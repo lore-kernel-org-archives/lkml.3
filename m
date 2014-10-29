@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576AbaJ2Kib (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:38:31 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:61511 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932168AbaJ2Ki3 (ORCPT
+	id S932410AbaJ2Kmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:42:36 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:61856 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168AbaJ2Kme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:38:29 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhgOAOHCUFRXQzqR/2dsb2JhbABcgw6BLLo7BgEBAQEBBQF0mkeBGhcBAQEBAX2EMC8jgRo3iEUBtmyObiyGNYpUHYQ1BZ1oljiBRwGCMTwvgksBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] ipv6: remove inline on static in c file
-Date: Wed, 29 Oct 2014 11:38:17 +0100
-Message-Id: <1414579097-11659-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Wed, 29 Oct 2014 06:42:34 -0400
+Date: Wed, 29 Oct 2014 11:36:05 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Juergen Gross <jgross@suse.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, hpa@zytor.com, x86@kernel.org,
+        mingo@redhat.com, stefan.bader@canonical.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com,
+        david.vrabel@citrix.com, jbeulich@suse.com, toshi.kani@hp.com
+Subject: Re: [PATCH V4 1/3] x86: Make page cache mode a real type
+Message-ID: <20141029103605.GA11648@gmail.com>
+References: <1414392513-24645-1-git-send-email-jgross@suse.com>
+ <1414392513-24645-2-git-send-email-jgross@suse.com>
+ <alpine.DEB.2.11.1410281536170.5308@nanos>
+ <20141029102859.GA11260@gmail.com>
+ <5450C2F3.40400@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5450C2F3.40400@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove __inline__ / inline and let compiler decide what to do
-with static functions
 
-Inspired-by: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/ipv6/reassembly.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+* Juergen Gross <jgross@suse.com> wrote:
 
-diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
-index 1a157ca..51ab096 100644
---- a/net/ipv6/reassembly.c
-+++ b/net/ipv6/reassembly.c
-@@ -69,7 +69,7 @@ struct ip6frag_skb_cb {
- 
- #define FRAG6_CB(skb)	((struct ip6frag_skb_cb *)((skb)->cb))
- 
--static inline u8 ip6_frag_ecn(const struct ipv6hdr *ipv6h)
-+static u8 ip6_frag_ecn(const struct ipv6hdr *ipv6h)
- {
- 	return 1 << (ipv6_get_dsfield(ipv6h) & INET_ECN_MASK);
- }
-@@ -178,7 +178,7 @@ static void ip6_frag_expire(unsigned long data)
- 	ip6_expire_frag_queue(net, fq, &ip6_frags);
- }
- 
--static __inline__ struct frag_queue *
-+static struct frag_queue *
- fq_find(struct net *net, __be32 id, const struct in6_addr *src,
- 	const struct in6_addr *dst, u8 ecn)
- {
-@@ -684,21 +684,21 @@ static void ip6_frags_sysctl_unregister(void)
- 	unregister_net_sysctl_table(ip6_ctl_header);
- }
- #else
--static inline int ip6_frags_ns_sysctl_register(struct net *net)
-+static int ip6_frags_ns_sysctl_register(struct net *net)
- {
- 	return 0;
- }
- 
--static inline void ip6_frags_ns_sysctl_unregister(struct net *net)
-+static void ip6_frags_ns_sysctl_unregister(struct net *net)
- {
- }
- 
--static inline int ip6_frags_sysctl_register(void)
-+static int ip6_frags_sysctl_register(void)
- {
- 	return 0;
- }
- 
--static inline void ip6_frags_sysctl_unregister(void)
-+static void ip6_frags_sysctl_unregister(void)
- {
- }
- #endif
--- 
-1.9.3
+> On 10/29/2014 11:28 AM, Ingo Molnar wrote:
+> >
+> >* Thomas Gleixner <tglx@linutronix.de> wrote:
+> >
+> >>On Mon, 27 Oct 2014, Juergen Gross wrote:
+> >>>At the moment there are a lot of places that handle setting or getting
+> >>>the page cache mode by treating the pgprot bits equal to the cache mode.
+> >>>This is only true because there are a lot of assumptions about the setup
+> >>>of the PAT MSR. Otherwise the cache type needs to get translated into
+> >>>pgprot bits and vice versa.
+> >>>
+> >>>This patch tries to prepare for that by introducing a separate type
+> >>>for the cache mode and adding functions to translate between those and
+> >>>pgprot values.
+> >>>
+> >>>To avoid too much performance penalty the translation between cache mode
+> >>>and pgprot values is done via tables which contain the relevant
+> >>>information.  Write-back cache mode is hard-wired to be 0, all other
+> >>>modes are configurable via those tables. For large pages there are
+> >>>translation functions as the PAT bit is located at different positions
+> >>>in the ptes of 4k and large pages.
+> >>
+> >>I'm fine with the approach itself. Though I wish you had split this
+> >>patch in several sanely to review pieces.
+> >>
+> >>   - Introduce enums, helper functions etc. which basically reflect
+> >>     the state of today
+> >>
+> >>   - Change the usage sites to use the enums and helpers
+> >>
+> >>   - Convert the enum/helper implementation to the new scheme
+> >>
+> >>   - Split out the printk change
+> >>
+> >>   ...
+> >
+> >That absolutely has to be done, should any of this introduce
+> >regressions. The diffstat:
+> >
+> >  18 files changed, 344 insertions(+), 212 deletions(-)
+> >
+> >is _way_ too large.
+> 
+> Okay, will do.
 
+Thanks!
+
+	Ingo
