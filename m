@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112AbaJ2JFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:05:09 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:52361 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755468AbaJ2JFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:05:06 -0400
-Date: Wed, 29 Oct 2014 18:05:03 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux-sh list <linux-sh@vger.kernel.org>,
-        Sudeep Holla <sudeep.holla@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: non-Multiplatform APE6EVM broken in v3.18-rc1
-Message-ID: <20141029090502.GA32069@verge.net.au>
-References: <20141028004131.GA8280@verge.net.au>
- <CAMuHMdXmOeJowF9FSQtoUzNK4zohvSYm+r3qp41-JigAOJ=+fg@mail.gmail.com>
- <20141028092305.GA11937@verge.net.au>
- <CAMuHMdUnwT7a1Gewz3AW-R9EaQBfYkJ2y7ZQ6uW4GaxBAHXzXg@mail.gmail.com>
- <20141029001258.GE20702@verge.net.au>
- <20141029020833.GA29787@verge.net.au>
- <CAMuHMdWkP=t2WL64X8vKdOPXW_ZpbibXQ66un8GfVTWoc-o+tw@mail.gmail.com>
+	id S1756055AbaJ2JIW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:08:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45880 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755469AbaJ2JIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 05:08:20 -0400
+Date: Wed, 29 Oct 2014 10:07:32 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/16] perf tools: Add a thread stack for synthesizing
+ call chains
+Message-ID: <20141029090732.GF3538@krava.brq.redhat.com>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+ <1414061124-26830-5-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdWkP=t2WL64X8vKdOPXW_ZpbibXQ66un8GfVTWoc-o+tw@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <1414061124-26830-5-git-send-email-adrian.hunter@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 09:13:11AM +0100, Geert Uytterhoeven wrote:
-> On Wed, Oct 29, 2014 at 3:08 AM, Simon Horman <horms@verge.net.au> wrote:
-> > On Wed, Oct 29, 2014 at 09:12:58AM +0900, Simon Horman wrote:
-> >> On Tue, Oct 28, 2014 at 10:32:32AM +0100, Geert Uytterhoeven wrote:
-> >> > On Tue, Oct 28, 2014 at 10:23 AM, Simon Horman <horms@verge.net.au> wrote:
-> >> > > On Tue, Oct 28, 2014 at 08:59:28AM +0100, Geert Uytterhoeven wrote:
-> >> > >> On Tue, Oct 28, 2014 at 1:41 AM, Simon Horman <horms@verge.net.au> wrote:
-> >> > >> > I have noticed that there appears to be a regression between v3.17 and
-> >> > >> > v3.18-rc1 such that non-multiplatform APE6EVM (ape6evm_defconfig) no longer
-> >> > >> > boots.  This appears to be the case using both reference DT (MACH_APE6EVM)
-> 
-> > It seems that the boot stops here:
-> >
-> > ...
-> > smsc911x smsc911x eth0: MAC Address: 00:08:f7:00:02:4b
-> > rcar_thermal rcar_thermal: Runtime PM disabled, clock forced on.
-> > rcar_thermal rcar_thermal: 3 sensor probed
-> > sh_mobile_sdhi sh_mobile_sdhi.0: Runtime PM disabled, clock forced on.
-> > sh_mobile_sdhi sh_mobile_sdhi.0: No vqmmc regulator found
-> >
-> > I re-ran my bisection and this time the following showed up as the culprit.
-> >
-> > I suspect that the initialisation of mmcif, which is usually the next
-> > device to be initialised, sleeps and never wakes up because the timer is
-> > disabled.
-> >
-> > commit c387f07e6205cc13f57c1def5f885bf0a20e1c2d
-> > Author: Sudeep Holla <sudeep.holla@arm.com>
-> > Date:   Mon Sep 29 01:50:05 2014 +0200
-> >
-> >     clocksource: arm_arch_timer: Discard unavailable timers correctly
-> 
-> Apparently reported and fixed by Laurent and a few others, cfr.
-> http://www.spinics.net/lists/arm-kernel/msg371615.html
+On Thu, Oct 23, 2014 at 01:45:12PM +0300, Adrian Hunter wrote:
 
-Great!
+SNIP
+
+>  };
+>  
+> +enum {
+> +	PERF_FLAG_BRANCH		= 1ULL << 0,
+> +	PERF_FLAG_CALL			= 1ULL << 1,
+> +	PERF_FLAG_RETURN		= 1ULL << 2,
+> +	PERF_FLAG_CONDITIONAL		= 1ULL << 3,
+> +	PERF_FLAG_SYSCALLRET		= 1ULL << 4,
+> +	PERF_FLAG_ASYNC			= 1ULL << 5,
+> +	PERF_FLAG_INTERRUPT		= 1ULL << 6,
+> +	PERF_FLAG_TX_ABORT		= 1ULL << 7,
+> +	PERF_FLAG_TRACE_BEGIN		= 1ULL << 8,
+> +	PERF_FLAG_TRACE_END		= 1ULL << 9,
+> +	PERF_FLAG_IN_TX			= 1ULL << 10,
+> +};
+> +
+> +#define PERF_BRANCH_MASK	(\
+> +	PERF_FLAG_BRANCH	|\
+> +	PERF_FLAG_CALL		|\
+> +	PERF_FLAG_RETURN	|\
+> +	PERF_FLAG_CONDITIONAL	|\
+> +	PERF_FLAG_SYSCALLRET	|\
+> +	PERF_FLAG_ASYNC		|\
+> +	PERF_FLAG_INTERRUPT	|\
+> +	PERF_FLAG_TX_ABORT	|\
+> +	PERF_FLAG_TRACE_BEGIN	|\
+> +	PERF_FLAG_TRACE_END)
+
+PERF_FLAG_ prefix seems too generic,
+
+should it be something like PERF_BRANCH_FLAG__* ?
+
+
+jirka
