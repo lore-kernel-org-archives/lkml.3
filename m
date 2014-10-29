@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665AbaJ2RxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:53:10 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:51972 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756645AbaJ2Rwe (ORCPT
+	id S1755896AbaJ2R4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:56:33 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:58811 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaJ2R4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:52:34 -0400
+	Wed, 29 Oct 2014 13:56:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141028215140.GA23970@linux.vnet.ibm.com>
-References: <20141028215140.GA23970@linux.vnet.ibm.com>
+In-Reply-To: <1414533217-24910-10-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20141028215140.GA23970@linux.vnet.ibm.com> <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1414533217-24910-10-git-send-email-paulmck@linux.vnet.ibm.com>
 From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 29 Oct 2014 13:52:03 -0400
-Message-ID: <CAJhHMCDw3oUF9TNPGFzkVNrq2X3XcdjqmS-O5pEQESb=83exAg@mail.gmail.com>
-Subject: Re: [PATCH tip/core/rcu 0/9] Per-CPU-variable updates
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Date: Wed, 29 Oct 2014 13:56:01 -0400
+Message-ID: <CAJhHMCDwxmNS0vA_9LqRKHxOVo=4RY-oHt2mPaVQK7MZJQ97=w@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 10/10] cpu: Avoid puts_pending overflow
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Dipankar Sarma <dipankar@in.ibm.com>,
@@ -33,51 +34,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 5:51 PM, Paul E. McKenney
+On Tue, Oct 28, 2014 at 5:53 PM, Paul E. McKenney
 <paulmck@linux.vnet.ibm.com> wrote:
-> Hello!
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 >
-> This series updates RCU's handling of per-CPU variables, mostly
-> moving from "cpu" function arguments to various "this_"-style accessors
-> for per-CPU variables:
+> A long string of get_online_cpus() with each followed by a
+> put_online_cpu() that fails to acquire cpu_hotplug.lock can result in
+> overflow of the cpu_hotplug.puts_pending counter.  Although this is
+> perhaps improbably, a system with absolutely no CPU-hotplug operations
+> will have an arbitrarily long time in which this overflow could occur.
+> This commit therefore adds overflow checks to get_online_cpus() and
+> try_get_online_cpus().
 >
-> 1.      Drop the rdtp argument from RCU's dyntick-idle and sysidle
->         functions, substituting this_cpu_ptr(), courtesy of Christoph
->         Lameter.
->
-> 2.      Use DEFINE_PER_CPU_SHARED_ALIGNED for rcu_data structures in
->         order to avoid false sharing with other per-CPU variables.
->
-> 3-9.    Remove "cpu" arguments from a number of RCU functions that are
->         only ever invoked on that CPU, and use appropriate "this_"-style
->         accesssors for the per-CPU variables.
->
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Reviewd-by: Pranith Kumar <bobby.prani@gmail.com>
+This patch seems to be missing in the cover letter.
 
+Reviewed-by: Pranith Kumar <bobby.prani@gmail.com>
 
->                                                         Thanx, Paul
+> ---
+>  kernel/cpu.c | 19 +++++++++++++------
+>  1 file changed, 13 insertions(+), 6 deletions(-)
 >
-> ------------------------------------------------------------------------
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index 90a3d017b90c..5d220234b3ca 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -86,6 +86,16 @@ static struct {
+>  #define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
+>  #define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
 >
->  b/include/linux/rcupdate.h |    2 +-
->  b/include/linux/rcutiny.h  |    2 +-
->  b/include/linux/rcutree.h  |    4 ++--
->  b/kernel/cpu.c             |   19 +++++++++++++------
->  b/kernel/rcu/tiny.c        |    2 +-
->  b/kernel/rcu/tree.c        |   25 +++++++++++++------------
->  b/kernel/rcu/tree.h        |    4 ++--
->  b/kernel/rcu/tree_plugin.h |   11 +++++++----
->  b/kernel/sched/core.c      |    2 +-
->  b/kernel/softirq.c         |    2 +-
->  b/kernel/time/tick-sched.c |    2 +-
->  b/kernel/time/timer.c      |    3 +--
->  include/linux/rcupdate.h   |    2 +-
->  include/linux/rcutree.h    |    2 +-
->  kernel/rcu/tree.c          |   30 +++++++++++++++---------------
->  kernel/rcu/tree.h          |    8 ++++----
->  kernel/rcu/tree_plugin.h   |   42 +++++++++++++++++++++---------------------
->  17 files changed, 86 insertions(+), 76 deletions(-)
+> +static void apply_puts_pending(int max)
+> +{
+> +       int delta;
+> +
+> +       if (atomic_read(&cpu_hotplug.puts_pending) >= max) {
+> +               delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
+> +               cpu_hotplug.refcount -= delta;
+> +       }
+> +}
+> +
+>  void get_online_cpus(void)
+>  {
+>         might_sleep();
+> @@ -93,6 +103,7 @@ void get_online_cpus(void)
+>                 return;
+>         cpuhp_lock_acquire_read();
+>         mutex_lock(&cpu_hotplug.lock);
+> +       apply_puts_pending(65536);
+>         cpu_hotplug.refcount++;
+>         mutex_unlock(&cpu_hotplug.lock);
+>  }
+> @@ -105,6 +116,7 @@ bool try_get_online_cpus(void)
+>         if (!mutex_trylock(&cpu_hotplug.lock))
+>                 return false;
+>         cpuhp_lock_acquire_tryread();
+> +       apply_puts_pending(65536);
+>         cpu_hotplug.refcount++;
+>         mutex_unlock(&cpu_hotplug.lock);
+>         return true;
+> @@ -161,12 +173,7 @@ void cpu_hotplug_begin(void)
+>         cpuhp_lock_acquire();
+>         for (;;) {
+>                 mutex_lock(&cpu_hotplug.lock);
+> -               if (atomic_read(&cpu_hotplug.puts_pending)) {
+> -                       int delta;
+> -
+> -                       delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
+> -                       cpu_hotplug.refcount -= delta;
+> -               }
+> +               apply_puts_pending(1);
+>                 if (likely(!cpu_hotplug.refcount))
+>                         break;
+>                 __set_current_state(TASK_UNINTERRUPTIBLE);
+> --
+> 1.8.1.5
 >
 
 
