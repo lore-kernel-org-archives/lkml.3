@@ -1,111 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaJ2DU4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 23:20:56 -0400
-Received: from forward2l.mail.yandex.net ([84.201.143.145]:42575 "EHLO
-	forward2l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaJ2DUy (ORCPT
+	id S1752725AbaJ2DXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 23:23:01 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:18881 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563AbaJ2DW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 23:20:54 -0400
-X-Yandex-Uniq: 4d28fdbc-dd2a-4b35-9e4b-f68b640c9c88
-Authentication-Results: smtp4h.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <54505D10.7050809@yandex.ru>
-Date: Wed, 29 Oct 2014 06:20:48 +0300
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:33.0) Gecko/20100101 Icedove/33.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Burke Libbey <burke.libbey@shopify.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [PATCH] sched: Fix race between task_group and sched_task_group
-References: <1414405105.19914.169.camel@tkhai> <20141027230427.GA18454@redhat.com> <1414473874.8574.2.camel@tkhai> <20141028225250.GA8519@redhat.com>
-In-Reply-To: <20141028225250.GA8519@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Oct 2014 23:22:59 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+X-AuditID: cbfee68e-f79b46d000002b74-2d-54505d7dee96
+Content-transfer-encoding: 8BIT
+Message-id: <54505D7D.4000704@samsung.com>
+Date: Wed, 29 Oct 2014 12:22:37 +0900
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: max77693-haptic - fix potential overflow
+References: <20141028164322.GA13234@dtor-ws>
+In-reply-to: <20141028164322.GA13234@dtor-ws>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSpFsbGxBi0H7cyuL6l+esFocXvWC0
+	uPnpG6vF5V1z2BxYPHbOusvu0bdlFaPH501yAcxRXDYpqTmZZalF+nYJXBlT26YzF+zhrZh9
+	9DhbA2MrdxcjJ4eEgInEwqWn2CFsMYkL99azgdhCAksZJVqWlMPUzDn4gwkiPp1R4v6CahCb
+	V0BQ4sfkeyxdjBwczALyEkcuZYOEmQXMJB61rGPuYuQCKn/NKLHk8E4miHotiZtvz4PtYhFQ
+	lVj+aR8LiM0moC3xff1iVhBbVCBC4sqaOYwgtoiAj0TjzEesEEPdJM6sPw1WLyzgIrFj3zZ2
+	iHt0JCb/6WEGsTkFdCW6Ju5mBFksIbCOXeJ210tmiGUCEt8mHwI7VEJAVmLTAWaIvyQlDq64
+	wTKBUWwWkndmIbwzC8k7CxiZVzGKphYkFxQnpRcZ6RUn5haX5qXrJefnbmIExs/pf8/6djDe
+	PGB9iFGAg1GJh9fgoV+IEGtiWXFl7iFGU6AjJjJLiSbnA6M0ryTe0NjMyMLUxNTYyNzSTEmc
+	N0HqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRuOGXM4ri3JE4g/VTdLNOdotxTbndr1p
+	9rN2sS/Tou9++rZn61uVu2JPy77b2/6fGblozvIXib+X3yo33zLNd7PmXq6Hz65ve+GdJfuo
+	riP9qtfBiZ/s/1wv0dvQF7ZsieGm8/qzezO2vV54hamOb2r1hl4dww3vtFutkn6oKtsmrv23
+	Y8lh36lKLMUZiYZazEXFiQBCoVhnmgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jQd3a2IAQg+7rxhbXvzxntTi86AWj
+	xc1P31gtLu+aw+bA4rFz1l12j74tqxg9Pm+SC2COamC0yUhNTEktUkjNS85PycxLt1XyDo53
+	jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFap6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULX
+	NyQIrsfIAA0krGHMmNo2nblgD2/F7KPH2RoYW7m7GDk5JARMJOYc/MEEYYtJXLi3ng3EFhKY
+	zihxf0E1iM0rICjxY/I9li5GDg5mAXmJI5eyQcLMAmYSj1rWMXcxcgGVv2aUWHJ4JxNEvZbE
+	zbfn2UFsFgFVieWf9rGA2GwC2hLf1y9mBbFFBSIkrqyZwwhiiwj4SDTOfMQKMdRN4sz602D1
+	wgIuEjv2bWOHuEdHYvKfHmYQm1NAV6Jr4m7GCYwCs5CcNwvhvFlIzlvAyLyKUTS1ILmgOCk9
+	10ivODG3uDQvXS85P3cTIzg+n0nvYFzVYHGIUYCDUYmH1/ChX4gQa2JZcWXuIUYJDmYlEd4d
+	5gEhQrwpiZVVqUX58UWlOanFhxhNgZ6byCwlmpwPTB15JfGGxiZmRpZG5oYWRsbmSuK8B1ut
+	A4UE0hNLUrNTUwtSi2D6mDg4pRoYq3+8ubzdoktUwMbjvtcnW5sJK2dWiW0W6r+y98Mm+/hN
+	XiuLpZdFXP1cEJ3OvV5NJcqvQSisZRLbbOUzsTOzNaQnKabNcTp9/yfTE40zN47/cNizXpnz
+	RLUpF/+G5NPq16P8fCdb7nD6VXPxzX13ySW6uYwci/eKfpwhv8tUtznSxiH3dkuHEktxRqKh
+	FnNRcSIAGTAY+OUCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.10.2014 01:52, Oleg Nesterov wrote:
-> On 10/28, Kirill Tkhai wrote:
->>
->> Shouldn't we do that in separate patch? How about this?
-> 
-> Up to Peter, but I think a separate patch is fine.
-> 
->> [PATCH]sched: Remove lockdep check in sched_move_task()
->>
->> sched_move_task() is the only interface to change sched_task_group:
->> cpu_cgrp_subsys methods and autogroup_move_group() use it.
-> 
-> Yes, but...
-> 
->> Everything is synchronized by task_rq_lock(), so cpu_cgroup_attach()
->> is ordered with other users of sched_move_task(). This means we do
->> no need RCU here: if we've dereferenced a tg here, the .attach method
->> hasn't been called for it yet.
->>
->> Thus, we should pass "true" to task_css_check() to silence lockdep
->> warnings.
-> 
-> In theory, I am not sure.
-> 
-> However, I never really understood this code and today I forgot everything,
-> please correct me.
-> 
->> @@ -7403,8 +7403,12 @@ void sched_move_task(struct task_struct *tsk)
->>  	if (unlikely(running))
->>  		put_prev_task(rq, tsk);
->>
->> -	tg = container_of(task_css_check(tsk, cpu_cgrp_id,
->> -				lockdep_is_held(&tsk->sighand->siglock)),
->> +	/*
->> +	 * All callers are synchronized by task_rq_lock(); we do not use RCU
->> +	 * which is pointless here. Thus, we pass "true" to task_css_check()
->> +	 * to prevent lockdep warnings.
->> +	 */
->> +	tg = container_of(task_css_check(tsk, cpu_cgrp_id, true),
->>  			  struct task_group, css);
-> 
-> Why this can't race with cgroup_task_migrate() if it is called by
-> cgroup_post_fork() ?
+Hi Dmitry,
 
-It can race, but which problem is there? The only thing is
-cgroup_post_fork()'s or ss->attach()'s call of sched_move_task() will be
-NOOP.
+2014년 10월 29일 01:43에 Dmitry Torokhov 이(가) 쓴 글:
+> Expression haptic->pwm_dev->period * haptic->magnitude is of type 'unsigned
+> int' and may overflow. We need to convert one of the operands to u64 before
+> multiplying, instead of casting result (potentially overflown) to u64.
+>
+> Reported by Coverity: CID 1248753
+>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>   drivers/input/misc/max77693-haptic.c | 5 ++---
+>   1 file changed, 2 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/input/misc/max77693-haptic.c b/drivers/input/misc/max77693-haptic.c
+> index 7b1fde9..ef6a9d6 100644
+> --- a/drivers/input/misc/max77693-haptic.c
+> +++ b/drivers/input/misc/max77693-haptic.c
+> @@ -194,7 +194,7 @@ static int max77693_haptic_play_effect(struct input_dev *dev, void *data,
+>   				       struct ff_effect *effect)
+>   {
+>   	struct max77693_haptic *haptic = input_get_drvdata(dev);
+> -	uint64_t period_mag_multi;
+> +	u64 period_mag_multi;
+>   
+>   	haptic->magnitude = effect->u.rumble.strong_magnitude;
+>   	if (!haptic->magnitude)
+> @@ -205,8 +205,7 @@ static int max77693_haptic_play_effect(struct input_dev *dev, void *data,
+>   	 * The formula to convert magnitude to pwm_duty as follows:
+>   	 * - pwm_duty = (magnitude * pwm_period) / MAX_MAGNITUDE(0xFFFF)
+>   	 */
+> -	period_mag_multi = (int64_t)(haptic->pwm_dev->period *
+> -						haptic->magnitude);
+> +	period_mag_multi = (u64)haptic->pwm_dev->period * haptic->magnitude;
+>   	haptic->pwm_duty = (unsigned int)(period_mag_multi >>
+>   						MAX_MAGNITUDE_SHIFT);
+>   
 
-cgroup_migrate_add_src()
 
-  cgroup_task_migrate()
-                                                    cgroup_post_fork();
-    rcu_assign_pointer(tsk->cgroups, new_cset);
-                                                      sched_move_task();
-  css->ss->attach(css, &tset);
+There was casting miss in multiplying.
+Thanks.
 
-    sched_move_task();
-
-cgroup_migrate_finish()
-
-> And cgroup_task_migrate() can free ->cgroups via call_rcu(). Of course,
-> in practice raw_spin_lock_irq() should also act as rcu_read_lock(), but
-> we should not rely on implementation details.
-
-Do you mean cgroup_task_migrate()->put_css_set_locked()? It's not
-possible there, because old_cset->refcount is lager than 1. We increment
-it in cgroup_migrate_add_src() and real freeing happens in
-cgroup_migrate_finish(). These functions are around task_migrate(), they
-are pair brackets.
-
-> task_group = tsk->cgroups[cpu_cgrp_id] can't go away because yes, if we
-> race with migrate then ->attach() was not called. But it seems that in
-> theory it is not safe to dereference tsk->cgroups.
-
-old_cset can't be freed in cgroup_task_migrate(), so we can safely
-dereference it. If we've got old_cset in
-cgroup_post_fork()->sched_move_task(), the right sched_task_group will
-be installed by attach->sched_move_task().
-
-Kirill
+Acked-by : Jaewon Kim <jaewon02.kim@samsung.com>
