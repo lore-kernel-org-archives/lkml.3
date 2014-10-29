@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096AbaJ2AQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 20:16:56 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:41414 "EHLO gloria.sntech.de"
+	id S1754889AbaJ2ATo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 20:19:44 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:41422 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858AbaJ2AQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 20:16:55 -0400
+	id S1752138AbaJ2ATn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 20:19:43 -0400
 From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] backlight: use of_find_backlight_by_node stub when backlight class disabled
-Date: Wed, 29 Oct 2014 01:20:06 +0100
-Message-ID: <50522512.UJWUZtqLop@diego>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] iommu: Improve error handling when setting bus iommu
+Date: Wed, 29 Oct 2014 01:22:56 +0100
+Message-ID: <1721918.cCnbhQjjFO@diego>
 User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
@@ -21,30 +20,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers may want to search for an optional backlight even when the backlight
-class is disabled. In this case the linker would miss the function referenced
-in the backlight header.
+When some part of bus_set_iommu fails it should undo any made changes
+and not simply leave everything as is.
 
-Therefore use the stub function also when the backlight class is disabled.
+This includes unregistering the bus notifier in iommu_bus_init when
+add_iommu_group fails and also setting the bus->iommu_ops back to NULL.
 
 Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 ---
- include/linux/backlight.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/iommu.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-index adb14a8..d9cb644 100644
---- a/include/linux/backlight.h
-+++ b/include/linux/backlight.h
-@@ -157,7 +157,7 @@ struct generic_bl_info {
- 	void (*kick_battery)(void);
- };
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index ed8b048..b0e6b94 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -818,7 +818,15 @@ static int iommu_bus_init(struct bus_type *bus, const struct iommu_ops *ops)
+ 		kfree(nb);
+ 		return err;
+ 	}
+-	return bus_for_each_dev(bus, NULL, &cb, add_iommu_group);
++
++	err = bus_for_each_dev(bus, NULL, &cb, add_iommu_group);
++	if (err) {
++		bus_unregister_notifier(bus, nb);
++		kfree(nb);
++		return err;
++	}
++
++	return 0;
+ }
  
--#ifdef CONFIG_OF
-+#if defined(CONFIG_OF) && defined(CONFIG_BACKLIGHT_CLASS_DEVICE)
- struct backlight_device *of_find_backlight_by_node(struct device_node *node);
- #else
- static inline struct backlight_device *
+ /**
+@@ -836,13 +844,19 @@ static int iommu_bus_init(struct bus_type *bus, const struct iommu_ops *ops)
+  */
+ int bus_set_iommu(struct bus_type *bus, const struct iommu_ops *ops)
+ {
++	int err;
++
+ 	if (bus->iommu_ops != NULL)
+ 		return -EBUSY;
+ 
+ 	bus->iommu_ops = ops;
+ 
+ 	/* Do IOMMU specific setup for this bus-type */
+-	return iommu_bus_init(bus, ops);
++	err = iommu_bus_init(bus, ops);
++	if (err)
++		bus->iommu_ops = NULL;
++
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(bus_set_iommu);
+ 
 -- 
 2.0.1
 
