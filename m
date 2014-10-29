@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934286AbaJ2PwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:52:23 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:43658 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933498AbaJ2PwV (ORCPT
+	id S934263AbaJ2Pxy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:53:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61207 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933467AbaJ2Pxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:52:21 -0400
-X-Originating-IP: 50.43.41.112
-Date: Wed, 29 Oct 2014 08:52:09 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
-Message-ID: <20141029155209.GA7287@thin>
-References: <20140923143232.5ffff46e@canb.auug.org.au>
- <20140923054328.GA28790@gmail.com>
- <20140923062125.GB6900@thin>
- <20140923083603.GA31876@gmail.com>
+	Wed, 29 Oct 2014 11:53:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] ACPI/EC: Fix regressions on Samsung hardware.
+Date: Wed, 29 Oct 2014 17:14:29 +0100
+Message-ID: <3707792.PHiIGtcpHx@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cover.1414553399.git.lv.zheng@intel.com>
+References: <544CE637.7000406@odi.ch> <cover.1414553399.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923083603.GA31876@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 10:36:03AM +0200, Ingo Molnar wrote:
-> * Josh Triplett <josh@joshtriplett.org> wrote:
-> > I've dropped tiny/no-io from tiny/next; I'll poke at it further 
-> > and resubmit for the x86 tree later, likely not for the next 
-> > merge window at this point.
-> > 
-> > Thanks for the feedback on process; this is day 1 of having a 
-> > merge-window-bound tree in -next for the first time. :)
+On Wednesday, October 29, 2014 11:33:33 AM Lv Zheng wrote:
+> It is reported that the Samsung EC firmware behaves differently than Acer
+> EC firmware. And then previous 2 commits that fix Acer issues have broken
+> Samsung hardware.
 > 
-> Sorry about the harshness of my initial email - I was unsure 
-> about the background and we are close to the merge window. I have 
-> no objections against the -tiny tree in linux-next, it's a good 
-> effort.
+> This patchset fixes the regressions.
 > 
-> I think we could cut down on the #ifdef uglies if we made the 
-> ioperm callback pointer unconditional. That's just a tiny amount 
-> of extra bloat, but should remove half of the #ifdefs or so? The 
-> rest of the patches look fine.
+> Lv Zheng (2):
+>   Revert "ACPI / EC: Add support to disallow QR_EC to be issued before
+>     completing previous QR_EC"
+>   ACPI/EC: Fix a regression caused by conflict firmware behavior
+>     between Samsung and Acer.
 
-I've revised the patch to eliminate quite a few #ifdefs, and in
-particular almost all of those in .c files, by adding a macro
-INIT_SET_IOPL_MASK to use in place of the initializer for set_iopl_mask,
-and using __maybe_unused rather than wrapping function definitions in
-#ifdef.  I'll send a new version momentarily.
+Both patches applied, thanks Lv!
 
-> Usually hpa handles the x86 ioperm area, but he's swamped right 
-> now, so I'll look at picking them up once you have submitted the 
-> latest version. If you send it in the next day or two then they 
-> could make the v3.18 merge window.
-
-Other things came up (LinuxCon / Plumbers), but hopefully the new
-version can go into 3.19.
-
-- Josh Triplett
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
