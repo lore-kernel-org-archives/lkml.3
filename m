@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934091AbaJ2P4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:56:31 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:40970 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932994AbaJ2P43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:56:29 -0400
-Date: Wed, 29 Oct 2014 16:56:20 +0100
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
-        jeffrey.t.kirsher@intel.com
-Subject: e1000_netpoll(): disable_irq() triggers might_sleep() on linux-next
-Message-ID: <20141029155620.GA4886@kria>
+	id S934151AbaJ2P4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:56:48 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46396 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932994AbaJ2P4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 11:56:47 -0400
+Date: Wed, 29 Oct 2014 08:56:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu 3/7] rcu: Avoid IPIing idle CPUs from
+ synchronize_sched_expedited()
+Message-ID: <20141029155641.GS5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141028222224.GA28263@linux.vnet.ibm.com>
+ <1414534982-29203-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1414534982-29203-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20141029105954.GZ3337@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141029105954.GZ3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102915-0013-0000-0000-000005DDC189
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit e22b886a8a43b ("sched/wait: Add might_sleep() checks") included
-in today's linux-next added a check that fires on e1000 with netpoll:
+On Wed, Oct 29, 2014 at 11:59:54AM +0100, Peter Zijlstra wrote:
+> On Tue, Oct 28, 2014 at 03:22:58PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > Currently, synchronize_sched_expedited() sends IPIs to all online CPUs,
+> > even those that are idle or executing in nohz_full= userspace.  Because
+> > idle CPUs and nohz_full= userspace CPUs are in extended quiescent states,
+> > there is no need to IPI them in the first place.  This commit therefore
+> > avoids IPIing CPUs that are already in extended quiescent states.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcu/tree.c | 27 ++++++++++++++++++++++++++-
+> >  1 file changed, 26 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> > index 7f73c5edf8cf..9e3c20f117cd 100644
+> > --- a/kernel/rcu/tree.c
+> > +++ b/kernel/rcu/tree.c
+> > @@ -2950,6 +2950,9 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
+> >   */
+> >  void synchronize_sched_expedited(void)
+> >  {
+> > +	cpumask_var_t cm;
+> > +	bool cma = false;
+> > +	int cpu;
+> >  	long firstsnap, s, snap;
+> >  	int trycount = 0;
+> >  	struct rcu_state *rsp = &rcu_sched_state;
+> > @@ -2984,11 +2987,26 @@ void synchronize_sched_expedited(void)
+> >  	}
+> >  	WARN_ON_ONCE(cpu_is_offline(raw_smp_processor_id()));
+> >  
+> > +	/* Offline CPUs, idle CPUs, and any CPU we run on are quiescent. */
+> > +	cma = zalloc_cpumask_var(&cm, GFP_KERNEL);
+> > +	if (cma) {
+> > +		cpumask_copy(cm, cpu_online_mask);
+> > +		cpumask_clear_cpu(raw_smp_processor_id(), cm);
+> > +		for_each_cpu(cpu, cm) {
+> > +			struct rcu_dynticks *rdtp = &per_cpu(rcu_dynticks, cpu);
+> > +
+> > +			if (!(atomic_add_return(0, &rdtp->dynticks) & 0x1))
+> > +				cpumask_clear_cpu(cpu, cm);
+> > +		}
+> > +		if (cpumask_weight(cm) == 0)
+> > +			goto all_cpus_idle;
+> > +	}
+> 
+> Is there a reason not to use on_each_cpu_cond()?
 
+Because I don't know how to write a function that returns a blooean value?
+(Sorry, couldn't resist, and yes I do know that "boolean" was meant.)
+If we had lambdas, I might be interested in making that transformation,
+but pulling the condition into a separate function doesn't seem like
+a win to me.
 
-BUG: sleeping function called from invalid context at kernel/irq/manage.c:104
-in_atomic(): 1, irqs_disabled(): 1, pid: 1, name: systemd
-no locks held by systemd/1.
-irq event stamp: 10102965
-hardirqs last  enabled at (10102965): [<ffffffff810cbafd>] vprintk_emit+0x2dd/0x6a0
-hardirqs last disabled at (10102964): [<ffffffff810cb897>] vprintk_emit+0x77/0x6a0
-softirqs last  enabled at (10102342): [<ffffffff810666aa>] __do_softirq+0x27a/0x6f0
-softirqs last disabled at (10102337): [<ffffffff81066e86>] irq_exit+0x56/0xe0
-Preemption disabled at:[<ffffffff817de50d>] printk_emit+0x31/0x33
+But even with lambdas, it looks to me like on_each_cpu_cond() just does
+an IPI, and I need the selected CPUs to do a context switch.  Yes, I
+could make the IPI handler function call induce a context switch, but
+then I would have to add more mechanism to wait for the induced context
+switches to actually happen.
 
-CPU: 1 PID: 1 Comm: systemd Not tainted 3.18.0-rc2-next-20141029-dirty #222
-Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140617_173321-var-lib-archbuild-testing-x86_64-tobias 04/01/2014
- ffffffff81a82291 ffff88001e743978 ffffffff817df31d 0000000000000000
- 0000000000000000 ffff88001e7439a8 ffffffff8108dfa2 ffff88001e7439a8
- ffffffff81a82291 0000000000000068 0000000000000000 ffff88001e7439d8
-Call Trace:
- [<ffffffff817df31d>] dump_stack+0x4f/0x7c
- [<ffffffff8108dfa2>] ___might_sleep+0x182/0x2b0
- [<ffffffff8108e10a>] __might_sleep+0x3a/0xc0
- [<ffffffff810ce358>] synchronize_irq+0x38/0xa0
- [<ffffffff810ce633>] ? __disable_irq_nosync+0x43/0x70
- [<ffffffff810ce690>] disable_irq+0x20/0x30
- [<ffffffff815d7253>] e1000_netpoll+0x23/0x60
- [<ffffffff81678d02>] netpoll_poll_dev+0x72/0x3a0
- [<ffffffff817e9993>] ? _raw_spin_trylock+0x73/0x90
- [<ffffffff8167920f>] ? netpoll_send_skb_on_dev+0x1df/0x2e0
- [<ffffffff816791e7>] netpoll_send_skb_on_dev+0x1b7/0x2e0
- [<ffffffff816795f3>] netpoll_send_udp+0x2e3/0x490
- [<ffffffff815d1f61>] ? write_msg+0x51/0x140
- [<ffffffff815d1fdf>] write_msg+0xcf/0x140
- [<ffffffff810cadbb>] call_console_drivers.constprop.22+0x13b/0x2a0
- [<ffffffff810cb6bd>] console_unlock+0x39d/0x500
- [<ffffffff810cbb3e>] ? vprintk_emit+0x31e/0x6a0
- [<ffffffff810cbb5c>] vprintk_emit+0x33c/0x6a0
- [<ffffffff811a6c6e>] ? might_fault+0x5e/0xc0
- [<ffffffff817de50d>] printk_emit+0x31/0x33
- [<ffffffff810cbfad>] devkmsg_write+0xbd/0x110
- [<ffffffff811f24d5>] do_iter_readv_writev+0x65/0xa0
- [<ffffffff811f3b72>] do_readv_writev+0xe2/0x290
- [<ffffffff810cbef0>] ? vprintk+0x30/0x30
- [<ffffffff810d499d>] ? rcu_read_lock_held+0x6d/0x70
- [<ffffffff812142d6>] ? __fget_light+0xc6/0xd0
- [<ffffffff811f3dac>] vfs_writev+0x3c/0x50
- [<ffffffff811f3eed>] SyS_writev+0x4d/0xe0
- [<ffffffff817ea16d>] system_call_fastpath+0x16/0x1b
+That said, I am considering switching synchronize_sched_expedited()
+from try_stop_cpus() to resched_cpu() if I need to parallelize
+synchronize_sched_expedited().
 
+							Thanx, Paul
 
-
-I'm able to reproduce it consistently by sending a lot of packets from
-that interface while writing to /dev/kmsg with netconsole
-enabled. Just writing to /dev/kmsg isn't enough.
-
-# with ping -f or pktgen running
-for i in `seq 1 20` ; do echo '............................................' > /dev/kmsg ; done
-
-
--- 
-Sabrina
