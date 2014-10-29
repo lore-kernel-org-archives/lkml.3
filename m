@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806AbaJ2Rv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:51:58 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60110 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756491AbaJ2Rvy (ORCPT
+	id S1756873AbaJ2Rwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:52:40 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51754 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807AbaJ2Rp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:51:54 -0400
-Date: Wed, 29 Oct 2014 17:51:42 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 4/4] clocksource: mips-gic: Add device-tree support
-Message-ID: <20141029175142.GC26471@leverpostej>
-References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
- <1414541562-10076-5-git-send-email-abrestic@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414541562-10076-5-git-send-email-abrestic@chromium.org>
-Thread-Topic: [PATCH V3 4/4] clocksource: mips-gic: Add device-tree support
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Oct 2014 13:45:29 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v3 01/15] net: dsa: Don't set skb->protocol on outgoing tagged packets
+Date: Wed, 29 Oct 2014 10:44:53 -0700
+Message-Id: <1414604707-22407-2-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
+References: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.545127B9.013E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 23
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 12:12:42AM +0000, Andrew Bresticker wrote:
-> Parse the GIC timer frequency and interrupt from the device-tree.
-> 
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> ---
-> New for v3.
-> ---
->  drivers/clocksource/Kconfig          |  1 +
->  drivers/clocksource/mips-gic-timer.c | 37 +++++++++++++++++++++++++++++-------
->  2 files changed, 31 insertions(+), 7 deletions(-)
-> 
+Setting skb->protocol to a private protocol type may result in warning
+messages such as
+	e1000e 0000:00:19.0 em1: checksum_partial proto=dada!
 
-[...]
+This happens if the L3 protocol is IP or IPv6 and skb->ip_summed is set
+to CHECKSUM_PARTIAL. Looking through the code, it appears that changing
+skb->protocol for transmitted packets is not necessary and may actually
+be harmful. For example, it prevents purposely unmodified (from a DSA
+perspective) network drivers from properly setting up their transmit
+checksum offload pointers since they inspect skb->protocol to set up the
+IPv4 header or IPv6 header pointers. So don't unnecessarily change the
+protocol field.
 
-> +static void __init gic_clocksource_of_init(struct device_node *node)
-> +{
-> +	if (of_property_read_u32(node, "clock-frequency", &gic_frequency)) {
-> +		pr_err("GIC frequency not specified.\n");
-> +		return;
-> +	}
-> +	gic_timer_irq = irq_of_parse_and_map(node, 0);
-> +	if (!gic_timer_irq) {
-> +		pr_err("GIC timer IRQ not specified.\n");
-> +		return;
-> +	}
-> +
-> +	__gic_clocksource_init();
-> +}
-> +CLOCKSOURCE_OF_DECLARE(mips_gic_timer, "mti,interaptiv-gic-timer",
-> +		       gic_clocksource_of_init);
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v3:
+- Updated description
+v2:
+- No change
 
-Your binding document expected the timer node under the GIC node, and it
-looks like this relies on GIC internals. Hwoever, this allows for people
-to put the timer node anywhere (and it turns out people are _really_ bad
-at putting things together as the binding author expected).
+ net/dsa/tag_dsa.c     | 2 --
+ net/dsa/tag_edsa.c    | 2 --
+ net/dsa/tag_trailer.c | 2 --
+ 3 files changed, 6 deletions(-)
 
-It might be better if the GIC driver detected the sub node and probed
-the clocksource driver (or registered a platform device that the
-clocksource driver gets registered from). that could prevent some
-horrible issues with probe ordering and/or bad dts.
+diff --git a/net/dsa/tag_dsa.c b/net/dsa/tag_dsa.c
+index ce90c8b..2dab270 100644
+--- a/net/dsa/tag_dsa.c
++++ b/net/dsa/tag_dsa.c
+@@ -63,8 +63,6 @@ static netdev_tx_t dsa_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		dsa_header[3] = 0x00;
+ 	}
+ 
+-	skb->protocol = htons(ETH_P_DSA);
+-
+ 	skb->dev = p->parent->dst->master_netdev;
+ 	dev_queue_xmit(skb);
+ 
+diff --git a/net/dsa/tag_edsa.c b/net/dsa/tag_edsa.c
+index 94fcce7..9aeda59 100644
+--- a/net/dsa/tag_edsa.c
++++ b/net/dsa/tag_edsa.c
+@@ -76,8 +76,6 @@ static netdev_tx_t edsa_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		edsa_header[7] = 0x00;
+ 	}
+ 
+-	skb->protocol = htons(ETH_P_EDSA);
+-
+ 	skb->dev = p->parent->dst->master_netdev;
+ 	dev_queue_xmit(skb);
+ 
+diff --git a/net/dsa/tag_trailer.c b/net/dsa/tag_trailer.c
+index 115fdca..e268f9d 100644
+--- a/net/dsa/tag_trailer.c
++++ b/net/dsa/tag_trailer.c
+@@ -57,8 +57,6 @@ static netdev_tx_t trailer_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	trailer[2] = 0x10;
+ 	trailer[3] = 0x00;
+ 
+-	nskb->protocol = htons(ETH_P_TRAILER);
+-
+ 	nskb->dev = p->parent->dst->master_netdev;
+ 	dev_queue_xmit(nskb);
+ 
+-- 
+1.9.1
 
-Mark.
