@@ -1,105 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122AbaJ2UMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:12:30 -0400
-Received: from pb-smtp1.int.icgroup.com ([208.72.237.35]:59615 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756939AbaJ2UM2 convert rfc822-to-8bit (ORCPT
+	id S1757174AbaJ2UOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:14:14 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:49780 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651AbaJ2UOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:12:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=G+5DhWVyO2EDx7L3Wkn
-	PRuUejQ4ohdvHq5oGLpCQykgXDXGm76oXDs2GxTds/fHYN7w0n+Ma2qpw/jnTq7i
-	UamTNiyODKDepwEDRBpw1Jer+2fJ+HwXNoDx13oBPLLfSFI47NUAbvfzfiDspAzC
-	QMJSH2M33QiRPzqozNvCXCZc=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v2.1.3
-Date: Wed, 29 Oct 2014 13:12:25 -0700
-Message-ID: <xmqq8ujyy6s6.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 29 Oct 2014 16:14:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: E6DBA366-5FA7-11E4-9AF7-692F9F42C9D4-77302942!pb-smtp1.pobox.com
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20141028215137.GG9255@lukather>
+References: <cover.1414444953.git.rbyshko@gmail.com> <210cc2a03d43e3d65b08f302b3b32663044ad94f.1414444953.git.rbyshko@gmail.com>
+ <20141028215137.GG9255@lukather>
+From: Roman Byshko <rbyshko@gmail.com>
+Date: Wed, 29 Oct 2014 21:13:50 +0100
+Message-ID: <CAMXmWBmU0j_tf_fseDP5p527SaO=iLB-=fKp1PCvE9J6FQk6dw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] ARM: dtsi: sunxi: add common VBUS regulator
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v2.1.3 is now available at
-the usual places.
+Hi Maxime,
 
-The tarballs are found at:
+thank you for the review!
 
-    https://www.kernel.org/pub/software/scm/git/
+On Tue, Oct 28, 2014 at 10:51 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Mon, Oct 27, 2014 at 10:43:02PM +0100, Roman Byshko wrote:
+>> Until now the regulator nodes for powering USB VBUS
+>> existed only for the two host controllers. Now the regulator
+>> is added for USB OTG too.
+>> ---
+>>  arch/arm/boot/dts/sunxi-common-regulators.dtsi | 19 +++++++++++++++++++
+>>  1 file changed, 19 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/sunxi-common-regulators.dtsi b/arch/arm/boot/dts/sunxi-common-regulators.dtsi
+>> index c9c5b10..f521672 100644
+>> --- a/arch/arm/boot/dts/sunxi-common-regulators.dtsi
+>> +++ b/arch/arm/boot/dts/sunxi-common-regulators.dtsi
+>> @@ -21,6 +21,13 @@
+>>                               allwinner,pull = <0>;
+>>                       };
+>>
+>> +                     usb0_vbus_pin_a: usb0_vbus_pin@0 {
+>> +                             allwinner,pins = "PB9";
+>> +                             allwinner,function = "gpio_out";
+>> +                             allwinner,drive = <0>;
+>> +                             allwinner,pull = <0>;
+>> +                     };
+>> +
+>>                       usb1_vbus_pin_a: usb1_vbus_pin@0 {
+>>                               allwinner,pins = "PH6";
+>>                               allwinner,function = "gpio_out";
+>> @@ -49,6 +56,18 @@
+>>               status = "disabled";
+>>       };
+>>
+>> +     reg_usb0_vbus: usb0-vbus {
+>> +             compatible = "regulator-fixed";
+>> +             pinctrl-names = "default";
+>> +             pinctrl-0 = <&usb0_vbus_pin_a>;
+>> +             regulator-name = "usb0-vbus";
+>> +             regulator-min-microvolt = <5000000>;
+>> +             regulator-max-microvolt = <5000000>;
+>> +             enable-active-high;
+>> +             gpio = <&pio 1 9 0>;
+>> +             status = "disabled";
+>> +     };
+>
+> We're using these regulators because a huuuge majority of the boards
+> out there, regardless of their SoC, are using the same GPIO to drive
+> the same regulator. Is this the case here? What board have you looked
+> at?
 
-The following public repositories all have a copy of the 'v2.1.3'
-tag and the 'maint' branch that the tag points at:
+Currently I'm developing and testing for Cubietruck. I also have a few
+other boards (with different SoC), I will add corresponding DT nodes
+for them later.
 
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+As for GPIO which is used to drive the USB0 VBUS pin.
 
-Git v2.1.3 Release Notes
-========================
+$ git remote show origin
+* remote origin
+  Fetch URL: https://github.com/linux-sunxi/sunxi-boards.git
+  Push  URL: https://github.com/linux-sunxi/sunxi-boards.git
+...
+$ grep -A7 usbc0 -r . | grep usb_drv_vbus_gpio | grep port | sort |
+cut -d: -f2 | cut -d "<" -f1 | sort | uniq -c
+      1 PA16
+      1 PA17
+     67 PB09
+      4 PB10
+      1 PB9
+      1 PC17
+      1 PD25
+      4 PG11
+     21 PG12
+      1 PG13
+      1 PH17
+      4 power4
 
- * Some MUAs mangled a line in a message that begins with "From " to
-   ">From " when writing to a mailbox file and feeding such an input to
-   "git am" used to lose such a line.
+So PB09 is most often used. PG12 is used on (alsmost always) A13. So
+propose to make PB09 default, then override it in sun5i-a13.dtsi and
+later in board dts file if needed.
 
- * "git daemon" (with NO_IPV6 build configuration) used to incorrectly
-   use the hostname even when gethostbyname() reported that the given
-   hostname is not found.
+Cubietruck uses PH17. That is why I override PB09 in its dts file.
 
- * Newer versions of 'meld' breaks the auto-detection we use to see if
-   they are new enough to support the `--output` option.
+Sounds good?
 
- * "git pack-objects" forgot to disable the codepath to generate
-   object recheability bitmap when it needs to split the resulting
-   pack.
+Best,
+Roman
 
- * "gitweb" used deprecated CGI::startfrom, which was removed from
-   CGI.pm as of 4.04; use CGI::start_from instead.
 
- * "git log" documentation had an example section marked up not
-   quite correctly, which passed AsciiDoc but failed with
-   AsciiDoctor.
-
-Also contains some documentation updates.
-
-----------------------------------------------------------------
-
-Changes since v2.1.2 are as follows:
-
-David Aguilar (1):
-      mergetools/meld: make usage of `--output` configurable and more robust
-
-Eric Sunshine (1):
-      mailinfo: work around -Wstring-plus-int warning
-
-Jeff King (2):
-      mailinfo: make ">From" in-body header check more robust
-      pack-objects: turn off bitmaps when we split packs
-
-Junio C Hamano (1):
-      Git 2.1.3
-
-René Scharfe (3):
-      daemon: handle gethostbyname() error
-      daemon: fix error message after bind()
-      daemon: remove write-only variable maxfd
-
-Roland Mas (1):
-      gitweb: use start_form, not startform that was removed in CGI.pm 4.04
-
-Wieland Hoffmann (1):
-      git-tag.txt: Add a missing hyphen to `-s`
-
-brian m. carlson (1):
-      Documentation: fix misrender of pretty-formats in Asciidoctor
-
+> Thanks,
+> Maxime
+>
+> --
+> Maxime Ripard, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
