@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933518AbaJ2M4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:56:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:36906 "EHLO mail.kernel.org"
+	id S933481AbaJ2M4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:56:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36873 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932773AbaJ2M4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:56:51 -0400
+	id S932773AbaJ2M4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 08:56:43 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/10] perf tools: Fix report -F mispredict for data without branch info
-Date: Wed, 29 Oct 2014 10:56:12 -0200
-Message-Id: <1414587377-25077-6-git-send-email-acme@kernel.org>
+Subject: [PATCH 03/10] perf tools: Fix report -F abort for data without branch info
+Date: Wed, 29 Oct 2014 10:56:10 -0200
+Message-Id: <1414587377-25077-4-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414587377-25077-1-git-send-email-acme@kernel.org>
 References: <1414587377-25077-1-git-send-email-acme@kernel.org>
@@ -33,7 +33,7 @@ allocated, which is wrong and following perf session ends up with report
 segfault.
 
   $ perf record ls
-  $ perf report -F mispredict
+  $ perf report -F abort
   perf: Segmentation fault
 
 Checking that hist_entry::branch_info is valid and display "N/A" string
@@ -49,51 +49,45 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1413468427-31049-4-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1413468427-31049-2-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ tools/perf/util/sort.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 9bcdb57076b8..0c68af83e7dd 100644
+index 4906cd81cb56..82241fe54e4b 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -471,11 +471,13 @@ struct sort_entry sort_sym_to = {
+@@ -989,6 +989,9 @@ struct sort_entry sort_mem_dcacheline = {
  static int64_t
- sort__mispredict_cmp(struct hist_entry *left, struct hist_entry *right)
+ sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
  {
--	const unsigned char mp = left->branch_info->flags.mispred !=
--					right->branch_info->flags.mispred;
--	const unsigned char p = left->branch_info->flags.predicted !=
--					right->branch_info->flags.predicted;
-+	unsigned char mp, p;
- 
 +	if (!left->branch_info || !right->branch_info)
 +		return cmp_null(left->branch_info, right->branch_info);
 +
-+	mp = left->branch_info->flags.mispred != right->branch_info->flags.mispred;
-+	p  = left->branch_info->flags.predicted != right->branch_info->flags.predicted;
- 	return mp || p;
+ 	return left->branch_info->flags.abort !=
+ 		right->branch_info->flags.abort;
  }
- 
-@@ -483,10 +485,12 @@ static int hist_entry__mispredict_snprintf(struct hist_entry *he, char *bf,
- 				    size_t size, unsigned int width){
- 	static const char *out = "N/A";
- 
--	if (he->branch_info->flags.predicted)
--		out = "N";
--	else if (he->branch_info->flags.mispred)
--		out = "Y";
+@@ -996,10 +999,15 @@ sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
+ static int hist_entry__abort_snprintf(struct hist_entry *he, char *bf,
+ 				    size_t size, unsigned int width)
+ {
+-	static const char *out = ".";
++	static const char *out = "N/A";
++
 +	if (he->branch_info) {
-+		if (he->branch_info->flags.predicted)
-+			out = "N";
-+		else if (he->branch_info->flags.mispred)
-+			out = "Y";
++		if (he->branch_info->flags.abort)
++			out = "A";
++		else
++			out = ".";
 +	}
  
- 	return repsep_snprintf(bf, size, "%-*.*s", width, width, out);
+-	if (he->branch_info->flags.abort)
+-		out = "A";
+ 	return repsep_snprintf(bf, size, "%-*s", width, out);
  }
+ 
 -- 
 1.9.3
 
