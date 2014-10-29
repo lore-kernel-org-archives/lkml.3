@@ -1,117 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268AbaJ2JMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:12:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58946 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196AbaJ2JMk (ORCPT
+	id S932321AbaJ2JN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:13:29 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:44937 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264AbaJ2JNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:12:40 -0400
-Date: Wed, 29 Oct 2014 02:10:32 -0700
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-f18298595aefa2c836a128ec6e0f75f39965dd81@git.kernel.org>
-Cc: rjw@rjwysocki.net, joro@8bytes.org, bp@alien8.de,
-        jiang.liu@linux.intel.com, andriy.shevchenko@linux.intel.com,
-        tony.luck@intel.com, benh@kernel.crashing.org, hpa@zytor.com,
-        bhelgaas@google.com, rdunlap@infradead.org, gregkh@linuxfoundation.org,
-        konrad.wilk@oracle.com, david.a.cohen@linux.intel.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, yinghai@kernel.org,
-        hpa@linux.intel.com, tglx@linutronix.de
-Reply-To: jiang.liu@linux.intel.com, andriy.shevchenko@linux.intel.com,
-        tony.luck@intel.com, bhelgaas@google.com, gregkh@linuxfoundation.org,
-        konrad.wilk@oracle.com, rdunlap@infradead.org, hpa@zytor.com,
-        benh@kernel.crashing.org, joro@8bytes.org, rjw@rjwysocki.net,
-        bp@alien8.de, hpa@linux.intel.com, yinghai@kernel.org,
-        tglx@linutronix.de, david.a.cohen@linux.intel.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org
-In-Reply-To: <1414387308-27148-3-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-3-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, intel-mid:
-  Create IRQs for APB timers and RTC timers
-Git-Commit-ID: f18298595aefa2c836a128ec6e0f75f39965dd81
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 29 Oct 2014 05:13:23 -0400
+Date: Wed, 29 Oct 2014 14:43:17 +0530
+From: Heena Sirwani <heenasirwani@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: john.stultz@linaro.org, tglx@linutronix.de, arnd@arndb.de
+Subject: [PATCH v7] timekeeping: Added a function to return tv_sec portion of
+ ktime_get_ts64()
+Message-ID: <20141029091317.GA1138@heena-HP-Compaq-8200-Elite-MT-PC>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f18298595aefa2c836a128ec6e0f75f39965dd81
-Gitweb:     http://git.kernel.org/tip/f18298595aefa2c836a128ec6e0f75f39965dd81
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 13:21:32 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 29 Oct 2014 08:52:23 +0100
+The following patch replaces all instances of time_t with time64_t i.e.
+change the type used for representing time from 32-bit to 64-bit. All
+32-bit kernels to date use a signed 32-bit time_t type, which can only
+represent time until January 2038. Since embedded systems running 32-bit
+Linux are going to survive beyond that date, we have to change all
+current uses, in a backwards compatible way.
 
-x86, intel-mid: Create IRQs for APB timers and RTC timers
+The patch also changes the function get_seconds() that returns a 32-bit
+integer to ktime_get_seconds() that returns seconds as 64-bit integer.
 
-Intel MID platforms has no legacy interrupts, so no IRQ descriptors
-preallocated. We need to call mp_map_gsi_to_irq() to create IRQ
-descriptors for APB timers and RTC timers, otherwise it may cause
-invalid memory access as:
-[    0.116839] BUG: unable to handle kernel NULL pointer dereference at
-0000003a
-[    0.123803] IP: [<c1071c0e>] setup_irq+0xf/0x4d
+The patch changes the type of ticks from time_t to u32. We keep ticks as
+32-bits as the function uses 32-bit arithmetic which would prove less
+expensive than 64-bit arithmetic and the function is expected to be
+called atleast once every 32 seconds.
 
-Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: David Cohen <david.a.cohen@linux.intel.com>
-Cc: <stable@vger.kernel.org> # 3.17
-Link: http://lkml.kernel.org/r/1414387308-27148-3-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
 ---
- arch/x86/kernel/apb_timer.c       | 2 --
- arch/x86/platform/intel-mid/sfi.c | 2 ++
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Changes in v7:
+	- Reordered assignments in tk_update_ktime_data() to improve
+	  readability.
 
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index 5972b10..b708738 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -185,8 +185,6 @@ static void apbt_setup_irq(struct apbt_dev *adev)
+ include/linux/timekeeper_internal.h |  2 ++
+ include/linux/timekeeping.h         |  1 +
+ kernel/time/timekeeping.c           | 31 ++++++++++++++++++++++++++++---
+ 3 files changed, 31 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/timekeeper_internal.h b/include/linux/timekeeper_internal.h
+index 95640dc..92e5e9d 100644
+--- a/include/linux/timekeeper_internal.h
++++ b/include/linux/timekeeper_internal.h
+@@ -42,6 +42,7 @@ struct tk_read_base {
+  * struct timekeeper - Structure holding internal timekeeping values.
+  * @tkr:		The readout base structure
+  * @xtime_sec:		Current CLOCK_REALTIME time in seconds
++ * @ktime_sec:		Current CLOCK_MONOTONIC time in seconds
+  * @wall_to_monotonic:	CLOCK_REALTIME to CLOCK_MONOTONIC offset
+  * @offs_real:		Offset clock monotonic -> clock realtime
+  * @offs_boot:		Offset clock monotonic -> clock boottime
+@@ -77,6 +78,7 @@ struct tk_read_base {
+ struct timekeeper {
+ 	struct tk_read_base	tkr;
+ 	u64			xtime_sec;
++	u64			ktime_sec;
+ 	struct timespec64	wall_to_monotonic;
+ 	ktime_t			offs_real;
+ 	ktime_t			offs_boot;
+diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
+index 1caa6b0..115d55e 100644
+--- a/include/linux/timekeeping.h
++++ b/include/linux/timekeeping.h
+@@ -28,6 +28,7 @@ struct timespec __current_kernel_time(void);
+ struct timespec get_monotonic_coarse(void);
+ extern void getrawmonotonic(struct timespec *ts);
+ extern void ktime_get_ts64(struct timespec64 *ts);
++extern time64_t ktime_get_seconds(void);
  
- 	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
- 	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
--	/* APB timer irqs are set up as mp_irqs, timer is edge type */
--	__irq_set_handler(adev->irq, handle_edge_irq, 0, "edge");
+ extern int __getnstimeofday64(struct timespec64 *tv);
+ extern void getnstimeofday64(struct timespec64 *tv);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index ec1791f..7136a33 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -418,6 +418,8 @@ EXPORT_SYMBOL_GPL(pvclock_gtod_unregister_notifier);
+ static inline void tk_update_ktime_data(struct timekeeper *tk)
+ {
+ 	s64 nsec;
++	u64 seconds;
++	s64 nsec_offset;
+ 
+ 	/*
+ 	 * The xtime based monotonic readout is:
+@@ -426,13 +428,18 @@ static inline void tk_update_ktime_data(struct timekeeper *tk)
+ 	 *	nsec = base_mono + now();
+ 	 * ==> base_mono = (xtime_sec + wtm_sec) * 1e9 + wtm_nsec
+ 	 */
+-	nsec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
+-	nsec *= NSEC_PER_SEC;
+-	nsec += tk->wall_to_monotonic.tv_nsec;
++	seconds = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
++	nsec_offset = tk->wall_to_monotonic.tv_nsec;
++	nsec = seconds * NSEC_PER_SEC;
++	nsec += nsec_offset;
+ 	tk->tkr.base_mono = ns_to_ktime(nsec);
+ 
+ 	/* Update the monotonic raw base */
+ 	tk->base_raw = timespec64_to_ktime(tk->raw_time);
++
++	if (((long)(tk->tkr.xtime_nsec >> tk->tkr.shift) + nsec_offset) >= NSEC_PER_SEC)
++		seconds += 1;
++	tk->ktime_sec = seconds;
  }
  
- /* Should be called with per cpu */
-diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
-index 3c53a90..c14ad34 100644
---- a/arch/x86/platform/intel-mid/sfi.c
-+++ b/arch/x86/platform/intel-mid/sfi.c
-@@ -106,6 +106,7 @@ int __init sfi_parse_mtmr(struct sfi_table_header *table)
- 			mp_irq.dstapic = MP_APIC_ALL;
- 			mp_irq.dstirq = pentry->irq;
- 			mp_save_irq(&mp_irq);
-+			mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
- 	}
- 
- 	return 0;
-@@ -176,6 +177,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
- 		mp_irq.dstapic = MP_APIC_ALL;
- 		mp_irq.dstirq = pentry->irq;
- 		mp_save_irq(&mp_irq);
-+		mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
- 	}
- 	return 0;
+ /* must hold timekeeper_lock */
+@@ -648,6 +655,24 @@ void ktime_get_ts64(struct timespec64 *ts)
  }
+ EXPORT_SYMBOL_GPL(ktime_get_ts64);
+ 
++time64_t ktime_get_seconds(void)
++{
++	time64_t seconds;
++	struct timekeeper *tk = &tk_core.timekeeper;
++	unsigned int seq;
++
++	WARN_ON(timekeeping_suspended);
++
++	do {
++		seq = read_seqcount_begin(&tk_core.seq);
++		seconds = tk->ktime_sec;
++
++	} while (read_seqcount_retry(&tk_core.seq, seq));
++
++	return seconds;
++}
++EXPORT_SYMBOL_GPL(ktime_get_seconds);
++
+ #ifdef CONFIG_NTP_PPS
+ 
+ /**
+-- 
+1.9.1
+
