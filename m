@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953AbaJ2SOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:14:49 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:52759 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209AbaJ2SOq (ORCPT
+	id S1756180AbaJ2SPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:15:07 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:45874 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049AbaJ2SPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:14:46 -0400
+	Wed, 29 Oct 2014 14:15:03 -0400
+Subject: [PATCH] of/fdt: Don't clear initial_boot_params if
+ fdt_check_header() fails
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 29 Oct 2014 12:15:00 -0600
+Message-ID: <20141029181500.16094.46561.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1410291713520.20256@pobox.suse.cz>
-References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
-	<alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz>
-	<20141001131008.GB18756@mail.corp.redhat.com>
-	<CAG_cf+fYGATBL9Sgvvp7CaScP112fiqiyuR0gBdkS-424S3Kog@mail.gmail.com>
-	<alpine.LNX.2.00.1410031308360.14259@pobox.suse.cz>
-	<CAN+gG=GET=FLmte9kQOtS+x=HPaTdgEu4HxuydHXBx1GZksNRw@mail.gmail.com>
-	<alpine.LNX.2.00.1410291048320.20256@pobox.suse.cz>
-	<CAN+gG=GXHUFz7y1AFyPcV2YP6dYzd-CBStJf5UAENbrpnVuOJg@mail.gmail.com>
-	<alpine.LNX.2.00.1410291713520.20256@pobox.suse.cz>
-Date: Wed, 29 Oct 2014 14:14:45 -0400
-Message-ID: <CAN+gG=G-7J9hYWxmpRWB61kzNpkbbL9C3P=gWfG4=gss5-Gc1w@mail.gmail.com>
-Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special devices
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew de los Reyes <andrew-vger@gizmolabs.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 12:14 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 29 Oct 2014, Benjamin Tissoires wrote:
->
->> No worries. I definitively understand. Being close to the merge window
->> is never a good time to send you patches and I am sure SuSE asks you a
->> lot also :)
->
-> Indeed, sometimes the flow of inbound things is just unstoppable :)
->
->> > I am almost done with the review, expect to hear from me in a 1-2 days
->> > timeframe regarding this series.
->>
->> Cool, thanks. That is much appreciated.
->
-> I have now applied the whole patchset and pushed out.
->
+If the device tree pointer is NULL, early_init_dt_verify() fails, leaving
+initial_boot_params unchanged.  If the device tree pointer is non-NULL but
+invalid, early_init_dt_verify() again fails but this time it also clears
+initial_boot_params.
 
-That was much faster than expected!!! Thanks a lot.
+Leave initial_boot_params unchanged if the device tree pointer is invalid.
+This doesn't fix a bug, but it makes the behavior more consistent and
+easier to analyze.
 
-Cheers,
-Benjamin
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/of/fdt.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index d1ffca8b34ea..55a566a53f36 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -994,15 +994,12 @@ bool __init early_init_dt_verify(void *params)
+ 	if (!params)
+ 		return false;
+ 
+-	/* Setup flat device-tree pointer */
+-	initial_boot_params = params;
+-
+ 	/* check device tree validity */
+-	if (fdt_check_header(params)) {
+-		initial_boot_params = NULL;
++	if (fdt_check_header(params))
+ 		return false;
+-	}
+ 
++	/* Setup flat device-tree pointer */
++	initial_boot_params = params;
+ 	return true;
+ }
+ 
+
