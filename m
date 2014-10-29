@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934744AbaJ2Qj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:39:58 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40174 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934242AbaJ2Qj4 (ORCPT
+	id S934670AbaJ2QjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:39:25 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:37126 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934559AbaJ2QiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:39:56 -0400
-Message-ID: <54511876.1040301@wwwdotorg.org>
-Date: Wed, 29 Oct 2014 10:40:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Matthias Klein <matthias.klein@linux.com>,
-        linux-rpi-kernel@lists.infradead.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: bcm2835: add device tree for Raspberry Pi model
- B+
-References: <1414457566-31802-1-git-send-email-matthias.klein@linux.com> <54504407.3090700@wwwdotorg.org> <5450AE6F.8010102@linux.com>
-In-Reply-To: <5450AE6F.8010102@linux.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Oct 2014 12:38:01 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 6/7] drbd: Fix state change in case of connection timeout
+Date: Wed, 29 Oct 2014 17:37:55 +0100
+Message-Id: <1414600676-11203-7-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414600676-11203-1-git-send-email-philipp.reisner@linbit.com>
+References: <1414600676-11203-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2014 03:07 AM, Matthias Klein wrote:
->
-> Am 29.10.2014 um 02:33 schrieb Stephen Warren:
->> On 10/27/2014 06:52 PM, Matthias Klein wrote:
->>> The model B and B+ differ in the GPIO lines for ACT and PWR led.
->>> The PWR led on the B+ model is active low.
->> This new file is almost identical to bcm2835-rpi.dts. Perhaps we can use
->> some include files to share the common portions so they aren't
->> duplicated. Roughly:
->>
->> * Move all the common content from bcm2835-rpi.dts into bcm2835-rpi.dtsi.
->>
->> * Update bcm2835-rpi.dts to include bcm2835-rpi.dtsi to get all the
->> common parts, and add the few lines of differences.
->>
->> * Update this patch similarly.
->>
->> Does that make sense?
-> Yes, I will work on such a patchset.
->
->>
->> A couple changes to this patch and the existing bcm2835-rpi.dts might
->> reduce the differences even further, leading to more common code in
->> bcm2835-rpi.dtsi:
->>
->> - Add the PWR LED to bcm2835-rpi-b.dts, if appropriate.
->> - Add the I2S pinmux settings for B+ too.
->>
->>> diff --git a/arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
->>> b/arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
->> ...
->>> +&mmc {
->> That label doesn't exist; it should be &sdhci. Consequently:
->
-> Sorry, I based my patch on the wrong tree. I used
-> https://github.com/pietrushnic/rpi-dt-linux/tree/rpi-3.17.y which
-> contains non upstream commits.
->
-> Which tree should I use in general for work on the BCM2835? Is
-> linux-next the right tree?
+A connection timeout affects all volumes of a resource!
+Under the following conditions:
 
-linux-next would usually work.
+ A resource with multiple volumes
+  AND
+ ko-count >=1
+  AND
+ a write request triggers the timeout (ko-count * timeout)
 
-The most recent Linus kernel would also often be a good base, or perhaps 
-any recent branch (of which there are none at present) in:
+DRBD's internal state gets confused. That in turn may
+lead to very miss leading follow up failures. E.g.
+"BUG: scheduling while atomic"
 
-https://git.kernel.org/cgit/linux/kernel/git/swarren/linux-rpi.git/
-(
-which will hopefully soon move to:
-https://git.kernel.org/cgit/linux/kernel/git/rpi/linux-rpi.git/
-)
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_req.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Which you pick depends on things like how many other patches touch the 
-same files, and which branches/repos they were applied in, and what 
-conflicts/dependencies exist.
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index 90319b1..3b797cd 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1629,7 +1629,7 @@ void request_timer_fn(unsigned long data)
+ 		 time_after(now, req_peer->pre_send_jif + ent) &&
+ 		!time_in_range(now, connection->last_reconnect_jif, connection->last_reconnect_jif + ent)) {
+ 		drbd_warn(device, "Remote failed to finish a request within ko-count * timeout\n");
+-		_drbd_set_state(_NS(device, conn, C_TIMEOUT), CS_VERBOSE | CS_HARD, NULL);
++		_conn_request_state(connection, NS(conn, C_TIMEOUT), CS_VERBOSE | CS_HARD);
+ 	}
+ 	if (dt && oldest_submit_jif != now &&
+ 		 time_after(now, oldest_submit_jif + dt) &&
+-- 
+1.9.1
+
