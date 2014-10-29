@@ -1,654 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934657AbaJ2QxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:53:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14928 "EHLO mga11.intel.com"
+	id S934679AbaJ2Qxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:53:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38361 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934001AbaJ2QxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:53:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="407974406"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next V2] mei: add reference counting for me clients
-Date: Wed, 29 Oct 2014 18:52:04 +0200
-Message-Id: <1414601524-4592-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S934001AbaJ2Qxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:53:40 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Miller <davem@davemloft.net>,
+        Steve Capper <steve.capper@linaro.org>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: [PATCH 1/5] mm: gup: add get_user_pages_locked and get_user_pages_unlocked
+Date: Wed, 29 Oct 2014 17:35:16 +0100
+Message-Id: <1414600520-7664-2-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
+References: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support dynamic addition/remove we add reference
-counter.
+We can leverage the VM_FAULT_RETRY functionality in the page fault
+paths better by using either get_user_pages_locked or
+get_user_pages_unlocked.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+The former allow conversion of get_user_pages invocations that will
+have to pass a "&locked" parameter to know if the mmap_sem was dropped
+during the call. Example from:
+
+    down_read(&mm->mmap_sem);
+    do_something()
+    get_user_pages(tsk, mm, ..., pages, NULL);
+    up_read(&mm->mmap_sem);
+
+to:
+
+    int locked = 1;
+    down_read(&mm->mmap_sem);
+    do_something()
+    get_user_pages_locked(tsk, mm, ..., pages, &locked);
+    if (locked)
+        up_read(&mm->mmap_sem);
+
+The latter is suitable only as a drop in replacement of the form:
+
+    down_read(&mm->mmap_sem);
+    get_user_pages(tsk, mm, ..., pages, NULL);
+    up_read(&mm->mmap_sem);
+
+into:
+
+    get_user_pages_unlocked(tsk, mm, ..., pages);
+
+Where tsk, mm, the intermediate "..." paramters and "pages" can be any
+value as before. Just the last parameter of get_user_pages (vmas) must
+be NULL for get_user_pages_locked|unlocked to be usable (the latter
+original form wouldn't have been safe anyway if vmas wasn't null, for
+the former we just make it explicit by dropping the parameter).
+
+If vmas is not NULL these two methods cannot be used.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Reviewed-by: Andres Lagar-Cavilla <andreslc@google.com>
+Reviewed-by: Peter Feiner <pfeiner@google.com>
 ---
-V2: code style and documentation fixes
+ include/linux/mm.h |   7 +++
+ mm/gup.c           | 177 +++++++++++++++++++++++++++++++++++++++++++++++++----
+ mm/nommu.c         |  23 +++++++
+ 3 files changed, 196 insertions(+), 11 deletions(-)
 
- drivers/misc/mei/amthif.c  |  14 ++---
- drivers/misc/mei/bus.c     |  39 ++++++++------
- drivers/misc/mei/client.c  | 126 ++++++++++++++++++++++++++++++++++++---------
- drivers/misc/mei/client.h  |  12 +++--
- drivers/misc/mei/debugfs.c |  32 +++++++-----
- drivers/misc/mei/hbm.c     |  17 ++++--
- drivers/misc/mei/main.c    |  22 ++++----
- drivers/misc/mei/mei_dev.h |   2 +
- drivers/misc/mei/nfc.c     |   2 +
- drivers/misc/mei/wd.c      |   1 +
- 10 files changed, 189 insertions(+), 78 deletions(-)
-
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index 56255ffe5a84..cafd9470a856 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -97,23 +97,25 @@ int mei_amthif_host_init(struct mei_device *dev)
- 	/* allocate storage for ME message buffer */
- 	msg_buf = kcalloc(dev->iamthif_mtu,
- 			sizeof(unsigned char), GFP_KERNEL);
--	if (!msg_buf)
--		return -ENOMEM;
-+	if (!msg_buf) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
- 
- 	dev->iamthif_msg_buf = msg_buf;
- 
- 	ret = mei_cl_link(cl, MEI_IAMTHIF_HOST_CLIENT_ID);
--
- 	if (ret < 0) {
--		dev_err(dev->dev,
--			"amthif: failed link client %d\n", ret);
--		return ret;
-+		dev_err(dev->dev, "amthif: failed cl_link %d\n", ret);
-+		goto out;
- 	}
- 
- 	ret = mei_cl_connect(cl, NULL);
- 
- 	dev->iamthif_state = MEI_IAMTHIF_IDLE;
- 
-+out:
-+	mei_me_cl_put(me_cl);
- 	return ret;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 27eb1bf..99831d9 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1218,6 +1218,13 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 		    unsigned long start, unsigned long nr_pages,
+ 		    int write, int force, struct page **pages,
+ 		    struct vm_area_struct **vmas);
++long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
++		    unsigned long start, unsigned long nr_pages,
++		    int write, int force, struct page **pages,
++		    int *locked);
++long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
++		    unsigned long start, unsigned long nr_pages,
++		    int write, int force, struct page **pages);
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
+ struct kvec;
+diff --git a/mm/gup.c b/mm/gup.c
+index cd62c8c..a8521f1 100644
+--- a/mm/gup.c
++++ b/mm/gup.c
+@@ -584,6 +584,165 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
+ 	return 0;
  }
  
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index b3a72bca5242..b2de93724f5b 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -228,8 +228,8 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
- 			bool blocking)
- {
- 	struct mei_device *dev;
--	struct mei_me_client *me_cl;
--	struct mei_cl_cb *cb;
-+	struct mei_me_client *me_cl = NULL;
-+	struct mei_cl_cb *cb = NULL;
- 	int rets;
- 
- 	if (WARN_ON(!cl || !cl->dev))
-@@ -237,33 +237,40 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
- 
- 	dev = cl->dev;
- 
--	if (cl->state != MEI_FILE_CONNECTED)
--		return -ENODEV;
-+	mutex_lock(&dev->device_lock);
-+	if (cl->state != MEI_FILE_CONNECTED) {
-+		rets = -ENODEV;
-+		goto out;
-+	}
- 
- 	/* Check if we have an ME client device */
- 	me_cl = mei_me_cl_by_uuid_id(dev, &cl->cl_uuid, cl->me_client_id);
--	if (!me_cl)
--		return -ENOTTY;
-+	if (!me_cl) {
-+		rets = -ENOTTY;
-+		goto out;
-+	}
- 
--	if (length > me_cl->props.max_msg_length)
--		return -EFBIG;
-+	if (length > me_cl->props.max_msg_length) {
-+		rets = -EFBIG;
-+		goto out;
-+	}
- 
- 	cb = mei_io_cb_init(cl, NULL);
--	if (!cb)
--		return -ENOMEM;
-+	if (!cb) {
-+		rets = -ENOMEM;
-+		goto out;
-+	}
- 
- 	rets = mei_io_cb_alloc_req_buf(cb, length);
--	if (rets < 0) {
--		mei_io_cb_free(cb);
--		return rets;
--	}
-+	if (rets < 0)
-+		goto out;
- 
- 	memcpy(cb->request_buffer.data, buf, length);
- 
--	mutex_lock(&dev->device_lock);
--
- 	rets = mei_cl_write(cl, cb, blocking);
- 
-+out:
-+	mei_me_cl_put(me_cl);
- 	mutex_unlock(&dev->device_lock);
- 	if (rets < 0)
- 		mei_io_cb_free(cb);
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 03c95e06ed1b..da97e06a51a2 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -26,8 +26,59 @@
- #include "hbm.h"
- #include "client.h"
- 
-+
-+/**
-+ * mei_me_cl_init - initialize me client
-+ *
-+ * @me_cl: me client
-+ */
-+void mei_me_cl_init(struct mei_me_client *me_cl)
++static __always_inline long __get_user_pages_locked(struct task_struct *tsk,
++						struct mm_struct *mm,
++						unsigned long start,
++						unsigned long nr_pages,
++						int write, int force,
++						struct page **pages,
++						struct vm_area_struct **vmas,
++						int *locked, bool notify_drop)
 +{
-+	INIT_LIST_HEAD(&me_cl->list);
-+	kref_init(&me_cl->refcnt);
-+}
++	int flags = FOLL_TOUCH;
++	long ret, pages_done;
++	bool lock_dropped;
 +
-+/**
-+ * mei_me_cl_get - increases me client refcount
-+ *
-+ * @me_cl: me client
-+ *
-+ * Return: me client or NULL
-+ */
-+struct mei_me_client *mei_me_cl_get(struct mei_me_client *me_cl)
-+{
-+	if (me_cl)
-+		kref_get(&me_cl->refcnt);
++	if (locked) {
++		/* if VM_FAULT_RETRY can be returned, vmas become invalid */
++		BUG_ON(vmas);
++		/* check caller initialized locked */
++		BUG_ON(*locked != 1);
++	}
 +
-+	return me_cl;
-+}
++	if (pages)
++		flags |= FOLL_GET;
++	if (write)
++		flags |= FOLL_WRITE;
++	if (force)
++		flags |= FOLL_FORCE;
 +
-+/**
-+ * mei_me_cl_release - unlink and free me client
-+ *
-+ * @me_cl: me client
-+ */
-+static void mei_me_cl_release(struct kref *ref)
-+{
-+	struct mei_me_client *me_cl =
-+		container_of(ref, struct mei_me_client, refcnt);
-+	list_del(&me_cl->list);
-+	kfree(me_cl);
-+}
-+/**
-+ * mei_me_cl_put - decrease me client refcount and free client if necessary
-+ *
-+ * @me_cl: me client
-+ */
-+void mei_me_cl_put(struct mei_me_client *me_cl)
-+{
-+	if (me_cl)
-+		kref_put(&me_cl->refcnt, mei_me_cl_release);
-+}
++	pages_done = 0;
++	lock_dropped = false;
++	for (;;) {
++		ret = __get_user_pages(tsk, mm, start, nr_pages, flags, pages,
++				       vmas, locked);
++		if (!locked)
++			/* VM_FAULT_RETRY couldn't trigger, bypass */
++			return ret;
 +
- /**
-  * mei_me_cl_by_uuid - locate me client by uuid
-+ *	increases ref count
-  *
-  * @dev: mei device
-  * @uuid: me client uuid
-@@ -43,13 +94,14 @@ struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
- 
- 	list_for_each_entry(me_cl, &dev->me_clients, list)
- 		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0)
--			return me_cl;
-+			return mei_me_cl_get(me_cl);
- 
- 	return NULL;
- }
- 
- /**
-  * mei_me_cl_by_id - locate me client by client id
-+ *	increases ref count
-  *
-  * @dev: the device structure
-  * @client_id: me client id
-@@ -65,12 +117,14 @@ struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
- 
- 	list_for_each_entry(me_cl, &dev->me_clients, list)
- 		if (me_cl->client_id == client_id)
--			return me_cl;
-+			return mei_me_cl_get(me_cl);
-+
- 	return NULL;
- }
- 
- /**
-  * mei_me_cl_by_uuid_id - locate me client by client id and uuid
-+ *	increases ref count
-  *
-  * @dev: the device structure
-  * @uuid: me client uuid
-@@ -88,31 +142,42 @@ struct mei_me_client *mei_me_cl_by_uuid_id(struct mei_device *dev,
- 	list_for_each_entry(me_cl, &dev->me_clients, list)
- 		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0 &&
- 		    me_cl->client_id == client_id)
--			return me_cl;
-+			return mei_me_cl_get(me_cl);
-+
- 	return NULL;
- }
- 
- /**
-- * mei_me_cl_remove - remove me client matching uuid and client_id
-+ * mei_me_cl_rm_by_uuid - remove all me clients matching uuid
-  *
-  * @dev: the device structure
-  * @uuid: me client uuid
-- * @client_id: me client address
-  */
--void mei_me_cl_remove(struct mei_device *dev, const uuid_le *uuid, u8 client_id)
-+void mei_me_cl_rm_by_uuid(struct mei_device *dev, const uuid_le *uuid)
- {
- 	struct mei_me_client *me_cl, *next;
- 
--	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
--		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0 &&
--		    me_cl->client_id == client_id) {
--			list_del(&me_cl->list);
--			kfree(me_cl);
--			break;
--		}
--	}
-+	dev_dbg(dev->dev, "remove %p\n", uuid);
-+	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list)
-+		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0)
-+			mei_me_cl_put(me_cl);
- }
- 
-+/**
-+ * mei_me_cl_remove_by_id - remove all me clients matching client id
-+ *
-+ * @dev: the device structure
-+ * @id: me client id
-+ */
-+void mei_me_cl_rm_by_id(struct mei_device *dev, u8 id)
-+{
-+	struct mei_me_client *me_cl, *next;
-+
-+	dev_dbg(dev->dev, "remove %d\n", id);
-+	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list)
-+		if (me_cl->client_id == id)
-+			mei_me_cl_put(me_cl);
-+}
- 
- /**
-  * mei_cl_cmp_id - tells if the clients are the same
-@@ -695,6 +760,7 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
- {
- 	struct mei_device *dev;
- 	struct mei_me_client *me_cl;
-+	int rets = 0;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -EINVAL;
-@@ -710,12 +776,13 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
- 		return -ENOENT;
- 	}
- 
--	if (me_cl->mei_flow_ctrl_creds) {
-+	if (me_cl->mei_flow_ctrl_creds > 0) {
-+		rets = 1;
- 		if (WARN_ON(me_cl->props.single_recv_buf == 0))
--			return -EINVAL;
--		return 1;
-+			rets = -EINVAL;
- 	}
--	return 0;
-+	mei_me_cl_put(me_cl);
-+	return rets;
- }
- 
- /**
-@@ -732,6 +799,7 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
- {
- 	struct mei_device *dev;
- 	struct mei_me_client *me_cl;
-+	int rets;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -EINVAL;
-@@ -745,15 +813,22 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
- 	}
- 
- 	if (me_cl->props.single_recv_buf) {
--		if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0))
--			return -EINVAL;
-+		if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0)) {
-+			rets = -EINVAL;
-+			goto out;
++		/* VM_FAULT_RETRY cannot return errors */
++		if (!*locked) {
++			BUG_ON(ret < 0);
++			BUG_ON(ret >= nr_pages);
 +		}
- 		me_cl->mei_flow_ctrl_creds--;
- 	} else {
--		if (WARN_ON(cl->mei_flow_ctrl_creds <= 0))
--			return -EINVAL;
-+		if (WARN_ON(cl->mei_flow_ctrl_creds <= 0)) {
-+			rets = -EINVAL;
-+			goto out;
++
++		if (!pages)
++			/* If it's a prefault don't insist harder */
++			return ret;
++
++		if (ret > 0) {
++			nr_pages -= ret;
++			pages_done += ret;
++			if (!nr_pages)
++				break;
 +		}
- 		cl->mei_flow_ctrl_creds--;
- 	}
--	return 0;
-+	rets = 0;
-+out:
-+	mei_me_cl_put(me_cl);
-+	return rets;
- }
- 
- /**
-@@ -788,6 +863,9 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
- 		cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
- 		return  -ENOTTY;
- 	}
-+	/* always allocate at least client max message */
-+	length = max_t(size_t, length, me_cl->props.max_msg_length);
-+	mei_me_cl_put(me_cl);
- 
- 	rets = pm_runtime_get(dev->dev);
- 	if (rets < 0 && rets != -EINPROGRESS) {
-@@ -802,8 +880,6 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
- 		goto out;
- 	}
- 
--	/* always allocate at least client max message */
--	length = max_t(size_t, length, me_cl->props.max_msg_length);
- 	rets = mei_io_cb_alloc_resp_buf(cb, length);
- 	if (rets)
- 		goto out;
-diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
-index d9d0c1525259..9e33da50791d 100644
---- a/drivers/misc/mei/client.h
-+++ b/drivers/misc/mei/client.h
-@@ -24,15 +24,21 @@
- 
- #include "mei_dev.h"
- 
++		if (*locked) {
++			/* VM_FAULT_RETRY didn't trigger */
++			if (!pages_done)
++				pages_done = ret;
++			break;
++		}
++		/* VM_FAULT_RETRY triggered, so seek to the faulting offset */
++		pages += ret;
++		start += ret << PAGE_SHIFT;
++
++		/*
++		 * Repeat on the address that fired VM_FAULT_RETRY
++		 * without FAULT_FLAG_ALLOW_RETRY but with
++		 * FAULT_FLAG_TRIED.
++		 */
++		*locked = 1;
++		lock_dropped = true;
++		down_read(&mm->mmap_sem);
++		ret = __get_user_pages(tsk, mm, start, 1, flags | FOLL_TRIED,
++				       pages, NULL, NULL);
++		if (ret != 1) {
++			BUG_ON(ret > 1);
++			if (!pages_done)
++				pages_done = ret;
++			break;
++		}
++		nr_pages--;
++		pages_done++;
++		if (!nr_pages)
++			break;
++		pages++;
++		start += PAGE_SIZE;
++	}
++	if (notify_drop && lock_dropped && *locked) {
++		/*
++		 * We must let the caller know we temporarily dropped the lock
++		 * and so the critical section protected by it was lost.
++		 */
++		up_read(&mm->mmap_sem);
++		*locked = 0;
++	}
++	return pages_done;
++}
++
 +/*
-+ * reference counting base function
++ * We can leverage the VM_FAULT_RETRY functionality in the page fault
++ * paths better by using either get_user_pages_locked() or
++ * get_user_pages_unlocked().
++ *
++ * get_user_pages_locked() is suitable to replace the form:
++ *
++ *      down_read(&mm->mmap_sem);
++ *      do_something()
++ *      get_user_pages(tsk, mm, ..., pages, NULL);
++ *      up_read(&mm->mmap_sem);
++ *
++ *  to:
++ *
++ *      int locked = 1;
++ *      down_read(&mm->mmap_sem);
++ *      do_something()
++ *      get_user_pages_locked(tsk, mm, ..., pages, &locked);
++ *      if (locked)
++ *          up_read(&mm->mmap_sem);
 + */
-+void mei_me_cl_init(struct mei_me_client *me_cl);
-+void mei_me_cl_put(struct mei_me_client *me_cl);
-+struct mei_me_client *mei_me_cl_get(struct mei_me_client *me_cl);
++long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
++			   unsigned long start, unsigned long nr_pages,
++			   int write, int force, struct page **pages,
++			   int *locked)
++{
++	return __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
++				       pages, NULL, locked, true);
++}
++EXPORT_SYMBOL(get_user_pages_locked);
 +
- struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
- 					const uuid_le *cuuid);
- struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id);
--
- struct mei_me_client *mei_me_cl_by_uuid_id(struct mei_device *dev,
- 					   const uuid_le *uuid, u8 client_id);
-+void mei_me_cl_rm_by_uuid(struct mei_device *dev, const uuid_le *uuid);
-+void mei_me_cl_rm_by_id(struct mei_device *dev, u8 id);
- 
--void mei_me_cl_remove(struct mei_device *dev,
--		      const uuid_le *uuid, u8 client_id);
- 
++/*
++ * get_user_pages_unlocked() is suitable to replace the form:
++ *
++ *      down_read(&mm->mmap_sem);
++ *      get_user_pages(tsk, mm, ..., pages, NULL);
++ *      up_read(&mm->mmap_sem);
++ *
++ *  with:
++ *
++ *      get_user_pages_unlocked(tsk, mm, ..., pages);
++ *
++ * It is functionally equivalent to get_user_pages_fast so
++ * get_user_pages_fast should be used instead, if the two parameters
++ * "tsk" and "mm" are respectively equal to current and current->mm,
++ * or if "force" shall be set to 1 (get_user_pages_fast misses the
++ * "force" parameter).
++ */
++long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
++			     unsigned long start, unsigned long nr_pages,
++			     int write, int force, struct page **pages)
++{
++	long ret;
++	int locked = 1;
++	down_read(&mm->mmap_sem);
++	ret = __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
++				      pages, NULL, &locked, false);
++	if (locked)
++		up_read(&mm->mmap_sem);
++	return ret;
++}
++EXPORT_SYMBOL(get_user_pages_unlocked);
++
  /*
-  * MEI IO Functions
-diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
-index b60b4263cf0f..7b722e6016aa 100644
---- a/drivers/misc/mei/debugfs.c
-+++ b/drivers/misc/mei/debugfs.c
-@@ -21,20 +21,22 @@
- #include <linux/mei.h>
- 
- #include "mei_dev.h"
-+#include "client.h"
- #include "hw.h"
- 
- static ssize_t mei_dbgfs_read_meclients(struct file *fp, char __user *ubuf,
- 					size_t cnt, loff_t *ppos)
- {
- 	struct mei_device *dev = fp->private_data;
--	struct mei_me_client *me_cl;
-+	struct mei_me_client *me_cl, *n;
- 	size_t bufsz = 1;
- 	char *buf;
- 	int i = 0;
- 	int pos = 0;
- 	int ret;
- 
--#define HDR "  |id|fix|         UUID                       |con|msg len|sb|\n"
-+#define HDR \
-+"  |id|fix|         UUID                       |con|msg len|sb|refc|\n"
- 
- 	mutex_lock(&dev->device_lock);
- 
-@@ -54,16 +56,22 @@ static ssize_t mei_dbgfs_read_meclients(struct file *fp, char __user *ubuf,
- 	if (dev->dev_state != MEI_DEV_ENABLED)
- 		goto out;
- 
--	list_for_each_entry(me_cl, &dev->me_clients, list) {
--
--		pos += scnprintf(buf + pos, bufsz - pos,
--			"%2d|%2d|%3d|%pUl|%3d|%7d|%2d|\n",
--			i++, me_cl->client_id,
--			me_cl->props.fixed_address,
--			&me_cl->props.protocol_name,
--			me_cl->props.max_number_of_connections,
--			me_cl->props.max_msg_length,
--			me_cl->props.single_recv_buf);
-+	list_for_each_entry_safe(me_cl, n,  &dev->me_clients, list) {
-+
-+		me_cl = mei_me_cl_get(me_cl);
-+		if (me_cl) {
-+			pos += scnprintf(buf + pos, bufsz - pos,
-+				"%2d|%2d|%3d|%pUl|%3d|%7d|%2d|%4d|\n",
-+				i++, me_cl->client_id,
-+				me_cl->props.fixed_address,
-+				&me_cl->props.protocol_name,
-+				me_cl->props.max_number_of_connections,
-+				me_cl->props.max_msg_length,
-+				me_cl->props.single_recv_buf,
-+				atomic_read(&me_cl->refcnt.refcount));
-+		}
-+
-+		mei_me_cl_put(me_cl);
- 	}
- out:
- 	mutex_unlock(&dev->device_lock);
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 49a2653d91a5..65a505226222 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -339,11 +339,16 @@ static int mei_hbm_me_cl_add(struct mei_device *dev,
- 			     struct hbm_props_response *res)
- {
- 	struct mei_me_client *me_cl;
-+	const uuid_le *uuid = &res->client_properties.protocol_name;
-+
-+	mei_me_cl_rm_by_uuid(dev, uuid);
- 
- 	me_cl = kzalloc(sizeof(struct mei_me_client), GFP_KERNEL);
- 	if (!me_cl)
- 		return -ENOMEM;
- 
-+	mei_me_cl_init(me_cl);
-+
- 	me_cl->props = res->client_properties;
- 	me_cl->client_id = res->me_addr;
- 	me_cl->mei_flow_ctrl_creds = 0;
-@@ -484,6 +489,7 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
- 				  struct hbm_flow_control *flow)
- {
- 	struct mei_me_client *me_cl;
-+	int rets;
- 
- 	me_cl = mei_me_cl_by_id(dev, flow->me_addr);
- 	if (!me_cl) {
-@@ -492,14 +498,19 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
- 		return -ENOENT;
- 	}
- 
--	if (WARN_ON(me_cl->props.single_recv_buf == 0))
--		return -EINVAL;
-+	if (WARN_ON(me_cl->props.single_recv_buf == 0)) {
-+		rets = -EINVAL;
-+		goto out;
-+	}
- 
- 	me_cl->mei_flow_ctrl_creds++;
- 	dev_dbg(dev->dev, "recv flow ctrl msg ME %d (single) creds = %d.\n",
- 	    flow->me_addr, me_cl->mei_flow_ctrl_creds);
- 
--	return 0;
-+	rets = 0;
-+out:
-+	mei_me_cl_put(me_cl);
-+	return rets;
- }
- 
- /**
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index beedc91f03a6..5d6a15c3619a 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -303,7 +303,7 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
- 			 size_t length, loff_t *offset)
- {
- 	struct mei_cl *cl = file->private_data;
--	struct mei_me_client *me_cl;
-+	struct mei_me_client *me_cl = NULL;
- 	struct mei_cl_cb *write_cb = NULL;
- 	struct mei_device *dev;
- 	unsigned long timeout = 0;
-@@ -399,12 +399,14 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
- 				"amthif write failed with status = %d\n", rets);
- 			goto out;
- 		}
-+		mei_me_cl_put(me_cl);
- 		mutex_unlock(&dev->device_lock);
- 		return length;
- 	}
- 
- 	rets = mei_cl_write(cl, write_cb, false);
- out:
-+	mei_me_cl_put(me_cl);
- 	mutex_unlock(&dev->device_lock);
- 	if (rets < 0)
- 		mei_io_cb_free(write_cb);
-@@ -433,24 +435,19 @@ static int mei_ioctl_connect_client(struct file *file,
- 	cl = file->private_data;
- 	dev = cl->dev;
- 
--	if (dev->dev_state != MEI_DEV_ENABLED) {
--		rets = -ENODEV;
--		goto end;
--	}
-+	if (dev->dev_state != MEI_DEV_ENABLED)
-+		return -ENODEV;
- 
- 	if (cl->state != MEI_FILE_INITIALIZING &&
--	    cl->state != MEI_FILE_DISCONNECTED) {
--		rets = -EBUSY;
--		goto end;
--	}
-+	    cl->state != MEI_FILE_DISCONNECTED)
-+		return  -EBUSY;
- 
- 	/* find ME client we're trying to connect to */
- 	me_cl = mei_me_cl_by_uuid(dev, &data->in_client_uuid);
- 	if (!me_cl || me_cl->props.fixed_address) {
- 		dev_dbg(dev->dev, "Cannot connect to FW Client UUID = %pUl\n",
- 				&data->in_client_uuid);
--		rets = -ENOTTY;
--		goto end;
-+		return  -ENOTTY;
- 	}
- 
- 	cl->me_client_id = me_cl->client_id;
-@@ -487,17 +484,16 @@ static int mei_ioctl_connect_client(struct file *file,
- 		goto end;
- 	}
- 
--
- 	/* prepare the output buffer */
- 	client = &data->out_client_properties;
- 	client->max_msg_length = me_cl->props.max_msg_length;
- 	client->protocol_version = me_cl->props.protocol_version;
- 	dev_dbg(dev->dev, "Can connect?\n");
- 
--
- 	rets = mei_cl_connect(cl, file);
- 
- end:
-+	mei_me_cl_put(me_cl);
- 	return rets;
- }
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 1288a5cf60b9..7d3a1de0b051 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -169,12 +169,14 @@ struct mei_fw_status {
-  * struct mei_me_client - representation of me (fw) client
+  * get_user_pages() - pin user pages in memory
+  * @tsk:	the task_struct to use for page fault accounting, or
+@@ -633,22 +792,18 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
+  * use the correct cache flushing APIs.
   *
-  * @list: link in me client list
-+ * @refcnt: struct reference count
-  * @props: client properties
-  * @client_id: me client id
-  * @mei_flow_ctrl_creds: flow control credits
+  * See also get_user_pages_fast, for performance critical applications.
++ *
++ * get_user_pages should be phased out in favor of
++ * get_user_pages_locked|unlocked or get_user_pages_fast. Nothing
++ * should use get_user_pages because it cannot pass
++ * FAULT_FLAG_ALLOW_RETRY to handle_mm_fault.
   */
- struct mei_me_client {
- 	struct list_head list;
-+	struct kref refcnt;
- 	struct mei_client_properties props;
- 	u8 client_id;
- 	u8 mei_flow_ctrl_creds;
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 82f38613c550..a10f3250aa2c 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -513,6 +513,7 @@ int mei_nfc_host_init(struct mei_device *dev)
+ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 		unsigned long start, unsigned long nr_pages, int write,
+ 		int force, struct page **pages, struct vm_area_struct **vmas)
+ {
+-	int flags = FOLL_TOUCH;
+-
+-	if (pages)
+-		flags |= FOLL_GET;
+-	if (write)
+-		flags |= FOLL_WRITE;
+-	if (force)
+-		flags |= FOLL_FORCE;
+-
+-	return __get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas,
+-				NULL);
++	return __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
++				       pages, vmas, NULL, false);
+ }
+ EXPORT_SYMBOL(get_user_pages);
  
- 	cl_info->me_client_id = me_cl->client_id;
- 	cl_info->cl_uuid = me_cl->props.protocol_name;
-+	mei_me_cl_put(me_cl);
+diff --git a/mm/nommu.c b/mm/nommu.c
+index bd1808e..2a63d1f 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -213,6 +213,29 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ }
+ EXPORT_SYMBOL(get_user_pages);
  
- 	ret = mei_cl_link(cl_info, MEI_HOST_CLIENT_ID_ANY);
- 	if (ret)
-@@ -531,6 +532,7 @@ int mei_nfc_host_init(struct mei_device *dev)
- 
- 	cl->me_client_id = me_cl->client_id;
- 	cl->cl_uuid = me_cl->props.protocol_name;
-+	mei_me_cl_put(me_cl);
- 
- 	ret = mei_cl_link(cl, MEI_HOST_CLIENT_ID_ANY);
- 	if (ret)
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index b1d892cea94d..475f1dea45bf 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -76,6 +76,7 @@ int mei_wd_host_init(struct mei_device *dev)
- 
- 	cl->me_client_id = me_cl->client_id;
- 	cl->cl_uuid = me_cl->props.protocol_name;
-+	mei_me_cl_put(me_cl);
- 
- 	ret = mei_cl_link(cl, MEI_WD_HOST_CLIENT_ID);
- 
--- 
-1.9.3
-
++long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
++			   unsigned long start, unsigned long nr_pages,
++			   int write, int force, struct page **pages,
++			   int *locked)
++{
++	return get_user_pages(tsk, mm, start, nr_pages, write, force,
++			      pages, NULL);
++}
++EXPORT_SYMBOL(get_user_pages_locked);
++
++long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
++			     unsigned long start, unsigned long nr_pages,
++			     int write, int force, struct page **pages)
++{
++	long ret;
++	down_read(&mm->mmap_sem);
++	ret = get_user_pages(tsk, mm, start, nr_pages, write, force,
++			     pages, NULL);
++	up_read(&mm->mmap_sem);
++	return ret;
++}
++EXPORT_SYMBOL(get_user_pages_unlocked);
++
+ /**
+  * follow_pfn - look up PFN at a user virtual address
+  * @vma: memory mapping
