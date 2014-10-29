@@ -1,94 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451AbaJ2SP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:15:27 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41302 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756262AbaJ2SPX (ORCPT
+	id S1756571AbaJ2SPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:15:39 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:47365 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291AbaJ2SPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:15:23 -0400
-X-Originating-IP: 173.246.103.110
-Date: Wed, 29 Oct 2014 11:15:17 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] CodingStyle: Add a chapter on conditional compilation
-Message-ID: <430ce084b015d22a597ef7e4f6436dadaea7b23d.1414606455.git.josh@joshtriplett.org>
+	Wed, 29 Oct 2014 14:15:35 -0400
+Message-ID: <54512EC6.4010901@linaro.org>
+Date: Wed, 29 Oct 2014 19:15:34 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Len Brown <lenb@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linaro-kernel@lists.linaro.org,
+        Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH V2 4/5] cpuidle: menu: Fix the get_typical_interval
+References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org>	<1414054881-17713-4-git-send-email-daniel.lezcano@linaro.org> <CAJvTdKk=uQmon81Y8+jVmYggxg-K2sWC4vEFM+bycKCEAt0fFg@mail.gmail.com>
+In-Reply-To: <CAJvTdKk=uQmon81Y8+jVmYggxg-K2sWC4vEFM+bycKCEAt0fFg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document several common practices and conventions regarding conditional
-compilation, most notably the preference for ifdefs in headers rather
-than .c files.
+On 10/28/2014 03:48 AM, Len Brown wrote:
+> On Thu, Oct 23, 2014 at 5:01 AM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>> The first time the 'get_typical_function' is called, it computes an average
+>> of zero as no data is filled yet. That leads the 'data->predicted_us' variable
+>> to be set to zero too.
+>>
+>> The caller, 'menu_select' will then do:
+>>
+>>          interactivity_req = data->predicted_us /
+>>                          performance_multiplier(nr_iowaiters, cpu_load);
+>>
+>> That sets the interactivity_req to zero (0/performance...).
+>>
+>> and then
+>>
+>>          if (latency_req > interactivity_req)
+>>                  latency_req = interactivity_req;
+>>
+>> ... setting 'latency_req' to zero too.
+>>
+>> No idle state will fulfill this constraint and we will go the C1 state as
+>> default and leading to an update. So the next calls will compute an average
+>> different from zero.
+>>
+>> Even if that works with the current code but with a broken semantic, it will
+>> just break with the next patches where we are stricter with the latencies
+>> check: the first check will fail (latency_req is zero), then no update will
+>> occur leading to always falling to choose an idle state.
+>>
+>> As there are no previous values and it is pointless to compute a standard
+>> deviation for these unexisting values. Just return without setting the
+>> 'data->predicted_us' to zero.
+>>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> ---
+>>   drivers/cpuidle/governors/menu.c | 9 +++++++++
+>>   1 file changed, 9 insertions(+)
+>>
+>> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+>> index 3907301..6ae8390 100644
+>> --- a/drivers/cpuidle/governors/menu.c
+>> +++ b/drivers/cpuidle/governors/menu.c
+>> @@ -226,6 +226,15 @@ again:
+>>          else
+>>                  do_div(avg, divisor);
+>>
+>> +       /*
+>> +        * We are at the very beginning and no data have been filled
+>> +        * yet. Let's skip the standard deviation computation
+>> +        * otherwise the data->predicted_us will be zero and that will
+>> +        * lead to a zero latency req in the select function
+>> +        */
+>> +       if (!avg)
+>> +               return;
+>> +
+>
+> Unfortunately, you've touched ugly code,
+> and your (correct) patch makes it ever-so slightly more ugly,
+> instead of more clear.
+>
+> I think the code would read more clearly, and your patch would
+> less obscure, if the code read something like this sow that it is
+> clear at the menu_select level when and where we monkey
+> with predicted_us:
+>
+> menu_select()...
+> ...
+> data->predicted_us = div_round64(bla bla bla
+>
+> interactivity_overrride_us = get_typical_interval(data);
+>
+> if (interactivity_override_us)
+>    if (interactivity_predicted_us < data->predicted_us)
+>          data->predicted_us = interactivity_override_us;
+>
+> And, of course, down inside get_typical_interval()
+> ...
+> if (!avg)
+>          return 0;
+> ...
+> if (likely(stddev <= ULONG_MAX)) {
+> ...
+>          return avg;
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
 
-I found myself explaining a few of these unwritten rules in patch
-feedback, so I figured I'd document them.
+Ok, thanks for the suggestion. I will look at reworking this patch.
 
- Documentation/CodingStyle | 43 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
+   -- Daniel
 
-diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
-index 3171822..9f28b14 100644
---- a/Documentation/CodingStyle
-+++ b/Documentation/CodingStyle
-@@ -845,6 +845,49 @@ next instruction in the assembly output:
- 	     : /* outputs */ : /* inputs */ : /* clobbers */);
- 
- 
-+		Chapter 20: Conditional Compilation
-+
-+Wherever possible, don't use preprocessor conditionals (#if, #ifdef) in .c
-+files; doing so makes code harder to read and logic harder to follow.  Instead,
-+use such conditionals in a header file defining functions for use in those .c
-+files, providing no-op stub versions in the #else case, and then call those
-+functions unconditionally from .c files.  The compiler will avoid generating
-+any code for the stub calls, producing identical results, but the logic will
-+remain easy to follow.
-+
-+Prefer to compile out entire functions, rather than portions of functions or
-+portions of expressions.  Rather than putting an ifdef in an expression, factor
-+out part or all of the expression into a separate helper function and apply the
-+conditional to that function.
-+
-+If you have a function or variable which may potentially go unused in a
-+particular configuration, and the compiler would warn about its definition
-+going unused, mark the definition as __maybe_unused rather than wrapping it in
-+a preprocessor conditional.  (However, if a function or variable *always* goes
-+unused, delete it.)
-+
-+Within code, where possible, use the IS_ENABLED macro to convert a Kconfig
-+symbol into a C boolean expression, and use it in a normal C conditional:
-+
-+	if (IS_ENABLED(CONFIG_SOMETHING)) {
-+		...
-+	}
-+
-+The compiler will constant-fold the conditional away, and include or exclude
-+the block of code just as with an #ifdef, so this will not add any runtime
-+overhead.  However, this approach still allows the C compiler to see the code
-+inside the block, and check it for correctness (syntax, types, symbol
-+references, etc).  Thus, you still have to use an #ifdef if the code inside the
-+block references symbols that will not exist if the condition is not met.
-+
-+At the end of any non-trivial #if or #ifdef block (more than a few lines),
-+place a comment after the #endif on the same line, noting the conditional
-+expression used.  For instance:
-+
-+#ifdef CONFIG_SOMETHING
-+...
-+#endif /* CONFIG_SOMETHING */
-+
- 
- 		Appendix I: References
- 
+
 -- 
-2.1.1
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
