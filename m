@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796AbaJ2SaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:30:00 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42916 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323AbaJ2S34 (ORCPT
+	id S1755374AbaJ2Sdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:33:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58134 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaJ2Sdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:29:56 -0400
-Message-ID: <1414607389.5330.67.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        James Morris <jmorris@namei.org>
-Date: Wed, 29 Oct 2014 14:29:49 -0400
-In-Reply-To: <CALCETrWpHXp=7u2777ANJjxQ5rRqmutnEwf76dLX2s_LXf87pQ@mail.gmail.com>
-References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
-	 <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
-	 <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <CALCETrWpHXp=7u2777ANJjxQ5rRqmutnEwf76dLX2s_LXf87pQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102918-0009-0000-0000-000005F1CC7D
+	Wed, 29 Oct 2014 14:33:31 -0400
+Date: Wed, 29 Oct 2014 19:33:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Sabrina Dubroca <sd@queasysnail.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
+ linux-next
+In-Reply-To: <20141029180734.GQ12706@worktop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.11.1410291918060.5308@nanos>
+References: <20141029155620.GA4886@kria> <20141029180734.GQ12706@worktop.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-29 at 09:23 -0700, Andy Lutomirski wrote: 
-> On Oct 29, 2014 6:00 AM, "Mimi Zohar" <zohar@linux.vnet.ibm.com> wrote:
-> >
-> > On Tue, 2014-10-28 at 22:08 -0700, Andy Lutomirski wrote:
-> > > On Tue, Oct 28, 2014 at 8:55 PM, James Morris <jmorris@namei.org> wrote:
-> > > > These changes fix a bug in xattr handling, where the evm and ima
-> > > > inode_setxattr() functions do not check for empty xattrs being passed from
-> > > > userspace (leading to user-triggerable null pointer dereferences).
-> > > >
-> > > > Please pull.
-> > > >
-> > > >
-> > > > The following changes since commit 9f76628da20f96a179ca62b504886f99ecc29223:
-> > > >
-> > > >   Merge branch 'for-3.18' of git://linux-nfs.org/~bfields/linux (2014-10-28 13:32:06 -0700)
-> > > >
-> > > > are available in the git repository at:
-> > > >
-> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-> > > >
-> > > > Dmitry Kasatkin (2):
-> > > >       ima: check xattr value length and type in the ima_inode_setxattr()
-> > >
-> > > I haven't read this one, but:
-> > >
-> > > >       evm: check xattr value length and type in evm_inode_setxattr()
-> > >
-> > > const struct evm_ima_xattr_data *xattr_data = xattr_value;
-> > > - if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
-> > > - && (xattr_data->type == EVM_XATTR_HMAC))
-> > > - return -EPERM;
-> > > + if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
-> > > + if (!xattr_value_len)
-> > > + return -EINVAL;
-> > > + if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
-> > > + return -EPERM;
-> > > + }
-> > >
-> > > Huh?  (Sorry about severe whitespace damage.)
-> > >
-> > > Shouldn't there be something like if (xattr_value_len < sizeof(struct
-> > > evm_ima_xattr_data)) return -EINVAL?
-> >
-> > Prior to commit 2fb1c9a "evm: prohibit userspace writing 'security.evm'
-> > HMAC value", a process with CAP_SYS_ADMIN could write either an HMAC or
-> > signature. As the HMAC key should only be known to the kernel, only
-> > signatures are now allowed.  Instead of "struct evm_ima_xattr_data", the
-> > code should reflect this change and use "struct signature_v2_hdr".
-> > We'll clean up this code for the next release.  For now, this patch
-> > prevents the oops.
-> >
+On Wed, 29 Oct 2014, Peter Zijlstra wrote:
+
+> On Wed, Oct 29, 2014 at 04:56:20PM +0100, Sabrina Dubroca wrote:
+> > commit e22b886a8a43b ("sched/wait: Add might_sleep() checks") included
+> > in today's linux-next added a check that fires on e1000 with netpoll:
+> > 
+> > 
+> > BUG: sleeping function called from invalid context at kernel/irq/manage.c:104
+> > in_atomic(): 1, irqs_disabled(): 1, pid: 1, name: systemd
+> > no locks held by systemd/1.
+> > irq event stamp: 10102965
+> > hardirqs last  enabled at (10102965): [<ffffffff810cbafd>] vprintk_emit+0x2dd/0x6a0
+> > hardirqs last disabled at (10102964): [<ffffffff810cb897>] vprintk_emit+0x77/0x6a0
+> > softirqs last  enabled at (10102342): [<ffffffff810666aa>] __do_softirq+0x27a/0x6f0
+> > softirqs last disabled at (10102337): [<ffffffff81066e86>] irq_exit+0x56/0xe0
+> > Preemption disabled at:[<ffffffff817de50d>] printk_emit+0x31/0x33
+> > 
+> > CPU: 1 PID: 1 Comm: systemd Not tainted 3.18.0-rc2-next-20141029-dirty #222
+> > Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140617_173321-var-lib-archbuild-testing-x86_64-tobias 04/01/2014
+> >  ffffffff81a82291 ffff88001e743978 ffffffff817df31d 0000000000000000
+> >  0000000000000000 ffff88001e7439a8 ffffffff8108dfa2 ffff88001e7439a8
+> >  ffffffff81a82291 0000000000000068 0000000000000000 ffff88001e7439d8
+> > Call Trace:
+> >  [<ffffffff817df31d>] dump_stack+0x4f/0x7c
+> >  [<ffffffff8108dfa2>] ___might_sleep+0x182/0x2b0
+> >  [<ffffffff8108e10a>] __might_sleep+0x3a/0xc0
+> >  [<ffffffff810ce358>] synchronize_irq+0x38/0xa0
+> >  [<ffffffff810ce690>] disable_irq+0x20/0x30
+> >  [<ffffffff815d7253>] e1000_netpoll+0x23/0x60
+> >  [<ffffffff81678d02>] netpoll_poll_dev+0x72/0x3a0
+> >  [<ffffffff816791e7>] netpoll_send_skb_on_dev+0x1b7/0x2e0
+> >  [<ffffffff816795f3>] netpoll_send_udp+0x2e3/0x490
 > 
-> I have no idea what the semantics are.  All I'm saying is that it
-> looks like the code still accesses memory past the end of the buffer.
-> The buffer isn't a null pointer, so the symptom is different, but it
-> may still be a security bug.
+> Oh cute.. not entirely sure what to do there. This only works if you
+> _know_ desc->threads_active will never be !0.
+> 
+> The best I can come up with is something like this, which avoids the
+> might_sleep() in the one special case.
+>  
+> Thomas?
 
-There's no accessing of data here, just writing the data out as an
-extended attribute, which requires CAP_SYS_ADMIN privilege.
+Yuck. No. You are just papering over the problem.
 
-Mimi
+What happens if you add 'threadirqs' to the kernel command line? Or if
+the interrupt line is shared with a real threaded interrupt user?
 
+The proper solution is to have a poll_lock for e1000 which serializes
+the hardware interrupt against netpoll instead of using
+disable/enable_irq().
+
+In fact that's less expensive than the disable/enable_irq() dance and
+the chance of contention is pretty low. If done right it will be a
+NOOP for the CONFIG_NET_POLL_CONTROLLER=n case.
+
+Thanks,
+
+	tglx
+
+ 
