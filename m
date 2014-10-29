@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaJ2BPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 21:15:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60597 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaJ2BPO (ORCPT
+	id S1752352AbaJ2B0i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 21:26:38 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.44.111]:37241 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaJ2B0g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 21:15:14 -0400
-Message-ID: <54503F9D.7080808@wwwdotorg.org>
-Date: Tue, 28 Oct 2014 19:15:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 28 Oct 2014 21:26:36 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "balbi@ti.com" <balbi@ti.com>
+CC: "dinh.linux@gmail.com" <dinh.linux@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "b.zolnierkie@samsung.com" <b.zolnierkie@samsung.com>,
+        "matthijs@stdin.nl" <matthijs@stdin.nl>,
+        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv6 8/8] usb: dwc2: move usb_disabled() call to host
+ driver only
+Thread-Topic: [PATCHv6 8/8] usb: dwc2: move usb_disabled() call to host
+ driver only
+Thread-Index: AQHP8wcWvZzyL/KB1k+yAGSg60g/IpxGR3iA
+Date: Wed, 29 Oct 2014 01:26:27 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844E6ACC@US01WEMBX2.internal.synopsys.com>
+References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
+ <1414538749-14735-9-git-send-email-dinguyen@opensource.altera.com>
+In-Reply-To: <1414538749-14735-9-git-send-email-dinguyen@opensource.altera.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Matthias Klein <matthias.klein@linux.com>,
-        linux-rpi-kernel@lists.infradead.org, linus.walleij@linaro.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] pinctrl: bcm2835: Start GPIO numeration at zero
-References: <1414447799-1284-1-git-send-email-matthias.klein@linux.com> <544ECAB2.3060706@wwwdotorg.org> <544ECFB4.7040704@linux.com> <544EDCB6.7090001@wwwdotorg.org> <544F3FDA.60407@linux.com>
-In-Reply-To: <544F3FDA.60407@linux.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 01:03 AM, Matthias Klein wrote:
+> From: dinguyen@opensource.altera.com [mailto:dinguyen@opensource.altera.com]
+> Sent: Tuesday, October 28, 2014 4:26 PM
 > 
-> Am 28.10.2014 um 01:00 schrieb Stephen Warren:
->> On 10/27/2014 05:05 PM, Matthias Klein wrote:
->>
->>> - To be in sync with the GPIO numbers in the datasheet / documentation
->>
->> I assume that's only relevant because of the second point; the GPIO
->> IDs in DT files already match the datasheet.
->>
->>> - For userland applications which rely on these GPIO numbers
->>
->> This isn't a scalable solution for that; this "fix" can only work for
->> a single GPIO controller in any one system. It'd be better for all
->> usage to search for the correct GPIO controller in sysfs, find the
->> base address of that, and then add on the controller-relative GPIO ID.
->> That way, the same approach is taken irrespective of which GPIO
->> controller is in use, and there are no special cases.
->>
->> Perhaps this could be simplified (removing the need to adding
->> base+offset to get the Linux ID) if the GPIO core exported a
->> per-controller directory in sysfs for GPIO manipulation (the files in
->> which used controller-relative numbering), rather than having a single
->> directory using Linux-internal global GPIO numbering; something like
->> /sys/class/gpio/gpio@7e200000/export which uses ID 0..N vs.
->> /sys/class/gpio/export which uses IDs X..X+N where X is arbitary.
+> Now that platform.c will get built for both Host and Gadget, if we leave the
+> usb_disabled() call in platform.c, it results in the following build error
+> when (!USB && USB_GADGET) condition is met.
 > 
-> Would you accept a patch which implements the "gpio-base" property into
-> the device tree for pinctrl-bcm2835?
+> ERROR: "usb_disabled" [drivers/usb/dwc2/dwc2_platform.ko] undefined!
+> 
+> Since usb_disabled() is mostly used to disable USB host functionality, move
+> the call the host portion for the DWC2 driver.
+> 
+> Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+> ---
+>  drivers/usb/dwc2/hcd.c      | 3 +++
+>  drivers/usb/dwc2/platform.c | 3 ---
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
+> index fa49c72..b741997 100644
+> --- a/drivers/usb/dwc2/hcd.c
+> +++ b/drivers/usb/dwc2/hcd.c
+> @@ -2780,6 +2780,9 @@ int dwc2_hcd_init(struct dwc2_hsotg *hsotg, int irq,
+>  	int i, num_channels;
+>  	int retval;
+> 
+> +	if (usb_disabled())
+> +		return -ENODEV;
+> +
+>  	dev_dbg(hsotg->dev, "DWC OTG HCD INIT\n");
+> 
+>  	/* Detect config values from hardware */
+> diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+> index 77c8417..123cf54 100644
+> --- a/drivers/usb/dwc2/platform.c
+> +++ b/drivers/usb/dwc2/platform.c
+> @@ -157,9 +157,6 @@ static int dwc2_driver_probe(struct platform_device *dev)
+>  	int retval;
+>  	int irq;
+> 
+> -	if (usb_disabled())
+> -		return -ENODEV;
+> -
+>  	match = of_match_device(dwc2_of_match_table, &dev->dev);
+>  	if (match && match->data) {
+>  		params = match->data;
 
-DT is supposed to represent HW features, in an OS-agnostic way, and a
-"GPIO base" is a Linux-specific SW concept.
+I'm confused. You are saying the build is broken until patch 8/8 is
+applied? As always, that is not acceptable. You need to fix the
+breakage at the point where it was introduced, not leave it broken
+until the last patch in the series.
+
+-- 
+Paul
+
