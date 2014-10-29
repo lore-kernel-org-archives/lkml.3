@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934399AbaJ2QgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:36:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43353 "EHLO mx1.redhat.com"
+	id S934517AbaJ2Qg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:36:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48068 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933786AbaJ2QgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:36:16 -0400
+	id S934001AbaJ2QgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:36:17 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
@@ -24,154 +24,170 @@ Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
         David Miller <davem@davemloft.net>,
         Steve Capper <steve.capper@linaro.org>,
         Johannes Weiner <jweiner@redhat.com>
-Subject: [PATCH 2/5] mm: gup: add __get_user_pages_unlocked to customize gup_flags
-Date: Wed, 29 Oct 2014 17:35:17 +0100
-Message-Id: <1414600520-7664-3-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 3/5] mm: gup: use get_user_pages_unlocked within get_user_pages_fast
+Date: Wed, 29 Oct 2014 17:35:18 +0100
+Message-Id: <1414600520-7664-4-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
 References: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some caller (like KVM) may want to set the gup_flags like
-FOLL_HWPOSION to get a proper -EHWPOSION retval instead of -EFAULT to
-take a more appropriate action if get_user_pages runs into a memory
-failure.
+This allows the get_user_pages_fast slow path to release the mmap_sem
+before blocking.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/mm.h |  4 ++++
- mm/gup.c           | 44 ++++++++++++++++++++++++++++++++------------
- mm/nommu.c         | 16 +++++++++++++---
- 3 files changed, 49 insertions(+), 15 deletions(-)
+ arch/mips/mm/gup.c    |  8 +++-----
+ arch/powerpc/mm/gup.c |  6 ++----
+ arch/s390/mm/gup.c    |  6 ++----
+ arch/sh/mm/gup.c      |  6 ++----
+ arch/sparc/mm/gup.c   |  6 ++----
+ arch/x86/mm/gup.c     |  7 +++----
+ mm/gup.c              |  6 ++----
+ mm/util.c             | 10 ++--------
+ 8 files changed, 18 insertions(+), 37 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 99831d9..9a5ada3 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1222,6 +1222,10 @@ long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
- 		    unsigned long start, unsigned long nr_pages,
- 		    int write, int force, struct page **pages,
- 		    int *locked);
-+long __get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
-+			       unsigned long start, unsigned long nr_pages,
-+			       int write, int force, struct page **pages,
-+			       unsigned int gup_flags);
- long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
- 		    unsigned long start, unsigned long nr_pages,
- 		    int write, int force, struct page **pages);
+diff --git a/arch/mips/mm/gup.c b/arch/mips/mm/gup.c
+index 06ce17c..20884f5 100644
+--- a/arch/mips/mm/gup.c
++++ b/arch/mips/mm/gup.c
+@@ -301,11 +301,9 @@ slow_irqon:
+ 	start += nr << PAGE_SHIFT;
+ 	pages += nr;
+ 
+-	down_read(&mm->mmap_sem);
+-	ret = get_user_pages(current, mm, start,
+-				(end - start) >> PAGE_SHIFT,
+-				write, 0, pages, NULL);
+-	up_read(&mm->mmap_sem);
++	ret = get_user_pages_unlocked(current, mm, start,
++				      (end - start) >> PAGE_SHIFT,
++				      write, 0, pages);
+ 
+ 	/* Have to be a bit careful with return values */
+ 	if (nr > 0) {
+diff --git a/arch/powerpc/mm/gup.c b/arch/powerpc/mm/gup.c
+index d874668..b70c34a 100644
+--- a/arch/powerpc/mm/gup.c
++++ b/arch/powerpc/mm/gup.c
+@@ -215,10 +215,8 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
+ 
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-				     nr_pages - nr, write, 0, pages, NULL);
+-		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++					      nr_pages - nr, write, 0, pages);
+ 
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
+diff --git a/arch/s390/mm/gup.c b/arch/s390/mm/gup.c
+index 639fce46..5c586c7 100644
+--- a/arch/s390/mm/gup.c
++++ b/arch/s390/mm/gup.c
+@@ -235,10 +235,8 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	/* Try to get the remaining pages with get_user_pages */
+ 	start += nr << PAGE_SHIFT;
+ 	pages += nr;
+-	down_read(&mm->mmap_sem);
+-	ret = get_user_pages(current, mm, start,
+-			     nr_pages - nr, write, 0, pages, NULL);
+-	up_read(&mm->mmap_sem);
++	ret = get_user_pages_unlocked(current, mm, start,
++			     nr_pages - nr, write, 0, pages);
+ 	/* Have to be a bit careful with return values */
+ 	if (nr > 0)
+ 		ret = (ret < 0) ? nr : ret + nr;
+diff --git a/arch/sh/mm/gup.c b/arch/sh/mm/gup.c
+index 37458f3..e15f52a 100644
+--- a/arch/sh/mm/gup.c
++++ b/arch/sh/mm/gup.c
+@@ -257,10 +257,8 @@ slow_irqon:
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
+ 
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-			(end - start) >> PAGE_SHIFT, write, 0, pages, NULL);
+-		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++			(end - start) >> PAGE_SHIFT, write, 0, pages);
+ 
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
+diff --git a/arch/sparc/mm/gup.c b/arch/sparc/mm/gup.c
+index ae6ce38..2e5c4fc 100644
+--- a/arch/sparc/mm/gup.c
++++ b/arch/sparc/mm/gup.c
+@@ -249,10 +249,8 @@ slow:
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
+ 
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-			(end - start) >> PAGE_SHIFT, write, 0, pages, NULL);
+-		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++			(end - start) >> PAGE_SHIFT, write, 0, pages);
+ 
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+index 207d9aef..2ab183b 100644
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -388,10 +388,9 @@ slow_irqon:
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
+ 
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-			(end - start) >> PAGE_SHIFT, write, 0, pages, NULL);
+-		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++					      (end - start) >> PAGE_SHIFT,
++					      write, 0, pages);
+ 
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
 diff --git a/mm/gup.c b/mm/gup.c
-index a8521f1..01534ff 100644
+index 01534ff..a349ae3 100644
 --- a/mm/gup.c
 +++ b/mm/gup.c
-@@ -591,9 +591,9 @@ static __always_inline long __get_user_pages_locked(struct task_struct *tsk,
- 						int write, int force,
- 						struct page **pages,
- 						struct vm_area_struct **vmas,
--						int *locked, bool notify_drop)
-+						int *locked, bool notify_drop,
-+						unsigned int flags)
- {
--	int flags = FOLL_TOUCH;
- 	long ret, pages_done;
- 	bool lock_dropped;
+@@ -1187,10 +1187,8 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
  
-@@ -707,11 +707,37 @@ long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
- 			   int *locked)
- {
- 	return __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
--				       pages, NULL, locked, true);
-+				       pages, NULL, locked, true, FOLL_TOUCH);
- }
- EXPORT_SYMBOL(get_user_pages_locked);
- 
- /*
-+ * Same as get_user_pages_unlocked(...., FOLL_TOUCH) but it allows to
-+ * pass additional gup_flags as last parameter (like FOLL_HWPOISON).
-+ *
-+ * NOTE: here FOLL_TOUCH is not set implicitly and must be set by the
-+ * caller if required (just like with __get_user_pages). "FOLL_GET",
-+ * "FOLL_WRITE" and "FOLL_FORCE" are set implicitly as needed
-+ * according to the parameters "pages", "write", "force"
-+ * respectively.
-+ */
-+__always_inline long __get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
-+					       unsigned long start, unsigned long nr_pages,
-+					       int write, int force, struct page **pages,
-+					       unsigned int gup_flags)
-+{
-+	long ret;
-+	int locked = 1;
-+	down_read(&mm->mmap_sem);
-+	ret = __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
-+				      pages, NULL, &locked, false, gup_flags);
-+	if (locked)
-+		up_read(&mm->mmap_sem);
-+	return ret;
-+}
-+EXPORT_SYMBOL(__get_user_pages_unlocked);
-+
-+/*
-  * get_user_pages_unlocked() is suitable to replace the form:
-  *
-  *      down_read(&mm->mmap_sem);
-@@ -732,14 +758,8 @@ long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
- 			     unsigned long start, unsigned long nr_pages,
- 			     int write, int force, struct page **pages)
- {
--	long ret;
--	int locked = 1;
--	down_read(&mm->mmap_sem);
--	ret = __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
--				      pages, NULL, &locked, false);
--	if (locked)
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-				     nr_pages - nr, write, 0, pages, NULL);
 -		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++					      nr_pages - nr, write, 0, pages);
+ 
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
+diff --git a/mm/util.c b/mm/util.c
+index fec39d4..f3ef639 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -240,14 +240,8 @@ int __weak get_user_pages_fast(unsigned long start,
+ 				int nr_pages, int write, struct page **pages)
+ {
+ 	struct mm_struct *mm = current->mm;
+-	int ret;
+-
+-	down_read(&mm->mmap_sem);
+-	ret = get_user_pages(current, mm, start, nr_pages,
+-					write, 0, pages, NULL);
+-	up_read(&mm->mmap_sem);
+-
 -	return ret;
-+	return __get_user_pages_unlocked(tsk, mm, start, nr_pages, write,
-+					 force, pages, FOLL_TOUCH);
++	return get_user_pages_unlocked(current, mm, start, nr_pages,
++				       write, 0, pages);
  }
- EXPORT_SYMBOL(get_user_pages_unlocked);
+ EXPORT_SYMBOL_GPL(get_user_pages_fast);
  
-@@ -803,7 +823,7 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 		int force, struct page **pages, struct vm_area_struct **vmas)
- {
- 	return __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
--				       pages, vmas, NULL, false);
-+				       pages, vmas, NULL, false, FOLL_TOUCH);
- }
- EXPORT_SYMBOL(get_user_pages);
- 
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 2a63d1f..6f6c752 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -223,9 +223,10 @@ long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
- }
- EXPORT_SYMBOL(get_user_pages_locked);
- 
--long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
--			     unsigned long start, unsigned long nr_pages,
--			     int write, int force, struct page **pages)
-+long __get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
-+			       unsigned long start, unsigned long nr_pages,
-+			       int write, int force, struct page **pages,
-+			       unsigned int gup_flags)
- {
- 	long ret;
- 	down_read(&mm->mmap_sem);
-@@ -234,6 +235,15 @@ long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
- 	up_read(&mm->mmap_sem);
- 	return ret;
- }
-+EXPORT_SYMBOL(__get_user_pages_unlocked);
-+
-+long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
-+			     unsigned long start, unsigned long nr_pages,
-+			     int write, int force, struct page **pages)
-+{
-+	return __get_user_pages_unlocked(tsk, mm, start, nr_pages, write,
-+					 force, pages, 0);
-+}
- EXPORT_SYMBOL(get_user_pages_unlocked);
- 
- /**
