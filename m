@@ -1,33 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751002AbaJ2TKT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 15:10:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45651 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaJ2TKP (ORCPT
+	id S1756673AbaJ2TMw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 15:12:52 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:64946 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917AbaJ2TMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 15:10:15 -0400
-Date: Wed, 29 Oct 2014 15:10:12 -0400 (EDT)
-Message-Id: <20141029.151012.1292848763539281187.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 0/2] r8152: support nway_reset
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-66-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-66-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 29 Oct 2014 12:10:15 -0700 (PDT)
+	Wed, 29 Oct 2014 15:12:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <430ce084b015d22a597ef7e4f6436dadaea7b23d.1414606455.git.josh@joshtriplett.org>
+References: <430ce084b015d22a597ef7e4f6436dadaea7b23d.1414606455.git.josh@joshtriplett.org>
+Date: Wed, 29 Oct 2014 20:12:49 +0100
+X-Google-Sender-Auth: 2SzgIcma2BTTzsMmmeHKiUwbn_w
+Message-ID: <CAMuHMdV2Z0+gon8+LP_7X2h4B4Hb3KAV2vpZ9kRwC2mVFGLWXw@mail.gmail.com>
+Subject: Re: [PATCH] CodingStyle: Add a chapter on conditional compilation
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Jonathan Corbet <corbet@lwn.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Tue, 28 Oct 2014 14:05:50 +0800
+On Wed, Oct 29, 2014 at 7:15 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> Document several common practices and conventions regarding conditional
+> compilation, most notably the preference for ifdefs in headers rather
+> than .c files.
+>
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 
-> Fix the CHECK from checkpatch.pl and support nway_reset.
+> +If you have a function or variable which may potentially go unused in a
+> +particular configuration, and the compiler would warn about its definition
+> +going unused, mark the definition as __maybe_unused rather than wrapping it in
+> +a preprocessor conditional.  (However, if a function or variable *always* goes
+> +unused, delete it.)
 
-Series applied, thanks.
+Personally, I don't like __maybe_unused. Once it's there, the compiler
+will stop warning about it, even if it really becomes unused.
+
+Apart from that:
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
