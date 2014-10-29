@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217AbaJ2SwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:52:05 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:64944 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728AbaJ2SwD (ORCPT
+	id S1756219AbaJ2Sz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:55:26 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:48389 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaJ2SzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:52:03 -0400
+	Wed, 29 Oct 2014 14:55:24 -0400
+Message-ID: <54513841.10803@gmail.com>
+Date: Wed, 29 Oct 2014 11:56:01 -0700
+From: Santosh Shilimkar <santosh.shilimkar@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141029183612.GI6890@mwanda>
-References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
- <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
- <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
- <CALCETrWpHXp=7u2777ANJjxQ5rRqmutnEwf76dLX2s_LXf87pQ@mail.gmail.com> <20141029183612.GI6890@mwanda>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 29 Oct 2014 11:51:40 -0700
-Message-ID: <CALCETrU1S94M1L-UM5Rg91J4kGjJRFLiPxce5aAnPPJVeitQ_A@mail.gmail.com>
-Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Enable PCI controller for Keystone SoCs
+References: <1414173095-32511-1-git-send-email-m-karicheri2@ti.com> <544FBF1C.80305@ti.com> <544FBF4D.6000502@ti.com> <544FC540.1050501@gmail.com> <5451019C.8080604@ti.com>
+In-Reply-To: <5451019C.8080604@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 11:36 AM, Dan Carpenter
-<dan.carpenter@oracle.com> wrote:
-> On Wed, Oct 29, 2014 at 09:23:45AM -0700, Andy Lutomirski wrote:
->> I have no idea what the semantics are.  All I'm saying is that it
->> looks like the code still accesses memory past the end of the buffer.
->> The buffer isn't a null pointer, so the symptom is different, but it
->> may still be a security bug.
+
+
+On 10/29/2014 08:02 AM, Murali Karicheri wrote:
+> On 10/28/2014 12:33 PM, Santosh Shilimkar wrote:
 >>
->> --Andy
->
-> It only reads one byte into the struct "xattr_data->type" so checking
-> for non-zero is sufficient and the patch is fine.
+>>
+>> On 10/28/2014 09:07 AM, Murali Karicheri wrote:
+>>> On 10/28/2014 12:06 PM, Murali Karicheri wrote:
+>>>> On 10/24/2014 01:51 PM, Murali Karicheri wrote:
+>>>>> Now that Keystone PCI driver is merged to v3.18, this patch series
+>>>>> add build options and DTS bindings to enable the driver for Keystone
+>>>>> SoCs.
+>>>>>
+>>>>> CC : Santosh Shilimkar<santosh.shilimkar@gmail.com>
+>>>>> CC : Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>>>>> CC : Rob Herring<robh+dt@kernel.org>
+>>>>> CC : Pawel Moll<pawel.moll@arm.com>
+>>>>> CC : Mark Rutland<mark.rutland@arm.com>
+>>>>> CC : Ian Campbell<ijc+devicetree@hellion.org.uk>
+>>>>> CC : Kumar Gala<galak@codeaurora.org>
+>>>>> CC : Russell King<linux@arm.linux.org.uk>
+>>>>> CC : devicetree@vger.kernel.org
+>>>>>
+>>>>> Murali Karicheri (4):
+>>>>> ARM: keystone: add pcie related options
+>>>>> ARM: keystone: defconfig: add options to enable PCI controller
+>>>>> ARM: keystone: dts: add DT bindings for PCI controller for port 0
+>>>>> ARM: keystone: dts: add DT bindings for PCI controller for port 1
+>>>>>
+>>>>> arch/arm/boot/dts/k2e.dtsi | 45 +++++++++++++++++++++++++++++++++++
+>>>>> arch/arm/boot/dts/keystone.dtsi | 45
+>>>>> +++++++++++++++++++++++++++++++++++
+>>>>> arch/arm/configs/keystone_defconfig | 3 +++
+>>>>> arch/arm/mach-keystone/Kconfig | 2 ++
+>>>>> 4 files changed, 95 insertions(+)
+>>>>>
+>>>> Santosh,
+>>>>
+>>>> Could you review this and apply to your tree for merge by end of this
+>>>> week if this looks good and there are no comments?
+>>>>
+>>> Adding Santosh's personal email ID
+>>>
+>> Just use the listed kernel.org id while posting patches which needs
+>> my attention. Please repost the series again so that I have all the
+>> patches.
+> Will do
+>>
+>> Also what happened with the PCIE notifier related series ?
+>> If you have already proposed something, please loop me on the thread.
+>>
+> That is work in progress. I have got something working, but dma-ranges
+> are also used in a different
+> way by the PCI sub systems on Power PC and require more thought on how
+> this can be done cleanly.
+> I am investigating this currently.
+'
+Ok. Thanks for the note.
 
-Indeed.  Still... eww.  I don't like code that, upon local inspection,
-is apparently wrong, even though it's coincidentally correct due to
-some other far away condition.
+Regards,
+Santosh
 
---Andy
-
->
-> I fixed that exact same bug in lustre last week where the xattr size is
-> not zero but it's less than the size of the struct.  So this seems like
-> maybe it could be a common anti-pattern though.
->
-> regards,
-> dan carpenter
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
