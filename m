@@ -1,204 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaJ2CF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 22:05:28 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:41382 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753066AbaJ2CFY (ORCPT
+	id S1753473AbaJ2CFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 22:05:49 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:57014 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaJ2CFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 22:05:24 -0400
-Message-ID: <54504B57.3020403@roeck-us.net>
-Date: Tue, 28 Oct 2014 19:05:11 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 34/47] acpi: Register power-off handler with kernel
- power-off handler
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net> <5416859.0WlfjKo7zJ@vostro.rjw.lan> <544EFB12.1090901@roeck-us.net> <4751363.lZMkCZKZet@vostro.rjw.lan>
-In-Reply-To: <4751363.lZMkCZKZet@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.54504B64.0055,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 28 Oct 2014 22:05:06 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=EUC-KR
+X-AuditID: cbfee691-f79b86d000004a5a-8b-54504b4e5672
+Content-transfer-encoding: 8BIT
+Message-id: <54504B4E.2070208@samsung.com>
+Date: Wed, 29 Oct 2014 11:05:02 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+To: =?EUC-KR?B?wK/H0bDm?= <hankyung.yu@lge.com>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
+        "'Chanho Min'" <chanho.min@lge.com>, "'Chris Ball'" <chris@printf.net>,
+        "'Ulf Hansson'" <ulf.hansson@linaro.org>,
+        "'Seungwon Jeon'" <tgih.jun@samsung.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'HyoJun Im'" <hyojun.im@lge.com>, gunho.lee@lge.com,
+        "'CPGS'" <cpgs@samsung.com>
+Subject: Re: [PATCH] mmc:core: fix hs400 timing selection
+References: <1413946555-1266-1-git-send-email-chanho.min@lge.com>
+ <544F1DB3.9050204@samsung.com> <00b601cff30a$3c57e710$b507b530$@lge.com>
+In-reply-to: <00b601cff30a$3c57e710$b507b530$@lge.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsWyRsSkUNfPOyDE4MlyK4uP1y6wW0y4vJ3R
+	4uUhTYsL0xYyW+x7P4XR4vP1JnaLG7/aWC0u75rDZnHkfz+jxYf7F5ktjq8Nd+D26Hp7hcnj
+	zrU9bB43Xi1k8ujbsorR4/MmuQDWKC6blNSczLLUIn27BK6Mk68fMhVMlK24s8WsgXGSeBcj
+	J4eEgInEk+brTBC2mMSFe+vZuhi5OIQEljJKzF02ixWm6EvHSUYQW0hgOqPEsReKIDavgKDE
+	j8n3WLoYOTiYBeQljlzKBgkzC2hITH19Gqr8NaNExxZriHItid9rl7CA2CwCqhIf1p0G28sm
+	oCOx/dtxMFtUIEziUNs8MFtE4DOjxMNdMRAzexglDp4UA7GFBSwl+m9uYYe4Eyjef+0dG0iC
+	U8BMoufvP0aQhITAS3aJVc9mQ20TkPg2+RDYoRICshKbDjBD/CUpcXDFDZYJjGKzkLwzC+Gd
+	WUjeWcDIvIpRNLUguaA4Kb3IVK84Mbe4NC9dLzk/dxMjMCpP/3s2cQfj/QPWhxgFOBiVeHgN
+	HvqFCLEmlhVX5h5iNAU6YiKzlGhyPjD280riDY3NjCxMTUyNjcwtzZTEeXWkfwYLCaQnlqRm
+	p6YWpBbFF5XmpBYfYmTi4JRqYJSIk9l2qPtjkZtZRIEDz3abb0tm/nhzhcGrcp4C4xXHPbpx
+	sTyHOS/tucU6p0WA2eFDl34Px5Kpz1+++rwte8LMw/yi70x+R6x0+VL2yuhRbmcP6/GZPkXr
+	s+p+tjOyc8yNvSefvkoy7SC/3rr6mTrPu36L9kxYobdgtqV/WNxptz9tJt95jZRYijMSDbWY
+	i4oTAfeZHE/FAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jQV0/74AQg5ZfBhYfr11gt5hweTuj
+	xctDmhYXpi1kttj3fgqjxefrTewWN361sVpc3jWHzeLI/35Giw/3LzJbHF8b7sDt0fX2CpPH
+	nWt72DxuvFrI5NG3ZRWjx+dNcgGsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaW
+	FuZKCnmJuam2Si4+AbpumTlAlykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkAD
+	CWsYM06+fshUMFG24s4WswbGSeJdjJwcEgImEl86TjJC2GISF+6tZwOxhQSmM0oce6EIYvMK
+	CEr8mHyPpYuRg4NZQF7iyKVskDCzgIbE1NenGSHKXzNKdGyxhijXkvi9dgkLiM0ioCrxYd1p
+	JhCbTUBHYvu342C2qECYxKG2eWC2iMBnRomHu2IgZvYwShw8KQZiCwtYSvTf3MLexcgFNB8o
+	3n/tHdhtnAJmEj1//zFOYBSYheS8WQjnzUJy3gJG5lWMoqkFyQXFSem5RnrFibnFpXnpesn5
+	uZsYwTH/THoH46oGi0OMAhyMSjy8hg/9QoRYE8uKK3MPMUpwMCuJ8O4wDwgR4k1JrKxKLcqP
+	LyrNSS0+xGgK9N1EZinR5HxgOsoriTc0NjEzsjQyN7QwMjZXEuc92GodKCSQnliSmp2aWpBa
+	BNPHxMEp1cBov9Rj/dJ7zR//du6JZdtz+vD32ZaJk9p/HrSPmbd8mtCeor9xxauau86wGR4z
+	2STjMjNVQIH34Raet9sPOLcJsnkUZbzouBiRcUlkonzUgRCpqHu/AzIWNy3RKFvFd0T9YHtO
+	5Mbi1RbJbdK/n6m9mB176PTrmpWsGjuYnmiFb+DRidSOludVYinOSDTUYi4qTgQAyjj9rQ8D	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 04:10 PM, Rafael J. Wysocki wrote:
-> On Monday, October 27, 2014 07:10:26 PM Guenter Roeck wrote:
->> On 10/27/2014 05:26 PM, Rafael J. Wysocki wrote:
->>> On Monday, October 27, 2014 08:55:41 AM Guenter Roeck wrote:
->>>> Register with kernel power-off handler instead of setting pm_power_off
->>>> directly. Register with high priority to reflect that the driver explicitly
->>>> overrides existing power-off handlers.
->>>
->>> Well, I'm still rather unconvinced that notifiers are particularly suitable for
->>> this purpose.
->>>
->>> Specifically ->
->>>
->>
->> Fine.
->>
->>>> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
->>>> Cc: Len Brown <lenb@kernel.org>
->>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>>> ---
->>>> v3:
->>>> - Replace poweroff in all newly introduced variables and in text
->>>>     with power_off or power-off as appropriate
->>>> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
->>>> - Replace acpi: with ACPI: in log message
->>>> v2:
->>>> - Use define to specify poweroff handler priority
->>>> - Use pr_warn instead of pr_err
->>>>
->>>>    drivers/acpi/sleep.c | 15 +++++++++++++--
->>>>    1 file changed, 13 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
->>>> index 05a31b5..7875b92 100644
->>>> --- a/drivers/acpi/sleep.c
->>>> +++ b/drivers/acpi/sleep.c
->>>> @@ -16,6 +16,8 @@
->>>>    #include <linux/device.h>
->>>>    #include <linux/interrupt.h>
->>>>    #include <linux/suspend.h>
->>>> +#include <linux/notifier.h>
->>>> +#include <linux/pm.h>
->>>>    #include <linux/reboot.h>
->>>>    #include <linux/acpi.h>
->>>>    #include <linux/module.h>
->>>> @@ -827,14 +829,22 @@ static void acpi_power_off_prepare(void)
->>>>    	acpi_disable_all_gpes();
->>>>    }
->>>>
->>>> -static void acpi_power_off(void)
->>>> +static int acpi_power_off(struct notifier_block *this,
->>>> +			  unsigned long unused1, void *unused2)
->>>>    {
->>>
->>> -> Is there any reason why any notifier in the new chain would use the
->>> second argument for anything meaningful?  And the third argument for
->>> that matter?
->>>
->>>>    	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
->>>>    	printk(KERN_DEBUG "%s called\n", __func__);
->>>>    	local_irq_disable();
->>>>    	acpi_enter_sleep_state(ACPI_STATE_S5);
->>>> +
->>>> +	return NOTIFY_DONE;
->>>
->>> Also is there any reason for any notifier in the new chain to return anything
->>> different from NOTIFY_DONE and if so, then what happens when anything else
->>> is returned?
->>>
->>
->> As mentioned earlier, notifiers just come handy. That is all.
->>
->> Having said that, I don't have a strong opinion either way. If you want me
->> to implement a priority based callback handler with a single argument,
->> just let me know and I'll be happy to implement it. It is not worth arguing
->> about.
->>
->> Would something like
->>
->> struct power_off_block {
->> 	void (*power_off_call)(struct power_off_block *);
->> 	struct power_off_block __rcu *next;
->> 	int priority;
->> };
->>
->> for the data structure be acceptable ? The power-off handler code would then
->> be something like
->>
->> static void acpi_power_off(struct power_off_block *this)
->> {
->> }
->>
->> ie quite similar to the current power-off handler code, with an added argument.
->> The API would, except for the structure argument, pretty much stay the same.
->
-> That's better in my view.
->
-> You could also get rid of the priority if you had something like
->
-> struct power_off_block *power_off_list[MAX_LEVEL];
->
-> and then made your power_off_block registration pass the level as the
-> second argument.
->
-> I also would use struct list_head instead of the next pointer, because the
-> list manipulation would be trivial then (and the above would become
-> struct list_head power_off_list[MAX_LEVEL];) and the callers would only
-> need to do
->
-> static struct power_off_block my_power_off_block = {
-> 	.power_off_call = my_routine,
-> };
->
-> and then something like
->
-> 	register_power_off_block(&my_power_off_block, <level>);
->
-> which would be just list_add_tail(&block->node, &power_off_list[<level>]) plus
-> some bounds checking etc.  To avoid open coding stuff.
->
-> That would allow me to avoid arbitrary gaps in the priority space too and
-> if more levels need to be added over time, that should be easy to do too if
-> an enum is used to define them.
->
-> But if you prefer to use a unidirectional list and keep the priority in
-> struct power_off_block, I'm fine with that too.
->
-I prefer a unidirectional list. It is not as if we expect dozens of registrations;
-in most cases there will be one, rarely two and even more rarely three.
+Hi,
 
-> [Dynamic allocation of memory for the struct power_off_block things is worth
-> considering too IMHO, so that users can simply pass the name of the routine
-> and the level to the registration function, like:
->
-> 	ret = register_power_off_call(my_routine, <level>);
-> 	if (ret)
-> 		complain;
->
-> The unregistration would be somewhat less straightforward then, but I'm not
-> sure if unregistration is necessary at all in this case.]
->
+On 10/29/2014 08:52 AM, À¯ÇÑ°æ wrote:
+> Hi I'm Hankyung Yu
+> 
+> I will answer instead Chanho Min
+> 
+> After mmc_set_timing(card->host, MMC_TIMING_MMC_HS); 
+> 
+> Host controller set to SDR transfer
+> 
+> so is to change to a DDR transfer mode.
 
-Problem with dynamic memory allocation is that some callers don't have
-the memory subsystem initialized when registering the poweroff function.
-That was my initial implementation, and it got me some unexpected crashes.
+As commit message was mentioned, I have checked the JEDEC v5.01 spec(6.6.5).
+There is no mention that mode needs to change to DDR mode.
 
-Thanks,
-Guenter
+And i know HS400 mode is only support the 8bit buswidth.
+If HS200 mode was set to 4bit buswidth, is HS400 working fine?
+
+Best Regards,
+Jaehoon Chung
+
+> 
+> 
+> -----Original Message-----
+> From: Jaehoon Chung [mailto:jh80.chung@samsung.com] 
+> Sent: Tuesday, October 28, 2014 1:38 PM
+> To: Chanho Min; Chris Ball; Ulf Hansson; Seungwon Jeon; Jaehoon Chung
+> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; HyoJun Im;
+> gunho.lee@lge.com; Hankyung Yu; CPGS
+> Subject: Re: [PATCH] mmc:core: fix hs400 timing selection
+> 
+> Hi, Chanho.
+> 
+> On 10/22/2014 11:55 AM, Chanho Min wrote:
+>> According to JEDEC v5.01 spec (6.6.5), In order to switch to HS400 
+>> mode, host should perform the following steps.
+>>
+>>  1. HS200 mode selection completed
+>>  2. Set HS_TIMING to 0x01(High Speed)
+>>  3. Host changes frequency to =< 52MHz  4. Set the bus width to DDR 
+>> 8bit (CMD6)  5. Host may read Driver Strength (CMD8)  6. Set HS_TIMING 
+>> to 0x03 (HS400)
+>>
+>> In current implementation, the order of 2 and 3 is reversed.
+>> The HS_TIMING field should be set to 0x1 before the clock frequency is 
+>> set to a value not greater than 52 MHz. Otherwise, Initialization of 
+>> timing can be failed. Also, the host contoller's UHS timing mode 
+>> should be set to DDR50 after the bus width is set to DDR 8bit.
+>>
+>> Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
+>> Signed-off-by: Chanho Min <chanho.min@lge.com>
+>> ---
+>>  drivers/mmc/core/mmc.c |   13 ++++++++++---
+>>  1 file changed, 10 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c index 
+>> a301a78..52f78e0 100644
+>> --- a/drivers/mmc/core/mmc.c
+>> +++ b/drivers/mmc/core/mmc.c
+>> @@ -1061,9 +1061,6 @@ static int mmc_select_hs400(struct mmc_card *card)
+>>  	 * Before switching to dual data rate operation for HS400,
+>>  	 * it is required to convert from HS200 mode to HS mode.
+>>  	 */
+>> -	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+>> -	mmc_set_bus_speed(card);
+>> -
+>>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS,
+>>  			   card->ext_csd.generic_cmd6_time, @@ -1074,6
+> +1071,14 @@ static 
+>> int mmc_select_hs400(struct mmc_card *card)
+>>  		return err;
+>>  	}
+>>  
+>> +	/*
+>> +	 * According to JEDEC v5.01 spec (6.6.5), Clock frequency should
+>> +	 * be set to a value not greater than 52MHz after the HS_TIMING
+>> +	 * field is set to 0x1.
+>> +	 */
+>> +	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+>> +	mmc_set_bus_speed(card);
+>> +
+>>  	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>  			 EXT_CSD_BUS_WIDTH,
+>>  			 EXT_CSD_DDR_BUS_WIDTH_8,
+>> @@ -1084,6 +1089,8 @@ static int mmc_select_hs400(struct mmc_card *card)
+>>  		return err;
+>>  	}
+>>  
+>> +	mmc_set_timing(card->host, MMC_TIMING_MMC_DDR52);
+>> +
+> 
+> I didn't know why timing is set to ddr50.
+> 
+> Best Regards,
+> Jaehoon Chung
+> 
+>>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS400,
+>>  			   card->ext_csd.generic_cmd6_time,
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
