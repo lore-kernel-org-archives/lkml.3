@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178AbaJ2IWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 04:22:05 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:47779 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506AbaJ2IVz (ORCPT
+	id S932099AbaJ2IWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 04:22:17 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:32833 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755506AbaJ2IWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 04:21:55 -0400
+	Wed, 29 Oct 2014 04:22:09 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
         sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [RFC v2 1/4] backports: replace CPTCFG prefix for CONFIG_BACKPORT
-Date: Wed, 29 Oct 2014 01:21:39 -0700
-Message-Id: <1414570902-5675-2-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC v2 4/4] backports: add kernl integration support to gentree.py
+Date: Wed, 29 Oct 2014 01:21:42 -0700
+Message-Id: <1414570902-5675-5-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,2450 +23,589 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-In order to support built-in kernel integration we want to use
-a more generic approach to defining symbols, CPTCFG was nice as
-it was short and relied on the fact that kconfig can work with
-a getenv(CONFIG_) but for kernel integration this doesn't work
-so well. Instead let's just stick to the regular CONFIG_
-namespace and add the BACKPORT prefix to it.
-
-Apart from these expected changes:
-
-for i in $(find ./  | grep -v "\.git"); do perl -pi -e'$_ =~ s|CPTCFG|CONFIG_BACKPORT|gs;' $i; done
-
-we also had to modify Makefiles and Kconfig entries quite a bit
-in order to accomplish the same goal. This means extending our
-kconfig parser. This adds some initial code for integration, this
-doesn't run yet.
-
-Since we have to really understand what is in your kernel, what we
-carry over, and deal with this on the Kconfig parser we can now
-easily just ensure that whenever we backport a solution that the user
-doesn't have this built-in. We previously had a checks.h file for
-this but with these new changes this is no longer needed.
-
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- backport/Kconfig                                   |    6 +-
- backport/Makefile.kernel                           |   36 +-
- backport/Makefile.real                             |    2 +-
- backport/backport-include/asm/dma-mapping.h        |    4 +-
- backport/backport-include/backport/backport.h      |    1 -
- backport/backport-include/backport/checks.h        |   12 -
- backport/backport-include/backport/leds-disabled.h |    2 +-
- backport/backport-include/net/net_namespace.h      |    4 +-
- backport/compat/Makefile                           |   38 +-
- backport/compat/backport-3.15.c                    |    4 +-
- backport/compat/backports.h                        |    4 +-
- backport/defconfigs/alx                            |    2 +-
- backport/defconfigs/ar5523                         |   16 +-
- backport/defconfigs/ath10k                         |   22 +-
- backport/defconfigs/ath5k                          |   16 +-
- backport/defconfigs/ath6kl                         |   14 +-
- backport/defconfigs/ath9k                          |   18 +-
- backport/defconfigs/ath9k-debug                    |   38 +-
- backport/defconfigs/b43                            |   40 +-
- backport/defconfigs/b43legacy                      |   24 +-
- backport/defconfigs/brcmfmac                       |   14 +-
- backport/defconfigs/brcmsmac                       |   18 +-
- backport/defconfigs/carl9170                       |   16 +-
- backport/defconfigs/cw1200                         |   18 +-
- backport/defconfigs/hwsim                          |   24 +-
- backport/defconfigs/ieee802154                     |   16 +-
- backport/defconfigs/igb                            |    4 +-
- backport/defconfigs/iwlwifi                        |   34 +-
- backport/defconfigs/media                          | 1026 ++++++++++----------
- backport/defconfigs/nfc                            |   40 +-
- backport/defconfigs/rtlwifi                        |   46 +-
- backport/defconfigs/wcn36xx                        |   26 +-
- backport/defconfigs/wifi                           |  232 ++---
- backport/defconfigs/wil6210                        |   10 +-
- backport/defconfigs/wwan                           |   12 +-
- devel/ckmake                                       |    4 +-
- devel/doc/kconfig-operation                        |   22 +-
- gentree.py                                         |   30 +-
- lib/kconfig.py                                     |   79 +-
- patches/backport-adjustments/devcoredump.patch     |    4 +-
- 40 files changed, 1028 insertions(+), 950 deletions(-)
- delete mode 100644 backport/backport-include/backport/checks.h
+ backport/Kconfig                              |  54 --------
+ backport/Kconfig.sources                      |  23 ++++
+ backport/Makefile                             |   3 +-
+ backport/Makefile.kernel                      |  18 +++
+ backport/backport-include/backport/backport.h |   2 +
+ backport/compat/Makefile                      |   4 +
+ gentree.py                                    | 186 +++++++++++++++++++++-----
+ lib/bpversion.py                              |  48 +++++++
+ lib/kconfig.py                                |  12 +-
+ 9 files changed, 260 insertions(+), 90 deletions(-)
+ delete mode 100644 backport/Kconfig
+ create mode 100644 backport/Kconfig.sources
+ create mode 100644 lib/bpversion.py
 
 diff --git a/backport/Kconfig b/backport/Kconfig
-index b14a268..f63f4fd 100644
+deleted file mode 100644
+index c523323..0000000
 --- a/backport/Kconfig
-+++ b/backport/Kconfig
-@@ -14,11 +14,15 @@ config BACKPORTED_KERNEL_NAME
- source Kconfig.kernel
- source Kconfig.versions
++++ /dev/null
+@@ -1,54 +0,0 @@
+-mainmenu "Linux Backports from $BACKPORTED_KERNEL_NAME $BACKPORTED_KERNEL_VERSION (with backports $BACKPORTS_VERSION)"
+-
+-config BACKPORT_DIR
+-	string
+-	option env="BACKPORT_DIR"
+-config BACKPORTS_VERSION
+-	string
+-	option env="BACKPORTS_VERSION"
+-config BACKPORTED_KERNEL_VERSION
+-	string
+-	option env="BACKPORTED_KERNEL_VERSION"
+-config BACKPORTED_KERNEL_NAME
+-	string
+-	option env="BACKPORTED_KERNEL_NAME"
+-
+-# these will be generated
+-source "$BACKPORT_DIR/Kconfig.kernel"
+-source "$BACKPORT_DIR/Kconfig.versions"
+-
+-# some hacks for when we use backports to generate a package
+-# to build modules out of tree.
+-#ignore-parser-package
+-config WIRELESS
+-	def_bool y
+-#ignore-parser-package
+-config NET_CORE
+-	def_bool y
+-#ignore-parser-package
+-config EXPERT
+-	def_bool y
+-
+-# this has the configuration for the backport code
+-source "$BACKPORT_DIR/compat/Kconfig"
+-
+-# these are copied from the kernel
+-source "$BACKPORT_DIR/net/wireless/Kconfig"
+-source "$BACKPORT_DIR/net/mac80211/Kconfig"
+-source "$BACKPORT_DIR/net/bluetooth/Kconfig"
+-source "$BACKPORT_DIR/drivers/net/wireless/Kconfig"
+-source "$BACKPORT_DIR/drivers/net/ethernet/Kconfig"
+-source "$BACKPORT_DIR/drivers/net/usb/Kconfig"
+-
+-source "$BACKPORT_DIR/drivers/ssb/Kconfig"
+-source "$BACKPORT_DIR/drivers/bcma/Kconfig"
+-
+-source "$BACKPORT_DIR/net/nfc/Kconfig"
+-
+-source "$BACKPORT_DIR/drivers/media/Kconfig"
+-
+-source "$BACKPORT_DIR/net/ieee802154/Kconfig"
+-source "$BACKPORT_DIR/net/mac802154/Kconfig"
+-source "$BACKPORT_DIR/drivers/net/ieee802154/Kconfig"
+-
+-source "$BACKPORT_DIR/drivers/usb/class/Kconfig"
+diff --git a/backport/Kconfig.sources b/backport/Kconfig.sources
+new file mode 100644
+index 0000000..cdf993c
+--- /dev/null
++++ b/backport/Kconfig.sources
+@@ -0,0 +1,23 @@
++# this has the configuration for the backport code
++source "$BACKPORT_DIR/compat/Kconfig"
++
++# these are copied from the kernel
++source "$BACKPORT_DIR/net/wireless/Kconfig"
++source "$BACKPORT_DIR/net/mac80211/Kconfig"
++source "$BACKPORT_DIR/net/bluetooth/Kconfig"
++source "$BACKPORT_DIR/drivers/net/wireless/Kconfig"
++source "$BACKPORT_DIR/drivers/net/ethernet/Kconfig"
++source "$BACKPORT_DIR/drivers/net/usb/Kconfig"
++
++source "$BACKPORT_DIR/drivers/ssb/Kconfig"
++source "$BACKPORT_DIR/drivers/bcma/Kconfig"
++
++source "$BACKPORT_DIR/net/nfc/Kconfig"
++
++source "$BACKPORT_DIR/drivers/media/Kconfig"
++
++source "$BACKPORT_DIR/net/ieee802154/Kconfig"
++source "$BACKPORT_DIR/net/mac802154/Kconfig"
++source "$BACKPORT_DIR/drivers/net/ieee802154/Kconfig"
++
++source "$BACKPORT_DIR/drivers/usb/class/Kconfig"
+diff --git a/backport/Makefile b/backport/Makefile
+index fcf2f01..b2ada90 100644
+--- a/backport/Makefile
++++ b/backport/Makefile
+@@ -19,8 +19,9 @@ KLIB_BUILD ?= $(KLIB)/build/
+ KERNEL_CONFIG := $(KLIB_BUILD)/.config
+ KERNEL_MAKEFILE := $(KLIB_BUILD)/Makefile
+ CONFIG_MD5 := $(shell md5sum $(KERNEL_CONFIG) 2>/dev/null | sed 's/\s.*//')
++BACKPORT_PACKAGE := 1
  
--# some hacks ...
-+# some hacks for when we use backports to generate a package
-+# to build modules out of tree.
-+#ignore-parser-package
- config WIRELESS
- 	def_bool y
-+#ignore-parser-package
- config NET_CORE
- 	def_bool y
-+#ignore-parser-package
- config EXPERT
- 	def_bool y
+-export KLIB KLIB_BUILD BACKPORT_DIR KMODDIR KMODPATH_ARG
++export KLIB KLIB_BUILD BACKPORT_DIR KMODDIR KMODPATH_ARG BACKPORT_PACKAGE
  
+ # disable built-in rules for this file
+ .SUFFIXES:
 diff --git a/backport/Makefile.kernel b/backport/Makefile.kernel
-index dcb2ba7..c31def8 100644
+index c31def8..6efea0d 100644
 --- a/backport/Makefile.kernel
 +++ b/backport/Makefile.kernel
-@@ -20,23 +20,23 @@ export backport_srctree = $(M)
+@@ -1,3 +1,4 @@
++ifneq ($(BACKPORT_PACKAGE),)
+ # Since 2.6.21, try-run is available, but cc-disable-warning
+ # was only added later, so we add it here ourselves:
+ backport-cc-disable-warning = $(call try-run,\
+@@ -13,10 +14,27 @@ NOSTDINC_FLAGS := \
+ 	-DBACKPORTS_VERSION=\"$(BACKPORTS_VERSION)\" \
+ 	-DBACKPORTED_KERNEL_VERSION=\"$(BACKPORTED_KERNEL_VERSION)\" \
+ 	-DBACKPORTED_KERNEL_NAME=\"$(BACKPORTED_KERNEL_NAME)\" \
++	-DBACKPORT_PACKAGE=\"$(BACKPORT_PACKAGE)\" \
+ 	$(BACKPORTS_GIT_TRACKER_DEF) \
+ 	$(CFLAGS)
+ 
+ export backport_srctree = $(M)
++else
++export BACKPORT_DIR = backports/
++export backport_srctree = $(BACKPORT_DIR)
++NOSTDINC_FLAGS := \
++	-I$(BACKPORT_DIR)/backport-include/ \
++	-I$(BACKPORT_DIR)/backport-include/uapi \
++	-I$(BACKPORT_DIR)/include/ \
++	-I$(BACKPORT_DIR)/include/uapi \
++	-include $(BACKPORT_DIR)/backport-include/backport/backport.h \
++	-DBACKPORTS_VERSION=\"$(BACKPORTS_VERSION)\" \
++	-DBACKPORTED_KERNEL_VERSION=\"$(BACKPORTED_KERNEL_VERSION)\" \
++	-DBACKPORTED_KERNEL_NAME=\"$(BACKPORTED_KERNEL_NAME)\" \
++	$(BACKPORTS_GIT_TRACKER_DEF) \
++	$(CFLAGS)
++endif
++
  
  obj-y += compat/
  
--obj-$(CPTCFG_CFG80211) += net/wireless/
--obj-$(CPTCFG_MAC80211) += net/mac80211/
--obj-$(CPTCFG_WLAN) += drivers/net/wireless/
--obj-$(CPTCFG_BT) += net/bluetooth/
--obj-$(CPTCFG_BT) += drivers/bluetooth/
--obj-$(CPTCFG_SSB) += drivers/ssb/
--obj-$(CPTCFG_BCMA) += drivers/bcma/
--obj-$(CPTCFG_ETHERNET) += drivers/net/ethernet/
--obj-$(CPTCFG_USB_NET_RNDIS_WLAN) += drivers/net/usb/
--obj-$(CPTCFG_NFC) += net/nfc/
--obj-$(CPTCFG_NFC) += drivers/nfc/
--obj-$(CPTCFG_MEDIA_SUPPORT) += drivers/media/
-+obj-$(CONFIG_BACKPORT_CFG80211) += net/wireless/
-+obj-$(CONFIG_BACKPORT_MAC80211) += net/mac80211/
-+obj-$(CONFIG_BACKPORT_WLAN) += drivers/net/wireless/
-+obj-$(CONFIG_BACKPORT_BT) += net/bluetooth/
-+obj-$(CONFIG_BACKPORT_BT) += drivers/bluetooth/
-+obj-$(CONFIG_BACKPORT_SSB) += drivers/ssb/
-+obj-$(CONFIG_BACKPORT_BCMA) += drivers/bcma/
-+obj-$(CONFIG_BACKPORT_ETHERNET) += drivers/net/ethernet/
-+obj-$(CONFIG_BACKPORT_USB_NET_RNDIS_WLAN) += drivers/net/usb/
-+obj-$(CONFIG_BACKPORT_NFC) += net/nfc/
-+obj-$(CONFIG_BACKPORT_NFC) += drivers/nfc/
-+obj-$(CONFIG_BACKPORT_MEDIA_SUPPORT) += drivers/media/
- 
--obj-$(CPTCFG_IEEE802154) += net/ieee802154/
--obj-$(CPTCFG_BT) += net/ieee802154/
--obj-$(CPTCFG_MAC802154) += net/mac802154/
--obj-$(CPTCFG_IEEE802154) += drivers/net/ieee802154/
-+obj-$(CONFIG_BACKPORT_IEEE802154) += net/ieee802154/
-+obj-$(CONFIG_BACKPORT_BT) += net/ieee802154/
-+obj-$(CONFIG_BACKPORT_MAC802154) += net/mac802154/
-+obj-$(CONFIG_BACKPORT_IEEE802154) += drivers/net/ieee802154/
- 
--obj-$(CPTCFG_USB_WDM) += drivers/usb/class/
--obj-$(CPTCFG_USB_USBNET) += drivers/net/usb/
-+obj-$(CONFIG_BACKPORT_USB_WDM) += drivers/usb/class/
-+obj-$(CONFIG_BACKPORT_USB_USBNET) += drivers/net/usb/
-diff --git a/backport/Makefile.real b/backport/Makefile.real
-index f60d5ca..4475570 100644
---- a/backport/Makefile.real
-+++ b/backport/Makefile.real
-@@ -9,7 +9,7 @@ endif
- # disable built-in rules for this file
- .SUFFIXES:
- 
--export CONFIG_=CPTCFG_
-+#export CONFIG_=CONFIG_BACKPORT_
- 
- .PHONY: menuconfig
- menuconfig:
-diff --git a/backport/backport-include/asm/dma-mapping.h b/backport/backport-include/asm/dma-mapping.h
-index 844fe3b..a65562c 100644
---- a/backport/backport-include/asm/dma-mapping.h
-+++ b/backport/backport-include/asm/dma-mapping.h
-@@ -3,12 +3,12 @@
- #include_next <asm/dma-mapping.h>
- #include <linux/version.h>
- 
--#if defined(CPTCFG_BACKPORT_BUILD_DMA_SHARED_HELPERS)
-+#if defined(CONFIG_BACKPORT_BUILD_DMA_SHARED_HELPERS)
- #define dma_common_get_sgtable LINUX_BACKPORT(dma_common_get_sgtable)
- int
- dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
- 		       void *cpu_addr, dma_addr_t dma_addr, size_t size);
--#endif /* defined(CPTCFG_BACKPORT_BUILD_DMA_SHARED_HELPERS) */
-+#endif /* defined(CONFIG_BACKPORT_BUILD_DMA_SHARED_HELPERS) */
- 
- #if LINUX_VERSION_CODE < KERNEL_VERSION(3,6,0)
- 
 diff --git a/backport/backport-include/backport/backport.h b/backport/backport-include/backport/backport.h
-index 7cf21aa..8edb151 100644
+index 8edb151..10c7c35 100644
 --- a/backport/backport-include/backport/backport.h
 +++ b/backport/backport-include/backport/backport.h
-@@ -5,7 +5,6 @@
+@@ -1,6 +1,8 @@
+ #ifndef __BACKPORT_H
+ #define __BACKPORT_H
++#ifdef BACKPORT_PACKAGE
+ #include <backport/autoconf.h>
++#endif
+ #include <linux/kconfig.h>
  
  #ifndef __ASSEMBLY__
- #define LINUX_BACKPORT(__sym) backport_ ##__sym
--#include <backport/checks.h>
- #endif
- 
- #endif /* __BACKPORT_H */
-diff --git a/backport/backport-include/backport/checks.h b/backport/backport-include/backport/checks.h
-deleted file mode 100644
-index d2c3492..0000000
---- a/backport/backport-include/backport/checks.h
-+++ /dev/null
-@@ -1,12 +0,0 @@
--#ifndef __BACKPORT_CHECKS
--#define __BACKPORT_CHECKS
--
--#if defined(CONFIG_MAC80211) && defined(CPTCFG_MAC80211)
--#error "You must not have mac80211 built into your kernel if you want to enable it"
--#endif
--
--#if defined(CONFIG_CFG80211) && defined(CPTCFG_CFG80211)
--#error "You must not have cfg80211 built into your kernel if you want to enable it"
--#endif
--
--#endif /* __BACKPORT_CHECKS */
-diff --git a/backport/backport-include/backport/leds-disabled.h b/backport/backport-include/backport/leds-disabled.h
-index 501f2a0..984242a 100644
---- a/backport/backport-include/backport/leds-disabled.h
-+++ b/backport/backport-include/backport/leds-disabled.h
-@@ -8,7 +8,7 @@
-  * allows compilation.
-  */
- 
--#ifdef CPTCFG_BACKPORT_BUILD_LEDS
-+#ifdef CONFIG_BACKPORT_BUILD_LEDS
- #include <linux/list.h>
- #include <linux/spinlock.h>
- #include <linux/rwsem.h>
-diff --git a/backport/backport-include/net/net_namespace.h b/backport/backport-include/net/net_namespace.h
-index e83b103..1746c48 100644
---- a/backport/backport-include/net/net_namespace.h
-+++ b/backport/backport-include/net/net_namespace.h
-@@ -3,7 +3,7 @@
- 
- #include_next <net/net_namespace.h>
- 
--#if IS_ENABLED(CPTCFG_IEEE802154_6LOWPAN)
-+#if IS_ENABLED(CONFIG_BACKPORT_IEEE802154_6LOWPAN)
- #include <linux/version.h>
- #include <net/netns/ieee802154_6lowpan.h>
- 
-@@ -22,6 +22,6 @@ net_ieee802154_lowpan(struct net *net)
- 	return &net->ieee802154_lowpan;
- }
- #endif /* LINUX_VERSION_CODE < KERNEL_VERSION(3,15,0) */
--#endif /* CPTCFG_IEEE802154_6LOWPAN */
-+#endif /* CONFIG_BACKPORT_IEEE802154_6LOWPAN */
- 
- #endif	/* _COMPAT_NET_NET_NAMESPACE_H */
 diff --git a/backport/compat/Makefile b/backport/compat/Makefile
-index 6d210b0..aba2c3a 100644
+index aba2c3a..b8fa48c 100644
 --- a/backport/compat/Makefile
 +++ b/backport/compat/Makefile
-@@ -3,23 +3,23 @@ obj-m += compat.o
+@@ -1,5 +1,9 @@
+ ccflags-y += -I$(src)
++ifneq ($(BACKPORT_PACKAGE),)
+ obj-m += compat.o
++else
++obj-y += compat.o
++endif
  compat-y += main.o
  
  # Kernel backport compatibility code
--compat-$(CPTCFG_BACKPORT_KERNEL_3_0) += compat-3.0.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_1) += compat-3.1.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_2) += backport-3.2.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_3) += compat-3.3.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_4) += compat-3.4.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_5) += compat-3.5.o user_namespace.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_6) += compat-3.6.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_7) += compat-3.7.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_8) += compat-3.8.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_9) += compat-3.9.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_10) += backport-3.10.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_12) += backport-3.12.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_13) += backport-3.13.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_14) += backport-3.14.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_15) += backport-3.15.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_17) += backport-3.17.o
--compat-$(CPTCFG_BACKPORT_KERNEL_3_18) += backport-3.18.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_0) += compat-3.0.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_1) += compat-3.1.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_2) += backport-3.2.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_3) += compat-3.3.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_4) += compat-3.4.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_5) += compat-3.5.o user_namespace.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_6) += compat-3.6.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_7) += compat-3.7.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_8) += compat-3.8.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_9) += compat-3.9.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_10) += backport-3.10.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_12) += backport-3.12.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_13) += backport-3.13.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_14) += backport-3.14.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_15) += backport-3.15.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_17) += backport-3.17.o
-+compat-$(CONFIG_BACKPORT_KERNEL_3_18) += backport-3.18.o
- 
--compat-$(CPTCFG_BACKPORT_BUILD_CRYPTO_CCM) += crypto-ccm.o
--compat-$(CPTCFG_BACKPORT_BUILD_DMA_SHARED_HELPERS) += dma-shared-helpers.o
-+compat-$(CONFIG_BACKPORT_BUILD_CRYPTO_CCM) += crypto-ccm.o
-+compat-$(CONFIG_BACKPORT_BUILD_DMA_SHARED_HELPERS) += dma-shared-helpers.o
-diff --git a/backport/compat/backport-3.15.c b/backport/compat/backport-3.15.c
-index 75216eb..e6c5a10 100644
---- a/backport/compat/backport-3.15.c
-+++ b/backport/compat/backport-3.15.c
-@@ -15,7 +15,7 @@
- #include <linux/string.h>
- #include <net/net_namespace.h>
- 
--#if IS_ENABLED(CPTCFG_IEEE802154_6LOWPAN)
-+#if IS_ENABLED(CONFIG_BACKPORT_IEEE802154_6LOWPAN)
- #if LINUX_VERSION_CODE < KERNEL_VERSION(3,15,0)
- /* the above kernel dependency is set to match the dependencies file */
- struct netns_ieee802154_lowpan ieee802154_lowpan;
-@@ -27,7 +27,7 @@ struct netns_ieee802154_lowpan *net_ieee802154_lowpan(struct net *net)
- }
- EXPORT_SYMBOL_GPL(net_ieee802154_lowpan);
- #endif
--#endif /* CPTCFG_IEEE802154_6LOWPAN */
-+#endif /* CONFIG_BACKPORT_IEEE802154_6LOWPAN */
- 
- /**
-  * devm_kstrdup - Allocate resource managed space and
-diff --git a/backport/compat/backports.h b/backport/compat/backports.h
-index c9094ac..36700f4 100644
---- a/backport/compat/backports.h
-+++ b/backport/compat/backports.h
-@@ -3,7 +3,7 @@
- 
- #include <linux/version.h>
- 
--#ifdef CPTCFG_BACKPORT_BUILD_CRYPTO_CCM
-+#ifdef CONFIG_BACKPORT_BUILD_CRYPTO_CCM
- int crypto_ccm_module_init(void);
- void crypto_ccm_module_exit(void);
- #else
-@@ -13,7 +13,7 @@ static inline void crypto_ccm_module_exit(void)
- {}
- #endif
- 
--#ifdef CPTCFG_BACKPORT_BUILD_WANT_DEV_COREDUMP
-+#ifdef CONFIG_BACKPORT_BUILD_WANT_DEV_COREDUMP
- int devcoredump_init(void);
- void devcoredump_exit(void);
- #else
-diff --git a/backport/defconfigs/alx b/backport/defconfigs/alx
-index b4ae66f..a11e927 100644
---- a/backport/defconfigs/alx
-+++ b/backport/defconfigs/alx
-@@ -1 +1 @@
--CPTCFG_ALX=m
-+CONFIG_BACKPORT_ALX=m
-diff --git a/backport/defconfigs/ar5523 b/backport/defconfigs/ar5523
-index b218d9a..8ee68d9 100644
---- a/backport/defconfigs/ar5523
-+++ b/backport/defconfigs/ar5523
-@@ -1,8 +1,8 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_MAC80211_MESH=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_AR5523=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_AR5523=m
-diff --git a/backport/defconfigs/ath10k b/backport/defconfigs/ath10k
-index c791c99..74948a3 100644
---- a/backport/defconfigs/ath10k
-+++ b/backport/defconfigs/ath10k
-@@ -1,11 +1,11 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_MAC80211_MESH=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_ATH10K_PCI=m
--CPTCFG_ATH10K=m
--CPTCFG_ATH10K_DEBUG=y
--CPTCFG_ATH10K_DEBUGFS=y
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_ATH10K_PCI=m
-+CONFIG_BACKPORT_ATH10K=m
-+CONFIG_BACKPORT_ATH10K_DEBUG=y
-+CONFIG_BACKPORT_ATH10K_DEBUGFS=y
-diff --git a/backport/defconfigs/ath5k b/backport/defconfigs/ath5k
-index df95c57..140ae08 100644
---- a/backport/defconfigs/ath5k
-+++ b/backport/defconfigs/ath5k
-@@ -1,8 +1,8 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_MAC80211_MESH=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_ATH5K=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_ATH5K=m
-diff --git a/backport/defconfigs/ath6kl b/backport/defconfigs/ath6kl
-index a372127..517540e 100644
---- a/backport/defconfigs/ath6kl
-+++ b/backport/defconfigs/ath6kl
-@@ -1,7 +1,7 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_ATH6KL=m
--CPTCFG_ATH6KL_SDIO=m
--CPTCFG_ATH6KL_USB=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_ATH6KL=m
-+CONFIG_BACKPORT_ATH6KL_SDIO=m
-+CONFIG_BACKPORT_ATH6KL_USB=m
-diff --git a/backport/defconfigs/ath9k b/backport/defconfigs/ath9k
-index 0e935cc..355f7d3 100644
---- a/backport/defconfigs/ath9k
-+++ b/backport/defconfigs/ath9k
-@@ -1,9 +1,9 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_MAC80211_MESH=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_ATH9K=m
--CPTCFG_ATH9K_HTC=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_ATH9K=m
-+CONFIG_BACKPORT_ATH9K_HTC=m
-diff --git a/backport/defconfigs/ath9k-debug b/backport/defconfigs/ath9k-debug
-index b7baedd..fa009ff 100644
---- a/backport/defconfigs/ath9k-debug
-+++ b/backport/defconfigs/ath9k-debug
-@@ -1,19 +1,19 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_MAC80211_MESH=y
--CPTCFG_MAC80211_DEBUGFS=y
--CPTCFG_MAC80211_DEBUG_MENU=y
--CPTCFG_MAC80211_VERBOSE_DEBUG=y
--CPTCFG_MAC80211_MLME_DEBUG=y
--CPTCFG_MAC80211_STA_DEBUG=y
--CPTCFG_MAC80211_HT_DEBUG=y
--CPTCFG_MAC80211_IBSS_DEBUG=y
--CPTCFG_MAC80211_PS_DEBUG=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_ATH9K=m
--CPTCFG_ATH9K_HTC=m
--CPTCFG_ATH_DEBUG=y
--CPTCFG_ATH9K_DEBUGFS=y
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_MAC80211_DEBUGFS=y
-+CONFIG_BACKPORT_MAC80211_DEBUG_MENU=y
-+CONFIG_BACKPORT_MAC80211_VERBOSE_DEBUG=y
-+CONFIG_BACKPORT_MAC80211_MLME_DEBUG=y
-+CONFIG_BACKPORT_MAC80211_STA_DEBUG=y
-+CONFIG_BACKPORT_MAC80211_HT_DEBUG=y
-+CONFIG_BACKPORT_MAC80211_IBSS_DEBUG=y
-+CONFIG_BACKPORT_MAC80211_PS_DEBUG=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_ATH9K=m
-+CONFIG_BACKPORT_ATH9K_HTC=m
-+CONFIG_BACKPORT_ATH_DEBUG=y
-+CONFIG_BACKPORT_ATH9K_DEBUGFS=y
-diff --git a/backport/defconfigs/b43 b/backport/defconfigs/b43
-index dd2ba89..5946a12 100644
---- a/backport/defconfigs/b43
-+++ b/backport/defconfigs/b43
-@@ -1,20 +1,20 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_MESH=y
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_WLAN=y
--CPTCFG_B43=m
--CPTCFG_B43_BCMA=y
--CPTCFG_B43_PCMCIA=y
--CPTCFG_B43_SDIO=y
--CPTCFG_B43_PHY_N=y
--CPTCFG_B43_PHY_LP=y
--CPTCFG_B43_PHY_HT=y
--CPTCFG_BCMA=m
--CPTCFG_BCMA_HOST_PCI=y
--CPTCFG_SSB=m
--CPTCFG_SSB_PCIHOST=y
--CPTCFG_SSB_PCMCIAHOST=y
--CPTCFG_SSB_SDIOHOST=y
--CPTCFG_SSB_DRIVER_PCICORE=y
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_B43=m
-+CONFIG_BACKPORT_B43_BCMA=y
-+CONFIG_BACKPORT_B43_PCMCIA=y
-+CONFIG_BACKPORT_B43_SDIO=y
-+CONFIG_BACKPORT_B43_PHY_N=y
-+CONFIG_BACKPORT_B43_PHY_LP=y
-+CONFIG_BACKPORT_B43_PHY_HT=y
-+CONFIG_BACKPORT_BCMA=m
-+CONFIG_BACKPORT_BCMA_HOST_PCI=y
-+CONFIG_BACKPORT_SSB=m
-+CONFIG_BACKPORT_SSB_PCIHOST=y
-+CONFIG_BACKPORT_SSB_PCMCIAHOST=y
-+CONFIG_BACKPORT_SSB_SDIOHOST=y
-+CONFIG_BACKPORT_SSB_DRIVER_PCICORE=y
-diff --git a/backport/defconfigs/b43legacy b/backport/defconfigs/b43legacy
-index 9a7fbe9..10636d6 100644
---- a/backport/defconfigs/b43legacy
-+++ b/backport/defconfigs/b43legacy
-@@ -1,12 +1,12 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_MESH=y
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_WLAN=y
--CPTCFG_B43LEGACY=m
--CPTCFG_SSB=m
--CPTCFG_SSB_PCIHOST=y
--CPTCFG_SSB_PCMCIAHOST=y
--CPTCFG_SSB_SDIOHOST=y
--CPTCFG_SSB_DRIVER_PCICORE=y
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_B43LEGACY=m
-+CONFIG_BACKPORT_SSB=m
-+CONFIG_BACKPORT_SSB_PCIHOST=y
-+CONFIG_BACKPORT_SSB_PCMCIAHOST=y
-+CONFIG_BACKPORT_SSB_SDIOHOST=y
-+CONFIG_BACKPORT_SSB_DRIVER_PCICORE=y
-diff --git a/backport/defconfigs/brcmfmac b/backport/defconfigs/brcmfmac
-index f4657c7..4f61341 100644
---- a/backport/defconfigs/brcmfmac
-+++ b/backport/defconfigs/brcmfmac
-@@ -1,7 +1,7 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_WLAN=y
--CPTCFG_BRCMFMAC=m
--CPTCFG_BRCMFMAC_SDIO=y
--CPTCFG_BRCMFMAC_USB=y
--CPTCFG_BRCMFMAC_PCIE=y
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_BRCMFMAC=m
-+CONFIG_BACKPORT_BRCMFMAC_SDIO=y
-+CONFIG_BACKPORT_BRCMFMAC_USB=y
-+CONFIG_BACKPORT_BRCMFMAC_PCIE=y
-diff --git a/backport/defconfigs/brcmsmac b/backport/defconfigs/brcmsmac
-index a1c56bc..4b9b287 100644
---- a/backport/defconfigs/brcmsmac
-+++ b/backport/defconfigs/brcmsmac
-@@ -1,9 +1,9 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_WLAN=y
--CPTCFG_BRCMSMAC=m
--CPTCFG_BCMA=m
--CPTCFG_BCMA_HOST_PCI=y
--CPTCFG_BCMA_DRIVER_GPIO=y
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_BRCMSMAC=m
-+CONFIG_BACKPORT_BCMA=m
-+CONFIG_BACKPORT_BCMA_HOST_PCI=y
-+CONFIG_BACKPORT_BCMA_DRIVER_GPIO=y
-diff --git a/backport/defconfigs/carl9170 b/backport/defconfigs/carl9170
-index cc94e37..e2ec2b7 100644
---- a/backport/defconfigs/carl9170
-+++ b/backport/defconfigs/carl9170
-@@ -1,8 +1,8 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_MAC80211_MESH=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_CARL9170=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_CARL9170=m
-diff --git a/backport/defconfigs/cw1200 b/backport/defconfigs/cw1200
-index ba03143..65ee72d 100644
---- a/backport/defconfigs/cw1200
-+++ b/backport/defconfigs/cw1200
-@@ -1,9 +1,9 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_MAC80211_MESH=y
--CPTCFG_WLAN=y
--CPTCFG_CW1200=m
--CPTCFG_CW1200_WLAN_SDIO=m
--CPTCFG_CW1200_WLAN_SPI=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_CW1200=m
-+CONFIG_BACKPORT_CW1200_WLAN_SDIO=m
-+CONFIG_BACKPORT_CW1200_WLAN_SPI=m
-diff --git a/backport/defconfigs/hwsim b/backport/defconfigs/hwsim
-index 9d8006e..a4115ee 100644
---- a/backport/defconfigs/hwsim
-+++ b/backport/defconfigs/hwsim
-@@ -1,12 +1,12 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_DEFAULT_PS=y
--CPTCFG_CFG80211_DEBUGFS=y
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--# CPTCFG_MAC80211_RC_PID is not set
--# CPTCFG_MAC80211_RC_MINSTREL is not set
--# CPTCFG_MAC80211_RC_DEFAULT_MINSTREL is not set
--CPTCFG_MAC80211_DEBUGFS=y
--CPTCFG_MAC80211_MESSAGE_TRACING=y
--CPTCFG_WLAN=y
--CPTCFG_MAC80211_HWSIM=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_DEFAULT_PS=y
-+CONFIG_BACKPORT_CFG80211_DEBUGFS=y
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+# CONFIG_BACKPORT_MAC80211_RC_PID is not set
-+# CONFIG_BACKPORT_MAC80211_RC_MINSTREL is not set
-+# CONFIG_BACKPORT_MAC80211_RC_DEFAULT_MINSTREL is not set
-+CONFIG_BACKPORT_MAC80211_DEBUGFS=y
-+CONFIG_BACKPORT_MAC80211_MESSAGE_TRACING=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_MAC80211_HWSIM=m
-diff --git a/backport/defconfigs/ieee802154 b/backport/defconfigs/ieee802154
-index 2c6730a..b7bf674 100644
---- a/backport/defconfigs/ieee802154
-+++ b/backport/defconfigs/ieee802154
-@@ -1,8 +1,8 @@
--CPTCFG_IEEE802154_DRIVERS=m
--CPTCFG_IEEE802154_FAKEHARD=m
--CPTCFG_IEEE802154_FAKELB=m
--CPTCFG_IEEE802154_AT86RF230=m
--CPTCFG_IEEE802154_MRF24J40=m
--CPTCFG_IEEE802154=m
--CPTCFG_IEEE802154_6LOWPAN=m
--CPTCFG_MAC802154=m
-+CONFIG_BACKPORT_IEEE802154_DRIVERS=m
-+CONFIG_BACKPORT_IEEE802154_FAKEHARD=m
-+CONFIG_BACKPORT_IEEE802154_FAKELB=m
-+CONFIG_BACKPORT_IEEE802154_AT86RF230=m
-+CONFIG_BACKPORT_IEEE802154_MRF24J40=m
-+CONFIG_BACKPORT_IEEE802154=m
-+CONFIG_BACKPORT_IEEE802154_6LOWPAN=m
-+CONFIG_BACKPORT_MAC802154=m
-diff --git a/backport/defconfigs/igb b/backport/defconfigs/igb
-index 8045257..8265381 100644
---- a/backport/defconfigs/igb
-+++ b/backport/defconfigs/igb
-@@ -1,2 +1,2 @@
--CPTCFG_NET_VENDOR_INTEL=y
--CPTCFG_IGB=m
-+CONFIG_BACKPORT_NET_VENDOR_INTEL=y
-+CONFIG_BACKPORT_IGB=m
-diff --git a/backport/defconfigs/iwlwifi b/backport/defconfigs/iwlwifi
-index fe7c6c1..0dd8f9a 100644
---- a/backport/defconfigs/iwlwifi
-+++ b/backport/defconfigs/iwlwifi
-@@ -1,17 +1,17 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_DEFAULT_PS=y
--CPTCFG_CFG80211_DEBUGFS=y
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--# CPTCFG_MAC80211_RC_PID is not set
--# CPTCFG_MAC80211_RC_MINSTREL is not set
--# CPTCFG_MAC80211_RC_DEFAULT_MINSTREL is not set
--CPTCFG_MAC80211_DEBUGFS=y
--CPTCFG_MAC80211_MESSAGE_TRACING=y
--CPTCFG_WLAN=y
--CPTCFG_IWLWIFI=m
--CPTCFG_IWLDVM=m
--CPTCFG_IWLMVM=m
--CPTCFG_IWLWIFI_DEBUG=y
--CPTCFG_IWLWIFI_DEBUGFS=y
--CPTCFG_IWLWIFI_DEVICE_TRACING=y
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_DEFAULT_PS=y
-+CONFIG_BACKPORT_CFG80211_DEBUGFS=y
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+# CONFIG_BACKPORT_MAC80211_RC_PID is not set
-+# CONFIG_BACKPORT_MAC80211_RC_MINSTREL is not set
-+# CONFIG_BACKPORT_MAC80211_RC_DEFAULT_MINSTREL is not set
-+CONFIG_BACKPORT_MAC80211_DEBUGFS=y
-+CONFIG_BACKPORT_MAC80211_MESSAGE_TRACING=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_IWLWIFI=m
-+CONFIG_BACKPORT_IWLDVM=m
-+CONFIG_BACKPORT_IWLMVM=m
-+CONFIG_BACKPORT_IWLWIFI_DEBUG=y
-+CONFIG_BACKPORT_IWLWIFI_DEBUGFS=y
-+CONFIG_BACKPORT_IWLWIFI_DEVICE_TRACING=y
-diff --git a/backport/defconfigs/media b/backport/defconfigs/media
-index 7b1bfa9..e2038a6 100644
---- a/backport/defconfigs/media
-+++ b/backport/defconfigs/media
-@@ -1,513 +1,513 @@
--CPTCFG_DVB_A8293=m
--CPTCFG_DVB_AF9013=m
--CPTCFG_DVB_AF9033=m
--CPTCFG_DVB_AS102=m
--CPTCFG_DVB_AS102_FE=m
--CPTCFG_DVB_ATBM8830=m
--CPTCFG_DVB_AU8522=m
--CPTCFG_DVB_AU8522_DTV=m
--CPTCFG_DVB_AU8522_V4L=m
--CPTCFG_DVB_AV7110=m
--CPTCFG_DVB_B2C2_FLEXCOP=m
--CPTCFG_DVB_B2C2_FLEXCOP_PCI=m
--CPTCFG_DVB_B2C2_FLEXCOP_USB=m
--CPTCFG_DVB_BCM3510=m
--CPTCFG_DVB_BT8XX=m
--CPTCFG_DVB_BUDGET=m
--CPTCFG_DVB_BUDGET_AV=m
--CPTCFG_DVB_BUDGET_CI=m
--CPTCFG_DVB_BUDGET_CORE=m
--CPTCFG_DVB_BUDGET_PATCH=m
--CPTCFG_DVB_CORE=m
--CPTCFG_DVB_CX22700=m
--CPTCFG_DVB_CX22702=m
--CPTCFG_DVB_CX24110=m
--CPTCFG_DVB_CX24116=m
--CPTCFG_DVB_CX24123=m
--CPTCFG_DVB_CXD2820R=m
--CPTCFG_DVB_DDBRIDGE=m
--CPTCFG_DVB_DIB3000MB=m
--CPTCFG_DVB_DIB3000MC=m
--CPTCFG_DVB_DIB7000M=m
--CPTCFG_DVB_DIB7000P=m
--CPTCFG_DVB_DIB8000=m
--CPTCFG_DVB_DIB9000=m
--CPTCFG_DVB_DM1105=m
--CPTCFG_DVB_DRXD=m
--CPTCFG_DVB_DRXK=m
--CPTCFG_DVB_DS3000=m
--CPTCFG_DVB_DUMMY_FE=m
--CPTCFG_DVB_EC100=m
--CPTCFG_DVB_FIREDTV=m
--CPTCFG_DVB_FIREDTV_INPUT=y
--CPTCFG_DVB_HD29L2=m
--CPTCFG_DVB_HOPPER=m
--CPTCFG_DVB_ISL6405=m
--CPTCFG_DVB_ISL6421=m
--CPTCFG_DVB_ISL6423=m
--CPTCFG_DVB_IX2505V=m
--CPTCFG_DVB_L64781=m
--CPTCFG_DVB_LG2160=m
--CPTCFG_DVB_LGDT3305=m
--CPTCFG_DVB_LGDT330X=m
--CPTCFG_DVB_LGS8GL5=m
--CPTCFG_DVB_LGS8GXX=m
--CPTCFG_DVB_LNBP21=m
--CPTCFG_DVB_LNBP22=m
--CPTCFG_DVB_M88RS2000=m
--CPTCFG_DVB_MANTIS=m
--CPTCFG_DVB_MB86A16=m
--CPTCFG_DVB_MB86A20S=m
--CPTCFG_DVB_MT312=m
--CPTCFG_DVB_MT352=m
--CPTCFG_DVB_NGENE=m
--CPTCFG_DVB_NXT200X=m
--CPTCFG_DVB_NXT6000=m
--CPTCFG_DVB_OR51132=m
--CPTCFG_DVB_OR51211=m
--CPTCFG_DVB_PLL=m
--CPTCFG_DVB_PLUTO2=m
--CPTCFG_DVB_PT1=m
--CPTCFG_DVB_PT3=m
--CPTCFG_DVB_RTL2830=m
--CPTCFG_DVB_RTL2832=m
--CPTCFG_DVB_S5H1409=m
--CPTCFG_DVB_S5H1411=m
--CPTCFG_DVB_S5H1420=m
--CPTCFG_DVB_S5H1432=m
--CPTCFG_DVB_S921=m
--CPTCFG_DVB_SI21XX=m
--CPTCFG_DVB_SP8870=m
--CPTCFG_DVB_SP887X=m
--CPTCFG_DVB_STB0899=m
--CPTCFG_DVB_STB6000=m
--CPTCFG_DVB_STB6100=m
--CPTCFG_DVB_STV0288=m
--CPTCFG_DVB_STV0297=m
--CPTCFG_DVB_STV0299=m
--CPTCFG_DVB_STV0367=m
--CPTCFG_DVB_STV0900=m
--CPTCFG_DVB_STV090x=m
--CPTCFG_DVB_STV6110=m
--CPTCFG_DVB_STV6110x=m
--CPTCFG_DVB_TDA10021=m
--CPTCFG_DVB_TDA10023=m
--CPTCFG_DVB_TDA10048=m
--CPTCFG_DVB_TDA1004X=m
--CPTCFG_DVB_TDA10071=m
--CPTCFG_DVB_TDA10086=m
--CPTCFG_DVB_TDA18271C2DD=m
--CPTCFG_DVB_TDA665x=m
--CPTCFG_DVB_TDA8083=m
--CPTCFG_DVB_TDA8261=m
--CPTCFG_DVB_TDA826X=m
--CPTCFG_DVB_TS2020=m
--CPTCFG_DVB_TTUSB_BUDGET=m
--CPTCFG_DVB_TTUSB_DEC=m
--CPTCFG_DVB_TUA6100=m
--CPTCFG_DVB_TUNER_CX24113=m
--CPTCFG_DVB_TUNER_DIB0070=m
--CPTCFG_DVB_TUNER_DIB0090=m
--CPTCFG_DVB_TUNER_ITD1000=m
--CPTCFG_DVB_USB=m
--CPTCFG_DVB_USB_A800=m
--CPTCFG_DVB_USB_AF9005=m
--CPTCFG_DVB_USB_AF9005_REMOTE=m
--CPTCFG_DVB_USB_AF9015=m
--CPTCFG_DVB_USB_AF9035=m
--CPTCFG_DVB_USB_ANYSEE=m
--CPTCFG_DVB_USB_AU6610=m
--CPTCFG_DVB_USB_AZ6007=m
--CPTCFG_DVB_USB_AZ6027=m
--CPTCFG_DVB_USB_CE6230=m
--CPTCFG_DVB_USB_CINERGY_T2=m
--CPTCFG_DVB_USB_CXUSB=m
--CPTCFG_DVB_USB_CYPRESS_FIRMWARE=m
--CPTCFG_DVB_USB_DIB0700=m
--CPTCFG_DVB_USB_DIBUSB_MB=m
--CPTCFG_DVB_USB_DIBUSB_MC=m
--CPTCFG_DVB_USB_DIGITV=m
--CPTCFG_DVB_USB_DTT200U=m
--CPTCFG_DVB_USB_DTV5100=m
--CPTCFG_DVB_USB_DVBSKY=m
--CPTCFG_DVB_USB_DW2102=m
--CPTCFG_DVB_USB_EC168=m
--CPTCFG_DVB_USB_FRIIO=m
--CPTCFG_DVB_USB_GL861=m
--CPTCFG_DVB_USB_GP8PSK=m
--CPTCFG_DVB_USB_LME2510=m
--CPTCFG_DVB_USB_M920X=m
--CPTCFG_DVB_USB_MXL111SF=m
--CPTCFG_DVB_USB_NOVA_T_USB2=m
--CPTCFG_DVB_USB_OPERA1=m
--CPTCFG_DVB_USB_PCTV452E=m
--CPTCFG_DVB_USB_RTL28XXU=m
--CPTCFG_DVB_USB_TECHNISAT_USB2=m
--CPTCFG_DVB_USB_TTUSB2=m
--CPTCFG_DVB_USB_UMT_010=m
--CPTCFG_DVB_USB_V2=m
--CPTCFG_DVB_USB_VP702X=m
--CPTCFG_DVB_USB_VP7045=m
--CPTCFG_DVB_VES1820=m
--CPTCFG_DVB_VES1X93=m
--CPTCFG_DVB_ZL10036=m
--CPTCFG_DVB_ZL10039=m
--CPTCFG_DVB_ZL10353=m
--CPTCFG_I2C_SI470X=m
--CPTCFG_I2C_SI4713=m
--CPTCFG_IR_ENE=m
--CPTCFG_IR_FINTEK=m
--CPTCFG_IR_GPIO_CIR=m
--CPTCFG_IR_IGUANA=m
--CPTCFG_IR_IMG=m
--CPTCFG_IR_IMG_HW=y
--CPTCFG_IR_IMG_JVC=y
--CPTCFG_IR_IMG_NEC=y
--CPTCFG_IR_IMG_RAW=y
--CPTCFG_IR_IMG_SANYO=y
--CPTCFG_IR_IMG_SHARP=y
--CPTCFG_IR_IMG_SONY=y
--CPTCFG_IR_IMON=m
--CPTCFG_IR_ITE_CIR=m
--CPTCFG_IR_JVC_DECODER=m
--CPTCFG_IR_LIRC_CODEC=m
--CPTCFG_IR_MCEUSB=m
--CPTCFG_IR_MCE_KBD_DECODER=m
--CPTCFG_IR_NEC_DECODER=m
--CPTCFG_IR_NUVOTON=m
--CPTCFG_IR_RC5_DECODER=m
--CPTCFG_IR_RC6_DECODER=m
--CPTCFG_IR_REDRAT3=m
--CPTCFG_IR_RX51=m
--CPTCFG_IR_SANYO_DECODER=m
--CPTCFG_IR_SONY_DECODER=m
--CPTCFG_IR_STREAMZAP=m
--CPTCFG_IR_TTUSBIR=m
--CPTCFG_IR_WINBOND_CIR=m
--CPTCFG_LIRC=m
--CPTCFG_MANTIS_CORE=m
--CPTCFG_MEDIA_ALTERA_CI=m
--CPTCFG_MEDIA_ANALOG_TV_SUPPORT=y
--CPTCFG_MEDIA_CAMERA_SUPPORT=y
--CPTCFG_MEDIA_CONTROLLER=y
--CPTCFG_MEDIA_DIGITAL_TV_SUPPORT=y
--CPTCFG_MEDIA_PARPORT_SUPPORT=y
--CPTCFG_MEDIA_PCI_SUPPORT=y
--CPTCFG_MEDIA_RADIO_SUPPORT=y
--CPTCFG_MEDIA_RC_SUPPORT=y
--CPTCFG_MEDIA_SDR_SUPPORT=y
--CPTCFG_MEDIA_SUPPORT=m
--CPTCFG_MEDIA_USB_SUPPORT=y
--CPTCFG_PLATFORM_SI4713=m
--CPTCFG_RADIO_AZTECH=m
--CPTCFG_RADIO_CADET=m
--CPTCFG_RADIO_GEMTEK=m
--CPTCFG_RADIO_ISA=m
--CPTCFG_RADIO_MAXIRADIO=m
--CPTCFG_RADIO_MIROPCM20=m
--CPTCFG_RADIO_RTRACK2=m
--CPTCFG_RADIO_RTRACK=m
--CPTCFG_RADIO_SAA7706H=m
--CPTCFG_RADIO_SF16FMI=m
--CPTCFG_RADIO_SF16FMR2=m
--CPTCFG_RADIO_SHARK2=m
--CPTCFG_RADIO_SHARK=m
--CPTCFG_RADIO_SI470X=y
--CPTCFG_RADIO_SI4713=m
--CPTCFG_RADIO_SI476X=m
--CPTCFG_RADIO_TEA5764=m
--CPTCFG_RADIO_TEF6862=m
--CPTCFG_RADIO_TERRATEC=m
--CPTCFG_RADIO_TIMBERDALE=m
--CPTCFG_RADIO_TRUST=m
--CPTCFG_RADIO_TYPHOON=m
--CPTCFG_RADIO_WL1273=m
--CPTCFG_RADIO_WL128X=m
--CPTCFG_RADIO_ZOLTRIX=m
--CPTCFG_RC_ATI_REMOTE=m
--CPTCFG_RC_CORE=m
--CPTCFG_RC_DEVICES=y
--CPTCFG_RC_LOOPBACK=m
--CPTCFG_RC_MAP=m
--CPTCFG_SMS_SDIO_DRV=m
--CPTCFG_SMS_SIANO_MDTV=m
--CPTCFG_SMS_USB_DRV=m
--CPTCFG_SOC_CAMERA=m
--CPTCFG_SOC_CAMERA_IMX074=m
--CPTCFG_SOC_CAMERA_MT9M001=m
--CPTCFG_SOC_CAMERA_MT9M111=m
--CPTCFG_SOC_CAMERA_MT9T031=m
--CPTCFG_SOC_CAMERA_MT9T112=m
--CPTCFG_SOC_CAMERA_MT9V022=m
--CPTCFG_SOC_CAMERA_OV2640=m
--CPTCFG_SOC_CAMERA_OV5642=m
--CPTCFG_SOC_CAMERA_OV6650=m
--CPTCFG_SOC_CAMERA_OV772X=m
--CPTCFG_SOC_CAMERA_OV9640=m
--CPTCFG_SOC_CAMERA_OV9740=m
--CPTCFG_SOC_CAMERA_PLATFORM=m
--CPTCFG_SOC_CAMERA_RJ54N1=m
--CPTCFG_SOC_CAMERA_TW9910=m
--CPTCFG_STA2X11_VIP=m
--CPTCFG_TTPCI_EEPROM=m
--CPTCFG_USB_AIRSPY=m
--CPTCFG_USB_DSBR=m
--CPTCFG_USB_GL860=m
--CPTCFG_USB_GSPCA=m
--CPTCFG_USB_GSPCA_BENQ=m
--CPTCFG_USB_GSPCA_CONEX=m
--CPTCFG_USB_GSPCA_CPIA1=m
--CPTCFG_USB_GSPCA_DTCS033=m
--CPTCFG_USB_GSPCA_ETOMS=m
--CPTCFG_USB_GSPCA_FINEPIX=m
--CPTCFG_USB_GSPCA_JEILINJ=m
--CPTCFG_USB_GSPCA_JL2005BCD=m
--CPTCFG_USB_GSPCA_KINECT=m
--CPTCFG_USB_GSPCA_KONICA=m
--CPTCFG_USB_GSPCA_MARS=m
--CPTCFG_USB_GSPCA_MR97310A=m
--CPTCFG_USB_GSPCA_NW80X=m
--CPTCFG_USB_GSPCA_OV519=m
--CPTCFG_USB_GSPCA_OV534=m
--CPTCFG_USB_GSPCA_OV534_9=m
--CPTCFG_USB_GSPCA_PAC207=m
--CPTCFG_USB_GSPCA_PAC7302=m
--CPTCFG_USB_GSPCA_PAC7311=m
--CPTCFG_USB_GSPCA_SE401=m
--CPTCFG_USB_GSPCA_SN9C2028=m
--CPTCFG_USB_GSPCA_SN9C20X=m
--CPTCFG_USB_GSPCA_SONIXB=m
--CPTCFG_USB_GSPCA_SONIXJ=m
--CPTCFG_USB_GSPCA_SPCA1528=m
--CPTCFG_USB_GSPCA_SPCA500=m
--CPTCFG_USB_GSPCA_SPCA501=m
--CPTCFG_USB_GSPCA_SPCA505=m
--CPTCFG_USB_GSPCA_SPCA506=m
--CPTCFG_USB_GSPCA_SPCA508=m
--CPTCFG_USB_GSPCA_SPCA561=m
--CPTCFG_USB_GSPCA_SQ905=m
--CPTCFG_USB_GSPCA_SQ905C=m
--CPTCFG_USB_GSPCA_SQ930X=m
--CPTCFG_USB_GSPCA_STK014=m
--CPTCFG_USB_GSPCA_STK1135=m
--CPTCFG_USB_GSPCA_STV0680=m
--CPTCFG_USB_GSPCA_SUNPLUS=m
--CPTCFG_USB_GSPCA_T613=m
--CPTCFG_USB_GSPCA_TOPRO=m
--CPTCFG_USB_GSPCA_TV8532=m
--CPTCFG_USB_GSPCA_VC032X=m
--CPTCFG_USB_GSPCA_VICAM=m
--CPTCFG_USB_GSPCA_XIRLINK_CIT=m
--CPTCFG_USB_GSPCA_ZC3XX=m
--CPTCFG_USB_HACKRF=m
--CPTCFG_USB_KEENE=m
--CPTCFG_USB_M5602=m
--CPTCFG_USB_MA901=m
--CPTCFG_USB_MR800=m
--CPTCFG_USB_MSI2500=m
--CPTCFG_USB_PWC=m
--CPTCFG_USB_RAREMONO=m
--CPTCFG_USB_S2255=m
--CPTCFG_USB_SI470X=m
--CPTCFG_USB_SI4713=m
--CPTCFG_USB_STKWEBCAM=m
--CPTCFG_USB_STV06XX=m
--CPTCFG_USB_VIDEO_CLASS=m
--CPTCFG_USB_ZR364XX=m
--CPTCFG_V4L2_MEM2MEM_DEV=m
--CPTCFG_V4L_MEM2MEM_DRIVERS=y
--CPTCFG_V4L_PLATFORM_DRIVERS=y
--CPTCFG_VIDEOBUF2_CORE=m
--CPTCFG_VIDEOBUF2_DMA_CONTIG=m
--CPTCFG_VIDEOBUF2_DMA_SG=m
--CPTCFG_VIDEOBUF2_MEMOPS=m
--CPTCFG_VIDEOBUF2_VMALLOC=m
--CPTCFG_VIDEOBUF_DMA_CONTIG=m
--CPTCFG_VIDEOBUF_DMA_SG=m
--CPTCFG_VIDEOBUF_DVB=m
--CPTCFG_VIDEOBUF_GEN=m
--CPTCFG_VIDEOBUF_VMALLOC=m
--CPTCFG_VIDEO_AD9389B=m
--CPTCFG_VIDEO_ADP1653=m
--CPTCFG_VIDEO_ADV7170=m
--CPTCFG_VIDEO_ADV7175=m
--CPTCFG_VIDEO_ADV7180=m
--CPTCFG_VIDEO_ADV7183=m
--CPTCFG_VIDEO_ADV7343=m
--CPTCFG_VIDEO_ADV7393=m
--CPTCFG_VIDEO_ADV7604=m
--CPTCFG_VIDEO_AK881X=m
--CPTCFG_VIDEO_APTINA_PLL=m
--CPTCFG_VIDEO_AS3645A=m
--CPTCFG_VIDEO_ATMEL_ISI=m
--CPTCFG_VIDEO_AU0828=m
--CPTCFG_VIDEO_AU0828_RC=y
--CPTCFG_VIDEO_BLACKFIN_CAPTURE=m
--CPTCFG_VIDEO_BLACKFIN_PPI=m
--CPTCFG_VIDEO_BT819=m
--CPTCFG_VIDEO_BT848=m
--CPTCFG_VIDEO_BT856=m
--CPTCFG_VIDEO_BT866=m
--CPTCFG_VIDEO_BTCX=m
--CPTCFG_VIDEO_BWQCAM=m
--CPTCFG_VIDEO_CAFE_CCIC=m
--CPTCFG_VIDEO_CODA=m
--CPTCFG_VIDEO_CPIA2=m
--CPTCFG_VIDEO_CQCAM=m
--CPTCFG_VIDEO_CS5345=m
--CPTCFG_VIDEO_CS53L32A=m
--CPTCFG_VIDEO_CX18=m
--CPTCFG_VIDEO_CX18_ALSA=m
--CPTCFG_VIDEO_CX231XX=m
--CPTCFG_VIDEO_CX231XX_ALSA=m
--CPTCFG_VIDEO_CX231XX_DVB=m
--CPTCFG_VIDEO_CX231XX_RC=y
--CPTCFG_VIDEO_CX2341X=m
--CPTCFG_VIDEO_CX23885=m
--CPTCFG_VIDEO_CX25821=m
--CPTCFG_VIDEO_CX25821_ALSA=m
--CPTCFG_VIDEO_CX25840=m
--CPTCFG_VIDEO_CX88=m
--CPTCFG_VIDEO_CX88_ALSA=m
--CPTCFG_VIDEO_CX88_BLACKBIRD=m
--CPTCFG_VIDEO_CX88_DVB=m
--CPTCFG_VIDEO_CX88_MPEG=m
--CPTCFG_VIDEO_CX88_VP3054=m
--CPTCFG_VIDEO_DAVINCI_VPBE_DISPLAY=m
--CPTCFG_VIDEO_DAVINCI_VPIF_CAPTURE=m
--CPTCFG_VIDEO_DAVINCI_VPIF_DISPLAY=m
--CPTCFG_VIDEO_DEV=m
--CPTCFG_VIDEO_DM355_CCDC=m
--CPTCFG_VIDEO_DM6446_CCDC=m
--CPTCFG_VIDEO_EM28XX=m
--CPTCFG_VIDEO_EM28XX_ALSA=m
--CPTCFG_VIDEO_EM28XX_DVB=m
--CPTCFG_VIDEO_EM28XX_RC=m
--CPTCFG_VIDEO_EM28XX_V4L2=m
--CPTCFG_VIDEO_EXYNOS_FIMC_LITE=m
--CPTCFG_VIDEO_FB_IVTV=m
--CPTCFG_VIDEO_GO7007=m
--CPTCFG_VIDEO_GO7007_USB=m
--CPTCFG_VIDEO_GO7007_USB_S2250_BOARD=m
--CPTCFG_VIDEO_HDPVR=m
--CPTCFG_VIDEO_HEXIUM_GEMINI=m
--CPTCFG_VIDEO_HEXIUM_ORION=m
--CPTCFG_VIDEO_IR_I2C=m
--CPTCFG_VIDEO_IVTV=m
--CPTCFG_VIDEO_IVTV_ALSA=m
--CPTCFG_VIDEO_KS0127=m
--CPTCFG_VIDEO_M32R_AR_M64278=m
--CPTCFG_VIDEO_M52790=m
--CPTCFG_VIDEO_M5MOLS=m
--CPTCFG_VIDEO_MEM2MEM_DEINTERLACE=m
--CPTCFG_VIDEO_MEM2MEM_TESTDEV=m
--CPTCFG_VIDEO_MEYE=m
--CPTCFG_VIDEO_MMP_CAMERA=m
--CPTCFG_VIDEO_MSP3400=m
--CPTCFG_VIDEO_MT9M032=m
--CPTCFG_VIDEO_MT9P031=m
--CPTCFG_VIDEO_MT9T001=m
--CPTCFG_VIDEO_MT9V011=m
--CPTCFG_VIDEO_MT9V032=m
--CPTCFG_VIDEO_MX2=m
--CPTCFG_VIDEO_MX2_EMMAPRP=m
--CPTCFG_VIDEO_MX3=m
--CPTCFG_VIDEO_MXB=m
--CPTCFG_VIDEO_NOON010PC30=m
--CPTCFG_VIDEO_OMAP1=m
--CPTCFG_VIDEO_OMAP2_VOUT=m
--CPTCFG_VIDEO_OMAP3=m
--CPTCFG_VIDEO_OV7640=m
--CPTCFG_VIDEO_OV7670=m
--CPTCFG_VIDEO_OV9650=m
--CPTCFG_VIDEO_PMS=m
--CPTCFG_VIDEO_PVRUSB2=m
--CPTCFG_VIDEO_PXA27x=m
--CPTCFG_VIDEO_S3C_CAMIF=m
--CPTCFG_VIDEO_S5C73M3=m
--CPTCFG_VIDEO_S5K4ECGX=m
--CPTCFG_VIDEO_S5K6AA=m
--CPTCFG_VIDEO_S5P_FIMC=m
--CPTCFG_VIDEO_S5P_MIPI_CSIS=m
--CPTCFG_VIDEO_SAA6588=m
--CPTCFG_VIDEO_SAA7110=m
--CPTCFG_VIDEO_SAA711X=m
--CPTCFG_VIDEO_SAA7127=m
--CPTCFG_VIDEO_SAA7134=m
--CPTCFG_VIDEO_SAA7134_ALSA=m
--CPTCFG_VIDEO_SAA7134_DVB=m
--CPTCFG_VIDEO_SAA7134_GO7007=m
--CPTCFG_VIDEO_SAA7134_RC=y
--CPTCFG_VIDEO_SAA7146=m
--CPTCFG_VIDEO_SAA7146_VV=m
--CPTCFG_VIDEO_SAA7164=m
--CPTCFG_VIDEO_SAA717X=m
--CPTCFG_VIDEO_SAA7185=m
--CPTCFG_VIDEO_SAA7191=m
--CPTCFG_VIDEO_SAMSUNG_EXYNOS_GSC=m
--CPTCFG_VIDEO_SAMSUNG_S5P_G2D=m
--CPTCFG_VIDEO_SAMSUNG_S5P_HDMI=m
--CPTCFG_VIDEO_SAMSUNG_S5P_HDMIPHY=m
--CPTCFG_VIDEO_SAMSUNG_S5P_JPEG=m
--CPTCFG_VIDEO_SAMSUNG_S5P_MFC=m
--CPTCFG_VIDEO_SAMSUNG_S5P_MIXER=m
--CPTCFG_VIDEO_SAMSUNG_S5P_SDO=m
--CPTCFG_VIDEO_SAMSUNG_S5P_SII9234=m
--CPTCFG_VIDEO_SAMSUNG_S5P_TV=y
--CPTCFG_VIDEO_SH_MOBILE_CEU=m
--CPTCFG_VIDEO_SH_MOBILE_CSI2=m
--CPTCFG_VIDEO_SH_VEU=m
--CPTCFG_VIDEO_SH_VOU=m
--CPTCFG_VIDEO_SMIAPP=m
--CPTCFG_VIDEO_SMIAPP_PLL=m
--CPTCFG_VIDEO_SOLO6X10=m
--CPTCFG_VIDEO_SONY_BTF_MPX=m
--CPTCFG_VIDEO_SR030PC30=m
--CPTCFG_VIDEO_STK1160=m
--CPTCFG_VIDEO_STK1160_AC97=y
--CPTCFG_VIDEO_STK1160_COMMON=m
--CPTCFG_VIDEO_TDA7432=m
--CPTCFG_VIDEO_TDA9840=m
--CPTCFG_VIDEO_TEA6415C=m
--CPTCFG_VIDEO_TEA6420=m
--CPTCFG_VIDEO_THS7303=m
--CPTCFG_VIDEO_TIMBERDALE=m
--CPTCFG_VIDEO_TLG2300=m
--CPTCFG_VIDEO_TLV320AIC23B=m
--CPTCFG_VIDEO_TM6000=m
--CPTCFG_VIDEO_TM6000_ALSA=m
--CPTCFG_VIDEO_TM6000_DVB=m
--CPTCFG_VIDEO_TUNER=m
--CPTCFG_VIDEO_TVAUDIO=m
--CPTCFG_VIDEO_TVEEPROM=m
--CPTCFG_VIDEO_TVP514X=m
--CPTCFG_VIDEO_TVP5150=m
--CPTCFG_VIDEO_TVP7002=m
--CPTCFG_VIDEO_TW2804=m
--CPTCFG_VIDEO_TW68=m
--CPTCFG_VIDEO_TW9903=m
--CPTCFG_VIDEO_TW9906=m
--CPTCFG_VIDEO_UDA1342=m
--CPTCFG_VIDEO_UPD64031A=m
--CPTCFG_VIDEO_UPD64083=m
--CPTCFG_VIDEO_USBTV=m
--CPTCFG_VIDEO_USBVISION=m
--CPTCFG_VIDEO_V4L2=m
--CPTCFG_VIDEO_V4L2_SUBDEV_API=y
--CPTCFG_VIDEO_VIA_CAMERA=m
--CPTCFG_VIDEO_VINO=m
--CPTCFG_VIDEO_VIU=m
--CPTCFG_VIDEO_VP27SMPX=m
--CPTCFG_VIDEO_VPX3220=m
--CPTCFG_VIDEO_VS6624=m
--CPTCFG_VIDEO_W9966=m
--CPTCFG_VIDEO_WM8739=m
--CPTCFG_VIDEO_WM8775=m
--CPTCFG_VIDEO_ZORAN=m
--CPTCFG_VIDEO_ZORAN_AVS6EYES=m
--CPTCFG_VIDEO_ZORAN_BUZ=m
--CPTCFG_VIDEO_ZORAN_DC10=m
--CPTCFG_VIDEO_ZORAN_DC30=m
--CPTCFG_VIDEO_ZORAN_LML33=m
--CPTCFG_VIDEO_ZORAN_LML33R10=m
--CPTCFG_VIDEO_ZORAN_ZR36060=m
-+CONFIG_BACKPORT_DVB_A8293=m
-+CONFIG_BACKPORT_DVB_AF9013=m
-+CONFIG_BACKPORT_DVB_AF9033=m
-+CONFIG_BACKPORT_DVB_AS102=m
-+CONFIG_BACKPORT_DVB_AS102_FE=m
-+CONFIG_BACKPORT_DVB_ATBM8830=m
-+CONFIG_BACKPORT_DVB_AU8522=m
-+CONFIG_BACKPORT_DVB_AU8522_DTV=m
-+CONFIG_BACKPORT_DVB_AU8522_V4L=m
-+CONFIG_BACKPORT_DVB_AV7110=m
-+CONFIG_BACKPORT_DVB_B2C2_FLEXCOP=m
-+CONFIG_BACKPORT_DVB_B2C2_FLEXCOP_PCI=m
-+CONFIG_BACKPORT_DVB_B2C2_FLEXCOP_USB=m
-+CONFIG_BACKPORT_DVB_BCM3510=m
-+CONFIG_BACKPORT_DVB_BT8XX=m
-+CONFIG_BACKPORT_DVB_BUDGET=m
-+CONFIG_BACKPORT_DVB_BUDGET_AV=m
-+CONFIG_BACKPORT_DVB_BUDGET_CI=m
-+CONFIG_BACKPORT_DVB_BUDGET_CORE=m
-+CONFIG_BACKPORT_DVB_BUDGET_PATCH=m
-+CONFIG_BACKPORT_DVB_CORE=m
-+CONFIG_BACKPORT_DVB_CX22700=m
-+CONFIG_BACKPORT_DVB_CX22702=m
-+CONFIG_BACKPORT_DVB_CX24110=m
-+CONFIG_BACKPORT_DVB_CX24116=m
-+CONFIG_BACKPORT_DVB_CX24123=m
-+CONFIG_BACKPORT_DVB_CXD2820R=m
-+CONFIG_BACKPORT_DVB_DDBRIDGE=m
-+CONFIG_BACKPORT_DVB_DIB3000MB=m
-+CONFIG_BACKPORT_DVB_DIB3000MC=m
-+CONFIG_BACKPORT_DVB_DIB7000M=m
-+CONFIG_BACKPORT_DVB_DIB7000P=m
-+CONFIG_BACKPORT_DVB_DIB8000=m
-+CONFIG_BACKPORT_DVB_DIB9000=m
-+CONFIG_BACKPORT_DVB_DM1105=m
-+CONFIG_BACKPORT_DVB_DRXD=m
-+CONFIG_BACKPORT_DVB_DRXK=m
-+CONFIG_BACKPORT_DVB_DS3000=m
-+CONFIG_BACKPORT_DVB_DUMMY_FE=m
-+CONFIG_BACKPORT_DVB_EC100=m
-+CONFIG_BACKPORT_DVB_FIREDTV=m
-+CONFIG_BACKPORT_DVB_FIREDTV_INPUT=y
-+CONFIG_BACKPORT_DVB_HD29L2=m
-+CONFIG_BACKPORT_DVB_HOPPER=m
-+CONFIG_BACKPORT_DVB_ISL6405=m
-+CONFIG_BACKPORT_DVB_ISL6421=m
-+CONFIG_BACKPORT_DVB_ISL6423=m
-+CONFIG_BACKPORT_DVB_IX2505V=m
-+CONFIG_BACKPORT_DVB_L64781=m
-+CONFIG_BACKPORT_DVB_LG2160=m
-+CONFIG_BACKPORT_DVB_LGDT3305=m
-+CONFIG_BACKPORT_DVB_LGDT330X=m
-+CONFIG_BACKPORT_DVB_LGS8GL5=m
-+CONFIG_BACKPORT_DVB_LGS8GXX=m
-+CONFIG_BACKPORT_DVB_LNBP21=m
-+CONFIG_BACKPORT_DVB_LNBP22=m
-+CONFIG_BACKPORT_DVB_M88RS2000=m
-+CONFIG_BACKPORT_DVB_MANTIS=m
-+CONFIG_BACKPORT_DVB_MB86A16=m
-+CONFIG_BACKPORT_DVB_MB86A20S=m
-+CONFIG_BACKPORT_DVB_MT312=m
-+CONFIG_BACKPORT_DVB_MT352=m
-+CONFIG_BACKPORT_DVB_NGENE=m
-+CONFIG_BACKPORT_DVB_NXT200X=m
-+CONFIG_BACKPORT_DVB_NXT6000=m
-+CONFIG_BACKPORT_DVB_OR51132=m
-+CONFIG_BACKPORT_DVB_OR51211=m
-+CONFIG_BACKPORT_DVB_PLL=m
-+CONFIG_BACKPORT_DVB_PLUTO2=m
-+CONFIG_BACKPORT_DVB_PT1=m
-+CONFIG_BACKPORT_DVB_PT3=m
-+CONFIG_BACKPORT_DVB_RTL2830=m
-+CONFIG_BACKPORT_DVB_RTL2832=m
-+CONFIG_BACKPORT_DVB_S5H1409=m
-+CONFIG_BACKPORT_DVB_S5H1411=m
-+CONFIG_BACKPORT_DVB_S5H1420=m
-+CONFIG_BACKPORT_DVB_S5H1432=m
-+CONFIG_BACKPORT_DVB_S921=m
-+CONFIG_BACKPORT_DVB_SI21XX=m
-+CONFIG_BACKPORT_DVB_SP8870=m
-+CONFIG_BACKPORT_DVB_SP887X=m
-+CONFIG_BACKPORT_DVB_STB0899=m
-+CONFIG_BACKPORT_DVB_STB6000=m
-+CONFIG_BACKPORT_DVB_STB6100=m
-+CONFIG_BACKPORT_DVB_STV0288=m
-+CONFIG_BACKPORT_DVB_STV0297=m
-+CONFIG_BACKPORT_DVB_STV0299=m
-+CONFIG_BACKPORT_DVB_STV0367=m
-+CONFIG_BACKPORT_DVB_STV0900=m
-+CONFIG_BACKPORT_DVB_STV090x=m
-+CONFIG_BACKPORT_DVB_STV6110=m
-+CONFIG_BACKPORT_DVB_STV6110x=m
-+CONFIG_BACKPORT_DVB_TDA10021=m
-+CONFIG_BACKPORT_DVB_TDA10023=m
-+CONFIG_BACKPORT_DVB_TDA10048=m
-+CONFIG_BACKPORT_DVB_TDA1004X=m
-+CONFIG_BACKPORT_DVB_TDA10071=m
-+CONFIG_BACKPORT_DVB_TDA10086=m
-+CONFIG_BACKPORT_DVB_TDA18271C2DD=m
-+CONFIG_BACKPORT_DVB_TDA665x=m
-+CONFIG_BACKPORT_DVB_TDA8083=m
-+CONFIG_BACKPORT_DVB_TDA8261=m
-+CONFIG_BACKPORT_DVB_TDA826X=m
-+CONFIG_BACKPORT_DVB_TS2020=m
-+CONFIG_BACKPORT_DVB_TTUSB_BUDGET=m
-+CONFIG_BACKPORT_DVB_TTUSB_DEC=m
-+CONFIG_BACKPORT_DVB_TUA6100=m
-+CONFIG_BACKPORT_DVB_TUNER_CX24113=m
-+CONFIG_BACKPORT_DVB_TUNER_DIB0070=m
-+CONFIG_BACKPORT_DVB_TUNER_DIB0090=m
-+CONFIG_BACKPORT_DVB_TUNER_ITD1000=m
-+CONFIG_BACKPORT_DVB_USB=m
-+CONFIG_BACKPORT_DVB_USB_A800=m
-+CONFIG_BACKPORT_DVB_USB_AF9005=m
-+CONFIG_BACKPORT_DVB_USB_AF9005_REMOTE=m
-+CONFIG_BACKPORT_DVB_USB_AF9015=m
-+CONFIG_BACKPORT_DVB_USB_AF9035=m
-+CONFIG_BACKPORT_DVB_USB_ANYSEE=m
-+CONFIG_BACKPORT_DVB_USB_AU6610=m
-+CONFIG_BACKPORT_DVB_USB_AZ6007=m
-+CONFIG_BACKPORT_DVB_USB_AZ6027=m
-+CONFIG_BACKPORT_DVB_USB_CE6230=m
-+CONFIG_BACKPORT_DVB_USB_CINERGY_T2=m
-+CONFIG_BACKPORT_DVB_USB_CXUSB=m
-+CONFIG_BACKPORT_DVB_USB_CYPRESS_FIRMWARE=m
-+CONFIG_BACKPORT_DVB_USB_DIB0700=m
-+CONFIG_BACKPORT_DVB_USB_DIBUSB_MB=m
-+CONFIG_BACKPORT_DVB_USB_DIBUSB_MC=m
-+CONFIG_BACKPORT_DVB_USB_DIGITV=m
-+CONFIG_BACKPORT_DVB_USB_DTT200U=m
-+CONFIG_BACKPORT_DVB_USB_DTV5100=m
-+CONFIG_BACKPORT_DVB_USB_DVBSKY=m
-+CONFIG_BACKPORT_DVB_USB_DW2102=m
-+CONFIG_BACKPORT_DVB_USB_EC168=m
-+CONFIG_BACKPORT_DVB_USB_FRIIO=m
-+CONFIG_BACKPORT_DVB_USB_GL861=m
-+CONFIG_BACKPORT_DVB_USB_GP8PSK=m
-+CONFIG_BACKPORT_DVB_USB_LME2510=m
-+CONFIG_BACKPORT_DVB_USB_M920X=m
-+CONFIG_BACKPORT_DVB_USB_MXL111SF=m
-+CONFIG_BACKPORT_DVB_USB_NOVA_T_USB2=m
-+CONFIG_BACKPORT_DVB_USB_OPERA1=m
-+CONFIG_BACKPORT_DVB_USB_PCTV452E=m
-+CONFIG_BACKPORT_DVB_USB_RTL28XXU=m
-+CONFIG_BACKPORT_DVB_USB_TECHNISAT_USB2=m
-+CONFIG_BACKPORT_DVB_USB_TTUSB2=m
-+CONFIG_BACKPORT_DVB_USB_UMT_010=m
-+CONFIG_BACKPORT_DVB_USB_V2=m
-+CONFIG_BACKPORT_DVB_USB_VP702X=m
-+CONFIG_BACKPORT_DVB_USB_VP7045=m
-+CONFIG_BACKPORT_DVB_VES1820=m
-+CONFIG_BACKPORT_DVB_VES1X93=m
-+CONFIG_BACKPORT_DVB_ZL10036=m
-+CONFIG_BACKPORT_DVB_ZL10039=m
-+CONFIG_BACKPORT_DVB_ZL10353=m
-+CONFIG_BACKPORT_I2C_SI470X=m
-+CONFIG_BACKPORT_I2C_SI4713=m
-+CONFIG_BACKPORT_IR_ENE=m
-+CONFIG_BACKPORT_IR_FINTEK=m
-+CONFIG_BACKPORT_IR_GPIO_CIR=m
-+CONFIG_BACKPORT_IR_IGUANA=m
-+CONFIG_BACKPORT_IR_IMG=m
-+CONFIG_BACKPORT_IR_IMG_HW=y
-+CONFIG_BACKPORT_IR_IMG_JVC=y
-+CONFIG_BACKPORT_IR_IMG_NEC=y
-+CONFIG_BACKPORT_IR_IMG_RAW=y
-+CONFIG_BACKPORT_IR_IMG_SANYO=y
-+CONFIG_BACKPORT_IR_IMG_SHARP=y
-+CONFIG_BACKPORT_IR_IMG_SONY=y
-+CONFIG_BACKPORT_IR_IMON=m
-+CONFIG_BACKPORT_IR_ITE_CIR=m
-+CONFIG_BACKPORT_IR_JVC_DECODER=m
-+CONFIG_BACKPORT_IR_LIRC_CODEC=m
-+CONFIG_BACKPORT_IR_MCEUSB=m
-+CONFIG_BACKPORT_IR_MCE_KBD_DECODER=m
-+CONFIG_BACKPORT_IR_NEC_DECODER=m
-+CONFIG_BACKPORT_IR_NUVOTON=m
-+CONFIG_BACKPORT_IR_RC5_DECODER=m
-+CONFIG_BACKPORT_IR_RC6_DECODER=m
-+CONFIG_BACKPORT_IR_REDRAT3=m
-+CONFIG_BACKPORT_IR_RX51=m
-+CONFIG_BACKPORT_IR_SANYO_DECODER=m
-+CONFIG_BACKPORT_IR_SONY_DECODER=m
-+CONFIG_BACKPORT_IR_STREAMZAP=m
-+CONFIG_BACKPORT_IR_TTUSBIR=m
-+CONFIG_BACKPORT_IR_WINBOND_CIR=m
-+CONFIG_BACKPORT_LIRC=m
-+CONFIG_BACKPORT_MANTIS_CORE=m
-+CONFIG_BACKPORT_MEDIA_ALTERA_CI=m
-+CONFIG_BACKPORT_MEDIA_ANALOG_TV_SUPPORT=y
-+CONFIG_BACKPORT_MEDIA_CAMERA_SUPPORT=y
-+CONFIG_BACKPORT_MEDIA_CONTROLLER=y
-+CONFIG_BACKPORT_MEDIA_DIGITAL_TV_SUPPORT=y
-+CONFIG_BACKPORT_MEDIA_PARPORT_SUPPORT=y
-+CONFIG_BACKPORT_MEDIA_PCI_SUPPORT=y
-+CONFIG_BACKPORT_MEDIA_RADIO_SUPPORT=y
-+CONFIG_BACKPORT_MEDIA_RC_SUPPORT=y
-+CONFIG_BACKPORT_MEDIA_SDR_SUPPORT=y
-+CONFIG_BACKPORT_MEDIA_SUPPORT=m
-+CONFIG_BACKPORT_MEDIA_USB_SUPPORT=y
-+CONFIG_BACKPORT_PLATFORM_SI4713=m
-+CONFIG_BACKPORT_RADIO_AZTECH=m
-+CONFIG_BACKPORT_RADIO_CADET=m
-+CONFIG_BACKPORT_RADIO_GEMTEK=m
-+CONFIG_BACKPORT_RADIO_ISA=m
-+CONFIG_BACKPORT_RADIO_MAXIRADIO=m
-+CONFIG_BACKPORT_RADIO_MIROPCM20=m
-+CONFIG_BACKPORT_RADIO_RTRACK2=m
-+CONFIG_BACKPORT_RADIO_RTRACK=m
-+CONFIG_BACKPORT_RADIO_SAA7706H=m
-+CONFIG_BACKPORT_RADIO_SF16FMI=m
-+CONFIG_BACKPORT_RADIO_SF16FMR2=m
-+CONFIG_BACKPORT_RADIO_SHARK2=m
-+CONFIG_BACKPORT_RADIO_SHARK=m
-+CONFIG_BACKPORT_RADIO_SI470X=y
-+CONFIG_BACKPORT_RADIO_SI4713=m
-+CONFIG_BACKPORT_RADIO_SI476X=m
-+CONFIG_BACKPORT_RADIO_TEA5764=m
-+CONFIG_BACKPORT_RADIO_TEF6862=m
-+CONFIG_BACKPORT_RADIO_TERRATEC=m
-+CONFIG_BACKPORT_RADIO_TIMBERDALE=m
-+CONFIG_BACKPORT_RADIO_TRUST=m
-+CONFIG_BACKPORT_RADIO_TYPHOON=m
-+CONFIG_BACKPORT_RADIO_WL1273=m
-+CONFIG_BACKPORT_RADIO_WL128X=m
-+CONFIG_BACKPORT_RADIO_ZOLTRIX=m
-+CONFIG_BACKPORT_RC_ATI_REMOTE=m
-+CONFIG_BACKPORT_RC_CORE=m
-+CONFIG_BACKPORT_RC_DEVICES=y
-+CONFIG_BACKPORT_RC_LOOPBACK=m
-+CONFIG_BACKPORT_RC_MAP=m
-+CONFIG_BACKPORT_SMS_SDIO_DRV=m
-+CONFIG_BACKPORT_SMS_SIANO_MDTV=m
-+CONFIG_BACKPORT_SMS_USB_DRV=m
-+CONFIG_BACKPORT_SOC_CAMERA=m
-+CONFIG_BACKPORT_SOC_CAMERA_IMX074=m
-+CONFIG_BACKPORT_SOC_CAMERA_MT9M001=m
-+CONFIG_BACKPORT_SOC_CAMERA_MT9M111=m
-+CONFIG_BACKPORT_SOC_CAMERA_MT9T031=m
-+CONFIG_BACKPORT_SOC_CAMERA_MT9T112=m
-+CONFIG_BACKPORT_SOC_CAMERA_MT9V022=m
-+CONFIG_BACKPORT_SOC_CAMERA_OV2640=m
-+CONFIG_BACKPORT_SOC_CAMERA_OV5642=m
-+CONFIG_BACKPORT_SOC_CAMERA_OV6650=m
-+CONFIG_BACKPORT_SOC_CAMERA_OV772X=m
-+CONFIG_BACKPORT_SOC_CAMERA_OV9640=m
-+CONFIG_BACKPORT_SOC_CAMERA_OV9740=m
-+CONFIG_BACKPORT_SOC_CAMERA_PLATFORM=m
-+CONFIG_BACKPORT_SOC_CAMERA_RJ54N1=m
-+CONFIG_BACKPORT_SOC_CAMERA_TW9910=m
-+CONFIG_BACKPORT_STA2X11_VIP=m
-+CONFIG_BACKPORT_TTPCI_EEPROM=m
-+CONFIG_BACKPORT_USB_AIRSPY=m
-+CONFIG_BACKPORT_USB_DSBR=m
-+CONFIG_BACKPORT_USB_GL860=m
-+CONFIG_BACKPORT_USB_GSPCA=m
-+CONFIG_BACKPORT_USB_GSPCA_BENQ=m
-+CONFIG_BACKPORT_USB_GSPCA_CONEX=m
-+CONFIG_BACKPORT_USB_GSPCA_CPIA1=m
-+CONFIG_BACKPORT_USB_GSPCA_DTCS033=m
-+CONFIG_BACKPORT_USB_GSPCA_ETOMS=m
-+CONFIG_BACKPORT_USB_GSPCA_FINEPIX=m
-+CONFIG_BACKPORT_USB_GSPCA_JEILINJ=m
-+CONFIG_BACKPORT_USB_GSPCA_JL2005BCD=m
-+CONFIG_BACKPORT_USB_GSPCA_KINECT=m
-+CONFIG_BACKPORT_USB_GSPCA_KONICA=m
-+CONFIG_BACKPORT_USB_GSPCA_MARS=m
-+CONFIG_BACKPORT_USB_GSPCA_MR97310A=m
-+CONFIG_BACKPORT_USB_GSPCA_NW80X=m
-+CONFIG_BACKPORT_USB_GSPCA_OV519=m
-+CONFIG_BACKPORT_USB_GSPCA_OV534=m
-+CONFIG_BACKPORT_USB_GSPCA_OV534_9=m
-+CONFIG_BACKPORT_USB_GSPCA_PAC207=m
-+CONFIG_BACKPORT_USB_GSPCA_PAC7302=m
-+CONFIG_BACKPORT_USB_GSPCA_PAC7311=m
-+CONFIG_BACKPORT_USB_GSPCA_SE401=m
-+CONFIG_BACKPORT_USB_GSPCA_SN9C2028=m
-+CONFIG_BACKPORT_USB_GSPCA_SN9C20X=m
-+CONFIG_BACKPORT_USB_GSPCA_SONIXB=m
-+CONFIG_BACKPORT_USB_GSPCA_SONIXJ=m
-+CONFIG_BACKPORT_USB_GSPCA_SPCA1528=m
-+CONFIG_BACKPORT_USB_GSPCA_SPCA500=m
-+CONFIG_BACKPORT_USB_GSPCA_SPCA501=m
-+CONFIG_BACKPORT_USB_GSPCA_SPCA505=m
-+CONFIG_BACKPORT_USB_GSPCA_SPCA506=m
-+CONFIG_BACKPORT_USB_GSPCA_SPCA508=m
-+CONFIG_BACKPORT_USB_GSPCA_SPCA561=m
-+CONFIG_BACKPORT_USB_GSPCA_SQ905=m
-+CONFIG_BACKPORT_USB_GSPCA_SQ905C=m
-+CONFIG_BACKPORT_USB_GSPCA_SQ930X=m
-+CONFIG_BACKPORT_USB_GSPCA_STK014=m
-+CONFIG_BACKPORT_USB_GSPCA_STK1135=m
-+CONFIG_BACKPORT_USB_GSPCA_STV0680=m
-+CONFIG_BACKPORT_USB_GSPCA_SUNPLUS=m
-+CONFIG_BACKPORT_USB_GSPCA_T613=m
-+CONFIG_BACKPORT_USB_GSPCA_TOPRO=m
-+CONFIG_BACKPORT_USB_GSPCA_TV8532=m
-+CONFIG_BACKPORT_USB_GSPCA_VC032X=m
-+CONFIG_BACKPORT_USB_GSPCA_VICAM=m
-+CONFIG_BACKPORT_USB_GSPCA_XIRLINK_CIT=m
-+CONFIG_BACKPORT_USB_GSPCA_ZC3XX=m
-+CONFIG_BACKPORT_USB_HACKRF=m
-+CONFIG_BACKPORT_USB_KEENE=m
-+CONFIG_BACKPORT_USB_M5602=m
-+CONFIG_BACKPORT_USB_MA901=m
-+CONFIG_BACKPORT_USB_MR800=m
-+CONFIG_BACKPORT_USB_MSI2500=m
-+CONFIG_BACKPORT_USB_PWC=m
-+CONFIG_BACKPORT_USB_RAREMONO=m
-+CONFIG_BACKPORT_USB_S2255=m
-+CONFIG_BACKPORT_USB_SI470X=m
-+CONFIG_BACKPORT_USB_SI4713=m
-+CONFIG_BACKPORT_USB_STKWEBCAM=m
-+CONFIG_BACKPORT_USB_STV06XX=m
-+CONFIG_BACKPORT_USB_VIDEO_CLASS=m
-+CONFIG_BACKPORT_USB_ZR364XX=m
-+CONFIG_BACKPORT_V4L2_MEM2MEM_DEV=m
-+CONFIG_BACKPORT_V4L_MEM2MEM_DRIVERS=y
-+CONFIG_BACKPORT_V4L_PLATFORM_DRIVERS=y
-+CONFIG_BACKPORT_VIDEOBUF2_CORE=m
-+CONFIG_BACKPORT_VIDEOBUF2_DMA_CONTIG=m
-+CONFIG_BACKPORT_VIDEOBUF2_DMA_SG=m
-+CONFIG_BACKPORT_VIDEOBUF2_MEMOPS=m
-+CONFIG_BACKPORT_VIDEOBUF2_VMALLOC=m
-+CONFIG_BACKPORT_VIDEOBUF_DMA_CONTIG=m
-+CONFIG_BACKPORT_VIDEOBUF_DMA_SG=m
-+CONFIG_BACKPORT_VIDEOBUF_DVB=m
-+CONFIG_BACKPORT_VIDEOBUF_GEN=m
-+CONFIG_BACKPORT_VIDEOBUF_VMALLOC=m
-+CONFIG_BACKPORT_VIDEO_AD9389B=m
-+CONFIG_BACKPORT_VIDEO_ADP1653=m
-+CONFIG_BACKPORT_VIDEO_ADV7170=m
-+CONFIG_BACKPORT_VIDEO_ADV7175=m
-+CONFIG_BACKPORT_VIDEO_ADV7180=m
-+CONFIG_BACKPORT_VIDEO_ADV7183=m
-+CONFIG_BACKPORT_VIDEO_ADV7343=m
-+CONFIG_BACKPORT_VIDEO_ADV7393=m
-+CONFIG_BACKPORT_VIDEO_ADV7604=m
-+CONFIG_BACKPORT_VIDEO_AK881X=m
-+CONFIG_BACKPORT_VIDEO_APTINA_PLL=m
-+CONFIG_BACKPORT_VIDEO_AS3645A=m
-+CONFIG_BACKPORT_VIDEO_ATMEL_ISI=m
-+CONFIG_BACKPORT_VIDEO_AU0828=m
-+CONFIG_BACKPORT_VIDEO_AU0828_RC=y
-+CONFIG_BACKPORT_VIDEO_BLACKFIN_CAPTURE=m
-+CONFIG_BACKPORT_VIDEO_BLACKFIN_PPI=m
-+CONFIG_BACKPORT_VIDEO_BT819=m
-+CONFIG_BACKPORT_VIDEO_BT848=m
-+CONFIG_BACKPORT_VIDEO_BT856=m
-+CONFIG_BACKPORT_VIDEO_BT866=m
-+CONFIG_BACKPORT_VIDEO_BTCX=m
-+CONFIG_BACKPORT_VIDEO_BWQCAM=m
-+CONFIG_BACKPORT_VIDEO_CAFE_CCIC=m
-+CONFIG_BACKPORT_VIDEO_CODA=m
-+CONFIG_BACKPORT_VIDEO_CPIA2=m
-+CONFIG_BACKPORT_VIDEO_CQCAM=m
-+CONFIG_BACKPORT_VIDEO_CS5345=m
-+CONFIG_BACKPORT_VIDEO_CS53L32A=m
-+CONFIG_BACKPORT_VIDEO_CX18=m
-+CONFIG_BACKPORT_VIDEO_CX18_ALSA=m
-+CONFIG_BACKPORT_VIDEO_CX231XX=m
-+CONFIG_BACKPORT_VIDEO_CX231XX_ALSA=m
-+CONFIG_BACKPORT_VIDEO_CX231XX_DVB=m
-+CONFIG_BACKPORT_VIDEO_CX231XX_RC=y
-+CONFIG_BACKPORT_VIDEO_CX2341X=m
-+CONFIG_BACKPORT_VIDEO_CX23885=m
-+CONFIG_BACKPORT_VIDEO_CX25821=m
-+CONFIG_BACKPORT_VIDEO_CX25821_ALSA=m
-+CONFIG_BACKPORT_VIDEO_CX25840=m
-+CONFIG_BACKPORT_VIDEO_CX88=m
-+CONFIG_BACKPORT_VIDEO_CX88_ALSA=m
-+CONFIG_BACKPORT_VIDEO_CX88_BLACKBIRD=m
-+CONFIG_BACKPORT_VIDEO_CX88_DVB=m
-+CONFIG_BACKPORT_VIDEO_CX88_MPEG=m
-+CONFIG_BACKPORT_VIDEO_CX88_VP3054=m
-+CONFIG_BACKPORT_VIDEO_DAVINCI_VPBE_DISPLAY=m
-+CONFIG_BACKPORT_VIDEO_DAVINCI_VPIF_CAPTURE=m
-+CONFIG_BACKPORT_VIDEO_DAVINCI_VPIF_DISPLAY=m
-+CONFIG_BACKPORT_VIDEO_DEV=m
-+CONFIG_BACKPORT_VIDEO_DM355_CCDC=m
-+CONFIG_BACKPORT_VIDEO_DM6446_CCDC=m
-+CONFIG_BACKPORT_VIDEO_EM28XX=m
-+CONFIG_BACKPORT_VIDEO_EM28XX_ALSA=m
-+CONFIG_BACKPORT_VIDEO_EM28XX_DVB=m
-+CONFIG_BACKPORT_VIDEO_EM28XX_RC=m
-+CONFIG_BACKPORT_VIDEO_EM28XX_V4L2=m
-+CONFIG_BACKPORT_VIDEO_EXYNOS_FIMC_LITE=m
-+CONFIG_BACKPORT_VIDEO_FB_IVTV=m
-+CONFIG_BACKPORT_VIDEO_GO7007=m
-+CONFIG_BACKPORT_VIDEO_GO7007_USB=m
-+CONFIG_BACKPORT_VIDEO_GO7007_USB_S2250_BOARD=m
-+CONFIG_BACKPORT_VIDEO_HDPVR=m
-+CONFIG_BACKPORT_VIDEO_HEXIUM_GEMINI=m
-+CONFIG_BACKPORT_VIDEO_HEXIUM_ORION=m
-+CONFIG_BACKPORT_VIDEO_IR_I2C=m
-+CONFIG_BACKPORT_VIDEO_IVTV=m
-+CONFIG_BACKPORT_VIDEO_IVTV_ALSA=m
-+CONFIG_BACKPORT_VIDEO_KS0127=m
-+CONFIG_BACKPORT_VIDEO_M32R_AR_M64278=m
-+CONFIG_BACKPORT_VIDEO_M52790=m
-+CONFIG_BACKPORT_VIDEO_M5MOLS=m
-+CONFIG_BACKPORT_VIDEO_MEM2MEM_DEINTERLACE=m
-+CONFIG_BACKPORT_VIDEO_MEM2MEM_TESTDEV=m
-+CONFIG_BACKPORT_VIDEO_MEYE=m
-+CONFIG_BACKPORT_VIDEO_MMP_CAMERA=m
-+CONFIG_BACKPORT_VIDEO_MSP3400=m
-+CONFIG_BACKPORT_VIDEO_MT9M032=m
-+CONFIG_BACKPORT_VIDEO_MT9P031=m
-+CONFIG_BACKPORT_VIDEO_MT9T001=m
-+CONFIG_BACKPORT_VIDEO_MT9V011=m
-+CONFIG_BACKPORT_VIDEO_MT9V032=m
-+CONFIG_BACKPORT_VIDEO_MX2=m
-+CONFIG_BACKPORT_VIDEO_MX2_EMMAPRP=m
-+CONFIG_BACKPORT_VIDEO_MX3=m
-+CONFIG_BACKPORT_VIDEO_MXB=m
-+CONFIG_BACKPORT_VIDEO_NOON010PC30=m
-+CONFIG_BACKPORT_VIDEO_OMAP1=m
-+CONFIG_BACKPORT_VIDEO_OMAP2_VOUT=m
-+CONFIG_BACKPORT_VIDEO_OMAP3=m
-+CONFIG_BACKPORT_VIDEO_OV7640=m
-+CONFIG_BACKPORT_VIDEO_OV7670=m
-+CONFIG_BACKPORT_VIDEO_OV9650=m
-+CONFIG_BACKPORT_VIDEO_PMS=m
-+CONFIG_BACKPORT_VIDEO_PVRUSB2=m
-+CONFIG_BACKPORT_VIDEO_PXA27x=m
-+CONFIG_BACKPORT_VIDEO_S3C_CAMIF=m
-+CONFIG_BACKPORT_VIDEO_S5C73M3=m
-+CONFIG_BACKPORT_VIDEO_S5K4ECGX=m
-+CONFIG_BACKPORT_VIDEO_S5K6AA=m
-+CONFIG_BACKPORT_VIDEO_S5P_FIMC=m
-+CONFIG_BACKPORT_VIDEO_S5P_MIPI_CSIS=m
-+CONFIG_BACKPORT_VIDEO_SAA6588=m
-+CONFIG_BACKPORT_VIDEO_SAA7110=m
-+CONFIG_BACKPORT_VIDEO_SAA711X=m
-+CONFIG_BACKPORT_VIDEO_SAA7127=m
-+CONFIG_BACKPORT_VIDEO_SAA7134=m
-+CONFIG_BACKPORT_VIDEO_SAA7134_ALSA=m
-+CONFIG_BACKPORT_VIDEO_SAA7134_DVB=m
-+CONFIG_BACKPORT_VIDEO_SAA7134_GO7007=m
-+CONFIG_BACKPORT_VIDEO_SAA7134_RC=y
-+CONFIG_BACKPORT_VIDEO_SAA7146=m
-+CONFIG_BACKPORT_VIDEO_SAA7146_VV=m
-+CONFIG_BACKPORT_VIDEO_SAA7164=m
-+CONFIG_BACKPORT_VIDEO_SAA717X=m
-+CONFIG_BACKPORT_VIDEO_SAA7185=m
-+CONFIG_BACKPORT_VIDEO_SAA7191=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_EXYNOS_GSC=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_G2D=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_HDMI=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_HDMIPHY=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_JPEG=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_MFC=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_MIXER=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_SDO=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_SII9234=m
-+CONFIG_BACKPORT_VIDEO_SAMSUNG_S5P_TV=y
-+CONFIG_BACKPORT_VIDEO_SH_MOBILE_CEU=m
-+CONFIG_BACKPORT_VIDEO_SH_MOBILE_CSI2=m
-+CONFIG_BACKPORT_VIDEO_SH_VEU=m
-+CONFIG_BACKPORT_VIDEO_SH_VOU=m
-+CONFIG_BACKPORT_VIDEO_SMIAPP=m
-+CONFIG_BACKPORT_VIDEO_SMIAPP_PLL=m
-+CONFIG_BACKPORT_VIDEO_SOLO6X10=m
-+CONFIG_BACKPORT_VIDEO_SONY_BTF_MPX=m
-+CONFIG_BACKPORT_VIDEO_SR030PC30=m
-+CONFIG_BACKPORT_VIDEO_STK1160=m
-+CONFIG_BACKPORT_VIDEO_STK1160_AC97=y
-+CONFIG_BACKPORT_VIDEO_STK1160_COMMON=m
-+CONFIG_BACKPORT_VIDEO_TDA7432=m
-+CONFIG_BACKPORT_VIDEO_TDA9840=m
-+CONFIG_BACKPORT_VIDEO_TEA6415C=m
-+CONFIG_BACKPORT_VIDEO_TEA6420=m
-+CONFIG_BACKPORT_VIDEO_THS7303=m
-+CONFIG_BACKPORT_VIDEO_TIMBERDALE=m
-+CONFIG_BACKPORT_VIDEO_TLG2300=m
-+CONFIG_BACKPORT_VIDEO_TLV320AIC23B=m
-+CONFIG_BACKPORT_VIDEO_TM6000=m
-+CONFIG_BACKPORT_VIDEO_TM6000_ALSA=m
-+CONFIG_BACKPORT_VIDEO_TM6000_DVB=m
-+CONFIG_BACKPORT_VIDEO_TUNER=m
-+CONFIG_BACKPORT_VIDEO_TVAUDIO=m
-+CONFIG_BACKPORT_VIDEO_TVEEPROM=m
-+CONFIG_BACKPORT_VIDEO_TVP514X=m
-+CONFIG_BACKPORT_VIDEO_TVP5150=m
-+CONFIG_BACKPORT_VIDEO_TVP7002=m
-+CONFIG_BACKPORT_VIDEO_TW2804=m
-+CONFIG_BACKPORT_VIDEO_TW68=m
-+CONFIG_BACKPORT_VIDEO_TW9903=m
-+CONFIG_BACKPORT_VIDEO_TW9906=m
-+CONFIG_BACKPORT_VIDEO_UDA1342=m
-+CONFIG_BACKPORT_VIDEO_UPD64031A=m
-+CONFIG_BACKPORT_VIDEO_UPD64083=m
-+CONFIG_BACKPORT_VIDEO_USBTV=m
-+CONFIG_BACKPORT_VIDEO_USBVISION=m
-+CONFIG_BACKPORT_VIDEO_V4L2=m
-+CONFIG_BACKPORT_VIDEO_V4L2_SUBDEV_API=y
-+CONFIG_BACKPORT_VIDEO_VIA_CAMERA=m
-+CONFIG_BACKPORT_VIDEO_VINO=m
-+CONFIG_BACKPORT_VIDEO_VIU=m
-+CONFIG_BACKPORT_VIDEO_VP27SMPX=m
-+CONFIG_BACKPORT_VIDEO_VPX3220=m
-+CONFIG_BACKPORT_VIDEO_VS6624=m
-+CONFIG_BACKPORT_VIDEO_W9966=m
-+CONFIG_BACKPORT_VIDEO_WM8739=m
-+CONFIG_BACKPORT_VIDEO_WM8775=m
-+CONFIG_BACKPORT_VIDEO_ZORAN=m
-+CONFIG_BACKPORT_VIDEO_ZORAN_AVS6EYES=m
-+CONFIG_BACKPORT_VIDEO_ZORAN_BUZ=m
-+CONFIG_BACKPORT_VIDEO_ZORAN_DC10=m
-+CONFIG_BACKPORT_VIDEO_ZORAN_DC30=m
-+CONFIG_BACKPORT_VIDEO_ZORAN_LML33=m
-+CONFIG_BACKPORT_VIDEO_ZORAN_LML33R10=m
-+CONFIG_BACKPORT_VIDEO_ZORAN_ZR36060=m
-diff --git a/backport/defconfigs/nfc b/backport/defconfigs/nfc
-index c00f10f..9d60afe 100644
---- a/backport/defconfigs/nfc
-+++ b/backport/defconfigs/nfc
-@@ -1,20 +1,20 @@
--CPTCFG_NFC=m
--CPTCFG_NFC_DIGITAL=m
--CPTCFG_NFC_HCI=m
--CPTCFG_NFC_MEI_PHY=m
--CPTCFG_NFC_MICROREAD=m
--CPTCFG_NFC_MICROREAD_I2C=m
--CPTCFG_NFC_MICROREAD_MEI=m
--CPTCFG_NFC_MRVL=m
--CPTCFG_NFC_MRVL_USB=m
--CPTCFG_NFC_NCI=m
--CPTCFG_NFC_NCI_SPI=y
--CPTCFG_NFC_PN533=m
--CPTCFG_NFC_PN544=m
--CPTCFG_NFC_PN544_I2C=m
--CPTCFG_NFC_PN544_MEI=m
--CPTCFG_NFC_PORT100=m
--CPTCFG_NFC_SHDLC=y
--CPTCFG_NFC_SIM=m
--CPTCFG_NFC_TRF7970A=m
--CPTCFG_NFC_WILINK=m
-+CONFIG_BACKPORT_NFC=m
-+CONFIG_BACKPORT_NFC_DIGITAL=m
-+CONFIG_BACKPORT_NFC_HCI=m
-+CONFIG_BACKPORT_NFC_MEI_PHY=m
-+CONFIG_BACKPORT_NFC_MICROREAD=m
-+CONFIG_BACKPORT_NFC_MICROREAD_I2C=m
-+CONFIG_BACKPORT_NFC_MICROREAD_MEI=m
-+CONFIG_BACKPORT_NFC_MRVL=m
-+CONFIG_BACKPORT_NFC_MRVL_USB=m
-+CONFIG_BACKPORT_NFC_NCI=m
-+CONFIG_BACKPORT_NFC_NCI_SPI=y
-+CONFIG_BACKPORT_NFC_PN533=m
-+CONFIG_BACKPORT_NFC_PN544=m
-+CONFIG_BACKPORT_NFC_PN544_I2C=m
-+CONFIG_BACKPORT_NFC_PN544_MEI=m
-+CONFIG_BACKPORT_NFC_PORT100=m
-+CONFIG_BACKPORT_NFC_SHDLC=y
-+CONFIG_BACKPORT_NFC_SIM=m
-+CONFIG_BACKPORT_NFC_TRF7970A=m
-+CONFIG_BACKPORT_NFC_WILINK=m
-diff --git a/backport/defconfigs/rtlwifi b/backport/defconfigs/rtlwifi
-index 6c465fc..79ce348 100644
---- a/backport/defconfigs/rtlwifi
-+++ b/backport/defconfigs/rtlwifi
-@@ -1,23 +1,23 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_DEFAULT_PS=y
--CPTCFG_CFG80211_DEBUGFS=y
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_MAC80211=m
--# CPTCFG_MAC80211_RC_PID is not set
--# CPTCFG_MAC80211_RC_MINSTREL is not set
--# CPTCFG_MAC80211_RC_DEFAULT_MINSTREL is not set
--CPTCFG_MAC80211_DEBUGFS=y
--CPTCFG_MAC80211_MESSAGE_TRACING=y
--CPTCFG_WLAN=y
--CPTCFG_RTLWIFI=m
--CPTCFG_RTLWIFI_DEBUG=y
--CPTCFG_RTL8192CE=m
--CPTCFG_RTL8192SE=m
--CPTCFG_RTL8192DE=m
--CPTCFG_RTL8723AE=m
--CPTCFG_RTL8723BE=m
--CPTCFG_RTL8188EE=m
--CPTCFG_RTL8192CU=m
--CPTCFG_RTL8192C_COMMON=m
--CPTCFG_RTL8192EE=m
--CPTCFG_RTL8821AE=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_DEFAULT_PS=y
-+CONFIG_BACKPORT_CFG80211_DEBUGFS=y
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_MAC80211=m
-+# CONFIG_BACKPORT_MAC80211_RC_PID is not set
-+# CONFIG_BACKPORT_MAC80211_RC_MINSTREL is not set
-+# CONFIG_BACKPORT_MAC80211_RC_DEFAULT_MINSTREL is not set
-+CONFIG_BACKPORT_MAC80211_DEBUGFS=y
-+CONFIG_BACKPORT_MAC80211_MESSAGE_TRACING=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_RTLWIFI=m
-+CONFIG_BACKPORT_RTLWIFI_DEBUG=y
-+CONFIG_BACKPORT_RTL8192CE=m
-+CONFIG_BACKPORT_RTL8192SE=m
-+CONFIG_BACKPORT_RTL8192DE=m
-+CONFIG_BACKPORT_RTL8723AE=m
-+CONFIG_BACKPORT_RTL8723BE=m
-+CONFIG_BACKPORT_RTL8188EE=m
-+CONFIG_BACKPORT_RTL8192CU=m
-+CONFIG_BACKPORT_RTL8192C_COMMON=m
-+CONFIG_BACKPORT_RTL8192EE=m
-+CONFIG_BACKPORT_RTL8821AE=m
-diff --git a/backport/defconfigs/wcn36xx b/backport/defconfigs/wcn36xx
-index 374eb11..ef19898 100644
---- a/backport/defconfigs/wcn36xx
-+++ b/backport/defconfigs/wcn36xx
-@@ -1,13 +1,13 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_DEFAULT_PS=y
--CPTCFG_CFG80211_DEBUGFS=y
--CPTCFG_MAC80211=m
--# CPTCFG_MAC80211_RC_PID is not set
--# CPTCFG_MAC80211_RC_MINSTREL is not set
--# CPTCFG_MAC80211_RC_DEFAULT_MINSTREL is not set
--CPTCFG_MAC80211_DEBUGFS=y
--CPTCFG_MAC80211_MESSAGE_TRACING=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_WCN36XX=m
--CPTCFG_WCN36XX_DEBUGFS=y
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_DEFAULT_PS=y
-+CONFIG_BACKPORT_CFG80211_DEBUGFS=y
-+CONFIG_BACKPORT_MAC80211=m
-+# CONFIG_BACKPORT_MAC80211_RC_PID is not set
-+# CONFIG_BACKPORT_MAC80211_RC_MINSTREL is not set
-+# CONFIG_BACKPORT_MAC80211_RC_DEFAULT_MINSTREL is not set
-+CONFIG_BACKPORT_MAC80211_DEBUGFS=y
-+CONFIG_BACKPORT_MAC80211_MESSAGE_TRACING=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_WCN36XX=m
-+CONFIG_BACKPORT_WCN36XX_DEBUGFS=y
-diff --git a/backport/defconfigs/wifi b/backport/defconfigs/wifi
-index 96496ed..1907c1c 100644
---- a/backport/defconfigs/wifi
-+++ b/backport/defconfigs/wifi
-@@ -1,116 +1,116 @@
--CPTCFG_ADM8211=m
--CPTCFG_AR5523=m
--CPTCFG_AT76C50X_USB=m
--CPTCFG_ATH10K=m
--CPTCFG_ATH10K_PCI=m
--CPTCFG_ATH5K=m
--CPTCFG_ATH6KL=m
--CPTCFG_ATH6KL_SDIO=m
--CPTCFG_ATH6KL_USB=m
--CPTCFG_ATH9K_HTC=m
--CPTCFG_ATH9K=m
--CPTCFG_ATH_CARDS=m
--CPTCFG_B43LEGACY=m
--CPTCFG_B43=m
--CPTCFG_B43_PCMCIA=y
--CPTCFG_B43_PHY_HT=y
--CPTCFG_B43_PHY_N=y
--CPTCFG_B43_SDIO=y
--CPTCFG_BCMA_DRIVER_GPIO=y
--CPTCFG_BCMA_HOST_PCI=y
--CPTCFG_BCMA=m
--CPTCFG_BRCMFMAC=m
--CPTCFG_BRCMFMAC_PCIE=y
--CPTCFG_BRCMFMAC_USB=y
--CPTCFG_BRCMSMAC=m
--CPTCFG_CARL9170=m
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_CW1200=m
--CPTCFG_CW1200_WLAN_SDIO=m
--CPTCFG_CW1200_WLAN_SPI=m
--CPTCFG_HERMES=m
--CPTCFG_HERMES_PRISM=y
--CPTCFG_IPW2100=m
--CPTCFG_IPW2100_MONITOR=y
--CPTCFG_IPW2200=m
--CPTCFG_IPW2200_MONITOR=y
--CPTCFG_IPW2200_PROMISCUOUS=y
--CPTCFG_IPW2200_QOS=y
--CPTCFG_IPW2200_RADIOTAP=y
--CPTCFG_IWL3945=m
--CPTCFG_IWL4965=m
--CPTCFG_IWLDVM=m
--CPTCFG_IWLMVM=m
--CPTCFG_IWLWIFI=m
--CPTCFG_LIBERTAS_CS=m
--CPTCFG_LIBERTAS=m
--CPTCFG_LIBERTAS_MESH=y
--CPTCFG_LIBERTAS_SDIO=m
--CPTCFG_LIBERTAS_SPI=m
--CPTCFG_LIBERTAS_THINFIRM=m
--CPTCFG_LIBERTAS_THINFIRM_USB=m
--CPTCFG_LIBERTAS_USB=m
--CPTCFG_MAC80211_HWSIM=m
--CPTCFG_MAC80211_LEDS=y
--CPTCFG_MAC80211=m
--CPTCFG_MAC80211_MESH=y
--CPTCFG_MWIFIEX=m
--CPTCFG_MWIFIEX_PCIE=m
--CPTCFG_MWIFIEX_SDIO=m
--CPTCFG_MWIFIEX_USB=m
--CPTCFG_MWL8K=m
--CPTCFG_NORTEL_HERMES=m
--CPTCFG_ORINOCO_USB=m
--CPTCFG_P54_COMMON=m
--CPTCFG_P54_PCI=m
--CPTCFG_P54_SPI=m
--CPTCFG_P54_USB=m
--CPTCFG_PCI_HERMES=m
--CPTCFG_PCMCIA_HERMES=m
--CPTCFG_PCMCIA_SPECTRUM=m
--CPTCFG_PLX_HERMES=m
--CPTCFG_RSI_91X=m
--CPTCFG_RT2400PCI=m
--CPTCFG_RT2500PCI=m
--CPTCFG_RT2500USB=m
--CPTCFG_RT2800PCI=m
--CPTCFG_RT2800USB=m
--CPTCFG_RT2800USB_RT3573=y
--CPTCFG_RT2800USB_RT53XX=y
--CPTCFG_RT2800USB_RT55XX=y
--CPTCFG_RT2800USB_UNKNOWN=y
--CPTCFG_RT2X00=m
--CPTCFG_RT61PCI=m
--CPTCFG_RT73USB=m
--CPTCFG_RTL8180=m
--CPTCFG_RTL8187=m
--CPTCFG_RTL8188EE=m
--CPTCFG_RTL8192C_COMMON=m
--CPTCFG_RTL8192CE=m
--CPTCFG_RTL8192CU=m
--CPTCFG_RTL8192DE=m
--CPTCFG_RTL8192EE=m
--CPTCFG_RTL8192SE=m
--CPTCFG_RTL8723AE=m
--CPTCFG_RTL8723BE=m
--CPTCFG_RTL8821AE=m
--CPTCFG_RTLWIFI=m
--CPTCFG_SSB=m
--CPTCFG_SSB_PCMCIAHOST=y
--CPTCFG_SSB_SDIOHOST=y
--CPTCFG_TMD_HERMES=m
--CPTCFG_USB_NET_RNDIS_WLAN=m
--CPTCFG_WCN36XX=m
--CPTCFG_WIL6210=m
--CPTCFG_WL1251=m
--CPTCFG_WL1251_SDIO=m
--CPTCFG_WL1251_SPI=m
--CPTCFG_WL12XX=m
--CPTCFG_WL18XX=m
--CPTCFG_WLAN=y
--CPTCFG_WLCORE=m
--CPTCFG_WLCORE_SDIO=m
--CPTCFG_WLCORE_SPI=m
--CPTCFG_WL_TI=y
--CPTCFG_ZD1211RW=m
-+CONFIG_BACKPORT_ADM8211=m
-+CONFIG_BACKPORT_AR5523=m
-+CONFIG_BACKPORT_AT76C50X_USB=m
-+CONFIG_BACKPORT_ATH10K=m
-+CONFIG_BACKPORT_ATH10K_PCI=m
-+CONFIG_BACKPORT_ATH5K=m
-+CONFIG_BACKPORT_ATH6KL=m
-+CONFIG_BACKPORT_ATH6KL_SDIO=m
-+CONFIG_BACKPORT_ATH6KL_USB=m
-+CONFIG_BACKPORT_ATH9K_HTC=m
-+CONFIG_BACKPORT_ATH9K=m
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_B43LEGACY=m
-+CONFIG_BACKPORT_B43=m
-+CONFIG_BACKPORT_B43_PCMCIA=y
-+CONFIG_BACKPORT_B43_PHY_HT=y
-+CONFIG_BACKPORT_B43_PHY_N=y
-+CONFIG_BACKPORT_B43_SDIO=y
-+CONFIG_BACKPORT_BCMA_DRIVER_GPIO=y
-+CONFIG_BACKPORT_BCMA_HOST_PCI=y
-+CONFIG_BACKPORT_BCMA=m
-+CONFIG_BACKPORT_BRCMFMAC=m
-+CONFIG_BACKPORT_BRCMFMAC_PCIE=y
-+CONFIG_BACKPORT_BRCMFMAC_USB=y
-+CONFIG_BACKPORT_BRCMSMAC=m
-+CONFIG_BACKPORT_CARL9170=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_CW1200=m
-+CONFIG_BACKPORT_CW1200_WLAN_SDIO=m
-+CONFIG_BACKPORT_CW1200_WLAN_SPI=m
-+CONFIG_BACKPORT_HERMES=m
-+CONFIG_BACKPORT_HERMES_PRISM=y
-+CONFIG_BACKPORT_IPW2100=m
-+CONFIG_BACKPORT_IPW2100_MONITOR=y
-+CONFIG_BACKPORT_IPW2200=m
-+CONFIG_BACKPORT_IPW2200_MONITOR=y
-+CONFIG_BACKPORT_IPW2200_PROMISCUOUS=y
-+CONFIG_BACKPORT_IPW2200_QOS=y
-+CONFIG_BACKPORT_IPW2200_RADIOTAP=y
-+CONFIG_BACKPORT_IWL3945=m
-+CONFIG_BACKPORT_IWL4965=m
-+CONFIG_BACKPORT_IWLDVM=m
-+CONFIG_BACKPORT_IWLMVM=m
-+CONFIG_BACKPORT_IWLWIFI=m
-+CONFIG_BACKPORT_LIBERTAS_CS=m
-+CONFIG_BACKPORT_LIBERTAS=m
-+CONFIG_BACKPORT_LIBERTAS_MESH=y
-+CONFIG_BACKPORT_LIBERTAS_SDIO=m
-+CONFIG_BACKPORT_LIBERTAS_SPI=m
-+CONFIG_BACKPORT_LIBERTAS_THINFIRM=m
-+CONFIG_BACKPORT_LIBERTAS_THINFIRM_USB=m
-+CONFIG_BACKPORT_LIBERTAS_USB=m
-+CONFIG_BACKPORT_MAC80211_HWSIM=m
-+CONFIG_BACKPORT_MAC80211_LEDS=y
-+CONFIG_BACKPORT_MAC80211=m
-+CONFIG_BACKPORT_MAC80211_MESH=y
-+CONFIG_BACKPORT_MWIFIEX=m
-+CONFIG_BACKPORT_MWIFIEX_PCIE=m
-+CONFIG_BACKPORT_MWIFIEX_SDIO=m
-+CONFIG_BACKPORT_MWIFIEX_USB=m
-+CONFIG_BACKPORT_MWL8K=m
-+CONFIG_BACKPORT_NORTEL_HERMES=m
-+CONFIG_BACKPORT_ORINOCO_USB=m
-+CONFIG_BACKPORT_P54_COMMON=m
-+CONFIG_BACKPORT_P54_PCI=m
-+CONFIG_BACKPORT_P54_SPI=m
-+CONFIG_BACKPORT_P54_USB=m
-+CONFIG_BACKPORT_PCI_HERMES=m
-+CONFIG_BACKPORT_PCMCIA_HERMES=m
-+CONFIG_BACKPORT_PCMCIA_SPECTRUM=m
-+CONFIG_BACKPORT_PLX_HERMES=m
-+CONFIG_BACKPORT_RSI_91X=m
-+CONFIG_BACKPORT_RT2400PCI=m
-+CONFIG_BACKPORT_RT2500PCI=m
-+CONFIG_BACKPORT_RT2500USB=m
-+CONFIG_BACKPORT_RT2800PCI=m
-+CONFIG_BACKPORT_RT2800USB=m
-+CONFIG_BACKPORT_RT2800USB_RT3573=y
-+CONFIG_BACKPORT_RT2800USB_RT53XX=y
-+CONFIG_BACKPORT_RT2800USB_RT55XX=y
-+CONFIG_BACKPORT_RT2800USB_UNKNOWN=y
-+CONFIG_BACKPORT_RT2X00=m
-+CONFIG_BACKPORT_RT61PCI=m
-+CONFIG_BACKPORT_RT73USB=m
-+CONFIG_BACKPORT_RTL8180=m
-+CONFIG_BACKPORT_RTL8187=m
-+CONFIG_BACKPORT_RTL8188EE=m
-+CONFIG_BACKPORT_RTL8192C_COMMON=m
-+CONFIG_BACKPORT_RTL8192CE=m
-+CONFIG_BACKPORT_RTL8192CU=m
-+CONFIG_BACKPORT_RTL8192DE=m
-+CONFIG_BACKPORT_RTL8192EE=m
-+CONFIG_BACKPORT_RTL8192SE=m
-+CONFIG_BACKPORT_RTL8723AE=m
-+CONFIG_BACKPORT_RTL8723BE=m
-+CONFIG_BACKPORT_RTL8821AE=m
-+CONFIG_BACKPORT_RTLWIFI=m
-+CONFIG_BACKPORT_SSB=m
-+CONFIG_BACKPORT_SSB_PCMCIAHOST=y
-+CONFIG_BACKPORT_SSB_SDIOHOST=y
-+CONFIG_BACKPORT_TMD_HERMES=m
-+CONFIG_BACKPORT_USB_NET_RNDIS_WLAN=m
-+CONFIG_BACKPORT_WCN36XX=m
-+CONFIG_BACKPORT_WIL6210=m
-+CONFIG_BACKPORT_WL1251=m
-+CONFIG_BACKPORT_WL1251_SDIO=m
-+CONFIG_BACKPORT_WL1251_SPI=m
-+CONFIG_BACKPORT_WL12XX=m
-+CONFIG_BACKPORT_WL18XX=m
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_WLCORE=m
-+CONFIG_BACKPORT_WLCORE_SDIO=m
-+CONFIG_BACKPORT_WLCORE_SPI=m
-+CONFIG_BACKPORT_WL_TI=y
-+CONFIG_BACKPORT_ZD1211RW=m
-diff --git a/backport/defconfigs/wil6210 b/backport/defconfigs/wil6210
-index 3fa29b8..0d08636 100644
---- a/backport/defconfigs/wil6210
-+++ b/backport/defconfigs/wil6210
-@@ -1,5 +1,5 @@
--CPTCFG_CFG80211=m
--CPTCFG_CFG80211_WEXT=y
--CPTCFG_WLAN=y
--CPTCFG_ATH_CARDS=m
--CPTCFG_WIL6210=m
-+CONFIG_BACKPORT_CFG80211=m
-+CONFIG_BACKPORT_CFG80211_WEXT=y
-+CONFIG_BACKPORT_WLAN=y
-+CONFIG_BACKPORT_ATH_CARDS=m
-+CONFIG_BACKPORT_WIL6210=m
-diff --git a/backport/defconfigs/wwan b/backport/defconfigs/wwan
-index 5b4d2e7..64fd61e 100644
---- a/backport/defconfigs/wwan
-+++ b/backport/defconfigs/wwan
-@@ -1,6 +1,6 @@
--CPTCFG_USB_USBNET=m
--CPTCFG_USB_NET_CDC_NCM=m
--CPTCFG_USB_NET_CDC_MBIM=m
--CPTCFG_USB_NET_QMI_WWAN=m
--CPTCFG_USB_SIERRA_NET=m
--CPTCFG_USB_WDM=m
-+CONFIG_BACKPORT_USB_USBNET=m
-+CONFIG_BACKPORT_USB_NET_CDC_NCM=m
-+CONFIG_BACKPORT_USB_NET_CDC_MBIM=m
-+CONFIG_BACKPORT_USB_NET_QMI_WWAN=m
-+CONFIG_BACKPORT_USB_SIERRA_NET=m
-+CONFIG_BACKPORT_USB_WDM=m
-diff --git a/devel/ckmake b/devel/ckmake
-index 0c238a6..122d201 100755
---- a/devel/ckmake
-+++ b/devel/ckmake
-@@ -164,7 +164,7 @@ def process_kernel(num, kset, cmdline_args):
- 
-         all_config_name = os.path.join(work_dir, 'all.config')
-         all_config = open(all_config_name, 'w')
--        all_config.write("CPTCFG_CFG80211_INTERNAL_REGDB=n\n")
-+        all_config.write("CONFIG_BACKPORT_CFG80211_INTERNAL_REGDB=n\n")
-         config_name = 'allnoconfig'
-         if cmdline_args.allyesconfig:
-             config_name = 'allyesconfig'
-@@ -172,7 +172,7 @@ def process_kernel(num, kset, cmdline_args):
-             all_config.write(
-                 open(os.path.join(work_dir, 'defconfigs', cmdline_args.defconfig)).read())
-         else:
--            all_config.write("CPTCFG_BACKPORT_USERSEL_BUILD_ALL=y\n")
-+            all_config.write("CONFIG_BACKPORT_USERSEL_BUILD_ALL=y\n")
-         all_config.close()
- 
-         all_config_env = os.environ.copy()
-diff --git a/devel/doc/kconfig-operation b/devel/doc/kconfig-operation
-index 0245889..f938942 100644
---- a/devel/doc/kconfig-operation
-+++ b/devel/doc/kconfig-operation
-@@ -64,16 +64,16 @@ being compiled against is older than X.
- All together, this allows the correct options to be selected by the user.
- 
- There's one more caveat: At backport configuration time, the CONFIG_
--environment variable is set to CPTCFG_ ("compat config", but also chosen
--because it has the same length as CONFIG_). This shows up in the .config
--file and other places, and in fact in all makefiles and in the code. The
--reason for this is that it must be possible to distinguish between kernel
--and backport options (even though we sort of port over kernel options).
--This allows code to, for example, have "#ifdef CONFIG_PM" which can only
--be set or cleared in the kernel, not in the backport configuration. Since
--this is needed, a transformation step is done at backport creation time.
--
-+environment variable is always replaced with CONFIG_BACKPORT_ for things
-+we backport.
- 
-+This shows up in the .config file and other places, and in fact in all
-+makefiles and in the code. The reason for this is that it must be possible
-+to distinguish between kernel and backport options (even though we sort
-+of port over kernel options). This allows code to, for example, have
-+"#ifdef CONFIG_PM" which can only be set or cleared in the kernel, not
-+in the backport configuration. Since this is needed, a transformation
-+step is done at backport creation time.
- 
-  Backport creation for Kconfig
- -------------------------------
-@@ -82,9 +82,9 @@ In order to achieve correct operation with all the above, multiple steps
- are necessary during the backport creation process.
- 
- These are the problems and their solutions:
-- 1) As just mentioned, all symbols are now named CPTCFG_* instead of the
-+ 1) As just mentioned, all symbols are now named CONFIG_BACKPORT_* instead of the
-     original CONFIG_*. This requires that all code files (and makefiles)
--    are updated to use CPTCFG_* and CPTCFG_*_MODULE instead of the CONFIG_
-+    are updated to use CONFIG_BACKPORT_* and CONFIG_BACKPORT_*_MODULE instead of the CONFIG_
-     versions of the same. However, not *all* CONFIG_* usage may be changed
-     since some options must come from the kernel still. More importantly,
-     kernel options "leak" into the backport build and the rename avoids
 diff --git a/gentree.py b/gentree.py
-index 9b4db98..47e3ca2 100755
+index 47e3ca2..971f15b 100755
 --- a/gentree.py
 +++ b/gentree.py
-@@ -228,9 +228,9 @@ def add_automatic_backports(args):
-                 raise Exception('backporting a module requires a #module-name')
-             for of in o_files:
-                 mf.write('%s-objs += %s\n' % (module_name, of))
--            mf.write('obj-$(CPTCFG_%s) += %s.o\n' % (sym, module_name))
-+            mf.write('obj-$(CONFIG_BACKPORT_%s) += %s.o\n' % (sym, module_name))
-         elif symtype == 'bool':
--            mf.write('compat-$(CPTCFG_%s) += %s\n' % (sym, ' '.join(o_files)))
-+            mf.write('compat-$(CONFIG_BACKPORT_%s) += %s\n' % (sym, ' '.join(o_files)))
+@@ -16,6 +16,7 @@ from lib import bpgpg as gpg
+ from lib import bpkup as kup
+ from lib.tempdir import tempdir
+ from lib import bpreqs as reqs
++from lib import bpversion as gen_version
  
-         # finally create the include file
-         syms = []
-@@ -243,14 +243,14 @@ def add_automatic_backports(args):
-         for f in h_files:
-             outf = open(os.path.join(args.outdir, 'include', f), 'w')
-             outf.write('/* Automatically created during backport process */\n')
--            outf.write('#ifndef CPTCFG_%s\n' % sym)
-+            outf.write('#ifndef CONFIG_BACKPORT_%s\n' % sym)
-             outf.write('#include_next <%s>\n' % f)
-             outf.write('#else\n');
-             for s in syms:
-                 outf.write('#undef %s\n' % s)
-                 outf.write('#define %s LINUX_BACKPORT(%s)\n' % (s, s))
-             outf.write('#include <%s>\n' % (os.path.dirname(f) + '/backport-' + os.path.basename(f), ))
--            outf.write('#endif /* CPTCFG_%s */\n' % sym)
-+            outf.write('#endif /* CONFIG_BACKPORT_%s */\n' % sym)
-     return disable_list
+ def read_copy_list(copyfile):
+     """
+@@ -461,6 +462,9 @@ def _main():
+                              'and we use git ls-tree to get the files.')
+     parser.add_argument('--clean', const=True, default=False, action="store_const",
+                         help='Clean output directory instead of erroring if it isn\'t empty')
++    parser.add_argument('--integrate', const=True, default=False, action="store_const",
++                        help='Integrate a future backported kernel solution into ' +
++                             'an older kernel tree source directory.')
+     parser.add_argument('--refresh', const=True, default=False, action="store_const",
+                         help='Refresh patches as they are applied, the source dir will be modified!')
+     parser.add_argument('--base-name', metavar='<name>', type=str, default='Linux',
+@@ -491,13 +495,18 @@ def _main():
+                              'of changes done by Coccinelle.')
+     args = parser.parse_args()
  
- def git_debug_init(args):
-@@ -552,6 +552,7 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
++    if args.integrate:
++        args.outdir = os.path.join(args.outdir, 'backports/')
++
+     def logwrite(msg):
+         sys.stdout.write(msg)
+         sys.stdout.write('\n')
+         sys.stdout.flush()
+ 
+     return process(args.kerneldir, args.outdir, args.copy_list,
+-                   git_revision=args.git_revision, clean=args.clean,
++                   git_revision=args.git_revision,
++                   integrate=args.integrate,
++                   clean=args.clean,
+                    refresh=args.refresh, base_name=args.base_name,
+                    gitdebug=args.gitdebug, verbose=args.verbose,
+                    extra_driver=args.extra_driver,
+@@ -508,6 +517,7 @@ def _main():
+                    logwrite=logwrite)
+ 
+ def process(kerneldir, outdir, copy_list_file, git_revision=None,
++            integrate=False,
+             clean=False, refresh=False, base_name="Linux", gitdebug=False,
+             verbose=False, extra_driver=[], kup=False,
+             kup_test=False,
+@@ -517,7 +527,7 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+             git_tracked_version=False):
+     class Args(object):
+         def __init__(self, kerneldir, outdir, copy_list_file,
+-                     git_revision, clean, refresh, base_name,
++                     git_revision, integrate, clean, refresh, base_name,
+                      gitdebug, verbose, extra_driver, kup,
+                      kup_test,
+                      test_cocci,
+@@ -526,6 +536,7 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+             self.outdir = outdir
+             self.copy_list = copy_list_file
+             self.git_revision = git_revision
++            self.integrate = integrate
+             self.clean = clean
+             self.refresh = refresh
+             self.base_name = base_name
+@@ -548,11 +559,15 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+             logwrite('Validated tree: %s' % tree)
+ 
+     args = Args(kerneldir, outdir, copy_list_file,
+-                git_revision, clean, refresh, base_name,
++                git_revision, integrate, clean, refresh, base_name,
                  gitdebug, verbose, extra_driver, kup, kup_test,
                  test_cocci, profile_cocci)
      rel_prep = None
-+    integrate = False
+-    integrate = False
++
++    if args.integrate:
++        if args.kup_test or args.test_cocci or args.profile_cocci or args.refresh:
++            logwrite('Cannot use integration with:\n\tkup_test\n\ttest_cocci\n\tprofile_cocci\n\trefresh\n');
++            sys.exit(1)
  
      # start processing ...
      if (args.kup or args.kup_test):
-@@ -758,11 +759,19 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+@@ -588,11 +603,32 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+     check_output_dir(args.outdir, args.clean)
  
+     # do the copy
++    backport_integrate_files = [
++            ('Makefile.kernel', 'Makefile'),
++            ]
++    backport_package_files = [(x, x) for x in [
++        'Makefile',
++        'kconf/' ,
++        'Makefile.real',
++        'Makefile.kernel',
++        'scripts/',
++        '.blacklist.map',
++        '.gitignore',
++        'Makefile.build'] ]
++    backport_package_files += [
++            ('Kconfig.package', 'Kconfig'),
++            ]
+     backport_files = [(x, x) for x in [
+-        'Kconfig', 'Makefile', 'Makefile.build', 'Makefile.kernel', '.gitignore',
+-        'Makefile.real', 'compat/', 'backport-include/', 'kconf/',
+-        'scripts/', '.blacklist.map',
++        'Kconfig.sources',
++        'compat/',
++        'backport-include/',
+     ]]
++
++    if not args.integrate:
++        backport_files += backport_package_files
++    else:
++        backport_files += backport_integrate_files
++
+     if not args.git_revision:
+         logwrite('Copy original source files ...')
+     else:
+@@ -600,7 +636,8 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+     
+     copy_files(os.path.join(source_dir, 'backport'), backport_files, args.outdir)
+ 
+-    git_debug_init(args)
++    if not args.integrate:
++        git_debug_init(args)
+ 
+     if not args.git_revision:
+         copy_files(args.kerneldir, copy_list, args.outdir)
+@@ -615,6 +652,60 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+ 
+     git_debug_snapshot(args, 'Add driver sources')
+ 
++    if git_tracked_version:
++        backports_version = "(see git)"
++        kernel_version = "(see git)"
++    else:
++        backports_version = git.describe(tree=source_dir, extra_args=['--long'])
++        kernel_version = git.describe(rev=args.git_revision or 'HEAD',
++                                      tree=args.kerneldir,
++                                      extra_args=['--long'])
++
++    if not args.integrate:
++        f = open(os.path.join(args.outdir, 'versions'), 'w')
++        f.write('BACKPORTS_VERSION="%s"\n' % backports_version)
++        f.write('BACKPORTED_KERNEL_VERSION="%s"\n' % kernel_version)
++        f.write('BACKPORTED_KERNEL_NAME="%s"\n' % args.base_name)
++        if git_tracked_version:
++            f.write('BACKPORTS_GIT_TRACKED="backport tracker ID: $(shell git rev-parse HEAD 2>/dev/null || echo \'not built in git tree\')"\n')
++        f.close()
++        git_debug_snapshot(args, "generate kernel version info file: version")
++    else:
++        # Only the kconfig 'mainmenu' entries grok variables, we want to keep
++        # this the main Kconfig as part of our program to be able to give it
++        # enough dynamic information
++        k = open(os.path.join(args.outdir, 'Kconfig'), 'w')
++        k.write('config BACKPORT_DIR\n')
++        k.write('\tstring\n')
++        k.write('\tdefault "backports/"\n')
++        k.write('config BACKPORTS_VERSION\n')
++        k.write('\tstring\n')
++        k.write('\tdefault "%s"\n' % backports_version)
++        k.write('config BACKPORTED_KERNEL_VERSION\n')
++        k.write('\tstring\n')
++        k.write('\tdefault "%s"\n' % kernel_version)
++        k.write('config BACKPORTED_KERNEL_NAME\n')
++        k.write('\tstring\n')
++        k.write('\tdefault "%s"\n' % args.base_name)
++        k.write('\n')
++        k.write('menuconfig BACKPORT_LINUX\n')
++        k.write('\tbool "Backport %s %s (backports %s)"\n' % (args.base_name, kernel_version, backports_version))
++        k.write('\tdefault n\n')
++        k.write('\t---help--- \n')
++        k.write('\t  Enabling this will let give you the opportunity to use\n')
++        k.write('\t  features and drivers backported from %s %s\n' % (args.base_name, kernel_version))
++        k.write('\t  on the kernel your are using. This is experimental and you should\n')
++        k.write('\t  say no unless you\'d like to help test things.\n')
++        k.write('\n')
++        k.write('if BACKPORT_LINUX\n')
++        k.write('\n')
++        k.write('source "$BACKPORT_DIR/Kconfig.versions"\n')
++        k.write('source "$BACKPORT_DIR/Kconfig.sources"\n')
++        k.write('\n')
++        k.write('endif # BACKPORT_LINUX\n')
++        k.close()
++        git_debug_snapshot(args, "generate top level backports/Kconfig")
++
+     disable_list = add_automatic_backports(args)
+     if disable_list:
+         bpcfg = kconfig.ConfigTree(os.path.join(args.outdir, 'compat', 'Kconfig'))
+@@ -757,6 +848,21 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+         logwrite('Done!')
+         return 0
+ 
++    # Kernel integration requires Kconfig.versions already generated for you,
++    # we cannot do this for a package as we have no idea what kernel folks
++    # will be using.
++    if args.integrate:
++        kver = gen_version.kernelversion(os.path.join(args.outdir, "../"))
++        rel_specs = gen_version.get_rel_spec_stable(kver)
++        if not rel_specs:
++            logwrite('Cannot parse source kernel version, update parser')
++            sys.exit(1)
++        data = gen_version.genkconfig_versions(rel_specs)
++        fo = open(os.path.join(args.outdir, 'Kconfig.versions'), 'w')
++        fo.write(data)
++        fo.close()
++        git_debug_snapshot(args, "generate kernel version requirement Kconfig file")
++
      # some post-processing is required
      configtree = kconfig.ConfigTree(os.path.join(args.outdir, 'Kconfig'))
-+    orig_symbols = configtree.symbols()
-+
-     logwrite('Modify Kconfig tree ...')
+     orig_symbols = configtree.symbols()
+@@ -765,7 +871,7 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
      configtree.prune_sources(ignore=['Kconfig.kernel', 'Kconfig.versions'])
      git_debug_snapshot(args, "prune Kconfig tree")
--    configtree.force_tristate_modular()
--    git_debug_snapshot(args, "force tristate options modular")
-+
-+    configtree.adjust_backported_configs(integrate, orig_symbols)
-+    git_debug_snapshot(args, "adjust backports config symbols we port")
-+
-+    if (not integrate):
-+        configtree.force_tristate_modular()
-+        git_debug_snapshot(args, "force tristate options modular")
-+
+ 
+-    configtree.adjust_backported_configs(integrate, orig_symbols)
++    configtree.adjust_backported_configs(args.integrate, orig_symbols)
+     git_debug_snapshot(args, "adjust backports config symbols we port")
+ 
+     if (not integrate):
+@@ -775,32 +881,15 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
      configtree.modify_selects()
      git_debug_snapshot(args, "convert select to depends on")
  
-@@ -819,8 +828,9 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+-    # write the versioning file
+-    if git_tracked_version:
+-        backports_version = "(see git)"
+-        kernel_version = "(see git)"
+-    else:
+-        backports_version = git.describe(tree=source_dir, extra_args=['--long'])
+-        kernel_version = git.describe(rev=args.git_revision or 'HEAD',
+-                                      tree=args.kerneldir,
+-                                      extra_args=['--long'])
+-    f = open(os.path.join(args.outdir, 'versions'), 'w')
+-    f.write('BACKPORTS_VERSION="%s"\n' % backports_version)
+-    f.write('BACKPORTED_KERNEL_VERSION="%s"\n' % kernel_version)
+-    f.write('BACKPORTED_KERNEL_NAME="%s"\n' % args.base_name)
+-    if git_tracked_version:
+-        f.write('BACKPORTS_GIT_TRACKED="backport tracker ID: $(shell git rev-parse HEAD 2>/dev/null || echo \'not built in git tree\')"\n')
+-    f.close()
+-
+     symbols = configtree.symbols()
  
-     # rewrite Makefile and source symbols
-     regexes = []
--    for some_symbols in [symbols[i:i + 50] for i in range(0, len(symbols), 50)]:
--        r = 'CONFIG_((' + '|'.join([s + '(_MODULE)?' for s in some_symbols]) + ')([^A-Za-z0-9_]|$))'
-+    all_symbols = orig_symbols + symbols
-+    for some_symbols in [all_symbols[i:i + 50] for i in range(0, len(all_symbols), 50)]:
-+        r = 'CONFIG_((?!BACKPORT)(' + '|'.join([s + '(_MODULE)?' for s in some_symbols]) + ')([^A-Za-z0-9_]|$))'
-         regexes.append(re.compile(r, re.MULTILINE))
-     for root, dirs, files in os.walk(args.outdir):
-         # don't go into .git dir (possible debug thing)
-@@ -829,7 +839,7 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
-         for f in files:
-             data = open(os.path.join(root, f), 'r').read()
-             for r in regexes:
--                data = r.sub(r'CPTCFG_\1', data)
-+                data = r.sub(r'CONFIG_BACKPORT_\1', data)
-             data = re.sub(r'\$\(srctree\)', '$(backport_srctree)', data)
-             data = re.sub(r'-Idrivers', '-I$(backport_srctree)/drivers', data)
-             fo = open(os.path.join(root, f), 'w')
-@@ -875,7 +885,7 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
-     # groups -- 50 seemed safer and is still fast)
-     regexes = []
-     for some_symbols in [disable_makefile[i:i + 50] for i in range(0, len(disable_makefile), 50)]:
--        r = '^([^#].*((CPTCFG|CONFIG)_(' + '|'.join([s for s in some_symbols]) + ')))'
-+        r = '^([^#].*((CONFIG_BACKPORT|CONFIG)_(' + '|'.join([s for s in some_symbols]) + ')))'
-         regexes.append(re.compile(r, re.MULTILINE))
-     for f in maketree.get_makefiles():
-         data = open(f, 'r').read()
+-    # write local symbol list -- needed during build
+-    f = open(os.path.join(args.outdir, '.local-symbols'), 'w')
+-    for sym in symbols:
+-        f.write('%s=\n' % sym)
+-    f.close()
+-
+-    git_debug_snapshot(args, "add versions/symbols files")
++    if not args.integrate:
++        # write local symbol list -- needed during build
++        f = open(os.path.join(args.outdir, '.local-symbols'), 'w')
++        for sym in symbols:
++            f.write('%s=\n' % sym)
++        f.close()
++        git_debug_snapshot(args, "add symbols files")
+ 
+     # add defconfigs that we want
+     defconfigs_dir = os.path.join(source_dir, 'backport', 'defconfigs')
+@@ -849,7 +938,10 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+     git_debug_snapshot(args, "rename config symbol / srctree usage")
+ 
+     # disable unbuildable Kconfig symbols and stuff Makefiles that doesn't exist
+-    maketree = make.MakeTree(os.path.join(args.outdir, 'Makefile.kernel'))
++    if args.integrate:
++        maketree = make.MakeTree(os.path.join(args.outdir, 'Makefile'))
++    else:
++        maketree = make.MakeTree(os.path.join(args.outdir, 'Makefile.kernel'))
+     disable_kconfig = []
+     disable_makefile = []
+     for sym in maketree.get_impossible_symbols():
+@@ -896,6 +988,32 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+         fo.close()
+     git_debug_snapshot(args, "disable unsatisfied Makefile parts")
+ 
++    if args.integrate:
++        f = open(os.path.join(args.outdir, '../arch/x86/Kconfig'), 'a')
++        f.write('source "backports/Kconfig"\n')
++        f.close()
++        git_debug_snapshot(args, "hooked backport Kconfig to supported architectures")
++
++        f = open(os.path.join(args.outdir, '../MAINTAINERS'), 'a')
++        f.write('M:\tHauke Mehrtens <hauke@hauke-m.de>\n')
++        f.write('M:\tLuis R. Rodriguez <mcgrof@do-not-panic.com>\n')
++        f.write('L:\tbackports@vger.kernel.org\n')
++        f.write('T:\tgit://git.kernel.org/pub/scm/linux/kernel/git/backports/backports.git\n')
++        f.write('F:\tbackports/\n')
++        f.close()
++        git_debug_snapshot(args, "add backport maintainers entry")
++
++        f = open(os.path.join(args.outdir, '../Makefile'), 'a')
++        f.write('ifeq ($(KBUILD_EXTMOD),)\n')
++        f.write('backports-y := backports/\n')
++        f.write('vmlinux-dirs += $(patsubst %/,%,$(filter %/, $(backports-y) $(backports-m)))\n')
++        f.write('vmlinux-alldirs += $(patsubst %/,%,$(filter %/, $(backports-n) $(backports-)))\n')
++        f.write('backports-y       := $(patsubst %/, %/built-in.o, $(backports-y))\n')
++        f.write('KBUILD_VMLINUX_MAIN += $(backports-y)\n')
++        f.write('endif\n')
++        f.close()
++        git_debug_snapshot(args, "add backports to the vmlinux built-in hunt")
++
+     if (args.kup or args.kup_test):
+         req = reqs.Req()
+         req.kup()
+diff --git a/lib/bpversion.py b/lib/bpversion.py
+new file mode 100644
+index 0000000..7ba4d99
+--- /dev/null
++++ b/lib/bpversion.py
+@@ -0,0 +1,48 @@
++import subprocess, os, re
++
++class VersionError(Exception):
++    pass
++class ExecutionError(VersionError):
++    def __init__(self, errcode):
++        self.error_code = errcode
++
++def _check(process):
++    if process.returncode != 0:
++        raise ExecutionError(process.returncode)
++
++def get_rel_spec_stable(rel):
++    """
++    Returns release specs for a linux-stable backports based release.
++    """
++    m = None
++    if ("rc" in rel):
++        m = re.match(r"v*(?P<VERSION>\d+)\.+" \
++                     "(?P<PATCHLEVEL>\d+)[.]*" \
++                     "(?P<SUBLEVEL>\d*)" \
++                     "[-rc]+(?P<RC_VERSION>\d+)",
++                     rel)
++    else:
++        m = re.match(r"(?P<VERSION>\d+)\.+" \
++                     "(?P<PATCHLEVEL>\d+)[.]*" \
++                     "(?P<SUBLEVEL>\d*)",
++                     rel)
++    if (not m):
++        return m
++    return m.groupdict()
++
++def kernelversion(tree):
++    cmd = ['make', '--no-print-directory', '-C', tree, 'kernelversion' ]
++    process = subprocess.Popen(cmd,
++                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
++                               close_fds=True, universal_newlines=True)
++    stdout = process.communicate()[0]
++    process.wait()
++    _check(process)
++    return stdout.strip()
++
++def genkconfig_versions(rel_specs):
++    data = ''
++    for i in range(int(rel_specs['PATCHLEVEL']), 99):
++        data += "config BACKPORT_KERNEL_%s_%s\n" % (rel_specs['VERSION'], i)
++        data += "    def_bool y\n"
++    return data
 diff --git a/lib/kconfig.py b/lib/kconfig.py
-index 179121a..0f93c76 100644
+index 29c42ad..5366085 100644
 --- a/lib/kconfig.py
 +++ b/lib/kconfig.py
-@@ -7,9 +7,10 @@ import os, re
- src_line = re.compile(r'^\s*source\s+"?(?P<src>[^\s"]*)"?\s*$')
- tri_line = re.compile(r'^(?P<spc>\s+)tristate')
- bool_line = re.compile(r'^(?P<spc>\s+)bool')
--cfg_line = re.compile(r'^(config|menuconfig)\s+(?P<sym>[^\s]*)')
-+cfg_line = re.compile(r'^(?P<opt>config|menuconfig)\s+(?P<sym>[^\s]*)')
+@@ -12,6 +12,8 @@ cfg_line = re.compile(r'^(?P<opt>config|menuconfig)\s+(?P<sym>[^\s]*)')
  sel_line = re.compile(r'^(?P<spc>\s+)select\s+(?P<sym>[^\s]*)\s*$')
  backport_line = re.compile(r'^\s+#(?P<key>[ch]-file|module-name)\s*(?P<name>.*)')
-+ignore_parse_p = re.compile(r'^\s+#(?P<key>ignore-parser-package)')
+ ignore_parse_p = re.compile(r'^\s+#(?P<key>ignore-parser-package)')
++kernel_versin_config = re.compile(r'^(?P<opt>config)\s+(?P<sym>BACKPORT_KERNEL_[\d])')
++ignore_syms = re.compile(r'^(?P<opt>config|menuconfig)\s+(?P<sym>BACKPORT_DIR|BACKPORTS_VERSION|BACKPORTED_KERNEL_VERSION|BACKPORTED_KERNEL_NAME|BACKPORT_LINUX)')
  
  class ConfigTree(object):
      def __init__(self, rootfile):
-@@ -56,6 +57,82 @@ class ConfigTree(object):
-             outf.write(out)
-             outf.close()
+@@ -84,7 +86,7 @@ class ConfigTree(object):
  
-+    def _mod_kconfig_line(self, l, orig_symbols):
-+        for sym in orig_symbols:
-+            if sym in l:
-+                return re.sub(r' (' + sym + ')', r' BACKPORT_\1', l)
-+        return l
-+
-+    def adjust_backported_configs(self, integrate, orig_symbols):
-+        m = None
-+        old_l = None
-+        ignore_parse_modular = False
-+        for nf in self._walk(self.rootfile):
-+            out = ''
-+            for l in open(os.path.join(self.basedir, nf), 'r'):
-+                pm = ignore_parse_p.match(l)
-+                if pm:
-+                    ignore_parse_modular = True
+     def _mod_kconfig_line(self, l, orig_symbols):
+         for sym in orig_symbols:
+-            if sym in l:
++            if sym in l and 'BACKPORT_' not in l:
+                 return re.sub(r' (' + sym + ')', r' BACKPORT_\1', l)
+         return l
+ 
+@@ -99,6 +101,14 @@ class ConfigTree(object):
+                 if pm:
+                     ignore_parse_modular = True
+                     continue
++                vm = kernel_versin_config.match(l)
++                if vm:
++                    out += l
 +                    continue
-+                n = cfg_line.match(l)
-+                if n:
-+                    m = n
-+                    old_l = l
++                ig = ignore_syms.match(l)
++                if ig:
++                    out += l
 +                    continue
-+                # We're now on the second line for the config symbol
-+                if m:
-+                    # Right now this only supports one line hacks
-+                    if ignore_parse_modular:
-+                        if not integrate:
-+                            out += old_l
-+                            out += l
-+                        ignore_parse_modular = False
-+                        m = None
-+                        continue
-+                    built_in_sym = re.sub(r'BACKPORT_(.*)', r'\1', m.group('sym'))
-+                    # These are things that we carry as part of our backports
-+                    # module or things we automatically copy over into our
-+                    # backports module.
-+                    if 'BACKPORT' in m.group('sym'):
-+                        out += old_l
-+                        out += l
-+                        # For modular solutions This might still be possible if
-+                        # we use backport_ prefixes for our own symbols but it
-+                        # seems that folks now don't want these prefixes so
-+                        # restrict to ensure what we replace will not be
-+                        # available built-in as we are reviewing phasing that
-+                        # usage out.
-+                        if not integrate:
-+                            x = 0
-+                            # XXX: for we won't address this, as this needs
-+                            # review and getting rid of the prefixes, otherwise
-+                            # its OK. Some folks may *want* to replace built-in
-+                            # old symbols with some modular hack when they
-+                            # know its safe, for instance.
-+                            # out += "\tdepends on %s!=y\n" % (built_in_sym)
-+                        else:
-+                            # For backports kernel integration solutions we
-+                            # allow the backported solution from future kernels
-+                            # to replace the kernel solution you on your
-+                            # original tree
-+                            # XXX: only do this for symbols that have C files
-+                            # depending on it
-+                            out += "\tdepends on !%s\n" % (built_in_sym)
-+                    else:
-+                        # First rewrite the upstream symbol with our prefix
-+                        out += m.group('opt') + ' ' + 'BACKPORT_' + m.group('sym') + '\n'
-+                        out += l
-+                        if not integrate:
-+                            out += "\tdepends on %s!=y\n" % (built_in_sym)
-+                        else:
-+                            out += "\tdepends on !%s\n" % (built_in_sym)
-+                    m = None
-+                else:
-+                    out += self._mod_kconfig_line(l, orig_symbols)
-+            outf = open(os.path.join(self.basedir, nf), 'w')
-+            outf.write(out)
-+            outf.close()
-+
-     def symbols(self):
-         syms = []
-         for nf in self._walk(self.rootfile):
-diff --git a/patches/backport-adjustments/devcoredump.patch b/patches/backport-adjustments/devcoredump.patch
-index 3378884..1d31c77 100644
---- a/patches/backport-adjustments/devcoredump.patch
-+++ b/patches/backport-adjustments/devcoredump.patch
-@@ -107,7 +107,7 @@ index c0a360e99f64..da20e61f6c06 100644
-  #include <linux/vmalloc.h>
-  
- -#ifdef CONFIG_DEV_COREDUMP
--+#ifdef CPTCFG_BACKPORT_BUILD_WANT_DEV_COREDUMP
-++#ifdef CONFIG_BACKPORT_BUILD_WANT_DEV_COREDUMP
-  void dev_coredumpv(struct device *dev, const void *data, size_t datalen,
-  		   gfp_t gfp);
-  
-@@ -116,6 +116,6 @@ index c0a360e99f64..da20e61f6c06 100644
-  	free(data);
-  }
- -#endif /* CONFIG_DEV_COREDUMP */
--+#endif /* CPTCFG_BACKPORT_BUILD_WANT_DEV_COREDUMP */
-++#endif /* CONFIG_BACKPORT_BUILD_WANT_DEV_COREDUMP */
-  
-  #endif /* __DEVCOREDUMP_H */
+                 n = cfg_line.match(l)
+                 if n:
+                     m = n
 -- 
 2.1.1
 
