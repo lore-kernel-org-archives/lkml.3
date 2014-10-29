@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444AbaJ2K3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:29:07 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:34019 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072AbaJ2K3F (ORCPT
+	id S932417AbaJ2Kat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:30:49 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:56963 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932231AbaJ2Kas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:29:05 -0400
-Date: Wed, 29 Oct 2014 11:28:59 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Juergen Gross <jgross@suse.com>, hpa@zytor.com, x86@kernel.org,
-        mingo@redhat.com, stefan.bader@canonical.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com,
-        david.vrabel@citrix.com, jbeulich@suse.com, toshi.kani@hp.com
-Subject: Re: [PATCH V4 1/3] x86: Make page cache mode a real type
-Message-ID: <20141029102859.GA11260@gmail.com>
-References: <1414392513-24645-1-git-send-email-jgross@suse.com>
- <1414392513-24645-2-git-send-email-jgross@suse.com>
- <alpine.DEB.2.11.1410281536170.5308@nanos>
+	Wed, 29 Oct 2014 06:30:48 -0400
+Date: Wed, 29 Oct 2014 16:00:41 +0530
+From: Heena Sirwani <heenasirwani@gmail.com>
+To: opw-kernel@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, tglx@linutronix.de,
+        arnd@arndb.de
+Subject: [PATCH v8 0/2] Added ktime_get_seconds() and ktime_get_real_seconds()
+Message-ID: <cover.1414578445.git.heenasirwani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410281536170.5308@nanos>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following patchset adds two functions as follows:
+	-ktime_get_seconds() to return tv_sec portion of
+	ktime_get_ts64().
+	-ktime_get_real_seconds() to return tv_sec portion of
+	ktime_get_real_ts64().
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+Changes in v8:
+	-changed type of ktime_sec to unsigned long
+	- Added a patch with ktime_get_real_seconds().
 
-> On Mon, 27 Oct 2014, Juergen Gross wrote:
-> > At the moment there are a lot of places that handle setting or getting
-> > the page cache mode by treating the pgprot bits equal to the cache mode.
-> > This is only true because there are a lot of assumptions about the setup
-> > of the PAT MSR. Otherwise the cache type needs to get translated into
-> > pgprot bits and vice versa.
-> > 
-> > This patch tries to prepare for that by introducing a separate type
-> > for the cache mode and adding functions to translate between those and
-> > pgprot values.
-> > 
-> > To avoid too much performance penalty the translation between cache mode
-> > and pgprot values is done via tables which contain the relevant
-> > information.  Write-back cache mode is hard-wired to be 0, all other
-> > modes are configurable via those tables. For large pages there are
-> > translation functions as the PAT bit is located at different positions
-> > in the ptes of 4k and large pages.
-> 
-> I'm fine with the approach itself. Though I wish you had split this
-> patch in several sanely to review pieces.
-> 
->   - Introduce enums, helper functions etc. which basically reflect
->     the state of today
-> 
->   - Change the usage sites to use the enums and helpers
-> 
->   - Convert the enum/helper implementation to the new scheme
-> 
->   - Split out the printk change
-> 
->   ...
+Heena Sirwani (2):
+  timekeeping: Added a function to return tv_sec portion of
+    ktime_get_ts64()
+  timekeeping: Added a function to return tv_sec portion of
+    ktime_get_real_ts64()
 
-That absolutely has to be done, should any of this introduce 
-regressions. The diffstat:
+ include/linux/timekeeper_internal.h |  2 ++
+ include/linux/timekeeping.h         |  2 ++
+ kernel/time/timekeeping.c           | 41 ++++++++++++++++++++++++++++++++++---
+ 3 files changed, 42 insertions(+), 3 deletions(-)
 
- 18 files changed, 344 insertions(+), 212 deletions(-)
+-- 
+1.9.1
 
-is _way_ too large.
-
-Thanks,
-
-	Ingo
