@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602AbaJ2WY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:24:56 -0400
-Received: from ozlabs.org ([103.22.144.67]:55432 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756291AbaJ2WYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:24:54 -0400
-Date: Thu, 30 Oct 2014 09:24:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: unnecessary merges in the v4l-dvb tree
-Message-ID: <20141030092445.519a86ba@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1757647AbaJ2WZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:25:06 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:57235 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757611AbaJ2WZA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 18:25:00 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/f9bX2SmEm1e.SVTQn4CG.Ke"; protocol="application/pgp-signature"
+In-Reply-To: <CACE9dm9eFhA-JXjvuxKdO=4MMMMJ+ENiLTYxCrseeLAVi3xbKg@mail.gmail.com>
+References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
+ <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
+ <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <CALCETrWpHXp=7u2777ANJjxQ5rRqmutnEwf76dLX2s_LXf87pQ@mail.gmail.com>
+ <20141029183612.GI6890@mwanda> <CALCETrU1S94M1L-UM5Rg91J4kGjJRFLiPxce5aAnPPJVeitQ_A@mail.gmail.com>
+ <1414614013.5330.90.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <CALCETrUNYRbeA7EiTfd9hXMsHrES9EMAYaS=2FHOO=Kbm6qBTg@mail.gmail.com> <CACE9dm9eFhA-JXjvuxKdO=4MMMMJ+ENiLTYxCrseeLAVi3xbKg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 29 Oct 2014 15:24:38 -0700
+Message-ID: <CALCETrWQT9T8bh6ycpzvt6C_xfce+BuMQe6hP+8JPJE_3OMqJQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <jmorris@namei.org>,
+        "security@kernel.org" <security@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/f9bX2SmEm1e.SVTQn4CG.Ke
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Oct 29, 2014 at 3:23 PM, Dmitry Kasatkin
+<dmitry.kasatkin@gmail.com> wrote:
+> On 29 October 2014 23:22, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Oct 29, 2014 1:20 PM, "Mimi Zohar" <zohar@linux.vnet.ibm.com> wrote:
+>>>
+>>> On Wed, 2014-10-29 at 11:51 -0700, Andy Lutomirski wrote:
+>>> > On Wed, Oct 29, 2014 at 11:36 AM, Dan Carpenter
+>>> > <dan.carpenter@oracle.com> wrote:
+>>> > > On Wed, Oct 29, 2014 at 09:23:45AM -0700, Andy Lutomirski wrote:
+>>> > >> I have no idea what the semantics are.  All I'm saying is that it
+>>> > >> looks like the code still accesses memory past the end of the buffer.
+>>> > >> The buffer isn't a null pointer, so the symptom is different, but it
+>>> > >> may still be a security bug.
+>>> > >>
+>>> > >> --Andy
+>>> > >
+>>> > > It only reads one byte into the struct "xattr_data->type" so checking
+>>> > > for non-zero is sufficient and the patch is fine.
+>>> >
+>>> > Indeed.  Still... eww.  I don't like code that, upon local inspection,
+>>> > is apparently wrong, even though it's coincidentally correct due to
+>>> > some other far away condition.
+>>>
+>>> No, the code may be incomplete, but definitely not wrong.
+>>
+>> I said "apparently wrong" instead of "wrong" for a reason :)
+>
+> I see there is a long discussion about this patch.
+>
+> Actually using something like this "if (xattr_value_len <
+> sizeof(struct evm_ima_xattr_data))" or using sizeof (struct
+> signature_v2_hdr)
+> in this function does not give too much.
+> xattr value is variable length value and having that statement false
+> absolutely does not mean that the value is correct.
+> It can be even a random garbage of the correct size.
+> This particular function checks the first byte only so the test is good enough.
+>
 
-Hi Mauro,
+My point is that there's no possible way to tell that only the first
+byte is read just by reading the function.
 
-I noticed that you have two unnecessary merges in the v4l-dvb tree
-(git://linuxtv.org/mchehab/media-next.git#master).  This is not
-entirely your fault.  Unfortunately, when you do
+--Andy
 
-git merge <signed tag>
+> - Dmitry
+>
+>>
+>>>
+>>> Mimi
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+> Thanks,
+> Dmitry
 
-git will produce a merge commit even if it could have fast
-forwarded :-(.  Consequently, you have commits 1ef24960ab78 ("Merge tag
-'v3.18-rc1' into patchwork") and d6d41ba1cb38 ("Merge remote-tracking
-branch 'linus/master' into patchwork") even though the patchwork branch
-in each case is included in the tag being merged.
 
-The only ways I know around this is to either merge the commit
-associated with the tag or do a (hard) reset to the tag.
 
-Linus, any thoughts?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/f9bX2SmEm1e.SVTQn4CG.Ke
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUUWkzAAoJEMDTa8Ir7ZwVhFQP/jzdyCkxPaWBOmV0YO9vxeke
-Mk+Di7YvfQcG+DZdrW8a/7cxneO9+TXGw+FhI1f82v4EQSsL/cDfpuCZ8mAxxx/x
-Ka68gZlcFyI5Hrl7CyRJCKcU0dj4gP3zPLJZyH7WvAapXf/TEzZWdL8mxyle4EIn
-wM4MNn2bmfv4SqgMuS6cdHLXXH1qO4jnmLj7lBc6ljwrS4hGSL1W+BbBYY3RP4Mc
-lX3mGuANeNXUFG8tNuP20sxXzwHwWMf+Owp6QylUf/fCz13ESD1w6G6/rt2W8lpi
-zW0deIeeiF75fqjgONpMVffFYw7KEgrN6nA4XwU5CUFJjtKaW0WDhtW0AYZep7lW
-2J9aLaVo01JGjfcW4+TQMcYLZdrOt1ubqJwPgTs4iUVr4zMPpcst1lRuTDJwTbVg
-iyN0r7WVph+y4pGB/qOVmmzT1AJtbrxw9iUayBLzD6kXn94PUNFqkZv9GxFWcqZp
-Ewuhsb4Xw4H9qV6W22awNwMRZls8I+EaNoxQa3lalGvsZVQQnszWUu7oLC5/dree
-7CmF1rWph7leR6y0qyZIsT+dFxd/snvuJr1obwVDnTdm+3++7xNagTjgBdfLu2Ql
-izLNUSFIkujrVHHTm8dyK4NnouMFJ34RGNM8iaqBXp3Wq81hf7tcQ5uk0WUYppSt
-3wBNqs89LRp7aRsyRhde
-=sOCI
------END PGP SIGNATURE-----
-
---Sig_/f9bX2SmEm1e.SVTQn4CG.Ke--
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
