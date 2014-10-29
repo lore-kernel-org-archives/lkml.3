@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaJ2Fuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 01:50:40 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:7745 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751963AbaJ2Fuj (ORCPT
+	id S1755179AbaJ2Fv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 01:51:26 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:19367 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752972AbaJ2FvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 01:50:39 -0400
+	Wed, 29 Oct 2014 01:51:25 -0400
 From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
 To: "'Rob Herring'" <robherring2@gmail.com>, "'Joe Perches'" <joe@perches.com>,
         "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
@@ -16,13 +16,11 @@ To: "'Rob Herring'" <robherring2@gmail.com>, "'Joe Perches'" <joe@perches.com>,
         "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
         "'linux-arm-kernel@lists.infradead.org'" 
 	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 29 Oct 2014 13:50:35 +0800
-Subject: [RFC V5 1/3] add CONFIG_HAVE_ARCH_BITREVERSE to support rbit
-  instruction
-Thread-Topic: [RFC V5 1/3] add CONFIG_HAVE_ARCH_BITREVERSE to support rbit
-  instruction
-Thread-Index: Ac/zKGffEmlPWtUCT7yIK/xKLtVDxQADp3GQAAAMGlAAAAxPoAABDRrg
-Message-ID: <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
+Date: Wed, 29 Oct 2014 13:51:17 +0800
+Subject: [RFC V5 2/3] arm:add bitrev.h file to support rbit instruction
+Thread-Topic: [RFC V5 2/3] arm:add bitrev.h file to support rbit instruction
+Thread-Index: Ac/zKGffEmlPWtUCT7yIK/xKLtVDxQADp3GQAAAMGlAAAAxPoAABDRrgAAArD0A=
+Message-ID: <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
 References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
  <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
  <1414392371.8884.2.camel@perches.com>
@@ -30,7 +28,8 @@ References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.ne
  <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
  <35FD53F367049845BC99AC72306C23D103E010D18260@CNBJMBX05.corpusers.net>
  <35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -42,108 +41,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9T5ojIg032663
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9T5pV6q032667
 
-this change add CONFIG_HAVE_ARCH_BITREVERSE config option,
-so that we can use arm/arm64 rbit instruction to do bitrev operation
-by hardware.
-
-Change bitrev16() bitrev32() to be inline function,
-don't need export symbol for these tiny functions.
-
+This patch add bitrev.h file to support rbit instruction,
+so that we can do bitrev operation by hardware.
 Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
 ---
- include/linux/bitrev.h | 21 ++++++++++++++++++---
- lib/Kconfig            |  9 +++++++++
- lib/bitrev.c           | 17 ++---------------
- 3 files changed, 29 insertions(+), 18 deletions(-)
+ arch/arm/Kconfig              |  1 +
+ arch/arm/include/asm/bitrev.h | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+)
+ create mode 100644 arch/arm/include/asm/bitrev.h
 
-diff --git a/include/linux/bitrev.h b/include/linux/bitrev.h
-index 7ffe03f..413c52c 100644
---- a/include/linux/bitrev.h
-+++ b/include/linux/bitrev.h
-@@ -3,14 +3,29 @@
- 
- #include <linux/types.h>
- 
--extern u8 const byte_rev_table[256];
-+#ifdef CONFIG_HAVE_ARCH_BITREVERSE
-+#include <asm/bitrev.h>
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 89c4b5c..be92b3b 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -28,6 +28,7 @@ config ARM
+ 	select HANDLE_DOMAIN_IRQ
+ 	select HARDIRQS_SW_RESEND
+ 	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
++	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
+ 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
+ 	select HAVE_ARCH_KGDB
+ 	select HAVE_ARCH_SECCOMP_FILTER if (AEABI && !OABI_COMPAT)
+diff --git a/arch/arm/include/asm/bitrev.h b/arch/arm/include/asm/bitrev.h
+new file mode 100644
+index 0000000..c21a5f4
+--- /dev/null
++++ b/arch/arm/include/asm/bitrev.h
+@@ -0,0 +1,28 @@
++#ifndef __ASM_ARM_BITREV_H
++#define __ASM_ARM_BITREV_H
 +
-+#define bitrev32 __arch_bitrev32
-+#define bitrev16 __arch_bitrev16
-+#define bitrev8 __arch_bitrev8
- 
-+#else
-+extern u8 const byte_rev_table[256];
- static inline u8 bitrev8(u8 byte)
- {
- 	return byte_rev_table[byte];
- }
- 
--extern u16 bitrev16(u16 in);
--extern u32 bitrev32(u32 in);
-+static inline u16 bitrev16(u16 x)
++static __always_inline __attribute_const__ u32 __arch_bitrev32(u32 x)
 +{
-+	return (bitrev8(x & 0xff) << 8) | bitrev8(x >> 8);
++	if (__builtin_constant_p(x)) {
++		x = (x >> 16) | (x << 16);
++		x = ((x & 0xFF00FF00) >> 8) | ((x & 0x00FF00FF) << 8);
++		x = ((x & 0xF0F0F0F0) >> 4) | ((x & 0x0F0F0F0F) << 4);
++		x = ((x & 0xCCCCCCCC) >> 2) | ((x & 0x33333333) << 2);
++		return ((x & 0xAAAAAAAA) >> 1) | ((x & 0x55555555) << 1);
++	}
++	__asm__ ("rbit %0, %1" : "=r" (x) : "r" (x));
++	return x;
 +}
 +
-+static inline u32 bitrev32(u32 x)
++static __always_inline __attribute_const__ u16 __arch_bitrev16(u16 x)
 +{
-+	return (bitrev16(x & 0xffff) << 16) | bitrev16(x >> 16);
++	return __arch_bitrev32((u32)x) >> 16;
 +}
- 
-+#endif /* CONFIG_HAVE_ARCH_BITREVERSE */
- #endif /* _LINUX_BITREV_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 54cf309..cd177ca 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -13,6 +13,15 @@ config RAID6_PQ
- config BITREVERSE
- 	tristate
- 
-+config HAVE_ARCH_BITREVERSE
-+	boolean
-+	default n
-+	depends on BITREVERSE
-+	help
-+	  This option provides an config for the architecture which have instruction
-+	  can do bitreverse operation, we use the hardware instruction if the architecture
-+	  have this capability.
 +
- config RATIONAL
- 	boolean
- 
-diff --git a/lib/bitrev.c b/lib/bitrev.c
-index 3956203..40ffda9 100644
---- a/lib/bitrev.c
-+++ b/lib/bitrev.c
-@@ -1,3 +1,4 @@
-+#ifndef CONFIG_HAVE_ARCH_BITREVERSE
- #include <linux/types.h>
- #include <linux/module.h>
- #include <linux/bitrev.h>
-@@ -42,18 +43,4 @@ const u8 byte_rev_table[256] = {
- };
- EXPORT_SYMBOL_GPL(byte_rev_table);
- 
--u16 bitrev16(u16 x)
--{
--	return (bitrev8(x & 0xff) << 8) | bitrev8(x >> 8);
--}
--EXPORT_SYMBOL(bitrev16);
--
--/**
-- * bitrev32 - reverse the order of bits in a u32 value
-- * @x: value to be bit-reversed
-- */
--u32 bitrev32(u32 x)
--{
--	return (bitrev16(x & 0xffff) << 16) | bitrev16(x >> 16);
--}
--EXPORT_SYMBOL(bitrev32);
-+#endif /* CONFIG_HAVE_ARCH_BITREVERSE */
++static __always_inline __attribute_const__ u8 __arch_bitrev8(u8 x)
++{
++	return __arch_bitrev32((u32)x) >> 24;
++}
++
++#endif
++
 -- 
 2.1.1
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
