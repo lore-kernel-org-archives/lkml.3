@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190AbaJ2I5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 04:57:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48361 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699AbaJ2I45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 04:56:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,808,1406617200"; 
-   d="scan'208";a="622640230"
-Date: Wed, 29 Oct 2014 10:56:52 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com, Arnd Bergmann <arnd@arndb.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH v2] Documentation: gpio: guidelines for bindings
-Message-ID: <20141029085652.GK1304@lahna.fi.intel.com>
-References: <1414570394-11706-1-git-send-email-acourbot@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414570394-11706-1-git-send-email-acourbot@nvidia.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755931AbaJ2JAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:00:41 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:22337 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755422AbaJ2JAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 05:00:39 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgMTACCsUFRXQzqR/2dsb2JhbABcgw6BLLpABgEBAQEBBQF0mkEEAoEZFwEBAQEBfYQwLyOBGjeIRQG2Yo5mLIY1iXBkHYQ1BZ1oljiBRwGCMTwvgQaBRQEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Jiri Kosina <trivial@kernel.org>,
+        netdev@vger.kernel.org
+Subject: [PATCH/TRIVIAL 1/1 net-next] ipv6: spelling s/incomming/incoming
+Date: Wed, 29 Oct 2014 10:00:26 +0100
+Message-Id: <1414573227-10743-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 05:13:14PM +0900, Alexandre Courbot wrote:
-> Now that ACPI supports named GPIO properties, either through ACPI 5.1 or
-> the per-driver ACPI GPIO mappings, we can be more narrow about the way
-> GPIOs should be specified in Device Tree bindings.
-> 
-> This patch updates the GPIO DT bindings documentation to highlight the
-> following rules for new GPIO bindings:
-> 
-> - All new bindings must have a meaningful name (e.g. the "gpios"
->   property must not be used)
-> - The only suffix allowed is "-gpios", no matter the number of
->   descriptors in the property
-> - GPIOs can only be grouped under the same property when they serve the
->   same purpose, a case that should remain exceptional (e.g. bit-banged
->   data lines).
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> CC: Rafael J. Wysocki <rjw@rjwysocki.net>
-> CC: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/ipv6/ip6mr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
+index 0171f08..467f310 100644
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -2090,7 +2090,7 @@ static void ip6_mr_forward(struct net *net, struct mr6_table *mrt,
+ 	if (ipv6_addr_any(&cache->mf6c_origin) && true_vifi >= 0) {
+ 		struct mfc6_cache *cache_proxy;
+ 
+-		/* For an (*,G) entry, we only check that the incomming
++		/* For an (*,G) entry, we only check that the incoming
+ 		 * interface is part of the static tree.
+ 		 */
+ 		cache_proxy = ip6mr_cache_find_any_parent(mrt, vif);
+-- 
+1.9.3
+
