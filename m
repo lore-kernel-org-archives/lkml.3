@@ -1,168 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaJ1X5B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:57:01 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:63581 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaJ1X47 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:56:59 -0400
-Date: Wed, 29 Oct 2014 00:54:37 +0100
-From: Alexis Berlemont <alexis.berlemont@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
-        namhyung@kernel.org, mmarek@suse.cz
-Subject: Re: [PATCH v4 00/14] Kbuild for perf
-Message-ID: <20141028235437.GA28345@marx-slim.home>
-References: <20141024124601.GX14687@kernel.org>
- <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
- <20141027223739.GA21965@krava.redhat.com>
+	id S1754635AbaJ2ABF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 20:01:05 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:42360 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858AbaJ2ABC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 20:01:02 -0400
+Date: Tue, 28 Oct 2014 22:00:51 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Sander Eikelenboom <linux@eikelenboom.it>, prabhakar.csengg@gmail.com,
+        Antti Palosaari <crope@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "sakari.ailus@linux.intel.com" <sakari.ailus@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "olebowle@gmx.com" <olebowle@gmx.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFCv1] Media Token API needs - Was: Re: [alsa-devel] [PATCH v2
+ 5/6] sound/usb: pcm changes to use media token api
+Message-ID: <20141028220051.68a8ab6e@recife.lan>
+In-Reply-To: <20141028214250.27f0c869@recife.lan>
+References: <cover.1413246370.git.shuahkh@osg.samsung.com>
+	<cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com>
+	<543FB374.8020604@metafoo.de>
+	<543FC3CD.8050805@osg.samsung.com>
+	<s5h38aow1ub.wl-tiwai@suse.de>
+	<543FD1EC.5010206@osg.samsung.com>
+	<s5hy4sgumjo.wl-tiwai@suse.de>
+	<543FD892.6010209@osg.samsung.com>
+	<s5htx34ul3w.wl-tiwai@suse.de>
+	<54467EFB.7050800@xs4all.nl>
+	<s5hbnp5z9uy.wl-tiwai@suse.de>
+	<CAGoCfixD-zv1MMHUXLnjGV5KVB-DGdp2ZqZ0hUTR14UvLh-Gvw@mail.gmail.com>
+	<544804F1.7090606@linux.intel.com>
+	<20141025114115.292ff5d2@recife.lan>
+	<s5hk33n8ccj.wl-tiwai@suse.de>
+	<20141027105237.5f5ec7fd@recife.lan>
+	<5450077F.70101@osg.samsung.com>
+	<20141028214250.27f0c869@recife.lan>
+Organization: Samsung
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20141027223739.GA21965@krava.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa wrote:
-> On Sun, Oct 26, 2014 at 12:20:25AM +0200, Alexis Berlemont wrote:
-> > Hello,
-> > 
-> > Here is a proposal of perf's build process managed by Kbuild:
-> > * The file Makefile.perf is replaced by Makefile.kbuild
-> > * Makefile.kbuild generates a default .config file if none exists
-> >   (allyesconfig)
-> > * Makefile.kbuild adapts the .config file according to the
-> >   features-check tests results
-> > * Makefile.kbuild builds external dependencies (linux/tools/lib/*)
-> > * Makefile.kbuild leaves the rest to Kbuild 
-> > 
-> > Changes since v3:
-> >  * Patchs were generated starting from the following branch:
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
-> >  * Add Kconfig options for 32-bit compatibility VDSOs
-> >  * Target build-test: for each .config-based test case, call "make
-> >    olddefconfig" so as to prevent failure because of new Kconfig
-> >    symbol(s)
-> 
-> hi,
-> I tried 'make clean && make' and got attached errors.
-> I'm running Fedora 20 on x86_64
->
+Em Tue, 28 Oct 2014 21:42:50 -0200
+Mauro Carvalho Chehab <mchehab@osg.samsung.com> escreveu:
 
-OK. I may have an idea. The parameters CONFIG_LIBDWARF_DIR and
-CONFIG_LIBUNWIND_DIR are empty (default value). So the variable
-LDFLAGS stored into .config-detected contains things like
-"-L/lib" and your /lib directory contains 32bit binaries.
+> Before starting with the description, this is the simplified diagram of
+> a media device (without IR, eeprom and other beasts):
 
-Could you send me the files .config and .config-detected which were
-generated during the build?
+As reference, a more complete diagram would be:
 
-I will send a new patch set.
 
-* FYI, so far, I tested the build:
-* on my archlinux x86_64 system
-* and with many cross-toolchains (powerpc, arm, etc.) generated by
-  crosstool-ng
 
-I should have tested on other distros especially fedora... Sorry.
+                                                                +------------------+
+                                                                |        IR        |
+                                                                +------------------+
+                                                                  |
+                                                                  |
+                                                                  v
+                                                                +------------------+
+                                                                |  IR POLL or DMA  |
+                                                                +------------------+
+                                                                  |
+                                                                  |
+                                                                  v
+                                                                +------------------+
+                                                                |  devnode input8  |
+                                                                +------------------+
 
-Thank you very much for testing it!
+                             +------------------------------------+
+                             v                                    |
+                           +----------------+          +-------+-------------------+-----------+
+                           |  demod_video   |  +-----> | tuner |     A/V switch    | composite |
+                           +----------------+  |       +-------+-------------------+-----------+
+                             |                 |                  |
+                             |                 |                  |
+                             v                 |                  v
+     +--------------+-----+-----------------+  |                +------------------+
+  +- |     dvb      | DMA |      analog     |  |                |   demod_audio    |
+  |  +--------------+-----+-----------------+  |                +------------------+
+  |    ^                     |                 |                  |
+  |    +---------------+     |                 |                  |
+  |                    |     v                 |                  v
+  |  +--------------+  |   +----------------+  |                +------------------+
+  +> | devnode dvr0 |  |   | devnode video0 |  |                |    audio DMA     |
+     +--------------+  |   +----------------+  |                +------------------+
+                       |                       |                  |
+                       |                       |                  |
+                       |                       |                  v
+                       |                       |                +------------------+
+                       |                       |                | devnode pcmC1D0c |
+                       |                       |                +------------------+
+                       |                       |
+                       |                       |
+                       |                       |
+                       |                     +--------+--------+-------------------+
+                       |                     | analog |  tuner |      digital      |
+                       |                     +--------+--------+-------------------+
+                       |                                          |
+                       |                                          |
+                       |                                          v
+                       |                                        +------------------+
+                       +--------------------------------------- |  digital_demux   |
+                                                                +------------------+
 
-Alexis.
+Regards,
+Mauro
 
-> jirka
-> 
-> 
-> ---
->   BUILD:   Doing 'make [33m-j4[m' parallel build
->   GEN     tools/perf/PERF-VERSION-FILE
-> make[3]: *** No rule to make target `kernelversion'.  Stop.
->   MKDIR    libapi_dirs
->   CC       /home/jolsa/kernel.org/linux-perf/tools/lib/api/fs/fs.o
->   CC       /home/jolsa/kernel.org/linux-perf/tools/lib/api/fs/debugfs.o
->   CC       /home/jolsa/kernel.org/linux-perf/tools/lib/api/fd/array.o
->   AR       libapikfs.a
->   LD      tools/perf/arch/built-in.o
->   LD      tools/perf/built-in.o
->   LD      tools/perf/perf
-> /bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/librt.so when searching for -lrt
-> /bin/ld: skipping incompatible /lib/librt.a when searching for -lrt
-> /bin/ld: skipping incompatible /lib/librt.so when searching for -lrt
-> /bin/ld: skipping incompatible /lib/librt.a when searching for -lrt
-> /bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libresolv.so when searching for -lresolv
-> /bin/ld: skipping incompatible /lib/libresolv.a when searching for -lresolv
-> /bin/ld: skipping incompatible /lib/libresolv.so when searching for -lresolv
-> /bin/ld: skipping incompatible /lib/libresolv.a when searching for -lresolv
-> /bin/ld: skipping incompatible /lib/libnsl.so when searching for -lnsl
-> /bin/ld: skipping incompatible /lib/libnsl.a when searching for -lnsl
-> /bin/ld: skipping incompatible /lib/libnsl.so when searching for -lnsl
-> /bin/ld: skipping incompatible /lib/libnsl.a when searching for -lnsl
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-> /bin/ld: skipping incompatible /lib/libcrypt.so when searching for -lcrypt
-> /bin/ld: skipping incompatible /lib/libcrypt.a when searching for -lcrypt
-> /bin/ld: skipping incompatible /lib/libcrypt.so when searching for -lcrypt
-> /bin/ld: skipping incompatible /lib/libcrypt.a when searching for -lcrypt
-> /bin/ld: skipping incompatible /lib/libutil.so when searching for -lutil
-> /bin/ld: skipping incompatible /lib/libutil.a when searching for -lutil
-> /bin/ld: skipping incompatible /lib/libutil.so when searching for -lutil
-> /bin/ld: skipping incompatible /lib/libutil.a when searching for -lutil
-> /bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libc.so when searching for -lc
-> /bin/ld: skipping incompatible /lib/libc.a when searching for -lc
-> /bin/ld: skipping incompatible /lib/libc.so when searching for -lc
-> /bin/ld: skipping incompatible /lib/libc.a when searching for -lc
-> /bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libutil.so when searching for -lutil
-> /bin/ld: skipping incompatible /lib/libutil.a when searching for -lutil
-> /bin/ld: skipping incompatible /lib/libutil.so when searching for -lutil
-> /bin/ld: skipping incompatible /lib/libutil.a when searching for -lutil
-> /bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-> /bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-> /bin/ld: skipping incompatible /lib/libc.so when searching for -lc
-> /bin/ld: skipping incompatible /lib/libc.a when searching for -lc
-> /bin/ld: skipping incompatible /lib/libc.so when searching for -lc
-> /bin/ld: skipping incompatible /lib/libc.a when searching for -lc
+-
+
+Dot file for the above diagram:
+
+digraph media_hardware {
+  node [shape=record]
+  DMA1[label = "<dvb> dvb | <dma> DMA | <video> analog"]
+  DMA2[label = "audio DMA"]
+  DMA3[label = "IR POLL or DMA"]
+  tuner[label = "<analog> analog | <tuner> tuner | <digital> digital"]
+  input[label = "<tuner> tuner | <switch> A/V switch | <composite> composite"]
+
+  DMA1:video -> "devnode video0"
+  DMA1:dvb -> "devnode dvr0"
+
+  "digital_demux" -> DMA1:dvb
+  demod_video -> DMA1:video
+
+  tuner:digital -> "digital_demux"
+  tuner:analog -> input:tuner
+
+  input:switch -> demod_video
+  input:switch -> demod_audio
+
+  demod_audio -> DMA2
+  DMA2 -> "devnode pcmC1D0c"
+
+  IR -> DMA3
+  DMA3 -> "devnode input8"
+}
