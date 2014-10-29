@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706AbaJ2LsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 07:48:21 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:33453 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932384AbaJ2LsT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 07:48:19 -0400
-Subject: Re: [PATCH] of: spi: Export single device registration method and accessors (v2)
-Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20141029101420.GT18557@sirena.org.uk>
-Date: Wed, 29 Oct 2014 13:48:06 +0200
-Cc: Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6A3753C0-251A-4645-AD96-CB1D6521175F@antoniou-consulting.com>
-References: <1414572037-11306-1-git-send-email-pantelis.antoniou@konsulko.com> <20141029101420.GT18557@sirena.org.uk>
-To: Mark Brown <broonie@kernel.org>
-X-Mailer: Apple Mail (2.1990.1)
+	id S932830AbaJ2LwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 07:52:04 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:19259 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932728AbaJ2LvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 07:51:10 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-16-5450d4acbc2f
+Subject: [PATCH] mm/balloon_compaction: fix deflation when compaction is
+ disabled
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mullins <mmullins@mmlx.us>, linux-kernel@vger.kernel.org,
+        Rafael Aquini <aquini@redhat.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, stable@vger.kernel.org
+Date: Wed, 29 Oct 2014 14:51:07 +0400
+Message-id: <20141029115107.23071.26065.stgit@buzz>
+In-reply-to: <20141028202333.GC29098@hydra.tuxags.com>
+References: <20141028202333.GC29098@hydra.tuxags.com>
+User-Agent: StGit/0.17.1-dirty
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t/xa7prrgSEGOz7zmkxZ/0aNosZD3+x
+	WPzY2ctqcXnXHDaLe2v+s1rMeb6UyWLxkdvMFgs2PmJ04PDY9GkSu8eJGb9ZPK62zmfz+Pj0
+	FovH+31X2Tz6tqxi9Pi8SS6APYrLJiU1J7MstUjfLoErY/usLywFU7gqpl7fwtbAuIeji5GT
+	Q0LARGLRxnYWCFtM4sK99WxdjFwcQgJLGSWm/5/ODJIQEmhkktg+PQvEFhYIlmh8voQRxGYT
+	MJPYtu82I0iDiMByRolV1x+wgSSYBRwkJq3+CVbEIqAqMW3yESCbg4NXwFhi7U5/kDAnUO/Z
+	1xBhIQFTiTWNMSBhUQE5iZWXW1hBbF4BQYkfk++xgJQwC6hLTJmSCzFcXmLzmrfMExgFZiGp
+	moVQNQtJ1QJG5lWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIcH/dQfj0mNWhxgFOBiVeHgj
+	jgWECLEmlhVX5h5ilOBgVhLhfbcXKMSbklhZlVqUH19UmpNafIiRiYNTqoHRIuoPp4zZ2Vd8
+	Ly7NuJ918btrlW/C93fZnnsmxcvFTdJR01pedXC9iUOCu+ztNd9sk0Mi33i35FblNeU2SxVH
+	c3sGVjc+fP2N8/s2JqOje043egpUiAUdeVL5i99pnuLvuaHx3u0Syul1334Ffi6InClVL6jk
+	4u3n3rA87laATNaC+UvMWZRYijMSDbWYi4oTAas7R5NcAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Fix for commit d6d86c0a7f8ddc5b38cf089222cb1d9540762dc2
+("mm/balloon_compaction: redesign ballooned pages management").
 
-> On Oct 29, 2014, at 12:14 , Mark Brown <broonie@kernel.org> wrote:
-> 
-> On Wed, Oct 29, 2014 at 10:40:37AM +0200, Pantelis Antoniou wrote:
->> Dynamically inserting spi device nodes requires the use of a single
->> device registration method. Rework and export it.
->> 
->> Methods to lookup a device/master using a device node are added
->> as well, of_find_spi_master_by_node() & of_find_spi_device_by_node().
-> 
-> Why do we need to do this - I would expect that adding nodes would
-> trigger parsing in the same way we normally do it.  Where is the user
-> and how does it know that it's handling a SPI node?
-> 
-> This feels like there is an abstraction problem somewhere, whatever code
-> is supposed to use this is going to need to be taught about each
-> individual bus which is going to be tedious, I would expect that we'd
-> have something like the bus being able to provide a callback which will
-> get invoked whenever a new node appears on the parent node for the bus.
-> 
+If CONFIG_BALLOON_COMPACTION=n balloon_page_insert() does not link
+pages with balloon and doesn't set PagePrivate flag, as a result
+balloon_page_dequeue cannot get any pages because it thinks that
+all of them are isolated. Without balloon compaction nobody can
+isolate ballooned pages, it's safe to remove this check.
 
-There’s a whole patchset that does exactly this. 
-Look at "OF: spi: Add OF notifier handler” and you’ll where this is used.
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Reported-by: Matt Mullins <mmullins@mmlx.us>
+Cc: Stable <stable@vger.kernel.org>	(v3.17)
+---
+ mm/balloon_compaction.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
->> Changes since v1:
->> * Brown paper bug with parameter on of_register_spi_device().
-> 
-> Don't include noise like this in the changelog, put it after --- like
-> SubmittingPatches says.  Please also try to keep your CC list sane,
-> CCing random people just means that you're increasing the volume of mail
-> they have to process.  I'm surprised kernel.org accepts so many CCs.
-> 
-> I have to say I don't recall ever seeing v1...
-
-All of them are in the CC list for a reason. 
-
-Regards
-
-— Pantelis
+diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
+index b3cbe19..fcad832 100644
+--- a/mm/balloon_compaction.c
++++ b/mm/balloon_compaction.c
+@@ -68,11 +68,13 @@ struct page *balloon_page_dequeue(struct balloon_dev_info *b_dev_info)
+ 		 * to be released by the balloon driver.
+ 		 */
+ 		if (trylock_page(page)) {
++#ifdef CONFIG_BALLOON_COMPACTION
+ 			if (!PagePrivate(page)) {
+ 				/* raced with isolation */
+ 				unlock_page(page);
+ 				continue;
+ 			}
++#endif
+ 			spin_lock_irqsave(&b_dev_info->pages_lock, flags);
+ 			balloon_page_delete(page);
+ 			__count_vm_event(BALLOON_DEFLATE);
 
