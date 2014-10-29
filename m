@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933617AbaJ2Oim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:38:42 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:59456 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475AbaJ2Oil (ORCPT
+	id S933542AbaJ2Oj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:39:56 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:52921 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475AbaJ2Ojz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:38:41 -0400
-Date: Wed, 29 Oct 2014 10:38:38 -0400
-From: Tejun Heo <tj@kernel.org>
-To: pang.xunlei@zte.com.cn
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH] idr: optimize ida_init() to avoid an extra memset
-Message-ID: <20141029143838.GC25226@htj.dyndns.org>
-References: <OF73B80F6F.959BED11-ON48257D80.00327936-48257D80.00341CEF@zte.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OF73B80F6F.959BED11-ON48257D80.00327936-48257D80.00341CEF@zte.com.cn>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 29 Oct 2014 10:39:55 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ALSA: hdspm: remove unused variable
+Date: Wed, 29 Oct 2014 20:09:45 +0530
+Message-Id: <1414593585-13277-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 05:26:34PM +0800, pang.xunlei@zte.com.cn wrote:
-> The memset in ida_init() already handles idr, so there's some
-> redundancy in the following idr_init().
-> 
-> This patch removes the memset, and clears ida->free_bitmap instead.
-> 
-> Signed-off-by: pang.xunlei <pang.xunlei@zte.com.cn>
-> ---
->  lib/idr.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/lib/idr.c b/lib/idr.c
-> index e654aeb..bbe5779 100644
-> --- a/lib/idr.c
-> +++ b/lib/idr.c
-> @@ -1141,8 +1141,7 @@ EXPORT_SYMBOL(ida_simple_remove);
->   */
->  void ida_init(struct ida *ida)
->  {
-> -   memset(ida, 0, sizeof(struct ida));
->     idr_init(&ida->idr);
-> -
-> +   ida->free_bitmap = NULL;
+removed the unused variables. These variables were only being
+assigned some value, but the values were never being used.
 
-I don't know.  Does this matter?  If this *really* matters, I'd much
-rather have memset(&ida->FIRST_FIELD, 0, sizeof(struct ida) - offset
-of FIRST_FIELD) to ensure that all fields get reset or implement an
-internal function like __idr_init_without_zeroing(); however, given
-the size of an idr and the low frequency of the operation, I'd prefer
-to just leave it as-is.
+it has been build tested after removing the variables.
 
-Thanks.
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ sound/pci/rme9652/hdspm.c | 23 +++--------------------
+ 1 file changed, 3 insertions(+), 20 deletions(-)
 
+diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
+index 7f7277b..e09348c1 100644
+--- a/sound/pci/rme9652/hdspm.c
++++ b/sound/pci/rme9652/hdspm.c
+@@ -1257,14 +1257,13 @@ static int hdspm_rate_multiplier(struct hdspm *hdspm, int rate)
+ /* check for external sample rate, returns the sample rate in Hz*/
+ static int hdspm_external_sample_rate(struct hdspm *hdspm)
+ {
+-	unsigned int status, status2, timecode;
++	unsigned int status, status2;
+ 	int syncref, rate = 0, rate_bits;
+ 
+ 	switch (hdspm->io_type) {
+ 	case AES32:
+ 		status2 = hdspm_read(hdspm, HDSPM_statusRegister2);
+ 		status = hdspm_read(hdspm, HDSPM_statusRegister);
+-		timecode = hdspm_read(hdspm, HDSPM_timecodeRegister);
+ 
+ 		syncref = hdspm_autosync_ref(hdspm);
+ 		switch (syncref) {
+@@ -4862,18 +4861,15 @@ snd_hdspm_proc_read_madi(struct snd_info_entry *entry,
+ 			 struct snd_info_buffer *buffer)
+ {
+ 	struct hdspm *hdspm = entry->private_data;
+-	unsigned int status, status2, control, freq;
++	unsigned int status, status2;
+ 
+ 	char *pref_sync_ref;
+ 	char *autosync_ref;
+ 	char *system_clock_mode;
+-	char *insel;
+ 	int x, x2;
+ 
+ 	status = hdspm_read(hdspm, HDSPM_statusRegister);
+ 	status2 = hdspm_read(hdspm, HDSPM_statusRegister2);
+-	control = hdspm->control_register;
+-	freq = hdspm_read(hdspm, HDSPM_timecodeRegister);
+ 
+ 	snd_iprintf(buffer, "%s (Card #%d) Rev.%x Status2first3bits: %x\n",
+ 			hdspm->card_name, hdspm->card->number + 1,
+@@ -4936,17 +4932,6 @@ snd_hdspm_proc_read_madi(struct snd_info_entry *entry,
+ 	snd_iprintf(buffer, "Line out: %s\n",
+ 		(hdspm->control_register & HDSPM_LineOut) ? "on " : "off");
+ 
+-	switch (hdspm->control_register & HDSPM_InputMask) {
+-	case HDSPM_InputOptical:
+-		insel = "Optical";
+-		break;
+-	case HDSPM_InputCoaxial:
+-		insel = "Coaxial";
+-		break;
+-	default:
+-		insel = "Unknown";
+-	}
+-
+ 	snd_iprintf(buffer,
+ 		"ClearTrackMarker = %s, Transmit in %s Channel Mode, "
+ 		"Auto Input %s\n",
+@@ -5191,15 +5176,13 @@ snd_hdspm_proc_read_raydat(struct snd_info_entry *entry,
+ 			 struct snd_info_buffer *buffer)
+ {
+ 	struct hdspm *hdspm = entry->private_data;
+-	unsigned int status1, status2, status3, control, i;
++	unsigned int status1, status2, status3, i;
+ 	unsigned int lock, sync;
+ 
+ 	status1 = hdspm_read(hdspm, HDSPM_RD_STATUS_1); /* s1 */
+ 	status2 = hdspm_read(hdspm, HDSPM_RD_STATUS_2); /* freq */
+ 	status3 = hdspm_read(hdspm, HDSPM_RD_STATUS_3); /* s2 */
+ 
+-	control = hdspm->control_register;
+-
+ 	snd_iprintf(buffer, "STATUS1: 0x%08x\n", status1);
+ 	snd_iprintf(buffer, "STATUS2: 0x%08x\n", status2);
+ 	snd_iprintf(buffer, "STATUS3: 0x%08x\n", status3);
 -- 
-tejun
+1.8.1.2
+
