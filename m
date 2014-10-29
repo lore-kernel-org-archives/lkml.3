@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934729AbaJ2Qju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:39:50 -0400
-Received: from distopic.net ([80.67.6.140]:34085 "EHLO distopic.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934242AbaJ2Qjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:39:48 -0400
-Message-ID: <545117FC.6030704@distopic.net>
-Date: Wed, 29 Oct 2014 17:38:20 +0100
-From: Mikael Svantesson <mikael@distopic.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S934744AbaJ2Qj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:39:58 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40174 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934242AbaJ2Qj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:39:56 -0400
+Message-ID: <54511876.1040301@wwwdotorg.org>
+Date: Wed, 29 Oct 2014 10:40:22 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, devel@driverdev.osuosl.org,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Jake Edge <jake@lwn.net>, Anton Saraev <antonysaraev@gmail.com>,
-        Mikael Svantesson <mikael@distopic.net>
-Subject: Re: [PATCH v2] staging: skein: skein_api.c: removed space before
- ','
-References: <544FF764.7090003@distopic.net> <20141029052517.GA3556@sudip-PC> <5450941F.5040609@distopic.net> <5450966A.20709@distopic.net> <20141029160553.GB18125@kroah.com>
-In-Reply-To: <20141029160553.GB18125@kroah.com>
-Content-Type: text/plain; charset=windows-1252
+To: Matthias Klein <matthias.klein@linux.com>,
+        linux-rpi-kernel@lists.infradead.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: bcm2835: add device tree for Raspberry Pi model
+ B+
+References: <1414457566-31802-1-git-send-email-matthias.klein@linux.com> <54504407.3090700@wwwdotorg.org> <5450AE6F.8010102@linux.com>
+In-Reply-To: <5450AE6F.8010102@linux.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-29 17:05, Greg Kroah-Hartman wrote:
-> Please send this as a "correct" patch, not one with a whole bunch of
-> other stuff in it that I would have to hand-edit in order to apply
-> properly.
-> 
-> Remember, you want to make it as easy as possible for me to accept your
-> patches, so far, this isn't going well :)
-> 
-> greg k-h
-> 
+On 10/29/2014 03:07 AM, Matthias Klein wrote:
+>
+> Am 29.10.2014 um 02:33 schrieb Stephen Warren:
+>> On 10/27/2014 06:52 PM, Matthias Klein wrote:
+>>> The model B and B+ differ in the GPIO lines for ACT and PWR led.
+>>> The PWR led on the B+ model is active low.
+>> This new file is almost identical to bcm2835-rpi.dts. Perhaps we can use
+>> some include files to share the common portions so they aren't
+>> duplicated. Roughly:
+>>
+>> * Move all the common content from bcm2835-rpi.dts into bcm2835-rpi.dtsi.
+>>
+>> * Update bcm2835-rpi.dts to include bcm2835-rpi.dtsi to get all the
+>> common parts, and add the few lines of differences.
+>>
+>> * Update this patch similarly.
+>>
+>> Does that make sense?
+> Yes, I will work on such a patchset.
+>
+>>
+>> A couple changes to this patch and the existing bcm2835-rpi.dts might
+>> reduce the differences even further, leading to more common code in
+>> bcm2835-rpi.dtsi:
+>>
+>> - Add the PWR LED to bcm2835-rpi-b.dts, if appropriate.
+>> - Add the I2S pinmux settings for B+ too.
+>>
+>>> diff --git a/arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
+>>> b/arch/arm/boot/dts/bcm2835-rpi-b-plus.dts
+>> ...
+>>> +&mmc {
+>> That label doesn't exist; it should be &sdhci. Consequently:
+>
+> Sorry, I based my patch on the wrong tree. I used
+> https://github.com/pietrushnic/rpi-dt-linux/tree/rpi-3.17.y which
+> contains non upstream commits.
+>
+> Which tree should I use in general for work on the BCM2835? Is
+> linux-next the right tree?
 
-Yeah, sorry about that. I have no idea why I haven't just used
-git-send-email.
+linux-next would usually work.
 
-I'll reply to this e-mail with a (hopefully) correct e-mail, otherwise
-I'll just give up, this is starting to get too embarassing. :D
+The most recent Linus kernel would also often be a good base, or perhaps 
+any recent branch (of which there are none at present) in:
 
-/ Mikael
+https://git.kernel.org/cgit/linux/kernel/git/swarren/linux-rpi.git/
+(
+which will hopefully soon move to:
+https://git.kernel.org/cgit/linux/kernel/git/rpi/linux-rpi.git/
+)
+
+Which you pick depends on things like how many other patches touch the 
+same files, and which branches/repos they were applied in, and what 
+conflicts/dependencies exist.
