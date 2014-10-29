@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080AbaJ2MwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:52:22 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14398 "EHLO
+	id S933395AbaJ2MxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:53:07 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14389 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932811AbaJ2MqR (ORCPT
+	with ESMTP id S932836AbaJ2MqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:46:17 -0400
+	Wed, 29 Oct 2014 08:46:14 -0400
 From: Richard Weinberger <richard@nod.at>
 To: dedekind1@gmail.com
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 16/35] UBI: Fastmap: Fix memory leak while attaching
-Date: Wed, 29 Oct 2014 13:45:39 +0100
-Message-Id: <1414586758-9972-17-git-send-email-richard@nod.at>
+Subject: [PATCH 11/35] UBI: Fastmap: Don't allocate new ubi_wl_entry objects
+Date: Wed, 29 Oct 2014 13:45:34 +0100
+Message-Id: <1414586758-9972-12-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
 References: <1414586758-9972-1-git-send-email-richard@nod.at>
@@ -21,147 +21,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we leak a few ubi_ainf_pebs while attaching.
+There is no need to allocate new ones every time, we can reuse
+the existing ones.
+This makes the code cleaner and more easy to follow.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/ubi/attach.c  | 61 +++++++++++++++++++++++++----------------------
- drivers/mtd/ubi/fastmap.c | 13 ----------
- 2 files changed, 33 insertions(+), 41 deletions(-)
+ drivers/mtd/ubi/fastmap.c | 31 +++++--------------------------
+ drivers/mtd/ubi/wl.c      | 11 +++++++----
+ 2 files changed, 12 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/mtd/ubi/attach.c b/drivers/mtd/ubi/attach.c
-index 6f27d9a..d1072bc 100644
---- a/drivers/mtd/ubi/attach.c
-+++ b/drivers/mtd/ubi/attach.c
-@@ -1297,6 +1297,30 @@ out_ech:
- 	return err;
- }
- 
-+static struct ubi_attach_info *alloc_ai(const char *slab_name)
-+{
-+	struct ubi_attach_info *ai;
-+
-+	ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
-+	if (!ai)
-+		return ai;
-+
-+	INIT_LIST_HEAD(&ai->corr);
-+	INIT_LIST_HEAD(&ai->free);
-+	INIT_LIST_HEAD(&ai->erase);
-+	INIT_LIST_HEAD(&ai->alien);
-+	ai->volumes = RB_ROOT;
-+	ai->aeb_slab_cache = kmem_cache_create(slab_name,
-+					       sizeof(struct ubi_ainf_peb),
-+					       0, 0, NULL);
-+	if (!ai->aeb_slab_cache) {
-+		kfree(ai);
-+		ai = NULL;
-+	}
-+
-+	return ai;
-+}
-+
- #ifdef CONFIG_MTD_UBI_FASTMAP
- 
- /**
-@@ -1309,7 +1333,7 @@ out_ech:
-  * UBI_NO_FASTMAP denotes that no fastmap was found.
-  * UBI_BAD_FASTMAP denotes that the found fastmap was invalid.
-  */
--static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info *ai)
-+static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info **ai)
- {
- 	int err, pnum, fm_anchor = -1;
- 	unsigned long long max_sqnum = 0;
-@@ -1330,7 +1354,7 @@ static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info *ai)
- 		cond_resched();
- 
- 		dbg_gen("process PEB %d", pnum);
--		err = scan_peb(ubi, ai, pnum, &vol_id, &sqnum);
-+		err = scan_peb(ubi, *ai, pnum, &vol_id, &sqnum);
- 		if (err < 0)
- 			goto out_vidh;
- 
-@@ -1346,7 +1370,12 @@ static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info *ai)
- 	if (fm_anchor < 0)
- 		return UBI_NO_FASTMAP;
- 
--	return ubi_scan_fastmap(ubi, ai, fm_anchor);
-+	destroy_ai(*ai);
-+	*ai = alloc_ai("ubi_aeb_slab_cache");
-+	if (!*ai)
-+		return -ENOMEM;
-+
-+	return ubi_scan_fastmap(ubi, *ai, fm_anchor);
- 
- out_vidh:
- 	ubi_free_vid_hdr(ubi, vidh);
-@@ -1358,30 +1387,6 @@ out:
- 
- #endif
- 
--static struct ubi_attach_info *alloc_ai(const char *slab_name)
--{
--	struct ubi_attach_info *ai;
--
--	ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
--	if (!ai)
--		return ai;
--
--	INIT_LIST_HEAD(&ai->corr);
--	INIT_LIST_HEAD(&ai->free);
--	INIT_LIST_HEAD(&ai->erase);
--	INIT_LIST_HEAD(&ai->alien);
--	ai->volumes = RB_ROOT;
--	ai->aeb_slab_cache = kmem_cache_create(slab_name,
--					       sizeof(struct ubi_ainf_peb),
--					       0, 0, NULL);
--	if (!ai->aeb_slab_cache) {
--		kfree(ai);
--		ai = NULL;
--	}
--
--	return ai;
--}
--
- /**
-  * ubi_attach - attach an MTD device.
-  * @ubi: UBI device descriptor
-@@ -1409,7 +1414,7 @@ int ubi_attach(struct ubi_device *ubi, int force_scan)
- 	if (force_scan)
- 		err = scan_all(ubi, ai, 0);
- 	else {
--		err = scan_fast(ubi, ai);
-+		err = scan_fast(ubi, &ai);
- 		if (err > 0) {
- 			if (err != UBI_NO_FASTMAP) {
- 				destroy_ai(ai);
 diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index 09a97ad..1654f95 100644
+index 8cce6f8..09a97ad 100644
 --- a/drivers/mtd/ubi/fastmap.c
 +++ b/drivers/mtd/ubi/fastmap.c
-@@ -625,21 +625,8 @@ static int ubi_attach_fastmap(struct ubi_device *ubi,
- 	INIT_LIST_HEAD(&used);
- 	INIT_LIST_HEAD(&free);
- 	INIT_LIST_HEAD(&eba_orphans);
--	INIT_LIST_HEAD(&ai->corr);
--	INIT_LIST_HEAD(&ai->free);
--	INIT_LIST_HEAD(&ai->erase);
--	INIT_LIST_HEAD(&ai->alien);
--	ai->volumes = RB_ROOT;
- 	ai->min_ec = UBI_MAX_ERASECOUNTER;
+@@ -1529,19 +1529,6 @@ int ubi_update_fastmap(struct ubi_device *ubi)
+ 	}
  
--	ai->aeb_slab_cache = kmem_cache_create("ubi_ainf_peb_slab",
--					       sizeof(struct ubi_ainf_peb),
--					       0, 0, NULL);
--	if (!ai->aeb_slab_cache) {
--		ret = -ENOMEM;
--		goto fail;
+ 	new_fm->used_blocks = ubi->fm_size / ubi->leb_size;
+-
+-	for (i = 0; i < new_fm->used_blocks; i++) {
+-		new_fm->e[i] = kmem_cache_alloc(ubi_wl_entry_slab, GFP_KERNEL);
+-		if (!new_fm->e[i]) {
+-			while (i--)
+-				kfree(new_fm->e[i]);
+-
+-			kfree(new_fm);
+-			mutex_unlock(&ubi->fm_mutex);
+-			return -ENOMEM;
+-		}
 -	}
 -
- 	fmsb = (struct ubi_fm_sb *)(fm_raw);
- 	ai->max_sqnum = fmsb->sqnum;
- 	fm_pos += sizeof(struct ubi_fm_sb);
+ 	old_fm = ubi->fm;
+ 	ubi->fm = NULL;
+ 
+@@ -1577,12 +1564,9 @@ int ubi_update_fastmap(struct ubi_device *ubi)
+ 				ubi_err("could not erase old fastmap PEB");
+ 				goto err;
+ 			}
+-
+-			new_fm->e[i]->pnum = old_fm->e[i]->pnum;
+-			new_fm->e[i]->ec = old_fm->e[i]->ec;
++			new_fm->e[i] = old_fm->e[i];
+ 		} else {
+-			new_fm->e[i]->pnum = tmp_e->pnum;
+-			new_fm->e[i]->ec = tmp_e->ec;
++			new_fm->e[i] = tmp_e;
+ 
+ 			if (old_fm)
+ 				ubi_wl_put_fm_peb(ubi, old_fm->e[i], i,
+@@ -1607,16 +1591,13 @@ int ubi_update_fastmap(struct ubi_device *ubi)
+ 							  i, 0);
+ 				goto err;
+ 			}
+-
+-			new_fm->e[0]->pnum = old_fm->e[0]->pnum;
++			new_fm->e[0] = old_fm->e[0];
+ 			new_fm->e[0]->ec = ret;
+ 		} else {
+ 			/* we've got a new anchor PEB, return the old one */
+ 			ubi_wl_put_fm_peb(ubi, old_fm->e[0], 0,
+ 					  old_fm->to_be_tortured[0]);
+-
+-			new_fm->e[0]->pnum = tmp_e->pnum;
+-			new_fm->e[0]->ec = tmp_e->ec;
++			new_fm->e[0] = tmp_e;
+ 		}
+ 	} else {
+ 		if (!tmp_e) {
+@@ -1629,9 +1610,7 @@ int ubi_update_fastmap(struct ubi_device *ubi)
+ 			ret = -ENOSPC;
+ 			goto err;
+ 		}
+-
+-		new_fm->e[0]->pnum = tmp_e->pnum;
+-		new_fm->e[0]->ec = tmp_e->ec;
++		new_fm->e[0] = tmp_e;
+ 	}
+ 
+ 	down_write(&ubi->work_sem);
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index 73ff40a..ac19f75 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -995,9 +995,6 @@ int ubi_wl_put_fm_peb(struct ubi_device *ubi, struct ubi_wl_entry *fm_e,
+ 		e = fm_e;
+ 		ubi_assert(e->ec >= 0);
+ 		ubi->lookuptbl[pnum] = e;
+-	} else {
+-		e->ec = fm_e->ec;
+-		kfree(fm_e);
+ 	}
+ 
+ 	spin_unlock(&ubi->wl_lock);
+@@ -1999,9 +1996,15 @@ int ubi_wl_init(struct ubi_device *ubi, struct ubi_attach_info *ai)
+ 
+ 	dbg_wl("found %i PEBs", found_pebs);
+ 
+-	if (ubi->fm)
++	if (ubi->fm) {
+ 		ubi_assert(ubi->good_peb_count == \
+ 			   found_pebs + ubi->fm->used_blocks);
++
++		for (i = 0; i < ubi->fm->used_blocks; i++) {
++			e = ubi->fm->e[i];
++			ubi->lookuptbl[e->pnum] = e;
++		}
++	}
+ 	else
+ 		ubi_assert(ubi->good_peb_count == found_pebs);
+ 
 -- 
 1.8.4.5
 
