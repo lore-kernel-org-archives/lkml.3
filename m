@@ -1,97 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaJ2WZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:25:36 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25645 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101AbaJ2WZc (ORCPT
+	id S1757687AbaJ2W0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:26:25 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:56980 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757341AbaJ2W0W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:25:32 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] PCI: fix sriov enabling with virtual bus
-Date: Wed, 29 Oct 2014 15:26:10 -0700
-Message-Id: <1414621570-20777-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 29 Oct 2014 18:26:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <2524690.yVcDsnFz2O@diego>
+References: <1414583525-17395-1-git-send-email-zyw@rock-chips.com>
+	<7hppda7iaa.fsf@deeprootsystems.com>
+	<2524690.yVcDsnFz2O@diego>
+Date: Wed, 29 Oct 2014 15:26:21 -0700
+X-Google-Sender-Auth: KHTFLdT6m6gCBncVTP_YuYEh854
+Message-ID: <CAD=FV=U-HesWSHdtiNq=5KquuBUR5_EBrL=rfZsAZEn+uuU5gw@mail.gmail.com>
+Subject: Re: [PATCH v6 0/7] This is the 1st version of suspend for RK3288.
+From: Doug Anderson <dianders@chromium.org>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Kevin Hilman <khilman@kernel.org>, Chris Zhong <zyw@rock-chips.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        linux-gpio@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tony Xie <xxx@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While enabling sriov for intel igb device got:
+Heiko,
 
-sca05-0a81fda5:~ # echo 7 > /sys/bus/pci/devices/0000\:09\:00.0/sriov_numvfs 
-[  729.612191] pci 0000:0a:10.0: [8086:1520] type 00 class 0x020000
-[  729.619002] BUG: unable to handle kernel NULL pointer dereference at 00000000000000e8
-[  729.627767] IP: [<ffffffff815901cb>] pci_get_hp_params+0x5b/0x640
-[  729.634593] PGD 0 
-[  729.636844] Oops: 0000 [#1] SMP 
-[  729.640466] Modules linked in:
-...
-[  729.795268] Call Trace:
-[  729.798007]  [<ffffffff81ea0843>] ? pci_mmcfg_read+0x123/0x140
-[  729.804519]  [<ffffffff81ea0770>] ? pci_mmcfg_read+0x50/0x140
-[  729.810942]  [<ffffffff815692a3>] pci_configure_device+0x33/0x350
-[  729.817744]  [<ffffffff8156aba4>] pci_device_add+0x24/0x160
-[  729.823965]  [<ffffffff8158f3bb>] pci_enable_sriov+0x4db/0x7d0
-[  729.830486]  [<ffffffff81b63f54>] ? igb_pci_enable_sriov+0xe4/0x200
-[  729.837481]  [<ffffffff81b63f7f>] igb_pci_enable_sriov+0x10f/0x200
-[  729.844386]  [<ffffffff8155129c>] ? _kstrtoull+0x2c/0x80
-[  729.850315]  [<ffffffff81b640a5>] igb_pci_sriov_configure+0x35/0x40
-[  729.857318]  [<ffffffff815752b5>] sriov_numvfs_store+0xe5/0x140
-[  729.863934]  [<ffffffff817e1f88>] dev_attr_store+0x18/0x30
-[  729.870063]  [<ffffffff812624d8>] sysfs_kf_write+0x48/0x60
-[  729.876186]  [<ffffffff812617ef>] ? kernfs_fop_write+0xaf/0x170
-[  729.882797]  [<ffffffff81261827>] kernfs_fop_write+0xe7/0x170
-[  729.889222]  [<ffffffff811ef66b>] vfs_write+0xcb/0x1c0
-[  729.894958]  [<ffffffff811f0019>] SyS_write+0x49/0xb0
-...
-[  729.943531] ---[ end trace 7cf0cdb66637665a ]---
+On Wed, Oct 29, 2014 at 2:50 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Mittwoch, 29. Oktober 2014, 13:06:05 schrieb Kevin Hilman:
+>> Hi Chris,
+>>
+>> Chris Zhong <zyw@rock-chips.com> writes:
+>> > RK3288 can shut down the cpu, gpu and other device controllers in suspend,
+>> > and it will pull the GLOBAL_PWROFF pin to high in the final stage of the
+>> > process of suspend, pull the pin to low again when resume.
+>>
+>> I tried to test this on top of linux-next (next-20141029) and it doesn't
+>> wake up from serial port activity.
+>>
+>> Can you describe how to test this, as well as describe dependencies on
+>> other out-of-tree patches, including pointers to where they've been
+>> posted.
+>>
+>> Also, please describe how you tested this and on which hardware
+>> platforms.  It's a big help to reviewers to know how it's been tested,
+>> and for anyone with similar hardware to know what else it's been tested
+>> on.
+>
+> When testing this series it did go to sleep with
+>
+> / # echo mem > /sys/power/state
+> PM: Syncing filesystems ... done.
+> Freezing user space processes ... (elapsed 0.010 seconds) done.
+> Freezing remaining freezable tasks ... (elapsed 0.010 seconds) done.
+> PM: suspend of devices complete after 0.001 msecs
+> PM: late suspend of devices complete after 0.001 msecs
+> PM: noirq suspend of devices complete after 0.001 msecs
+> Disabling non-boot CPUs ...
+> CPU1: shutdown
+> CPU2: shutdown
+> CPU3: shutdown
+>
+> and the change in pmic-noise lets me assume it's really asleep.
+>
+>
+> But I'm not exactly sure how to wake it up again. I even hard-wired the gpio-
+> keys to always enable the irq wake, but so far it didn't wake again when
+> pressing the power-key on the evb.
+>
+> If anyone wants to peek, the collected patches (Doug's and Chris') can be
+> found on [0].
 
-and pci_get_hp_params+0x5b point to
-0xffffffff815901cb is in pci_get_hp_params (include/linux/device.h:815).
-810	#include <linux/pm_wakeup.h>
-811	
-812	static inline const char *dev_name(const struct device *dev)
-813	{
-814		/* Use the init name until the kobject becomes available */
-815		if (dev->init_name)
-816			return dev->init_name;
-817	
-818		return kobject_name(&dev->kobj);
+Unless you get a device tree that sets up regulator states I think
+you're going to be SOL.  In other words one thing that will definitely
+bite you is (7592100 ARM: dts: add suspend voltage setting for RK808).
 
-The root cause:
-Now pci_configure_device/pci_get_hp_params will be called for every pci_dev,
-including VF that is under virtual bus. But virtual bus does not have bridge
-set. So we can not refer pbus->self->dev directly.
+That's referencing the "global_pwroff" which means we'll be telling
+the PMIC when we suspend.  That's good but the PMIC hasn't been
+programmed with any reasonable voltages because all the device tree
+properties are ignored.  That's not good.  You can see my comments
+about this at <https://patchwork.kernel.org/patch/5186951/>
 
-Add checking with pbus->slef and bail out early.
+Also: I think that I remember the GPU being pretty unhappy if you
+turned its voltage off but didn't gate its power domain.  At the
+moment I've got all the power domain patches sitting in my tree plus
+<https://chromium-review.googlesource.com/#/c/223464/>.  You might
+also just be able to change the GPU not to be powered off in suspend
+(but then you need to program a good voltage to it).
 
-Fixing: commit 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+At the moment all of my testing is happening in the chromeos-3.14 tree
+(which has a ton of backports and thus isn't that different than
+mainline as far as Rockchip is concerned).  You could theoretically
+try jamming Chris's stuff into the top of the chromeos-3.14 tree and
+see what happens on EVB.  I may be able to give that a shot
+tomorrow...
 
----
- include/linux/pci-acpi.h |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/include/linux/pci-acpi.h
-===================================================================
---- linux-2.6.orig/include/linux/pci-acpi.h
-+++ linux-2.6/include/linux/pci-acpi.h
-@@ -44,8 +44,12 @@ static inline acpi_handle acpi_pci_get_b
- 
- 	if (pci_is_root_bus(pbus))
- 		dev = pbus->bridge;
--	else
-+	else {
-+		if (!pbus->self)
-+			return NULL;
-+
- 		dev = &pbus->self->dev;
-+	}
- 
- 	dev_printk(KERN_DEBUG, &pbus->dev, "  bridge ACPI_HANDLE %p : %s\n",
- 			 ACPI_HANDLE(dev), dev_name(dev));
+-Doug
