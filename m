@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933674AbaJ2OU5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:20:57 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:45094 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475AbaJ2OUz (ORCPT
+	id S933703AbaJ2OVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:21:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56786 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475AbaJ2OVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:20:55 -0400
-Date: Wed, 29 Oct 2014 14:20:52 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
-Message-ID: <20141029142052.GR12020@console-pimps.org>
-References: <20141007150132.GA7307@nazgul.tnic>
- <20141007170748.GA25767@jig.fritz.box>
- <20141008151730.GB16892@pd.tnic>
- <CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
- <20141008222619.GG16892@pd.tnic>
- <20141012125515.GA32045@jig.fritz.box>
- <20141028185756.GD10873@pd.tnic>
- <CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
- <20141028201342.GG10873@pd.tnic>
- <CA+rthh9LSRm12qYORAd5BWzpw7DEP7hqHLA3EDdfUDxwx-4=2g@mail.gmail.com>
+	Wed, 29 Oct 2014 10:21:19 -0400
+Date: Wed, 29 Oct 2014 15:21:16 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Heena Sirwani <heenasirwani@gmail.com>
+cc: opw-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, arnd@arndb.de
+Subject: Re: [PATCH v8 0/2] Added ktime_get_seconds() and
+ ktime_get_real_seconds()
+In-Reply-To: <cover.1414578445.git.heenasirwani@gmail.com>
+Message-ID: <alpine.DEB.2.11.1410291518300.5308@nanos>
+References: <cover.1414578445.git.heenasirwani@gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+rthh9LSRm12qYORAd5BWzpw7DEP7hqHLA3EDdfUDxwx-4=2g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct, at 10:14:25PM, Mathias Krause wrote:
+On Wed, 29 Oct 2014, Heena Sirwani wrote:
+
+> The following patchset adds two functions as follows:
+> 	-ktime_get_seconds() to return tv_sec portion of
+> 	ktime_get_ts64().
+> 	-ktime_get_real_seconds() to return tv_sec portion of
+> 	ktime_get_real_ts64().
 > 
-> Mapping the kernel into the EFI page table may help ;) Then the
-> kernel's #PF handler would be present and able to print a register
-> dump, at least.
- 
-The kernel is already mapped into the EFI page table.
+> Changes in v8:
+> 	-changed type of ktime_sec to unsigned long
+> 	- Added a patch with ktime_get_real_seconds().
 
-> So, assuming you're not mapping the EFI virtual mappings below the
-> pgd[511] hierarchy, making pgd[511] equal init_level4_pgt[511] should
-> help in this case. In fact, you need to map portions of the kernel
-> into the EFI page table anyway. Otherwise the EFI code wouldn't be
-> able to access, e.g., the data it should write to NVRAM. So the EFI
-> code would just trap and trigger a #PF -- and because of the missing
-> #PF handler, a #DF -- and because of the missing #DF handler the
-> triple fault. ;)
- 
-Exactly.
+Heena, thanks for your patience and for following up to the reviews.
 
-We don't setup a separate page table for EFI calls for any kind of
-isolation, we do it to make use of the existing 1:1 mappings in
-trampoline_pgd because some firmware directly reference physical
-addresses at runtime. It actually doesn't work too well in practice,
-because you soon hit other issues on those firmware, but there you go.
+I merged the lot into tip timers/2038. Thats a new branch reserved for
+the 2038 work.
 
-So the fact that we have EFI mappings in init_level4_pgt[] isn't
-indicative of any kind of bug, it's potentially a bit unclean, but
-that's about it.
+Arnd, feel free to pull that branch into your tree for the patches
+which depend on those interfaces.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Thanks,
+
+	tglx
+
