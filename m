@@ -1,101 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492AbaJ2UYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:24:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58748 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125AbaJ2UYK (ORCPT
+	id S1757194AbaJ2UZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:25:20 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:53449 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321AbaJ2UZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:24:10 -0400
-Date: Wed, 29 Oct 2014 21:23:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Sabrina Dubroca <sd@queasysnail.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
-Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
- linux-next
-In-Reply-To: <alpine.DEB.2.11.1410292053430.5308@nanos>
-Message-ID: <alpine.DEB.2.11.1410292119350.5308@nanos>
-References: <20141029155620.GA4886@kria> <20141029180734.GQ12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410291918060.5308@nanos> <20141029193603.GS12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410292046270.5308@nanos>
- <20141029195054.GH10501@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410292053430.5308@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 29 Oct 2014 16:25:15 -0400
+Message-ID: <54514D25.4020207@hp.com>
+Date: Wed, 29 Oct 2014 16:25:09 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization support
+References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com> <1413483040-58399-10-git-send-email-Waiman.Long@hp.com> <20141024085437.GV21513@worktop.programming.kicks-ass.net> <544E830C.6070307@hp.com> <20141027180439.GL3337@twins.programming.kicks-ass.net> <544EB79E.6020200@hp.com> <54513A90.3080108@hp.com>
+In-Reply-To: <54513A90.3080108@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014, Thomas Gleixner wrote:
-> On Wed, 29 Oct 2014, Peter Zijlstra wrote:
-> 
-> > On Wed, Oct 29, 2014 at 08:49:03PM +0100, Thomas Gleixner wrote:
-> > > On Wed, 29 Oct 2014, Peter Zijlstra wrote:
-> > > 
-> > > > On Wed, Oct 29, 2014 at 07:33:00PM +0100, Thomas Gleixner wrote:
-> > > > > Yuck. No. You are just papering over the problem.
-> > > > > 
-> > > > > What happens if you add 'threadirqs' to the kernel command line? Or if
-> > > > > the interrupt line is shared with a real threaded interrupt user?
-> > > > > 
-> > > > > The proper solution is to have a poll_lock for e1000 which serializes
-> > > > > the hardware interrupt against netpoll instead of using
-> > > > > disable/enable_irq().
-> > > > > 
-> > > > > In fact that's less expensive than the disable/enable_irq() dance and
-> > > > > the chance of contention is pretty low. If done right it will be a
-> > > > > NOOP for the CONFIG_NET_POLL_CONTROLLER=n case.
-> > > > > 
-> > > > 
-> > > > OK a little something like so then I suppose.. But I suspect most all
-> > > > the network drivers will need this and maybe more, disable_irq() is a
-> > > > popular little thing and we 'just' changed semantics on them.
-> > > 
-> > > We changed that almost 4 years ago :) What we 'just' did was to add a
-> > > prominent warning into the code.
-> > 
-> > You know that is the same right... they didn't know it was broken
-> > therefore it wasn't :-), but now they need to go actually do stuff about
-> > it, an entirely different proposition.
-> 
-> Right, and of course the world and some more has the very same code
-> there:
-> 
-> poll_controller()
-> {
-> 	disable_irq();
-> 	dev_interrupt_handler();
-> 	enable_irq();
-> }
-> 
-> Trying to twist my brain to come up with a solution which avoids the
-> spinlock, but I have a hard time to come up with one.
-> 
-> The only thing I came up with so far is to avoid adding locks to every
-> driver incarnation and instead put it into struct net_device and
-> provide helper functions for the lock/unlock case.
-> 
-> That does not change the fact that we need to deal with that on a per
-> driver basis :(
+On 10/29/2014 03:05 PM, Waiman Long wrote:
+> On 10/27/2014 05:22 PM, Waiman Long wrote:
+>> On 10/27/2014 02:04 PM, Peter Zijlstra wrote:
+>>> On Mon, Oct 27, 2014 at 01:38:20PM -0400, Waiman Long wrote:
+>>>> On 10/24/2014 04:54 AM, Peter Zijlstra wrote:
+>>>>> On Thu, Oct 16, 2014 at 02:10:38PM -0400, Waiman Long wrote:
+>>>>>
+>>>>>> Since enabling paravirt spinlock will disable unlock function 
+>>>>>> inlining,
+>>>>>> a jump label can be added to the unlock function without adding 
+>>>>>> patch
+>>>>>> sites all over the kernel.
+>>>>> But you don't have to. My patches allowed for the inline to remain,
+>>>>> again reducing the overhead of enabling PV spinlocks while running 
+>>>>> on a
+>>>>> real machine.
+>>>>>
+>>>>> Look at:
+>>>>>
+>>>>>    http://lkml.kernel.org/r/20140615130154.213923590@chello.nl
+>>>>>
+>>>>> In particular this hunk:
+>>>>>
+>>>>> Index: linux-2.6/arch/x86/kernel/paravirt_patch_64.c
+>>>>> ===================================================================
+>>>>> --- linux-2.6.orig/arch/x86/kernel/paravirt_patch_64.c
+>>>>> +++ linux-2.6/arch/x86/kernel/paravirt_patch_64.c
+>>>>> @@ -22,6 +22,10 @@ DEF_NATIVE(pv_cpu_ops, swapgs, "swapgs")
+>>>>>   DEF_NATIVE(, mov32, "mov %edi, %eax");
+>>>>>   DEF_NATIVE(, mov64, "mov %rdi, %rax");
+>>>>>
+>>>>> +#if defined(CONFIG_PARAVIRT_SPINLOCKS)&&   
+>>>>> defined(CONFIG_QUEUE_SPINLOCK)
+>>>>> +DEF_NATIVE(pv_lock_ops, queue_unlock, "movb $0, (%rdi)");
+>>>>> +#endif
+>>>>> +
+>>>>>   unsigned paravirt_patch_ident_32(void *insnbuf, unsigned len)
+>>>>>   {
+>>>>>          return paravirt_patch_insns(insnbuf, len,
+>>>>> @@ -61,6 +65,9 @@ unsigned native_patch(u8 type, u16 clobb
+>>>>>                  PATCH_SITE(pv_cpu_ops, clts);
+>>>>>                  PATCH_SITE(pv_mmu_ops, flush_tlb_single);
+>>>>>                  PATCH_SITE(pv_cpu_ops, wbinvd);
+>>>>> +#if defined(CONFIG_PARAVIRT_SPINLOCKS)&&   
+>>>>> defined(CONFIG_QUEUE_SPINLOCK)
+>>>>> +               PATCH_SITE(pv_lock_ops, queue_unlock);
+>>>>> +#endif
+>>>>>
+>>>>>          patch_site:
+>>>>>                  ret = paravirt_patch_insns(ibuf, len, start, end);
+>>>>>
+>>>>>
+>>>>> That makes sure to overwrite the callee-saved call to the
+>>>>> pv_lock_ops::queue_unlock with the immediate asm "movb $0, (%rdi)".
+>>>>>
+>>>>>
+>>>>> Therefore you can retain the inlined unlock with hardly (there 
+>>>>> might be
+>>>>> some NOP padding) any overhead at all. On PV it reverts to a callee
+>>>>> saved function call.
+>>>> My concern is that spin_unlock() can be called in many places, 
+>>>> including
+>>>> loadable kernel modules. Can the paravirt_patch_ident_32() function 
+>>>> able to
+>>>> patch all of them in reasonable time? How about a kernel module 
+>>>> loaded later
+>>>> at run time?
+>>> modules should be fine, see arch/x86/kernel/module.c:module_finalize()
+>>> ->  apply_paravirt().
+>>>
+>>> Also note that the 'default' text is an indirect call into the paravirt
+>>> ops table which routes to the 'right' function, so even if the text
+>>> patching would be 'late' calls would 'work' as expected, just slower.
+>>
+>> Thanks for letting me know about that. I have this concern because 
+>> your patch didn't change the current configuration of disabling 
+>> unlock inlining when paravirt_spinlock is enabled. With that, I think 
+>> it is worthwhile to reduce the performance delta between the PV and 
+>> non-PV kernel on bare metal.
+>
+> I am sorry that the unlock call sites patching code doesn't work in a 
+> virtual guest. Your pvqspinlock patch did an unconditional patching 
+> even in a virtual guest. I added check for the 
+> paravirt_spinlocks_enabled, but it turned out that some spin_unlock() 
+> seemed to be called before paravirt_spinlocks_enabled is set. As a 
+> result, some call sites were still patched resulting in missed wake 
+> up's and system hang.
+>
+> At this point, I am going to leave out that change from my patch set 
+> until we can figure out a better way of doing that.
+>
 
-But at least it allows to mitigate the impact by making it conditional
-at a central point.
+Below was a partial kernel log with the unlock call site patch code in a 
+KVM guest:
 
-static inline void netpoll_lock(struct net_device *nd)
-{
-	if (netpoll_active(nd))
-		spin_lock(&nd->netpoll_lock);
-}
+[    0.438006] native_patch: patch out pv_queue_unlock!
+[    0.438565] native_patch: patch out pv_queue_unlock!
+[    0.439006] native_patch: patch out pv_queue_unlock!
+[    0.439638] native_patch: patch out pv_queue_unlock!
+[    0.440052] native_patch: patch out pv_queue_unlock!
+[    0.441006] native_patch: patch out pv_queue_unlock!
+[    0.441566] native_patch: patch out pv_queue_unlock!
+[    0.442035] ftrace: allocating 24168 entries in 95 pages
+[    0.451208] Switched APIC routing to physical flat.
+[    0.453202] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+[    0.454002] smpboot: CPU0: Intel QEMU Virtual CPU version 1.5.3 (fam: 
+06, model: 06, stepping: 03)
+[    0.456000] Performance Events: Broken PMU hardware detected, using 
+software events only.
+[    0.456003] Failed to access perfctr msr (MSR c1 is 0)
+[    0.457151] KVM setup paravirtual spinlock
+[    0.460039] NMI watchdog: disabled (cpu0): hardware events not enabled
 
-and let the core code make sure that activation/deactivation of
-netpoll on a particular interface is serialized against the interrupt
-and netpoll calls.
+It could be seen that some unlock call sites were patched before the KVM 
+setup code set the paravirt_spinlocks_enabled flag.
 
-Not sure if it's worth the trouble, but at least it allows to deal
-with it in the core instead of dealing with it on a per driver base.
+-Longman
 
-Thanks,
-
-	tglx
