@@ -1,49 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563AbaJ2V7m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:59:42 -0400
-Received: from smtprelay0130.hostedemail.com ([216.40.44.130]:33672 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756664AbaJ2V7l (ORCPT
+	id S1757597AbaJ2WBO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:01:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:29917 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756039AbaJ2WBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:59:41 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3351:3622:3865:3868:3870:3872:3873:3874:4321:5007:6261:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ship90_8e56243002621
-X-Filterd-Recvd-Size: 1519
-Message-ID: <1414619976.2542.1.camel@perches.com>
-Subject: Re: mmotm 2014-10-29-14-19 uploaded
-From: Joe Perches <joe@perches.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
-Date: Wed, 29 Oct 2014 14:59:36 -0700
-In-Reply-To: <alpine.DEB.2.11.1410292233340.5308@nanos>
-References: <54515a25.46WrYSce5BExT3V4%akpm@linux-foundation.org>
-	 <alpine.DEB.2.11.1410292233340.5308@nanos>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Oct 2014 18:01:10 -0400
+Message-Id: <20141029220107.465008329@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Wed, 29 Oct 2014 17:56:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        <netfilter-devel@vger.kernel.org>, <coreteam@netfilter.org>
+Subject: [RFA][PATCH 2/8] netfilter: Remove return values for print_conntrack callbacks
+References: <20141029215602.535533597@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-netfilter-Remove-return-values-for-print_conntrack-c.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-29 at 22:37 +0100, Thomas Gleixner wrote:
-> On Wed, 29 Oct 2014, akpm@linux-foundation.org wrote:
-> > This mmotm tree contains the following patches against 3.18-rc2:
-> > (patches marked "*" will be included in linux-next)
-> > 
-> > * kernel-posix-timersc-code-clean-up.patch
-> 
-> Can you please drop this pointless churn? We really can replace all
-> that stuff with a shell script and let it run over the tree every now
-> and then.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Should any automated code reformatting really be done
-by an unsupervised or unreviewed shell script?
+[ REQUEST FOR ACKS ]
 
-Likely not.
+The seq_printf() and friends are having their return values removed.
+The print_conntrack() returns the result of seq_printf(), which is
+meaningless when seq_printf() returns void. Might as well remove the
+return values of print_conntrack() as well.
+
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Cc: netfilter-devel@vger.kernel.org
+Cc: coreteam@netfilter.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/net/netfilter/nf_conntrack_l4proto.h          | 2 +-
+ net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c | 5 ++++-
+ net/netfilter/nf_conntrack_proto_dccp.c               | 4 ++--
+ net/netfilter/nf_conntrack_proto_gre.c                | 8 ++++----
+ net/netfilter/nf_conntrack_proto_sctp.c               | 4 ++--
+ net/netfilter/nf_conntrack_proto_tcp.c                | 4 ++--
+ net/netfilter/nf_conntrack_standalone.c               | 4 ++--
+ 7 files changed, 17 insertions(+), 14 deletions(-)
+
+diff --git a/include/net/netfilter/nf_conntrack_l4proto.h b/include/net/netfilter/nf_conntrack_l4proto.h
+index 4c8d573830b7..82e4ec002a39 100644
+--- a/include/net/netfilter/nf_conntrack_l4proto.h
++++ b/include/net/netfilter/nf_conntrack_l4proto.h
+@@ -60,7 +60,7 @@ struct nf_conntrack_l4proto {
+ 			   const struct nf_conntrack_tuple *);
+ 
+ 	/* Print out the private part of the conntrack. */
+-	int (*print_conntrack)(struct seq_file *s, struct nf_conn *);
++	void (*print_conntrack)(struct seq_file *s, struct nf_conn *);
+ 
+ 	/* Return the array of timeouts for this protocol. */
+ 	unsigned int *(*get_timeouts)(struct net *net);
+diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+index 4c48e434bb1f..91f207c2cb69 100644
+--- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
++++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+@@ -147,7 +147,10 @@ static int ct_seq_show(struct seq_file *s, void *v)
+ 		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
+ 		goto release;
+ 
+-	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
++	if (l4proto->print_conntrack)
++		l4proto->print_conntrack(s, ct);
++
++	if (seq_has_overflowed(s))
+ 		goto release;
+ 
+ 	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+diff --git a/net/netfilter/nf_conntrack_proto_dccp.c b/net/netfilter/nf_conntrack_proto_dccp.c
+index cb372f96f10d..15971177470a 100644
+--- a/net/netfilter/nf_conntrack_proto_dccp.c
++++ b/net/netfilter/nf_conntrack_proto_dccp.c
+@@ -626,9 +626,9 @@ static int dccp_print_tuple(struct seq_file *s,
+ 			  ntohs(tuple->dst.u.dccp.port));
+ }
+ 
+-static int dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
++static void dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+ {
+-	return seq_printf(s, "%s ", dccp_state_names[ct->proto.dccp.state]);
++	seq_printf(s, "%s ", dccp_state_names[ct->proto.dccp.state]);
+ }
+ 
+ #if IS_ENABLED(CONFIG_NF_CT_NETLINK)
+diff --git a/net/netfilter/nf_conntrack_proto_gre.c b/net/netfilter/nf_conntrack_proto_gre.c
+index d5665739e3b1..cba607ada069 100644
+--- a/net/netfilter/nf_conntrack_proto_gre.c
++++ b/net/netfilter/nf_conntrack_proto_gre.c
+@@ -235,11 +235,11 @@ static int gre_print_tuple(struct seq_file *s,
+ }
+ 
+ /* print private data for conntrack */
+-static int gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
++static void gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+ {
+-	return seq_printf(s, "timeout=%u, stream_timeout=%u ",
+-			  (ct->proto.gre.timeout / HZ),
+-			  (ct->proto.gre.stream_timeout / HZ));
++	seq_printf(s, "timeout=%u, stream_timeout=%u ",
++		   (ct->proto.gre.timeout / HZ),
++		   (ct->proto.gre.stream_timeout / HZ));
+ }
+ 
+ static unsigned int *gre_get_timeouts(struct net *net)
+diff --git a/net/netfilter/nf_conntrack_proto_sctp.c b/net/netfilter/nf_conntrack_proto_sctp.c
+index 1314d33f6bcf..c61f4cd6407d 100644
+--- a/net/netfilter/nf_conntrack_proto_sctp.c
++++ b/net/netfilter/nf_conntrack_proto_sctp.c
+@@ -175,7 +175,7 @@ static int sctp_print_tuple(struct seq_file *s,
+ }
+ 
+ /* Print out the private part of the conntrack. */
+-static int sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
++static void sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+ {
+ 	enum sctp_conntrack state;
+ 
+@@ -183,7 +183,7 @@ static int sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+ 	state = ct->proto.sctp.state;
+ 	spin_unlock_bh(&ct->lock);
+ 
+-	return seq_printf(s, "%s ", sctp_conntrack_names[state]);
++	seq_printf(s, "%s ", sctp_conntrack_names[state]);
+ }
+ 
+ #define for_each_sctp_chunk(skb, sch, _sch, offset, dataoff, count)	\
+diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
+index 44d1ea32570a..79668fd3db96 100644
+--- a/net/netfilter/nf_conntrack_proto_tcp.c
++++ b/net/netfilter/nf_conntrack_proto_tcp.c
+@@ -311,7 +311,7 @@ static int tcp_print_tuple(struct seq_file *s,
+ }
+ 
+ /* Print out the private part of the conntrack. */
+-static int tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
++static void tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+ {
+ 	enum tcp_conntrack state;
+ 
+@@ -319,7 +319,7 @@ static int tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+ 	state = ct->proto.tcp.state;
+ 	spin_unlock_bh(&ct->lock);
+ 
+-	return seq_printf(s, "%s ", tcp_conntrack_names[state]);
++	seq_printf(s, "%s ", tcp_conntrack_names[state]);
+ }
+ 
+ static unsigned int get_conntrack_index(const struct tcphdr *tcph)
+diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+index cf65a1e040dd..348aa3602787 100644
+--- a/net/netfilter/nf_conntrack_standalone.c
++++ b/net/netfilter/nf_conntrack_standalone.c
+@@ -199,8 +199,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
+ 		       ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
+ 		goto release;
+ 
+-	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
+-		goto release;
++	if (l4proto->print_conntrack)
++		l4proto->print_conntrack(s, ct);
+ 
+ 	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+ 			l3proto, l4proto))
+-- 
+2.1.1
 
 
