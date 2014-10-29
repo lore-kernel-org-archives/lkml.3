@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934641AbaJ2QiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:38:08 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:37090 "EHLO
+	id S934585AbaJ2QiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:38:04 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:37101 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439AbaJ2QiA (ORCPT
+	with ESMTP id S934515AbaJ2QiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Oct 2014 12:38:00 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 0/7] RFC DRBD updates for 3.19
-Date: Wed, 29 Oct 2014 17:37:49 +0100
-Message-Id: <1414600676-11203-1-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 4/7] drbd: fix resync throttling initialization
+Date: Wed, 29 Oct 2014 17:37:53 +0100
+Message-Id: <1414600676-11203-5-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414600676-11203-1-git-send-email-philipp.reisner@linbit.com>
+References: <1414600676-11203-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-these are the proposed DRBD changes for 3.19. All minor stuff
-and fixes.
+If for some reason DRBD resync was the only activity on a backend
+device, drbd_rs_c_min_rate_throttle() would mistakenly decide that it is
+still initialization time, and keep throttling the resync.
 
-I will repost it in one week with the appropriate CC: stable
-header set, and eventual feedback integrated.
+This patch explicitly initializes ->rs_last_events to the current
+backend event counters, and drops the rs_last_events == 0 from the
+throttle condition.
 
-Thanks!
+Reported-by: Mikhail Sugakov <msugakov@amazon.de>
 
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_receiver.c | 2 +-
+ drivers/block/drbd/drbd_state.c    | 1 -
+ drivers/block/drbd/drbd_worker.c   | 5 ++++-
+ 3 files changed, 5 insertions(+), 3 deletions(-)
 
-Andreas Gruenbacher (2):
-  drbd: Minor cleanups
-  drbd: Only use drbd_msg_put_info() in drbd_nl.c
-
-Lars Ellenberg (2):
-  drbd: fix resync throttling initialization
-  drbd: merge_bvec_fn: properly remap bvm->bi_bdev
-
-Philipp Reisner (3):
-  drbd: fix race between role change and handshake
-  drbd: Fix state change in case of connection timeout
-  drbd: Remove an useless copy of kernel_setsockopt()
-
- drivers/block/drbd/drbd_actlog.c   |  3 +-
- drivers/block/drbd/drbd_int.h      | 39 +++++------------------
- drivers/block/drbd/drbd_main.c     | 23 ++++----------
- drivers/block/drbd/drbd_nl.c       | 64 +++++++++++++++++---------------------
- drivers/block/drbd/drbd_receiver.c |  2 +-
- drivers/block/drbd/drbd_req.c      |  3 +-
- drivers/block/drbd/drbd_state.c    | 42 ++++++++++++++++++++-----
- drivers/block/drbd/drbd_state.h    |  5 +++
- drivers/block/drbd/drbd_worker.c   |  5 ++-
- include/linux/drbd.h               |  2 +-
- 10 files changed, 90 insertions(+), 98 deletions(-)
-
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 6960fb0..d169b4a 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -2482,7 +2482,7 @@ bool drbd_rs_c_min_rate_throttle(struct drbd_device *device)
+ 			atomic_read(&device->rs_sect_ev);
+ 
+ 	if (atomic_read(&device->ap_actlog_cnt)
+-	    || !device->rs_last_events || curr_events - device->rs_last_events > 64) {
++	    || curr_events - device->rs_last_events > 64) {
+ 		unsigned long rs_left;
+ 		int i;
+ 
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index 4529d92..2d7dd26 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -1099,7 +1099,6 @@ __drbd_set_state(struct drbd_device *device, union drbd_state ns,
+ 
+ 		set_ov_position(device, ns.conn);
+ 		device->rs_start = now;
+-		device->rs_last_events = 0;
+ 		device->rs_last_sect_ev = 0;
+ 		device->ov_last_oos_size = 0;
+ 		device->ov_last_oos_start = 0;
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index d2d1f97..d0fae55 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -1592,11 +1592,15 @@ void drbd_resync_after_changed(struct drbd_device *device)
+ 
+ void drbd_rs_controller_reset(struct drbd_device *device)
+ {
++	struct gendisk *disk = device->ldev->backing_bdev->bd_contains->bd_disk;
+ 	struct fifo_buffer *plan;
+ 
+ 	atomic_set(&device->rs_sect_in, 0);
+ 	atomic_set(&device->rs_sect_ev, 0);
+ 	device->rs_in_flight = 0;
++	device->rs_last_events =
++		(int)part_stat_read(&disk->part0, sectors[0]) +
++		(int)part_stat_read(&disk->part0, sectors[1]);
+ 
+ 	/* Updating the RCU protected object in place is necessary since
+ 	   this function gets called from atomic context.
+@@ -1743,7 +1747,6 @@ void drbd_start_resync(struct drbd_device *device, enum drbd_conns side)
+ 		device->rs_failed    = 0;
+ 		device->rs_paused    = 0;
+ 		device->rs_same_csum = 0;
+-		device->rs_last_events = 0;
+ 		device->rs_last_sect_ev = 0;
+ 		device->rs_total     = tw;
+ 		device->rs_start     = now;
 -- 
 1.9.1
 
