@@ -1,136 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517AbaJ2TgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 15:36:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46388 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaJ2TgH (ORCPT
+	id S1756847AbaJ2TgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 15:36:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43553 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaJ2TgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 15:36:07 -0400
-Date: Wed, 29 Oct 2014 20:36:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
-Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
- linux-next
-Message-ID: <20141029193603.GS12706@worktop.programming.kicks-ass.net>
-References: <20141029155620.GA4886@kria>
- <20141029180734.GQ12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.11.1410291918060.5308@nanos>
+	Wed, 29 Oct 2014 15:36:12 -0400
+Message-ID: <54514211.9@oracle.com>
+Date: Wed, 29 Oct 2014 15:37:53 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410291918060.5308@nanos>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
+CC: david.vrabel@citrix.com, konrad.wilk@oracle.com, tianyu.lan@intel.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH v3] xen/smp: Use die_complete completion when taking CPU
+ down
+References: <1413997748-29808-1-git-send-email-boris.ostrovsky@oracle.com>
+In-Reply-To: <1413997748-29808-1-git-send-email-boris.ostrovsky@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 07:33:00PM +0100, Thomas Gleixner wrote:
-> Yuck. No. You are just papering over the problem.
-> 
-> What happens if you add 'threadirqs' to the kernel command line? Or if
-> the interrupt line is shared with a real threaded interrupt user?
-> 
-> The proper solution is to have a poll_lock for e1000 which serializes
-> the hardware interrupt against netpoll instead of using
-> disable/enable_irq().
-> 
-> In fact that's less expensive than the disable/enable_irq() dance and
-> the chance of contention is pretty low. If done right it will be a
-> NOOP for the CONFIG_NET_POLL_CONTROLLER=n case.
-> 
+On 10/22/2014 01:09 PM, Boris Ostrovsky wrote:
+> Commit 2ed53c0d6cc9 ("x86/smpboot: Speed up suspend/resume by avoiding
+> 100ms sleep for CPU offline during S3") introduced completions to CPU
+> offlining process. These completions are not initialized on Xen kernels
+> causing a panic in play_dead_common().
+>
+> Move handling of die_complete into common routines to make them
+> available to Xen guests.
+>
+> (While at it, move die_complete definition under #ifdef CONFIG_HOTPLUG_CPU)
+>
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>
+> v3: Don't #ifdef function prototypes in smp.h
+> v2: Keep die_complete private to smpboot.c
+>
+>
+>   arch/x86/include/asm/smp.h |  1 +
+>   arch/x86/kernel/smpboot.c  | 13 +++++++++++--
+>   arch/x86/xen/smp.c         |  3 +++
+>   3 files changed, 15 insertions(+), 2 deletions(-)
 
-OK a little something like so then I suppose.. But I suspect most all
-the network drivers will need this and maybe more, disable_irq() is a
-popular little thing and we 'just' changed semantics on them.
 
----
- drivers/net/ethernet/intel/e1000/e1000.h      |  2 ++
- drivers/net/ethernet/intel/e1000/e1000_main.c | 22 +++++++++++++++++-----
- kernel/irq/manage.c                           |  2 +-
- 3 files changed, 20 insertions(+), 6 deletions(-)
+Does anything else need to be done in this patch? We have CPU hotplug 
+broken currently in Xen and it would be nice to have it fixed in rc3.
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000.h b/drivers/net/ethernet/intel/e1000/e1000.h
-index 69707108d23c..3f48609f2318 100644
---- a/drivers/net/ethernet/intel/e1000/e1000.h
-+++ b/drivers/net/ethernet/intel/e1000/e1000.h
-@@ -323,6 +323,8 @@ struct e1000_adapter {
- 	struct delayed_work watchdog_task;
- 	struct delayed_work fifo_stall_task;
- 	struct delayed_work phy_info_task;
-+
-+	spinlock_t irq_lock;
- };
- 
- enum e1000_state_t {
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index 5f6aded512f5..d12cbffe2149 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -1310,6 +1310,7 @@ static int e1000_sw_init(struct e1000_adapter *adapter)
- 	e1000_irq_disable(adapter);
- 
- 	spin_lock_init(&adapter->stats_lock);
-+	spin_lock_init(&adapter->irq_lock);
- 
- 	set_bit(__E1000_DOWN, &adapter->flags);
- 
-@@ -3748,10 +3749,8 @@ void e1000_update_stats(struct e1000_adapter *adapter)
-  * @irq: interrupt number
-  * @data: pointer to a network interface device structure
-  **/
--static irqreturn_t e1000_intr(int irq, void *data)
-+static irqreturn_t __e1000_intr(int irq, struct e1000_adapter *adapter)
- {
--	struct net_device *netdev = data;
--	struct e1000_adapter *adapter = netdev_priv(netdev);
- 	struct e1000_hw *hw = &adapter->hw;
- 	u32 icr = er32(ICR);
- 
-@@ -3793,6 +3792,19 @@ static irqreturn_t e1000_intr(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
-+static irqreturn_t e1000_intr(int irq, void *data)
-+{
-+	struct net_device *netdev = data;
-+	struct e1000_adapter *adapter = netdev_priv(netdev);
-+	irqreturn_t ret;
-+
-+	spin_lock(&adapter->irq_lock);
-+	ret = __e1000_intr(irq, adapter);
-+	spin_unlock(&adapter->irq_lock);
-+
-+	return ret;
-+}
-+
- /**
-  * e1000_clean - NAPI Rx polling callback
-  * @adapter: board private structure
-@@ -5217,9 +5229,9 @@ static void e1000_netpoll(struct net_device *netdev)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
- 
--	disable_irq(adapter->pdev->irq);
-+	spin_lock(&adapter->irq_lock)
- 	e1000_intr(adapter->pdev->irq, netdev);
--	enable_irq(adapter->pdev->irq);
-+	spin_unlock(&adapter->irq_lock)
- }
- #endif
- 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0a9104b4608b..b5a4a06bf2fd 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -427,7 +427,7 @@ EXPORT_SYMBOL(disable_irq_nosync);
-  *	to complete before returning. If you use this function while
-  *	holding a resource the IRQ handler may need you will deadlock.
-  *
-- *	This function may be called - with care - from IRQ context.
-+ *	This function may _NOT_ be called from IRQ context.
-  */
- void disable_irq(unsigned int irq)
- {
+-boris
+
+
+>
+> diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+> index 8cd27e0..8cd1cc3 100644
+> --- a/arch/x86/include/asm/smp.h
+> +++ b/arch/x86/include/asm/smp.h
+> @@ -150,6 +150,7 @@ static inline void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>   }
+>   
+>   void cpu_disable_common(void);
+> +void cpu_die_common(unsigned int cpu);
+>   void native_smp_prepare_boot_cpu(void);
+>   void native_smp_prepare_cpus(unsigned int max_cpus);
+>   void native_smp_cpus_done(unsigned int max_cpus);
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 2d5200e..6fe0fc1 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -102,7 +102,9 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
+>   DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+>   EXPORT_PER_CPU_SYMBOL(cpu_info);
+>   
+> +#ifdef CONFIG_HOTPLUG_CPU
+>   static DEFINE_PER_CPU(struct completion, die_complete);
+> +#endif
+>   
+>   atomic_t init_deasserted;
+>   
+> @@ -1309,6 +1311,8 @@ void cpu_disable_common(void)
+>   {
+>   	int cpu = smp_processor_id();
+>   
+> +	init_completion(&per_cpu(die_complete, smp_processor_id()));
+> +
+>   	remove_siblinginfo(cpu);
+>   
+>   	/* It's now safe to remove this processor from the online map */
+> @@ -1327,16 +1331,21 @@ int native_cpu_disable(void)
+>   		return ret;
+>   
+>   	clear_local_APIC();
+> -	init_completion(&per_cpu(die_complete, smp_processor_id()));
+>   	cpu_disable_common();
+>   
+>   	return 0;
+>   }
+>   
+> +void cpu_die_common(unsigned int cpu)
+> +{
+> +	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
+> +}
+> +
+>   void native_cpu_die(unsigned int cpu)
+>   {
+>   	/* We don't do anything here: idle task is faking death itself. */
+> -	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
+> +
+> +	cpu_die_common(cpu);
+>   
+>   	/* They ack this in play_dead() by setting CPU_DEAD */
+>   	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 8650cdb..4c071ae 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -510,6 +510,9 @@ static void xen_cpu_die(unsigned int cpu)
+>   		current->state = TASK_UNINTERRUPTIBLE;
+>   		schedule_timeout(HZ/10);
+>   	}
+> +
+> +	cpu_die_common(cpu);
+> +
+>   	xen_smp_intr_free(cpu);
+>   	xen_uninit_lock_cpu(cpu);
+>   	xen_teardown_timer(cpu);
+
