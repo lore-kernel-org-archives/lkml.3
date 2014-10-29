@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365AbaJ2R70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:59:26 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:62552 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756559AbaJ2R7Y (ORCPT
+	id S1756559AbaJ2SBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:01:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60876 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513AbaJ2SBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:59:24 -0400
+	Wed, 29 Oct 2014 14:01:34 -0400
+Message-ID: <54512B7B.905@codeaurora.org>
+Date: Wed, 29 Oct 2014 11:01:31 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141028215937.GA25095@linux.vnet.ibm.com>
-References: <20141028215937.GA25095@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 29 Oct 2014 13:58:53 -0400
-Message-ID: <CAJhHMCDf1vTuQ5-31aumFPVsyTTFYyioDjvoT7xDobC5vVUHMA@mail.gmail.com>
-Subject: Re: [PATCH tip/core/rcu 0/5] Documentation updates for 3.19
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Daniel Thompson <daniel.thompson@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, Jiri Slaby <jslaby@suse.cz>,
+        linux-arm-msm@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [PATCH] serial: msm: Add magic SysRq support in dmmode
+References: <1414600712-20721-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1414600712-20721-1-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 5:59 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> Hello!
+On 10/29/2014 09:38 AM, Daniel Thompson wrote:
+> Currently the _dm RX handler detects breaks but does not pass any
+> characters to uart_handle_sysrq_char().
 >
-> This series contains a few documentation updates:
+> The _dm optimizations combined with the port's spin lock make if
+> difficult to pass all characters to the sysrq logic because we cannot
+> safely call uart_handle_sysrq_char() when the lock is held without
+> deadlock (the console handler also takes the lock).
 >
-> 1.      Records limitations of bitfields and small variables.
->         Also rules out pre-EV56 Alpha, which lack 8- and 16-bit
->         memory-reference instructions.  Later Alpha CPUs are OK.
->         (The official Alpha maintainers have thus far been silent
->         on this patch.)
+> Rather than passing all characters via uart_handle_sysrq_char() this patch
+> only passes the last few characters in the FIFO. This should include all
+> characters typed as a slow (human) rate. This makes the problem much
+> simpler and allows us to move the handling of these characters outside
+> of the port lock. This makes magic SysRq work if there is a human at
+> the keyboard (or a short delay in a script).
 >
-> 2.      Document the new RCU self-test boot parameters, courtesy of
->         Pranith Kumar.
->
-> 3.      Records that short-circuit boolean evaluation does not necessarily
->         defend against control-dependency breakage by compiler optimizations.
->
-> 4.      Add mention of atomic_long_t to atomic_ops.txt.
->
-> 5.      Fix an example in memory-barriers.txt, courtesy of Pranith Kumar.
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> ---
 
-
-Reviewed-by: Pranith Kumar <bobby.prani@gmail.com>
-
->
->                                                         Thanx, Paul
->
-> ------------------------------------------------------------------------
->
->  b/Documentation/atomic_ops.txt        |   12 +++--
->  b/Documentation/kernel-parameters.txt |    9 ++++
->  b/Documentation/memory-barriers.txt   |   71 ++++++++++++++++++++++++++++------
->  3 files changed, 77 insertions(+), 15 deletions(-)
->
-
-
+I have a patch that I was going to send for this (Frank R. and I have
+been looking at it since a month or two ago). This patch doesn't look
+correct given that the SR register is not actually accurate and doesn't
+indicate that a break is there in the fifo. I'll Cc you on the patch,
+please test it.
 
 -- 
-Pranith
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
