@@ -1,129 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062AbaJ3BLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 21:11:00 -0400
-Received: from regular1.263xmail.com ([211.150.99.132]:44091 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756788AbaJ3BK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 21:10:59 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <8922f360dd118fa64c48e0ed59b35373>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <54519019.6010903@rock-chips.com>
-Date: Thu, 30 Oct 2014 09:10:49 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S932318AbaJ3BN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 21:13:59 -0400
+Received: from mail-am1hn0252.outbound.protection.outlook.com ([157.56.112.252]:63936
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756618AbaJ3BN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 21:13:58 -0400
+X-Greylist: delayed 1808 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Oct 2014 21:13:57 EDT
+Reply-To: <ru_garang156@mail.com>
+From: Mrs Rebecca Garang <info@mtmoriahmbc.org>
+Subject: We can do this Investment
+Date: Wed, 29 Oct 2014 16:12:35 -0700
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Doug Anderson <dianders@chromium.org>
-CC: Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>,
-        =?UTF-8?B?IuaItOWFi+mcliAoSmFjayki?= <dkl@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: rockchip: disable unused clocks
-References: <1414577167-25666-1-git-send-email-kever.yang@rock-chips.com> <CAD=FV=Vnt7Pg9V_cE0S8u-2X2hDsPN8huwy8xKv1UwvWEo-Hyw@mail.gmail.com> <13348555.zj6gsMcCpK@diego>
-In-Reply-To: <13348555.zj6gsMcCpK@diego>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <ARTHURKiJa21NdWQNqQ00024985@hjweir.co.uk>
+X-OriginalArrivalTime: 29 Oct 2014 23:12:47.0425 (UTC) FILETIME=[DA5A9B10:01CFF3CD]
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130591034270705244;(b504ccec-b765-4e2f-5846-08d168caef57);()
+X-Forefront-Antispam-Report: CIP:217.40.154.18;CTRY:GB;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10009020)(6009001)(252514010)(189002)(199003)(87286001)(44976005)(50986999)(217433001)(19580395003)(19580405001)(69596002)(81686999)(53806999)(81816999)(4396001)(50226001)(85852003)(62236002)(44716002)(87936001)(88136002)(58726001)(62966002)(20776003)(47776003)(64706001)(89996001)(85306004)(558084003)(50466002)(77096002)(110136001)(1671002)(104016003)(107046002)(107886001)(229853001)(77156001)(35302002)(46102003)(80022003)(36756003)(43066003)(120916001)(21056001)(99396003)(76482002)(104166001)(102836001)(81156004)(106466001)(95666004)(105596002)(92726001)(93916002)(86362001)(40036004)(23686002)(61296003)(5456002);DIR:OUT;SFP:1501;SCL:6;SRVR:AM3PR06MB050;H:hjweir.co.uk;FPR:;MLV:spm;PTR:mail.h-j-weir.co.uk;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:AM3PR06MB050;
+X-Forefront-PRVS: 038002787A
+Authentication-Results: spf=softfail (sender IP is 217.40.154.18)
+ smtp.mailfrom=info@mtmoriahmbc.org; 
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
 
-On 10/30/2014 05:53 AM, Heiko Stübner wrote:
-> Am Mittwoch, 29. Oktober 2014, 13:50:20 schrieb Doug Anderson:
->> Kever,
->>
->> On Wed, Oct 29, 2014 at 3:06 AM, Kever Yang <kever.yang@rock-chips.com>
-> wrote:
->>> The rockchip clock driver use CLK_IGNORE_UNUSED flag to make sure
->>> all the clocks are available like default power on state.
->>> We have implement the clock manage in most of rockchip drivers,
->>> it is time to remove it for power save.
->>> Instead we add CLK_IGNORE_UNUSED for some clock nodes which should
->>> be on during boot or no module driver in kernel will initialize it.
->>>
->>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
->>> ---
->>>
->>>   drivers/clk/rockchip/clk-rk3188.c |  32 ++++-----
->>>   drivers/clk/rockchip/clk-rk3288.c | 146
->>>   +++++++++++++++++++------------------- drivers/clk/rockchip/clk.c
->>>   |   9 ---
->>>   3 files changed, 90 insertions(+), 97 deletions(-)
->> Your patch didn't seem to apply to the top of Heiko's
->> "v3.19-clk/next".  Where should it apply to?
-I apply the patch on the top of linux-next, I will apply it on Heiko's
-"v3.19-clk/next" next version.
->>
->>> -       GATE(ACLK_CPU, "aclk_cpu", "aclk_cpu_pre", 0,
->>> +       GATE(0, "aclk_cpu", "aclk_cpu_pre", CLK_IGNORE_UNUSED,
->>>
->>>                          RK3288_CLKGATE_CON(0), 3, GFLAGS),
->> It seems strange to me that you're removing the ACLK_CPU ID here.  Was
->> that on purpose?
-Sorry for that, I didn't mean to removing any ID here, will fix in next 
-version.
->>
->>> -       COMPOSITE_NOMUX(PCLK_CPU, "pclk_cpu", "aclk_cpu_pre", 0,
->>> +       COMPOSITE_NOMUX(0, "pclk_cpu", "aclk_cpu_pre", CLK_IGNORE_UNUSED,
->>>
->>>                          RK3288_CLKSEL_CON(1), 12, 3, DFLAGS,
->>>                          RK3288_CLKGATE_CON(0), 5, GFLAGS),
->> Here too for PCLK_CPU.  There are a few others as well.
-> yeah, they should keep their clock ids
->
->
->> I'll also say that when I applied this atop my local tree that USB
->> stopped working.  I just see:
->>
->> [ 1647.626747] hub 2-1:1.0: hub_port_status failed (err = -110)
->> [ 1657.626746] hub 2-1:1.0: hub_port_status failed (err = -110)
->>
->> ...over and over and over again.
-> maybe Kever's dwc2 clock-handling patch [0] might help there, as the dwc2-host
-> currently does not seem to do any clock handling at all.
-I think Heiko is right, I test in my evb with following change and dwc2
-works well:
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -654,8 +654,8 @@ static struct rockchip_clk_branch 
-rk3288_clk_branches[] __initdata = {
-
-         /* hclk_peri gates */
-         GATE(0, "hclk_peri_matrix", "hclk_peri", CLK_IGNORE_UNUSED, 
-RK3288_CLKGATE_CON(6), 0, GFLAGS),
--       GATE(HCLK_OTG0, "hclk_otg0", "hclk_peri", 0, 
-RK3288_CLKGATE_CON(7), 4, GFLAGS),
--       GATE(HCLK_USBHOST0, "hclk_host0", "hclk_peri", 0, 
-RK3288_CLKGATE_CON(7), 6, GFLAGS),
-+       GATE(HCLK_OTG0, "hclk_otg0", "hclk_peri", CLK_IGNORE_UNUSED, 
-RK3288_CLKGATE_CON(7), 4, GFLAGS),
-+       GATE(HCLK_USBHOST0, "hclk_host0", "hclk_peri", 
-CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 6, GFLAGS),
-         GATE(HCLK_USBHOST1, "hclk_host1", "hclk_peri", 0, 
-RK3288_CLKGATE_CON(7), 7, GFLAGS),
-         GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, 
-RK3288_CLKGATE_CON(7), 8, GFLAGS),
-         GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED, 
-RK3288_CLKGATE_CON(7), 9, GFLAGS),
-
-- Kever
+Hello dear Friend
+May I ask if you would be eligible to pursue a Business investment of US$57.3m with me in your country,
+if you dont mind? (Let me know if you are interested For more details,
+Email: ru_garang156@mail.com).
+Thank you.
+Regards,
+Ms. Rebecca Garang
 
