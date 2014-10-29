@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330AbaJ2RtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:49:14 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:51818 "EHLO
+	id S932353AbaJ2RuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:50:04 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51808 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090AbaJ2Rpr (ORCPT
+	with ESMTP id S1755972AbaJ2Rpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:45:47 -0400
+	Wed, 29 Oct 2014 13:45:44 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
         Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v3 09/15] net: dsa: Add support for switch EEPROM access
-Date: Wed, 29 Oct 2014 10:45:01 -0700
-Message-Id: <1414604707-22407-10-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v3 08/15] net: dsa/mv88e6123_61_65: Report chip temperature
+Date: Wed, 29 Oct 2014 10:45:00 -0700
+Message-Id: <1414604707-22407-9-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
 References: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020207.545127CA.0288,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020208.545127C8.0097,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 64
+X-CTCH-SenderID-TotalMessages: 57
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -50,134 +50,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some chips it is possible to access the switch eeprom.
-Add infrastructure support for it.
+MV88E6123 and compatible chips support reading the chip temperature
+from PHY register 6:26.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v3:
-- Fix bug seen if devicetree is enabled; eeprom-length property is
-  attached to switch devicetree node, not to dsa node.
+- No change
 v2:
-- Add support for configuring switch EEPROM size through platform data
-  or devicetree data
-- Do not compare new pointers against NULL
-- Check if get_eeprom pointer is set before calling it
+- Make new functionality optional, depending on CONFIG_NET_DSA_HWMON
 
- include/net/dsa.h | 10 ++++++++++
- net/dsa/dsa.c     |  4 ++++
- net/dsa/slave.c   | 41 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 55 insertions(+)
+ drivers/net/dsa/mv88e6123_61_65.c | 68 +++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 66 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/dsa.h b/include/net/dsa.h
-index 55e75e7..37856a2 100644
---- a/include/net/dsa.h
-+++ b/include/net/dsa.h
-@@ -38,6 +38,9 @@ struct dsa_chip_data {
- 	struct device	*host_dev;
- 	int		sw_addr;
- 
-+	/* set to size of eeprom if supported by the switch */
-+	int		eeprom_len;
-+
- 	/* Device tree node pointer for this specific switch chip
- 	 * used during switch setup in case additional properties
- 	 * and resources needs to be used
-@@ -258,6 +261,13 @@ struct dsa_switch_driver {
- 	int	(*set_temp_limit)(struct dsa_switch *ds, int temp);
- 	int	(*get_temp_alarm)(struct dsa_switch *ds, bool *alarm);
- #endif
-+
-+	/* EEPROM access */
-+	int	(*get_eeprom_len)(struct dsa_switch *ds);
-+	int	(*get_eeprom)(struct dsa_switch *ds,
-+			      struct ethtool_eeprom *eeprom, u8 *data);
-+	int	(*set_eeprom)(struct dsa_switch *ds,
-+			      struct ethtool_eeprom *eeprom, u8 *data);
- };
- 
- void register_switch_driver(struct dsa_switch_driver *type);
-diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
-index 5edbbca..b51ef592 100644
---- a/net/dsa/dsa.c
-+++ b/net/dsa/dsa.c
-@@ -575,6 +575,7 @@ static int dsa_of_probe(struct platform_device *pdev)
- 	const char *port_name;
- 	int chip_index, port_index;
- 	const unsigned int *sw_addr, *port_reg;
-+	u32 eeprom_len;
- 	int ret;
- 
- 	mdio = of_parse_phandle(np, "dsa,mii-bus", 0);
-@@ -626,6 +627,9 @@ static int dsa_of_probe(struct platform_device *pdev)
- 		if (cd->sw_addr > PHY_MAX_ADDR)
- 			continue;
- 
-+		if (!of_property_read_u32(np, "eeprom-length", &eeprom_len))
-+			cd->eeprom_len = eeprom_len;
-+
- 		for_each_available_child_of_node(child, port) {
- 			port_reg = of_get_property(port, "reg", NULL);
- 			if (!port_reg)
-diff --git a/net/dsa/slave.c b/net/dsa/slave.c
-index 6d18174..ff2fbe7 100644
---- a/net/dsa/slave.c
-+++ b/net/dsa/slave.c
-@@ -271,6 +271,44 @@ static u32 dsa_slave_get_link(struct net_device *dev)
- 	return -EOPNOTSUPP;
+diff --git a/drivers/net/dsa/mv88e6123_61_65.c b/drivers/net/dsa/mv88e6123_61_65.c
+index a332c53..9f43c9b 100644
+--- a/drivers/net/dsa/mv88e6123_61_65.c
++++ b/drivers/net/dsa/mv88e6123_61_65.c
+@@ -291,6 +291,54 @@ static int mv88e6123_61_65_setup_port(struct dsa_switch *ds, int p)
+ 	return 0;
  }
  
-+static int dsa_slave_get_eeprom_len(struct net_device *dev)
++#ifdef CONFIG_NET_DSA_HWMON
++
++static int  mv88e6123_61_65_get_temp(struct dsa_switch *ds, int *temp)
 +{
-+	struct dsa_slave_priv *p = netdev_priv(dev);
-+	struct dsa_switch *ds = p->parent;
++	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
++	int ret;
++	int val;
 +
-+	if (ds->pd->eeprom_len)
-+		return ds->pd->eeprom_len;
++	*temp = 0;
 +
-+	if (ds->drv->get_eeprom_len)
-+		return ds->drv->get_eeprom_len(ds);
++	mutex_lock(&ps->phy_mutex);
 +
-+	return 0;
++	ret = mv88e6xxx_phy_write(ds, 0x0, 0x16, 0x6);
++	if (ret < 0)
++		goto error;
++
++	/* Enable temperature sensor */
++	ret = mv88e6xxx_phy_read(ds, 0x0, 0x1a);
++	if (ret < 0)
++		goto error;
++
++	ret = mv88e6xxx_phy_write(ds, 0x0, 0x1a, ret | (1 << 5));
++	if (ret < 0)
++		goto error;
++
++	/* Wait for temperature to stabilize */
++	usleep_range(10000, 12000);
++
++	val = mv88e6xxx_phy_read(ds, 0x0, 0x1a);
++	if (val < 0) {
++		ret = val;
++		goto error;
++	}
++
++	/* Disable temperature sensor */
++	ret = mv88e6xxx_phy_write(ds, 0x0, 0x1a, ret & ~(1 << 5));
++	if (ret < 0)
++		goto error;
++
++	*temp = ((val & 0x1f) - 5) * 5;
++
++error:
++	mv88e6xxx_phy_write(ds, 0x0, 0x16, 0x0);
++	mutex_unlock(&ps->phy_mutex);
++	return ret;
 +}
++#endif /* CONFIG_NET_DSA_HWMON */
 +
-+static int dsa_slave_get_eeprom(struct net_device *dev,
-+				struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	struct dsa_slave_priv *p = netdev_priv(dev);
-+	struct dsa_switch *ds = p->parent;
-+
-+	if (ds->drv->get_eeprom)
-+		return ds->drv->get_eeprom(ds, eeprom, data);
-+
-+	return -EOPNOTSUPP;
-+}
-+
-+static int dsa_slave_set_eeprom(struct net_device *dev,
-+				struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	struct dsa_slave_priv *p = netdev_priv(dev);
-+	struct dsa_switch *ds = p->parent;
-+
-+	if (ds->drv->set_eeprom)
-+		return ds->drv->set_eeprom(ds, eeprom, data);
-+
-+	return -EOPNOTSUPP;
-+}
-+
- static void dsa_slave_get_strings(struct net_device *dev,
- 				  uint32_t stringset, uint8_t *data)
+ static int mv88e6123_61_65_setup(struct dsa_switch *ds)
  {
-@@ -387,6 +425,9 @@ static const struct ethtool_ops dsa_slave_ethtool_ops = {
- 	.get_drvinfo		= dsa_slave_get_drvinfo,
- 	.nway_reset		= dsa_slave_nway_reset,
- 	.get_link		= dsa_slave_get_link,
-+	.get_eeprom_len		= dsa_slave_get_eeprom_len,
-+	.get_eeprom		= dsa_slave_get_eeprom,
-+	.set_eeprom		= dsa_slave_set_eeprom,
- 	.get_strings		= dsa_slave_get_strings,
- 	.get_ethtool_stats	= dsa_slave_get_ethtool_stats,
- 	.get_sset_count		= dsa_slave_get_sset_count,
+ 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+@@ -299,6 +347,7 @@ static int mv88e6123_61_65_setup(struct dsa_switch *ds)
+ 
+ 	mutex_init(&ps->smi_mutex);
+ 	mutex_init(&ps->stats_mutex);
++	mutex_init(&ps->phy_mutex);
+ 
+ 	ret = mv88e6123_61_65_switch_reset(ds);
+ 	if (ret < 0)
+@@ -329,16 +378,28 @@ static int mv88e6123_61_65_port_to_phy_addr(int port)
+ static int
+ mv88e6123_61_65_phy_read(struct dsa_switch *ds, int port, int regnum)
+ {
++	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+ 	int addr = mv88e6123_61_65_port_to_phy_addr(port);
+-	return mv88e6xxx_phy_read(ds, addr, regnum);
++	int ret;
++
++	mutex_lock(&ps->phy_mutex);
++	ret = mv88e6xxx_phy_read(ds, addr, regnum);
++	mutex_unlock(&ps->phy_mutex);
++	return ret;
+ }
+ 
+ static int
+ mv88e6123_61_65_phy_write(struct dsa_switch *ds,
+ 			      int port, int regnum, u16 val)
+ {
++	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+ 	int addr = mv88e6123_61_65_port_to_phy_addr(port);
+-	return mv88e6xxx_phy_write(ds, addr, regnum, val);
++	int ret;
++
++	mutex_lock(&ps->phy_mutex);
++	ret = mv88e6xxx_phy_write(ds, addr, regnum, val);
++	mutex_unlock(&ps->phy_mutex);
++	return ret;
+ }
+ 
+ static struct mv88e6xxx_hw_stat mv88e6123_61_65_hw_stats[] = {
+@@ -406,6 +467,9 @@ struct dsa_switch_driver mv88e6123_61_65_switch_driver = {
+ 	.get_strings		= mv88e6123_61_65_get_strings,
+ 	.get_ethtool_stats	= mv88e6123_61_65_get_ethtool_stats,
+ 	.get_sset_count		= mv88e6123_61_65_get_sset_count,
++#ifdef CONFIG_NET_DSA_HWMON
++	.get_temp		= mv88e6123_61_65_get_temp,
++#endif
+ };
+ 
+ MODULE_ALIAS("platform:mv88e6123");
 -- 
 1.9.1
 
