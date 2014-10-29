@@ -1,185 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160AbaJ2NLd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:11:33 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:50881 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933073AbaJ2NLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 09:11:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1413543482-12748-1-git-send-email-a.hajda@samsung.com>
-References: <1413543482-12748-1-git-send-email-a.hajda@samsung.com>
-Date: Wed, 29 Oct 2014 14:11:27 +0100
-Message-ID: <CAPDyKFqPB9suSmoH20WWywZ5BWDveSopyvUdA1g8LX309aPVNA@mail.gmail.com>
-Subject: Re: [PATCH] PM / Runtime: Rework RPM get callback routines
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: "open list:SUSPEND TO RAM" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	id S933003AbaJ2NO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:14:29 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:47024 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932759AbaJ2NO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 09:14:27 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>,
+        Max Schwarz <max.schwarz@online.de>, Addy Ke <addy.ke@rock-chips.com>,
+        wsa@the-dreams.de
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/Rockchip SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
         open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v2] ARM: dts: rockchip: use internal pull-up resistors on I2C busses
+Date: Wed, 29 Oct 2014 14:17:23 +0100
+Message-ID: <2234299.BSD6RSf1dG@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1414492597-13566-1-git-send-email-julien.chauveau@neo-technologies.fr>
+References: <1414492597-13566-1-git-send-email-julien.chauveau@neo-technologies.fr>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 October 2014 12:58, Andrzej Hajda <a.hajda@samsung.com> wrote:
-> PM uses three separate functions to fetch RPM callbacks.
-> These functions uses quite complicated macro in their body.
-> The patch replaces these routines with one small macro and
-> one helper function.
->
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+Hi Addy, Max, Wolfram,
+
+after Doug's explanation of disfavour [0] and Julien's subsequent response I'm
+not sure which direction to go. So if possible I'd like to collect some more
+opinions of people knowing a lot more about i2c internals than myself :-) .
+
+
+Thanks
+Heiko
+
+
+[0] http://lists.infradead.org/pipermail/linux-rockchip/2014-October/000934.html
+
+Am Dienstag, 28. Oktober 2014, 11:36:36 schrieb Julien CHAUVEAU:
+> According to the I2C bus specification, it is required to use pull-up
+> resistors on the clock and data lines. Probing the I2C busses with
+> i2cdetect results in bad results when no devices are connected and no
+> external resistors are used.
+> 
+> This patch configures the I2C busses to use the internal pull-up resistors
+> on the RK3066, RK3188 and RK3288 Rockchip processors. It should also be
+> noted that these default pull settings match the original configuration on
+> these SoCs.
+> 
+> Below is the results of using i2cdetect on a I2C bus with no devices
+> connected before (1) and after (2) applying this patch.
+> 
+> (1) root@localhost:~# i2cdetect -y 3
+>      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+> 00:          03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+> 10: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+> 20: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f
+> 30: -- -- -- -- -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x81, state: 2
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 2
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 2
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
+> ...
+> 
+> (2) root@localhost:~# i2cdetect -y 3
+>      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+> 00:          -- -- -- -- -- -- -- -- -- -- -- -- --
+> 10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 70: -- -- -- -- -- -- -- --
+> 
+> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
 > ---
-> Hi,
->
-> I guess such constructs (offsetof and void* arithmetic) are little bit
+> Changes since v1:
+> - fix the rk3066a pull settings (only available is pull_none/pull_default)
+> - remove the warnings in the results of i2cdetect
+> 
+>  arch/arm/boot/dts/rk3066a.dtsi | 20 ++++++++++----------
+>  arch/arm/boot/dts/rk3188.dtsi  | 20 ++++++++++----------
+>  arch/arm/boot/dts/rk3288.dtsi  | 24 ++++++++++++------------
+>  3 files changed, 32 insertions(+), 32 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/rk3066a.dtsi b/arch/arm/boot/dts/rk3066a.dtsi
+> index ad9c2db..dbc1a0b 100644
+> --- a/arch/arm/boot/dts/rk3066a.dtsi
+> +++ b/arch/arm/boot/dts/rk3066a.dtsi
+> @@ -202,36 +202,36 @@
+> 
+>  		i2c0 {
+>  			i2c0_xfer: i2c0-xfer {
+> -				rockchip,pins = <RK_GPIO2 28 RK_FUNC_1 &pcfg_pull_none>,
+> -						<RK_GPIO2 29 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO2 28 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO2 29 RK_FUNC_1 &pcfg_pull_default>;
+>  			};
+>  		};
+> 
+>  		i2c1 {
+>  			i2c1_xfer: i2c1-xfer {
+> -				rockchip,pins = <RK_GPIO2 30 RK_FUNC_1 &pcfg_pull_none>,
+> -						<RK_GPIO2 31 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO2 30 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO2 31 RK_FUNC_1 &pcfg_pull_default>;
+>  			};
+>  		};
+> 
+>  		i2c2 {
+>  			i2c2_xfer: i2c2-xfer {
+> -				rockchip,pins = <RK_GPIO3 0 RK_FUNC_1 &pcfg_pull_none>,
+> -						<RK_GPIO3 1 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO3 0 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO3 1 RK_FUNC_1 &pcfg_pull_default>;
+>  			};
+>  		};
+> 
+>  		i2c3 {
+>  			i2c3_xfer: i2c3-xfer {
+> -				rockchip,pins = <RK_GPIO3 2 RK_FUNC_2 &pcfg_pull_none>,
+> -						<RK_GPIO3 3 RK_FUNC_2 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO3 2 RK_FUNC_2 &pcfg_pull_default>,
+> +						<RK_GPIO3 3 RK_FUNC_2 &pcfg_pull_default>;
+>  			};
+>  		};
+> 
+>  		i2c4 {
+>  			i2c4_xfer: i2c4-xfer {
+> -				rockchip,pins = <RK_GPIO3 4 RK_FUNC_1 &pcfg_pull_none>,
+> -						<RK_GPIO3 5 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO3 4 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO3 5 RK_FUNC_1 &pcfg_pull_default>;
+>  			};
+>  		};
+> 
+> diff --git a/arch/arm/boot/dts/rk3188.dtsi b/arch/arm/boot/dts/rk3188.dtsi
+> index ddaada7..ee2865f 100644
+> --- a/arch/arm/boot/dts/rk3188.dtsi
+> +++ b/arch/arm/boot/dts/rk3188.dtsi
+> @@ -188,36 +188,36 @@
+> 
+>  		i2c0 {
+>  			i2c0_xfer: i2c0-xfer {
+> -				rockchip,pins = <RK_GPIO1 24 RK_FUNC_1 &pcfg_pull_none>,
+> -						<RK_GPIO1 25 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO1 24 RK_FUNC_1 &pcfg_pull_up>,
+> +						<RK_GPIO1 25 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c1 {
+>  			i2c1_xfer: i2c1-xfer {
+> -				rockchip,pins = <RK_GPIO1 26 RK_FUNC_1 &pcfg_pull_none>,
+> -						<RK_GPIO1 27 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO1 26 RK_FUNC_1 &pcfg_pull_up>,
+> +						<RK_GPIO1 27 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c2 {
+>  			i2c2_xfer: i2c2-xfer {
+> -				rockchip,pins = <RK_GPIO1 28 RK_FUNC_1 &pcfg_pull_none>,
+> -						<RK_GPIO1 29 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO1 28 RK_FUNC_1 &pcfg_pull_up>,
+> +						<RK_GPIO1 29 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c3 {
+>  			i2c3_xfer: i2c3-xfer {
+> -				rockchip,pins = <RK_GPIO3 14 RK_FUNC_2 &pcfg_pull_none>,
+> -						<RK_GPIO3 15 RK_FUNC_2 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO3 14 RK_FUNC_2 &pcfg_pull_up>,
+> +						<RK_GPIO3 15 RK_FUNC_2 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c4 {
+>  			i2c4_xfer: i2c4-xfer {
+> -				rockchip,pins = <RK_GPIO1 30 RK_FUNC_1 &pcfg_pull_none>,
+> -						<RK_GPIO1 31 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <RK_GPIO1 30 RK_FUNC_1 &pcfg_pull_up>,
+> +						<RK_GPIO1 31 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 874e66d..9a4b1f7 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -636,43 +636,43 @@
+> 
+>  		i2c0 {
+>  			i2c0_xfer: i2c0-xfer {
+> -				rockchip,pins = <0 15 RK_FUNC_1 &pcfg_pull_none>,
+> -						<0 16 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <0 15 RK_FUNC_1 &pcfg_pull_up>,
+> +						<0 16 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c1 {
+>  			i2c1_xfer: i2c1-xfer {
+> -				rockchip,pins = <8 4 RK_FUNC_1 &pcfg_pull_none>,
+> -						<8 5 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <8 4 RK_FUNC_1 &pcfg_pull_up>,
+> +						<8 5 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c2 {
+>  			i2c2_xfer: i2c2-xfer {
+> -				rockchip,pins = <6 9 RK_FUNC_1 &pcfg_pull_none>,
+> -						<6 10 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <6 9 RK_FUNC_1 &pcfg_pull_up>,
+> +						<6 10 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c3 {
+>  			i2c3_xfer: i2c3-xfer {
+> -				rockchip,pins = <2 16 RK_FUNC_1 &pcfg_pull_none>,
+> -						<2 17 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <2 16 RK_FUNC_1 &pcfg_pull_up>,
+> +						<2 17 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c4 {
+>  			i2c4_xfer: i2c4-xfer {
+> -				rockchip,pins = <7 17 RK_FUNC_1 &pcfg_pull_none>,
+> -						<7 18 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <7 17 RK_FUNC_1 &pcfg_pull_up>,
+> +						<7 18 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
+> 
+>  		i2c5 {
+>  			i2c5_xfer: i2c5-xfer {
+> -				rockchip,pins = <7 19 RK_FUNC_1 &pcfg_pull_none>,
+> -						<7 20 RK_FUNC_1 &pcfg_pull_none>;
+> +				rockchip,pins = <7 19 RK_FUNC_1 &pcfg_pull_up>,
+> +						<7 20 RK_FUNC_1 &pcfg_pull_up>;
+>  			};
+>  		};
 
-I haven't seen this kind of constructs, but I like them. It simplifies
-the code and removes the ugly macro, which I added some time ago.
-
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-
-Kind regards
-Uffe
-
-> controversial. On the other side they seems to me more clear than the
-> current solution. For sure they produce better code:
->    8186      72      24    8282    205a drivers/base/power/runtime.old.o
->    7938      72      24    8034    1f62 drivers/base/power/runtime.o
->
-> Regards
-> Andrzej
-> ---
->  drivers/base/power/runtime.c | 69 +++++++++++++++++++++-----------------------
->  1 file changed, 33 insertions(+), 36 deletions(-)
->
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 67c7938..8f1ab84 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -13,42 +13,39 @@
->  #include <trace/events/rpm.h>
->  #include "power.h"
->
-> -#define RPM_GET_CALLBACK(dev, cb)                              \
-> -({                                                             \
-> -       int (*__rpm_cb)(struct device *__d);                    \
-> -                                                               \
-> -       if (dev->pm_domain)                                     \
-> -               __rpm_cb = dev->pm_domain->ops.cb;              \
-> -       else if (dev->type && dev->type->pm)                    \
-> -               __rpm_cb = dev->type->pm->cb;                   \
-> -       else if (dev->class && dev->class->pm)                  \
-> -               __rpm_cb = dev->class->pm->cb;                  \
-> -       else if (dev->bus && dev->bus->pm)                      \
-> -               __rpm_cb = dev->bus->pm->cb;                    \
-> -       else                                                    \
-> -               __rpm_cb = NULL;                                \
-> -                                                               \
-> -       if (!__rpm_cb && dev->driver && dev->driver->pm)        \
-> -               __rpm_cb = dev->driver->pm->cb;                 \
-> -                                                               \
-> -       __rpm_cb;                                               \
-> -})
-> -
-> -static int (*rpm_get_suspend_cb(struct device *dev))(struct device *)
-> -{
-> -       return RPM_GET_CALLBACK(dev, runtime_suspend);
-> -}
-> +typedef int (*pm_callback_t)(struct device *);
->
-> -static int (*rpm_get_resume_cb(struct device *dev))(struct device *)
-> +static pm_callback_t __rpm_get_callback(struct device *dev, size_t cb_offset)
->  {
-> -       return RPM_GET_CALLBACK(dev, runtime_resume);
-> +       pm_callback_t cb;
-> +       const struct dev_pm_ops *ops;
-> +
-> +       if (dev->pm_domain)
-> +               ops = &dev->pm_domain->ops;
-> +       else if (dev->type && dev->type->pm)
-> +               ops = dev->type->pm;
-> +       else if (dev->class && dev->class->pm)
-> +               ops = dev->class->pm;
-> +       else if (dev->bus && dev->bus->pm)
-> +               ops = dev->bus->pm;
-> +       else
-> +               ops = NULL;
-> +
-> +       if (ops)
-> +               cb = *(pm_callback_t *)((void *)ops + cb_offset);
-> +       else
-> +               cb = NULL;
-> +
-> +       if (!cb && dev->driver && dev->driver->pm)
-> +               cb = *(pm_callback_t *)((void *)dev->driver->pm + cb_offset);
-> +
-> +       return cb;
->  }
->
-> +#define RPM_GET_CALLBACK(dev, callback) \
-> +               __rpm_get_callback(dev, offsetof(struct dev_pm_ops, callback))
-> +
->  #ifdef CONFIG_PM_RUNTIME
-> -static int (*rpm_get_idle_cb(struct device *dev))(struct device *)
-> -{
-> -       return RPM_GET_CALLBACK(dev, runtime_idle);
-> -}
->
->  static int rpm_resume(struct device *dev, int rpmflags);
->  static int rpm_suspend(struct device *dev, int rpmflags);
-> @@ -347,7 +344,7 @@ static int rpm_idle(struct device *dev, int rpmflags)
->
->         dev->power.idle_notification = true;
->
-> -       callback = rpm_get_idle_cb(dev);
-> +       callback = RPM_GET_CALLBACK(dev, runtime_idle);
->
->         if (callback)
->                 retval = __rpm_callback(callback, dev);
-> @@ -517,7 +514,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->
->         __update_runtime_status(dev, RPM_SUSPENDING);
->
-> -       callback = rpm_get_suspend_cb(dev);
-> +       callback = RPM_GET_CALLBACK(dev, runtime_suspend);
->
->         retval = rpm_callback(callback, dev);
->         if (retval)
-> @@ -737,7 +734,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
->
->         __update_runtime_status(dev, RPM_RESUMING);
->
-> -       callback = rpm_get_resume_cb(dev);
-> +       callback = RPM_GET_CALLBACK(dev, runtime_resume);
->
->         retval = rpm_callback(callback, dev);
->         if (retval) {
-> @@ -1431,7 +1428,7 @@ int pm_runtime_force_suspend(struct device *dev)
->         if (pm_runtime_status_suspended(dev))
->                 return 0;
->
-> -       callback = rpm_get_suspend_cb(dev);
-> +       callback = RPM_GET_CALLBACK(dev, runtime_suspend);
->
->         if (!callback) {
->                 ret = -ENOSYS;
-> @@ -1467,7 +1464,7 @@ int pm_runtime_force_resume(struct device *dev)
->         int (*callback)(struct device *);
->         int ret = 0;
->
-> -       callback = rpm_get_resume_cb(dev);
-> +       callback = RPM_GET_CALLBACK(dev, runtime_resume);
->
->         if (!callback) {
->                 ret = -ENOSYS;
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
