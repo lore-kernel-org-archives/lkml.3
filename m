@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026AbaJ2U27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:28:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46423 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaJ2U24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:28:56 -0400
+	id S1757379AbaJ2U3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:29:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34045 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757084AbaJ2U3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 16:29:08 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 CC: Murali Karicheri <m-karicheri2@ti.com>,
         Santosh Shilimkar <ssantosh@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 2/4] ARM: keystone: defconfig: add options to enable PCI controller
-Date: Wed, 29 Oct 2014 16:28:15 -0400
-Message-ID: <1414614497-4798-3-git-send-email-m-karicheri2@ti.com>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>
+Subject: [PATCH v2 0/4] Enable PCI controller for Keystone SoCs
+Date: Wed, 29 Oct 2014 16:28:13 -0400
+Message-ID: <1414614497-4798-1-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1414614497-4798-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <yes>
 References: <yes>
- <1414614497-4798-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables PCI controller driver for Keystone SoCs by
-default.
+v2: Some more minor edits based on comments
+v1: resend with some minor fix up of the commit description and fixing
+    the email ID for Santosh.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 CC: Santosh Shilimkar <ssantosh@kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>
 CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- v2 - Added a description in the commit log per comment
- v1 - fixed email ID for Santosh
- arch/arm/configs/keystone_defconfig |    3 +++
- 1 file changed, 3 insertions(+)
+CC: Rob Herring <robh+dt@kernel.org>
+CC: Pawel Moll <pawel.moll@arm.com>
+CC: Mark Rutland <mark.rutland@arm.com>
+CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+CC: Kumar Gala <galak@codeaurora.org>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: devicetree@vger.kernel.org
 
-diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
-index 932ae40..40d3e9d 100644
---- a/arch/arm/configs/keystone_defconfig
-+++ b/arch/arm/configs/keystone_defconfig
-@@ -20,6 +20,9 @@ CONFIG_MODULE_FORCE_UNLOAD=y
- CONFIG_MODVERSIONS=y
- CONFIG_ARCH_KEYSTONE=y
- CONFIG_ARM_LPAE=y
-+CONFIG_PCI=y
-+CONFIG_PCI_MSI=y
-+CONFIG_PCI_KEYSTONE=y
- CONFIG_SMP=y
- CONFIG_PREEMPT=y
- CONFIG_AEABI=y
+Murali Karicheri (4):
+  ARM: keystone: add pcie related options
+  ARM: keystone: defconfig: add options to enable PCI controller
+  ARM: dts: keystone: add DT bindings for PCI controller for port 0
+  ARM: dts: keystone-k2e: add DT bindings for PCI controller for port 1
+
+ arch/arm/boot/dts/k2e.dtsi          |   45 +++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/keystone.dtsi     |   45 +++++++++++++++++++++++++++++++++++
+ arch/arm/configs/keystone_defconfig |    3 +++
+ arch/arm/mach-keystone/Kconfig      |    2 ++
+ 4 files changed, 95 insertions(+)
+
 -- 
 1.7.9.5
 
