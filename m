@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934386AbaJ2PqU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:46:20 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:51507 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933664AbaJ2PqQ (ORCPT
+	id S934401AbaJ2PqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:46:24 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46085 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933664AbaJ2PqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:46:16 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: linux-kernel@vger.kernel.org
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: [PATCH v2] cpufreq: Guard against not-yet-initialized policies in cpufreq_cpu_get()
-Date: Wed, 29 Oct 2014 16:45:47 +0100
-Message-Id: <1414597547-16506-1-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <20141029024426.GA7468@kroah.com>
-References: <20141029024426.GA7468@kroah.com>
+	Wed, 29 Oct 2014 11:46:21 -0400
+Date: Wed, 29 Oct 2014 08:46:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: Remove redundant rcu_is_cpu_rrupt_from_idle()
+ function
+Message-ID: <20141029154615.GR5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1414580827-19545-1-git-send-email-agordeev@redhat.com>
+ <20141029124728.GL5718@linux.vnet.ibm.com>
+ <20141029134519.GC30198@agordeev.usersys.redhat.com>
+ <20141029143439.GN5718@linux.vnet.ibm.com>
+ <20141029151622.GD30198@agordeev.usersys.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029151622.GD30198@agordeev.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102915-8236-0000-0000-000006820E80
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a substantial window of opportunity from the time the policy objects
-are created until they are initialized, causing this:
+On Wed, Oct 29, 2014 at 03:16:23PM +0000, Alexander Gordeev wrote:
+> On Wed, Oct 29, 2014 at 07:34:39AM -0700, Paul E. McKenney wrote:
+> > On Wed, Oct 29, 2014 at 01:45:19PM +0000, Alexander Gordeev wrote:
+> > > On Wed, Oct 29, 2014 at 05:47:29AM -0700, Paul E. McKenney wrote:
+> > > > On Wed, Oct 29, 2014 at 12:07:07PM +0100, Alexander Gordeev wrote:
+> > > > > Function rcu_is_cpu_rrupt_from_idle() is called from scheduling-
+> > > > > clock interrupt handler to check if the current CPU was interrupted
+> > > > > from idle. If true, it results in invocation of RCU callbacks. But
+> > > > > the common hardware interrupt exit path also contains similar check
+> > > > > and therefore the call to rcu_is_cpu_rrupt_from_idle() is redundant.
+> > > > 
+> > > > By common hardware interrupt exit path, you are meaning the calls
+> > > > to rcu_irq_exit()?  If not, please let me know exactly what you
+> > > > mean here.
+> > > 
+> > > Yes, I mean rcu_irq_exit().
+> > 
+> > Unless you can get the indication of whether or not the original interrupt
+> > came from userspace execution into rcu_irq_exit(), this will not work.
+> > It will result in grace-period hangs on some configurations.
+> 
+> Okay, that was my concern wrt tree RCU. By contrast, tiny RCU does not seem
+> able to hang a grace-period, isn't it?
 
-WARNING: CPU: 1 PID: 64 at include/linux/kref.h:47 kobject_get+0x64/0x70()
-Modules linked in:
-CPU: 1 PID: 64 Comm: irq/77-tegra-ac Not tainted 3.18.0-rc1-next-20141027ccu-00049-g21a0041 #248
-[<c0016fac>] (unwind_backtrace) from [<c001272c>] (show_stack+0x10/0x14)
-[<c001272c>] (show_stack) from [<c0601920>] (dump_stack+0x98/0xd8)
-[<c0601920>] (dump_stack) from [<c00288d8>] (warn_slowpath_common+0x70/0x8c)
-[<c00288d8>] (warn_slowpath_common) from [<c0028990>] (warn_slowpath_null+0x1c/0x24)
-[<c0028990>] (warn_slowpath_null) from [<c02227bc>] (kobject_get+0x64/0x70)
-[<c02227bc>] (kobject_get) from [<c03e5238>] (cpufreq_cpu_get+0x88/0xc8)
-[<c03e5238>] (cpufreq_cpu_get) from [<c03e52ec>] (cpufreq_get+0xc/0x64)
-[<c03e52ec>] (cpufreq_get) from [<c0287818>] (actmon_thread_isr+0x140/0x1a4)
-[<c0287818>] (actmon_thread_isr) from [<c0068a68>] (irq_thread_fn+0x1c/0x40)
-[<c0068a68>] (irq_thread_fn) from [<c0068d84>] (irq_thread+0x134/0x174)
-[<c0068d84>] (irq_thread) from [<c0040284>] (kthread+0xdc/0xf4)
-[<c0040284>] (kthread) from [<c000f4b8>] (ret_from_fork+0x14/0x3c)
+Although it is true that tiny RCU cannot hang a synchronize_rcu()
+grace period, it most certainly can hang a call_rcu() grace period
+in exactly the same way.
 
-This commit checks that initialization has finished before trying to do
-anything with the policy.
+> > Now, if you -can- get the userspace-execution indication into
+> > rcu_irq_exit(), this might be of interest.  However, it might be faster
+> > to simply let the scheduling-clock interrupt do the job as it currently
+> > does, especially for workloads with lots of interrupts.
+> > 
+> > Or did you have something else in mind?
+> 
+> Nope. I would even leave as is tiny RCU's rcu_is_cpu_rrupt_from_idle()
+> for clarity then ;)
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
----
- drivers/cpufreq/cpufreq.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Also to avoid userspace execution from preventing RCU callbacks from
+ever being invoked.  ;-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 644b54e..7b84d1a 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -48,6 +48,9 @@ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- /* Flag to suspend/resume CPUFreq governors */
- static bool cpufreq_suspended;
- 
-+/* Flag that tells whether initialization is completed */
-+static atomic_t cpufreq_initialized = ATOMIC_INIT(0);
-+
- static inline bool has_target(void)
- {
- 	return cpufreq_driver->target_index || cpufreq_driver->target;
-@@ -211,7 +214,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
- 	/* get the cpufreq driver */
- 	read_lock_irqsave(&cpufreq_driver_lock, flags);
- 
--	if (cpufreq_driver) {
-+	if (atomic_read(&cpufreq_initialized)) {
- 		/* get the CPU */
- 		policy = per_cpu(cpufreq_cpu_data, cpu);
- 		if (policy)
-@@ -1289,6 +1292,8 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	kobject_uevent(&policy->kobj, KOBJ_ADD);
- 	up_read(&cpufreq_rwsem);
- 
-+	atomic_set(&cpufreq_initialized, 1);
-+
- 	pr_debug("initialization complete\n");
- 
- 	return 0;
--- 
-1.9.3
+							Thanx, Paul
 
