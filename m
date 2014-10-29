@@ -1,231 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933226AbaJ2Mtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:49:33 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14401 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932945AbaJ2MqX (ORCPT
+	id S933251AbaJ2Mtm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:49:42 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:47854 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932852AbaJ2Mtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:46:23 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 25/35] UBI: Fastmap: Fix race after ubi_wl_get_peb()
-Date: Wed, 29 Oct 2014 13:45:48 +0100
-Message-Id: <1414586758-9972-26-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
-References: <1414586758-9972-1-git-send-email-richard@nod.at>
+	Wed, 29 Oct 2014 08:49:39 -0400
+Date: Wed, 29 Oct 2014 13:46:29 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Felipe Balbi <balbi@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Guenter Roeck <linux@roeck-us.net>, nsekhar@ti.com, t-kristo@ti.com,
+        j-keerthy@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] rtc: omap: add support for pmic_power_en
+Message-ID: <20141029124629.GA8823@localhost>
+References: <1413913086-12730-1-git-send-email-johan@kernel.org>
+ <1414397368-26480-1-git-send-email-johan@kernel.org>
+ <20141027154031.4492ea11d401045ca04a3ff8@linux-foundation.org>
+ <20141028083633.GM2006@localhost>
+ <20141028141805.7b67bba29734be326354957f@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028141805.7b67bba29734be326354957f@linux-foundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ubi_wl_get_peb() returns a fresh PEB which can be used by
-user of UBI. Due to the pool logic fastmap will correctly
-map this PEB upon attach time because it will be scanned.
+On Tue, Oct 28, 2014 at 02:18:05PM -0700, Andrew Morton wrote:
+> On Tue, 28 Oct 2014 09:36:33 +0100 Johan Hovold <johan@kernel.org> wrote:
+> 
+> > > But it doesn't explain *why* we want the alarm to trigger before
+> > > returning.
+> > 
+> > Should we really require every power-off handler to document arch
+> > behaviour (even if its inconsistent and currently undocumented); in
+> > this case that some arches return to user-space where we may oops if
+> > called from process 0 (e.g. systemd, but not if using sysvinit)?
+> 
+> The kernel really doesn't have a problem related to excessive amounts
+> of useful code comments :(
+> 
+> The bottom line is: did I provide a reader with the ability to
+> understand why the code is this way?  If "no" then improvements beckon.
+> 
+> This does look like one code site where an elaborate explanation is
+> warranted.  There's no way in which a reader can get to your above
+> paragraph from the current rtc-omap.c.
 
-If a new fastmap is written (due to heavy parallel io)
-while the before the fresh PEB is assigned to the EBA table
-it will not be scanned as it is no longer in the pool.
-So, the race window exists between ubi_wl_get_peb()
-and the EBA table assignment.
-We have to make sure that no new fastmap can be written
-while that.
+I agree with you that I should add a comment on why that mdelay is
+there to make it perfectly clear and obvious that it's purpose is to let
+the alarm trigger, which in turn causes the pmic to power off the
+system.
 
-To ensure that ubi_wl_get_peb() will grab ubi->fm_sem in read mode
-and the user of ubi_wl_get_peb() has to release it after the PEB
-got assigned.
+It is a power-off handler, and any power-off handler should not return
+until it has at least attempted to power off the system. In this case,
+that mandates a two-second delay.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/eba.c | 24 ++++++++++++++++++------
- drivers/mtd/ubi/wl.c  |  6 ++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
+So far, so good. I don't agree with you that every power-off handler
+should document what happens if it fails to power-off the system. That
+is, to describe what arches will happily return to user space, and under
+what conditions (e.g. what init system is used) that this will cause a
+panic.
 
-diff --git a/drivers/mtd/ubi/eba.c b/drivers/mtd/ubi/eba.c
-index 04abe7f..2f41e53 100644
---- a/drivers/mtd/ubi/eba.c
-+++ b/drivers/mtd/ubi/eba.c
-@@ -510,6 +510,7 @@ retry:
- 	new_pnum = ubi_wl_get_peb(ubi);
- 	if (new_pnum < 0) {
- 		ubi_free_vid_hdr(ubi, vid_hdr);
-+		up_read(&ubi->fm_sem);
- 		return new_pnum;
- 	}
- 
-@@ -519,13 +520,16 @@ retry:
- 	if (err && err != UBI_IO_BITFLIPS) {
- 		if (err > 0)
- 			err = -EIO;
-+		up_read(&ubi->fm_sem);
- 		goto out_put;
- 	}
- 
- 	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
- 	err = ubi_io_write_vid_hdr(ubi, new_pnum, vid_hdr);
--	if (err)
-+	if (err) {
-+		up_read(&ubi->fm_sem);
- 		goto write_error;
-+	}
- 
- 	data_size = offset + len;
- 	mutex_lock(&ubi->buf_mutex);
-@@ -534,8 +538,10 @@ retry:
- 	/* Read everything before the area where the write failure happened */
- 	if (offset > 0) {
- 		err = ubi_io_read_data(ubi, ubi->peb_buf, pnum, 0, offset);
--		if (err && err != UBI_IO_BITFLIPS)
-+		if (err && err != UBI_IO_BITFLIPS) {
-+			up_read(&ubi->fm_sem);
- 			goto out_unlock;
-+		}
- 	}
- 
- 	memcpy(ubi->peb_buf + offset, buf, len);
-@@ -543,13 +549,13 @@ retry:
- 	err = ubi_io_write_data(ubi, ubi->peb_buf, new_pnum, 0, data_size);
- 	if (err) {
- 		mutex_unlock(&ubi->buf_mutex);
-+		up_read(&ubi->fm_sem);
- 		goto write_error;
- 	}
- 
- 	mutex_unlock(&ubi->buf_mutex);
- 	ubi_free_vid_hdr(ubi, vid_hdr);
- 
--	down_read(&ubi->fm_sem);
- 	vol->eba_tbl[lnum] = new_pnum;
- 	up_read(&ubi->fm_sem);
- 	ubi_wl_put_peb(ubi, vol_id, lnum, pnum, 1);
-@@ -646,6 +652,7 @@ retry:
- 	if (pnum < 0) {
- 		ubi_free_vid_hdr(ubi, vid_hdr);
- 		leb_write_unlock(ubi, vol_id, lnum);
-+		up_read(&ubi->fm_sem);
- 		return pnum;
- 	}
- 
-@@ -656,6 +663,7 @@ retry:
- 	if (err) {
- 		ubi_warn("failed to write VID header to LEB %d:%d, PEB %d",
- 			 vol_id, lnum, pnum);
-+		up_read(&ubi->fm_sem);
- 		goto write_error;
- 	}
- 
-@@ -664,11 +672,11 @@ retry:
- 		if (err) {
- 			ubi_warn("failed to write %d bytes at offset %d of LEB %d:%d, PEB %d",
- 				 len, offset, vol_id, lnum, pnum);
-+			up_read(&ubi->fm_sem);
- 			goto write_error;
- 		}
- 	}
- 
--	down_read(&ubi->fm_sem);
- 	vol->eba_tbl[lnum] = pnum;
- 	up_read(&ubi->fm_sem);
- 
-@@ -767,6 +775,7 @@ retry:
- 	if (pnum < 0) {
- 		ubi_free_vid_hdr(ubi, vid_hdr);
- 		leb_write_unlock(ubi, vol_id, lnum);
-+		up_read(&ubi->fm_sem);
- 		return pnum;
- 	}
- 
-@@ -777,6 +786,7 @@ retry:
- 	if (err) {
- 		ubi_warn("failed to write VID header to LEB %d:%d, PEB %d",
- 			 vol_id, lnum, pnum);
-+		up_read(&ubi->fm_sem);
- 		goto write_error;
- 	}
- 
-@@ -784,11 +794,11 @@ retry:
- 	if (err) {
- 		ubi_warn("failed to write %d bytes of data to PEB %d",
- 			 len, pnum);
-+		up_read(&ubi->fm_sem);
- 		goto write_error;
- 	}
- 
- 	ubi_assert(vol->eba_tbl[lnum] < 0);
--	down_read(&ubi->fm_sem);
- 	vol->eba_tbl[lnum] = pnum;
- 	up_read(&ubi->fm_sem);
- 
-@@ -885,6 +895,7 @@ retry:
- 	pnum = ubi_wl_get_peb(ubi);
- 	if (pnum < 0) {
- 		err = pnum;
-+		up_read(&ubi->fm_sem);
- 		goto out_leb_unlock;
- 	}
- 
-@@ -895,6 +906,7 @@ retry:
- 	if (err) {
- 		ubi_warn("failed to write VID header to LEB %d:%d, PEB %d",
- 			 vol_id, lnum, pnum);
-+		up_read(&ubi->fm_sem);
- 		goto write_error;
- 	}
- 
-@@ -902,10 +914,10 @@ retry:
- 	if (err) {
- 		ubi_warn("failed to write %d bytes of data to PEB %d",
- 			 len, pnum);
-+		up_read(&ubi->fm_sem);
- 		goto write_error;
- 	}
- 
--	down_read(&ubi->fm_sem);
- 	old_pnum = vol->eba_tbl[lnum];
- 	vol->eba_tbl[lnum] = pnum;
- 	up_read(&ubi->fm_sem);
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 44ebefd..fbe9b5c 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -628,6 +628,7 @@ void ubi_refill_pools(struct ubi_device *ubi)
- 
- /* ubi_wl_get_peb - works exaclty like __wl_get_peb but keeps track of
-  * the fastmap pool.
-+ * Returns with ubi->fm_sem held in read mode!
-  */
- int ubi_wl_get_peb(struct ubi_device *ubi)
- {
-@@ -636,15 +637,19 @@ int ubi_wl_get_peb(struct ubi_device *ubi)
- 	struct ubi_fm_pool *wl_pool = &ubi->fm_wl_pool;
- 
- again:
-+	down_read(&ubi->fm_sem);
- 	spin_lock(&ubi->wl_lock);
- 	if (!pool->size || !wl_pool->size || pool->used >= pool->size ||
- 	    wl_pool->used >= wl_pool->size) {
- 		spin_unlock(&ubi->wl_lock);
-+		up_read(&ubi->fm_sem);
- 		ret = ubi_update_fastmap(ubi);
- 		if (ret) {
- 			ubi_msg("Unable to write a new fastmap: %i", ret);
-+			down_read(&ubi->fm_sem);
- 			return -ENOSPC;
- 		}
-+		down_read(&ubi->fm_sem);
- 		spin_lock(&ubi->wl_lock);
- 	}
- 
-@@ -721,6 +726,7 @@ int ubi_wl_get_peb(struct ubi_device *ubi)
- 		return err;
- 	}
- 
-+	down_read(&ubi->fm_sem);
- 	return peb;
- }
- #endif
--- 
-1.8.4.5
+If anything that belongs in arch code or kernel/reboot.c, and is
+also something that is likely to change over time (consider the
+power-off-handler call chains).
 
+Johan
