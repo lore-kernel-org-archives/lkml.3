@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065AbaJ2M7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:59:46 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14388 "EHLO
+	id S933207AbaJ2NAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:00:01 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14387 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932730AbaJ2MqL (ORCPT
+	with ESMTP id S932729AbaJ2MqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Oct 2014 08:46:11 -0400
 From: Richard Weinberger <richard@nod.at>
 To: dedekind1@gmail.com
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 04/35] UBI: Fastmap: Care about the protection queue
-Date: Wed, 29 Oct 2014 13:45:27 +0100
-Message-Id: <1414586758-9972-5-git-send-email-richard@nod.at>
+Subject: [PATCH 02/35] UBI: Fix stale pointers in ubi->lookuptbl
+Date: Wed, 29 Oct 2014 13:45:25 +0100
+Message-Id: <1414586758-9972-3-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
 References: <1414586758-9972-1-git-send-email-richard@nod.at>
@@ -21,40 +21,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fastmap can miss a PEB if it is in the protection queue
-and not jet in the used tree.
-Treat every protected PEB as used.
+In some error paths the WL sub-system gives up on a PEB
+and frees it's ubi_wl_entry struct but does not set
+the entry in ubi->lookuptbl to NULL.
+Fastmap can stumble over such a stale pointer as it uses
+ubi->lookuptbl to find all PEBs.
+
+Fix this by setting the pointers to free'd ubi_wl_entry to NULL.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/ubi/fastmap.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/mtd/ubi/wl.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index adccc1f..8cce6f8 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -1273,6 +1273,20 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
- 		fm_pos += sizeof(*fec);
- 		ubi_assert(fm_pos <= ubi->fm_size);
- 	}
-+
-+	for (i = 0; i < UBI_PROT_QUEUE_LEN; i++) {
-+		list_for_each_entry(wl_e, &ubi->pq[i], u.list) {
-+			fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
-+
-+			fec->pnum = cpu_to_be32(wl_e->pnum);
-+			set_seen(ubi, wl_e->pnum, seen_pebs);
-+			fec->ec = cpu_to_be32(wl_e->ec);
-+
-+			used_peb_count++;
-+			fm_pos += sizeof(*fec);
-+			ubi_assert(fm_pos <= ubi->fm_size);
-+		}
-+	}
- 	fmh->used_peb_count = cpu_to_be32(used_peb_count);
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index 6654f191..a12c54b 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -1212,9 +1212,12 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
  
- 	for (node = rb_first(&ubi->scrub); node; node = rb_next(node)) {
+ 	err = do_sync_erase(ubi, e1, vol_id, lnum, 0);
+ 	if (err) {
++		ubi->lookuptbl[e1->pnum] = NULL;
+ 		kmem_cache_free(ubi_wl_entry_slab, e1);
+-		if (e2)
++		if (e2) {
++			ubi->lookuptbl[e2->pnum] = NULL;
+ 			kmem_cache_free(ubi_wl_entry_slab, e2);
++		}
+ 		goto out_ro;
+ 	}
+ 
+@@ -1227,6 +1230,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
+ 		       e2->pnum, vol_id, lnum);
+ 		err = do_sync_erase(ubi, e2, vol_id, lnum, 0);
+ 		if (err) {
++			ubi->lookuptbl[e2->pnum] = NULL;
+ 			kmem_cache_free(ubi_wl_entry_slab, e2);
+ 			goto out_ro;
+ 		}
+@@ -1266,6 +1270,7 @@ out_not_moved:
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
+ 	err = do_sync_erase(ubi, e2, vol_id, lnum, torture);
+ 	if (err) {
++		ubi->lookuptbl[e2->pnum] = NULL;
+ 		kmem_cache_free(ubi_wl_entry_slab, e2);
+ 		goto out_ro;
+ 	}
+@@ -1285,6 +1290,8 @@ out_error:
+ 	spin_unlock(&ubi->wl_lock);
+ 
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
++	ubi->lookuptbl[e1->pnum] = NULL;
++	ubi->lookuptbl[e2->pnum] = NULL;
+ 	kmem_cache_free(ubi_wl_entry_slab, e1);
+ 	kmem_cache_free(ubi_wl_entry_slab, e2);
+ 
+@@ -1428,6 +1435,7 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
+ 	if (shutdown) {
+ 		dbg_wl("cancel erasure of PEB %d EC %d", pnum, e->ec);
+ 		kfree(wl_wrk);
++		ubi->lookuptbl[e->pnum] = NULL;
+ 		kmem_cache_free(ubi_wl_entry_slab, e);
+ 		return 0;
+ 	}
+@@ -1474,6 +1482,7 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
+ 		return err;
+ 	}
+ 
++	ubi->lookuptbl[e->pnum] = NULL;
+ 	kmem_cache_free(ubi_wl_entry_slab, e);
+ 	if (err != -EIO)
+ 		/*
+@@ -1912,6 +1921,7 @@ int ubi_wl_init(struct ubi_device *ubi, struct ubi_attach_info *ai)
+ 		ubi_assert(!ubi_is_fm_block(ubi, e->pnum));
+ 		ubi->lookuptbl[e->pnum] = e;
+ 		if (schedule_erase(ubi, e, aeb->vol_id, aeb->lnum, 0)) {
++			ubi->lookuptbl[e->pnum] = NULL;
+ 			kmem_cache_free(ubi_wl_entry_slab, e);
+ 			goto out_free;
+ 		}
 -- 
 1.8.4.5
 
