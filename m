@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700AbaJ2Rr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:47:58 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:51854 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245AbaJ2Rp5 (ORCPT
+	id S932127AbaJ2RsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:48:18 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45174 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755506AbaJ2RsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:45:57 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v3 14/15] net: dsa/mv88e6352: Add support for reading switch registers
-Date: Wed, 29 Oct 2014 10:45:06 -0700
-Message-Id: <1414604707-22407-15-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
-References: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.545127D5.0116,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 81
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Wed, 29 Oct 2014 13:48:14 -0400
+Date: Wed, 29 Oct 2014 10:48:10 -0700
+From: Tina Ruchandani <ruchandani.tina@gmail.com>
+To: tiwai@suse.de, arnd@arndb.de
+Cc: perex@perex.cz, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ALSA: es1968: Replace timeval with ktime_t
+Message-ID: <20141029174810.GA48058@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Report switch register values to ethtool.
+es1968_measure_clock uses struct timeval, which on 32-bit systems will overflow
+in 2038, leading to incorrect interpretation of time.This patch changes the
+function to use ktime_t instead of struct timeval, which implies:
+- no y2038: ktime_t uses a 64-bit datatype explicitly.
+- efficent subtraction: The earlier version computes the difference in usecs
+  while dealing with secs and nsecs. It requires checks to see if the nsecs of
+  stop is less than start. This patch uses a direct subtract of ktime_t and
+  converts to usecs.
+- use of monotonic clock (ktime_get) over real time (do_gettimeofday),
+  which simplifies timekeeping, as it does not have to deal with cases
+  where stop_time is less than start_time.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
-v3:
-- No change
-v2:
-- No change
+ sound/pci/es1968.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
- drivers/net/dsa/mv88e6352.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
-index 8a956f9..d5bbe49 100644
---- a/drivers/net/dsa/mv88e6352.c
-+++ b/drivers/net/dsa/mv88e6352.c
-@@ -778,6 +778,8 @@ struct dsa_switch_driver mv88e6352_switch_driver = {
- #endif
- 	.get_eeprom		= mv88e6352_get_eeprom,
- 	.set_eeprom		= mv88e6352_set_eeprom,
-+	.get_regs_len		= mv88e6xxx_get_regs_len,
-+	.get_regs		= mv88e6xxx_get_regs,
- };
+diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
+index a9956a7..6039700 100644
+--- a/sound/pci/es1968.c
++++ b/sound/pci/es1968.c
+@@ -1710,7 +1710,8 @@ static void es1968_measure_clock(struct es1968 *chip)
+ 	int i, apu;
+ 	unsigned int pa, offset, t;
+ 	struct esm_memory *memory;
+-	struct timeval start_time, stop_time;
++	ktime_t start_time, stop_time;
++	ktime_t diff;
  
- MODULE_ALIAS("platform:mv88e6352");
+ 	if (chip->clock == 0)
+ 		chip->clock = 48000; /* default clock value */
+@@ -1761,12 +1762,12 @@ static void es1968_measure_clock(struct es1968 *chip)
+ 	snd_es1968_bob_inc(chip, ESM_BOB_FREQ);
+ 	__apu_set_register(chip, apu, 5, pa & 0xffff);
+ 	snd_es1968_trigger_apu(chip, apu, ESM_APU_16BITLINEAR);
+-	do_gettimeofday(&start_time);
++	start_time = ktime_get();
+ 	spin_unlock_irq(&chip->reg_lock);
+ 	msleep(50);
+ 	spin_lock_irq(&chip->reg_lock);
+ 	offset = __apu_get_register(chip, apu, 5);
+-	do_gettimeofday(&stop_time);
++	stop_time = ktime_get();
+ 	snd_es1968_trigger_apu(chip, apu, 0); /* stop */
+ 	snd_es1968_bob_dec(chip);
+ 	chip->in_measurement = 0;
+@@ -1777,12 +1778,8 @@ static void es1968_measure_clock(struct es1968 *chip)
+ 	offset &= 0xfffe;
+ 	offset += chip->measure_count * (CLOCK_MEASURE_BUFSIZE/2);
+ 
+-	t = stop_time.tv_sec - start_time.tv_sec;
+-	t *= 1000000;
+-	if (stop_time.tv_usec < start_time.tv_usec)
+-		t -= start_time.tv_usec - stop_time.tv_usec;
+-	else
+-		t += stop_time.tv_usec - start_time.tv_usec;
++	diff = ktime_sub(stop_time, start_time);
++	t = ktime_to_us(diff);
+ 	if (t == 0) {
+ 		dev_err(chip->card->dev, "?? calculation error..\n");
+ 	} else {
 -- 
-1.9.1
+2.1.0.rc2.206.gedb03e5
 
