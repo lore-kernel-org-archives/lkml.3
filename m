@@ -1,128 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571AbaJ2SPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:15:39 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:47365 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291AbaJ2SPf (ORCPT
+	id S1756609AbaJ2SQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:16:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34168 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755214AbaJ2SOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:15:35 -0400
-Message-ID: <54512EC6.4010901@linaro.org>
-Date: Wed, 29 Oct 2014 19:15:34 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linaro-kernel@lists.linaro.org,
-        Patch Tracking <patches@linaro.org>
-Subject: Re: [PATCH V2 4/5] cpuidle: menu: Fix the get_typical_interval
-References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org>	<1414054881-17713-4-git-send-email-daniel.lezcano@linaro.org> <CAJvTdKk=uQmon81Y8+jVmYggxg-K2sWC4vEFM+bycKCEAt0fFg@mail.gmail.com>
-In-Reply-To: <CAJvTdKk=uQmon81Y8+jVmYggxg-K2sWC4vEFM+bycKCEAt0fFg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 29 Oct 2014 14:14:41 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        Frank Rowand <frank.rowand@sonymobile.com>,
+        Daniel Thompson <daniel.thompson@linaro.org>
+Subject: [PATCH 1/2] tty: serial: msm: Fix sysrq spinlock recursion on non-DM
+Date: Wed, 29 Oct 2014 11:14:37 -0700
+Message-Id: <1414606478-13709-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.61.ge50deb1
+In-Reply-To: <1414606478-13709-1-git-send-email-sboyd@codeaurora.org>
+References: <1414606478-13709-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 03:48 AM, Len Brown wrote:
-> On Thu, Oct 23, 2014 at 5:01 AM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> The first time the 'get_typical_function' is called, it computes an average
->> of zero as no data is filled yet. That leads the 'data->predicted_us' variable
->> to be set to zero too.
->>
->> The caller, 'menu_select' will then do:
->>
->>          interactivity_req = data->predicted_us /
->>                          performance_multiplier(nr_iowaiters, cpu_load);
->>
->> That sets the interactivity_req to zero (0/performance...).
->>
->> and then
->>
->>          if (latency_req > interactivity_req)
->>                  latency_req = interactivity_req;
->>
->> ... setting 'latency_req' to zero too.
->>
->> No idle state will fulfill this constraint and we will go the C1 state as
->> default and leading to an update. So the next calls will compute an average
->> different from zero.
->>
->> Even if that works with the current code but with a broken semantic, it will
->> just break with the next patches where we are stricter with the latencies
->> check: the first check will fail (latency_req is zero), then no update will
->> occur leading to always falling to choose an idle state.
->>
->> As there are no previous values and it is pointless to compute a standard
->> deviation for these unexisting values. Just return without setting the
->> 'data->predicted_us' to zero.
->>
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->> ---
->>   drivers/cpuidle/governors/menu.c | 9 +++++++++
->>   1 file changed, 9 insertions(+)
->>
->> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
->> index 3907301..6ae8390 100644
->> --- a/drivers/cpuidle/governors/menu.c
->> +++ b/drivers/cpuidle/governors/menu.c
->> @@ -226,6 +226,15 @@ again:
->>          else
->>                  do_div(avg, divisor);
->>
->> +       /*
->> +        * We are at the very beginning and no data have been filled
->> +        * yet. Let's skip the standard deviation computation
->> +        * otherwise the data->predicted_us will be zero and that will
->> +        * lead to a zero latency req in the select function
->> +        */
->> +       if (!avg)
->> +               return;
->> +
->
-> Unfortunately, you've touched ugly code,
-> and your (correct) patch makes it ever-so slightly more ugly,
-> instead of more clear.
->
-> I think the code would read more clearly, and your patch would
-> less obscure, if the code read something like this sow that it is
-> clear at the menu_select level when and where we monkey
-> with predicted_us:
->
-> menu_select()...
-> ...
-> data->predicted_us = div_round64(bla bla bla
->
-> interactivity_overrride_us = get_typical_interval(data);
->
-> if (interactivity_override_us)
->    if (interactivity_predicted_us < data->predicted_us)
->          data->predicted_us = interactivity_override_us;
->
-> And, of course, down inside get_typical_interval()
-> ...
-> if (!avg)
->          return 0;
-> ...
-> if (likely(stddev <= ULONG_MAX)) {
-> ...
->          return avg;
+The handle_rx() path calls uart_handle_sysrq_char() with the port
+lock held. This causes a spinlock recursion. Release and
+reacquire the lock here to avoid this.
 
+BUG: spinlock recursion on CPU#0, swapper/0
+ lock: msm_uart_ports+0x1e0/0x2d0, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-rc7-00012-gb38ee8265941 #69
+[<c0013964>] (unwind_backtrace) from [<c0011f74>] (show_stack+0x10/0x14)
+[<c0011f74>] (show_stack) from [<c004ed1c>] (do_raw_spin_lock+0x11c/0x13c)
+[<c004ed1c>] (do_raw_spin_lock) from [<c02d44c0>] (msm_console_write+0x78/0x188)
+[<c02d44c0>] (msm_console_write) from [<c0052880>] (call_console_drivers.constprop.22+0xb4/0x144)
+[<c0052880>] (call_console_drivers.constprop.22) from [<c0053570>] (console_unlock+0x27c/0x4ac)
+[<c0053570>] (console_unlock) from [<c0053bb4>] (vprintk_emit+0x1f4/0x5a8)
+[<c0053bb4>] (vprintk_emit) from [<c04ad0ac>] (printk+0x30/0x40)
+[<c04ad0ac>] (printk) from [<c02c2990>] (__handle_sysrq+0x58/0x1b8)
+[<c02c2990>] (__handle_sysrq) from [<c02d41b0>] (msm_irq+0x694/0x6f8)
+[<c02d41b0>] (msm_irq) from [<c0055740>] (handle_irq_event_percpu+0x58/0x270)
+[<c0055740>] (handle_irq_event_percpu) from [<c0055994>] (handle_irq_event+0x3c/0x5c)
+[<c0055994>] (handle_irq_event) from [<c0057e84>] (handle_level_irq+0x9c/0x138)
+[<c0057e84>] (handle_level_irq) from [<c005509c>] (generic_handle_irq+0x24/0x38)
+[<c005509c>] (generic_handle_irq) from [<c000f730>] (handle_IRQ+0x44/0xb0)
+[<c000f730>] (handle_IRQ) from [<c0008518>] (msm_vic_handle_irq+0x44/0x64)
+[<c0008518>] (msm_vic_handle_irq) from [<c04b5ac4>] (__irq_svc+0x44/0x7c)
+Exception stack(0xc0719f68 to 0xc0719fb0)
+9f60:                   00000001 00000001 00000000 c0722938 c0718000 c0769acc
+9f80: 00000000 c0720098 c0769305 4117b362 c0769acc 00000000 01000000 c0719fb0
+9fa0: c004cab0 c000f880 20000013 ffffffff
+[<c04b5ac4>] (__irq_svc) from [<c000f880>] (arch_cpu_idle+0x20/0x30)
+[<c000f880>] (arch_cpu_idle) from [<c004691c>] (cpu_startup_entry+0xf4/0x23c)
+[<c004691c>] (cpu_startup_entry) from [<c06d8b70>] (start_kernel+0x32c/0x394)
 
-Ok, thanks for the suggestion. I will look at reworking this patch.
+Cc: Frank Rowand <frank.rowand@sonymobile.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/tty/serial/msm_serial.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-   -- Daniel
-
-
+diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+index 4b6c78331a64..cedcc36762a2 100644
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -174,6 +174,7 @@ static void handle_rx(struct uart_port *port)
+ 	while ((sr = msm_read(port, UART_SR)) & UART_SR_RX_READY) {
+ 		unsigned int c;
+ 		char flag = TTY_NORMAL;
++		int sysrq;
+ 
+ 		c = msm_read(port, UART_RF);
+ 
+@@ -195,7 +196,10 @@ static void handle_rx(struct uart_port *port)
+ 		else if (sr & UART_SR_PAR_FRAME_ERR)
+ 			flag = TTY_FRAME;
+ 
+-		if (!uart_handle_sysrq_char(port, c))
++		spin_unlock(&port->lock);
++		sysrq = uart_handle_sysrq_char(port, c);
++		spin_lock(&port->lock);
++		if (!sysrq)
+ 			tty_insert_flip_char(tport, c, flag);
+ 	}
+ 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
