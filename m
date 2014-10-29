@@ -1,165 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaJ2FOS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 01:14:18 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:37513 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216AbaJ2FOQ convert rfc822-to-8bit (ORCPT
+	id S1752602AbaJ2FOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 01:14:24 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:6736 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752223AbaJ2FOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 01:14:16 -0400
-X-Original-SENDERIP: 10.178.30.169
-X-Original-MAILFROM: hankyung.yu@lge.com
-From: =?ks_c_5601-1987?B?wK/H0bDm?= <hankyung.yu@lge.com>
-To: "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Chanho Min'" <chanho.min@lge.com>, "'Chris Ball'" <chris@printf.net>,
-        "'Ulf Hansson'" <ulf.hansson@linaro.org>,
-        "'Seungwon Jeon'" <tgih.jun@samsung.com>
-Cc: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "'HyoJun Im'" <hyojun.im@lge.com>, <gunho.lee@lge.com>,
-        "'CPGS'" <cpgs@samsung.com>
-References: <1413946555-1266-1-git-send-email-chanho.min@lge.com> <544F1DB3.9050204@samsung.com> <00b601cff30a$3c57e710$b507b530$@lge.com> <54504B4E.2070208@samsung.com>
-In-Reply-To: <54504B4E.2070208@samsung.com>
-Subject: RE: [PATCH] mmc:core: fix hs400 timing selection
-Date: Wed, 29 Oct 2014 14:14:14 +0900
-Message-ID: <010501cff337$2e9e9790$8bdbc6b0$@lge.com>
+	Wed, 29 Oct 2014 01:14:22 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Rob Herring'" <robherring2@gmail.com>, Joe Perches <joe@perches.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 29 Oct 2014 13:14:18 +0800
+Subject: [RFC V4 1/3] add CONFIG_HAVE_ARCH_BITREVERSE to support rbit
+ instruction
+Thread-Topic: [RFC V4 1/3] add CONFIG_HAVE_ARCH_BITREVERSE to support rbit
+ instruction
+Thread-Index: Ac/zKGffEmlPWtUCT7yIK/xKLtVDxQADp3GQ
+Message-ID: <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
+ <1414392371.8884.2.camel@perches.com>
+ <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
+In-Reply-To: <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ks_c_5601-1987"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQJgI7CSBWg4GKXd5yLJVzam1HpizQGEUuZiArskKpoBjS5zL5r3waPQ
-Content-Language: ko
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9T5EXU5032413
 
-Hi
+this change add CONFIG_HAVE_ARCH_BITREVERSE config option,
+so that we can use arm/arm64 rbit instruction to do bitrev operation
+by hardware.
 
-I have read the specifications document to answer your question.
-It is better, I think, the host controller is changed into DDR50 mode when
-to change the eMMC bus mode into DDR50
-There will no problem because the no data line will be used in DDR50 mode
-during the transition to HS400.
+We also change byte_rev_table[] to be static,
+to make sure no drivers can access it directly.
 
+Change bitrev16() bitrev32() to be inline function,
+don't need export symbol for these tiny functions.
 
-So we drop this patch
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ include/linux/bitrev.h | 21 ++++++++++++++++++---
+ lib/Kconfig            |  9 +++++++++
+ lib/bitrev.c           | 19 +++----------------
+ 3 files changed, 30 insertions(+), 19 deletions(-)
 
-Sorry for confusing. Thanks for the helpful response.
+diff --git a/include/linux/bitrev.h b/include/linux/bitrev.h
+index 7ffe03f..fa2682c 100644
+--- a/include/linux/bitrev.h
++++ b/include/linux/bitrev.h
+@@ -3,14 +3,29 @@
+ 
+ #include <linux/types.h>
+ 
+-extern u8 const byte_rev_table[256];
++#ifdef CONFIG_HAVE_ARCH_BITREVERSE
++#include <asm/bitrev.h>
++
++#define bitrev32 __arch_bitrev32
++#define bitrev16 __arch_bitrev16
++#define bitrev8 __arch_bitrev8
++
++#else
+ 
+ static inline u8 bitrev8(u8 byte)
+ {
+ 	return byte_rev_table[byte];
+ }
+ 
+-extern u16 bitrev16(u16 in);
+-extern u32 bitrev32(u32 in);
++static inline u16 bitrev16(u16 x)
++{
++	return (bitrev8(x & 0xff) << 8) | bitrev8(x >> 8);
++}
++
++static inline u32 bitrev32(u32 x)
++{
++	return (bitrev16(x & 0xffff) << 16) | bitrev16(x >> 16);
++}
+ 
++#endif /* CONFIG_HAVE_ARCH_BITREVERSE */
+ #endif /* _LINUX_BITREV_H */
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 54cf309..cd177ca 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -13,6 +13,15 @@ config RAID6_PQ
+ config BITREVERSE
+ 	tristate
+ 
++config HAVE_ARCH_BITREVERSE
++	boolean
++	default n
++	depends on BITREVERSE
++	help
++	  This option provides an config for the architecture which have instruction
++	  can do bitreverse operation, we use the hardware instruction if the architecture
++	  have this capability.
++
+ config RATIONAL
+ 	boolean
+ 
+diff --git a/lib/bitrev.c b/lib/bitrev.c
+index 3956203..ba13610 100644
+--- a/lib/bitrev.c
++++ b/lib/bitrev.c
+@@ -1,3 +1,4 @@
++#ifndef CONFIG_HAVE_ARCH_BITREVERSE
+ #include <linux/types.h>
+ #include <linux/module.h>
+ #include <linux/bitrev.h>
+@@ -6,7 +7,7 @@ MODULE_AUTHOR("Akinobu Mita <akinobu.mita@gmail.com>");
+ MODULE_DESCRIPTION("Bit ordering reversal functions");
+ MODULE_LICENSE("GPL");
+ 
+-const u8 byte_rev_table[256] = {
++const static u8 byte_rev_table[256] = {
+ 	0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
+ 	0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
+ 	0x08, 0x88, 0x48, 0xc8, 0x28, 0xa8, 0x68, 0xe8,
+@@ -42,18 +43,4 @@ const u8 byte_rev_table[256] = {
+ };
+ EXPORT_SYMBOL_GPL(byte_rev_table);
+ 
+-u16 bitrev16(u16 x)
+-{
+-	return (bitrev8(x & 0xff) << 8) | bitrev8(x >> 8);
+-}
+-EXPORT_SYMBOL(bitrev16);
+-
+-/**
+- * bitrev32 - reverse the order of bits in a u32 value
+- * @x: value to be bit-reversed
+- */
+-u32 bitrev32(u32 x)
+-{
+-	return (bitrev16(x & 0xffff) << 16) | bitrev16(x >> 16);
+-}
+-EXPORT_SYMBOL(bitrev32);
++#endif /* CONFIG_HAVE_ARCH_BITREVERSE */
+-- 
+2.1.1
 
------Original Message-----
-From: Jaehoon Chung [mailto:jh80.chung@samsung.com] 
-Sent: Wednesday, October 29, 2014 11:05 AM
-To: ¿Ø«—∞Ê; 'Jaehoon Chung'; 'Chanho Min'; 'Chris Ball'; 'Ulf Hansson';
-'Seungwon Jeon'
-Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; 'HyoJun Im';
-gunho.lee@lge.com; 'CPGS'
-Subject: Re: [PATCH] mmc:core: fix hs400 timing selection
-
-Hi,
-
-On 10/29/2014 08:52 AM, ¿Ø«—∞Ê wrote:
-> Hi I'm Hankyung Yu
-> 
-> I will answer instead Chanho Min
-> 
-> After mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
-> 
-> Host controller set to SDR transfer
-> 
-> so is to change to a DDR transfer mode.
-
-As commit message was mentioned, I have checked the JEDEC v5.01 spec(6.6.5).
-There is no mention that mode needs to change to DDR mode.
-
-And i know HS400 mode is only support the 8bit buswidth.
-If HS200 mode was set to 4bit buswidth, is HS400 working fine?
-
-Best Regards,
-Jaehoon Chung
-
-> 
-> 
-> -----Original Message-----
-> From: Jaehoon Chung [mailto:jh80.chung@samsung.com]
-> Sent: Tuesday, October 28, 2014 1:38 PM
-> To: Chanho Min; Chris Ball; Ulf Hansson; Seungwon Jeon; Jaehoon Chung
-> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; HyoJun 
-> Im; gunho.lee@lge.com; Hankyung Yu; CPGS
-> Subject: Re: [PATCH] mmc:core: fix hs400 timing selection
-> 
-> Hi, Chanho.
-> 
-> On 10/22/2014 11:55 AM, Chanho Min wrote:
->> According to JEDEC v5.01 spec (6.6.5), In order to switch to HS400 
->> mode, host should perform the following steps.
->>
->>  1. HS200 mode selection completed
->>  2. Set HS_TIMING to 0x01(High Speed)  3. Host changes frequency to 
->> =< 52MHz  4. Set the bus width to DDR 8bit (CMD6)  5. Host may read 
->> Driver Strength (CMD8)  6. Set HS_TIMING to 0x03 (HS400)
->>
->> In current implementation, the order of 2 and 3 is reversed.
->> The HS_TIMING field should be set to 0x1 before the clock frequency 
->> is set to a value not greater than 52 MHz. Otherwise, Initialization 
->> of timing can be failed. Also, the host contoller's UHS timing mode 
->> should be set to DDR50 after the bus width is set to DDR 8bit.
->>
->> Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
->> Signed-off-by: Chanho Min <chanho.min@lge.com>
->> ---
->>  drivers/mmc/core/mmc.c |   13 ++++++++++---
->>  1 file changed, 10 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c index
->> a301a78..52f78e0 100644
->> --- a/drivers/mmc/core/mmc.c
->> +++ b/drivers/mmc/core/mmc.c
->> @@ -1061,9 +1061,6 @@ static int mmc_select_hs400(struct mmc_card *card)
->>  	 * Before switching to dual data rate operation for HS400,
->>  	 * it is required to convert from HS200 mode to HS mode.
->>  	 */
->> -	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
->> -	mmc_set_bus_speed(card);
->> -
->>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
->>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS,
->>  			   card->ext_csd.generic_cmd6_time, @@ -1074,6
-> +1071,14 @@ static
->> int mmc_select_hs400(struct mmc_card *card)
->>  		return err;
->>  	}
->>  
->> +	/*
->> +	 * According to JEDEC v5.01 spec (6.6.5), Clock frequency should
->> +	 * be set to a value not greater than 52MHz after the HS_TIMING
->> +	 * field is set to 0x1.
->> +	 */
->> +	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
->> +	mmc_set_bus_speed(card);
->> +
->>  	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
->>  			 EXT_CSD_BUS_WIDTH,
->>  			 EXT_CSD_DDR_BUS_WIDTH_8,
->> @@ -1084,6 +1089,8 @@ static int mmc_select_hs400(struct mmc_card *card)
->>  		return err;
->>  	}
->>  
->> +	mmc_set_timing(card->host, MMC_TIMING_MMC_DDR52);
->> +
-> 
-> I didn't know why timing is set to ddr50.
-> 
-> Best Regards,
-> Jaehoon Chung
-> 
->>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
->>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS400,
->>  			   card->ext_csd.generic_cmd6_time,
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" 
-> in the body of a message to majordomo@vger.kernel.org More majordomo 
-> info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
