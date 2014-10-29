@@ -1,84 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934235AbaJ2QHS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:07:18 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51536 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933423AbaJ2QHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:07:15 -0400
-Message-ID: <1414598848.32383.4.camel@mm-sol.com>
-Subject: Re: [PATCH 0/2] Qualcomm PM8941 power key driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Wed, 29 Oct 2014 18:07:28 +0200
-In-Reply-To: <20141024152350.GD28611@sonymobile.com>
-References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com>
-	 <1412672510.1027.57.camel@iivanov-dev>
-	 <20141007184640.GB31125@sonymobile.com>
-	 <1412761807.13569.12.camel@iivanov-dev>
-	 <20141024152350.GD28611@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.6-fta3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934356AbaJ2QHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:07:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44997 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933955AbaJ2QHD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:07:03 -0400
+Date: Thu, 30 Oct 2014 00:05:53 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mikael Svantesson <mikael@distopic.net>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, devel@driverdev.osuosl.org,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Jake Edge <jake@lwn.net>, Anton Saraev <antonysaraev@gmail.com>
+Subject: Re: [PATCH v2] staging: skein: skein_api.c: removed space before ','
+Message-ID: <20141029160553.GB18125@kroah.com>
+References: <544FF764.7090003@distopic.net>
+ <20141029052517.GA3556@sudip-PC>
+ <5450941F.5040609@distopic.net>
+ <5450966A.20709@distopic.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5450966A.20709@distopic.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Hi Bjorn,
-
-On Fri, 2014-10-24 at 08:23 -0700, Bjorn Andersson wrote:
-> On Wed 08 Oct 02:50 PDT 2014, Ivan T. Ivanov wrote:
+On Wed, Oct 29, 2014 at 08:25:30AM +0100, Mikael Svantesson wrote:
+> Signed-off-by: Mikael Svantesson <mikael@distopic.net>
+> ---
+>  drivers/staging/skein/skein_api.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> > On Tue, 2014-10-07 at 11:46 -0700, Bjorn Andersson wrote:
-> > > On Tue 07 Oct 02:01 PDT 2014, Ivan T. Ivanov wrote:
-> > > 
-> > > > Hi Bjorn,
-> > > > 
-> > > > On Mon, 2014-10-06 at 18:11 -0700, Bjorn Andersson wrote:
-> [..]
-> > > > >  create mode 100644 drivers/input/misc/pm8941-pwrkey.c
-> > > > 
-> > > > Any reason why we cannot reuse pm8xxx-pwrkey driver? It have been
-> > > > converted to regmap already.
-> > > > 
-> > > 
-> > > The boilerplate code is the same,
-> > 
-> > The boilerplate code is almost 100% :-)
-> > 
-> > >  but configuration registers have different
-> > > layout and values written in them are different.
-> > 
-> > We talk about 3 registers and 2 bit defines. struct regmap_field
-> > should be able to help here.
-> > 
+> diff --git a/drivers/staging/skein/skein_api.c b/drivers/staging/skein/skein_api.c
+> index 6e700ee..5bfce07 100644
+> --- a/drivers/staging/skein/skein_api.c
+> +++ b/drivers/staging/skein/skein_api.c
+> @@ -31,7 +31,7 @@ int skein_ctx_prepare(struct skein_ctx *ctx, enum skein_size size)
+>  {
+>  	skein_assert_ret(ctx && size, SKEIN_FAIL);
+>  
+> -	memset(ctx , 0, sizeof(struct skein_ctx));
+> +	memset(ctx, 0, sizeof(struct skein_ctx));
+>  	ctx->skein_size = size;
+>  
+>  	return SKEIN_SUCCESS;
+> -- 
+> 2.1.1
 > 
-> You're totally right, we could rewrite the driver to use regmap_field and make
-> the rest of the differences conditional. In my eyes we end up with two drivers
-> in one file - but it can be done.
-> 
-> A difference however is that in pm8941 the ps hold behavious (reboot vs power
-> off) is controlled by this same block. So I have an additional patch that adds
-> a restart handler here that sets the pmic in the right state before we pull
-> pshold (but I haven't been able to test it properly).
-> 
-> In pm8xxx this is handled in the pmic misc block and does not belong in this
-> driver.
+> On 2014-10-29 08:15, Mikael Svantesson wrote:
+> > I'm saving the patch to my mail server using git-imap-send, then enter
+> > e-mail addresses using Thunderbird and send it.
+> > 
+> > The problem seems to be that Thunderbird thrashes empty lines when
+> > double clicking the e-mail in Drafts or selecting "Edit as new".
+> > When forwarding the e-mail it doesn't seem to affect the empty lines,
+> > very weird behaviour.
+> > 
+> > Regards,
+> > 
+> > Mikael
+> > 
+> > On 2014-10-29 06:25, Sudip Mukherjee wrote:
+> >> On Tue, Oct 28, 2014 at 09:07:00PM +0100, Mikael Svantesson wrote:
+> >>> Signed-off-by: Mikael Svantesson <mikael@distopic.net>
+> >> still the same problem.
+> >>
+> >> ERROR: patch seems to be corrupt (line wrapped?)
+> >>
+> >>
+> >>> ---
+> >>>  drivers/staging/skein/skein_api.c | 2 +-
+> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/drivers/staging/skein/skein_api.c b/drivers/staging/skein/skein_api.c
+> >>> index 6e700ee..5bfce07 100644
+> >>> --- a/drivers/staging/skein/skein_api.c
+> >>> +++ b/drivers/staging/skein/skein_api.c
+> >>> @@ -31,7 +31,7 @@ int skein_ctx_prepare(struct skein_ctx *ctx, enum skein_size size)
+> >>>  {
+> >>>  	skein_assert_ret(ctx && size, SKEIN_FAIL);
+> >>>  -	memset(ctx , 0, sizeof(struct skein_ctx));
+> >>> +	memset(ctx, 0, sizeof(struct skein_ctx));
+> >>>  	ctx->skein_size = size;
+> >>>   	return SKEIN_SUCCESS;
+> >>> -- 
+> >>> 2.1.1
+> >>>
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>> Please read the FAQ at  http://www.tux.org/lkml/
+> > 
 
-Ok, Your plan is to bring up support for QPNP power-on PMIC sub function into this
-driver. In this case, I agree, it will be cleaner to have separate driver for this.
+Please send this as a "correct" patch, not one with a whole bunch of
+other stuff in it that I would have to hand-edit in order to apply
+properly.
 
-Regards,
-Ivan
+Remember, you want to make it as easy as possible for me to accept your
+patches, so far, this isn't going well :)
+
+greg k-h
