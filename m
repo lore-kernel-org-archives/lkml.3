@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564AbaJ2Kce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:32:34 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54996 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932091AbaJ2Kcc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:32:32 -0400
-Date: Wed, 29 Oct 2014 10:31:40 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Message-ID: <20141029103140.GY18557@sirena.org.uk>
-References: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com>
- <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
- <20141028223121.GH18557@sirena.org.uk>
- <1414574413.18868.6.camel@AMDC1943>
- <20141029100142.GR18557@sirena.org.uk>
- <1414577934.18868.7.camel@AMDC1943>
+	id S932351AbaJ2Kfg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:35:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37087 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932091AbaJ2Kff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 06:35:35 -0400
+Message-ID: <5450C2F3.40400@suse.com>
+Date: Wed, 29 Oct 2014 11:35:31 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xsYrt8mWir//dmFZ"
-Content-Disposition: inline
-In-Reply-To: <1414577934.18868.7.camel@AMDC1943>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 3/4] regulator: max77686: Add suspend disable for some
- LDOs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+CC: hpa@zytor.com, x86@kernel.org, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com
+Subject: Re: [PATCH V4 1/3] x86: Make page cache mode a real type
+References: <1414392513-24645-1-git-send-email-jgross@suse.com> <1414392513-24645-2-git-send-email-jgross@suse.com> <alpine.DEB.2.11.1410281536170.5308@nanos> <20141029102859.GA11260@gmail.com>
+In-Reply-To: <20141029102859.GA11260@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/29/2014 11:28 AM, Ingo Molnar wrote:
+>
+> * Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+>> On Mon, 27 Oct 2014, Juergen Gross wrote:
+>>> At the moment there are a lot of places that handle setting or getting
+>>> the page cache mode by treating the pgprot bits equal to the cache mode.
+>>> This is only true because there are a lot of assumptions about the setup
+>>> of the PAT MSR. Otherwise the cache type needs to get translated into
+>>> pgprot bits and vice versa.
+>>>
+>>> This patch tries to prepare for that by introducing a separate type
+>>> for the cache mode and adding functions to translate between those and
+>>> pgprot values.
+>>>
+>>> To avoid too much performance penalty the translation between cache mode
+>>> and pgprot values is done via tables which contain the relevant
+>>> information.  Write-back cache mode is hard-wired to be 0, all other
+>>> modes are configurable via those tables. For large pages there are
+>>> translation functions as the PAT bit is located at different positions
+>>> in the ptes of 4k and large pages.
+>>
+>> I'm fine with the approach itself. Though I wish you had split this
+>> patch in several sanely to review pieces.
+>>
+>>    - Introduce enums, helper functions etc. which basically reflect
+>>      the state of today
+>>
+>>    - Change the usage sites to use the enums and helpers
+>>
+>>    - Convert the enum/helper implementation to the new scheme
+>>
+>>    - Split out the printk change
+>>
+>>    ...
+>
+> That absolutely has to be done, should any of this introduce
+> regressions. The diffstat:
+>
+>   18 files changed, 344 insertions(+), 212 deletions(-)
+>
+> is _way_ too large.
 
---xsYrt8mWir//dmFZ
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Okay, will do.
 
-On Wed, Oct 29, 2014 at 11:18:54AM +0100, Krzysztof Kozlowski wrote:
-> On =C5=9Bro, 2014-10-29 at 10:01 +0000, Mark Brown wrote:
+Juergen
 
-> > No, this isn't suspend enable control - this is normal, standard enable
-> > control and the device has no suspend enable control.
-
-> You mean that for such regulator the driver shouldn't implement
-> suspend_enable()?
-
-Yes, if there is no separate control of suspend mode in hardware then of
-course the driver shouldn't implement operations for things it doesn't
-have.
-
---xsYrt8mWir//dmFZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUUMILAAoJECTWi3JdVIfQl34IAIU09lINYcxSvqRF0ZWXjFp/
-u7O7oIGMAPbZ5KKfuiDXQB2ia0NvKEQUrZMAfDOcs7tt2ZI6y3p3Q3VM6S0Eo6ac
-zqEObwWNS5wo4GtIJslXDiuutFi8ww82HoWnbT6yjpUlun+fSs/Q/Vs4MQTTJVOJ
-ALn1Z82x0DepYtI1l1BHLCIVrVsMvFcTwPWLwAOXt7+TYQj8BfLrU2YvdDf0XhBA
-y8GFcu8EhW4y3ExPFJDiggNHd/i7R+NZc36pDXEbFt2J0uj9/yr0HQXBJY62+uum
-yQkPfRBv6znlPj5hlheHkD90y8ulYZIoEnFeLF+rq3vuI7Z5XFHxM4PRWWySikE=
-=B9Jq
------END PGP SIGNATURE-----
-
---xsYrt8mWir//dmFZ--
