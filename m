@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272AbaJ2Vaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:30:52 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:46952 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaJ2Vav (ORCPT
+	id S1757420AbaJ2VbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:31:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59063 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757259AbaJ2VbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:30:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141029200016.GK3424@laptop.dumpdata.com>
-References: <cover.1414516558.git.luto@amacapital.net> <6b0c9b0fc128de68634c730a5b1a80e1d085ad02.1414516558.git.luto@amacapital.net>
- <20141028174629.GA2150@jtriplet-mobl1> <CALCETrUihPeKODJqi3tMYwyWYhML1Z=gr4wrVK5VnaFo=KGVJA@mail.gmail.com>
- <20141029200016.GK3424@laptop.dumpdata.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 29 Oct 2014 14:30:29 -0700
-Message-ID: <CALCETrW+f8S9fNrui_J34q3Ve4jwA=neGe-tYZ_Lbp+ML3LiRw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86_64,vsyscall: Make vsyscall emulation configurable
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+	Wed, 29 Oct 2014 17:31:11 -0400
+Date: Wed, 29 Oct 2014 22:31:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Kevin Cernekee <cernekee@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Ralf Baechle <ralf@linux-mips.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Content-Type: text/plain; charset=UTF-8
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 01/11] irqchip: Allow irq_reg_{readl,writel} to use
+ __raw_{readl_writel}
+In-Reply-To: <22478002.kqKBdeLAKz@wuerfel>
+Message-ID: <alpine.DEB.2.11.1410292226050.5308@nanos>
+References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <5338153.4SY4TFtus9@wuerfel> <CAJiQ=7C7SzT2ngQzP=dQqdQz=+ShJ_Jf0z4kwFgvUKg1G3vrAw@mail.gmail.com> <22478002.kqKBdeLAKz@wuerfel>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 29, 2014 1:00 PM, "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com> wrote:
->
-> On Tue, Oct 28, 2014 at 11:09:53AM -0700, Andy Lutomirski wrote:
-> > On Tue, Oct 28, 2014 at 10:57 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > > On Tue, Oct 28, 2014 at 10:22:28AM -0700, Andy Lutomirski wrote:
-> > >> This adds CONFIG_X86_VSYSCALL_EMULATION, guarded by CONFIG_EXPERT.
-> > >> Turning it off completely disables vsyscall emulation, saving ~3.5k
-> > >> for vsyscall_64.c, 4k for vsyscall_emu_64.S (the fake vsyscall
-> > >> page), some tiny amount of core mm code that supports a gate area,
-> > >> and possibly 4k for a wasted pagetable.  The latter is because the
-> > >> vsyscall addresses are misaligned and fit poorly in the fixmap.
-> > >>
-> > >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> > >
-> > > One minor nit below, but with or without that change,
-> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > >
-> > >> --- a/arch/x86/xen/mmu.c
-> > >> +++ b/arch/x86/xen/mmu.c
-> > >> @@ -1456,11 +1456,13 @@ static int xen_pgd_alloc(struct mm_struct *mm)
-> > >>               user_pgd = (pgd_t *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
-> > >>               page->private = (unsigned long)user_pgd;
-> > >>
-> > >> +#ifdef CONFIG_X86_VSYSCALL_EMULATION
-> > >>               if (user_pgd != NULL) {
-> > >>                       user_pgd[pgd_index(VSYSCALL_ADDR)] =
-> > >>                               __pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
-> > >>                       ret = 0;
-> > >>               }
-> > >> +#endif
-> > >
-> > > Could you instead make the if use IS_ENABLED?
-> > >
-> > >                 if (IS_ENABLED(CONFIG_X86_VSYSCALL_EMULATION) && user_pgd != NULL)
-> > >
-> > > That has the advantage of ensuring that the code continues to compile.
-> > > (Given that you haven't removed level3_user_vsyscall, that should work.)
-> >
-> > I need the ret = 0, I think, so I'll resend.
-> >
-> > I think I'd rather use #ifdef here, since I think it would be great if
-> > the Xen people could clean this up further.  With this change, under
-> > some configurations, there should be no user-accessible kernel
-> > addresses at all.  (Also, is there some PV mechanism
-> > that I'm not thinking of that will break with this change?  I know
-> > I've tripped over Xen pagetable and fixmap oddities before.)
->
-> Not that I know of. The vsyscall is the only one that I know of that
-> does this.
+On Wed, 29 Oct 2014, Arnd Bergmann wrote:
+> On Wednesday 29 October 2014 13:09:47 Kevin Cernekee wrote:
+> > generic-chip.c already has a fair amount of indirection, with pointers
+> > to saved masks, user-specified register offsets, and such.  Is there a
+> > concern that introducing, say, a pair of readl/writel function
+> > pointers, would cause an unacceptable performance drop?
+> 
+> I don't know. Thomas' reply suggests that it isn't. Doing byteswap
+> in software at a register access is usually free in terms of CPU
+> cycles, but an indirect function call can be noticeable if we do
+> that a lot.
 
-There's kvm-clock, too, but that may never co-exist with Xen.
+I did not say that it is free. I merily said that I prefer to have
+this solved at the core level rather than at the driver level. So you
+have several options to do so:
 
-I tagged v2 here:
+1) Indirections
 
-https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/tag/?id=optional-vsyscall-emulation-v2
+2) Different functions for the different access modes
 
-and I'll send it out in a bit.
+3) Alternatives
 
---Andy
+#1 Is the simplest solution, but imposes the overhead of an indirect
+   function call for something trivial
 
->
-> Do you have a full patchset somewhere for testing?
-> >
-> > --Andy
+#2 The most efficient and flexible way if you have to provide
+   different access modes for different drivers. But it comes with the
+   price of increasing the text foot print.
+
+#3 Smart and efficient, but requires that on a particular system all
+   drivers use the same access mode.
+
+Thanks,
+
+	tglx
+
+
+
+  
