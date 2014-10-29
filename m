@@ -1,63 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933264AbaJ2Nr5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:47:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39767 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933159AbaJ2Nry (ORCPT
+	id S933147AbaJ2Nr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:47:29 -0400
+Received: from s250.sam-solutions.net ([217.21.49.219]:46611 "EHLO
+	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933020AbaJ2Nr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 09:47:54 -0400
-Date: Wed, 29 Oct 2014 14:44:45 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Romain Perier <romain.perier@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        devicetree <devicetree@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, j-keerthy@ti.com, nsekhar@ti.com,
-        Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        t-kristo@ti.com, Lokesh Vutla <lokeshvutla@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
-Message-ID: <20141029134445.GF2265@localhost>
-References: <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org>
- <20141028002552.GX12379@n2100.arm.linux.org.uk>
- <20141028081616.GL2006@localhost>
- <20141028084745.GY12379@n2100.arm.linux.org.uk>
- <20141028131257.GS2006@localhost>
- <20141028151610.GA12379@n2100.arm.linux.org.uk>
- <20141029123418.GB2265@localhost>
- <CABgxDo+ewxNwb3RrBVZA7kqYMvSujLb9U6A6FCvnHQH1W8V0kg@mail.gmail.com>
- <20141029130050.GC2265@localhost>
- <CABgxDoJN_PmEyA4eEU7UVL+ZqNqJ4Sd-JYc5yhm6D2iLoorEUA@mail.gmail.com>
+	Wed, 29 Oct 2014 09:47:26 -0400
+From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <perex@perex.cz>, <tiwai@suse.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        "Dmitry Lavnikevich" <d.lavnikevich@sam-solutions.com>
+Subject: [PATCH v5 2/3] ARM: dts: pbab01: enable I2S audio on phyFLEX-i.MX6 boards
+Date: Wed, 29 Oct 2014 16:47:03 +0300
+Message-ID: <1414590424-25585-3-git-send-email-d.lavnikevich@sam-solutions.com>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
+References: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABgxDoJN_PmEyA4eEU7UVL+ZqNqJ4Sd-JYc5yhm6D2iLoorEUA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-Originating-IP: [192.168.117.165]
+X-ClientProxiedBy: S326.sam-solutions.net (217.21.35.11) To
+ S326.sam-solutions.net (217.21.35.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Again, please stop with the top-posting.
+Audio on phyFLEX boards is presented by tlv320aic3007 codec connected
+over SSI interface.
 
-A: http://en.wikipedia.org/wiki/Top_post
-Q: Were do I find info about this thing called top-posting?
+Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+---
+ arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi | 100 ++++++++++++++++++++++++++-
+ arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi |  15 ++++
+ 2 files changed, 113 insertions(+), 2 deletions(-)
 
-A: Because it messes up the order in which people normally read text.
-Q: Why is top-posting such a bad thing? ]
+diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
+index f1bdcae5b97d..cb8f1b6ec083 100644
+--- a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
+@@ -9,10 +9,73 @@
+  * http://www.gnu.org/copyleft/gpl.html
+  */
+ 
++#include <dt-bindings/sound/fsl-imx-audmux.h>
++
+ / {
+ 	chosen {
+ 		linux,stdout-path = &uart4;
+ 	};
++
++	regulators {
++		sound_1v8: regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "i2s-audio-1v8";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		sound_3v3: regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <3>;
++			regulator-name = "i2s-audio-3v3";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++		};
++	};
++
++	tlv320_mclk: oscillator {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <19200000>;
++		clock-output-names = "tlv320-mclk";
++	};
++
++	sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "OnboardTLV320AIC3007";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&dailink_master>;
++		simple-audio-card,frame-master = <&dailink_master>;
++		simple-audio-card,widgets =
++			"Microphone", "Mic Jack",
++			"Line", "Line In",
++			"Line", "Line Out",
++			"Speaker", "Speaker",
++			"Headphone", "Headphone Jack";
++		simple-audio-card,routing =
++			"Line Out", "LLOUT",
++			"Line Out", "RLOUT",
++			"Speaker", "SPOP",
++			"Speaker", "SPOM",
++			"Headphone Jack", "HPLOUT",
++			"Headphone Jack", "HPROUT",
++			"MIC3L", "Mic Jack",
++			"MIC3R", "Mic Jack",
++			"Mic Jack", "Mic Bias",
++			"LINE1L", "Line In",
++			"LINE1R", "Line In";
++
++		simple-audio-card,cpu {
++			sound-dai = <&ssi2>;
++		};
++
++		dailink_master: simple-audio-card,codec {
++			sound-dai = <&codec>;
++			clocks = <&tlv320_mclk>;
++		};
++	};
++
+ };
+ 
+ &fec {
+@@ -27,12 +90,45 @@
+ 	status = "okay";
+ };
+ 
++&ssi2 {
++	status = "okay";
++};
++
++&audmux {
++	status = "okay";
++
++	ssi2 {
++		fsl,audmux-port = <1>;
++		fsl,port-config = <
++			(IMX_AUDMUX_V2_PTCR_TFSDIR |
++			IMX_AUDMUX_V2_PTCR_TFSEL(4) |
++			IMX_AUDMUX_V2_PTCR_TCLKDIR |
++			IMX_AUDMUX_V2_PTCR_TCSEL(4))
++	                IMX_AUDMUX_V2_PDCR_RXDSEL(4)
++		>;
++	};
++	pins5 {
++		fsl,audmux-port = <4>;
++		fsl,port-config = <
++			0x00000000
++			IMX_AUDMUX_V2_PDCR_RXDSEL(1)
++		>;
++	};
++};
++
+ &i2c2 {
+ 	status = "okay";
+ 
+-	tlv320@18 {
+-		compatible = "ti,tlv320aic3x";
++	codec: tlv320@18 {
++		compatible = "ti,tlv320aic3007";
++		#sound-dai-cells = <0>;
+ 		reg = <0x18>;
++		ai3x-micbias-vg = <2>;
++
++		AVDD-supply = <&sound_3v3>;
++		IOVDD-supply = <&sound_3v3>;
++		DRVDD-supply = <&sound_3v3>;
++		DVDD-supply = <&sound_1v8>;
+ 	};
+ 
+ 	stmpe@41 {
+diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
+index aa2275671d2c..d7f34664e008 100644
+--- a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
+@@ -58,6 +58,12 @@
+ 	};
+ };
+ 
++&audmux {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_audmux>;
++	status = "disabled";
++};
++
+ &ecspi3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ecspi3>;
+@@ -319,6 +325,15 @@
+ 				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000
+ 			>;
+ 		};
++
++		pinctrl_audmux: audmuxgrp {
++			fsl,pins = <
++				MX6QDL_PAD_DISP0_DAT16__AUD5_TXC	0x130b0
++				MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS	0x130b0
++				MX6QDL_PAD_DISP0_DAT17__AUD5_TXD	0x110b0
++				MX6QDL_PAD_DISP0_DAT19__AUD5_RXD	0x130b0
++			>;
++		};
+ 	};
+ };
+ 
+-- 
+2.1.2
 
-On Wed, Oct 29, 2014 at 02:11:02PM +0100, Romain Perier wrote:
-> This just to be sure, nothing more. I did read that you mentionned
-> "poweroff-source" earlier. However If I am wrong, my bad, everything
-> is fine.
-
-I only mentioned that you had proposed that name in my cover letter.
-
-Johan
