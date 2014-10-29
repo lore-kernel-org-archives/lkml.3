@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934340AbaJ2P5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:57:33 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:43616 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934240AbaJ2P5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:57:30 -0400
-Date: Wed, 29 Oct 2014 16:54:22 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Johan Hovold <johan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, nsekhar@ti.com, t-kristo@ti.com,
-        j-keerthy@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
-Message-ID: <20141029155422.GI2265@localhost>
-References: <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org>
- <20141028002552.GX12379@n2100.arm.linux.org.uk>
- <20141028081616.GL2006@localhost>
- <20141028084745.GY12379@n2100.arm.linux.org.uk>
- <20141028131257.GS2006@localhost>
- <20141028151610.GA12379@n2100.arm.linux.org.uk>
- <20141029123418.GB2265@localhost>
- <5450E9A8.1060506@roeck-us.net>
- <20141029133526.GE2265@localhost>
- <20141029153641.GB20565@roeck-us.net>
+	id S934029AbaJ2QAF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:00:05 -0400
+Received: from mail-bn1on0131.outbound.protection.outlook.com ([157.56.110.131]:11552
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933413AbaJ2QAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:00:03 -0400
+X-WSS-ID: 0NE7R3W-07-A3L-02
+X-M-MSG: 
+Message-ID: <54510EFC.2080107@amd.com>
+Date: Wed, 29 Oct 2014 10:59:56 -0500
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141029153641.GB20565@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Borislav Petkov <bp@alien8.de>
+CC: Chen Yucong <slaoub@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before machine_check_poll()
+ resets it
+References: <CAOjmkp9qQiTbqU3NUhUDAoQAa8wAPJnE_qXbDuBKrA3ee1_APQ@mail.gmail.com>
+ <5435B206.60402@amd.com> <20141008225750.GH16892@pd.tnic>
+ <20141009165339.GA11360@arav-dinar> <20141009173529.GC17647@pd.tnic>
+ <5436DB72.1090507@amd.com> <20141021202840.GD4420@pd.tnic>
+ <1413942678.17435.11.camel@debian> <20141022081618.GA2511@pd.tnic>
+ <1413968014.7070.12.camel@debian> <20141022093042.GB2511@pd.tnic>
+In-Reply-To: <20141022093042.GB2511@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(164054003)(24454002)(51704005)(199003)(479174003)(377454003)(2473001)(189002)(92566001)(92726001)(80316001)(19580395003)(76482002)(21056001)(44976005)(23676002)(86362001)(47776003)(20776003)(64706001)(575784001)(65956001)(50466002)(46102003)(80022003)(64126003)(85852003)(99136001)(84676001)(87936001)(65816999)(83506001)(50986999)(87266999)(54356999)(76176999)(15975445006)(33656002)(36756003)(102836001)(106466001)(95666004)(105586002)(107046002)(97736003)(101416001)(110136001)(93886004)(4396001)(68736004)(85306004)(59896002)(99396003)(120916001)(31966008)(120886001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-Forefront-PRVS: 03793408BA
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 08:36:41AM -0700, Guenter Roeck wrote:
-> On Wed, Oct 29, 2014 at 02:35:26PM +0100, Johan Hovold wrote:
-> > On Wed, Oct 29, 2014 at 06:20:40AM -0700, Guenter Roeck wrote:
-> > > On 10/29/2014 05:34 AM, Johan Hovold wrote:
-
-> > > > And what about any power-off latencies? Should this always be dealt with
-> > > > in the power-off handler?
-> > > >
-> > > > Again, if it's predictable and high, as in the OMAP RTC case, it should
-> > > > go in the handler. But what if it's just normal bus latencies
-> > > > (peripheral busses, i2c, or whatever people may come up with)?
-> > > >
-> > > > Should there always be a short delay before calling the next handler?
-> > > 
-> > > That delay would depend on the individual power-off handler, so I think
-> > > the current implementation works just fine (where power-off handlers
-> > > implement the delay).
-> > 
-> > Some don't, and could possibly unknowingly have been relying on the fact
-> > that they could return to user space and be powered off at some later
-> > time. With systemd that would have caused a panic.
+On 10/22/2014 4:30 AM, Borislav Petkov wrote:
+> Hi Aravind,
 >
-> Agreed, but there are two cases to consider: What should be the delay
-> before the next power-off handler is called, and what should the system
-> do if all power-off handlers fail (or if there are none). The current
-> behavior isn't exactly well defined. Ok, with systemd that results in
-> a crash, but I am not really sure if one can or should blame systemd
-> for that. The discussion about systemd and its philosophy should not
-> cloud the fact that power-off behavior isn't exactly well defined.
+> question: what's the story with MC?_MISC[IntP], is that bit still there?
+> Because I don't see it in my BKDGs here.
 
-Sounds like we pretty much agree. See my response to your last mail.
+Yep, It exists.
+Maybe you are referring to Fam15h M0h BKDG? I think the bit was 
+introduced only from F15h M30h onwards.
+The bit does *not* exist for bank=4, But-
+if (bank ==4)
+   return true;
 
-> > Also consider generic power-off handlers such as gpio-poweroff. It
-> > currently hard-codes a three-second delay but the actual delay would
-> > really be board specific.
-> > 
-> A configurable delay would address that. The actually required delay
-> could be provided in platform data or as devicetree property.
+takes care of that.
 
-Yep, see mail mentioned above.
+> The background of the story is
+>
+> https://lkml.org/lkml/2014/10/7/84
+>
+> There's this thing we did at the time
+>
+> f227d4306cf3 ("x86, MCE, AMD: Make APIC LVT thresholding interrupt optional")
+>
+> which, AFAICR, is about some F15h versions having a counter but *not*
+> generating a thresholding interrupt. Can you confirm that is still
+> the case and we can have a counter but no interrupt gets generated on
+> overflow?
+>
 
-Johan
+So yes, moving the assignment inside the if condition should work just fine.
+
+I see the patch on your 'ras-for-3.19' branch does not have this, so 
+I'll make this modification
+to the branch before I test it.
+
+Thanks,
+-Aravind.
