@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934483AbaJ2RSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:18:03 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35500 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933749AbaJ2RSC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:18:02 -0400
-Date: Wed, 29 Oct 2014 10:17:54 -0700
-From: josh@joshtriplett.org
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	id S934603AbaJ2RVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:21:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33505 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934130AbaJ2RVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 13:21:00 -0400
+Message-ID: <545121DC.5050305@zytor.com>
+Date: Wed, 29 Oct 2014 10:20:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: josh@joshtriplett.org, Kees Cook <keescook@chromium.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>,
         "virtualization@lists.linux-foundation.org" 
 	<virtualization@lists.linux-foundation.org>,
         "x86@kernel.org" <x86@kernel.org>, xen-devel@lists.xenproject.org
 Subject: Re: [PATCH v3 3/3] x86: Support compiling out userspace I/O (iopl
  and ioperm)
-Message-ID: <20141029171754.GA18888@cloud>
-References: <7159269982aac3b732af2c33a2e3d04e2048bdfb.1414598511.git.josh@joshtriplett.org>
- <9d77d0e4df8feb2cb55fb21689e016a3145cb7f8.1414598511.git.josh@joshtriplett.org>
- <CAGXu5jKCuWmbUgNtnVWC2JQF3ML_SQQwBMooVynsbBO8cDLudA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKCuWmbUgNtnVWC2JQF3ML_SQQwBMooVynsbBO8cDLudA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+References: <7159269982aac3b732af2c33a2e3d04e2048bdfb.1414598511.git.josh@joshtriplett.org> <9d77d0e4df8feb2cb55fb21689e016a3145cb7f8.1414598511.git.josh@joshtriplett.org> <CAGXu5jKCuWmbUgNtnVWC2JQF3ML_SQQwBMooVynsbBO8cDLudA@mail.gmail.com> <20141029171754.GA18888@cloud>
+In-Reply-To: <20141029171754.GA18888@cloud>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 09:59:25AM -0700, Kees Cook wrote:
-> On Wed, Oct 29, 2014 at 9:10 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > --- a/arch/x86/kernel/process-io.h
-> > +++ b/arch/x86/kernel/process-io.h
-> > @@ -1,9 +1,17 @@
-> >  #ifndef _X86_KERNEL_PROCESS_IO_H
-> >  #define _X86_KERNEL_PROCESS_IO_H
-> >
-> > +static inline void clear_thread_io_bitmap(struct task_struct *p)
-> > +{
-> > +#ifdef CONFIG_X86_IOPORT
-> > +       p->thread.io_bitmap_ptr = NULL;
-> > +#endif /* CONFIG_X86_IOPORT */
-> > +}
+On 10/29/2014 10:17 AM, josh@joshtriplett.org wrote:
+>>
+>> But this is entirely a style decision, so I leave it up to the x86
+>> maintainers ...
 > 
-> Personally, I prefer seeing these kinds of optional functions declared
-> in a single block rather than having the #ifdefs inside the functions:
+> I can certainly do that if the x86 maintainers prefer, but that tends to
+> produce a net increase in lines of code, as well as duplicating all the
+> function prototypes, which to me seems more error-prone.  If the
+> stub versions contained any code, rather than just becoming no-ops, I'd
+> definitely do that.
 > 
-> #ifdef CONFIG_X86_IOPORT
-> static inline void clear_thread_io_bitmap(struct task_struct *p)
-> {
->     ...
-> }
+
+I concur with this style choice.
+
+>> Another nit may be that we should call this CONFIG_SYSCALL_IOPL or
+>> CONFIG_SYSCALL_IOPERM in keeping with the other CONFIG_SYSCALL_*
+>> naming thread? Again, I don't really care strongly beyond really
+>> wanting to use this new feature! :)
 > 
-> static inline int copy_io_bitmap(struct task_struct *me,
->                                   struct task_struct *p)
-> {
->     ...
-> }
-> 
-> ...remaining_functions...
-> 
-> #else
-> static inline void clear_thread_io_bitmap(struct task_struct *p) { }
-> static inline int copy_io_bitmap(struct task_struct *me,
->                                   struct task_struct *p)
-> {
->     return 0;
-> }
-> ...remaining functions...
-> #endif /* CONFIG_X86_IOPORT */
-> 
-> But this is entirely a style decision, so I leave it up to the x86
-> maintainers ...
+> I don't feel strongly about the naming.  Ingo?
 
-I can certainly do that if the x86 maintainers prefer, but that tends to
-produce a net increase in lines of code, as well as duplicating all the
-function prototypes, which to me seems more error-prone.  If the
-stub versions contained any code, rather than just becoming no-ops, I'd
-definitely do that.
+It is sort of a special case here, as this reflects more than one syscall.
 
-> Another nit may be that we should call this CONFIG_SYSCALL_IOPL or
-> CONFIG_SYSCALL_IOPERM in keeping with the other CONFIG_SYSCALL_*
-> naming thread? Again, I don't really care strongly beyond really
-> wanting to use this new feature! :)
+	-hpa
 
-I don't feel strongly about the naming.  Ingo?
 
-> Thanks for working on this!
-
-No problem.  I look forward to seeing it used, in Chrome OS and
-elsewhere. :)
-
-- Josh Triplett
