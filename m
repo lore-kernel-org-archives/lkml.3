@@ -1,71 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414AbaJ2CYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 22:24:36 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:32852 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515AbaJ2CYe (ORCPT
+	id S1753233AbaJ2Cdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 22:33:50 -0400
+Received: from regular1.263xmail.com ([211.150.99.140]:42971 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaJ2Cds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 22:24:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141028214756.GF9255@lukather>
-References: <cover.1414444953.git.rbyshko@gmail.com> <668c1b5541fc0175957573bd5f8d40dd2eaccae1.1414444953.git.rbyshko@gmail.com>
- <20141028214756.GF9255@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Wed, 29 Oct 2014 10:24:12 +0800
-X-Google-Sender-Auth: 4HWE-tNoasnjKjlEVe1ZPLzfBSU
-Message-ID: <CAGb2v65gSq+kMnVZMAvXkF6+ARiFE1qRpQ9SFDThfXCg_kERsQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] phy: sun4i: add support for USB phy0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Roman Byshko <rbyshko@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Oct 2014 22:33:48 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <bdda17e361176e1e5529378856f4c799>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
+Cc: zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
+        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v16 0/5] Rockchip soc thermal driver
+Date: Wed, 29 Oct 2014 10:32:34 +0800
+Message-Id: <1414549959-13699-1-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 5:47 AM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> Hi Roman,
->
-> Thanks for your patches
->
-> On Mon, Oct 27, 2014 at 10:43:01PM +0100, Roman Byshko wrote:
->> The driver for sun4i USB phys currently supports
->> only phy1 and phy2 which are used for USB host
->> controllers. This patch adds support for USB phy0,
->> which is used by the musb hdrc USB controller.
->
-> Like Andreas already pointed out, your signed-off-by is missing from
-> all your patches.
->
->> ---
->>  drivers/phy/phy-sun4i-usb.c | 9 ++++++---
->>  1 file changed, 6 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
->> index 0baf5ef..a24728b 100644
->> --- a/drivers/phy/phy-sun4i-usb.c
->> +++ b/drivers/phy/phy-sun4i-usb.c
->> @@ -157,6 +157,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
->>               return ret;
->>       }
->>
->> +     /* Regulation 45 ohms */
->> +     if (phy->index == 0)
->> +             sun4i_usb_phy_write(phy, PHY_RES45_CAL_EN, 0x01, 1);
->
-> What is this code supposed to do?
->
-> Some define for this bit and/or a better comment would be nice.
+This series patchs tested on rk3288 SDK board and pinky-v1,v2 board.
+I believe the driver can be used on the rk3288-evb board.
 
->From Allwinner's sources: "Enable/Disable USB res45 Calibration"
+Add this driver, The system will shutdown when
+the thermal temperture over 120C.If for some reason we are unable to
+shut it down in orderly fashion (kernel is stuck holding a lock or similar)
+then hardware will reset it.
 
-which I think refers to the internal 45 ohm termination resistors
-for the USB data lines. But I'm not an expert on USB hardware.
+Changes in v16:
+	* address comments from Dmitry Torokhov.
+	- add thermal->chip->control(thermal->regs, false) in remove()
+	- adjust TSHUT in resume().
+
+Changes in v15:
+	* address comments from Dmitry Torokhov.
+	- enable TSHUT move into rk_tsadcv2_tshut_temp().
+	- drop the id argument in rk_tsadcv2_control().
+
+Changes in v14:
+	* address comments from Dmitry Torokhov.
+	- adjust-alarm-rate-depending-on-clock.
+	- 0001-rockchip-thermal-do-not-register-cpufreq-cooling-dev.
+
+Changes in v13:
+	- add cooling-maps for cpu-thermal.
+	- put tshut polarity in device tree.
+
+Changes in v12:
+	* address comments from Dmitry Torokhov and Vladimir Zapolskiy.
+	- split-sensor-handling.
+	- rename-rockchip_tsadc_platform_data.
+
+Changes in v11:
+	* address comments from Vladimir Zapolskiy.
+	- fix cpufreq_cooling_unregister() to put in correct position.
+	- fix "data->chn",at least can get valid Tsensor temp.
+
+Changes in v10:
+	* address comments from Doug Anderson.
+	- fix TSHUT polarity,ensure support TSHUT.
+	- add the decription for rk_tsadcv2_initialize().
+
+Changes in v9:
+	* address comments from Dmitry Torokhov.
+	- fix some style be defined
+	- remove some unused code.
+	- clk_disable_unprepare->clk_disable in suspend()
+
+Changes in v8:
+	* address comments from Dmitry Torokhov and Doug Anderson.
+	- add three Teperture Sensors.
+	- support CRU and GPIO reset chip.
+	- rename rk3xxx-cpu-thermal.dtsi as rk3288-thermal.dtsi
+	- alarm-temp via set_trips() callback
+	- remove "reset-gpios"
+
+Changes in v7:
+	- fix get data->clk=0 when in probe() function.
+	- fix some style code.
+	- modify dts,main add rk3xxx-cpu-thermal.dtsi
+
+Changes in v6:
+	* address comments from Tomeu Vizoso.
+	- use thermal's generic framework.
+
+Changes in v5:
+	* address comments from Eduardo Valentin,rui.zhang and Heiko Stubner:
+	- with BIT() macro
+	- manage clocks in suspend/resume.
+	- license is fixed as GPLv2.
+	- #include "thermal_core.h"->#include <linux/thermal.h>
+	- use the generic trip-points.the hw-shut-temp isn't generic trip-points.
+	- The method of binding and unbinding be fixed.
+	- The pin-name tsadc->otp_out
+
+Changes in v4:
+	* address comments from Jonathan Cameron,huangtao and zhaoyifeng:
+	- this series thermal driver still be put in driver/thermal/
+	- modify the thermal driver description.
+
+Changes in v3:(add dts configure)
+	* address comments from Dmitry Torokhov and Arnd Bergmann:
+	- fix clock-names in rockchip-thermal.txt
+	- remove rockchip_thermal_control() in rockchip_set_mode()
+	- fix some code style.
+	- add dts configure.
+
+Changes in v2:
+	* address comments from Heiko Stubner:
+	- fix dt-bindings in rockchip-thermal.txt
+	- remove Author mark
+	- rename TSADC_XXX->TSADCV2_XXX,it eill ready to merge compatible other SoCs.
+	- fix a identation
+	- remove clk_set_rate(),it's no necessary.
+	- fix the SIMPLE_DEV_PM_OPS() function  style.
+
+Caesar Wang (5):
+  thermal: rockchip: add driver for thermal
+  dt-bindings: document Rockchip thermal
+  ARM: dts: add RK3288 Thermal data
+  ARM: dts: add main Thermal info to rk3288
+  ARM: dts: enable Thermal on rk3288-evb board
+
+ .../bindings/thermal/rockchip-thermal.txt          |  45 ++
+ arch/arm/boot/dts/rk3288-evb.dtsi                  |   5 +
+ arch/arm/boot/dts/rk3288-thermal.dtsi              |  58 ++
+ arch/arm/boot/dts/rk3288.dtsi                      |  23 +
+ drivers/thermal/Kconfig                            |   9 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/rockchip_thermal.c                 | 628 +++++++++++++++++++++
+ 7 files changed, 769 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+ create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
+ create mode 100644 drivers/thermal/rockchip_thermal.c
+
+-- 
+1.9.1
+
+
