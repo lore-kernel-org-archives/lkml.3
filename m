@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934575AbaJ2Q1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:27:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47294 "EHLO mx2.suse.de"
+	id S934608AbaJ2Q1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:27:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57373 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934559AbaJ2Q1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:27:33 -0400
-Date: Wed, 29 Oct 2014 17:27:30 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Seth Jennings <sjenning@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [for-next][PATCH 0/4] ftrace: Add dynamic trampoline support
-In-Reply-To: <20141027182702.778680710@goodmis.org>
-Message-ID: <alpine.LNX.2.00.1410291053180.20256@pobox.suse.cz>
-References: <20141027182702.778680710@goodmis.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934172AbaJ2QYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:24:07 -0400
+Message-ID: <1414599817.1870.15.camel@deneb.redhat.com>
+Subject: Re: [PATCH RESEND 1/7] arm64: dts: Add APM X-Gene USB DTS node
+From: Mark Salter <msalter@redhat.com>
+To: Feng Kan <fkan@apm.com>
+Cc: catalin.marinas@arm.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@apm.com, Bao Truong <btruong@apm.com>
+Date: Wed, 29 Oct 2014 12:23:37 -0400
+In-Reply-To: <1414438108-8384-2-git-send-email-fkan@apm.com>
+References: <1414438108-8384-1-git-send-email-fkan@apm.com>
+	 <1414438108-8384-2-git-send-email-fkan@apm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Steven Rostedt wrote:
-
-> This adds the allocation of dynamic trampolines. It still does not
-> allow for dynamic ftrace_ops to use them on CONFIG_PREEMPT systems.
-> That will come in 3.20, as I want to test out call_rcu_tasks() for
-> a bit first on my own boxes.
+On Mon, 2014-10-27 at 12:28 -0700, Feng Kan wrote:
+> This parch adds the device tree nodes for APM X-Gnene USB host controller.
+> Since X-Gene SOC supports maximum 2 USB ports, 2 dts node are added.
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> for-next
+> Signed-off-by: Bao Truong <btruong@apm.com>
+> Signed-off-by: Feng Kan <fkan@apm.com>
+> ---
+>  arch/arm64/boot/dts/apm-storm.dtsi | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
 > 
-> Head SHA1: 9fd7caf67913fbf35d834beaa8f9764d733a9236
-> 
-> 
-> Steven Rostedt (Red Hat) (4):
->       ftrace/x86: Add dynamic allocated trampoline for ftrace_ops
->       ftrace/x86: Show trampoline call function in enabled_functions
->       ftrace/x86: Allow !CONFIG_PREEMPT dynamic ops to use allocated trampolines
->       ftrace: Add more information to ftrace_bug() output
+> diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
+> index 3eef74b..a80f2fa 100644
+> --- a/arch/arm64/boot/dts/apm-storm.dtsi
+> +++ b/arch/arm64/boot/dts/apm-storm.dtsi
+> @@ -587,6 +587,20 @@
+>  			phy-names = "sata-phy";
+>  		};
+>  
+> +		usb0: dwusb@19000000 {
+> +			status = "disabled";
+> +			compatible = "xhci-platform";
+> +			reg =  <0x0 0x19000000 0x0 0x100000>;
+> +			interrupts = <0x0 0x89 0x4>;
+> +		};
+> +
+> +		usb1: dwusb@19800000 {
+> +			status = "disabled";
+> +			compatible = "xhci-platform";
+> +			reg =  <0x0 0x19800000 0x0 0x100000>;
+> +			interrupts = <0x0 0x8a 0x4>;
+> +		};
+> +
 
-FWIW I just did a very quick test, and kGraft seems to run flawlessly on 
-top of this.
+Should these have "dma-coherent" properties?
 
-Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs
