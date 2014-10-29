@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934469AbaJ2QYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:24:54 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:46804 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934133AbaJ2QYu (ORCPT
+	id S934423AbaJ2QYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:24:36 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:52422 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933523AbaJ2QYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:24:50 -0400
+	Wed, 29 Oct 2014 12:24:32 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: linux-tegra@vger.kernel.org
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Mikko Perttunen <mperttunen@nvidia.com>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 09/13] memory: tegra: Add API needed by the EMC driver
-Date: Wed, 29 Oct 2014 17:22:27 +0100
-Message-Id: <1414599796-30597-10-git-send-email-tomeu.vizoso@collabora.com>
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 06/13] of: Add Tegra124 EMC bindings
+Date: Wed, 29 Oct 2014 17:22:24 +0100
+Message-Id: <1414599796-30597-7-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -27,270 +32,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mikko Perttunen <mperttunen@nvidia.com>
 
-The EMC driver needs to know the number of external memory devices and also
-needs to update the EMEM configuration based on the new rate of the memory bus.
-
-To know how to update the EMEM config, looks up the values of the burst regs in
-the DT, for a given timing.
+Add binding documentation for the nvidia,tegra124-emc device tree node.
 
 Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
----
- drivers/memory/tegra/tegra-mc.c | 172 ++++++++++++++++++++++++++++++++++++++++
- include/soc/tegra/memory.h      |  17 ++++
- 2 files changed, 189 insertions(+)
- create mode 100644 include/soc/tegra/memory.h
 
-diff --git a/drivers/memory/tegra/tegra-mc.c b/drivers/memory/tegra/tegra-mc.c
-index 0f0c8be..15ec018 100644
---- a/drivers/memory/tegra/tegra-mc.c
-+++ b/drivers/memory/tegra/tegra-mc.c
-@@ -16,8 +16,10 @@
- #include <linux/of_platform.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
-+#include <linux/sort.h>
- 
- #include <soc/tegra/ahb.h>
-+#include <soc/tegra/fuse.h>
- 
- #include "tegra-mc.h"
- 
-@@ -53,8 +55,59 @@
- #define  MC_EMEM_ARB_CFG_CYCLES_PER_UPDATE_MASK	0x1ff
- #define MC_EMEM_ARB_MISC0 0xd8
- 
-+#define MC_EMEM_ARB_CFG				0x90
-+#define MC_EMEM_ARB_OUTSTANDING_REQ		0x94
-+#define MC_EMEM_ARB_TIMING_RCD			0x98
-+#define MC_EMEM_ARB_TIMING_RP			0x9c
-+#define MC_EMEM_ARB_TIMING_RC			0xa0
-+#define MC_EMEM_ARB_TIMING_RAS			0xa4
-+#define MC_EMEM_ARB_TIMING_FAW			0xa8
-+#define MC_EMEM_ARB_TIMING_RRD			0xac
-+#define MC_EMEM_ARB_TIMING_RAP2PRE		0xb0
-+#define MC_EMEM_ARB_TIMING_WAP2PRE		0xb4
-+#define MC_EMEM_ARB_TIMING_R2R			0xb8
-+#define MC_EMEM_ARB_TIMING_W2W			0xbc
-+#define MC_EMEM_ARB_TIMING_R2W			0xc0
-+#define MC_EMEM_ARB_TIMING_W2R			0xc4
-+#define MC_EMEM_ARB_DA_TURNS			0xd0
-+#define MC_EMEM_ARB_DA_COVERS			0xd4
-+#define MC_EMEM_ARB_MISC0			0xd8
-+#define MC_EMEM_ARB_MISC1			0xdc
-+#define MC_EMEM_ARB_RING1_THROTTLE		0xe0
-+
-+#define MC_EMEM_ADR_CFG 0x54
-+#define MC_EMEM_ADR_CFG_EMEM_NUMDEV BIT(0)
-+
- struct tegra_smmu;
- 
-+static int t124_mc_burst_regs[] = {
-+	MC_EMEM_ARB_CFG,
-+	MC_EMEM_ARB_OUTSTANDING_REQ,
-+	MC_EMEM_ARB_TIMING_RCD,
-+	MC_EMEM_ARB_TIMING_RP,
-+	MC_EMEM_ARB_TIMING_RC,
-+	MC_EMEM_ARB_TIMING_RAS,
-+	MC_EMEM_ARB_TIMING_FAW,
-+	MC_EMEM_ARB_TIMING_RRD,
-+	MC_EMEM_ARB_TIMING_RAP2PRE,
-+	MC_EMEM_ARB_TIMING_WAP2PRE,
-+	MC_EMEM_ARB_TIMING_R2R,
-+	MC_EMEM_ARB_TIMING_W2W,
-+	MC_EMEM_ARB_TIMING_R2W,
-+	MC_EMEM_ARB_TIMING_W2R,
-+	MC_EMEM_ARB_DA_TURNS,
-+	MC_EMEM_ARB_DA_COVERS,
-+	MC_EMEM_ARB_MISC0,
-+	MC_EMEM_ARB_MISC1,
-+	MC_EMEM_ARB_RING1_THROTTLE
-+};
-+
-+struct mc_timing {
-+	unsigned long rate;
-+
-+	u32 mc_burst_data[ARRAY_SIZE(t124_mc_burst_regs)];
-+};
-+
- struct tegra_mc {
- 	struct device *dev;
- 	struct tegra_smmu *smmu;
-@@ -64,6 +117,9 @@ struct tegra_mc {
- 
- 	const struct tegra_mc_soc *soc;
- 	unsigned long tick;
-+
-+	struct mc_timing *timings;
-+	unsigned int num_timings;
- };
- 
- static inline u32 mc_readl(struct tegra_mc *mc, unsigned long offset)
-@@ -789,6 +845,37 @@ static const struct of_device_id tegra_mc_of_match[] = {
- 	{ }
- };
- 
-+void tegra_mc_write_emem_configuration(struct tegra_mc *mc, unsigned long rate)
-+{
-+	int i;
-+	struct mc_timing timing;
-+
-+	for (i = 0; i < mc->num_timings; ++i) {
-+		timing = mc->timings[i];
-+
-+		if (timing.rate == rate)
-+			break;
-+	}
-+
-+	if (i == mc->num_timings)
-+		return;
-+
-+	for (i = 0; i < ARRAY_SIZE(t124_mc_burst_regs); ++i)
-+		mc_writel(mc, timing.mc_burst_data[i], t124_mc_burst_regs[i]);
-+}
-+
-+int tegra_mc_get_emem_device_count(struct tegra_mc *mc)
-+{
-+	u8 dram_count;
-+
-+	dram_count = mc_readl(mc, MC_EMEM_ADR_CFG);
-+	dram_count &= MC_EMEM_ADR_CFG_EMEM_NUMDEV;
-+	dram_count++;
-+
-+	return dram_count;
-+}
-+
-+
- /* XXX: provide prototype in public header */
- int tegra_mc_set_bandwidth(struct tegra_mc *mc, unsigned int id,
- 			   unsigned long bandwidth)
-@@ -966,11 +1053,68 @@ static irqreturn_t tegra_mc_irq(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
-+static int load_one_timing_from_dt(struct tegra_mc *mc,
-+				   struct mc_timing *timing,
-+				   struct device_node *node)
-+{
-+	int err;
-+	u32 tmp;
-+
-+	err = of_property_read_u32(node, "clock-frequency", &tmp);
-+	if (err) {
-+		dev_err(mc->dev,
-+			"timing %s: failed to read rate\n", node->name);
-+		return err;
-+	}
-+
-+	timing->rate = tmp;
-+
-+	err = of_property_read_u32_array(node, "nvidia,emem-configuration",
-+					 timing->mc_burst_data,
-+					 ARRAY_SIZE(timing->mc_burst_data));
-+	if (err) {
-+		dev_err(mc->dev,
-+			"timing %s: failed to read emc burst data\n",
-+			node->name);
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static int load_timings_from_dt(struct tegra_mc *mc,
-+				struct device_node *node)
-+{
-+	struct device_node *child;
-+	int child_count = of_get_child_count(node);
-+	int i = 0, err;
-+
-+	mc->timings = devm_kzalloc(mc->dev,
-+				      sizeof(struct mc_timing) * child_count,
-+				      GFP_KERNEL);
-+	if (!mc->timings)
-+		return -ENOMEM;
-+
-+	mc->num_timings = child_count;
-+
-+	for_each_child_of_node(node, child) {
-+		struct mc_timing *timing = mc->timings + (i++);
-+
-+		err = load_one_timing_from_dt(mc, timing, child);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
- static int tegra_mc_probe(struct platform_device *pdev)
- {
- 	const struct of_device_id *match;
- 	struct resource *res;
- 	struct tegra_mc *mc;
-+	struct device_node *node;
-+	u32 ram_code, node_ram_code;
- 	u32 value;
- 	int err;
- 
-@@ -1001,6 +1145,34 @@ static int tegra_mc_probe(struct platform_device *pdev)
- 		return PTR_ERR(mc->clk);
- 	}
- 
-+	ram_code = tegra_read_ram_code();
-+
-+	mc->num_timings = 0;
-+
-+	for_each_child_of_node(pdev->dev.of_node, node) {
-+		if (strcmp(node->name, "timings"))
-+			continue;
-+
-+		err = of_property_read_u32(node, "nvidia,ram-code",
-+						&node_ram_code);
-+		if (err) {
-+			dev_warn(&pdev->dev,
-+				 "skipping timing without ram-code\n");
-+			continue;
-+		}
-+
-+		if (node_ram_code != ram_code)
-+			continue;
-+
-+		err = load_timings_from_dt(mc, node);
-+		if (err)
-+			return err;
-+		break;
-+	}
-+
-+	if (mc->num_timings == 0)
-+		dev_warn(&pdev->dev, "no memory timings registered\n");
-+
- 	err = tegra_mc_setup_latency_allowance(mc);
- 	if (err < 0) {
- 		dev_err(&pdev->dev, "failed to setup latency allowance: %d\n",
-diff --git a/include/soc/tegra/memory.h b/include/soc/tegra/memory.h
+---
+
+v2:	* Specify the unit addresses for the timings and timing nodes
+---
+ .../bindings/memory-controllers/tegra-emc.txt      | 118 +++++++++++++++++++++
+ 1 file changed, 118 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+
+diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
 new file mode 100644
-index 0000000..f307516
+index 0000000..fe64d57
 --- /dev/null
-+++ b/include/soc/tegra/memory.h
-@@ -0,0 +1,17 @@
-+/*
-+ * Copyright (C) 2014 NVIDIA Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++++ b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+@@ -0,0 +1,118 @@
++NVIDIA Tegra124 SoC EMC (external memory controller)
++====================================================
 +
-+#ifndef __SOC_TEGRA_MEMORY_H__
-+#define __SOC_TEGRA_MEMORY_H__
++Required properties :
++- compatible : Should be "nvidia,tegra124-emc".
++- reg : physical base address and length of the controller's registers.
++- nvidia,memory-controller : phandle of the MC driver.
 +
-+struct tegra_mc;
++The node should contain a "timings" subnode for each supported RAM type (see
++field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address being its
++RAM_CODE.
 +
-+void tegra_mc_write_emem_configuration(struct tegra_mc *mc, unsigned long rate);
-+int tegra_mc_get_emem_device_count(struct tegra_mc *mc);
++Required properties for "timings" nodes :
++- nvidia,ram-code : Should contain the value of RAM_CODE this timing set is used
++for.
 +
-+#endif /* __SOC_TEGRA_MEMORY_H__ */
++Each "timings" node should contain a "timing" subnode for every supported EMC
++clock rate. The "timing" subnodes should have the clock rate in Hz as their unit
++address.
++
++Required properties for "timing" nodes :
++- clock-frequency : Should contain the memory clock rate in Hz.
++- The following properties contain EMC timing characterization values (specified
++in the board documentation) :
++  - nvidia,emc-zcal-cnt-long
++  - nvidia,emc-auto-cal-interval
++  - nvidia,emc-ctt-term-ctrl
++  - nvidia,emc-cfg
++  - nvidia,emc-cfg-2
++  - nvidia,emc-sel-dpd-ctrl
++  - nvidia,emc-cfg-dig-dll
++  - nvidia,emc-bgbias-ctl0
++  - nvidia,emc-auto-cal-config
++  - nvidia,emc-auto-cal-config2
++  - nvidia,emc-auto-cal-config3
++  - nvidia,emc-mode-reset
++  - nvidia,emc-mode-1
++  - nvidia,emc-mode-2
++  - nvidia,emc-mode-4
++- nvidia,emc-configuration : EMC timing characterization data to be written to
++the EMC registers, as specified by the board documentation.
++
++Example SoC include file:
++
++/ {
++	emc@0,7001b000 {
++		compatible = "nvidia,tegra124-emc";
++		reg = <0x0 0x7001b000 0x0 0x1000>;
++
++		nvidia,memory-controller = <&mc>;
++	};
++};
++
++Example board file:
++
++/ {
++	emc@0,7001b000 {
++		timings@3 {
++			nvidia,ram-code = <3>;
++
++			timing@12750000 {
++				clock-frequency = <12750000>;
++
++				nvidia,emc-zcal-cnt-long = <0x00000042>;
++				nvidia,emc-auto-cal-interval = <0x001fffff>;
++				nvidia,emc-ctt-term-ctrl = <0x00000802>;
++				nvidia,emc-cfg = <0x73240000>;
++				nvidia,emc-cfg-2 = <0x000008c5>;
++				nvidia,emc-sel-dpd-ctrl = <0x00040128>;
++				nvidia,emc-cfg-dig-dll = <0x002c0068>;
++				nvidia,emc-bgbias-ctl0 = <0x00000008>;
++				nvidia,emc-auto-cal-config = <0xa1430000>;
++				nvidia,emc-auto-cal-config2 = <0x00000000>;
++				nvidia,emc-auto-cal-config3 = <0x00000000>;
++				nvidia,emc-mode-reset = <0x80001221>;
++				nvidia,emc-mode-1 = <0x80100003>;
++				nvidia,emc-mode-2 = <0x80200008>;
++				nvidia,emc-mode-4 = <0x00000000>;
++
++				nvidia,emc-configuration = <
++					0x00000000 /* EMC_RC */
++					0x00000003 /* EMC_RFC */
++					0x00000000 /* EMC_RFC_SLR */
++					0x00000000 /* EMC_RAS */
++					0x00000000 /* EMC_RP */
++				>;
++			};
++
++			timing@20400000 {
++				clock-frequency = <20400000>;
++
++				nvidia,emc-zcal-cnt-long = <0x00000042>;
++				nvidia,emc-auto-cal-interval = <0x001fffff>;
++				nvidia,emc-ctt-term-ctrl = <0x00000802>;
++				nvidia,emc-cfg = <0x73240000>;
++				nvidia,emc-cfg-2 = <0x000008c5>;
++				nvidia,emc-sel-dpd-ctrl = <0x00040128>;
++				nvidia,emc-cfg-dig-dll = <0x002c0068>;
++				nvidia,emc-bgbias-ctl0 = <0x00000008>;
++				nvidia,emc-auto-cal-config = <0x00000000>;
++				nvidia,emc-auto-cal-config2 = <0x00000000>;
++				nvidia,emc-auto-cal-config3 = <0xa1430000>;
++				nvidia,emc-mode-reset = <0x80001221>;
++				nvidia,emc-mode-1 = <0x80100003>;
++				nvidia,emc-mode-2 = <0x80200008>;
++				nvidia,emc-mode-4 = <0x00000000>;
++
++				nvidia,emc-configuration = <
++					0x00000000
++					0x00000005
++					0x00000000
++					0x00000000
++					0x00000000
++				>;
++			};
++		};
++	};
++};
 -- 
 1.9.3
 
