@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278AbaJ2WQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:16:16 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:36515 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636AbaJ2WQN (ORCPT
+	id S1757479AbaJ2WQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:16:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53335 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756966AbaJ2WQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:16:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 29 Oct 2014 15:15:51 -0700
-Message-ID: <CALCETrWrxc8foPYbRPtxwNX0sHK_=vLFLDXXyXu+2U2=B+=qCQ@mail.gmail.com>
+	Wed, 29 Oct 2014 18:16:15 -0400
+Date: Wed, 29 Oct 2014 15:15:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org, marcel@holtmann.org,
+        desrt@desrt.ca, hadess@hadess.net, dh.herrmann@gmail.com,
+        tixxdz@opendz.org, simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no
 Subject: Re: [PATCH 00/12] Add kdbus implementation
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>, simon.mcvittie@collabora.co.uk,
-        daniel@zonque.org, alban.crequy@collabora.co.uk,
-        javier.martinez@collabora.co.uk, Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <20141029221505.GA7812@kroah.com>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(reply 1/2 -- I'm replying twice to keep the threading sane)
-
-On Wed, Oct 29, 2014 at 3:00 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
+On Wed, Oct 29, 2014 at 03:00:44PM -0700, Greg Kroah-Hartman wrote:
 > kdbus is a kernel-level IPC implementation that aims for resemblance to
 > the the protocol layer with the existing userspace D-Bus daemon while
 > enabling some features that couldn't be implemented before in userspace.
->
 
->  * Support for multiple domains, completely separated from each other,
->    allowing multiple virtualized instances to be used at the same time.
+{sigh}
 
-Given that there is no such thing as a device namespace, how does this work?
+I'll blame it on the jet-lag for the lack of [XX/12] markings on the
+patches.  I'll give it a day for review before resending if people
+really want to know the ordering.  It doesn't matter except for the
+final patch that adds the code to the build file.
 
-The docs seem a bit confusing to me as to whether there's a hierarchy
-of domains.  Do domains have a concept of a parent?
+sorry about that,
 
-What's "container-name"?
-
-Given that domains have random IDs, how can they be checkpointed and restored?
-
---Andy
+greg k-h
