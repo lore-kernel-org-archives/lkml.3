@@ -1,117 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532AbaJ2Vwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:52:35 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:38766 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108AbaJ2Vwc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:52:32 -0400
+	id S1757266AbaJ2V6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:58:04 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:42234 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756704AbaJ2V6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 17:58:02 -0400
+Date: Wed, 29 Oct 2014 16:58:39 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Alex Thorlton <athorlton@sgi.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
+Message-ID: <20141029215839.GO2979@sgi.com>
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+ <87lho0pf4l.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <4115047.A3orYVLyA3@vostro.rjw.lan>
-References: <1414378748-8855-1-git-send-email-zhangwm@marvell.com>
- <544EBB70.6020507@intel.com> <CALZtONCkQVeau8JETKtxuQsoGnVymKPOgwvcidHH=EFVmhKc5g@mail.gmail.com>
- <4115047.A3orYVLyA3@vostro.rjw.lan>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Wed, 29 Oct 2014 17:52:10 -0400
-X-Google-Sender-Auth: qLvTuAuvNDmsWHVU6veiPrHN6RA
-Message-ID: <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
-Subject: Re: [PATCH V2] Driver cpu: update online when cpu_up/down besides sysfs
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Neil Zhang <zhangwm@marvell.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        nfont@linux.vnet.ibm.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lho0pf4l.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 5:46 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Monday, October 27, 2014 08:46:08 PM Dan Streetman wrote:
->> On Mon, Oct 27, 2014 at 5:38 PM, Rafael J. Wysocki
->> <rafael.j.wysocki@intel.com> wrote:
->> > On 10/27/2014 3:59 AM, Neil Zhang wrote:
->> >>
->> >> The current per-cpu offline info won't be updated when we use
->> >> any other method besides sysfs to call cpu_up/down.
->> >> Thus the cpu/online can't reflect the real online status.
->> >>
->> >> This patch is going to fix the issue introduced by commit
->> >> 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c (Driver core:
->> >> Use generic offline/online for CPU offline/online)
->> >>
->> >> CC: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >> Tested-by: Dan Streetman <ddstreet@ieee.org>
->> >> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
->> >
->> >
->> > Oh dear, no.
->> >
->> > Please first tell me what exactly the problem you're seeing is.
->>
->> For some background, here is my last comment on the first email thread on this:
->> https://lkml.org/lkml/2014/10/27/595
->>
->> I didn't create this patch, but the problem essentially is that before
->> your commit the individual cpu online nodes
->> (/sys/devices/system/cpu/cpuN/online) stayed in sync during
->> cpu_down/up, because they used the cpu_online_mask; while after the
->> commit, they are tracked by the cpu's generic dev->offline flag, which
->> isn't updated during cpu_down/up.
->
-> Which is not triggered from sysfs.
->
->> So now, any place in the kernel
->> that brings a cpu up or down must also update the cpu->dev->offline
->> flag.
->
-> Not any place.  In particular, system suspend-resume doesn't need to
-> do that, because it takes CPUs offline and then brings them back
-> online.
->
-> If there's a place in the kernel where CPUs are taken offline and
-> left in that state, then it needs to be updated.
+On Tue, Oct 28, 2014 at 05:12:26AM -0700, Andi Kleen wrote:
+> Alex Thorlton <athorlton@sgi.com> writes:
+> 
+> > Last week, while discussing possible fixes for some unexpected/unwanted behavior
+> > from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
+> > mentioned possibly changing changing khugepaged to work as a task_work function
+> > instead of a kernel thread.  This will give us finer grained control over the
+> > page collapse scans, eliminate some unnecessary scans since tasks that are
+> > relatively inactive will not be scanned often, and eliminate the unwanted
+> > behavior described in the email thread I mentioned.
+> 
+> With your change, what would happen in a single threaded case?
+> 
+> Previously one core would scan and another would run the workload.
+> With your change both scanning and running would be on the same
+> core.
+> 
+> Would seem like a step backwards to me.
 
-The only place I know of is ppc's dlpar code, as mentioned below.
+I suppose from the single-threaded point of view, it could be.  Maybe we
+could look at this a bit differently.  What if we allow processes to
+choose their collapse mechanism on fork?  That way, the system could
+default to using the standard khugepaged mechanism, but we could request
+that processes handle collapses themselves if we want.  Overall, I don't
+think that would add too much overhead to what I've already proposed
+here, and it gives us more flexibility.
 
-Neil, as you crafted the original patch, I assume you know of some
-other place in the kernel doing cpu_up/down directly, where you're
-seeing this problem?
+Thoughts?
 
->
->> My interest in the patch was coincidental because I was seeing
->> the same problem when using dlpar operations to hotplug cpus, which
->> uses the arch/powerpc/platform/pseries/dlpar.c code; that code brings
->> a cpu offline when it's hot-removed (and the cpu online when it's
->> hot-added), but it hasn't been changed to also update the cpu's
->> dev->offline flag.
->
-> It should be modified to do that.
->
->> As I said in the previous email to the first thread, the ppc dlpar
->> operation might be changed in the future to fully unregister a cpu
->> when it's hot-removed, which would remove the entire sysfs cpuN
->> directory.  Alternately and/or until then, it could be updated to
->> simply update the cpu'd dev->offline flag (that's what I originally
->> did for my own testing).  However, without a central place to update
->> the cpu's dev->offline field, like this, or possibly in
->> set_cpu_online(), or elsewhere during cpu_down/up, each place in the
->> kernel that calls cpu_down() or cpu_up() also needs to update the
->> dev->offline flag.  It's possible that the ppc dlpar code is the only
->> place in the kernel that has this problem; I haven't searched.
->
-> It is quite likely to be the only place like that.
->
-> While I'm not familiar with the code in question, the most straightforward
-> way to fix the problem would be to replace cpu_down() in there with
-> device_offline(get_cpu_device(cpu)), but that needs to be called under
-> device_hotplug_lock.
-
-Ok, will do.
-
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+- Alex
