@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609AbaJ2SQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:16:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34168 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214AbaJ2SOl (ORCPT
+	id S1756640AbaJ2SQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:16:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45569 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaJ2SQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:14:41 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        Frank Rowand <frank.rowand@sonymobile.com>,
-        Daniel Thompson <daniel.thompson@linaro.org>
-Subject: [PATCH 1/2] tty: serial: msm: Fix sysrq spinlock recursion on non-DM
-Date: Wed, 29 Oct 2014 11:14:37 -0700
-Message-Id: <1414606478-13709-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.61.ge50deb1
-In-Reply-To: <1414606478-13709-1-git-send-email-sboyd@codeaurora.org>
-References: <1414606478-13709-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 29 Oct 2014 14:16:58 -0400
+Date: Wed, 29 Oct 2014 19:16:54 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vikas Shivappa <vikas.shivappa@intel.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        vikas <vikas.shivappa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "matt.fleming" <matt.fleming@intel.com>,
+        "will.auld" <will.auld@intel.com>, tj@kernel.org
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141029181654.GR12706@worktop.programming.kicks-ass.net>
+References: <1413485050.28564.14.camel@vshiva-Udesk>
+ <20141020161855.GF12020@console-pimps.org>
+ <20141024105306.GI12706@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410291020020.26215@vshiva-Udesk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1410291020020.26215@vshiva-Udesk>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The handle_rx() path calls uart_handle_sysrq_char() with the port
-lock held. This causes a spinlock recursion. Release and
-reacquire the lock here to avoid this.
+On Wed, Oct 29, 2014 at 10:26:16AM -0700, Vikas Shivappa wrote:
+> >It appears to me this 'mode' thing is entirely superfluous and can be
+> >constructed by voluntary operation of this and cpusets or manual
+> >affinity calls.
+> 
+> Do you mean user would would just user the cpusets for cpu affinity and CAT
+> cgroup for cache allocation as shown in example below ?
+> 
+> In other words say affinitize the PID1 and PID2 to CPUs 1 and 2
+>  and then set the desired cache allocation as well like below - then we have
+> the desired cpu affinity and cache allocation for these PIDs..
+> 
+> cd /sys/fs/cgroup/cpuset
+> 
+> mkdir group1_specialuse
+> /bin/echo 1-2 > cpuset.cpus
+> /bin/echo PID1 > tasks
+> /bin/echo PID2 > tasks
+> 
+> Now come to CAT and do the cache allocation for the same tasks PID1 and
+> PID2.
+> 
+> cd /sys/fs/cgroup/cat (CAT cgroup)
+> 
+> mkdir group1_specialuse (keeping same name just for understanding)
+> /bin/echo 0xf > cat.cbm (set the cache bit mask)
+> /bin/echo PID1 > tasks
+> /bin/echo PID2 > tasks
+> 
 
-BUG: spinlock recursion on CPU#0, swapper/0
- lock: msm_uart_ports+0x1e0/0x2d0, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-rc7-00012-gb38ee8265941 #69
-[<c0013964>] (unwind_backtrace) from [<c0011f74>] (show_stack+0x10/0x14)
-[<c0011f74>] (show_stack) from [<c004ed1c>] (do_raw_spin_lock+0x11c/0x13c)
-[<c004ed1c>] (do_raw_spin_lock) from [<c02d44c0>] (msm_console_write+0x78/0x188)
-[<c02d44c0>] (msm_console_write) from [<c0052880>] (call_console_drivers.constprop.22+0xb4/0x144)
-[<c0052880>] (call_console_drivers.constprop.22) from [<c0053570>] (console_unlock+0x27c/0x4ac)
-[<c0053570>] (console_unlock) from [<c0053bb4>] (vprintk_emit+0x1f4/0x5a8)
-[<c0053bb4>] (vprintk_emit) from [<c04ad0ac>] (printk+0x30/0x40)
-[<c04ad0ac>] (printk) from [<c02c2990>] (__handle_sysrq+0x58/0x1b8)
-[<c02c2990>] (__handle_sysrq) from [<c02d41b0>] (msm_irq+0x694/0x6f8)
-[<c02d41b0>] (msm_irq) from [<c0055740>] (handle_irq_event_percpu+0x58/0x270)
-[<c0055740>] (handle_irq_event_percpu) from [<c0055994>] (handle_irq_event+0x3c/0x5c)
-[<c0055994>] (handle_irq_event) from [<c0057e84>] (handle_level_irq+0x9c/0x138)
-[<c0057e84>] (handle_level_irq) from [<c005509c>] (generic_handle_irq+0x24/0x38)
-[<c005509c>] (generic_handle_irq) from [<c000f730>] (handle_IRQ+0x44/0xb0)
-[<c000f730>] (handle_IRQ) from [<c0008518>] (msm_vic_handle_irq+0x44/0x64)
-[<c0008518>] (msm_vic_handle_irq) from [<c04b5ac4>] (__irq_svc+0x44/0x7c)
-Exception stack(0xc0719f68 to 0xc0719fb0)
-9f60:                   00000001 00000001 00000000 c0722938 c0718000 c0769acc
-9f80: 00000000 c0720098 c0769305 4117b362 c0769acc 00000000 01000000 c0719fb0
-9fa0: c004cab0 c000f880 20000013 ffffffff
-[<c04b5ac4>] (__irq_svc) from [<c000f880>] (arch_cpu_idle+0x20/0x30)
-[<c000f880>] (arch_cpu_idle) from [<c004691c>] (cpu_startup_entry+0xf4/0x23c)
-[<c004691c>] (cpu_startup_entry) from [<c06d8b70>] (start_kernel+0x32c/0x394)
+Yah, except I have a strong urge to mount cpusets under /dog when you
+put it like that ;-)
 
-Cc: Frank Rowand <frank.rowand@sonymobile.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/tty/serial/msm_serial.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index 4b6c78331a64..cedcc36762a2 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -174,6 +174,7 @@ static void handle_rx(struct uart_port *port)
- 	while ((sr = msm_read(port, UART_SR)) & UART_SR_RX_READY) {
- 		unsigned int c;
- 		char flag = TTY_NORMAL;
-+		int sysrq;
- 
- 		c = msm_read(port, UART_RF);
- 
-@@ -195,7 +196,10 @@ static void handle_rx(struct uart_port *port)
- 		else if (sr & UART_SR_PAR_FRAME_ERR)
- 			flag = TTY_FRAME;
- 
--		if (!uart_handle_sysrq_char(port, c))
-+		spin_unlock(&port->lock);
-+		sysrq = uart_handle_sysrq_char(port, c);
-+		spin_lock(&port->lock);
-+		if (!sysrq)
- 			tty_insert_flip_char(tport, c, flag);
- 	}
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+Or co-mount cpusets and pets and do it that way.
