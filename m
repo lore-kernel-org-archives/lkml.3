@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934335AbaJ2PpD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:45:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44013 "EHLO
+	id S934361AbaJ2Ppf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:45:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44002 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934147AbaJ2PmI (ORCPT
+	with ESMTP id S934071AbaJ2PmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:42:08 -0400
-Date: Wed, 29 Oct 2014 17:25:33 +0800
+	Wed, 29 Oct 2014 11:42:07 -0400
+Date: Wed, 29 Oct 2014 17:22:08 +0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Gaston Gonzalez <gascoar@gmail.com>
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, devel@driverdev.osuosl.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: staging: imx-drm Fix checkpatch warning
-Message-ID: <20141029092533.GA5886@kroah.com>
-References: <1413427044-9980-1-git-send-email-gascoar@gmail.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, markh@compro.net, devel@driverdev.osuosl.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
+Subject: Re: [PATCH RESEND] staging: dgap: re-arrange functions for removing
+ forward declarations
+Message-ID: <20141029092208.GA28631@kroah.com>
+References: <20141026020853.GA28838@devel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413427044-9980-1-git-send-email-gascoar@gmail.com>
+In-Reply-To: <20141026020853.GA28838@devel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 11:37:24PM -0300, Gaston Gonzalez wrote:
-> Fix line over 80 characters in imx-tve.c
+On Sun, Oct 26, 2014 at 11:08:54AM +0900, Daeseok Youn wrote:
+> Re-arrange the functions for removing forward declarations.
 > 
-> Signed-off-by: Gaston Gonzalez <gascoar@gmail.com>
+> Tested-by: Mark Hounschell <markh@compro.net>
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 > ---
->  drivers/staging/imx-drm/imx-tve.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
-> index 3e8b0a1..a46905f 100644
-> --- a/drivers/staging/imx-drm/imx-tve.c
-> +++ b/drivers/staging/imx-drm/imx-tve.c
-> @@ -665,7 +665,8 @@ static int imx_tve_bind(struct device *dev, struct device *master, void *data)
->  
->  	ret = regmap_read(tve->regmap, TVE_COM_CONF_REG, &val);
->  	if (ret < 0) {
-> -		dev_err(dev, "failed to read configuration register: %d\n", ret);
-> +		dev_err(dev, "failed to read configuration register: %d\n",
-> +			ret);
->  		return ret;
->  	}
->  	if (val != 0x00100000) {
+> RESEND: This patch is tested all by Mark.
+> It is good to merge. Greg, check please.
 
-Does not apply :(
+It doesn't apply to my tree :(
