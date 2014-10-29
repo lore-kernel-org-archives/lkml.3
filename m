@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757674AbaJ2XHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 19:07:37 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40711 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757077AbaJ2XHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 19:07:34 -0400
-Date: Thu, 30 Oct 2014 00:05:07 +0100
-From: Alexis Berlemont <alexis.berlemont@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
-        namhyung@kernel.org, mmarek@suse.cz,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v4 04/14] perf tools: Add kbuild support into
- Makefile.kbuild
-Message-ID: <20141029230507.GA15701@marx-slim.home>
-References: <20141024124601.GX14687@kernel.org>
- <1414275639-1053-5-git-send-email-alexis.berlemont@gmail.com>
- <20141029081603.GC3538@krava.brq.redhat.com>
+	id S1757735AbaJ2XJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 19:09:17 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41076 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757279AbaJ2XJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 19:09:16 -0400
+Date: Wed, 29 Oct 2014 18:09:12 -0500
+From: Benoit Parrot <bparrot@ti.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
+Message-ID: <20141029230912.GF29965@ti.com>
+References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
+ <20141029104559.GC21251@lukather>
+ <20141029164122.GC29965@ti.com>
+ <20141029164746.GD21251@lukather>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20141029081603.GC3538@krava.brq.redhat.com>
+In-Reply-To: <20141029164746.GD21251@lukather>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa wrote:
-> On Sun, Oct 26, 2014 at 12:20:29AM +0200, Alexis Berlemont wrote:
-> > From: Jiri Olsa <jolsa@redhat.com>
+Maxime Ripard <maxime.ripard@free-electrons.com> wrote on Wed [2014-Oct-29 17:47:46 +0100]:
+> On Wed, Oct 29, 2014 at 11:41:22AM -0500, Benoit Parrot wrote:
+> > Maxime Ripard <maxime.ripard@free-electrons.com> wrote on Wed [2014-Oct-29 11:45:59 +0100]:
+> > > Hi,
+> > > 
+> > > On Tue, Oct 21, 2014 at 03:09:58PM -0500, Benoit Parrot wrote:
+> > > > Based on Boris Brezillion work this is a reworked patch
+> > > > of his initial GPIO hogging mechanism.
+> > > > This patch provides a way to initally configure specific GPIO
+> > > > when the gpio controller is probe.
+> > > > 
+> > > > The actual DT scanning to collect the GPIO specific data is performed
+> > > > as part of the gpiochip_add().
+> > > > 
+> > > > The purpose of this is to allows specific GPIOs to be configured
+> > > > without any driver specific code.
+> > > > This particularly usueful because board design are getting
+> > > > increassingly complex and given SoC pins can now have upward
+> > > > of 10 mux values a lot of connections are now dependent on
+> > > > external IO muxes to switch various modes and combination.
+> > > > 
+> > > > Specific drivers should not necessarily need to be aware of
+> > > > what accounts to a specific board implementation. This board level
+> > > > "description" should be best kept as part of the dts file.
+> > > > 
+> > > > Signed-off-by: Benoit Parrot <bparrot@ti.com>
+> > > 
+> > > I've been thinking about this for quite some time, it's good to see
+> > > some progress on that :)
+> > > 
+> > > However, I have a slightly different use case for it: the Allwinner
+> > > SoCs have a vdd pin coming in for every gpio bank. Nothing out of the
+> > > ordinary so far, except that some of the boards are using a
+> > > GPIO-controlled regulator to feed another bank vdd. That obviously
+> > > causes a chicken-egg issue, since for the gpio-regulator driver to
+> > > probe, it needs to gpio driver, and for the gpio driver to probe, it
+> > > needs the regulator driver.
+> > 
+> > Unless the gpio controlling the vdd pin is from the same bank your
+> > trying to power up I do not see the issue here.
 > 
-> SNIP
-> 
-> > ---
-> >  tools/perf/Kbuild                                  |  47 +++
-> >  tools/perf/Kconfig                                 | 284 ++++++++++++++
-> >  tools/perf/Makefile.kbuild                         | 431 +++++++++++++++++++++
-> >  tools/perf/Makefile.perf                           |   2 +-
-> >  tools/perf/arch/Kbuild                             |   3 +
-> >  tools/perf/arch/arm/Kbuild                         |   2 +
-> >  tools/perf/arch/arm/Makefile                       |  14 -
-> >  tools/perf/arch/arm/tests/Kbuild                   |   2 +
-> >  tools/perf/arch/arm/util/Kbuild                    |   3 +
-> >  tools/perf/arch/arm64/Kbuild                       |   1 +
-> >  tools/perf/arch/arm64/Makefile                     |   7 -
-> >  tools/perf/arch/arm64/util/Kbuild                  |   2 +
-> >  tools/perf/arch/powerpc/Kbuild                     |   1 +
-> >  tools/perf/arch/powerpc/Makefile                   |   6 -
-> >  tools/perf/arch/powerpc/util/Kbuild                |   3 +
-> >  tools/perf/arch/s390/Kbuild                        |   1 +
-> >  tools/perf/arch/s390/Makefile                      |   7 -
-> >  tools/perf/arch/s390/util/Kbuild                   |   2 +
-> >  tools/perf/arch/sh/Kbuild                          |   1 +
-> >  tools/perf/arch/sh/Makefile                        |   4 -
-> >  tools/perf/arch/sh/util/Kbuild                     |   1 +
-> >  tools/perf/arch/sparc/Kbuild                       |   1 +
-> >  tools/perf/arch/sparc/Makefile                     |   4 -
-> >  tools/perf/arch/sparc/util/Kbuild                  |   1 +
-> >  tools/perf/arch/x86/Kbuild                         |   1 +
-> >  tools/perf/arch/x86/tests/Kbuild                   |   3 +
-> >  tools/perf/{ => arch/x86}/tests/perf-time-to-tsc.c |   0
-> >  tools/perf/arch/x86/util/Kbuild                    |   5 +
-> >  tools/perf/bench/Kbuild                            |  12 +
-> >  tools/perf/builtin-cmds.h                          |   4 +
-> >  tools/perf/config/Makefile                         |  55 ++-
-> >  tools/perf/config/Makefile.fix-config              | 104 +++++
-> >  tools/perf/config/Makefile.fix-legacy              |  46 +++
-> >  tools/perf/config/defconfig                        |  54 +++
-> >  tools/perf/perf-sys.h                              |   4 +-
-> >  tools/perf/scripts/perl/Perf-Trace-Util/Kbuild     |   6 +
-> >  tools/perf/scripts/python/Perf-Trace-Util/Kbuild   |   5 +
-> >  tools/perf/tests/Kbuild                            |  38 ++
-> >  tools/perf/ui/Kbuild                               |  15 +
-> >  tools/perf/ui/browsers/Kbuild                      |   9 +
-> >  tools/perf/ui/gtk/Kbuild                           |   9 +
-> >  tools/perf/ui/stdio/Kbuild                         |   1 +
-> >  tools/perf/ui/tui/Kbuild                           |   4 +
-> >  tools/perf/util/Kbuild                             | 126 ++++++
-> >  tools/perf/util/PERF-VERSION-GEN                   |   4 +
-> >  tools/perf/util/generate-cmdlist.sh                |   8 +-
-> >  tools/perf/util/scripting-engines/Kbuild           |  11 +
-> >  tools/perf/util/setup.py                           |   8 +-
-> 
-> so this patch took the perf Makefile (at that time) and changed it to
-> use the kbuild.. but since that time the Makefile.perf came and many
-> other changes, which need to be reflected in Makefile.kbuild
-> 
-> I need to revisit the logic and split the change into more incremental
-> patches (the patchset is too big)
-> 
-> I can redo patches 2,3,4 and get back to you, sounds ok?
+> Not the same bank, but the same driver.
 
-Of course. 
+How are you currently working around this issue?
 
-Which changes in Makefile.perf do you have in mind ? I thought that
-Makefile.kbuild was just supposed to build the few extra dependencies
-(libtraceevent, etc.). I thought that I updated your original patch
-accordingly with the changes before and after the add of
-Makefile.perf.
+> 
+> -- 
+> Maxime Ripard, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
 
-Alexis.
 
