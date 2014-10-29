@@ -1,57 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867AbaJ2Tst (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 15:48:49 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:50518 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755698AbaJ2Tsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 15:48:46 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Mike Turquette <mturquette@linaro.org>, dianders@chromium.org,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        xjq@rock-chips.com, hj@rock-chips.com, huangtao@rock-chips.com,
-        dkl@rock-chips.com, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: rockchip: change PLL setting for better clock jitter
-Date: Wed, 29 Oct 2014 20:51:50 +0100
-Message-ID: <2603477.gAdFcjx3UJ@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1412918637-9843-1-git-send-email-kever.yang@rock-chips.com>
-References: <1412918637-9843-1-git-send-email-kever.yang@rock-chips.com>
+	id S1756876AbaJ2Ttb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 15:49:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58554 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756005AbaJ2Tta (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 15:49:30 -0400
+Date: Wed, 29 Oct 2014 20:49:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Sabrina Dubroca <sd@queasysnail.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
+ linux-next
+In-Reply-To: <20141029193603.GS12706@worktop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.11.1410292046270.5308@nanos>
+References: <20141029155620.GA4886@kria> <20141029180734.GQ12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410291918060.5308@nanos> <20141029193603.GS12706@worktop.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 9. Oktober 2014, 22:23:57 schrieb Kever Yang:
-> dclk_vop0/1 is the source of HDMI TMDS clock in rk3288, usually we
-> use 594MHz for clock source of dclk_vop0/1.
-> 
-> HDMI CTS 7-9 require TMDS Clock jitter is lower than 0.25*Tbit:
-> TMDS clock(MHz)		CTS require jitter (ps)
-> 	297		84.2
-> 	148.5		168
-> 	74.25		336
-> 	27		1247
-> 
-> PLL BW and VCO frequency effects the jitter of PLL output clock,
-> clock jitter is better if BW is lower or VCO frequency is higher.
-> 
-> If PLL use default setting of RK3066_PLL_RATE( 594000000, 2, 198, 4),
-> the TMDS Clock jitter is higher than 250ps, which means we can't
-> pass the test when TMDS clock is 297MHz or 148.5MHz.
-> 
-> If we use RK3066_PLL_RATE_BWADJ(594000000, 1, 198, 8, 1),
-> the TMDS Clock jitter is about 60ps and we can pass all test case.
-> 
-> So we need this patch to make hdmi si test pass.
-> 
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+On Wed, 29 Oct 2014, Peter Zijlstra wrote:
 
-I've applied this to my v3.19-clk branch with Dougs Review-Tag.
+> On Wed, Oct 29, 2014 at 07:33:00PM +0100, Thomas Gleixner wrote:
+> > Yuck. No. You are just papering over the problem.
+> > 
+> > What happens if you add 'threadirqs' to the kernel command line? Or if
+> > the interrupt line is shared with a real threaded interrupt user?
+> > 
+> > The proper solution is to have a poll_lock for e1000 which serializes
+> > the hardware interrupt against netpoll instead of using
+> > disable/enable_irq().
+> > 
+> > In fact that's less expensive than the disable/enable_irq() dance and
+> > the chance of contention is pretty low. If done right it will be a
+> > NOOP for the CONFIG_NET_POLL_CONTROLLER=n case.
+> > 
+> 
+> OK a little something like so then I suppose.. But I suspect most all
+> the network drivers will need this and maybe more, disable_irq() is a
+> popular little thing and we 'just' changed semantics on them.
 
+We changed that almost 4 years ago :) What we 'just' did was to add a
+prominent warning into the code.
+ 
+> ---
+>  drivers/net/ethernet/intel/e1000/e1000.h      |  2 ++
+>  drivers/net/ethernet/intel/e1000/e1000_main.c | 22 +++++++++++++++++-----
+>  kernel/irq/manage.c                           |  2 +-
+>  3 files changed, 20 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/e1000/e1000.h b/drivers/net/ethernet/intel/e1000/e1000.h
+> index 69707108d23c..3f48609f2318 100644
+> --- a/drivers/net/ethernet/intel/e1000/e1000.h
+> +++ b/drivers/net/ethernet/intel/e1000/e1000.h
+> @@ -323,6 +323,8 @@ struct e1000_adapter {
+>  	struct delayed_work watchdog_task;
+>  	struct delayed_work fifo_stall_task;
+>  	struct delayed_work phy_info_task;
+> +
+> +	spinlock_t irq_lock;
+>  };
+>  
+>  enum e1000_state_t {
+> diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+> index 5f6aded512f5..d12cbffe2149 100644
+> --- a/drivers/net/ethernet/intel/e1000/e1000_main.c
+> +++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+> @@ -1310,6 +1310,7 @@ static int e1000_sw_init(struct e1000_adapter *adapter)
+>  	e1000_irq_disable(adapter);
+>  
+>  	spin_lock_init(&adapter->stats_lock);
+> +	spin_lock_init(&adapter->irq_lock);
+>  
+>  	set_bit(__E1000_DOWN, &adapter->flags);
+>  
+> @@ -3748,10 +3749,8 @@ void e1000_update_stats(struct e1000_adapter *adapter)
+>   * @irq: interrupt number
+>   * @data: pointer to a network interface device structure
+>   **/
+> -static irqreturn_t e1000_intr(int irq, void *data)
+> +static irqreturn_t __e1000_intr(int irq, struct e1000_adapter *adapter)
+>  {
+> -	struct net_device *netdev = data;
+> -	struct e1000_adapter *adapter = netdev_priv(netdev);
+>  	struct e1000_hw *hw = &adapter->hw;
+>  	u32 icr = er32(ICR);
+>  
+> @@ -3793,6 +3792,19 @@ static irqreturn_t e1000_intr(int irq, void *data)
+>  	return IRQ_HANDLED;
+>  }
+>  
+> +static irqreturn_t e1000_intr(int irq, void *data)
+> +{
+> +	struct net_device *netdev = data;
+> +	struct e1000_adapter *adapter = netdev_priv(netdev);
+> +	irqreturn_t ret;
+> +
+> +	spin_lock(&adapter->irq_lock);
+> +	ret = __e1000_intr(irq, adapter);
+> +	spin_unlock(&adapter->irq_lock);
+> +
+> +	return ret;
+> +}
+> +
+>  /**
+>   * e1000_clean - NAPI Rx polling callback
+>   * @adapter: board private structure
+> @@ -5217,9 +5229,9 @@ static void e1000_netpoll(struct net_device *netdev)
+>  {
+>  	struct e1000_adapter *adapter = netdev_priv(netdev);
+>  
+> -	disable_irq(adapter->pdev->irq);
+> +	spin_lock(&adapter->irq_lock)
+>  	e1000_intr(adapter->pdev->irq, netdev);
+> -	enable_irq(adapter->pdev->irq);
+> +	spin_unlock(&adapter->irq_lock)
+>  }
+>  #endif
+>  
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index 0a9104b4608b..b5a4a06bf2fd 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -427,7 +427,7 @@ EXPORT_SYMBOL(disable_irq_nosync);
+>   *	to complete before returning. If you use this function while
+>   *	holding a resource the IRQ handler may need you will deadlock.
+>   *
+> - *	This function may be called - with care - from IRQ context.
+> + *	This function may _NOT_ be called from IRQ context.
 
-Heiko
+It can only be called from preemptible thread context.
+
+Thanks,
+
+	tglx
