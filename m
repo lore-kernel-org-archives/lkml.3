@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911AbaJ2OJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:09:31 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:65119 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933855AbaJ2OJM (ORCPT
+	id S933887AbaJ2OJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:09:28 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:43360 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933835AbaJ2OJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:09:12 -0400
+	Wed, 29 Oct 2014 10:09:20 -0400
 From: Kever Yang <kever.yang@rock-chips.com>
 To: Paul Zimmerman <paulz@synopsys.com>
 Cc: Dinh Nguyen <dinguyen@opensource.altera.com>, Felipe Balbi <balbi@ti.com>,
@@ -15,9 +15,9 @@ Cc: Dinh Nguyen <dinguyen@opensource.altera.com>, Felipe Balbi <balbi@ti.com>,
         Kever Yang <kever.yang@rock-chips.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v2 1/2] usb: dwc2: add bus suspend/resume for dwc2
-Date: Wed, 29 Oct 2014 22:08:46 +0800
-Message-Id: <1414591728-10106-2-git-send-email-kever.yang@rock-chips.com>
+Subject: [RFC PATCH v2 2/2] usb: dwc2: move the clock management from gadget to platform
+Date: Wed, 29 Oct 2014 22:08:47 +0800
+Message-Id: <1414591728-10106-3-git-send-email-kever.yang@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414591728-10106-1-git-send-email-kever.yang@rock-chips.com>
 References: <1414591728-10106-1-git-send-email-kever.yang@rock-chips.com>
@@ -25,125 +25,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds suspend/resume for dwc2 hcd controller.
+This patch move clock management out of gadget into platform,
+make both hcd and gadget can use the clock.
 
 Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 ---
 
 Changes in v2:
-- remove the clock from hcd
-- adjust the delay time when resume
+- move all the clock operation into platform
 
- drivers/usb/dwc2/hcd.c | 75 ++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 64 insertions(+), 11 deletions(-)
+ drivers/usb/dwc2/gadget.c   | 24 ++----------------------
+ drivers/usb/dwc2/platform.c | 32 ++++++++++++++++++++------------
+ 2 files changed, 22 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
-index fa49c72..76984da 100644
---- a/drivers/usb/dwc2/hcd.c
-+++ b/drivers/usb/dwc2/hcd.c
-@@ -1473,6 +1473,30 @@ static void dwc2_port_suspend(struct dwc2_hsotg *hsotg, u16 windex)
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 6ffbfc2..0b108ee 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -2852,8 +2852,6 @@ static int s3c_hsotg_udc_start(struct usb_gadget *gadget,
+ 	hsotg->gadget.dev.of_node = hsotg->dev->of_node;
+ 	hsotg->gadget.speed = USB_SPEED_UNKNOWN;
+ 
+-	clk_enable(hsotg->clk);
+-
+ 	ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+ 				    hsotg->supplies);
+ 	if (ret) {
+@@ -2903,8 +2901,6 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
+ 	regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
+ 				hsotg->supplies);
+ 
+-	clk_disable(hsotg->clk);
+-
+ 	return 0;
+ }
+ 
+@@ -2936,10 +2932,8 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
+ 	spin_lock_irqsave(&hsotg->lock, flags);
+ 	if (is_on) {
+ 		s3c_hsotg_phy_enable(hsotg);
+-		clk_enable(hsotg->clk);
+ 		s3c_hsotg_core_init(hsotg);
+ 	} else {
+-		clk_disable(hsotg->clk);
+ 		s3c_hsotg_phy_disable(hsotg);
  	}
+ 
+@@ -3408,20 +3402,12 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+ 			hsotg->phyif = GUSBCFG_PHYIF8;
+ 	}
+ 
+-	hsotg->clk = devm_clk_get(dev, "otg");
+-	if (IS_ERR(hsotg->clk)) {
+-		dev_err(dev, "cannot get otg clock\n");
+-		return PTR_ERR(hsotg->clk);
+-	}
+-
+ 	hsotg->gadget.max_speed = USB_SPEED_HIGH;
+ 	hsotg->gadget.ops = &s3c_hsotg_gadget_ops;
+ 	hsotg->gadget.name = dev_name(dev);
+ 
+ 	/* reset the system */
+ 
+-	clk_prepare_enable(hsotg->clk);
+-
+ 	/* regulators */
+ 
+ 	for (i = 0; i < ARRAY_SIZE(hsotg->supplies); i++)
+@@ -3431,7 +3417,7 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+ 				 hsotg->supplies);
+ 	if (ret) {
+ 		dev_err(dev, "failed to request supplies: %d\n", ret);
+-		goto err_clk;
++		goto out;
+ 	}
+ 
+ 	ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+@@ -3510,9 +3496,7 @@ err_ep_mem:
+ 	kfree(eps);
+ err_supplies:
+ 	s3c_hsotg_phy_disable(hsotg);
+-err_clk:
+-	clk_disable_unprepare(hsotg->clk);
+-
++out:
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(dwc2_gadget_init);
+@@ -3532,8 +3516,6 @@ int s3c_hsotg_remove(struct dwc2_hsotg *hsotg)
+ 		usb_gadget_unregister_driver(hsotg->driver);
+ 	}
+ 
+-	clk_disable_unprepare(hsotg->clk);
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(s3c_hsotg_remove);
+@@ -3560,7 +3542,6 @@ int s3c_hsotg_suspend(struct dwc2_hsotg *hsotg)
+ 
+ 		ret = regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
+ 					     hsotg->supplies);
+-		clk_disable(hsotg->clk);
+ 	}
+ 
+ 	return ret;
+@@ -3576,7 +3557,6 @@ int s3c_hsotg_resume(struct dwc2_hsotg *hsotg)
+ 		dev_info(hsotg->dev, "resuming usb gadget %s\n",
+ 			 hsotg->driver->driver.name);
+ 
+-		clk_enable(hsotg->clk);
+ 		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+ 				      hsotg->supplies);
+ 	}
+diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+index 77c8417..356e378 100644
+--- a/drivers/usb/dwc2/platform.c
++++ b/drivers/usb/dwc2/platform.c
+@@ -37,6 +37,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/clk.h>
+ #include <linux/device.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/of_device.h>
+@@ -122,6 +123,7 @@ static int dwc2_driver_remove(struct platform_device *dev)
+ 
+ 	dwc2_hcd_remove(hsotg);
+ 	s3c_hsotg_remove(hsotg);
++	clk_disable_unprepare(hsotg->clk);
+ 
+ 	return 0;
+ }
+@@ -216,24 +218,28 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
+ 
+ 	spin_lock_init(&hsotg->lock);
+-	retval = dwc2_gadget_init(hsotg, irq);
+-	if (retval) {
+-		/*
+-		 * We will not fail the driver initialization for dual-role
+-		 * if no clock node is supplied. However, all gadget
+-		 * functionality will be disabled if a clock node is not
+-		 * provided. Host functionality will continue.
+-		 * TO-DO: make clock node a requirement for the HCD.
+-		 */
+-		if (!IS_ERR(hsotg->clk))
+-			return retval;
++	hsotg->clk = devm_clk_get(hsotg->dev, "otg");
++	if (IS_ERR(hsotg->clk)) {
++		dev_err(dev, "cannot get otg clock\n");
++		return PTR_ERR(hsotg->clk);
+ 	}
++
++	clk_prepare_enable(hsotg->clk);
++
++	retval = dwc2_gadget_init(hsotg, irq);
++	if (retval)
++		goto out;
++
+ 	retval = dwc2_hcd_init(hsotg, irq, params);
+ 	if (retval)
+-		return retval;
++		goto out;
+ 
+ 	platform_set_drvdata(dev, hsotg);
+ 
++out:
++	if (IS_ERR(retval))
++		clk_disable_unprepare(hsotg->clk);
++
+ 	return retval;
  }
  
-+static void dwc2_port_resume(struct dwc2_hsotg *hsotg)
-+{
-+	u32 hprt0;
-+
-+	/* After clear the Stop PHY clock bit, we should wait for a moment
-+	 * for clock stable, but I still didn't know how long it should take.
-+	 * I will update it in next version.
-+	 */
-+	writel(0, hsotg->regs + PCGCTL);
-+	usleep_range(20000, 40000);
-+
-+	hprt0 = dwc2_read_hprt0(hsotg);
-+	hprt0 |= HPRT0_RES;
-+	writel(hprt0, hsotg->regs + HPRT0);
-+	hprt0 &= ~HPRT0_SUSP;
-+	/* according to USB2.0 Spec 7.1.7.7, the host most send the resume
-+	 * signal for at least 20ms
-+	 */
-+	usleep_range(20000, 25000);
-+
-+	hprt0 &= ~HPRT0_RES;
-+	writel(hprt0, hsotg->regs + HPRT0);
-+}
-+
- /* Handles hub class-specific requests */
- static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
- 				u16 wvalue, u16 windex, char *buf, u16 wlength)
-@@ -1518,17 +1542,7 @@ static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
- 		case USB_PORT_FEAT_SUSPEND:
- 			dev_dbg(hsotg->dev,
- 				"ClearPortFeature USB_PORT_FEAT_SUSPEND\n");
--			writel(0, hsotg->regs + PCGCTL);
--			usleep_range(20000, 40000);
--
--			hprt0 = dwc2_read_hprt0(hsotg);
--			hprt0 |= HPRT0_RES;
--			writel(hprt0, hsotg->regs + HPRT0);
--			hprt0 &= ~HPRT0_SUSP;
--			usleep_range(100000, 150000);
--
--			hprt0 &= ~HPRT0_RES;
--			writel(hprt0, hsotg->regs + HPRT0);
-+			dwc2_port_resume(hsotg);
- 			break;
- 
- 		case USB_PORT_FEAT_POWER:
-@@ -2301,6 +2315,42 @@ static void _dwc2_hcd_stop(struct usb_hcd *hcd)
- 	usleep_range(1000, 3000);
+@@ -245,6 +251,7 @@ static int dwc2_suspend(struct device *dev)
+ 	if (dwc2_is_device_mode(dwc2))
+ 		if (!IS_ERR(dwc2->clk))
+ 			ret = s3c_hsotg_suspend(dwc2);
++	clk_disable(dwc2->clk);
+ 	return ret;
  }
  
-+static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
-+{
-+	struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
-+	u32 hprt0;
-+
-+	if (hsotg->op_state != OTG_STATE_B_HOST)
-+		return 0;
-+
-+	if (hsotg->lx_state != DWC2_L0)
-+		return 0;
-+
-+	hprt0 = dwc2_read_hprt0(hsotg);
-+	if (hprt0 & HPRT0_CONNSTS)
-+		dwc2_port_suspend(hsotg, 1);
-+
-+	return 0;
-+}
-+
-+static int _dwc2_hcd_resume(struct usb_hcd *hcd)
-+{
-+	struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
-+	u32 hprt0;
-+
-+	if (hsotg->op_state != OTG_STATE_B_HOST)
-+		return 0;
-+
-+	if (hsotg->lx_state != DWC2_L2)
-+		return 0;
-+
-+	hprt0 = dwc2_read_hprt0(hsotg);
-+	if ((hprt0 | HPRT0_CONNSTS) && (hprt0 | HPRT0_SUSP))
-+		dwc2_port_resume(hsotg);
-+
-+	return 0;
-+}
-+
- /* Returns the current frame number */
- static int _dwc2_hcd_get_frame_number(struct usb_hcd *hcd)
- {
-@@ -2671,6 +2721,9 @@ static struct hc_driver dwc2_hc_driver = {
- 	.hub_status_data = _dwc2_hcd_hub_status_data,
- 	.hub_control = _dwc2_hcd_hub_control,
- 	.clear_tt_buffer_complete = _dwc2_hcd_clear_tt_buffer_complete,
-+
-+	.bus_suspend = _dwc2_hcd_suspend,
-+	.bus_resume = _dwc2_hcd_resume,
- };
+@@ -253,6 +260,7 @@ static int dwc2_resume(struct device *dev)
+ 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+ 	int ret = 0;
  
- /*
++	clk_enable(dwc2->clk);
+ 	if (dwc2_is_device_mode(dwc2))
+ 		if (!IS_ERR(dwc2->clk))
+ 			ret = s3c_hsotg_resume(dwc2);
 -- 
 1.9.1
 
