@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933561AbaJ2OHv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:07:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41200 "EHLO mail.kernel.org"
+	id S933636AbaJ2OIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:08:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41281 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932906AbaJ2OHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:07:47 -0400
+	id S933594AbaJ2OIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 10:08:00 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Wang Nan <wangnan0@huawei.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Li Zefan <lizefan@huawei.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Waiman Long <Waiman.Long@hp.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/25] perf kvm: Print kvm specific --help output
-Date: Wed, 29 Oct 2014 12:06:22 -0200
-Message-Id: <1414591597-2763-11-git-send-email-acme@kernel.org>
+Subject: [PATCH 13/25] perf tools: Ensure return negative value when write header error
+Date: Wed, 29 Oct 2014 12:06:25 -0200
+Message-Id: <1414591597-2763-14-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414591597-2763-1-git-send-email-acme@kernel.org>
 References: <1414591597-2763-1-git-send-email-acme@kernel.org>
@@ -23,103 +26,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Wang Nan <wangnan0@huawei.com>
 
-The 'perf kvm stat record' tool is an alias of 'perf record' with
-predefined kvm related options. All options that passed to 'perf kvm
-stat record' are processed by the 'perf record' tool. So, 'perf kvm
-stat record --help' prints help of usage for the 'perf record'
-command. There are a few options useful for 'perf kvm stat record',
-the rest either break kvm related output or don't change it.
+When 'perf record' write headers, it calls write_xxx in
+tools/perf/util/header.c, and check return value. It rolls back all
+working only when return value is negative.
 
-Let's print safe for 'perf kvm stat record' options in addition to
-general 'perf record' --help output.
+This patch ensures write_cpudesc() and write_total_mem() return negative number
+when error. Without this patch, headers reported by 'perf report' header is
+error in some platform. Following output is caputured on ARM, which doesn't
+contain "Processor" field in /proc/cpuinfo. See "cpudesc", "total memory" and
+"cmdline" field.
 
-With this patch, new output looks like below:
+   bash-4.2# perf record ls
+   ...
+   [ perf record: Woken up 1 times to write data ]
+   [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
+   bash-4.2# perf report --stdio --header
+   Error:
+   The perf.data file has no samples!
+   # ========
+   # captured on: Fri Sep 12 10:09:10 2014
+   # hostname : arma15el
+   # os release : 3.17.0+
+   # perf version : 3.10.53
+   # arch : armv7l
+   # nrcpus online : 4
+   # nrcpus avail : 1
+   # cpudesc : (null)
+   # total memory : 0 kB
+   # cmdline :
+   # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
+   # pmu mappings: not available
+   # ========
+   #
 
-  $ perf kvm stat record -h
-
-   usage: perf kvm stat record [<options>]
-
-      -p, --pid <pid>       record events on existing process id
-      -t, --tid <tid>       record events on existing thread id
-      -r, --realtime <n>    collect data with this RT SCHED_FIFO priority
-          --no-buffering    collect data without buffering
-      -a, --all-cpus        system-wide collection from all CPUs
-      -C, --cpu <cpu>       list of cpus to monitor
-      -c, --count <n>       event period to sample
-      -o, --output <file>   output file name
-      -i, --no-inherit      child tasks do not inherit counters
-      -m, --mmap-pages <pages>
-                            number of mmap data pages
-      -v, --verbose         be more verbose (show counter open errors, etc)
-      -q, --quiet           don't print any message
-      -s, --stat            per thread counts
-      -D, --delay <n>       ms to wait before starting measurement after program start
-      -u, --uid <user>      user to profile
-          --per-thread      use per-thread mmaps
-
-  $ perf kvm stat record -n sleep 1
-    Error: switch `n' is not usable
-
-   usage: perf kvm stat record [<options>]
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
-Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1413990949-13953-4-git-send-email-namhyung@kernel.org
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Link: http://lkml.kernel.org/r/1413428909-80017-1-git-send-email-wangnan0@huawei.com
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ tools/perf/util/header.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index b65eb0507b38..3c0f3d4fb021 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1132,6 +1132,10 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 		"-m", "1024",
- 		"-c", "1",
- 	};
-+	const char * const kvm_stat_record_usage[] = {
-+		"perf kvm stat record [<options>]",
-+		NULL
-+	};
- 	const char * const *events_tp;
- 	events_tp_size = 0;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 26f5b2fe5dc8..0ecf4a304cbc 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -601,8 +601,10 @@ static int __write_cpudesc(int fd, const char *cpuinfo_proc)
+ 			break;
+ 	}
  
-@@ -1159,6 +1163,27 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 	for (j = 1; j < (unsigned int)argc; j++, i++)
- 		rec_argv[i] = argv[j];
+-	if (ret)
++	if (ret) {
++		ret = -1;
+ 		goto done;
++	}
  
-+	set_option_flag(record_options, 'e', "event", PARSE_OPT_HIDDEN);
-+	set_option_flag(record_options, 0, "filter", PARSE_OPT_HIDDEN);
-+	set_option_flag(record_options, 'R', "raw-samples", PARSE_OPT_HIDDEN);
-+
-+	set_option_flag(record_options, 'F', "freq", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 0, "group", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'g', NULL, PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 0, "call-graph", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'd', "data", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'T', "timestamp", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'P', "period", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'n', "no-samples", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'N', "no-buildid-cache", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'B', "no-buildid", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'G', "cgroup", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'b', "branch-any", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'j', "branch-filter", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'W', "weight", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 0, "transaction", PARSE_OPT_DISABLED);
-+
-+	record_usage = kvm_stat_record_usage;
- 	return cmd_record(i, rec_argv, NULL);
- }
+ 	s = buf;
  
+@@ -965,7 +967,8 @@ static int write_total_mem(int fd, struct perf_header *h __maybe_unused,
+ 		n = sscanf(buf, "%*s %"PRIu64, &mem);
+ 		if (n == 1)
+ 			ret = do_write(fd, &mem, sizeof(mem));
+-	}
++	} else
++		ret = -1;
+ 	free(buf);
+ 	fclose(fp);
+ 	return ret;
 -- 
 1.9.3
 
