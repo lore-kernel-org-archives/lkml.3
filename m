@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934351AbaJ2QDX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:03:23 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53792 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933670AbaJ2QDS (ORCPT
+	id S934116AbaJ2QES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:04:18 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60730 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933829AbaJ2QER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:03:18 -0400
-X-Originating-IP: 50.43.41.112
-Date: Wed, 29 Oct 2014 09:03:07 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: [PATCH v3 2/3] x86: tss: Eliminate fragile calculation of TSS
- segment limit
-Message-ID: <8982dc6cc6beadae9488830d566fb1c8cf42d4ee.1414598511.git.josh@joshtriplett.org>
-References: <7159269982aac3b732af2c33a2e3d04e2048bdfb.1414598511.git.josh@joshtriplett.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7159269982aac3b732af2c33a2e3d04e2048bdfb.1414598511.git.josh@joshtriplett.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 29 Oct 2014 12:04:17 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Cc: ismael.luceno@corp.bluecherry.net, m.chehab@samsung.com,
+        hverkuil@xs4all.nl, Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH 1/4] [media] solo6x10: free vb2 buffers on stop_streaming
+Date: Wed, 29 Oct 2014 20:03:51 +0400
+Message-Id: <1414598634-13446-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__set_tss_desc has a complex calculation of the TSS segment limit,
-duplicating the quirky details of the I/O bitmap array length, and
-requiring a complex comment to explain.  Replace that calculation with a
-simpler one based on the offsetof the "stack" field that follows the
-array.
+This fixes warning from drivers/media/v4l2-core/videobuf2-core.c:2144
 
-That then removes the last use of IO_BITMAP_OFFSET, so delete it.
-
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Acked-by: Alexander van Heukelum <heukelum@fastmail.fm>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 ---
-v3: No changes in this patch, only in patch 3/3.
+ drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
- arch/x86/include/asm/desc.h      | 11 +----------
- arch/x86/include/asm/processor.h |  4 +++-
- 2 files changed, 4 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-index 50d033a..f8dc455 100644
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -177,16 +177,7 @@ static inline void __set_tss_desc(unsigned cpu, unsigned int entry, void *addr)
- 	struct desc_struct *d = get_cpu_gdt_table(cpu);
- 	tss_desc tss;
+diff --git a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+index 28023f9..6cd6a25 100644
+--- a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
++++ b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+@@ -781,9 +781,19 @@ static int solo_enc_start_streaming(struct vb2_queue *q, unsigned int count)
+ static void solo_enc_stop_streaming(struct vb2_queue *q)
+ {
+ 	struct solo_enc_dev *solo_enc = vb2_get_drv_priv(q);
++	unsigned long flags;
  
--	/*
--	 * sizeof(unsigned long) coming from an extra "long" at the end
--	 * of the iobitmap. See tss_struct definition in processor.h
--	 *
--	 * -1? seg base+limit should be pointing to the address of the
--	 * last valid byte
--	 */
--	set_tssldt_descriptor(&tss, (unsigned long)addr, DESC_TSS,
--			      IO_BITMAP_OFFSET + IO_BITMAP_BYTES +
--			      sizeof(unsigned long) - 1);
-+	set_tssldt_descriptor(&tss, (unsigned long)addr, DESC_TSS, TSS_LIMIT);
- 	write_gdt_entry(d, entry, &tss, DESC_TSS);
++	spin_lock_irqsave(&solo_enc->av_lock, flags);
+ 	solo_enc_off(solo_enc);
+-	INIT_LIST_HEAD(&solo_enc->vidq_active);
++	while (!list_empty(&solo_enc->vidq_active)) {
++		struct solo_vb2_buf *buf = list_entry(
++				solo_enc->vidq_active.next,
++				struct solo_vb2_buf, list);
++
++		list_del(&buf->list);
++		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
++	}
++	spin_unlock_irqrestore(&solo_enc->av_lock, flags);
+ 	solo_ring_stop(solo_enc->solo_dev);
  }
  
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index eb71ec7..76751cd 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -258,9 +258,11 @@ struct x86_hw_tss {
- #define IO_BITMAP_BITS			65536
- #define IO_BITMAP_BYTES			(IO_BITMAP_BITS/8)
- #define IO_BITMAP_LONGS			(IO_BITMAP_BYTES/sizeof(long))
--#define IO_BITMAP_OFFSET		offsetof(struct tss_struct, io_bitmap)
- #define INVALID_IO_BITMAP_OFFSET	0x8000
- 
-+/* Segment limits point to the last valid byte, hence the -1 */
-+#define TSS_LIMIT	(offsetof(struct tss_struct, stack) - 1)
-+
- struct tss_struct {
- 	/*
- 	 * The hardware state:
 -- 
-2.1.1
+1.8.5.5
 
