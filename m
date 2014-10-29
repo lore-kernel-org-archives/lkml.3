@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaJ2E3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 00:29:50 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:35615 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaJ2E3t (ORCPT
+	id S1752262AbaJ2E3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 00:29:55 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:43416 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaJ2E3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 00:29:49 -0400
+	Wed, 29 Oct 2014 00:29:52 -0400
 From: Anton Saraev <antonysaraev@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: antonysaraev@gmail.com, oleg.drokin@intel.com, andreas.dilger@intel.com,
         heenasirwani@gmail.com, bergwolf@gmail.com, amir.shehata@intel.com,
         gdonald@gmail.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 00/02] staging:lustre:lnet:selftest: fix sparse warnings
-Date: Wed, 29 Oct 2014 08:29:43 +0400
-Message-Id: <cover.1414517099.git.antonysaraev@gmail.com>
+Subject: [PATCH 02/02] staging:lustre:lnet:selftest: remove unused function
+Date: Wed, 29 Oct 2014 08:29:45 +0400
+Message-Id: <993d3876f1afcf5aa80ee619adde33a44c9d0416.1414517099.git.antonysaraev@gmail.com>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <d5f02315b6e410bc677be4787762403cb3c75c2a.1414517099.git.antonysaraev@gmail.com>
+References: <cover.1414517099.git.antonysaraev@gmail.com>
+ <d5f02315b6e410bc677be4787762403cb3c75c2a.1414517099.git.antonysaraev@gmail.com>
+In-Reply-To: <cover.1414517099.git.antonysaraev@gmail.com>
+References: <cover.1414517099.git.antonysaraev@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch fix simple sparse warnings: make functions static and remove
-unused code. I'm doing only little testing: module was loaded properly,
-output of lst without real server is the same as before.
+Function lnet_selftest_structure_assertion is never used and can
+be removed.
 
-Anton Saraev (2):
-  staging:lustre:lnet:selftest: fix sparse warnings
-  staging:lustre:lnet:selftest: remove unused function
+Signed-off-by: Anton Saraev <antonysaraev@gmail.com>
+---
+ drivers/staging/lustre/lnet/selftest/module.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
- drivers/staging/lustre/lnet/selftest/conctl.c    | 34 ++++++++--------
- drivers/staging/lustre/lnet/selftest/conrpc.c    | 20 +++++-----
- drivers/staging/lustre/lnet/selftest/framework.c | 50 ++++++++++++------------
- drivers/staging/lustre/lnet/selftest/module.c    | 15 +------
- drivers/staging/lustre/lnet/selftest/rpc.c       | 34 ++++++++--------
- drivers/staging/lustre/lnet/selftest/timer.c     |  8 ++--
- 6 files changed, 75 insertions(+), 86 deletions(-)
-
+diff --git a/drivers/staging/lustre/lnet/selftest/module.c b/drivers/staging/lustre/lnet/selftest/module.c
+index 718663f..92520c2 100644
+--- a/drivers/staging/lustre/lnet/selftest/module.c
++++ b/drivers/staging/lustre/lnet/selftest/module.c
+@@ -90,17 +90,6 @@ lnet_selftest_fini(void)
+ 	return;
+ }
+ 
+-static void
+-lnet_selftest_structure_assertion(void)
+-{
+-	CLASSERT(sizeof(srpc_msg_t) == 160);
+-	CLASSERT(sizeof(srpc_test_reqst_t) == 70);
+-	CLASSERT(offsetof(srpc_msg_t, msg_body.tes_reqst.tsr_concur) == 72);
+-	CLASSERT(offsetof(srpc_msg_t, msg_body.tes_reqst.tsr_ndest) == 78);
+-	CLASSERT(sizeof(srpc_stat_reply_t) == 136);
+-	CLASSERT(sizeof(srpc_stat_reqst_t) == 28);
+-}
+-
+ static int
+ lnet_selftest_init(void)
+ {
 -- 
 1.9.1
 
