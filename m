@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaJ2Hgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 03:36:45 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:64065 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283AbaJ2Hgn (ORCPT
+	id S1755481AbaJ2HmN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 03:42:13 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:15289 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224AbaJ2HmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 03:36:43 -0400
+	Wed, 29 Oct 2014 03:42:11 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 29 Oct 2014 00:41:29 -0700
+Message-ID: <54509A3B.5090709@nvidia.com>
+Date: Wed, 29 Oct 2014 16:41:47 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <2258102.tG8NmIz9Bk@wuerfel>
-References: <1414139071-3818-1-git-send-email-lftan@altera.com>
-	<1806277.3CF96bVORX@wuerfel>
-	<1414492984.2295.8.camel@leyfoon-vm>
-	<2258102.tG8NmIz9Bk@wuerfel>
-Date: Wed, 29 Oct 2014 15:36:41 +0800
-X-Google-Sender-Auth: 3WBdZPd4Lip0O5a4CufKy6f-3Rw
-Message-ID: <CAFiDJ5-WPfyS8Zn+NRu4ps3LKbt9xhhe=3sO1ykOjhrqEZx3rA@mail.gmail.com>
-Subject: Re: [PATCH v5 21/29] nios2: Time keeping
-From: Ley Foon Tan <lftan@altera.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Darren Hart <dvhart@linux.intel.com>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index()
+ when using properties
+References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <2740724.5yjNTKs1RY@vostro.rjw.lan>
+In-Reply-To: <2740724.5yjNTKs1RY@vostro.rjw.lan>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: HKMAIL104.nvidia.com (10.18.16.13) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 9:39 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On 10/29/2014 06:59 AM, Rafael J. Wysocki wrote:
+> On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
+>> acpi_dev_add_driver_gpios() makes it possible to set up mapping between
+>> properties and ACPI GpioIo resources in a driver, so we can take index
+>> parameter in acpi_find_gpio() into use with _DSD device properties now.
+>>
+>> This index can be used to select a GPIO from a property with multiple
+>> GPIOs:
+>>
+>>    Package () {
+>>    	"data-gpios",
+>>    	Package () {
+>>    		\_SB.GPIO, 0, 0, 0,
+>>    		\_SB.GPIO, 1, 0, 0,
+>>    		\_SB.GPIO, 2, 0, 1,
+>>    	}
+>>    }
+>>
+>> In order to retrieve the last GPIO from a driver we can simply do:
+>>
+>>    desc = devm_gpiod_get_index(dev, "data", 2);
+>>
+>> and so on.
+>>
+>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>
+> Cool. :-)
+>
+> Any objections anyone?
 
->> Hi Arnd,
->> No problem, I can change that. But, seem that we don't need to have
->> calibrate_delay_is_known() as well. We can just set "lpj_fine" variable,
->> arm64 uses this.
->
-> Right, that works too.
-Okay.
->
->> BTW, do you have further comment for other patches in this series? Only
->> few minor updates since v4 patches and would like to get it into the
->> v3.18 merge window if possible. What's your opinion?
->
-> The 3.18 merge window is closed, we already have 3.18-rc2 now.
->
-> I have taken another look over the series now, I only had
-> a few additional comments. Please fix those along with the comments
-> you got from other reviewers and then ask Stephen Rothwell to
-> include your tree in linux-next (if it isn't already).
-Okay, I will fix them and will ask Stephen to include nios2 tree later.
-Anyone other thing I need to do other than this? Do we need setup
-nios2 repo in git://git.kernel.org? Or can we use our own git repo?
+Looks good to me!
 
->
-> When 3.18 is released, you can then send a pull request to Linus.
-Okay, will wait for 3.18 to release then.
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
-Thanks for reviewing.
-
-Regards
-Ley Foon
+Since this looks like a bug fix, shouldn't this be squashed into the 
+relevant patch of the device-properties set?
