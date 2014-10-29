@@ -1,201 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377AbaJ2VMe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:12:34 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61090 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756966AbaJ2VMc (ORCPT
+	id S1757416AbaJ2VNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:13:17 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:60425 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291AbaJ2VNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:12:32 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Wed, 29 Oct 2014 17:13:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Ralf Baechle <ralf@linux-mips.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v5 12/18] ACPI / processor: Make it possible to get CPU hardware ID via GICC
-Date: Wed, 29 Oct 2014 22:33:06 +0100
-Message-ID: <4773594.btHp9vXayV@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <544E1732.5090902@linaro.org>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <20141024173920.GB8303@red-moon> <544E1732.5090902@linaro.org>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 01/11] irqchip: Allow irq_reg_{readl,writel} to use __raw_{readl_writel}
+Date: Wed, 29 Oct 2014 22:13:10 +0100
+Message-ID: <22478002.kqKBdeLAKz@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAJiQ=7C7SzT2ngQzP=dQqdQz=+ShJ_Jf0z4kwFgvUKg1G3vrAw@mail.gmail.com>
+References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <5338153.4SY4TFtus9@wuerfel> <CAJiQ=7C7SzT2ngQzP=dQqdQz=+ShJ_Jf0z4kwFgvUKg1G3vrAw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:00zS+aMm3FNAuo9gN54LRDrqHACVVPAdvqXkiBQxUJn
+ TLVEaZ1rJro0umzBKSswIlWv69nsjlvA/jet5KPNQt2stM8BoD
+ ipYL82T1BuyheU2JoAuShB1AJPOR4xLFklB9oUSrHzdai4h45T
+ P8zgbBZTaevUoaeEm601YHjYQdhdVrGQHogE/6eayKo2D1uTzn
+ YcuYEyBAJZEYMxA45HPFq1PCBWx1ux84yWGVGkSyLwwP120pOV
+ aatKzaJtUDmKJKmonfDNCySbBcYStCpcZ1uVNVj6UTFMG4pYYi
+ ZZIor5EtQMIYkCFr+O1hbaeZXbggzeipUa8mjjIEqjAvem4ocb
+ X8pzuwzKH0C7nO6SvKpY=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 27, 2014 05:58:10 PM Hanjun Guo wrote:
-> On 2014-10-25 1:39, Lorenzo Pieralisi wrote:
-> > On Fri, Oct 17, 2014 at 02:37:08PM +0100, Hanjun Guo wrote:
-> >> Introduce a new function map_gicc_mpidr() to allow MPIDRs to be obtained
-> >> from the GICC Structure introduced by ACPI 5.1.
+On Wednesday 29 October 2014 13:09:47 Kevin Cernekee wrote:
+> On Wed, Oct 29, 2014 at 12:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> The host CPU is connected to the peripheral/register interface using a
+> >> 32-bit wide data bus.  A simple 32-bit store originating from the host
+> >> CPU, targeted to an onchip SoC peripheral, will never need endian
+> >> swapping.  i.e. this code works equally well on all supported systems
+> >> regardless of endianness:
 > >>
-> >> MPIDR is the CPU hardware ID as local APIC ID on x86 platform, so we use
-> >> MPIDR not the GIC CPU interface ID to identify CPUs.
+> >>     volatile u32 *foo = (void *)MY_REG_VA;
+> >>     *foo = 0x12345678;
 > >>
-> >> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> >> ---
-> >>  arch/arm64/include/asm/acpi.h |   29 +++++++++++++++++++++++++++++
-> >>  arch/arm64/kernel/acpi.c      |    1 -
-> >>  drivers/acpi/processor_core.c |   37 +++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 66 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-> >> index c82d4a1..483ff45 100644
-> >> --- a/arch/arm64/include/asm/acpi.h
-> >> +++ b/arch/arm64/include/asm/acpi.h
-> >> @@ -12,6 +12,8 @@
-> >>  #ifndef _ASM_ACPI_H
-> >>  #define _ASM_ACPI_H
-> >>  
-> >> +#include <asm/smp_plat.h>
-> >> +
-> >>  /* Basic configuration for ACPI */
-> >>  #ifdef	CONFIG_ACPI
-> >>  #define acpi_strict 1	/* No out-of-spec workarounds on ARM64 */
-> >> @@ -45,6 +47,33 @@ static inline void enable_acpi(void)
-> >>  	acpi_noirq = 0;
-> >>  }
-> >>  
-> >> +/* MPIDR value provided in GICC structure is 64 bits, but the
-> >> + * existing apic_id (CPU hardware ID) using in acpi processor
-> >> + * driver is 32-bit, to conform to the same datatype we need
-> >> + * to repack the GICC structure MPIDR.
-> >> + *
-> >> + * Only 32 bits of MPIDR are used:
-> >> + * 
-> >> + * Bits [0:7] Aff0;
-> >> + * Bits [8:15] Aff1;
-> >> + * Bits [16:23] Aff2;
-> >> + * Bits [32:39] Aff3;
-> >> + */
-> >> +static inline u32 pack_mpidr(u64 mpidr)
-> >> +{
-> >> +	return (u32) ((mpidr & 0xff00000000) >> 8) | mpidr;
-> >> +}
-> >> +
-> >> +/*
-> >> + * The ACPI processor driver for ACPI core code needs this macro
-> >> + * to find out this cpu was already mapped (mapping from CPU hardware
-> >> + * ID to CPU logical ID) or not.
-> >> + *
-> >> + * cpu_logical_map(cpu) is the mapping of MPIDR and the logical cpu,
-> >> + * and MPIDR is the cpu hardware ID we needed to pack.
-> >> + */
-> >> +#define cpu_physical_id(cpu) pack_mpidr(cpu_logical_map(cpu))
-> >> +
-> >>  /*
-> >>   * It's used from ACPI core in kdump to boot UP system with SMP kernel,
-> >>   * with this check the ACPI core will not override the CPU index
-> >> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-> >> index 34837e0..e91ec76 100644
-> >> --- a/arch/arm64/kernel/acpi.c
-> >> +++ b/arch/arm64/kernel/acpi.c
-> >> @@ -24,7 +24,6 @@
-> >>  #include <linux/bootmem.h>
-> >>  #include <linux/smp.h>
-> >>  
-> >> -#include <asm/smp_plat.h>
-> >>  #include <asm/cputype.h>
-> >>  #include <asm/cpu_ops.h>
-> >>  
-> >> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-> >> index e32321c..4007313 100644
-> >> --- a/drivers/acpi/processor_core.c
-> >> +++ b/drivers/acpi/processor_core.c
-> >> @@ -64,6 +64,38 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
-> >>  	return 0;
-> >>  }
-> >>  
-> >> +/*
-> >> + * On ARM platform, MPIDR value is the hardware ID as apic ID
-> >> + * on Intel platforms
-> >> + */
-> >> +static int map_gicc_mpidr(struct acpi_subtable_header *entry,
-> >> +		int device_declaration, u32 acpi_id, int *mpidr)
-> >> +{
-> >> +	struct acpi_madt_generic_interrupt *gicc =
-> >> +	    container_of(entry, struct acpi_madt_generic_interrupt, header);
-> >> +
-> >> +	if (!(gicc->flags & ACPI_MADT_ENABLED))
-> >> +		return -ENODEV;
-> >> +
-> >> +	/* In the GIC interrupt model, logical processors are
-> >> +	 * required to have a Processor Device object in the DSDT,
-> >> +	 * so we should check device_declaration here
-> >> +	 */
-> >> +	if (device_declaration && (gicc->uid == acpi_id)) {
-> >> +		/*
-> >> +		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
-> >> +		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
-> >> +		 * fields into a single 32 bit identifier to accommodate the
-> >> +		 * acpi processor drivers.
-> >> +		 */
-> >> +		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
-> >> +			 | gicc->arm_mpidr;
-> > 
-> > The simple fact that you define a function to pack the mpidr value and
-> > you can't use it here because this is *generic* code is telling, and
-> > a very bad omen. At the cost of sounding like a broken record, I do not
-> > like this mpidr->apic->logical_cpu song and dance at all.
-> > ACPI is peppered with code (eg hotplug is another example, CPUidle driver
-> > even worse) that is supposed to be generic but contains x86 code to carry
-> > out this cpuid conversion, I really think that in order to start an ARM64
-> > ACPI port properly we should at least try to factor out this physical to
-> > logical cpu id conversion, and it is not the first time that I mention this
-> > on the lists.
+> >> 8-bit and 16-bit accesses may be another story, but only appear in a
+> >> few very special peripherals.
+> >
+> > Sorry, but this makes no sense. If you run a little-endian kernel
+> > on one of the MIPS systems that you marked as "always BE", or a
+> > big-endian kernel on the systems that are marked "always LE",
+> > then you have to byte swap.
 > 
-> I know, thanks for pointing this out. As I replied in previous version
-> of this patch set, apic_id is x86/ia64 specific, but the meaning behind
-> it is not. It means the CPU hardware id to identify itself in the system,
-> it just like MPIDR on ARM.
-> 
-> I will send out a patch for RFC to convert apic_id to physid which
-> is generic for all platforms.
-> 
-> > 
-> > I will also talk to Rafael about this at the earliest opportunity, I
-> > guess that x86 code relies on apic-id because some ACPI versions could
-> > not rely on the acpi-id or some other reasons I have to investigate.
-> 
-> As ACPI spec (section 8.4, Declaring Processors) said, Each processor
-> in the system must be declared in the ACPI namespace, so each cpu will
-> have acpi_id in all ACPI versions, and in theory we can map acpi_id to
-> logical cpu id if we want to.
-> 
-> But things are complicated, apic_id is connected to many
-> tables, MADT for smp init, DSDT for device driver, and SRAT for NUMA (there
-> is no acpi_id in it, ONLY has apic_id in the table for x86/ia64), so if we
-> want to factor the code to map acpi_id to logical cpu id, we need to modify:
-> 
->  - ACPI drivers;
->  - SMP init for x86 and ia64
->  - the mappings for NUMA init for x86 and ia64
-> that will be lots of work I think.
+> If I ran an LE MIPS kernel on a BE system, it would hang on boot.  I
+> know this through experience. 
 
-And error prone for that matter.
+What is a "BE system" then? Is the CPU core not capable of running
+code either way?
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Setting aside the problem that the instruction words, pointers, and
+> bitfields in the image are all in the wrong byte order, there are many
+> other endian-specific assumptions baked into the executable.
+
+Most of those are handled by the compiler. Bitfields are of course
+a problem when they are accessed through DMA, but I would assume
+that this is still a problem with the hardware byteswap hack that
+the Broadcom SoCs have.
+
+Of course, anything that uses __raw_readl on an MMIO register is
+broken if you try to do this, which was my point the whole time.
+
+> Does this actually work on other architectures like ARM?  I still see
+> compile-time checks for CONFIG_CPU_ENDIAN* in a couple of places under
+> arch/arm.
+
+Yes, it should work on any architecture that supports both modes. It
+definitely works on all ARM cores I know, and on most PowerPC cores.
+I always assumed that MIPS was bi-endian as well, but according to
+what you say I guess it is not.
+
+ARM and PowerPC can actually switch endianess in the kernel, and this
+is what they do in the first instruction when you run a different
+endianess from what the boot loader runs as it calls into the kernel.
+The ARM boot protocol requires entering the kernel in little-endian
+mode, while I think on PowerPC the boot loader is supposed to detect
+the format of the kernel binary and pick the right mode before calling
+it.
+
+> >> Or, we could add IRQ_GC_NATIVE_IO and/or IRQ_GC_BE_IO to enum irq_gc_flags.
+> >>
+> >> Would either of these choices satisfy everyone's goals?
+> >
+> > This is what I meant with doing extra work in the case where we want to
+> > support both in the same kernel. We would only enable the runtime
+> > logic if both GENERIC_IRQ_CHIP and GENERIC_IRQ_CHIP_BE are set, and
+> > leave it up to the platform to select the right one. For MIPS BCM7xxx,
+> > you could use
+> >
+> > config BCM7xxx
+> >         select GENERIC_IRQ_CHIP if CPU_LITTLE_ENDIAN
+> >         select GENERIC_IRQ_CHIP_BE if CPU_BIG_ENDIAN
+> >
+> > so you would default to the hardwired big-endian accessor unless
+> > some other drivers selects GENERIC_IRQ_CHIP.
+> 
+> generic-chip.c already has a fair amount of indirection, with pointers
+> to saved masks, user-specified register offsets, and such.  Is there a
+> concern that introducing, say, a pair of readl/writel function
+> pointers, would cause an unacceptable performance drop?
+
+I don't know. Thomas' reply suggests that it isn't. Doing byteswap
+in software at a register access is usually free in terms of CPU
+cycles, but an indirect function call can be noticeable if we do
+that a lot.
+ 
+> Backing up a little bit, do we have a consensus that defining
+> irq_reg_{readl,writel} at compile time from include/linux/irq.h is a
+> bad idea for multiplatform images, and it should be removed one way or
+> another?
+
+If we can prove at compile-time that all users of irq_reg_{readl,writel}
+are the same, then I think it's ok to hardcode it, but of course if
+any driver we build needs the opposite of the others, or needs CPU-endian
+access, then it definitely can't work.
+
+	Arnd
