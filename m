@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542AbaJ2Oj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:39:56 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:52921 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475AbaJ2Ojz (ORCPT
+	id S933397AbaJ2Ol7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:41:59 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:35021 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932870AbaJ2Ol6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:39:55 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ALSA: hdspm: remove unused variable
-Date: Wed, 29 Oct 2014 20:09:45 +0530
-Message-Id: <1414593585-13277-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 29 Oct 2014 10:41:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1410291048320.20256@pobox.suse.cz>
+References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
+	<alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz>
+	<20141001131008.GB18756@mail.corp.redhat.com>
+	<CAG_cf+fYGATBL9Sgvvp7CaScP112fiqiyuR0gBdkS-424S3Kog@mail.gmail.com>
+	<alpine.LNX.2.00.1410031308360.14259@pobox.suse.cz>
+	<CAN+gG=GET=FLmte9kQOtS+x=HPaTdgEu4HxuydHXBx1GZksNRw@mail.gmail.com>
+	<alpine.LNX.2.00.1410291048320.20256@pobox.suse.cz>
+Date: Wed, 29 Oct 2014 10:41:57 -0400
+Message-ID: <CAN+gG=GXHUFz7y1AFyPcV2YP6dYzd-CBStJf5UAENbrpnVuOJg@mail.gmail.com>
+Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special devices
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew de los Reyes <andrew-vger@gizmolabs.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-removed the unused variables. These variables were only being
-assigned some value, but the values were never being used.
+On Wed, Oct 29, 2014 at 5:49 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 28 Oct 2014, Benjamin Tissoires wrote:
+>
+>> >> I've tested these patches successfully on a Chromebook Pixel with the
+>> >> following devices:
+>> >>
+>> >> - T650 touchpad
+>> >> - TK820 keyboard/touchpad
+>> >> - Original WTP touchpad
+>> >>
+>> >> I also tested a touch mouse and as expected it continued to function
+>> >> as a plain USB mouse. The TK820 was indeed broken into two devices,
+>> >> with autorepeat enabled for the keyboard only. The other two devices
+>> >> behaved as expected with no perceived regressions.
+>> >>
+>> >> In short, from a functionality perspective I'm happy with these
+>> >> patches. I will let others discuss code structure.
+>> >
+>> > Thank you. Can I use
+>> >
+>> >         Tested-by: Andrew de los Reyes <andrew-vger@gizmolabs.org>
+>> >
+>> > once / if I am merging this patchset?
+>> >
+>>
+>> I am pretty sure this is not required too, but I am raising this one
+>> again in Jiri's pile of things to review.
+>> Sorry Jiri, I did not forget about it :)
+>
+> It absolutely hasn't been forgotten, I've been just a bit busy during past
+> weeks.
 
-it has been build tested after removing the variables.
+No worries. I definitively understand. Being close to the merge window
+is never a good time to send you patches and I am sure SuSE asks you a
+lot also :)
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
- sound/pci/rme9652/hdspm.c | 23 +++--------------------
- 1 file changed, 3 insertions(+), 20 deletions(-)
+>
+> I am almost done with the review, expect to hear from me in a 1-2 days
+> timeframe regarding this series.
 
-diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
-index 7f7277b..e09348c1 100644
---- a/sound/pci/rme9652/hdspm.c
-+++ b/sound/pci/rme9652/hdspm.c
-@@ -1257,14 +1257,13 @@ static int hdspm_rate_multiplier(struct hdspm *hdspm, int rate)
- /* check for external sample rate, returns the sample rate in Hz*/
- static int hdspm_external_sample_rate(struct hdspm *hdspm)
- {
--	unsigned int status, status2, timecode;
-+	unsigned int status, status2;
- 	int syncref, rate = 0, rate_bits;
- 
- 	switch (hdspm->io_type) {
- 	case AES32:
- 		status2 = hdspm_read(hdspm, HDSPM_statusRegister2);
- 		status = hdspm_read(hdspm, HDSPM_statusRegister);
--		timecode = hdspm_read(hdspm, HDSPM_timecodeRegister);
- 
- 		syncref = hdspm_autosync_ref(hdspm);
- 		switch (syncref) {
-@@ -4862,18 +4861,15 @@ snd_hdspm_proc_read_madi(struct snd_info_entry *entry,
- 			 struct snd_info_buffer *buffer)
- {
- 	struct hdspm *hdspm = entry->private_data;
--	unsigned int status, status2, control, freq;
-+	unsigned int status, status2;
- 
- 	char *pref_sync_ref;
- 	char *autosync_ref;
- 	char *system_clock_mode;
--	char *insel;
- 	int x, x2;
- 
- 	status = hdspm_read(hdspm, HDSPM_statusRegister);
- 	status2 = hdspm_read(hdspm, HDSPM_statusRegister2);
--	control = hdspm->control_register;
--	freq = hdspm_read(hdspm, HDSPM_timecodeRegister);
- 
- 	snd_iprintf(buffer, "%s (Card #%d) Rev.%x Status2first3bits: %x\n",
- 			hdspm->card_name, hdspm->card->number + 1,
-@@ -4936,17 +4932,6 @@ snd_hdspm_proc_read_madi(struct snd_info_entry *entry,
- 	snd_iprintf(buffer, "Line out: %s\n",
- 		(hdspm->control_register & HDSPM_LineOut) ? "on " : "off");
- 
--	switch (hdspm->control_register & HDSPM_InputMask) {
--	case HDSPM_InputOptical:
--		insel = "Optical";
--		break;
--	case HDSPM_InputCoaxial:
--		insel = "Coaxial";
--		break;
--	default:
--		insel = "Unknown";
--	}
--
- 	snd_iprintf(buffer,
- 		"ClearTrackMarker = %s, Transmit in %s Channel Mode, "
- 		"Auto Input %s\n",
-@@ -5191,15 +5176,13 @@ snd_hdspm_proc_read_raydat(struct snd_info_entry *entry,
- 			 struct snd_info_buffer *buffer)
- {
- 	struct hdspm *hdspm = entry->private_data;
--	unsigned int status1, status2, status3, control, i;
-+	unsigned int status1, status2, status3, i;
- 	unsigned int lock, sync;
- 
- 	status1 = hdspm_read(hdspm, HDSPM_RD_STATUS_1); /* s1 */
- 	status2 = hdspm_read(hdspm, HDSPM_RD_STATUS_2); /* freq */
- 	status3 = hdspm_read(hdspm, HDSPM_RD_STATUS_3); /* s2 */
- 
--	control = hdspm->control_register;
--
- 	snd_iprintf(buffer, "STATUS1: 0x%08x\n", status1);
- 	snd_iprintf(buffer, "STATUS2: 0x%08x\n", status2);
- 	snd_iprintf(buffer, "STATUS3: 0x%08x\n", status3);
--- 
-1.8.1.2
+Cool, thanks. That is much appreciated.
 
+Cheers,
+Benjamin
