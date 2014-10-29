@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387AbaJ2KWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:22:23 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36702 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072AbaJ2KWU convert rfc822-to-8bit (ORCPT
+	id S932434AbaJ2KXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:23:14 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:36184 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168AbaJ2KXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:22:20 -0400
-Message-ID: <5450BFD8.7040307@arm.com>
-Date: Wed, 29 Oct 2014 10:22:16 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 29 Oct 2014 06:23:11 -0400
+From: Junjie Mao <eternal.n08@gmail.com>
+To: Martin Pitt <martin.pitt@ubuntu.com>
+Cc: Junjie Mao <eternal.n08@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mac80211_hwsim: release driver when ieee80211_register_hw fails
+References: <1414459907-7509-1-git-send-email-eternal.n08@gmail.com>
+	<20141029064501.GB2985@piware.de>
+Date: Wed, 29 Oct 2014 18:23:02 +0800
+In-Reply-To: <20141029064501.GB2985@piware.de> (Martin Pitt's message of "Wed,
+	29 Oct 2014 07:45:01 +0100")
+Message-ID: <8638a718ft.fsf@MJJ-LAPTOP.i-did-not-set--mail-host-address--so-tickle-me>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (windows-nt)
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, Phong Vo <pvo@apm.com>,
-        Tin Huynh <tnhuynh@apm.com>, Y Vo <yvo@apm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Toan Le <toanle@apm.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/3] irqchip: GIC: Add support for irq_{get,set}_irqchip_state
-References: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com> <1414232097-4328-3-git-send-email-marc.zyngier@arm.com> <CACRpkdZJBWF=JPksecB4UNxcYtjhybAUprhWHkdHzMpb6gchJQ@mail.gmail.com>
-In-Reply-To: <CACRpkdZJBWF=JPksecB4UNxcYtjhybAUprhWHkdHzMpb6gchJQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 29 Oct 2014 10:22:17.0607 (UTC) FILETIME=[373C3170:01CFF362]
-X-MC-Unique: 114102910221802201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/14 10:14, Linus Walleij wrote:
-> On Sat, Oct 25, 2014 at 12:14 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> 
->> Add the required hooks for the internal state of an interrupt
->> to be exposed to other subsystems.
->>
->> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> 
-> (...)
->> +static void gic_poke_irq(struct irq_data *d, u32 offset)
->> +static int gic_peek_irq(struct irq_data *d, u32 offset)
-> 
-> Awesome terminology Marc, very CBM BASIC v2 :)
+I was not familiar with the acquiring/releasing API either, until I met
+with this bug...
 
-Sorry Linus, I'm strictly an ORIC EXTENDED BASIC V1.0 kind of guy. :-)
+Perhaps we can use static checkers to avoid these issues as early as
+possible. Any suggestions?
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Best Regards
+Junjie Mao
 
+Martin Pitt <martin.pitt@ubuntu.com> writes:
+
+> Acked-By: Martin Pitt <martin.pitt@ubuntu.com>
+>
+> Hello Junjie,
+>
+> Junjie Mao [2014-10-28  9:31 +0800]:
+>> The driver is not released when ieee80211_register_hw fails in
+>> mac80211_hwsim_create_radio, leading to the access to the unregistered (and
+>> possibly freed) device in platform_driver_unregister:
+>
+> Many thanks for fixing this! Sorry about that, I don't know these bits
+> very well.
+>
+> Martin
