@@ -1,57 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599AbaJ2Rqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:46:38 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:33411 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756579AbaJ2Rqd (ORCPT
+	id S1756654AbaJ2RrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:47:11 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51883 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756330AbaJ2RqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:46:33 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Inki Dae <inki.dae@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Andrzej Hajda <a.hajda@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [RFC 1/2] PM / Domains: Power on domain early during system resume
-References: <1414072090-11293-1-git-send-email-k.kozlowski@samsung.com>
-	<1414072090-11293-2-git-send-email-k.kozlowski@samsung.com>
-Date: Wed, 29 Oct 2014 10:46:29 -0700
-In-Reply-To: <1414072090-11293-2-git-send-email-k.kozlowski@samsung.com>
-	(Krzysztof Kozlowski's message of "Thu, 23 Oct 2014 15:48:09 +0200")
-Message-ID: <7hk33iahvu.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 29 Oct 2014 13:46:00 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v3 15/15] net: dsa: Provide additional RMON statistics
+Date: Wed, 29 Oct 2014 10:45:07 -0700
+Message-Id: <1414604707-22407-16-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
+References: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.545127D8.001A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 82
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krzysztof Kozlowski <k.kozlowski@samsung.com> writes:
+Display sw_in_discards, sw_in_filtered, and sw_out_filtered for chips
+supported by mv88e6123_61_65 and mv88e6352 drivers.
 
-> When resuming the system the power domain has to be powered on early so
-> any runtime PM aware devices could resume.
->
-> This fixes following scenario reproduced on Exynos DRM:
-> 1. Power domain is off before suspending the system.
-> 2. System is suspended to RAM.
-> 3. Resuming starts. The Exynos DRM driver resume callback is called.
-> 4. The Exynos DRM driver calls drm_helper_resume_force_mode which turns
->    the screen on by calling exynos_dsi_dpms with DRM_MODE_DPMS_ON.
+The variables are provided in port registers, not the normal status registers.
+Mark by adding 0x100 to the register offset and add special handling code
+to mv88e6xxx_get_ethtool_stats.
 
-Dumb Q: if the device (and power domain) were off before (and during)
-suspend, why are they being resumed?
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v3:
+- No change
+v2:
+- No change
 
-Shouldn't the resume path restore things to the same state they were
-before suspend?
+ drivers/net/dsa/mv88e6123_61_65.c |  3 +++
+ drivers/net/dsa/mv88e6352.c       |  3 +++
+ drivers/net/dsa/mv88e6xxx.c       | 26 +++++++++++++++++++++-----
+ 3 files changed, 27 insertions(+), 5 deletions(-)
 
-Kevin
+diff --git a/drivers/net/dsa/mv88e6123_61_65.c b/drivers/net/dsa/mv88e6123_61_65.c
+index e2d2e37..9a3f9e0 100644
+--- a/drivers/net/dsa/mv88e6123_61_65.c
++++ b/drivers/net/dsa/mv88e6123_61_65.c
+@@ -433,6 +433,9 @@ static struct mv88e6xxx_hw_stat mv88e6123_61_65_hw_stats[] = {
+ 	{ "hist_256_511bytes", 4, 0x0b, },
+ 	{ "hist_512_1023bytes", 4, 0x0c, },
+ 	{ "hist_1024_max_bytes", 4, 0x0d, },
++	{ "sw_in_discards", 4, 0x110, },
++	{ "sw_in_filtered", 2, 0x112, },
++	{ "sw_out_filtered", 2, 0x113, },
+ };
+ 
+ static void
+diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
+index d5bbe49..258d9ef 100644
+--- a/drivers/net/dsa/mv88e6352.c
++++ b/drivers/net/dsa/mv88e6352.c
+@@ -539,6 +539,9 @@ static struct mv88e6xxx_hw_stat mv88e6352_hw_stats[] = {
+ 	{ "hist_256_511bytes", 4, 0x0b, },
+ 	{ "hist_512_1023bytes", 4, 0x0c, },
+ 	{ "hist_1024_max_bytes", 4, 0x0d, },
++	{ "sw_in_discards", 4, 0x110, },
++	{ "sw_in_filtered", 2, 0x112, },
++	{ "sw_out_filtered", 2, 0x113, },
+ };
+ 
+ static int mv88e6352_read_eeprom_word(struct dsa_switch *ds, int addr)
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index c071fde..da558d8 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -485,17 +485,33 @@ void mv88e6xxx_get_ethtool_stats(struct dsa_switch *ds,
+ 	for (i = 0; i < nr_stats; i++) {
+ 		struct mv88e6xxx_hw_stat *s = stats + i;
+ 		u32 low;
+-		u32 high;
+-
++		u32 high = 0;
++
++		if (s->reg >= 0x100) {
++			int ret;
++
++			ret = mv88e6xxx_reg_read(ds, REG_PORT(port),
++						 s->reg - 0x100);
++			if (ret < 0)
++				goto error;
++			low = ret;
++			if (s->sizeof_stat == 4) {
++				ret = mv88e6xxx_reg_read(ds, REG_PORT(port),
++							 s->reg - 0x100 + 1);
++				if (ret < 0)
++					goto error;
++				high = ret;
++			}
++			data[i] = (((u64)high) << 16) | low;
++			continue;
++		}
+ 		mv88e6xxx_stats_read(ds, s->reg, &low);
+ 		if (s->sizeof_stat == 8)
+ 			mv88e6xxx_stats_read(ds, s->reg + 1, &high);
+-		else
+-			high = 0;
+ 
+ 		data[i] = (((u64)high) << 32) | low;
+ 	}
+-
++error:
+ 	mutex_unlock(&ps->stats_mutex);
+ }
+ 
+-- 
+1.9.1
+
