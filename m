@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786AbaJ2Mad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:30:33 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55192 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388AbaJ2Mac (ORCPT
+	id S932778AbaJ2Md5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:33:57 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:46995 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388AbaJ2Md4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:30:32 -0400
-Date: Wed, 29 Oct 2014 12:30:05 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Message-ID: <20141029123005.GH18557@sirena.org.uk>
-References: <1414570560-10320-1-git-send-email-mike.looijmans@topic.nl>
- <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl>
+	Wed, 29 Oct 2014 08:33:56 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cZT4zKSEMdXcwoCQ"
-Content-Disposition: inline
-In-Reply-To: <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] Add ltc3562 voltage regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1414552896-20797-1-git-send-email-b18965@freescale.com>
+References: <1414552896-20797-1-git-send-email-b18965@freescale.com>
+Date: Wed, 29 Oct 2014 10:33:54 -0200
+Message-ID: <CAOMZO5Ah4H1WDvFOBMhw7RS7XwSNSEet3u_emELFZTGD7rUzyw@mail.gmail.com>
+Subject: Re: [PATCH] audio: sai: Add Power Management support
+From: Fabio Estevam <festevam@gmail.com>
+To: Alison Wang <b18965@freescale.com>
+Cc: perex@perex.cz, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicolin Chen <nicoleotsuka@gmail.com>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Alison,
 
---cZT4zKSEMdXcwoCQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please always add the driver maintainers (Xiubo Li and Nicolin Chen).
 
-On Wed, Oct 29, 2014 at 09:16:00AM +0100, Mike Looijmans wrote:
+On Wed, Oct 29, 2014 at 1:21 AM, Alison Wang <b18965@freescale.com> wrote:
 
-> +	if (!status->voltage_set) {
-> +		if (of_property_read_u32(dev->dev.of_node,
-> +			"ltc3562-default-voltage", &v_default) == 0) {
+> +#ifdef CONFIG_PM_SLEEP
+> +static int fsl_sai_suspend(struct device *dev)
+> +{
+> +       struct fsl_sai *sai = dev_get_drvdata(dev);
+> +
+> +       regcache_cache_only(sai->regmap, true);
+> +       regcache_mark_dirty(sai->regmap);
+> +
+> +       return 0;
+> +}
+> +
+> +static int fsl_sai_resume(struct device *dev)
+> +{
+> +       struct fsl_sai *sai = dev_get_drvdata(dev);
+> +
+> +       /* Restore all registers */
+> +       regcache_cache_only(sai->regmap, false);
+> +       regcache_sync(sai->regmap);
+> +
+> +       return 0;
+> +};
+> +#endif /* CONFIG_PM_SLEEP */
+> +
+> +static const struct dev_pm_ops fsl_sai_pm = {
+> +       SET_SYSTEM_SLEEP_PM_OPS(fsl_sai_suspend, fsl_sai_resume)
 
-A couple of problems here:
+This could be simplified to:
+static SIMPLE_DEV_PM_OPS(fsl_sai_pm, fsl_sai_suspend, fsl_sai_resume);
 
- - This contains DT code but no DT bindings documentation; the binding
-   documentation is mandatory for any new bindings.
- - It's not obvious why a "default voltage" property would be device
-   specific - what is this for and why is it being added in an
-   individual device driver?
+I am also curious as to how you tested it, as I noticed that
+suspend/resume is broken on 3.18-rc for mx6sx.
 
---cZT4zKSEMdXcwoCQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUUN3MAAoJECTWi3JdVIfQ3FEH/3AM3hruAGXrbQGn7ZazVM91
-FnEuRaMRQxUmffvhYjF6jrmOASBdQ9+zqc1HWcE7jEMIsfuReyOnXVfGByKxXwqv
-EUgC7yN+ZA8NPcKKmLbMJ+/xGhC6TH+usbU8CSgigf6kMx1BG0jcDk+vKwJqfTcG
-LzNAOA7qZWjqu+pFRJWOKXiqQ3Mg7K1fttbCBs7kRDfosWQRFdM9mODjh0WgSwVG
-3gmZGaHC7t6L4bvkWqEsY1fn+laIJtsRPNZigYkEezwyUEDDlpyZoM+hZZmqzPdo
-qFcqfqXfxQ/2KCxf/tmQUiXkkYLt2CVBnR+QihmsclVjBzNmgHnRDntpcC7L4SA=
-=sdxI
------END PGP SIGNATURE-----
-
---cZT4zKSEMdXcwoCQ--
+Are you able to do suspend/resume on 3.18-rc on a mx6sx sdb board?
