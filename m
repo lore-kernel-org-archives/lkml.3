@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690AbaJ2LfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 07:35:07 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60099 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529AbaJ2LfE (ORCPT
+	id S932713AbaJ2LhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 07:37:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35779 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932461AbaJ2LhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 07:35:04 -0400
-Message-ID: <5450D0E1.7040904@collabora.co.uk>
-Date: Wed, 29 Oct 2014 12:34:57 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Wed, 29 Oct 2014 07:37:03 -0400
+Date: Wed, 29 Oct 2014 12:36:55 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, mingo@kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        ilya.dryomov@inktank.com, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, rafael.j.wysocki@intel.com
+Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
+Message-ID: <20141029113655.GD10476@twins.programming.kicks-ass.net>
+References: <20140925090619.GA5430@worktop>
+ <20140925091556.GB5430@worktop>
+ <20141002102251.GA6324@worktop.programming.kicks-ass.net>
+ <20141002121553.GB6324@worktop.programming.kicks-ass.net>
+ <20141027134103.GA10476@twins.programming.kicks-ass.net>
+ <20141028000703.GA22964@redhat.com>
+ <20141028082335.GM3337@twins.programming.kicks-ass.net>
+ <20141029000055.GA12107@redhat.com>
+ <20141029093503.GX3337@twins.programming.kicks-ass.net>
+ <20141029113103.GC10476@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH v6 2/3] regulator: max77802: Remove suspend_enable
-References: <1414581294-1315-1-git-send-email-k.kozlowski@samsung.com> <1414581294-1315-3-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1414581294-1315-3-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029113103.GC10476@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
-
-On 10/29/2014 12:14 PM, Krzysztof Kozlowski wrote:
-> The Maxim 77802 PMIC regulators do not have special enable configuration
-> for suspend. The driver instead enabled them manually which is not a
-> best way to deal with suspend.
+On Wed, Oct 29, 2014 at 12:31:03PM +0100, Peter Zijlstra wrote:
+> On Wed, Oct 29, 2014 at 10:35:03AM +0100, Peter Zijlstra wrote:
+> > On Wed, Oct 29, 2014 at 01:00:56AM +0100, Oleg Nesterov wrote:
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/regulator/max77802.c | 4 ----
->  1 file changed, 4 deletions(-)
+> > > But what if it calls try_to_freeze() and another thread (which should
+> > > be frozen too) sleeps in kthread_stop() ?
+> > 
+> > Fair point indeed. Now I had a look at __refrigerator() and is there any
+> > reason we should not remove that .check_kthr_stop argument and replace
+> > it with an unconditional (current->flags & PF_KTHREAD) ?
 > 
-> diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-> index 5839c4509e1f..b9958d927297 100644
-> --- a/drivers/regulator/max77802.c
-> +++ b/drivers/regulator/max77802.c
+> Hmm, doesn't kthread_freezable_should_stop() suffer the same problem? It
+> should not refrigerate when should_stop.
 
-After what Mark explained, I understand this is the right thing to do.
-
-Acked-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-
-Best regards,
-Javier
+Oh never you mind, i've got my head on backwards it seems, it uses
+__refrigerator(.check_kthr_stop = true), which does another should_stop
+test.
