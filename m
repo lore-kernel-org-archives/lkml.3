@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798AbaJ2FfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 01:35:11 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:55021 "EHLO
+	id S1753345AbaJ2FfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 01:35:09 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:55020 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831AbaJ2FfG (ORCPT
+	with ESMTP id S1751502AbaJ2FfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Oct 2014 01:35:06 -0400
 X-Original-SENDERIP: 165.186.175.39
@@ -15,9 +15,9 @@ To: gregkh@linuxfoundation.org, john.stultz@linaro.org, rebecca@android.com,
         iamjoonsoo.kim@lge.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         gunho.lee@lge.com, Gioh Kim <gioh.kim@lge.com>
-Subject: [PATCHv2 3/3] staging: ion: debugfs to shrink pool
-Date: Wed, 29 Oct 2014 14:36:00 +0900
-Message-Id: <1414560960-21130-4-git-send-email-gioh.kim@lge.com>
+Subject: [PATCHv2 2/3] staging: ion: limit pool size
+Date: Wed, 29 Oct 2014 14:35:59 +0900
+Message-Id: <1414560960-21130-3-git-send-email-gioh.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414560960-21130-1-git-send-email-gioh.kim@lge.com>
 References: <1414560960-21130-1-git-send-email-gioh.kim@lge.com>
@@ -25,112 +25,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables debugfs files /sys/kernel/debug/ion/heaps/system_shrink
-,which was commented out, to shrink pool or get pool size
-Reading the file returns pool size and writing occurs to shrink pool.
+This patch limits pool size by page unit.
+And enable a debugfs file to set limit.
 
+Change-Id: Idaef4daa69084e8ec0844ecefc6738afeab79ccb
 Signed-off-by: Gioh Kim <gioh.kim@lge.com>
 ---
- drivers/staging/android/ion/ion.c           |   31 +++++++--------------------
- drivers/staging/android/ion/ion_page_pool.c |    5 ++++-
- 2 files changed, 12 insertions(+), 24 deletions(-)
+ drivers/staging/android/ion/ion.c             |   31 +++++++++++++++++++++++++
+ drivers/staging/android/ion/ion_page_pool.c   |   24 +++++++++++--------
+ drivers/staging/android/ion/ion_system_heap.c |    2 +-
+ 3 files changed, 46 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index 036e29b..4879076 100644
+index 290d4d2..036e29b 100644
 --- a/drivers/staging/android/ion/ion.c
 +++ b/drivers/staging/android/ion/ion.c
-@@ -1463,43 +1463,29 @@ static const struct file_operations debug_heap_fops = {
- 	.release = single_release,
- };
- 
--#ifdef DEBUG_HEAP_SHRINKER
- static int debug_shrink_set(void *data, u64 val)
- {
- 	struct ion_heap *heap = data;
--	struct shrink_control sc;
- 	int objs;
- 
--	sc.gfp_mask = -1;
--	sc.nr_to_scan = 0;
--
--	if (!val)
--		return 0;
--
--	objs = heap->shrinker.shrink(&heap->shrinker, &sc);
--	sc.nr_to_scan = objs;
-+	if (val)
-+		objs = val;
-+	else
-+		objs = heap->ops->shrink(heap, __GFP_HIGHMEM, 0);
- 
--	heap->shrinker.shrink(&heap->shrinker, &sc);
-+	(void)heap->ops->shrink(heap, __GFP_HIGHMEM, objs);
- 	return 0;
- }
- 
- static int debug_shrink_get(void *data, u64 *val)
- {
- 	struct ion_heap *heap = data;
--	struct shrink_control sc;
--	int objs;
--
--	sc.gfp_mask = -1;
--	sc.nr_to_scan = 0;
--
--	objs = heap->shrinker.shrink(&heap->shrinker, &sc);
--	*val = objs;
-+	*val = heap->ops->shrink(heap, __GFP_HIGHMEM, 0);
- 	return 0;
- }
- 
- DEFINE_SIMPLE_ATTRIBUTE(debug_shrink_fops, debug_shrink_get,
+@@ -1501,6 +1501,25 @@ DEFINE_SIMPLE_ATTRIBUTE(debug_shrink_fops, debug_shrink_get,
  			debug_shrink_set, "%llu\n");
--#endif
+ #endif
  
- extern int pool_limit;
- extern const int num_orders;
-@@ -1553,8 +1539,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
- 			path, heap->name);
- 	}
- 
--#ifdef DEBUG_HEAP_SHRINKER
--	if (heap->shrinker.shrink) {
-+	if (heap->ops->shrink) {
- 		char debug_name[64];
- 
- 		snprintf(debug_name, 64, "%s_shrink", heap->name);
-@@ -1581,7 +1566,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
- 			       path, debug_name);
-                 }
- 	}
--#endif
++extern int pool_limit;
++extern const int num_orders;
 +
++static int debug_limit_set(void *data, u64 val)
++{
++        /* val is kb unit, pool_limit is for page limit of individual pool */
++        pool_limit = (int)(val / PAGE_SIZE) / num_orders;
++        return 0;
++}
++
++static int debug_limit_get(void *data, u64 *val)
++{
++        *val = pool_limit * PAGE_SIZE * num_orders;
++        return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_limit_fops, debug_limit_get,
++                        debug_limit_set, "%llu\n");
++
+ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
+ {
+ 	struct dentry *debug_file;
+@@ -1549,6 +1568,18 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
+ 			pr_err("Failed to create heap shrinker debugfs at %s/%s\n",
+ 				path, debug_name);
+ 		}
++
++		snprintf(debug_name, 64, "%s_limit", heap->name);
++                debug_file = debugfs_create_file(
++                        debug_name, 0644, dev->heaps_debug_root, heap,
++                        &debug_limit_fops);
++                if (!debug_file) {
++                        char buf[256], *path;
++
++                        path = dentry_path(dev->heaps_debug_root, buf, 256);
++                        pr_err("Failed to create heap shrinker debugfs at %s/%s\n",
++			       path, debug_name);
++                }
+ 	}
+ #endif
  	up_write(&dev->lock);
- }
- 
 diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index 15d1ac8..c473c2a 100644
+index 165152f..15d1ac8 100644
 --- a/drivers/staging/android/ion/ion_page_pool.c
 +++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -25,6 +25,9 @@
- #include <linux/kconfig.h>
+@@ -22,6 +22,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/swap.h>
++#include <linux/kconfig.h>
  #include "ion_priv.h"
  
-+/* limit number of pages each pool can have */
-+int pool_limit;
-+
  static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
- {
- 	struct page *page = alloc_pages(pool->gfp_mask, pool->order);
-@@ -54,7 +57,7 @@ static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
+@@ -41,8 +42,21 @@ static void ion_page_pool_free_pages(struct ion_page_pool *pool,
+ 	__free_pages(page, pool->order);
+ }
  
++static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
++{
++	int count = pool->low_count;
++
++	if (high)
++		count += pool->high_count;
++
++	return count << pool->order;
++}
++
  static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
  {
--	if (CONFIG_ION_POOL_LIMIT && ion_page_pool_total(pool, 1) > POOL_LIMIT)
-+	if (pool_limit && ion_page_pool_total(pool, 1) > pool_limit)
- 		return 1;
- 
++	if (CONFIG_ION_POOL_LIMIT && ion_page_pool_total(pool, 1) > POOL_LIMIT)
++		return 1;
++
  	mutex_lock(&pool->mutex);
+ 	if (PageHighMem(page)) {
+ 		list_add_tail(&page->lru, &pool->high_items);
+@@ -103,16 +117,6 @@ void ion_page_pool_free(struct ion_page_pool *pool, struct page *page)
+ 		ion_page_pool_free_pages(pool, page);
+ }
+ 
+-static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
+-{
+-	int count = pool->low_count;
+-
+-	if (high)
+-		count += pool->high_count;
+-
+-	return count << pool->order;
+-}
+-
+ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
+ 				int nr_to_scan)
+ {
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index 0ba8aaf..d6c0acd 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -30,7 +30,7 @@ static gfp_t high_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN |
+ 				     __GFP_NORETRY) & ~__GFP_WAIT;
+ static gfp_t low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN);
+ static const unsigned int orders[] = {4, 3, 2, 0};
+-static const int num_orders = ARRAY_SIZE(orders);
++const int num_orders = ARRAY_SIZE(orders);
+ static int order_to_index(unsigned int order)
+ {
+ 	int i;
 -- 
 1.7.9.5
 
