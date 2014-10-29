@@ -1,156 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554AbaJ2J1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:27:31 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:26453 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056AbaJ2JXO (ORCPT
+	id S1756237AbaJ2J1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:27:51 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:60070 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756556AbaJ2J1r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:23:14 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-e6-5450b1ffddac
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
-        linux-omap@vger.kernel.org, linus.walleij@linaro.org, tony@atomide.com,
-        drake@endlessm.com, loeliger@gmail.com,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH v7 5/8] ARM: l2c: Add support for overriding prefetch settings
-Date: Wed, 29 Oct 2014 10:22:58 +0100
-Message-id: <1414574581-2320-6-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1414574581-2320-1-git-send-email-m.szyprowski@samsung.com>
-References: <1414574581-2320-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t/xy7r/NwaEGJyZrmvxaP5jZoveBVfZ
-	LM42vWG32N45g91iyp/lTBabHl9jtbi8aw6bxewl/SwWM87vY7K4fZnX4tz2LSwWa4/cZbdY
-	ev0ik8WqXX8YLfZf8XLg91gzbw2jR0tzD5vHt6+TWDwu9/UyeSz6nuWxc9Zddo871/aweWxe
-	Uu/Rt2UVo8fnTXIBXFFcNimpOZllqUX6dglcGYu7TjEXXFeo+LDsOksD43upLkZODgkBE4ml
-	u3exQ9hiEhfurWfrYuTiEBJYyijR3LSGEcLpY5K4OPU3WBWbgKFE19suNhBbRCBb4se3ySwg
-	RcwCfcwS56f3MIMkhAX8JLquPmcCsVkEVCU+b50MZvMKuEvs+72YDWKdnMT/lyvA4pwCHhKr
-	LywBiwsB1Ww83M02gZF3ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQkP6yg3HxMatD
-	jAIcjEo8vBq7/UOEWBPLiitzDzFKcDArifDuMA8IEeJNSaysSi3Kjy8qzUktPsTIxMEp1cCY
-	pFnwPaGVYf8p9ZjA1ZMEJjpLnnti+vFo2aQ7k+9l7X3XkRD9S+u12a/9if8zzZ8pe/wU0Ygy
-	nbHd36JqxZf7i0N1QheXM39XvrDHRD7Bm9HMNb1mK3Mo9zoW4aiL4dfP9e6/mvBg8d0Tl/YL
-	6F0PC3mzNFfu8XLWRpU5khsjrt2MkZ+49dFcJZbijERDLeai4kQAYdx/+0cCAAA=
+	Wed, 29 Oct 2014 05:27:47 -0400
+Message-ID: <5450B309.4040607@arm.com>
+Date: Wed, 29 Oct 2014 09:27:37 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+Subject: Re: [Patch Part2 v3 01/24] irqdomain: Introduce new interfaces to
+ support hierarchy irqdomains
+References: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com>  <1414484803-10311-2-git-send-email-jiang.liu@linux.intel.com> <1414489711.32399.53.camel@mtksdaap41> <alpine.DEB.2.11.1410282010340.5308@nanos> <544FF900.4020601@arm.com> <alpine.DEB.2.11.1410282116220.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410282116220.5308@nanos>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 29 Oct 2014 09:27:39.0513 (UTC) FILETIME=[9556BE90:01CFF35A]
+X-MC-Unique: 114102909274312701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+On 28/10/14 20:23, Thomas Gleixner wrote:
+> On Tue, 28 Oct 2014, Marc Zyngier wrote:
+>> On 28/10/14 19:37, Thomas Gleixner wrote:
+>>> So while we are at it:
+>>>
+>>>> +	if (irq_domain_is_hierarchy(domain)) {
+>>>> +		if (domain->ops->xlate) {
+>>>> +			/*
+>>>> +			 * If we've already configured this interrupt,
+>>>> +			 * don't do it again, or hell will break loose.
+>>>> +			 */
+>>>> +			virq = irq_find_mapping(domain, hwirq);
+>>>> +			if (virq)
+>>>> +				return virq;
+>>>
+>>> I can understand that it is an issue if the mapping exists already,
+>>> but I have to ask WHY is it correct behaviour to call into that code
+>>> for an existing mapping.
+>>
+>> As I have originally looked at this, I'll answer the question:
+>>
+>> The generic DT code parses the whole tree, and generates platform
+>> devices as it goes. As part of the platform device creation, it
+>> populates the IRQ resources, which translates into calling into
+>> irq_create_of_mapping(). You could argue that this behaviour is crazy,
+>> and I wouldn't disagree.
+> 
+> Mooo.
 
-Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
-settings configured in registers leading to crashes if L2C is enabled
-without overriding them. This patch introduces bindings to enable
-prefetch settings to be specified from DT and necessary support in the
-driver.
+Quite.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-[mszyprow: rebased onto v3.18-rc1, added error message when prefetch related
- dt property has been provided without any value]
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- Documentation/devicetree/bindings/arm/l2cc.txt | 10 +++++
- arch/arm/mm/cache-l2x0.c                       | 55 ++++++++++++++++++++++++++
- 2 files changed, 65 insertions(+)
+>> See http://www.spinics.net/lists/devicetree/msg53164.html for more gory
+>> details.
+>>
+>>> And why would this check only apply if domain->ops->xlate is set?
+>>> irq_create_mapping() does it unconditionally.
+>>
+>> My original code used the xlate callback to parse the opaque irq_data,
+>> computing hwirq, and I suspect this is a leftover of it. The above code
+>> seems to pull hwirq out of thin air, which is probably not the intended
+>> behaviour. Joe?
+> 
+> No. Here is the full patch from Joe:
+> 
+>   http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296543.html
+> 
+> hwirq gets either set from hwirq = irq_data->args[0] or from the xlate
+> call.
 
-diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
-index 292ef7ca3058..0dbabe9a6b0a 100644
---- a/Documentation/devicetree/bindings/arm/l2cc.txt
-+++ b/Documentation/devicetree/bindings/arm/l2cc.txt
-@@ -57,6 +57,16 @@ Optional properties:
- - cache-id-part: cache id part number to be used if it is not present
-   on hardware
- - wt-override: If present then L2 is forced to Write through mode
-+- arm,double-linefill : Override double linefill enable setting. Enable if
-+  non-zero, disable if zero.
-+- arm,double-linefill-incr : Override double linefill on INCR read. Enable
-+  if non-zero, disable if zero.
-+- arm,double-linefill-wrap : Override double linefill on WRAP read. Enable
-+  if non-zero, disable if zero.
-+- arm,prefetch-drop : Override prefetch drop enable setting. Enable if non-zero,
-+  disable if zero.
-+- arm,prefetch-offset : Override prefetch offset value. Valid values are
-+  0-7, 15, 23, and 31.
- 
- Example:
- 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 83b36f3b415c..ae417ddb05ed 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -1163,6 +1163,9 @@ static void __init l2c310_of_parse(const struct device_node *np,
- 	u32 tag[3] = { 0, 0, 0 };
- 	u32 filter[2] = { 0, 0 };
- 	u32 assoc;
-+	u32 prefetch;
-+	u32 val;
-+	int ret;
- 
- 	of_property_read_u32_array(np, "arm,tag-latency", tag, ARRAY_SIZE(tag));
- 	if (tag[0] && tag[1] && tag[2])
-@@ -1204,6 +1207,58 @@ static void __init l2c310_of_parse(const struct device_node *np,
- 		       assoc);
- 		break;
- 	}
-+
-+	prefetch = l2x0_saved_regs.prefetch_ctrl;
-+
-+	ret = of_property_read_u32(np, "arm,double-linefill", &val);
-+	if (ret == 0) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,double-linefill property value is missing\n");
-+	}
-+
-+	ret = of_property_read_u32(np, "arm,double-linefill-incr", &val);
-+	if (ret == 0) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,double-linefill-incr property value is missing\n");
-+	}
-+
-+	ret = of_property_read_u32(np, "arm,double-linefill-wrap", &val);
-+	if (ret == 0) {
-+		if (!val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,double-linefill-wrap property value is missing\n");
-+	}
-+
-+	ret = of_property_read_u32(np, "arm,prefetch-drop", &val);
-+	if (ret == 0) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_PREFETCH_DROP;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_PREFETCH_DROP;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,prefetch-drop property value is missing\n");
-+	}
-+
-+	ret = of_property_read_u32(np, "arm,prefetch-offset", &val);
-+	if (ret == 0) {
-+		prefetch &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
-+		prefetch |= val & L310_PREFETCH_CTRL_OFFSET_MASK;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,prefetch-offset property value is missing\n");
-+	}
-+
-+	l2x0_saved_regs.prefetch_ctrl = prefetch;
- }
- 
- static const struct l2c_init_data of_l2c310_data __initconst = {
+Ah, that makes a lot more sense.
+
+> But my question still stands:
+> 
+> Why would this check only apply if domain->ops->xlate is set?
+> irq_create_mapping() does it unconditionally.
+
+I don't think we should consider xlate at all. We already resolved hwirq
+(either directly or through a xlate call), and the check should always
+be performed (otherwise we're likely to fall into the same trap again).
+Looks like a bug to me.
+
+Thanks,
+
+	M.
 -- 
-1.9.2
+Jazz is not dead. It just smells funny...
 
