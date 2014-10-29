@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552AbaJ2TUC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 15:20:02 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:57474 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455AbaJ2TUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 15:20:00 -0400
-Message-ID: <54513DDC.2020700@amacapital.net>
-Date: Wed, 29 Oct 2014 12:19:56 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Bastien Nocera <hadess@hadess.net>, Pavel Machek <pavel@ucw.cz>
-CC: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-References: <1413881397.30379.7.camel@hadess.net>	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>	 <1413911644.30379.12.camel@hadess.net>	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd> <1414420292.30379.55.camel@hadess.net>
-In-Reply-To: <1414420292.30379.55.camel@hadess.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1756586AbaJ2TZD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 15:25:03 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:51392 "EHLO mx02.posteo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754198AbaJ2TZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 15:25:01 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH 0/3] char: misc: assign file->private_data to miscdevice on open
+Date: Wed, 29 Oct 2014 20:22:55 +0100
+Message-Id: <1414610578-22779-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 07:31 AM, Bastien Nocera wrote:
-> On Mon, 2014-10-27 at 10:28 +0100, Pavel Machek wrote:
->> Hi!
->>
->>>> I suspect wakeup type reporting is maybe not the best way to go about
->>>> this, since there may be a number of causes for wakeups and they can
->>>> arrive closely together in different orders, which can result in
->>>> races.
->>>>
->>>> For instance, if the machine suspends, and sets an alarm to be woken
->>>> up at midnight to do a backup, if the user resumes their laptop at
->>>> 11:59:59, should the backup still proceed at midnight?
->>>
->>> No. And I would expect that we would get a wake up type of "power
->>> button" or "lid open" in this case.
->>
->> I believe you should really use "is lid opened or AC or dock
->> connected" to determine if it was automatic resume or not. It should
->> work better and you can actually do it today.
-> 
-> There's no LID or docks on a tablet.
+This slightly changes the behaviour of miscdevice drivers at an open()
+syscall. Not only if the driver happens to implement an open() fop itself,
+but now just always file->private_data points to struct miscdevice, when
+a user opens the device file.
 
-For a tablet, isn't the relevant piece of information whether the power
-button was recently pressed, not whether the power button caused the wakeup?
+This call for review once more: if anybody has an hour to kill:
 
-It would be really annoying if there were a window around every RTC
-wakeup during which pressing the power button didn't actually turn on
-the screen.
+Look for the only dangerous situation where a miscdevice driver _depends_ on
+file->private_data being NULL when _not_ implementing an open() routine
+itself. I didn't find anything.
 
---Andy
+The one section I was unsure about should be ok, see
+http://marc.info/?l=linux-kernel&m=141376535132316&w=2
+
+Bonus: one could look for drivers that _do_ implement open()
+and do the (in any case) redundant work themselves.
+
+Martin Kepplinger (3):
+  misc: always assign miscdevice to file->private_data in open()
+  fbdev: pxa3xx-gcu: remove redundant implementation of open()
+  char: misc: document behaviour of open()
+
+ drivers/char/misc.c              |    6 ++++--
+ drivers/video/fbdev/pxa3xx-gcu.c |   10 ----------
+ 2 files changed, 4 insertions(+), 12 deletions(-)
+
+-- 
+1.7.10.4
+
