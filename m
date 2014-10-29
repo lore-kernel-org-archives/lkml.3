@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933779AbaJ2OIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:08:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41434 "EHLO mail.kernel.org"
+	id S933800AbaJ2OIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:08:53 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41546 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755837AbaJ2OIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:08:40 -0400
+	id S933781AbaJ2OIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 10:08:49 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 21/25] perf script: Add Python script to export to postgresql
-Date: Wed, 29 Oct 2014 12:06:33 -0200
-Message-Id: <1414591597-2763-22-git-send-email-acme@kernel.org>
+Subject: [PATCH 23/25] perf tools: Add id index
+Date: Wed, 29 Oct 2014 12:06:35 -0200
+Message-Id: <1414591597-2763-24-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414591597-2763-1-git-send-email-acme@kernel.org>
 References: <1414591597-2763-1-git-send-email-acme@kernel.org>
@@ -27,138 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Add a Python script to export to a postgresql database.
+Add an index of the event identifiers, in preparation for Intel PT.
 
-The script requires the Python pyside module and the Qt PostgreSQL
-driver.  The packages needed are probably named "python-pyside" and
-"libqt4-sql-psql"
+The event id (also called the sample id) is a unique number
+allocated by the kernel to the event created by perf_event_open().  Events
+can include the event id by having a sample type including PERF_SAMPLE_ID or
+PERF_SAMPLE_IDENTIFIER.
 
-The caller of the script must be able to create postgresql databases.
+Currently the main use of the event id is to match an event back to the
+evsel to which it belongs i.e. perf_evlist__id2evsel()
 
-The script takes the database name as a parameter.  The database and
-database tables are created.  Data is written to flat files which are
-then imported using SQL COPY FROM.
+The purpose of this patch is to make it possible to match an event back to
+the mmap from which it was read.  The reason that is useful is because the
+mmap represents a time-ordered context (either for a cpu or for a thread).
+Intel PT decodes trace information on that basis.  In full-trace mode, that
+information can be recorded when the Intel PT trace is read, but in
+sample-mode the Intel PT trace data is embedded in a sample and it is in
+that case that the "id index" is needed.
 
-Example:
+So the mmaps are numbered (idx) and the cpu and tid recorded against the id
+by perf_evlist__set_sid_idx() which is called by perf_evlist__mmap_per_evsel().
 
-  $ perf record ls
-  ...
-  $ perf script report export-to-postgresql lsdb
-  2014-02-14 10:55:38.631431 Creating database...
-  2014-02-14 10:55:39.291958 Writing to intermediate files...
-  2014-02-14 10:55:39.350280 Copying to database...
-  2014-02-14 10:55:39.358536 Removing intermediate files...
-  2014-02-14 10:55:39.358665 Adding primary keys
-  2014-02-14 10:55:39.658697 Adding foreign keys
-  2014-02-14 10:55:39.667412 Done
-  $ psql lsdb
-  lsdb-# \d
-              List of relations
-   Schema |      Name       | Type  | Owner
-  --------+-----------------+-------+-------
-   public | comm_threads    | table | acme
-   public | comms           | table | acme
-   public | dsos            | table | acme
-   public | machines        | table | acme
-   public | samples         | table | acme
-   public | samples_view    | view  | acme
-   public | selected_events | table | acme
-   public | symbols         | table | acme
-   public | threads         | table | acme
-  (9 rows)
-  lsdb-# \d samples
-         Table "public.samples"
-      Column     |  Type   | Modifiers
-  ---------------+---------+-----------
-   id            | bigint  | not null
-   evsel_id      | bigint  |
-   machine_id    | bigint  |
-   thread_id     | bigint  |
-   comm_id       | bigint  |
-   dso_id        | bigint  |
-   symbol_id     | bigint  |
-   sym_offset    | bigint  |
-   ip            | bigint  |
-   time          | bigint  |
-   cpu           | integer |
-   to_dso_id     | bigint  |
-   to_symbol_id  | bigint  |
-   to_sym_offset | bigint  |
-   to_ip         | bigint  |
-   period        | bigint  |
-   weight        | bigint  |
-   transaction   | bigint  |
-   data_src      | bigint  |
-  Indexes:
-      "samples_pkey" PRIMARY KEY, btree (id)
-  Foreign-key constraints:
-      "commfk" FOREIGN KEY (comm_id) REFERENCES comms(id)
-      "dsofk" FOREIGN KEY (dso_id) REFERENCES dsos(id)
-      "evselfk" FOREIGN KEY (evsel_id) REFERENCES selected_events(id)
-      "machinefk" FOREIGN KEY (machine_id) REFERENCES machines(id)
-      "symbolfk" FOREIGN KEY (symbol_id) REFERENCES symbols(id)
-      "threadfk" FOREIGN KEY (thread_id) REFERENCES threads(id)
-      "todsofk" FOREIGN KEY (to_dso_id) REFERENCES dsos(id)
-      "tosymbolfk" FOREIGN KEY (to_symbol_id) REFERENCES symbols(id)
+That information is recorded on the perf.data file in the new "id index".
+idx, cpu and tid are added to struct perf_sample_id (which is the node of
+evlist's hash table to match ids to evsels).  The information can be
+retrieved using perf_evlist__id2sid().  Note however this all depends on
+having a sample type including PERF_SAMPLE_ID or PERF_SAMPLE_IDENTIFIER,
+otherwise ids are not recorded.
 
-  lsdb-# \d samples_view
-                 View "public.samples_view"
-        Column       |          Type           | Modifiers
-  -------------------+-------------------------+-----------
-   id                | bigint                  |
-   time              | bigint                  |
-   cpu               | integer                 |
-   pid               | integer                 |
-   tid               | integer                 |
-   command           | character varying(16)   |
-   event             | character varying(80)   |
-   ip_hex            | text                    |
-   symbol            | character varying(2048) |
-   sym_offset        | bigint                  |
-   dso_short_name    | character varying(256)  |
-   to_ip_hex         | text                    |
-   to_symbol         | character varying(2048) |
-   to_sym_offset     | bigint                  |
-   to_dso_short_name | character varying(256)  |
-
-    lsdb=# select * from samples_view;
-
-   id| time       |cpu | pid  | tid  |command| event  |   ip_hex      |           symbol    |sym_off| dso_name|to_ip_hex|to_symbol|to_sym_off|to_dso_name
-   --+------------+----+------+------+-------+--------+---------------+---------------------+-------+---------+---------+---------+----------+----------
-   1 |12202825015 | -1 | 7339 | 7339 |:17339 | cycles | fffff8104d24a |native_write_msr_safe|    10 | [kernel]| 0       | unknown |         0| unknown
-   2 |12203258804 | -1 | 7339 | 7339 |:17339 | cycles | fffff8104d24a |native_write_msr_safe|    10 | [kernel]| 0       | unknown |         0| unknown
-   3 |12203988119 | -1 | 7339 | 7339 |:17339 | cycles | fffff8104d24a |native_write_msr_safe|    10 | [kernel]| 0       | unknown |         0| unknown
-
-My notes (which may be out-of-date) on setting up postgresql so you can
-create databases:
-
-fedora:
-
-        $ sudo yum install postgresql postgresql-server python-pyside qt-postgresql
-        $ sudo su - postgres -c initdb
-        $ sudo service postgresql start
-        $ sudo su - postgres
-        $ createuser -s <your username>
-
-I used the the unix user name in createuser.
-
-If it fails, try createuser without -s and answer the following question
-to allow your user to create tables:
-
-        Shall the new role be a superuser? (y/n) y
-
-ubuntu:
-
-        $ sudo apt-get install postgresql
-        $ sudo su - postgres
-        $ createuser <your username>
-        Shall the new role be a superuser? (y/n) y
-
-You may want to disable automatic startup.  One way is to edit
-/etc/postgresql/9.3/main/start.conf.  Another is to disable the init
-script e.g. sudo update-rc.d postgresql disable
+The "id index" is a synthesized event record which will be created when
+Intel PT sampling is used by calling perf_event__synthesize_id_index().
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
@@ -166,427 +67,332 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1414061124-26830-8-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1414417770-18602-2-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../scripts/python/bin/export-to-postgresql-record |   8 +
- .../scripts/python/bin/export-to-postgresql-report |  24 ++
- tools/perf/scripts/python/export-to-postgresql.py  | 360 +++++++++++++++++++++
- 3 files changed, 392 insertions(+)
- create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-record
- create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-report
- create mode 100644 tools/perf/scripts/python/export-to-postgresql.py
+ tools/perf/builtin-inject.c |   1 +
+ tools/perf/util/event.c     |   1 +
+ tools/perf/util/event.h     |  15 ++++++
+ tools/perf/util/evlist.c    |  26 ++++++++--
+ tools/perf/util/evsel.h     |   3 ++
+ tools/perf/util/session.c   | 122 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.h   |  10 ++++
+ tools/perf/util/tool.h      |   3 +-
+ 8 files changed, 177 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/scripts/python/bin/export-to-postgresql-record b/tools/perf/scripts/python/bin/export-to-postgresql-record
-new file mode 100644
-index 000000000000..221d66e05713
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/export-to-postgresql-record
-@@ -0,0 +1,8 @@
-+#!/bin/bash
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 06f1758951f1..84df2deed988 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -409,6 +409,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.tracing_data	= perf_event__repipe_op2_synth,
+ 			.finished_round	= perf_event__repipe_op2_synth,
+ 			.build_id	= perf_event__repipe_op2_synth,
++			.id_index	= perf_event__repipe_op2_synth,
+ 		},
+ 		.input_name  = "-",
+ 		.samples = LIST_HEAD_INIT(inject.samples),
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index e00a29fb099f..6c6d044e959a 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -28,6 +28,7 @@ static const char *perf_event__names[] = {
+ 	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
+ 	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
+ 	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
++	[PERF_RECORD_ID_INDEX]			= "ID_INDEX",
+ };
+ 
+ const char *perf_event__name(unsigned int id)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 5f0e0b89e130..8c7fe9d64e79 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -187,6 +187,7 @@ enum perf_user_event_type { /* above any possible kernel type */
+ 	PERF_RECORD_HEADER_TRACING_DATA		= 66,
+ 	PERF_RECORD_HEADER_BUILD_ID		= 67,
+ 	PERF_RECORD_FINISHED_ROUND		= 68,
++	PERF_RECORD_ID_INDEX			= 69,
+ 	PERF_RECORD_HEADER_MAX
+ };
+ 
+@@ -239,6 +240,19 @@ struct tracing_data_event {
+ 	u32 size;
+ };
+ 
++struct id_index_entry {
++	u64 id;
++	u64 idx;
++	u64 cpu;
++	u64 tid;
++};
 +
-+#
-+# export perf data to a postgresql database. Can cover
-+# perf ip samples (excluding the tracepoints). No special
-+# record requirements, just record what you want to export.
-+#
-+perf record $@
-diff --git a/tools/perf/scripts/python/bin/export-to-postgresql-report b/tools/perf/scripts/python/bin/export-to-postgresql-report
-new file mode 100644
-index 000000000000..a8fdd15f85bf
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/export-to-postgresql-report
-@@ -0,0 +1,24 @@
-+#!/bin/bash
-+# description: export perf data to a postgresql database
-+# args: [database name] [columns]
-+n_args=0
-+for i in "$@"
-+do
-+    if expr match "$i" "-" > /dev/null ; then
-+	break
-+    fi
-+    n_args=$(( $n_args + 1 ))
-+done
-+if [ "$n_args" -gt 2 ] ; then
-+    echo "usage: export-to-postgresql-report [database name] [columns]"
-+    exit
-+fi
-+if [ "$n_args" -gt 1 ] ; then
-+    dbname=$1
-+    columns=$2
-+    shift 2
-+elif [ "$n_args" -gt 0 ] ; then
-+    dbname=$1
-+    shift
-+fi
-+perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/export-to-postgresql.py $dbname $columns
-diff --git a/tools/perf/scripts/python/export-to-postgresql.py b/tools/perf/scripts/python/export-to-postgresql.py
-new file mode 100644
-index 000000000000..d8f6df0093d6
---- /dev/null
-+++ b/tools/perf/scripts/python/export-to-postgresql.py
-@@ -0,0 +1,360 @@
-+# export-to-postgresql.py: export perf data to a postgresql database
-+# Copyright (c) 2014, Intel Corporation.
-+#
-+# This program is free software; you can redistribute it and/or modify it
-+# under the terms and conditions of the GNU General Public License,
-+# version 2, as published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope it will be useful, but WITHOUT
-+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+# more details.
++struct id_index_event {
++	struct perf_event_header header;
++	u64 nr;
++	struct id_index_entry entries[0];
++};
 +
-+import os
-+import sys
-+import struct
-+import datetime
+ union perf_event {
+ 	struct perf_event_header	header;
+ 	struct mmap_event		mmap;
+@@ -253,6 +267,7 @@ union perf_event {
+ 	struct event_type_event		event_type;
+ 	struct tracing_data_event	tracing_data;
+ 	struct build_id_event		build_id;
++	struct id_index_event		id_index;
+ };
+ 
+ void perf_event__print_totals(void);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 3c9e77d6b4c2..0babd390963c 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -527,6 +527,22 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
+ 	return 0;
+ }
+ 
++static void perf_evlist__set_sid_idx(struct perf_evlist *evlist,
++				     struct perf_evsel *evsel, int idx, int cpu,
++				     int thread)
++{
++	struct perf_sample_id *sid = SID(evsel, cpu, thread);
++	sid->idx = idx;
++	if (evlist->cpus && cpu >= 0)
++		sid->cpu = evlist->cpus->map[cpu];
++	else
++		sid->cpu = -1;
++	if (!evsel->system_wide && evlist->threads && thread >= 0)
++		sid->tid = evlist->threads->map[thread];
++	else
++		sid->tid = -1;
++}
 +
-+from PySide.QtSql import *
+ struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id)
+ {
+ 	struct hlist_head *head;
+@@ -805,9 +821,13 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+ 			return -1;
+ 		}
+ 
+-		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+-		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
+-			return -1;
++		if (evsel->attr.read_format & PERF_FORMAT_ID) {
++			if (perf_evlist__id_add_fd(evlist, evsel, cpu, thread,
++						   fd) < 0)
++				return -1;
++			perf_evlist__set_sid_idx(evlist, evsel, idx, cpu,
++						 thread);
++		}
+ 	}
+ 
+ 	return 0;
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index d3854c4f52e1..979790951bfb 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -36,6 +36,9 @@ struct perf_sample_id {
+ 	struct hlist_node 	node;
+ 	u64		 	id;
+ 	struct perf_evsel	*evsel;
++	int			idx;
++	int			cpu;
++	pid_t			tid;
+ 
+ 	/* Holds total ID period value for PERF_SAMPLE_READ processing. */
+ 	u64			period;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 776010844cdc..27a0049118b5 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -228,6 +228,15 @@ static int process_finished_round(struct perf_tool *tool,
+ 				  union perf_event *event,
+ 				  struct perf_session *session);
+ 
++static int process_id_index_stub(struct perf_tool *tool __maybe_unused,
++				 union perf_event *event __maybe_unused,
++				 struct perf_session *perf_session
++				 __maybe_unused)
++{
++	dump_printf(": unhandled!\n");
++	return 0;
++}
 +
-+# Need to access PostgreSQL C library directly to use COPY FROM STDIN
-+from ctypes import *
-+libpq = CDLL("libpq.so.5")
-+PQconnectdb = libpq.PQconnectdb
-+PQconnectdb.restype = c_void_p
-+PQfinish = libpq.PQfinish
-+PQstatus = libpq.PQstatus
-+PQexec = libpq.PQexec
-+PQexec.restype = c_void_p
-+PQresultStatus = libpq.PQresultStatus
-+PQputCopyData = libpq.PQputCopyData
-+PQputCopyData.argtypes = [ c_void_p, c_void_p, c_int ]
-+PQputCopyEnd = libpq.PQputCopyEnd
-+PQputCopyEnd.argtypes = [ c_void_p, c_void_p ]
+ void perf_tool__fill_defaults(struct perf_tool *tool)
+ {
+ 	if (tool->sample == NULL)
+@@ -262,6 +271,8 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
+ 		else
+ 			tool->finished_round = process_finished_round_stub;
+ 	}
++	if (tool->id_index == NULL)
++		tool->id_index = process_id_index_stub;
+ }
+  
+ static void swap_sample_id_all(union perf_event *event, void *data)
+@@ -460,6 +471,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
+ 	[PERF_RECORD_HEADER_EVENT_TYPE]	  = perf_event__event_type_swap,
+ 	[PERF_RECORD_HEADER_TRACING_DATA] = perf_event__tracing_data_swap,
+ 	[PERF_RECORD_HEADER_BUILD_ID]	  = NULL,
++	[PERF_RECORD_ID_INDEX]		  = perf_event__all64_swap,
+ 	[PERF_RECORD_HEADER_MAX]	  = NULL,
+ };
+ 
+@@ -888,6 +900,8 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+ 		return tool->build_id(tool, event, session);
+ 	case PERF_RECORD_FINISHED_ROUND:
+ 		return tool->finished_round(tool, event, session);
++	case PERF_RECORD_ID_INDEX:
++		return tool->id_index(tool, event, session);
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -1594,3 +1608,111 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ out:
+ 	return err;
+ }
 +
-+sys.path.append(os.environ['PERF_EXEC_PATH'] + \
-+	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
++int perf_event__process_id_index(struct perf_tool *tool __maybe_unused,
++				 union perf_event *event,
++				 struct perf_session *session)
++{
++	struct perf_evlist *evlist = session->evlist;
++	struct id_index_event *ie = &event->id_index;
++	size_t i, nr, max_nr;
 +
-+# These perf imports are not used at present
-+#from perf_trace_context import *
-+#from Core import *
++	max_nr = (ie->header.size - sizeof(struct id_index_event)) /
++		 sizeof(struct id_index_entry);
++	nr = ie->nr;
++	if (nr > max_nr)
++		return -EINVAL;
 +
-+perf_db_export_mode = True
++	if (dump_trace)
++		fprintf(stdout, " nr: %zu\n", nr);
 +
-+def usage():
-+	print >> sys.stderr, "Usage is: export-to-postgresql.py <database name> [<columns>]"
-+	print >> sys.stderr, "where:	columns		'all' or 'branches'"
-+	raise Exception("Too few arguments")
++	for (i = 0; i < nr; i++) {
++		struct id_index_entry *e = &ie->entries[i];
++		struct perf_sample_id *sid;
 +
-+if (len(sys.argv) < 2):
-+	usage()
++		if (dump_trace) {
++			fprintf(stdout,	" ... id: %"PRIu64, e->id);
++			fprintf(stdout,	"  idx: %"PRIu64, e->idx);
++			fprintf(stdout,	"  cpu: %"PRId64, e->cpu);
++			fprintf(stdout,	"  tid: %"PRId64"\n", e->tid);
++		}
 +
-+dbname = sys.argv[1]
++		sid = perf_evlist__id2sid(evlist, e->id);
++		if (!sid)
++			return -ENOENT;
++		sid->idx = e->idx;
++		sid->cpu = e->cpu;
++		sid->tid = e->tid;
++	}
++	return 0;
++}
 +
-+if (len(sys.argv) >= 3):
-+	columns = sys.argv[2]
-+else:
-+	columns = "all"
++int perf_event__synthesize_id_index(struct perf_tool *tool,
++				    perf_event__handler_t process,
++				    struct perf_evlist *evlist,
++				    struct machine *machine)
++{
++	union perf_event *ev;
++	struct perf_evsel *evsel;
++	size_t nr = 0, i = 0, sz, max_nr, n;
++	int err;
 +
-+if columns not in ("all", "branches"):
-+	usage()
++	pr_debug2("Synthesizing id index\n");
 +
-+branches = (columns == "branches")
++	max_nr = (UINT16_MAX - sizeof(struct id_index_event)) /
++		 sizeof(struct id_index_entry);
 +
-+output_dir_name = os.getcwd() + "/" + dbname + "-perf-data"
-+os.mkdir(output_dir_name)
++	list_for_each_entry(evsel, &evlist->entries, node)
++		nr += evsel->ids;
 +
-+def do_query(q, s):
-+	if (q.exec_(s)):
-+		return
-+	raise Exception("Query failed: " + q.lastError().text())
++	n = nr > max_nr ? max_nr : nr;
++	sz = sizeof(struct id_index_event) + n * sizeof(struct id_index_entry);
++	ev = zalloc(sz);
++	if (!ev)
++		return -ENOMEM;
 +
-+print datetime.datetime.today(), "Creating database..."
++	ev->id_index.header.type = PERF_RECORD_ID_INDEX;
++	ev->id_index.header.size = sz;
++	ev->id_index.nr = n;
 +
-+db = QSqlDatabase.addDatabase('QPSQL')
-+query = QSqlQuery(db)
-+db.setDatabaseName('postgres')
-+db.open()
-+try:
-+	do_query(query, 'CREATE DATABASE ' + dbname)
-+except:
-+	os.rmdir(output_dir_name)
-+	raise
-+query.finish()
-+query.clear()
-+db.close()
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		u32 j;
 +
-+db.setDatabaseName(dbname)
-+db.open()
++		for (j = 0; j < evsel->ids; j++) {
++			struct id_index_entry *e;
++			struct perf_sample_id *sid;
 +
-+query = QSqlQuery(db)
-+do_query(query, 'SET client_min_messages TO WARNING')
++			if (i >= n) {
++				err = process(tool, ev, NULL, machine);
++				if (err)
++					goto out_err;
++				nr -= n;
++				i = 0;
++			}
 +
-+do_query(query, 'CREATE TABLE selected_events ('
-+		'id		bigint		NOT NULL,'
-+		'name		varchar(80))')
-+do_query(query, 'CREATE TABLE machines ('
-+		'id		bigint		NOT NULL,'
-+		'pid		integer,'
-+		'root_dir 	varchar(4096))')
-+do_query(query, 'CREATE TABLE threads ('
-+		'id		bigint		NOT NULL,'
-+		'machine_id	bigint,'
-+		'process_id	bigint,'
-+		'pid		integer,'
-+		'tid		integer)')
-+do_query(query, 'CREATE TABLE comms ('
-+		'id		bigint		NOT NULL,'
-+		'comm		varchar(16))')
-+do_query(query, 'CREATE TABLE comm_threads ('
-+		'id		bigint		NOT NULL,'
-+		'comm_id	bigint,'
-+		'thread_id	bigint)')
-+do_query(query, 'CREATE TABLE dsos ('
-+		'id		bigint		NOT NULL,'
-+		'machine_id	bigint,'
-+		'short_name	varchar(256),'
-+		'long_name	varchar(4096),'
-+		'build_id	varchar(64))')
-+do_query(query, 'CREATE TABLE symbols ('
-+		'id		bigint		NOT NULL,'
-+		'dso_id		bigint,'
-+		'sym_start	bigint,'
-+		'sym_end	bigint,'
-+		'binding	integer,'
-+		'name		varchar(2048))')
-+if branches:
-+	do_query(query, 'CREATE TABLE samples ('
-+		'id		bigint		NOT NULL,'
-+		'evsel_id	bigint,'
-+		'machine_id	bigint,'
-+		'thread_id	bigint,'
-+		'comm_id	bigint,'
-+		'dso_id		bigint,'
-+		'symbol_id	bigint,'
-+		'sym_offset	bigint,'
-+		'ip		bigint,'
-+		'time		bigint,'
-+		'cpu		integer,'
-+		'to_dso_id	bigint,'
-+		'to_symbol_id	bigint,'
-+		'to_sym_offset	bigint,'
-+		'to_ip		bigint)')
-+else:
-+	do_query(query, 'CREATE TABLE samples ('
-+		'id		bigint		NOT NULL,'
-+		'evsel_id	bigint,'
-+		'machine_id	bigint,'
-+		'thread_id	bigint,'
-+		'comm_id	bigint,'
-+		'dso_id		bigint,'
-+		'symbol_id	bigint,'
-+		'sym_offset	bigint,'
-+		'ip		bigint,'
-+		'time		bigint,'
-+		'cpu		integer,'
-+		'to_dso_id	bigint,'
-+		'to_symbol_id	bigint,'
-+		'to_sym_offset	bigint,'
-+		'to_ip		bigint,'
-+		'period		bigint,'
-+		'weight		bigint,'
-+		'transaction	bigint,'
-+		'data_src	bigint)')
++			e = &ev->id_index.entries[i++];
 +
-+do_query(query, 'CREATE VIEW samples_view AS '
-+	'SELECT '
-+		'id,'
-+		'time,'
-+		'cpu,'
-+		'(SELECT pid FROM threads WHERE id = thread_id) AS pid,'
-+		'(SELECT tid FROM threads WHERE id = thread_id) AS tid,'
-+		'(SELECT comm FROM comms WHERE id = comm_id) AS command,'
-+		'(SELECT name FROM selected_events WHERE id = evsel_id) AS event,'
-+		'to_hex(ip) AS ip_hex,'
-+		'(SELECT name FROM symbols WHERE id = symbol_id) AS symbol,'
-+		'sym_offset,'
-+		'(SELECT short_name FROM dsos WHERE id = dso_id) AS dso_short_name,'
-+		'to_hex(to_ip) AS to_ip_hex,'
-+		'(SELECT name FROM symbols WHERE id = to_symbol_id) AS to_symbol,'
-+		'to_sym_offset,'
-+		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name'
-+	' FROM samples')
++			e->id = evsel->id[j];
 +
++			sid = perf_evlist__id2sid(evlist, e->id);
++			if (!sid) {
++				free(ev);
++				return -ENOENT;
++			}
 +
-+file_header = struct.pack("!11sii", "PGCOPY\n\377\r\n\0", 0, 0)
-+file_trailer = "\377\377"
++			e->idx = sid->idx;
++			e->cpu = sid->cpu;
++			e->tid = sid->tid;
++		}
++	}
 +
-+def open_output_file(file_name):
-+	path_name = output_dir_name + "/" + file_name
-+	file = open(path_name, "w+")
-+	file.write(file_header)
-+	return file
++	sz = sizeof(struct id_index_event) + nr * sizeof(struct id_index_entry);
++	ev->id_index.header.size = sz;
++	ev->id_index.nr = nr;
 +
-+def close_output_file(file):
-+	file.write(file_trailer)
-+	file.close()
++	err = process(tool, ev, NULL, machine);
++out_err:
++	free(ev);
 +
-+def copy_output_file_direct(file, table_name):
-+	close_output_file(file)
-+	sql = "COPY " + table_name + " FROM '" + file.name + "' (FORMAT 'binary')"
-+	do_query(query, sql)
++	return err;
++}
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index a4be851f1a90..d8521ac73a10 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -126,4 +126,14 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ extern volatile int session_done;
+ 
+ #define session_done()	ACCESS_ONCE(session_done)
 +
-+# Use COPY FROM STDIN because security may prevent postgres from accessing the files directly
-+def copy_output_file(file, table_name):
-+	conn = PQconnectdb("dbname = " + dbname)
-+	if (PQstatus(conn)):
-+		raise Exception("COPY FROM STDIN PQconnectdb failed")
-+	file.write(file_trailer)
-+	file.seek(0)
-+	sql = "COPY " + table_name + " FROM STDIN (FORMAT 'binary')"
-+	res = PQexec(conn, sql)
-+	if (PQresultStatus(res) != 4):
-+		raise Exception("COPY FROM STDIN PQexec failed")
-+	data = file.read(65536)
-+	while (len(data)):
-+		ret = PQputCopyData(conn, data, len(data))
-+		if (ret != 1):
-+			raise Exception("COPY FROM STDIN PQputCopyData failed, error " + str(ret))
-+		data = file.read(65536)
-+	ret = PQputCopyEnd(conn, None)
-+	if (ret != 1):
-+		raise Exception("COPY FROM STDIN PQputCopyEnd failed, error " + str(ret))
-+	PQfinish(conn)
++int perf_event__process_id_index(struct perf_tool *tool,
++				 union perf_event *event,
++				 struct perf_session *session);
 +
-+def remove_output_file(file):
-+	name = file.name
-+	file.close()
-+	os.unlink(name)
++int perf_event__synthesize_id_index(struct perf_tool *tool,
++				    perf_event__handler_t process,
++				    struct perf_evlist *evlist,
++				    struct machine *machine);
 +
-+evsel_file		= open_output_file("evsel_table.bin")
-+machine_file		= open_output_file("machine_table.bin")
-+thread_file		= open_output_file("thread_table.bin")
-+comm_file		= open_output_file("comm_table.bin")
-+comm_thread_file	= open_output_file("comm_thread_table.bin")
-+dso_file		= open_output_file("dso_table.bin")
-+symbol_file		= open_output_file("symbol_table.bin")
-+sample_file		= open_output_file("sample_table.bin")
-+
-+def trace_begin():
-+	print datetime.datetime.today(), "Writing to intermediate files..."
-+	# id == 0 means unknown.  It is easier to create records for them than replace the zeroes with NULLs
-+	evsel_table(0, "unknown")
-+	machine_table(0, 0, "unknown")
-+	thread_table(0, 0, 0, -1, -1)
-+	comm_table(0, "unknown")
-+	dso_table(0, 0, "unknown", "unknown", "")
-+	symbol_table(0, 0, 0, 0, 0, "unknown")
-+
-+unhandled_count = 0
-+
-+def trace_end():
-+	print datetime.datetime.today(), "Copying to database..."
-+	copy_output_file(evsel_file,		"selected_events")
-+	copy_output_file(machine_file,		"machines")
-+	copy_output_file(thread_file,		"threads")
-+	copy_output_file(comm_file,		"comms")
-+	copy_output_file(comm_thread_file,	"comm_threads")
-+	copy_output_file(dso_file,		"dsos")
-+	copy_output_file(symbol_file,		"symbols")
-+	copy_output_file(sample_file,		"samples")
-+
-+	print datetime.datetime.today(), "Removing intermediate files..."
-+	remove_output_file(evsel_file)
-+	remove_output_file(machine_file)
-+	remove_output_file(thread_file)
-+	remove_output_file(comm_file)
-+	remove_output_file(comm_thread_file)
-+	remove_output_file(dso_file)
-+	remove_output_file(symbol_file)
-+	remove_output_file(sample_file)
-+	os.rmdir(output_dir_name)
-+	print datetime.datetime.today(), "Adding primary keys"
-+	do_query(query, 'ALTER TABLE selected_events ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE machines        ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE threads         ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE comms           ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE comm_threads    ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE dsos            ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE symbols         ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE samples         ADD PRIMARY KEY (id)')
-+
-+	print datetime.datetime.today(), "Adding foreign keys"
-+	do_query(query, 'ALTER TABLE threads '
-+					'ADD CONSTRAINT machinefk  FOREIGN KEY (machine_id)   REFERENCES machines   (id),'
-+					'ADD CONSTRAINT processfk  FOREIGN KEY (process_id)   REFERENCES threads    (id)')
-+	do_query(query, 'ALTER TABLE comm_threads '
-+					'ADD CONSTRAINT commfk     FOREIGN KEY (comm_id)      REFERENCES comms      (id),'
-+					'ADD CONSTRAINT threadfk   FOREIGN KEY (thread_id)    REFERENCES threads    (id)')
-+	do_query(query, 'ALTER TABLE dsos '
-+					'ADD CONSTRAINT machinefk  FOREIGN KEY (machine_id)   REFERENCES machines   (id)')
-+	do_query(query, 'ALTER TABLE symbols '
-+					'ADD CONSTRAINT dsofk      FOREIGN KEY (dso_id)       REFERENCES dsos       (id)')
-+	do_query(query, 'ALTER TABLE samples '
-+					'ADD CONSTRAINT evselfk    FOREIGN KEY (evsel_id)     REFERENCES selected_events (id),'
-+					'ADD CONSTRAINT machinefk  FOREIGN KEY (machine_id)   REFERENCES machines   (id),'
-+					'ADD CONSTRAINT threadfk   FOREIGN KEY (thread_id)    REFERENCES threads    (id),'
-+					'ADD CONSTRAINT commfk     FOREIGN KEY (comm_id)      REFERENCES comms      (id),'
-+					'ADD CONSTRAINT dsofk      FOREIGN KEY (dso_id)       REFERENCES dsos       (id),'
-+					'ADD CONSTRAINT symbolfk   FOREIGN KEY (symbol_id)    REFERENCES symbols    (id),'
-+					'ADD CONSTRAINT todsofk    FOREIGN KEY (to_dso_id)    REFERENCES dsos       (id),'
-+					'ADD CONSTRAINT tosymbolfk FOREIGN KEY (to_symbol_id) REFERENCES symbols    (id)')
-+
-+	if (unhandled_count):
-+		print datetime.datetime.today(), "Warning: ", unhandled_count, " unhandled events"
-+	print datetime.datetime.today(), "Done"
-+
-+def trace_unhandled(event_name, context, event_fields_dict):
-+	global unhandled_count
-+	unhandled_count += 1
-+
-+def sched__sched_switch(*x):
-+	pass
-+
-+def evsel_table(evsel_id, evsel_name, *x):
-+	n = len(evsel_name)
-+	fmt = "!hiqi" + str(n) + "s"
-+	value = struct.pack(fmt, 2, 8, evsel_id, n, evsel_name)
-+	evsel_file.write(value)
-+
-+def machine_table(machine_id, pid, root_dir, *x):
-+	n = len(root_dir)
-+	fmt = "!hiqiii" + str(n) + "s"
-+	value = struct.pack(fmt, 3, 8, machine_id, 4, pid, n, root_dir)
-+	machine_file.write(value)
-+
-+def thread_table(thread_id, machine_id, process_id, pid, tid, *x):
-+	value = struct.pack("!hiqiqiqiiii", 5, 8, thread_id, 8, machine_id, 8, process_id, 4, pid, 4, tid)
-+	thread_file.write(value)
-+
-+def comm_table(comm_id, comm_str, *x):
-+	n = len(comm_str)
-+	fmt = "!hiqi" + str(n) + "s"
-+	value = struct.pack(fmt, 2, 8, comm_id, n, comm_str)
-+	comm_file.write(value)
-+
-+def comm_thread_table(comm_thread_id, comm_id, thread_id, *x):
-+	fmt = "!hiqiqiq"
-+	value = struct.pack(fmt, 3, 8, comm_thread_id, 8, comm_id, 8, thread_id)
-+	comm_thread_file.write(value)
-+
-+def dso_table(dso_id, machine_id, short_name, long_name, build_id, *x):
-+	n1 = len(short_name)
-+	n2 = len(long_name)
-+	n3 = len(build_id)
-+	fmt = "!hiqiqi" + str(n1) + "si"  + str(n2) + "si" + str(n3) + "s"
-+	value = struct.pack(fmt, 5, 8, dso_id, 8, machine_id, n1, short_name, n2, long_name, n3, build_id)
-+	dso_file.write(value)
-+
-+def symbol_table(symbol_id, dso_id, sym_start, sym_end, binding, symbol_name, *x):
-+	n = len(symbol_name)
-+	fmt = "!hiqiqiqiqiii" + str(n) + "s"
-+	value = struct.pack(fmt, 6, 8, symbol_id, 8, dso_id, 8, sym_start, 8, sym_end, 4, binding, n, symbol_name)
-+	symbol_file.write(value)
-+
-+def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, *x):
-+	if branches:
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiq", 15, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip)
-+	else:
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiq", 19, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src)
-+	sample_file.write(value)
+ #endif /* __PERF_SESSION_H */
+diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
+index f11636966a0f..bb2708bbfaca 100644
+--- a/tools/perf/util/tool.h
++++ b/tools/perf/util/tool.h
+@@ -39,7 +39,8 @@ struct perf_tool {
+ 	event_attr_op	attr;
+ 	event_op2	tracing_data;
+ 	event_op2	finished_round,
+-			build_id;
++			build_id,
++			id_index;
+ 	bool		ordered_events;
+ 	bool		ordering_requires_timestamps;
+ };
 -- 
 1.9.3
 
