@@ -1,76 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaJ2INS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 04:13:18 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:35716 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398AbaJ2INN (ORCPT
+	id S1756015AbaJ2INa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 04:13:30 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:2472 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843AbaJ2INX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 04:13:13 -0400
+	Wed, 29 Oct 2014 04:13:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 29 Oct 2014 01:08:31 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v2] Documentation: gpio: guidelines for bindings
+Date: Wed, 29 Oct 2014 17:13:14 +0900
+Message-ID: <1414570394-11706-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.1.2
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <20141029020833.GA29787@verge.net.au>
-References: <20141028004131.GA8280@verge.net.au>
-	<CAMuHMdXmOeJowF9FSQtoUzNK4zohvSYm+r3qp41-JigAOJ=+fg@mail.gmail.com>
-	<20141028092305.GA11937@verge.net.au>
-	<CAMuHMdUnwT7a1Gewz3AW-R9EaQBfYkJ2y7ZQ6uW4GaxBAHXzXg@mail.gmail.com>
-	<20141029001258.GE20702@verge.net.au>
-	<20141029020833.GA29787@verge.net.au>
-Date: Wed, 29 Oct 2014 09:13:11 +0100
-X-Google-Sender-Auth: LdrnnPelMsNWOYS1NwDnZUhYdPg
-Message-ID: <CAMuHMdWkP=t2WL64X8vKdOPXW_ZpbibXQ66un8GfVTWoc-o+tw@mail.gmail.com>
-Subject: Re: non-Multiplatform APE6EVM broken in v3.18-rc1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Simon Horman <horms@verge.net.au>
-Cc: Linux-sh list <linux-sh@vger.kernel.org>,
-        Sudeep Holla <sudeep.holla@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 3:08 AM, Simon Horman <horms@verge.net.au> wrote:
-> On Wed, Oct 29, 2014 at 09:12:58AM +0900, Simon Horman wrote:
->> On Tue, Oct 28, 2014 at 10:32:32AM +0100, Geert Uytterhoeven wrote:
->> > On Tue, Oct 28, 2014 at 10:23 AM, Simon Horman <horms@verge.net.au> wrote:
->> > > On Tue, Oct 28, 2014 at 08:59:28AM +0100, Geert Uytterhoeven wrote:
->> > >> On Tue, Oct 28, 2014 at 1:41 AM, Simon Horman <horms@verge.net.au> wrote:
->> > >> > I have noticed that there appears to be a regression between v3.17 and
->> > >> > v3.18-rc1 such that non-multiplatform APE6EVM (ape6evm_defconfig) no longer
->> > >> > boots.  This appears to be the case using both reference DT (MACH_APE6EVM)
+Now that ACPI supports named GPIO properties, either through ACPI 5.1 or
+the per-driver ACPI GPIO mappings, we can be more narrow about the way
+GPIOs should be specified in Device Tree bindings.
 
-> It seems that the boot stops here:
->
-> ...
-> smsc911x smsc911x eth0: MAC Address: 00:08:f7:00:02:4b
-> rcar_thermal rcar_thermal: Runtime PM disabled, clock forced on.
-> rcar_thermal rcar_thermal: 3 sensor probed
-> sh_mobile_sdhi sh_mobile_sdhi.0: Runtime PM disabled, clock forced on.
-> sh_mobile_sdhi sh_mobile_sdhi.0: No vqmmc regulator found
->
-> I re-ran my bisection and this time the following showed up as the culprit.
->
-> I suspect that the initialisation of mmcif, which is usually the next
-> device to be initialised, sleeps and never wakes up because the timer is
-> disabled.
->
-> commit c387f07e6205cc13f57c1def5f885bf0a20e1c2d
-> Author: Sudeep Holla <sudeep.holla@arm.com>
-> Date:   Mon Sep 29 01:50:05 2014 +0200
->
->     clocksource: arm_arch_timer: Discard unavailable timers correctly
+This patch updates the GPIO DT bindings documentation to highlight the
+following rules for new GPIO bindings:
 
-Apparently reported and fixed by Laurent and a few others, cfr.
-http://www.spinics.net/lists/arm-kernel/msg371615.html
+- All new bindings must have a meaningful name (e.g. the "gpios"
+  property must not be used)
+- The only suffix allowed is "-gpios", no matter the number of
+  descriptors in the property
+- GPIOs can only be grouped under the same property when they serve the
+  same purpose, a case that should remain exceptional (e.g. bit-banged
+  data lines).
 
-Gr{oetje,eeting}s,
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+CC: Linus Walleij <linus.walleij@linaro.org>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Rafael J. Wysocki <rjw@rjwysocki.net>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+Changes since v1:
+- Rewritten in OS-neutral manner.
 
-                        Geert
+ Documentation/devicetree/bindings/gpio/gpio.txt | 40 ++++++++++++++++---------
+ 1 file changed, 26 insertions(+), 14 deletions(-)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+index 3fb8f53071b8..b9bd1d64cfa6 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+@@ -13,13 +13,22 @@ properties, each containing a 'gpio-list':
+ 	gpio-specifier : Array of #gpio-cells specifying specific gpio
+ 			 (controller specific)
+ 
+-GPIO properties should be named "[<name>-]gpios". The exact
+-meaning of each gpios property must be documented in the device tree
+-binding for each device.
++GPIO properties should be named "[<name>-]gpios", with <name> being the purpose
++of this GPIO for the device. While a non-existent <name> is considered valid
++for compatibility reasons (resolving to the "gpios" property), it is not allowed
++for new bindings.
+ 
+-For example, the following could be used to describe GPIO pins used
+-as chip select lines; with chip selects 0, 1 and 3 populated, and chip
+-select 2 left empty:
++GPIO properties can contain one or more GPIO phandles, but only in exceptional
++cases should they contain more than one. If your device uses several GPIOs with
++distinct functions, reference each of them under its own property, giving it a
++meaningful name. The only case where an array of GPIOs is accepted is when
++several GPIOs serve the same function (e.g. a parallel data line).
++
++The exact purpose of each gpios property must be documented in the device tree
++binding of the device.
++
++The following example could be used to describe GPIO pins used as device enable
++and bit-banged data signals:
+ 
+ 	gpio1: gpio1 {
+ 		gpio-controller
+@@ -30,10 +39,12 @@ select 2 left empty:
+ 		 #gpio-cells = <1>;
+ 	};
+ 	[...]
+-	 chipsel-gpios = <&gpio1 12 0>,
+-			 <&gpio1 13 0>,
+-			 <0>, /* holes are permitted, means no GPIO 2 */
+-			 <&gpio2 2>;
++
++	enable-gpios = <&gpio2 2>;
++	data-gpios = <&gpio1 12 0>,
++		     <&gpio1 13 0>,
++		     <&gpio1 14 0>,
++		     <&gpio1 15 0>;
+ 
+ Note that gpio-specifier length is controller dependent.  In the
+ above example, &gpio1 uses 2 cells to specify a gpio, while &gpio2
+@@ -42,16 +53,17 @@ only uses one.
+ gpio-specifier may encode: bank, pin position inside the bank,
+ whether pin is open-drain and whether pin is logically inverted.
+ Exact meaning of each specifier cell is controller specific, and must
+-be documented in the device tree binding for the device.
++be documented in the device tree binding for the device. Use the macros
++defined in include/dt-bindings/gpio/gpio.h whenever possible:
+ 
+ Example of a node using GPIOs:
+ 
+ 	node {
+-		gpios = <&qe_pio_e 18 0>;
++		enable-gpios = <&qe_pio_e 18 GPIO_ACTIVE_HIGH>;
+ 	};
+ 
+-In this example gpio-specifier is "18 0" and encodes GPIO pin number,
+-and GPIO flags as accepted by the "qe_pio_e" gpio-controller.
++GPIO_ACTIVE_HIGH is 0, so in this example gpio-specifier is "18 0" and encodes
++GPIO pin number, and GPIO flags as accepted by the "qe_pio_e" gpio-controller.
+ 
+ 1.1) GPIO specifier best practices
+ ----------------------------------
+-- 
+2.1.2
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
