@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934241AbaJ2QCl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:02:41 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:56723 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933751AbaJ2QCj (ORCPT
+	id S934297AbaJ2QC5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:02:57 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42395 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934251AbaJ2QCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:02:39 -0400
-Date: Wed, 29 Oct 2014 18:02:34 +0200
-From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-To: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
-Cc: linux390@de.ibm.com, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de,
-        opw-kernel@googlegroups.com
-Subject: [PATCH] drivers: s390: net: ctcm: migrate variables to handle y2038
- problem
-Message-ID: <20141029160234.GA5003@localhost.localdomain>
+	Wed, 29 Oct 2014 12:02:53 -0400
+X-Originating-IP: 50.43.41.112
+Date: Wed, 29 Oct 2014 09:02:43 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: [PATCH v3 1/3] x86: process: Unify 32-bit and 64-bit copy_thread I/O
+ bitmap handling
+Message-ID: <7159269982aac3b732af2c33a2e3d04e2048bdfb.1414598511.git.josh@joshtriplett.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,101 +26,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is concerned with migrating the time variables for the s390
-network driver. The changes handle the y2038 problem where timespec will
-overflow in the year 2038. timespec64 and unsigned long long were used
-instead of timespec and unsigned long respectively in two files.
-All timespec variables use monotonic time values through the function
-ktime_get_ts64(). This is to make sure that all the time values
-are calculated from a fixed point.
+The 32-bit and 64-bit versions of copy_thread have functionally
+identical handling for copying the I/O bitmap, modulo differences in
+error handling.  Clean up the error paths in both by moving the copy of
+the I/O bitmap to the end, to eliminate the need to free it if
+subsequent copy steps fail; move the resulting identical code to a
+static inline in a common header.
 
-Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Acked-by: Kees Cook <keescook@chromium.org>
 ---
-v1: Arnd has advised me to provide you with options for time 
-    calculation. The first option: "accuracy" is used in this
-    patch. The second option: "speed" can be done through
-    jiffies and current_kernel_time().
+v3: No changes in this patch, only in patch 3/3.
 
- drivers/s390/net/ctcm_fsms.c | 18 +++++++++++-------
- drivers/s390/net/ctcm_main.h |  4 ++--
- 2 files changed, 13 insertions(+), 9 deletions(-)
+ arch/x86/kernel/process-io.h | 22 ++++++++++++++++++++++
+ arch/x86/kernel/process_32.c | 28 ++++++++--------------------
+ arch/x86/kernel/process_64.c | 25 +++++--------------------
+ 3 files changed, 35 insertions(+), 40 deletions(-)
+ create mode 100644 arch/x86/kernel/process-io.h
 
-diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
-index fb92524..233aef8 100644
---- a/drivers/s390/net/ctcm_fsms.c
-+++ b/drivers/s390/net/ctcm_fsms.c
-@@ -250,8 +250,10 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
- 	struct sk_buff *skb;
- 	int first = 1;
- 	int i;
--	unsigned long duration;
--	struct timespec done_stamp = current_kernel_time(); /* xtime */
-+	unsigned long long duration;
-+	struct timespec64 done_stamp;
+diff --git a/arch/x86/kernel/process-io.h b/arch/x86/kernel/process-io.h
+new file mode 100644
+index 0000000..d884444
+--- /dev/null
++++ b/arch/x86/kernel/process-io.h
+@@ -0,0 +1,22 @@
++#ifndef _X86_KERNEL_PROCESS_IO_H
++#define _X86_KERNEL_PROCESS_IO_H
 +
-+	ktime_get_ts64(&done_stamp);
- 
- 	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
- 
-@@ -307,7 +309,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
- 		spin_unlock(&ch->collect_lock);
- 		ch->ccw[1].count = ch->trans_skb->len;
- 		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
--		ch->prof.send_stamp = current_kernel_time(); /* xtime */
-+		ktime_get_ts64(&ch->prof.sendstamp);
- 		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
- 						(unsigned long)ch, 0xff, 0);
- 		ch->prof.doios_multi++;
-@@ -1224,12 +1226,14 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
- 	int		first = 1;
- 	int		i;
- 	__u32		data_space;
--	unsigned long	duration;
-+	unsigned long long	duration;
- 	struct sk_buff	*peekskb;
- 	int		rc;
- 	struct th_header *header;
- 	struct pdu	*p_header;
--	struct timespec done_stamp = current_kernel_time(); /* xtime */
-+	struct timespec64 done_stamp;
++static inline int copy_io_bitmap(struct task_struct *me,
++				 struct task_struct *p)
++{
++	if (unlikely(test_tsk_thread_flag(me, TIF_IO_BITMAP))) {
++		p->thread.io_bitmap_ptr = kmemdup(me->thread.io_bitmap_ptr,
++						  IO_BITMAP_BYTES, GFP_KERNEL);
++		if (!p->thread.io_bitmap_ptr) {
++			p->thread.io_bitmap_max = 0;
++			return -ENOMEM;
++		}
++		set_tsk_thread_flag(p, TIF_IO_BITMAP);
++	} else {
++		p->thread.io_bitmap_ptr = NULL;
++	}
 +
-+	ktime_get_ts64(&done_stamp);
++	return 0;
++}
++
++#endif /* _X86_KERNEL_PROCESS_IO_H */
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 8f3ebfe..07550ff 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -55,6 +55,8 @@
+ #include <asm/debugreg.h>
+ #include <asm/switch_to.h>
  
- 	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
- 			__func__, dev->name, smp_processor_id());
-@@ -1361,7 +1365,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
++#include "process-io.h"
++
+ asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
+ asmlinkage void ret_from_kernel_thread(void) __asm__("ret_from_kernel_thread");
  
- 	ch->ccw[1].count = ch->trans_skb->len;
- 	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
--	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-+	ktime_get_ts64(&ch->prof.send_stamp);
- 	if (do_debug_ccw)
- 		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
- 	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
-@@ -1827,7 +1831,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
- 	fsm_newstate(wch->fsm, CTC_STATE_TX);
+@@ -134,7 +136,6 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ {
+ 	struct pt_regs *childregs = task_pt_regs(p);
+ 	struct task_struct *tsk;
+-	int err;
  
- 	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
--	wch->prof.send_stamp = current_kernel_time(); /* xtime */
-+	ktime_get_ts64(&wch->prof.send_stamp);
- 	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
- 					(unsigned long) wch, 0xff, 0);
- 	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
-diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
-index 477c933..ed7d44a 100644
---- a/drivers/s390/net/ctcm_main.h
-+++ b/drivers/s390/net/ctcm_main.h
-@@ -120,8 +120,8 @@ struct ctcm_profile {
- 	unsigned long doios_single;
- 	unsigned long doios_multi;
- 	unsigned long txlen;
--	unsigned long tx_time;
--	struct timespec send_stamp;
-+	unsigned long long tx_time;
-+	struct timespec64 send_stamp;
- };
+ 	p->thread.sp = (unsigned long) childregs;
+ 	p->thread.sp0 = (unsigned long) (childregs+1);
+@@ -166,32 +167,19 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
  
- /*
+ 	p->thread.io_bitmap_ptr = NULL;
+ 	tsk = current;
+-	err = -ENOMEM;
+-
+-	if (unlikely(test_tsk_thread_flag(tsk, TIF_IO_BITMAP))) {
+-		p->thread.io_bitmap_ptr = kmemdup(tsk->thread.io_bitmap_ptr,
+-						IO_BITMAP_BYTES, GFP_KERNEL);
+-		if (!p->thread.io_bitmap_ptr) {
+-			p->thread.io_bitmap_max = 0;
+-			return -ENOMEM;
+-		}
+-		set_tsk_thread_flag(p, TIF_IO_BITMAP);
+-	}
+-
+-	err = 0;
+ 
+ 	/*
+ 	 * Set a new TLS for the child thread?
+ 	 */
+-	if (clone_flags & CLONE_SETTLS)
++	if (clone_flags & CLONE_SETTLS) {
++		int err;
+ 		err = do_set_thread_area(p, -1,
+ 			(struct user_desc __user *)childregs->si, 0);
+-
+-	if (err && p->thread.io_bitmap_ptr) {
+-		kfree(p->thread.io_bitmap_ptr);
+-		p->thread.io_bitmap_max = 0;
++		if(err)
++			return err;
+ 	}
+-	return err;
++
++	return copy_io_bitmap(tsk, p);
+ }
+ 
+ void
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 3ed4a68..b1babb4 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -50,6 +50,8 @@
+ #include <asm/debugreg.h>
+ #include <asm/switch_to.h>
+ 
++#include "process-io.h"
++
+ asmlinkage extern void ret_from_fork(void);
+ 
+ __visible DEFINE_PER_CPU(unsigned long, old_rsp);
+@@ -154,7 +156,6 @@ static inline u32 read_32bit_tls(struct task_struct *t, int tls)
+ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 		unsigned long arg, struct task_struct *p)
+ {
+-	int err;
+ 	struct pt_regs *childregs;
+ 	struct task_struct *me = current;
+ 
+@@ -191,21 +192,11 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 	if (sp)
+ 		childregs->sp = sp;
+ 
+-	err = -ENOMEM;
+-	if (unlikely(test_tsk_thread_flag(me, TIF_IO_BITMAP))) {
+-		p->thread.io_bitmap_ptr = kmemdup(me->thread.io_bitmap_ptr,
+-						  IO_BITMAP_BYTES, GFP_KERNEL);
+-		if (!p->thread.io_bitmap_ptr) {
+-			p->thread.io_bitmap_max = 0;
+-			return -ENOMEM;
+-		}
+-		set_tsk_thread_flag(p, TIF_IO_BITMAP);
+-	}
+-
+ 	/*
+ 	 * Set a new TLS for the child thread?
+ 	 */
+ 	if (clone_flags & CLONE_SETTLS) {
++		int err;
+ #ifdef CONFIG_IA32_EMULATION
+ 		if (test_thread_flag(TIF_IA32))
+ 			err = do_set_thread_area(p, -1,
+@@ -214,16 +205,10 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ #endif
+ 			err = do_arch_prctl(p, ARCH_SET_FS, childregs->r8);
+ 		if (err)
+-			goto out;
+-	}
+-	err = 0;
+-out:
+-	if (err && p->thread.io_bitmap_ptr) {
+-		kfree(p->thread.io_bitmap_ptr);
+-		p->thread.io_bitmap_max = 0;
++			return err;
+ 	}
+ 
+-	return err;
++	return copy_io_bitmap(me, p);
+ }
+ 
+ static void
 -- 
-1.9.3
+2.1.1
 
