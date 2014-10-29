@@ -1,176 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933789AbaJ2OTI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:19:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60612 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932476AbaJ2OTD (ORCPT
+	id S933870AbaJ2OTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:19:47 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:45819 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933398AbaJ2OTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:19:03 -0400
-Date: Wed, 29 Oct 2014 07:18:30 -0700
-From: tip-bot for Heena Sirwani <tipbot@zytor.com>
-Message-ID: <tip-9e3680b1750b9a62680b0262c9f438de98b77655@git.kernel.org>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        tglx@linutronix.de, heenasirwani@gmail.com, arnd@arndb.de,
-        mingo@kernel.org
-Reply-To: arnd@arndb.de, heenasirwani@gmail.com, mingo@kernel.org,
-        john.stultz@linaro.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        tglx@linutronix.de
-In-Reply-To: <da0b63f4bdf3478909f92becb35861197da3a905.1414578445.git.heenasirwani@gmail.com>
-References: <da0b63f4bdf3478909f92becb35861197da3a905.1414578445.git.heenasirwani@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/2038] timekeeping:
-  Provide fast accessor to the seconds part of CLOCK_MONOTONIC
-Git-Commit-ID: 9e3680b1750b9a62680b0262c9f438de98b77655
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 29 Oct 2014 10:19:06 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141028213426.GE18557@sirena.org.uk>
+References: <1414436825-19416-1-git-send-email-jcmvbkbc@gmail.com>
+	<20141027193229.GE18557@sirena.org.uk>
+	<CAMo8Bf+Z9V8mkiC3JOupPQmi1EJUDKrb1qcNncDbsEbhjigbww@mail.gmail.com>
+	<20141028154224.GX18557@sirena.org.uk>
+	<CAMo8BfLpJ0bdmaFt9+gLQ_kEjB68XdjAJUw8f8s=Owv46h_yDQ@mail.gmail.com>
+	<20141028173853.GD18557@sirena.org.uk>
+	<CAMo8BfL+vW7BjC1bQPNjhuBMTcRTkf8_DDS3NO2HmBUnfHYAFQ@mail.gmail.com>
+	<20141028213426.GE18557@sirena.org.uk>
+Date: Wed, 29 Oct 2014 17:19:05 +0300
+Message-ID: <CAMo8Bf+NT6HrtXzgx=9TBJwLYFJK1VE-fuBBuoUmmzchhOON2Q@mail.gmail.com>
+Subject: Re: [PATCH] ASoC: add xtensa xtfpga I2S interface and platform
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9e3680b1750b9a62680b0262c9f438de98b77655
-Gitweb:     http://git.kernel.org/tip/9e3680b1750b9a62680b0262c9f438de98b77655
-Author:     Heena Sirwani <heenasirwani@gmail.com>
-AuthorDate: Wed, 29 Oct 2014 16:01:16 +0530
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 29 Oct 2014 15:15:40 +0100
+On Wed, Oct 29, 2014 at 12:34 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Oct 28, 2014 at 09:11:34PM +0300, Max Filippov wrote:
+>> On Tue, Oct 28, 2014 at 8:38 PM, Mark Brown <broonie@kernel.org> wrote:
+>
+>> > You *really* need to explain how it's supposed to work - right now it's
+>> > not at all obvious, like I say the fact that this is a rarely used idiom
+>> > is not helping.  For example when we tear down the stream we just assign
+>> > the pointer in _stop() but don't bother with a sync until the stream is
+>> > closed - why?
+>
+>> Because we can't wait in stop and syncing is not time critical, we can
+>> do it any time before the stream becomes invalid.
+>
+> To be clear: the important part is that someone reading the code can
+> understand what's going on.
 
-timekeeping: Provide fast accessor to the seconds part of CLOCK_MONOTONIC
+Ok, I'll change it.
 
-This is the counterpart to get_seconds() based on CLOCK_MONOTONIC. The
-use case for this interface are kernel internal coarse grained
-timestamps which do neither require the nanoseconds fraction of
-current time nor the CLOCK_REALTIME properties. Such timestamps can
-currently only retrieved by calling ktime_get_ts64() and using the
-tv_sec field of the returned timespec64. That's inefficient as it
-involves the read of the clocksource, math operations and must be
-protected by the timekeeper sequence counter.
+>> >> hw_params callback can change MCLK rate, so it has to disable and
+>> >> enable the clock anyway, and since enable can fail it does not guarantee
+>> >> that the clock will be left in the same state. Or should I adjust MCLK rate
+>> >> w/o disabling the clock?
+>
+>> > So yet again: why not just enable the clock only when the device is in
+>> > use?  If it's being configured it stands to reason that the device isn't
+>> > actively in use...
+>
+>> Mark, I don't get it, sorry ): My clock synthesizer is I2C controlled, so
+>> I can't prepare/unprepare it in the trigger callback. When should I do it?
+>
+> Runtime PM is the normal way of doing it.
 
-To avoid the sequence counter protection we restrict the return value
-to unsigned 32bit on 32bit machines. This covers ~136 years of uptime
-and therefor an overflow is not expected to hit anytime soon.
+Ok, thanks.
 
-To avoid math in the function we calculate the current seconds portion
-of CLOCK_MONOTONIC when the timekeeper gets updated in
-tk_update_ktime_data() similar to the CLOCK_REALTIME counterpart
-xtime_sec.
+>> >> The level field in the control register is 4 bit wide, so the allowed range of
+>> >> level is 0..15. FIFO size is 8192 entries, level = 1 corresponds to
+>> >> FIFO size / 2, level = 14 -- to FIFO size of 0. I guess this function
+>> >> won't get period_size of 0?
+>
+>> > So if the IP gets changed and the code gets blown up this could well
+>> > explode then...  which doesn't seem entirely unlikely considering this
+>> > is a FPGA platform so presumably this is easy to update.  To repeat this
+>> > is about clarity and the code looking like it's probably hiding bugs as
+>> > much as if the code actually works if you really sit down and study it.
+>
+>> The calculation does not depend on the actual hardware, but on the
+>> constant definitions in the same file. They need to be updated if the
+>> hardware changes. I'll try to rewrite it in a cleaner way.
+>
+> Right, my point is that if someone changes the hardware they'll just
+> update the constants and then things will break.
 
-[ tglx: Massaged changelog, simplified and commented the update
-  	function, added docbook comment ]
+Ok, I've rewritten it in a safer manner.
 
-Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
-Reviewed-by: Arnd Bergman <arnd@arndb.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: opw-kernel@googlegroups.com
-Link: http://lkml.kernel.org/r/da0b63f4bdf3478909f92becb35861197da3a905.1414578445.git.heenasirwani@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/timekeeper_internal.h |  2 ++
- include/linux/timekeeping.h         |  1 +
- kernel/time/timekeeping.c           | 38 ++++++++++++++++++++++++++++++++-----
- 3 files changed, 36 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/timekeeper_internal.h b/include/linux/timekeeper_internal.h
-index 95640dc..05af9a3 100644
---- a/include/linux/timekeeper_internal.h
-+++ b/include/linux/timekeeper_internal.h
-@@ -42,6 +42,7 @@ struct tk_read_base {
-  * struct timekeeper - Structure holding internal timekeeping values.
-  * @tkr:		The readout base structure
-  * @xtime_sec:		Current CLOCK_REALTIME time in seconds
-+ * @ktime_sec:		Current CLOCK_MONOTONIC time in seconds
-  * @wall_to_monotonic:	CLOCK_REALTIME to CLOCK_MONOTONIC offset
-  * @offs_real:		Offset clock monotonic -> clock realtime
-  * @offs_boot:		Offset clock monotonic -> clock boottime
-@@ -77,6 +78,7 @@ struct tk_read_base {
- struct timekeeper {
- 	struct tk_read_base	tkr;
- 	u64			xtime_sec;
-+	unsigned long		ktime_sec;
- 	struct timespec64	wall_to_monotonic;
- 	ktime_t			offs_real;
- 	ktime_t			offs_boot;
-diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
-index 1caa6b0..115d55e 100644
---- a/include/linux/timekeeping.h
-+++ b/include/linux/timekeeping.h
-@@ -28,6 +28,7 @@ struct timespec __current_kernel_time(void);
- struct timespec get_monotonic_coarse(void);
- extern void getrawmonotonic(struct timespec *ts);
- extern void ktime_get_ts64(struct timespec64 *ts);
-+extern time64_t ktime_get_seconds(void);
- 
- extern int __getnstimeofday64(struct timespec64 *tv);
- extern void getnstimeofday64(struct timespec64 *tv);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index ec1791f..a693270 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -417,7 +417,8 @@ EXPORT_SYMBOL_GPL(pvclock_gtod_unregister_notifier);
-  */
- static inline void tk_update_ktime_data(struct timekeeper *tk)
- {
--	s64 nsec;
-+	u64 seconds;
-+	u32 nsec;
- 
- 	/*
- 	 * The xtime based monotonic readout is:
-@@ -426,13 +427,22 @@ static inline void tk_update_ktime_data(struct timekeeper *tk)
- 	 *	nsec = base_mono + now();
- 	 * ==> base_mono = (xtime_sec + wtm_sec) * 1e9 + wtm_nsec
- 	 */
--	nsec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
--	nsec *= NSEC_PER_SEC;
--	nsec += tk->wall_to_monotonic.tv_nsec;
--	tk->tkr.base_mono = ns_to_ktime(nsec);
-+	seconds = (u64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
-+	nsec = (u32) tk->wall_to_monotonic.tv_nsec;
-+	tk->tkr.base_mono = ns_to_ktime(seconds * NSEC_PER_SEC + nsec);
- 
- 	/* Update the monotonic raw base */
- 	tk->base_raw = timespec64_to_ktime(tk->raw_time);
-+
-+	/*
-+	 * The sum of the nanoseconds portions of xtime and
-+	 * wall_to_monotonic can be greater/equal one second. Take
-+	 * this into account before updating tk->ktime_sec.
-+	 */
-+	nsec += (u32)(tk->tkr.xtime_nsec >> tk->tkr.shift);
-+	if (nsec >= NSEC_PER_SEC)
-+		seconds++;
-+	tk->ktime_sec = seconds;
- }
- 
- /* must hold timekeeper_lock */
-@@ -648,6 +658,24 @@ void ktime_get_ts64(struct timespec64 *ts)
- }
- EXPORT_SYMBOL_GPL(ktime_get_ts64);
- 
-+/**
-+ * ktime_get_seconds - Get the seconds portion of CLOCK_MONOTONIC
-+ *
-+ * Returns the seconds portion of CLOCK_MONOTONIC with a single non
-+ * serialized read. tk->ktime_sec is of type 'unsigned long' so this
-+ * works on both 32 and 64 bit systems. On 32 bit systems the readout
-+ * covers ~136 years of uptime which should be enough to prevent
-+ * premature wrap arounds.
-+ */
-+time64_t ktime_get_seconds(void)
-+{
-+	struct timekeeper *tk = &tk_core.timekeeper;
-+
-+	WARN_ON(timekeeping_suspended);
-+	return tk->ktime_sec;
-+}
-+EXPORT_SYMBOL_GPL(ktime_get_seconds);
-+
- #ifdef CONFIG_NTP_PPS
- 
- /**
+-- 
+Thanks.
+-- Max
