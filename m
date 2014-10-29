@@ -1,112 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207AbaJ2IXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 04:23:25 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41311 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756150AbaJ2IWA (ORCPT
+	id S1756043AbaJ2IY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 04:24:27 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:51851 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755492AbaJ2IYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 04:22:00 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: backports@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [RFC v2 2/4] backports: replace BACKPORT_PWD with BACKPORT_DIR
-Date: Wed, 29 Oct 2014 01:21:40 -0700
-Message-Id: <1414570902-5675-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
+	Wed, 29 Oct 2014 04:24:24 -0400
+Date: Wed, 29 Oct 2014 09:24:29 +0100
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+CC: <wsa@the-dreams.de>, <ludovic.desroches@atmel.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nicolas.ferre@atmel.com>, <khilman@kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/3] i2c/at91: add support PM functions
+Message-ID: <20141029082429.GG9284@ldesroches-Latitude-E6320>
+Mail-Followup-To: Wenyou Yang <wenyou.yang@atmel.com>, wsa@the-dreams.de,
+	linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+	nicolas.ferre@atmel.com, khilman@kernel.org,
+	linux-arm-kernel@lists.infradead.org
+References: <1414133417-11530-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1414133417-11530-1-git-send-email-wenyou.yang@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+For the whole serie
 
-This will also be used for built-in kernel integration, by
-using this we can share more code with the built-in kernel
-approach.
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- backport/Makefile             | 6 +++---
- backport/Makefile.build       | 4 ++--
- backport/Makefile.real        | 2 +-
- backport/scripts/uninstall.sh | 4 ++--
- 4 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/backport/Makefile b/backport/Makefile
-index ea3982b..fcf2f01 100644
---- a/backport/Makefile
-+++ b/backport/Makefile
-@@ -6,7 +6,7 @@ ifeq ($(KERNELRELEASE),)
- 
- MAKEFLAGS += --no-print-directory
- SHELL := /bin/bash
--BACKPORT_PWD := $(shell pwd)
-+BACKPORT_DIR := $(shell pwd)
- 
- KMODDIR ?= updates
- ifneq ($(origin KLIB), undefined)
-@@ -20,7 +20,7 @@ KERNEL_CONFIG := $(KLIB_BUILD)/.config
- KERNEL_MAKEFILE := $(KLIB_BUILD)/Makefile
- CONFIG_MD5 := $(shell md5sum $(KERNEL_CONFIG) 2>/dev/null | sed 's/\s.*//')
- 
--export KLIB KLIB_BUILD BACKPORT_PWD KMODDIR KMODPATH_ARG
-+export KLIB KLIB_BUILD BACKPORT_DIR KMODDIR KMODPATH_ARG
- 
- # disable built-in rules for this file
- .SUFFIXES:
-@@ -159,5 +159,5 @@ help: defconfig-help
- 	@echo ""
- 	@echo "Execute "make" or "make all" to build all targets marked with [*]"
- else
--include $(BACKPORT_PWD)/Makefile.kernel
-+include $(BACKPORT_DIR)/Makefile.kernel
- endif
-diff --git a/backport/Makefile.build b/backport/Makefile.build
-index d209041..a848b37 100644
---- a/backport/Makefile.build
-+++ b/backport/Makefile.build
-@@ -3,8 +3,8 @@ export
- 
- .PHONY: modules
- modules:
--	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD) modules
-+	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR) modules
- 
- .PHONY: clean
- clean:
--	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD) clean
-+	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR) clean
-diff --git a/backport/Makefile.real b/backport/Makefile.real
-index 4475570..1a55ce5 100644
---- a/backport/Makefile.real
-+++ b/backport/Makefile.real
-@@ -89,7 +89,7 @@ modules: backport-include/backport/autoconf.h
- 
- .PHONY: install
- install: modules
--	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD)			\
-+	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR)			\
- 		INSTALL_MOD_DIR=$(KMODDIR) $(KMODPATH_ARG)		\
- 		modules_install
- 	@./scripts/blacklist.sh $(KLIB)/ $(KLIB)/$(KMODDIR)
-diff --git a/backport/scripts/uninstall.sh b/backport/scripts/uninstall.sh
-index 1eb42b0..b46d3fe 100755
---- a/backport/scripts/uninstall.sh
-+++ b/backport/scripts/uninstall.sh
-@@ -10,8 +10,8 @@ else
- 	compr=""
- fi
- 
--for driver in $(find ${BACKPORT_PWD} -type f -name *.ko); do
--	mod_name=${driver/${BACKPORT_PWD}/${KLIB}${KMODDIR}}${compr}
-+for driver in $(find ${BACKPORT_DIR} -type f -name *.ko); do
-+	mod_name=${driver/${BACKPORT_DIR}/${KLIB}${KMODDIR}}${compr}
- 	echo "  uninstall" $mod_name
- 	rm -f $mod_name
- done
--- 
-2.1.1
-
+On Fri, Oct 24, 2014 at 02:50:14PM +0800, Wenyou Yang wrote:
+> Hi Wolfram,
+> 
+> The patches is to add the PM functions support for the at91 i2c controller.
+> 
+> It is based on the i2c/for-next branch of 
+> git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git.
+> 
+> Best Regards,
+> Wenyou Yang
+> 
+> ------
+> Change log:
+> v2.0
+> 
+> According to the advice from Kevin Hilman, 
+> 1./ Wrap the runtime suspend/resume functions in CONFIG_PM instead of CONFIG_PM_RUNTIME.
+> 2./ Call the runtime suspend/resume functions directly in the system suspend/resume.
+> 
+> v3.0
+>    Covert the system suspend/resume to suspend_noirq/resume_noirq.
+> 
+> Wenyou Yang (3):
+>   i2c/at91: add support for runtime PM
+>   i2c/at91: add support for system PM
+>   i2c/at91: adopt pinctrl support
+> 
+>  drivers/i2c/busses/i2c-at91.c |   71 +++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 65 insertions(+), 6 deletions(-)
+> 
+> -- 
+> 1.7.9.5
+> 
