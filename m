@@ -1,102 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934374AbaJ2Qet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:34:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51744 "EHLO bear.ext.ti.com"
+	id S934447AbaJ2QgT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:36:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48067 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933750AbaJ2Qer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:34:47 -0400
-Date: Wed, 29 Oct 2014 11:34:45 -0500
-From: Benoit Parrot <bparrot@ti.com>
-To: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
-Message-ID: <20141029163445.GB29965@ti.com>
-References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
- <3D00ADB3-00B3-40A8-8263-444BCADDAC33@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3D00ADB3-00B3-40A8-8263-444BCADDAC33@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S933994AbaJ2QgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:36:17 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Miller <davem@davemloft.net>,
+        Steve Capper <steve.capper@linaro.org>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: [PATCH 4/5] mm: gup: use get_user_pages_unlocked
+Date: Wed, 29 Oct 2014 17:35:19 +0100
+Message-Id: <1414600520-7664-5-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
+References: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pantelis,
+This allows those get_user_pages calls to pass FAULT_FLAG_ALLOW_RETRY
+to the page fault in order to release the mmap_sem during the I/O.
 
-Thanks for the feedback.
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ drivers/iommu/amd_iommu_v2.c       | 6 ++----
+ drivers/media/pci/ivtv/ivtv-udma.c | 6 ++----
+ drivers/scsi/st.c                  | 7 ++-----
+ drivers/video/fbdev/pvr2fb.c       | 6 ++----
+ mm/process_vm_access.c             | 7 ++-----
+ net/ceph/pagevec.c                 | 6 ++----
+ 6 files changed, 12 insertions(+), 26 deletions(-)
 
-Pantelis Antoniou <pantelis.antoniou@gmail.com> wrote on Wed [2014-Oct-29 10:53:44 +0200]:
-> Hi Benoit,
-> 
-> > On Oct 21, 2014, at 23:09 , Benoit Parrot <bparrot@ti.com> wrote:
-> > 
-> > Based on Boris Brezillion work this is a reworked patch
-> > of his initial GPIO hogging mechanism.
-> > This patch provides a way to initally configure specific GPIO
-> > when the gpio controller is probe.
-> > 
-> > The actual DT scanning to collect the GPIO specific data is performed
-> > as part of the gpiochip_add().
-> > 
-> > The purpose of this is to allows specific GPIOs to be configured
-> > without any driver specific code.
-> > This particularly usueful because board design are getting
-> > increassingly complex and given SoC pins can now have upward
-> > of 10 mux values a lot of connections are now dependent on
-> > external IO muxes to switch various modes and combination.
-> > 
-> > Specific drivers should not necessarily need to be aware of
-> > what accounts to a specific board implementation. This board level
-> > "description" should be best kept as part of the dts file.
-> > 
-> 
-> This look like it’s going to the right direction. I have a few general
-> comments at first.
-> 
-> 1) It relies on dubious DT binding of having sub-nodes of the
-> gpio device implicitly defining hogs.
-
-I think in this instance the nodes are explicitly defining hogs.
-Please clarify. What would you like to see here?
-> 
-> 2) There is no way for having hogs inserted dynamically as far as I can tell, and
-> no way to remove a hog either.
-
-The original patch was allowing that but, Linus's review comment suggested this feature be 
-part of the gpio-controller's gpiochip_add() hook only.
-
-> 
-> 3) I’m not very fond of having this being part of the gpio controller. This
-> configuration conceptually has little to do with the gpio controller per se,
-> it is more of a board specific thing. Why not come up with a gpio-hog driver that
-> references GPIOs? That way with a single gpio-hog driver instance you could setup
-> all the GPIO-hogging configuration for all GPIOs on the board, even one that
-> lie on different GPIO controllers.
-
-Again this follows Linus's review comment.
-I agree that it prevent a centralize spot where all hog would be defined but it has the advantages of not relying on PROBE_DEFER.
-I mean since all "gpio-hogs" would be defined in a single board dts file it would not be that hard to figure out the big picture anyways.
-
-> 
-> 
-> > Signed-off-by: Benoit Parrot <bparrot@ti.com>
-> > ---
-> > Documentation/devicetree/bindings/gpio/gpio.txt | 33 +++++++++
-> > drivers/gpio/gpiolib-of.c                       | 99 +++++++++++++++++++++++++
-> > drivers/gpio/gpiolib.c                          | 81 ++++++++++++++++++++
-> > include/linux/of_gpio.h                         | 11 +++
-> > 4 files changed, 224 insertions(+)
-> > 
-> 
-> Regards
-> 
-> — Pantelis
-> 
-
-Regards,
-Benoit
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 90d734b..4cd8a87 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -521,10 +521,8 @@ static void do_fault(struct work_struct *work)
+ 
+ 	write = !!(fault->flags & PPR_FAULT_WRITE);
+ 
+-	down_read(&fault->state->mm->mmap_sem);
+-	npages = get_user_pages(NULL, fault->state->mm,
+-				fault->address, 1, write, 0, &page, NULL);
+-	up_read(&fault->state->mm->mmap_sem);
++	npages = get_user_pages_unlocked(NULL, fault->state->mm,
++					 fault->address, 1, write, 0, &page);
+ 
+ 	if (npages == 1) {
+ 		put_page(page);
+diff --git a/drivers/media/pci/ivtv/ivtv-udma.c b/drivers/media/pci/ivtv/ivtv-udma.c
+index 7338cb2..96d866b 100644
+--- a/drivers/media/pci/ivtv/ivtv-udma.c
++++ b/drivers/media/pci/ivtv/ivtv-udma.c
+@@ -124,10 +124,8 @@ int ivtv_udma_setup(struct ivtv *itv, unsigned long ivtv_dest_addr,
+ 	}
+ 
+ 	/* Get user pages for DMA Xfer */
+-	down_read(&current->mm->mmap_sem);
+-	err = get_user_pages(current, current->mm,
+-			user_dma.uaddr, user_dma.page_count, 0, 1, dma->map, NULL);
+-	up_read(&current->mm->mmap_sem);
++	err = get_user_pages_unlocked(current, current->mm,
++			user_dma.uaddr, user_dma.page_count, 0, 1, dma->map);
+ 
+ 	if (user_dma.page_count != err) {
+ 		IVTV_DEBUG_WARN("failed to map user pages, returned %d instead of %d\n",
+diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
+index 4daa372..a98e00b 100644
+--- a/drivers/scsi/st.c
++++ b/drivers/scsi/st.c
+@@ -4538,18 +4538,15 @@ static int sgl_map_user_pages(struct st_buffer *STbp,
+ 		return -ENOMEM;
+ 
+         /* Try to fault in all of the necessary pages */
+-	down_read(&current->mm->mmap_sem);
+         /* rw==READ means read from drive, write into memory area */
+-	res = get_user_pages(
++	res = get_user_pages_unlocked(
+ 		current,
+ 		current->mm,
+ 		uaddr,
+ 		nr_pages,
+ 		rw == READ,
+ 		0, /* don't force */
+-		pages,
+-		NULL);
+-	up_read(&current->mm->mmap_sem);
++		pages);
+ 
+ 	/* Errors and no page mapped should return here */
+ 	if (res < nr_pages)
+diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
+index 7c74f58..0e24eb9 100644
+--- a/drivers/video/fbdev/pvr2fb.c
++++ b/drivers/video/fbdev/pvr2fb.c
+@@ -686,10 +686,8 @@ static ssize_t pvr2fb_write(struct fb_info *info, const char *buf,
+ 	if (!pages)
+ 		return -ENOMEM;
+ 
+-	down_read(&current->mm->mmap_sem);
+-	ret = get_user_pages(current, current->mm, (unsigned long)buf,
+-			     nr_pages, WRITE, 0, pages, NULL);
+-	up_read(&current->mm->mmap_sem);
++	ret = get_user_pages_unlocked(current, current->mm, (unsigned long)buf,
++				      nr_pages, WRITE, 0, pages);
+ 
+ 	if (ret < nr_pages) {
+ 		nr_pages = ret;
+diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
+index 5077afc..b159769 100644
+--- a/mm/process_vm_access.c
++++ b/mm/process_vm_access.c
+@@ -99,11 +99,8 @@ static int process_vm_rw_single_vec(unsigned long addr,
+ 		size_t bytes;
+ 
+ 		/* Get the pages we're interested in */
+-		down_read(&mm->mmap_sem);
+-		pages = get_user_pages(task, mm, pa, pages,
+-				      vm_write, 0, process_pages, NULL);
+-		up_read(&mm->mmap_sem);
+-
++		pages = get_user_pages_unlocked(task, mm, pa, pages,
++						vm_write, 0, process_pages);
+ 		if (pages <= 0)
+ 			return -EFAULT;
+ 
+diff --git a/net/ceph/pagevec.c b/net/ceph/pagevec.c
+index 5550130..096d914 100644
+--- a/net/ceph/pagevec.c
++++ b/net/ceph/pagevec.c
+@@ -23,17 +23,15 @@ struct page **ceph_get_direct_page_vector(const void __user *data,
+ 	if (!pages)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	down_read(&current->mm->mmap_sem);
+ 	while (got < num_pages) {
+-		rc = get_user_pages(current, current->mm,
++		rc = get_user_pages_unlocked(current, current->mm,
+ 		    (unsigned long)data + ((unsigned long)got * PAGE_SIZE),
+-		    num_pages - got, write_page, 0, pages + got, NULL);
++		    num_pages - got, write_page, 0, pages + got);
+ 		if (rc < 0)
+ 			break;
+ 		BUG_ON(rc == 0);
+ 		got += rc;
+ 	}
+-	up_read(&current->mm->mmap_sem);
+ 	if (rc < 0)
+ 		goto fail;
+ 	return pages;
