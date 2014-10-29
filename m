@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934358AbaJ2QE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:04:27 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:45324 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933829AbaJ2QEX (ORCPT
+	id S933993AbaJ2QEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:04:30 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:54087 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933829AbaJ2QE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:04:23 -0400
+	Wed, 29 Oct 2014 12:04:28 -0400
 From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         devel@driverdev.osuosl.org
 Cc: ismael.luceno@corp.bluecherry.net, m.chehab@samsung.com,
         hverkuil@xs4all.nl, Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH 2/4] [media] solo6x10: free DMA allocation when releasing encoder
-Date: Wed, 29 Oct 2014 20:03:52 +0400
-Message-Id: <1414598634-13446-2-git-send-email-andrey.krieger.utkin@gmail.com>
+Subject: [PATCH 3/4] [media] solo6x10: bind start & stop of encoded frames processing thread to device (de)init
+Date: Wed, 29 Oct 2014 20:03:53 +0400
+Message-Id: <1414598634-13446-3-git-send-email-andrey.krieger.utkin@gmail.com>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1414598634-13446-1-git-send-email-andrey.krieger.utkin@gmail.com>
 References: <1414598634-13446-1-git-send-email-andrey.krieger.utkin@gmail.com>
@@ -22,63 +22,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes this warning:
-
-[  956.730136] ------------[ cut here ]------------
-[  956.730143] WARNING: CPU: 1 PID: 10134 at lib/dma-debug.c:963 dma_debug_device_change+0x191/0x1f0()
-[  956.730146] pci 0000:07:05.0: DMA-API: device driver has pending DMA allocations while released from device [count=8]
-One of leaked entries details: [device address=0x00000000d3d57000] [size=512 bytes] [mapped with DMA_BIDIRECTIONAL] [mapped as coherent]
-[  956.730147] Modules linked in: solo6x10(-) videobuf2_dma_contig videobuf2_dma_sg videobuf2_memops videobuf2_core ipt_MASQUERADE nf_nat_masquerade_ipv4 iptable_nat nf_nat_ipv4 nf_nat videobuf_vmalloc videobuf_core v4l2_common videodev rt2800usb rt2800lib rt2x00usb rt2x00lib mac80211 cfg80211 crc_ccitt usbkbd hid_a4tech hid_generic usbhid snd_hda_codec_hdmi snd_hda_codec_via snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm x86_pkg_temp_thermal snd_timer snd soundcore
-[  956.730172] CPU: 1 PID: 10134 Comm: rmmod Not tainted 3.18.0-rc1-next-20141023-zver-dirty #24
-[  956.730173] Hardware name: System manufacturer System Product Name/P8H77-V, BIOS 0501 02/28/2012
-[  956.730175]  0000000000000009 ffff8801df9e3c58 ffffffff817ffe6b 0000000000000001
-[  956.730177]  ffff8801df9e3ca8 ffff8801df9e3c98 ffffffff81091ec7 0000000000000046
-[  956.730180]  ffff880215457e90 0000000000000008 ffffffff81cbb10f ffff880215570098
-[  956.730183] Call Trace:
-[  956.730188]  [<ffffffff817ffe6b>] dump_stack+0x4f/0x7c
-[  956.730192]  [<ffffffff81091ec7>] warn_slowpath_common+0x87/0xb0
-[  956.730194]  [<ffffffff81091f91>] warn_slowpath_fmt+0x41/0x50
-[  956.730197]  [<ffffffff81412558>] ? dma_debug_device_change+0xb8/0x1f0
-[  956.730199]  [<ffffffff81412631>] dma_debug_device_change+0x191/0x1f0
-[  956.730203]  [<ffffffff810b14ad>] notifier_call_chain+0x4d/0x70
-[  956.730205]  [<ffffffff810b15f9>] __blocking_notifier_call_chain+0x59/0x80
-[  956.730207]  [<ffffffff810b1631>] blocking_notifier_call_chain+0x11/0x20
-[  956.730211]  [<ffffffff815873af>] __device_release_driver+0xcf/0xf0
-[  956.730213]  [<ffffffff81587ee8>] driver_detach+0xc8/0xd0
-[  956.730215]  [<ffffffff81587147>] bus_remove_driver+0x57/0xd0
-[  956.730218]  [<ffffffff815887e9>] driver_unregister+0x29/0x60
-[  956.730221]  [<ffffffff81420131>] pci_unregister_driver+0x21/0x90
-[  956.730225]  [<ffffffffa03219d7>] solo_pci_driver_exit+0x10/0x12 [solo6x10]
-[  956.730228]  [<ffffffff81112ee0>] SyS_delete_module+0x170/0x1f0
-[  956.730232]  [<ffffffff813eb76e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[  956.730234]  [<ffffffff8180abd2>] system_call_fastpath+0x12/0x17
-[  956.730235] ---[ end trace e730af02713a6c53 ]---
-[  956.730237] Mapped at:
-[  956.730238]  [<ffffffff8141186c>] debug_dma_alloc_coherent+0x3c/0xb0
-[  956.730240]  [<ffffffffa03203f6>] solo_enc_v4l2_init+0x706/0xba0 [solo6x10]
-[  956.730243]  [<ffffffffa03165b3>] solo_pci_probe+0x503/0x700 [solo6x10]
-[  956.730245]  [<ffffffff81420459>] local_pci_probe+0x49/0xa0
-[  956.730248]  [<ffffffff814207a1>] pci_device_probe+0xd1/0x120
+Before, it was called from individual encoder (de)init procedures, which
+lead to spare threads running (which were actually lost, leaked).
+The current fix uses trivial approach, and the downside is that the
+processing thread is working always, even when there's no consumer.
 
 Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 ---
- drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
-index 6cd6a25..9afeb69 100644
+index 9afeb69..b9b61b9 100644
 --- a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
 +++ b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
-@@ -1385,6 +1385,9 @@ static void solo_enc_free(struct solo_enc_dev *solo_enc)
- 	if (solo_enc == NULL)
- 		return;
+@@ -770,12 +770,8 @@ static void solo_ring_stop(struct solo_dev *solo_dev)
+ static int solo_enc_start_streaming(struct vb2_queue *q, unsigned int count)
+ {
+ 	struct solo_enc_dev *solo_enc = vb2_get_drv_priv(q);
+-	int ret;
  
-+	pci_free_consistent(solo_enc->solo_dev->pdev,
-+			sizeof(struct solo_p2m_desc) * solo_enc->desc_nelts,
-+			solo_enc->desc_items, solo_enc->desc_dma);
- 	video_unregister_device(solo_enc->vfd);
- 	v4l2_ctrl_handler_free(&solo_enc->hdl);
- 	kfree(solo_enc);
+-	ret = solo_enc_on(solo_enc);
+-	if (ret)
+-		return ret;
+-	return solo_ring_start(solo_enc->solo_dev);
++	return solo_enc_on(solo_enc);
+ }
+ 
+ static void solo_enc_stop_streaming(struct vb2_queue *q)
+@@ -794,7 +790,6 @@ static void solo_enc_stop_streaming(struct vb2_queue *q)
+ 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+ 	}
+ 	spin_unlock_irqrestore(&solo_enc->av_lock, flags);
+-	solo_ring_stop(solo_enc->solo_dev);
+ }
+ 
+ static struct vb2_ops solo_enc_video_qops = {
+@@ -1432,13 +1427,15 @@ int solo_enc_v4l2_init(struct solo_dev *solo_dev, unsigned nr)
+ 		 solo_dev->v4l2_enc[0]->vfd->num,
+ 		 solo_dev->v4l2_enc[solo_dev->nr_chans - 1]->vfd->num);
+ 
+-	return 0;
++	return solo_ring_start(solo_dev);
+ }
+ 
+ void solo_enc_v4l2_exit(struct solo_dev *solo_dev)
+ {
+ 	int i;
+ 
++	solo_ring_stop(solo_dev);
++
+ 	for (i = 0; i < solo_dev->nr_chans; i++)
+ 		solo_enc_free(solo_dev->v4l2_enc[i]);
+ 
 -- 
 1.8.5.5
 
