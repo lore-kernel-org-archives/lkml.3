@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934436AbaJ2QLS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:11:18 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17130 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932994AbaJ2QLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:11:16 -0400
-Date: Wed, 29 Oct 2014 19:10:57 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] Bluetooth: 6lowpan: use after free in disconnect_devices()
-Message-ID: <20141029161057.GF5290@mwanda>
+	id S934079AbaJ2QOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:14:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47100 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933423AbaJ2QOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:14:33 -0400
+Date: Wed, 29 Oct 2014 17:14:31 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+cc: Andrew de los Reyes <andrew-vger@gizmolabs.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>
+Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special
+ devices
+In-Reply-To: <CAN+gG=GXHUFz7y1AFyPcV2YP6dYzd-CBStJf5UAENbrpnVuOJg@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1410291713520.20256@pobox.suse.cz>
+References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com> <alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz> <20141001131008.GB18756@mail.corp.redhat.com> <CAG_cf+fYGATBL9Sgvvp7CaScP112fiqiyuR0gBdkS-424S3Kog@mail.gmail.com>
+ <alpine.LNX.2.00.1410031308360.14259@pobox.suse.cz> <CAN+gG=GET=FLmte9kQOtS+x=HPaTdgEu4HxuydHXBx1GZksNRw@mail.gmail.com> <alpine.LNX.2.00.1410291048320.20256@pobox.suse.cz> <CAN+gG=GXHUFz7y1AFyPcV2YP6dYzd-CBStJf5UAENbrpnVuOJg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was accidentally changed from list_for_each_entry_safe() to
-list_for_each_entry() so now it has a use after free bug.  I've changed
-it back.
+On Wed, 29 Oct 2014, Benjamin Tissoires wrote:
 
-Fixes: 90305829635d ('Bluetooth: 6lowpan: Converting rwlocks to use RCU')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> No worries. I definitively understand. Being close to the merge window 
+> is never a good time to send you patches and I am sure SuSE asks you a 
+> lot also :)
 
-diff --git a/net/bluetooth/6lowpan.c b/net/bluetooth/6lowpan.c
-index 7254bdd..eef298d 100644
---- a/net/bluetooth/6lowpan.c
-+++ b/net/bluetooth/6lowpan.c
-@@ -1383,7 +1383,7 @@ static const struct file_operations lowpan_control_fops = {
- 
- static void disconnect_devices(void)
- {
--	struct lowpan_dev *entry, *new_dev;
-+	struct lowpan_dev *entry, *tmp, *new_dev;
- 	struct list_head devices;
- 
- 	INIT_LIST_HEAD(&devices);
-@@ -1408,7 +1408,7 @@ static void disconnect_devices(void)
- 
- 	rcu_read_unlock();
- 
--	list_for_each_entry(entry, &devices, list) {
-+	list_for_each_entry_safe(entry, tmp, &devices, list) {
- 		ifdown(entry->netdev);
- 		BT_DBG("Unregistering netdev %s %p",
- 		       entry->netdev->name, entry->netdev);
+Indeed, sometimes the flow of inbound things is just unstoppable :)
+
+> > I am almost done with the review, expect to hear from me in a 1-2 days 
+> > timeframe regarding this series.
+> 
+> Cool, thanks. That is much appreciated.
+
+I have now applied the whole patchset and pushed out.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
