@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933172AbaJ2Ms3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:48:29 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14400 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975AbaJ2MqY (ORCPT
+	id S933196AbaJ2Msk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:48:40 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:44504 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932975AbaJ2Msi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:46:24 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 30/35] UBI: Add accessor functions for WL data structures
-Date: Wed, 29 Oct 2014 13:45:53 +0100
-Message-Id: <1414586758-9972-31-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
-References: <1414586758-9972-1-git-send-email-richard@nod.at>
+	Wed, 29 Oct 2014 08:48:38 -0400
+Date: Wed, 29 Oct 2014 12:48:34 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Will Auld <will.auld@intel.com>, Tejun Heo <tj@kernel.org>,
+        Vikas Shivappa <vikas.shivappa@intel.com>
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141029124834.GQ12020@console-pimps.org>
+References: <1413485050.28564.14.camel@vshiva-Udesk>
+ <20141020161855.GF12020@console-pimps.org>
+ <20141024105306.GI12706@worktop.programming.kicks-ass.net>
+ <20141028232215.GO12020@console-pimps.org>
+ <20141029081640.GT3337@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029081640.GT3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fastmap need access to various WL data structures as
-fastmap tightly depends on WL.
-To make the access less invasive add accessor functions.
-
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/ubi.h | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
-
-diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-index 9a37fe3..e159aa1 100644
---- a/drivers/mtd/ubi/ubi.h
-+++ b/drivers/mtd/ubi/ubi.h
-@@ -895,6 +895,42 @@ static inline int ubiblock_remove(struct ubi_volume_info *vi)
- }
- #endif
+On Wed, 29 Oct, at 09:16:40AM, Peter Zijlstra wrote:
+> 
+> Ah, so one way around that is to only assign a (whats the CQE equivalent
+> of RMIDs again?) once you stick a task in.
  
-+/*
-+ * ubi_for_each_free_peb - walk the UBI free RB tree
-+ * @ubi: UBI device description object
-+ * @e: a pointer to a ubi_wl_entry to use as cursor
-+ * @tmp_e: a pointer to a ubi_wl_entry to use as temporary storage
-+ */
-+#define ubi_for_each_free_peb(ubi, e, tmp_e)	\
-+	rbtree_postorder_for_each_entry_safe((e), (tmp_e), &(ubi)->free, u.rb)
-+
-+/*
-+ * ubi_for_each_used_peb - walk the UBI used RB tree
-+ * @ubi: UBI device description object
-+ * @e: a pointer to a ubi_wl_entry to use as cursor
-+ * @tmp_e: a pointer to a ubi_wl_entry to use as temporary storage
-+ */
-+#define ubi_for_each_used_peb(ubi, e, tmp_e)	\
-+	rbtree_postorder_for_each_entry_safe((e), (tmp_e), &(ubi)->used, u.rb)
-+
-+/*
-+ * ubi_for_each_scub_peb - walk the UBI scub RB tree
-+ * @ubi: UBI device description object
-+ * @e: a pointer to a ubi_wl_entry to use as cursor
-+ * @tmp_e: a pointer to a ubi_wl_entry to use as temporary storage
-+ */
-+#define ubi_for_each_scrub_peb(ubi, e, tmp_e)	\
-+	rbtree_postorder_for_each_entry_safe((e), (tmp_e), &(ubi)->scrub, u.rb)
-+
-+/*
-+ * ubi_for_each_protected_peb - walk the UBI protection queue
-+ * @ubi: UBI device description object
-+ * @i: a integer used as counter
-+ * @e: a pointer to a ubi_wl_entry to use as cursor
-+ */
-+#define ubi_for_each_protected_peb(ubi, i, e)	\
-+	for ((i) = 0; (i) < UBI_PROT_QUEUE_LEN; (i)++)	\
-+		list_for_each_entry((e), &(ubi->pq[(i)]), u.list)
- 
- /*
-  * ubi_rb_for_each_entry - walk an RB-tree.
+I think you're after "Class of Service" (CLOS) ID.
+
+Yeah we can do the CLOS ID assignment on-demand but what we can't do
+on-demand is the cache bitmask assignment, i.e. how we carve up the LLC.
+These need to persist irrespective of which task is running. And it's
+the cache bitmask that I'm specifically talking about not allowing
+arbitrarly deep nesting.
+
+So if I create a cgroup directory with a mask of 0x3 in the root cgroup
+directory for CAT (meow). Then, create two sub-directories, and split my
+0x3 bitmask into 0x2 and 0x1, it's impossible to nest any further, i.e.
+
+                    /sys/fs/cgroup/cacheqe           0xffffffff
+                              |
+                              |
+                            meow                     0x3
+                           /    \
+                          /      \
+                        sub1    sub2                 0x1, 0x2
+
+Of course the pathological case is creating a cgroup directory with
+bitmask 0x1, so you can't have sub-directories because you can't split
+the cache allocation at all.
+
+Does this fly in the face of "full hierarchies"? Or is this a reasonable
+limitation?
+
+> But basically it means you need to allow things like:
+> 
+> root/virt/more/crap/hostA
+>                    /hostB
+>     /sanityA
+>     /random/other/yunk
+> 
+> Now, the root will have the entire bitmask set, any child, say
+> virt/more/crap can also have them all set, and you can maybe only start
+> differentiating in the /host[AB] bits.
+> 
+> Whether or not it makes sense, libvirt likes to create these pointless
+> deep hierarchies, as do a lot of other people for that matter.
+
+OK, this is something I hadn't considered; that you may *not* want to
+split the cache bitmask as you move down the hierarchy.
+
+I think that's something we could do without too much pain, though
+actually programming that from a user perspective makes my head hurt.
+
 -- 
-1.8.4.5
-
+Matt Fleming, Intel Open Source Technology Center
