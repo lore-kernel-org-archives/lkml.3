@@ -1,136 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933395AbaJ2MxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:53:07 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14389 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836AbaJ2MqO (ORCPT
+	id S933410AbaJ2MxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:53:19 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:58078 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932836AbaJ2MxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:46:14 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 11/35] UBI: Fastmap: Don't allocate new ubi_wl_entry objects
-Date: Wed, 29 Oct 2014 13:45:34 +0100
-Message-Id: <1414586758-9972-12-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
-References: <1414586758-9972-1-git-send-email-richard@nod.at>
+	Wed, 29 Oct 2014 08:53:14 -0400
+Date: Wed, 29 Oct 2014 13:50:05 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Felipe Balbi <balbi@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Guenter Roeck <linux@roeck-us.net>, nsekhar@ti.com, t-kristo@ti.com,
+        j-keerthy@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] rtc: omap: add support for pmic_power_en
+Message-ID: <20141029125005.GB8823@localhost>
+References: <1413913086-12730-1-git-send-email-johan@kernel.org>
+ <1414397368-26480-1-git-send-email-johan@kernel.org>
+ <20141027154031.4492ea11d401045ca04a3ff8@linux-foundation.org>
+ <20141028083633.GM2006@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028083633.GM2006@localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to allocate new ones every time, we can reuse
-the existing ones.
-This makes the code cleaner and more easy to follow.
+On Tue, Oct 28, 2014 at 09:36:33AM +0100, Johan Hovold wrote:
+> On Mon, Oct 27, 2014 at 03:40:31PM -0700, Andrew Morton wrote:
+> > On Mon, 27 Oct 2014 09:09:28 +0100 Johan Hovold <johan@kernel.org> wrote:
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/fastmap.c | 31 +++++--------------------------
- drivers/mtd/ubi/wl.c      | 11 +++++++----
- 2 files changed, 12 insertions(+), 30 deletions(-)
+> But in general, how do you want to handle updates to a single patch in a
+> series you already have in your tree? Do you prefer a proper
+> incremental-fix patch (with commit message), just an updated single
+> patch, or a resend of the whole series?
 
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index 8cce6f8..09a97ad 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -1529,19 +1529,6 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 	}
- 
- 	new_fm->used_blocks = ubi->fm_size / ubi->leb_size;
--
--	for (i = 0; i < new_fm->used_blocks; i++) {
--		new_fm->e[i] = kmem_cache_alloc(ubi_wl_entry_slab, GFP_KERNEL);
--		if (!new_fm->e[i]) {
--			while (i--)
--				kfree(new_fm->e[i]);
--
--			kfree(new_fm);
--			mutex_unlock(&ubi->fm_mutex);
--			return -ENOMEM;
--		}
--	}
--
- 	old_fm = ubi->fm;
- 	ubi->fm = NULL;
- 
-@@ -1577,12 +1564,9 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 				ubi_err("could not erase old fastmap PEB");
- 				goto err;
- 			}
--
--			new_fm->e[i]->pnum = old_fm->e[i]->pnum;
--			new_fm->e[i]->ec = old_fm->e[i]->ec;
-+			new_fm->e[i] = old_fm->e[i];
- 		} else {
--			new_fm->e[i]->pnum = tmp_e->pnum;
--			new_fm->e[i]->ec = tmp_e->ec;
-+			new_fm->e[i] = tmp_e;
- 
- 			if (old_fm)
- 				ubi_wl_put_fm_peb(ubi, old_fm->e[i], i,
-@@ -1607,16 +1591,13 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 							  i, 0);
- 				goto err;
- 			}
--
--			new_fm->e[0]->pnum = old_fm->e[0]->pnum;
-+			new_fm->e[0] = old_fm->e[0];
- 			new_fm->e[0]->ec = ret;
- 		} else {
- 			/* we've got a new anchor PEB, return the old one */
- 			ubi_wl_put_fm_peb(ubi, old_fm->e[0], 0,
- 					  old_fm->to_be_tortured[0]);
--
--			new_fm->e[0]->pnum = tmp_e->pnum;
--			new_fm->e[0]->ec = tmp_e->ec;
-+			new_fm->e[0] = tmp_e;
- 		}
- 	} else {
- 		if (!tmp_e) {
-@@ -1629,9 +1610,7 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 			ret = -ENOSPC;
- 			goto err;
- 		}
--
--		new_fm->e[0]->pnum = tmp_e->pnum;
--		new_fm->e[0]->ec = tmp_e->ec;
-+		new_fm->e[0] = tmp_e;
- 	}
- 
- 	down_write(&ubi->work_sem);
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 73ff40a..ac19f75 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -995,9 +995,6 @@ int ubi_wl_put_fm_peb(struct ubi_device *ubi, struct ubi_wl_entry *fm_e,
- 		e = fm_e;
- 		ubi_assert(e->ec >= 0);
- 		ubi->lookuptbl[pnum] = e;
--	} else {
--		e->ec = fm_e->ec;
--		kfree(fm_e);
- 	}
- 
- 	spin_unlock(&ubi->wl_lock);
-@@ -1999,9 +1996,15 @@ int ubi_wl_init(struct ubi_device *ubi, struct ubi_attach_info *ai)
- 
- 	dbg_wl("found %i PEBs", found_pebs);
- 
--	if (ubi->fm)
-+	if (ubi->fm) {
- 		ubi_assert(ubi->good_peb_count == \
- 			   found_pebs + ubi->fm->used_blocks);
-+
-+		for (i = 0; i < ubi->fm->used_blocks; i++) {
-+			e = ubi->fm->e[i];
-+			ubi->lookuptbl[e->pnum] = e;
-+		}
-+	}
- 	else
- 		ubi_assert(ubi->good_peb_count == found_pebs);
- 
--- 
-1.8.4.5
+How should I best send the updated patch? Can you just replace the
+current three incremental patches:
 
+	rtc-omap-add-support-for-pmic_power_en.patch
+	rtc-omap-add-support-for-pmic_power_en-v3.patch
+	rtc-omap-add-support-for-pmic_power_en-v3-fix.patch
+
+that you have in your tree, with a single new v4 which adds a more
+elaborate comment?
+
+Thanks,
+Johan
