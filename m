@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934224AbaJ2Ps0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:48:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43929 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933329AbaJ2Plz (ORCPT
+	id S934255AbaJ2Pui (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:50:38 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:37582 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933822AbaJ2Pug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:41:55 -0400
-Date: Wed, 29 Oct 2014 16:37:30 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anton Saraev <antonysaraev@gmail.com>
-Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, heenasirwani@gmail.com,
-        bergwolf@gmail.com, amir.shehata@intel.com, gdonald@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 01/02] staging:lustre:lnet:selftest: fix sparse
- warnings
-Message-ID: <20141029083730.GA16144@kroah.com>
-References: <cover.1414517099.git.antonysaraev@gmail.com>
- <d5f02315b6e410bc677be4787762403cb3c75c2a.1414517099.git.antonysaraev@gmail.com>
+	Wed, 29 Oct 2014 11:50:36 -0400
+Message-ID: <54510CD2.2070101@landley.net>
+Date: Wed, 29 Oct 2014 10:50:42 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d5f02315b6e410bc677be4787762403cb3c75c2a.1414517099.git.antonysaraev@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dan Carpenter <dan.carpenter@oracle.com>, Jonathan Corbet <corbet@lwn.net>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Bolle <pebolle@tiscali.nl>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [patch v2] Documentation/SubmittingPatches: Reported-by tags
+ and permission
+References: <20141029100136.GA14718@mwanda>
+In-Reply-To: <20141029100136.GA14718@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 09:50:18PM +0400, Anton Saraev wrote:
-> Fix sparse warnings: symbol X was not declared. Should it be static?
-> Some functions used only in files where they are declared. They can
-> be static.
+On 10/29/14 05:01, Dan Carpenter wrote:
+> The reported-by text says you have to ask for permission, but that
+> should only be if the bug was reported in private.  These days the
+> standard is to always give reported-by credit or it's considered a bit
+> rude.
 > 
-> Signed-off-by: Anton Saraev <antonysaraev@gmail.com>
-> ---
->  drivers/staging/lustre/lnet/selftest/conctl.c    | 34 ++++++++--------
->  drivers/staging/lustre/lnet/selftest/conrpc.c    | 20 +++++-----
->  drivers/staging/lustre/lnet/selftest/framework.c | 50 ++++++++++++------------
->  drivers/staging/lustre/lnet/selftest/module.c    |  6 +--
->  drivers/staging/lustre/lnet/selftest/rpc.c       | 34 ++++++++--------
->  drivers/staging/lustre/lnet/selftest/timer.c     |  8 ++--
->  6 files changed, 76 insertions(+), 76 deletions(-)
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+> index 482c749..1fa1caa 100644
+> --- a/Documentation/SubmittingPatches
+> +++ b/Documentation/SubmittingPatches
+> @@ -483,12 +483,10 @@ have been included in the discussion
+>  
+>  14) Using Reported-by:, Tested-by:, Reviewed-by:, Suggested-by: and Fixes:
+>  
+> -If this patch fixes a problem reported by somebody else, consider adding a
+> -Reported-by: tag to credit the reporter for their contribution.  Please
+> -note that this tag should not be added without the reporter's permission,
+> -especially if the problem was not reported in a public forum.  That said,
+> -if we diligently credit our bug reporters, they will, hopefully, be
+> -inspired to help us again in the future.
+> +The Reported-by tag gives credit to people who find bugs and report them and it
+> +hopefully inspires them to help us again in the future.  Please note that if
+> +the bug was reported in private, then ask for permission first before using the
+> +Reported-by tag.
+>  
+>  A Tested-by: tag indicates that the patch has been successfully tested (in
+>  some environment) by the person named.  This tag informs maintainers that
 
-This patch adds a build warning to the build, so I can't apply it.
-Please fix it up and resend.
+Nitpick: no colon at end of tag name?
 
-thanks,
+Rob
 
-greg k-h
