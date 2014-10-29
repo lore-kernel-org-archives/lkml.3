@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934512AbaJ2RIq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:08:46 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40310 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934226AbaJ2RIo convert rfc822-to-8bit (ORCPT
+	id S934590AbaJ2RIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:08:50 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:62751 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934226AbaJ2RIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:08:44 -0400
-Message-ID: <54511F21.5090506@arm.com>
-Date: Wed, 29 Oct 2014 17:08:49 +0000
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 29 Oct 2014 13:08:47 -0400
+Date: Wed, 29 Oct 2014 10:08:43 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Yassin Jaffer <yassinjaffer@gmail.com>
+Subject: Re: [PATCH v7 1/2] mtd: nand: add sunxi NAND flash controller support
+Message-ID: <20141029170843.GD23619@ld-irv-0074>
+References: <1413896922-11680-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1413896922-11680-2-git-send-email-boris.brezillon@free-electrons.com>
+ <20141028181310.GA23619@ld-irv-0074>
+ <20141029140251.142fed10@bbrezillon>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: [PATCH 4/6] sched/dl: push task away if the deadline is equal
- to curr during wakeup
-References: <1414374067-7209-1-git-send-email-wanpeng.li@linux.intel.com> <1414374067-7209-4-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1414374067-7209-4-git-send-email-wanpeng.li@linux.intel.com>
-X-OriginalArrivalTime: 29 Oct 2014 17:08:42.0444 (UTC) FILETIME=[FDBB08C0:01CFF39A]
-X-MC-Unique: 114102917084201301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029140251.142fed10@bbrezillon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 27/10/14 01:41, Wanpeng Li wrote:
-> This patch pushes task away if the dealine of the task is equal 
-> to current during wake up. The same behavior as rt class.
+On Wed, Oct 29, 2014 at 02:02:51PM +0100, Boris Brezillon wrote:
+> On Tue, 28 Oct 2014 11:13:11 -0700 Brian Norris <computersforpeace@gmail.com> wrote:
+> > On Tue, Oct 21, 2014 at 03:08:41PM +0200, Boris Brezillon wrote:
+> > > +static int sunxi_nand_hw_ecc_ctrl_init(struct mtd_info *mtd,
+> > > +				       struct nand_ecc_ctrl *ecc,
+> > > +				       struct device_node *np)
+> > > +{
+> > > +	struct nand_ecclayout *layout;
+> > > +	int i, j;
+> > > +	int ret;
+> > > +
+> > > +	ret = sunxi_nand_hw_common_ecc_ctrl_init(mtd, ecc, np);
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	ecc->read_page = sunxi_nfc_hw_ecc_read_page;
+> > > +	ecc->write_page = sunxi_nfc_hw_ecc_write_page;
+> > > +	layout = ecc->layout;
+> > > +
+> > > +	for (i = 0; i < ecc->steps; i++) {
+> > 
+> > Hmm, did you retest this since changing this to ecc->steps? I think this
+> > won't work, since ecc->steps is only initialized in nand_scan_tail(),
+> > which comes after this. I only recommended the change for the
+> > {read,write}_page() type of functions, not the initialization functions.
+> > 
+> > [snip the rest]
+> > 
+> > So I'd suggest the following additional patch, and otherwise, the series
+> > is fine with me. If you give your ack, I can just squash this in and
+> > apply it to my tree:
 > 
+> It works, you can squash those changes into my first patch.
 
-Right.
+OK, pushed both (+ my fixes) to l2-mtd.git. Thanks!
 
-Thanks,
-
-- Juri
-
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->  kernel/sched/deadline.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index aa7c27f..97141e2 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -1492,7 +1492,7 @@ static void task_woken_dl(struct rq *rq, struct task_struct *p)
->  	    p->nr_cpus_allowed > 1 &&
->  	    dl_task(rq->curr) &&
->  	    (rq->curr->nr_cpus_allowed < 2 ||
-> -	     dl_entity_preempt(&rq->curr->dl, &p->dl))) {
-> +	     !dl_entity_preempt(&p->dl, &rq->curr->dl))) {
->  		push_dl_tasks(rq);
->  	}
->  }
-> 
-
+Brian
