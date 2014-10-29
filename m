@@ -1,85 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301AbaJ2D21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 23:28:27 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:35430 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaJ2D20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 23:28:26 -0400
+	id S1752907AbaJ2DdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 23:33:13 -0400
+Received: from mail-bn1bon0117.outbound.protection.outlook.com ([157.56.111.117]:14602
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751993AbaJ2DdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 23:33:11 -0400
+Date: Wed, 29 Oct 2014 11:33:00 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <stern@rowland.harvard.edu>, <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 0/7] usb: add support for the generic PHY framework
+Message-ID: <20141029033259.GA5982@peterchendt>
+References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <1414392371.8884.2.camel@perches.com>
-References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net> <1414392371.8884.2.camel@perches.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Wed, 29 Oct 2014 11:28:04 +0800
-Message-ID: <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
-Subject: Re: [RFC V2] arm/arm64:add CONFIG_HAVE_ARCH_BITREVERSE to support
- rbit instruction
-To: Joe Perches <joe@perches.com>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(189002)(51704005)(4396001)(6806004)(46102003)(102836001)(97736003)(23726002)(26826002)(33716001)(44976005)(31966008)(47776003)(64706001)(106466001)(20776003)(105606002)(33656002)(92566001)(107046002)(85852003)(19580395003)(46406003)(21056001)(92726001)(84676001)(86362001)(68736004)(15975445006)(83506001)(76176999)(87936001)(97756001)(54356999)(50466002)(99396003)(80022003)(50986999)(104016003)(57986006)(110136001)(95666004)(85306004)(120916001)(76482002)(41533002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0639;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0639;
+X-Forefront-PRVS: 03793408BA
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 2:46 PM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2014-10-27 at 14:37 +0800, Wang, Yalin wrote:
->> this change add CONFIG_HAVE_ARCH_BITREVERSE config option,
->> so that we can use arm/arm64 rbit instruction to do bitrev operation
->> by hardware.
+On Tue, Oct 28, 2014 at 05:35:34PM +0100, Antoine Tenart wrote:
+> The series can be found at:
+> git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+> 
+> Changes since v6:
+> 	- rebased on top of v3.18-rc2
+> 
+> Changes since v5:
+>         - rebased on the latest version of Sergei's series[1]
+>         - fixed one modifiaction made in the wrong patch
+> 
+> Changes since v4:
+>         - reworked the PHY handling in ci_hdrc_probe()
+>         - fixed a rebase error
+> 
+> Changes since v3:
+>         - moved phy_exit() after phy_power_on()
+>         - fixed the PHY handling in ci_hdrc_probe()
+>         - some little fixes
+> 
+> Changes since v2:
+>         - rebased the series on top of v3.17-rc1
+>         - switched to devm_phy_get() to handle non DT cases
+>         - moved usb_otg into the ci_hdrc structure
+> 
+> Changes since v1:
+>         - rebased the series on top of [2] (generic PHY support for HCD)
+>         - split s/phy/usb_phy/ renaming and generic PHY support in separate
+>           patches
+> 
+> [1] https://www.mail-archive.com/linux-usb%40vger.kernel.org/msg48068.html
+> 
+> Antoine Tenart (7):
+>   usb: move the OTG state from the USB PHY to the OTG structure
+>   usb: rename phy to usb_phy in OTG
+>   usb: add support to the generic PHY framework in OTG
+>   usb: allow to supply the PHY in the drivers when using HCD
+>   usb: rename transceiver and phy to usb_phy in ChipIdea
+>   usb: chipidea: move usb_otg into struct ci_hdrc
+>   usb: chipidea: add support to the generic PHY framework in ChipIdea
+> 
+>  drivers/phy/phy-omap-usb2.c         | 14 ++----
+>  drivers/usb/chipidea/ci.h           |  8 +++-
+>  drivers/usb/chipidea/ci_hdrc_imx.c  |  2 +-
+>  drivers/usb/chipidea/ci_hdrc_msm.c  |  8 ++--
+>  drivers/usb/chipidea/core.c         | 89 ++++++++++++++++++++++++++--------
+>  drivers/usb/chipidea/debug.c        |  2 +-
+>  drivers/usb/chipidea/host.c         | 10 ++--
+>  drivers/usb/chipidea/otg_fsm.c      | 30 +++++-------
+>  drivers/usb/chipidea/udc.c          |  4 +-
+>  drivers/usb/common/usb-otg-fsm.c    |  8 ++--
+>  drivers/usb/core/hcd.c              |  7 +--
+>  drivers/usb/host/ohci-omap.c        |  2 +-
+>  drivers/usb/musb/am35x.c            | 28 +++++------
+>  drivers/usb/musb/blackfin.c         | 18 +++----
+>  drivers/usb/musb/da8xx.c            | 28 +++++------
+>  drivers/usb/musb/davinci.c          | 18 +++----
+>  drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++------------------
+>  drivers/usb/musb/musb_dsps.c        | 26 +++++-----
+>  drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
+>  drivers/usb/musb/musb_host.c        |  8 ++--
+>  drivers/usb/musb/musb_virthub.c     | 22 ++++-----
+>  drivers/usb/musb/omap2430.c         | 30 ++++++------
+>  drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
+>  drivers/usb/musb/ux500.c            | 10 ++--
+>  drivers/usb/phy/phy-ab8500-usb.c    | 16 +++----
+>  drivers/usb/phy/phy-fsl-usb.c       | 23 ++++-----
+>  drivers/usb/phy/phy-generic.c       |  6 +--
+>  drivers/usb/phy/phy-gpio-vbus-usb.c | 14 +++---
+>  drivers/usb/phy/phy-isp1301-omap.c  | 10 ++--
+>  drivers/usb/phy/phy-msm-usb.c       | 95 +++++++++++++++++++------------------
+>  drivers/usb/phy/phy-mv-usb.c        | 50 +++++++++----------
+>  drivers/usb/phy/phy-tahvo.c         |  8 ++--
+>  drivers/usb/phy/phy-ulpi.c          |  6 +--
+>  include/linux/usb/chipidea.h        |  4 +-
+>  include/linux/usb/otg.h             |  7 ++-
+>  include/linux/usb/phy.h             |  1 -
+>  36 files changed, 420 insertions(+), 362 deletions(-)
+> 
+> -- 
+> 1.9.1
+> 
 
-I don't see the original patch in my inbox, so replying here.
+Tested the whole patch set at imx6 hardware, and you can add
+my Acked-by to the last three chipidea patches.
 
->>
->> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
->> ---
->>  arch/arm/Kconfig                |  1 +
->>  arch/arm/include/asm/bitrev.h   | 21 +++++++++++++++++++++
->>  arch/arm64/Kconfig              |  1 +
->>  arch/arm64/include/asm/bitrev.h | 21 +++++++++++++++++++++
->>  include/linux/bitrev.h          |  9 +++++++++
->>  lib/Kconfig                     |  9 +++++++++
->>  lib/bitrev.c                    |  2 ++
->>  7 files changed, 64 insertions(+)
->>  create mode 100644 arch/arm/include/asm/bitrev.h
->>  create mode 100644 arch/arm64/include/asm/bitrev.h
->>
->> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> index 89c4b5c..426cbcc 100644
->> --- a/arch/arm/Kconfig
->> +++ b/arch/arm/Kconfig
->> @@ -16,6 +16,7 @@ config ARM
->>       select DCACHE_WORD_ACCESS if HAVE_EFFICIENT_UNALIGNED_ACCESS
->>       select GENERIC_ALLOCATOR
->>       select GENERIC_ATOMIC64 if (CPU_V7M || CPU_V6 || !CPU_32v6K || !AEABI)
->> +     select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
->>       select GENERIC_CLOCKEVENTS_BROADCAST if SMP
->>       select GENERIC_IDLE_POLL_SETUP
->>       select GENERIC_IRQ_PROBE
+I hope your patch-set can be queued soon, since I find the rebase
+error with my next tree, I can put your patches on the top.
 
-[...]
-
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index 9532f8d..263c28c 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -36,6 +36,7 @@ config ARM64
->>       select HARDIRQS_SW_RESEND
->>       select HAVE_ARCH_AUDITSYSCALL
->>       select HAVE_ARCH_JUMP_LABEL
->> +     select HAVE_ARCH_BITREVERSE
->>       select HAVE_ARCH_KGDB
->>       select HAVE_ARCH_TRACEHOOK
->>       select HAVE_BPF_JIT
-
-The kconfig lists should be sorted.
-
-Rob
+-- 
+Best Regards,
+Peter Chen
