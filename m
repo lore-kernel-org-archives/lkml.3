@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934204AbaJ2PsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:48:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43933 "EHLO
+	id S934309AbaJ2Ps1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:48:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43923 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933587AbaJ2Pl4 (ORCPT
+	with ESMTP id S933872AbaJ2Plz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:41:56 -0400
-Date: Wed, 29 Oct 2014 16:37:59 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anton Saraev <antonysaraev@gmail.com>
-Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, heenasirwani@gmail.com,
-        bergwolf@gmail.com, amir.shehata@intel.com, gdonald@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 02/02] staging:lustre:lnet:selftest: remove unused
- function
-Message-ID: <20141029083759.GA23302@kroah.com>
-References: <cover.1414517099.git.antonysaraev@gmail.com>
- <993d3876f1afcf5aa80ee619adde33a44c9d0416.1414517099.git.antonysaraev@gmail.com>
+	Wed, 29 Oct 2014 11:41:55 -0400
+Date: Wed, 29 Oct 2014 16:36:10 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Junien Fridrick <linux.kernel@junien.fridrick.net>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        HPDD-discuss@ml01.01.org, Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Doug Oucharek <doug.s.oucharek@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>,
+        LABBE Corentin <clabbe.montjoie@gmail.com>,
+        Isaac Huang <he.huang@intel.com>
+Subject: Re: [PATCH] staging: lustre: fix sparse warning for static
+ declarations
+Message-ID: <20141029083610.GA9261@kroah.com>
+References: <1414264176-2546-1-git-send-email-linux.kernel@junien.fridrick.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <993d3876f1afcf5aa80ee619adde33a44c9d0416.1414517099.git.antonysaraev@gmail.com>
+In-Reply-To: <1414264176-2546-1-git-send-email-linux.kernel@junien.fridrick.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 09:50:19PM +0400, Anton Saraev wrote:
-> Function lnet_selftest_structure_assertion is never used and can
-> be removed.
+On Sat, Oct 25, 2014 at 07:09:34PM +0000, Junien Fridrick wrote:
+> This patch fixes the following sparse warnings :
 > 
-> Signed-off-by: Anton Saraev <antonysaraev@gmail.com>
+> drivers/staging/lustre/lnet/lnet/router_proc.c:167:5: warning: symbol 'proc_lnet_routes' was not declared. Should it be static?
+> drivers/staging/lustre/lnet/lnet/router_proc.c:293:5: warning: symbol 'proc_lnet_routers' was not declared. Should it be static?
+> drivers/staging/lustre/lnet/lnet/router_proc.c:428:5: warning: symbol 'proc_lnet_peers' was not declared. Should it be static?
+> drivers/staging/lustre/lnet/lnet/router_proc.c:660:5: warning: symbol 'proc_lnet_nis' was not declared. Should it be static?
+> 
+> Signed-off-by: Junien Fridrick <linux.kernel@junien.fridrick.net>
 > ---
->  drivers/staging/lustre/lnet/selftest/module.c | 11 -----------
->  1 file changed, 11 deletions(-)
+> This patch is part of task 16 of the Eudyptula challenge
+> Applies to next-20141023
 > 
-> diff --git a/drivers/staging/lustre/lnet/selftest/module.c b/drivers/staging/lustre/lnet/selftest/module.c
-> index 718663f..92520c2 100644
-> --- a/drivers/staging/lustre/lnet/selftest/module.c
-> +++ b/drivers/staging/lustre/lnet/selftest/module.c
-> @@ -90,17 +90,6 @@ lnet_selftest_fini(void)
->  	return;
->  }
->  
-> -static void
-> -lnet_selftest_structure_assertion(void)
-> -{
-> -	CLASSERT(sizeof(srpc_msg_t) == 160);
-> -	CLASSERT(sizeof(srpc_test_reqst_t) == 70);
-> -	CLASSERT(offsetof(srpc_msg_t, msg_body.tes_reqst.tsr_concur) == 72);
-> -	CLASSERT(offsetof(srpc_msg_t, msg_body.tes_reqst.tsr_ndest) == 78);
-> -	CLASSERT(sizeof(srpc_stat_reply_t) == 136);
-> -	CLASSERT(sizeof(srpc_stat_reqst_t) == 28);
-> -}
-> -
->  static int
->  lnet_selftest_init(void)
->  {
+>  drivers/staging/lustre/lnet/lnet/router_proc.c | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
 
-This doesn't apply to my tree at all :(
+This patch fails to apply to my tree, please refresh and try again.
+
+thanks,
+
+greg k-h
