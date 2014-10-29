@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703AbaJ2OVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:21:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56786 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475AbaJ2OVT (ORCPT
+	id S933907AbaJ2OVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:21:52 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52941 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932903AbaJ2OVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:21:19 -0400
-Date: Wed, 29 Oct 2014 15:21:16 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Heena Sirwani <heenasirwani@gmail.com>
-cc: opw-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org, arnd@arndb.de
-Subject: Re: [PATCH v8 0/2] Added ktime_get_seconds() and
- ktime_get_real_seconds()
-In-Reply-To: <cover.1414578445.git.heenasirwani@gmail.com>
-Message-ID: <alpine.DEB.2.11.1410291518300.5308@nanos>
-References: <cover.1414578445.git.heenasirwani@gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 29 Oct 2014 10:21:50 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
+Date: Wed, 29 Oct 2014 15:42:23 +0100
+Message-ID: <1738599.RytCx391OM@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141029085429.GJ1304@lahna.fi.intel.com>
+References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <54509A3B.5090709@nvidia.com> <20141029085429.GJ1304@lahna.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014, Heena Sirwani wrote:
-
-> The following patchset adds two functions as follows:
-> 	-ktime_get_seconds() to return tv_sec portion of
-> 	ktime_get_ts64().
-> 	-ktime_get_real_seconds() to return tv_sec portion of
-> 	ktime_get_real_ts64().
+On Wednesday, October 29, 2014 10:54:29 AM Mika Westerberg wrote:
+> On Wed, Oct 29, 2014 at 04:41:47PM +0900, Alexandre Courbot wrote:
+> > On 10/29/2014 06:59 AM, Rafael J. Wysocki wrote:
+> > >On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
+> > >>acpi_dev_add_driver_gpios() makes it possible to set up mapping between
+> > >>properties and ACPI GpioIo resources in a driver, so we can take index
+> > >>parameter in acpi_find_gpio() into use with _DSD device properties now.
+> > >>
+> > >>This index can be used to select a GPIO from a property with multiple
+> > >>GPIOs:
+> > >>
+> > >>   Package () {
+> > >>   	"data-gpios",
+> > >>   	Package () {
+> > >>   		\_SB.GPIO, 0, 0, 0,
+> > >>   		\_SB.GPIO, 1, 0, 0,
+> > >>   		\_SB.GPIO, 2, 0, 1,
+> > >>   	}
+> > >>   }
+> > >>
+> > >>In order to retrieve the last GPIO from a driver we can simply do:
+> > >>
+> > >>   desc = devm_gpiod_get_index(dev, "data", 2);
+> > >>
+> > >>and so on.
+> > >>
+> > >>Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > >
+> > >Cool. :-)
+> > >
+> > >Any objections anyone?
+> > 
+> > Looks good to me!
+> > 
+> > Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 > 
-> Changes in v8:
-> 	-changed type of ktime_sec to unsigned long
-> 	- Added a patch with ktime_get_real_seconds().
+> Thanks!
+> 
+> > Since this looks like a bug fix, shouldn't this be squashed into the
+> > relevant patch of the device-properties set?
+> 
+> I agree.
 
-Heena, thanks for your patience and for following up to the reviews.
+Well, except that the set is in my linux-next branch now and I very much
+prefer to do fixes on top of it.
 
-I merged the lot into tip timers/2038. Thats a new branch reserved for
-the 2038 work.
+Besides, I'm not sure if that even matters for the current series.
 
-Arnd, feel free to pull that branch into your tree for the patches
-which depend on those interfaces.
-
-Thanks,
-
-	tglx
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
