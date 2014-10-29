@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638AbaJ2HxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 03:53:10 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:39537 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224AbaJ2HxJ (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 29 Oct 2014 03:53:09 -0400
-Message-Id: <5450AAF30200007800042F64@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Wed, 29 Oct 2014 07:53:07 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ingo Molnar" <mingo@kernel.org>
-Cc: <tglx@linutronix.de>, <jiang.liu@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [tip:x86/urgent] ix86: Fix build failure when
- !CONFIG_X86_IO_APIC
-References: <54184CC802000078000355EE@mail.emea.novell.com>
- <tip-a425cf83e39f99a70168c184e79cea8c67ba7c12@git.kernel.org>
- <544FAC9F0200007800042CA6@mail.emea.novell.com>
- <20141029075042.GA7322@gmail.com>
-In-Reply-To: <20141029075042.GA7322@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1755743AbaJ2Hxu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 03:53:50 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:53337 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224AbaJ2Hxt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 03:53:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
+        ralf@linux-mips.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH 10/11] irqchip: bcm7120-l2: Extend driver to support 64+ bit controllers
+Date: Wed, 29 Oct 2014 08:53:38 +0100
+Message-ID: <7518897.LmfE2WsusV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414555138-6500-10-git-send-email-cernekee@gmail.com>
+References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <1414555138-6500-10-git-send-email-cernekee@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:XoVJaEioVZjgZch+BcyEnqlGnllO/4yEHrDsKBPvFH4
+ HfShp9BCKZ+6LZicRBXlX+zdFtc5dNcKT3DcFAAULnVJsjLLff
+ hDaiYUWjKVfXcHYLtW7HL7oNWfs3qnenZCURVxmz7loyLtg8s7
+ UEQAXbC2kisuDnUpzSYJ2zqww0u0ugB35A6Vqnjyepg8xZpUBT
+ BBufzF8ChyW+Z3Gt33avd2rxCSLcDYAwe2NhHrX7Mab54ouWjZ
+ VOdJ7XXQAeRAJZ4O2ohh7A67JyuVvu3xMZbESe48WqBrKEpSD2
+ ZuNhv+NuqtffPZ4G9c8NVTPKNEfJebmWhL+g2MLivahYRD9+8E
+ NSrQzouL3t4JJtcrhFzk=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 29.10.14 at 08:50, <mingo@kernel.org> wrote:
-
-> * Jan Beulich <JBeulich@suse.com> wrote:
+On Tuesday 28 October 2014 20:58:57 Kevin Cernekee wrote:
+> Most implementations of the bcm7120-l2 controller only have a single
+> 32-bit enable word + 32-bit status word.  But some instances have added
+> more enable/status pairs in order to support 64+ IRQs (which are all
+> ORed into one parent IRQ input).  Make the following changes to allow
+> the driver to support this:
 > 
->> >>> On 28.10.14 at 12:18, <tipbot@zytor.com> wrote:
->> > Commit-ID:  a425cf83e39f99a70168c184e79cea8c67ba7c12
->> > Gitweb:     
-> http://git.kernel.org/tip/a425cf83e39f99a70168c184e79cea8c67ba7c12 
->> > Author:     Jan Beulich <JBeulich@suse.com>
->> > AuthorDate: Tue, 16 Sep 2014 13:44:24 +0100
->> > Committer:  Ingo Molnar <mingo@kernel.org>
->> > CommitDate: Tue, 28 Oct 2014 12:01:09 +0100
->> > 
->> > ix86: Fix build failure when !CONFIG_X86_IO_APIC
->> > 
->> > mp_should_keep_irq() isn't really IO-APIC related, and
->> > considering that it's being used solely in arch/x86/pci/ likely
->> > both declaration and definition got misplaced even without
->> > considering the resulting build failure:
->> > 
->> >   .../arch/x86/pci/irq.c: In function ‘pirq_disable_irq’:
->> >   .../arch/x86/pci/irq.c:1259: error: implicit declaration of function 
->> > ‘mp_should_keep_irq’
->> >   make[3]: *** [arch/x86/pci/irq.o] Error 1
->> > 
->> > Move them to better places.
->> 
->> Ingo,
->> 
->> the build failure had got addressed by a different patch 
->> already, albeit that patch seems far from ideal to me. I.e. I 
->> still think cleanup along the lines of the patch here is 
->> desirable, but I need to submit one that actually builds (the 
->> build failure the test robot encountered is a direct result of 
->> the clash between the two patches). I have that patch ready, 
->> but didn't want to submit before I got around to test it with 
->> 3.18-rc.
+>  - Extend DT bindings so that multiple words can be specified for the
+>    reg property, various masks, etc.
 > 
-> Okay, I've removed it from x86/urgent. Note that it also 
-> generated this build failure:
+>  - Add loops to the probe/handle functions to deal with each word
+>    separately
 > 
-> ./arch/x86/include/asm/io_apic.h:240:20: error: static declaration of 
-> ‘mp_should_keep_irq’ follows non-static declaration
+>  - Allocate 1 generic-chip for every 32 IRQs, so we can still use the
+>    clr/set helper functions
+> 
+>  - Update the documentation
+> 
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 
-Right - that's the one I was referring to above (actually iirc there
-are two relatively similar build failures resulting from the conflict).
+You should probably specify a 'big-endian' DT property for the driver
+to check. If you have both LE and BE versions of this device, we
+must make sure that we use the correct accessors.
 
-Jan
+As long as we don't need to build a kernel that supports both (if
+I understand you correctly, the ARM SoCs use a LE instance of this
+device, while the MIPS SoCs use a BE version) you can still decide
+at compile-time which one you want, but please add the runtime check
+now, so if we ever get a new combination we can handle it at runtime
+with a more complex driver implementation.
+
+If I read your code right, you have decided to use one IRQ domain
+per register set, rather than one domain for all of them. I don't
+know which of the two ways is better here, but it would be good if
+you could explain in the patch description why you did it like this.
+
+	Arnd
