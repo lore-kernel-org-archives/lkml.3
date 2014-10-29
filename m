@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934844AbaJ2Rgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:36:55 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:65001 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934823AbaJ2Rgx (ORCPT
+	id S934855AbaJ2Rhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:37:52 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44713 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934565AbaJ2Rhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:36:53 -0400
-Message-ID: <54512599.4080500@gmail.com>
-Date: Wed, 29 Oct 2014 10:36:25 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Kevin Cernekee <cernekee@gmail.com>
-CC: tglx@linutronix.de, jason@lakedaemon.net, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH 01/11] irqchip: Allow irq_reg_{readl,writel} to use __raw_{readl_writel}
-References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <11255905.1JsQYcArO7@wuerfel>
-In-Reply-To: <11255905.1JsQYcArO7@wuerfel>
-Content-Type: text/plain; charset=utf-8
+	Wed, 29 Oct 2014 13:37:50 -0400
+Date: Wed, 29 Oct 2014 13:37:45 -0400 (EDT)
+Message-Id: <20141029.133745.352978224935750457.davem@davemloft.net>
+To: peterz@infradead.org
+Cc: fengguang.wu@intel.com, lkp@01.org, linux-kernel@vger.kernel.org,
+        oleg@redhat.com, ebiederm@xmission.com
+Subject: Re: [PATCH] netdev: Fix sleeping inside wait event
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141029161657.GF3337@twins.programming.kicks-ass.net>
+References: <20141028142541.GA19097@wfg-t540p.sh.intel.com>
+	<20141029161657.GF3337@twins.programming.kicks-ass.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 29 Oct 2014 10:37:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2014 12:43 AM, Arnd Bergmann wrote:
-> On Tuesday 28 October 2014 20:58:48 Kevin Cernekee wrote:
->>
->> +#ifdef CONFIG_RAW_IRQ_ACCESSORS
->> +
->> +#ifndef irq_reg_writel
->> +# define irq_reg_writel(val, addr)     __raw_writel(val, addr)
->> +#endif
->> +#ifndef irq_reg_readl
->> +# define irq_reg_readl(addr)           __raw_readl(addr)
->> +#endif
->> +
->> +#else
->> +
-> 
-> No, this is just wrong: registers almost always have a fixed endianess
-> indenpent of CPU endianess, so if you use __raw_writel, it will be
-> broken on one or the other.
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 29 Oct 2014 17:16:57 +0100
 
-Our brcmstb platforms had an endian strap settings for MIPS-based
-platforms, and for most peripherals this would be just completely
-transparent, as the HW always will do the internal swapping, such that
-host CPU does read/writes in its native endianess regardless of the
-actual strap settings.
+> On Tue, Oct 28, 2014 at 10:25:41PM +0800, Fengguang Wu wrote:
+>> [  122.247299] ------------[ cut here ]------------
+>> [  122.247328] WARNING: CPU: 0 PID: 61 at kernel/sched/core.c:7312 __might_sleep+0x50/0x249()
+>> [  122.247334] do not call blocking ops when !TASK_RUNNING; state=2 set at [<c106ffd9>] prepare_to_wait+0x3c/0x5f
+>> [  122.247339] Modules linked in:
+>> [  122.247349] CPU: 0 PID: 61 Comm: kworker/u2:1 Not tainted 3.18.0-rc2-00037-g24574709 #136
+>> [  122.247350] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>> [  122.247368] Workqueue: netns cleanup_net
+>> [  122.247377]  c1071d83 d2b83dd8 d2b83dac c15887b1 d2b83dc8 c104c4c6 00001c90 c1068ebf
+>> [  122.247383]  00000000 c17b67e3 0000026d d2b83de0 c104c508 00000009 d2b83dd8 c17b5d4b
+>> [  122.247388]  d2b83df4 d2b83e0c c1068ebf c17b5cec 00001c90 c17b5d4b 00000002 c106ffd9
+>> [  122.247389] Call Trace:
+>> [  122.247393]  [<c1071d83>] ? down_trylock+0x23/0x2c
+>> [  122.247402]  [<c15887b1>] dump_stack+0x16/0x18
+>> [  122.247413]  [<c104c4c6>] warn_slowpath_common+0x66/0x7d
+>> [  122.247416]  [<c1068ebf>] ? __might_sleep+0x50/0x249
+>> [  122.247419]  [<c104c508>] warn_slowpath_fmt+0x2b/0x2f
+>> [  122.247422]  [<c1068ebf>] __might_sleep+0x50/0x249
+>> [  122.247424]  [<c106ffd9>] ? prepare_to_wait+0x3c/0x5f
+>> [  122.247426]  [<c106ffd9>] ? prepare_to_wait+0x3c/0x5f
+>> [  122.247432]  [<c158c364>] mutex_lock_nested+0x23/0x347
+>> [  122.247436]  [<c1075105>] ? trace_hardirqs_on+0xb/0xd
+>> [  122.247439]  [<c158eb0c>] ? _raw_spin_unlock_irqrestore+0x66/0x78
+>> [  122.247445]  [<c1570e10>] rtnl_lock+0x14/0x16
+>> [  122.247449]  [<c156516b>] default_device_exit_batch+0x54/0xf3
+>> [  122.247452]  [<c1570e1f>] ? rtnl_unlock+0xd/0xf
+>> [  122.247454]  [<c1070233>] ? __wake_up_sync+0x12/0x12
+>> [  122.247461]  [<c155e35d>] ops_exit_list+0x20/0x40
+>> [  122.247464]  [<c155ec96>] cleanup_net+0xbe/0x140
+>> [  122.247473]  [<c105ffe4>] process_one_work+0x29e/0x643
+>> [  122.247479]  [<c1061215>] worker_thread+0x23a/0x311
+>> [  122.247482]  [<c1060fdb>] ? rescuer_thread+0x204/0x204
+>> [  122.247486]  [<c10648cc>] kthread+0xbe/0xc3
+>> [  122.247490]  [<c158f4c0>] ret_from_kernel_thread+0x20/0x30
+>> [  122.247492]  [<c106480e>] ? kthread_stop+0x364/0x364
+>> [  122.247495] ---[ end trace 2073c37ae3c8b3b4 ]---
+> 
+> Ah, more of that. Thanks!
+> 
+> Dave, this relies on bits currently in tip/sched/core, if you're ok I'll
+> merge it through that tree.
 
-AFAICT bcm3384, a MIPS-based Cable Modem platform has only one endianess
-setting: BE, and the HW only supports that specific endianess.
+Yep, no problem:
 
-> 
-> If you have a machine that uses big-endian registers in the interrupt
-> controller, you need to find a way to use the correct accessors
-> (e.g. iowrite32be) and use them independent of what endianess the CPU
-> is running.
-> 
-> As this code is being used on all sorts of platforms, you can't assume
-> that they all use the same endianess, which makes it rather tricky.
-
-I think the more general problem with the use of readl_*() I/O accessors
-is that they just happen to work fine on most platforms out there: ARM
-Little-endian, because this nicely matches the endianess expected by the
-HW and that does not enforce an audit of whether your actual peripheral
-expects little-endian writes to be done.
-
-The other problem is that readl() on ARM implies a barrier, which is not
-necesarily true/necessary for some other platforms such as some MIPS
-processors.
-
-> 
-> As the first step, you can probably introduce a new Kconfig symbol
-> GENERIC_IRQ_CHIP_BE, and then make that mutually exclusive with the
-> existing users that all use little-endian registers:
-> 
-> #if defined(CONFIG_GENERIC_IRQ_CHIP) && !defined(CONFIG_GENERIC_IRQ_CHIP_BE)
-> #define irq_reg_writel(val, addr)     writel(val, addr)
-> #else if defined(CONFIG_GENERIC_IRQ_CHIP_BE) && !defined(CONFIG_GENERIC_IRQ_CHIP)
-> #define irq_reg_writel(val, addr)     iowrite32be(val, addr)
-> #else
-> /* provoke a compile error when this is used */
-> #define irq_reg_writel(val, addr)	irq_reg_writel_unknown_endian(val, addr)
-> #endif
-> 
-> and
-> 
-> --- a/kernel/irq/Makefile
-> +++ b/kernel/irq/Makefile
-> @@ -1,5 +1,6 @@
->  
->  obj-y := irqdesc.o handle.o manage.o spurious.o resend.o chip.o dummychip.o devres.o
-> +obj-$(CONFIG_GENERIC_IRQ_CHIP_BE) += generic-chip.o
->  obj-$(CONFIG_GENERIC_IRQ_CHIP) += generic-chip.o
->  obj-$(CONFIG_GENERIC_IRQ_PROBE) += autoprobe.o
->  obj-$(CONFIG_IRQ_DOMAIN) += irqdomain.o
-> 
-> Note that you might also have a case where you have more than
-> one generic irqchip driver built into the kernel, which require
-> different endianess. We can't really support that case without
-> changing the generic-chip implementation.
-> 
-> 	Arnd
-> 
-
+Acked-by: David S. Miller <davem@davemloft.net>
