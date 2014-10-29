@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984AbaJ2AMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 20:12:55 -0400
-Received: from mail-oi0-f73.google.com ([209.85.218.73]:50991 "EHLO
-	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103AbaJ2AMs (ORCPT
+	id S1755279AbaJ2ANj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 20:13:39 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:34241 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626AbaJ2AMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 20:12:48 -0400
+	Tue, 28 Oct 2014 20:12:49 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -19,9 +19,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
         Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V3 1/4] of: Add vendor prefix for MIPS Technologies, Inc.
-Date: Tue, 28 Oct 2014 17:12:39 -0700
-Message-Id: <1414541562-10076-2-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V3 2/4] of: Add binding document for MIPS GIC
+Date: Tue, 28 Oct 2014 17:12:40 -0700
+Message-Id: <1414541562-10076-3-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
 References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
@@ -29,31 +29,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the vendor prefix "mti" for MIPS Technologies, Inc.
+The Global Interrupt Controller (GIC) present on certain MIPS systems
+can be used to route external interrupts to individual VPEs and CPU
+interrupt vectors.  It also supports a timer and software-generated
+interrupts.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
-I'll update the users of the "mips" prefix to use "mti" instead once
-this lands.
-
-No changes from v2.
-New for v2.
+Changes from v2:
+ - added third cell to specify local vs. shared
+ - added documentation for timer sub-node
+ - changed compatible string to include CPU version
+Changes from v1:
+ - moved from mips/ to interrupt-controller/
+ - removed interrupts and interrupt-parent properties
+ - added available-cpu-vectors property
+ - dropped third cell in interrupt specifier
 ---
- Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
- 1 file changed, 1 insertion(+)
+ .../bindings/interrupt-controller/mips-gic.txt     | 55 ++++++++++++++++++++++
+ .../dt-bindings/interrupt-controller/mips-gic.h    |  9 ++++
+ 2 files changed, 64 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
+ create mode 100644 include/dt-bindings/interrupt-controller/mips-gic.h
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 0979393..0221b49 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -98,6 +98,7 @@ mitsubishi	Mitsubishi Electric Corporation
- mosaixtech	Mosaix Technologies, Inc.
- moxa	Moxa
- mpl	MPL AG
-+mti	MIPS Technologies, Inc.
- mundoreader	Mundo Reader S.L.
- murata	Murata Manufacturing Co., Ltd.
- mxicy	Macronix International Co., Ltd.
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt b/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
+new file mode 100644
+index 0000000..84cbbed
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
+@@ -0,0 +1,55 @@
++MIPS Global Interrupt Controller (GIC)
++
++The MIPS GIC routes external interrupts to individual VPEs and IRQ pins.
++It also supports local (per-processor) interrupts and software-generated
++interrupts which can be used as IPIs.  The GIC also includes a free-running
++global timer, per-CPU count/compare timers, and a watchdog.
++
++Required properties:
++- compatible : Should be "mti,<cpu>-gic".  Supported variants:
++  - "mti,interaptiv-gic"
++- reg : Base address and length of the GIC registers.
++- interrupt-controller : Identifies the node as an interrupt controller
++- #interrupt-cells : Specifies the number of cells needed to encode an
++  interrupt specifier.  Should be 3.
++  - The first cell is the type of interrupt, local or shared.
++    See <include/dt-bindings/interrupt-controller/mips-gic.h>.
++  - The second cell is the GIC interrupt number.
++  - The third cell encodes the interrupt flags.
++    See <include/dt-bindings/interrupt-controller/irq.h> for a list of valid
++    flags.
++- mti,available-cpu-vectors : Specifies the list of CPU interrupt vectors
++  to which the GIC may route interrupts.  May contain up to 6 entries, one
++  for each of the CPU's hardware interrupt vectors.  Valid values are 2 - 7.
++  This property is ignored if the CPU is started in EIC mode.
++
++Required properties for timer sub-node:
++- compatible : Should be "mti,<cpu>-gic-timer".  Supported variants:
++  - "mti,interaptiv-gic-timer"
++- interrupts : Interrupt for the GIC local timer.
++- clock-frequency : Clock frequency at which the GIC timers operate.
++
++Example:
++
++	gic: interrupt-controller@1bdc0000 {
++		compatible = "mti,interaptiv-gic";
++		reg = <0x1bdc0000 0x20000>;
++
++		interrupt-controller;
++		#interrupt-cells = <3>;
++
++		mti,available-cpu-vectors = <2>, <3>, <4>, <5>;
++
++		timer {
++			compatible = "mti,interaptiv-gic-timer";
++			interrupts = <GIC_LOCAL 1 IRQ_TYPE_NONE>;
++			clock-frequency = <50000000>;
++		};
++	};
++
++	uart@18101400 {
++		...
++		interrupt-parent = <&gic>;
++		interrupts = <GIC_SHARED 24 IRQ_TYPE_LEVEL_HIGH>;
++		...
++	};
+diff --git a/include/dt-bindings/interrupt-controller/mips-gic.h b/include/dt-bindings/interrupt-controller/mips-gic.h
+new file mode 100644
+index 0000000..cf35a57
+--- /dev/null
++++ b/include/dt-bindings/interrupt-controller/mips-gic.h
+@@ -0,0 +1,9 @@
++#ifndef _DT_BINDINGS_INTERRUPT_CONTROLLER_MIPS_GIC_H
++#define _DT_BINDINGS_INTERRUPT_CONTROLLER_MIPS_GIC_H
++
++#include <dt-bindings/interrupt-controller/irq.h>
++
++#define GIC_SHARED 0
++#define GIC_LOCAL 1
++
++#endif
 -- 
 2.1.0.rc2.206.gedb03e5
 
