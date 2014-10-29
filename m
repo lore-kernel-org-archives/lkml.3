@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757963AbaJ2Xlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 19:41:52 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60890 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757289AbaJ2Xlv (ORCPT
+	id S1757978AbaJ2Xma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 19:42:30 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:49227 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757289AbaJ2Xm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 19:41:51 -0400
-Message-ID: <54517B37.9010305@collabora.co.uk>
-Date: Thu, 30 Oct 2014 00:41:43 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Wed, 29 Oct 2014 19:42:29 -0400
+Date: Wed, 29 Oct 2014 19:42:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFA][PATCH 1/8] seq_file: Rename seq_overflow() to
+ seq_has_overflowed() and make public
+Message-ID: <20141029194215.44e86ffb@gandalf.local.home>
+In-Reply-To: <1414620516.2542.3.camel@perches.com>
+References: <20141029215602.535533597@goodmis.org>
+	<20141029220107.333126455@goodmis.org>
+	<1414620516.2542.3.camel@perches.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [RFT v2 2/8] regulator: max77802: Remove support for board files
-References: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com> <1414595206-1437-3-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1414595206-1437-3-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+On Wed, 29 Oct 2014 15:08:36 -0700
+Joe Perches <joe@perches.com> wrote:
 
-On 10/29/2014 04:06 PM, Krzysztof Kozlowski wrote:
->  
->  static int max77802_pmic_probe(struct platform_device *pdev)
->  {
->  	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-> -	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
->  	struct max77802_regulator_prv *max77802;
->  	int i, ret = 0, val;
->  	struct regulator_config config = { };
-> -
-> -	/* This is allocated by the MFD driver */
-> -	if (!pdata) {
-> -		dev_err(&pdev->dev, "no platform data found for regulator\n");
-> -		return -ENODEV;
-> -	}
-> +	struct of_regulator_match *rdata;
->  
->  	max77802 = devm_kzalloc(&pdev->dev,
->  				sizeof(struct max77802_regulator_prv),
-> @@ -586,24 +558,29 @@ static int max77802_pmic_probe(struct platform_device *pdev)
->  	if (!max77802)
->  		return -ENOMEM;
->  
-> -	if (iodev->dev->of_node) {
-> -		ret = max77802_pmic_dt_parse_pdata(pdev, pdata);
-> -		if (ret)
-> -			return ret;
-> -	}
-> -
->  	config.dev = iodev->dev;
->  	config.regmap = iodev->regmap;
->  	config.driver_data = max77802;
->  	platform_set_drvdata(pdev, max77802);
->  
-> +	rdata = kzalloc(sizeof(*rdata) * MAX77802_REG_MAX, GFP_KERNEL);
-> +	if (!rdata)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < MAX77802_REG_MAX; i++)
-> +		rdata[i].name = regulators[i].name;
-> +
-> +	ret = max77802_pmic_dt_parse(pdev, rdata);
-> +	if (ret)
-> +		goto out;
-> +
->  	for (i = 0; i < MAX77802_REG_MAX; i++) {
->  		struct regulator_dev *rdev;
-> -		int id = pdata->regulators[i].id;
-> +		int id = regulators[i].id;
->  		int shift = max77802_get_opmode_shift(id);
->  
-> -		config.init_data = pdata->regulators[i].initdata;
-> -		config.of_node = pdata->regulators[i].of_node;
-> +		config.init_data = rdata[i].init_data;
-> +		config.of_node = rdata[i].of_node;
->  
->  		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
->  		val = val >> shift & MAX77802_OPMODE_MASK;
-> @@ -621,13 +598,17 @@ static int max77802_pmic_probe(struct platform_device *pdev)
->  		rdev = devm_regulator_register(&pdev->dev,
->  					       &regulators[i], &config);
+> On Wed, 2014-10-29 at 17:56 -0400, Steven Rostedt wrote:
+> > +A true return from seq_has_overflowed means that the seq_file buffer is full
+> > +and further output will be discarded.
+> 
+> Perhaps the description is a bit unclear here.
+> 
+> Doesn't a return of true to seq_has_overflowed mean that
+> more characters have already been written than the buffer
+> can accept?
+> 
 
-Thanks for your patch. It's indeed an improvement over the old code and I can
-test it tomorrow when I've access to my machine with a max77802 PMIC.
+Actually, right now the comment is correct and the name is misleading.
+But I have a patch that will make the comment incorrect (and will be
+fixed) and the name correct.
 
-However, I don't think this is the change that Mark asked. AFAIU what he wanted
-is to fill the struct regulator_desc .of_match and .regulators_node fields so
-the init_data is extracted by the core on regulator registration.
+But since seq_has_overflowed() is to be used throughout the kernel, I
+didn't want to have to go do patches all over again for a temporary
+misnomer.
 
-Look at commits a0c7b164 ("regulator: of: Provide simplified DT parsing method")
-and 93a127b ("regulator: isl9305: Convert to new style DT parsing") to see what
-I'm talking about.
+In other words, I'm going to change the function to really return only
+if it did overflow and not just be full. But that's another patch set
+to come.
 
-Best regards,
-Javier
+I can update the change log and comment to state what will happen in
+the future.
+
+Thanks,
+
+-- Steve
