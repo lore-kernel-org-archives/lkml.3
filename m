@@ -1,60 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398AbaJ2UU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:20:29 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42397 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757111AbaJ2UU0 (ORCPT
+	id S1757450AbaJ2UU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:20:59 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:13709 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375AbaJ2UUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:20:26 -0400
-Message-ID: <1414614013.5330.90.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
+	Wed, 29 Oct 2014 16:20:09 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        James Morris <jmorris@namei.org>
-Date: Wed, 29 Oct 2014 16:20:13 -0400
-In-Reply-To: <CALCETrU1S94M1L-UM5Rg91J4kGjJRFLiPxce5aAnPPJVeitQ_A@mail.gmail.com>
-References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
-	 <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
-	 <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <CALCETrWpHXp=7u2777ANJjxQ5rRqmutnEwf76dLX2s_LXf87pQ@mail.gmail.com>
-	 <20141029183612.GI6890@mwanda>
-	 <CALCETrU1S94M1L-UM5Rg91J4kGjJRFLiPxce5aAnPPJVeitQ_A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102920-0029-0000-0000-000005400450
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v13 11/11] pvqspinlock, x86: Enable PV qspinlock for XEN
+Date: Wed, 29 Oct 2014 16:19:11 -0400
+Message-Id: <1414613951-32532-12-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1414613951-32532-1-git-send-email-Waiman.Long@hp.com>
+References: <1414613951-32532-1-git-send-email-Waiman.Long@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-29 at 11:51 -0700, Andy Lutomirski wrote: 
-> On Wed, Oct 29, 2014 at 11:36 AM, Dan Carpenter
-> <dan.carpenter@oracle.com> wrote:
-> > On Wed, Oct 29, 2014 at 09:23:45AM -0700, Andy Lutomirski wrote:
-> >> I have no idea what the semantics are.  All I'm saying is that it
-> >> looks like the code still accesses memory past the end of the buffer.
-> >> The buffer isn't a null pointer, so the symptom is different, but it
-> >> may still be a security bug.
-> >>
-> >> --Andy
-> >
-> > It only reads one byte into the struct "xattr_data->type" so checking
-> > for non-zero is sufficient and the patch is fine.
-> 
-> Indeed.  Still... eww.  I don't like code that, upon local inspection,
-> is apparently wrong, even though it's coincidentally correct due to
-> some other far away condition.
+This patch adds the necessary XEN specific code to allow XEN to
+support the CPU halting and kicking operations needed by the queue
+spinlock PV code.
 
-No, the code may be incomplete, but definitely not wrong.
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ arch/x86/xen/spinlock.c |  149 +++++++++++++++++++++++++++++++++++++++++++++--
+ kernel/Kconfig.locks    |    2 +-
+ 2 files changed, 145 insertions(+), 6 deletions(-)
 
-Mimi
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index d332ae0..401d7a6 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -17,6 +17,12 @@
+ #include "xen-ops.h"
+ #include "debugfs.h"
+ 
++static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
++static DEFINE_PER_CPU(char *, irq_name);
++static bool xen_pvspin = true;
++
++#ifndef CONFIG_QUEUE_SPINLOCK
++
+ enum xen_contention_stat {
+ 	TAKEN_SLOW,
+ 	TAKEN_SLOW_PICKUP,
+@@ -100,12 +106,9 @@ struct xen_lock_waiting {
+ 	__ticket_t want;
+ };
+ 
+-static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
+-static DEFINE_PER_CPU(char *, irq_name);
+ static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
+ static cpumask_t waiting_cpus;
+ 
+-static bool xen_pvspin = true;
+ __visible void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+ {
+ 	int irq = __this_cpu_read(lock_kicker_irq);
+@@ -213,6 +216,118 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
+ 	}
+ }
+ 
++#else /* CONFIG_QUEUE_SPINLOCK */
++
++#ifdef CONFIG_XEN_DEBUG_FS
++static u32 kick_nohlt_stats;		/* Kick but not halt count	*/
++static u32 halt_qhead_stats;		/* Queue head halting count	*/
++static u32 halt_qnode_stats;		/* Queue node halting count	*/
++static u32 halt_abort_stats;		/* Halting abort count		*/
++static u32 wake_kick_stats;		/* Wakeup by kicking count	*/
++static u32 wake_spur_stats;		/* Spurious wakeup count	*/
++static u64 time_blocked;		/* Total blocking time		*/
++
++static inline void xen_halt_stats(enum pv_lock_stats type)
++{
++	if (type == PV_HALT_QHEAD)
++		add_smp(&halt_qhead_stats, 1);
++	else if (type == PV_HALT_QNODE)
++		add_smp(&halt_qnode_stats, 1);
++	else /* type == PV_HALT_ABORT */
++		add_smp(&halt_abort_stats, 1);
++}
++
++void xen_lock_stats(enum pv_lock_stats type)
++{
++	if (type == PV_WAKE_KICKED)
++		add_smp(&wake_kick_stats, 1);
++	else if (type == PV_WAKE_SPURIOUS)
++		add_smp(&wake_spur_stats, 1);
++	else /* type == PV_KICK_NOHALT */
++		add_smp(&kick_nohlt_stats, 1);
++}
++PV_CALLEE_SAVE_REGS_THUNK(xen_lock_stats);
++
++static inline u64 spin_time_start(void)
++{
++	return sched_clock();
++}
++
++static inline void spin_time_accum_blocked(u64 start)
++{
++	u64 delta;
++
++	delta = sched_clock() - start;
++	add_smp(&time_blocked, delta);
++}
++#else /* CONFIG_XEN_DEBUG_FS */
++static inline void xen_halt_stats(enum pv_lock_stats type)
++{
++}
++
++static inline u64 spin_time_start(void)
++{
++	return 0;
++}
++
++static inline void spin_time_accum_blocked(u64 start)
++{
++}
++#endif /* CONFIG_XEN_DEBUG_FS */
++
++void xen_kick_cpu(int cpu)
++{
++	xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
++}
++PV_CALLEE_SAVE_REGS_THUNK(xen_kick_cpu);
++
++/*
++ * Halt the current CPU & release it back to the host
++ */
++void xen_halt_cpu(u8 *lockbyte)
++{
++	int irq = __this_cpu_read(lock_kicker_irq);
++	unsigned long flags;
++	u64 start;
++
++	/* If kicker interrupts not initialized yet, just spin */
++	if (irq == -1)
++		return;
++
++	/*
++	 * Make sure an interrupt handler can't upset things in a
++	 * partially setup state.
++	 */
++	local_irq_save(flags);
++	start = spin_time_start();
++
++	xen_halt_stats(lockbyte ? PV_HALT_QHEAD : PV_HALT_QNODE);
++	/* clear pending */
++	xen_clear_irq_pending(irq);
++
++	/* Allow interrupts while blocked */
++	local_irq_restore(flags);
++	/*
++	 * Don't halt if the lock is now available
++	 */
++	if (lockbyte && !ACCESS_ONCE(*lockbyte)) {
++		xen_halt_stats(PV_HALT_ABORT);
++		return;
++	}
++	/*
++	 * If an interrupt happens here, it will leave the wakeup irq
++	 * pending, which will cause xen_poll_irq() to return
++	 * immediately.
++	 */
++
++	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
++	xen_poll_irq(irq);
++	spin_time_accum_blocked(start);
++}
++PV_CALLEE_SAVE_REGS_THUNK(xen_halt_cpu);
++
++#endif /* CONFIG_QUEUE_SPINLOCK */
++
+ static irqreturn_t dummy_handler(int irq, void *dev_id)
+ {
+ 	BUG();
+@@ -258,7 +373,6 @@ void xen_uninit_lock_cpu(int cpu)
+ 	per_cpu(irq_name, cpu) = NULL;
+ }
+ 
+-
+ /*
+  * Our init of PV spinlocks is split in two init functions due to us
+  * using paravirt patching and jump labels patching and having to do
+@@ -275,8 +389,17 @@ void __init xen_init_spinlocks(void)
+ 		return;
+ 	}
+ 	printk(KERN_DEBUG "xen: PV spinlocks enabled\n");
++
++#ifdef CONFIG_QUEUE_SPINLOCK
++	pv_lock_ops.kick_cpu = PV_CALLEE_SAVE(xen_kick_cpu);
++	pv_lock_ops.lockwait = PV_CALLEE_SAVE(xen_halt_cpu);
++#ifdef CONFIG_XEN_DEBUG_FS
++	pv_lock_ops.lockstat = PV_CALLEE_SAVE(xen_lock_stats);
++#endif
++#else
+ 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
+ 	pv_lock_ops.unlock_kick = xen_unlock_kick;
++#endif
+ }
+ 
+ /*
+@@ -321,6 +444,7 @@ static int __init xen_spinlock_debugfs(void)
+ 
+ 	d_spin_debug = debugfs_create_dir("spinlocks", d_xen);
+ 
++#ifndef CONFIG_QUEUE_SPINLOCK
+ 	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
+ 
+ 	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
+@@ -340,7 +464,22 @@ static int __init xen_spinlock_debugfs(void)
+ 
+ 	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
+ 				spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
+-
++#else /* CONFIG_QUEUE_SPINLOCK */
++	debugfs_create_u32("kick_nohlt_stats",
++			   0644, d_spin_debug, &kick_nohlt_stats);
++	debugfs_create_u32("halt_qhead_stats",
++			   0644, d_spin_debug, &halt_qhead_stats);
++	debugfs_create_u32("halt_qnode_stats",
++			   0644, d_spin_debug, &halt_qnode_stats);
++	debugfs_create_u32("halt_abort_stats",
++			   0644, d_spin_debug, &halt_abort_stats);
++	debugfs_create_u32("wake_kick_stats",
++			   0644, d_spin_debug, &wake_kick_stats);
++	debugfs_create_u32("wake_spur_stats",
++			   0644, d_spin_debug, &wake_spur_stats);
++	debugfs_create_u64("time_blocked",
++			   0644, d_spin_debug, &time_blocked);
++#endif /* CONFIG_QUEUE_SPINLOCK */
+ 	return 0;
+ }
+ fs_initcall(xen_spinlock_debugfs);
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 57301de..1e66280 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -236,7 +236,7 @@ config ARCH_USE_QUEUE_SPINLOCK
+ 
+ config QUEUE_SPINLOCK
+ 	def_bool y if ARCH_USE_QUEUE_SPINLOCK
+-	depends on SMP && (!PARAVIRT_SPINLOCKS || !XEN)
++	depends on SMP
+ 
+ config ARCH_USE_QUEUE_RWLOCK
+ 	bool
+-- 
+1.7.1
 
