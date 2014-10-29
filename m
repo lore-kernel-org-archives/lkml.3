@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096AbaJ2NC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:02:57 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:42594 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932680AbaJ2NC4 (ORCPT
+	id S933121AbaJ2NEC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:04:02 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:56813 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932680AbaJ2ND7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 09:02:56 -0400
-Date: Wed, 29 Oct 2014 14:02:51 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Yassin Jaffer <yassinjaffer@gmail.com>
-Subject: Re: [PATCH v7 1/2] mtd: nand: add sunxi NAND flash controller
- support
-Message-ID: <20141029140251.142fed10@bbrezillon>
-In-Reply-To: <20141028181310.GA23619@ld-irv-0074>
-References: <1413896922-11680-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1413896922-11680-2-git-send-email-boris.brezillon@free-electrons.com>
-	<20141028181310.GA23619@ld-irv-0074>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 29 Oct 2014 09:03:59 -0400
+Date: Wed, 29 Oct 2014 14:00:50 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Romain Perier <romain.perier@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        devicetree <devicetree@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, j-keerthy@ti.com, nsekhar@ti.com,
+        Felipe Balbi <balbi@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        t-kristo@ti.com, Lokesh Vutla <lokeshvutla@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
+Message-ID: <20141029130050.GC2265@localhost>
+References: <20141024194442.GG11455@saruman>
+ <20141024195532.GF19377@localhost>
+ <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org>
+ <20141028002552.GX12379@n2100.arm.linux.org.uk>
+ <20141028081616.GL2006@localhost>
+ <20141028084745.GY12379@n2100.arm.linux.org.uk>
+ <20141028131257.GS2006@localhost>
+ <20141028151610.GA12379@n2100.arm.linux.org.uk>
+ <20141029123418.GB2265@localhost>
+ <CABgxDo+ewxNwb3RrBVZA7kqYMvSujLb9U6A6FCvnHQH1W8V0kg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABgxDo+ewxNwb3RrBVZA7kqYMvSujLb9U6A6FCvnHQH1W8V0kg@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
+[ Please do not top-post. ]
 
-On Tue, 28 Oct 2014 11:13:11 -0700
-Brian Norris <computersforpeace@gmail.com> wrote:
+On Wed, Oct 29, 2014 at 01:55:49PM +0100, Romain Perier wrote:
+> Johan:. do you really plan to use this "poweroff-source" property ? As
+> you proposed a renaming few days ago...
+> I don't really want to waste time to propose patches to fix things
+> incrementally and rename it if the old one is used...
 
-> Hi Boris,
-> 
-> On Tue, Oct 21, 2014 at 03:08:41PM +0200, Boris Brezillon wrote:
-> > +static int sunxi_nand_hw_ecc_ctrl_init(struct mtd_info *mtd,
-> > +				       struct nand_ecc_ctrl *ecc,
-> > +				       struct device_node *np)
-> > +{
-> > +	struct nand_ecclayout *layout;
-> > +	int i, j;
-> > +	int ret;
-> > +
-> > +	ret = sunxi_nand_hw_common_ecc_ctrl_init(mtd, ecc, np);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	ecc->read_page = sunxi_nfc_hw_ecc_read_page;
-> > +	ecc->write_page = sunxi_nfc_hw_ecc_write_page;
-> > +	layout = ecc->layout;
-> > +
-> > +	for (i = 0; i < ecc->steps; i++) {
-> 
-> Hmm, did you retest this since changing this to ecc->steps? I think this
-> won't work, since ecc->steps is only initialized in nand_scan_tail(),
-> which comes after this. I only recommended the change for the
-> {read,write}_page() type of functions, not the initialization functions.
-> 
-> [snip the rest]
-> 
-> So I'd suggest the following additional patch, and otherwise, the series
-> is fine with me. If you give your ack, I can just squash this in and
-> apply it to my tree:
+Why would I want to use your retracted renaming proposal for this
+property (i.e. "poweroff-source")?
 
-It works, you can squash those changes into my first patch.
+These patches use "ti,system-power-controller" and the vendor prefix
+will be dropped when your patches have been merged.
 
-Thanks,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Johan
