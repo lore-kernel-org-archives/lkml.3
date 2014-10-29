@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978AbaJ2M5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:57:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37078 "EHLO mail.kernel.org"
+	id S933598AbaJ2M5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:57:09 -0400
+Received: from tex.lwn.net ([70.33.254.29]:47577 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933575AbaJ2M5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:57:12 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/10] perf probe: Trivial typo fix for --demangle
-Date: Wed, 29 Oct 2014 10:56:17 -0200
-Message-Id: <1414587377-25077-11-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1414587377-25077-1-git-send-email-acme@kernel.org>
-References: <1414587377-25077-1-git-send-email-acme@kernel.org>
+	id S933536AbaJ2M5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 08:57:03 -0400
+Date: Wed, 29 Oct 2014 08:57:01 -0400
+From: Jonathan Corbet <corbet@lwn.net>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Landley <rob@landley.net>, Paul Bolle <pebolle@tiscali.nl>,
+        devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [patch v2] Documentation/SubmittingPatches: Reported-by tags
+ and permission
+Message-ID: <20141029085701.51f0bd86@lwn.net>
+In-Reply-To: <20141029100136.GA14718@mwanda>
+References: <20141028090451.41ed6aad@lwn.net>
+	<20141029100136.GA14718@mwanda>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On Wed, 29 Oct 2014 13:01:36 +0300
+Dan Carpenter <dan.carpenter@oracle.com> wrote:
 
-Replace "Disable" with "Enable", since --demangle option enables symbol
-demangling, not disable it.
+> The reported-by text says you have to ask for permission, but that
+> should only be if the bug was reported in private.  These days the
+> standard is to always give reported-by credit or it's considered a bit
+> rude.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-perf probe has --demangle and --no-demangle options, but the
-command-line help (--help) shows only --demangle option. So it should
-explain about --demangle.
+Applied, thanks.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20141027203124.21219.68278.stgit@localhost.localdomain
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-probe.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 04412b4770a2..7af26acf06d9 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -375,7 +375,7 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK('x', "exec", NULL, "executable|path",
- 			"target executable name or path", opt_set_target),
- 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
--		    "Disable symbol demangling"),
-+		    "Enable symbol demangling"),
- 	OPT_BOOLEAN(0, "demangle-kernel", &symbol_conf.demangle_kernel,
- 		    "Enable kernel symbol demangling"),
- 	OPT_END()
--- 
-1.9.3
-
+jon
