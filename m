@@ -1,130 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933961AbaJ2OLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:11:15 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51250 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933135AbaJ2OLL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:11:11 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/M73CRpvr7t6ToA1kt+/+j
-Date: Wed, 29 Oct 2014 07:09:44 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
-        sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: Nokia n900 problems in 3.18-rc1 (was Re: USB Ethernet gadget on
- Nokia n900)
-Message-ID: <20141029140943.GX2542@atomide.com>
-References: <20141019090107.GA19132@amd>
- <201410262222.39892@pali>
- <20141026215548.GA9004@amd>
- <201410262323.17891@pali>
- <20141027195209.GP2560@atomide.com>
- <20141027223114.GU2560@atomide.com>
- <20141028220450.GA27667@amd>
- <20141028221124.GT2542@atomide.com>
- <20141029084637.GA30662@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141029084637.GA30662@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S933755AbaJ2OIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:08:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41479 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755859AbaJ2OIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 10:08:43 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 22/25] perf probe: Add --quiet option to suppress output result message
+Date: Wed, 29 Oct 2014 12:06:34 -0200
+Message-Id: <1414591597-2763-23-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1414591597-2763-1-git-send-email-acme@kernel.org>
+References: <1414591597-2763-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pavel Machek <pavel@ucw.cz> [141029 01:48]:
-> 
-> Speaking of testing:
-> 
-> I'm not sure what is omap_l3_smx neccessary for, but it does not work.
-> 
-> [    0.223297] omap_l3_smx omap_l3_smx.0: couldn't request debug irq
-> [    0.223419] omap_l3_smx: probe of omap_l3_smx.0 failed with error
-> -22
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Hmm this should be fixed to get interrupts about invalid bus
-access.
+Add --quiet(-q) option to suppress output result message for --add, and
+--del options (Note that --lines/funcs/vars are not affected). This
+option is useful if you run the perf probe inside your scripts.
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20141027203131.21219.35170.stgit@localhost.localdomain
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-probe.c    | 11 +++++++++++
+ tools/perf/util/probe-event.c | 18 +++++++++---------
+ 2 files changed, 20 insertions(+), 9 deletions(-)
+
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 2d3577d1009d..921bb6942503 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -55,6 +55,7 @@ static struct {
+ 	bool show_funcs;
+ 	bool mod_events;
+ 	bool uprobes;
++	bool quiet;
+ 	int nevents;
+ 	struct perf_probe_event events[MAX_PROBES];
+ 	struct strlist *dellist;
+@@ -315,6 +316,8 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct option options[] = {
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show parsed arguments, etc)"),
++	OPT_BOOLEAN('q', "quiet", &params.quiet,
++		    "be quiet (do not show any mesages)"),
+ 	OPT_BOOLEAN('l', "list", &params.list_events,
+ 		    "list up current probe events"),
+ 	OPT_CALLBACK('d', "del", NULL, "[GROUP:]EVENT", "delete a probe event.",
+@@ -404,6 +407,14 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		}
+ 	}
  
-> There is some fun in pinmuxing:
-> 
-> [    0.247131] irq: no irq domain found for /ocp/pinmux@48002030 !
-> [    0.248291] irq: no irq domain found for /ocp/pinmux@48002030 !
-> ...
-> [    0.384826] omap_i2c 48070000.i2c: could not find pctldev for node
-> /ocp/pinmux@48002030/pinmux_i\
-> 2c1_pins, deferring probe
-> [    0.384918] platform 48070000.i2c: Driver omap_i2c requests probe
-> deferral
-> [    0.385070] omap_i2c 48072000.i2c: could not find pctldev for node
-> /ocp/pinmux@48002030/pinmux_i\
-> 2c2_pins, deferring probe
-> [    0.385162] platform 48072000.i2c: Driver omap_i2c requests probe
-> deferral
-> [    0.385284] omap_i2c 48060000.i2c: could not find pctldev for node
-> /ocp/pinmux@48002030/pinmux_i\
-> 2c3_pins, deferring probe
-> [    0.385375] platform 48060000.i2c: Driver omap_i2c requests probe
-> deferral
-
-These are related to deferred probe and should go away when we
-make drivers/i2c/busses/i2c-omap.c to use regular module_init and
-stop using subsys_initcall. But I think legacy booting still needs
-it early, could be omap1 only nowadays though.
++	if (params.quiet) {
++		if (verbose != 0) {
++			pr_err("  Error: -v and -q are exclusive.\n");
++			return -EINVAL;
++		}
++		verbose = -1;
++	}
++
+ 	if (params.max_probe_points == 0)
+ 		params.max_probe_points = MAX_PROBES;
  
-> And serial has some problems:
-> 
-> [    0.482208] of_get_named_gpiod_flags: can't parse 'rts-gpio'
-> property of node '/ocp/serial@4806c\
-> 000[0]'
-> [    0.482513] omap_uart 4806c000.serial: ttyO1 at MMIO 0x4806c000
-> (irq = 223, base_baud = 3000000)\
->  is a OMAP UART1
-> [    0.484588] of_get_named_gpiod_flags: can't parse 'rts-gpio'
-> property of node '/ocp/serial@49020\
-> 000[0]'
-> [    0.484771] omap_uart 49020000.serial: ttyO2 at MMIO 0x49020000
-> (irq = 224, base_baud = 3000000)\
->  is a OMAP UART2
-
-I these come from the GPIO framework when booting with debug enabled.
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index c150ca4343eb..28eb1417cb2a 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1910,21 +1910,21 @@ static int show_perf_probe_event(struct perf_probe_event *pev,
+ 	if (ret < 0)
+ 		return ret;
  
-> There's a lot of noise from probe defferal :-(. And it looks like mmc
-> properties have some problems:
-> 
-> [    0.739349] of_get_named_gpiod_flags: can't parse 'wp-gpios'
-> property of node '/ocp/mmc@4809c000\
-> [0]'
-> [    0.740142] omap_hsmmc 4809c000.mmc: unable to get vmmc regulator
-> -517
-> [    0.740386] platform 4809c000.mmc: Driver omap_hsmmc requests probe
-> deferral
-> [    0.740661] of_get_named_gpiod_flags: can't parse 'cd-gpios'
-> property of node '/ocp/mmc@480b4000\
-> [0]'
-> [    0.740692] of_get_named_gpiod_flags: can't parse 'wp-gpios'
-> property of node '/ocp/mmc@480b4000\
-> [0]'
-
-These too. But yeah, I agree, let's try to patch away some of
-the deferred probe noise.
+-	printf("  %-20s (on %s", buf, place);
++	pr_info("  %-20s (on %s", buf, place);
+ 	if (module)
+-		printf(" in %s", module);
++		pr_info(" in %s", module);
  
-> omapfb reports problems, but seems to work ok:
-> 
-> [    0.990386] omapfb omapfb: cannot parse default modes
-> [    1.004791] Console: switching to colour frame buffer device 100x30
-> [    1.073150] omapfb omapfb: using display 'lcd' mode 800x480
+ 	if (pev->nargs > 0) {
+-		printf(" with");
++		pr_info(" with");
+ 		for (i = 0; i < pev->nargs; i++) {
+ 			ret = synthesize_perf_probe_arg(&pev->args[i],
+ 							buf, 128);
+ 			if (ret < 0)
+ 				break;
+-			printf(" %s", buf);
++			pr_info(" %s", buf);
+ 		}
+ 	}
+-	printf(")\n");
++	pr_info(")\n");
+ 	free(place);
+ 	return ret;
+ }
+@@ -2124,7 +2124,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 	}
+ 
+ 	ret = 0;
+-	printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
++	pr_info("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
+ 	for (i = 0; i < ntevs; i++) {
+ 		tev = &tevs[i];
+ 		if (pev->event)
+@@ -2179,8 +2179,8 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 
+ 	if (ret >= 0) {
+ 		/* Show how to use the event. */
+-		printf("\nYou can now use it in all perf tools, such as:\n\n");
+-		printf("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
++		pr_info("\nYou can now use it in all perf tools, such as:\n\n");
++		pr_info("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
+ 			 tev->event);
+ 	}
+ 
+@@ -2444,7 +2444,7 @@ static int __del_trace_probe_event(int fd, struct str_node *ent)
+ 		goto error;
+ 	}
+ 
+-	printf("Removed event: %s\n", ent->s);
++	pr_info("Removed event: %s\n", ent->s);
+ 	return 0;
+ error:
+ 	pr_warning("Failed to delete event: %s\n",
+-- 
+1.9.3
 
-Tomi, is the default mode warning correct here?
-
-Regards,
-
-Tony
