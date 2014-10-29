@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794AbaJ2Mh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:37:29 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:43254 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388AbaJ2Mh0 (ORCPT
+	id S932813AbaJ2Mjt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:39:49 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:46055 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388AbaJ2Mjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:37:26 -0400
-Date: Wed, 29 Oct 2014 13:34:18 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Johan Hovold <johan@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Felipe Balbi <balbi@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
-Message-ID: <20141029123418.GB2265@localhost>
-References: <20141024192948.GE11455@saruman>
- <20141024193655.GD19377@localhost>
- <20141024194442.GG11455@saruman>
- <20141024195532.GF19377@localhost>
- <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org>
- <20141028002552.GX12379@n2100.arm.linux.org.uk>
- <20141028081616.GL2006@localhost>
- <20141028084745.GY12379@n2100.arm.linux.org.uk>
- <20141028131257.GS2006@localhost>
- <20141028151610.GA12379@n2100.arm.linux.org.uk>
+	Wed, 29 Oct 2014 08:39:48 -0400
+Date: Wed, 29 Oct 2014 13:39:42 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Andrzej Hajda <a.hajda@samsung.com>, Dave Airlie <airlied@gmail.com>,
+        dri-devel@lists.freedesktop.org, Thierry Reding <treding@nvidia.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] MAINTAINERS: Add entry for MIPI DSI bus
+Message-ID: <20141029123939.GA30610@ulmo.nvidia.com>
+References: <1414403310-6316-1-git-send-email-a.hajda@samsung.com>
+ <1414403310-6316-2-git-send-email-a.hajda@samsung.com>
+ <20141027141717.GN26941@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
 Content-Disposition: inline
-In-Reply-To: <20141028151610.GA12379@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141027141717.GN26941@phenom.ffwll.local>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 03:16:10PM +0000, Russell King - ARM Linux wrote:
-> On Tue, Oct 28, 2014 at 02:12:57PM +0100, Johan Hovold wrote:
-> > That's not what I was trying to refer to. But the patch set explicitly
-> > allows for multiple, prioritised power-off handlers, which can power
-> > off a board in different ways and with various degrees of success.
-> > Specifically, it allows for fallback handlers in case one or more
-> > power-off handlers fail.
-> > 
-> > So if we allow for that, what is to prevent the final power-off handler
-> > from failing? And should this not be logged by arch code in the same way
-> > as failure to restart is?
-> 
-> And how is that different from having a set of power-off handlers, and
-> reporting when each individual one fails?  Don't you want to know if
-> your primary high priority reboot handler fails, just as much as you
-> want to know if your final last-resort power-off handler fails?
 
-Good point. Failed power-off should probably be logged by the power-off
-call chain implementation (which seems to makes notifier chains a bad
-fit).
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And what about any power-off latencies? Should this always be dealt with
-in the power-off handler?
+On Mon, Oct 27, 2014 at 03:17:17PM +0100, Daniel Vetter wrote:
+> On Mon, Oct 27, 2014 at 10:48:26AM +0100, Andrzej Hajda wrote:
+> > Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> > ---
+> >  MAINTAINERS | 7 +++++++
+> >  1 file changed, 7 insertions(+)
+> >=20
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index dd31933..476679c 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -3071,6 +3071,13 @@ F:	drivers/gpu/vga/
+> >  F:	include/drm/
+> >  F:	include/uapi/drm/
+> > =20
+> > +DRM MIPI DSI BUS
+> > +M:	Andrzej Hajda <a.hajda@samsung.com>
+> > +L:	dri-devel@lists.freedesktop.org
+> > +S:	Supported
+> > +F:	drivers/gpu/drm/drm_mipi_dsi.c
+> > +F:	include/drm/drm_mipi_dsi.h
+>=20
+> I really prefer when common infrastructure like this doesn't get
+> maintainer by a vendor. And I care with my intel hat on since we also ahve
+> a dsi driver that sooner or later needs to be converted to to this stuff.
+>=20
+> Why doesn't the usual model of merging stuff through Dave's tree, or if
+> that doesn't work well due to patch depencies, through vendor trees with
+> Dave's ack?
 
-Again, if it's predictable and high, as in the OMAP RTC case, it should
-go in the handler. But what if it's just normal bus latencies
-(peripheral busses, i2c, or whatever people may come up with)?
+FWIW, I've merged DSI changes through the panel tree in the past after
+discussing it with Dave on IRC. It seemed like a good fit and it was
+most relevant for panels anyway. Given that I had expected that Dave
+would give it a closer look before pulling than any of the vendor trees
+anyway, so it would be as good as an explicit Acked-by anyway.
 
-Should there always be a short delay before calling the next handler?
+Thierry
 
-> Or different from having no power-off handlers.
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature
 
-That is actually quite different, as in that case we call machine_halt
-instead (via kernel_halt).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> Here's the x86 code:
-> 
-> void machine_power_off(void)
-> {
->         machine_ops.power_off();
-> }
-> 
-> struct machine_ops machine_ops = {
->         .power_off = native_machine_power_off,
-> ...
-> 
-> static void native_machine_power_off(void)
-> {
->         if (pm_power_off) {
->                 if (!reboot_force)
->                         machine_shutdown();
->                 pm_power_off();
->         }
->         /* A fallback in case there is no PM info available */
->         tboot_shutdown(TB_SHUTDOWN_HALT);
-> }
-> 
-> void tboot_shutdown(u32 shutdown_type)
-> {
->         void (*shutdown)(void);
-> 
->         if (!tboot_enabled())
->                 return;
-> 
-> See - x86 can very well just fall straight back out of machine_power_off()
-> if there's no pm_power_off() hook and tboot is not enabled.
+iQIcBAEBAgAGBQJUUOALAAoJEN0jrNd/PrOhCrcQAL1oBQJZByGlCHB0MO8eLBYB
+XAjXazILr++793j+wA5ivlNgyTY7gfUweDW77RfC0M0hAL953UfLBpvfJRvOmMGv
+173LcwYO7nYJeZRk6IeWhBRB4StGIgCfJcOwi9mdIZKSRIrYW6vHnCrvqQAn6QGO
+Q2xcrMyuIy6yvhm9UNGDTL3+wHtRJRan9aWxc1LMkVguOKpjz38a/lKEerlgzZk+
+eJMghNoCUz7EQ0rxRHFgXKLDfV9fW06AQTX7o8sk4K1vab5yNBgH3nKF5noRiXM1
+Xj36Y8qF2saI3sybDcyvvIaYbyrpQNZKPZrQNwV7kx9ci+AjA5l6yXXjsJkoXhi2
+Wbwf5bL5OeXdkhzhRrveqO6tyVDdu3LSPUluRw0URoonYgT16z3e/EpdLeeTQyOb
+DQZnLC3KEosolDBrqWC5FmXlvfYH3KWxExjNtkkgp6GfU5DnGqucr9NVMqZ1D5LH
+2ywi6c9FL7q2Nbr5sLkcFnsifHkEqJ0cXd1FwmoPX9ngKxGPTLQI4VS3690N0rW9
+hRP8VBaHYEsIRMSwwjMznLNIozhl7oF0BOsTfYGEy95JPEqSzpBnD5rG5O5O30m1
+QEtJCG7YSm34ogv6PoZ9Db8CZ3vP0iHYdZRVWAnNllCMYr0pjIzbQkciPJE3iSjP
++qHEXxroO2XoDPZqdsRn
+=sDrr
+-----END PGP SIGNATURE-----
 
-I never doubted that, but is the right thing to do? Not all arches do it
-that way.
-
-And what about the killing of init? Shall we simply consider that a
-systemd bug? 
-
-	case LINUX_REBOOT_CMD_POWER_OFF:
-		kernel_power_off();
-		do_exit(0);
-		break;
-
-If power-off fails (for whatever reason), do_exit(0) will trigger a
-panic when called from PID 1.
-
-Johan
+--r5Pyd7+fXNt84Ff3--
