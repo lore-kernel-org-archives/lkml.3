@@ -1,114 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766AbaJ2TOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 15:14:44 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:61619 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465AbaJ2TOm (ORCPT
+	id S1756379AbaJ2TSA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 15:18:00 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:64058 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881AbaJ2TR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 15:14:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Kevin Cernekee <cernekee@gmail.com>, tglx@linutronix.de,
-        jason@lakedaemon.net, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH 01/11] irqchip: Allow irq_reg_{readl,writel} to use __raw_{readl_writel}
-Date: Wed, 29 Oct 2014 20:14:19 +0100
-Message-ID: <2708949.pfRevDjuZe@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54512599.4080500@gmail.com>
-References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <11255905.1JsQYcArO7@wuerfel> <54512599.4080500@gmail.com>
+	Wed, 29 Oct 2014 15:17:59 -0400
+From: Giedrius Statkevicius <giedriuswork@gmail.com>
+To: eric.piel@tremplin-utc.net
+Cc: dvhart@infradead.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Giedrius=20Statkevi=C4=8Dius?= <giedriuswork@gmail.com>
+Subject: [PATCH] platform: hp_accel: add a i8042 filter to remove HPQ6000 data from kb bus stream
+Date: Wed, 29 Oct 2014 21:16:22 +0200
+Message-Id: <1414610182-28702-1-git-send-email-giedriuswork@gmail.com>
+X-Mailer: git-send-email 2.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cz0xjSYTpBbTZqfbPwfAIytB+3/vXnHoecdkHKIQbn9
- KilSLBYiaZk+7U7Bn6JmNkQIu9pFzQns2QYneNjVtQJYK+KSR7
- U5xutHWqG3NS/barW386+XymuQtgpCgTzKYcrNs7rfSgDzd1vf
- wMp8SAXQJ8UuruBFJ78wYFVkoahQyLTDx5qEHQsPHm29t4B0B7
- 2P5KPXMc8sXlu+STetOefCEm2+cikwVhaIpyk+kpb5efuUFX0M
- Zk6fbJDRfGMvITcphZSP8sA+PRHad5HEYSNMxmrBjmUQ9p/3my
- T01U3e5/1IElwwfTyAYFJULapoWBqY0sRofVbialrg/fuhgRvS
- KSxLvgGozUY0mqV0K0l8=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 October 2014 10:36:25 Florian Fainelli wrote:
-> On 10/29/2014 12:43 AM, Arnd Bergmann wrote:
-> > On Tuesday 28 October 2014 20:58:48 Kevin Cernekee wrote:
-> >>
-> >> +#ifdef CONFIG_RAW_IRQ_ACCESSORS
-> >> +
-> >> +#ifndef irq_reg_writel
-> >> +# define irq_reg_writel(val, addr)     __raw_writel(val, addr)
-> >> +#endif
-> >> +#ifndef irq_reg_readl
-> >> +# define irq_reg_readl(addr)           __raw_readl(addr)
-> >> +#endif
-> >> +
-> >> +#else
-> >> +
-> > 
-> > No, this is just wrong: registers almost always have a fixed endianess
-> > indenpent of CPU endianess, so if you use __raw_writel, it will be
-> > broken on one or the other.
-> 
-> Our brcmstb platforms had an endian strap settings for MIPS-based
-> platforms, and for most peripherals this would be just completely
-> transparent, as the HW always will do the internal swapping, such that
-> host CPU does read/writes in its native endianess regardless of the
-> actual strap settings.
+Add a i8042 filter to hp_accel to remove accelerometer's data with acpi
+id HPQ6000 from keyboard bus stream. The codes sent by accelerometer are
+e0 25, e0 26, e0 27 and e0 28. The relevant information is already
+passed through /dev/freefall so no need to send these undocumented weird
+signals through the keyboard bus. Also, unclogs `dmesg` because atkbd
+complained about weird scan codes, saves processing power and disk
+space.
 
-That's irrelevant, it just makes matters worse because then you
-might run into all combinations of big-endian and little-endian
-kernels vs MMIO registers.
+Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
+---
+First of all, any Tested-Bys are very welcome by people who also have a
+accelerometer with acpi id HPQ6000. If it happens with HPQ6007 too we
+can easily modify this to install the filter when HPQ6007 is detected.
+For the time being the filter is only installed when HPQ6000 is
+detected. 
 
-> AFAICT bcm3384, a MIPS-based Cable Modem platform has only one endianess
-> setting: BE, and the HW only supports that specific endianess.
+Now moving to what was changed since the RFC. I reworked the filter
+function to hopefully make it more clear what it is doing. Since the
+codes sent by the accelerometer are extended then we need to filter all
+of 0xe0's and then send one 0xe0 back when the actual key isn't in the
+range of 0x25-0x28. Also, I've removed the check for errors for
+i8042_install_filter() because it's unnecessary to check if it failed.
+If multiple HPQ6000's are in the system then no issue occurs even if
+multiple i8042_install_filter() are issued because this is handled by
+i8042 and it's smart enough not to install the same filter two or more
+times.
 
-But they might have a secondary interrupt controller on a PCI card that
-uses the same driver in the little-endian mode.
+ drivers/platform/x86/hp_accel.c | 45 ++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 44 insertions(+), 1 deletion(-)
 
-> > If you have a machine that uses big-endian registers in the interrupt
-> > controller, you need to find a way to use the correct accessors
-> > (e.g. iowrite32be) and use them independent of what endianess the CPU
-> > is running.
-> > 
-> > As this code is being used on all sorts of platforms, you can't assume
-> > that they all use the same endianess, which makes it rather tricky.
-> 
-> I think the more general problem with the use of readl_*() I/O accessors
-> is that they just happen to work fine on most platforms out there: ARM
-> Little-endian, because this nicely matches the endianess expected by the
-> HW and that does not enforce an audit of whether your actual peripheral
-> expects little-endian writes to be done.
+diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
+index 13e14ec..a751621 100644
+--- a/drivers/platform/x86/hp_accel.c
++++ b/drivers/platform/x86/hp_accel.c
+@@ -38,6 +38,8 @@
+ #include <linux/atomic.h>
+ #include <linux/acpi.h>
+ #include "../../misc/lis3lv02d/lis3lv02d.h"
++#include <linux/i8042.h>
++#include <linux/serio.h>
+ 
+ #define DRIVER_NAME     "hp_accel"
+ #define ACPI_MDPS_CLASS "accelerometer"
+@@ -73,6 +75,13 @@ static inline void delayed_sysfs_set(struct led_classdev *led_cdev,
+ 
+ /* HP-specific accelerometer driver ------------------------------------ */
+ 
++/* e0 25, e0 26, e0 27, e0 28 are scan codes that the accelerometer with acpi id
++ * HPQ6000 sends through the keyboard bus */
++#define ACCEL_1 0x25
++#define ACCEL_2 0x26
++#define ACCEL_3 0x27
++#define ACCEL_4 0x28
++
+ /* For automatic insertion of the module */
+ static const struct acpi_device_id lis3lv02d_device_ids[] = {
+ 	{"HPQ0004", 0}, /* HP Mobile Data Protection System PNP */
+@@ -82,7 +91,6 @@ static const struct acpi_device_id lis3lv02d_device_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(acpi, lis3lv02d_device_ids);
+ 
+-
+ /**
+  * lis3lv02d_acpi_init - ACPI _INI method: initialize the device.
+  * @lis3: pointer to the device struct
+@@ -294,6 +302,35 @@ static void lis3lv02d_enum_resources(struct acpi_device *device)
+ 		printk(KERN_DEBUG DRIVER_NAME ": Error getting resources\n");
+ }
+ 
++static bool hp_accel_i8042_filter(unsigned char data, unsigned char str,
++				  struct serio *port)
++{
++	static bool extended;
++
++	if (str & I8042_STR_AUXDATA)
++		return false;
++
++	if (data == 0xe0) {
++		extended = true;
++		return true;
++	} else if (unlikely(extended)) {
++		extended = false;
++
++		switch (data) {
++		case ACCEL_1:
++		case ACCEL_2:
++		case ACCEL_3:
++		case ACCEL_4:
++			return true;
++		default:
++			serio_interrupt(port, 0xe0, 0);
++			return false;
++		}
++	}
++
++	return false;
++}
++
+ static int lis3lv02d_add(struct acpi_device *device)
+ {
+ 	int ret;
+@@ -326,6 +363,11 @@ static int lis3lv02d_add(struct acpi_device *device)
+ 	if (ret)
+ 		return ret;
+ 
++	/* filter to remove HPQ6000 accelerometer data
++	 * from keyboard bus stream */
++	if (strstr(dev_name(&device->dev), "HPQ6000"))
++		i8042_install_filter(hp_accel_i8042_filter);
++
+ 	INIT_WORK(&hpled_led.work, delayed_set_status_worker);
+ 	ret = led_classdev_register(NULL, &hpled_led.led_classdev);
+ 	if (ret) {
+@@ -343,6 +385,7 @@ static int lis3lv02d_remove(struct acpi_device *device)
+ 	if (!device)
+ 		return -EINVAL;
+ 
++	i8042_remove_filter(hp_accel_i8042_filter);
+ 	lis3lv02d_joystick_disable(&lis3_dev);
+ 	lis3lv02d_poweroff(&lis3_dev);
+ 
+-- 
+2.1.2
 
-Most peripherals have registers that are designed for PCI compatibility,
-and PCI mandates little-endian registers. This has very little to do with
-the architecture.
-
-We also have a lot of peripherals that have big-endian registers, e.g
-for things that are shared between ARM and PowerPC.
-
-The only hardware that is causing problems is the kind where the hardware
-developer tried to be helpful by making it possible to change endianess,
-and this is what causes endless nightmares for kernel developers.
-
-I think the easiest solution here is to make this irqchip not use
-the irq-generic logic, because it clearly is not generic.
-
-> The other problem is that readl() on ARM implies a barrier, which is not
-> necesarily true/necessary for some other platforms such as some MIPS
-> processors.
-
-readl has to provide the semantics that PCI devices expect on x86.
-On x86, it implies a barrier, so everything else has to do the same.
-
-If you know that a driver does not need barriers, you can use
-readl_relaxed(). It doesn't currently work on all architectures, but
-it works on MIPS and I have a patch series from Will Deacon that I want
-to push to make it work everywhere.
-
-	Arnd
