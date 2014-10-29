@@ -1,51 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542AbaJ2JY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:24:26 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:45127 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978AbaJ2JYY (ORCPT
+	id S932135AbaJ2JYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:24:53 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:26453 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756372AbaJ2JXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:24:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412259404-5202-1-git-send-email-lisovy@merica.cz>
-References: <542D46A1.9090905@ti.com>
-	<1412259404-5202-1-git-send-email-lisovy@merica.cz>
-Date: Wed, 29 Oct 2014 10:24:23 +0100
-Message-ID: <CAH6sp9M0VaH8-4NXcRNUYQS8Zuzbkra6zmgjSebjv8Awj6i0og@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] mtd: nand: omap: Synchronize the access to the ECC engine
-From: Frans Klaver <fransklaver@gmail.com>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Roger Quadros <rogerq@ti.com>,
-        linux-mtd@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        michal.vokac@comap.cz, sojkam1@fel.cvut.cz,
-        Rostislav Lisovy <lisovy@merica.cz>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 29 Oct 2014 05:23:17 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-e8-5450b20092b3
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org, tony@atomide.com,
+        drake@endlessm.com, loeliger@gmail.com,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v7 6/8] ARM: EXYNOS: Add .write_sec outer cache callback for
+ L2C-310
+Date: Wed, 29 Oct 2014 10:22:59 +0100
+Message-id: <1414574581-2320-7-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+In-reply-to: <1414574581-2320-1-git-send-email-m.szyprowski@samsung.com>
+References: <1414574581-2320-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t/xy7oMmwJCDLYcEbd4NP8xs0Xvgqts
+	Fmeb3rBbbO+cwW4x5c9yJotNj6+xWlzeNYfNYvaSfhaLGef3MVncvsxrcW77FhaLtUfuslss
+	vX6RyWLVrj+MFvuveDnwe6yZt4bRo6W5h83j29dJLB6X+3qZPBZ9z/LYOesuu8eda3vYPDYv
+	qffo27KK0ePzJrkArigum5TUnMyy1CJ9uwSujOZ3k5gKtopVXLr6gqWBcZtQFyMHh4SAiUTD
+	xqouRk4gU0ziwr31bF2MXBxCAksZJbZevs8C4fQxSSz8eJAVpIpNwFCi620XG4gtIpAt8ePb
+	ZLAiZoE+Zonz03uYQRLCAmESm9b3gTWwCKhKfO/Zyw5i8wq4S+z//5cFYp2cxP+XK5hAbE4B
+	D4nVF5aADRUCqtl4uJttAiPvAkaGVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghAf1lB+Pi
+	Y1aHGAU4GJV4eDV2+4cIsSaWFVfmHmKU4GBWEuHdYR4QIsSbklhZlVqUH19UmpNafIiRiYNT
+	qoFRYNKzh04PJ374cKf9io+j5O3JU9jT/BSeswo5nPhgeXZq8M9Sd8E658piBakPMpt6MmLE
+	FVZu1lDkXyrfwP7tdmpiIeu5301cVV5yk/X/FqeenGSzwvUJw5+ZrH94/nf1NDHVzNPe2SK5
+	8EqQts6GU17rLDWanggVhPoz+NbusGGd2efbWKDEUpyRaKjFXFScCABWqQopRgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 2, 2014 at 4:16 PM, Rostislav Lisovy <lisovy@gmail.com> wrote:
->
-> diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-> index f0dcdb6..dfae46f 100644
-> --- a/drivers/mtd/nand/omap2.c
-> +++ b/drivers/mtd/nand/omap2.c
-> @@ -144,8 +144,13 @@ static u_char bch8_vector[] = {0xf3, 0xdb, 0x14, 0x16, 0x8b, 0xd2, 0xbe, 0xcc,
->         0xac, 0x6b, 0xff, 0x99, 0x7b};
->  static u_char bch4_vector[] = {0x00, 0x6b, 0x31, 0xdd, 0x41, 0xbc, 0x10};
->
-> +/* Shared among all NAND instances to synchronize the access to the ECC Engine */
-> +struct nand_hw_control omap_gpmc_controller = {
-> +       .lock = __SPIN_LOCK_UNLOCKED(omap_gpmc_controller.lock),
-> +       .wq = __WAIT_QUEUE_HEAD_INITIALIZER(omap_gpmc_controller.wq),
-> +};
-> +
+From: Tomasz Figa <t.figa@samsung.com>
 
-Any reason not to make this one static?
+Exynos4 SoCs equipped with an L2C-310 cache controller and running under
+secure firmware require certain registers of aforementioned IP to be
+accessed only from secure mode. This means that SMC calls are required
+for certain register writes. To handle this, an implementation of
+.write_sec and .configure callbacks is provided by this patch.
 
-Thanks,
-Frans
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+[added comment and reworked unconditional call to SMC_CMD_L2X0INVALL]
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ arch/arm/mach-exynos/firmware.c | 50 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+
+diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+index f5e626d55951..e6a052c593f2 100644
+--- a/arch/arm/mach-exynos/firmware.c
++++ b/arch/arm/mach-exynos/firmware.c
+@@ -17,6 +17,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cputype.h>
+ #include <asm/firmware.h>
++#include <asm/hardware/cache-l2x0.h>
+ #include <asm/suspend.h>
+ 
+ #include <mach/map.h>
+@@ -120,6 +121,43 @@ static const struct firmware_ops exynos_firmware_ops = {
+ 	.resume			= exynos_resume,
+ };
+ 
++static void exynos_l2_write_sec(unsigned long val, unsigned reg)
++{
++	static int l2cache_enabled;
++
++	switch (reg) {
++	case L2X0_CTRL:
++		if (val & L2X0_CTRL_EN) {
++			/*
++			 * Before the cache can be enabled, due to firmware
++			 * design, SMC_CMD_L2X0INVALL must be called.
++			 */
++			if (!l2cache_enabled) {
++				exynos_smc(SMC_CMD_L2X0INVALL, 0, 0, 0);
++				l2cache_enabled = 1;
++			}
++		} else {
++			l2cache_enabled = 0;
++		}
++		exynos_smc(SMC_CMD_L2X0CTRL, val, 0, 0);
++		break;
++
++	case L2X0_DEBUG_CTRL:
++		exynos_smc(SMC_CMD_L2X0DEBUG, val, 0, 0);
++		break;
++
++	default:
++		WARN_ONCE(1, "%s: ignoring write to reg 0x%x\n", __func__, reg);
++	}
++}
++
++static void exynos_l2_configure(const struct l2x0_regs *regs)
++{
++	exynos_smc(SMC_CMD_L2X0SETUP1, regs->tag_latency, regs->data_latency,
++			regs->prefetch_ctrl);
++	exynos_smc(SMC_CMD_L2X0SETUP2, regs->pwr_ctrl, regs->aux_ctrl, 0);
++}
++
+ void __init exynos_firmware_init(void)
+ {
+ 	struct device_node *nd;
+@@ -139,4 +177,16 @@ void __init exynos_firmware_init(void)
+ 	pr_info("Running under secure firmware.\n");
+ 
+ 	register_firmware_ops(&exynos_firmware_ops);
++
++	/*
++	 * Exynos 4 SoCs (based on Cortex A9 and equipped with L2C-310),
++	 * running under secure firmware, require certain registers of L2
++	 * cache controller to be written in secure mode. Here .write_sec
++	 * callback is provided to perform necessary SMC calls.
++	 */
++	if (IS_ENABLED(CONFIG_CACHE_L2X0)
++	    && read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
++		outer_cache.write_sec = exynos_l2_write_sec;
++		outer_cache.configure = exynos_l2_configure;
++	}
+ }
+-- 
+1.9.2
+
