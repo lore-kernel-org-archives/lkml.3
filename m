@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667AbaJ2WjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:39:10 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:61429 "EHLO
+	id S1757145AbaJ2Wme (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:42:34 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:59341 "EHLO
 	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756987AbaJ2WjJ (ORCPT
+	with ESMTP id S1755636AbaJ2Wmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:39:09 -0400
+	Wed, 29 Oct 2014 18:42:33 -0400
 From: Behan Webster <behanw@converseincode.com>
-To: micky_ching@realsil.com.cn
-Cc: behanw@converseincode.com, devel@driverdev.osuosl.org,
+To: andriy.shevchenko@linux.intel.com, aysemelikeyurtoglu@gmail.com,
+        matthias.schoepe@studium.uni-erlangen.de, mdcasey@chabloom.com,
+        peter.senna@gmail.com, rashika.kheria@gmail.com, standby24x7@gmail.com
+Cc: behanw@converseincode.com, akpm@linux-foundation.org,
+        andreas.frembs@studium.uni-erlangen.de, devel@driverdev.osuosl.org,
         gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] staging, rts5208, LLVMLinux: Change extern inline to static inline
-Date: Wed, 29 Oct 2014 15:38:42 -0700
-Message-Id: <1414622322-19813-1-git-send-email-behanw@converseincode.com>
+        mahati.chamarthy@gmail.com, peter.p.waskiewicz.jr@intel.com,
+        quozl@laptop.org, valentina.manea.m@gmail.com
+Subject: [PATCH 0/4] staging, rtl8192e, LLVMLinux: Patches to enable the kernel to be compiled with clang/LLVM
+Date: Wed, 29 Oct 2014 15:42:19 -0700
+Message-Id: <1414622543-22969-1-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With compilers which follow the C99 standard (like modern versions of gcc and
-clang), "extern inline" does the opposite thing from older versions of gcc
-(emits code for an externally linkable version of the inline function). "static
-inline" does the intended behavior in both gcc and clang.
+Removing a number of warnings generated from compiling stl8192e with clang.
 
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Suggested-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Arnd Bergmann <arnd@arndb.de>
----
- drivers/staging/rts5208/rtsx_transport.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+clang (the C front end for the LLVM compiler infrastructure project). 
 
-diff --git a/drivers/staging/rts5208/rtsx_transport.h b/drivers/staging/rts5208/rtsx_transport.h
-index b4b1123..899bc20 100644
---- a/drivers/staging/rts5208/rtsx_transport.h
-+++ b/drivers/staging/rts5208/rtsx_transport.h
-@@ -46,7 +46,7 @@ void rtsx_add_cmd(struct rtsx_chip *chip,
- void rtsx_send_cmd_no_wait(struct rtsx_chip *chip);
- int rtsx_send_cmd(struct rtsx_chip *chip, u8 card, int timeout);
- 
--extern inline u8 *rtsx_get_cmd_data(struct rtsx_chip *chip)
-+static inline u8 *rtsx_get_cmd_data(struct rtsx_chip *chip)
- {
- #ifdef CMD_USING_SG
- 	return (u8 *)(chip->host_sg_tbl_ptr);
+Behan Webster (4):
+  staging, rtl8192e, LLVMLinux: Change extern inline to static inline
+  staging, rtl8192e, LLVMLinux: Remove unused inline prototype
+  staging, rtl8192e, LLVMLinux: Remove unused prototype
+  staging, rtl8192e, LLVMLinux: Make static local in inline function
+    const
+
+ drivers/staging/rtl8192e/rtllib.h         |  6 ++----
+ drivers/staging/rtl8192e/rtllib_softmac.c | 11 ++++++-----
+ 2 files changed, 8 insertions(+), 9 deletions(-)
+
 -- 
 1.9.1
 
