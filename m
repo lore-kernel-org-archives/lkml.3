@@ -1,109 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509AbaJ2J4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:56:53 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:58226 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756101AbaJ2J4v (ORCPT
+	id S932219AbaJ2J6W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:58:22 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34852 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756445AbaJ2J6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:56:51 -0400
-Message-ID: <1414576607.28499.50.camel@x220>
-Subject: Re: CRISv32: ETRAX_SPI_MMC_BOARD
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Jesper Nilsson <jespern@axis.com>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Oct 2014 10:56:47 +0100
-In-Reply-To: <20141029093320.GQ30087@axis.com>
-References: <1414570854.28499.34.camel@x220>
-	 <20141029093320.GQ30087@axis.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Oct 2014 09:56:47.0958 (UTC) FILETIME=[A77E4760:01CFF35E]
-X-RcptDomain: vger.kernel.org
+	Wed, 29 Oct 2014 05:58:16 -0400
+Date: Wed, 29 Oct 2014 10:58:10 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH RESEND V4 5/9] of: Add NVIDIA Tegra xHCI controller
+ binding
+Message-ID: <20141029095808.GB28356@ulmo.nvidia.com>
+References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+ <1414535277-15645-6-git-send-email-abrestic@chromium.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/NkBOFFp2J2Af1nK"
+Content-Disposition: inline
+In-Reply-To: <1414535277-15645-6-git-send-email-abrestic@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesper,
 
-On Wed, 2014-10-29 at 10:33 +0100, Jesper Nilsson wrote:
-> On Wed, Oct 29, 2014 at 09:20:54AM +0100, Paul Bolle wrote:
-> > Your commit be64c1ce6e79 ("CRISv32: Drop obsolete file for SPI driver")
-> > landed in today's linux-next (ie, next-20141029). It removes the last
-> > user of the Kconfig symbol ETRAX_SPI_MMC_BOARD. Setting that symbol is
-> > now pointless.
-> > 
-> > Is the trivial patch to remove the entry for ETRAX_SPI_MMC_BOARD (and
-> > one select statement for it) queued somewhere? If not, should I submit
-> > it?
-> 
-> It was not, but it is now:
-> 
-> CRISv32: Remove last remnants of ETRAX_SPI_MMC_BOARD
-> 
-> There are no users of this symbol left.
-> 
-> Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
-> ---
->  arch/cris/arch-v32/drivers/Kconfig |    7 -------
->  1 file changed, 7 deletions(-)
-> 
-> diff --git a/arch/cris/arch-v32/drivers/Kconfig b/arch/cris/arch-v32/drivers/Kconfig
-> index 6880f94..7068c4b 100644
-> --- a/arch/cris/arch-v32/drivers/Kconfig
-> +++ b/arch/cris/arch-v32/drivers/Kconfig
-> @@ -361,13 +361,6 @@ config ETRAX_SPI_MMC
->  	default MMC
->  	select SPI
->  	select MMC_SPI
-> -	select ETRAX_SPI_MMC_BOARD
-> -
-> -# For the parts that can't be a module (due to restrictions in
-> -# framework elsewhere).
-> -config ETRAX_SPI_MMC_BOARD
-> -       boolean
-> -       default n
->  
->  # While the board info is MMC_SPI only, the drivers are written to be
->  # independent of MMC_SPI, so we'll keep SPI non-dependent on the
-> -- 
-> 1.7.10.4
-> 
-> 
-> I'll try to think about unreferenced kconfigs in the future,
+--/NkBOFFp2J2Af1nK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'm hoping that Valentin's project will automate detection of these kind
-of problems for you (see
-http://www.linuxplumbersconf.org/2014/ocw/sessions/1863 ).
+On Tue, Oct 28, 2014 at 03:27:52PM -0700, Andrew Bresticker wrote:
+[...]
+> diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
+[...]
+> +    - pll_u_480m
+> +    - clk_m
+> +    - pll_e
 
-> my suspicion is that all those SPI and MMC related configs are
-> also unused, just circular references keeping them unnoticed.
+What are these used for? I guess I'll see when I get to the driver
+patch.
 
-Would you have an example?
+> +Optional properties:
+> +--------------------
+> + - phys: Must contain an entry for each entry in phy-names.
+> +   See ../phy/phy-bindings.txt for details.
+> + - phy-names: Should include an entry for each PHY used by the controller.
+> +   May be a subset of the following:
+> +    - utmi-{0,1,2}
+> +    - hsic-{0,1}
+> +    - usb3-{0,1}
+> + - avddio-pex-supply: PCIe/USB3 analog logic power supply.  Must supply 1.05V.
+> + - dvddio-pex-supply: PCIe/USB3 digital logic power supply.  Must supply 1.05V.
+> + - avdd-usb-supply: USB controller power supply.  Must supply 3.3V.
+> + - avdd-pll-utmip-supply: UTMI PLL power supply.  Must supply 1.8V.
+> + - avdd-pll-erefe-supply: PLLE reference PLL power supply.  Must supply 1.05V.
+> + - avdd-pex-pll-supply: PCIe/USB3 PLL power supply.  Must supply 1.05V.
+> + - hvdd-pex-supply: High-voltage PCIe/USB3 power supply.  Must supply 3.3V.
+> + - hvdd-pex-plle-supply: High-voltage PLLE power supply.  Must supply 3.3V.
 
-(I try to check each linux-next release with a 800 line perl monster.
-It's just smart enough to detect cases like this. Ie, a Kconfig entry,
-whose Kconfig macro isn't used anywhere in the tree, that is not
-selecting anything, but that itself is a _target_ of a select statement.
+I think the name for this in the documentation is HVDD_PEX_PLL_E, which
+would translate to hvdd-pex-pll-e. At least that's how we named this
+supply for PCIe.
 
-It's not entirely trivial to detect things like that. But perhaps I
-could still tweak the tests of that this script to detect even more
-unused Kconfig symbols.)
+Alternatively it seems like there are aliases for the USB 3.0 related
+supplies:
 
-> Thanks for the heads up.
+	avdd-pex-pll -> avdd-usb-ss-pll
+	hvdd-pex -> hvdd-usb-ss
+	hvdd-pex-pll-e -> hvdd-usb-ss-pll-e
 
-You're welcome. And thanks for taking care of this. Experience shows
-that these cleanups go more smoothly if maintainers, actual users, etc.,
-do them (instead of random contributors, like me, who are not familiar
-with the subsystem they're touching).
+So perhaps these could be used for the XHCI driver instead? Also, should
+these supplies not be mandatory?
 
+Thierry
 
-Paul Bolle
+--/NkBOFFp2J2Af1nK
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUULowAAoJEN0jrNd/PrOhqSMP/A0WZ+IQ9+HY4U3HiMecg0T8
+E7rTjP8DAVngvBKDocb7p94tR+yLT6kEPoYlCicOCF7Rw6sAtiqbHCZTiQGWbsZl
+nuwMAOlo0lSBC08tTTcxoRwcqquCIgQQZADz+olX+M7MCZam9fFVLyPBpfR0ZNag
+cJRxcI3842GfAzeavjMcaPCrSPVUgimnFgBR9oMZq74YPstX5E1aaRY+LEW6fn0z
+1SfjU9X5voXFNZzZ0aE62MbAzmWrdxCPoEL6urryphBDlnaRHN9ig4m4xwAz1+8E
+QnpKAQ3T7a2KEyl8fRTMUhKR0odXrywjPD8JikuxzwY3xQp5qunMaT749KH5avj8
+siCbCagu+2e5jFGVi4yFVeQ6XD884nDxqxjF3nu/3Lh7hkBXtlvTGSQQkw7pAmwq
+vAh3jhL7ia0/hiARPLf6KozRTEXDASsqxsDDHZ4EPZCuBSbWsTjxFegdGbGfoWC4
+25xhdgkz3w/3juOmThUXKxm02t9/xA8pU6f9KoVyiJ9dOyQBbDw7nTbpOqU1cezM
+0CTJO95MpFKQlde0AOoMU61WCFOTmZoMQfL8TzpN9+JZjaLzpVDDpb43FPwtuOuP
+0KOxx6ljxlNqW3iGBKvlqYduGD5o2d4EhqG9SBq+2ZXpzJ9vTawJ92po7jGW4NP1
+mYcrQhMVfJzQETqE2olp
+=YV82
+-----END PGP SIGNATURE-----
+
+--/NkBOFFp2J2Af1nK--
