@@ -1,149 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934530AbaJ2QhP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:37:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47816 "EHLO mx2.suse.de"
+	id S934497AbaJ2Qg5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:36:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43358 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933452AbaJ2QhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:37:13 -0400
-Date: Wed, 29 Oct 2014 17:37:11 +0100
-From: Jan Kara <jack@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH block/for-linus] writeback: fix a subtle race condition
- in I_DIRTY clearing
-Message-ID: <20141029163711.GG11466@quack.suse.cz>
-References: <20141024193821.GA7453@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024193821.GA7453@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934075AbaJ2QgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:36:17 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Miller <davem@davemloft.net>,
+        Steve Capper <steve.capper@linaro.org>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: [PATCH 5/5] mm: gup: kvm use get_user_pages_unlocked
+Date: Wed, 29 Oct 2014 17:35:20 +0100
+Message-Id: <1414600520-7664-6-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
+References: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 24-10-14 15:38:21, Tejun Heo wrote:
-> After invoking ->dirty_inode(), __mark_inode_dirty() does smp_mb() and
-> tests inode->i_state locklessly to see whether it already has all the
-> necessary I_DIRTY bits set.  The comment above the barrier doesn't
-> contain any useful information - memory barriers can't ensure "changes
-> are seen by all cpus" by itself.
-> 
-> And it sure enough was broken.  Please consider the following
-> scenario.
-> 
->  CPU 0					CPU 1
->  -------------------------------------------------------------------------------
-> 
-> 					enters __writeback_single_inode()
-> 					grabs inode->i_lock
-> 					tests PAGECACHE_TAG_DIRTY which is clear
->  enters __set_page_dirty()
->  grabs mapping->tree_lock
->  sets PAGECACHE_TAG_DIRTY
->  releases mapping->tree_lock
->  leaves __set_page_dirty()
-> 
->  enters __mark_inode_dirty()
->  smp_mb()
->  sees I_DIRTY_PAGES set
->  leaves __mark_inode_dirty()
-> 					clears I_DIRTY_PAGES
-> 					releases inode->i_lock
-> 
-> Now @inode has dirty pages w/ I_DIRTY_PAGES clear.  This doesn't seem
-> to lead to an immediately critical problem because requeue_inode()
-> later checks PAGECACHE_TAG_DIRTY instead of I_DIRTY_PAGES when
-> deciding whether the inode needs to be requeued for IO and there are
-> enough unintentional memory barriers inbetween, so while the inode
-> ends up with inconsistent I_DIRTY_PAGES flag, it doesn't fall off the
-> IO list.
-> 
-> The lack of explicit barrier may also theoretically affect the other
-> I_DIRTY bits which deal with metadata dirtiness.  There is no
-> guarantee that a strong enough barrier exists between
-> I_DIRTY_[DATA]SYNC clearing and write_inode() writing out the dirtied
-> inode.  Filesystem inode writeout path likely has enough stuff which
-> can behave as full barrier but it's theoretically possible that the
-> writeout may not see all the updates from ->dirty_inode().
-> 
-> Fix it by adding an explicit smp_mb() after I_DIRTY clearing.  Note
-> that I_DIRTY_PAGES needs a special treatment as it always needs to be
-> cleared to be interlocked with the lockless test on
-> __mark_inode_dirty() side.  It's cleared unconditionally and
-> reinstated after smp_mb() if the mapping still has dirty pages.
-> 
-> Also add comments explaining how and why the barriers are paired.
-> 
-> Lightly tested.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Mikulas Patocka <mpatocka@redhat.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: stable@vger.kernel.org
-  Looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+Use the more generic get_user_pages_unlocked which has the additional
+benefit of passing FAULT_FLAG_ALLOW_RETRY at the very first page fault
+(which allows the first page fault in an unmapped area to be always
+able to block indefinitely by being allowed to release the mmap_sem).
 
-								Honza
-> ---
->  fs/fs-writeback.c |   29 ++++++++++++++++++++++-------
->  1 file changed, 22 insertions(+), 7 deletions(-)
-> 
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -479,12 +479,28 @@ __writeback_single_inode(struct inode *i
->  	 * write_inode()
->  	 */
->  	spin_lock(&inode->i_lock);
-> -	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
-> -	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-> -		inode->i_state &= ~I_DIRTY_PAGES;
-> +
->  	dirty = inode->i_state & I_DIRTY;
-> -	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
-> +	inode->i_state &= ~I_DIRTY;
-> +
-> +	/*
-> +	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
-> +	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
-> +	 * either they see the I_DIRTY bits cleared or we see the dirtied
-> +	 * inode.
-> +	 *
-> +	 * I_DIRTY_PAGES is always cleared together above even if @mapping
-> +	 * still has dirty pages.  The flag is reinstated after smp_mb() if
-> +	 * necessary.  This guarantees that either __mark_inode_dirty()
-> +	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
-> +	 */
-> +	smp_mb();
-> +
-> +	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-> +		inode->i_state |= I_DIRTY_PAGES;
-> +
->  	spin_unlock(&inode->i_lock);
-> +
->  	/* Don't write the inode if only I_DIRTY_PAGES was set */
->  	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
->  		int err = write_inode(inode, wbc);
-> @@ -1148,12 +1164,11 @@ void __mark_inode_dirty(struct inode *in
->  	}
->  
->  	/*
-> -	 * make sure that changes are seen by all cpus before we test i_state
-> -	 * -- mikulas
-> +	 * Paired with smp_mb() in __writeback_single_inode() for the
-> +	 * following lockless i_state test.  See there for details.
->  	 */
->  	smp_mb();
->  
-> -	/* avoid the locking if we can */
->  	if ((inode->i_state & flags) == flags)
->  		return;
->  
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/kvm_host.h | 11 -----------
+ virt/kvm/async_pf.c      |  2 +-
+ virt/kvm/kvm_main.c      | 50 ++++--------------------------------------------
+ 3 files changed, 5 insertions(+), 58 deletions(-)
+
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index ea53b04..82c67da 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -199,17 +199,6 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
+ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu);
+ #endif
+ 
+-/*
+- * Carry out a gup that requires IO. Allow the mm to relinquish the mmap
+- * semaphore if the filemap/swap has to wait on a page lock. pagep == NULL
+- * controls whether we retry the gup one more time to completion in that case.
+- * Typically this is called after a FAULT_FLAG_RETRY_NOWAIT in the main tdp
+- * handler.
+- */
+-int kvm_get_user_page_io(struct task_struct *tsk, struct mm_struct *mm,
+-			 unsigned long addr, bool write_fault,
+-			 struct page **pagep);
+-
+ enum {
+ 	OUTSIDE_GUEST_MODE,
+ 	IN_GUEST_MODE,
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index 5ff7f7f..44660ae 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -80,7 +80,7 @@ static void async_pf_execute(struct work_struct *work)
+ 
+ 	might_sleep();
+ 
+-	kvm_get_user_page_io(NULL, mm, addr, 1, NULL);
++	get_user_pages_unlocked(NULL, mm, addr, 1, 1, 0, NULL);
+ 	kvm_async_page_present_sync(vcpu, apf);
+ 
+ 	spin_lock(&vcpu->async_pf.lock);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 25ffac9..78236ad 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1134,43 +1134,6 @@ static int get_user_page_nowait(struct task_struct *tsk, struct mm_struct *mm,
+ 	return __get_user_pages(tsk, mm, start, 1, flags, page, NULL, NULL);
+ }
+ 
+-int kvm_get_user_page_io(struct task_struct *tsk, struct mm_struct *mm,
+-			 unsigned long addr, bool write_fault,
+-			 struct page **pagep)
+-{
+-	int npages;
+-	int locked = 1;
+-	int flags = FOLL_TOUCH | FOLL_HWPOISON |
+-		    (pagep ? FOLL_GET : 0) |
+-		    (write_fault ? FOLL_WRITE : 0);
+-
+-	/*
+-	 * If retrying the fault, we get here *not* having allowed the filemap
+-	 * to wait on the page lock. We should now allow waiting on the IO with
+-	 * the mmap semaphore released.
+-	 */
+-	down_read(&mm->mmap_sem);
+-	npages = __get_user_pages(tsk, mm, addr, 1, flags, pagep, NULL,
+-				  &locked);
+-	if (!locked) {
+-		VM_BUG_ON(npages);
+-
+-		if (!pagep)
+-			return 0;
+-
+-		/*
+-		 * The previous call has now waited on the IO. Now we can
+-		 * retry and complete. Pass TRIED to ensure we do not re
+-		 * schedule async IO (see e.g. filemap_fault).
+-		 */
+-		down_read(&mm->mmap_sem);
+-		npages = __get_user_pages(tsk, mm, addr, 1, flags | FOLL_TRIED,
+-					  pagep, NULL, NULL);
+-	}
+-	up_read(&mm->mmap_sem);
+-	return npages;
+-}
+-
+ static inline int check_user_page_hwpoison(unsigned long addr)
+ {
+ 	int rc, flags = FOLL_TOUCH | FOLL_HWPOISON | FOLL_WRITE;
+@@ -1233,15 +1196,10 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
+ 		npages = get_user_page_nowait(current, current->mm,
+ 					      addr, write_fault, page);
+ 		up_read(&current->mm->mmap_sem);
+-	} else {
+-		/*
+-		 * By now we have tried gup_fast, and possibly async_pf, and we
+-		 * are certainly not atomic. Time to retry the gup, allowing
+-		 * mmap semaphore to be relinquished in the case of IO.
+-		 */
+-		npages = kvm_get_user_page_io(current, current->mm, addr,
+-					      write_fault, page);
+-	}
++	} else
++		npages = __get_user_pages_unlocked(current, current->mm, addr, 1,
++						   write_fault, 0, page,
++						   FOLL_TOUCH|FOLL_HWPOISON);
+ 	if (npages != 1)
+ 		return npages;
+ 
