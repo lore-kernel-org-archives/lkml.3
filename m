@@ -1,65 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933916AbaJ2PLn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:11:43 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:57093 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933775AbaJ2PLL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933813AbaJ2PLL (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 29 Oct 2014 11:11:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: opw-kernel@googlegroups.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org
-Subject: Re: [OPW kernel] Re: [PATCH v8 0/2] Added ktime_get_seconds() and ktime_get_real_seconds()
-Date: Wed, 29 Oct 2014 16:11:04 +0100
-Message-ID: <2064687.Au5VJFYEvM@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.11.1410291518300.5308@nanos>
-References: <cover.1414578445.git.heenasirwani@gmail.com> <alpine.DEB.2.11.1410291518300.5308@nanos>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Bc8lePSCSstDLEly4Tjzkl3fstaIGLbQ2b19MnRQOpv
- dBpJwoZuR0AJoUcUIrsjLugpYGKd/0oTTYYHFVpH2t4DviYpz1
- 47TPSB9igbmSrSDVpRHaEuX0KcKTRt370+kfsLG1VSVAGnK2lV
- w6v0Auj/Q5GB/D8Xch9nwlznQ/kG1sltRhUHEktTK8nV8lmUxA
- f1qjLFK8LN6hMxOASL1bsYye3glnW89/QMxPZrnIsAS77xxITI
- 71iuzkNbFrQ5iNBxzKRzw659pYLG+PeO2ViiAeIXIs1IN8dTiA
- bq1PryO6oZBqca+IIJZK07t6W8eMxKgUeS5psGVlhWus5CiVdO
- rZDXeIwJJLqLBWRw/IRE=
-X-UI-Out-Filterresults: notjunk:1;
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:31462 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933420AbaJ2PLD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 11:11:03 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-df-54510383fa67
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 0/8] regulator: max77686: Add GPIO control
+Date: Wed, 29 Oct 2014 16:06:38 +0100
+Message-id: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t/xy7rNzIEhBgdmqFpsnLGe1WLSugNM
+	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
+	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
+	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DKOHvoGkvBH5GK6WuusjcwNgh0
+	MXJySAiYSPS1f2WFsMUkLtxbzwZiCwksZZRYfcaji5ELyO5jkjj0ZA87SIJNwFhi8/IlbCAJ
+	EYFOZomeg73MIA6zwGomiZ9XTgE5HBzCArYScya7gDSwCKhKfJ5yFWwDr4CbxPpnM5kgtslJ
+	nDw2mXUCI/cCRoZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCEB+3UH49JjVocYBTgYlXh4
+	I44FhAixJpYVV+YeYpTgYFYS4f38CyjEm5JYWZValB9fVJqTWnyIkYmDU6qBUbPv5rcn6vN2
+	m//e9LG1+fmddHPOgv9ripM7X1XpLw2eYyd2K0FlSay0c4h0rqd7zz4bf3PnQHWutRMVbKO/
+	Oboo34y5NZXDtlrR40eGwluFdVpls2+xCf36HcB69eR9tqjA7N7dz38zzWpUNj3y6svypfd9
+	l+72yT9ps/io8dmy0oy74scPKLEUZyQaajEXFScCAHu618c2AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 October 2014 15:21:16 Thomas Gleixner wrote:
-> On Wed, 29 Oct 2014, Heena Sirwani wrote:
-> 
-> > The following patchset adds two functions as follows:
-> >       -ktime_get_seconds() to return tv_sec portion of
-> >       ktime_get_ts64().
-> >       -ktime_get_real_seconds() to return tv_sec portion of
-> >       ktime_get_real_ts64().
-> > 
-> > Changes in v8:
-> >       -changed type of ktime_sec to unsigned long
-> >       - Added a patch with ktime_get_real_seconds().
-> 
-> Heena, thanks for your patience and for following up to the reviews.
-> 
-> I merged the lot into tip timers/2038. Thats a new branch reserved for
-> the 2038 work.
-> 
-> Arnd, feel free to pull that branch into your tree for the patches
-> which depend on those interfaces.
-> 
+Hi,
 
-Thanks a lot!
 
-I've rebased my y2038 tree on top of that now, and merged Heena's
-"[PATCH v6] cpuset: Replace all instances of time_t with time64_t"
-on top of that.
+Patch 2/8: not tested on hardware. I am kindly asking for testing it
+because I don't have the board with Maxim 77802.
 
-	Arnd
+Changes since v1
+================
+1. Add patch: 1/8 "regulator: max77686: Consistently index opmode
+   array by rdev id".
+2. Remove patch "regulator: max77686: Make regulator_desc array
+   const" (applied).
+3. Re-work patches removing from regulators board file support (2/8
+   and 3/8). Parse regulators with of_regulator_match() at once, remove
+   num_regulators.
+4. Patch 4/8: Add depends on OF to mfd/Kconfig. Add Javier's
+   reviewed-by.
+5. Patch 5/8: Add Javier's reviewed-by.
+6. Patch 6/8: Add depends on GPIOLIB to regulator/Kconfig. Rename
+   "external control" to "GPIO control" and "ext_control_gpios" to
+   simpler "gpios".
+   I tried to use new GPIO API but it ended with more problems
+   https://lkml.org/lkml/2014/10/29/239
+
+
+Description
+===========
+This patch helps in proper description of max77686 regulators in DTS by
+allowing to control them over GPIO. This allows removal of
+fixed regulators from DTS which duplicate the description of hardware.
+
+The first five patches are cleanups, including board support removal.
+
+The whole patchset should be taken at once.
+
+Patchset is rebased on next-20141023 AND:
+1. ARM: EXYNOS: Call regulator suspend prepare/finish
+   https://lkml.org/lkml/2014/10/20/545
+2. regulator: max77686/trats2: Disable some regulators in suspend
+   https://lkml.org/lkml/2014/10/27/280
+
+
+Best regards,
+Krzysztof
+
+Krzysztof Kozlowski (8):
+  regulator: max77686: Consistently index opmode array by rdev id
+  regulator: max77802: Remove support for board files
+  regulator: max77686: Remove support for board files
+  mfd: max77686/802: Remove support for board files
+  regulator: max77686: Initialize opmode explicitly to normal mode
+  regulator: max77686: Add GPIO control
+  mfd/regulator: dt-bindings: max77686: Document gpio property
+  ARM: dts: exynos4412-trats: Switch max77686 regulators to GPIO control
+
+ Documentation/devicetree/bindings/mfd/max77686.txt |   3 +
+ arch/arm/boot/dts/exynos4412-trats2.dts            |  25 +--
+ drivers/mfd/Kconfig                                |   1 +
+ drivers/mfd/max77686.c                             |  23 ---
+ drivers/regulator/Kconfig                          |   1 +
+ drivers/regulator/max77686.c                       | 179 ++++++++++++++-------
+ drivers/regulator/max77802.c                       |  87 ++++------
+ include/linux/mfd/max77686-private.h               |   1 -
+ include/linux/mfd/max77686.h                       |  28 ----
+ 9 files changed, 166 insertions(+), 182 deletions(-)
+
+-- 
+1.9.1
+
