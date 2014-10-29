@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaJ2D75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 23:59:57 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:53072 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027AbaJ2D7S (ORCPT
+	id S1751393AbaJ2EA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 00:00:26 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:32996 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881AbaJ2D7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 23:59:18 -0400
+	Tue, 28 Oct 2014 23:59:17 -0400
 From: Kevin Cernekee <cernekee@gmail.com>
 To: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
         ralf@linux-mips.org
 Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: [PATCH 09/11] irqchip: bcm7120-l2: Use gc->mask_cache to simplify suspend/resume functions
-Date: Tue, 28 Oct 2014 20:58:56 -0700
-Message-Id: <1414555138-6500-9-git-send-email-cernekee@gmail.com>
+Subject: [PATCH 08/11] irqchip: bcm7120-l2: Fix missing nibble in gc->unused mask
+Date: Tue, 28 Oct 2014 20:58:55 -0700
+Message-Id: <1414555138-6500-8-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
 References: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
@@ -22,56 +22,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cached value already incorporates irq_fwd_mask, and was saved the
-last time an IRQ was enabled/disabled.
+This mask should have been 0xffff_ffff, not 0x0fff_ffff.
+
+The change should not have an effect on current users (STB) because bits
+31:27 are unused.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- drivers/irqchip/irq-bcm7120-l2.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/irqchip/irq-bcm7120-l2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
-index e9331f8..c76c9ad 100644
+index f041992..e9331f8 100644
 --- a/drivers/irqchip/irq-bcm7120-l2.c
 +++ b/drivers/irqchip/irq-bcm7120-l2.c
-@@ -37,7 +37,6 @@ struct bcm7120_l2_intc_data {
- 	bool can_wake;
- 	u32 irq_fwd_mask;
- 	u32 irq_map_mask;
--	u32 saved_mask;
- };
- 
- static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
-@@ -62,14 +61,11 @@ static void bcm7120_l2_intc_suspend(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
- 	struct bcm7120_l2_intc_data *b = gc->private;
--	u32 reg;
- 
- 	irq_gc_lock(gc);
--	/* Save the current mask and the interrupt forward mask */
--	b->saved_mask = irq_reg_readl(b->base + IRQEN) | b->irq_fwd_mask;
- 	if (b->can_wake) {
--		reg = b->saved_mask | gc->wake_active;
--		irq_reg_writel(reg, b->base + IRQEN);
-+		irq_reg_writel(gc->mask_cache | gc->wake_active,
-+			       b->base + IRQEN);
+@@ -171,7 +171,7 @@ int __init bcm7120_l2_intc_of_init(struct device_node *dn,
  	}
- 	irq_gc_unlock(gc);
- }
-@@ -77,11 +73,10 @@ static void bcm7120_l2_intc_suspend(struct irq_data *d)
- static void bcm7120_l2_intc_resume(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	struct bcm7120_l2_intc_data *b = gc->private;
  
- 	/* Restore the saved mask */
- 	irq_gc_lock(gc);
--	irq_reg_writel(b->saved_mask, b->base + IRQEN);
-+	irq_reg_writel(gc->mask_cache, b->base + IRQEN);
- 	irq_gc_unlock(gc);
- }
- 
+ 	gc = irq_get_domain_generic_chip(data->domain, 0);
+-	gc->unused = 0xfffffff & ~data->irq_map_mask;
++	gc->unused = 0xffffffff & ~data->irq_map_mask;
+ 	gc->reg_base = data->base;
+ 	gc->private = data;
+ 	ct = gc->chip_types;
 -- 
 2.1.1
 
