@@ -1,37 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951AbaJ2Tu7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 15:50:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56160 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755556AbaJ2Tu6 (ORCPT
+	id S1756711AbaJ2TyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 15:54:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58576 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754198AbaJ2TyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 15:50:58 -0400
-Date: Wed, 29 Oct 2014 20:50:54 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+	Wed, 29 Oct 2014 15:54:03 -0400
+Date: Wed, 29 Oct 2014 20:53:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Sabrina Dubroca <sd@queasysnail.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
  linux-next
-Message-ID: <20141029195054.GH10501@worktop.programming.kicks-ass.net>
-References: <20141029155620.GA4886@kria>
- <20141029180734.GQ12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.11.1410291918060.5308@nanos>
- <20141029193603.GS12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.11.1410292046270.5308@nanos>
+In-Reply-To: <1414611641.2420.54.camel@jtkirshe-mobl>
+Message-ID: <alpine.DEB.2.11.1410292049350.5308@nanos>
+References: <20141029155620.GA4886@kria>  <20141029180734.GQ12706@worktop.programming.kicks-ass.net>  <alpine.DEB.2.11.1410291918060.5308@nanos>  <20141029193603.GS12706@worktop.programming.kicks-ass.net> <1414611641.2420.54.camel@jtkirshe-mobl>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410292046270.5308@nanos>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 08:49:03PM +0100, Thomas Gleixner wrote:
-> On Wed, 29 Oct 2014, Peter Zijlstra wrote:
-> 
+On Wed, 29 Oct 2014, Jeff Kirsher wrote:
+> On Wed, 2014-10-29 at 20:36 +0100, Peter Zijlstra wrote:
 > > On Wed, Oct 29, 2014 at 07:33:00PM +0100, Thomas Gleixner wrote:
 > > > Yuck. No. You are just papering over the problem.
 > > > 
@@ -51,9 +49,35 @@ On Wed, Oct 29, 2014 at 08:49:03PM +0100, Thomas Gleixner wrote:
 > > the network drivers will need this and maybe more, disable_irq() is a
 > > popular little thing and we 'just' changed semantics on them.
 > 
-> We changed that almost 4 years ago :) What we 'just' did was to add a
-> prominent warning into the code.
+> Thomas- if you are fine with Peter's patch, I can get this under
+> testing.
 
-You know that is the same right... they didn't know it was broken
-therefore it wasn't :-), but now they need to go actually do stuff about
-it, an entirely different proposition.
+I'm fine with it except for the comment part of disable_irq(), but
+that does not matter :)
+
+One nitpick: Instead of having the lock unconditionally, I'd make it
+depend on CONFIG_NET_POLL_CONTROLLER.
+
+#ifdef CONFIG_NET_POLL_CONTROLLER
+static inline void netpoll_lock(struct e1000_adapter *adapter)
+{
+	spin_lock(&adapter->irq_lock);
+}
+
+static inline void netpoll_unlock(struct e1000_adapter *adapter)
+{
+	spin_unlock(&adapter->irq_lock);
+}
+#else
+static inline void netpoll_lock(struct e1000_adapter *adapter) { }
+static inline void netpoll_unlock(struct e1000_adapter *adapter) { }
+#endif
+
+and use that instead of the unconditional spin[un]lock() invocations.
+
+But that's up to you.
+
+Thanks,
+
+	tglx
+
