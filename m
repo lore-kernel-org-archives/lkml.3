@@ -1,157 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194AbaJ2UZU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:25:20 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:53449 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321AbaJ2UZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:25:15 -0400
-Message-ID: <54514D25.4020207@hp.com>
-Date: Wed, 29 Oct 2014 16:25:09 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1757371AbaJ2U0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:26:23 -0400
+Received: from imap.thunk.org ([74.207.234.97]:51544 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756594AbaJ2U0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 16:26:22 -0400
+Date: Wed, 29 Oct 2014 16:26:16 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Bastien Nocera <hadess@hadess.net>, Pavel Machek <pavel@ucw.cz>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: A desktop environment[1] kernel wishlist
+Message-ID: <20141029202616.GC5000@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Bastien Nocera <hadess@hadess.net>, Pavel Machek <pavel@ucw.cz>,
+	John Stultz <john.stultz@linaro.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1413881397.30379.7.camel@hadess.net>
+ <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+ <1413911644.30379.12.camel@hadess.net>
+ <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+ <1413914978.30379.14.camel@hadess.net>
+ <20141027092804.GB9807@amd>
+ <1414420292.30379.55.camel@hadess.net>
+ <54513DDC.2020700@amacapital.net>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>
-Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization support
-References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com> <1413483040-58399-10-git-send-email-Waiman.Long@hp.com> <20141024085437.GV21513@worktop.programming.kicks-ass.net> <544E830C.6070307@hp.com> <20141027180439.GL3337@twins.programming.kicks-ass.net> <544EB79E.6020200@hp.com> <54513A90.3080108@hp.com>
-In-Reply-To: <54513A90.3080108@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54513DDC.2020700@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2014 03:05 PM, Waiman Long wrote:
-> On 10/27/2014 05:22 PM, Waiman Long wrote:
->> On 10/27/2014 02:04 PM, Peter Zijlstra wrote:
->>> On Mon, Oct 27, 2014 at 01:38:20PM -0400, Waiman Long wrote:
->>>> On 10/24/2014 04:54 AM, Peter Zijlstra wrote:
->>>>> On Thu, Oct 16, 2014 at 02:10:38PM -0400, Waiman Long wrote:
->>>>>
->>>>>> Since enabling paravirt spinlock will disable unlock function 
->>>>>> inlining,
->>>>>> a jump label can be added to the unlock function without adding 
->>>>>> patch
->>>>>> sites all over the kernel.
->>>>> But you don't have to. My patches allowed for the inline to remain,
->>>>> again reducing the overhead of enabling PV spinlocks while running 
->>>>> on a
->>>>> real machine.
->>>>>
->>>>> Look at:
->>>>>
->>>>>    http://lkml.kernel.org/r/20140615130154.213923590@chello.nl
->>>>>
->>>>> In particular this hunk:
->>>>>
->>>>> Index: linux-2.6/arch/x86/kernel/paravirt_patch_64.c
->>>>> ===================================================================
->>>>> --- linux-2.6.orig/arch/x86/kernel/paravirt_patch_64.c
->>>>> +++ linux-2.6/arch/x86/kernel/paravirt_patch_64.c
->>>>> @@ -22,6 +22,10 @@ DEF_NATIVE(pv_cpu_ops, swapgs, "swapgs")
->>>>>   DEF_NATIVE(, mov32, "mov %edi, %eax");
->>>>>   DEF_NATIVE(, mov64, "mov %rdi, %rax");
->>>>>
->>>>> +#if defined(CONFIG_PARAVIRT_SPINLOCKS)&&   
->>>>> defined(CONFIG_QUEUE_SPINLOCK)
->>>>> +DEF_NATIVE(pv_lock_ops, queue_unlock, "movb $0, (%rdi)");
->>>>> +#endif
->>>>> +
->>>>>   unsigned paravirt_patch_ident_32(void *insnbuf, unsigned len)
->>>>>   {
->>>>>          return paravirt_patch_insns(insnbuf, len,
->>>>> @@ -61,6 +65,9 @@ unsigned native_patch(u8 type, u16 clobb
->>>>>                  PATCH_SITE(pv_cpu_ops, clts);
->>>>>                  PATCH_SITE(pv_mmu_ops, flush_tlb_single);
->>>>>                  PATCH_SITE(pv_cpu_ops, wbinvd);
->>>>> +#if defined(CONFIG_PARAVIRT_SPINLOCKS)&&   
->>>>> defined(CONFIG_QUEUE_SPINLOCK)
->>>>> +               PATCH_SITE(pv_lock_ops, queue_unlock);
->>>>> +#endif
->>>>>
->>>>>          patch_site:
->>>>>                  ret = paravirt_patch_insns(ibuf, len, start, end);
->>>>>
->>>>>
->>>>> That makes sure to overwrite the callee-saved call to the
->>>>> pv_lock_ops::queue_unlock with the immediate asm "movb $0, (%rdi)".
->>>>>
->>>>>
->>>>> Therefore you can retain the inlined unlock with hardly (there 
->>>>> might be
->>>>> some NOP padding) any overhead at all. On PV it reverts to a callee
->>>>> saved function call.
->>>> My concern is that spin_unlock() can be called in many places, 
->>>> including
->>>> loadable kernel modules. Can the paravirt_patch_ident_32() function 
->>>> able to
->>>> patch all of them in reasonable time? How about a kernel module 
->>>> loaded later
->>>> at run time?
->>> modules should be fine, see arch/x86/kernel/module.c:module_finalize()
->>> ->  apply_paravirt().
->>>
->>> Also note that the 'default' text is an indirect call into the paravirt
->>> ops table which routes to the 'right' function, so even if the text
->>> patching would be 'late' calls would 'work' as expected, just slower.
->>
->> Thanks for letting me know about that. I have this concern because 
->> your patch didn't change the current configuration of disabling 
->> unlock inlining when paravirt_spinlock is enabled. With that, I think 
->> it is worthwhile to reduce the performance delta between the PV and 
->> non-PV kernel on bare metal.
->
-> I am sorry that the unlock call sites patching code doesn't work in a 
-> virtual guest. Your pvqspinlock patch did an unconditional patching 
-> even in a virtual guest. I added check for the 
-> paravirt_spinlocks_enabled, but it turned out that some spin_unlock() 
-> seemed to be called before paravirt_spinlocks_enabled is set. As a 
-> result, some call sites were still patched resulting in missed wake 
-> up's and system hang.
->
-> At this point, I am going to leave out that change from my patch set 
-> until we can figure out a better way of doing that.
->
+On Wed, Oct 29, 2014 at 12:19:56PM -0700, Andy Lutomirski wrote:
+> For a tablet, isn't the relevant piece of information whether the power
+> button was recently pressed, not whether the power button caused the wakeup?
 
-Below was a partial kernel log with the unlock call site patch code in a 
-KVM guest:
+For Android L devices, it has been reported that the device might
+power up its screen fully (note I didn't say 'wake up') automatically
+when it detects that you are picking it up, or when you double-tap the
+screen.  It also reportedly has a low power black and white "ambient
+display" (ala the Android Wear devics) which allows you to see
+notifications without waking up the phone all the way[1].  (All of
+this assuming appropriate hardware support, of course.)
 
-[    0.438006] native_patch: patch out pv_queue_unlock!
-[    0.438565] native_patch: patch out pv_queue_unlock!
-[    0.439006] native_patch: patch out pv_queue_unlock!
-[    0.439638] native_patch: patch out pv_queue_unlock!
-[    0.440052] native_patch: patch out pv_queue_unlock!
-[    0.441006] native_patch: patch out pv_queue_unlock!
-[    0.441566] native_patch: patch out pv_queue_unlock!
-[    0.442035] ftrace: allocating 24168 entries in 95 pages
-[    0.451208] Switched APIC routing to physical flat.
-[    0.453202] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-[    0.454002] smpboot: CPU0: Intel QEMU Virtual CPU version 1.5.3 (fam: 
-06, model: 06, stepping: 03)
-[    0.456000] Performance Events: Broken PMU hardware detected, using 
-software events only.
-[    0.456003] Failed to access perfctr msr (MSR c1 is 0)
-[    0.457151] KVM setup paravirtual spinlock
-[    0.460039] NMI watchdog: disabled (cpu0): hardware events not enabled
+[1] http://www.androidauthority.com/ambient-display-lollipop-541198/
 
-It could be seen that some unlock call sites were patched before the KVM 
-setup code set the paravirt_spinlocks_enabled flag.
+Which goes back to the concept of having a "suspend" mode is legacy
+thinking.  Modern devices will soon have not just a "awake" and a
+"asleep" modes; there will be (well, is now) a much wider spectrum of
+modes, with the goal of using the minimum amount of power while still
+providing use functionality to the user.
 
--Longman
-
+						- Ted
