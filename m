@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276AbaJ2NAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:00:12 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:47974 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932729AbaJ2NAG (ORCPT
+	id S933041AbaJ2NBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:01:23 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:34247 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932863AbaJ2NBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 09:00:06 -0400
-Message-ID: <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "security@kernel.org" <security@kernel.org>
-Date: Wed, 29 Oct 2014 08:59:59 -0400
-In-Reply-To: <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
-References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
-	 <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102913-8236-0000-0000-00000680E4D1
+	Wed, 29 Oct 2014 09:01:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413468302.5605.9.camel@AMDC1943>
+References: <1413468302.5605.9.camel@AMDC1943>
+Date: Wed, 29 Oct 2014 14:01:20 +0100
+Message-ID: <CAPDyKFpy98h-BYnvhPSJy+p5=ynpXkhnjABYG4gMc+X1BCQSYA@mail.gmail.com>
+Subject: Re: PM/runtime issue: Device cannot runtime resume because power
+ domain is off during system resume
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-28 at 22:08 -0700, Andy Lutomirski wrote: 
-> On Tue, Oct 28, 2014 at 8:55 PM, James Morris <jmorris@namei.org> wrote:
-> > These changes fix a bug in xattr handling, where the evm and ima
-> > inode_setxattr() functions do not check for empty xattrs being passed from
-> > userspace (leading to user-triggerable null pointer dereferences).
-> >
-> > Please pull.
-> >
-> >
-> > The following changes since commit 9f76628da20f96a179ca62b504886f99ecc29223:
-> >
-> >   Merge branch 'for-3.18' of git://linux-nfs.org/~bfields/linux (2014-10-28 13:32:06 -0700)
-> >
-> > are available in the git repository at:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-> >
-> > Dmitry Kasatkin (2):
-> >       ima: check xattr value length and type in the ima_inode_setxattr()
-> 
-> I haven't read this one, but:
-> 
-> >       evm: check xattr value length and type in evm_inode_setxattr()
-> 
-> const struct evm_ima_xattr_data *xattr_data = xattr_value;
-> - if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
-> - && (xattr_data->type == EVM_XATTR_HMAC))
-> - return -EPERM;
-> + if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
-> + if (!xattr_value_len)
-> + return -EINVAL;
-> + if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
-> + return -EPERM;
-> + }
-> 
-> Huh?  (Sorry about severe whitespace damage.)
-> 
-> Shouldn't there be something like if (xattr_value_len < sizeof(struct
-> evm_ima_xattr_data)) return -EINVAL?
+On 16 October 2014 16:05, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> Hi,
+>
+> I encounter issues with DRM/panel driver for Exynos after resuming from
+> suspend to RAM. This is reproduced on 3.16 but I think it is applicable
+> also to mainline.
+>
+> The scenario:
+> 0. DRM DSI is in LCD power domain. Power domain is OFF before
+> suspending.
+> 1. System suspends.
+> 2. System resumes.
+> 3. DRM driver:resume().
+> 4. pm_runtime_get() for DRM DSI driver.
+> 5. This should enable LCD power domain.
+> 6. but __pm_genpd_poweron() exits early because:
+>    genpd->prepared_count = 3
 
-Prior to commit 2fb1c9a "evm: prohibit userspace writing 'security.evm'
-HMAC value", a process with CAP_SYS_ADMIN could write either an HMAC or
-signature. As the HMAC key should only be known to the kernel, only
-signatures are now allowed.  Instead of "struct evm_ima_xattr_data", the
-code should reflect this change and use "struct signature_v2_hdr".
-We'll clean up this code for the next release.  For now, this patch
-prevents the oops.
+I am getting to this soonish in my genpd work. Currently I am working
+on the boot issues. :-)
 
-thanks,
+At a first glance, I think the genpd->prepare_count variable shouldn't
+exist at all, but I need to dig into this in more detail to be sure.
 
-Mimi
+In principle I think genpd should rely _more_ on the PM core during
+system PM transitions. For example the PM core invokes a
+pm_runtime_get_noresume() (and for some reason genpd as well) at the
+->prepare() phase. Shouldn't that be enough!?
 
+>    genpd->suspend_power_off = 1
+>   in domain.c:183
+>
+> 7. The domain is not powered on but it is marked as active.
+> 8. The DRM driver thinks everything is OK and proceeds with resume...
+> but it fails because whole power domain is OFF.
+>
+> The question: Shouldn't the power domain be powered up EARLY?
+
+Good question, I would like us to strive towards these goals:
+
+For CONFIG_PM_RUNTIME, I think the PM domain should be powered up at
+the first time a runtime PM resume callbacks gets invoked.
+For !CONFIG_PM_RUNTIME, I think we should restore the state the PM
+domain had prior we went to system PM sleep.
+
+Kind regards
+Uffe
