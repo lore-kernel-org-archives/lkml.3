@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933656AbaJ2OIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:08:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41308 "EHLO mail.kernel.org"
+	id S933610AbaJ2OIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:08:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41261 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933209AbaJ2OIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:08:10 -0400
+	id S933560AbaJ2OHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 10:07:55 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/25] perf tools: Build programs to copy 32-bit compatibility
-Date: Wed, 29 Oct 2014 12:06:27 -0200
-Message-Id: <1414591597-2763-16-git-send-email-acme@kernel.org>
+Subject: [PATCH 12/25] perf probe: Use PARSE_OPT_EXCLUSIVE flag
+Date: Wed, 29 Oct 2014 12:06:24 -0200
+Message-Id: <1414591597-2763-13-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414591597-2763-1-git-send-email-acme@kernel.org>
 References: <1414591597-2763-1-git-send-email-acme@kernel.org>
@@ -24,353 +24,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-perf tools copy VDSO out of memory.  However, on 64-bit machines there
-may be 32-bit compatibility VDOs also.  To copy those requires separate
-32-bit executables.
+The perf probe command has some exclusive options.  Use new PARSE_OPT_EXCLUSIVE
+flag to simplify the code and show more compact usage.
 
-This patch adds to the build additional programs perf-read-vdso32 and
-perf-read-vdsox32 for 32-bit and x32 respectively.
+  $ perf probe -l -a foo
+    Error: switch `a' cannot be used with switch `l'
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+   usage: perf probe [<options>] 'PROBEDEF' ['PROBEDEF' ...]
+      or: perf probe [<options>] --add 'PROBEDEF' [--add 'PROBEDEF' ...]
+      or: perf probe [<options>] --del '[GROUP:]EVENT' ...
+      or: perf probe --list
+      or: perf probe [<options>] --line 'LINEDESC'
+      or: perf probe [<options>] --vars 'PROBEPOINT'
+
+      -a, --add <[EVENT=]FUNC[@SRC][+OFF|%return|:RL|;PT]|SRC:AL|SRC;PT [[NAME=]ARG ...]>
+                            probe point definition, where
+		GROUP:	Group name (optional)
+		EVENT:	Event name
+		FUNC:	Function name
+		OFF:	Offset from function entry (in byte)
+		%return:	Put the probe at function return
+		SRC:	Source code path
+		RL:	Relative line number from function entry.
+		AL:	Absolute line number in file.
+		PT:	Lazy expression of line code.
+		ARG:	Probe argument (local variable name or
+			kprobe-tracer argument format.)
+
+      -l, --list            list up current probe events
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1414061124-26830-15-git-send-email-adrian.hunter@intel.com
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1413990949-13953-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf                        | 38 ++++++++++++++++++++++---
- tools/perf/config/Makefile                      | 25 +++++++++++++++-
- tools/perf/config/Makefile.arch                 |  8 ++++++
- tools/perf/config/feature-checks/Makefile       | 10 ++++++-
- tools/perf/config/feature-checks/test-compile.c |  4 +++
- tools/perf/perf-read-vdso.c                     | 34 ++++++++++++++++++++++
- tools/perf/util/find-vdso-map.c                 | 30 +++++++++++++++++++
- tools/perf/util/vdso.c                          | 37 ++++--------------------
- 8 files changed, 149 insertions(+), 37 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-compile.c
- create mode 100644 tools/perf/perf-read-vdso.c
- create mode 100644 tools/perf/util/find-vdso-map.c
+ tools/perf/builtin-probe.c | 54 ++++++++--------------------------------------
+ 1 file changed, 9 insertions(+), 45 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 262916f4a377..9c4ced0fc845 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -60,6 +60,12 @@ include config/utilities.mak
- #
- # Define NO_LIBDW_DWARF_UNWIND if you do not want libdw support
- # for dwarf backtrace post unwind.
-+#
-+# Define NO_PERF_READ_VDSO32 if you do not want to build perf-read-vdso32
-+# for reading the 32-bit compatibility VDSO in 64-bit mode
-+#
-+# Define NO_PERF_READ_VDSOX32 if you do not want to build perf-read-vdsox32
-+# for reading the x32 mode 32-bit compatibility VDSO in 64-bit mode
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 7af26acf06d9..2d3577d1009d 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -312,7 +312,7 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ #endif
+ 		NULL
+ };
+-	const struct option options[] = {
++	struct option options[] = {
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show parsed arguments, etc)"),
+ 	OPT_BOOLEAN('l', "list", &params.list_events,
+@@ -382,6 +382,14 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	};
+ 	int ret;
  
- ifeq ($(srctree),)
- srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-@@ -171,11 +177,16 @@ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
++	set_option_flag(options, 'a', "add", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'd', "del", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'l', "list", PARSE_OPT_EXCLUSIVE);
++#ifdef HAVE_DWARF_SUPPORT
++	set_option_flag(options, 'L', "line", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'V', "vars", PARSE_OPT_EXCLUSIVE);
++#endif
++
+ 	argc = parse_options(argc, argv, options, probe_usage,
+ 			     PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (argc > 0) {
+@@ -409,22 +417,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
  
- SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+ 	if (params.list_events) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --list with --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_lines) {
+-			pr_err("  Error: Don't use --list with --line.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err(" Error: Don't use --list with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_funcs) {
+-			pr_err("  Error: Don't use --list with --funcs.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (params.uprobes) {
+ 			pr_warning("  Error: Don't use --list with --exec.\n");
+ 			usage_with_options(probe_usage, options);
+@@ -435,19 +427,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return ret;
+ 	}
+ 	if (params.show_funcs) {
+-		if (params.nevents != 0 || params.dellist) {
+-			pr_err("  Error: Don't use --funcs with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_lines) {
+-			pr_err("  Error: Don't use --funcs with --line.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err("  Error: Don't use --funcs with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
+ 						       NULL);
+@@ -462,16 +441,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
  
--#
--# Single 'perf' binary right now:
--#
- PROGRAMS += $(OUTPUT)perf
- 
-+ifndef NO_PERF_READ_VDSO32
-+PROGRAMS += $(OUTPUT)perf-read-vdso32
-+endif
-+
-+ifndef NO_PERF_READ_VDSOX32
-+PROGRAMS += $(OUTPUT)perf-read-vdsox32
-+endif
-+
- # what 'all' will build and 'install' will install, in perfexecdir
- ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
- 
-@@ -253,6 +264,7 @@ LIB_H += util/event.h
- LIB_H += util/evsel.h
- LIB_H += util/evlist.h
- LIB_H += util/exec_cmd.h
-+LIB_H += util/find-vdso-map.c
- LIB_H += util/levenshtein.h
- LIB_H += util/machine.h
- LIB_H += util/map.h
-@@ -732,6 +744,16 @@ $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Uti
- $(OUTPUT)perf-%: %.o $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
- 
-+ifndef NO_PERF_READ_VDSO32
-+$(OUTPUT)perf-read-vdso32: perf-read-vdso.c util/find-vdso-map.c
-+	$(QUIET_CC)$(CC) -m32 $(filter -static,$(LDFLAGS)) -Wall -Werror -o $@ perf-read-vdso.c
-+endif
-+
-+ifndef NO_PERF_READ_VDSOX32
-+$(OUTPUT)perf-read-vdsox32: perf-read-vdso.c util/find-vdso-map.c
-+	$(QUIET_CC)$(CC) -mx32 $(filter -static,$(LDFLAGS)) -Wall -Werror -o $@ perf-read-vdso.c
-+endif
-+
- $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
- $(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
- 
-@@ -876,6 +898,14 @@ install-bin: all install-gtk
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'; \
- 		$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'; \
- 		$(LN) '$(DESTDIR_SQ)$(bindir_SQ)/perf' '$(DESTDIR_SQ)$(bindir_SQ)/trace'
-+ifndef NO_PERF_READ_VDSO32
-+	$(call QUIET_INSTALL, perf-read-vdso32) \
-+		$(INSTALL) $(OUTPUT)perf-read-vdso32 '$(DESTDIR_SQ)$(bindir_SQ)';
-+endif
-+ifndef NO_PERF_READ_VDSOX32
-+	$(call QUIET_INSTALL, perf-read-vdsox32) \
-+		$(INSTALL) $(OUTPUT)perf-read-vdsox32 '$(DESTDIR_SQ)$(bindir_SQ)';
-+endif
- 	$(call QUIET_INSTALL, libexec) \
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
- 	$(call QUIET_INSTALL, perf-archive) \
-@@ -928,7 +958,7 @@ config-clean:
- 
- clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
- 	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
--	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
-+	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
- 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
- 	$(python-clean)
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 58f609198c6d..3ba2382a5236 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -230,7 +230,9 @@ VF_FEATURE_TESTS =			\
- 	bionic				\
- 	liberty				\
- 	liberty-z			\
--	cplus-demangle
-+	cplus-demangle			\
-+	compile-32			\
-+	compile-x32
- 
- # Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
- # If in the future we need per-feature checks/flags for features not
-@@ -622,6 +624,27 @@ ifdef HAVE_KVM_STAT_SUPPORT
-     CFLAGS += -DHAVE_KVM_STAT_SUPPORT
- endif
- 
-+ifeq (${IS_64_BIT}, 1)
-+  ifndef NO_PERF_READ_VDSO32
-+    $(call feature_check,compile-32)
-+    ifneq ($(feature-compile-32), 1)
-+      NO_PERF_READ_VDSO32 := 1
-+    endif
-+  endif
-+  ifneq (${IS_X86_64}, 1)
-+    NO_PERF_READ_VDSOX32 := 1
-+  endif
-+  ifndef NO_PERF_READ_VDSOX32
-+    $(call feature_check,compile-x32)
-+    ifneq ($(feature-compile-x32), 1)
-+      NO_PERF_READ_VDSOX32 := 1
-+    endif
-+  endif
-+else
-+  NO_PERF_READ_VDSO32 := 1
-+  NO_PERF_READ_VDSOX32 := 1
-+endif
-+
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
-diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
-index 4b06719ee984..851cd0172a76 100644
---- a/tools/perf/config/Makefile.arch
-+++ b/tools/perf/config/Makefile.arch
-@@ -21,3 +21,11 @@ ifeq ($(ARCH),x86_64)
-     RAW_ARCH := x86_64
-   endif
- endif
-+
-+ifeq (${IS_X86_64}, 1)
-+  IS_64_BIT := 1
-+else ifeq ($(ARCH),x86)
-+  IS_64_BIT := 0
-+else
-+  IS_64_BIT := $(shell echo __LP64__ | ${CC} ${CFLAGS} -E -x c - | tail -n 1)
-+endif
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 72ab2984718e..7c68ec74a808 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -27,7 +27,9 @@ FILES=					\
- 	test-libunwind-debug-frame.bin	\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
--	test-libdw-dwarf-unwind.bin
-+	test-libdw-dwarf-unwind.bin	\
-+	test-compile-32.bin		\
-+	test-compile-x32.bin
- 
- CC := $(CROSS_COMPILE)gcc -MD
- PKG_CONFIG := $(CROSS_COMPILE)pkg-config
-@@ -131,6 +133,12 @@ test-libdw-dwarf-unwind.bin:
- test-sync-compare-and-swap.bin:
- 	$(BUILD) -Werror
- 
-+test-compile-32.bin:
-+	$(CC) -m32 -o $(OUTPUT)$@ test-compile.c
-+
-+test-compile-x32.bin:
-+	$(CC) -mx32 -o $(OUTPUT)$@ test-compile.c
-+
- -include *.d
- 
- ###############################
-diff --git a/tools/perf/config/feature-checks/test-compile.c b/tools/perf/config/feature-checks/test-compile.c
-new file mode 100644
-index 000000000000..31dbf45bf99c
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-compile.c
-@@ -0,0 +1,4 @@
-+int main(void)
-+{
-+	return 0;
-+}
-diff --git a/tools/perf/perf-read-vdso.c b/tools/perf/perf-read-vdso.c
-new file mode 100644
-index 000000000000..764e2547c25a
---- /dev/null
-+++ b/tools/perf/perf-read-vdso.c
-@@ -0,0 +1,34 @@
-+#include <stdio.h>
-+#include <string.h>
-+
-+#define VDSO__MAP_NAME "[vdso]"
-+
-+/*
-+ * Include definition of find_vdso_map() also used in util/vdso.c for
-+ * building perf.
-+ */
-+#include "util/find-vdso-map.c"
-+
-+int main(void)
-+{
-+	void *start, *end;
-+	size_t size, written;
-+
-+	if (find_vdso_map(&start, &end))
-+		return 1;
-+
-+	size = end - start;
-+
-+	while (size) {
-+		written = fwrite(start, 1, size, stdout);
-+		if (!written)
-+			return 1;
-+		start += written;
-+		size -= written;
-+	}
-+
-+	if (fflush(stdout))
-+		return 1;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/find-vdso-map.c b/tools/perf/util/find-vdso-map.c
-new file mode 100644
-index 000000000000..95ef1cffc056
---- /dev/null
-+++ b/tools/perf/util/find-vdso-map.c
-@@ -0,0 +1,30 @@
-+static int find_vdso_map(void **start, void **end)
-+{
-+	FILE *maps;
-+	char line[128];
-+	int found = 0;
-+
-+	maps = fopen("/proc/self/maps", "r");
-+	if (!maps) {
-+		fprintf(stderr, "vdso: cannot open maps\n");
-+		return -1;
-+	}
-+
-+	while (!found && fgets(line, sizeof(line), maps)) {
-+		int m = -1;
-+
-+		/* We care only about private r-x mappings. */
-+		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
-+				start, end, &m))
-+			continue;
-+		if (m < 0)
-+			continue;
-+
-+		if (!strncmp(&line[m], VDSO__MAP_NAME,
-+			     sizeof(VDSO__MAP_NAME) - 1))
-+			found = 1;
-+	}
-+
-+	fclose(maps);
-+	return !found;
-+}
-diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index adca69384fcc..f51390a1ed51 100644
---- a/tools/perf/util/vdso.c
-+++ b/tools/perf/util/vdso.c
-@@ -15,6 +15,12 @@
- #include "linux/string.h"
- #include "debug.h"
- 
-+/*
-+ * Include definition of find_vdso_map() also used in perf-read-vdso.c for
-+ * building perf-read-vdso32 and perf-read-vdsox32.
-+ */
-+#include "find-vdso-map.c"
-+
- #define VDSO__TEMP_FILE_NAME "/tmp/perf-vdso.so-XXXXXX"
- 
- struct vdso_file {
-@@ -40,37 +46,6 @@ static struct vdso_info *vdso_info__new(void)
- 	return memdup(&vdso_info_init, sizeof(vdso_info_init));
- }
- 
--static int find_vdso_map(void **start, void **end)
--{
--	FILE *maps;
--	char line[128];
--	int found = 0;
+ #ifdef HAVE_DWARF_SUPPORT
+ 	if (params.show_lines) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --line with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err(" Error: Don't use --line with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
 -
--	maps = fopen("/proc/self/maps", "r");
--	if (!maps) {
--		pr_err("vdso: cannot open maps\n");
--		return -1;
--	}
--
--	while (!found && fgets(line, sizeof(line), maps)) {
--		int m = -1;
--
--		/* We care only about private r-x mappings. */
--		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
--				start, end, &m))
--			continue;
--		if (m < 0)
--			continue;
--
--		if (!strncmp(&line[m], VDSO__MAP_NAME,
--			     sizeof(VDSO__MAP_NAME) - 1))
--			found = 1;
--	}
--
--	fclose(maps);
--	return !found;
--}
--
- static char *get_file(struct vdso_file *vdso_file)
- {
- 	char *vdso = NULL;
+ 		ret = show_line_range(&params.line_range, params.target,
+ 				      params.uprobes);
+ 		if (ret < 0)
+@@ -479,11 +448,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return ret;
+ 	}
+ 	if (params.show_vars) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --vars with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_VAR_FILTER,
+ 						       NULL);
 -- 
 1.9.3
 
