@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132AbaJ2IYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 04:24:43 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36455 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492AbaJ2IYk (ORCPT
+	id S1756199AbaJ2IYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 04:24:46 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59208 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755504AbaJ2IYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 04:24:40 -0400
-Date: Wed, 29 Oct 2014 09:24:32 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Brown, Len" <len.brown@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-pm@vger.kernel.org >> Linux PM list" 
-	<linux-pm@vger.kernel.org>
-Subject: Re: [RFC/PATCH] PM / Sleep: Timer quiesce in freeze state
-Message-ID: <20141029082432.GV3337@twins.programming.kicks-ass.net>
-References: <5446787E.60202@linux.intel.com>
- <20141024153656.GM12706@worktop.programming.kicks-ass.net>
- <544DE5CF.9040501@linux.intel.com>
- <20141027074419.GE10501@worktop.programming.kicks-ass.net>
- <544F4B31.7050308@linux.intel.com>
- <20141028082503.GN3337@twins.programming.kicks-ass.net>
- <5450253B.5020802@linux.intel.com>
+	Wed, 29 Oct 2014 04:24:43 -0400
+Date: Wed, 29 Oct 2014 09:24:40 +0100
+From: Pavel Machek <pavel@denx.de>
+To: atull <atull@opensource.altera.com>
+Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
+        michal.simek@xilinx.com, rdunlap@infradead.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
+        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
+        rubini@gnudd.com, jason@lakedaemon.net, kyle.teske@ni.com,
+        nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, mgerlach@opensource.altera.com,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
+Message-ID: <20141029082440.GA22891@amd>
+References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
+ <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
+ <20141024070042.GL10262@pengutronix.de>
+ <alpine.DEB.2.02.1410281601570.11910@atx-linux-37>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5450253B.5020802@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.DEB.2.02.1410281601570.11910@atx-linux-37>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 07:22:35AM +0800, Li, Aubrey wrote:
-> On 2014/10/28 16:25, Peter Zijlstra wrote:
-> > On Tue, Oct 28, 2014 at 03:52:17PM +0800, Li, Aubrey wrote:
+Hi!
+
+> > > +Optional properties:
+> > > + - label          : name that you want this bridge to show up as under
+> > > +                    /sys/class/fpga-bridge.  Default is br<device#> if this is
+> > > +                    not specified.
+> > > +
 > > 
-> >> Both clocksource and clockevents are not per-cpu device, why do we need
-> >> to run their suspend callback on *each* cpu?
-> > 
-> > Uhm, you mean to say we don't use per-cpu timer lists and per-cpu timer
-> > hardware for clockevents then?
-> > 
+> > Why? Linux-specific.
 > 
-> From OS level, currently tick device is per-cpu implementation while
-> clocksource and clockevent devices are global device.
-> 
-> We already stop tick by clockevents_notify(suspend) on each cpu, that
-> addresses per-cpu timer list.
+> That was a convience for the user.  I can take that out and won't
+> miss it.
 
-Right, I know. But I was saying I might have confused myself between
-events and sources while going through that call chain, thereby
-(mistakenly) thinking the source suspend code needed more than the 1
-cpu.
+Actually make it
 
-Its easy to confuse yourself trying to reverse engineer that opaque
-callchain :-)
+- label : optional user-readable name for this bridge
 
-> And, we already call clocksource_suspend() and clockevents_suspend() in
-> timekeeping_suspend() on the tick timer CPU. Yes, we didn't suspend
-> per-cpu timer hardware on x86 because x86 does not have lapic timer
-> suspend implementation. If we need to implement this, I think we can do
-> the cross-CPU calls in clocksource/clockevents suspend(), but I didn't
-> see any necessary we need to do this now.
-> 
-> so, I think we are okay now, :)
-
-Right, I tend to agree, we'll find out quickly enough once those
-platforms will try this code anyhow ;-)
+...and it is no longer Linux-specific, and you can keep it if it is
+otherwise useful...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
