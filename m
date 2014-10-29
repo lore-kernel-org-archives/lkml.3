@@ -1,105 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228AbaJ2V0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:26:13 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52309 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757065AbaJ2V0K (ORCPT
+	id S1757307AbaJ2V1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:27:07 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:40847 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756602AbaJ2V1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:26:10 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Neil Zhang <zhangwm@marvell.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        nfont@linux.vnet.ibm.com
-Subject: Re: [PATCH V2] Driver cpu: update online when cpu_up/down besides sysfs
-Date: Wed, 29 Oct 2014 22:46:46 +0100
-Message-ID: <4115047.A3orYVLyA3@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CALZtONCkQVeau8JETKtxuQsoGnVymKPOgwvcidHH=EFVmhKc5g@mail.gmail.com>
-References: <1414378748-8855-1-git-send-email-zhangwm@marvell.com> <544EBB70.6020507@intel.com> <CALZtONCkQVeau8JETKtxuQsoGnVymKPOgwvcidHH=EFVmhKc5g@mail.gmail.com>
+	Wed, 29 Oct 2014 17:27:04 -0400
+Date: Wed, 29 Oct 2014 14:26:20 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Anton Blanchard <anton@au1.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 01/32] perf tools powerpc: Cache the DWARF debug info
+Message-ID: <20141029212620.GC17916@us.ibm.com>
+References: <1414503146-22789-1-git-send-email-acme@kernel.org>
+ <1414503146-22789-2-git-send-email-acme@kernel.org>
+ <87egtr751p.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87egtr751p.fsf@sejong.aot.lge.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102921-0009-0000-0000-000005F2E981
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 27, 2014 08:46:08 PM Dan Streetman wrote:
-> On Mon, Oct 27, 2014 at 5:38 PM, Rafael J. Wysocki
-> <rafael.j.wysocki@intel.com> wrote:
-> > On 10/27/2014 3:59 AM, Neil Zhang wrote:
-> >>
-> >> The current per-cpu offline info won't be updated when we use
-> >> any other method besides sysfs to call cpu_up/down.
-> >> Thus the cpu/online can't reflect the real online status.
-> >>
-> >> This patch is going to fix the issue introduced by commit
-> >> 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c (Driver core:
-> >> Use generic offline/online for CPU offline/online)
-> >>
-> >> CC: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> Tested-by: Dan Streetman <ddstreet@ieee.org>
-> >> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> >
-> >
-> > Oh dear, no.
-> >
-> > Please first tell me what exactly the problem you're seeing is.
-> 
-> For some background, here is my last comment on the first email thread on this:
-> https://lkml.org/lkml/2014/10/27/595
-> 
-> I didn't create this patch, but the problem essentially is that before
-> your commit the individual cpu online nodes
-> (/sys/devices/system/cpu/cpuN/online) stayed in sync during
-> cpu_down/up, because they used the cpu_online_mask; while after the
-> commit, they are tracked by the cpu's generic dev->offline flag, which
-> isn't updated during cpu_down/up.
+Namhyung Kim [namhyung@kernel.org] wrote:
+| > +		if (dwfl_report_offline(dwfl, "", dso->long_name, -1) == NULL) {
+| > +			pr_debug("dwfl_report_offline() failed %s\n",
+| > +						dwarf_errmsg(-1));
+| > +			/*
+| > +			 * We normally cache the DWARF debug info and never
+| > +			 * call dwfl_end(). But to prevent fd leak, free in
+| > +			 * case of error.
+| > +			 */
+| 
+| Well, it can be freed when dso__delete() called at least. :)
 
-Which is not triggered from sysfs.
+Agree. Jiri Olsa also pointed that out. Plan to add that as a part
+of couple of other changes Jiri proposed.
 
-> So now, any place in the kernel
-> that brings a cpu up or down must also update the cpu->dev->offline
-> flag.
+| 
+| 
+| > +			dwfl_end(dwfl);
+| > +			goto out;
+| > +		}
+| > +		dso->dwfl = dwfl;
+| >  	}
+| >  
+| >  	mod = dwfl_addrmodule(dwfl, pc);
+| 
+| I don't know how dwfl_report_offline() can make it to find out a mod
+| from pc as it's an (loaded) virtual address.  Maybe I miss something or
+| is your dso's are prelinked?
 
-Not any place.  In particular, system suspend-resume doesn't need to
-do that, because it takes CPUs offline and then brings them back
-online.
+Scratching my head on this and a related issue.
 
-If there's a place in the kernel where CPUs are taken offline and
-left in that state, then it needs to be updated.
+The code seems to work consistently on Fedora20 and we recently noticed
+that it does not work on RHEL7. Maybe related to the issue you point out.
 
-> My interest in the patch was coincidental because I was seeing
-> the same problem when using dlpar operations to hotplug cpus, which
-> uses the arch/powerpc/platform/pseries/dlpar.c code; that code brings
-> a cpu offline when it's hot-removed (and the cpu online when it's
-> hot-added), but it hasn't been changed to also update the cpu's
-> dev->offline flag.
+On Fedora20 objdump -D /usr/lib64/libc-2.18.so shows something like this:
 
-It should be modified to do that.
+00000080a7be3bf0 <.__random>:
+  80a7be3bf0:   7c 08 02 a6     mflr    r0
+  80a7be3bf4:   fb e1 ff f8     std     r31,-8(r1)
+  80a7be3bf8:   60 00 00 00     nop
+  80a7be3bfc:   39 00 00 01     li      r8,1
+  80a7be3c00:   3b e2 9a f0     addi    r31,r2,-25872
+  80a7be3c04:   39 40 00 00     li      r10,0
+  80a7be3c08:   f8 01 00 10     std     r0,16(r1)
+  80a7be3c0c:   f8 21 ff 71     stdu    r1,-144(r1)
+  80a7be3c10:   7d 20 f8 29     lwarx   r9,0,r31,1
+  80a7be3c14:   7c 09 50 00     cmpw    r9,r10
+  80a7be3c18:   40 82 00 0c     bne     80a7be3c24 <.__random+0x34>
 
-> As I said in the previous email to the first thread, the ppc dlpar
-> operation might be changed in the future to fully unregister a cpu
-> when it's hot-removed, which would remove the entire sysfs cpuN
-> directory.  Alternately and/or until then, it could be updated to
-> simply update the cpu'd dev->offline flag (that's what I originally
-> did for my own testing).  However, without a central place to update
-> the cpu's dev->offline field, like this, or possibly in
-> set_cpu_online(), or elsewhere during cpu_down/up, each place in the
-> kernel that calls cpu_down() or cpu_up() also needs to update the
-> dev->offline flag.  It's possible that the ppc dlpar code is the only
-> place in the kernel that has this problem; I haven't searched.
+and my small test program (and perf) can use the addresses to correctly
+say if LR is relevant or not.
 
-It is quite likely to be the only place like that.
+But on RHEL7, objdump shows addresses differently:
 
-While I'm not familiar with the code in question, the most straightforward
-way to fix the problem would be to replace cpu_down() in there with
-device_offline(get_cpu_device(cpu)), but that needs to be called under
-device_hotplug_lock.
+0000000000063870 <.__random>:
+   63870:       7c 08 02 a6     mflr    r0
+   63874:       fb e1 ff f8     std     r31,-8(r1)
+   63878:       60 00 00 00     nop
+   6387c:       3b e2 9a e0     addi    r31,r2,-25888
+   63880:       39 00 00 01     li      r8,1
+   63884:       39 40 00 00     li      r10,0
+   63888:       f8 01 00 10     std     r0,16(r1)
+   6388c:       f8 21 ff 71     stdu    r1,-144(r1)
+   63890:       7d 20 f8 29     lwarx   r9,0,r31,1
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+and perf and my test program fail. Not sure if this is something related
+to the way it is built.
+
+Sukadev
+
