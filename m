@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933849AbaJ2PWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:22:21 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:53662 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933194AbaJ2PWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:22:19 -0400
+	id S933694AbaJ2PXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:23:45 -0400
+Received: from mga14.intel.com ([192.55.52.115]:55486 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933194AbaJ2PXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 11:23:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,810,1406617200"; 
+   d="scan'208";a="613481823"
+Date: Wed, 29 Oct 2014 23:23:38 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the pm tree
+Message-ID: <20141029152338.GA9571@wfg-t540p.sh.intel.com>
+References: <20141029135129.40193e14@canb.auug.org.au>
+ <1548287.VkQosq7gyk@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20141029142214.GS12020@console-pimps.org>
-References: <1411313216-2641-2-git-send-email-minipli@googlemail.com>
-	<20141003134707.GJ14343@console-pimps.org>
-	<20141007150132.GA7307@nazgul.tnic>
-	<20141007170748.GA25767@jig.fritz.box>
-	<20141008151730.GB16892@pd.tnic>
-	<CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
-	<20141008222619.GG16892@pd.tnic>
-	<20141012125515.GA32045@jig.fritz.box>
-	<20141028185756.GD10873@pd.tnic>
-	<CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
-	<20141029142214.GS12020@console-pimps.org>
-Date: Wed, 29 Oct 2014 16:22:17 +0100
-Message-ID: <CA+rthh8yf2PONJzoJrQ_vQjfaVbJj2e9TFvrK1YDdnL5_gspFQ@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
-From: Mathias Krause <minipli@googlemail.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1548287.VkQosq7gyk@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 October 2014 15:22, Matt Fleming <matt@console-pimps.org> wrote:
-> On Tue, 28 Oct, at 08:48:23PM, Mathias Krause wrote:
->> On 28 October 2014 19:57, Borislav Petkov <bp@alien8.de> wrote:
->> > [...]
->> >
->> > Ok, thanks for refreshing this for me, your patch is good, so
->> >
->> > Acked-by: Borislav Petkov <bp@suse.de>
->>
->> Thanks. But as you said, the EFI mappings shouldn't be in the kernel's
->> page table in the first place, so I'd rather see a patch doing that
->> instead. But, in the meantime, this patch is valid, as it shows the
->> "status quo".
->
-> Now, everyone agrees this patch is OK? There are no comments that still
-> need addressing?
+On Wed, Oct 29, 2014 at 03:55:19PM +0100, Rafael J. Wysocki wrote:
+> On Wednesday, October 29, 2014 01:51:29 PM Stephen Rothwell wrote:
+> > Hi Rafael,
+> 
+> Hi,
+> 
+> > After merging the pm tree, today's linux-next build (arm
+> > multi_v7_defconfig) produced this warning:
+> > 
+> > drivers/of/base.c: In function 'of_property_read_string_array':
+> > drivers/of/base.c:1472:1: warning: control reaches end of non-void function [-Wreturn-type]
+> >  }
+> >  ^
+> > 
+> > Introduced by commit ef23586751cd ("Driver core: Unified device
+> > properties interface for platform firmware").
+> 
+> Thanks for reporting this!
+> 
+> > Please don't ignore new warnings ...
+> 
+> I don't as a rule.  I'm not sure why I haven't seen that before (and the kbuild
+> robot reports BUILD SUCCESS for that branch).
 
-The patch was fine from the beginning. The discussion kind of hijacked
-the thread to argue about the underlying issue. So, the patch is still
-good for me to be merged.
+I do find the build error id:
+
+-rw-rw-r-- 1 kbuild kbuild  272 2014-10-29 23:11 /kbuild-tests/build-error/drivers-of-base.c:warning:control-reaches-end-of-non-void-function
+
+However there happens to be an old one half year ago. Since I never
+delete old warnings, it prevents the reporting of the new warning on
+your tree..
+
+% cat /kbuild-tests/build-error/drivers-of-base.c:warning:control-reaches-end-of-non-void-function
+drivers/of/base.c:1147:1: warning: control reaches end of non-void function [-Wreturn-type]
+
+2014-04-17 02:59:49 lkp-ib04 socfpga-nex:socfpga_for_next_dts_overlays:bdb1f0c2cbe39db8f4a2ac4794001ba2e99cb65b i386-randconfig-i001-0414 f11752c03ccfd747a1f0740955682a
+304933361c                         
+
+The easiest way to fix it is to delete any old error/warnings that
+have been *inactive* for more than 2 months (which means they are
+likely fixed).
 
 Thanks,
-Mathias
+Fengguang
