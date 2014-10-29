@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755AbaJ2Liq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 07:38:46 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:42297 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932461AbaJ2Lip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 07:38:45 -0400
-From: Minfei Huang <mnfhuang@gmail.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, pbonzini@redhat.com,
-        akpm@linux-foundation.org, bp@suse.de
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Minfei Huang <mnfhuang@gmail.com>
-Subject: [PATCH v2] x86/mm: Re-use the early_ioremap fixed area
-Date: Wed, 29 Oct 2014 19:38:37 +0800
-Message-Id: <1414582717-32729-1-git-send-email-mnfhuang@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S932706AbaJ2LsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 07:48:21 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:33453 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932384AbaJ2LsT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 07:48:19 -0400
+Subject: Re: [PATCH] of: spi: Export single device registration method and accessors (v2)
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20141029101420.GT18557@sirena.org.uk>
+Date: Wed, 29 Oct 2014 13:48:06 +0200
+Cc: Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
+        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6A3753C0-251A-4645-AD96-CB1D6521175F@antoniou-consulting.com>
+References: <1414572037-11306-1-git-send-email-pantelis.antoniou@konsulko.com> <20141029101420.GT18557@sirena.org.uk>
+To: Mark Brown <broonie@kernel.org>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The temp fixed area is only used during boot for early_ioremap(), and
-it is unused when the ioremap() is functional. vmalloc/pkmap area become
-available after early boot so the temp fixed area is available for re-use.
+Hi
 
-The virtual address is more precious on i386, especially turning on the
-high memory. So we can re-use the virtual address whichever we can.
+> On Oct 29, 2014, at 12:14 , Mark Brown <broonie@kernel.org> wrote:
+> 
+> On Wed, Oct 29, 2014 at 10:40:37AM +0200, Pantelis Antoniou wrote:
+>> Dynamically inserting spi device nodes requires the use of a single
+>> device registration method. Rework and export it.
+>> 
+>> Methods to lookup a device/master using a device node are added
+>> as well, of_find_spi_master_by_node() & of_find_spi_device_by_node().
+> 
+> Why do we need to do this - I would expect that adding nodes would
+> trigger parsing in the same way we normally do it.  Where is the user
+> and how does it know that it's handling a SPI node?
+> 
+> This feels like there is an abstraction problem somewhere, whatever code
+> is supposed to use this is going to need to be taught about each
+> individual bus which is going to be tedious, I would expect that we'd
+> have something like the bus being able to provide a callback which will
+> get invoked whenever a new node appears on the parent node for the bus.
+> 
 
-The macros of FIXADDR_BOOT_START and FIXADDR_BOOT_SIZE donot use any
-more.
+There’s a whole patchset that does exactly this. 
+Look at "OF: spi: Add OF notifier handler” and you’ll where this is used.
 
-Signed-off-by: Minfei Huang <mnfhuang@gmail.com>
----
- arch/x86/include/asm/fixmap.h           |  2 --
- arch/x86/include/asm/highmem.h          | 25 ++++++++++++++-----------
- arch/x86/include/asm/pgtable_32_types.h |  4 ++--
- 3 files changed, 16 insertions(+), 15 deletions(-)
+>> Changes since v1:
+>> * Brown paper bug with parameter on of_register_spi_device().
+> 
+> Don't include noise like this in the changelog, put it after --- like
+> SubmittingPatches says.  Please also try to keep your CC list sane,
+> CCing random people just means that you're increasing the volume of mail
+> they have to process.  I'm surprised kernel.org accepts so many CCs.
+> 
+> I have to say I don't recall ever seeing v1...
 
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index ffb1733..bf728e4 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -136,9 +136,7 @@ enum fixed_addresses {
- extern void reserve_top_address(unsigned long reserve);
- 
- #define FIXADDR_SIZE	(__end_of_permanent_fixed_addresses << PAGE_SHIFT)
--#define FIXADDR_BOOT_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START		(FIXADDR_TOP - FIXADDR_SIZE)
--#define FIXADDR_BOOT_START	(FIXADDR_TOP - FIXADDR_BOOT_SIZE)
- 
- extern int fixmaps_set;
- 
-diff --git a/arch/x86/include/asm/highmem.h b/arch/x86/include/asm/highmem.h
-index 302a323..fa0713d 100644
---- a/arch/x86/include/asm/highmem.h
-+++ b/arch/x86/include/asm/highmem.h
-@@ -38,17 +38,20 @@ extern unsigned long highstart_pfn, highend_pfn;
- /*
-  * Ordering is:
-  *
-- * FIXADDR_TOP
-- * 			fixed_addresses
-- * FIXADDR_START
-- * 			temp fixed addresses
-- * FIXADDR_BOOT_START
-- * 			Persistent kmap area
-- * PKMAP_BASE
-- * VMALLOC_END
-- * 			Vmalloc area
-- * VMALLOC_START
-- * high_memory
-+ * high memory on:			              high_memory off:
-+ *    FIXADDR_TOP                                        FIXADDR_TOP
-+ *        fixed addresses                                    fixed addresses
-+ *    FIXADDR_START                                      FIXADDR_START
-+ *        temp fixed addresses/persistent kmap area      VMALLOC_END
-+ *    PKMAP_BASE                                             temp fixed addresses/vmalloc area
-+ *    VMALLOC_END                                        VMALLOC_START
-+ *        vmalloc area                                   high_memory
-+ *    VMALLOC_START
-+ *    high_memory
-+ *
-+ * The temp fixed area is only used during boot for early_ioremap(), and
-+ * it is unused when the ioremap() is functional. vmalloc/pkmap area become
-+ * available after early boot so the temp fixed area is available for re-use.
-  */
- #define LAST_PKMAP_MASK (LAST_PKMAP-1)
- #define PKMAP_NR(virt)  ((virt-PKMAP_BASE) >> PAGE_SHIFT)
-diff --git a/arch/x86/include/asm/pgtable_32_types.h b/arch/x86/include/asm/pgtable_32_types.h
-index 2ac5fc8..9fb2f2b 100644
---- a/arch/x86/include/asm/pgtable_32_types.h
-+++ b/arch/x86/include/asm/pgtable_32_types.h
-@@ -37,13 +37,13 @@ extern bool __vmalloc_start_set; /* set once high_memory is set */
- #define LAST_PKMAP 1024
- #endif
- 
--#define PKMAP_BASE ((FIXADDR_BOOT_START - PAGE_SIZE * (LAST_PKMAP + 1))	\
-+#define PKMAP_BASE ((FIXADDR_START - PAGE_SIZE * (LAST_PKMAP + 1))	\
- 		    & PMD_MASK)
- 
- #ifdef CONFIG_HIGHMEM
- # define VMALLOC_END	(PKMAP_BASE - 2 * PAGE_SIZE)
- #else
--# define VMALLOC_END	(FIXADDR_BOOT_START - 2 * PAGE_SIZE)
-+# define VMALLOC_END	(FIXADDR_START - 2 * PAGE_SIZE)
- #endif
- 
- #define MODULES_VADDR	VMALLOC_START
--- 
-1.8.3.1
+All of them are in the CC list for a reason. 
+
+Regards
+
+— Pantelis
 
