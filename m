@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447AbaJ2UGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:06:11 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37792 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaJ2UGJ (ORCPT
+	id S1756879AbaJ2UHl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:07:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58616 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359AbaJ2UHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:06:09 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: heiko@sntech.de, dianders@chromium.org, mturquette@linaro.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-rockchip@lists.infradead.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, Tony Xie <xxx@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 0/7] This is the 1st version of suspend for RK3288.
-References: <1414583525-17395-1-git-send-email-zyw@rock-chips.com>
-Date: Wed, 29 Oct 2014 13:06:05 -0700
-In-Reply-To: <1414583525-17395-1-git-send-email-zyw@rock-chips.com> (Chris
-	Zhong's message of "Wed, 29 Oct 2014 19:51:58 +0800")
-Message-ID: <7hppda7iaa.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 29 Oct 2014 16:07:40 -0400
+Date: Wed, 29 Oct 2014 21:07:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Sabrina Dubroca <sd@queasysnail.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
+ linux-next
+In-Reply-To: <20141029195054.GH10501@worktop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.11.1410292053430.5308@nanos>
+References: <20141029155620.GA4886@kria> <20141029180734.GQ12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410291918060.5308@nanos> <20141029193603.GS12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410292046270.5308@nanos>
+ <20141029195054.GH10501@worktop.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Wed, 29 Oct 2014, Peter Zijlstra wrote:
 
-Chris Zhong <zyw@rock-chips.com> writes:
+> On Wed, Oct 29, 2014 at 08:49:03PM +0100, Thomas Gleixner wrote:
+> > On Wed, 29 Oct 2014, Peter Zijlstra wrote:
+> > 
+> > > On Wed, Oct 29, 2014 at 07:33:00PM +0100, Thomas Gleixner wrote:
+> > > > Yuck. No. You are just papering over the problem.
+> > > > 
+> > > > What happens if you add 'threadirqs' to the kernel command line? Or if
+> > > > the interrupt line is shared with a real threaded interrupt user?
+> > > > 
+> > > > The proper solution is to have a poll_lock for e1000 which serializes
+> > > > the hardware interrupt against netpoll instead of using
+> > > > disable/enable_irq().
+> > > > 
+> > > > In fact that's less expensive than the disable/enable_irq() dance and
+> > > > the chance of contention is pretty low. If done right it will be a
+> > > > NOOP for the CONFIG_NET_POLL_CONTROLLER=n case.
+> > > > 
+> > > 
+> > > OK a little something like so then I suppose.. But I suspect most all
+> > > the network drivers will need this and maybe more, disable_irq() is a
+> > > popular little thing and we 'just' changed semantics on them.
+> > 
+> > We changed that almost 4 years ago :) What we 'just' did was to add a
+> > prominent warning into the code.
+> 
+> You know that is the same right... they didn't know it was broken
+> therefore it wasn't :-), but now they need to go actually do stuff about
+> it, an entirely different proposition.
 
-> RK3288 can shut down the cpu, gpu and other device controllers in suspend,
-> and it will pull the GLOBAL_PWROFF pin to high in the final stage of the
-> process of suspend, pull the pin to low again when resume.
+Right, and of course the world and some more has the very same code
+there:
 
-I tried to test this on top of linux-next (next-20141029) and it doesn't
-wake up from serial port activity.
+poll_controller()
+{
+	disable_irq();
+	dev_interrupt_handler();
+	enable_irq();
+}
 
-Can you describe how to test this, as well as describe dependencies on
-other out-of-tree patches, including pointers to where they've been
-posted.
+Trying to twist my brain to come up with a solution which avoids the
+spinlock, but I have a hard time to come up with one.
 
-Also, please describe how you tested this and on which hardware
-platforms.  It's a big help to reviewers to know how it's been tested,
-and for anyone with similar hardware to know what else it's been tested
-on.
+The only thing I came up with so far is to avoid adding locks to every
+driver incarnation and instead put it into struct net_device and
+provide helper functions for the lock/unlock case.
+
+That does not change the fact that we need to deal with that on a per
+driver basis :(
 
 Thanks,
 
-Kevin
+	tglx
+
+
