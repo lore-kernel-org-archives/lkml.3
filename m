@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639AbaJ2KMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:12:14 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:45339 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407AbaJ2KMJ (ORCPT
+	id S932431AbaJ2KMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:12:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55392 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171AbaJ2KMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:12:09 -0400
+	Wed, 29 Oct 2014 06:12:49 -0400
+Date: Wed, 29 Oct 2014 11:12:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+cc: f.fainelli@gmail.com, jason@lakedaemon.net, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH 01/11] irqchip: Allow irq_reg_{readl,writel} to use
+ __raw_{readl_writel}
+In-Reply-To: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
+Message-ID: <alpine.DEB.2.11.1410291112120.5308@nanos>
+References: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1414232097-4328-2-git-send-email-marc.zyngier@arm.com>
-References: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com>
-	<1414232097-4328-2-git-send-email-marc.zyngier@arm.com>
-Date: Wed, 29 Oct 2014 11:12:07 +0100
-Message-ID: <CACRpkdZjUPV1eWcJjT587kxJm2zyC+OEYD0Deid4wYPh8A-Z4w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] genirq: Allow the irqchip state of an IRQ to be save/restored
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, Phong Vo <pvo@apm.com>,
-        Tin Huynh <tnhuynh@apm.com>, Y Vo <yvo@apm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Toan Le <toanle@apm.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 25, 2014 at 12:14 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+On Tue, 28 Oct 2014, Kevin Cernekee wrote:
 
-> There is a number of cases where a kernel subsystem may want to
-> introspect the state of an interrupt at the irqchip level:
->
-> - When a peripheral is shared between virtual machines, its interrupt
->   state becomes part of the guest's state, and must be switched accordingly.
->   KVM on arm/arm64 requires this for its guest-visible timer
-> - Some GPIO controllers seem to require peeking into the interrupt controller
->   they are connected to to report their internal state
+> On big-endian systems readl/writel may perform an unwanted endian swap,
+> breaking generic-chip.c.  Let the platform code opt to use the __raw_
+> variants by selecting RAW_IRQ_ACCESSORS.
+> 
+> This is required in order for bcm3384 to use GENERIC_IRQ_CHIP.  Several
+> existing irqchip drivers also use the __raw_ accessors directly, so it
+> is a reasonably common requirement.
 
-I'd like to know exactly what this means, for GPIO. As mentioned in
-conversation with Arnd, there is since before the case where a GPIO
-irqchip gets its irqs "stolen" by some other hardware that is in the
-always-on domain, and I call these "latent irqs".
+How does that work with multi arch kernels?
 
-There is a third usecase here since ages (pre-git) in
-arch/arm/mach-integrator/integrator_cp.c:
+Thanks,
 
-/*
- * It seems that the card insertion interrupt remains active after
- * we've acknowledged it.  We therefore ignore the interrupt, and
- * rely on reading it from the SIC.  This also means that we must
- * clear the latched interrupt.
- */
-static unsigned int mmc_status(struct device *dev)
-{
-        unsigned int status = readl(__io_address(0xca000000 + 4));
-        writel(8, intcp_con_base + 8);
-
-        return status & 8;
-}
-
-static struct mmci_platform_data mmc_data = {
-        .ocr_mask       = MMC_VDD_32_33|MMC_VDD_33_34,
-        .status         = mmc_status,
-        .gpio_wp        = -1,
-        .gpio_cd        = -1,
-};
-
-This just goes in and peeks around in the Integrator SIC, this
-patch would solve also this I think. Or are the added calls good
-for clearing the latched IRQ too?
-
-Yours,
-Linus Walleij
+	tglx
+ 
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+> ---
+>  drivers/irqchip/Kconfig |  3 +++
+>  include/linux/irq.h     | 13 +++++++++++++
+>  2 files changed, 16 insertions(+)
+> 
+> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+> index b21f12f..6f0e80b 100644
+> --- a/drivers/irqchip/Kconfig
+> +++ b/drivers/irqchip/Kconfig
+> @@ -2,6 +2,9 @@ config IRQCHIP
+>  	def_bool y
+>  	depends on OF_IRQ
+>  
+> +config RAW_IRQ_ACCESSORS
+> +	bool
+> +
+>  config ARM_GIC
+>  	bool
+>  	select IRQ_DOMAIN
+> diff --git a/include/linux/irq.h b/include/linux/irq.h
+> index 03f48d9..ed1ea8a 100644
+> --- a/include/linux/irq.h
+> +++ b/include/linux/irq.h
+> @@ -639,6 +639,17 @@ void arch_teardown_hwirq(unsigned int irq);
+>  void irq_init_desc(unsigned int irq);
+>  #endif
+>  
+> +#ifdef CONFIG_RAW_IRQ_ACCESSORS
+> +
+> +#ifndef irq_reg_writel
+> +# define irq_reg_writel(val, addr)	__raw_writel(val, addr)
+> +#endif
+> +#ifndef irq_reg_readl
+> +# define irq_reg_readl(addr)		__raw_readl(addr)
+> +#endif
+> +
+> +#else
+> +
+>  #ifndef irq_reg_writel
+>  # define irq_reg_writel(val, addr)	writel(val, addr)
+>  #endif
+> @@ -646,6 +657,8 @@ void irq_init_desc(unsigned int irq);
+>  # define irq_reg_readl(addr)		readl(addr)
+>  #endif
+>  
+> +#endif
+> +
+>  /**
+>   * struct irq_chip_regs - register offsets for struct irq_gci
+>   * @enable:	Enable register offset to reg_base
+> -- 
+> 2.1.1
+> 
+> 
