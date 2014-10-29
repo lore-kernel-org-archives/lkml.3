@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934245AbaJ2QYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:24:10 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:61142 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932994AbaJ2QYG (ORCPT
+	id S934296AbaJ2QYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:24:20 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:36773 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932994AbaJ2QYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:24:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
- <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com> <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 29 Oct 2014 09:23:45 -0700
-Message-ID: <CALCETrWpHXp=7u2777ANJjxQ5rRqmutnEwf76dLX2s_LXf87pQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 29 Oct 2014 12:24:15 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: linux-tegra@vger.kernel.org
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 03/13] soc/tegra: Add ram code reader helper
+Date: Wed, 29 Oct 2014 17:22:21 +0100
+Message-Id: <1414599796-30597-4-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 29, 2014 6:00 AM, "Mimi Zohar" <zohar@linux.vnet.ibm.com> wrote:
->
-> On Tue, 2014-10-28 at 22:08 -0700, Andy Lutomirski wrote:
-> > On Tue, Oct 28, 2014 at 8:55 PM, James Morris <jmorris@namei.org> wrote:
-> > > These changes fix a bug in xattr handling, where the evm and ima
-> > > inode_setxattr() functions do not check for empty xattrs being passed from
-> > > userspace (leading to user-triggerable null pointer dereferences).
-> > >
-> > > Please pull.
-> > >
-> > >
-> > > The following changes since commit 9f76628da20f96a179ca62b504886f99ecc29223:
-> > >
-> > >   Merge branch 'for-3.18' of git://linux-nfs.org/~bfields/linux (2014-10-28 13:32:06 -0700)
-> > >
-> > > are available in the git repository at:
-> > >
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-> > >
-> > > Dmitry Kasatkin (2):
-> > >       ima: check xattr value length and type in the ima_inode_setxattr()
-> >
-> > I haven't read this one, but:
-> >
-> > >       evm: check xattr value length and type in evm_inode_setxattr()
-> >
-> > const struct evm_ima_xattr_data *xattr_data = xattr_value;
-> > - if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
-> > - && (xattr_data->type == EVM_XATTR_HMAC))
-> > - return -EPERM;
-> > + if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
-> > + if (!xattr_value_len)
-> > + return -EINVAL;
-> > + if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
-> > + return -EPERM;
-> > + }
-> >
-> > Huh?  (Sorry about severe whitespace damage.)
-> >
-> > Shouldn't there be something like if (xattr_value_len < sizeof(struct
-> > evm_ima_xattr_data)) return -EINVAL?
->
-> Prior to commit 2fb1c9a "evm: prohibit userspace writing 'security.evm'
-> HMAC value", a process with CAP_SYS_ADMIN could write either an HMAC or
-> signature. As the HMAC key should only be known to the kernel, only
-> signatures are now allowed.  Instead of "struct evm_ima_xattr_data", the
-> code should reflect this change and use "struct signature_v2_hdr".
-> We'll clean up this code for the next release.  For now, this patch
-> prevents the oops.
->
+From: Mikko Perttunen <mperttunen@nvidia.com>
 
-I have no idea what the semantics are.  All I'm saying is that it
-looks like the code still accesses memory past the end of the buffer.
-The buffer isn't a null pointer, so the symptom is different, but it
-may still be a security bug.
+Needed for the EMC and MC drivers to know what timings from the DT to use.
 
---Andy
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+---
+ drivers/soc/tegra/fuse/tegra-apbmisc.c | 19 +++++++++++++++++++
+ include/soc/tegra/fuse.h               |  1 +
+ 2 files changed, 20 insertions(+)
 
-> thanks,
->
-> Mimi
->
+diff --git a/drivers/soc/tegra/fuse/tegra-apbmisc.c b/drivers/soc/tegra/fuse/tegra-apbmisc.c
+index 3bf5aba..e580892 100644
+--- a/drivers/soc/tegra/fuse/tegra-apbmisc.c
++++ b/drivers/soc/tegra/fuse/tegra-apbmisc.c
+@@ -28,8 +28,13 @@
+ #define APBMISC_SIZE	0x64
+ #define FUSE_SKU_INFO	0x10
+ 
++#define PMC_STRAPPING_OPT_A_RAM_CODE_MASK_LONG	(0xf << 4)
++#define PMC_STRAPPING_OPT_A_RAM_CODE_MASK_SHORT	(0x3 << 4)
++#define PMC_STRAPPING_OPT_A_RAM_CODE_SHIFT	4
++
+ static void __iomem *apbmisc_base;
+ static void __iomem *strapping_base;
++static bool          long_ram_code;
+ 
+ u32 tegra_read_chipid(void)
+ {
+@@ -54,6 +59,18 @@ u32 tegra_read_straps(void)
+ 		return 0;
+ }
+ 
++u32 tegra_read_ram_code(void)
++{
++	u32 straps = tegra_read_straps();
++
++	if (long_ram_code)
++		straps &= PMC_STRAPPING_OPT_A_RAM_CODE_MASK_LONG;
++	else
++		straps &= PMC_STRAPPING_OPT_A_RAM_CODE_MASK_SHORT;
++
++	return straps >> PMC_STRAPPING_OPT_A_RAM_CODE_SHIFT;
++}
++
+ static const struct of_device_id apbmisc_match[] __initconst = {
+ 	{ .compatible = "nvidia,tegra20-apbmisc", },
+ 	{},
+@@ -112,4 +129,6 @@ void __init tegra_init_apbmisc(void)
+ 	strapping_base = of_iomap(np, 1);
+ 	if (!strapping_base)
+ 		pr_err("ioremap tegra strapping_base failed\n");
++
++	long_ram_code = of_property_read_bool(np, "nvidia,long-ram-code");
+ }
+diff --git a/include/soc/tegra/fuse.h b/include/soc/tegra/fuse.h
+index 8e12494..4ad6fd9 100644
+--- a/include/soc/tegra/fuse.h
++++ b/include/soc/tegra/fuse.h
+@@ -55,6 +55,7 @@ struct tegra_sku_info {
+ };
+ 
+ u32 tegra_read_straps(void);
++u32 tegra_read_ram_code(void);
+ u32 tegra_read_chipid(void);
+ int tegra_fuse_readl(unsigned long offset, u32 *value);
+ 
+-- 
+1.9.3
+
