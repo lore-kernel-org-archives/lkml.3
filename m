@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279AbaJ2ANj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 20:13:39 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:34241 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626AbaJ2AMt (ORCPT
+	id S1755218AbaJ2ANi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 20:13:38 -0400
+Received: from mail-oi0-f74.google.com ([209.85.218.74]:40350 "EHLO
+	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917AbaJ2AMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 20:12:49 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
@@ -19,9 +19,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
         Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V3 2/4] of: Add binding document for MIPS GIC
-Date: Tue, 28 Oct 2014 17:12:40 -0700
-Message-Id: <1414541562-10076-3-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V3 3/4] irqchip: mips-gic: Add device-tree support
+Date: Tue, 28 Oct 2014 17:12:41 -0700
+Message-Id: <1414541562-10076-4-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
 References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
@@ -29,105 +29,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Global Interrupt Controller (GIC) present on certain MIPS systems
-can be used to route external interrupts to individual VPEs and CPU
-interrupt vectors.  It also supports a timer and software-generated
-interrupts.
+Add device-tree support for the MIPS GIC.  Update the GIC irqdomain's
+xlate() callback to handle the three-cell specifier described in the
+MIPS GIC binding document.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
 Changes from v2:
- - added third cell to specify local vs. shared
- - added documentation for timer sub-node
- - changed compatible string to include CPU version
+ - rebased on GIC irqchip cleanups
+ - updated for change in bindings
+ - only parse first CPU vector
+ - allow platforms to use EIC mode
 Changes from v1:
- - moved from mips/ to interrupt-controller/
- - removed interrupts and interrupt-parent properties
- - added available-cpu-vectors property
- - dropped third cell in interrupt specifier
+ - updated for change in bindings
+ - set base address and enable bit in GCR_GIC_BASE
 ---
- .../bindings/interrupt-controller/mips-gic.txt     | 55 ++++++++++++++++++++++
- .../dt-bindings/interrupt-controller/mips-gic.h    |  9 ++++
- 2 files changed, 64 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
- create mode 100644 include/dt-bindings/interrupt-controller/mips-gic.h
+ drivers/irqchip/irq-mips-gic.c | 71 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 66 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt b/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
-new file mode 100644
-index 0000000..84cbbed
---- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
-@@ -0,0 +1,55 @@
-+MIPS Global Interrupt Controller (GIC)
+diff --git a/drivers/irqchip/irq-mips-gic.c b/drivers/irqchip/irq-mips-gic.c
+index 61ac482..914d73d 100644
+--- a/drivers/irqchip/irq-mips-gic.c
++++ b/drivers/irqchip/irq-mips-gic.c
+@@ -12,12 +12,18 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/irqchip/mips-gic.h>
++#include <linux/of_address.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+ 
++#include <asm/mips-cm.h>
+ #include <asm/setup.h>
+ #include <asm/traps.h>
+ 
++#include <dt-bindings/interrupt-controller/mips-gic.h>
 +
-+The MIPS GIC routes external interrupts to individual VPEs and IRQ pins.
-+It also supports local (per-processor) interrupts and software-generated
-+interrupts which can be used as IPIs.  The GIC also includes a free-running
-+global timer, per-CPU count/compare timers, and a watchdog.
++#include "irqchip.h"
 +
-+Required properties:
-+- compatible : Should be "mti,<cpu>-gic".  Supported variants:
-+  - "mti,interaptiv-gic"
-+- reg : Base address and length of the GIC registers.
-+- interrupt-controller : Identifies the node as an interrupt controller
-+- #interrupt-cells : Specifies the number of cells needed to encode an
-+  interrupt specifier.  Should be 3.
-+  - The first cell is the type of interrupt, local or shared.
-+    See <include/dt-bindings/interrupt-controller/mips-gic.h>.
-+  - The second cell is the GIC interrupt number.
-+  - The third cell encodes the interrupt flags.
-+    See <include/dt-bindings/interrupt-controller/irq.h> for a list of valid
-+    flags.
-+- mti,available-cpu-vectors : Specifies the list of CPU interrupt vectors
-+  to which the GIC may route interrupts.  May contain up to 6 entries, one
-+  for each of the CPU's hardware interrupt vectors.  Valid values are 2 - 7.
-+  This property is ignored if the CPU is started in EIC mode.
+ unsigned int gic_present;
+ 
+ struct gic_pcpu_mask {
+@@ -662,14 +668,34 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int virq,
+ 	return gic_shared_irq_domain_map(d, virq, hw);
+ }
+ 
++static int gic_irq_domain_xlate(struct irq_domain *d, struct device_node *ctrlr,
++				const u32 *intspec, unsigned int intsize,
++				irq_hw_number_t *out_hwirq,
++				unsigned int *out_type)
++{
++	if (intsize != 3)
++		return -EINVAL;
 +
-+Required properties for timer sub-node:
-+- compatible : Should be "mti,<cpu>-gic-timer".  Supported variants:
-+  - "mti,interaptiv-gic-timer"
-+- interrupts : Interrupt for the GIC local timer.
-+- clock-frequency : Clock frequency at which the GIC timers operate.
++	if (intspec[0] == GIC_SHARED)
++		*out_hwirq = GIC_SHARED_TO_HWIRQ(intspec[1]);
++	else if (intspec[0] == GIC_LOCAL)
++		*out_hwirq = GIC_LOCAL_TO_HWIRQ(intspec[1]);
++	else
++		return -EINVAL;
++	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
 +
-+Example:
++	return 0;
++}
 +
-+	gic: interrupt-controller@1bdc0000 {
-+		compatible = "mti,interaptiv-gic";
-+		reg = <0x1bdc0000 0x20000>;
+ static struct irq_domain_ops gic_irq_domain_ops = {
+ 	.map = gic_irq_domain_map,
+-	.xlate = irq_domain_xlate_twocell,
++	.xlate = gic_irq_domain_xlate,
+ };
+ 
+-void __init gic_init(unsigned long gic_base_addr,
+-		     unsigned long gic_addrspace_size, unsigned int cpu_vec,
+-		     unsigned int irqbase)
++static void __init __gic_init(unsigned long gic_base_addr,
++			      unsigned long gic_addrspace_size,
++			      unsigned int cpu_vec, unsigned int irqbase,
++			      struct device_node *node)
+ {
+ 	unsigned int gicconfig;
+ 
+@@ -695,7 +721,7 @@ void __init gic_init(unsigned long gic_base_addr,
+ 					gic_irq_dispatch);
+ 	}
+ 
+-	gic_irq_domain = irq_domain_add_simple(NULL, GIC_NUM_LOCAL_INTRS +
++	gic_irq_domain = irq_domain_add_simple(node, GIC_NUM_LOCAL_INTRS +
+ 					       gic_shared_intrs, irqbase,
+ 					       &gic_irq_domain_ops, NULL);
+ 	if (!gic_irq_domain)
+@@ -705,3 +731,38 @@ void __init gic_init(unsigned long gic_base_addr,
+ 
+ 	gic_ipi_init();
+ }
 +
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
++void __init gic_init(unsigned long gic_base_addr,
++		     unsigned long gic_addrspace_size,
++		     unsigned int cpu_vec, unsigned int irqbase)
++{
++	__gic_init(gic_base_addr, gic_addrspace_size, cpu_vec, irqbase, NULL);
++}
 +
-+		mti,available-cpu-vectors = <2>, <3>, <4>, <5>;
++static int __init gic_of_init(struct device_node *node,
++			      struct device_node *parent)
++{
++	int cpu_vec;
++	struct resource res;
 +
-+		timer {
-+			compatible = "mti,interaptiv-gic-timer";
-+			interrupts = <GIC_LOCAL 1 IRQ_TYPE_NONE>;
-+			clock-frequency = <50000000>;
-+		};
-+	};
++	/* Use the first available CPU vector. */
++	if (of_property_read_u32_index(node, "mti,available-cpu-vectors", 0,
++				       &cpu_vec)) {
++		pr_err("No CPU vectors available for GIC\n");
++		return -ENODEV;
++	}
 +
-+	uart@18101400 {
-+		...
-+		interrupt-parent = <&gic>;
-+		interrupts = <GIC_SHARED 24 IRQ_TYPE_LEVEL_HIGH>;
-+		...
-+	};
-diff --git a/include/dt-bindings/interrupt-controller/mips-gic.h b/include/dt-bindings/interrupt-controller/mips-gic.h
-new file mode 100644
-index 0000000..cf35a57
---- /dev/null
-+++ b/include/dt-bindings/interrupt-controller/mips-gic.h
-@@ -0,0 +1,9 @@
-+#ifndef _DT_BINDINGS_INTERRUPT_CONTROLLER_MIPS_GIC_H
-+#define _DT_BINDINGS_INTERRUPT_CONTROLLER_MIPS_GIC_H
++	if (of_address_to_resource(node, 0, &res)) {
++		pr_err("Failed to get GIC memory range\n");
++		return -ENODEV;
++	}
 +
-+#include <dt-bindings/interrupt-controller/irq.h>
++	if (mips_cm_present())
++		write_gcr_gic_base(res.start | CM_GCR_GIC_BASE_GICEN_MSK);
++	gic_present = true;
 +
-+#define GIC_SHARED 0
-+#define GIC_LOCAL 1
++	__gic_init(res.start, resource_size(&res), cpu_vec, 0, node);
 +
-+#endif
++	return 0;
++}
++IRQCHIP_DECLARE(mips_gic, "mti,interaptiv-gic", gic_of_init);
 -- 
 2.1.0.rc2.206.gedb03e5
 
