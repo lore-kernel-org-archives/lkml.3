@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213AbaJ2UOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:14:25 -0400
-Received: from admin.compro.net ([12.186.155.30]:51051 "HELO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757183AbaJ2UOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:14:22 -0400
-X-BYPSHEADER: 2986634
-X-SMScore: -200
-Message-ID: <54514A9D.5040308@compro.net>
-Date: Wed, 29 Oct 2014 16:14:21 -0400
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Daeseok Youn <daeseok.youn@gmail.com>
-CC: lidza.louina@gmail.com, devel@driverdev.osuosl.org,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com
-Subject: Re: [PATCH RESEND] staging: dgap: re-arrange functions for removing
- forward declarations
-References: <20141026020853.GA28838@devel> <2027049040.1672126.1414597322410.JavaMail.root@mx2.compro.net>
-In-Reply-To: <2027049040.1672126.1414597322410.JavaMail.root@mx2.compro.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757240AbaJ2UOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:14:37 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:4890 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755636AbaJ2UOf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 16:14:35 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuQNAOdJUVRbtAu8/2dsb2JhbABcgw6BLLojAQEBAQEBBQF0mk+BHxcBAQEBAX2EXyOBGjeIRQG5NI8ghjaJdmQdhDUFnWqWQIFHAYIxPC+BBoFFAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 1/1 linux-next] powerpc: fix section mismatch warning
+Date: Wed, 29 Oct 2014 21:14:27 +0100
+Message-Id: <1414613667-2553-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2014 05:22 AM, Greg KH wrote:
-> On Sun, Oct 26, 2014 at 11:08:54AM +0900, Daeseok Youn wrote:
->> Re-arrange the functions for removing forward declarations.
->>
->> Tested-by: Mark Hounschell <markh@compro.net>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->> RESEND: This patch is tested all by Mark.
->> It is good to merge. Greg, check please.
->
-> It doesn't apply to my tree :(
->
->
+Adding __init to MMU_setup() which uses __initdata boot_command_line.
 
-Daeseok,
+Warning appeared since commit 3e47d1474c2b
+("powerpc: Remove powerpc specific cmd_line")
 
-I will be happy to test the new patch. Somehow another patch got in 
-there without us seeing it "commit: 
-ac2f46c365e655dd2c366f69c609febc4ac310fd" on the list. That's why it 
-doesn't apply for Greg.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ arch/powerpc/mm/init_32.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Regards
-Mark
+diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
+index cad68ff..415a51b 100644
+--- a/arch/powerpc/mm/init_32.c
++++ b/arch/powerpc/mm/init_32.c
+@@ -103,7 +103,7 @@ unsigned long __max_low_memory = MAX_LOW_MEM;
+ /*
+  * Check for command-line options that affect what MMU_init will do.
+  */
+-void MMU_setup(void)
++void __init MMU_setup(void)
+ {
+ 	/* Check for nobats option (used in mapin_ram). */
+ 	if (strstr(boot_command_line, "nobats")) {
+-- 
+1.9.3
 
