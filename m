@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930AbaJ2VWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:22:25 -0400
-Received: from mail-ig0-f201.google.com ([209.85.213.201]:50649 "EHLO
-	mail-ig0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270AbaJ2VWX (ORCPT
+	id S1757356AbaJ2VWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:22:52 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39135 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636AbaJ2VWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:22:23 -0400
-From: Anton Staaf <robotboy@chromium.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Anton Staaf <robotboy@chromium.org>
-Subject: [PATCH] USB: simple: add Google simple serial SubClass support
-Date: Wed, 29 Oct 2014 14:21:56 -0700
-Message-Id: <1414617716-39377-1-git-send-email-robotboy@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Wed, 29 Oct 2014 17:22:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1414614013.5330.90.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
+ <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
+ <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <CALCETrWpHXp=7u2777ANJjxQ5rRqmutnEwf76dLX2s_LXf87pQ@mail.gmail.com>
+ <20141029183612.GI6890@mwanda> <CALCETrU1S94M1L-UM5Rg91J4kGjJRFLiPxce5aAnPPJVeitQ_A@mail.gmail.com>
+ <1414614013.5330.90.camel@dhcp-9-2-203-236.watson.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 29 Oct 2014 14:22:29 -0700
+Message-ID: <CALCETrUNYRbeA7EiTfd9hXMsHrES9EMAYaS=2FHOO=Kbm6qBTg@mail.gmail.com>
+Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <jmorris@namei.org>,
+        "security@kernel.org" <security@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Google devices that export simple serial
-interfaces using the vendor specific SubClass/Protocol pair
-0x50/0x01.
+On Oct 29, 2014 1:20 PM, "Mimi Zohar" <zohar@linux.vnet.ibm.com> wrote:
+>
+> On Wed, 2014-10-29 at 11:51 -0700, Andy Lutomirski wrote:
+> > On Wed, Oct 29, 2014 at 11:36 AM, Dan Carpenter
+> > <dan.carpenter@oracle.com> wrote:
+> > > On Wed, Oct 29, 2014 at 09:23:45AM -0700, Andy Lutomirski wrote:
+> > >> I have no idea what the semantics are.  All I'm saying is that it
+> > >> looks like the code still accesses memory past the end of the buffer.
+> > >> The buffer isn't a null pointer, so the symptom is different, but it
+> > >> may still be a security bug.
+> > >>
+> > >> --Andy
+> > >
+> > > It only reads one byte into the struct "xattr_data->type" so checking
+> > > for non-zero is sufficient and the patch is fine.
+> >
+> > Indeed.  Still... eww.  I don't like code that, upon local inspection,
+> > is apparently wrong, even though it's coincidentally correct due to
+> > some other far away condition.
+>
+> No, the code may be incomplete, but definitely not wrong.
 
-Signed-off-by: Anton Staaf <robotboy@chromium.org>
+I said "apparently wrong" instead of "wrong" for a reason :)
 
----
- drivers/usb/serial/usb-serial-simple.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/drivers/usb/serial/usb-serial-simple.c b/drivers/usb/serial/usb-serial-simple.c
-index fb79775..85bb973 100644
---- a/drivers/usb/serial/usb-serial-simple.c
-+++ b/drivers/usb/serial/usb-serial-simple.c
-@@ -8,6 +8,7 @@
-  * Copyright (C) 2010 Zilogic Systems <code@zilogic.com>
-  * Copyright (C) 2013 Wei Shuai <cpuwolf@gmail.com>
-  * Copyright (C) 2013 Linux Foundation
-+ * Copyright (C) 2014 Google, Inc.
-  *
-  *	This program is free software; you can redistribute it and/or
-  *	modify it under the terms of the GNU General Public License version
-@@ -80,6 +81,14 @@ DEVICE(suunto, SUUNTO_IDS);
- 	{ USB_DEVICE(0x908, 0x0004) }
- DEVICE(siemens_mpi, SIEMENS_IDS);
- 
-+/* Google Serial USB SubClass */
-+#define GOOGLE_IDS()					       \
-+	{ USB_VENDOR_AND_INTERFACE_INFO(0x18d1,		       \
-+					USB_CLASS_VENDOR_SPEC, \
-+					0x50,		       \
-+					0x01) }
-+DEVICE(google, GOOGLE_IDS);
-+
- /* All of the above structures mushed into two lists */
- static struct usb_serial_driver * const serial_drivers[] = {
- 	&zio_device,
-@@ -90,6 +99,7 @@ static struct usb_serial_driver * const serial_drivers[] = {
- 	&hp4x_device,
- 	&suunto_device,
- 	&siemens_mpi_device,
-+	&google_device,
- 	NULL
- };
- 
-@@ -102,6 +112,7 @@ static const struct usb_device_id id_table[] = {
- 	HP4X_IDS(),
- 	SUUNTO_IDS(),
- 	SIEMENS_IDS(),
-+	GOOGLE_IDS(),
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
--- 
-2.1.0.rc2.206.gedb03e5
-
+>
+> Mimi
+>
