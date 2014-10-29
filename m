@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573AbaJ2Rqc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:46:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59966 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756100AbaJ2Rq1 (ORCPT
+	id S1756599AbaJ2Rqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:46:38 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:33411 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756579AbaJ2Rqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:46:27 -0400
-Date: Wed, 29 Oct 2014 17:46:12 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Qais Yousef <qais.yousef@imgtec.com>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 2/4] of: Add binding document for MIPS GIC
-Message-ID: <20141029174611.GB26471@leverpostej>
-References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
- <1414541562-10076-3-git-send-email-abrestic@chromium.org>
- <5450CAF9.3040902@imgtec.com>
- <CAL1qeaHEE43n6V-y6XECicPaoEAfTBpyfg8bYJZK0e-pSMAJjw@mail.gmail.com>
- <545122AF.303@imgtec.com>
+	Wed, 29 Oct 2014 13:46:33 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Andrzej Hajda <a.hajda@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [RFC 1/2] PM / Domains: Power on domain early during system resume
+References: <1414072090-11293-1-git-send-email-k.kozlowski@samsung.com>
+	<1414072090-11293-2-git-send-email-k.kozlowski@samsung.com>
+Date: Wed, 29 Oct 2014 10:46:29 -0700
+In-Reply-To: <1414072090-11293-2-git-send-email-k.kozlowski@samsung.com>
+	(Krzysztof Kozlowski's message of "Thu, 23 Oct 2014 15:48:09 +0200")
+Message-ID: <7hk33iahvu.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545122AF.303@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 05:23:59PM +0000, Qais Yousef wrote:
-> On 10/29/2014 05:08 PM, Andrew Bresticker wrote:
-> > On Wed, Oct 29, 2014 at 4:09 AM, Qais Yousef <qais.yousef@imgtec.com> wrote:
-> >> On 10/29/2014 12:12 AM, Andrew Bresticker wrote:
-> >>> +- reg : Base address and length of the GIC registers.
-> >>>
-> >> Also except for sead3, the base address should be properly reported by the
-> >> hardware. The size is fixed (for a specific version of GIC at least - which
-> >> is also reported by the hardware). So it would be nice to make this
-> >> optional.
-> > Even though this is usually probable, I'd prefer to leave this as
-> > required, or at least "optional, but recommended".  I don't have a
-> > very strong opinion on it though, but perhaps the device-tree folks
-> > do?
+Krzysztof Kozlowski <k.kozlowski@samsung.com> writes:
 
-It boils down to how reliable the values you can read out of the HW are.
-If it can always be probed reliably, then the property isn't strictly
-necessary. However, the fact that you can probe it now doesn't mean you
-can always probe it reliably (e.g. a future CPU's reporting mechanism
-might be different, or values might be plain wrong). It depends on what
-you expect in future in that regard.
+> When resuming the system the power domain has to be powered on early so
+> any runtime PM aware devices could resume.
+>
+> This fixes following scenario reproduced on Exynos DRM:
+> 1. Power domain is off before suspending the system.
+> 2. System is suspended to RAM.
+> 3. Resuming starts. The Exynos DRM driver resume callback is called.
+> 4. The Exynos DRM driver calls drm_helper_resume_force_mode which turns
+>    the screen on by calling exynos_dsi_dpms with DRM_MODE_DPMS_ON.
 
-As an example, for a while on ARM we thought we could probe the number
-of CPUs present from the HW, but new CPUs and multi-cluster designs
-broke our assumptions there. Now we just rely on the /cpus node
-containing the appropriate cpu sub-nodes (regardless of whether this
-could be probed for a particular CPU/SoC). Luckily we were able to
-change that as we were still in the early days of DT conversion.
+Dumb Q: if the device (and power domain) were off before (and during)
+suspend, why are they being resumed?
 
-So consider the possible ways your current probing mechanism is
-realistically likely to be broken. If there are clear ways of working
-around that, you're probably fine with an optional property. If it looks
-like things could change substantially, require the property for now --
-you can always ignore it in future if things turn out to be reliably
-probeable through other means.
+Shouldn't the resume path restore things to the same state they were
+before suspend?
 
-> The biggest advantage I can think of is that it can potentially make GIC 
-> DT definition more shareable across for instance multiple revisions of 
-> an SoC that might have the GIC at different base addresses.
-
-For the different revisions of an SoC, I would expect that if your
-interrupt controller moved other elements would also? A layer or two of
-dtsi files can keep all the common stuff common while allowing
-per-revision changes.
-
-> I won't insist too much though.
-
-Similarly, I don't really have a strong opinion either way. There's no
-single answer on this.
-
-Thanks,
-Mark.
+Kevin
