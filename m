@@ -1,149 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379AbaJ2TSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 15:18:00 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:64058 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881AbaJ2TR7 (ORCPT
+	id S1756552AbaJ2TUC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 15:20:02 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:57474 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455AbaJ2TUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 15:17:59 -0400
-From: Giedrius Statkevicius <giedriuswork@gmail.com>
-To: eric.piel@tremplin-utc.net
-Cc: dvhart@infradead.org, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Giedrius=20Statkevi=C4=8Dius?= <giedriuswork@gmail.com>
-Subject: [PATCH] platform: hp_accel: add a i8042 filter to remove HPQ6000 data from kb bus stream
-Date: Wed, 29 Oct 2014 21:16:22 +0200
-Message-Id: <1414610182-28702-1-git-send-email-giedriuswork@gmail.com>
-X-Mailer: git-send-email 2.1.2
+	Wed, 29 Oct 2014 15:20:00 -0400
+Message-ID: <54513DDC.2020700@amacapital.net>
+Date: Wed, 29 Oct 2014 12:19:56 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Bastien Nocera <hadess@hadess.net>, Pavel Machek <pavel@ucw.cz>
+CC: John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: A desktop environment[1] kernel wishlist
+References: <1413881397.30379.7.camel@hadess.net>	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>	 <1413911644.30379.12.camel@hadess.net>	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd> <1414420292.30379.55.camel@hadess.net>
+In-Reply-To: <1414420292.30379.55.camel@hadess.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a i8042 filter to hp_accel to remove accelerometer's data with acpi
-id HPQ6000 from keyboard bus stream. The codes sent by accelerometer are
-e0 25, e0 26, e0 27 and e0 28. The relevant information is already
-passed through /dev/freefall so no need to send these undocumented weird
-signals through the keyboard bus. Also, unclogs `dmesg` because atkbd
-complained about weird scan codes, saves processing power and disk
-space.
+On 10/27/2014 07:31 AM, Bastien Nocera wrote:
+> On Mon, 2014-10-27 at 10:28 +0100, Pavel Machek wrote:
+>> Hi!
+>>
+>>>> I suspect wakeup type reporting is maybe not the best way to go about
+>>>> this, since there may be a number of causes for wakeups and they can
+>>>> arrive closely together in different orders, which can result in
+>>>> races.
+>>>>
+>>>> For instance, if the machine suspends, and sets an alarm to be woken
+>>>> up at midnight to do a backup, if the user resumes their laptop at
+>>>> 11:59:59, should the backup still proceed at midnight?
+>>>
+>>> No. And I would expect that we would get a wake up type of "power
+>>> button" or "lid open" in this case.
+>>
+>> I believe you should really use "is lid opened or AC or dock
+>> connected" to determine if it was automatic resume or not. It should
+>> work better and you can actually do it today.
+> 
+> There's no LID or docks on a tablet.
 
-Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
----
-First of all, any Tested-Bys are very welcome by people who also have a
-accelerometer with acpi id HPQ6000. If it happens with HPQ6007 too we
-can easily modify this to install the filter when HPQ6007 is detected.
-For the time being the filter is only installed when HPQ6000 is
-detected. 
+For a tablet, isn't the relevant piece of information whether the power
+button was recently pressed, not whether the power button caused the wakeup?
 
-Now moving to what was changed since the RFC. I reworked the filter
-function to hopefully make it more clear what it is doing. Since the
-codes sent by the accelerometer are extended then we need to filter all
-of 0xe0's and then send one 0xe0 back when the actual key isn't in the
-range of 0x25-0x28. Also, I've removed the check for errors for
-i8042_install_filter() because it's unnecessary to check if it failed.
-If multiple HPQ6000's are in the system then no issue occurs even if
-multiple i8042_install_filter() are issued because this is handled by
-i8042 and it's smart enough not to install the same filter two or more
-times.
+It would be really annoying if there were a window around every RTC
+wakeup during which pressing the power button didn't actually turn on
+the screen.
 
- drivers/platform/x86/hp_accel.c | 45 ++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 44 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
-index 13e14ec..a751621 100644
---- a/drivers/platform/x86/hp_accel.c
-+++ b/drivers/platform/x86/hp_accel.c
-@@ -38,6 +38,8 @@
- #include <linux/atomic.h>
- #include <linux/acpi.h>
- #include "../../misc/lis3lv02d/lis3lv02d.h"
-+#include <linux/i8042.h>
-+#include <linux/serio.h>
- 
- #define DRIVER_NAME     "hp_accel"
- #define ACPI_MDPS_CLASS "accelerometer"
-@@ -73,6 +75,13 @@ static inline void delayed_sysfs_set(struct led_classdev *led_cdev,
- 
- /* HP-specific accelerometer driver ------------------------------------ */
- 
-+/* e0 25, e0 26, e0 27, e0 28 are scan codes that the accelerometer with acpi id
-+ * HPQ6000 sends through the keyboard bus */
-+#define ACCEL_1 0x25
-+#define ACCEL_2 0x26
-+#define ACCEL_3 0x27
-+#define ACCEL_4 0x28
-+
- /* For automatic insertion of the module */
- static const struct acpi_device_id lis3lv02d_device_ids[] = {
- 	{"HPQ0004", 0}, /* HP Mobile Data Protection System PNP */
-@@ -82,7 +91,6 @@ static const struct acpi_device_id lis3lv02d_device_ids[] = {
- };
- MODULE_DEVICE_TABLE(acpi, lis3lv02d_device_ids);
- 
--
- /**
-  * lis3lv02d_acpi_init - ACPI _INI method: initialize the device.
-  * @lis3: pointer to the device struct
-@@ -294,6 +302,35 @@ static void lis3lv02d_enum_resources(struct acpi_device *device)
- 		printk(KERN_DEBUG DRIVER_NAME ": Error getting resources\n");
- }
- 
-+static bool hp_accel_i8042_filter(unsigned char data, unsigned char str,
-+				  struct serio *port)
-+{
-+	static bool extended;
-+
-+	if (str & I8042_STR_AUXDATA)
-+		return false;
-+
-+	if (data == 0xe0) {
-+		extended = true;
-+		return true;
-+	} else if (unlikely(extended)) {
-+		extended = false;
-+
-+		switch (data) {
-+		case ACCEL_1:
-+		case ACCEL_2:
-+		case ACCEL_3:
-+		case ACCEL_4:
-+			return true;
-+		default:
-+			serio_interrupt(port, 0xe0, 0);
-+			return false;
-+		}
-+	}
-+
-+	return false;
-+}
-+
- static int lis3lv02d_add(struct acpi_device *device)
- {
- 	int ret;
-@@ -326,6 +363,11 @@ static int lis3lv02d_add(struct acpi_device *device)
- 	if (ret)
- 		return ret;
- 
-+	/* filter to remove HPQ6000 accelerometer data
-+	 * from keyboard bus stream */
-+	if (strstr(dev_name(&device->dev), "HPQ6000"))
-+		i8042_install_filter(hp_accel_i8042_filter);
-+
- 	INIT_WORK(&hpled_led.work, delayed_set_status_worker);
- 	ret = led_classdev_register(NULL, &hpled_led.led_classdev);
- 	if (ret) {
-@@ -343,6 +385,7 @@ static int lis3lv02d_remove(struct acpi_device *device)
- 	if (!device)
- 		return -EINVAL;
- 
-+	i8042_remove_filter(hp_accel_i8042_filter);
- 	lis3lv02d_joystick_disable(&lis3_dev);
- 	lis3lv02d_poweroff(&lis3_dev);
- 
--- 
-2.1.2
-
+--Andy
