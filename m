@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207AbaJ2NAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:00:01 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14387 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932729AbaJ2MqL (ORCPT
+	id S933276AbaJ2NAM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:00:12 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:47974 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932729AbaJ2NAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:46:11 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 02/35] UBI: Fix stale pointers in ubi->lookuptbl
-Date: Wed, 29 Oct 2014 13:45:25 +0100
-Message-Id: <1414586758-9972-3-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
-References: <1414586758-9972-1-git-send-email-richard@nod.at>
+	Wed, 29 Oct 2014 09:00:06 -0400
+Message-ID: <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "security@kernel.org" <security@kernel.org>
+Date: Wed, 29 Oct 2014 08:59:59 -0400
+In-Reply-To: <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
+References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
+	 <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102913-8236-0000-0000-00000680E4D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some error paths the WL sub-system gives up on a PEB
-and frees it's ubi_wl_entry struct but does not set
-the entry in ubi->lookuptbl to NULL.
-Fastmap can stumble over such a stale pointer as it uses
-ubi->lookuptbl to find all PEBs.
+On Tue, 2014-10-28 at 22:08 -0700, Andy Lutomirski wrote: 
+> On Tue, Oct 28, 2014 at 8:55 PM, James Morris <jmorris@namei.org> wrote:
+> > These changes fix a bug in xattr handling, where the evm and ima
+> > inode_setxattr() functions do not check for empty xattrs being passed from
+> > userspace (leading to user-triggerable null pointer dereferences).
+> >
+> > Please pull.
+> >
+> >
+> > The following changes since commit 9f76628da20f96a179ca62b504886f99ecc29223:
+> >
+> >   Merge branch 'for-3.18' of git://linux-nfs.org/~bfields/linux (2014-10-28 13:32:06 -0700)
+> >
+> > are available in the git repository at:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+> >
+> > Dmitry Kasatkin (2):
+> >       ima: check xattr value length and type in the ima_inode_setxattr()
+> 
+> I haven't read this one, but:
+> 
+> >       evm: check xattr value length and type in evm_inode_setxattr()
+> 
+> const struct evm_ima_xattr_data *xattr_data = xattr_value;
+> - if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
+> - && (xattr_data->type == EVM_XATTR_HMAC))
+> - return -EPERM;
+> + if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
+> + if (!xattr_value_len)
+> + return -EINVAL;
+> + if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
+> + return -EPERM;
+> + }
+> 
+> Huh?  (Sorry about severe whitespace damage.)
+> 
+> Shouldn't there be something like if (xattr_value_len < sizeof(struct
+> evm_ima_xattr_data)) return -EINVAL?
 
-Fix this by setting the pointers to free'd ubi_wl_entry to NULL.
+Prior to commit 2fb1c9a "evm: prohibit userspace writing 'security.evm'
+HMAC value", a process with CAP_SYS_ADMIN could write either an HMAC or
+signature. As the HMAC key should only be known to the kernel, only
+signatures are now allowed.  Instead of "struct evm_ima_xattr_data", the
+code should reflect this change and use "struct signature_v2_hdr".
+We'll clean up this code for the next release.  For now, this patch
+prevents the oops.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/wl.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+thanks,
 
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 6654f191..a12c54b 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1212,9 +1212,12 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
- 
- 	err = do_sync_erase(ubi, e1, vol_id, lnum, 0);
- 	if (err) {
-+		ubi->lookuptbl[e1->pnum] = NULL;
- 		kmem_cache_free(ubi_wl_entry_slab, e1);
--		if (e2)
-+		if (e2) {
-+			ubi->lookuptbl[e2->pnum] = NULL;
- 			kmem_cache_free(ubi_wl_entry_slab, e2);
-+		}
- 		goto out_ro;
- 	}
- 
-@@ -1227,6 +1230,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
- 		       e2->pnum, vol_id, lnum);
- 		err = do_sync_erase(ubi, e2, vol_id, lnum, 0);
- 		if (err) {
-+			ubi->lookuptbl[e2->pnum] = NULL;
- 			kmem_cache_free(ubi_wl_entry_slab, e2);
- 			goto out_ro;
- 		}
-@@ -1266,6 +1270,7 @@ out_not_moved:
- 	ubi_free_vid_hdr(ubi, vid_hdr);
- 	err = do_sync_erase(ubi, e2, vol_id, lnum, torture);
- 	if (err) {
-+		ubi->lookuptbl[e2->pnum] = NULL;
- 		kmem_cache_free(ubi_wl_entry_slab, e2);
- 		goto out_ro;
- 	}
-@@ -1285,6 +1290,8 @@ out_error:
- 	spin_unlock(&ubi->wl_lock);
- 
- 	ubi_free_vid_hdr(ubi, vid_hdr);
-+	ubi->lookuptbl[e1->pnum] = NULL;
-+	ubi->lookuptbl[e2->pnum] = NULL;
- 	kmem_cache_free(ubi_wl_entry_slab, e1);
- 	kmem_cache_free(ubi_wl_entry_slab, e2);
- 
-@@ -1428,6 +1435,7 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
- 	if (shutdown) {
- 		dbg_wl("cancel erasure of PEB %d EC %d", pnum, e->ec);
- 		kfree(wl_wrk);
-+		ubi->lookuptbl[e->pnum] = NULL;
- 		kmem_cache_free(ubi_wl_entry_slab, e);
- 		return 0;
- 	}
-@@ -1474,6 +1482,7 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
- 		return err;
- 	}
- 
-+	ubi->lookuptbl[e->pnum] = NULL;
- 	kmem_cache_free(ubi_wl_entry_slab, e);
- 	if (err != -EIO)
- 		/*
-@@ -1912,6 +1921,7 @@ int ubi_wl_init(struct ubi_device *ubi, struct ubi_attach_info *ai)
- 		ubi_assert(!ubi_is_fm_block(ubi, e->pnum));
- 		ubi->lookuptbl[e->pnum] = e;
- 		if (schedule_erase(ubi, e, aeb->vol_id, aeb->lnum, 0)) {
-+			ubi->lookuptbl[e->pnum] = NULL;
- 			kmem_cache_free(ubi_wl_entry_slab, e);
- 			goto out_free;
- 		}
--- 
-1.8.4.5
+Mimi
 
