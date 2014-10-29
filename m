@@ -1,70 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934186AbaJ2QBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:01:49 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:45538 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933869AbaJ2QBs (ORCPT
+	id S934241AbaJ2QCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:02:41 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:56723 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933751AbaJ2QCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:01:48 -0400
-Date: Wed, 29 Oct 2014 16:58:40 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        Jim Paris <jim@jtan.com>, Oliver Neukum <oliver@neukum.org>,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [PATCH] USB: cdc-acm: only raise DTR on transitions from B0
-Message-ID: <20141029155840.GJ2265@localhost>
-References: <20141029150716.GG2265@localhost>
- <1414596640-28555-1-git-send-email-johan@kernel.org>
- <20141029155602.GC17399@kroah.com>
+	Wed, 29 Oct 2014 12:02:39 -0400
+Date: Wed, 29 Oct 2014 18:02:34 +0200
+From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+To: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Cc: linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de,
+        opw-kernel@googlegroups.com
+Subject: [PATCH] drivers: s390: net: ctcm: migrate variables to handle y2038
+ problem
+Message-ID: <20141029160234.GA5003@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141029155602.GC17399@kroah.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 11:56:02PM +0800, Greg Kroah-Hartman wrote:
-> On Wed, Oct 29, 2014 at 04:30:40PM +0100, Johan Hovold wrote:
-> > Make sure to only raise DTR on transitions from B0 in set_termios.
-> > 
-> > Also allow set_termios to be called from open with a termios_old of
-> > NULL. Note that DTR will not be raised prematurely in this case.
-> > 
-> > Signed-off-by: Johan Hovold <johan@kernel.org>
-> > ---
-> >  drivers/usb/class/cdc-acm.c | 5 +++--
-> >  1 file changed, 3 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-> > index e934e19f49f5..7e58bbfd6319 100644
-> > --- a/drivers/usb/class/cdc-acm.c
-> > +++ b/drivers/usb/class/cdc-acm.c
-> > @@ -980,11 +980,12 @@ static void acm_tty_set_termios(struct tty_struct *tty,
-> >  	/* FIXME: Needs to clear unsupported bits in the termios */
-> >  	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
-> >  
-> > -	if (!newline.dwDTERate) {
-> > +	if (C_BAUD(tty) == B0) {
-> >  		newline.dwDTERate = acm->line.dwDTERate;
-> >  		newctrl &= ~ACM_CTRL_DTR;
-> > -	} else
-> > +	} else if (termios_old && (termios_old->c_cflag & CBAUD) == B0) {
-> >  		newctrl |=  ACM_CTRL_DTR;
-> > +	}
-> >  
-> >  	if (newctrl != acm->ctrlout)
-> >  		acm_set_control(acm, acm->ctrlout = newctrl);
-> 
-> This should go to older kernels as well, right?
+This patch is concerned with migrating the time variables for the s390
+network driver. The changes handle the y2038 problem where timespec will
+overflow in the year 2038. timespec64 and unsigned long long were used
+instead of timespec and unsigned long respectively in two files.
+All timespec variables use monotonic time values through the function
+ktime_get_ts64(). This is to make sure that all the time values
+are calculated from a fixed point.
 
-Yes, if you want.
+Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+---
+v1: Arnd has advised me to provide you with options for time 
+    calculation. The first option: "accuracy" is used in this
+    patch. The second option: "speed" can be done through
+    jiffies and current_kernel_time().
 
-It's fixing handling of B0, but I doubt many people care (hence the
-missing stable tag). Note that set_termios is currently not called
-during open() (but Jim's patch will be relying on this one).
+ drivers/s390/net/ctcm_fsms.c | 18 +++++++++++-------
+ drivers/s390/net/ctcm_main.h |  4 ++--
+ 2 files changed, 13 insertions(+), 9 deletions(-)
 
-Johan
+diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
+index fb92524..233aef8 100644
+--- a/drivers/s390/net/ctcm_fsms.c
++++ b/drivers/s390/net/ctcm_fsms.c
+@@ -250,8 +250,10 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+ 	struct sk_buff *skb;
+ 	int first = 1;
+ 	int i;
+-	unsigned long duration;
+-	struct timespec done_stamp = current_kernel_time(); /* xtime */
++	unsigned long long duration;
++	struct timespec64 done_stamp;
++
++	ktime_get_ts64(&done_stamp);
+ 
+ 	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
+ 
+@@ -307,7 +309,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+ 		spin_unlock(&ch->collect_lock);
+ 		ch->ccw[1].count = ch->trans_skb->len;
+ 		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+-		ch->prof.send_stamp = current_kernel_time(); /* xtime */
++		ktime_get_ts64(&ch->prof.sendstamp);
+ 		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+ 						(unsigned long)ch, 0xff, 0);
+ 		ch->prof.doios_multi++;
+@@ -1224,12 +1226,14 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+ 	int		first = 1;
+ 	int		i;
+ 	__u32		data_space;
+-	unsigned long	duration;
++	unsigned long long	duration;
+ 	struct sk_buff	*peekskb;
+ 	int		rc;
+ 	struct th_header *header;
+ 	struct pdu	*p_header;
+-	struct timespec done_stamp = current_kernel_time(); /* xtime */
++	struct timespec64 done_stamp;
++
++	ktime_get_ts64(&done_stamp);
+ 
+ 	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
+ 			__func__, dev->name, smp_processor_id());
+@@ -1361,7 +1365,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+ 
+ 	ch->ccw[1].count = ch->trans_skb->len;
+ 	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+-	ch->prof.send_stamp = current_kernel_time(); /* xtime */
++	ktime_get_ts64(&ch->prof.send_stamp);
+ 	if (do_debug_ccw)
+ 		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
+ 	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+@@ -1827,7 +1831,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
+ 	fsm_newstate(wch->fsm, CTC_STATE_TX);
+ 
+ 	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
+-	wch->prof.send_stamp = current_kernel_time(); /* xtime */
++	ktime_get_ts64(&wch->prof.send_stamp);
+ 	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
+ 					(unsigned long) wch, 0xff, 0);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
+diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
+index 477c933..ed7d44a 100644
+--- a/drivers/s390/net/ctcm_main.h
++++ b/drivers/s390/net/ctcm_main.h
+@@ -120,8 +120,8 @@ struct ctcm_profile {
+ 	unsigned long doios_single;
+ 	unsigned long doios_multi;
+ 	unsigned long txlen;
+-	unsigned long tx_time;
+-	struct timespec send_stamp;
++	unsigned long long tx_time;
++	struct timespec64 send_stamp;
+ };
+ 
+ /*
+-- 
+1.9.3
+
