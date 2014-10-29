@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549AbaJ2Jhx (ORCPT <rfc822;w@1wt.eu>);
+	id S932131AbaJ2Jh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:37:56 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:49977 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756210AbaJ2Jhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Oct 2014 05:37:53 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36122 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755726AbaJ2Jhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:37:48 -0400
-Message-ID: <5450B545.1050905@ti.com>
-Date: Wed, 29 Oct 2014 11:37:09 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org
+Subject: Re: [PATCH v7] timekeeping: Added a function to return tv_sec portion of ktime_get_ts64()
+Date: Wed, 29 Oct 2014 10:37:42 +0100
+Message-ID: <3371590.dCyFlG7rJg@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.11.1410291020140.5308@nanos>
+References: <20141029091317.GA1138@heena-HP-Compaq-8200-Elite-MT-PC> <alpine.DEB.2.11.1410291020140.5308@nanos>
 MIME-Version: 1.0
-To: Frans Klaver <fransklaver@gmail.com>, Rostislav Lisovy <lisovy@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <michal.vokac@comap.cz>, <sojkam1@fel.cvut.cz>,
-        Rostislav Lisovy <lisovy@merica.cz>
-Subject: Re: [PATCH v3 2/2] mtd: nand: omap: Synchronize the access to the
- ECC engine
-References: <542D46A1.9090905@ti.com>	<1412259404-5202-1-git-send-email-lisovy@merica.cz> <CAH6sp9M0VaH8-4NXcRNUYQS8Zuzbkra6zmgjSebjv8Awj6i0og@mail.gmail.com>
-In-Reply-To: <CAH6sp9M0VaH8-4NXcRNUYQS8Zuzbkra6zmgjSebjv8Awj6i0og@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:V/N8Nt2K3VE5Jag3E8ZwmAk3EgClGwNY9OwVWwxZVdd
+ HegdLcb/k03Zohp8QsoXbR9kvuakzLPDQ2d5jZ7aTYAS0VyHzM
+ acg78QILK/CQTwR26XteOTlqWWuqSQ9yjBmpCDiGI7IsMUqnHD
+ SI2eo6NJNCpEKLGrZFNGnWLu94BZTEjgdDQFFRYcayKLhNndEl
+ R9vcY4lZa3bxFLOl3M1wHoDrCDzJTK6kezlKq6VP4wl3MKmme7
+ Br1LNaXR/uVnnQ3hiyHioi4S5E2CsujgxEmTm6evsGNChbE05s
+ 1LfNbvOV9ZVneQvrL2WRjYNItH3d6vzoAZJgJkVgZV1g4p2SYk
+ QtcsYgRNckgMwXlJeNBw=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rostislav,
-
-Sorry to miss this one.
-
-On 10/29/2014 11:24 AM, Frans Klaver wrote:
-> On Thu, Oct 2, 2014 at 4:16 PM, Rostislav Lisovy <lisovy@gmail.com> wrote:
->>
->> diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
->> index f0dcdb6..dfae46f 100644
->> --- a/drivers/mtd/nand/omap2.c
->> +++ b/drivers/mtd/nand/omap2.c
->> @@ -144,8 +144,13 @@ static u_char bch8_vector[] = {0xf3, 0xdb, 0x14, 0x16, 0x8b, 0xd2, 0xbe, 0xcc,
->>         0xac, 0x6b, 0xff, 0x99, 0x7b};
->>  static u_char bch4_vector[] = {0x00, 0x6b, 0x31, 0xdd, 0x41, 0xbc, 0x10};
->>
->> +/* Shared among all NAND instances to synchronize the access to the ECC Engine */
->> +struct nand_hw_control omap_gpmc_controller = {
->> +       .lock = __SPIN_LOCK_UNLOCKED(omap_gpmc_controller.lock),
->> +       .wq = __WAIT_QUEUE_HEAD_INITIALIZER(omap_gpmc_controller.wq),
->> +};
->> +
+On Wednesday 29 October 2014 10:21:18 Thomas Gleixner wrote:
+> On Wed, 29 Oct 2014, Heena Sirwani wrote:
+> > +time64_t ktime_get_seconds(void)
+> > +{
+> > +     time64_t seconds;
+> > +     struct timekeeper *tk = &tk_core.timekeeper;
+> > +     unsigned int seq;
+> > +
+> > +     WARN_ON(timekeeping_suspended);
 > 
-> Any reason not to make this one static?
+> You want to have the same 64bit logic as you did for
+> ktime_get_real_seconds. So on 64bit it boils down to return
+> tk->ktime_sec.
 > 
-Right. Apart from that, this patch looks good for me.
-So after that change you can add my
+> > +
+> > +     do {
+> > +             seq = read_seqcount_begin(&tk_core.seq);
+> > +             seconds = tk->ktime_sec;
+> > +
+> > +     } while (read_seqcount_retry(&tk_core.seq, seq));
+> 
 
-Acked-by: Roger Quadros <rogerq@ti.com>
+I wonder if we should just make tk->ktime_sec 'unsigned long' and
+avoid the lock for 32-bit as well. Are there any theoretical
+cases where the monotonic time could overflow a 32-bit integer?
 
-cheers,
--roger
+As a minor optimization 's64 nsec_offset' could also be 'long',
+since that only stores a number that is known to be less than
+1000000000.
 
+	Arnd
