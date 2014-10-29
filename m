@@ -1,118 +1,531 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934230AbaJ2QRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:17:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49126 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932994AbaJ2QRG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:17:06 -0400
-Date: Wed, 29 Oct 2014 17:16:57 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKP <lkp@01.org>, linux-kernel@vger.kernel.org, oleg@redhat.com,
-        ebiederm@xmission.com, davem@davemloft.net
-Subject: [PATCH] netdev: Fix sleeping inside wait event
-Message-ID: <20141029161657.GF3337@twins.programming.kicks-ass.net>
-References: <20141028142541.GA19097@wfg-t540p.sh.intel.com>
+	id S934105AbaJ2QVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:21:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53894 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932994AbaJ2QVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:21:12 -0400
+Date: Wed, 29 Oct 2014 11:21:05 -0500
+From: Benoit Parrot <bparrot@ti.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>
+Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
+Message-ID: <20141029162105.GA29965@ti.com>
+References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
+ <CAAVeFuK4PaFbbYjUsvA-oO78P5qmQvyGqG+Ov4GLghoC=yPAoA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <20141028142541.GA19097@wfg-t540p.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAVeFuK4PaFbbYjUsvA-oO78P5qmQvyGqG+Ov4GLghoC=yPAoA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 10:25:41PM +0800, Fengguang Wu wrote:
-> [  122.247299] ------------[ cut here ]------------
-> [  122.247328] WARNING: CPU: 0 PID: 61 at kernel/sched/core.c:7312 __might_sleep+0x50/0x249()
-> [  122.247334] do not call blocking ops when !TASK_RUNNING; state=2 set at [<c106ffd9>] prepare_to_wait+0x3c/0x5f
-> [  122.247339] Modules linked in:
-> [  122.247349] CPU: 0 PID: 61 Comm: kworker/u2:1 Not tainted 3.18.0-rc2-00037-g24574709 #136
-> [  122.247350] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  122.247368] Workqueue: netns cleanup_net
-> [  122.247377]  c1071d83 d2b83dd8 d2b83dac c15887b1 d2b83dc8 c104c4c6 00001c90 c1068ebf
-> [  122.247383]  00000000 c17b67e3 0000026d d2b83de0 c104c508 00000009 d2b83dd8 c17b5d4b
-> [  122.247388]  d2b83df4 d2b83e0c c1068ebf c17b5cec 00001c90 c17b5d4b 00000002 c106ffd9
-> [  122.247389] Call Trace:
-> [  122.247393]  [<c1071d83>] ? down_trylock+0x23/0x2c
-> [  122.247402]  [<c15887b1>] dump_stack+0x16/0x18
-> [  122.247413]  [<c104c4c6>] warn_slowpath_common+0x66/0x7d
-> [  122.247416]  [<c1068ebf>] ? __might_sleep+0x50/0x249
-> [  122.247419]  [<c104c508>] warn_slowpath_fmt+0x2b/0x2f
-> [  122.247422]  [<c1068ebf>] __might_sleep+0x50/0x249
-> [  122.247424]  [<c106ffd9>] ? prepare_to_wait+0x3c/0x5f
-> [  122.247426]  [<c106ffd9>] ? prepare_to_wait+0x3c/0x5f
-> [  122.247432]  [<c158c364>] mutex_lock_nested+0x23/0x347
-> [  122.247436]  [<c1075105>] ? trace_hardirqs_on+0xb/0xd
-> [  122.247439]  [<c158eb0c>] ? _raw_spin_unlock_irqrestore+0x66/0x78
-> [  122.247445]  [<c1570e10>] rtnl_lock+0x14/0x16
-> [  122.247449]  [<c156516b>] default_device_exit_batch+0x54/0xf3
-> [  122.247452]  [<c1570e1f>] ? rtnl_unlock+0xd/0xf
-> [  122.247454]  [<c1070233>] ? __wake_up_sync+0x12/0x12
-> [  122.247461]  [<c155e35d>] ops_exit_list+0x20/0x40
-> [  122.247464]  [<c155ec96>] cleanup_net+0xbe/0x140
-> [  122.247473]  [<c105ffe4>] process_one_work+0x29e/0x643
-> [  122.247479]  [<c1061215>] worker_thread+0x23a/0x311
-> [  122.247482]  [<c1060fdb>] ? rescuer_thread+0x204/0x204
-> [  122.247486]  [<c10648cc>] kthread+0xbe/0xc3
-> [  122.247490]  [<c158f4c0>] ret_from_kernel_thread+0x20/0x30
-> [  122.247492]  [<c106480e>] ? kthread_stop+0x364/0x364
-> [  122.247495] ---[ end trace 2073c37ae3c8b3b4 ]---
+Alexandre,
 
-Ah, more of that. Thanks!
+Thanks for the feedback.
 
-Dave, this relies on bits currently in tip/sched/core, if you're ok I'll
-merge it through that tree.
+Alexandre Courbot <gnurou@gmail.com> wrote on Wed [2014-Oct-29 16:09:59 +0900]:
+> Sorry for the delay in reviewing. Adding Jiri and Pantelis who might
+> want to extend over this patch and thus will likely have interesting
+> comments to make.
+> 
+> On Wed, Oct 22, 2014 at 5:09 AM, Benoit Parrot <bparrot@ti.com> wrote:
+> > Based on Boris Brezillion work this is a reworked patch
+> > of his initial GPIO hogging mechanism.
+> > This patch provides a way to initally configure specific GPIO
+> > when the gpio controller is probe.
+> 
+> Typo nit: s/probe/probed
+Will fix.
 
----
-Subject: netdev: Fix sleeping inside wait event
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed Oct 29 17:04:56 CET 2014
+> 
+> >
+> > The actual DT scanning to collect the GPIO specific data is performed
+> > as part of the gpiochip_add().
+> >
+> > The purpose of this is to allows specific GPIOs to be configured
+> > without any driver specific code.
+> > This particularly usueful because board design are getting
+> 
+> s/suseful/useful
+> 
+> > increassingly complex and given SoC pins can now have upward
+> 
+> s/increassingly/increasingly
 
-rtnl_lock_unregistering() takes rtnl_lock() -- a mutex -- inside a
-wait loop. The wait loop relies on current->state to function, but so
-does mutex_lock(), nesting them makes for the inner to destroy the
-outer state.
+Will fix.
 
-Fix this using the new wait_woken() bits.
+> 
+> > of 10 mux values a lot of connections are now dependent on
+> > external IO muxes to switch various modes and combination.
+> >
+> > Specific drivers should not necessarily need to be aware of
+> > what accounts to a specific board implementation. This board level
+> > "description" should be best kept as part of the dts file.
+> >
+> > Signed-off-by: Benoit Parrot <bparrot@ti.com>
+> > ---
+> >  Documentation/devicetree/bindings/gpio/gpio.txt | 33 +++++++++
+> >  drivers/gpio/gpiolib-of.c                       | 99 +++++++++++++++++++++++++
+> >  drivers/gpio/gpiolib.c                          | 81 ++++++++++++++++++++
+> >  include/linux/of_gpio.h                         | 11 +++
+> >  4 files changed, 224 insertions(+)
+> >
+> > diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+> > index 3fb8f53..a9700d8 100644
+> > --- a/Documentation/devicetree/bindings/gpio/gpio.txt
+> > +++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+> 
+> Note: changes to DT bindings documentation should generally come as a
+> separate patch.
+Ok.
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Eric Biederman <ebiederm@xmission.com>
-Cc: David Miller <davem@davemloft.net>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
----
- net/core/dev.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> > @@ -103,6 +103,26 @@ Every GPIO controller node must contain both an empty "gpio-controller"
+> >  property, and a #gpio-cells integer property, which indicates the number of
+> >  cells in a gpio-specifier.
+> >
+> > +It might contain GPIO hog definitions. GPIO hogging is a mechanism providing
+> > +automatic GPIO request and configuration as part of the gpio-controller's
+> > +driver probe function.
+> > +
+> > +Each GPIO hog definition is represented as a child node of the GPIO controller.
+> > +Required properties:
+> > +- gpios: store the gpio information (id, flags, ...). Shall contain the
+> > +  number of cells specified in its parent node (GPIO controller node).
+> 
+> If would be nice to be able to specify several GPIO references to that
+> they can be all set to the same configuration in one row instead of
+> requiring one node each.
+> 
+> > +- input: a property specifying to set the GPIO direction as input.
+> > +- output-high: a property specifying to set the GPIO direction to output with
+> > +  the value high.
+> > +- output-low: a property specifying to set the GPIO direction to output with
+> > +  the value low.
+> 
+> Wouldn't a "direction" property taking one of the values "input",
+> "output-low" or "output-high" be easier to parse and generally
+> clearer?
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -7196,11 +7196,10 @@ static void __net_exit rtnl_lock_unregis
- 	 */
- 	struct net *net;
- 	bool unregistering;
--	DEFINE_WAIT(wait);
-+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
- 
-+	add_wait_queue(&netdev_unregistering_wq, &wait);
- 	for (;;) {
--		prepare_to_wait(&netdev_unregistering_wq, &wait,
--				TASK_UNINTERRUPTIBLE);
- 		unregistering = false;
- 		rtnl_lock();
- 		list_for_each_entry(net, net_list, exit_list) {
-@@ -7212,9 +7211,10 @@ static void __net_exit rtnl_lock_unregis
- 		if (!unregistering)
- 			break;
- 		__rtnl_unlock();
--		schedule();
-+
-+		wait_woken(&wait, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
- 	}
--	finish_wait(&netdev_unregistering_wq, &wait);
-+	remove_wait_queue(&netdev_unregistering_wq, &wait);
- }
- 
- static void __net_exit default_device_exit_batch(struct list_head *net_list)
+I guess here you mean something like this:
+	...
+	line_y: line_y {
+		gpios = <15 0>;
+		direction = <output-low>;
+	};
+
+Not sure about easier to parse, but it would be clearer.
+
+> 
+> > +
+> > +Optional properties:
+> > +- line-name: the GPIO label name. If not present the node name is used.
+> 
+> I guess we also could use this for naming the GPIO during its export
+> if we decide to allow this in a near-future patch.
+> 
+Right.
+
+> > +
+> > +A GPIO controller can request GPIO hogs using the "gpio-hogs" property, which
+> > +encodes a list of requested GPIO hogs.
+> > +
+> >  Example of two SOC GPIO banks defined as gpio-controller nodes:
+> >
+> >         qe_pio_a: gpio-controller@1400 {
+> > @@ -110,6 +130,19 @@ Example of two SOC GPIO banks defined as gpio-controller nodes:
+> >                 reg = <0x1400 0x18>;
+> >                 gpio-controller;
+> >                 #gpio-cells = <2>;
+> > +               gpio-hogs = <&line_b>;
+> > +
+> > +               /* line_a hog is defined but not enabled in this example*/
+> > +               line_a: line_a {
+> > +                       gpios = <5 0>;
+> > +                       input;
+> > +               };
+> > +
+> > +               line_b: line_b {
+> > +                       gpios = <6 0>;
+> > +                       output-low;
+> > +                       line-name = "foo-bar-gpio";
+> > +               };
+> 
+> I think it might be good to group the hog nodes such as to allow
+> complex configurations to be set in one go, à la pinmux:
+
+See below.
+> 
+>                 gpio-controller;
+>                 #gpio-cells = <2>;
+> +               gpio-hogs = <&line_b>;
+> +
+> +               line_a: line_a {
+> +                      line_a {
+> +                               gpios = <5 0>;
+> +                               input;
+> +                      };
+> +                      line_c {
+> +                               gpios = <7 0>;
+> +                               inputl
+> +                      };
+> +               };
+> +
+> +               line_b: line_b {
+> +                       line_b {
+> +                               gpios = <6 0>;
+> +                               output-low;
+> +                               line-name = "foo-bar-gpio";
+> +                       };
+> +               };
+> 
+> Here if you want to enable the first configuration you don't need to
+> specify all the lines one by one, you just need to select the right
+> group.
+> 
+> I wonder if such usage of child nodes could not interfere with GPIO
+> drivers (existing or to be) that need to use child nodes for other
+> purposes. Right now there is no way to distinguish a hog node from a
+> node that serves another purpose, and that might become a problem in
+> the future. Not sure how that should be addressed though - maybe by
+> enforcing a "-hog" suffix for the group nodes, e.g. line_a-hog?
+> Comments from people more experienced with DT would be nice.
+
+I did consider a "pinmux" flavored format (not sure how hard to parse it would be).
+It would allow grouping if nothing else.
+
+	/* Line syntax: line_name <gpio# flags> direction-value [export] */
+	gpio-hogs = <&group_y>;
+
+	group_y: group_y {
+		gpio-hogs-group = <
+			line_x <15 0> output-low
+			line_y <16 0> output-high export
+			line_z <17 0> input
+		>;
+	};
+
+> 
+> >         };
+> >
+> >         qe_pio_e: gpio-controller@1460 {
+> > diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+> > index 604dbe6..7308dfc 100644
+> > --- a/drivers/gpio/gpiolib-of.c
+> > +++ b/drivers/gpio/gpiolib-of.c
+> > @@ -111,6 +111,105 @@ int of_get_named_gpio_flags(struct device_node *np, const char *list_name,
+> >  EXPORT_SYMBOL(of_get_named_gpio_flags);
+> >
+> >  /**
+> > + * of_get_gpio_hog() - Get a GPIO hog descriptor, names and flags for GPIO API
+> > + * @np:                device node to get GPIO from
+> > + * @index:     index of the GPIO
+> > + * @name:      GPIO line name
+> > + * @flags:     a flags pointer to fill in
+> > + *
+> > + * Returns GPIO descriptor to use with Linux GPIO API, or one of the errno
+> > + * value on the error condition.
+> > + */
+> > +struct gpio_desc *of_get_gpio_hog(struct device_node *np, int index,
+> > +                                 const char **name, unsigned long *flags)
+> > +{
+> > +       struct device_node *cfg_np, *chip_np;
+> > +       enum of_gpio_flags xlate_flags;
+> > +       unsigned long req_flags = 0;
+> > +       struct gpio_desc *desc;
+> > +       struct gg_data gg_data = {
+> > +               .flags = &xlate_flags,
+> > +               .out_gpio = NULL,
+> > +       };
+> > +       u32 tmp;
+> > +       int i;
+> > +       int ret;
+> > +
+> > +       cfg_np = of_parse_phandle(np, "gpio-hogs", index);
+> > +       if (!cfg_np)
+> > +               return ERR_PTR(-EINVAL);
+> > +
+> > +       chip_np = cfg_np->parent;
+> > +       if (!chip_np) {
+> > +               desc = ERR_PTR(-EINVAL);
+> > +               goto out;
+> > +       }
+> > +
+> > +       ret = of_property_read_u32(chip_np, "#gpio-cells", &tmp);
+> > +       if (ret) {
+> > +               desc = ERR_PTR(ret);
+> > +               goto out;
+> > +       }
+> > +
+> > +       if (tmp > MAX_PHANDLE_ARGS) {
+> > +               desc = ERR_PTR(-EINVAL);
+> > +               goto out;
+> > +       }
+> > +
+> > +       gg_data.gpiospec.args_count = tmp;
+> > +       gg_data.gpiospec.np = chip_np;
+> > +       for (i = 0; i < tmp; i++) {
+> > +               ret = of_property_read_u32(cfg_np, "gpios",
+> > +                                          &gg_data.gpiospec.args[i]);
+> > +               if (ret) {
+> > +                       desc = ERR_PTR(ret);
+> > +                       goto out;
+> > +               }
+> > +       }
+> > +
+> > +       gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+> > +       if (!gg_data.out_gpio) {
+> > +               if (cfg_np->parent == np)
+> > +                       desc = ERR_PTR(-ENXIO);
+> > +               else
+> > +                       desc = ERR_PTR(-EPROBE_DEFER);
+> > +
+> > +               goto out;
+> > +       }
+> > +
+> > +       if (xlate_flags & OF_GPIO_ACTIVE_LOW)
+> > +               req_flags |= GPIOF_ACTIVE_LOW;
+> > +
+> > +       if (of_property_read_bool(cfg_np, "input")) {
+> > +               req_flags |= GPIOF_DIR_IN;
+> > +       } else if (of_property_read_bool(cfg_np, "output-high")) {
+> > +               req_flags |= GPIOF_INIT_HIGH;
+> > +       } else if (!of_property_read_bool(cfg_np, "output-low")) {
+> > +               desc = ERR_PTR(-EINVAL);
+> > +               goto out;
+> > +       }
+> 
+> That's why I would prefer a "direction" property instead of these 3
+> ones: because if you have the following node:
+> 
+> line_foo {
+>         gpios = <1 GPIO_ACTIVE_HIGH>;
+>         input;
+>         output-high;
+> };
+> 
+> Then this code will not trigger an error and will just configure the
+> GPIO as input.
+
+Understood.
+
+> 
+> > +
+> > +       if (of_property_read_bool(cfg_np, "open-drain-line"))
+> > +               req_flags |= GPIOF_OPEN_DRAIN;
+> > +
+> > +       if (of_property_read_bool(cfg_np, "open-source-line"))
+> > +               req_flags |= GPIOF_OPEN_DRAIN;
+> > +
+> > +       if (name && of_property_read_string(cfg_np, "line-name", name))
+> > +               *name = cfg_np->name;
+> > +
+> > +       if (flags)
+> > +               *flags = req_flags;
+> > +
+> > +       desc = gg_data.out_gpio;
+> > +
+> > +out:
+> > +       of_node_put(cfg_np);
+> > +
+> > +       return desc;
+> > +}
+> > +
+> > +/**
+> >   * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
+> >   * @gc:                pointer to the gpio_chip structure
+> >   * @np:                device node of the GPIO chip
+> > diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> > index e8e98ca..b6f5bdb 100644
+> > --- a/drivers/gpio/gpiolib.c
+> > +++ b/drivers/gpio/gpiolib.c
+> > @@ -55,6 +55,9 @@ static DEFINE_MUTEX(gpio_lookup_lock);
+> >  static LIST_HEAD(gpio_lookup_list);
+> >  LIST_HEAD(gpio_chips);
+> >
+> > +struct gpio_desc *__must_check gpiod_get_hog_index(struct device *dev,
+> > +                                                  unsigned int idx);
+> > +
+> >  static inline void desc_set_label(struct gpio_desc *d, const char *label)
+> >  {
+> >         d->label = label;
+> > @@ -226,6 +229,8 @@ int gpiochip_add(struct gpio_chip *chip)
+> >         int             status = 0;
+> >         unsigned        id;
+> >         int             base = chip->base;
+> > +       struct gpio_desc        *desc;
+> > +       int             i;
+> >
+> >         if ((!gpio_is_valid(base) || !gpio_is_valid(base + chip->ngpio - 1))
+> >                         && base >= 0) {
+> > @@ -275,6 +280,16 @@ int gpiochip_add(struct gpio_chip *chip)
+> >         of_gpiochip_add(chip);
+> >         acpi_gpiochip_add(chip);
+> >
+> > +       /*
+> > +        * Instantiate GPIO hogs
+> > +        * There shouldn't be mores hogs then gpio available on this chip
+> 
+> s/then/than
+
+Will fix.
+
+> 
+> > +        */
+> > +       for (i = 0; i < chip->ngpio; i++) {
+> > +               desc = gpiod_get_hog_index(chip->dev, i);
+> > +               if (IS_ERR(desc))
+> > +                       break;
+> > +       }
+> 
+> chip->ngpio? Isn't there a better way to know the number of phandles
+> in your gpio-hogs property?
+
+Maybe there is. I'll look into it.
+
+> 
+> Also you may have an error returned either because you reached the end
+> of the list, or because the hog configuration itself failed. In the
+> latter case don't you want to continue to go through the list?
+Understood.
+
+> 
+> Finally your desc variable should be declared within this loop since
+> it is not used elsewhere.
+> 
+Understood.
+
+> > +
+> >         if (status)
+> >                 goto fail;
+> >
+> > @@ -1742,6 +1757,72 @@ struct gpio_desc *__must_check __gpiod_get_index_optional(struct device *dev,
+> >  EXPORT_SYMBOL_GPL(__gpiod_get_index_optional);
+> >
+> >  /**
+> > + * gpiod_get_hog_index - obtain a GPIO from a multi-index GPIO hog
+> > + * @dev:       GPIO consumer
+> > + * @idx:       index of the GPIO to obtain
+> > + *
+> > + * This should only be used by the gpiochip_add to request/set GPIO initial
+> > + * configuration.
+> > + *
+> > + * Return a valid GPIO descriptor, or an IS_ERR() condition in case of error.
+> > + */
+> > +struct gpio_desc *__must_check gpiod_get_hog_index(struct device *dev,
+> > +                                                  unsigned int idx)
+> > +{
+> > +       struct gpio_desc *desc = NULL;
+> > +       int err;
+> > +       unsigned long flags;
+> > +       const char *name;
+> > +
+> > +       /* Using device tree? */
+> > +       if (IS_ENABLED(CONFIG_OF) && dev && dev->of_node)
+> > +               desc = of_get_gpio_hog(dev->of_node, idx, &name, &flags);
+> > +
+> > +       if (!desc)
+> > +               return ERR_PTR(-ENOTSUPP);
+> > +       else if (IS_ERR(desc))
+> > +               return desc;
+> > +
+> > +       dev_dbg(dev, "gpio-hog: GPIO:%d (%s) as %s%s\n",
+> > +               desc_to_gpio(desc), name, (flags&GPIOF_DIR_IN)?"input":"output",
+> > +               (flags&GPIOF_DIR_IN)?"":(flags&GPIOF_INIT_HIGH)?"/high":"/low");
+> > +
+> 
+> ...
+
+I guess this means to remove the dev_dbg code?
+
+> 
+> > +       err = gpiod_request(desc, name);
+> > +       if (err)
+> > +               return ERR_PTR(err);
+> > +
+> > +       if (flags & GPIOF_OPEN_DRAIN)
+> > +               set_bit(FLAG_OPEN_DRAIN, &desc->flags);
+> > +
+> > +       if (flags & GPIOF_OPEN_SOURCE)
+> > +               set_bit(FLAG_OPEN_SOURCE, &desc->flags);
+> > +
+> > +       if (flags & GPIOF_ACTIVE_LOW)
+> > +               set_bit(FLAG_ACTIVE_LOW, &desc->flags);
+> > +
+> > +       if (flags & GPIOF_DIR_IN)
+> > +               err = gpiod_direction_input(desc);
+> > +       else
+> > +               err = gpiod_direction_output_raw(desc,
+> > +                               (flags & GPIOF_INIT_HIGH) ? 1 : 0);
+> > +
+> 
+> This part of the code is very similar to what is found in
+> __gpiod_get_index. Could you maybe try to extract the common code into
+> its own function and call it from both sites instead of duplicating
+> code?
+
+Agreed.
+Originally I was making use of gpio_request_one, but then I noticed it was move to the "_legacy" and would probably dissapear.
+
+> 
+> > +       if (err)
+> > +               goto free_gpio;
+> > +
+> > +       if (flags & GPIOF_EXPORT) {
+> > +               err = gpiod_export(desc, flags & GPIOF_EXPORT_CHANGEABLE);
+> > +               if (err)
+> > +                       goto free_gpio;
+> 
+> Right now export is not possible so I don't think you need that block.
+
+Unless the export feature is requested along with this pacth.
+
+> 
+> > +       }
+> > +
+> > +       return desc;
+> > +
+> > +free_gpio:
+> > +       gpiod_free(desc);
+> > +       return ERR_PTR(err);
+> > +}
+> > +
+> > +/**
+> >   * gpiod_put - dispose of a GPIO descriptor
+> >   * @desc:      GPIO descriptor to dispose of
+> >   *
+> > diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+> > index 38fc050..52d154c 100644
+> > --- a/include/linux/of_gpio.h
+> > +++ b/include/linux/of_gpio.h
+> > @@ -59,6 +59,9 @@ extern int of_gpio_simple_xlate(struct gpio_chip *gc,
+> >                                 const struct of_phandle_args *gpiospec,
+> >                                 u32 *flags);
+> >
+> > +extern struct gpio_desc *of_get_gpio_hog(struct device_node *np, int index,
+> > +                                        const char **name,
+> > +                                        unsigned long *flags);
+> 
+> This function is gpiolib-private, therefore it should be declared in
+> drivers/gpio/gpiolib.h alongside with the declaration of
+> of_get_named_gpiod_flags.
+
+Ah yes would be much better.
+
+> 
+> If I understood the latest discussions correctly we might want to add
+> an export (and named export) feature on top of this patch. Linus, am I
+> correct to understand that you are not opposed to both features? In
+> this case, we might want to go ahead with the merging of one of the
+> named GPIOs patches, so that Jiri and Pantelis can implement export
+> based on this patch.
