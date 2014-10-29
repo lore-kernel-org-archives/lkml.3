@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735AbaJ2XJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 19:09:17 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41076 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757279AbaJ2XJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 19:09:16 -0400
-Date: Wed, 29 Oct 2014 18:09:12 -0500
-From: Benoit Parrot <bparrot@ti.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
-Message-ID: <20141029230912.GF29965@ti.com>
-References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
- <20141029104559.GC21251@lukather>
- <20141029164122.GC29965@ti.com>
- <20141029164746.GD21251@lukather>
+	id S1757862AbaJ2XJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 19:09:25 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:58633 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757752AbaJ2XJV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 19:09:21 -0400
+Date: Thu, 30 Oct 2014 00:09:13 +0100
+From: Rabin Vincent <rabin@rab.in>
+To: kishon@ti.com, tony@atomide.com
+Cc: rogerq@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ghorbel@pivasoftware.com, linux-omap@vger.kernel.org
+Subject: Re: [PATCHv2] phy: omap-usb2: Enable runtime PM of omap-usb2 phy
+ properly
+Message-ID: <20141029230913.GA26977@debian>
+References: <20141006194418.GA399@debian>
+ <1412679771-8293-1-git-send-email-ghorbel@pivasoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141029164746.GD21251@lukather>
+In-Reply-To: <1412679771-8293-1-git-send-email-ghorbel@pivasoftware.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maxime Ripard <maxime.ripard@free-electrons.com> wrote on Wed [2014-Oct-29 17:47:46 +0100]:
-> On Wed, Oct 29, 2014 at 11:41:22AM -0500, Benoit Parrot wrote:
-> > Maxime Ripard <maxime.ripard@free-electrons.com> wrote on Wed [2014-Oct-29 11:45:59 +0100]:
-> > > Hi,
-> > > 
-> > > On Tue, Oct 21, 2014 at 03:09:58PM -0500, Benoit Parrot wrote:
-> > > > Based on Boris Brezillion work this is a reworked patch
-> > > > of his initial GPIO hogging mechanism.
-> > > > This patch provides a way to initally configure specific GPIO
-> > > > when the gpio controller is probe.
-> > > > 
-> > > > The actual DT scanning to collect the GPIO specific data is performed
-> > > > as part of the gpiochip_add().
-> > > > 
-> > > > The purpose of this is to allows specific GPIOs to be configured
-> > > > without any driver specific code.
-> > > > This particularly usueful because board design are getting
-> > > > increassingly complex and given SoC pins can now have upward
-> > > > of 10 mux values a lot of connections are now dependent on
-> > > > external IO muxes to switch various modes and combination.
-> > > > 
-> > > > Specific drivers should not necessarily need to be aware of
-> > > > what accounts to a specific board implementation. This board level
-> > > > "description" should be best kept as part of the dts file.
-> > > > 
-> > > > Signed-off-by: Benoit Parrot <bparrot@ti.com>
-> > > 
-> > > I've been thinking about this for quite some time, it's good to see
-> > > some progress on that :)
-> > > 
-> > > However, I have a slightly different use case for it: the Allwinner
-> > > SoCs have a vdd pin coming in for every gpio bank. Nothing out of the
-> > > ordinary so far, except that some of the boards are using a
-> > > GPIO-controlled regulator to feed another bank vdd. That obviously
-> > > causes a chicken-egg issue, since for the gpio-regulator driver to
-> > > probe, it needs to gpio driver, and for the gpio driver to probe, it
-> > > needs the regulator driver.
-> > 
-> > Unless the gpio controlling the vdd pin is from the same bank your
-> > trying to power up I do not see the issue here.
-> 
-> Not the same bank, but the same driver.
+Unless I'm missing something, this patch appears to have still not been
+picked up.  It would be nice if it can go in for 3.18 so that we have
+working USB on pandaboard again at least in that release.
 
-How are you currently working around this issue?
+Tony, would you mind carrying it as OMAP maintainer since we haven't
+heard anything from Kishon (the PHY maintainer) about this?  It's been
+acked by Roger (whose patch introduced the problem).
 
+Thanks.
+
+(leaving the patch intact below)
+
+On Tue, Oct 07, 2014 at 12:02:51PM +0100, Oussama Ghorbel wrote:
+> The USB OTG port does not work since v3.16 on omap platform.
+> This is a regression introduced by the commit
+> eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
+>  and remove).
+> This because the call to pm_runtime_enable() function is moved after the
+> call to devm_phy_create() function, which has side effect since later in
+> the subsequent calls of devm_phy_create() there is a check with
+> pm_runtime_enabled() to configure few things.
 > 
+> Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
+> ---
+>  drivers/phy/phy-omap-usb2.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+> index 93d7835..acc13f8 100644
+> --- a/drivers/phy/phy-omap-usb2.c
+> +++ b/drivers/phy/phy-omap-usb2.c
+> @@ -262,14 +262,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
+>  	otg->phy		= &phy->phy;
+>  
+>  	platform_set_drvdata(pdev, phy);
+> +	pm_runtime_enable(phy->dev);
+>  
+>  	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
+> -	if (IS_ERR(generic_phy))
+> +	if (IS_ERR(generic_phy)) {
+> +		pm_runtime_disable(phy->dev);
+>  		return PTR_ERR(generic_phy);
+> +	}
+>  
+>  	phy_set_drvdata(generic_phy, phy);
+>  
+> -	pm_runtime_enable(phy->dev);
+>  	phy_provider = devm_of_phy_provider_register(phy->dev,
+>  			of_phy_simple_xlate);
+>  	if (IS_ERR(phy_provider)) {
 > -- 
-> Maxime Ripard, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
-
-
+> 1.8.3.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
