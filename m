@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786AbaJ2UuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:50:23 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:33300 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359AbaJ2UuV (ORCPT
+	id S1756938AbaJ2Uu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:50:27 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55193 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752359AbaJ2UuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:50:21 -0400
+	Wed, 29 Oct 2014 16:50:24 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kevin Hilman <khilman@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Preeti Murthy <preeti.lkml@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        patches@linaro.org, Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH V2 3/5] cpuidle: idle: menu: Don't reflect when a state selection failed
+Date: Wed, 29 Oct 2014 22:11 +0100
+Message-ID: <1509380.Ri3TuW8Kom@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <7h8ujybyuk.fsf@deeprootsystems.com>
+References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org> <544FE032.5050900@linaro.org> <7h8ujybyuk.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-In-Reply-To: <1414577167-25666-1-git-send-email-kever.yang@rock-chips.com>
-References: <1414577167-25666-1-git-send-email-kever.yang@rock-chips.com>
-Date: Wed, 29 Oct 2014 13:50:20 -0700
-X-Google-Sender-Auth: SHqW5UTLBC5stkC36fb0zhTI2-g
-Message-ID: <CAD=FV=Vnt7Pg9V_cE0S8u-2X2hDsPN8huwy8xKv1UwvWEo-Hyw@mail.gmail.com>
-Subject: Re: [PATCH] clk: rockchip: disable unused clocks
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, han jiang <hj@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+On Wednesday, October 29, 2014 09:54:43 AM Kevin Hilman wrote:
+> Daniel Lezcano <daniel.lezcano@linaro.org> writes:
+> 
+> > On 10/28/2014 08:01 AM, Preeti Murthy wrote:
+> >> On Thu, Oct 23, 2014 at 2:31 PM, Daniel Lezcano
+> >> <daniel.lezcano@linaro.org> wrote:
+> >>> In the current code, the check to reflect or not the outcoming state is done
+> >>> against the idle state which has been chosen and its value.
+> >>>
+> >>> Instead of doing a check in each of the reflect functions, just don't call reflect
+> >>> if something went wrong in the idle path.
+> >>>
+> >>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >>> Acked-by: Nicolas Pitre <nico@linaro.org>
+> >>> ---
+> >>>   drivers/cpuidle/governors/ladder.c | 3 +--
+> >>>   drivers/cpuidle/governors/menu.c   | 4 +---
+> >>>   kernel/sched/idle.c                | 3 ++-
+> >>>   3 files changed, 4 insertions(+), 6 deletions(-)
+> >>>
+> >>> diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+> >>> index fb396d6..c0b36a8 100644
+> >>> --- a/drivers/cpuidle/governors/ladder.c
+> >>> +++ b/drivers/cpuidle/governors/ladder.c
+> >>> @@ -165,8 +165,7 @@ static int ladder_enable_device(struct cpuidle_driver *drv,
+> >>>   static void ladder_reflect(struct cpuidle_device *dev, int index)
+> >>>   {
+> >>>          struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
+> >>> -       if (index > 0)
+> >>> -               ldev->last_state_idx = index;
+> >>> +       ldev->last_state_idx = index;
+> >>>   }
+> >>>
+> >>>   static struct cpuidle_governor ladder_governor = {
+> >>> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> >>> index a17515f..3907301 100644
+> >>> --- a/drivers/cpuidle/governors/menu.c
+> >>> +++ b/drivers/cpuidle/governors/menu.c
+> >>> @@ -365,9 +365,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
+> >>>   static void menu_reflect(struct cpuidle_device *dev, int index)
+> >>>   {
+> >>>          struct menu_device *data = &__get_cpu_var(menu_devices);
+> >>> -       data->last_state_idx = index;
+> >>> -       if (index >= 0)
+> >>> -               data->needs_update = 1;
+> >>> +       data->needs_update = 1;
+> >>
+> >> Why is the last_state_idx not getting updated ?
+> >
+> > Oups, right. This is missing.
+> >
+> > Thanks for pointing this out.
+> >
+> > By the way, I don't think a back end driver is changing the selected
+> > state currently and I am not sure this is desirable since we want to
+> > trust the state we are going (as a best effort). 
+> 
+> FYI, the OMAP3 backend driver can does not always obey the selected
+> state, and will return a different state than the one requested.
 
-On Wed, Oct 29, 2014 at 3:06 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> The rockchip clock driver use CLK_IGNORE_UNUSED flag to make sure
-> all the clocks are available like default power on state.
-> We have implement the clock manage in most of rockchip drivers,
-> it is time to remove it for power save.
-> Instead we add CLK_IGNORE_UNUSED for some clock nodes which should
-> be on during boot or no module driver in kernel will initialize it.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
->  drivers/clk/rockchip/clk-rk3188.c |  32 ++++-----
->  drivers/clk/rockchip/clk-rk3288.c | 146 +++++++++++++++++++-------------------
->  drivers/clk/rockchip/clk.c        |   9 ---
->  3 files changed, 90 insertions(+), 97 deletions(-)
+The ACPI driver can do that as well.
 
-Your patch didn't seem to apply to the top of Heiko's
-"v3.19-clk/next".  Where should it apply to?
-
-> -       GATE(ACLK_CPU, "aclk_cpu", "aclk_cpu_pre", 0,
-> +       GATE(0, "aclk_cpu", "aclk_cpu_pre", CLK_IGNORE_UNUSED,
->                         RK3288_CLKGATE_CON(0), 3, GFLAGS),
-
-It seems strange to me that you're removing the ACLK_CPU ID here.  Was
-that on purpose?
-
-> -       COMPOSITE_NOMUX(PCLK_CPU, "pclk_cpu", "aclk_cpu_pre", 0,
-> +       COMPOSITE_NOMUX(0, "pclk_cpu", "aclk_cpu_pre", CLK_IGNORE_UNUSED,
->                         RK3288_CLKSEL_CON(1), 12, 3, DFLAGS,
->                         RK3288_CLKGATE_CON(0), 5, GFLAGS),
-
-Here too for PCLK_CPU.  There are a few others as well.
-
-
-I'll also say that when I applied this atop my local tree that USB
-stopped working.  I just see:
-
-[ 1647.626747] hub 2-1:1.0: hub_port_status failed (err = -110)
-[ 1657.626746] hub 2-1:1.0: hub_port_status failed (err = -110)
-
-...over and over and over again.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
