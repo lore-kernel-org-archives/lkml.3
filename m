@@ -1,437 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794AbaJ2WCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:02:52 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:49001 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757019AbaJ2WBK (ORCPT
+	id S1757084AbaJ2WDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:03:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53130 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757849AbaJ2WD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:01:10 -0400
-Message-Id: <20141029220108.245270017@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Wed, 29 Oct 2014 17:56:09 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [RFA][PATCH 7/8] fs: Convert show_fdinfo functions to void
-References: <20141029215602.535533597@goodmis.org>
+	Wed, 29 Oct 2014 18:03:26 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org, marcel@holtmann.org,
+        desrt@desrt.ca, hadess@hadess.net, dh.herrmann@gmail.com,
+        tixxdz@opendz.org, gregkh@linuxfoundation.org,
+        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no
+Subject: [PATCH 00/12] Add kdbus implementation
+Date: Wed, 29 Oct 2014 15:00:44 -0700
+Message-Id: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0007-fs-Convert-show_fdinfo-functions-to-void.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+kdbus is a kernel-level IPC implementation that aims for resemblance to
+the the protocol layer with the existing userspace D-Bus daemon while
+enabling some features that couldn't be implemented before in userspace.
 
-[ REQUEST FOR ACKS ]
+The documentation added by the first patch in this series is meant to
+explain all protocol and API details comprehensively, but here's a terse
+list of the kdbus key features:
 
-seq_printf functions shouldn't really check the return value.
-Checking seq_has_overflowed() occasionally is used instead.
+ * Implemented as a char driver, which creates devices on demand when
+   they are created.
 
-Update vfs documentation.
+ * Message transfer over shared memory areas in each of the peer's
+   task to avoid unnecessary extra data copies during message exchanges.
 
-Link: http://lkml.kernel.org/p/e37e6e7b76acbdcc3bb4ab2a57c8f8ca1ae11b9a.1412031505.git.joe@perches.com
+ * Optional passing of file descriptors and sealed memfds along with
+   messages.
 
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Joe Perches <joe@perches.com>
-[ did a few clean ups ]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- Documentation/filesystems/vfs.txt |  2 +-
- drivers/net/tun.c                 |  4 +-
- fs/eventfd.c                      |  9 ++---
- fs/eventpoll.c                    | 13 +++----
- fs/notify/fdinfo.c                | 78 ++++++++++++++++-----------------------
- fs/notify/fdinfo.h                |  4 +-
- fs/proc/fd.c                      |  3 +-
- fs/signalfd.c                     |  4 +-
- fs/timerfd.c                      | 27 +++++++-------
- include/linux/fs.h                |  2 +-
- 10 files changed, 63 insertions(+), 83 deletions(-)
+ * No demarshalling of any message content from inside the kernel;
+   the driver stays entirely agnostic to the transported payload.
 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index fceff7c00a3c..af1dbc1823bb 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -828,7 +828,7 @@ struct file_operations {
- 	ssize_t (*splice_read)(struct file *, struct pipe_inode_info *, size_t, unsigned int);
- 	int (*setlease)(struct file *, long arg, struct file_lock **, void **);
- 	long (*fallocate)(struct file *, int mode, loff_t offset, loff_t len);
--	int (*show_fdinfo)(struct seq_file *m, struct file *f);
-+	void (*show_fdinfo)(struct seq_file *m, struct file *f);
- };
- 
- Again, all methods are called without any locks being held, unless
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 186ce541c657..a3420e091689 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -2209,7 +2209,7 @@ static int tun_chr_close(struct inode *inode, struct file *file)
- }
- 
- #ifdef CONFIG_PROC_FS
--static int tun_chr_show_fdinfo(struct seq_file *m, struct file *f)
-+static void tun_chr_show_fdinfo(struct seq_file *m, struct file *f)
- {
- 	struct tun_struct *tun;
- 	struct ifreq ifr;
-@@ -2225,7 +2225,7 @@ static int tun_chr_show_fdinfo(struct seq_file *m, struct file *f)
- 	if (tun)
- 		tun_put(tun);
- 
--	return seq_printf(m, "iff:\t%s\n", ifr.ifr_name);
-+	seq_printf(m, "iff:\t%s\n", ifr.ifr_name);
- }
- #endif
- 
-diff --git a/fs/eventfd.c b/fs/eventfd.c
-index d6a88e7812f3..4b0a226024fa 100644
---- a/fs/eventfd.c
-+++ b/fs/eventfd.c
-@@ -287,17 +287,14 @@ static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t c
- }
- 
- #ifdef CONFIG_PROC_FS
--static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
-+static void eventfd_show_fdinfo(struct seq_file *m, struct file *f)
- {
- 	struct eventfd_ctx *ctx = f->private_data;
--	int ret;
- 
- 	spin_lock_irq(&ctx->wqh.lock);
--	ret = seq_printf(m, "eventfd-count: %16llx\n",
--			 (unsigned long long)ctx->count);
-+	seq_printf(m, "eventfd-count: %16llx\n",
-+		   (unsigned long long)ctx->count);
- 	spin_unlock_irq(&ctx->wqh.lock);
--
--	return ret;
- }
- #endif
- 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 7bcfff900f05..d77f94491352 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -870,25 +870,22 @@ static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
- }
- 
- #ifdef CONFIG_PROC_FS
--static int ep_show_fdinfo(struct seq_file *m, struct file *f)
-+static void ep_show_fdinfo(struct seq_file *m, struct file *f)
- {
- 	struct eventpoll *ep = f->private_data;
- 	struct rb_node *rbp;
--	int ret = 0;
- 
- 	mutex_lock(&ep->mtx);
- 	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
- 		struct epitem *epi = rb_entry(rbp, struct epitem, rbn);
- 
--		ret = seq_printf(m, "tfd: %8d events: %8x data: %16llx\n",
--				 epi->ffd.fd, epi->event.events,
--				 (long long)epi->event.data);
--		if (ret)
-+		seq_printf(m, "tfd: %8d events: %8x data: %16llx\n",
-+			   epi->ffd.fd, epi->event.events,
-+			   (long long)epi->event.data);
-+		if (seq_has_overflowed(m))
- 			break;
- 	}
- 	mutex_unlock(&ep->mtx);
--
--	return ret;
- }
- #endif
- 
-diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
-index 9d7e2b9659cb..6ffd220eb14d 100644
---- a/fs/notify/fdinfo.c
-+++ b/fs/notify/fdinfo.c
-@@ -20,25 +20,24 @@
- 
- #if defined(CONFIG_INOTIFY_USER) || defined(CONFIG_FANOTIFY)
- 
--static int show_fdinfo(struct seq_file *m, struct file *f,
--		       int (*show)(struct seq_file *m, struct fsnotify_mark *mark))
-+static void show_fdinfo(struct seq_file *m, struct file *f,
-+			void (*show)(struct seq_file *m,
-+				     struct fsnotify_mark *mark))
- {
- 	struct fsnotify_group *group = f->private_data;
- 	struct fsnotify_mark *mark;
--	int ret = 0;
- 
- 	mutex_lock(&group->mark_mutex);
- 	list_for_each_entry(mark, &group->marks_list, g_list) {
--		ret = show(m, mark);
--		if (ret)
-+		show(m, mark);
-+		if (seq_has_overflowed(m))
- 			break;
- 	}
- 	mutex_unlock(&group->mark_mutex);
--	return ret;
- }
- 
- #if defined(CONFIG_EXPORTFS)
--static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
-+static void show_mark_fhandle(struct seq_file *m, struct inode *inode)
- {
- 	struct {
- 		struct file_handle handle;
-@@ -52,71 +51,62 @@ static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
- 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
- 	if ((ret == FILEID_INVALID) || (ret < 0)) {
- 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
--		return 0;
-+		return;
- 	}
- 
- 	f.handle.handle_type = ret;
- 	f.handle.handle_bytes = size * sizeof(u32);
- 
--	ret = seq_printf(m, "fhandle-bytes:%x fhandle-type:%x f_handle:",
--			 f.handle.handle_bytes, f.handle.handle_type);
-+	seq_printf(m, "fhandle-bytes:%x fhandle-type:%x f_handle:",
-+		   f.handle.handle_bytes, f.handle.handle_type);
- 
- 	for (i = 0; i < f.handle.handle_bytes; i++)
--		ret |= seq_printf(m, "%02x", (int)f.handle.f_handle[i]);
--
--	return ret;
-+		seq_printf(m, "%02x", (int)f.handle.f_handle[i]);
- }
- #else
--static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
-+static void show_mark_fhandle(struct seq_file *m, struct inode *inode)
- {
--	return 0;
- }
- #endif
- 
- #ifdef CONFIG_INOTIFY_USER
- 
--static int inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
-+static void inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
- {
- 	struct inotify_inode_mark *inode_mark;
- 	struct inode *inode;
--	int ret = 0;
- 
- 	if (!(mark->flags & (FSNOTIFY_MARK_FLAG_ALIVE | FSNOTIFY_MARK_FLAG_INODE)))
--		return 0;
-+		return;
- 
- 	inode_mark = container_of(mark, struct inotify_inode_mark, fsn_mark);
- 	inode = igrab(mark->i.inode);
- 	if (inode) {
--		ret = seq_printf(m, "inotify wd:%x ino:%lx sdev:%x "
--				 "mask:%x ignored_mask:%x ",
--				 inode_mark->wd, inode->i_ino,
--				 inode->i_sb->s_dev,
--				 mark->mask, mark->ignored_mask);
--		ret |= show_mark_fhandle(m, inode);
--		ret |= seq_putc(m, '\n');
-+		seq_printf(m, "inotify wd:%x ino:%lx sdev:%x mask:%x ignored_mask:%x ",
-+			   inode_mark->wd, inode->i_ino, inode->i_sb->s_dev,
-+			   mark->mask, mark->ignored_mask);
-+		show_mark_fhandle(m, inode);
-+		seq_putc(m, '\n');
- 		iput(inode);
- 	}
--
--	return ret;
- }
- 
--int inotify_show_fdinfo(struct seq_file *m, struct file *f)
-+void inotify_show_fdinfo(struct seq_file *m, struct file *f)
- {
--	return show_fdinfo(m, f, inotify_fdinfo);
-+	show_fdinfo(m, f, inotify_fdinfo);
- }
- 
- #endif /* CONFIG_INOTIFY_USER */
- 
- #ifdef CONFIG_FANOTIFY
- 
--static int fanotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
-+static void fanotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
- {
- 	unsigned int mflags = 0;
- 	struct inode *inode;
--	int ret = 0;
- 
- 	if (!(mark->flags & FSNOTIFY_MARK_FLAG_ALIVE))
--		return 0;
-+		return;
- 
- 	if (mark->flags & FSNOTIFY_MARK_FLAG_IGNORED_SURV_MODIFY)
- 		mflags |= FAN_MARK_IGNORED_SURV_MODIFY;
-@@ -124,26 +114,22 @@ static int fanotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
- 	if (mark->flags & FSNOTIFY_MARK_FLAG_INODE) {
- 		inode = igrab(mark->i.inode);
- 		if (!inode)
--			goto out;
--		ret = seq_printf(m, "fanotify ino:%lx sdev:%x "
--				 "mflags:%x mask:%x ignored_mask:%x ",
--				 inode->i_ino, inode->i_sb->s_dev,
--				 mflags, mark->mask, mark->ignored_mask);
--		ret |= show_mark_fhandle(m, inode);
--		ret |= seq_putc(m, '\n');
-+			return;
-+		seq_printf(m, "fanotify ino:%lx sdev:%x mflags:%x mask:%x ignored_mask:%x ",
-+			   inode->i_ino, inode->i_sb->s_dev,
-+			   mflags, mark->mask, mark->ignored_mask);
-+		show_mark_fhandle(m, inode);
-+		seq_putc(m, '\n');
- 		iput(inode);
- 	} else if (mark->flags & FSNOTIFY_MARK_FLAG_VFSMOUNT) {
- 		struct mount *mnt = real_mount(mark->m.mnt);
- 
--		ret = seq_printf(m, "fanotify mnt_id:%x mflags:%x mask:%x "
--				 "ignored_mask:%x\n", mnt->mnt_id, mflags,
--				 mark->mask, mark->ignored_mask);
-+		seq_printf(m, "fanotify mnt_id:%x mflags:%x mask:%x ignored_mask:%x\n",
-+			   mnt->mnt_id, mflags, mark->mask, mark->ignored_mask);
- 	}
--out:
--	return ret;
- }
- 
--int fanotify_show_fdinfo(struct seq_file *m, struct file *f)
-+void fanotify_show_fdinfo(struct seq_file *m, struct file *f)
- {
- 	struct fsnotify_group *group = f->private_data;
- 	unsigned int flags = 0;
-@@ -169,7 +155,7 @@ int fanotify_show_fdinfo(struct seq_file *m, struct file *f)
- 	seq_printf(m, "fanotify flags:%x event-flags:%x\n",
- 		   flags, group->fanotify_data.f_flags);
- 
--	return show_fdinfo(m, f, fanotify_fdinfo);
-+	show_fdinfo(m, f, fanotify_fdinfo);
- }
- 
- #endif /* CONFIG_FANOTIFY */
-diff --git a/fs/notify/fdinfo.h b/fs/notify/fdinfo.h
-index 556afda990e9..9664c4904d6b 100644
---- a/fs/notify/fdinfo.h
-+++ b/fs/notify/fdinfo.h
-@@ -10,11 +10,11 @@ struct file;
- #ifdef CONFIG_PROC_FS
- 
- #ifdef CONFIG_INOTIFY_USER
--extern int inotify_show_fdinfo(struct seq_file *m, struct file *f);
-+void inotify_show_fdinfo(struct seq_file *m, struct file *f);
- #endif
- 
- #ifdef CONFIG_FANOTIFY
--extern int fanotify_show_fdinfo(struct seq_file *m, struct file *f);
-+void fanotify_show_fdinfo(struct seq_file *m, struct file *f);
- #endif
- 
- #else /* CONFIG_PROC_FS */
-diff --git a/fs/proc/fd.c b/fs/proc/fd.c
-index e11d7c590bb0..8e5ad83b629a 100644
---- a/fs/proc/fd.c
-+++ b/fs/proc/fd.c
-@@ -53,7 +53,8 @@ static int seq_show(struct seq_file *m, void *v)
- 			   (long long)file->f_pos, f_flags,
- 			   real_mount(file->f_path.mnt)->mnt_id);
- 		if (file->f_op->show_fdinfo)
--			ret = file->f_op->show_fdinfo(m, file);
-+			file->f_op->show_fdinfo(m, file);
-+		ret = seq_has_overflowed(m);
- 		fput(file);
- 	}
- 
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index 424b7b65321f..7e412ad74836 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -230,7 +230,7 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
- }
- 
- #ifdef CONFIG_PROC_FS
--static int signalfd_show_fdinfo(struct seq_file *m, struct file *f)
-+static void signalfd_show_fdinfo(struct seq_file *m, struct file *f)
- {
- 	struct signalfd_ctx *ctx = f->private_data;
- 	sigset_t sigmask;
-@@ -238,8 +238,6 @@ static int signalfd_show_fdinfo(struct seq_file *m, struct file *f)
- 	sigmask = ctx->sigmask;
- 	signotset(&sigmask);
- 	render_sigset_t(m, "sigmask:\t", &sigmask);
--
--	return 0;
- }
- #endif
- 
-diff --git a/fs/timerfd.c b/fs/timerfd.c
-index b46ffa94372a..b94fa6c3c6eb 100644
---- a/fs/timerfd.c
-+++ b/fs/timerfd.c
-@@ -288,7 +288,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
- }
- 
- #ifdef CONFIG_PROC_FS
--static int timerfd_show(struct seq_file *m, struct file *file)
-+static void timerfd_show(struct seq_file *m, struct file *file)
- {
- 	struct timerfd_ctx *ctx = file->private_data;
- 	struct itimerspec t;
-@@ -298,18 +298,19 @@ static int timerfd_show(struct seq_file *m, struct file *file)
- 	t.it_interval = ktime_to_timespec(ctx->tintv);
- 	spin_unlock_irq(&ctx->wqh.lock);
- 
--	return seq_printf(m,
--			  "clockid: %d\n"
--			  "ticks: %llu\n"
--			  "settime flags: 0%o\n"
--			  "it_value: (%llu, %llu)\n"
--			  "it_interval: (%llu, %llu)\n",
--			  ctx->clockid, (unsigned long long)ctx->ticks,
--			  ctx->settime_flags,
--			  (unsigned long long)t.it_value.tv_sec,
--			  (unsigned long long)t.it_value.tv_nsec,
--			  (unsigned long long)t.it_interval.tv_sec,
--			  (unsigned long long)t.it_interval.tv_nsec);
-+	seq_printf(m,
-+		   "clockid: %d\n"
-+		   "ticks: %llu\n"
-+		   "settime flags: 0%o\n"
-+		   "it_value: (%llu, %llu)\n"
-+		   "it_interval: (%llu, %llu)\n",
-+		   ctx->clockid,
-+		   (unsigned long long)ctx->ticks,
-+		   ctx->settime_flags,
-+		   (unsigned long long)t.it_value.tv_sec,
-+		   (unsigned long long)t.it_value.tv_nsec,
-+		   (unsigned long long)t.it_interval.tv_sec,
-+		   (unsigned long long)t.it_interval.tv_nsec);
- }
- #else
- #define timerfd_show NULL
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a957d4366c24..01dd9052a142 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1491,7 +1491,7 @@ struct file_operations {
- 	int (*setlease)(struct file *, long, struct file_lock **, void **);
- 	long (*fallocate)(struct file *file, int mode, loff_t offset,
- 			  loff_t len);
--	int (*show_fdinfo)(struct seq_file *m, struct file *f);
-+	void (*show_fdinfo)(struct seq_file *m, struct file *f);
- };
- 
- struct inode_operations {
+ * Support for multiple domains, completely separated from each other,
+   allowing multiple virtualized instances to be used at the same time.
+
+ * Support for peer-to-peer unicast and multicast messages.
+
+ * Attachment of trustable metadata to each message on demand, such as
+   the sending peer's timestamp, creds, auxgroups, comm, exe, cmdline,
+   cgroup path, capabilities, security label, audit information, etc,
+   each taken at the time the sender issued the ioctl to send the
+   message. Which of those are actually recorded and attached is
+   controlled by the receiving peer.
+
+ * Bloom filters as measure to pre-filter broadcast messages and to
+   mitigate unnecessary task wakeups. On the side kernel, however, this
+   is just a cheap &-operation, hash functions are left to be
+   implemented by userspace.
+
+ * Optional message dequeuing by priority, allowing multiple types of
+   payloads of different priorities to be transported over the same
+   connection.
+
+ * Global, domain-wide guaranteed message ordering.
+
+ * Eavesdropping for buses for debugging
+
+ * Adressing of remote peers by their numerical unique ID, or by a
+   well-known name.
+
+ * Built-in name registry for atomic name ownership lookups, claims,
+   releases and take-overs from one peer to another.
+
+ * Simple policy database to restrict peers from seeing or talking to
+   each other, and to control name ownership.
+
+ * Custom bus endpoints in addition to the default ones. Those allow
+   to upload extra policy rules, and can act as a protocol-filtering
+   bus firewall.
+
+ * Kernel-generated notifications on connected and disconnected peers,
+   claimed and released well-known-names, and exceeded reply timeouts.
+
+This is the first submission of kdbus by the kernel community.  It was
+developed in its own repository for well more than a year, and has been
+tested on x64-64, i686 and ARM architectures in various use cases. The
+driver is totally non-intrusive and doesn't touch a single line of
+existing kernel code.
+
+kdbus has been worked on collaboratively by many people contributing
+code and suggestions during its development. Below is a list of all
+involved individuals, in alphabetical order.
+
+  Alban Crequy, Arnd Bergmann, Christian S., Daniel Kowalski,
+  Daniel Mack, David Herrmann, Djalal Harouni, Govindarajulu
+  Varadarajan, Greg Kroah-Hartman, Harald Hoyer, Hristo Venev,
+  Ingo van Lil, Jacek Janczyk, Jason A. Donenfeld, John de
+  la Garza, Kay Sievers, Lennart Poettering, Lukasz Skalski,
+  Maciej Wereski, Marc-Antoine Perennou, Marcel Holtmann,
+  Michal Eljasiewicz, Michele Curti, Przemyslaw Kedzierski,
+  Radoslaw Pajak, Ryan Lortie, Simon McVittie, Simon Peeters,
+  Stefan Beller, Ted Feng, Tejun Heo, Tero Roponen, Thomas
+  Andersen, Torstein Husebø, Vasiliy Balyasnyy.
+
+Some statistics: the driver itself has a little more than 11k lines,
+with ~25% of the lines being comments. Our test suite weights in for
+another 6k lines, and the API documentation file currently has >1800
+lines. The loaded kernel module has ~70kB of text size.
+
+Patches #3 to #10 carry the driver implementation in digestable bites,
+but only #11 adds the Makefile to actually compile them. That division
+can of course be changed, and the patches be squashed and reordered
+later.
+
+The rest should be pretty much self-explanatory - the individual commit
+logs and Documentation/kdbus.txt contain detailed information on the
+driver's inner life.
+
+While we consider the kernel API/ABI mostly stable at this point, we're
+still in the process of fixing up some ends in userspace, such as
+compatibility layers and the D-Bus spec, but that shouldn't affect the
+kernel side much anymore.
+
+As for maintainership, Daniel Mack, David Herrmann, Djalal Harouni and
+myself would be taking care for it in the future.
+
+I'll also be keeping this in a git tree, the kdbus branch of
+char-misc.git at:
+	https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-misc.git/
+
+thanks,
+
+greg k-h
+
+Daniel Mack (12):
+  kdbus: add documentation
+  kdbus: add header file
+  kdbus: add driver skeleton, ioctl entry points and utility functions
+  kdbus: add connection pool implementation
+  kdbus: add connection, queue handling and message validation code
+  kdbus: add code to gather metadata
+  kdbus: add code for notifications and matches
+  kdbus: add code for buses, domains and endpoints
+  kdbus: add name registry implementation
+  kdbus: add policy database implementation
+  kdbus: add Makefile, Kconfig and MAINTAINERS entry
+  kdbus: add selftests
+
+ Documentation/ioctl/ioctl-number.txt             |    1 +
+ Documentation/kdbus.txt                          | 1815 ++++++++++++++++++++++
+ MAINTAINERS                                      |   12 +
+ drivers/misc/Kconfig                             |    1 +
+ drivers/misc/Makefile                            |    1 +
+ drivers/misc/kdbus/Kconfig                       |   11 +
+ drivers/misc/kdbus/Makefile                      |   19 +
+ drivers/misc/kdbus/bus.c                         |  450 ++++++
+ drivers/misc/kdbus/bus.h                         |  107 ++
+ drivers/misc/kdbus/connection.c                  | 1751 +++++++++++++++++++++
+ drivers/misc/kdbus/connection.h                  |  177 +++
+ drivers/misc/kdbus/domain.c                      |  477 ++++++
+ drivers/misc/kdbus/domain.h                      |  105 ++
+ drivers/misc/kdbus/endpoint.c                    |  567 +++++++
+ drivers/misc/kdbus/endpoint.h                    |   94 ++
+ drivers/misc/kdbus/handle.c                      | 1221 +++++++++++++++
+ drivers/misc/kdbus/handle.h                      |   46 +
+ drivers/misc/kdbus/item.c                        |  256 +++
+ drivers/misc/kdbus/item.h                        |   40 +
+ drivers/misc/kdbus/limits.h                      |   77 +
+ drivers/misc/kdbus/main.c                        |   70 +
+ drivers/misc/kdbus/match.c                       |  521 +++++++
+ drivers/misc/kdbus/match.h                       |   30 +
+ drivers/misc/kdbus/message.c                     |  420 +++++
+ drivers/misc/kdbus/message.h                     |   72 +
+ drivers/misc/kdbus/metadata.c                    |  626 ++++++++
+ drivers/misc/kdbus/metadata.h                    |   51 +
+ drivers/misc/kdbus/names.c                       |  920 +++++++++++
+ drivers/misc/kdbus/names.h                       |   81 +
+ drivers/misc/kdbus/notify.c                      |  235 +++
+ drivers/misc/kdbus/notify.h                      |   28 +
+ drivers/misc/kdbus/policy.c                      |  617 ++++++++
+ drivers/misc/kdbus/policy.h                      |   60 +
+ drivers/misc/kdbus/pool.c                        |  728 +++++++++
+ drivers/misc/kdbus/pool.h                        |   43 +
+ drivers/misc/kdbus/queue.c                       |  602 +++++++
+ drivers/misc/kdbus/queue.h                       |   82 +
+ drivers/misc/kdbus/util.c                        |  108 ++
+ drivers/misc/kdbus/util.h                        |   94 ++
+ include/uapi/linux/kdbus.h                       |  918 +++++++++++
+ tools/testing/selftests/Makefile                 |    1 +
+ tools/testing/selftests/kdbus/.gitignore         |   11 +
+ tools/testing/selftests/kdbus/Makefile           |   46 +
+ tools/testing/selftests/kdbus/kdbus-enum.c       |   90 ++
+ tools/testing/selftests/kdbus/kdbus-enum.h       |   14 +
+ tools/testing/selftests/kdbus/kdbus-test.c       |  474 ++++++
+ tools/testing/selftests/kdbus/kdbus-test.h       |   79 +
+ tools/testing/selftests/kdbus/kdbus-util.c       | 1173 ++++++++++++++
+ tools/testing/selftests/kdbus/kdbus-util.h       |  139 ++
+ tools/testing/selftests/kdbus/test-activator.c   |  317 ++++
+ tools/testing/selftests/kdbus/test-benchmark.c   |  417 +++++
+ tools/testing/selftests/kdbus/test-bus.c         |  117 ++
+ tools/testing/selftests/kdbus/test-chat.c        |  123 ++
+ tools/testing/selftests/kdbus/test-connection.c  |  258 +++
+ tools/testing/selftests/kdbus/test-daemon.c      |   66 +
+ tools/testing/selftests/kdbus/test-domain.c      |   65 +
+ tools/testing/selftests/kdbus/test-endpoint.c    |  221 +++
+ tools/testing/selftests/kdbus/test-fd.c          |  473 ++++++
+ tools/testing/selftests/kdbus/test-free.c        |   34 +
+ tools/testing/selftests/kdbus/test-match.c       |  385 +++++
+ tools/testing/selftests/kdbus/test-message.c     |  126 ++
+ tools/testing/selftests/kdbus/test-metadata-ns.c |  236 +++
+ tools/testing/selftests/kdbus/test-monitor.c     |  156 ++
+ tools/testing/selftests/kdbus/test-names.c       |  184 +++
+ tools/testing/selftests/kdbus/test-policy-ns.c   |  578 +++++++
+ tools/testing/selftests/kdbus/test-policy-priv.c | 1168 ++++++++++++++
+ tools/testing/selftests/kdbus/test-policy.c      |   81 +
+ tools/testing/selftests/kdbus/test-race.c        |  313 ++++
+ tools/testing/selftests/kdbus/test-sync.c        |  241 +++
+ tools/testing/selftests/kdbus/test-timeout.c     |   97 ++
+ 70 files changed, 21217 insertions(+)
+ create mode 100644 Documentation/kdbus.txt
+ create mode 100644 drivers/misc/kdbus/Kconfig
+ create mode 100644 drivers/misc/kdbus/Makefile
+ create mode 100644 drivers/misc/kdbus/bus.c
+ create mode 100644 drivers/misc/kdbus/bus.h
+ create mode 100644 drivers/misc/kdbus/connection.c
+ create mode 100644 drivers/misc/kdbus/connection.h
+ create mode 100644 drivers/misc/kdbus/domain.c
+ create mode 100644 drivers/misc/kdbus/domain.h
+ create mode 100644 drivers/misc/kdbus/endpoint.c
+ create mode 100644 drivers/misc/kdbus/endpoint.h
+ create mode 100644 drivers/misc/kdbus/handle.c
+ create mode 100644 drivers/misc/kdbus/handle.h
+ create mode 100644 drivers/misc/kdbus/item.c
+ create mode 100644 drivers/misc/kdbus/item.h
+ create mode 100644 drivers/misc/kdbus/limits.h
+ create mode 100644 drivers/misc/kdbus/main.c
+ create mode 100644 drivers/misc/kdbus/match.c
+ create mode 100644 drivers/misc/kdbus/match.h
+ create mode 100644 drivers/misc/kdbus/message.c
+ create mode 100644 drivers/misc/kdbus/message.h
+ create mode 100644 drivers/misc/kdbus/metadata.c
+ create mode 100644 drivers/misc/kdbus/metadata.h
+ create mode 100644 drivers/misc/kdbus/names.c
+ create mode 100644 drivers/misc/kdbus/names.h
+ create mode 100644 drivers/misc/kdbus/notify.c
+ create mode 100644 drivers/misc/kdbus/notify.h
+ create mode 100644 drivers/misc/kdbus/policy.c
+ create mode 100644 drivers/misc/kdbus/policy.h
+ create mode 100644 drivers/misc/kdbus/pool.c
+ create mode 100644 drivers/misc/kdbus/pool.h
+ create mode 100644 drivers/misc/kdbus/queue.c
+ create mode 100644 drivers/misc/kdbus/queue.h
+ create mode 100644 drivers/misc/kdbus/util.c
+ create mode 100644 drivers/misc/kdbus/util.h
+ create mode 100644 include/uapi/linux/kdbus.h
+ create mode 100644 tools/testing/selftests/kdbus/.gitignore
+ create mode 100644 tools/testing/selftests/kdbus/Makefile
+ create mode 100644 tools/testing/selftests/kdbus/kdbus-enum.c
+ create mode 100644 tools/testing/selftests/kdbus/kdbus-enum.h
+ create mode 100644 tools/testing/selftests/kdbus/kdbus-test.c
+ create mode 100644 tools/testing/selftests/kdbus/kdbus-test.h
+ create mode 100644 tools/testing/selftests/kdbus/kdbus-util.c
+ create mode 100644 tools/testing/selftests/kdbus/kdbus-util.h
+ create mode 100644 tools/testing/selftests/kdbus/test-activator.c
+ create mode 100644 tools/testing/selftests/kdbus/test-benchmark.c
+ create mode 100644 tools/testing/selftests/kdbus/test-bus.c
+ create mode 100644 tools/testing/selftests/kdbus/test-chat.c
+ create mode 100644 tools/testing/selftests/kdbus/test-connection.c
+ create mode 100644 tools/testing/selftests/kdbus/test-daemon.c
+ create mode 100644 tools/testing/selftests/kdbus/test-domain.c
+ create mode 100644 tools/testing/selftests/kdbus/test-endpoint.c
+ create mode 100644 tools/testing/selftests/kdbus/test-fd.c
+ create mode 100644 tools/testing/selftests/kdbus/test-free.c
+ create mode 100644 tools/testing/selftests/kdbus/test-match.c
+ create mode 100644 tools/testing/selftests/kdbus/test-message.c
+ create mode 100644 tools/testing/selftests/kdbus/test-metadata-ns.c
+ create mode 100644 tools/testing/selftests/kdbus/test-monitor.c
+ create mode 100644 tools/testing/selftests/kdbus/test-names.c
+ create mode 100644 tools/testing/selftests/kdbus/test-policy-ns.c
+ create mode 100644 tools/testing/selftests/kdbus/test-policy-priv.c
+ create mode 100644 tools/testing/selftests/kdbus/test-policy.c
+ create mode 100644 tools/testing/selftests/kdbus/test-race.c
+ create mode 100644 tools/testing/selftests/kdbus/test-sync.c
+ create mode 100644 tools/testing/selftests/kdbus/test-timeout.c
+
 -- 
-2.1.1
-
+2.1.0
 
