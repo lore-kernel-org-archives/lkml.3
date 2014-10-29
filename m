@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207AbaJ2Vnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:43:41 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55975 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728AbaJ2Vnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:43:40 -0400
-Date: Wed, 29 Oct 2014 21:43:01 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20141029214301.GO18557@sirena.org.uk>
-References: <1412957836-2186-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
- <20141010164959.GG18557@sirena.org.uk>
- <20141014103945.GA25013@opensource.wolfsonmicro.com>
+	id S1757255AbaJ2Vrw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:47:52 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:51325 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755698AbaJ2Vru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 17:47:50 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Kevin Hilman <khilman@kernel.org>
+Cc: Chris Zhong <zyw@rock-chips.com>, dianders@chromium.org,
+        mturquette@linaro.org, Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-rockchip@lists.infradead.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org, Tony Xie <xxx@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 0/7] This is the 1st version of suspend for RK3288.
+Date: Wed, 29 Oct 2014 22:50:53 +0100
+Message-ID: <2524690.yVcDsnFz2O@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <7hppda7iaa.fsf@deeprootsystems.com>
+References: <1414583525-17395-1-git-send-email-zyw@rock-chips.com> <7hppda7iaa.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8/LSkofCkrBCwA7K"
-Content-Disposition: inline
-In-Reply-To: <20141014103945.GA25013@opensource.wolfsonmicro.com>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6] ASoC: dapm: add code to configure dai link parameters
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Mittwoch, 29. Oktober 2014, 13:06:05 schrieb Kevin Hilman:
+> Hi Chris,
+> 
+> Chris Zhong <zyw@rock-chips.com> writes:
+> > RK3288 can shut down the cpu, gpu and other device controllers in suspend,
+> > and it will pull the GLOBAL_PWROFF pin to high in the final stage of the
+> > process of suspend, pull the pin to low again when resume.
+> 
+> I tried to test this on top of linux-next (next-20141029) and it doesn't
+> wake up from serial port activity.
+> 
+> Can you describe how to test this, as well as describe dependencies on
+> other out-of-tree patches, including pointers to where they've been
+> posted.
+> 
+> Also, please describe how you tested this and on which hardware
+> platforms.  It's a big help to reviewers to know how it's been tested,
+> and for anyone with similar hardware to know what else it's been tested
+> on.
 
---8/LSkofCkrBCwA7K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+When testing this series it did go to sleep with
 
-On Tue, Oct 14, 2014 at 11:39:45AM +0100, Nikesh Oswal wrote:
-> On Fri, Oct 10, 2014 at 05:49:59PM +0100, Mark Brown wrote:
+/ # echo mem > /sys/power/state 
+PM: Syncing filesystems ... done.
+Freezing user space processes ... (elapsed 0.010 seconds) done.
+Freezing remaining freezable tasks ... (elapsed 0.010 seconds) done.
+PM: suspend of devices complete after 0.001 msecs
+PM: late suspend of devices complete after 0.001 msecs
+PM: noirq suspend of devices complete after 0.001 msecs
+Disabling non-boot CPUs ...
+CPU1: shutdown
+CPU2: shutdown
+CPU3: shutdown
 
-> > Has anything changed since the previous version?  I've postponed
-> > reviewing that until after the merge window given the way you were
-> > ignoring feedback and the approach of the merge window, is this a new
-> > version or just a reposting.
+and the change in pmic-noise lets me assume it's really asleep.
 
-> >>> Since it was not merged or reviewed since long, I just did a  reposti=
-ng=20
-> of previous version of the patch
 
-OK.  *Please* try to configure your e-mail client so that it formats
-e-mails in a normal fashion for posting on the lists, I'm sure your
-colleagues can help you with that.  The above looks like your reply is
-actually part of some quoted text rather than a reply.
+But I'm not exactly sure how to wake it up again. I even hard-wired the gpio-
+keys to always enable the irq wake, but so far it didn't wake again when 
+pressing the power-key on the evb.
 
---8/LSkofCkrBCwA7K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If anyone wants to peek, the collected patches (Doug's and Chris') can be 
+found on [0].
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUUV9lAAoJECTWi3JdVIfQgVoH/RUer9+8qDdKbCFJTZoNRrO5
-hvTIRkML+9oPiGtKD2UH7jGA8eFc+4Xe7Vl1IKxIvVAaAyGiGRGvzjmIWLhxkCOD
-fTx9Wc/T3ahJF6DNO267DFL1qPmuAkqh6MqOaaWIsNNYWvjctX8Vbd6yun30h6bE
-9D0hm8uaiLmbBzTcFSebDHY1khcElYTGRLoifzjbCQQydH29sYaGVFgq/Gyfrsx/
-VSg8Bv11eZp53JKgYU3D0/dml3Ik9IqZqug3npdMARufiNVrhdwbrdADHoX6TbbV
-ICP6PttwFeLZgbUQZ8zGLLa6qperr42otwIlXvUiRSv4jZoRRm5kFfSQMyErR1Q=
-=rpfp
------END PGP SIGNATURE-----
+Heiko
 
---8/LSkofCkrBCwA7K--
+
+[0] https://github.com/mmind/linux-rockchip/tree/wip/rk3288-suspend
