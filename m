@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933901AbaJ2OTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:19:54 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58263 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933398AbaJ2OTv (ORCPT
+	id S933674AbaJ2OU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:20:57 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:45094 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475AbaJ2OUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:19:51 -0400
-Message-ID: <5450F746.4030901@ti.com>
-Date: Wed, 29 Oct 2014 16:18:46 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 29 Oct 2014 10:20:55 -0400
+Date: Wed, 29 Oct 2014 14:20:52 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
+Message-ID: <20141029142052.GR12020@console-pimps.org>
+References: <20141007150132.GA7307@nazgul.tnic>
+ <20141007170748.GA25767@jig.fritz.box>
+ <20141008151730.GB16892@pd.tnic>
+ <CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
+ <20141008222619.GG16892@pd.tnic>
+ <20141012125515.GA32045@jig.fritz.box>
+ <20141028185756.GD10873@pd.tnic>
+ <CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
+ <20141028201342.GG10873@pd.tnic>
+ <CA+rthh9LSRm12qYORAd5BWzpw7DEP7hqHLA3EDdfUDxwx-4=2g@mail.gmail.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>, Pavel Machek <pavel@ucw.cz>
-CC: =?windows-1252?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
-        <sre@debian.org>, <sre@ring0.de>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>
-Subject: Re: Nokia n900 problems in 3.18-rc1 (was Re: USB Ethernet gadget
- on Nokia n900)
-References: <20141019090107.GA19132@amd> <201410262222.39892@pali> <20141026215548.GA9004@amd> <201410262323.17891@pali> <20141027195209.GP2560@atomide.com> <20141027223114.GU2560@atomide.com> <20141028220450.GA27667@amd> <20141028221124.GT2542@atomide.com> <20141029084637.GA30662@amd> <20141029140943.GX2542@atomide.com>
-In-Reply-To: <20141029140943.GX2542@atomide.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="kXWSRCf1boGfPtNKKIbKetgC8uJrnE4tA"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+rthh9LSRm12qYORAd5BWzpw7DEP7hqHLA3EDdfUDxwx-4=2g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---kXWSRCf1boGfPtNKKIbKetgC8uJrnE4tA
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Tue, 28 Oct, at 10:14:25PM, Mathias Krause wrote:
+> 
+> Mapping the kernel into the EFI page table may help ;) Then the
+> kernel's #PF handler would be present and able to print a register
+> dump, at least.
+ 
+The kernel is already mapped into the EFI page table.
 
-On 29/10/14 16:09, Tony Lindgren wrote:
+> So, assuming you're not mapping the EFI virtual mappings below the
+> pgd[511] hierarchy, making pgd[511] equal init_level4_pgt[511] should
+> help in this case. In fact, you need to map portions of the kernel
+> into the EFI page table anyway. Otherwise the EFI code wouldn't be
+> able to access, e.g., the data it should write to NVRAM. So the EFI
+> code would just trap and trigger a #PF -- and because of the missing
+> #PF handler, a #DF -- and because of the missing #DF handler the
+> triple fault. ;)
+ 
+Exactly.
 
->> omapfb reports problems, but seems to work ok:
->>
->> [    0.990386] omapfb omapfb: cannot parse default modes
->> [    1.004791] Console: switching to colour frame buffer device 100x30=
+We don't setup a separate page table for EFI calls for any kind of
+isolation, we do it to make use of the existing 1:1 mappings in
+trampoline_pgd because some firmware directly reference physical
+addresses at runtime. It actually doesn't work too well in practice,
+because you soon hit other issues on those firmware, but there you go.
 
->> [    1.073150] omapfb omapfb: using display 'lcd' mode 800x480
->=20
-> Tomi, is the default mode warning correct here?
+So the fact that we have EFI mappings in init_level4_pgt[] isn't
+indicative of any kind of bug, it's potentially a bit unclean, but
+that's about it.
 
-omapfb warns that it couldn't parse kernel cmdline parameters
-('omapfb.mode' parameter). I couldn't find in the thread what actual
-parameters were used in this case.
-
-Although I don't see why N900 would need any omapfb mode parameters in
-the first place, as the LCD has just one mode...
-
- Tomi
-
-
-
---kXWSRCf1boGfPtNKKIbKetgC8uJrnE4tA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUUPdGAAoJEPo9qoy8lh71xp4QAJCnd8J6h3Zekf4y5gK1aJ3X
-YvhgAAVRNVSaAh81JpJnmVL+1My/Qjh1VuJt55uEemKfn8vbC75X14Yhn2m6d5yp
-gr6zHBckBxQL2nEc11vg+kiYHtg5k1TPGxlnAPeV70+PXLlGjWe4eT3pRa8TR0Gj
-hehDB+Ol46K7ptHW9u79rDSC9ajkFX9SWJvLKcmQv6jrSYBGCXOHxivv/KqY4Kg1
-Ih0VMl4Sy6OZ0ArHwgNd+FnZUndcHc2EYbK4qtEt00bKxXagYsns1dXl2Jr6vLRx
-m/V/CzPYbiuc7mYWjEUacjHeSQenAJyRFvRFlWmYvq4artP8Mj8JOMVwjmbikYjJ
-DwafwHQ3+1S2FlP6CYS57XLF9pdPQ6O+KCW3B87bmJcjcmHwBZ8cxzAHzFjWtkl1
-FrQDcd+26d7vSU4Jb69xQYk7dXdpT+/dsOoIX8YYm85gb1Q2ahg2IhKoHjR1Njcr
-q31RWg7SBanUtIAmr2pmphnScDySO2dh9TmS29a2Wlss2ktrtMF81wZTjnGUjg6Q
-NPB9uw63/j4Zm99xNgBWOvIscj3C3XwC9e0Ex2Jk1GENVArI0SLPsuBQSK3QsdBI
-OcrFP1IIVSDb8iz25gaRLniCrllJ45RcqPHLyrdarpFfqmx5Ca+sHwaa/Dq0Ichc
-wSD08ypifoOkXqn+CxK7
-=B1Co
------END PGP SIGNATURE-----
-
---kXWSRCf1boGfPtNKKIbKetgC8uJrnE4tA--
+-- 
+Matt Fleming, Intel Open Source Technology Center
