@@ -1,126 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066AbaJ2Cex (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 22:34:53 -0400
-Received: from regular1.263xmail.com ([211.150.99.140]:43091 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739AbaJ2Cd6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 22:33:58 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <e29d04a50879e9b3695dc2f053e65099>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
-        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v16 3/5] ARM: dts: add RK3288 Thermal data
-Date: Wed, 29 Oct 2014 10:32:37 +0800
-Message-Id: <1414549959-13699-4-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414549959-13699-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1414549959-13699-1-git-send-email-caesar.wang@rock-chips.com>
+	id S1753751AbaJ2CmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 22:42:08 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:1712 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750858AbaJ2CmF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 22:42:05 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Joe Perches'" <joe@perches.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 29 Oct 2014 10:42:00 +0800
+Subject: RE: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
+Thread-Topic: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
+Thread-Index: Ac/y9VfeDNRCoVSXRyyNvIRV7m0a2AALFzow
+Message-ID: <35FD53F367049845BC99AC72306C23D103E010D1825C@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
+	 <1414392371.8884.2.camel@perches.com>
+ <1414531369.10912.14.camel@perches.com>
+In-Reply-To: <1414531369.10912.14.camel@perches.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes a dtsi file to contain the thermal data
-on RK3288 and later SoCs. This data will
-enable a thermal shutdown over 120C.
+> Use the inline function instead of directly indexing the array.
+> 
+> This allows some architectures with hardware instructions for bit reversals
+> to eliminate the array.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> On Sun, 2014-10-26 at 23:46 -0700, Joe Perches wrote:
+> > On Mon, 2014-10-27 at 14:37 +0800, Wang, Yalin wrote:
+> > > this change add CONFIG_HAVE_ARCH_BITREVERSE config option, so that
+> > > we can use arm/arm64 rbit instruction to do bitrev operation by
+> > > hardware.
+> []
+> > > diff --git a/include/linux/bitrev.h b/include/linux/bitrev.h index
+> > > 7ffe03f..ef5b2bb 100644
+> > > --- a/include/linux/bitrev.h
+> > > +++ b/include/linux/bitrev.h
+> > > @@ -3,6 +3,14 @@
+> > >
+> > >  #include <linux/types.h>
+> > >
+> > > +#ifdef CONFIG_HAVE_ARCH_BITREVERSE
+> > > +#include <asm/bitrev.h>
+> > > +
+> > > +#define bitrev32 __arch_bitrev32
+> > > +#define bitrev16 __arch_bitrev16
+> > > +#define bitrev8 __arch_bitrev8
+> > > +
+> > > +#else
+> > >  extern u8 const byte_rev_table[256];
+> 
+>  sound/usb/6fire/firmware.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/sound/usb/6fire/firmware.c b/sound/usb/6fire/firmware.c index
+> 3b02e54..62c25e7 100644
+> --- a/sound/usb/6fire/firmware.c
+> +++ b/sound/usb/6fire/firmware.c
+> @@ -316,7 +316,7 @@ static int usb6fire_fw_fpga_upload(
+> 
+>  	while (c != end) {
+>  		for (i = 0; c != end && i < FPGA_BUFSIZE; i++, c++)
+> -			buffer[i] = byte_rev_table[(u8) *c];
+> +			buffer[i] = bitrev8((u8)*c);
+> 
+>  		ret = usb6fire_fw_fpga_write(device, buffer, i);
+>  		if (ret < 0) {
+> 
+I think the most safe way is change byte_rev_table[] to be satic,
+So that no driver can access it directly,
+The build error can remind the developer if they use byte_rev_table[]
+Directly .
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- arch/arm/boot/dts/rk3288-thermal.dtsi | 65 +++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
- create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
-
-diff --git a/arch/arm/boot/dts/rk3288-thermal.dtsi b/arch/arm/boot/dts/rk3288-thermal.dtsi
-new file mode 100644
-index 0000000..2a018dc
---- /dev/null
-+++ b/arch/arm/boot/dts/rk3288-thermal.dtsi
-@@ -0,0 +1,65 @@
-+/*
-+ * Device Tree Source for RK3288 SoC thermal
-+ *
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+#include <dt-bindings/thermal/thermal.h>
-+
-+reserve_thermal: reserve_thermal {
-+	polling-delay-passive = <1000>; /* milliseconds */
-+	polling-delay = <5000>; /* milliseconds */
-+
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	0>;
-+
-+};
-+
-+cpu_thermal: cpu_thermal {
-+	polling-delay-passive = <1000>; /* milliseconds */
-+	polling-delay = <5000>; /* milliseconds */
-+
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	1>;
-+
-+	trips {
-+		cpu_alert0: cpu_alert0 {
-+			temperature = <80000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "passive";
-+		};
-+		cpu_crit: cpu_crit {
-+			temperature = <120000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "critical";
-+		};
-+	};
-+
-+	cooling-maps {
-+		map0 {
-+			trip = <&cpu_alert0>;
-+			cooling-device =
-+				<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-+		};
-+	};
-+};
-+
-+gpu_thermal: gpu_thermal {
-+	polling-delay-passive = <1000>; /* milliseconds */
-+	polling-delay = <5000>; /* milliseconds */
-+
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	2>;
-+
-+	trips {
-+		gpu_crit: gpu_crit {
-+			temperature = <120000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "critical";
-+		};
-+	};
-+};
--- 
-1.9.1
-
-
+Thanks
