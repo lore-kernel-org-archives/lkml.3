@@ -1,97 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507AbaJ2Vw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:52:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16996 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756910AbaJ2Vw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:52:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,280,1413270000"; 
-   d="scan'208";a="613696618"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: hbm: use client specific print functions
-Date: Wed, 29 Oct 2014 23:50:58 +0200
-Message-Id: <1414619458-7623-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1757532AbaJ2Vwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:52:35 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:38766 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757108AbaJ2Vwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 17:52:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <4115047.A3orYVLyA3@vostro.rjw.lan>
+References: <1414378748-8855-1-git-send-email-zhangwm@marvell.com>
+ <544EBB70.6020507@intel.com> <CALZtONCkQVeau8JETKtxuQsoGnVymKPOgwvcidHH=EFVmhKc5g@mail.gmail.com>
+ <4115047.A3orYVLyA3@vostro.rjw.lan>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Wed, 29 Oct 2014 17:52:10 -0400
+X-Google-Sender-Auth: qLvTuAuvNDmsWHVU6veiPrHN6RA
+Message-ID: <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
+Subject: Re: [PATCH V2] Driver cpu: update online when cpu_up/down besides sysfs
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Neil Zhang <zhangwm@marvell.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        nfont@linux.vnet.ibm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+On Wed, Oct 29, 2014 at 5:46 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Monday, October 27, 2014 08:46:08 PM Dan Streetman wrote:
+>> On Mon, Oct 27, 2014 at 5:38 PM, Rafael J. Wysocki
+>> <rafael.j.wysocki@intel.com> wrote:
+>> > On 10/27/2014 3:59 AM, Neil Zhang wrote:
+>> >>
+>> >> The current per-cpu offline info won't be updated when we use
+>> >> any other method besides sysfs to call cpu_up/down.
+>> >> Thus the cpu/online can't reflect the real online status.
+>> >>
+>> >> This patch is going to fix the issue introduced by commit
+>> >> 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c (Driver core:
+>> >> Use generic offline/online for CPU offline/online)
+>> >>
+>> >> CC: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> >> Tested-by: Dan Streetman <ddstreet@ieee.org>
+>> >> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+>> >
+>> >
+>> > Oh dear, no.
+>> >
+>> > Please first tell me what exactly the problem you're seeing is.
+>>
+>> For some background, here is my last comment on the first email thread on this:
+>> https://lkml.org/lkml/2014/10/27/595
+>>
+>> I didn't create this patch, but the problem essentially is that before
+>> your commit the individual cpu online nodes
+>> (/sys/devices/system/cpu/cpuN/online) stayed in sync during
+>> cpu_down/up, because they used the cpu_online_mask; while after the
+>> commit, they are tracked by the cpu's generic dev->offline flag, which
+>> isn't updated during cpu_down/up.
+>
+> Which is not triggered from sysfs.
+>
+>> So now, any place in the kernel
+>> that brings a cpu up or down must also update the cpu->dev->offline
+>> flag.
+>
+> Not any place.  In particular, system suspend-resume doesn't need to
+> do that, because it takes CPUs offline and then brings them back
+> online.
+>
+> If there's a place in the kernel where CPUs are taken offline and
+> left in that state, then it needs to be updated.
 
-We have host client in connect/disconnect response processors,
-so use client print functions to simplify and unify code.
+The only place I know of is ppc's dlpar code, as mentioned below.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/hbm.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+Neil, as you crafted the original patch, I assume you know of some
+other place in the kernel doing cpu_up/down directly, where you're
+seeing this problem?
 
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 65a505226222..c3783d4e3896 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -573,17 +573,17 @@ int mei_hbm_cl_disconnect_rsp(struct mei_device *dev, struct mei_cl *cl)
-  * mei_hbm_cl_disconnect_res - update the client state according
-  *       disconnect response
-  *
-+ * @dev: the device structure
-  * @cl: mei host client
-  * @cmd: disconnect client response host bus message
-  */
--static void mei_hbm_cl_disconnect_res(struct mei_cl *cl,
-+static void mei_hbm_cl_disconnect_res(struct mei_device *dev, struct mei_cl *cl,
- 				      struct mei_hbm_cl_cmd *cmd)
- {
- 	struct hbm_client_connect_response *rs =
- 		(struct hbm_client_connect_response *)cmd;
- 
--	dev_dbg(cl->dev->dev, "hbm: disconnect response cl:host=%02d me=%02d status=%d\n",
--			rs->me_addr, rs->host_addr, rs->status);
-+	cl_dbg(dev, cl, "hbm: disconnect response status=%d\n", rs->status);
- 
- 	if (rs->status == MEI_CL_DISCONN_SUCCESS)
- 		cl->state = MEI_FILE_DISCONNECTED;
-@@ -609,17 +609,17 @@ int mei_hbm_cl_connect_req(struct mei_device *dev, struct mei_cl *cl)
-  * mei_hbm_cl_connect_res - update the client state according
-  *        connection response
-  *
-+ * @dev: the device structure
-  * @cl: mei host client
-  * @cmd: connect client response host bus message
-  */
--static void mei_hbm_cl_connect_res(struct mei_cl *cl,
-+static void mei_hbm_cl_connect_res(struct mei_device *dev, struct mei_cl *cl,
- 				   struct mei_hbm_cl_cmd *cmd)
- {
- 	struct hbm_client_connect_response *rs =
- 		(struct hbm_client_connect_response *)cmd;
- 
--	dev_dbg(cl->dev->dev, "hbm: connect response cl:host=%02d me=%02d status=%s\n",
--			rs->me_addr, rs->host_addr,
-+	cl_dbg(dev, cl, "hbm: connect response status=%s\n",
- 			mei_cl_conn_status_str(rs->status));
- 
- 	if (rs->status == MEI_CL_CONN_SUCCESS)
-@@ -668,10 +668,10 @@ static void mei_hbm_cl_res(struct mei_device *dev,
- 
- 	switch (fop_type) {
- 	case MEI_FOP_CONNECT:
--		mei_hbm_cl_connect_res(cl, rs);
-+		mei_hbm_cl_connect_res(dev, cl, rs);
- 		break;
- 	case MEI_FOP_DISCONNECT:
--		mei_hbm_cl_disconnect_res(cl, rs);
-+		mei_hbm_cl_disconnect_res(dev, cl, rs);
- 		break;
- 	default:
- 		return;
--- 
-1.9.3
+>
+>> My interest in the patch was coincidental because I was seeing
+>> the same problem when using dlpar operations to hotplug cpus, which
+>> uses the arch/powerpc/platform/pseries/dlpar.c code; that code brings
+>> a cpu offline when it's hot-removed (and the cpu online when it's
+>> hot-added), but it hasn't been changed to also update the cpu's
+>> dev->offline flag.
+>
+> It should be modified to do that.
+>
+>> As I said in the previous email to the first thread, the ppc dlpar
+>> operation might be changed in the future to fully unregister a cpu
+>> when it's hot-removed, which would remove the entire sysfs cpuN
+>> directory.  Alternately and/or until then, it could be updated to
+>> simply update the cpu'd dev->offline flag (that's what I originally
+>> did for my own testing).  However, without a central place to update
+>> the cpu's dev->offline field, like this, or possibly in
+>> set_cpu_online(), or elsewhere during cpu_down/up, each place in the
+>> kernel that calls cpu_down() or cpu_up() also needs to update the
+>> dev->offline flag.  It's possible that the ppc dlpar code is the only
+>> place in the kernel that has this problem; I haven't searched.
+>
+> It is quite likely to be the only place like that.
+>
+> While I'm not familiar with the code in question, the most straightforward
+> way to fix the problem would be to replace cpu_down() in there with
+> device_offline(get_cpu_device(cpu)), but that needs to be called under
+> device_hotplug_lock.
 
+Ok, will do.
+
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
