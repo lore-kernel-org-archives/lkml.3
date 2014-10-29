@@ -1,104 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099AbaJ2Nih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:38:37 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:38274 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932759AbaJ2Nif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 09:38:35 -0400
-Date: Wed, 29 Oct 2014 14:35:26 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Johan Hovold <johan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, nsekhar@ti.com, t-kristo@ti.com,
-        j-keerthy@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
-Message-ID: <20141029133526.GE2265@localhost>
-References: <20141024194442.GG11455@saruman>
- <20141024195532.GF19377@localhost>
- <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org>
- <20141028002552.GX12379@n2100.arm.linux.org.uk>
- <20141028081616.GL2006@localhost>
- <20141028084745.GY12379@n2100.arm.linux.org.uk>
- <20141028131257.GS2006@localhost>
- <20141028151610.GA12379@n2100.arm.linux.org.uk>
- <20141029123418.GB2265@localhost>
- <5450E9A8.1060506@roeck-us.net>
+	id S932891AbaJ2Nnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:43:55 -0400
+Received: from jim.sh ([75.150.123.25]:50192 "EHLO psychosis.jim.sh"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932746AbaJ2Nnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 09:43:53 -0400
+Date: Wed, 29 Oct 2014 09:43:41 -0400
+From: Jim Paris <jim@jtan.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] cdc-acm: ensure that termios get set when the port is
+ activated
+Message-ID: <20141029134305.GA8149@psychosis.jim.sh>
+References: <20141028232649.GA1064@psychosis.jim.sh>
+ <54503D44.4080908@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5450E9A8.1060506@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <54503D44.4080908@hurleysoftware.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 06:20:40AM -0700, Guenter Roeck wrote:
-> On 10/29/2014 05:34 AM, Johan Hovold wrote:
-> > On Tue, Oct 28, 2014 at 03:16:10PM +0000, Russell King - ARM Linux wrote:
-> >> On Tue, Oct 28, 2014 at 02:12:57PM +0100, Johan Hovold wrote:
-> >>> That's not what I was trying to refer to. But the patch set explicitly
-> >>> allows for multiple, prioritised power-off handlers, which can power
-> >>> off a board in different ways and with various degrees of success.
-> >>> Specifically, it allows for fallback handlers in case one or more
-> >>> power-off handlers fail.
-> >>>
-> >>> So if we allow for that, what is to prevent the final power-off handler
-> >>> from failing? And should this not be logged by arch code in the same way
-> >>> as failure to restart is?
-> >>
-> >> And how is that different from having a set of power-off handlers, and
-> >> reporting when each individual one fails?  Don't you want to know if
-> >> your primary high priority reboot handler fails, just as much as you
-> >> want to know if your final last-resort power-off handler fails?
-> >
-> > Good point. Failed power-off should probably be logged by the power-off
-> > call chain implementation (which seems to makes notifier chains a bad
-> > fit).
->
-> Good that I just replaced notifier chain with an open coded implementation.
+The driver wasn't properly configuring the hardware for the current
+termios settings under all conditions.  Ensure that termios are
+written to the device when the port is activated.
 
-Good to hear.
+Signed-off-by: Jim Paris <jim@jtan.com>
+---
 
-> Sure, that is possible, but I would prefer to do that as a follow-up commit,
-> and it should be discussed in the context of the power-off handler patch set.
-
-Fine with me.
-
-> > And what about any power-off latencies? Should this always be dealt with
-> > in the power-off handler?
-> >
-> > Again, if it's predictable and high, as in the OMAP RTC case, it should
-> > go in the handler. But what if it's just normal bus latencies
-> > (peripheral busses, i2c, or whatever people may come up with)?
-> >
-> > Should there always be a short delay before calling the next handler?
+Peter Hurley wrote:
+> Yeah, you're right that the cdc-acm driver isn't properly configuring
+> the hardware for the current termios settings under all conditions.
 > 
-> That delay would depend on the individual power-off handler, so I think
-> the current implementation works just fine (where power-off handlers
-> implement the delay).
+> But you don't want to do it for every tty open, only for opens
+> requiring port initialization, which is what the tty_port->activate()
+> method is for (ie., acm_port_activate()).
 
-Some don't, and could possibly unknowingly have been relying on the fact
-that they could return to user space and be powered off at some later
-time. With systemd that would have caused a panic.
+I moved it to acm_port_activate(), which works fine.  Thanks!
+acm_tty_set_termios is just moved in this patch, not changed.
 
-Also consider generic power-off handlers such as gpio-poweroff. It
-currently hard-codes a three-second delay but the actual delay would
-really be board specific.
+Jim
 
-> We could move the delay into the infrastructure, but it would have
-> to be configurable. I would prefer to consider that as a follow-up patch
-> to not overload the power-off handler patch set with too many changes
-> at the same time.
+---
+ drivers/usb/class/cdc-acm.c | 104 ++++++++++++++++++++++----------------------
+ 1 file changed, 53 insertions(+), 51 deletions(-)
 
-Sure.
-
-Johan
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index e934e19f49f5..24077deb737a 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -504,6 +504,57 @@ static int acm_tty_open(struct tty_struct *tty, struct file *filp)
+ 	return tty_port_open(&acm->port, tty, filp);
+ }
+ 
++static void acm_tty_set_termios(struct tty_struct *tty,
++						struct ktermios *termios_old)
++{
++	struct acm *acm = tty->driver_data;
++	struct ktermios *termios = &tty->termios;
++	struct usb_cdc_line_coding newline;
++	int newctrl = acm->ctrlout;
++
++	newline.dwDTERate = cpu_to_le32(tty_get_baud_rate(tty));
++	newline.bCharFormat = termios->c_cflag & CSTOPB ? 2 : 0;
++	newline.bParityType = termios->c_cflag & PARENB ?
++				(termios->c_cflag & PARODD ? 1 : 2) +
++				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
++	switch (termios->c_cflag & CSIZE) {
++	case CS5:
++		newline.bDataBits = 5;
++		break;
++	case CS6:
++		newline.bDataBits = 6;
++		break;
++	case CS7:
++		newline.bDataBits = 7;
++		break;
++	case CS8:
++	default:
++		newline.bDataBits = 8;
++		break;
++	}
++	/* FIXME: Needs to clear unsupported bits in the termios */
++	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
++
++	if (!newline.dwDTERate) {
++		newline.dwDTERate = acm->line.dwDTERate;
++		newctrl &= ~ACM_CTRL_DTR;
++	} else
++		newctrl |=  ACM_CTRL_DTR;
++
++	if (newctrl != acm->ctrlout)
++		acm_set_control(acm, acm->ctrlout = newctrl);
++
++	if (memcmp(&acm->line, &newline, sizeof newline)) {
++		memcpy(&acm->line, &newline, sizeof newline);
++		dev_dbg(&acm->control->dev, "%s - set line: %d %d %d %d\n",
++			__func__,
++			le32_to_cpu(newline.dwDTERate),
++			newline.bCharFormat, newline.bParityType,
++			newline.bDataBits);
++		acm_set_line(acm, &acm->line);
++	}
++}
++
+ static void acm_port_dtr_rts(struct tty_port *port, int raise)
+ {
+ 	struct acm *acm = container_of(port, struct acm, port);
+@@ -554,6 +605,8 @@ static int acm_port_activate(struct tty_port *port, struct tty_struct *tty)
+ 		goto error_submit_urb;
+ 	}
+ 
++	acm_tty_set_termios(tty, NULL);
++
+ 	/*
+ 	 * Unthrottle device in case the TTY was closed while throttled.
+ 	 */
+@@ -949,57 +1002,6 @@ static int acm_tty_ioctl(struct tty_struct *tty,
+ 	return rv;
+ }
+ 
+-static void acm_tty_set_termios(struct tty_struct *tty,
+-						struct ktermios *termios_old)
+-{
+-	struct acm *acm = tty->driver_data;
+-	struct ktermios *termios = &tty->termios;
+-	struct usb_cdc_line_coding newline;
+-	int newctrl = acm->ctrlout;
+-
+-	newline.dwDTERate = cpu_to_le32(tty_get_baud_rate(tty));
+-	newline.bCharFormat = termios->c_cflag & CSTOPB ? 2 : 0;
+-	newline.bParityType = termios->c_cflag & PARENB ?
+-				(termios->c_cflag & PARODD ? 1 : 2) +
+-				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
+-	switch (termios->c_cflag & CSIZE) {
+-	case CS5:
+-		newline.bDataBits = 5;
+-		break;
+-	case CS6:
+-		newline.bDataBits = 6;
+-		break;
+-	case CS7:
+-		newline.bDataBits = 7;
+-		break;
+-	case CS8:
+-	default:
+-		newline.bDataBits = 8;
+-		break;
+-	}
+-	/* FIXME: Needs to clear unsupported bits in the termios */
+-	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
+-
+-	if (!newline.dwDTERate) {
+-		newline.dwDTERate = acm->line.dwDTERate;
+-		newctrl &= ~ACM_CTRL_DTR;
+-	} else
+-		newctrl |=  ACM_CTRL_DTR;
+-
+-	if (newctrl != acm->ctrlout)
+-		acm_set_control(acm, acm->ctrlout = newctrl);
+-
+-	if (memcmp(&acm->line, &newline, sizeof newline)) {
+-		memcpy(&acm->line, &newline, sizeof newline);
+-		dev_dbg(&acm->control->dev, "%s - set line: %d %d %d %d\n",
+-			__func__,
+-			le32_to_cpu(newline.dwDTERate),
+-			newline.bCharFormat, newline.bParityType,
+-			newline.bDataBits);
+-		acm_set_line(acm, &acm->line);
+-	}
+-}
+-
+ static const struct tty_port_operations acm_port_ops = {
+ 	.dtr_rts = acm_port_dtr_rts,
+ 	.shutdown = acm_port_shutdown,
+-- 
+2.1.0
