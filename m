@@ -1,530 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbaJ2Uzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:55:32 -0400
-Received: from mail-bn1on0148.outbound.protection.outlook.com ([157.56.110.148]:33507
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1757136AbaJ2U4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:56:38 -0400
+Received: from mail-by2on0067.outbound.protection.outlook.com ([207.46.100.67]:60728
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751917AbaJ2Uz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:55:29 -0400
-X-WSS-ID: 0NE84S8-07-3UB-02
-X-M-MSG: 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-To: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>, <tglx@linutronix.de>,
-        <hpa@zytor.com>, <x86@kernel.org>, <bp@suse.de>,
-        <dan.carpenter@oracle.com>, <dougthompson@xmission.com>,
-        <bp@alien8.de>, <m.chehab@samsung.com>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH V3 4/4] edac, amd64_edac: Add F15h M60h support
-Date: Wed, 29 Oct 2014 16:18:03 -0500
-Message-ID: <1414617483-4941-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-X-Mailer: git-send-email 2.0.2
+	id S1754084AbaJ2U4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 16:56:36 -0400
+Date: Wed, 29 Oct 2014 15:49:24 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+CC: <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
+        <michal.simek@xilinx.com>, <rdunlap@infradead.org>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
+        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
+        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>, <pavel@denx.de>,
+        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <mgerlach@opensource.altera.com>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
+In-Reply-To: <20141029075701.GA10262@pengutronix.de>
+Message-ID: <alpine.DEB.2.02.1410291545250.29374@atx-linux-37>
+References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com> <1414108267-22058-3-git-send-email-atull@opensource.altera.com> <20141024070042.GL10262@pengutronix.de> <alpine.DEB.2.02.1410281601570.11910@atx-linux-37>
+ <20141029075701.GA10262@pengutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(2201001)(107046002)(64706001)(229853001)(104166001)(4396001)(97736003)(101416001)(95666004)(19580395003)(84676001)(68736004)(62966002)(50986999)(47776003)(92566001)(105586002)(85852003)(120916001)(89996001)(50226001)(36756003)(86362001)(87286001)(19580405001)(99396003)(93916002)(48376002)(44976005)(20776003)(31966008)(21056001)(85306004)(106466001)(88136002)(76482002)(77156001)(77096002)(87936001)(92726001)(46102003)(50466002)(53416004)(80022003)(1121002)(921003)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB193;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB193;
-X-Exchange-Antispam-Report-Test: UriScan:;
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: AMSPR02CA0046.eurprd02.prod.outlook.com (10.242.225.174) To
+ BY2PR03MB314.namprd03.prod.outlook.com (10.141.139.19)
+X-MS-Exchange-Transport-FromEntityHeader: Hosted
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB314;
 X-Forefront-PRVS: 03793408BA
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB227;
-X-OriginatorOrg: amd4.onmicrosoft.com
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(189002)(199003)(24454002)(51414003)(40100003)(4396001)(77096002)(93886004)(76176999)(83506001)(50986999)(31966008)(110136001)(15975445006)(122386002)(54356999)(80022003)(76482002)(99396003)(19580395003)(120916001)(19580405001)(69596002)(15202345003)(53416004)(86152002)(97736003)(87976001)(107046002)(101416001)(86362001)(92726001)(85852003)(92566001)(20776003)(106356001)(21056001)(95666004)(81156004)(105586002)(66066001)(46406003)(23726002)(64706001)(50466002)(33716001)(85306004)(42186005)(47776003)(46102003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB314;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for ECC error decoding for F15h M60h processor.
-Aside from the usual changes, the patch adds support for some new features
-in the processor:
- - DDR4(unbuffered, registered); LRDIMM DDR3 support
-   - relevant debug messages have been modified/added to report these
-     memory types
- - new dbam_to_cs mappers
-   - if (F15h M60h && LRDIMM); we need a 'multiplier' value to find
-     cs_size. This multiplier value is obtained from the per-dimm
-     DCSM register. So, change the interface to accept a 'cs_mask_nr'
-     value to facilitate this calculation
- - switch-casing determine_memory_type()
-   - done to cleanse the function of too many if-else statements
-     and improve readability
-   - This is now called early in read_mc_regs() to cache dram_type
+On Wed, 29 Oct 2014, Steffen Trumtrar wrote:
 
-Misc cleanup:
- - amd64_pci_table[] is condensed by using PCI_VDEVICE macro.
+> Hi!
+> 
+> On Tue, Oct 28, 2014 at 04:19:03PM -0500, atull wrote:
+> > On Fri, 24 Oct 2014, Steffen Trumtrar wrote:
+> > 
+> > > Hi!
+> > > 
+> > 
+> > Hi,
+> > 
+> > I see that my documentation sucks and needs cleanup.  I'll try to
+> > answer some of the flames and get a more coherent version out soon.
+> > 
+> > > On Thu, Oct 23, 2014 at 06:51:06PM -0500, atull@opensource.altera.com wrote:
+> > > > From: Alan Tull <atull@opensource.altera.com>
+> > > 
+> > > (...)
+> > > 
+> > > > diff --git a/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+> > > > new file mode 100644
+> > > > index 0000000..bc24a2e
+> > > > --- /dev/null
+> > > > +++ b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+> > > > @@ -0,0 +1,53 @@
+> > > > +Altera FPGA/HPS Bridge Driver
+> > > > +
+> > > > +This driver manages a bridge between a FPGA and a host processor system (HPS).
+> > > > +User space can enable or disable the bridge by writing a "1" or a "0",
+> > > > +respectively, to its enable file under bridge's entry in
+> > > > +/sys/class/fpga-bridge.  Typically, one disables the bridges before
+> > > > +reprogramming the FPGA.  Once the FPGA is reprogrammed, the bridges are
+> > > > +reenabled.
+> > > > +
+> > > 
+> > > NAK.
+> > > 
+> > > This is all linux specific and doesn't belong here.
+> > 
+> > Right.  This stuff shouldn't be in this document.  While I was squashing
+> > patches and cleaning up for posting on the mailing list, I added a sysfs
+> > document and forgot to clean up my DT bindings documents.
+> > 
+> > > 
+> > > > +Required properties:
+> > > > +
+> > > > + - compatible     : should contain one of:
+> > > > +                     "altr,socfpga-hps2fpga-bridge"
+> > > > +                     "altr,socfpga-lwhps2fpga-bridge"
+> > > > +                     "altr,socfpga-fpga2hps-bridge"
+> > > > +
+> > > > + - clocks         : clocks used by this module
+> > > > +
+> > > > + - altr,l3-syscon : phandle of the l3 interconnect module
+> > > > +
+> > > 
+> > > L3 shouldn't be a syscon.
+> > 
+> > L3 is actually a good candidate for syscon.  Lots of registers, each one
+> > affects a different hardware block.
+> > 
+> > > Have you tried dumping the regmap in the debugfs if L3
+> > > is a syscon? Doesn't work.
+> > 
+> > Is that a bug in regmap or is that because the register in L3 that
+> > I am actully interested in here is write-only (ugh)?
+> >
+> 
+> That is not a bug in regmap. It is because you only have a register at 0x4008,
+> than one at 0x4104, that one at 0x5008, etc.... (values from memory, so might
+> be wrong)
+> 
+> Of course regmap tries to read from the whole register range if specified as
+> syscon. Which it can't.
+> 
+> So, that shouldn't be a problem though, as I already cooked up a driver for
+> the L3 with all the ranges specified. The only thing I need to figure out
+> before I will post it, is how to nicely handle the WO remap register.
+> I think regmap might be able to handle this itself, but am not sure yet.
+> 
+> > > 
+> > > > +Optional properties:
+> > > > + - label          : name that you want this bridge to show up as under
+> > > > +                    /sys/class/fpga-bridge.  Default is br<device#> if this is
+> > > > +                    not specified.
+> > > > +
+> > > 
+> > > Why? Linux-specific.
+> > 
+> > That was a convience for the user.  I can take that out and won't miss it.
+> > 
+> > > 
+> > > > + - init-val       : 0 if driver should disable bridge at startup
+> > > > +                    1 if driver should enable bridge at startup
+> > > > +                    driver leaves bridge in current state if property not
+> > > > +                    specified.
+> > > > +
+> > > 
+> > > Configuration in the DT? Really?
+> > > 
+> > > > +Example:
+> > > > +	hps_fpgabridge0: fpgabridge@0 {
+> > > > +		compatible = "altr,socfpga-hps2fpga-bridge";
+> > > > +		label = "hps2fpga";
+> > > > +		altr,l3-syscon = <&l3regs>;
+> > > > +		clocks = <&l4_main_clk>;
+> > > > +		init-val = <1>;
+> > > > +	};
+> > > > +
+> > > > +	hps_fpgabridge1: fpgabridge@1 {
+> > > > +		compatible = "altr,socfpga-lwhps2fpga-bridge";
+> > > > +		label = "lwhps2fpga";
+> > > > +		altr,l3-syscon = <&l3regs>;
+> > > > +		clocks = <&l4_main_clk>;
+> > > > +		init-val = <0>;
+> > > > +	};
+> > > > +
+> > > > +	hps_fpgabridge2: fpgabridge@2 {
+> > > > +		compatible = "altr,socfpga-fpga2hps-bridge";
+> > > > +		label = "fpga2hps";
+> > > > +		altr,l3-syscon = <&l3regs>;
+> > > > +		clocks = <&l4_main_clk>;
+> > > > +	};
+> > > 
+> > > The bridges are the buses into the FPGA. This has to be accomodated.
+> > > The bridges have two specified memory ranges: one the address space
+> > > of the bus, the second the register space for configuration.
+> > > 
+> > > This binding does NOT correctly describe the hardware. Sorry.
+> > > 
+> > 
+> > OK that was outdated.  More cleanup needed.  How about this type of
+> > binding?  Here's an actual use case for something that has multiple
+> > pieces of soft IP in the FPGA (sysid, gpio).  I eliminated a few.
+> > 
+> > *snippet of DT*
+> > sopc@0 {
+> > 	device_type = "soc";
+> > 	ranges;
+> > 	#address-cells = <0x1>;
+> > 	#size-cells = <0x1>;
+> > 	compatible = "ALTR,avalon", "simple-bus";
+> > 	bus-frequency = <0x0>;
+> > 
+> > 	bridge@0xc0000000 {
+> > 		compatible = "altr,bridge-14.0", "simple-bus";
+> > 		reg = <0xc0000000 0x20000000 0xff200000 0x200000>;
+> > 		reg-names = "axi_h2f", "axi_h2f_lw";
+> > 		clocks = <0x2 0x2 0x2>;
+> > 		clock-names = "h2f_axi_clock", "h2f_lw_axi_clock",
+> > 		              "f2h_sdram0_clock";
+> > 		#address-cells = <0x2>;
+> > 		#size-cells = <0x1>;
+> > 		ranges = <0x0 0x0 0xc0000000 0x10000
+> > 		          0x1 0x10000 0xff210000 0x8
+> > 			  0x1 0x10040 0xff210040 0x20 
+> > 			  0x1 0x10080 0xff210080 0x10 
+> > 			  0x1 0x100c0 0xff2100c0 0x10 
+> > 			  0x1 0x20000 0xff220000 0x8>;
+> > 
+> > 		sysid@0x100010000 {
+> > 			compatible = "altr,sysid-14.0", "altr,sysid-1.0";
+> > 			reg = <0x1 0x10000 0x8>;
+> > 			clocks = <0x2>;
+> > 			id = <0xacd51402>;
+> > 			timestamp = <0x540a048e>;
+> > 		};
+> > 
+> > 		gpio@0x100010040 {
+> > 			compatible = "altr,pio-14.0", "altr,pio-1.0";
+> > 			reg = <0x1 0x10040 0x20>;
+> > 			clocks = <0x2>;
+> > 			altr,gpio-bank-width = <0x4>;
+> > 			resetvalue = <0x0>;
+> > 			#gpio-cells = <0x2>;
+> > 			gpio-controller;
+> > 			linux,phandle = <0x2a>;
+> > 		};
+> > 
+> > 		/* other hardware that exists on FPGA here */
+> > 
+> > 	};
+> > };
+> > 
+> 
+> Yes, something like this seems appropriate. Again, I also cooked up a driver
+> for this. I need to figure out why the GPV register writing sometimes doesn't
+> work as expected and will try to marry it to your FPGA manager framework
+> before I consider sending it to the list.
 
-Testing details:
-Tested the patch by injecting 'ECC' type errors using mce_amd_inj
-and error decoding works fine.
+Hi Steffen,
 
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
----
-Changes in V3
- - Re-work per-family low_op for determine_memory_type() as
-   switch-case
- - Rebase work on top of latest tip.git
+I look forward to seeing it.
 
-Changes in V2
- - Cache dram_type in amd64_pvt structure (per Boris suggestion)
- - Introduce per-family low_ops for determine_memory_type() to reduce
-   number of if-else statements
-   - Call this early in read_mc_regs() to cache dram_type
-   - The debug messages are moved around a bit as a result to print
-     dram_type immediately
+> 
+> My proposed binding at the moment looks like:
+> 
+> Example:
+> 
+> 	hps2fpga: axibridge@ff500000 {
+> 		#address-cells = <1>;
+> 		#size-cells = <1>;
+> 		compatible = "altr,hps2fpga-axi-bridge";
+> 		reg = <0xff500000 0x100000>,
+> 		      <0xc0000000 0x3c000000>;
+> 		clocks = <&l4_mp_clk>, <&l3_main_clk>;
+> 		clock-names = "gpv_clk", "data_clk";
+> 		resets = <&rst HPS2FPGA_RESET>;
+> 		reset-names = "hps2fpga";
+> 		altr,gpv-master = <&lwhps2fpga>;
+> 		altr,l3-gpv = <&l3regs>;
+> 		bus-width = <64>;
+> 		status = "disabled";
+> 		ranges;
+> 	};
+> 
+> Board file example:
+> 
+> 	&hps2fpga {
+> 		bus-width = <32>;
+> 		status = "okay";
+> 
+> 		axi-ip: axi-ip@c0000000 {
+> 			compatible = "axi-ip";
+> 			reg = <0xc0000000 0x10000>;
+> 			clocks = <&h2f_usr2_clk>;
+> 			status = "okay";
+> 		};
+> 	};
+> 
+> So we seem to be almost on the same page. I first had the simple-bus in
+> there, too. But this will lead to all sorts of problems regarding driver
+> probing/removing on that bus.
+> 
 
- drivers/edac/amd64_edac.c | 257 +++++++++++++++++++++++++++++++---------------
- drivers/edac/amd64_edac.h |  15 ++-
- 2 files changed, 186 insertions(+), 86 deletions(-)
+I think the problems we have had was that the bus had to be arch_initcall so
+that it would be there before the drivers were.  Are there other problems
+you are thinking of?  It would be good if we could get around that problem
+as otherwise it will be a problem with the l3-nic not being early enough.
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index bbd6514..1092ddd 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -692,9 +692,19 @@ static void debug_dump_dramcfg_low(struct amd64_pvt *pvt, u32 dclr, int chan)
- {
- 	edac_dbg(1, "F2x%d90 (DRAM Cfg Low): 0x%08x\n", chan, dclr);
- 
--	edac_dbg(1, "  DIMM type: %sbuffered; all DIMMs support ECC: %s\n",
--		 (dclr & BIT(16)) ?  "un" : "",
--		 (dclr & BIT(19)) ? "yes" : "no");
-+	if (pvt->dram_type == MEM_LRDDR3) {
-+		u32 dcsm = pvt->csels[chan].csmasks[0];
-+		/*
-+		 * It's assumed all LRDIMMs in a DCT are going to be of
-+		 * same 'type' until proven otherwise. So, use a cs
-+		 * value of '0' here to get dcsm value.
-+		 */
-+		edac_dbg(1, " LRDIMM %dx rank multiply\n", (dcsm & 0x3));
-+	}
-+
-+	edac_dbg(1, "All DIMMs support ECC:%s\n",
-+		    (dclr & BIT(19)) ? "yes" : "no");
-+
- 
- 	edac_dbg(1, "  PAR/ERR parity: %s\n",
- 		 (dclr & BIT(8)) ?  "enabled" : "disabled");
-@@ -756,7 +766,7 @@ static void prep_chip_selects(struct amd64_pvt *pvt)
- 	if (pvt->fam == 0xf && pvt->ext_model < K8_REV_F) {
- 		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 8;
- 		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 8;
--	} else if (pvt->fam == 0x15 && pvt->model >= 0x30) {
-+	} else if (pvt->fam == 0x15 && pvt->model == 0x30) {
- 		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 4;
- 		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 2;
- 	} else {
-@@ -813,25 +823,57 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
- 	}
- }
- 
--static enum mem_type determine_memory_type(struct amd64_pvt *pvt, int cs)
-+static void determine_memory_type(struct amd64_pvt *pvt)
- {
--	enum mem_type type;
--
--	/* F15h supports only DDR3 */
--	if (pvt->fam >= 0x15)
--		type = (pvt->dclr0 & BIT(16)) ?	MEM_DDR3 : MEM_RDDR3;
--	else if (pvt->fam == 0x10 || pvt->ext_model >= K8_REV_F) {
--		if (pvt->dchr0 & DDR3_MODE)
--			type = (pvt->dclr0 & BIT(16)) ?	MEM_DDR3 : MEM_RDDR3;
--		else
--			type = (pvt->dclr0 & BIT(16)) ? MEM_DDR2 : MEM_RDDR2;
--	} else {
--		type = (pvt->dclr0 & BIT(18)) ? MEM_DDR : MEM_RDDR;
-+	switch (pvt->fam) {
-+	case 0xf:
-+		if (pvt->ext_model < K8_REV_F) {
-+			pvt->dram_type = (pvt->dclr0 & BIT(18)) ?
-+					 MEM_DDR : MEM_RDDR;
-+			break;
-+		}
-+		/* ext_model >= k8_rev_f, fall down below */
-+	case 0x10:
-+		if (!(pvt->dchr0 & DDR3_MODE)) {
-+			pvt->dram_type = (pvt->dclr0 & BIT(16)) ?
-+					 MEM_DDR2 : MEM_RDDR2;
-+			break;
-+		}
-+		/* If f10h supports DDR3, it will be handled by cases below */
-+	case 0x15:
-+		/* F15h supports only DDR3 */
-+		if (pvt->model == 0x60) {
-+			/*
-+			 * We use a Chip Select value of '0' to obtain dcsm.
-+			 * Theoretically, it is possible to populate LRDIMMs
-+			 * of different 'Rank' value on a DCT. But this is not
-+			 * a common case. So, it's reasonable to assume all
-+			 * DIMMs are going to be of same 'type' until proven
-+			 * otherwise.
-+			 */
-+			u32 dram_ctrl;
-+			u32 dcsm = pvt->csels[0].csmasks[0];
-+
-+			amd64_read_dct_pci_cfg(pvt, 0, DRAM_CONTROL,
-+					       &dram_ctrl);
-+			if (((dram_ctrl >> 8) & 0x7) == 0x2)
-+				pvt->dram_type = MEM_DDR4;
-+			else if (pvt->dclr0 & BIT(16))
-+				pvt->dram_type = MEM_DDR3;
-+			else if (dcsm & 0x3)
-+				pvt->dram_type = MEM_LRDDR3;
-+			else
-+				pvt->dram_type = MEM_RDDR3;
-+			break;
-+		}
-+		/* other f15h models fall down below */
-+	case 0x16:
-+		pvt->dram_type = (pvt->dclr0 & BIT(16)) ?
-+				 MEM_DDR3 : MEM_RDDR3;
-+		break;
-+	default:
-+		pvt->dram_type = MEM_EMPTY;
- 	}
--
--	amd64_info("CS%d: %s\n", cs, edac_mem_types[type]);
--
--	return type;
- }
- 
- /* Get the number of DCT channels the memory controller is using. */
-@@ -958,8 +1000,12 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
- 	if (WARN_ON(!nb))
- 		return;
- 
--	pci_func = (pvt->model == 0x30) ? PCI_DEVICE_ID_AMD_15H_M30H_NB_F1
--					: PCI_DEVICE_ID_AMD_15H_NB_F1;
-+	if (pvt->model == 0x60)
-+		pci_func = PCI_DEVICE_ID_AMD_15H_M60H_NB_F1;
-+	else if (pvt->model == 0x30)
-+		pci_func = PCI_DEVICE_ID_AMD_15H_M30H_NB_F1;
-+	else
-+		pci_func = PCI_DEVICE_ID_AMD_15H_NB_F1;
- 
- 	f1 = pci_get_related_function(nb->misc->vendor, pci_func, nb->misc);
- 	if (WARN_ON(!f1))
-@@ -1049,7 +1095,7 @@ static int ddr2_cs_size(unsigned i, bool dct_width)
- }
- 
- static int k8_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
--				  unsigned cs_mode)
-+				  unsigned cs_mode, int cs_mask_nr)
- {
- 	u32 dclr = dct ? pvt->dclr1 : pvt->dclr0;
- 
-@@ -1167,8 +1213,43 @@ static int ddr3_cs_size(unsigned i, bool dct_width)
- 	return cs_size;
- }
- 
-+static int ddr3_lrdimm_cs_size(unsigned i, unsigned rank_multiply)
-+{
-+	unsigned shift = 0;
-+	int cs_size = 0;
-+
-+	if (i < 4 || i == 6)
-+		cs_size = -1;
-+	else if (i == 12)
-+		shift = 7;
-+	else if (!(i & 0x1))
-+		shift = i >> 1;
-+	else
-+		shift = (i + 1) >> 1;
-+
-+	if (cs_size != -1)
-+		cs_size = rank_multiply * (128 << shift);
-+
-+	return cs_size;
-+}
-+
-+static int ddr4_cs_size(unsigned i)
-+{
-+	int cs_size = 0;
-+
-+	if (i == 0)
-+		cs_size = -1;
-+	else if (i == 1)
-+		cs_size = 1024;
-+	else
-+		/* Min cs_size = 1G */
-+		cs_size = 1024 * (1 << (i >> 1));
-+
-+	return cs_size;
-+}
-+
- static int f10_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
--				   unsigned cs_mode)
-+				   unsigned cs_mode, int cs_mask_nr)
- {
- 	u32 dclr = dct ? pvt->dclr1 : pvt->dclr0;
- 
-@@ -1184,18 +1265,49 @@ static int f10_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
-  * F15h supports only 64bit DCT interfaces
-  */
- static int f15_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
--				   unsigned cs_mode)
-+				   unsigned cs_mode, int cs_mask_nr)
- {
- 	WARN_ON(cs_mode > 12);
- 
- 	return ddr3_cs_size(cs_mode, false);
- }
- 
-+/* F15h M60h supports DDR4 mapping as well.. */
-+static int f15_m60h_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
-+					unsigned cs_mode, int cs_mask_nr)
-+{
-+	int cs_size;
-+	u32 dcsm = pvt->csels[dct].csmasks[cs_mask_nr];
-+
-+	WARN_ON(cs_mode > 12);
-+
-+	if (pvt->dram_type == MEM_DDR4) {
-+		if (cs_mode > 9)
-+			return -1;
-+
-+		cs_size = ddr4_cs_size(cs_mode);
-+	} else if (pvt->dram_type == MEM_LRDDR3) {
-+		unsigned rank_multiply = dcsm & 0xf;
-+
-+		if (rank_multiply == 3)
-+			rank_multiply = 4;
-+		cs_size = ddr3_lrdimm_cs_size(cs_mode, rank_multiply);
-+	} else {
-+		/* Minimum cs size is 512mb for F15hM60h*/
-+		if (cs_mode == 0x1)
-+			return -1;
-+
-+		cs_size = ddr3_cs_size(cs_mode, false);
-+	}
-+
-+	return cs_size;
-+}
-+
- /*
-  * F16h and F15h model 30h have only limited cs_modes.
-  */
- static int f16_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
--				unsigned cs_mode)
-+				unsigned cs_mode, int cs_mask_nr)
- {
- 	WARN_ON(cs_mode > 12);
- 
-@@ -1757,13 +1869,20 @@ static void debug_display_dimm_sizes(struct amd64_pvt *pvt, u8 ctrl)
- 
- 		size0 = 0;
- 		if (dcsb[dimm*2] & DCSB_CS_ENABLE)
-+			/* For f15m60h, need multiplier for LRDIMM cs_size
-+			 * calculation. We pass 'dimm' value to the dbam_to_cs
-+			 * mapper so we can find the multiplier from the
-+			 * corresponding DCSM.
-+			 */
- 			size0 = pvt->ops->dbam_to_cs(pvt, ctrl,
--						     DBAM_DIMM(dimm, dbam));
-+						     DBAM_DIMM(dimm, dbam),
-+						     dimm);
- 
- 		size1 = 0;
- 		if (dcsb[dimm*2 + 1] & DCSB_CS_ENABLE)
- 			size1 = pvt->ops->dbam_to_cs(pvt, ctrl,
--						     DBAM_DIMM(dimm, dbam));
-+						     DBAM_DIMM(dimm, dbam),
-+						     dimm);
- 
- 		amd64_info(EDAC_MC ": %d: %5dMB %d: %5dMB\n",
- 				dimm * 2,     size0,
-@@ -1812,6 +1931,16 @@ static struct amd64_family_type family_types[] = {
- 			.dbam_to_cs		= f16_dbam_to_chip_select,
- 		}
- 	},
-+	[F15_M60H_CPUS] = {
-+		.ctl_name = "F15h_M60h",
-+		.f1_id = PCI_DEVICE_ID_AMD_15H_M60H_NB_F1,
-+		.f3_id = PCI_DEVICE_ID_AMD_15H_M60H_NB_F3,
-+		.ops = {
-+			.early_channel_count	= f1x_early_channel_count,
-+			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
-+			.dbam_to_cs		= f15_m60h_dbam_to_chip_select,
-+		}
-+	},
- 	[F16_CPUS] = {
- 		.ctl_name = "F16h",
- 		.f1_id = PCI_DEVICE_ID_AMD_16H_NB_F1,
-@@ -2175,6 +2304,8 @@ static void read_mc_regs(struct amd64_pvt *pvt)
- 	}
- 
- 	pvt->ecc_sym_sz = 4;
-+	determine_memory_type(pvt);
-+	edac_dbg(1, "  DIMM type: %s\n", edac_mem_types[pvt->dram_type]);
- 
- 	if (pvt->fam >= 0x10) {
- 		amd64_read_pci_cfg(pvt->F3, EXT_NB_MCA_CFG, &tmp);
-@@ -2238,7 +2369,8 @@ static u32 get_csrow_nr_pages(struct amd64_pvt *pvt, u8 dct, int csrow_nr)
- 	 */
- 	cs_mode = DBAM_DIMM(csrow_nr / 2, dbam);
- 
--	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode) << (20 - PAGE_SHIFT);
-+	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode, (csrow_nr / 2))
-+							   << (20 - PAGE_SHIFT);
- 
- 	edac_dbg(0, "csrow: %d, channel: %d, DBAM idx: %d\n",
- 		    csrow_nr, dct,  cs_mode);
-@@ -2257,7 +2389,6 @@ static int init_csrows(struct mem_ctl_info *mci)
- 	struct csrow_info *csrow;
- 	struct dimm_info *dimm;
- 	enum edac_type edac_mode;
--	enum mem_type mtype;
- 	int i, j, empty = 1;
- 	int nr_pages = 0;
- 	u32 val;
-@@ -2302,8 +2433,6 @@ static int init_csrows(struct mem_ctl_info *mci)
- 			nr_pages += row_dct1_pages;
- 		}
- 
--		mtype = determine_memory_type(pvt, i);
--
- 		edac_dbg(1, "Total csrow%d pages: %u\n", i, nr_pages);
- 
- 		/*
-@@ -2317,7 +2446,7 @@ static int init_csrows(struct mem_ctl_info *mci)
- 
- 		for (j = 0; j < pvt->channel_count; j++) {
- 			dimm = csrow->channels[j]->dimm;
--			dimm->mtype = mtype;
-+			dimm->mtype = pvt->dram_type;
- 			dimm->edac_mode = edac_mode;
- 		}
- 	}
-@@ -2604,6 +2733,10 @@ static struct amd64_family_type *per_family_init(struct amd64_pvt *pvt)
- 			fam_type = &family_types[F15_M30H_CPUS];
- 			pvt->ops = &family_types[F15_M30H_CPUS].ops;
- 			break;
-+		} else if (pvt->model == 0x60) {
-+			fam_type = &family_types[F15_M60H_CPUS];
-+			pvt->ops = &family_types[F15_M60H_CPUS].ops;
-+			break;
- 		}
- 
- 		fam_type	= &family_types[F15_CPUS];
-@@ -2828,55 +2961,13 @@ static void remove_one_instance(struct pci_dev *pdev)
-  * inquiry this table to see if this driver is for a given device found.
-  */
- static const struct pci_device_id amd64_pci_table[] = {
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_K8_NB_MEMCTL,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_10H_NB_DRAM,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_15H_NB_F2,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_15H_M30H_NB_F2,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_16H_NB_F2,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_16H_M30H_NB_F2,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_K8_NB_MEMCTL) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_10H_NB_DRAM) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F2) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F2) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F2) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F2) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F2) },
- 	{0, }
- };
- MODULE_DEVICE_TABLE(pci, amd64_pci_table);
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 55fb594..d8468c6 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -162,10 +162,12 @@
- /*
-  * PCI-defined configuration space registers
-  */
--#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F1 0x141b
--#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F2 0x141c
- #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
- #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F1 0x141b
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F2 0x141c
-+#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F1 0x1571
-+#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F2 0x1572
- #define PCI_DEVICE_ID_AMD_16H_NB_F1	0x1531
- #define PCI_DEVICE_ID_AMD_16H_NB_F2	0x1532
- #define PCI_DEVICE_ID_AMD_16H_M30H_NB_F1 0x1581
-@@ -221,6 +223,8 @@
- 
- #define csrow_enabled(i, dct, pvt)	((pvt)->csels[(dct)].csbases[(i)] & DCSB_CS_ENABLE)
- 
-+#define DRAM_CONTROL			0x78
-+
- #define DBAM0				0x80
- #define DBAM1				0x180
- 
-@@ -301,6 +305,7 @@ enum amd_families {
- 	F10_CPUS,
- 	F15_CPUS,
- 	F15_M30H_CPUS,
-+	F15_M60H_CPUS,
- 	F16_CPUS,
- 	F16_M30H_CPUS,
- 	NUM_FAMILIES,
-@@ -379,6 +384,9 @@ struct amd64_pvt {
- 
- 	/* place to store error injection parameters prior to issue */
- 	struct error_injection injection;
-+
-+	/* cache the dram_type */
-+	enum mem_type dram_type;
- };
- 
- enum err_codes {
-@@ -480,7 +488,8 @@ struct low_ops {
- 	int (*early_channel_count)	(struct amd64_pvt *pvt);
- 	void (*map_sysaddr_to_csrow)	(struct mem_ctl_info *mci, u64 sys_addr,
- 					 struct err_info *);
--	int (*dbam_to_cs)		(struct amd64_pvt *pvt, u8 dct, unsigned cs_mode);
-+	int (*dbam_to_cs)		(struct amd64_pvt *pvt, u8 dct,
-+					 unsigned cs_mode, int cs_mask_nr);
- };
- 
- struct amd64_family_type {
--- 
-2.0.2
+Alan
 
+
+> Regards,
+> Steffen
+> 
+> -- 
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
