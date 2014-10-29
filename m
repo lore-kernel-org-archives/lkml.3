@@ -1,116 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406AbaJ2Siw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:38:52 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:38801 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020AbaJ2Siu (ORCPT
+	id S932563AbaJ2Si6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:38:58 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:62424 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020AbaJ2Six (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:38:50 -0400
-Message-ID: <54513435.9050803@gmail.com>
-Date: Wed, 29 Oct 2014 19:38:45 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-CC: "David S. Miller" <davem@davemloft.net>,
-        =?UTF-8?B?QW50b2luZSBUw6luYXI=?= =?UTF-8?B?dA==?= 
-	<antoine.tenart@free-electrons.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/9] ARM: berlin: Add BG2 ethernet DT nodes
-References: <1414002412-13615-1-git-send-email-sebastian.hesselbarth@gmail.com> <1414002412-13615-7-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1414002412-13615-7-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 29 Oct 2014 14:38:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <1414171197-18620-1-git-send-email-dbaryshkov@gmail.com>
+References: <1414171197-18620-1-git-send-email-dbaryshkov@gmail.com>
+Date: Wed, 29 Oct 2014 22:38:52 +0400
+Message-ID: <CALT56yPLnitsAqKJ=ryFE1uXwQqpbqwP3BmOf8L+fYG88kPnhw@mail.gmail.com>
+Subject: Re: [PATCH] mfd: tc6393xb fail ohci suspend if full state restore is required
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: kernel list <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.10.2014 20:26, Sebastian Hesselbarth wrote:
-> Marvell BG2 has two fast ethernet controllers with internal PHY,
-> add the corresponding nodes to SoC dtsi.
+2014-10-24 20:19 GMT+03:00 Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>:
+> Some boards with TC6393XB chip require full state restore during system
+> resume thanks to chip's VCC being cut off during suspend (Sharp SL-6000
+> tosa is one of them). Failing to do so would result in ohci Oops on
+> resume due to internal memory contentes being changed. Fail ohci suspend
+> on tc6393xb is full state restore is required.
 >
-> Tested-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Recommended workaround is to unbind tmio-ohci driver before suspend and
+> rebind it after resume.
 
-Applied the four DT patches to berlin/dt.
+ping
 
-Sebastian
-
+>
+> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> Cc: stable@vger.kernel.org
 > ---
-> Changelog:
-> v1->v2:
-> - move phy-connection-type to controller node instead of PHY node
->    (Reported by Sergei Shtylyov)
->
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: netdev@vger.kernel.org
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   arch/arm/boot/dts/berlin2.dtsi | 36 ++++++++++++++++++++++++++++++++++++
->   1 file changed, 36 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-> index 9d7c810ebd0b..dc0227dfc691 100644
-> --- a/arch/arm/boot/dts/berlin2.dtsi
-> +++ b/arch/arm/boot/dts/berlin2.dtsi
-> @@ -79,11 +79,47 @@
->   			clocks = <&chip CLKID_TWD>;
->   		};
->
-> +		eth1: ethernet@b90000 {
-> +			compatible = "marvell,pxa168-eth";
-> +			reg = <0xb90000 0x10000>;
-> +			clocks = <&chip CLKID_GETH1>;
-> +			interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
-> +			/* set by bootloader */
-> +			local-mac-address = [00 00 00 00 00 00];
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +			phy-connection-type = "mii";
-> +			phy-handle = <&ethphy1>;
-> +			status = "disabled";
-> +
-> +			ethphy1: ethernet-phy@0 {
-> +				reg = <0>;
-> +			};
-> +		};
-> +
->   		cpu-ctrl@dd0000 {
->   			compatible = "marvell,berlin-cpu-ctrl";
->   			reg = <0xdd0000 0x10000>;
->   		};
->
-> +		eth0: ethernet@e50000 {
-> +			compatible = "marvell,pxa168-eth";
-> +			reg = <0xe50000 0x10000>;
-> +			clocks = <&chip CLKID_GETH0>;
-> +			interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
-> +			/* set by bootloader */
-> +			local-mac-address = [00 00 00 00 00 00];
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +			phy-connection-type = "mii";
-> +			phy-handle = <&ethphy0>;
-> +			status = "disabled";
-> +
-> +			ethphy0: ethernet-phy@0 {
-> +				reg = <0>;
-> +			};
-> +		};
-> +
->   		apb@e80000 {
->   			compatible = "simple-bus";
->   			#address-cells = <1>;
->
+>  drivers/mfd/tc6393xb.c | 13 ++++++++++++-
+>  1 file changed, 12 insertions(+), 1 deletion(-)
 
+
+
+-- 
+With best wishes
+Dmitry
