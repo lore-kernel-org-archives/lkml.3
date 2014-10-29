@@ -1,142 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546AbaJ2Kmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:42:51 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:31958 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168AbaJ2Kms (ORCPT
+	id S932452AbaJ2Knh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:43:37 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:53112 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259AbaJ2Knf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:42:48 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-2c-5450c4a42477
-Message-id: <1414579362.18868.11.camel@AMDC1943>
-Subject: Re: [PATCH 6/8] regulator: max77686: Add external GPIO control
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Date: Wed, 29 Oct 2014 11:42:42 +0100
-In-reply-to: <1414498308.24949.32.camel@AMDC1943>
-References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
- <1414422226-10948-7-git-send-email-k.kozlowski@samsung.com>
- <544EA4FA.6040704@collabora.co.uk> <1414486356.24949.19.camel@AMDC1943>
- <1414498308.24949.32.camel@AMDC1943>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t/xy7pLjgSEGFx7rWuxccZ6VotJ6w4w
-	WUx9+ITN4vqX56wW84+cY7U4+rvAonfBVTaLs01v2C3ufz3KaPHtSgeTxabH11gtLu+aw2Yx
-	4/w+Jovbl3kt1h65y25xupvVQcCjpbmHzePv8+ssHn9XvWD22DnrLrvHplWdbB53ru1h85h3
-	MtBj85J6j74tqxg9Pm+SC+CK4rJJSc3JLEst0rdL4MrYuuUGU8FtsYrNG54wNTA+EOxi5OSQ
-	EDCRWPd/NTOELSZx4d56ti5GLg4hgaWMEjMefmGFcD4zShzeuhasilfAQOLs4+2sILawgLvE
-	/YWHmEBsNgFjic3Ll7CB2CICdhI3Vj9kBmlmFjjMIrHowXWwBIuAqkTbrZ9ADRwcnAKGEmvv
-	ZkEs+MYo8WPVS7AaZgF1iUnzFjGD1EgIKEs09rtB7BWU+DH5HgtEibzE5jVvmScwCsxC0jEL
-	SdksJGULGJlXMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoRE2tcdjEuPWR1iFOBgVOLhjWDx
-	DxFiTSwrrsw9xCjBwawkwvtub0CIEG9KYmVValF+fFFpTmrxIUYmDk6pBsZTQg4T2/50MBWf
-	ulVQfXN1G/u5WXwKnFnHuZy3hOZMnP+uTfDi/wyfxalTYnrvMkb29NTV/lyuscldNmvGfd8P
-	VnK7T+vcLDh0YEYjR9qdtrmxTyL0b8ZN4iwu29o7semeSx1f8w/+J3KeWh5WU4RyZyosmSnE
-	vYAl3rNE9dbZ7dacQZ/nzlBiKc5INNRiLipOBAA8xbIGkgIAAA==
+	Wed, 29 Oct 2014 06:43:35 -0400
+Date: Wed, 29 Oct 2014 10:43:22 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v5 12/18] ACPI / processor: Make it possible to get CPU
+ hardware ID via GICC
+Message-ID: <20141029104321.GA8896@e102568-lin.cambridge.arm.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <1413553034-20956-13-git-send-email-hanjun.guo@linaro.org>
+ <20141024173920.GB8303@red-moon>
+ <544E1732.5090902@linaro.org>
+MIME-Version: 1.0
+In-Reply-To: <544E1732.5090902@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 29 Oct 2014 10:43:30.0091 (UTC) FILETIME=[2DB1D7B0:01CFF365]
+X-MC-Unique: 114102910433205001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-10-28 at 13:11 +0100, Krzysztof Kozlowski wrote:
-> On wto, 2014-10-28 at 09:52 +0100, Krzysztof Kozlowski wrote:
-> > On pon, 2014-10-27 at 21:03 +0100, Javier Martinez Canillas wrote:
-> > > Hello Krzysztof,
-> > > 
-> > > On 10/27/2014 04:03 PM, Krzysztof Kozlowski wrote:
-> > > > @@ -85,6 +91,9 @@ struct max77686_data {
-> > > >  	struct max77686_regulator_data *regulators;
-> > > >  	int num_regulators;
-> > > >  
-> > > > +	/* Array of size num_regulators with GPIOs for external control. */
-> > > > +	int *ext_control_gpio;
-> > > > +
-> > > 
-> > > The integer-based GPIO API is deprecated in favor of the descriptor-based GPIO
-> > > interface (Documentation/gpio/consumer.txt). Could you please use the later?
+On Mon, Oct 27, 2014 at 09:58:10AM +0000, Hanjun Guo wrote:
+
+[...]
+
+> >> +static int map_gicc_mpidr(struct acpi_subtable_header *entry,
+> >> +		int device_declaration, u32 acpi_id, int *mpidr)
+> >> +{
+> >> +	struct acpi_madt_generic_interrupt *gicc =
+> >> +	    container_of(entry, struct acpi_madt_generic_interrupt, header);
+> >> +
+> >> +	if (!(gicc->flags & ACPI_MADT_ENABLED))
+> >> +		return -ENODEV;
+> >> +
+> >> +	/* In the GIC interrupt model, logical processors are
+> >> +	 * required to have a Processor Device object in the DSDT,
+> >> +	 * so we should check device_declaration here
+> >> +	 */
+> >> +	if (device_declaration && (gicc->uid == acpi_id)) {
+> >> +		/*
+> >> +		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
+> >> +		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
+> >> +		 * fields into a single 32 bit identifier to accommodate the
+> >> +		 * acpi processor drivers.
+> >> +		 */
+> >> +		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
+> >> +			 | gicc->arm_mpidr;
 > > 
-> > Sure, I can. Please have in mind that regulator core still accepts old
-> > GPIO so I will have to use desc_to_gpio(). That should work... and
-> > should be future-ready.
+> > The simple fact that you define a function to pack the mpidr value and
+> > you can't use it here because this is *generic* code is telling, and
+> > a very bad omen. At the cost of sounding like a broken record, I do not
+> > like this mpidr->apic->logical_cpu song and dance at all.
+> > ACPI is peppered with code (eg hotplug is another example, CPUidle driver
+> > even worse) that is supposed to be generic but contains x86 code to carry
+> > out this cpuid conversion, I really think that in order to start an ARM64
+> > ACPI port properly we should at least try to factor out this physical to
+> > logical cpu id conversion, and it is not the first time that I mention this
+> > on the lists.
 > 
-> It seems I was too hasty... I think usage of the new gpiod API implies
-> completely different bindings.
-> 
-> The gpiod_get() gets GPIO from a device level, not from given sub-node
-> pointer. This means that you cannot have DTS like this:
-> ldo21_reg: ldo21 {
-> 	regulator-compatible = "LDO21";
-> 	regulator-name = "VTF_2.8V";
-> 	regulator-min-microvolt = <2800000>;
-> 	regulator-max-microvolt = <2800000>;
-> 	ec-gpio = <&gpy2 0 0>;
-> };
-> 
-> ldo22_reg: ldo22 {
-> 	regulator-compatible = "LDO22";
-> 	regulator-name = "VMEM_VDD_2.8V";
-> 	regulator-min-microvolt = <2800000>;
-> 	regulator-max-microvolt = <2800000>;
-> 	ec-gpio = <&gpk0 2 0>;
-> };
-> 
-> 
-> I could put GPIOs in device node:
-> 
-> max77686_pmic@09 {
-> 	compatible = "maxim,max77686";
-> 	interrupt-parent = <&gpx0>;
-> 	interrupts = <7 0>;
-> 	reg = <0x09>;
-> 	#clock-cells = <1>;
-> 	ldo21-gpio = <&gpy2 0 0>;
-> 	ldo22-gpio = <&gpk0 2 0>;
-> 
-> 	ldo21_reg: ldo21 {
-> 		regulator-compatible = "LDO21";
-> 		regulator-name = "VTF_2.8V";
-> 		regulator-min-microvolt = <2800000>;
-> 		regulator-max-microvolt = <2800000>;
-> 	};
-> 
-> 	ldo22_reg: ldo22 {
-> 		regulator-compatible = "LDO22";
-> 		regulator-name = "VMEM_VDD_2.8V";
-> 		regulator-min-microvolt = <2800000>;
-> 		regulator-max-microvolt = <2800000>;
-> 	};
-> 
-> This would work but I don't like it. The properties of a regulator are
-> above the node configuring that regulator.
-> 
-> Any ideas?
-> 
+> I know, thanks for pointing this out. As I replied in previous version
+> of this patch set, apic_id is x86/ia64 specific, but the meaning behind
+> it is not. It means the CPU hardware id to identify itself in the system,
+> it just like MPIDR on ARM.
 
-Continuing talking to myself... I found another problem - GPIO cannot be
-requested more than once (-EBUSY). In case of this driver (and board:
-Trats2) one GPIO is connected to regulators. The legacy GPIO API and
-regulator core handle this.
+Yes, except that it is called apic_id.
 
-With new GPIO API I would have to implement some additional steps in
-such case...
+> I will send out a patch for RFC to convert apic_id to physid which
+> is generic for all platforms.
 
-So there are 2 issues:
-1. Cannot put GPIO property in regulator node.
-2. Cannot request some GPIO more than once.
+That seems a good idea to sound out if I am the only one having an issue
+with the current approach.
 
-I'm going back to legacy API for now.
+> > I will also talk to Rafael about this at the earliest opportunity, I
+> > guess that x86 code relies on apic-id because some ACPI versions could
+> > not rely on the acpi-id or some other reasons I have to investigate.
+> 
+> As ACPI spec (section 8.4, Declaring Processors) said, Each processor
+> in the system must be declared in the ACPI namespace, so each cpu will
+> have acpi_id in all ACPI versions, and in theory we can map acpi_id to
+> logical cpu id if we want to.
+> 
+> But things are complicated, apic_id is connected to many
+> tables, MADT for smp init, DSDT for device driver, and SRAT for NUMA (there
+> is no acpi_id in it, ONLY has apic_id in the table for x86/ia64), so if we
+> want to factor the code to map acpi_id to logical cpu id, we need to modify:
+> 
+>  - ACPI drivers;
+>  - SMP init for x86 and ia64
+>  - the mappings for NUMA init for x86 and ia64
+> that will be lots of work I think.
+> 
+> I'm willing to discuss this further and come out a solution, please
+> comment on what I said and share your ideas :)
 
-Best regards,
-Krzysztof
+Factoring out apic_id to a common cpu_physical_id is ok to me, because
+basically that's what you are doing except for the naming. I do not
+have any particular preference for the acpi_id, I mentioned that only
+as a means to implement a generic cpu_physical_id, arch agnostic.
+
+Drop the RFC you mentioned above please on the list, we will restart debating
+from there.
+
+Thanks,
+Lorenzo
 
