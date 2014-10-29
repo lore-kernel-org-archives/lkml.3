@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469AbaJ2SH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:07:27 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:55018 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaJ2SH0 (ORCPT
+	id S1755879AbaJ2SHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:07:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45486 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755506AbaJ2SHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:07:26 -0400
-Date: Wed, 29 Oct 2014 11:07:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz, bp@suse.de,
-        yaneti@declera.com, jay.vosburgh@canonical.com, mroos@linux.ee,
-        emunson@akamai.com, kevin@scrye.com
-Subject: [GIT PULL rcu/urgent-for-mingo] Regression fixes
-Message-ID: <20141029180721.GA9127@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Wed, 29 Oct 2014 14:07:37 -0400
+Date: Wed, 29 Oct 2014 19:07:34 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sabrina Dubroca <sd@queasysnail.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jeffrey.t.kirsher@intel.com, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
+ linux-next
+Message-ID: <20141029180734.GQ12706@worktop.programming.kicks-ass.net>
+References: <20141029155620.GA4886@kria>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102918-0013-0000-0000-000005DEA5DA
+In-Reply-To: <20141029155620.GA4886@kria>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+On Wed, Oct 29, 2014 at 04:56:20PM +0100, Sabrina Dubroca wrote:
+> commit e22b886a8a43b ("sched/wait: Add might_sleep() checks") included
+> in today's linux-next added a check that fires on e1000 with netpoll:
+> 
+> 
+> BUG: sleeping function called from invalid context at kernel/irq/manage.c:104
+> in_atomic(): 1, irqs_disabled(): 1, pid: 1, name: systemd
+> no locks held by systemd/1.
+> irq event stamp: 10102965
+> hardirqs last  enabled at (10102965): [<ffffffff810cbafd>] vprintk_emit+0x2dd/0x6a0
+> hardirqs last disabled at (10102964): [<ffffffff810cb897>] vprintk_emit+0x77/0x6a0
+> softirqs last  enabled at (10102342): [<ffffffff810666aa>] __do_softirq+0x27a/0x6f0
+> softirqs last disabled at (10102337): [<ffffffff81066e86>] irq_exit+0x56/0xe0
+> Preemption disabled at:[<ffffffff817de50d>] printk_emit+0x31/0x33
+> 
+> CPU: 1 PID: 1 Comm: systemd Not tainted 3.18.0-rc2-next-20141029-dirty #222
+> Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140617_173321-var-lib-archbuild-testing-x86_64-tobias 04/01/2014
+>  ffffffff81a82291 ffff88001e743978 ffffffff817df31d 0000000000000000
+>  0000000000000000 ffff88001e7439a8 ffffffff8108dfa2 ffff88001e7439a8
+>  ffffffff81a82291 0000000000000068 0000000000000000 ffff88001e7439d8
+> Call Trace:
+>  [<ffffffff817df31d>] dump_stack+0x4f/0x7c
+>  [<ffffffff8108dfa2>] ___might_sleep+0x182/0x2b0
+>  [<ffffffff8108e10a>] __might_sleep+0x3a/0xc0
+>  [<ffffffff810ce358>] synchronize_irq+0x38/0xa0
+>  [<ffffffff810ce690>] disable_irq+0x20/0x30
+>  [<ffffffff815d7253>] e1000_netpoll+0x23/0x60
+>  [<ffffffff81678d02>] netpoll_poll_dev+0x72/0x3a0
+>  [<ffffffff816791e7>] netpoll_send_skb_on_dev+0x1b7/0x2e0
+>  [<ffffffff816795f3>] netpoll_send_udp+0x2e3/0x490
 
-This pull request contains a couple of fixes for RCU regressions:
+Oh cute.. not entirely sure what to do there. This only works if you
+_know_ desc->threads_active will never be !0.
 
-1.	Complete the work of commit dd56af42bd82 (rcu: Eliminate deadlock
-	between CPU hotplug and expedited grace periods), which was
-	intended to allow synchronize_sched_expedited() to be safely
-	used when holding locks acquired by CPU-hotplug notifiers.
-	This commit makes the put_online_cpus() avoid the deadlock
-	instead of just handling the get_online_cpus().
+The best I can come up with is something like this, which avoids the
+might_sleep() in the one special case.
 
-2.	Complete the work of commit 35ce7f29a44a (rcu: Create rcuo
-	kthreads only for onlined CPUs), which was intended to allow
-	RCU to avoid allocating unneeded kthreads on systems where the
-	firmware says that there are more CPUs than are really present.
-	This commit makes rcu_barrier() aware of the mismatch, so that
-	it doesn't hang waiting for non-existent CPUs.  (And yes, I do
-	need to force this non-existent-CPU condition into my testing.)
+Thomas?
 
-Both of these changes have been tested by the submitters and have been
-exposed to -next testing.  These changes are needed to avoid system hangs,
-and these system hangs have actually occurred during mainline testing.
+---
+ kernel/irq/manage.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-These changes are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git urgent-for-mingo
-
-for you to fetch changes up to d7e29933969e5ca7c112ce1368a07911f4485dc2:
-
-  rcu: Make rcu_barrier() understand about missing rcuo kthreads (2014-10-28 13:24:13 -0700)
-
-----------------------------------------------------------------
-Paul E. McKenney (2):
-      rcu: More on deadlock between CPU hotplug and expedited grace periods
-      rcu: Make rcu_barrier() understand about missing rcuo kthreads
-
- include/trace/events/rcu.h | 18 +++++++++---------
- kernel/cpu.c               | 14 +++++++++++++-
- kernel/rcu/tree.c          | 15 ++++++++++-----
- kernel/rcu/tree.h          |  1 +
- kernel/rcu/tree_plugin.h   | 33 +++++++++++++++++++++++++++++++++
- 5 files changed, 66 insertions(+), 15 deletions(-)
-
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0a9104b4608b..b7cb736a8b32 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -100,8 +100,11 @@ void synchronize_irq(unsigned int irq)
+ 		 * running. Now verify that no threaded handlers are
+ 		 * active.
+ 		 */
+-		wait_event(desc->wait_for_threads,
+-			   !atomic_read(&desc->threads_active));
++		if (atomic_read(&desc->threads_active)) {
++			might_sleep();
++			__wait_event(desc->wait_for_threads,
++				     !atomic_read(&desc->threads_active));
++		}
+ 	}
+ }
+ EXPORT_SYMBOL(synchronize_irq);
