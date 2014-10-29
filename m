@@ -1,183 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932891AbaJ2Nnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:43:55 -0400
-Received: from jim.sh ([75.150.123.25]:50192 "EHLO psychosis.jim.sh"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932746AbaJ2Nnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 09:43:53 -0400
-Date: Wed, 29 Oct 2014 09:43:41 -0400
-From: Jim Paris <jim@jtan.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] cdc-acm: ensure that termios get set when the port is
- activated
-Message-ID: <20141029134305.GA8149@psychosis.jim.sh>
-References: <20141028232649.GA1064@psychosis.jim.sh>
- <54503D44.4080908@hurleysoftware.com>
+	id S932937AbaJ2Npe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:45:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43011 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932746AbaJ2Npd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 09:45:33 -0400
+Date: Wed, 29 Oct 2014 14:45:26 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Will Auld <will.auld@intel.com>, Tejun Heo <tj@kernel.org>,
+        Vikas Shivappa <vikas.shivappa@intel.com>
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141029134526.GC3337@twins.programming.kicks-ass.net>
+References: <1413485050.28564.14.camel@vshiva-Udesk>
+ <20141020161855.GF12020@console-pimps.org>
+ <20141024105306.GI12706@worktop.programming.kicks-ass.net>
+ <20141028232215.GO12020@console-pimps.org>
+ <20141029081640.GT3337@twins.programming.kicks-ass.net>
+ <20141029124834.GQ12020@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54503D44.4080908@hurleysoftware.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20141029124834.GQ12020@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver wasn't properly configuring the hardware for the current
-termios settings under all conditions.  Ensure that termios are
-written to the device when the port is activated.
-
-Signed-off-by: Jim Paris <jim@jtan.com>
----
-
-Peter Hurley wrote:
-> Yeah, you're right that the cdc-acm driver isn't properly configuring
-> the hardware for the current termios settings under all conditions.
+On Wed, Oct 29, 2014 at 12:48:34PM +0000, Matt Fleming wrote:
+> On Wed, 29 Oct, at 09:16:40AM, Peter Zijlstra wrote:
+> > 
+> > Ah, so one way around that is to only assign a (whats the CQE equivalent
+> > of RMIDs again?) once you stick a task in.
+>  
+> I think you're after "Class of Service" (CLOS) ID.
 > 
-> But you don't want to do it for every tty open, only for opens
-> requiring port initialization, which is what the tty_port->activate()
-> method is for (ie., acm_port_activate()).
+> Yeah we can do the CLOS ID assignment on-demand but what we can't do
+> on-demand is the cache bitmask assignment, i.e. how we carve up the LLC.
+> These need to persist irrespective of which task is running. And it's
+> the cache bitmask that I'm specifically talking about not allowing
+> arbitrarly deep nesting.
+> 
+> So if I create a cgroup directory with a mask of 0x3 in the root cgroup
+> directory for CAT (meow).
 
-I moved it to acm_port_activate(), which works fine.  Thanks!
-acm_tty_set_termios is just moved in this patch, not changed.
+All we now need is a DOG to go woof :-) and they can have a party.
 
-Jim
+> Then, create two sub-directories, and split my
+> 0x3 bitmask into 0x2 and 0x1, it's impossible to nest any further, i.e.
+> 
+>                     /sys/fs/cgroup/cacheqe           0xffffffff
+>                               |
+>                               |
+>                             meow                     0x3
+>                            /    \
+>                           /      \
+>                         sub1    sub2                 0x1, 0x2
+> 
+> Of course the pathological case is creating a cgroup directory with
+> bitmask 0x1, so you can't have sub-directories because you can't split
+> the cache allocation at all.
+> 
+> Does this fly in the face of "full hierarchies"? Or is this a reasonable
+> limitation?
 
----
- drivers/usb/class/cdc-acm.c | 104 ++++++++++++++++++++++----------------------
- 1 file changed, 53 insertions(+), 51 deletions(-)
+I don't see a reason why we should not allow further children of sub1,
+they'll all have to have 0x1, but that should be fine, pointless
+perhaps, but perfectly consistent.
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index e934e19f49f5..24077deb737a 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -504,6 +504,57 @@ static int acm_tty_open(struct tty_struct *tty, struct file *filp)
- 	return tty_port_open(&acm->port, tty, filp);
- }
- 
-+static void acm_tty_set_termios(struct tty_struct *tty,
-+						struct ktermios *termios_old)
-+{
-+	struct acm *acm = tty->driver_data;
-+	struct ktermios *termios = &tty->termios;
-+	struct usb_cdc_line_coding newline;
-+	int newctrl = acm->ctrlout;
-+
-+	newline.dwDTERate = cpu_to_le32(tty_get_baud_rate(tty));
-+	newline.bCharFormat = termios->c_cflag & CSTOPB ? 2 : 0;
-+	newline.bParityType = termios->c_cflag & PARENB ?
-+				(termios->c_cflag & PARODD ? 1 : 2) +
-+				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
-+	switch (termios->c_cflag & CSIZE) {
-+	case CS5:
-+		newline.bDataBits = 5;
-+		break;
-+	case CS6:
-+		newline.bDataBits = 6;
-+		break;
-+	case CS7:
-+		newline.bDataBits = 7;
-+		break;
-+	case CS8:
-+	default:
-+		newline.bDataBits = 8;
-+		break;
-+	}
-+	/* FIXME: Needs to clear unsupported bits in the termios */
-+	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
-+
-+	if (!newline.dwDTERate) {
-+		newline.dwDTERate = acm->line.dwDTERate;
-+		newctrl &= ~ACM_CTRL_DTR;
-+	} else
-+		newctrl |=  ACM_CTRL_DTR;
-+
-+	if (newctrl != acm->ctrlout)
-+		acm_set_control(acm, acm->ctrlout = newctrl);
-+
-+	if (memcmp(&acm->line, &newline, sizeof newline)) {
-+		memcpy(&acm->line, &newline, sizeof newline);
-+		dev_dbg(&acm->control->dev, "%s - set line: %d %d %d %d\n",
-+			__func__,
-+			le32_to_cpu(newline.dwDTERate),
-+			newline.bCharFormat, newline.bParityType,
-+			newline.bDataBits);
-+		acm_set_line(acm, &acm->line);
-+	}
-+}
-+
- static void acm_port_dtr_rts(struct tty_port *port, int raise)
- {
- 	struct acm *acm = container_of(port, struct acm, port);
-@@ -554,6 +605,8 @@ static int acm_port_activate(struct tty_port *port, struct tty_struct *tty)
- 		goto error_submit_urb;
- 	}
- 
-+	acm_tty_set_termios(tty, NULL);
-+
- 	/*
- 	 * Unthrottle device in case the TTY was closed while throttled.
- 	 */
-@@ -949,57 +1002,6 @@ static int acm_tty_ioctl(struct tty_struct *tty,
- 	return rv;
- }
- 
--static void acm_tty_set_termios(struct tty_struct *tty,
--						struct ktermios *termios_old)
--{
--	struct acm *acm = tty->driver_data;
--	struct ktermios *termios = &tty->termios;
--	struct usb_cdc_line_coding newline;
--	int newctrl = acm->ctrlout;
--
--	newline.dwDTERate = cpu_to_le32(tty_get_baud_rate(tty));
--	newline.bCharFormat = termios->c_cflag & CSTOPB ? 2 : 0;
--	newline.bParityType = termios->c_cflag & PARENB ?
--				(termios->c_cflag & PARODD ? 1 : 2) +
--				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
--	switch (termios->c_cflag & CSIZE) {
--	case CS5:
--		newline.bDataBits = 5;
--		break;
--	case CS6:
--		newline.bDataBits = 6;
--		break;
--	case CS7:
--		newline.bDataBits = 7;
--		break;
--	case CS8:
--	default:
--		newline.bDataBits = 8;
--		break;
--	}
--	/* FIXME: Needs to clear unsupported bits in the termios */
--	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
--
--	if (!newline.dwDTERate) {
--		newline.dwDTERate = acm->line.dwDTERate;
--		newctrl &= ~ACM_CTRL_DTR;
--	} else
--		newctrl |=  ACM_CTRL_DTR;
--
--	if (newctrl != acm->ctrlout)
--		acm_set_control(acm, acm->ctrlout = newctrl);
--
--	if (memcmp(&acm->line, &newline, sizeof newline)) {
--		memcpy(&acm->line, &newline, sizeof newline);
--		dev_dbg(&acm->control->dev, "%s - set line: %d %d %d %d\n",
--			__func__,
--			le32_to_cpu(newline.dwDTERate),
--			newline.bCharFormat, newline.bParityType,
--			newline.bDataBits);
--		acm_set_line(acm, &acm->line);
--	}
--}
--
- static const struct tty_port_operations acm_port_ops = {
- 	.dtr_rts = acm_port_dtr_rts,
- 	.shutdown = acm_port_shutdown,
--- 
-2.1.0
+> > But basically it means you need to allow things like:
+> > 
+> > root/virt/more/crap/hostA
+> >                    /hostB
+> >     /sanityA
+> >     /random/other/yunk
+> > 
+> > Now, the root will have the entire bitmask set, any child, say
+> > virt/more/crap can also have them all set, and you can maybe only start
+> > differentiating in the /host[AB] bits.
+> > 
+> > Whether or not it makes sense, libvirt likes to create these pointless
+> > deep hierarchies, as do a lot of other people for that matter.
+> 
+> OK, this is something I hadn't considered; that you may *not* want to
+> split the cache bitmask as you move down the hierarchy.
+> 
+> I think that's something we could do without too much pain, though
+> actually programming that from a user perspective makes my head hurt.
+
+Right, also note that in the libvirt case, most of the intermediate
+groups are empty (of tasks) and would thus not actually instantiate a
+CLOS thingy.
