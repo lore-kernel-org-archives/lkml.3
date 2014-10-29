@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600AbaJ2KoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:44:09 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:15374 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249AbaJ2KoH (ORCPT
+	id S932456AbaJ2KrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:47:19 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:49633 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228AbaJ2KrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:44:07 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f956d000005ed7-9c-5450c4f4b9b5
-Content-transfer-encoding: 8BIT
-Message-id: <1414579442.18868.13.camel@AMDC1943>
-Subject: Re: [PATCH v5 3/4] regulator: max77686: Add suspend disable for some
- LDOs
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Date: Wed, 29 Oct 2014 11:44:02 +0100
-In-reply-to: <20141029103140.GY18557@sirena.org.uk>
-References: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com>
- <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
- <20141028223121.GH18557@sirena.org.uk> <1414574413.18868.6.camel@AMDC1943>
- <20141029100142.GR18557@sirena.org.uk> <1414577934.18868.7.camel@AMDC1943>
- <20141029103140.GY18557@sirena.org.uk>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/xq7pfjgSEGFxfLGGxccZ6VotJ6w4w
-	WUx9+ITN4vqX56wW84+cY7U4+rvAonfBVTaLs01v2C2+Xelgstj0+BqrxeVdc9gsZpzfx2Rx
-	+zKvxdojd9kd+DxamnvYPP4+v87i8XfVC2aPnbPusntsWtXJ5rF5Sb1H35ZVjB6fN8kFcERx
-	2aSk5mSWpRbp2yVwZXyYtY694BFrxb71U9kbGE+wdDFyckgImEjs3L+BFcIWk7hwbz0biC0k
-	sJRRYu3vKBCbV0BQ4sfke0D1HBzMAvISRy5lg4SZBdQlJs1bxNzFyAVU/plR4uL/XkaIegOJ
-	led2gM0RFgiR+HbtABOIzSZgLLF5+RKwuIiAssTV73tZQJqZBaaxSCz4eAmsmUVAVaJp5zqw
-	Ik6ghpVfF0NtOMYksWz7Z3aQKySAuhv73SYwCsxCct8shPtmIblvASPzKkbR1NLkguKk9Fwj
-	veLE3OLSvHS95PzcTYyQCPq6g3HpMatDjAIcjEo8vBEs/iFCrIllxZW5hxglOJiVRHjf7Q0I
-	EeJNSaysSi3Kjy8qzUktPsTIxMEp1cDIbXFcft0U+40zpNdtn5ybLiQj7Zx5h0Va2faG54Jp
-	ucd6jlYxb/PXSnVwUeedxVqVPeXSi28sTb6zq4X6JmtqnmsoE9z0+I/Nx/w1NxZVM7rEf2u9
-	er+BWdvryKreynmdxTsezV22rF7Wiu/0GTE+meBFD1+45TLsV7hiqv2+Y8uOxTtW/Z6qxFKc
-	kWioxVxUnAgANFKwYX4CAAA=
+	Wed, 29 Oct 2014 06:47:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Heena Sirwani <heenasirwani@gmail.com>
+Cc: opw-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [PATCH v8 1/2] timekeeping: Added a function to return tv_sec portion of ktime_get_ts64()
+Date: Wed, 29 Oct 2014 11:47:12 +0100
+Message-ID: <6923588.JzQ3nF9J4j@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <da0b63f4bdf3478909f92becb35861197da3a905.1414578445.git.heenasirwani@gmail.com>
+References: <cover.1414578445.git.heenasirwani@gmail.com> <da0b63f4bdf3478909f92becb35861197da3a905.1414578445.git.heenasirwani@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:EX5dkEiI60CouknArrfDcaGcvdAVTYsqFtXdddFsQz0
+ vbB1pG15VgMXDN9N/EScED9Cs3dwwNgowU65PX0nYtOkNmayvP
+ SVRLK33zZx9NFpmevV2Yy9Qsg5TYtSsfAiu9pg1NXFjKvKN02I
+ dq8fmGqht68NZdFDZxxkBmAkE5t3hfNcho3DccxkP+pv1v49nx
+ 6lBnOjE7vGuazVvqLEKkidGAY5KqwJVUrhTllAJfatL6STf6JJ
+ aKt6LA9p9YpEOw3MSFwhttpGKkv4XAjOyJOZrCD2wC+oKkP0eD
+ ghen3UxGjmhosd0q9KoE4HsUhjW1Qfs6CTEthA3RbRVLymwG4I
+ E065m2ikKnTmo7hCgU5A=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-10-29 at 10:31 +0000, Mark Brown wrote:
-> On Wed, Oct 29, 2014 at 11:18:54AM +0100, Krzysztof Kozlowski wrote:
-> > On śro, 2014-10-29 at 10:01 +0000, Mark Brown wrote:
+On Wednesday 29 October 2014 16:01:16 Heena Sirwani wrote:
+> The following patch adds a function to return tv_sec portion of
+> ktime_get_ts64() function in order to have a function that returns
+> seconds as 64-bit integers instead of 32-bit integers to address the
+> y2038 problem.
 > 
-> > > No, this isn't suspend enable control - this is normal, standard enable
-> > > control and the device has no suspend enable control.
+> Since we are interested only in the seconds portion of ktime_get_ts64()
+> and require this to be as fast as possible, we take the implementation
+> of ktime_get_ts64() as it is and remove everything pertaining to the
+> nanoseconds portion. We only add to the seconds calculation if the
+> calculation of nanoseconds is more than one billion nanoseconds. For all
+> this calculation, we add a new field to the timekeeper struct,
+> ktime_sec. We update this field in the function tk_update_ktime_data()
+> by including the calculation of monotonic clock time in seconds and
+> including the tk_xtime() implementation that gives the nanoseconds value
+> of last timer click  instead of using timekeeping_get_ns() which is
+> expensive and we do not require such fine resolution for nanoseconds.
 > 
-> > You mean that for such regulator the driver shouldn't implement
-> > suspend_enable()?
+> Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
 > 
-> Yes, if there is no separate control of suspend mode in hardware then of
-> course the driver shouldn't implement operations for things it doesn't
-> have.
 
-Oh, thanks! I'll send fixed patch.
-
-This means that probably the max77802 ("mirrored" driver) should be
-fixed...
-
-Best regards,
-Krzysztof
-
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
