@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933410AbaJ2MxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:53:19 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:58078 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836AbaJ2MxO (ORCPT
+	id S933373AbaJ2MxF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:53:05 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14395 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932835AbaJ2MqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:53:14 -0400
-Date: Wed, 29 Oct 2014 13:50:05 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Felipe Balbi <balbi@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Guenter Roeck <linux@roeck-us.net>, nsekhar@ti.com, t-kristo@ti.com,
-        j-keerthy@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] rtc: omap: add support for pmic_power_en
-Message-ID: <20141029125005.GB8823@localhost>
-References: <1413913086-12730-1-git-send-email-johan@kernel.org>
- <1414397368-26480-1-git-send-email-johan@kernel.org>
- <20141027154031.4492ea11d401045ca04a3ff8@linux-foundation.org>
- <20141028083633.GM2006@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028083633.GM2006@localhost>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 29 Oct 2014 08:46:14 -0400
+From: Richard Weinberger <richard@nod.at>
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 10/35] UBI: Fastmap: Fix memory leaks while closing the WL sub-system
+Date: Wed, 29 Oct 2014 13:45:33 +0100
+Message-Id: <1414586758-9972-11-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
+References: <1414586758-9972-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 09:36:33AM +0100, Johan Hovold wrote:
-> On Mon, Oct 27, 2014 at 03:40:31PM -0700, Andrew Morton wrote:
-> > On Mon, 27 Oct 2014 09:09:28 +0100 Johan Hovold <johan@kernel.org> wrote:
+Add a ubi_fastmap_close() to free all resources used by fastmap
+at WL shutdown.
 
-> But in general, how do you want to handle updates to a single patch in a
-> series you already have in your tree? Do you prefer a proper
-> incremental-fix patch (with commit message), just an updated single
-> patch, or a resend of the whole series?
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/ubi/wl.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-How should I best send the updated patch? Can you just replace the
-current three incremental patches:
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index 0639353..73ff40a 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -2055,6 +2055,23 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+ 	}
+ }
+ 
++static void ubi_fastmap_close(struct ubi_device *ubi)
++{
++#ifdef CONFIG_MTD_UBI_FASTMAP
++	int i;
++
++	flush_work(&ubi->fm_work);
++	return_unused_pool_pebs(ubi, &ubi->fm_pool);
++	return_unused_pool_pebs(ubi, &ubi->fm_wl_pool);
++
++	if (ubi->fm) {
++		for (i = 0; i < ubi->fm->used_blocks; i++)
++			kfree(ubi->fm->e[i]);
++	}
++	kfree(ubi->fm);
++#endif
++}
++
+ /**
+  * ubi_wl_close - close the wear-leveling sub-system.
+  * @ubi: UBI device description object
+@@ -2062,9 +2079,7 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+ void ubi_wl_close(struct ubi_device *ubi)
+ {
+ 	dbg_wl("close the WL sub-system");
+-#ifdef CONFIG_MTD_UBI_FASTMAP
+-	flush_work(&ubi->fm_work);
+-#endif
++	ubi_fastmap_close(ubi);
+ 	shutdown_work(ubi);
+ 	protection_queue_destroy(ubi);
+ 	tree_destroy(&ubi->used);
+-- 
+1.8.4.5
 
-	rtc-omap-add-support-for-pmic_power_en.patch
-	rtc-omap-add-support-for-pmic_power_en-v3.patch
-	rtc-omap-add-support-for-pmic_power_en-v3-fix.patch
-
-that you have in your tree, with a single new v4 which adds a more
-elaborate comment?
-
-Thanks,
-Johan
