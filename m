@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376AbaJ2Jra (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:47:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55238 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357AbaJ2Jr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:47:28 -0400
-Date: Wed, 29 Oct 2014 10:47:17 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Minfei Huang <mnfhuang@gmail.com>
-cc: mingo@redhat.com, hpa@zytor.com, pbonzini@redhat.com,
-        akpm@linux-foundation.org, bp@suse.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86/mm: Re-use the early_ioremap fixed area
-In-Reply-To: <1414563151-7175-1-git-send-email-mnfhuang@gmail.com>
-Message-ID: <alpine.DEB.2.11.1410291045520.5308@nanos>
-References: <1414563151-7175-1-git-send-email-mnfhuang@gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1756473AbaJ2JtN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:49:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35484 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755889AbaJ2JtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 05:49:10 -0400
+Date: Wed, 29 Oct 2014 10:49:08 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+cc: Andrew de los Reyes <andrew-vger@gizmolabs.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>
+Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special
+ devices
+In-Reply-To: <CAN+gG=GET=FLmte9kQOtS+x=HPaTdgEu4HxuydHXBx1GZksNRw@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1410291048320.20256@pobox.suse.cz>
+References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com> <alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz> <20141001131008.GB18756@mail.corp.redhat.com> <CAG_cf+fYGATBL9Sgvvp7CaScP112fiqiyuR0gBdkS-424S3Kog@mail.gmail.com>
+ <alpine.LNX.2.00.1410031308360.14259@pobox.suse.cz> <CAN+gG=GET=FLmte9kQOtS+x=HPaTdgEu4HxuydHXBx1GZksNRw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014, Minfei Huang wrote:
-> diff --git a/arch/x86/include/asm/highmem.h b/arch/x86/include/asm/highmem.h
-> index 302a323..49b7469 100644
-> --- a/arch/x86/include/asm/highmem.h
-> +++ b/arch/x86/include/asm/highmem.h
-> @@ -41,9 +41,7 @@ extern unsigned long highstart_pfn, highend_pfn;
->   * FIXADDR_TOP
->   * 			fixed_addresses
->   * FIXADDR_START
-> - * 			temp fixed addresses
-> - * FIXADDR_BOOT_START
+On Tue, 28 Oct 2014, Benjamin Tissoires wrote:
 
-We should at least add a comment here which makes it clear, that
-PKMAP/VMALLOC area is used for early_ioremap() during early boot.
+> >> I've tested these patches successfully on a Chromebook Pixel with the
+> >> following devices:
+> >>
+> >> - T650 touchpad
+> >> - TK820 keyboard/touchpad
+> >> - Original WTP touchpad
+> >>
+> >> I also tested a touch mouse and as expected it continued to function
+> >> as a plain USB mouse. The TK820 was indeed broken into two devices,
+> >> with autorepeat enabled for the keyboard only. The other two devices
+> >> behaved as expected with no perceived regressions.
+> >>
+> >> In short, from a functionality perspective I'm happy with these
+> >> patches. I will let others discuss code structure.
+> >
+> > Thank you. Can I use
+> >
+> >         Tested-by: Andrew de los Reyes <andrew-vger@gizmolabs.org>
+> >
+> > once / if I am merging this patchset?
+> >
+> 
+> I am pretty sure this is not required too, but I am raising this one
+> again in Jiri's pile of things to review.
+> Sorry Jiri, I did not forget about it :)
 
-Thanks,
+It absolutely hasn't been forgotten, I've been just a bit busy during past 
+weeks.
 
-	tglx
+I am almost done with the review, expect to hear from me in a 1-2 days 
+timeframe regarding this series.
+
+Thanks for patience,
+
+-- 
+Jiri Kosina
+SUSE Labs
