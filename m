@@ -1,51 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298AbaJ2VDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:03:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58937 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757259AbaJ2VDs (ORCPT
+	id S1757324AbaJ2VEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:04:09 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64701 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757259AbaJ2VEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:03:48 -0400
-Date: Wed, 29 Oct 2014 22:03:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Sabrina Dubroca <sd@queasysnail.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
-Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
- linux-next
-In-Reply-To: <20141029205131.GI10501@worktop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.11.1410292201530.5308@nanos>
-References: <20141029155620.GA4886@kria> <20141029180734.GQ12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410291918060.5308@nanos> <20141029193603.GS12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410292046270.5308@nanos>
- <20141029195054.GH10501@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410292053430.5308@nanos> <alpine.DEB.2.11.1410292119350.5308@nanos> <20141029205131.GI10501@worktop.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 29 Oct 2014 17:04:07 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2] cpufreq: Guard against not-yet-initialized policies in cpufreq_cpu_get()
+Date: Wed, 29 Oct 2014 22:24:43 +0100
+Message-ID: <1537896.k4L3VHfc5p@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414597547-16506-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <20141029024426.GA7468@kroah.com> <1414597547-16506-1-git-send-email-tomeu.vizoso@collabora.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014, Peter Zijlstra wrote:
-
-> On Wed, Oct 29, 2014 at 09:23:42PM +0100, Thomas Gleixner wrote:
-> > But at least it allows to mitigate the impact by making it conditional
-> > at a central point.
-> > 
-> > static inline void netpoll_lock(struct net_device *nd)
-> > {
-> > 	if (netpoll_active(nd))
-> > 		spin_lock(&nd->netpoll_lock);
-> > }
+On Wednesday, October 29, 2014 04:45:47 PM Tomeu Vizoso wrote:
+> There's a substantial window of opportunity from the time the policy objects
+> are created until they are initialized, causing this:
 > 
-> branch fail vs lock might be a toss on most machines, but if we're
-> hitting cold cachelines we loose big.
+> WARNING: CPU: 1 PID: 64 at include/linux/kref.h:47 kobject_get+0x64/0x70()
+> Modules linked in:
+> CPU: 1 PID: 64 Comm: irq/77-tegra-ac Not tainted 3.18.0-rc1-next-20141027ccu-00049-g21a0041 #248
+> [<c0016fac>] (unwind_backtrace) from [<c001272c>] (show_stack+0x10/0x14)
+> [<c001272c>] (show_stack) from [<c0601920>] (dump_stack+0x98/0xd8)
+> [<c0601920>] (dump_stack) from [<c00288d8>] (warn_slowpath_common+0x70/0x8c)
+> [<c00288d8>] (warn_slowpath_common) from [<c0028990>] (warn_slowpath_null+0x1c/0x24)
+> [<c0028990>] (warn_slowpath_null) from [<c02227bc>] (kobject_get+0x64/0x70)
+> [<c02227bc>] (kobject_get) from [<c03e5238>] (cpufreq_cpu_get+0x88/0xc8)
+> [<c03e5238>] (cpufreq_cpu_get) from [<c03e52ec>] (cpufreq_get+0xc/0x64)
+> [<c03e52ec>] (cpufreq_get) from [<c0287818>] (actmon_thread_isr+0x140/0x1a4)
+> [<c0287818>] (actmon_thread_isr) from [<c0068a68>] (irq_thread_fn+0x1c/0x40)
+> [<c0068a68>] (irq_thread_fn) from [<c0068d84>] (irq_thread+0x134/0x174)
+> [<c0068d84>] (irq_thread) from [<c0040284>] (kthread+0xdc/0xf4)
+> [<c0040284>] (kthread) from [<c000f4b8>] (ret_from_fork+0x14/0x3c)
+> 
+> This commit checks that initialization has finished before trying to do
+> anything with the policy.
+> 
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> ---
+>  drivers/cpufreq/cpufreq.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 644b54e..7b84d1a 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -48,6 +48,9 @@ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+>  /* Flag to suspend/resume CPUFreq governors */
+>  static bool cpufreq_suspended;
+>  
+> +/* Flag that tells whether initialization is completed */
+> +static atomic_t cpufreq_initialized = ATOMIC_INIT(0);
+> +
+>  static inline bool has_target(void)
+>  {
+>  	return cpufreq_driver->target_index || cpufreq_driver->target;
+> @@ -211,7 +214,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+>  	/* get the cpufreq driver */
+>  	read_lock_irqsave(&cpufreq_driver_lock, flags);
+>  
+> -	if (cpufreq_driver) {
+> +	if (atomic_read(&cpufreq_initialized)) {
 
-Well, if the net_device is not cache hot on irq entry you have lost
-already. The extra branch/lock is not going to add much to that.
- 
-Thanks,
+The atomics don't help you here, because they don't make race conditions go
+away.  Memory barriers would be needed for that, but then there should be an
+alternative way to address the problem at hand.
 
-	tglx
+>  		/* get the CPU */
+>  		policy = per_cpu(cpufreq_cpu_data, cpu);
+>  		if (policy)
+> @@ -1289,6 +1292,8 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  	kobject_uevent(&policy->kobj, KOBJ_ADD);
+>  	up_read(&cpufreq_rwsem);
+>  
+> +	atomic_set(&cpufreq_initialized, 1);
+> +
+
+__cpufreq_add_dev() can be run for many times.  Why is the first one only
+relevant?
+
+>  	pr_debug("initialization complete\n");
+>  
+>  	return 0;
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
