@@ -1,111 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285AbaJ2Dd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 23:33:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50906 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793AbaJ2Ddz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 23:33:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,807,1406617200"; 
-   d="scan'208";a="622507379"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 2/2] ACPI/EC: Fix a regression caused by conflict firmware behavior between Samsung and Acer.
-Date: Wed, 29 Oct 2014 11:33:49 +0800
-Message-Id: <2e35401ac793fc86ba36f03e013ec35546a62d67.1414553399.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1414553399.git.lv.zheng@intel.com>
-References: <544CE637.7000406@odi.ch> <cover.1414553399.git.lv.zheng@intel.com>
+	id S1752334AbaJ2DzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 23:55:22 -0400
+Received: from mail-bn1bon0142.outbound.protection.outlook.com ([157.56.111.142]:33152
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751664AbaJ2DzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 23:55:20 -0400
+From: Alison Wang <b18965@freescale.com>
+To: <perex@perex.cz>, <tiwai@suse.de>, <lgirdwood@gmail.com>,
+        <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] audio: sai: Add Power Management support
+Date: Wed, 29 Oct 2014 11:21:36 +0800
+Message-ID: <1414552896-20797-1-git-send-email-b18965@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(88136002)(2201001)(92566001)(87936001)(84676001)(92726001)(21056001)(93916002)(87286001)(104016003)(97736003)(33646002)(19580395003)(68736004)(19580405001)(4396001)(89996001)(6806004)(85852003)(85306004)(44976005)(50226001)(31966008)(50466002)(48376002)(50986999)(46102003)(26826002)(62966002)(80022003)(102836001)(99396003)(76482002)(104166001)(120916001)(47776003)(106466001)(20776003)(36756003)(95666004)(229853001)(77156001)(64706001)(107046002)(105606002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0631;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0631;
+X-Forefront-PRVS: 03793408BA
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=alison.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is reported that Samsung laptops that need to poll events are broken by
-the following commit:
- Commit 3afcf2ece453e1a8c2c6de19cdf06da3772a1b08
- Subject: ACPI / EC: Add support to disallow QR_EC to be issued when SCI_EVT isn't set
+This patch adds Power Management support for SAI.
+Activate regmap cache with REGCACHE_RBTREE, and use
+regmap cache code to save and restore registers in
+suspend and resume. The Transmit Control Register
+(TCSR) and Receive Control Register(RCSR) should
+be volatile registers.
 
-The behaviors of the 2 vendor firmwares are conflict:
-1. Acer: OSPM shouldn't issue QR_EC unless SCI_EVT is set, firmware
-         automatically sets SCI_EVT as long as there is event queued up.
-2. Samsung: OSPM should issue QR_EC whatever SCI_EVT is set, firmware
-            returns 0 when there is no event queued up.
-
-This patch is a quick fix to distinguish the behaviors to make Acer
-behavior only effective for Acer EC firmware so that the breakages on
-Samsung EC firmware can be avoided.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=44161
-Reported-and-tested-by: Ortwin Gl¨¹ck <odi@odi.ch>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Alison Wang <alison.wang@freescale.com>
 ---
- drivers/acpi/ec.c |   25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ sound/soc/fsl/fsl_sai.c | 33 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 31b699f..5f9b74b 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -126,6 +126,7 @@ static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
- static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
- static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
- static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
-+static int EC_FLAGS_QUERY_HANDSHAKE; /* Needs QR_EC issued when SCI_EVT set */
+diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+index 7eeb1dd..c7dd953 100644
+--- a/sound/soc/fsl/fsl_sai.c
++++ b/sound/soc/fsl/fsl_sai.c
+@@ -509,9 +509,11 @@ static bool fsl_sai_readable_reg(struct device *dev, unsigned int reg)
+ static bool fsl_sai_volatile_reg(struct device *dev, unsigned int reg)
+ {
+ 	switch (reg) {
++	case FSL_SAI_TCSR:
+ 	case FSL_SAI_TFR:
+-	case FSL_SAI_RFR:
+ 	case FSL_SAI_TDR:
++	case FSL_SAI_RCSR:
++	case FSL_SAI_RFR:
+ 	case FSL_SAI_RDR:
+ 		return true;
+ 	default:
+@@ -553,6 +555,7 @@ static const struct regmap_config fsl_sai_regmap_config = {
+ 	.readable_reg = fsl_sai_readable_reg,
+ 	.volatile_reg = fsl_sai_volatile_reg,
+ 	.writeable_reg = fsl_sai_writeable_reg,
++	.cache_type = REGCACHE_RBTREE,
+ };
  
- /* --------------------------------------------------------------------------
-  *                           Transaction Management
-@@ -236,13 +237,8 @@ static bool advance_transaction(struct acpi_ec *ec)
- 		}
- 		return wakeup;
- 	} else {
--		/*
--		 * There is firmware refusing to respond QR_EC when SCI_EVT
--		 * is not set, for which case, we complete the QR_EC
--		 * without issuing it to the firmware.
--		 * https://bugzilla.kernel.org/show_bug.cgi?id=86211
--		 */
--		if (!(status & ACPI_EC_FLAG_SCI) &&
-+		if (EC_FLAGS_QUERY_HANDSHAKE &&
-+		    !(status & ACPI_EC_FLAG_SCI) &&
- 		    (t->command == ACPI_EC_COMMAND_QUERY)) {
- 			t->flags |= ACPI_EC_COMMAND_POLL;
- 			t->rdata[t->ri++] = 0x00;
-@@ -1012,6 +1008,18 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
+ static int fsl_sai_probe(struct platform_device *pdev)
+@@ -668,6 +671,33 @@ static int fsl_sai_probe(struct platform_device *pdev)
+ 				SND_DMAENGINE_PCM_FLAG_NO_RESIDUE);
  }
  
- /*
-+ * Acer EC firmware refuses to respond QR_EC when SCI_EVT is not set, for
-+ * which case, we complete the QR_EC without issuing it to the firmware.
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=86211
-+ */
-+static int ec_flag_query_handshake(const struct dmi_system_id *id)
++#ifdef CONFIG_PM_SLEEP
++static int fsl_sai_suspend(struct device *dev)
 +{
-+	pr_debug("Detected the EC firmware requiring QR_EC issued when SCI_EVT set\n");
-+	EC_FLAGS_QUERY_HANDSHAKE = 1;
++	struct fsl_sai *sai = dev_get_drvdata(dev);
++
++	regcache_cache_only(sai->regmap, true);
++	regcache_mark_dirty(sai->regmap);
++
 +	return 0;
 +}
 +
-+/*
-  * On some hardware it is necessary to clear events accumulated by the EC during
-  * sleep. These ECs stop reporting GPEs until they are manually polled, if too
-  * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
-@@ -1085,6 +1093,9 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
- 	{
- 	ec_clear_on_resume, "Samsung hardware", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
-+	{
-+	ec_flag_query_handshake, "Acer hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "Acer"), }, NULL},
- 	{},
++static int fsl_sai_resume(struct device *dev)
++{
++	struct fsl_sai *sai = dev_get_drvdata(dev);
++
++	/* Restore all registers */
++	regcache_cache_only(sai->regmap, false);
++	regcache_sync(sai->regmap);
++
++	return 0;
++};
++#endif /* CONFIG_PM_SLEEP */
++
++static const struct dev_pm_ops fsl_sai_pm = {
++	SET_SYSTEM_SLEEP_PM_OPS(fsl_sai_suspend, fsl_sai_resume)
++};
++
+ static const struct of_device_id fsl_sai_ids[] = {
+ 	{ .compatible = "fsl,vf610-sai", },
+ 	{ .compatible = "fsl,imx6sx-sai", },
+@@ -680,6 +710,7 @@ static struct platform_driver fsl_sai_driver = {
+ 		.name = "fsl-sai",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = fsl_sai_ids,
++		.pm = &fsl_sai_pm,
+ 	},
  };
- 
+ module_platform_driver(fsl_sai_driver);
 -- 
-1.7.10
+2.1.0.27.g96db324
 
