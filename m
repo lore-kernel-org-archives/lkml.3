@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576AbaJ2W7W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:59:22 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55480 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664AbaJ2W7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:59:20 -0400
-Message-ID: <54517143.6010801@gmail.com>
-Date: Thu, 30 Oct 2014 06:59:15 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757680AbaJ2XAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 19:00:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54724 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757456AbaJ2XAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 19:00:23 -0400
+Date: Thu, 30 Oct 2014 00:00:16 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org,
+        marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
+        dh.herrmann@gmail.com, tixxdz@opendz.org,
+        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+In-Reply-To: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+Message-ID: <alpine.LRH.2.00.1410292354480.11562@twin.jikos.cz>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>
-CC: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] sched/dl: reschedule if successfully pull earlier
- deadline task
-References: <1414374067-7209-1-git-send-email-wanpeng.li@linux.intel.com> <1414374067-7209-5-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1414374067-7209-5-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=gbk; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri, could you review 5/6 and 6/6? 5/6 is the same behavior as rt 
-class. ;-)
-2014/10/27 9:41, Wanpeng Li:
-> Reschedule if successfully pull earlier deadline task.
->
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->   kernel/sched/deadline.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 97141e2..21de865 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -1583,8 +1583,8 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
->   	 * this is the right place to try to pull some other one
->   	 * from an overloaded cpu, if any.
->   	 */
-> -	if (!rq->dl.dl_nr_running)
-> -		pull_dl_task(rq);
-> +	if (!rq->dl.dl_nr_running && pull_dl_task(rq))
-> +			resched_curr(rq);
->   #endif
->   }
->   
+On Wed, 29 Oct 2014, Greg Kroah-Hartman wrote:
+
+> kdbus is a kernel-level IPC implementation that aims for resemblance to
+> the the protocol layer with the existing userspace D-Bus daemon while
+> enabling some features that couldn't be implemented before in userspace.
+
+I'd be interested in the features that can't be implemented in userspace 
+(and therefore would justify existence of kdbus in the kernel). Could you 
+please point me to such list / documentation?
+
+It seems to me that most of the highlight features from the cover letter 
+can be "easily" (for certain definition of that word, of course) 
+implemented in userspace (vmsplice(), sending fd through unix socket, user 
+namespaces, UUID management, etc).
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
 
