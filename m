@@ -1,139 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633AbaJ2Kty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:49:54 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60025 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932265AbaJ2Kti (ORCPT
+	id S932661AbaJ2KuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:50:08 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:41751 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932637AbaJ2KuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:49:38 -0400
-Message-ID: <5450C63B.3000602@collabora.co.uk>
-Date: Wed, 29 Oct 2014 11:49:31 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Wed, 29 Oct 2014 06:50:04 -0400
+Date: Wed, 29 Oct 2014 11:45:59 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Benoit Parrot <bparrot@ti.com>
+Cc: linus.walleij@linaro.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
+Message-ID: <20141029104559.GC21251@lukather>
+References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH 6/8] regulator: max77686: Add external GPIO control
-References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com> <1414422226-10948-7-git-send-email-k.kozlowski@samsung.com> <544EA4FA.6040704@collabora.co.uk> <1414486356.24949.19.camel@AMDC1943> <1414498308.24949.32.camel@AMDC1943> <1414579362.18868.11.camel@AMDC1943>
-In-Reply-To: <1414579362.18868.11.camel@AMDC1943>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MnLPg7ZWsaic7Fhd"
+Content-Disposition: inline
+In-Reply-To: <1413922198-29373-1-git-send-email-bparrot@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding Linus and Alexandre to the cc list]
 
-Hello Krzysztof,
+--MnLPg7ZWsaic7Fhd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 10/29/2014 11:42 AM, Krzysztof Kozlowski wrote:
-> On wto, 2014-10-28 at 13:11 +0100, Krzysztof Kozlowski wrote:
->> On wto, 2014-10-28 at 09:52 +0100, Krzysztof Kozlowski wrote:
->> > On pon, 2014-10-27 at 21:03 +0100, Javier Martinez Canillas wrote:
->> > > Hello Krzysztof,
->> > > 
->> > > On 10/27/2014 04:03 PM, Krzysztof Kozlowski wrote:
->> > > > @@ -85,6 +91,9 @@ struct max77686_data {
->> > > >  	struct max77686_regulator_data *regulators;
->> > > >  	int num_regulators;
->> > > >  
->> > > > +	/* Array of size num_regulators with GPIOs for external control. */
->> > > > +	int *ext_control_gpio;
->> > > > +
->> > > 
->> > > The integer-based GPIO API is deprecated in favor of the descriptor-based GPIO
->> > > interface (Documentation/gpio/consumer.txt). Could you please use the later?
->> > 
->> > Sure, I can. Please have in mind that regulator core still accepts old
->> > GPIO so I will have to use desc_to_gpio(). That should work... and
->> > should be future-ready.
->> 
->> It seems I was too hasty... I think usage of the new gpiod API implies
->> completely different bindings.
->> 
->> The gpiod_get() gets GPIO from a device level, not from given sub-node
->> pointer. This means that you cannot have DTS like this:
->> ldo21_reg: ldo21 {
->> 	regulator-compatible = "LDO21";
->> 	regulator-name = "VTF_2.8V";
->> 	regulator-min-microvolt = <2800000>;
->> 	regulator-max-microvolt = <2800000>;
->> 	ec-gpio = <&gpy2 0 0>;
->> };
->> 
->> ldo22_reg: ldo22 {
->> 	regulator-compatible = "LDO22";
->> 	regulator-name = "VMEM_VDD_2.8V";
->> 	regulator-min-microvolt = <2800000>;
->> 	regulator-max-microvolt = <2800000>;
->> 	ec-gpio = <&gpk0 2 0>;
->> };
->> 
->> 
->> I could put GPIOs in device node:
->> 
->> max77686_pmic@09 {
->> 	compatible = "maxim,max77686";
->> 	interrupt-parent = <&gpx0>;
->> 	interrupts = <7 0>;
->> 	reg = <0x09>;
->> 	#clock-cells = <1>;
->> 	ldo21-gpio = <&gpy2 0 0>;
->> 	ldo22-gpio = <&gpk0 2 0>;
->> 
->> 	ldo21_reg: ldo21 {
->> 		regulator-compatible = "LDO21";
->> 		regulator-name = "VTF_2.8V";
->> 		regulator-min-microvolt = <2800000>;
->> 		regulator-max-microvolt = <2800000>;
->> 	};
->> 
->> 	ldo22_reg: ldo22 {
->> 		regulator-compatible = "LDO22";
->> 		regulator-name = "VMEM_VDD_2.8V";
->> 		regulator-min-microvolt = <2800000>;
->> 		regulator-max-microvolt = <2800000>;
->> 	};
->> 
->> This would work but I don't like it. The properties of a regulator are
->> above the node configuring that regulator.
->> 
->> Any ideas?
->> 
-> 
-> Continuing talking to myself... I found another problem - GPIO cannot be
-> requested more than once (-EBUSY). In case of this driver (and board:
-> Trats2) one GPIO is connected to regulators. The legacy GPIO API and
-> regulator core handle this.
-> 
-> With new GPIO API I would have to implement some additional steps in
-> such case...
-> 
-> So there are 2 issues:
-> 1. Cannot put GPIO property in regulator node.
-> 2. Cannot request some GPIO more than once.
-> 
-> I'm going back to legacy API for now.
-> 
+Hi,
 
-I've added the GPIO maintainers as cc so hopefully they can comment on this.
+On Tue, Oct 21, 2014 at 03:09:58PM -0500, Benoit Parrot wrote:
+> Based on Boris Brezillion work this is a reworked patch
+> of his initial GPIO hogging mechanism.
+> This patch provides a way to initally configure specific GPIO
+> when the gpio controller is probe.
+>=20
+> The actual DT scanning to collect the GPIO specific data is performed
+> as part of the gpiochip_add().
+>=20
+> The purpose of this is to allows specific GPIOs to be configured
+> without any driver specific code.
+> This particularly usueful because board design are getting
+> increassingly complex and given SoC pins can now have upward
+> of 10 mux values a lot of connections are now dependent on
+> external IO muxes to switch various modes and combination.
+>=20
+> Specific drivers should not necessarily need to be aware of
+> what accounts to a specific board implementation. This board level
+> "description" should be best kept as part of the dts file.
+>=20
+> Signed-off-by: Benoit Parrot <bparrot@ti.com>
 
-> Best regards,
-> Krzysztof
-> 
+I've been thinking about this for quite some time, it's good to see
+some progress on that :)
 
-Best regards,
-Javier
+However, I have a slightly different use case for it: the Allwinner
+SoCs have a vdd pin coming in for every gpio bank. Nothing out of the
+ordinary so far, except that some of the boards are using a
+GPIO-controlled regulator to feed another bank vdd. That obviously
+causes a chicken-egg issue, since for the gpio-regulator driver to
+probe, it needs to gpio driver, and for the gpio driver to probe, it
+needs the regulator driver.
+
+I was thinking of solving this by enforcing gpio hogs, in order to
+have the gpio driver loading, grabing its gpios setting them to the
+right value to enable the current to flow in, and then let the
+regulator driver probe later on.
+
+I don't think it's possible with your current code, would it be
+something worth considering, or would someone have a better solution?
+
+Maxime
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--MnLPg7ZWsaic7Fhd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUUMVnAAoJEBx+YmzsjxAg60oP/RKk8/v1C3Ks5jCxPgGqt+JY
+ruYg2Tdxl/MG/m4Nr9wFHqmneE5X3jM6yDtRfEBhcHLiP8kjz/NehcGwQ0NNtzGi
+X8FMCfm9wZYdO5okzNCOvCJbpn1vRFOTb16+J5djlOC9N1oy721WwCl0MlIGr2Hi
+OUCkAN06I2O12kGt9XUz7CkEaS9Pz51Q/Omvs69fYe0TfRrUgz5RQBFqJWLqqlhG
+vX2CwW0z3Cg75/0bQmDAKopfad46ba8q8+zrLiSMCAKs/ARyiaeaJ5mHl9MQn/s4
+ZDkDj8p/n4hQA3lSeTOKh60h21DnF9o1S++KFNd3qrMrc+LUrA/CAd74HnhDGeO+
+5PvvHY3a1aMD8jDDFiHrZOgJcpVvThBTOQK3ZIkLeHHCQkTk/2VMafa3MhXoPfVH
+U+fIfK0PAvFO1JWTk6KCsu7t0DrkdHuohj6h9V1J6CV+NXsSuHSOxO0Wai+PQqHN
+3Q64P1BWYodgnUBFinrMPtUBSqWfu3E3wfmwpWYRWCY49rExSMtG1Qwj/dy2/dES
+EfBpnU67xZA95LqnQ21++ng78xysLB6Km20MOl/7Y/wdoht9yKrPa5HQSToik2ZF
+yOkWwS1YBxCKm8Uf9aHVf7Iyd2s/e8QzEokjO780HJYjprn7WqHzDjmrHMTqQWRa
+ABdvGXZjs3TSyDX4CLFS
+=3qsa
+-----END PGP SIGNATURE-----
+
+--MnLPg7ZWsaic7Fhd--
