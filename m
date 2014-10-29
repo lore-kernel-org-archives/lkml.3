@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830AbaJ2LwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 07:52:04 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:19259 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932728AbaJ2LvK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 07:51:10 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-16-5450d4acbc2f
-Subject: [PATCH] mm/balloon_compaction: fix deflation when compaction is
- disabled
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mullins <mmullins@mmlx.us>, linux-kernel@vger.kernel.org,
-        Rafael Aquini <aquini@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, stable@vger.kernel.org
-Date: Wed, 29 Oct 2014 14:51:07 +0400
-Message-id: <20141029115107.23071.26065.stgit@buzz>
-In-reply-to: <20141028202333.GC29098@hydra.tuxags.com>
-References: <20141028202333.GC29098@hydra.tuxags.com>
-User-Agent: StGit/0.17.1-dirty
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t/xa7prrgSEGOz7zmkxZ/0aNosZD3+x
-	WPzY2ctqcXnXHDaLe2v+s1rMeb6UyWLxkdvMFgs2PmJ04PDY9GkSu8eJGb9ZPK62zmfz+Pj0
-	FovH+31X2Tz6tqxi9Pi8SS6APYrLJiU1J7MstUjfLoErY/usLywFU7gqpl7fwtbAuIeji5GT
-	Q0LARGLRxnYWCFtM4sK99WxdjFwcQgJLGSWm/5/ODJIQEmhkktg+PQvEFhYIlmh8voQRxGYT
-	MJPYtu82I0iDiMByRolV1x+wgSSYBRwkJq3+CVbEIqAqMW3yESCbg4NXwFhi7U5/kDAnUO/Z
-	1xBhIQFTiTWNMSBhUQE5iZWXW1hBbF4BQYkfk++xgJQwC6hLTJmSCzFcXmLzmrfMExgFZiGp
-	moVQNQtJ1QJG5lWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIcH/dQfj0mNWhxgFOBiVeHgj
-	jgWECLEmlhVX5h5ilOBgVhLhfbcXKMSbklhZlVqUH19UmpNafIiRiYNTqoHRIuoPp4zZ2Vd8
-	Ly7NuJ918btrlW/C93fZnnsmxcvFTdJR01pedXC9iUOCu+ztNd9sk0Mi33i35FblNeU2SxVH
-	c3sGVjc+fP2N8/s2JqOje043egpUiAUdeVL5i99pnuLvuaHx3u0Syul1334Ffi6InClVL6jk
-	4u3n3rA87laATNaC+UvMWZRYijMSDbWYi4oTAas7R5NcAgAA
+	id S932855AbaJ2LwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 07:52:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36216 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932812AbaJ2LwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 07:52:03 -0400
+Date: Wed, 29 Oct 2014 12:48:46 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Cyril Brulebois <kibi@debian.org>
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wireless: rt2x00: add new rt2800usb device
+Message-ID: <20141029114846.GC2021@redhat.com>
+References: <1414510961-28920-1-git-send-email-kibi@debian.org>
+ <20141029110214.GB2021@redhat.com>
+ <20141029111224.GC29720@mraw.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029111224.GC29720@mraw.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for commit d6d86c0a7f8ddc5b38cf089222cb1d9540762dc2
-("mm/balloon_compaction: redesign ballooned pages management").
+On Wed, Oct 29, 2014 at 12:12:24PM +0100, Cyril Brulebois wrote:
+> Stanislaw Gruszka <sgruszka@redhat.com> (2014-10-29):
+> > On Tue, Oct 28, 2014 at 04:42:41PM +0100, Cyril Brulebois wrote:
+> > > 0x1b75 0xa200 AirLive WN-200USB wireless 11b/g/n dongle
+> > > 
+> > > References: https://bugs.debian.org/766802
+> > > Reported-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+> > 
+> > Was this patch tested by reporter? I would rather see Reported-and-tested-by tag :-)
+> 
+> The reporter confirmed the following trick worked:
+> 
+>   # echo rt2800usb >> /etc/modules
+>   # echo 'install rt2800usb /sbin/modprobe --ignore-install rt2800usb $CMDLINE_OPTS && echo 1b75 a200 > /sys/bus/usb/drivers/rt2800usb/new_id' > /etc/modprobe.d/ralink.conf
+>   # modprobe -r rt2800usb ; modprobe rt2800usb
 
-If CONFIG_BALLOON_COMPACTION=n balloon_page_insert() does not link
-pages with balloon and doesn't set PagePrivate flag, as a result
-balloon_page_dequeue cannot get any pages because it thinks that
-all of them are isolated. Without balloon compaction nobody can
-isolate ballooned pages, it's safe to remove this check.
+Ok, that's fine .
 
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Reported-by: Matt Mullins <mmullins@mmlx.us>
-Cc: Stable <stable@vger.kernel.org>	(v3.17)
----
- mm/balloon_compaction.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
-index b3cbe19..fcad832 100644
---- a/mm/balloon_compaction.c
-+++ b/mm/balloon_compaction.c
-@@ -68,11 +68,13 @@ struct page *balloon_page_dequeue(struct balloon_dev_info *b_dev_info)
- 		 * to be released by the balloon driver.
- 		 */
- 		if (trylock_page(page)) {
-+#ifdef CONFIG_BALLOON_COMPACTION
- 			if (!PagePrivate(page)) {
- 				/* raced with isolation */
- 				unlock_page(page);
- 				continue;
- 			}
-+#endif
- 			spin_lock_irqsave(&b_dev_info->pages_lock, flags);
- 			balloon_page_delete(page);
- 			__count_vm_event(BALLOON_DEFLATE);
+Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
 
