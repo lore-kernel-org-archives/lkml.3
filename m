@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaJ2EBb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 00:01:31 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:57207 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761AbaJ2D7M (ORCPT
+	id S1752365AbaJ2EBv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 00:01:51 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62221 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382AbaJ2D7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 23:59:12 -0400
+	Tue, 28 Oct 2014 23:59:08 -0400
 From: Kevin Cernekee <cernekee@gmail.com>
 To: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
         ralf@linux-mips.org
 Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: [PATCH 05/11] irqchip: bcm7120-l2: Make sure all register accesses use base+offset
-Date: Tue, 28 Oct 2014 20:58:52 -0700
-Message-Id: <1414555138-6500-5-git-send-email-cernekee@gmail.com>
+Subject: [PATCH 02/11] irqchip: brcmstb-l2: Eliminate dependency on ARM code
+Date: Tue, 28 Oct 2014 20:58:49 -0700
+Message-Id: <1414555138-6500-2-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
 References: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
@@ -22,40 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple of accesses to IRQEN (base+0x00) just used "base" directly, so
-they would break if IRQEN ever became nonzero.  Make sure that all
-reads/writes specify the register offset constant.
+The irq-brcmstb-l2 driver has a single dependency on the ARM code, the
+do_bad_IRQ macro.  Expand this macro in-place so that the driver can be
+built on non-ARM platforms.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- drivers/irqchip/irq-bcm7120-l2.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-brcmstb-l2.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
-index 49d8f3d..6472b71 100644
---- a/drivers/irqchip/irq-bcm7120-l2.c
-+++ b/drivers/irqchip/irq-bcm7120-l2.c
-@@ -66,10 +66,10 @@ static void bcm7120_l2_intc_suspend(struct irq_data *d)
+diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
+index c15c840..c9bdf20 100644
+--- a/drivers/irqchip/irq-brcmstb-l2.c
++++ b/drivers/irqchip/irq-brcmstb-l2.c
+@@ -19,6 +19,7 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
++#include <linux/spinlock.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_address.h>
+@@ -30,8 +31,6 @@
+ #include <linux/irqchip.h>
+ #include <linux/irqchip/chained_irq.h>
  
- 	irq_gc_lock(gc);
- 	/* Save the current mask and the interrupt forward mask */
--	b->saved_mask = __raw_readl(b->base) | b->irq_fwd_mask;
-+	b->saved_mask = __raw_readl(b->base + IRQEN) | b->irq_fwd_mask;
- 	if (b->can_wake) {
- 		reg = b->saved_mask | gc->wake_active;
--		__raw_writel(reg, b->base);
-+		__raw_writel(reg, b->base + IRQEN);
+-#include <asm/mach/irq.h>
+-
+ #include "irqchip.h"
+ 
+ /* Register offsets in the L2 interrupt controller */
+@@ -63,7 +62,9 @@ static void brcmstb_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
+ 		~(__raw_readl(b->base + CPU_MASK_STATUS));
+ 
+ 	if (status == 0) {
+-		do_bad_IRQ(irq, desc);
++		raw_spin_lock(&desc->lock);
++		handle_bad_irq(irq, desc);
++		raw_spin_unlock(&desc->lock);
+ 		goto out;
  	}
- 	irq_gc_unlock(gc);
- }
-@@ -81,7 +81,7 @@ static void bcm7120_l2_intc_resume(struct irq_data *d)
- 
- 	/* Restore the saved mask */
- 	irq_gc_lock(gc);
--	__raw_writel(b->saved_mask, b->base);
-+	__raw_writel(b->saved_mask, b->base + IRQEN);
- 	irq_gc_unlock(gc);
- }
  
 -- 
 2.1.1
