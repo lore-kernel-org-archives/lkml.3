@@ -1,100 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031AbaJ2VBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:01:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755671AbaJ2VBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:01:06 -0400
-Date: Wed, 29 Oct 2014 21:09:16 +0000
-From: Alexander Gordeev <agordeev@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: Remove redundant rcu_is_cpu_rrupt_from_idle()
- function
-Message-ID: <20141029210916.GB13273@agordeev.usersys.redhat.com>
-References: <1414580827-19545-1-git-send-email-agordeev@redhat.com>
- <20141029124728.GL5718@linux.vnet.ibm.com>
- <20141029134519.GC30198@agordeev.usersys.redhat.com>
- <20141029143439.GN5718@linux.vnet.ibm.com>
- <20141029151622.GD30198@agordeev.usersys.redhat.com>
- <20141029154615.GR5718@linux.vnet.ibm.com>
+	id S1757203AbaJ2VBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:01:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58920 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755790AbaJ2VBK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 17:01:10 -0400
+Date: Wed, 29 Oct 2014 22:00:54 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Josh Triplett <josh@joshtriplett.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [PATCH v3 3/3] x86: Support compiling out userspace I/O (iopl
+ and ioperm)
+In-Reply-To: <9d77d0e4df8feb2cb55fb21689e016a3145cb7f8.1414598511.git.josh@joshtriplett.org>
+Message-ID: <alpine.DEB.2.11.1410292155300.5308@nanos>
+References: <7159269982aac3b732af2c33a2e3d04e2048bdfb.1414598511.git.josh@joshtriplett.org> <9d77d0e4df8feb2cb55fb21689e016a3145cb7f8.1414598511.git.josh@joshtriplett.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141029154615.GR5718@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 08:46:15AM -0700, Paul E. McKenney wrote:
-> On Wed, Oct 29, 2014 at 03:16:23PM +0000, Alexander Gordeev wrote:
-> > On Wed, Oct 29, 2014 at 07:34:39AM -0700, Paul E. McKenney wrote:
-> > > On Wed, Oct 29, 2014 at 01:45:19PM +0000, Alexander Gordeev wrote:
-> > > > On Wed, Oct 29, 2014 at 05:47:29AM -0700, Paul E. McKenney wrote:
-> > > > > On Wed, Oct 29, 2014 at 12:07:07PM +0100, Alexander Gordeev wrote:
-> > > > > > Function rcu_is_cpu_rrupt_from_idle() is called from scheduling-
-> > > > > > clock interrupt handler to check if the current CPU was interrupted
-> > > > > > from idle. If true, it results in invocation of RCU callbacks. But
-> > > > > > the common hardware interrupt exit path also contains similar check
-> > > > > > and therefore the call to rcu_is_cpu_rrupt_from_idle() is redundant.
-> > > > > 
-> > > > > By common hardware interrupt exit path, you are meaning the calls
-> > > > > to rcu_irq_exit()?  If not, please let me know exactly what you
-> > > > > mean here.
-> > > > 
-> > > > Yes, I mean rcu_irq_exit().
-> > > 
-> > > Unless you can get the indication of whether or not the original interrupt
-> > > came from userspace execution into rcu_irq_exit(), this will not work.
-> > > It will result in grace-period hangs on some configurations.
-> > 
-> > Okay, that was my concern wrt tree RCU. By contrast, tiny RCU does not seem
-> > able to hang a grace-period, isn't it?
-> 
-> Although it is true that tiny RCU cannot hang a synchronize_rcu()
-> grace period, it most certainly can hang a call_rcu() grace period
-> in exactly the same way.
+On Wed, 29 Oct 2014, Josh Triplett wrote:
+> v3: Eliminated several #ifdefs, and in particular almost all #ifdefs in
+>     .c files, by adding a macro INIT_SET_IOPL_MASK to use in place of
+>     the initializer for set_iopl_mask, and using __maybe_unused rather
+>     than wrapping function definitions in #ifdef.  Rebased on v3.18-rc1.
+>     Recomputed bloat-o-meter.
 
-Sorry for being a pain in the neck - just want to make sure I am following.
+Can you please split this patch into smaller pieces?
 
-I only see possibility to cause callbacks not being called for "too long"
-in case a system has lots of nested interrupts and rcu_idle_enter_common()
-is not being called from hardware interrupt context as result. How could
-rcu_is_cpu_rrupt_from_idle() help here?
+    - Seperate the code move to header files
+    - Seperate the macro stuff
+    - Add the #ifdef CONFIG_.... changes
 
-> > > Now, if you -can- get the userspace-execution indication into
-> > > rcu_irq_exit(), this might be of interest.  However, it might be faster
-> > > to simply let the scheduling-clock interrupt do the job as it currently
-> > > does, especially for workloads with lots of interrupts.
-> > > 
-> > > Or did you have something else in mind?
-> > 
-> > Nope. I would even leave as is tiny RCU's rcu_is_cpu_rrupt_from_idle()
-> > for clarity then ;)
-> 
-> Also to avoid userspace execution from preventing RCU callbacks from
-> ever being invoked.  ;-)
+Thanks,
 
-Hmm.. Am I missing something else? I did not remove the userspace check
-from the scheduling-clock interrupt:
-
-@@ -250,7 +240,7 @@ void rcu_bh_qs(void)
- void rcu_check_callbacks(int cpu, int user)
- {
- 	RCU_TRACE(check_cpu_stalls());
--	if (user || rcu_is_cpu_rrupt_from_idle())
-+	if (user)
- 		rcu_sched_qs();
- 	else if (!in_softirq())
- 		rcu_bh_qs();
-
-Thanks!
-
-> 							Thanx, Paul
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+	tglx
