@@ -1,67 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685AbaJ2PIR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:08:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933143AbaJ2PIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:08:16 -0400
-Date: Wed, 29 Oct 2014 15:16:23 +0000
-From: Alexander Gordeev <agordeev@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: Remove redundant rcu_is_cpu_rrupt_from_idle()
- function
-Message-ID: <20141029151622.GD30198@agordeev.usersys.redhat.com>
-References: <1414580827-19545-1-git-send-email-agordeev@redhat.com>
- <20141029124728.GL5718@linux.vnet.ibm.com>
- <20141029134519.GC30198@agordeev.usersys.redhat.com>
- <20141029143439.GN5718@linux.vnet.ibm.com>
+	id S933714AbaJ2PK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:10:26 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:54468 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933090AbaJ2PKZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 11:10:25 -0400
+Date: Wed, 29 Oct 2014 16:07:16 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Jim Paris <jim@jtan.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] cdc-acm: ensure that termios get set when the port is
+ activated
+Message-ID: <20141029150716.GG2265@localhost>
+References: <20141028232649.GA1064@psychosis.jim.sh>
+ <54503D44.4080908@hurleysoftware.com>
+ <20141029134305.GA8149@psychosis.jim.sh>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141029143439.GN5718@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141029134305.GA8149@psychosis.jim.sh>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 07:34:39AM -0700, Paul E. McKenney wrote:
-> On Wed, Oct 29, 2014 at 01:45:19PM +0000, Alexander Gordeev wrote:
-> > On Wed, Oct 29, 2014 at 05:47:29AM -0700, Paul E. McKenney wrote:
-> > > On Wed, Oct 29, 2014 at 12:07:07PM +0100, Alexander Gordeev wrote:
-> > > > Function rcu_is_cpu_rrupt_from_idle() is called from scheduling-
-> > > > clock interrupt handler to check if the current CPU was interrupted
-> > > > from idle. If true, it results in invocation of RCU callbacks. But
-> > > > the common hardware interrupt exit path also contains similar check
-> > > > and therefore the call to rcu_is_cpu_rrupt_from_idle() is redundant.
-> > > 
-> > > By common hardware interrupt exit path, you are meaning the calls
-> > > to rcu_irq_exit()?  If not, please let me know exactly what you
-> > > mean here.
+On Wed, Oct 29, 2014 at 09:43:41AM -0400, Jim Paris wrote:
+> The driver wasn't properly configuring the hardware for the current
+> termios settings under all conditions.  Ensure that termios are
+> written to the device when the port is activated.
+> 
+> Signed-off-by: Jim Paris <jim@jtan.com>
+> ---
+> 
+> Peter Hurley wrote:
+> > Yeah, you're right that the cdc-acm driver isn't properly configuring
+> > the hardware for the current termios settings under all conditions.
 > > 
-> > Yes, I mean rcu_irq_exit().
+> > But you don't want to do it for every tty open, only for opens
+> > requiring port initialization, which is what the tty_port->activate()
+> > method is for (ie., acm_port_activate()).
 > 
-> Unless you can get the indication of whether or not the original interrupt
-> came from userspace execution into rcu_irq_exit(), this will not work.
-> It will result in grace-period hangs on some configurations.
+> I moved it to acm_port_activate(), which works fine.  Thanks!
+> acm_tty_set_termios is just moved in this patch, not changed.
 
-Okay, that was my concern wrt tree RCU. By contrast, tiny RCU does not seem
-able to hang a grace-period, isn't it?
+Don't do that. Use a prototype instead of moving.
 
-> Now, if you -can- get the userspace-execution indication into
-> rcu_irq_exit(), this might be of interest.  However, it might be faster
-> to simply let the scheduling-clock interrupt do the job as it currently
-> does, especially for workloads with lots of interrupts.
+> Jim
 > 
-> Or did you have something else in mind?
+> ---
+>  drivers/usb/class/cdc-acm.c | 104 ++++++++++++++++++++++----------------------
+>  1 file changed, 53 insertions(+), 51 deletions(-)
+> 
+> diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+> index e934e19f49f5..24077deb737a 100644
+> --- a/drivers/usb/class/cdc-acm.c
+> +++ b/drivers/usb/class/cdc-acm.c
+> @@ -504,6 +504,57 @@ static int acm_tty_open(struct tty_struct *tty, struct file *filp)
+>  	return tty_port_open(&acm->port, tty, filp);
+>  }
+>  
+> +static void acm_tty_set_termios(struct tty_struct *tty,
+> +						struct ktermios *termios_old)
+> +{
+> +	struct acm *acm = tty->driver_data;
+> +	struct ktermios *termios = &tty->termios;
+> +	struct usb_cdc_line_coding newline;
+> +	int newctrl = acm->ctrlout;
+> +
+> +	newline.dwDTERate = cpu_to_le32(tty_get_baud_rate(tty));
+> +	newline.bCharFormat = termios->c_cflag & CSTOPB ? 2 : 0;
+> +	newline.bParityType = termios->c_cflag & PARENB ?
+> +				(termios->c_cflag & PARODD ? 1 : 2) +
+> +				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
+> +	switch (termios->c_cflag & CSIZE) {
+> +	case CS5:
+> +		newline.bDataBits = 5;
+> +		break;
+> +	case CS6:
+> +		newline.bDataBits = 6;
+> +		break;
+> +	case CS7:
+> +		newline.bDataBits = 7;
+> +		break;
+> +	case CS8:
+> +	default:
+> +		newline.bDataBits = 8;
+> +		break;
+> +	}
+> +	/* FIXME: Needs to clear unsupported bits in the termios */
+> +	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
+> +
+> +	if (!newline.dwDTERate) {
+> +		newline.dwDTERate = acm->line.dwDTERate;
+> +		newctrl &= ~ACM_CTRL_DTR;
+> +	} else
+> +		newctrl |=  ACM_CTRL_DTR;
+> +
+> +	if (newctrl != acm->ctrlout)
+> +		acm_set_control(acm, acm->ctrlout = newctrl);
+> +
+> +	if (memcmp(&acm->line, &newline, sizeof newline)) {
+> +		memcpy(&acm->line, &newline, sizeof newline);
+> +		dev_dbg(&acm->control->dev, "%s - set line: %d %d %d %d\n",
+> +			__func__,
+> +			le32_to_cpu(newline.dwDTERate),
+> +			newline.bCharFormat, newline.bParityType,
+> +			newline.bDataBits);
+> +		acm_set_line(acm, &acm->line);
+> +	}
+> +}
+> +
+>  static void acm_port_dtr_rts(struct tty_port *port, int raise)
+>  {
+>  	struct acm *acm = container_of(port, struct acm, port);
+> @@ -554,6 +605,8 @@ static int acm_port_activate(struct tty_port *port, struct tty_struct *tty)
+>  		goto error_submit_urb;
+>  	}
+>  
+> +	acm_tty_set_termios(tty, NULL);
+> +
 
-Nope. I would even leave as is tiny RCU's rcu_is_cpu_rrupt_from_idle()
-for clarity then ;)
+Using set_termios this way also has the side-effect of raising DTR (when
+baudrate != B0). This is currently not done until after the port has
+been fully opened (by .dtr_rts).
 
-> 							Thanx, Paul
+This is actually a bug in set_termios which should only raise DTR on
+transitions from B0. I'll fix this separately.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+>  	/*
+>  	 * Unthrottle device in case the TTY was closed while throttled.
+>  	 */
+> @@ -949,57 +1002,6 @@ static int acm_tty_ioctl(struct tty_struct *tty,
+>  	return rv;
+>  }
+
+Johan
