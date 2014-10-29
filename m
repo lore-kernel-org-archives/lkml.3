@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933340AbaJ2ObY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:31:24 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52748 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932834AbaJ2ObW (ORCPT
+	id S933407AbaJ2OcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:32:16 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:51250 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932834AbaJ2OcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:31:22 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
-Date: Wed, 29 Oct 2014 15:51:59 +0100
-Message-ID: <11524706.oiA2Jzq65k@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1738599.RytCx391OM@vostro.rjw.lan>
-References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <20141029085429.GJ1304@lahna.fi.intel.com> <1738599.RytCx391OM@vostro.rjw.lan>
+	Wed, 29 Oct 2014 10:32:14 -0400
+Date: Wed, 29 Oct 2014 10:32:10 -0400
+From: Tejun Heo <tj@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC] workqueue: allow rescuer thread to do more work.
+Message-ID: <20141029143210.GA25226@htj.dyndns.org>
+References: <20141029172608.39119c80@notabene.brown>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029172608.39119c80@notabene.brown>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 29, 2014 03:42:23 PM Rafael J. Wysocki wrote:
-> On Wednesday, October 29, 2014 10:54:29 AM Mika Westerberg wrote:
-> > On Wed, Oct 29, 2014 at 04:41:47PM +0900, Alexandre Courbot wrote:
-> > > On 10/29/2014 06:59 AM, Rafael J. Wysocki wrote:
-> > > >On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
-> > > >>acpi_dev_add_driver_gpios() makes it possible to set up mapping between
-> > > >>properties and ACPI GpioIo resources in a driver, so we can take index
-> > > >>parameter in acpi_find_gpio() into use with _DSD device properties now.
-> > > >>
-> > > >>This index can be used to select a GPIO from a property with multiple
-> > > >>GPIOs:
-> > > >>
-> > > >>   Package () {
-> > > >>   	"data-gpios",
-> > > >>   	Package () {
-> > > >>   		\_SB.GPIO, 0, 0, 0,
-> > > >>   		\_SB.GPIO, 1, 0, 0,
-> > > >>   		\_SB.GPIO, 2, 0, 1,
-> > > >>   	}
-> > > >>   }
-> > > >>
-> > > >>In order to retrieve the last GPIO from a driver we can simply do:
-> > > >>
-> > > >>   desc = devm_gpiod_get_index(dev, "data", 2);
-> > > >>
-> > > >>and so on.
-> > > >>
-> > > >>Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > >
-> > > >Cool. :-)
-> > > >
-> > > >Any objections anyone?
-> > > 
-> > > Looks good to me!
-> > > 
-> > > Acked-by: Alexandre Courbot <acourbot@nvidia.com>
-> > 
-> > Thanks!
-> > 
-> > > Since this looks like a bug fix, shouldn't this be squashed into the
-> > > relevant patch of the device-properties set?
-> > 
-> > I agree.
-> 
-> Well, except that the set is in my linux-next branch now and I very much
-> prefer to do fixes on top of it.
-> 
-> Besides, I'm not sure if that even matters for the current series.
+Hello, Neil.
 
-Never mind.  I need to rebase the series anyway because of a bug in the
-second patch, so I'll fold the $subject one into patch [5/12].
+On Wed, Oct 29, 2014 at 05:26:08PM +1100, NeilBrown wrote:
+> Hi Tejun,
+>   I haven't tested this patch yet so this really is an 'RFC'.
+> In general ->nr_active should only be accessed under the pool->lock,
+> but a miss-read here will at most cause a very occasional 100ms delay so
+> shouldn't be a big problem.  The only thread likely to change ->nr_active is
+> this thread, so such a delay would be extremely unlikely.
+> 
+> Thanks,
+> NeilBrown
+> 
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 09b685daee3d..d0a8b101c5d9 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -2244,16 +2244,18 @@ repeat:
+>  		spin_lock_irq(&pool->lock);
+>  		rescuer->pool = pool;
+>  
+> -		/*
+> -		 * Slurp in all works issued via this workqueue and
+> -		 * process'em.
+> -		 */
+> -		WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
+> -		list_for_each_entry_safe(work, n, &pool->worklist, entry)
+> -			if (get_work_pwq(work) == pwq)
+> -				move_linked_works(work, scheduled, &n);
+> +		do {
+> +			/*
+> +			 * Slurp in all works issued via this workqueue and
+> +			 * process'em.
+> +			 */
+> +			WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
+> +			list_for_each_entry_safe(work, n, &pool->worklist, entry)
+> +				if (get_work_pwq(work) == pwq)
+> +					move_linked_works(work, scheduled, &n);
+>  
+> -		process_scheduled_works(rescuer);
+> +			process_scheduled_works(rescuer);
+> +		} while (need_more_worker(pool) && pwq->nr_active);
+
+need_more_worker(pool) is always true for unbound pools as long as
+there are work items queued, so the above condition may stay true
+longer than it needs to.  Given that workder depletion is pool-wide
+event, maybe it'd make sense to trigger rescuers immediately while
+workers are in short supply?  e.g. while there's a manager stuck in
+maybe_create_worker() with the mayday timer already triggered?
+
+Thanks.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+tejun
