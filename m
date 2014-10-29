@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934802AbaJ2Qzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:55:48 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50764 "EHLO
+	id S934817AbaJ2Qz7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:55:59 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64505 "EHLO
 	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933822AbaJ2Qzq (ORCPT
+	with ESMTP id S933822AbaJ2Qz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:55:46 -0400
-Message-ID: <54511BF6.9060908@gmail.com>
-Date: Wed, 29 Oct 2014 09:55:18 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 29 Oct 2014 12:55:56 -0400
 MIME-Version: 1.0
-To: Kevin Cernekee <cernekee@gmail.com>, tglx@linutronix.de,
-        jason@lakedaemon.net, ralf@linux-mips.org
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH 09/11] irqchip: bcm7120-l2: Use gc->mask_cache to simplify
- suspend/resume functions
-References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <1414555138-6500-9-git-send-email-cernekee@gmail.com>
-In-Reply-To: <1414555138-6500-9-git-send-email-cernekee@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5450B1B1.5070301@imgtec.com>
+References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
+	<1414541562-10076-3-git-send-email-abrestic@chromium.org>
+	<5450B1B1.5070301@imgtec.com>
+Date: Wed, 29 Oct 2014 09:55:56 -0700
+X-Google-Sender-Auth: aie1nVPGjk_dC-h9SLT8YI0mBG8
+Message-ID: <CAL1qeaFeoKFbea7eiiXaw87PYUWO1JmP5xxdLLpW2RrFCprtZg@mail.gmail.com>
+Subject: Re: [PATCH V3 2/4] of: Add binding document for MIPS GIC
+From: Andrew Bresticker <abrestic@chromium.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 08:58 PM, Kevin Cernekee wrote:
-> The cached value already incorporates irq_fwd_mask, and was saved the
-> last time an IRQ was enabled/disabled.
-> 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Hi James,
 
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+On Wed, Oct 29, 2014 at 2:21 AM, James Hogan <james.hogan@imgtec.com> wrote:
+> Hi Andrew,
+>
+> On 29/10/14 00:12, Andrew Bresticker wrote:
+>>  - changed compatible string to include CPU version
+>
+>> +Required properties:
+>> +- compatible : Should be "mti,<cpu>-gic".  Supported variants:
+>> +  - "mti,interaptiv-gic"
+>
+>> +Required properties for timer sub-node:
+>> +- compatible : Should be "mti,<cpu>-gic-timer".  Supported variants:
+>> +  - "mti,interaptiv-gic-timer"
+>
+> Erm, I'm a bit confused...
+> Why do you include the core name in the compatible string?
+>
+> You seem to be suggesting that:
+>
+> 1) The GIC/timer drivers need to know what core they're running on.
+>
+> Is that really true?
 
-> ---
->  drivers/irqchip/irq-bcm7120-l2.c | 11 +++--------
->  1 file changed, 3 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
-> index e9331f8..c76c9ad 100644
-> --- a/drivers/irqchip/irq-bcm7120-l2.c
-> +++ b/drivers/irqchip/irq-bcm7120-l2.c
-> @@ -37,7 +37,6 @@ struct bcm7120_l2_intc_data {
->  	bool can_wake;
->  	u32 irq_fwd_mask;
->  	u32 irq_map_mask;
-> -	u32 saved_mask;
->  };
->  
->  static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
-> @@ -62,14 +61,11 @@ static void bcm7120_l2_intc_suspend(struct irq_data *d)
->  {
->  	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
->  	struct bcm7120_l2_intc_data *b = gc->private;
-> -	u32 reg;
->  
->  	irq_gc_lock(gc);
-> -	/* Save the current mask and the interrupt forward mask */
-> -	b->saved_mask = irq_reg_readl(b->base + IRQEN) | b->irq_fwd_mask;
->  	if (b->can_wake) {
-> -		reg = b->saved_mask | gc->wake_active;
-> -		irq_reg_writel(reg, b->base + IRQEN);
-> +		irq_reg_writel(gc->mask_cache | gc->wake_active,
-> +			       b->base + IRQEN);
->  	}
->  	irq_gc_unlock(gc);
->  }
-> @@ -77,11 +73,10 @@ static void bcm7120_l2_intc_suspend(struct irq_data *d)
->  static void bcm7120_l2_intc_resume(struct irq_data *d)
->  {
->  	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> -	struct bcm7120_l2_intc_data *b = gc->private;
->  
->  	/* Restore the saved mask */
->  	irq_gc_lock(gc);
-> -	irq_reg_writel(b->saved_mask, b->base + IRQEN);
-> +	irq_reg_writel(gc->mask_cache, b->base + IRQEN);
->  	irq_gc_unlock(gc);
->  }
->  
-> 
+They don't now, but it's possible that a future CPU has a newer
+revision of the GIC which has some differences that need to be
+accounted for in the driver.
 
+> 2) It isn't possible to probe the core type.
+>
+> But the kernel already knows this, so what's wrong with using
+> current_cpu_type() like everything else that needs to know?
+>
+> 3) Every new core should require a new compatible string to be added
+> before the GIC will work. You don't even have a generic compatible
+> string that DT can specify after the core specific one as a fallback.
+
+Yes, adding a generic compatible string would be a good idea.
+
+> Please lets not do this unless it's actually necessary (which AFAICT it
+> really isn't).
+
+The point of this was to future-proof these bindings and I though that
+CPU type was the best way to indicate version in the compatible
+string.  This is also how it's done for the ARM GIC and arch timers.
+Perhaps the best thing to do is to require both a core-specific
+("mti,interaptiv-gic") and generic ("mti,gic") compatible string and
+just match on the generic one for now until there's a need to use the
+core-specific one.  Thoughts?
