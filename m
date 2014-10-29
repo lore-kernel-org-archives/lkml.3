@@ -1,80 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbaJ2A3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 20:29:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39836 "EHLO comal.ext.ti.com"
+	id S1755025AbaJ2AbD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 20:31:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53054 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414AbaJ2A3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 20:29:37 -0400
-Date: Tue, 28 Oct 2014 19:29:08 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Felipe Balbi <balbi@ti.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: linux-next: build failure after merge of the usb-gadget-fixes
- tree
-Message-ID: <20141029002908.GA29769@saruman>
-Reply-To: <balbi@ti.com>
-References: <20141029095848.12be411e@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-In-Reply-To: <20141029095848.12be411e@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754793AbaJ2AbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 20:31:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="407565438"
+From: jagadish.krishnamoorthy@intel.com
+To: dmitry.torokhov@gmail.com, bleung@chromium.org, dusonlin@emc.com.tw
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jagadish Krishnamoorthy <jagadish.krishnamoorthy@intel.com>
+Subject: [PATCH] input: add gpio based irq support to Elan touchpad
+Date: Tue, 28 Oct 2014 17:27:24 -0700
+Message-Id: <1414542444-27184-1-git-send-email-jagadish.krishnamoorthy@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Jagadish Krishnamoorthy <jagadish.krishnamoorthy@intel.com>
 
-On Wed, Oct 29, 2014 at 09:58:48AM +1100, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> After merging the usb-gadget-fixes tree, today's linux-next build
-> (x86_64 allmodconfig) failed like this:
->=20
-> drivers/usb/dwc2/gadget.c: In function 's3c_hsotg_suspend':
-> drivers/usb/dwc2/gadget.c:3633:2: error: implicit declaration of function=
- 's3c_hsotg_core_disconnect' [-Werror=3Dimplicit-function-declaration]
->   s3c_hsotg_core_disconnect(hsotg);
->   ^
->=20
-> Caused by commit 9f2104db1295 ("usb: dwc2: gadget: fix calls to phy
-> control functions in suspend/resume code").
->=20
-> I have used the usb-gadget-fixes tree from next-20141028 for today.
+Adding new member 'irq' in main device structure.
+On some of the platforms, gpio is passed in platform data
+instead of irq. Convert the gpio to irq and store it in the
+driver data.
 
-I dropped that commit for now. I guess I forgot to build test that one,
-sorry.
+Signed-off-by: Jagadish Krishnamoorthy <jagadish.krishnamoorthy@intel.com>
+---
+ drivers/input/mouse/elan_i2c.h       |    3 ++-
+ drivers/input/mouse/elan_i2c_core.c  |   44 ++++++++++++++++++++++++----------
+ drivers/input/mouse/elan_i2c_i2c.c   |    7 +++---
+ drivers/input/mouse/elan_i2c_smbus.c |    3 ++-
+ 4 files changed, 39 insertions(+), 18 deletions(-)
 
---=20
-balbi
+diff --git a/drivers/input/mouse/elan_i2c.h b/drivers/input/mouse/elan_i2c.h
+index 2e83862..bb94a96 100644
+--- a/drivers/input/mouse/elan_i2c.h
++++ b/drivers/input/mouse/elan_i2c.h
+@@ -76,7 +76,8 @@ struct elan_transport_ops {
+ 	int (*write_fw_block)(struct i2c_client *client,
+ 			      const u8 *page, u16 checksum, int idx);
+ 	int (*finish_fw_update)(struct i2c_client *client,
+-				struct completion *reset_done);
++				struct completion *reset_done,
++				unsigned int irq);
+ 
+ 	int (*get_report)(struct i2c_client *client, u8 *report);
+ };
+diff --git a/drivers/input/mouse/elan_i2c_core.c b/drivers/input/mouse/elan_i2c_core.c
+index 0cb2be4..9c5c5d3 100644
+--- a/drivers/input/mouse/elan_i2c_core.c
++++ b/drivers/input/mouse/elan_i2c_core.c
+@@ -35,6 +35,7 @@
+ #include <linux/completion.h>
+ #include <linux/of.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/gpio.h>
+ #include <asm/unaligned.h>
+ 
+ #include "elan_i2c.h"
+@@ -75,6 +76,7 @@ struct elan_tp_data {
+ 	unsigned int		width_y;
+ 	unsigned int		x_res;
+ 	unsigned int		y_res;
++	unsigned int		irq;
+ 
+ 	u8			product_id;
+ 	u8			fw_version;
+@@ -331,7 +333,8 @@ static int __elan_update_firmware(struct elan_tp_data *data,
+ 	/* Wait WDT reset and power on reset */
+ 	msleep(600);
+ 
+-	error = data->ops->finish_fw_update(client, &data->fw_completion);
++	error = data->ops->finish_fw_update(client, &data->fw_completion,
++					    data->irq);
+ 	if (error)
+ 		return error;
+ 
+@@ -356,7 +359,7 @@ static int elan_update_firmware(struct elan_tp_data *data,
+ 
+ 	dev_dbg(&client->dev, "Starting firmware update....\n");
+ 
+-	disable_irq(client->irq);
++	disable_irq(data->irq);
+ 	data->in_fw_update = true;
+ 
+ 	retval = __elan_update_firmware(data, fw);
+@@ -370,7 +373,7 @@ static int elan_update_firmware(struct elan_tp_data *data,
+ 	}
+ 
+ 	data->in_fw_update = false;
+-	enable_irq(client->irq);
++	enable_irq(data->irq);
+ 
+ 	return retval;
+ }
+@@ -482,7 +485,7 @@ static ssize_t calibrate_store(struct device *dev,
+ 	if (retval)
+ 		return retval;
+ 
+-	disable_irq(client->irq);
++	disable_irq(data->irq);
+ 
+ 	data->mode |= ETP_ENABLE_CALIBRATE;
+ 	retval = data->ops->set_mode(client, data->mode);
+@@ -528,7 +531,7 @@ out_disable_calibrate:
+ 			retval = error;
+ 	}
+ out:
+-	enable_irq(client->irq);
++	enable_irq(data->irq);
+ 	mutex_unlock(&data->sysfs_mutex);
+ 	return retval ?: count;
+ }
+@@ -594,7 +597,7 @@ static ssize_t acquire_store(struct device *dev, struct device_attribute *attr,
+ 	if (retval)
+ 		return retval;
+ 
+-	disable_irq(client->irq);
++	disable_irq(data->irq);
+ 
+ 	data->baseline_ready = false;
+ 
+@@ -636,7 +639,7 @@ out_disable_calibrate:
+ 			retval = error;
+ 	}
+ out:
+-	enable_irq(client->irq);
++	enable_irq(data->irq);
+ 	mutex_unlock(&data->sysfs_mutex);
+ 	return retval ?: count;
+ }
+@@ -900,6 +903,7 @@ static int elan_probe(struct i2c_client *client,
+ 	const struct elan_transport_ops *transport_ops;
+ 	struct device *dev = &client->dev;
+ 	struct elan_tp_data *data;
++	struct gpio_desc *desc;
+ 	unsigned long irqflags;
+ 	int error;
+ 
+@@ -992,17 +996,31 @@ static int elan_probe(struct i2c_client *client,
+ 		return error;
+ 
+ 	/*
++	 * Check for the irq number in platform data.
++	 * If that fails check for gpio based irq.
++	 */
++	if (client->irq >= 0) {
++		data->irq = client->irq;
++	} else {
++		desc = devm_gpiod_get_index(&client->dev, "ELAN_GPIO_IRQ", 0);
++		if (IS_ERR(desc) || gpiod_direction_input(desc)) {
++			dev_err(&client->dev, "failed to initialize gpio\n");
++			return error;
++		}
++		data->irq = gpiod_to_irq(desc);
++	}
++	/*
+ 	 * Systems using device tree should set up interrupt via DTS,
+ 	 * the rest will use the default falling edge interrupts.
+ 	 */
+ 	irqflags = client->dev.of_node ? 0 : IRQF_TRIGGER_FALLING;
+ 
+-	error = devm_request_threaded_irq(&client->dev, client->irq,
++	error = devm_request_threaded_irq(&client->dev, data->irq,
+ 					  NULL, elan_isr,
+ 					  irqflags | IRQF_ONESHOT,
+ 					  client->name, data);
+ 	if (error) {
+-		dev_err(&client->dev, "cannot register irq=%d\n", client->irq);
++		dev_err(&client->dev, "cannot register irq=%d\n", data->irq);
+ 		return error;
+ 	}
+ 
+@@ -1055,12 +1073,12 @@ static int __maybe_unused elan_suspend(struct device *dev)
+ 	if (ret)
+ 		return ret;
+ 
+-	disable_irq(client->irq);
++	disable_irq(data->irq);
+ 
+ 	if (device_may_wakeup(dev)) {
+ 		ret = elan_sleep(data);
+ 		/* Enable wake from IRQ */
+-		data->irq_wake = (enable_irq_wake(client->irq) == 0);
++		data->irq_wake = (enable_irq_wake(data->irq) == 0);
+ 	} else {
+ 		ret = elan_disable_power(data);
+ 	}
+@@ -1076,7 +1094,7 @@ static int __maybe_unused elan_resume(struct device *dev)
+ 	int error;
+ 
+ 	if (device_may_wakeup(dev) && data->irq_wake) {
+-		disable_irq_wake(client->irq);
++		disable_irq_wake(data->irq);
+ 		data->irq_wake = false;
+ 	}
+ 
+@@ -1088,7 +1106,7 @@ static int __maybe_unused elan_resume(struct device *dev)
+ 	if (error)
+ 		dev_err(dev, "initialize when resuming failed: %d\n", error);
+ 
+-	enable_irq(data->client->irq);
++	enable_irq(data->irq);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/input/mouse/elan_i2c_i2c.c b/drivers/input/mouse/elan_i2c_i2c.c
+index 97d4937..5e897cd 100644
+--- a/drivers/input/mouse/elan_i2c_i2c.c
++++ b/drivers/input/mouse/elan_i2c_i2c.c
+@@ -520,7 +520,8 @@ static int elan_i2c_write_fw_block(struct i2c_client *client,
+ }
+ 
+ static int elan_i2c_finish_fw_update(struct i2c_client *client,
+-				     struct completion *completion)
++				     struct completion *completion,
++				     unsigned int irq)
+ {
+ 	struct device *dev = &client->dev;
+ 	long ret;
+@@ -529,13 +530,13 @@ static int elan_i2c_finish_fw_update(struct i2c_client *client,
+ 	u8 buffer[ETP_I2C_INF_LENGTH];
+ 
+ 	reinit_completion(completion);
+-	enable_irq(client->irq);
++	enable_irq(irq);
+ 
+ 	error = elan_i2c_write_cmd(client, ETP_I2C_STAND_CMD, ETP_I2C_RESET);
+ 	if (!error)
+ 		ret = wait_for_completion_interruptible_timeout(completion,
+ 							msecs_to_jiffies(300));
+-	disable_irq(client->irq);
++	disable_irq(irq);
+ 
+ 	if (error) {
+ 		dev_err(dev, "device reset failed: %d\n", error);
+diff --git a/drivers/input/mouse/elan_i2c_smbus.c b/drivers/input/mouse/elan_i2c_smbus.c
+index 359bf85..a81b8fb 100644
+--- a/drivers/input/mouse/elan_i2c_smbus.c
++++ b/drivers/input/mouse/elan_i2c_smbus.c
+@@ -477,7 +477,8 @@ static int elan_smbus_get_report(struct i2c_client *client, u8 *report)
+ }
+ 
+ static int elan_smbus_finish_fw_update(struct i2c_client *client,
+-				       struct completion *fw_completion)
++				       struct completion *fw_completion,
++				       unsigned int irq)
+ {
+ 	/* No special handling unlike I2C transport */
+ 	return 0;
+-- 
+1.7.9.5
 
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUUDTUAAoJEIaOsuA1yqREdtUQAJPLY8TmkgKM31y/Vk9lK5VB
-QrGJ9ZtNcUWyLe6iGCvXWC+tisJS+EsYpYXrJ0v4YZHrP3k4RqLheJOpSB4L7p6v
-3yLMbP0nDowWwkcxYJDu+pgG+OxKogEVq4wIT3YC6AFemUojAvhKxKbCCahRtV5H
-Tn1vsOsTtyA4wCcx812jlZq04Lb+HM7Zy5/gfNop9PY7Z0AXdRhZkI2Cm20TzogL
-pHlHrhHIPnSjCuEfB//c9sqUa8Q20bSSZaNd+9r5sW86XJkmvDtGRCUIKyXDE3rl
-oirTrJwBZg/rFepNp8vWmmgimwn0ntfbzrutOn2T2UlMBu0NWXRORbzd70eONa9E
-iWBCtm72lbFJjhuxLgBouERm3R8La+mQVts8LqkUHP+k6E9UZlBZf0/x6ChwDUiK
-d2QyZ0XTdlNrr80f2kJvBgZ88Qk3ynJra6R5IJJAXaUm4aXj6Lvm4kuU6iRbEQVg
-f4rFC+0P1+JlswRaBOiiyMYUuhr+MpjRNxwmlDFU7KMFG+iDplMU6UwVSpAwt7zx
-vACHM64h7OakGcF5aOwjIY7CqjvterhJtqma2XJml5e5qMtYNdupjffZb9Bbo8Ap
-GDWLyTVfVyjRdfT7a0XO38DwajVQZIld3dGyGFCe+2O1g8+gw94t/wwgQ9Y3CjMK
-kdoDpuebBGn/mft6DsWz
-=8wpv
------END PGP SIGNATURE-----
-
---gKMricLos+KVdGMg--
