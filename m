@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757AbaJ2MqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:46:14 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14386 "EHLO
+	id S933131AbaJ2My1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:54:27 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14394 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932653AbaJ2MqK (ORCPT
+	with ESMTP id S932828AbaJ2MqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:46:10 -0400
+	Wed, 29 Oct 2014 08:46:14 -0400
 From: Richard Weinberger <richard@nod.at>
 To: dedekind1@gmail.com
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 01/35] UBI: Add initial support for fastmap self checks
-Date: Wed, 29 Oct 2014 13:45:24 +0100
-Message-Id: <1414586758-9972-2-git-send-email-richard@nod.at>
+Subject: [PATCH 09/35] UBI: Fastmap: Make ubi_refill_pools() fair
+Date: Wed, 29 Oct 2014 13:45:32 +0100
+Message-Id: <1414586758-9972-10-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
 References: <1414586758-9972-1-git-send-email-richard@nod.at>
@@ -21,101 +21,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using this debugfs knob fastmap self checks can be controlled.
+Currently ubi_refill_pools() first fills the first and then
+the second one.
+If only very few free PEBs are available the second pool can get
+zero PEBs.
+Change ubi_refill_pools() to distribute free PEBs fair between
+all pools.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/ubi/debug.c | 11 +++++++++++
- drivers/mtd/ubi/debug.h |  5 +++++
- drivers/mtd/ubi/ubi.h   |  4 ++++
- 3 files changed, 20 insertions(+)
+ drivers/mtd/ubi/wl.c | 73 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 36 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/mtd/ubi/debug.c b/drivers/mtd/ubi/debug.c
-index 63cb1d7..ea9be20 100644
---- a/drivers/mtd/ubi/debug.c
-+++ b/drivers/mtd/ubi/debug.c
-@@ -275,6 +275,8 @@ static ssize_t dfs_file_read(struct file *file, char __user *user_buf,
- 		val = d->chk_gen;
- 	else if (dent == d->dfs_chk_io)
- 		val = d->chk_io;
-+	else if (dent == d->dfs_chk_fastmap)
-+		val = d->chk_fastmap;
- 	else if (dent == d->dfs_disable_bgt)
- 		val = d->disable_bgt;
- 	else if (dent == d->dfs_emulate_bitflips)
-@@ -336,6 +338,8 @@ static ssize_t dfs_file_write(struct file *file, const char __user *user_buf,
- 		d->chk_gen = val;
- 	else if (dent == d->dfs_chk_io)
- 		d->chk_io = val;
-+	else if (dent == d->dfs_chk_fastmap)
-+		d->chk_fastmap = val;
- 	else if (dent == d->dfs_disable_bgt)
- 		d->disable_bgt = val;
- 	else if (dent == d->dfs_emulate_bitflips)
-@@ -406,6 +410,13 @@ int ubi_debugfs_init_dev(struct ubi_device *ubi)
- 		goto out_remove;
- 	d->dfs_chk_io = dent;
- 
-+	fname = "chk_fastmap";
-+	dent = debugfs_create_file(fname, S_IWUSR, d->dfs_dir, (void *)ubi_num,
-+				   &dfs_fops);
-+	if (IS_ERR_OR_NULL(dent))
-+		goto out_remove;
-+	d->dfs_chk_fastmap = dent;
-+
- 	fname = "tst_disable_bgt";
- 	dent = debugfs_create_file(fname, S_IWUSR, d->dfs_dir, (void *)ubi_num,
- 				   &dfs_fops);
-diff --git a/drivers/mtd/ubi/debug.h b/drivers/mtd/ubi/debug.h
-index cba89fc..e99ef37 100644
---- a/drivers/mtd/ubi/debug.h
-+++ b/drivers/mtd/ubi/debug.h
-@@ -127,4 +127,9 @@ static inline int ubi_dbg_chk_gen(const struct ubi_device *ubi)
- {
- 	return ubi->dbg.chk_gen;
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index 95bb12b..0639353 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -571,59 +571,58 @@ static void return_unused_pool_pebs(struct ubi_device *ubi,
  }
+ 
+ /**
+- * refill_wl_pool - refills all the fastmap pool used by the
+- * WL sub-system.
++ * ubi_refill_pools - refills all fastmap PEB pools.
+  * @ubi: UBI device description object
+  */
+-static void refill_wl_pool(struct ubi_device *ubi)
++void ubi_refill_pools(struct ubi_device *ubi)
+ {
++	struct ubi_fm_pool *wl_pool = &ubi->fm_wl_pool;
++	struct ubi_fm_pool *pool = &ubi->fm_pool;
+ 	struct ubi_wl_entry *e;
+-	struct ubi_fm_pool *pool = &ubi->fm_wl_pool;
++	int enough;
+ 
++	spin_lock(&ubi->wl_lock);
 +
-+static inline int ubi_dbg_chk_fastmap(const struct ubi_device *ubi)
-+{
-+	return ubi->dbg.chk_fastmap;
-+}
- #endif /* !__UBI_DEBUG_H__ */
-diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-index 320fc38..f80a726 100644
---- a/drivers/mtd/ubi/ubi.h
-+++ b/drivers/mtd/ubi/ubi.h
-@@ -352,6 +352,7 @@ struct ubi_wl_entry;
-  *
-  * @chk_gen: if UBI general extra checks are enabled
-  * @chk_io: if UBI I/O extra checks are enabled
-+ * @chk_fastmap: if UBI fastmap extra checks are enabled
-  * @disable_bgt: disable the background task for testing purposes
-  * @emulate_bitflips: emulate bit-flips for testing purposes
-  * @emulate_io_failures: emulate write/erase failures for testing purposes
-@@ -359,6 +360,7 @@ struct ubi_wl_entry;
-  * @dfs_dir: direntry object of the UBI device debugfs directory
-  * @dfs_chk_gen: debugfs knob to enable UBI general extra checks
-  * @dfs_chk_io: debugfs knob to enable UBI I/O extra checks
-+ * @dfs_chk_fastmap: debugfs knob to enable UBI fastmap extra checks
-  * @dfs_disable_bgt: debugfs knob to disable the background task
-  * @dfs_emulate_bitflips: debugfs knob to emulate bit-flips
-  * @dfs_emulate_io_failures: debugfs knob to emulate write/erase failures
-@@ -366,6 +368,7 @@ struct ubi_wl_entry;
- struct ubi_debug_info {
- 	unsigned int chk_gen:1;
- 	unsigned int chk_io:1;
-+	unsigned int chk_fastmap:1;
- 	unsigned int disable_bgt:1;
- 	unsigned int emulate_bitflips:1;
- 	unsigned int emulate_io_failures:1;
-@@ -373,6 +376,7 @@ struct ubi_debug_info {
- 	struct dentry *dfs_dir;
- 	struct dentry *dfs_chk_gen;
- 	struct dentry *dfs_chk_io;
-+	struct dentry *dfs_chk_fastmap;
- 	struct dentry *dfs_disable_bgt;
- 	struct dentry *dfs_emulate_bitflips;
- 	struct dentry *dfs_emulate_io_failures;
++	return_unused_pool_pebs(ubi, wl_pool);
+ 	return_unused_pool_pebs(ubi, pool);
+ 
+-	for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
+-		if (!ubi->free.rb_node ||
+-		   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
+-			break;
++	wl_pool->size = 0;
++	pool->size = 0;
+ 
+-		e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
+-		self_check_in_wl_tree(ubi, e, &ubi->free);
+-		rb_erase(&e->u.rb, &ubi->free);
+-		ubi->free_count--;
++	for (;;) {
++		enough = 0;
++		if (pool->size < pool->max_size) {
++			e = wl_get_wle(ubi);
++			if (!e)
++				break;
+ 
+-		pool->pebs[pool->size] = e->pnum;
+-	}
+-	pool->used = 0;
+-}
++			pool->pebs[pool->size] = e->pnum;
++			pool->size++;
++		} else
++			enough++;
+ 
+-/**
+- * refill_wl_user_pool - refills all the fastmap pool used by ubi_wl_get_peb.
+- * @ubi: UBI device description object
+- */
+-static void refill_wl_user_pool(struct ubi_device *ubi)
+-{
+-	struct ubi_fm_pool *pool = &ubi->fm_pool;
++		if (wl_pool->size < wl_pool->max_size) {
++			if (!ubi->free.rb_node ||
++			   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
++				break;
+ 
+-	return_unused_pool_pebs(ubi, pool);
++			e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
++			self_check_in_wl_tree(ubi, e, &ubi->free);
++			rb_erase(&e->u.rb, &ubi->free);
++			ubi->free_count--;
++
++			wl_pool->pebs[wl_pool->size] = e->pnum;
++			wl_pool->size++;
++		} else
++			enough++;
+ 
+-	for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
+-		pool->pebs[pool->size] = __wl_get_peb(ubi);
+-		if (pool->pebs[pool->size] < 0)
++		if (enough == 2)
+ 			break;
+ 	}
++
++	wl_pool->used = 0;
+ 	pool->used = 0;
+-}
+ 
+-/**
+- * ubi_refill_pools - refills all fastmap PEB pools.
+- * @ubi: UBI device description object
+- */
+-void ubi_refill_pools(struct ubi_device *ubi)
+-{
+-	spin_lock(&ubi->wl_lock);
+-	refill_wl_pool(ubi);
+-	refill_wl_user_pool(ubi);
+ 	spin_unlock(&ubi->wl_lock);
+ }
+ 
 -- 
 1.8.4.5
 
