@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647AbaJ2WZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:25:06 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:57235 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757611AbaJ2WZA (ORCPT
+	id S932477AbaJ2WZg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:25:36 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25645 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756101AbaJ2WZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:25:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACE9dm9eFhA-JXjvuxKdO=4MMMMJ+ENiLTYxCrseeLAVi3xbKg@mail.gmail.com>
-References: <alpine.LRH.2.11.1410291450290.28213@namei.org>
- <CALCETrUskFJY6hd9OCN_N1645VZ6zfwbGAuSEJNt6F_FPUi3gg@mail.gmail.com>
- <1414587599.5330.50.camel@dhcp-9-2-203-236.watson.ibm.com>
- <CALCETrWpHXp=7u2777ANJjxQ5rRqmutnEwf76dLX2s_LXf87pQ@mail.gmail.com>
- <20141029183612.GI6890@mwanda> <CALCETrU1S94M1L-UM5Rg91J4kGjJRFLiPxce5aAnPPJVeitQ_A@mail.gmail.com>
- <1414614013.5330.90.camel@dhcp-9-2-203-236.watson.ibm.com>
- <CALCETrUNYRbeA7EiTfd9hXMsHrES9EMAYaS=2FHOO=Kbm6qBTg@mail.gmail.com> <CACE9dm9eFhA-JXjvuxKdO=4MMMMJ+ENiLTYxCrseeLAVi3xbKg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 29 Oct 2014 15:24:38 -0700
-Message-ID: <CALCETrWQT9T8bh6ycpzvt6C_xfce+BuMQe6hP+8JPJE_3OMqJQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Fix for Integrity subsystem null pointer deref
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <jmorris@namei.org>,
-        "security@kernel.org" <security@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 29 Oct 2014 18:25:32 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] PCI: fix sriov enabling with virtual bus
+Date: Wed, 29 Oct 2014 15:26:10 -0700
+Message-Id: <1414621570-20777-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 3:23 PM, Dmitry Kasatkin
-<dmitry.kasatkin@gmail.com> wrote:
-> On 29 October 2014 23:22, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Oct 29, 2014 1:20 PM, "Mimi Zohar" <zohar@linux.vnet.ibm.com> wrote:
->>>
->>> On Wed, 2014-10-29 at 11:51 -0700, Andy Lutomirski wrote:
->>> > On Wed, Oct 29, 2014 at 11:36 AM, Dan Carpenter
->>> > <dan.carpenter@oracle.com> wrote:
->>> > > On Wed, Oct 29, 2014 at 09:23:45AM -0700, Andy Lutomirski wrote:
->>> > >> I have no idea what the semantics are.  All I'm saying is that it
->>> > >> looks like the code still accesses memory past the end of the buffer.
->>> > >> The buffer isn't a null pointer, so the symptom is different, but it
->>> > >> may still be a security bug.
->>> > >>
->>> > >> --Andy
->>> > >
->>> > > It only reads one byte into the struct "xattr_data->type" so checking
->>> > > for non-zero is sufficient and the patch is fine.
->>> >
->>> > Indeed.  Still... eww.  I don't like code that, upon local inspection,
->>> > is apparently wrong, even though it's coincidentally correct due to
->>> > some other far away condition.
->>>
->>> No, the code may be incomplete, but definitely not wrong.
->>
->> I said "apparently wrong" instead of "wrong" for a reason :)
->
-> I see there is a long discussion about this patch.
->
-> Actually using something like this "if (xattr_value_len <
-> sizeof(struct evm_ima_xattr_data))" or using sizeof (struct
-> signature_v2_hdr)
-> in this function does not give too much.
-> xattr value is variable length value and having that statement false
-> absolutely does not mean that the value is correct.
-> It can be even a random garbage of the correct size.
-> This particular function checks the first byte only so the test is good enough.
->
+While enabling sriov for intel igb device got:
 
-My point is that there's no possible way to tell that only the first
-byte is read just by reading the function.
+sca05-0a81fda5:~ # echo 7 > /sys/bus/pci/devices/0000\:09\:00.0/sriov_numvfs 
+[  729.612191] pci 0000:0a:10.0: [8086:1520] type 00 class 0x020000
+[  729.619002] BUG: unable to handle kernel NULL pointer dereference at 00000000000000e8
+[  729.627767] IP: [<ffffffff815901cb>] pci_get_hp_params+0x5b/0x640
+[  729.634593] PGD 0 
+[  729.636844] Oops: 0000 [#1] SMP 
+[  729.640466] Modules linked in:
+...
+[  729.795268] Call Trace:
+[  729.798007]  [<ffffffff81ea0843>] ? pci_mmcfg_read+0x123/0x140
+[  729.804519]  [<ffffffff81ea0770>] ? pci_mmcfg_read+0x50/0x140
+[  729.810942]  [<ffffffff815692a3>] pci_configure_device+0x33/0x350
+[  729.817744]  [<ffffffff8156aba4>] pci_device_add+0x24/0x160
+[  729.823965]  [<ffffffff8158f3bb>] pci_enable_sriov+0x4db/0x7d0
+[  729.830486]  [<ffffffff81b63f54>] ? igb_pci_enable_sriov+0xe4/0x200
+[  729.837481]  [<ffffffff81b63f7f>] igb_pci_enable_sriov+0x10f/0x200
+[  729.844386]  [<ffffffff8155129c>] ? _kstrtoull+0x2c/0x80
+[  729.850315]  [<ffffffff81b640a5>] igb_pci_sriov_configure+0x35/0x40
+[  729.857318]  [<ffffffff815752b5>] sriov_numvfs_store+0xe5/0x140
+[  729.863934]  [<ffffffff817e1f88>] dev_attr_store+0x18/0x30
+[  729.870063]  [<ffffffff812624d8>] sysfs_kf_write+0x48/0x60
+[  729.876186]  [<ffffffff812617ef>] ? kernfs_fop_write+0xaf/0x170
+[  729.882797]  [<ffffffff81261827>] kernfs_fop_write+0xe7/0x170
+[  729.889222]  [<ffffffff811ef66b>] vfs_write+0xcb/0x1c0
+[  729.894958]  [<ffffffff811f0019>] SyS_write+0x49/0xb0
+...
+[  729.943531] ---[ end trace 7cf0cdb66637665a ]---
 
---Andy
+and pci_get_hp_params+0x5b point to
+0xffffffff815901cb is in pci_get_hp_params (include/linux/device.h:815).
+810	#include <linux/pm_wakeup.h>
+811	
+812	static inline const char *dev_name(const struct device *dev)
+813	{
+814		/* Use the init name until the kobject becomes available */
+815		if (dev->init_name)
+816			return dev->init_name;
+817	
+818		return kobject_name(&dev->kobj);
 
-> - Dmitry
->
->>
->>>
->>> Mimi
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
-> --
-> Thanks,
-> Dmitry
+The root cause:
+Now pci_configure_device/pci_get_hp_params will be called for every pci_dev,
+including VF that is under virtual bus. But virtual bus does not have bridge
+set. So we can not refer pbus->self->dev directly.
 
+Add checking with pbus->slef and bail out early.
 
+Fixing: commit 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ include/linux/pci-acpi.h |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/include/linux/pci-acpi.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci-acpi.h
++++ linux-2.6/include/linux/pci-acpi.h
+@@ -44,8 +44,12 @@ static inline acpi_handle acpi_pci_get_b
+ 
+ 	if (pci_is_root_bus(pbus))
+ 		dev = pbus->bridge;
+-	else
++	else {
++		if (!pbus->self)
++			return NULL;
++
+ 		dev = &pbus->self->dev;
++	}
+ 
+ 	dev_printk(KERN_DEBUG, &pbus->dev, "  bridge ACPI_HANDLE %p : %s\n",
+ 			 ACPI_HANDLE(dev), dev_name(dev));
