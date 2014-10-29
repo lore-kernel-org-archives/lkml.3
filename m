@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094AbaJ2FVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 01:21:42 -0400
-Received: from smtprelay0207.hostedemail.com ([216.40.44.207]:43629 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751145AbaJ2FVk (ORCPT
+	id S1752387AbaJ2FZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 01:25:30 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:52457 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaJ2FZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 01:21:40 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2901:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3872:3873:3874:4321:5007:6120:6261:7903:10004:10400:10848:11026:11232:11473:11658:11914:12114:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pig46_e541ac98b244
-X-Filterd-Recvd-Size: 2047
-Message-ID: <1414560096.10912.18.camel@perches.com>
-Subject: Re: [RFC V4 1/3] add CONFIG_HAVE_ARCH_BITREVERSE to support rbit
- instruction
-From: Joe Perches <joe@perches.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'Rob Herring'" <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 28 Oct 2014 22:21:36 -0700
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
-	 <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
-	 <1414392371.8884.2.camel@perches.com>
-	 <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
-	 <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Oct 2014 01:25:29 -0400
+Date: Wed, 29 Oct 2014 10:55:17 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Mikael Svantesson <mikael@distopic.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Cooper <jason@lakedaemon.net>, Jake Edge <jake@lwn.net>,
+        Anton Saraev <antonysaraev@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] staging: skein: skein_api.c: removed space before ','
+Message-ID: <20141029052517.GA3556@sudip-PC>
+References: <544FF764.7090003@distopic.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544FF764.7090003@distopic.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-29 at 13:14 +0800, Wang, Yalin wrote:
-> this change add CONFIG_HAVE_ARCH_BITREVERSE config option,
-> so that we can use arm/arm64 rbit instruction to do bitrev operation
-> by hardware.
+On Tue, Oct 28, 2014 at 09:07:00PM +0100, Mikael Svantesson wrote:
+> Signed-off-by: Mikael Svantesson <mikael@distopic.net>
+still the same problem.
 
-> We also change byte_rev_table[] to be static,
-> to make sure no drivers can access it directly.
-
-You break the build with this patch.
-
-You can't do this until the users of the table
-are converted.
-
-So far, they are not.
-
-I submitted patches for these uses, but those patches
-are not yet applied.
-
-Please make sure the dependencies for your patches
-are explicitly stated.
+ERROR: patch seems to be corrupt (line wrapped?)
 
 
+> ---
+>  drivers/staging/skein/skein_api.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/skein/skein_api.c b/drivers/staging/skein/skein_api.c
+> index 6e700ee..5bfce07 100644
+> --- a/drivers/staging/skein/skein_api.c
+> +++ b/drivers/staging/skein/skein_api.c
+> @@ -31,7 +31,7 @@ int skein_ctx_prepare(struct skein_ctx *ctx, enum skein_size size)
+>  {
+>  	skein_assert_ret(ctx && size, SKEIN_FAIL);
+>  -	memset(ctx , 0, sizeof(struct skein_ctx));
+> +	memset(ctx, 0, sizeof(struct skein_ctx));
+>  	ctx->skein_size = size;
+>   	return SKEIN_SUCCESS;
+> -- 
+> 2.1.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
