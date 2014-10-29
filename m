@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371AbaJ2U0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:26:23 -0400
-Received: from imap.thunk.org ([74.207.234.97]:51544 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756594AbaJ2U0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:26:22 -0400
-Date: Wed, 29 Oct 2014 16:26:16 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Bastien Nocera <hadess@hadess.net>, Pavel Machek <pavel@ucw.cz>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141029202616.GC5000@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Bastien Nocera <hadess@hadess.net>, Pavel Machek <pavel@ucw.cz>,
-	John Stultz <john.stultz@linaro.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1413881397.30379.7.camel@hadess.net>
- <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
- <1413911644.30379.12.camel@hadess.net>
- <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
- <1413914978.30379.14.camel@hadess.net>
- <20141027092804.GB9807@amd>
- <1414420292.30379.55.camel@hadess.net>
- <54513DDC.2020700@amacapital.net>
+	id S1757026AbaJ2U27 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:28:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46423 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaJ2U24 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 16:28:56 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v2 2/4] ARM: keystone: defconfig: add options to enable PCI controller
+Date: Wed, 29 Oct 2014 16:28:15 -0400
+Message-ID: <1414614497-4798-3-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1414614497-4798-1-git-send-email-m-karicheri2@ti.com>
+References: <yes>
+ <1414614497-4798-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54513DDC.2020700@amacapital.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 12:19:56PM -0700, Andy Lutomirski wrote:
-> For a tablet, isn't the relevant piece of information whether the power
-> button was recently pressed, not whether the power button caused the wakeup?
+This patch enables PCI controller driver for Keystone SoCs by
+default.
 
-For Android L devices, it has been reported that the device might
-power up its screen fully (note I didn't say 'wake up') automatically
-when it detects that you are picking it up, or when you double-tap the
-screen.  It also reportedly has a low power black and white "ambient
-display" (ala the Android Wear devics) which allows you to see
-notifications without waking up the phone all the way[1].  (All of
-this assuming appropriate hardware support, of course.)
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+CC: Santosh Shilimkar <ssantosh@kernel.org>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ v2 - Added a description in the commit log per comment
+ v1 - fixed email ID for Santosh
+ arch/arm/configs/keystone_defconfig |    3 +++
+ 1 file changed, 3 insertions(+)
 
-[1] http://www.androidauthority.com/ambient-display-lollipop-541198/
+diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
+index 932ae40..40d3e9d 100644
+--- a/arch/arm/configs/keystone_defconfig
++++ b/arch/arm/configs/keystone_defconfig
+@@ -20,6 +20,9 @@ CONFIG_MODULE_FORCE_UNLOAD=y
+ CONFIG_MODVERSIONS=y
+ CONFIG_ARCH_KEYSTONE=y
+ CONFIG_ARM_LPAE=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_PCI_KEYSTONE=y
+ CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+-- 
+1.7.9.5
 
-Which goes back to the concept of having a "suspend" mode is legacy
-thinking.  Modern devices will soon have not just a "awake" and a
-"asleep" modes; there will be (well, is now) a much wider spectrum of
-modes, with the goal of using the minimum amount of power while still
-providing use functionality to the user.
-
-						- Ted
