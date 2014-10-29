@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757636AbaJ2WhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:37:09 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:60078 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaJ2WhH (ORCPT
+	id S1757667AbaJ2WjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:39:10 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:61429 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756987AbaJ2WjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:37:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrX6vf7cKy=XDhDtn9hn1W930MRxBa=pk93RnyuZ-EaNyw@mail.gmail.com>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <CALCETrUBegZ4F1sKq3LxUgANX3=syYOrqOp9=F--g9pkVHHgUA@mail.gmail.com>
- <20141029222531.GA8129@kroah.com> <CALCETrX6vf7cKy=XDhDtn9hn1W930MRxBa=pk93RnyuZ-EaNyw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 29 Oct 2014 15:36:44 -0700
-Message-ID: <CALCETrUXPyaz5czA6dPLV7K2rDeVQoJ46oKavK-bb6LCtWE_iQ@mail.gmail.com>
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>, simon.mcvittie@collabora.co.uk,
-        daniel@zonque.org, alban.crequy@collabora.co.uk,
-        javier.martinez@collabora.co.uk, Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 29 Oct 2014 18:39:09 -0400
+From: Behan Webster <behanw@converseincode.com>
+To: micky_ching@realsil.com.cn
+Cc: behanw@converseincode.com, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] staging, rts5208, LLVMLinux: Change extern inline to static inline
+Date: Wed, 29 Oct 2014 15:38:42 -0700
+Message-Id: <1414622322-19813-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 3:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Oct 29, 2014 at 3:25 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Wed, Oct 29, 2014 at 03:19:21PM -0700, Andy Lutomirski wrote:
->>> On Wed, Oct 29, 2014 at 3:00 PM, Greg Kroah-Hartman
->>> <gregkh@linuxfoundation.org> wrote:
->>> >  * Attachment of trustable metadata to each message on demand, such as
->>> >    the sending peer's timestamp, creds, auxgroups, comm, exe, cmdline,
->>> >    cgroup path, capabilities, security label, audit information, etc,
->>> >    each taken at the time the sender issued the ioctl to send the
->>> >    message. Which of those are actually recorded and attached is
->>> >    controlled by the receiving peer.
->>>
->>> I think that each piece of trustable metadata needs to be explicitly
->>> opted-in to by the sender at the time of capture.  Otherwise you're
->>> asking for lots of information leaks and privilege escalations.  This
->>> is especially important given that some of the items in the current
->>> list could be rather sensitive.
->>
->> You do have to opt-in for this information at time of capture, so I
->> don't understand the issue here.  This is the same type of thing that
->> dbus does today, and I don't see the information leaks happening there,
->> do you?
->>
->
-> The docs suggest that the *receiver* opts in.
->
+With compilers which follow the C99 standard (like modern versions of gcc and
+clang), "extern inline" does the opposite thing from older versions of gcc
+(emits code for an externally linkable version of the inline function). "static
+inline" does the intended behavior in both gcc and clang.
 
-So does the code:
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/staging/rts5208/rtsx_transport.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-+ /*
-+ * The first receiver which requests additional
-+ * metadata causes the message to carry it; all
-+ * receivers after that will see all of the added
-+ * data, even when they did not ask for it.
-+ */
-+ if (conn_src) {
-+ /* Check if conn_src is allowed to signal */
-+ ret = kdbus_ep_policy_check_broadcast(conn_dst->ep,
-+ conn_src,
-+ conn_dst);
-+ if (ret < 0)
-+ continue;
-+
-+ ret = kdbus_ep_policy_check_src_names(conn_dst->ep,
-+ conn_src,
-+ conn_dst);
-+ if (ret < 0)
-+ continue;
-+
-+ ret = kdbus_kmsg_attach_metadata(kmsg, conn_src,
-+ conn_dst);
-+ if (ret < 0)
-+ goto exit_unlock;
-+ }
-+
+diff --git a/drivers/staging/rts5208/rtsx_transport.h b/drivers/staging/rts5208/rtsx_transport.h
+index b4b1123..899bc20 100644
+--- a/drivers/staging/rts5208/rtsx_transport.h
++++ b/drivers/staging/rts5208/rtsx_transport.h
+@@ -46,7 +46,7 @@ void rtsx_add_cmd(struct rtsx_chip *chip,
+ void rtsx_send_cmd_no_wait(struct rtsx_chip *chip);
+ int rtsx_send_cmd(struct rtsx_chip *chip, u8 card, int timeout);
+ 
+-extern inline u8 *rtsx_get_cmd_data(struct rtsx_chip *chip)
++static inline u8 *rtsx_get_cmd_data(struct rtsx_chip *chip)
+ {
+ #ifdef CMD_USING_SG
+ 	return (u8 *)(chip->host_sg_tbl_ptr);
+-- 
+1.9.1
 
-I'd like this if the sender chose the metadata flags.  In fact, I'd
-want to make that feature available on regular UNIX sockets, too
-(search the archives for SCM_IDENTITY).
-
---Andy
