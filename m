@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022AbaJ2R7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:59:00 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57441 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756304AbaJ2R65 (ORCPT
+	id S932365AbaJ2R70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:59:26 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:62552 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559AbaJ2R7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:58:57 -0400
-Date: Wed, 29 Oct 2014 10:58:51 -0700
-From: josh@joshtriplett.org
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, xen-devel@lists.xenproject.org
-Subject: Re: [PATCH v3 3/3] x86: Support compiling out userspace I/O (iopl
- and ioperm)
-Message-ID: <20141029175851.GA19076@cloud>
-References: <7159269982aac3b732af2c33a2e3d04e2048bdfb.1414598511.git.josh@joshtriplett.org>
- <9d77d0e4df8feb2cb55fb21689e016a3145cb7f8.1414598511.git.josh@joshtriplett.org>
- <CAGXu5jKCuWmbUgNtnVWC2JQF3ML_SQQwBMooVynsbBO8cDLudA@mail.gmail.com>
- <20141029171754.GA18888@cloud>
- <545121DC.5050305@zytor.com>
+	Wed, 29 Oct 2014 13:59:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545121DC.5050305@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20141028215937.GA25095@linux.vnet.ibm.com>
+References: <20141028215937.GA25095@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 29 Oct 2014 13:58:53 -0400
+Message-ID: <CAJhHMCDf1vTuQ5-31aumFPVsyTTFYyioDjvoT7xDobC5vVUHMA@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 0/5] Documentation updates for 3.19
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 10:20:28AM -0700, H. Peter Anvin wrote:
-> On 10/29/2014 10:17 AM, josh@joshtriplett.org wrote:
-> >>
-> >> But this is entirely a style decision, so I leave it up to the x86
-> >> maintainers ...
-> > 
-> > I can certainly do that if the x86 maintainers prefer, but that tends to
-> > produce a net increase in lines of code, as well as duplicating all the
-> > function prototypes, which to me seems more error-prone.  If the
-> > stub versions contained any code, rather than just becoming no-ops, I'd
-> > definitely do that.
-> > 
-> 
-> I concur with this style choice.
+On Tue, Oct 28, 2014 at 5:59 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> Hello!
+>
+> This series contains a few documentation updates:
+>
+> 1.      Records limitations of bitfields and small variables.
+>         Also rules out pre-EV56 Alpha, which lack 8- and 16-bit
+>         memory-reference instructions.  Later Alpha CPUs are OK.
+>         (The official Alpha maintainers have thus far been silent
+>         on this patch.)
+>
+> 2.      Document the new RCU self-test boot parameters, courtesy of
+>         Pranith Kumar.
+>
+> 3.      Records that short-circuit boolean evaluation does not necessarily
+>         defend against control-dependency breakage by compiler optimizations.
+>
+> 4.      Add mention of atomic_long_t to atomic_ops.txt.
+>
+> 5.      Fix an example in memory-barriers.txt, courtesy of Pranith Kumar.
 
-To clarify: you concur with Kees's suggested change or with the style I
-used in my patch?
 
-> >> Another nit may be that we should call this CONFIG_SYSCALL_IOPL or
-> >> CONFIG_SYSCALL_IOPERM in keeping with the other CONFIG_SYSCALL_*
-> >> naming thread? Again, I don't really care strongly beyond really
-> >> wanting to use this new feature! :)
-> > 
-> > I don't feel strongly about the naming.  Ingo?
-> 
-> It is sort of a special case here, as this reflects more than one syscall.
+Reviewed-by: Pranith Kumar <bobby.prani@gmail.com>
 
-As well as four VT ioctls. :)
+>
+>                                                         Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+>  b/Documentation/atomic_ops.txt        |   12 +++--
+>  b/Documentation/kernel-parameters.txt |    9 ++++
+>  b/Documentation/memory-barriers.txt   |   71 ++++++++++++++++++++++++++++------
+>  3 files changed, 77 insertions(+), 15 deletions(-)
+>
 
-- Josh Triplett
+
+
+-- 
+Pranith
