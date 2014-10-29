@@ -1,114 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715AbaJ2SBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:01:42 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60225 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755513AbaJ2SBi (ORCPT
+	id S1756745AbaJ2SCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:02:40 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:34090 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516AbaJ2SCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:01:38 -0400
-Date: Wed, 29 Oct 2014 18:01:25 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: James Hogan <james.hogan@imgtec.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+	Wed, 29 Oct 2014 14:02:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141029113415.GD28356@ulmo.nvidia.com>
+References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+	<1414535277-15645-3-git-send-email-abrestic@chromium.org>
+	<20141029113415.GD28356@ulmo.nvidia.com>
+Date: Wed, 29 Oct 2014 11:02:36 -0700
+X-Google-Sender-Auth: 8k4kScw_KPGOtNThqn3tWkfURxY
+Message-ID: <CAL1qeaG2DFyfsPa2wgDqOkYTbnJ-tXoiV48AF9EaSCf1QCtOyQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND V4 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 2/4] of: Add binding document for MIPS GIC
-Message-ID: <20141029180125.GD26471@leverpostej>
-References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
- <1414541562-10076-3-git-send-email-abrestic@chromium.org>
- <5450B1B1.5070301@imgtec.com>
- <CAL1qeaFeoKFbea7eiiXaw87PYUWO1JmP5xxdLLpW2RrFCprtZg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL1qeaFeoKFbea7eiiXaw87PYUWO1JmP5xxdLLpW2RrFCprtZg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 04:55:56PM +0000, Andrew Bresticker wrote:
-> Hi James,
-> 
-> On Wed, Oct 29, 2014 at 2:21 AM, James Hogan <james.hogan@imgtec.com> wrote:
-> > Hi Andrew,
-> >
-> > On 29/10/14 00:12, Andrew Bresticker wrote:
-> >>  - changed compatible string to include CPU version
-> >
-> >> +Required properties:
-> >> +- compatible : Should be "mti,<cpu>-gic".  Supported variants:
-> >> +  - "mti,interaptiv-gic"
-> >
-> >> +Required properties for timer sub-node:
-> >> +- compatible : Should be "mti,<cpu>-gic-timer".  Supported variants:
-> >> +  - "mti,interaptiv-gic-timer"
-> >
-> > Erm, I'm a bit confused...
-> > Why do you include the core name in the compatible string?
-> >
-> > You seem to be suggesting that:
-> >
-> > 1) The GIC/timer drivers need to know what core they're running on.
-> >
-> > Is that really true?
-> 
-> They don't now, but it's possible that a future CPU has a newer
-> revision of the GIC which has some differences that need to be
-> accounted for in the driver.
+>> +     for (i = 0; i < ARRAY_SIZE(mbox->vchan_allocated); i++) {
+>> +             if (mbox->vchan_allocated[i])
+>> +                     mbox_chan_received_data(&mbox->mbox.chans[i], &msg);
+>> +     }
+>
+> It seems like the only reason why you need to explicitly check for an
+> allocated channel is that mbox_chan_received_data() would otherwise
+> crash. Are mailbox drivers really supposed to keep track of whether a
+> channel has been requested by a client? Isn't that something that should
+> be done in the core?
 
-At that point you can allocate a new compatible string. Until then you
-don't necessarily need to distinguish.
+Yeah, I'd agree that this is something that should be handled by the core.
 
-Is the timer defined by the architecture, or is it specific to this CPU
-(and might get reused in future)?
+>> +static int tegra_xusb_mbox_probe(struct platform_device *pdev)
+>> +{
+>> +     struct tegra_xusb_mbox *mbox;
+>> +     struct resource *res;
+>> +     int ret;
+>> +
+>> +     mbox = devm_kzalloc(&pdev->dev, sizeof(*mbox), GFP_KERNEL);
+>> +     if (!mbox)
+>> +             return -ENOMEM;
+>> +     platform_set_drvdata(pdev, mbox);
+>> +     spin_lock_init(&mbox->lock);
+>> +
+>> +     mbox->mbox.dev = &pdev->dev;
+>> +     mbox->mbox.chans = devm_kcalloc(&pdev->dev, TEGRA_XUSB_MBOX_NUM_CHANS,
+>> +                                     sizeof(*mbox->mbox.chans), GFP_KERNEL);
+>> +     if (!mbox->mbox.chans)
+>> +             return -ENOMEM;
+>> +     mbox->mbox.num_chans = TEGRA_XUSB_MBOX_NUM_CHANS;
+>> +     mbox->mbox.ops = &tegra_xusb_mbox_chan_ops;
+>> +     mbox->mbox.txdone_poll = true;
+>> +     mbox->mbox.txpoll_period = 0; /* no need to actually poll */
+>
+> Does the core perhaps need special handling for this? It seems like
+> poll_txdone() will always rearm the timer used to do the polling,
+> irrespective of whether the transfer is actually done or not.
 
-> > 2) It isn't possible to probe the core type.
-> >
-> > But the kernel already knows this, so what's wrong with using
-> > current_cpu_type() like everything else that needs to know?
-> >
-> > 3) Every new core should require a new compatible string to be added
-> > before the GIC will work. You don't even have a generic compatible
-> > string that DT can specify after the core specific one as a fallback.
-> 
-> Yes, adding a generic compatible string would be a good idea.
-> 
-> > Please lets not do this unless it's actually necessary (which AFAICT it
-> > really isn't).
-> 
-> The point of this was to future-proof these bindings and I though that
-> CPU type was the best way to indicate version in the compatible
-> string.  This is also how it's done for the ARM GIC and arch timers.
-> Perhaps the best thing to do is to require both a core-specific
-> ("mti,interaptiv-gic") and generic ("mti,gic") compatible string and
-> just match on the generic one for now until there's a need to use the
-> core-specific one.  Thoughts?
+Yeah, that doesn't seem quite right...
 
-If this timer is architected you can have a generic string for now, with
-each CPU having a more specific string just in case, e.g.
+> Maybe something like this patch would be more correct in handling
+> this:
+>
+> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+> index afcb430508ec..85691a7d8ca6 100644
+> --- a/drivers/mailbox/mailbox.c
+> +++ b/drivers/mailbox/mailbox.c
+> @@ -117,10 +117,11 @@ static void poll_txdone(unsigned long data)
+>                 struct mbox_chan *chan = &mbox->chans[i];
+>
+>                 if (chan->active_req && chan->cl) {
+> -                       resched = true;
+>                         txdone = chan->mbox->ops->last_tx_done(chan);
+>                         if (txdone)
+>                                 tx_tick(chan, 0);
+> +                       else
+> +                               resched = true;
+>                 }
+>         }
 
-	compatible = "mti,interaptiv-gic-timer", "mti,gic-timer".
+... but we still need to re-arm the timer if tx_tick() submits another
+message.  Perhaps the better thing to do is to have msg_submit() arm
+the timer.
 
-The kernel driver can currently match just "mti,gic-timer", andd
-everything should be fine if it turns out nothing changes with new CPUs:
+>> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +     if (!res)
+>> +             return -ENODEV;
+>> +     mbox->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+>> +     if (!mbox->regs)
+>> +             return -ENOMEM;
+>
+> This doesn't look right. Upon closer inspection, the reason why you
+> don't use devm_request_resource() is because these registers are shared
+> with the XHCI controller.
+>
+> Perhaps a better design would be for the XHCI driver to expose the
+> mailbox rather than split it off into a separate driver.
 
-	compatible = "mti,newcpu-gic-timer", "mti,gic-timer";
+Well that's what I had originally, but then it was suggested I make it
+a separate driver.
 
-If the new CPU's timer doesn't quite match, you add its comaptible
-string to the driver, and drop "mti,gic-timer" from the node's
-comaptible list:
+Stephen also brought this up during review and suggested that some
+sort of MFD would be the best way to structure this, but was fine with
+the way I have it now.  I can move this driver around (again) if you
+feel that strongly about it...
 
-	compatible = "mti,newcpu-gic-timer";
+>> diff --git a/include/soc/tegra/xusb.h b/include/soc/tegra/xusb.h
+>> new file mode 100644
+>> index 0000000..cfe211d
+>> --- /dev/null
+>> +++ b/include/soc/tegra/xusb.h
+>
+> Perhaps this should really be named xusb-mbox.h?
 
-Mark.
+I'd prefer to leave it as xusb.h so that any other XUSB-related
+definitions can be left here.
