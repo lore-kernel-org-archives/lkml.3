@@ -1,348 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaJ2Iku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 04:40:50 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:35473 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931AbaJ2Ikq (ORCPT
+	id S1756073AbaJ2Ik4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 04:40:56 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:47766 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931AbaJ2Ikw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 04:40:46 -0400
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-To: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH] of: spi: Export single device registration method and accessors (v2)
-Date: Wed, 29 Oct 2014 10:40:37 +0200
-Message-Id: <1414572037-11306-1-git-send-email-pantelis.antoniou@konsulko.com>
-X-Mailer: git-send-email 1.7.12
+	Wed, 29 Oct 2014 04:40:52 -0400
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <5450A810.6030108@lge.com>
+Date: Wed, 29 Oct 2014 17:40:48 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: gregkh@linuxfoundation.org, john.stultz@linaro.org, rebecca@android.com,
+        lauraa@codeaurora.org, dan.carpenter@oracle.com, minchan@kernel.org,
+        iamjoonsoo.kim@lge.com
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        gunho.lee@lge.com
+Subject: Re: [PATCHv2 0/3] staging: ion: enable pool shrinking in page unit
+References: <1414560960-21130-1-git-send-email-gioh.kim@lge.com>
+In-Reply-To: <1414560960-21130-1-git-send-email-gioh.kim@lge.com>
+Content-Type: text/plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamically inserting spi device nodes requires the use of a single
-device registration method. Rework and export it.
 
-Methods to lookup a device/master using a device node are added
-as well, of_find_spi_master_by_node() & of_find_spi_device_by_node().
 
-Changes since v1:
-* Brown paper bug with parameter on of_register_spi_device().
+2014-10-29 오후 2:35에 Gioh Kim 이(가) 쓴 글:
+> Hello,
+> 
+> Current pool shrinking is not page unit, block unit.
+> But shrinker returns the pool size in page unit,
+> so it is confused.
+> 
+> And there is no way to control pool size and shrink pool directly.
+> 
+> I have 3 patches like followings.
+> 
+> 1. Patch 1/3: make pool be shrinked by page unit
+> This patch shrinks pool in page unit.
+> 
+> 2. Patch 2/3: limit pool size
+> This patch specifies pool size limit via debugfs.
+> The default value of limit is 0.
+> cat /sys/kernel/debug/ion/heaps/system_limit returns 0.
+> If you want to create 4 pools and limit each pool by 10MB,
+> you can write 40MB(=41943040) at system_limit debugfs file
+> like following:
+> echo 41943040 > /sys/kernel/debug/ion/heaps/system_limit
+> 
+> 2. Patch 3/3: enable debugfs to shrink page directly
+> This patch enables debugfs to specify shrink amount.
+> For instance, this shrinks all pages in every pool.
+> echo 0 > /sys/kernel/debug/ion/heaps/system_shrink
+> And this shrinks 300-pages from entire pool.
+> echo 30 > /sys/kernel/debug/ion/heaps/system_shrink
+> It try to shrink high-order pool first because high-order pages is necessary
+> more than low-order when the system has low memory.
+> 
+> This patchset is based on linux-next-20141023.
+> 
+> 
+> Gioh Kim (3):
+>    staging: ion: shrink page-pool by page unit
+>    staging: ion: limit pool size
+>    staging: ion: debugfs to shrink pool
+> 
+>   drivers/staging/android/ion/ion.c             |   62 ++++++++++++++++---------
+>   drivers/staging/android/ion/ion_page_pool.c   |   32 ++++++++-----
+>   drivers/staging/android/ion/ion_system_heap.c |   20 ++++++--
+>   3 files changed, 75 insertions(+), 39 deletions(-)
+> 
 
-Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
----
- drivers/spi/spi.c | 255 +++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 157 insertions(+), 98 deletions(-)
+Following is my test result.
+I set the orders as 4,3,2,0 for test.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index ebcb33d..4778366 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1220,6 +1220,122 @@ err_init_queue:
- /*-------------------------------------------------------------------------*/
- 
- #if defined(CONFIG_OF)
-+
-+static struct spi_device *
-+of_register_spi_device(struct spi_master *master, struct device_node *nc)
-+{
-+	struct spi_device *spi;
-+	int rc;
-+	u32 value;
-+
-+	/* Alloc an spi_device */
-+	spi = spi_alloc_device(master);
-+	if (!spi) {
-+		dev_err(&master->dev, "spi_device alloc error for %s\n",
-+			nc->full_name);
-+		rc = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	/* Select device driver */
-+	rc = of_modalias_node(nc, spi->modalias,
-+				sizeof(spi->modalias));
-+	if (rc < 0) {
-+		dev_err(&master->dev, "cannot find modalias for %s\n",
-+			nc->full_name);
-+		goto err_out;
-+	}
-+
-+	/* Device address */
-+	rc = of_property_read_u32(nc, "reg", &value);
-+	if (rc) {
-+		dev_err(&master->dev, "%s has no valid 'reg' property (%d)\n",
-+			nc->full_name, rc);
-+		goto err_out;
-+	}
-+	spi->chip_select = value;
-+
-+	/* Mode (clock phase/polarity/etc.) */
-+	if (of_find_property(nc, "spi-cpha", NULL))
-+		spi->mode |= SPI_CPHA;
-+	if (of_find_property(nc, "spi-cpol", NULL))
-+		spi->mode |= SPI_CPOL;
-+	if (of_find_property(nc, "spi-cs-high", NULL))
-+		spi->mode |= SPI_CS_HIGH;
-+	if (of_find_property(nc, "spi-3wire", NULL))
-+		spi->mode |= SPI_3WIRE;
-+	if (of_find_property(nc, "spi-lsb-first", NULL))
-+		spi->mode |= SPI_LSB_FIRST;
-+
-+	/* Device DUAL/QUAD mode */
-+	if (!of_property_read_u32(nc, "spi-tx-bus-width", &value)) {
-+		switch (value) {
-+		case 1:
-+			break;
-+		case 2:
-+			spi->mode |= SPI_TX_DUAL;
-+			break;
-+		case 4:
-+			spi->mode |= SPI_TX_QUAD;
-+			break;
-+		default:
-+			dev_warn(&master->dev,
-+				"spi-tx-bus-width %d not supported\n",
-+				value);
-+			break;
-+		}
-+	}
-+
-+	if (!of_property_read_u32(nc, "spi-rx-bus-width", &value)) {
-+		switch (value) {
-+		case 1:
-+			break;
-+		case 2:
-+			spi->mode |= SPI_RX_DUAL;
-+			break;
-+		case 4:
-+			spi->mode |= SPI_RX_QUAD;
-+			break;
-+		default:
-+			dev_warn(&master->dev,
-+				"spi-rx-bus-width %d not supported\n",
-+				value);
-+			break;
-+		}
-+	}
-+
-+	/* Device speed */
-+	rc = of_property_read_u32(nc, "spi-max-frequency", &value);
-+	if (rc) {
-+		dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
-+			nc->full_name, rc);
-+		goto err_out;
-+	}
-+	spi->max_speed_hz = value;
-+
-+	/* IRQ */
-+	spi->irq = irq_of_parse_and_map(nc, 0);
-+
-+	/* Store a pointer to the node in the device structure */
-+	of_node_get(nc);
-+	spi->dev.of_node = nc;
-+
-+	/* Register the new device */
-+	request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
-+	rc = spi_add_device(spi);
-+	if (rc) {
-+		dev_err(&master->dev, "spi_device register error %s\n",
-+			nc->full_name);
-+		goto err_out;
-+	}
-+
-+	return spi;
-+
-+err_out:
-+	spi_dev_put(spi);
-+	return ERR_PTR(rc);
-+}
-+
- /**
-  * of_register_spi_devices() - Register child devices onto the SPI bus
-  * @master:	Pointer to spi_master device
-@@ -1229,120 +1345,63 @@ err_init_queue:
-  */
- static void of_register_spi_devices(struct spi_master *master)
- {
--	struct spi_device *spi;
- 	struct device_node *nc;
--	int rc;
--	u32 value;
-+	struct spi_device *spi;
- 
- 	if (!master->dev.of_node)
- 		return;
- 
- 	for_each_available_child_of_node(master->dev.of_node, nc) {
--		/* Alloc an spi_device */
--		spi = spi_alloc_device(master);
--		if (!spi) {
--			dev_err(&master->dev, "spi_device alloc error for %s\n",
-+		spi = of_register_spi_device(master, nc);
-+		if (IS_ERR(spi))
-+			dev_warn(&master->dev, "Failed to create SPI device for %s\n",
- 				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
-+	}
-+}
- 
--		/* Select device driver */
--		if (of_modalias_node(nc, spi->modalias,
--				     sizeof(spi->modalias)) < 0) {
--			dev_err(&master->dev, "cannot find modalias for %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
-+static int of_dev_node_match(struct device *dev, void *data)
-+{
-+	return dev->of_node == data;
-+}
- 
--		/* Device address */
--		rc = of_property_read_u32(nc, "reg", &value);
--		if (rc) {
--			dev_err(&master->dev, "%s has no valid 'reg' property (%d)\n",
--				nc->full_name, rc);
--			spi_dev_put(spi);
--			continue;
--		}
--		spi->chip_select = value;
--
--		/* Mode (clock phase/polarity/etc.) */
--		if (of_find_property(nc, "spi-cpha", NULL))
--			spi->mode |= SPI_CPHA;
--		if (of_find_property(nc, "spi-cpol", NULL))
--			spi->mode |= SPI_CPOL;
--		if (of_find_property(nc, "spi-cs-high", NULL))
--			spi->mode |= SPI_CS_HIGH;
--		if (of_find_property(nc, "spi-3wire", NULL))
--			spi->mode |= SPI_3WIRE;
--		if (of_find_property(nc, "spi-lsb-first", NULL))
--			spi->mode |= SPI_LSB_FIRST;
--
--		/* Device DUAL/QUAD mode */
--		if (!of_property_read_u32(nc, "spi-tx-bus-width", &value)) {
--			switch (value) {
--			case 1:
--				break;
--			case 2:
--				spi->mode |= SPI_TX_DUAL;
--				break;
--			case 4:
--				spi->mode |= SPI_TX_QUAD;
--				break;
--			default:
--				dev_warn(&master->dev,
--					 "spi-tx-bus-width %d not supported\n",
--					 value);
--				break;
--			}
--		}
-+/* bah; the match functions differ just by const-ness */
-+static int of_dev_node_match_const(struct device *dev, const void *data)
-+{
-+	return dev->of_node == data;
-+}
- 
--		if (!of_property_read_u32(nc, "spi-rx-bus-width", &value)) {
--			switch (value) {
--			case 1:
--				break;
--			case 2:
--				spi->mode |= SPI_RX_DUAL;
--				break;
--			case 4:
--				spi->mode |= SPI_RX_QUAD;
--				break;
--			default:
--				dev_warn(&master->dev,
--					 "spi-rx-bus-width %d not supported\n",
--					 value);
--				break;
--			}
--		}
-+/* must call put_device() when done with returned spi_device device */
-+struct spi_device *of_find_spi_device_by_node(struct device_node *node)
-+{
-+	struct device *dev;
- 
--		/* Device speed */
--		rc = of_property_read_u32(nc, "spi-max-frequency", &value);
--		if (rc) {
--			dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
--				nc->full_name, rc);
--			spi_dev_put(spi);
--			continue;
--		}
--		spi->max_speed_hz = value;
-+	dev = bus_find_device(&spi_bus_type, NULL, node,
-+					 of_dev_node_match);
-+	if (!dev)
-+		return NULL;
- 
--		/* IRQ */
--		spi->irq = irq_of_parse_and_map(nc, 0);
-+	return to_spi_device(dev);
-+}
-+EXPORT_SYMBOL(of_find_spi_device_by_node);
- 
--		/* Store a pointer to the node in the device structure */
--		of_node_get(nc);
--		spi->dev.of_node = nc;
-+/* forward decl */
-+static struct class spi_master_class;
- 
--		/* Register the new device */
--		request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
--		rc = spi_add_device(spi);
--		if (rc) {
--			dev_err(&master->dev, "spi_device register error %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--		}
-+/* the spi masters are not using spi_bus, so we find it with another way */
-+struct spi_master *of_find_spi_master_by_node(struct device_node *node)
-+{
-+	struct device *dev;
- 
--	}
-+	dev = class_find_device(&spi_master_class, NULL, node,
-+				of_dev_node_match_const);
-+	if (!dev)
-+		return NULL;
-+
-+	/* reference got in class_find_device */
-+	return container_of(dev, struct spi_master, dev);
- }
-+EXPORT_SYMBOL(of_find_spi_master_by_node);
-+
- #else
- static void of_register_spi_devices(struct spi_master *master) { }
- #endif
--- 
-1.7.12
+# mount -t debugfs none /sys/kernel/debug
+
+...... activate driver that calls ion-alloc ......
+
+# cat /sys/kernel/debug/ion/heaps/system  ===================> no limit
+          client              pid             size
+----------------------------------------------------
+----------------------------------------------------
+orphaned allocations (info is from last known client):
+----------------------------------------------------
+  total orphaned                0
+          total                 0
+   deferred free                0
+----------------------------------------------------
+0 order 4 highmem pages in pool = 0 total
+176 order 4 lowmem pages in pool = 11534336 total
+0 order 3 highmem pages in pool = 0 total
+0 order 3 lowmem pages in pool = 0 total
+0 order 2 highmem pages in pool = 0 total
+704 order 2 lowmem pages in pool = 11534336 total
+0 order 0 highmem pages in pool = 0 total
+2816 order 0 lowmem pages in pool = 11534336 total
+# cat /sys/kernel/debug/ion/heaps/system_limit
+0
+# echo 41943040 > /sys/kernel/debug/ion/heaps/system_limit
+# cat /sys/kernel/debug/ion/heaps/system_limit
+41943040
+
+...... activate driver that calls ion-alloc ......
+
+# cat /sys/kernel/debug/ion/heaps/system     ====================> 10MB limit
+          client              pid             size
+----------------------------------------------------
+----------------------------------------------------
+orphaned allocations (info is from last known client):
+----------------------------------------------------
+  total orphaned                0
+          total                 0
+   deferred free                0
+----------------------------------------------------
+0 order 4 highmem pages in pool = 0 total
+161 order 4 lowmem pages in pool = 10551296 total
+0 order 3 highmem pages in pool = 0 total
+0 order 3 lowmem pages in pool = 0 total
+0 order 2 highmem pages in pool = 0 total
+641 order 2 lowmem pages in pool = 10502144 total
+0 order 0 highmem pages in pool = 0 total
+2561 order 0 lowmem pages in pool = 10489856 total
+# cat /sys/kernel/debug/ion/heaps/system_shrink ===============> count total pages
+7701
+# echo 0 > /sys/kernel/debug/ion/heaps/system_shrink  =========> shrink all pages
+# cat /sys/kernel/debug/ion/heaps/system
+          client              pid             size
+----------------------------------------------------
+----------------------------------------------------
+orphaned allocations (info is from last known client):
+----------------------------------------------------
+  total orphaned                0
+          total                 0
+   deferred free                0
+----------------------------------------------------
+0 order 4 highmem pages in pool = 0 total
+0 order 4 lowmem pages in pool = 0 total
+0 order 3 highmem pages in pool = 0 total
+0 order 3 lowmem pages in pool = 0 total
+0 order 2 highmem pages in pool = 0 total
+0 order 2 lowmem pages in pool = 0 total
+0 order 0 highmem pages in pool = 0 total
+0 order 0 lowmem pages in pool = 0 total
+# cat /sys/kernel/debug/ion/heaps/system_shrink
+0
+
 
