@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501AbaJ2M4u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:56:50 -0400
-Received: from mail.kernel.org ([198.145.19.201]:36890 "EHLO mail.kernel.org"
+	id S933462AbaJ2M4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:56:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36852 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932773AbaJ2M4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:56:47 -0400
+	id S932773AbaJ2M4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 08:56:39 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Wang Nan <wangnan0@huawei.com>,
+        Li Zefan <lizefan@huawei.com>, Namhyung Kim <namhyung@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/10] perf tools: Fix report -F in_tx for data without branch info
-Date: Wed, 29 Oct 2014 10:56:11 -0200
-Message-Id: <1414587377-25077-5-git-send-email-acme@kernel.org>
+Subject: [PATCH 02/10] perf tools: Make CPUINFO_PROC an array to support different kernel versions
+Date: Wed, 29 Oct 2014 10:56:09 -0200
+Message-Id: <1414587377-25077-3-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414587377-25077-1-git-send-email-acme@kernel.org>
 References: <1414587377-25077-1-git-send-email-acme@kernel.org>
@@ -26,67 +21,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Wang Nan <wangnan0@huawei.com>
 
-The branch field sorting code assumes hist_entry::branch_info is
-allocated, which is wrong and following perf session ends up with report
-segfault.
+After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
+/proc/cpuinfo replaces 'Processor' to 'model name'.
 
-  $ perf record ls
-  $ perf report -F in_tx
-  perf: Segmentation fault
+This patch makes CPUINFO_PROC to an array and provides two choices for
+ARM, makes it compatible for different kernel version.
 
-Checking that hist_entry::branch_info is valid and display "N/A" string
-in snprint callback if it's not.
+v1 -> v2: minor changes as suggested by Namhyung Kim:
 
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+ - Doesn't pass @h and @evlist to __write_cpudesc;
+ - Coding style fix.
+
+v2 -> v3:
+  - Rebase:
+    git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1413468427-31049-3-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1414115126-7479-1-git-send-email-wangnan0@huawei.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ tools/perf/perf-sys.h    | 30 +++++++++++++++---------------
+ tools/perf/util/header.c | 27 +++++++++++++++++++++------
+ 2 files changed, 36 insertions(+), 21 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 82241fe54e4b..9bcdb57076b8 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1021,6 +1021,9 @@ struct sort_entry sort_abort = {
- static int64_t
- sort__in_tx_cmp(struct hist_entry *left, struct hist_entry *right)
+diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
+index 937e4324ad94..a3b13d7dc1d4 100644
+--- a/tools/perf/perf-sys.h
++++ b/tools/perf/perf-sys.h
+@@ -13,7 +13,7 @@
+ #define wmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
+ #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
+ #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #ifndef __NR_perf_event_open
+ # define __NR_perf_event_open 336
+ #endif
+@@ -30,7 +30,7 @@
+ #define wmb()		asm volatile("sfence" ::: "memory")
+ #define rmb()		asm volatile("lfence" ::: "memory")
+ #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #ifndef __NR_perf_event_open
+ # define __NR_perf_event_open 298
+ #endif
+@@ -47,14 +47,14 @@
+ #define mb()		asm volatile ("sync" ::: "memory")
+ #define wmb()		asm volatile ("sync" ::: "memory")
+ #define rmb()		asm volatile ("sync" ::: "memory")
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
+ 
+ #ifdef __s390__
+ #define mb()		asm volatile("bcr 15,0" ::: "memory")
+ #define wmb()		asm volatile("bcr 15,0" ::: "memory")
+ #define rmb()		asm volatile("bcr 15,0" ::: "memory")
+-#define CPUINFO_PROC	"vendor_id"
++#define CPUINFO_PROC	{"vendor_id"}
+ #endif
+ 
+ #ifdef __sh__
+@@ -67,14 +67,14 @@
+ # define wmb()		asm volatile("" ::: "memory")
+ # define rmb()		asm volatile("" ::: "memory")
+ #endif
+-#define CPUINFO_PROC	"cpu type"
++#define CPUINFO_PROC	{"cpu type"}
+ #endif
+ 
+ #ifdef __hppa__
+ #define mb()		asm volatile("" ::: "memory")
+ #define wmb()		asm volatile("" ::: "memory")
+ #define rmb()		asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
+ 
+ #ifdef __sparc__
+@@ -87,14 +87,14 @@
+ #endif
+ #define wmb()		asm volatile("":::"memory")
+ #define rmb()		asm volatile("":::"memory")
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
+ 
+ #ifdef __alpha__
+ #define mb()		asm volatile("mb" ::: "memory")
+ #define wmb()		asm volatile("wmb" ::: "memory")
+ #define rmb()		asm volatile("mb" ::: "memory")
+-#define CPUINFO_PROC	"cpu model"
++#define CPUINFO_PROC	{"cpu model"}
+ #endif
+ 
+ #ifdef __ia64__
+@@ -102,7 +102,7 @@
+ #define wmb()		asm volatile ("mf" ::: "memory")
+ #define rmb()		asm volatile ("mf" ::: "memory")
+ #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #endif
+ 
+ #ifdef __arm__
+@@ -113,7 +113,7 @@
+ #define mb()		((void(*)(void))0xffff0fa0)()
+ #define wmb()		((void(*)(void))0xffff0fa0)()
+ #define rmb()		((void(*)(void))0xffff0fa0)()
+-#define CPUINFO_PROC	"Processor"
++#define CPUINFO_PROC	{"model name", "Processor"}
+ #endif
+ 
+ #ifdef __aarch64__
+@@ -133,28 +133,28 @@
+ 				: "memory")
+ #define wmb()	mb()
+ #define rmb()	mb()
+-#define CPUINFO_PROC	"cpu model"
++#define CPUINFO_PROC	{"cpu model"}
+ #endif
+ 
+ #ifdef __arc__
+ #define mb()		asm volatile("" ::: "memory")
+ #define wmb()		asm volatile("" ::: "memory")
+ #define rmb()		asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"Processor"
++#define CPUINFO_PROC	{"Processor"}
+ #endif
+ 
+ #ifdef __metag__
+ #define mb()		asm volatile("" ::: "memory")
+ #define wmb()		asm volatile("" ::: "memory")
+ #define rmb()		asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"CPU"
++#define CPUINFO_PROC	{"CPU"}
+ #endif
+ 
+ #ifdef __xtensa__
+ #define mb()		asm volatile("memw" ::: "memory")
+ #define wmb()		asm volatile("memw" ::: "memory")
+ #define rmb()		asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"core ID"
++#define CPUINFO_PROC	{"core ID"}
+ #endif
+ 
+ #ifdef __tile__
+@@ -162,7 +162,7 @@
+ #define wmb()		asm volatile ("mf" ::: "memory")
+ #define rmb()		asm volatile ("mf" ::: "memory")
+ #define cpu_relax()	asm volatile ("mfspr zero, PASS" ::: "memory")
+-#define CPUINFO_PROC    "model name"
++#define CPUINFO_PROC    {"model name"}
+ #endif
+ 
+ #define barrier() asm volatile ("" ::: "memory")
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index ce0de00399da..26f5b2fe5dc8 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -579,16 +579,12 @@ static int write_version(int fd, struct perf_header *h __maybe_unused,
+ 	return do_write_string(fd, perf_version_string);
+ }
+ 
+-static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
+-		       struct perf_evlist *evlist __maybe_unused)
++static int __write_cpudesc(int fd, const char *cpuinfo_proc)
  {
-+	if (!left->branch_info || !right->branch_info)
-+		return cmp_null(left->branch_info, right->branch_info);
+-#ifndef CPUINFO_PROC
+-#define CPUINFO_PROC NULL
+-#endif
+ 	FILE *file;
+ 	char *buf = NULL;
+ 	char *s, *p;
+-	const char *search = CPUINFO_PROC;
++	const char *search = cpuinfo_proc;
+ 	size_t len = 0;
+ 	int ret = -1;
+ 
+@@ -638,6 +634,25 @@ done:
+ 	return ret;
+ }
+ 
++static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
++		       struct perf_evlist *evlist __maybe_unused)
++{
++#ifndef CPUINFO_PROC
++#define CPUINFO_PROC {"model name", }
++#endif
++	const char *cpuinfo_procs[] = CPUINFO_PROC;
++	unsigned int i;
 +
- 	return left->branch_info->flags.in_tx !=
- 		right->branch_info->flags.in_tx;
- }
-@@ -1028,10 +1031,14 @@ sort__in_tx_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__in_tx_snprintf(struct hist_entry *he, char *bf,
- 				    size_t size, unsigned int width)
- {
--	static const char *out = ".";
-+	static const char *out = "N/A";
- 
--	if (he->branch_info->flags.in_tx)
--		out = "T";
-+	if (he->branch_info) {
-+		if (he->branch_info->flags.in_tx)
-+			out = "T";
-+		else
-+			out = ".";
++	for (i = 0; i < ARRAY_SIZE(cpuinfo_procs); i++) {
++		int ret;
++		ret = __write_cpudesc(fd, cpuinfo_procs[i]);
++		if (ret >= 0)
++			return ret;
 +	}
- 
- 	return repsep_snprintf(bf, size, "%-*s", width, out);
- }
++	return -1;
++}
++
++
+ static int write_nrcpus(int fd, struct perf_header *h __maybe_unused,
+ 			struct perf_evlist *evlist __maybe_unused)
+ {
 -- 
 1.9.3
 
