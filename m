@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813AbaJ2XFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 19:05:44 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:43837 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385AbaJ2XFm (ORCPT
+	id S1757674AbaJ2XHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 19:07:37 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40711 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757077AbaJ2XHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 19:05:42 -0400
+	Wed, 29 Oct 2014 19:07:34 -0400
+Date: Thu, 30 Oct 2014 00:05:07 +0100
+From: Alexis Berlemont <alexis.berlemont@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
+        namhyung@kernel.org, mmarek@suse.cz,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v4 04/14] perf tools: Add kbuild support into
+ Makefile.kbuild
+Message-ID: <20141029230507.GA15701@marx-slim.home>
+References: <20141024124601.GX14687@kernel.org>
+ <1414275639-1053-5-git-send-email-alexis.berlemont@gmail.com>
+ <20141029081603.GC3538@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <22478002.kqKBdeLAKz@wuerfel>
-References: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
- <5338153.4SY4TFtus9@wuerfel> <CAJiQ=7C7SzT2ngQzP=dQqdQz=+ShJ_Jf0z4kwFgvUKg1G3vrAw@mail.gmail.com>
- <22478002.kqKBdeLAKz@wuerfel>
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Wed, 29 Oct 2014 16:05:21 -0700
-Message-ID: <CAJiQ=7DWEr9Oej6=+3vqKL_fJd2-wvQjx2Xw4dYwyE3AGDXOUA@mail.gmail.com>
-Subject: Re: [PATCH 01/11] irqchip: Allow irq_reg_{readl,writel} to use __raw_{readl_writel}
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029081603.GC3538@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 2:13 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 29 October 2014 13:09:47 Kevin Cernekee wrote:
->> On Wed, Oct 29, 2014 at 12:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> >> The host CPU is connected to the peripheral/register interface using a
->> >> 32-bit wide data bus.  A simple 32-bit store originating from the host
->> >> CPU, targeted to an onchip SoC peripheral, will never need endian
->> >> swapping.  i.e. this code works equally well on all supported systems
->> >> regardless of endianness:
->> >>
->> >>     volatile u32 *foo = (void *)MY_REG_VA;
->> >>     *foo = 0x12345678;
->> >>
->> >> 8-bit and 16-bit accesses may be another story, but only appear in a
->> >> few very special peripherals.
->> >
->> > Sorry, but this makes no sense. If you run a little-endian kernel
->> > on one of the MIPS systems that you marked as "always BE", or a
->> > big-endian kernel on the systems that are marked "always LE",
->> > then you have to byte swap.
->>
->> If I ran an LE MIPS kernel on a BE system, it would hang on boot.  I
->> know this through experience.
->
-> What is a "BE system" then? Is the CPU core not capable of running
-> code either way?
+Jiri Olsa wrote:
+> On Sun, Oct 26, 2014 at 12:20:29AM +0200, Alexis Berlemont wrote:
+> > From: Jiri Olsa <jolsa@redhat.com>
+> 
+> SNIP
+> 
+> > ---
+> >  tools/perf/Kbuild                                  |  47 +++
+> >  tools/perf/Kconfig                                 | 284 ++++++++++++++
+> >  tools/perf/Makefile.kbuild                         | 431 +++++++++++++++++++++
+> >  tools/perf/Makefile.perf                           |   2 +-
+> >  tools/perf/arch/Kbuild                             |   3 +
+> >  tools/perf/arch/arm/Kbuild                         |   2 +
+> >  tools/perf/arch/arm/Makefile                       |  14 -
+> >  tools/perf/arch/arm/tests/Kbuild                   |   2 +
+> >  tools/perf/arch/arm/util/Kbuild                    |   3 +
+> >  tools/perf/arch/arm64/Kbuild                       |   1 +
+> >  tools/perf/arch/arm64/Makefile                     |   7 -
+> >  tools/perf/arch/arm64/util/Kbuild                  |   2 +
+> >  tools/perf/arch/powerpc/Kbuild                     |   1 +
+> >  tools/perf/arch/powerpc/Makefile                   |   6 -
+> >  tools/perf/arch/powerpc/util/Kbuild                |   3 +
+> >  tools/perf/arch/s390/Kbuild                        |   1 +
+> >  tools/perf/arch/s390/Makefile                      |   7 -
+> >  tools/perf/arch/s390/util/Kbuild                   |   2 +
+> >  tools/perf/arch/sh/Kbuild                          |   1 +
+> >  tools/perf/arch/sh/Makefile                        |   4 -
+> >  tools/perf/arch/sh/util/Kbuild                     |   1 +
+> >  tools/perf/arch/sparc/Kbuild                       |   1 +
+> >  tools/perf/arch/sparc/Makefile                     |   4 -
+> >  tools/perf/arch/sparc/util/Kbuild                  |   1 +
+> >  tools/perf/arch/x86/Kbuild                         |   1 +
+> >  tools/perf/arch/x86/tests/Kbuild                   |   3 +
+> >  tools/perf/{ => arch/x86}/tests/perf-time-to-tsc.c |   0
+> >  tools/perf/arch/x86/util/Kbuild                    |   5 +
+> >  tools/perf/bench/Kbuild                            |  12 +
+> >  tools/perf/builtin-cmds.h                          |   4 +
+> >  tools/perf/config/Makefile                         |  55 ++-
+> >  tools/perf/config/Makefile.fix-config              | 104 +++++
+> >  tools/perf/config/Makefile.fix-legacy              |  46 +++
+> >  tools/perf/config/defconfig                        |  54 +++
+> >  tools/perf/perf-sys.h                              |   4 +-
+> >  tools/perf/scripts/perl/Perf-Trace-Util/Kbuild     |   6 +
+> >  tools/perf/scripts/python/Perf-Trace-Util/Kbuild   |   5 +
+> >  tools/perf/tests/Kbuild                            |  38 ++
+> >  tools/perf/ui/Kbuild                               |  15 +
+> >  tools/perf/ui/browsers/Kbuild                      |   9 +
+> >  tools/perf/ui/gtk/Kbuild                           |   9 +
+> >  tools/perf/ui/stdio/Kbuild                         |   1 +
+> >  tools/perf/ui/tui/Kbuild                           |   4 +
+> >  tools/perf/util/Kbuild                             | 126 ++++++
+> >  tools/perf/util/PERF-VERSION-GEN                   |   4 +
+> >  tools/perf/util/generate-cmdlist.sh                |   8 +-
+> >  tools/perf/util/scripting-engines/Kbuild           |  11 +
+> >  tools/perf/util/setup.py                           |   8 +-
+> 
+> so this patch took the perf Makefile (at that time) and changed it to
+> use the kbuild.. but since that time the Makefile.perf came and many
+> other changes, which need to be reflected in Makefile.kbuild
+> 
+> I need to revisit the logic and split the change into more incremental
+> patches (the patchset is too big)
+> 
+> I can redo patches 2,3,4 and get back to you, sounds ok?
 
-On the MIPS BCM7xxx chips, LE/BE support was a design requirement.  So:
+Of course. 
 
- - The chips include a strap pin for LE/BE so it can be configured
-through board jumpers.  This is the only supported method of switching
-endianness.
+Which changes in Makefile.perf do you have in mind ? I thought that
+Makefile.kbuild was just supposed to build the few extra dependencies
+(libtraceevent, etc.). I thought that I updated your original patch
+accordingly with the changes before and after the add of
+Makefile.perf.
 
- - Endianness interactions and performance concerns have been analyzed
-for all peripherals, buses, and data flows.
+Alexis.
 
- - As Florian mentioned earlier, the LE/BE strap preconfigures several
-hardware blocks at boot time, e.g. telling the SPI controller how to
-arrange the incoming data such that the MSB of each instruction word
-read from flash shows up in the right place.
-
- - The entire software stack (and even the cross toolchain) needs to
-be compiled for either LE or BE.
-
-So in this context a "BE system" is a BCM7xxx MIPS chip strapped for
-BE, or one of the BCM33xx/BCM63xx/BCM68xx MIPS chips that is hardwired
-and verified for BE only.
-
->> Does this actually work on other architectures like ARM?  I still see
->> compile-time checks for CONFIG_CPU_ENDIAN* in a couple of places under
->> arch/arm.
->
-> Yes, it should work on any architecture that supports both modes. It
-> definitely works on all ARM cores I know, and on most PowerPC cores.
-> I always assumed that MIPS was bi-endian as well, but according to
-> what you say I guess it is not.
->
-> ARM and PowerPC can actually switch endianess in the kernel, and this
-> is what they do in the first instruction when you run a different
-> endianess from what the boot loader runs as it calls into the kernel.
-> The ARM boot protocol requires entering the kernel in little-endian
-> mode, while I think on PowerPC the boot loader is supposed to detect
-> the format of the kernel binary and pick the right mode before calling
-> it.
-
-Is it the intention to allow runtime endian switching on any
-ARM/PowerPC platform (even the Samsung products you mentioned)?  Or
-only on the boards that were designed to operate this way?
-
-Our problem becomes much simpler if we assume that the majority of
-systems have a fixed endianness, and only a few special cases need to
-accommodate the different kernel/register endianness permutations
-you've listed.
