@@ -1,140 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257AbaJ2Mzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:55:53 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:39525 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932751AbaJ2Mzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:55:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141029123418.GB2265@localhost>
-References: <20141024192948.GE11455@saruman>
-	<20141024193655.GD19377@localhost>
-	<20141024194442.GG11455@saruman>
-	<20141024195532.GF19377@localhost>
-	<20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org>
-	<20141028002552.GX12379@n2100.arm.linux.org.uk>
-	<20141028081616.GL2006@localhost>
-	<20141028084745.GY12379@n2100.arm.linux.org.uk>
-	<20141028131257.GS2006@localhost>
-	<20141028151610.GA12379@n2100.arm.linux.org.uk>
-	<20141029123418.GB2265@localhost>
-Date: Wed, 29 Oct 2014 13:55:49 +0100
-Message-ID: <CABgxDo+ewxNwb3RrBVZA7kqYMvSujLb9U6A6FCvnHQH1W8V0kg@mail.gmail.com>
-Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
-From: Romain Perier <romain.perier@gmail.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        devicetree <devicetree@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, j-keerthy@ti.com, nsekhar@ti.com,
-        Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        t-kristo@ti.com, Lokesh Vutla <lokeshvutla@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        =?UTF-8?Q?Beno=C3=AEt_Cousson?= <bcousson@baylibre.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Content-Type: text/plain; charset=UTF-8
+	id S933109AbaJ2M4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:56:33 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36789 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932773AbaJ2M4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 08:56:31 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Arun Sharma <asharma@fb.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Wang Nan <wangnan0@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/10] perf/urgent fixes
+Date: Wed, 29 Oct 2014 10:56:07 -0200
+Message-Id: <1414587377-25077-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johan:. do you really plan to use this "poweroff-source" property ? As
-you proposed a renaming few days ago...
-I don't really want to waste time to propose patches to fix things
-incrementally and rename it if the old one is used...
+Hi Ingo,
 
-Romain
+	Please consider pulling,
 
-2014-10-29 13:34 GMT+01:00 Johan Hovold <johan@kernel.org>:
-> On Tue, Oct 28, 2014 at 03:16:10PM +0000, Russell King - ARM Linux wrote:
->> On Tue, Oct 28, 2014 at 02:12:57PM +0100, Johan Hovold wrote:
->> > That's not what I was trying to refer to. But the patch set explicitly
->> > allows for multiple, prioritised power-off handlers, which can power
->> > off a board in different ways and with various degrees of success.
->> > Specifically, it allows for fallback handlers in case one or more
->> > power-off handlers fail.
->> >
->> > So if we allow for that, what is to prevent the final power-off handler
->> > from failing? And should this not be logged by arch code in the same way
->> > as failure to restart is?
->>
->> And how is that different from having a set of power-off handlers, and
->> reporting when each individual one fails?  Don't you want to know if
->> your primary high priority reboot handler fails, just as much as you
->> want to know if your final last-resort power-off handler fails?
->
-> Good point. Failed power-off should probably be logged by the power-off
-> call chain implementation (which seems to makes notifier chains a bad
-> fit).
->
-> And what about any power-off latencies? Should this always be dealt with
-> in the power-off handler?
->
-> Again, if it's predictable and high, as in the OMAP RTC case, it should
-> go in the handler. But what if it's just normal bus latencies
-> (peripheral busses, i2c, or whatever people may come up with)?
->
-> Should there always be a short delay before calling the next handler?
->
->> Or different from having no power-off handlers.
->
-> That is actually quite different, as in that case we call machine_halt
-> instead (via kernel_halt).
->
->> Here's the x86 code:
->>
->> void machine_power_off(void)
->> {
->>         machine_ops.power_off();
->> }
->>
->> struct machine_ops machine_ops = {
->>         .power_off = native_machine_power_off,
->> ...
->>
->> static void native_machine_power_off(void)
->> {
->>         if (pm_power_off) {
->>                 if (!reboot_force)
->>                         machine_shutdown();
->>                 pm_power_off();
->>         }
->>         /* A fallback in case there is no PM info available */
->>         tboot_shutdown(TB_SHUTDOWN_HALT);
->> }
->>
->> void tboot_shutdown(u32 shutdown_type)
->> {
->>         void (*shutdown)(void);
->>
->>         if (!tboot_enabled())
->>                 return;
->>
->> See - x86 can very well just fall straight back out of machine_power_off()
->> if there's no pm_power_off() hook and tboot is not enabled.
->
-> I never doubted that, but is the right thing to do? Not all arches do it
-> that way.
->
-> And what about the killing of init? Shall we simply consider that a
-> systemd bug?
->
->         case LINUX_REBOOT_CMD_POWER_OFF:
->                 kernel_power_off();
->                 do_exit(0);
->                 break;
->
-> If power-off fails (for whatever reason), do_exit(0) will trigger a
-> panic when called from PID 1.
->
-> Johan
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+- Arnaldo
+
+The following changes since commit 1776b10627e486dd431fe72d8d47e5a865cf65d1:
+
+  perf/x86/intel: Revert incomplete and undocumented Broadwell client support (2014-10-29 11:07:58 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-urgent-for-mingo
+
+for you to fetch changes up to 4cdcc33db2f0455f297b4e14e434ba311ec5ca06:
+
+  perf probe: Trivial typo fix for --demangle (2014-10-29 10:30:18 -0200)
+
+----------------------------------------------------------------
+perf/urgent fixes:
+
+User visible:
+
+* Fix report -F (abort, in_tx, mispredict, etc) segfaults for sample.data files
+  without branch info (Jiri Olsa)
+
+* Add patch that should have went in a previous patchkit to use global cache
+  provided by libunwind (Namhyung Kim)
+
+* Make CPUINFO_PROC an array to support different kernels, problem
+  detected when the information reported via /proc/cpuinfo changed on ARM (Wang Nan)
+
+* 'perf probe' --demangle typo fix and a new --quiet option (Masami Hiramatsu)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Jiri Olsa (7):
+      perf tools: Fix report -F abort for data without branch info
+      perf tools: Fix report -F in_tx for data without branch info
+      perf tools: Fix report -F mispredict for data without branch info
+      perf tools: Fix report -F symbol_to for data without branch info
+      perf tools: Fix report -F symbol_from for data without branch info
+      perf tools: Fix report -F dso_to for data without branch info
+      perf tools: Fix report -F dso_from for data without branch info
+
+Masami Hiramatsu (1):
+      perf probe: Trivial typo fix for --demangle
+
+Namhyung Kim (1):
+      perf callchain: Use global caching provided by libunwind
+
+Wang Nan (1):
+      perf tools: Make CPUINFO_PROC an array to support different kernel versions
+
+ tools/perf/builtin-probe.c         |   2 +-
+ tools/perf/perf-sys.h              |  30 +++++------
+ tools/perf/util/header.c           |  27 +++++++---
+ tools/perf/util/sort.c             | 102 +++++++++++++++++++++++++++----------
+ tools/perf/util/thread.c           |   3 ++
+ tools/perf/util/unwind-libunwind.c |  12 +++++
+ tools/perf/util/unwind.h           |   3 ++
+ 7 files changed, 131 insertions(+), 48 deletions(-)
