@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933648AbaJ2PGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:06:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26895 "EHLO mga11.intel.com"
+	id S933685AbaJ2PIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:08:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59175 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933114AbaJ2PGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:06:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,810,1406617200"; 
-   d="scan'208";a="622820153"
-Date: Wed, 29 Oct 2014 07:49:44 -0700
-From: Patrick Lu <patrick.lu@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH 2/5] perf, x86, uncore: Add Haswell-EP uncore support
-Message-ID: <20141029144944.GA10491@debian-x64.ch.intel.com>
-References: <CAADnVQL3X_UqA1Oz1msuz8LyP0CTGG5iy16YwjdPUhoNTk31yQ@mail.gmail.com>
- <20141029031115.GW12538@two.firstfloor.org>
+	id S933143AbaJ2PIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 11:08:16 -0400
+Date: Wed, 29 Oct 2014 15:16:23 +0000
+From: Alexander Gordeev <agordeev@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: Remove redundant rcu_is_cpu_rrupt_from_idle()
+ function
+Message-ID: <20141029151622.GD30198@agordeev.usersys.redhat.com>
+References: <1414580827-19545-1-git-send-email-agordeev@redhat.com>
+ <20141029124728.GL5718@linux.vnet.ibm.com>
+ <20141029134519.GC30198@agordeev.usersys.redhat.com>
+ <20141029143439.GN5718@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141029031115.GW12538@two.firstfloor.org>
+In-Reply-To: <20141029143439.GN5718@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 04:11:15AM +0100, Andi Kleen wrote:
+On Wed, Oct 29, 2014 at 07:34:39AM -0700, Paul E. McKenney wrote:
+> On Wed, Oct 29, 2014 at 01:45:19PM +0000, Alexander Gordeev wrote:
+> > On Wed, Oct 29, 2014 at 05:47:29AM -0700, Paul E. McKenney wrote:
+> > > On Wed, Oct 29, 2014 at 12:07:07PM +0100, Alexander Gordeev wrote:
+> > > > Function rcu_is_cpu_rrupt_from_idle() is called from scheduling-
+> > > > clock interrupt handler to check if the current CPU was interrupted
+> > > > from idle. If true, it results in invocation of RCU callbacks. But
+> > > > the common hardware interrupt exit path also contains similar check
+> > > > and therefore the call to rcu_is_cpu_rrupt_from_idle() is redundant.
+> > > 
+> > > By common hardware interrupt exit path, you are meaning the calls
+> > > to rcu_irq_exit()?  If not, please let me know exactly what you
+> > > mean here.
 > > 
-> > yes. removing line 'hswep_uncore_sbox' also worked as workaround.
-> > You have an idea what's going on?
+> > Yes, I mean rcu_irq_exit().
 > 
-> Not yet. I don't see it on my own systems, so it's something that's
-> different on yours.
-Hi Andi, I am experiencing the same crash using E5-2658v3 CPU in our lab in Chandler. I can
-provide remote access for you to take a look.
+> Unless you can get the indication of whether or not the original interrupt
+> came from userspace execution into rcu_irq_exit(), this will not work.
+> It will result in grace-period hangs on some configurations.
 
-Also, I used your ucevents.py to check out IRP counter, and it looks like
-it's reporting half of what I'm expecting. Do you know if the script/PMU
-program for both IRP0 and IRP1?
+Okay, that was my concern wrt tree RCU. By contrast, tiny RCU does not seem
+able to hang a grace-period, isn't it?
 
-Patrick
+> Now, if you -can- get the userspace-execution indication into
+> rcu_irq_exit(), this might be of interest.  However, it might be faster
+> to simply let the scheduling-clock interrupt do the job as it currently
+> does, especially for workloads with lots of interrupts.
 > 
-> > I suspect other folks will see the same crash when E5 v3
-> > become more widespread.
-> 
-> I guess we can disable the sbox for now. 
-> 
-> -Andi
-> > 
-> 
-> -- 
-> ak@linux.intel.com -- Speaking for myself only.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Or did you have something else in mind?
+
+Nope. I would even leave as is tiny RCU's rcu_is_cpu_rrupt_from_idle()
+for clarity then ;)
+
+> 							Thanx, Paul
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
