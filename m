@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654AbaJ2RKC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:10:02 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:63462 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934191AbaJ2RKA (ORCPT
+	id S934688AbaJ2RKg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:10:36 -0400
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:54739 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934191AbaJ2RKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:10:00 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PM / Domains: Extract code to power off/on a PM domain
-References: <1414066336-11168-1-git-send-email-geert+renesas@glider.be>
-	<1414066336-11168-2-git-send-email-geert+renesas@glider.be>
-	<CAPDyKFr+8A_i5GyrL+KOv7AvqoMEFaiJ0ck9AQGn=M4vJ7g7Xg@mail.gmail.com>
-	<CAMuHMdWA+KeEoS+79Qos958r=4rWGN_ZeAbhP9FB5ZoEoQKqpQ@mail.gmail.com>
-Date: Wed, 29 Oct 2014 10:09:56 -0700
-In-Reply-To: <CAMuHMdWA+KeEoS+79Qos958r=4rWGN_ZeAbhP9FB5ZoEoQKqpQ@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Wed, 29 Oct 2014 14:32:30 +0100")
-Message-ID: <7htx2majkr.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 29 Oct 2014 13:10:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1412918637-9843-1-git-send-email-kever.yang@rock-chips.com>
+References: <1412918637-9843-1-git-send-email-kever.yang@rock-chips.com>
+Date: Wed, 29 Oct 2014 10:10:34 -0700
+X-Google-Sender-Auth: VORJeYlYqE6_vZVz_LmWUbrXzWk
+Message-ID: <CAD=FV=XDYe203VZmPtpAVibtmAXcBwGBdQ=2BNUVD-kA6gCP0w@mail.gmail.com>
+Subject: Re: [PATCH] clk: rockchip: change PLL setting for better clock jitter
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+Kever,
 
-> Hi Ulf,
+On Thu, Oct 9, 2014 at 10:23 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> dclk_vop0/1 is the source of HDMI TMDS clock in rk3288, usually we
+> use 594MHz for clock source of dclk_vop0/1.
 >
-> On Wed, Oct 29, 2014 at 2:25 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> On 23 October 2014 14:12, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
->>> PM domains are powered on/off from various places. Some callers do
->>> latency measurements, others don't. Consolidate using two helper
->>> functions, which always measure the latencies, and update the stored
->>> latencies when needed.
->>>
->>> Other minor changes:
->>>   - Use pr_warn() instead of pr_warning(),
->>>   - There's no need to check genpd->name, %s handles NULL pointers fine,
->>>   - Make the warning format strings identical, to save memory.
->>>
->>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->>
->> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+> HDMI CTS 7-9 require TMDS Clock jitter is lower than 0.25*Tbit:
+> TMDS clock(MHz)         CTS require jitter (ps)
+>         297             84.2
+>         148.5           168
+>         74.25           336
+>         27              1247
 >
-> Thanks for your review.
+> PLL BW and VCO frequency effects the jitter of PLL output clock,
+> clock jitter is better if BW is lower or VCO frequency is higher.
 >
->>> --- a/drivers/base/power/domain.c
->>> +++ b/drivers/base/power/domain.c
->>> @@ -151,6 +151,59 @@ static void genpd_recalc_cpu_exit_latency(struct generic_pm_domain *genpd)
->>>         genpd->cpuidle_data->idle_state->exit_latency = usecs64;
->>>  }
->>>
->>> +static int do_genpd_power_on(struct generic_pm_domain *genpd)
->>
->> Should we try to agree on the prefixes of the function names in genpd?
->> Currently there are a mix of them.
->>
->> May I suggest we try to stick to this:
->>
->> Exported functions:
->> pm_genpd_*
->> _pm_genpd_*
->> __pm_genpd_*
->>
->> Static functions:
->> genpd_*
->> _genpd_*
->> __genpd_*
->>
->> What do you think? Do you have any better suggestions?
+> If PLL use default setting of RK3066_PLL_RATE( 594000000, 2, 198, 4),
+> the TMDS Clock jitter is higher than 250ps, which means we can't
+> pass the test when TMDS clock is 297MHz or 148.5MHz.
 >
-> Sounds sane.
+> If we use RK3066_PLL_RATE_BWADJ(594000000, 1, 198, 8, 1),
+> the TMDS Clock jitter is about 60ps and we can pass all test case.
 >
-> So:
+> So we need this patch to make hdmi si test pass.
 >
-> s/do_genpd_power_on/genpd_power_on/
-> s/do_genpd_power_off/genpd_power_off/
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+>  drivers/clk/rockchip/clk-rk3288.c | 2 +-
+>  drivers/clk/rockchip/clk.h        | 9 +++++++++
+>  2 files changed, 10 insertions(+), 1 deletion(-)
 
-With that name change, feel free to add
+As per offline discussion, I have now received a TRM (2014-10-22) that
+has expanded the valid ranges of the PLLs.  This now looks OK to me.
 
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
-
-Kevin
+Reviewed-by: Doug Anderson <dianders@chromium.org>
