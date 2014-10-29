@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934590AbaJ2RIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:08:50 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:62751 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934226AbaJ2RIr (ORCPT
+	id S934654AbaJ2RKC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:10:02 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:63462 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934191AbaJ2RKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:08:47 -0400
-Date: Wed, 29 Oct 2014 10:08:43 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Yassin Jaffer <yassinjaffer@gmail.com>
-Subject: Re: [PATCH v7 1/2] mtd: nand: add sunxi NAND flash controller support
-Message-ID: <20141029170843.GD23619@ld-irv-0074>
-References: <1413896922-11680-1-git-send-email-boris.brezillon@free-electrons.com>
- <1413896922-11680-2-git-send-email-boris.brezillon@free-electrons.com>
- <20141028181310.GA23619@ld-irv-0074>
- <20141029140251.142fed10@bbrezillon>
+	Wed, 29 Oct 2014 13:10:00 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PM / Domains: Extract code to power off/on a PM domain
+References: <1414066336-11168-1-git-send-email-geert+renesas@glider.be>
+	<1414066336-11168-2-git-send-email-geert+renesas@glider.be>
+	<CAPDyKFr+8A_i5GyrL+KOv7AvqoMEFaiJ0ck9AQGn=M4vJ7g7Xg@mail.gmail.com>
+	<CAMuHMdWA+KeEoS+79Qos958r=4rWGN_ZeAbhP9FB5ZoEoQKqpQ@mail.gmail.com>
+Date: Wed, 29 Oct 2014 10:09:56 -0700
+In-Reply-To: <CAMuHMdWA+KeEoS+79Qos958r=4rWGN_ZeAbhP9FB5ZoEoQKqpQ@mail.gmail.com>
+	(Geert Uytterhoeven's message of "Wed, 29 Oct 2014 14:32:30 +0100")
+Message-ID: <7htx2majkr.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141029140251.142fed10@bbrezillon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 02:02:51PM +0100, Boris Brezillon wrote:
-> On Tue, 28 Oct 2014 11:13:11 -0700 Brian Norris <computersforpeace@gmail.com> wrote:
-> > On Tue, Oct 21, 2014 at 03:08:41PM +0200, Boris Brezillon wrote:
-> > > +static int sunxi_nand_hw_ecc_ctrl_init(struct mtd_info *mtd,
-> > > +				       struct nand_ecc_ctrl *ecc,
-> > > +				       struct device_node *np)
-> > > +{
-> > > +	struct nand_ecclayout *layout;
-> > > +	int i, j;
-> > > +	int ret;
-> > > +
-> > > +	ret = sunxi_nand_hw_common_ecc_ctrl_init(mtd, ecc, np);
-> > > +	if (ret)
-> > > +		return ret;
-> > > +
-> > > +	ecc->read_page = sunxi_nfc_hw_ecc_read_page;
-> > > +	ecc->write_page = sunxi_nfc_hw_ecc_write_page;
-> > > +	layout = ecc->layout;
-> > > +
-> > > +	for (i = 0; i < ecc->steps; i++) {
-> > 
-> > Hmm, did you retest this since changing this to ecc->steps? I think this
-> > won't work, since ecc->steps is only initialized in nand_scan_tail(),
-> > which comes after this. I only recommended the change for the
-> > {read,write}_page() type of functions, not the initialization functions.
-> > 
-> > [snip the rest]
-> > 
-> > So I'd suggest the following additional patch, and otherwise, the series
-> > is fine with me. If you give your ack, I can just squash this in and
-> > apply it to my tree:
-> 
-> It works, you can squash those changes into my first patch.
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-OK, pushed both (+ my fixes) to l2-mtd.git. Thanks!
+> Hi Ulf,
+>
+> On Wed, Oct 29, 2014 at 2:25 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> On 23 October 2014 14:12, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+>>> PM domains are powered on/off from various places. Some callers do
+>>> latency measurements, others don't. Consolidate using two helper
+>>> functions, which always measure the latencies, and update the stored
+>>> latencies when needed.
+>>>
+>>> Other minor changes:
+>>>   - Use pr_warn() instead of pr_warning(),
+>>>   - There's no need to check genpd->name, %s handles NULL pointers fine,
+>>>   - Make the warning format strings identical, to save memory.
+>>>
+>>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>>
+>> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+>
+> Thanks for your review.
+>
+>>> --- a/drivers/base/power/domain.c
+>>> +++ b/drivers/base/power/domain.c
+>>> @@ -151,6 +151,59 @@ static void genpd_recalc_cpu_exit_latency(struct generic_pm_domain *genpd)
+>>>         genpd->cpuidle_data->idle_state->exit_latency = usecs64;
+>>>  }
+>>>
+>>> +static int do_genpd_power_on(struct generic_pm_domain *genpd)
+>>
+>> Should we try to agree on the prefixes of the function names in genpd?
+>> Currently there are a mix of them.
+>>
+>> May I suggest we try to stick to this:
+>>
+>> Exported functions:
+>> pm_genpd_*
+>> _pm_genpd_*
+>> __pm_genpd_*
+>>
+>> Static functions:
+>> genpd_*
+>> _genpd_*
+>> __genpd_*
+>>
+>> What do you think? Do you have any better suggestions?
+>
+> Sounds sane.
+>
+> So:
+>
+> s/do_genpd_power_on/genpd_power_on/
+> s/do_genpd_power_off/genpd_power_off/
 
-Brian
+With that name change, feel free to add
+
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
+
+Kevin
