@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933314AbaJ2Nyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:54:32 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18087 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932897AbaJ2Nya (ORCPT
+	id S933067AbaJ2N7u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:59:50 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:25278 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932801AbaJ2N7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 09:54:30 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/lckmNOgVs/NC7yRfQdKty5slBWTKicLA=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 4E1C960BC36
-Date: Wed, 29 Oct 2014 09:54:26 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Eric Rost <eric.rost@mybabylon.net>
-Cc: gregkh@linuxfoundation.org, jake@lwn.net, antonysaraev@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] staging: skein: Removes skein_debug include
-Message-ID: <20141029135426.GH15252@titan.lakedaemon.net>
-References: <20141028234431.GA16606@localhost>
+	Wed, 29 Oct 2014 09:59:48 -0400
+X-IronPort-AV: E=Sophos;i="5.04,810,1406592000"; 
+   d="scan'208";a="187391153"
+Message-ID: <5450F2CE.8070104@citrix.com>
+Date: Wed, 29 Oct 2014 13:59:42 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028234431.GA16606@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <konrad.wilk@oracle.com>, <stefano.stabellini@eu.citrix.com>
+CC: <linux-kernel@vger.kernel.org>, <jun.nakajima@intel.com>,
+        <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH v2 0/2] xen/pci: Use APIC for MSIs when APIC
+ virtualization is supported
+References: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
+In-Reply-To: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric,
-
-Much better.  One small nit below:
-
-On Tue, Oct 28, 2014 at 06:44:31PM -0500, Eric Rost wrote:
-> Removes skein_debug.h include since skein_debug.h is nonexistent.
-> Removes unneeded debug empty macro defines and their uses.
+On 27/10/14 16:05, Boris Ostrovsky wrote:
+> Changes in v2:
+> * New version of cpuid.h file from Xen tree (with a couple of style adjustments)
+> * Whitespace cleanup
 > 
-> Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
-> ---
->  drivers/staging/skein/skein_base.c  | 18 ------------------
->  drivers/staging/skein/skein_base.h  | 17 -----------------
->  drivers/staging/skein/skein_block.c | 30 +-----------------------------
->  3 files changed, 1 insertion(+), 64 deletions(-)
+> Currently HVM guests handle MSI interrupts using pirqs/event channels, allowing
+> us to not issue APIC accesses that result in somewhat expensive VMEXITs. When
+> hardware supports APIC virtualization we don't need to use pirqs anymore
+> since now guest's APIC accesses can be handled by the processor itself.
 > 
-...
-> diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-> index 36b0b40..289bf13 100644
-> --- a/drivers/staging/skein/skein_block.c
-> +++ b/drivers/staging/skein/skein_block.c
-...
-> @@ -422,9 +409,6 @@ void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
->  		X3 = w[3] + ks[3];
->  
->  		/* show starting state values */
-> -		skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INITIAL,
-> -				 x_ptr);
-> -
+> There are two patches in this series:
+> 
+> 1. Move setting of x86_msi ops to a later point. The reason for doing so is that
+> we currently decide whether or not to use pirqs before kernel had a chance to
+> see whether it should be using x2APIC instead of plain APIC. Since hardware may
+> virtualize either or both of those two we can only make pirqs vs. APIC selection
+> after kernel has settled down on which APIC version it will use. (Note that
+> currently x2APIC is not used by HVM guests so technically this patch is not
+> necessary. However, it probably makes sense to apply it now to avoid
+> forgetting to do it when we enable x2APIC).
+> 
+> 2. Set x86_msi ops to use pirqs only when APIC virtualization is not available.
+> The commit message describes performance improvements that this change brings.
+> 
+> Boris Ostrovsky (2):
+>   xen/pci: Defer initialization of MSI ops on HVM guests until after
+>     x2APIC has been set up
+>   xen/pci: Use APIC directly when APIC virtualization is supported by
+>     hardware
 
-Please remove the comment here as well.
+Applied to devel/for-linus-3.19.
 
->  		blk_ptr += SKEIN_256_BLOCK_BYTES;
->  
->  		/* run the rounds */
+Thanks.
 
-Fix that up and please add my:
-
-Reviewed-by: Jason Cooper <jason@lakedaemon.net>
-
-to the next version (below your Signed-off-by:).
-
-thx,
-
-Jason.
+David
