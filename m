@@ -1,176 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933949AbaJ2OKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:10:23 -0400
-Received: from regular1.263xmail.com ([211.150.99.135]:53993 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932961AbaJ2OKS (ORCPT
+	id S933961AbaJ2OLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:11:15 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51250 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933135AbaJ2OLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:10:18 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: jinkun.hong@rock-chips.com
-X-FST-TO: dmitry.torokhov@gmail.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: jinkun.hong@rock-chips.com
-X-UNIQUE-TAG: <7381d3db66b468fb92faea9b4d4e1c10>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <5450F534.8030501@rock-chips.com>
-Date: Wed, 29 Oct 2014 22:09:56 +0800
-From: Hong jinkun <jinkun.hong@rock-chips.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 29 Oct 2014 10:11:11 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/M73CRpvr7t6ToA1kt+/+j
+Date: Wed, 29 Oct 2014 07:09:44 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
+        sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: Nokia n900 problems in 3.18-rc1 (was Re: USB Ethernet gadget on
+ Nokia n900)
+Message-ID: <20141029140943.GX2542@atomide.com>
+References: <20141019090107.GA19132@amd>
+ <201410262222.39892@pali>
+ <20141026215548.GA9004@amd>
+ <201410262323.17891@pali>
+ <20141027195209.GP2560@atomide.com>
+ <20141027223114.GU2560@atomide.com>
+ <20141028220450.GA27667@amd>
+ <20141028221124.GT2542@atomide.com>
+ <20141029084637.GA30662@amd>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
-        Jack Dai <jack.dai@rock-chips.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v5 1/3] power-domain: add power domain drivers for Rockchip
- platform
-References: <1413882808-4669-1-git-send-email-jinkun.hong@rock-chips.com>	<1413882808-4669-2-git-send-email-jinkun.hong@rock-chips.com>	<20141021195854.GE8609@dtor-ws>	<544725C4.4040703@rock-chips.com> <CAPDyKFp+aNJd_FEY6=-ubK0zvVDWh+x5ZsVG+AVpuBzpSqynOQ@mail.gmail.com>
-In-Reply-To: <CAPDyKFp+aNJd_FEY6=-ubK0zvVDWh+x5ZsVG+AVpuBzpSqynOQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029084637.GA30662@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Pavel Machek <pavel@ucw.cz> [141029 01:48]:
+> 
+> Speaking of testing:
+> 
+> I'm not sure what is omap_l3_smx neccessary for, but it does not work.
+> 
+> [    0.223297] omap_l3_smx omap_l3_smx.0: couldn't request debug irq
+> [    0.223419] omap_l3_smx: probe of omap_l3_smx.0 failed with error
+> -22
 
-On 2014/10/22 15:58, Ulf Hansson wrote:
-> [...]
->
->>>> +
->>>> +       list_for_each_entry(de, &pd->dev_list, node) {
->>>> +               i += 1;
->>>> +               pm_clk_resume(pd->dev);
->>> Do you really need to call pm_clk_resume() number of times that there
->>> are devices in power domain? Did you want it to be
->>>
->>>                  pm_clk_resume(de->dev);
->>>
->>> by any chance?
-> I was just about to ask the similar question as Dmitry did. :-)
->
->> You are right.I will modify in the next version.
-> Now, does that also mean you would like to assign the ->start|stop()
-> callbacks in the struct gpd_dev_ops to pm_clk_suspend|resume()? Or do
-> you intend to handle that from each driver instead?
-If it can call dev_ops.start before calling power_on and power_off is 
-the best.But I found dev_ops.start not called.Is not I did add some patch?
->>>> +       }
->>>> +
->>>> +       /* no clk, set power domain will fail */
->>>> +       if (i == 0) {
->>>> +               pr_err("%s: failed to on/off power domain!", __func__);
->>>> +               spin_unlock_irq(&pd->dev_lock);
->>>> +               return ret;
->>>> +       }
->>> Instead of counting I'd do
->>>
->>>          if (list_empty(&pd->dev_list)) {
->>>                  pr_waen("%s: no devices in power domain\n", __func__);
->>>                  goto out;
->>>          }
->>>
->>> in the beginning of the function.
->> This is a good idea.
->>
->>>> +
->>>> +       ret = rockchip_pmu_set_power_domain(pd, power_on);
->>>> +
->>>> +       list_for_each_entry(de, &pd->dev_list, node) {
->>>> +               pm_clk_suspend(pd->dev);
->>> Same here?
->>>
->>>> +       }
->>>> +
->>>> +       spin_unlock_irq(&pd->dev_lock);
->>>> +
->>>> +       return ret;
->>>> +}
->>>> +
->>>> +static int rockchip_pd_power_on(struct generic_pm_domain *domain)
->>>> +{
->>>> +       struct rockchip_domain *pd = to_rockchip_pd(domain);
->>>> +
->>>> +       return rockchip_pd_power(pd, true);
->>>> +}
->>>> +
->>>> +static int rockchip_pd_power_off(struct generic_pm_domain *domain)
->>>> +{
->>>> +       struct rockchip_domain *pd = to_rockchip_pd(domain);
->>>> +
->>>> +       return rockchip_pd_power(pd, false);
->>>> +}
->>>> +
->>>> +void rockchip_pm_domain_attach_dev(struct device *dev)
->>>> +{
->>>> +       int ret;
->>>> +       int i = 0;
->>>> +       struct clk *clk;
->>>> +       struct rockchip_domain *pd;
->>>> +       struct rockchip_dev_entry *de;
->>>> +
->>>> +       pd = (struct rockchip_domain *)dev->pm_domain;
->>>> +       ret = pm_clk_create(dev);
->>>> +       if (ret) {
->>>> +               dev_err(dev, "pm_clk_create failed %d\n", ret);
->>>> +               return;
->>>> +       };
->>> Stray semicolon.
->>>> +
->>>> +       while ((clk = of_clk_get(dev->of_node, i++)) && !IS_ERR(clk)) {
->>>> +               ret = pm_clk_add_clk(dev, clk);
->>>> +               if (ret) {
->>>> +                       dev_err(dev, "pm_clk_add_clk failed %d\n", ret);
->>>> +                       goto clk_err;
->>>> +               };
->>>> +       }
->>>> +
->>>> +       de = devm_kcalloc(pd->dev, 1,
->>>> +                       sizeof(struct rockchip_dev_entry *), GFP_KERNEL);
->>> Why devm_calloc for a single element and not devm_kzalloc? Also, I am a
->>> bit concerned about using devm_* API here. They are better reserved fir
->>> driver's ->probe() paths whereas we are called from
->>> dev_pm_domain_attach() which is more general API (yes, currently it is
->>> used by buses probing code, but that might change in the future).
-> Using the devm_*API is supposed to work from here. I have kept this in
-> mind, while we added the new dev_pm_domain_attach|detach() API. The
-> buses also handles -EPROBE_DEFER.
->
-> Now, I just realized that while Geert added attach|detach_dev()
-> callbacks for the generic PM domain, those are both "void" callbacks.
-> It means the deferred probe error handling is broken for these
-> callbacks. We should convert the attach_dev() callback into an int, I
-> will cook a patch immediately.
->
->>> Also, where is OOM error handling?
->> Ok,I will change the use  devm_kzalloc.
->> Register to pm domain devices, the number is not a lot.
-> [...]
->
-> Kind regards
-> Uffe
->
->
->
+Hmm this should be fixed to get interrupts about invalid bus
+access.
+ 
+> There is some fun in pinmuxing:
+> 
+> [    0.247131] irq: no irq domain found for /ocp/pinmux@48002030 !
+> [    0.248291] irq: no irq domain found for /ocp/pinmux@48002030 !
+> ...
+> [    0.384826] omap_i2c 48070000.i2c: could not find pctldev for node
+> /ocp/pinmux@48002030/pinmux_i\
+> 2c1_pins, deferring probe
+> [    0.384918] platform 48070000.i2c: Driver omap_i2c requests probe
+> deferral
+> [    0.385070] omap_i2c 48072000.i2c: could not find pctldev for node
+> /ocp/pinmux@48002030/pinmux_i\
+> 2c2_pins, deferring probe
+> [    0.385162] platform 48072000.i2c: Driver omap_i2c requests probe
+> deferral
+> [    0.385284] omap_i2c 48060000.i2c: could not find pctldev for node
+> /ocp/pinmux@48002030/pinmux_i\
+> 2c3_pins, deferring probe
+> [    0.385375] platform 48060000.i2c: Driver omap_i2c requests probe
+> deferral
 
+These are related to deferred probe and should go away when we
+make drivers/i2c/busses/i2c-omap.c to use regular module_init and
+stop using subsys_initcall. But I think legacy booting still needs
+it early, could be omap1 only nowadays though.
+ 
+> And serial has some problems:
+> 
+> [    0.482208] of_get_named_gpiod_flags: can't parse 'rts-gpio'
+> property of node '/ocp/serial@4806c\
+> 000[0]'
+> [    0.482513] omap_uart 4806c000.serial: ttyO1 at MMIO 0x4806c000
+> (irq = 223, base_baud = 3000000)\
+>  is a OMAP UART1
+> [    0.484588] of_get_named_gpiod_flags: can't parse 'rts-gpio'
+> property of node '/ocp/serial@49020\
+> 000[0]'
+> [    0.484771] omap_uart 49020000.serial: ttyO2 at MMIO 0x49020000
+> (irq = 224, base_baud = 3000000)\
+>  is a OMAP UART2
 
+I these come from the GPIO framework when booting with debug enabled.
+ 
+> There's a lot of noise from probe defferal :-(. And it looks like mmc
+> properties have some problems:
+> 
+> [    0.739349] of_get_named_gpiod_flags: can't parse 'wp-gpios'
+> property of node '/ocp/mmc@4809c000\
+> [0]'
+> [    0.740142] omap_hsmmc 4809c000.mmc: unable to get vmmc regulator
+> -517
+> [    0.740386] platform 4809c000.mmc: Driver omap_hsmmc requests probe
+> deferral
+> [    0.740661] of_get_named_gpiod_flags: can't parse 'cd-gpios'
+> property of node '/ocp/mmc@480b4000\
+> [0]'
+> [    0.740692] of_get_named_gpiod_flags: can't parse 'wp-gpios'
+> property of node '/ocp/mmc@480b4000\
+> [0]'
+
+These too. But yeah, I agree, let's try to patch away some of
+the deferred probe noise.
+ 
+> omapfb reports problems, but seems to work ok:
+> 
+> [    0.990386] omapfb omapfb: cannot parse default modes
+> [    1.004791] Console: switching to colour frame buffer device 100x30
+> [    1.073150] omapfb omapfb: using display 'lcd' mode 800x480
+
+Tomi, is the default mode warning correct here?
+
+Regards,
+
+Tony
