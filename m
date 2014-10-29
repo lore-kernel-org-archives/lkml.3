@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227AbaJ2JKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:10:10 -0400
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:49828 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755726AbaJ2JKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756200AbaJ2JKF (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 29 Oct 2014 05:10:05 -0400
-Message-ID: <5450AEAB.40200@nsn.com>
-Date: Wed, 29 Oct 2014 10:08:59 +0100
-From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+Received: from [103.239.73.48] ([103.239.73.48]:35855 "EHLO a.1-hour-pay.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755492AbaJ2JKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 05:10:03 -0400
+Date: Wed, 29 Oct 2014 17:11:30 +0800
+From: "LED Light" <hw6@a.1-hour-pay.com>
+Reply-To: shadow@JRS-Tech.net
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: LED MINING LIGHTS  GARDEN LIGHT  CANDLE LIGHT
+Message-ID: <201410291711309532592@a.1-hour-pay.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-To: ext Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH] of: spi: Export single device registration method and
- accessors (v2)
-References: <1414572037-11306-1-git-send-email-pantelis.antoniou@konsulko.com>
-In-Reply-To: <1414572037-11306-1-git-send-email-pantelis.antoniou@konsulko.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 740
-X-purgate-ID: 151667::1414573742-0000437E-3AA35DEA/0/0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9T9ACti001174
 
-Hello!
+Dear Sir,
 
-On 29/10/14 09:40, ext Pantelis Antoniou wrote:
-> Dynamically inserting spi device nodes requires the use of a single
-> device registration method. Rework and export it.
-> 
-> Methods to lookup a device/master using a device node are added
-> as well, of_find_spi_master_by_node() & of_find_spi_device_by_node().
-> 
-> Changes since v1:
-> * Brown paper bug with parameter on of_register_spi_device().
-> 
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+How are you?
 
-Acked-by: Alexander Sverdlin <alexaner.sverdlin@nsn.com>
+We are the professional China Supplier of LED products, LED LED spot lights, LED down lights, Par38, T-8...
+We are glad to know that you are in the market for LED products lights.
+There are some of this kind as attached for your reference.
 
-> ---
->  drivers/spi/spi.c | 255 +++++++++++++++++++++++++++++++++---------------------
->  1 file changed, 157 insertions(+), 98 deletions(-)
+ 
+Are you interested in it?
 
--- 
-Best regards,
-Alexander Sverdlin.
+Or you can visit our website or contact us for more details: www.jrs-LED.net
+
+We are looking forward to establish business relationship with you in this field.
+
+We have new catalogue, if you are interesting, we can send to you, pls contact with me by email, thanks.
+
+
+I¡äm looking forward to your response.
+
+Sincerely
+JRS Technology Co.,Ltd
+Shadow
+
+Email£º  shadow@JRS-Tech.net
+Skype£º  techjrsb
+MSN£º    techjrsb@msn.cn
+Websit£º www.jrs-LED.net
+
+
+we would be grateful if you will be our led lamps catalogue reserved for your supervisor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
