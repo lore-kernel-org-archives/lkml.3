@@ -1,110 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934665AbaJ2Qiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:38:54 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:47197 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934110AbaJ2Qiv (ORCPT
+	id S934685AbaJ2Qj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:39:26 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:37125 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934554AbaJ2QiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:38:51 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, Jiri Slaby <jslaby@suse.cz>,
-        linux-arm-msm@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [PATCH] serial: msm: Add magic SysRq support in dmmode
-Date: Wed, 29 Oct 2014 16:38:32 +0000
-Message-Id: <1414600712-20721-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Wed, 29 Oct 2014 12:38:01 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 5/7] drbd: merge_bvec_fn: properly remap bvm->bi_bdev
+Date: Wed, 29 Oct 2014 17:37:54 +0100
+Message-Id: <1414600676-11203-6-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414600676-11203-1-git-send-email-philipp.reisner@linbit.com>
+References: <1414600676-11203-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the _dm RX handler detects breaks but does not pass any
-characters to uart_handle_sysrq_char().
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-The _dm optimizations combined with the port's spin lock make if
-difficult to pass all characters to the sysrq logic because we cannot
-safely call uart_handle_sysrq_char() when the lock is held without
-deadlock (the console handler also takes the lock).
+This was not noticed for many years. Affects operation if
+md raid is used a backing device for DRBD.
 
-Rather than passing all characters via uart_handle_sysrq_char() this patch
-only passes the last few characters in the FIFO. This should include all
-characters typed as a slow (human) rate. This makes the problem much
-simpler and allows us to move the handling of these characters outside
-of the port lock. This makes magic SysRq work if there is a human at
-the keyboard (or a short delay in a script).
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/tty/serial/msm_serial.c | 26 +++++++++++++++++++++++---
- 1 file changed, 23 insertions(+), 3 deletions(-)
+ drivers/block/drbd/drbd_req.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index 4b6c783..24c4fd1 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -104,6 +104,7 @@ static void handle_rx_dm(struct uart_port *port, unsigned int misr)
- 	unsigned int sr;
- 	int count = 0;
- 	struct msm_port *msm_port = UART_TO_MSM(port);
-+	unsigned char buf[4];
-
- 	if ((msm_read(port, UART_SR) & UART_SR_OVERRUN)) {
- 		port->icount.overrun++;
-@@ -125,11 +126,10 @@ static void handle_rx_dm(struct uart_port *port, unsigned int misr)
- 	port->icount.rx += count;
-
- 	while (count > 0) {
--		unsigned char buf[4];
--
- 		sr = msm_read(port, UART_SR);
- 		if ((sr & UART_SR_RX_READY) == 0) {
- 			msm_port->old_snap_state -= count;
-+			count = 0;
- 			break;
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index 5a01c53..90319b1 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1545,6 +1545,7 @@ int drbd_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm, struct
+ 		struct request_queue * const b =
+ 			device->ldev->backing_bdev->bd_disk->queue;
+ 		if (b->merge_bvec_fn) {
++			bvm->bi_bdev = device->ldev->backing_bdev;
+ 			backing_limit = b->merge_bvec_fn(b, bvm, bvec);
+ 			limit = min(limit, backing_limit);
  		}
- 		ioread32_rep(port->membase + UARTDM_RF, buf, 1);
-@@ -140,13 +140,33 @@ static void handle_rx_dm(struct uart_port *port, unsigned int misr)
- 		} else if (sr & UART_SR_PAR_FRAME_ERR)
- 			port->icount.frame++;
-
--		/* TODO: handle sysrq */
-+		/* The last few characters receive special processing below. */
-+		if (count <= 2)
-+			break;
-+
- 		tty_insert_flip_string(tport, buf, min(count, 4));
- 		count -= 4;
- 	}
-
- 	spin_unlock(&port->lock);
-+
-+	/*
-+	 * We have deferred the last few characters to be processed
-+	 * with the port unlocked. This allows all characters received at
-+	 * "human speed" to be passed through the magic SysRq handling.
-+	 * The hardware sends us two characters after a break (the second
-+	 * of which is \0) so we are forced to process up to two final
-+	 * characters rather than just one.
-+	 */
-+	if (count > 0) {
-+		if (!uart_handle_sysrq_char(port, buf[0]))
-+			tty_insert_flip_string(tport, buf, count);
-+		else if (count > 1 && !uart_handle_sysrq_char(port, buf[1]))
-+			tty_insert_flip_char(tport, buf[1], 0);
-+	}
-+
- 	tty_flip_buffer_push(tport);
-+
- 	spin_lock(&port->lock);
-
- 	if (misr & (UART_IMR_RXSTALE))
---
-1.9.3
+-- 
+1.9.1
 
