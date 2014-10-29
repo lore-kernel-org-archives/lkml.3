@@ -1,129 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaJ2DdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 23:33:13 -0400
-Received: from mail-bn1bon0117.outbound.protection.outlook.com ([157.56.111.117]:14602
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751993AbaJ2DdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 23:33:11 -0400
-Date: Wed, 29 Oct 2014 11:33:00 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
-        <stern@rowland.harvard.edu>, <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 0/7] usb: add support for the generic PHY framework
-Message-ID: <20141029033259.GA5982@peterchendt>
-References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1753467AbaJ2Ddp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 23:33:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:11619 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680AbaJ2Ddn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 23:33:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="407617893"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 0/2] ACPI/EC: Fix regressions on Samsung hardware.
+Date: Wed, 29 Oct 2014 11:33:33 +0800
+Message-Id: <cover.1414553399.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <544CE637.7000406@odi.ch>
+References: <544CE637.7000406@odi.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(189002)(51704005)(4396001)(6806004)(46102003)(102836001)(97736003)(23726002)(26826002)(33716001)(44976005)(31966008)(47776003)(64706001)(106466001)(20776003)(105606002)(33656002)(92566001)(107046002)(85852003)(19580395003)(46406003)(21056001)(92726001)(84676001)(86362001)(68736004)(15975445006)(83506001)(76176999)(87936001)(97756001)(54356999)(50466002)(99396003)(80022003)(50986999)(104016003)(57986006)(110136001)(95666004)(85306004)(120916001)(76482002)(41533002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0639;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0639;
-X-Forefront-PRVS: 03793408BA
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 05:35:34PM +0100, Antoine Tenart wrote:
-> The series can be found at:
-> git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
-> 
-> Changes since v6:
-> 	- rebased on top of v3.18-rc2
-> 
-> Changes since v5:
->         - rebased on the latest version of Sergei's series[1]
->         - fixed one modifiaction made in the wrong patch
-> 
-> Changes since v4:
->         - reworked the PHY handling in ci_hdrc_probe()
->         - fixed a rebase error
-> 
-> Changes since v3:
->         - moved phy_exit() after phy_power_on()
->         - fixed the PHY handling in ci_hdrc_probe()
->         - some little fixes
-> 
-> Changes since v2:
->         - rebased the series on top of v3.17-rc1
->         - switched to devm_phy_get() to handle non DT cases
->         - moved usb_otg into the ci_hdrc structure
-> 
-> Changes since v1:
->         - rebased the series on top of [2] (generic PHY support for HCD)
->         - split s/phy/usb_phy/ renaming and generic PHY support in separate
->           patches
-> 
-> [1] https://www.mail-archive.com/linux-usb%40vger.kernel.org/msg48068.html
-> 
-> Antoine Tenart (7):
->   usb: move the OTG state from the USB PHY to the OTG structure
->   usb: rename phy to usb_phy in OTG
->   usb: add support to the generic PHY framework in OTG
->   usb: allow to supply the PHY in the drivers when using HCD
->   usb: rename transceiver and phy to usb_phy in ChipIdea
->   usb: chipidea: move usb_otg into struct ci_hdrc
->   usb: chipidea: add support to the generic PHY framework in ChipIdea
-> 
->  drivers/phy/phy-omap-usb2.c         | 14 ++----
->  drivers/usb/chipidea/ci.h           |  8 +++-
->  drivers/usb/chipidea/ci_hdrc_imx.c  |  2 +-
->  drivers/usb/chipidea/ci_hdrc_msm.c  |  8 ++--
->  drivers/usb/chipidea/core.c         | 89 ++++++++++++++++++++++++++--------
->  drivers/usb/chipidea/debug.c        |  2 +-
->  drivers/usb/chipidea/host.c         | 10 ++--
->  drivers/usb/chipidea/otg_fsm.c      | 30 +++++-------
->  drivers/usb/chipidea/udc.c          |  4 +-
->  drivers/usb/common/usb-otg-fsm.c    |  8 ++--
->  drivers/usb/core/hcd.c              |  7 +--
->  drivers/usb/host/ohci-omap.c        |  2 +-
->  drivers/usb/musb/am35x.c            | 28 +++++------
->  drivers/usb/musb/blackfin.c         | 18 +++----
->  drivers/usb/musb/da8xx.c            | 28 +++++------
->  drivers/usb/musb/davinci.c          | 18 +++----
->  drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++------------------
->  drivers/usb/musb/musb_dsps.c        | 26 +++++-----
->  drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
->  drivers/usb/musb/musb_host.c        |  8 ++--
->  drivers/usb/musb/musb_virthub.c     | 22 ++++-----
->  drivers/usb/musb/omap2430.c         | 30 ++++++------
->  drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
->  drivers/usb/musb/ux500.c            | 10 ++--
->  drivers/usb/phy/phy-ab8500-usb.c    | 16 +++----
->  drivers/usb/phy/phy-fsl-usb.c       | 23 ++++-----
->  drivers/usb/phy/phy-generic.c       |  6 +--
->  drivers/usb/phy/phy-gpio-vbus-usb.c | 14 +++---
->  drivers/usb/phy/phy-isp1301-omap.c  | 10 ++--
->  drivers/usb/phy/phy-msm-usb.c       | 95 +++++++++++++++++++------------------
->  drivers/usb/phy/phy-mv-usb.c        | 50 +++++++++----------
->  drivers/usb/phy/phy-tahvo.c         |  8 ++--
->  drivers/usb/phy/phy-ulpi.c          |  6 +--
->  include/linux/usb/chipidea.h        |  4 +-
->  include/linux/usb/otg.h             |  7 ++-
->  include/linux/usb/phy.h             |  1 -
->  36 files changed, 420 insertions(+), 362 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
+It is reported that the Samsung EC firmware behaves differently than Acer
+EC firmware. And then previous 2 commits that fix Acer issues have broken
+Samsung hardware.
 
-Tested the whole patch set at imx6 hardware, and you can add
-my Acked-by to the last three chipidea patches.
+This patchset fixes the regressions.
 
-I hope your patch-set can be queued soon, since I find the rebase
-error with my next tree, I can put your patches on the top.
+Lv Zheng (2):
+  Revert "ACPI / EC: Add support to disallow QR_EC to be issued before
+    completing previous QR_EC"
+  ACPI/EC: Fix a regression caused by conflict firmware behavior
+    between Samsung and Acer.
+
+ drivers/acpi/ec.c |   31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
 -- 
-Best Regards,
-Peter Chen
+1.7.10
+
