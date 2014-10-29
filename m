@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230AbaJ2Nrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:47:32 -0400
-Received: from s250.sam-solutions.net ([217.21.49.219]:46620 "EHLO
+	id S933191AbaJ2Nra (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:47:30 -0400
+Received: from s250.sam-solutions.net ([217.21.49.219]:46609 "EHLO
 	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932965AbaJ2Nr3 (ORCPT
+	with ESMTP id S933039AbaJ2Nr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 09:47:29 -0400
+	Wed, 29 Oct 2014 09:47:26 -0400
 From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
 To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
         <pawel.moll@arm.com>, <mark.rutland@arm.com>,
@@ -14,14 +14,11 @@ To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
         <linux@arm.linux.org.uk>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
         <perex@perex.cz>, <tiwai@suse.de>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        "Dmitry Lavnikevich" <d.lavnikevich@sam-solutions.com>
-Subject: [PATCH v5 3/3] ARM: imx_v6_v7_defconfig: enable tlv320aic3x audio codec by default
-Date: Wed, 29 Oct 2014 16:47:04 +0300
-Message-ID: <1414590424-25585-4-git-send-email-d.lavnikevich@sam-solutions.com>
+        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>
+Subject: [PATCH v5 0/3] Add Phytec pbab01 audio support
+Date: Wed, 29 Oct 2014 16:47:01 +0300
+Message-ID: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
-References: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [192.168.117.165]
@@ -31,25 +28,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used on Phytec PBAB01 board.
+By mistake previous patchset versions was sent as in-reply-to to
+previous patchset versions, so they may have been lost among other
+mails.
 
-Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
----
- arch/arm/configs/imx_v6_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+One of pathces was already applied by Mark Brown, here is 3 patches
+implementing audio support on Phytec phyFLEX-i.MX6 boards.
 
-diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
-index 8fca6e276b69..cac07d67b933 100644
---- a/arch/arm/configs/imx_v6_v7_defconfig
-+++ b/arch/arm/configs/imx_v6_v7_defconfig
-@@ -210,6 +210,7 @@ CONFIG_SND_SOC_IMX_WM8962=y
- CONFIG_SND_SOC_IMX_SGTL5000=y
- CONFIG_SND_SOC_IMX_SPDIF=y
- CONFIG_SND_SOC_IMX_MC13783=y
-+CONFIG_SND_SOC_TLV320AIC3X=y
- CONFIG_SND_SIMPLE_CARD=y
- CONFIG_USB=y
- CONFIG_USB_EHCI_HCD=y
--- 
-2.1.2
+This patchset version only renames audio card name to
+OnboardTLV320AIC3007 (on request from Phytec).
+
+Patches are based on branch for-next of
+git://git.kernel.org/pub/scm/linux/kernel/git/shawnguo/linux.git
 
