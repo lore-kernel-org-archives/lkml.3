@@ -1,135 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847AbaJ2TgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 15:36:15 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43553 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaJ2TgM (ORCPT
+	id S1756886AbaJ2Tgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 15:36:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44416 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaJ2Tgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 15:36:12 -0400
-Message-ID: <54514211.9@oracle.com>
-Date: Wed, 29 Oct 2014 15:37:53 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 29 Oct 2014 15:36:53 -0400
+Date: Wed, 29 Oct 2014 14:36:51 -0500
+From: Benoit Parrot <bparrot@ti.com>
+To: Pantelis Antoniou <pantelis.antoniou@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
+Message-ID: <20141029193651.GE29965@ti.com>
+References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
+ <3D00ADB3-00B3-40A8-8263-444BCADDAC33@gmail.com>
+ <20141029163445.GB29965@ti.com>
+ <2BA5D07E-B5EF-49E1-BFD2-310A6C5F3FE4@gmail.com>
 MIME-Version: 1.0
-To: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
-CC: david.vrabel@citrix.com, konrad.wilk@oracle.com, tianyu.lan@intel.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH v3] xen/smp: Use die_complete completion when taking CPU
- down
-References: <1413997748-29808-1-git-send-email-boris.ostrovsky@oracle.com>
-In-Reply-To: <1413997748-29808-1-git-send-email-boris.ostrovsky@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2BA5D07E-B5EF-49E1-BFD2-310A6C5F3FE4@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 01:09 PM, Boris Ostrovsky wrote:
-> Commit 2ed53c0d6cc9 ("x86/smpboot: Speed up suspend/resume by avoiding
-> 100ms sleep for CPU offline during S3") introduced completions to CPU
-> offlining process. These completions are not initialized on Xen kernels
-> causing a panic in play_dead_common().
->
-> Move handling of die_complete into common routines to make them
-> available to Xen guests.
->
-> (While at it, move die_complete definition under #ifdef CONFIG_HOTPLUG_CPU)
->
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->
-> v3: Don't #ifdef function prototypes in smp.h
-> v2: Keep die_complete private to smpboot.c
->
->
->   arch/x86/include/asm/smp.h |  1 +
->   arch/x86/kernel/smpboot.c  | 13 +++++++++++--
->   arch/x86/xen/smp.c         |  3 +++
->   3 files changed, 15 insertions(+), 2 deletions(-)
+Pantelis Antoniou <pantelis.antoniou@gmail.com> wrote on Wed [2014-Oct-29 18:42:48 +0200]:
+> Hi Benoit,
+> 
+> > On Oct 29, 2014, at 18:34 , Benoit Parrot <bparrot@ti.com> wrote:
+> > 
+> > Pantelis,
+> > 
+> > Thanks for the feedback.
+> > 
+> > Pantelis Antoniou <pantelis.antoniou@gmail.com> wrote on Wed [2014-Oct-29 10:53:44 +0200]:
+> >> Hi Benoit,
+> >> 
+> >>> On Oct 21, 2014, at 23:09 , Benoit Parrot <bparrot@ti.com> wrote:
+> >>> 
+> >>> Based on Boris Brezillion work this is a reworked patch
+> >>> of his initial GPIO hogging mechanism.
+> >>> This patch provides a way to initally configure specific GPIO
+> >>> when the gpio controller is probe.
+> >>> 
+> >>> The actual DT scanning to collect the GPIO specific data is performed
+> >>> as part of the gpiochip_add().
+> >>> 
+> >>> The purpose of this is to allows specific GPIOs to be configured
+> >>> without any driver specific code.
+> >>> This particularly usueful because board design are getting
+> >>> increassingly complex and given SoC pins can now have upward
+> >>> of 10 mux values a lot of connections are now dependent on
+> >>> external IO muxes to switch various modes and combination.
+> >>> 
+> >>> Specific drivers should not necessarily need to be aware of
+> >>> what accounts to a specific board implementation. This board level
+> >>> "description" should be best kept as part of the dts file.
+> >>> 
+> >> 
+> >> This look like it’s going to the right direction. I have a few general
+> >> comments at first.
+> >> 
+> >> 1) It relies on dubious DT binding of having sub-nodes of the
+> >> gpio device implicitly defining hogs.
+> > 
+> > I think in this instance the nodes are explicitly defining hogs.
+> > Please clarify. What would you like to see here?
+> >> 
+> 
+> Any subnodes are implicitly taken as hog definitions. This is not right because
+> gpio controllers might have subnodes that they use for another purpose.
 
+I think I see what you mean.
+Even though "gpio-hog = <&phandle>" guarantee that only those sub-node
+are going to be parsed, if a particular gpio-controller has sub-node for
+some other reason then the "hog" related sub-node might be in the way.
 
-Does anything else need to be done in this patch? We have CPU hotplug 
-broken currently in Xen and it would be nice to have it fixed in rc3.
+Do you know of such an example currently in mainline I can take a look at?
 
--boris
+> 
+> >> 2) There is no way for having hogs inserted dynamically as far as I can tell, and
+> >> no way to remove a hog either.
+> > 
+> > The original patch was allowing that but, Linus's review comment suggested this feature be 
+> > part of the gpio-controller's gpiochip_add() hook only.
+> > 
+> 
+> If it’s not possible to remove a hog, then it’s no good for my use case in which
+> the gpios get exported and then removed.
 
+I guess if we add the export feature then that could be possible.
+But if I am not mistaken the hog concept was to allow gpio setting
+for gpio not belonging to any particular drivers.
+If you have gpio which needs to be released then would they fall in
+the "own" by a driver category and which case use the exixting method? 
+> 
+> >> 
+> >> 3) I’m not very fond of having this being part of the gpio controller. This
+> >> configuration conceptually has little to do with the gpio controller per se,
+> >> it is more of a board specific thing. Why not come up with a gpio-hog driver that
+> >> references GPIOs? That way with a single gpio-hog driver instance you could setup
+> >> all the GPIO-hogging configuration for all GPIOs on the board, even one that
+> >> lie on different GPIO controllers.
+> > 
+> > Again this follows Linus's review comment.
+> > I agree that it prevent a centralize spot where all hog would be defined but it has the advantages of not relying on PROBE_DEFER.
+> > I mean since all "gpio-hogs" would be defined in a single board dts file it would not be that hard to figure out the big picture anyways.
+> > 
+> 
+> There won’t be a single board dts file if you’re using things like overlays.
+I see, I had not consider that.
 
->
-> diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-> index 8cd27e0..8cd1cc3 100644
-> --- a/arch/x86/include/asm/smp.h
-> +++ b/arch/x86/include/asm/smp.h
-> @@ -150,6 +150,7 @@ static inline void arch_send_call_function_ipi_mask(const struct cpumask *mask)
->   }
->   
->   void cpu_disable_common(void);
-> +void cpu_die_common(unsigned int cpu);
->   void native_smp_prepare_boot_cpu(void);
->   void native_smp_prepare_cpus(unsigned int max_cpus);
->   void native_smp_cpus_done(unsigned int max_cpus);
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 2d5200e..6fe0fc1 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -102,7 +102,9 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
->   DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
->   EXPORT_PER_CPU_SYMBOL(cpu_info);
->   
-> +#ifdef CONFIG_HOTPLUG_CPU
->   static DEFINE_PER_CPU(struct completion, die_complete);
-> +#endif
->   
->   atomic_t init_deasserted;
->   
-> @@ -1309,6 +1311,8 @@ void cpu_disable_common(void)
->   {
->   	int cpu = smp_processor_id();
->   
-> +	init_completion(&per_cpu(die_complete, smp_processor_id()));
-> +
->   	remove_siblinginfo(cpu);
->   
->   	/* It's now safe to remove this processor from the online map */
-> @@ -1327,16 +1331,21 @@ int native_cpu_disable(void)
->   		return ret;
->   
->   	clear_local_APIC();
-> -	init_completion(&per_cpu(die_complete, smp_processor_id()));
->   	cpu_disable_common();
->   
->   	return 0;
->   }
->   
-> +void cpu_die_common(unsigned int cpu)
-> +{
-> +	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
-> +}
-> +
->   void native_cpu_die(unsigned int cpu)
->   {
->   	/* We don't do anything here: idle task is faking death itself. */
-> -	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
-> +
-> +	cpu_die_common(cpu);
->   
->   	/* They ack this in play_dead() by setting CPU_DEAD */
->   	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 8650cdb..4c071ae 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -510,6 +510,9 @@ static void xen_cpu_die(unsigned int cpu)
->   		current->state = TASK_UNINTERRUPTIBLE;
->   		schedule_timeout(HZ/10);
->   	}
-> +
-> +	cpu_die_common(cpu);
-> +
->   	xen_smp_intr_free(cpu);
->   	xen_uninit_lock_cpu(cpu);
->   	xen_teardown_timer(cpu);
+A generic board level gpio driver would be a different option I guess.
 
+> 
+> >> 
+> >> 
+> >>> Signed-off-by: Benoit Parrot <bparrot@ti.com>
+> >>> ---
+> >>> Documentation/devicetree/bindings/gpio/gpio.txt | 33 +++++++++
+> >>> drivers/gpio/gpiolib-of.c                       | 99 +++++++++++++++++++++++++
+> >>> drivers/gpio/gpiolib.c                          | 81 ++++++++++++++++++++
+> >>> include/linux/of_gpio.h                         | 11 +++
+> >>> 4 files changed, 224 insertions(+)
+> >>> 
+> >> 
+> >> Regards
+> >> 
+> >> — Pantelis
+> >> 
+> > 
+> > Regards,
+> > Benoit
+> 
+> Regards
+> 
+> — Pantelis
+> 
+
+Regards,
+Benoit
