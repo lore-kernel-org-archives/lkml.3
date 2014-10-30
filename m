@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806AbaJ3Li1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:38:27 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:49937 "EHLO
+	id S1759566AbaJ3Lit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:38:49 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:49933 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759328AbaJ3Lgw (ORCPT
+	with ESMTP id S1759312AbaJ3Lgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:36:52 -0400
+	Thu, 30 Oct 2014 07:36:51 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: Peter.Chen@freescale.com
 Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
@@ -14,9 +14,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] usb: chipidea: use ci_hdrc_get_platdata in ci_hdrc_msm
-Date: Thu, 30 Oct 2014 12:36:44 +0100
-Message-Id: <1414669007-9850-4-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH 2/6] usb: chipidea: use ci_hdrc_get_platdata in ci_hdrc_imx
+Date: Thu, 30 Oct 2014 12:36:43 +0100
+Message-Id: <1414669007-9850-3-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1414669007-9850-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1414669007-9850-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -29,43 +29,57 @@ chipidea internal ci_hdrc_platform_data structure.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
- drivers/usb/chipidea/ci_hdrc_msm.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/usb/chipidea/ci_hdrc_imx.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
-index 3edf969ed797..32eeab404911 100644
---- a/drivers/usb/chipidea/ci_hdrc_msm.c
-+++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-@@ -55,10 +55,15 @@ static struct ci_hdrc_platform_data ci_hdrc_msm_platdata = {
- static int ci_hdrc_msm_probe(struct platform_device *pdev)
+diff --git a/drivers/usb/chipidea/ci_hdrc_imx.c b/drivers/usb/chipidea/ci_hdrc_imx.c
+index 6f8b1b1045b5..25f3b465cb73 100644
+--- a/drivers/usb/chipidea/ci_hdrc_imx.c
++++ b/drivers/usb/chipidea/ci_hdrc_imx.c
+@@ -103,7 +103,8 @@ static struct imx_usbmisc_data *usbmisc_get_init_data(struct device *dev)
+ static int ci_hdrc_imx_probe(struct platform_device *pdev)
  {
- 	struct platform_device *plat_ci;
+ 	struct ci_hdrc_imx_data *data;
+-	struct ci_hdrc_platform_data pdata = {
 +	struct ci_hdrc_platform_data *ci_pdata;
- 	struct usb_phy *phy;
++	struct ci_hdrc_platform_data ci_pdata_default = {
+ 		.name		= dev_name(&pdev->dev),
+ 		.capoffset	= DEF_CAPOFFSET,
+ 		.flags		= CI_HDRC_REQUIRE_TRANSCEIVER |
+@@ -114,6 +115,10 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
+ 			of_match_device(ci_hdrc_imx_dt_ids, &pdev->dev);
+ 	const struct ci_hdrc_imx_platform_flag *imx_platform_flag = of_id->data;
  
- 	dev_dbg(&pdev->dev, "ci_hdrc_msm_probe\n");
- 
-+	ci_pdata = ci_hdrc_get_platdata(&pdev->dev, &ci_hdrc_msm_platdata);
++	ci_pdata = ci_hdrc_get_platdata(&pdev->dev, &ci_pdata_default);
 +	if (IS_ERR(ci_pdata))
 +		return PTR_ERR(ci_pdata);
 +
- 	/*
- 	 * OTG(PHY) driver takes care of PHY initialization, clock management,
- 	 * powering up VBUS, mapping of registers address space and power
-@@ -68,11 +73,10 @@ static int ci_hdrc_msm_probe(struct platform_device *pdev)
- 	if (IS_ERR(phy))
- 		return PTR_ERR(phy);
+ 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+ 	if (!data) {
+ 		dev_err(&pdev->dev, "Failed to allocate ci_hdrc-imx data!\n");
+@@ -147,10 +152,10 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
+ 		goto err_clk;
+ 	}
  
--	ci_hdrc_msm_platdata.usb_phy = phy;
-+	ci_pdata->usb_phy = phy;
+-	pdata.usb_phy = data->phy;
++	ci_pdata->usb_phy = data->phy;
  
- 	plat_ci = ci_hdrc_add_device(&pdev->dev,
+ 	if (imx_platform_flag->flags & CI_HDRC_IMX_IMX28_WRITE_FIX)
+-		pdata.flags |= CI_HDRC_IMX28_WRITE_FIX;
++		ci_pdata->flags |= CI_HDRC_IMX28_WRITE_FIX;
+ 
+ 	ret = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+ 	if (ret)
+@@ -166,8 +171,7 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	data->ci_pdev = ci_hdrc_add_device(&pdev->dev,
 -				pdev->resource, pdev->num_resources,
--				&ci_hdrc_msm_platdata);
+-				&pdata);
 +				pdev->resource, pdev->num_resources, ci_pdata);
- 	if (IS_ERR(plat_ci)) {
- 		dev_err(&pdev->dev, "ci_hdrc_add_device failed!\n");
- 		return PTR_ERR(plat_ci);
+ 	if (IS_ERR(data->ci_pdev)) {
+ 		ret = PTR_ERR(data->ci_pdev);
+ 		dev_err(&pdev->dev,
 -- 
 2.1.0
 
