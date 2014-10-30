@@ -1,104 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934537AbaJ3UZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 16:25:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40436 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513AbaJ3UZp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 16:25:45 -0400
-Date: Thu, 30 Oct 2014 13:24:34 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Linux API <linux-api@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tejun Heo <tj@kernel.org>,
-        Ryan Lortie <desrt@desrt.ca>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>, daniel@zonque.org,
-        David Herrmann <dh.herrmann@gmail.com>, Paul Moore <pmoore@redhat.com>,
-        "casey.schaufler@intel.com" <casey.schaufler@intel.com>,
-        marcel@holtmann.org, tixxdz@opendz.org,
-        javier.martinez@collabora.co.uk, alban.crequy@collabora.co.uk
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-Message-ID: <20141030202434.GA17410@kroah.com>
-References: <54520A21.20404@samsung.com>
- <54521697.1030900@samsung.com>
- <20141030144709.GA19721@kroah.com>
- <545297CC.6020306@samsung.com>
+	id S1161101AbaJ3U0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 16:26:00 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56204 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932513AbaJ3UZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 16:25:59 -0400
+Date: Thu, 30 Oct 2014 21:25:50 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 5/8] x86, microcode, intel: don't check extsig entry
+ checksum
+Message-ID: <20141030202550.GF11178@pd.tnic>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-6-git-send-email-hmh@hmh.eng.br>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <545297CC.6020306@samsung.com>
+In-Reply-To: <1410197875-19252-6-git-send-email-hmh@hmh.eng.br>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 08:55:56PM +0100, Karol Lewandowski wrote:
-> On 2014-10-30 15:47, Greg Kroah-Hartman wrote:
-> > On Thu, Oct 30, 2014 at 11:44:39AM +0100, Karol Lewandowski wrote:
-> >> [ Sorry for breaking thread and resend - gmane rejected my original message
-> >>   due to too long list of recipients... ]
-> >>
-> >> On 2014-10-30 00:40, Greg Kroah-Hartman wrote:
-> >>
-> >>> There is a 1815 line documentation file in this series, so we aren't
-> >>> trying to not provide this type of information here at all.  But yes,
-> >>> more background, about why this can't be done in userspace (zero copy,
-> >>> less context switches, proper credential passing, timestamping, availble
-> >>> at early-boot, LSM hooks for security models to tie into
-> >>
-> >> While you're at it... I did some work on proof-of-concept LSM patches for
-> >> kdbus some time ago, see [1][2].  Currently, these are completely of date.
-> >>
-> >>  [1] https://github.com/lmctl/linux/commits/kdbus-lsm-v4.for-systemd-v212
-> >>  [2] https://github.com/lmctl/kdbus/commit/aa0885489d19be92fa41c6f0a71df28763228a40
-> >>
-> >> May I ask if you guys have your own plan for LSM or maybe it would be
-> >> worth to resurrect [1]?
-> > 
-> > The core calls are already mediated by LSM today, right?  We don't want
-> > anyone to be parsing the data stream through an LSM, that idea got
-> > rejected a long time ago as something that is really not a good idea.
+On Mon, Sep 08, 2014 at 02:37:51PM -0300, Henrique de Moraes Holschuh wrote:
+> The contents of the extended signature entries are already covered by
+> the extended table checksum, and the microcode driver should not be
+> attempting to check their internal checksum field.
 > 
-> Parsing data is out of question, of course, but this is not what we were
-> proposing.
+> Unlike the main microcode checksum field and the extended signature
+> table checksum field, the checksum fields inside the extended signature
+> entries are not meant to be processed by a microcode update loader.  The
+> extended signature entry checksum field's description in the Intel SDM,
+> vol 3A, table 9-6, page 9-30, reads in the first paragraph:
+> 
+>    "Used by utility software to decompose a microcode update into
+>     multiple microcode updates where each of the new updates is
+>     constructed without the optional Extended Processor Signature
+>     Table."
+> 
+> And the Linux microcode driver is not processing them correctly anyway.
+> The second paragraph of the signature entry checksum field's description
+> in the Intel SDM, vol 3A, table 9-6, page 9-30, reads:
+> 
+>    "To calculate the Checksum, substitute the Primary Processor
+>     Signature entry and the Processor Flags entry with the corresponding
+>     Extended Patch entry. Delete the Extended Processor Signature Table
+>     entries. The Checksum is correct when the summation of all DWORDs
+>     that comprise the created Extended Processor Patch results in
+>     00000000H."
+> 
+> Deleting the extended signature table changes the Total Size field, and
+> the Intel SDM paragraph above makes it very clear that such a change must
+> be accounted for by the checksum.  The current extended signature entry
+> checksum code in the Linux microcode driver, which has been in place
+> since 2003, will be thrown off by this and reject a valid microcode
+> update.
 
-Glad to hear it :)
+I don't know where you come up with this but the code you're removing
+was added in 2013:
 
-> > Other than that, I don't know exactly what your patches do, or why they
-> > are needed, care to go into details?
-> 
-> Patches in question were supposed to add few hooks for kdbus-specific
-> operations that doesn't seem to have compatible semantics with hooks
-> currently available in LSM.
-> 
-> kdbus' bus introduces quite a few new concepts that we wanted to be able
-> to limit based on MAC label/context, eg.
-> 
->  - check flags at HELO stage (say disallow fd passing),
-> 
->  - restrict ability to acquire name to certain subjects (for system bus),
-> 
->  - disallow creation of new buses,
-> 
->  - limit scope of broadcasts,
-> 
->  - etc.
+	e666dfa273db ("x86/microcode_intel_lib.c: Early update ucode on Intel's CPU")
 
-Nice list.
+and I'd strongly assume it was tested at the time. Now, the text in the
+SDM is confusing, as most of the time is so I would think the code is
+doing the right thing even if the text doesn't really say that clearly.
 
-> Please take a look at hook list - I think most of names are self-explanatory:
+Fenghua, care to comment please?
+
+Leaving in the rest for reference.
+
+> The microcode driver is better off by doing what the Intel SDM suggests,
+> and staying well clear of that checksum field.  It has already checked
+> the whole extended signature table's checksum, anyway.
 > 
->   https://github.com/lmctl/linux/blob/a9fe4c33b6e5ab25a243e0590df406aabb6add12/include/linux/security.h#L1874
+> Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> ---
+>  arch/x86/kernel/cpu/microcode/intel_lib.c |   20 ++------------------
+>  1 file changed, 2 insertions(+), 18 deletions(-)
 > 
-> kdbus modifications were pretty light - with most visible change being
-> addition of opaque security pointer to kdbus_bus and similar structs.
+> diff --git a/arch/x86/kernel/cpu/microcode/intel_lib.c b/arch/x86/kernel/cpu/microcode/intel_lib.c
+> index 1cc6494..9200b83 100644
+> --- a/arch/x86/kernel/cpu/microcode/intel_lib.c
+> +++ b/arch/x86/kernel/cpu/microcode/intel_lib.c
+> @@ -49,8 +49,7 @@ int microcode_sanity_check(void *mc, int print_err)
+>  	unsigned long total_size, data_size, ext_table_size;
+>  	struct microcode_header_intel *mc_header = mc;
+>  	struct extended_sigtable *ext_header = NULL;
+> -	int sum, orig_sum, ext_sigcount = 0, i;
+> -	struct extended_signature *ext_sig;
+> +	int orig_sum, i;
+>  
+>  	total_size = get_totalsize(mc_header);
+>  	data_size = get_datasize(mc_header);
+> @@ -81,7 +80,6 @@ int microcode_sanity_check(void *mc, int print_err)
+>  				pr_err("error: bad exttable size in microcode data file\n");
+>  			return -EFAULT;
+>  		}
+> -		ext_sigcount = ext_header->count;
+>  	}
+>  
+>  	/*
+> @@ -129,21 +127,7 @@ int microcode_sanity_check(void *mc, int print_err)
+>  			pr_err("error: bad microcode update checksum\n");
+>  		return -EINVAL;
+>  	}
+> -	if (!ext_table_size)
+> -		return 0;
+> -	/* check extended signature checksum */
+> -	for (i = 0; i < ext_sigcount; i++) {
+> -		ext_sig = (void *)ext_header + EXT_HEADER_SIZE +
+> -			  EXT_SIGNATURE_SIZE * i;
+> -		sum = orig_sum
+> -			- (mc_header->sig + mc_header->pf + mc_header->cksum)
+> -			+ (ext_sig->sig + ext_sig->pf + ext_sig->cksum);
+> -		if (sum) {
+> -			if (print_err)
+> -				pr_err("error: bad extended signature checksum\n");
+> -			return -EINVAL;
+> -		}
+> -	}
+> +
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(microcode_sanity_check);
+> -- 
+> 1.7.10.4
+> 
+> 
 
-That looks very reasonable, care to make it up into a patch I can add to
-the end of this series so it's easy to review and possibly submit as
-part of it?
+-- 
+Regards/Gruss,
+    Boris.
 
-thanks,
-
-greg k-h
+Sent from a fat crate under my desk. Formatting is fine.
+--
