@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781AbaJ3KHg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:07:36 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:49871 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758135AbaJ3KHf (ORCPT
+	id S1758548AbaJ3KJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:09:50 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51167 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756976AbaJ3KJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:07:35 -0400
-Message-ID: <54520DE4.9090008@imgtec.com>
-Date: Thu, 30 Oct 2014 10:07:32 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	Thu, 30 Oct 2014 06:09:49 -0400
+Date: Thu, 30 Oct 2014 08:09:34 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: unnecessary merges in the v4l-dvb tree
+Message-ID: <20141030080934.154ff729@recife.lan>
+In-Reply-To: <20141030092445.519a86ba@canb.auug.org.au>
+References: <20141030092445.519a86ba@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>, <linux-mips@linux-mips.org>,
-        <nbd@openwrt.org>, <yanh@lemote.com>, <linux-kernel@vger.kernel.org>,
-        <ralf@linux-mips.org>, <alex.smith@imgtec.com>, <taohl@lemote.com>,
-        <chenhc@lemote.com>, <blogic@openwrt.org>
-Subject: Re: [PATCH] MIPS: DMA: fix coherent alloc in non-coherent systems
-References: <20141030014753.13189.48344.stgit@linux-yegoshin>
-In-Reply-To: <20141030014753.13189.48344.stgit@linux-yegoshin>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/DJ1v5vn2Tc2bp4VJHQ+S8vV"; protocol="application/pgp-signature"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leonid,
+--Sig_/DJ1v5vn2Tc2bp4VJHQ+S8vV
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 30/10/14 01:48, Leonid Yegoshin wrote:
-> A default dma_alloc_coherent() fails to alloc a coherent memory on non-coherent
-> systems in case of device->coherent_dma_mask covering the whole memory space.
-> 
-> In case of non-coherent systems the coherent memory on MIPS is restricted by
-> size of un-cachable segment and should be located in ZONE_DMA.
+Hi Stephen,
 
-Has this pretty much always been broken?
+Em Thu, 30 Oct 2014 09:24:45 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
 
-> @@ -81,6 +81,11 @@ static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
->  		dma_flag = __GFP_DMA;
->  	else
->  #endif
-> +#ifdef CONFIG_ZONE_DMA
-> +	     if (coherent && !plat_device_is_coherent(dev))
+> Hi Mauro,
+>=20
+> I noticed that you have two unnecessary merges in the v4l-dvb tree
+> (git://linuxtv.org/mchehab/media-next.git#master).  This is not
+> entirely your fault.  Unfortunately, when you do
+>=20
+> git merge <signed tag>
+>=20
+> git will produce a merge commit even if it could have fast
+> forwarded :-(.  Consequently, you have commits 1ef24960ab78 ("Merge tag
+> 'v3.18-rc1' into patchwork") and d6d41ba1cb38 ("Merge remote-tracking
+> branch 'linus/master' into patchwork") even though the patchwork branch
+> in each case is included in the tag being merged.
+>=20
+> The only ways I know around this is to either merge the commit
+> associated with the tag or do a (hard) reset to the tag.
 
-Broken indentation. Please fix to use tabs.
+A hard reset to the tag would likely be a bad idea, as it would break
+the sub-maintainers trees that are based on my tree.
 
-> +			dma_flag = __GFP_DMA;
-> +	else
-> +#endif
->  #if defined(CONFIG_ZONE_DMA32) && defined(CONFIG_ZONE_DMA)
->  	     if (dev->coherent_dma_mask < DMA_BIT_MASK(32))
->  			dma_flag = __GFP_DMA;
+I generally use "git pull" for that, as the man page says that the
+default behavior is to do fast forward:
+       "--ff
+           When the merge resolves as a fast-forward, only update
+	   the branch pointer, without creating a merge commit.=20
+	   This is the default behavior."
 
-Other than that, this patch looks okay to me (but those with more
-experience with MIPS DMA than me may know better).
+It seems that the man page is then outdated for signed tags, or,
+eventually, we need to make --ff explicit on this case.
 
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
+I'll try the approach of merging the associated commit next time,
+but this is something that it is easy to forget.
 
-Thanks
-James
+>=20
+> Linus, any thoughts?
+
+Regards,
+Mauro
+
+--Sig_/DJ1v5vn2Tc2bp4VJHQ+S8vV
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUUg5mAAoJEAhfPr2O5OEV2FYP/1NdlzMt6scV1xO6MsDpU5/D
+spxTMG/SxdWJWYinUinROBWUYHZTyYjSQWYZR9KDJdtMgC9/gldb0PJDF8ntL081
+5upYLzpyMbbrxN7Z0BTzHIQDlxz7rwCA0G6u/pSvPmwPJlfC7Ym0Hix5VE9J4sHg
+EfQMwG5hflZlVIHGb0bzrlVBp8pu1IGlhVxVGt5+H3Kzg8TnButbkmxoDWyIHcSy
+MAQR9/N50/A0sknKWbijqBATxIT+1vrtmMu/KkfMeJlwhFbK+m+ftqW+YIqsrMzY
+3OTwCxgcek4yAM/3JbuP83TYY7NX1cGkeU3rRyltAD3jbTiDfWkkqNV6Q05Htwmp
+dwkKCmGc5jAw4t42KzXsuPnU8+iQlFwiXrXS9o9BxAPdCzjJXZ1n0KlfGWjqevdz
+DmA/lyXMq660Lgy+3aSGOBBj8XJ0rN7O4VSzmmLQO1g1FeTVx/XiGi7ASjaVR4wr
+LeAKLAJ4u53vz1W3Q8OFBDrGsG2OZpBX1QxgPCLFPHKbAkYoeW6x8SBr0erDglcN
+bqwHiKRXrS+dUosOeAbe1WE4g2avKVA5vWhIxf5DNOGbK5EZOkCdLo6S8GczumIK
+LRQ7haCC6L/MFXd1b3W4ypdJpInR9COY+mcMclycyatO2IekixJVVWW6GWk1WEFz
+FCxB078CCZkOoj3kn3lE
+=Q6cJ
+-----END PGP SIGNATURE-----
+
+--Sig_/DJ1v5vn2Tc2bp4VJHQ+S8vV--
