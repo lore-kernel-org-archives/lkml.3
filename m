@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758797AbaJ3KUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:20:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27716 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757283AbaJ3KUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:20:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,284,1413270000"; 
-   d="scan'208";a="628214126"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
-Subject: Re: [PATCH v5 18/20] perf: Allocate ring buffers for inherited per-task kernel events
-In-Reply-To: <20141030084359.GD23531@worktop.programming.kicks-ass.net>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com> <1413207948-28202-19-git-send-email-alexander.shishkin@linux.intel.com> <20141023123855.GC12706@worktop.programming.kicks-ass.net> <87egtx3o95.fsf@ashishki-desk.ger.corp.intel.com> <20141030084359.GD23531@worktop.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 30 Oct 2014 12:20:33 +0200
-Message-ID: <878ujxdfke.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1758949AbaJ3KU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:20:58 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40251 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758922AbaJ3KU4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 06:20:56 -0400
+Message-ID: <5452110C.40108@arm.com>
+Date: Thu, 30 Oct 2014 10:21:00 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: [PATCH 5/6] sched/dl: reschedule if successfully pull earlier
+ deadline task
+References: <1414374067-7209-1-git-send-email-wanpeng.li@linux.intel.com> <1414374067-7209-5-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1414374067-7209-5-git-send-email-wanpeng.li@linux.intel.com>
+X-OriginalArrivalTime: 30 Oct 2014 10:20:52.0348 (UTC) FILETIME=[2ED473C0:01CFF42B]
+X-MC-Unique: 114103010205404801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Hi,
 
-> On Fri, Oct 24, 2014 at 10:44:54AM +0300, Alexander Shishkin wrote:
->> Peter Zijlstra <peterz@infradead.org> writes:
->> 
->> > On Mon, Oct 13, 2014 at 04:45:46PM +0300, Alexander Shishkin wrote:
->> >> Normally, per-task events can't be inherited parents' ring buffers to
->> >> avoid multiple events contending for the same buffer. And since buffer
->> >> allocation is typically done by the userspace consumer, there is no
->> >> practical interface to allocate new buffers for inherited counters.
->> >> 
->> >> However, for kernel users we can allocate new buffers for inherited
->> >> events as soon as they are created (and also reap them on event
->> >> destruction). This pattern has a number of use cases, such as event
->> >> sample annotation and process core dump annotation.
->> >> 
->> >> When a new event is inherited from a per-task kernel event that has a
->> >> ring buffer, allocate a new buffer for this event so that data from the
->> >> child task is collected and can later be retrieved for sample annotation
->> >> or core dump inclusion. This ring buffer is released when the event is
->> >> freed, for example, when the child task exits.
->> >> 
->> >
->> > This causes a pinned memory explosion, not at all nice that.
->> >
->> > I think I see why and all, but it would be ever so good to not have to
->> > allocate so much memory.
->> 
->> Are there any controls we could use to limit such memory usage?
->
-> I'd say the same limit we're already accounting the mmap()s against. But
-> the question is; what do we do when we run out?
->
-> Will we fail clone()? That might 'surprise' quite a few people, that
-> their application won't work when profiled.
+On 27/10/14 01:41, Wanpeng Li wrote:
+> Reschedule if successfully pull earlier deadline task.
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+>  kernel/sched/deadline.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index 97141e2..21de865 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -1583,8 +1583,8 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
+>  	 * this is the right place to try to pull some other one
+>  	 * from an overloaded cpu, if any.
+>  	 */
+> -	if (!rq->dl.dl_nr_running)
+> -		pull_dl_task(rq);
+> +	if (!rq->dl.dl_nr_running && pull_dl_task(rq))
+> +			resched_curr(rq);
 
-Or we just don't allocate any more buffers for this user; if there's a
-perf stream involved, we can output a record saying that.
+Right, we have to reschedule. But, how about we fully align to -rt?
 
-> In any case, lets focus on the other parts of this work and delay this
-> feature till later.
+Peter, is the task_on_rq_queued() check for cases in which p is not
+enqueued but its class changes after a setscheduler/rt_mutex_setprio?
 
-Agreed.
+Thanks,
 
-Regards,
---
-Alex
+- Juri
+
+>From 404749782e493cb6019193f347163b640ebd552d Mon Sep 17 00:00:00 2001
+From: Juri Lelli <juri.lelli@arm.com>
+Date: Thu, 30 Oct 2014 10:15:40 +0000
+Subject: [PATCH] sched/deadline: reschedule from switched_from_dl() after a
+ successful pull
+
+In switched_from_dl() we have to issue a resched if we
+successfully pulled some task from other cpus.
+This patch also aligns the behaviour with -rt.
+
+Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+Suggested-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ kernel/sched/deadline.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index db6ad38..e8943fc 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1623,8 +1623,11 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
+ 	 * this is the right place to try to pull some other one
+ 	 * from an overloaded cpu, if any.
+ 	 */
+-	if (!rq->dl.dl_nr_running)
+-		pull_dl_task(rq);
++	if (!task_on_rq_queued(p) || rq->dl.dl_nr_running)
++		return;
++
++	if (pull_dl_task(rq))
++		resched_curr(rq);
+ #endif
+ }
+ 
+-- 
+2.1.2
+
