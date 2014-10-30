@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928AbaJ3FQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 01:16:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54252 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755607AbaJ3FQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 01:16:50 -0400
-Message-ID: <5451C99C.6040102@ti.com>
-Date: Thu, 30 Oct 2014 10:46:12 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>, <arm@kernel.org>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] MAINTAINERS: drop list entry for davinci
-References: <1414575861-3906-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1414575861-3906-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="windows-1252"
+	id S1757124AbaJ3FS0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 01:18:26 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:63222 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802AbaJ3FSY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 01:18:24 -0400
+Message-ID: <1414646300.5306.22.camel@marge.simpson.net>
+Subject: Re: [PATCH] futex: fix a race condition between REQUEUE_PI and task
+ death
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Brian Silverman <bsilver16384@gmail.com>, tglx@linutronix.de,
+        Austin Schuh <austin.linux@gmail.com>, linux-kernel@vger.kernel.org
+Date: Thu, 30 Oct 2014 06:18:20 +0100
+In-Reply-To: <20141030042852.GI14609@vmdeb7>
+References: <1414092159-17697-1-git-send-email-bsilver16384@gmail.com>
+	 <CAP01z6LSTyS5FDgZTma96BY5eWycpHgECNwZSy2Afyn2UFH5yA@mail.gmail.com>
+	 <20141030042852.GI14609@vmdeb7>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 October 2014 03:14 PM, Lad, Prabhakar wrote:
-> As davinci-linux-open-source@linux.davincidsp.com is now
-> shut and no more maintained by TI, drop this entry from
-> DAVINCI MACHINE SUPPORT and DAVINCI SERIES MEDIA DRIVER.
+On Wed, 2014-10-29 at 21:28 -0700, Darren Hart wrote: 
+> On Thu, Oct 23, 2014 at 03:28:07PM -0400, Brian Silverman wrote:
+> > Here's the test code:
+> > 
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Kevin Hilman <khilman@deeprootsystems.com>
-> Cc: arm@kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
+> I want to say "Thanks!" and pull it into futextest... but destroying filesystems
+> and BIOS errors?!? may not be ideal failure detection modes.
 
-Acked-by: Sekhar Nori <nsekhar@ti.com>
+Yup, suse now has a test farm box with a slightly bent up btrfs root.
+I'll have to remember to poke the install button when I return it :)
 
-Arnd, Kevin, Olof,
+-Mike
 
-Can you please pick this up directly through ARM-SoC tree for next -rc?
-I do not have anything else queued ATM.
-
-Thanks,
-Sekhar
