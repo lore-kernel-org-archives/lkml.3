@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760529AbaJ3T3Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 15:29:16 -0400
-Received: from [103.239.73.48] ([103.239.73.48]:53592 "EHLO a.1-hour-pay.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755251AbaJ3T3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 15:29:15 -0400
-Date: Fri, 31 Oct 2014 03:30:50 +0800
-From: "LED Light" <hw6@a.1-hour-pay.com>
-Reply-To: shadow@hk29.eidc.cn
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: high-power LED SPOT LIGHTS Milky white ceiling lamps
-Message-ID: <201410310330509210470@a.1-hour-pay.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1760773AbaJ3TaP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 15:30:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47330 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaJ3TaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 15:30:13 -0400
+Date: Thu, 30 Oct 2014 20:30:05 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Sasha Levin <sasha.levin@oracle.com>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
+Message-ID: <20141030193005.GX12706@worktop.programming.kicks-ass.net>
+References: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com>
+ <20141030082712.GB4664@dhcp22.suse.cz>
+ <54523DDE.9000904@oracle.com>
+ <20141030141401.GA24520@phnom.home.cmpxchg.org>
+ <54524A2F.5050907@oracle.com>
+ <20141030153159.GA3639@dhcp22.suse.cz>
+ <20141030172632.GA25217@phnom.home.cmpxchg.org>
+ <20141030174241.GD3639@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030174241.GD3639@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9UJTLJZ015077
 
-Dear Mr/MS,
-Very glad to know you are looking for LED panel light and spot light in the market. 
-We are one of the biggest suppliers of LED in China and southeast Asia.
-For more information, please visit our website: http://www.jrs-led.net
-Enclosed is price list and Free sample can be sent to you for testing.
-Waiting for your reply.
- 
-Sincerely
-JRS Technology Co.,Ltd
-shadow
+On Thu, Oct 30, 2014 at 06:42:41PM +0100, Michal Hocko wrote:
+> Well, I would use a typedef to obfuscate those values because nobody
+> except for mem_cgroup_{begin,end}_page_stat should touch them. But we
+> are not doing typedefs in kernel...
 
-Email£º  shadow@JRS-Tech.net
-Skype£º  techjrsb
-MSN£º    techjrsb@msn.cn
-Websit£º www.jrs-led.net
-
-
-we would be grateful if you will be our led lamps catalogue reserved for your supervisoÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+$ git grep typedef | wc -l
+11379
