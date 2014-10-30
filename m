@@ -1,135 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758482AbaJ3IaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 04:30:03 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:43052 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaJ3I37 (ORCPT
+	id S1758521AbaJ3IcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 04:32:20 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:64097 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684AbaJ3IcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 04:29:59 -0400
-Message-ID: <5451F678.5090900@linaro.org>
-Date: Thu, 30 Oct 2014 16:27:36 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 30 Oct 2014 04:32:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, tj@kernel.org, marcel@holtmann.org,
+        desrt@desrt.ca, hadess@hadess.net, dh.herrmann@gmail.com,
+        tixxdz@opendz.org, simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no
+Subject: Re: kdbus: add selftests
+Date: Thu, 30 Oct 2014 09:31:34 +0100
+Message-ID: <27579568.3momLxJBeo@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414620056-6675-13-git-send-email-gregkh@linuxfoundation.org>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <1414620056-6675-13-git-send-email-gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v5 12/18] ACPI / processor: Make it possible to get CPU
- hardware ID via GICC
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-13-git-send-email-hanjun.guo@linaro.org> <20141024173920.GB8303@red-moon> <544E1732.5090902@linaro.org> <20141029104321.GA8896@e102568-lin.cambridge.arm.com>
-In-Reply-To: <20141029104321.GA8896@e102568-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:b1d1t0DkN+nzDZ09EJmQLdY+6kqcO/xTO47lJmtz/UR
+ DKX+azgbo6TUL8AE8YIdxsukgedGknYGbW9yjWcZbEzX0h9bB/
+ AIyDWRg+jzuGYj2kG/O8F0374twHtlCFnlvDkGhwE4WDv1S7FB
+ ZvRiPRAoB9QpLhnV9yabyy2pSJZLTmmXtZVQ9Rci3t4zmIthRH
+ bH5ksHOK1YRz6JydkzsRjS0lI6o6Nk/Y/ziypkD4+XC0a9GwpL
+ yh+im13E3CVK6DzdlkEqLia2L/thclz57yHp7ysuKC/8rxxkqG
+ ZjZkxHy2dmTayardZbLyIKaE11dT4FGN+cneYyzy4EY/8vx2aN
+ XQKYzfaaOf61A76h+DMg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-29 18:43, Lorenzo Pieralisi wrote:
-> On Mon, Oct 27, 2014 at 09:58:10AM +0000, Hanjun Guo wrote:
+On Wednesday 29 October 2014 15:00:56 Greg Kroah-Hartman wrote:
+> From: Daniel Mack <daniel@zonque.org>
 > 
-> [...]
+> This patch adds a quite extensive test suite for kdbus that checks
+> the most important code pathes in the driver. The idea is to extend
+> the test suite over time.
 > 
->>>> +static int map_gicc_mpidr(struct acpi_subtable_header *entry,
->>>> +		int device_declaration, u32 acpi_id, int *mpidr)
->>>> +{
->>>> +	struct acpi_madt_generic_interrupt *gicc =
->>>> +	    container_of(entry, struct acpi_madt_generic_interrupt, header);
->>>> +
->>>> +	if (!(gicc->flags & ACPI_MADT_ENABLED))
->>>> +		return -ENODEV;
->>>> +
->>>> +	/* In the GIC interrupt model, logical processors are
->>>> +	 * required to have a Processor Device object in the DSDT,
->>>> +	 * so we should check device_declaration here
->>>> +	 */
->>>> +	if (device_declaration && (gicc->uid == acpi_id)) {
->>>> +		/*
->>>> +		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
->>>> +		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
->>>> +		 * fields into a single 32 bit identifier to accommodate the
->>>> +		 * acpi processor drivers.
->>>> +		 */
->>>> +		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
->>>> +			 | gicc->arm_mpidr;
->>>
->>> The simple fact that you define a function to pack the mpidr value and
->>> you can't use it here because this is *generic* code is telling, and
->>> a very bad omen. At the cost of sounding like a broken record, I do not
->>> like this mpidr->apic->logical_cpu song and dance at all.
->>> ACPI is peppered with code (eg hotplug is another example, CPUidle driver
->>> even worse) that is supposed to be generic but contains x86 code to carry
->>> out this cpuid conversion, I really think that in order to start an ARM64
->>> ACPI port properly we should at least try to factor out this physical to
->>> logical cpu id conversion, and it is not the first time that I mention this
->>> on the lists.
->>
->> I know, thanks for pointing this out. As I replied in previous version
->> of this patch set, apic_id is x86/ia64 specific, but the meaning behind
->> it is not. It means the CPU hardware id to identify itself in the system,
->> it just like MPIDR on ARM.
+> Also, this code can serve as an example implementation to show how to
+> use the kernel API from userspace.
 > 
-> Yes, except that it is called apic_id.
-> 
->> I will send out a patch for RFC to convert apic_id to physid which
->> is generic for all platforms.
-> 
-> That seems a good idea to sound out if I am the only one having an issue
-> with the current approach.
-> 
->>> I will also talk to Rafael about this at the earliest opportunity, I
->>> guess that x86 code relies on apic-id because some ACPI versions could
->>> not rely on the acpi-id or some other reasons I have to investigate.
->>
->> As ACPI spec (section 8.4, Declaring Processors) said, Each processor
->> in the system must be declared in the ACPI namespace, so each cpu will
->> have acpi_id in all ACPI versions, and in theory we can map acpi_id to
->> logical cpu id if we want to.
->>
->> But things are complicated, apic_id is connected to many
->> tables, MADT for smp init, DSDT for device driver, and SRAT for NUMA (there
->> is no acpi_id in it, ONLY has apic_id in the table for x86/ia64), so if we
->> want to factor the code to map acpi_id to logical cpu id, we need to modify:
->>
->>  - ACPI drivers;
->>  - SMP init for x86 and ia64
->>  - the mappings for NUMA init for x86 and ia64
->> that will be lots of work I think.
->>
->> I'm willing to discuss this further and come out a solution, please
->> comment on what I said and share your ideas :)
-> 
-> Factoring out apic_id to a common cpu_physical_id is ok to me, because
-> basically that's what you are doing except for the naming. I do not
-> have any particular preference for the acpi_id, I mentioned that only
-> as a means to implement a generic cpu_physical_id, arch agnostic.
-> 
-> Drop the RFC you mentioned above please on the list, we will restart debating
-> from there.
+> Signed-off-by: Daniel Mack <daniel@zonque.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Ok, will send out the patch soon.
+Ah, new kernel code that comes with selftests, I'm impressed!
 
-Thanks
-Hanjun
-
+	Arnd
