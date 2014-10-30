@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609AbaJ3Gpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 02:45:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38079 "EHLO
+	id S933718AbaJ3Gp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 02:45:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38084 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758591AbaJ3Gpu (ORCPT
+	with ESMTP id S1758229AbaJ3Gpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 02:45:50 -0400
-Date: Wed, 29 Oct 2014 23:45:12 -0700
-From: tip-bot for Wang Nan <tipbot@zytor.com>
-Message-ID: <tip-ed3077585f2f041e0db0fc41060b69673e98963b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
-        jolsa@redhat.com, mingo@redhat.com, adrian.hunter@intel.com,
-        mingo@kernel.org, tglx@linutronix.de, Waiman.Long@hp.com,
-        acme@redhat.com, paulus@samba.org, lizefan@huawei.com,
-        namhyung.kim@lge.com, wangnan0@huawei.com
-Reply-To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
-        jolsa@redhat.com, Waiman.Long@hp.com, acme@redhat.com,
-        tglx@linutronix.de, mingo@kernel.org, adrian.hunter@intel.com,
-        mingo@redhat.com, lizefan@huawei.com, paulus@samba.org,
-        wangnan0@huawei.com, namhyung.kim@lge.com
-In-Reply-To: <1413428909-80017-1-git-send-email-wangnan0@huawei.com>
-References: <1413428909-80017-1-git-send-email-wangnan0@huawei.com>
+	Thu, 30 Oct 2014 02:45:55 -0400
+Date: Wed, 29 Oct 2014 23:44:55 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-13dcbbc0222f9768394b0a58ab84adcd630f48d6@git.kernel.org>
+Cc: mingo@kernel.org, namhyung@kernel.org, tglx@linutronix.de,
+        hemant@linux.vnet.ibm.com, dsahern@gmail.com, jolsa@redhat.com,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, acme@redhat.com, hpa@zytor.com
+Reply-To: namhyung@kernel.org, dsahern@gmail.com, hemant@linux.vnet.ibm.com,
+        tglx@linutronix.de, mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        jolsa@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, peterz@infradead.org
+In-Reply-To: <1413990949-13953-6-git-send-email-namhyung@kernel.org>
+References: <1413990949-13953-6-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Ensure return negative value when write header error
-Git-Commit-ID: ed3077585f2f041e0db0fc41060b69673e98963b
+Subject: [tip:perf/core] perf probe: Use PARSE_OPT_EXCLUSIVE flag
+Git-Commit-ID: 13dcbbc0222f9768394b0a58ab84adcd630f48d6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,86 +35,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ed3077585f2f041e0db0fc41060b69673e98963b
-Gitweb:     http://git.kernel.org/tip/ed3077585f2f041e0db0fc41060b69673e98963b
-Author:     Wang Nan <wangnan0@huawei.com>
-AuthorDate: Thu, 16 Oct 2014 11:08:29 +0800
+Commit-ID:  13dcbbc0222f9768394b0a58ab84adcd630f48d6
+Gitweb:     http://git.kernel.org/tip/13dcbbc0222f9768394b0a58ab84adcd630f48d6
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Thu, 23 Oct 2014 00:15:49 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 Oct 2014 10:32:48 -0200
+CommitDate: Wed, 29 Oct 2014 10:32:47 -0200
 
-perf tools: Ensure return negative value when write header error
+perf probe: Use PARSE_OPT_EXCLUSIVE flag
 
-When 'perf record' write headers, it calls write_xxx in
-tools/perf/util/header.c, and check return value. It rolls back all
-working only when return value is negative.
+The perf probe command has some exclusive options.  Use new PARSE_OPT_EXCLUSIVE
+flag to simplify the code and show more compact usage.
 
-This patch ensures write_cpudesc() and write_total_mem() return negative number
-when error. Without this patch, headers reported by 'perf report' header is
-error in some platform. Following output is caputured on ARM, which doesn't
-contain "Processor" field in /proc/cpuinfo. See "cpudesc", "total memory" and
-"cmdline" field.
+  $ perf probe -l -a foo
+    Error: switch `a' cannot be used with switch `l'
 
-   bash-4.2# perf record ls
-   ...
-   [ perf record: Woken up 1 times to write data ]
-   [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
-   bash-4.2# perf report --stdio --header
-   Error:
-   The perf.data file has no samples!
-   # ========
-   # captured on: Fri Sep 12 10:09:10 2014
-   # hostname : arma15el
-   # os release : 3.17.0+
-   # perf version : 3.10.53
-   # arch : armv7l
-   # nrcpus online : 4
-   # nrcpus avail : 1
-   # cpudesc : (null)
-   # total memory : 0 kB
-   # cmdline :
-   # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
-   # pmu mappings: not available
-   # ========
-   #
+   usage: perf probe [<options>] 'PROBEDEF' ['PROBEDEF' ...]
+      or: perf probe [<options>] --add 'PROBEDEF' [--add 'PROBEDEF' ...]
+      or: perf probe [<options>] --del '[GROUP:]EVENT' ...
+      or: perf probe --list
+      or: perf probe [<options>] --line 'LINEDESC'
+      or: perf probe [<options>] --vars 'PROBEPOINT'
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+      -a, --add <[EVENT=]FUNC[@SRC][+OFF|%return|:RL|;PT]|SRC:AL|SRC;PT [[NAME=]ARG ...]>
+                            probe point definition, where
+		GROUP:	Group name (optional)
+		EVENT:	Event name
+		FUNC:	Function name
+		OFF:	Offset from function entry (in byte)
+		%return:	Put the probe at function return
+		SRC:	Source code path
+		RL:	Relative line number from function entry.
+		AL:	Absolute line number in file.
+		PT:	Lazy expression of line code.
+		ARG:	Probe argument (local variable name or
+			kprobe-tracer argument format.)
+
+      -l, --list            list up current probe events
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Link: http://lkml.kernel.org/r/1413428909-80017-1-git-send-email-wangnan0@huawei.com
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1413990949-13953-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ tools/perf/builtin-probe.c | 54 ++++++++--------------------------------------
+ 1 file changed, 9 insertions(+), 45 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 26f5b2f..0ecf4a3 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -601,8 +601,10 @@ static int __write_cpudesc(int fd, const char *cpuinfo_proc)
- 			break;
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 7af26ac..2d3577d 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -312,7 +312,7 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ #endif
+ 		NULL
+ };
+-	const struct option options[] = {
++	struct option options[] = {
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show parsed arguments, etc)"),
+ 	OPT_BOOLEAN('l', "list", &params.list_events,
+@@ -382,6 +382,14 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	};
+ 	int ret;
+ 
++	set_option_flag(options, 'a', "add", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'd', "del", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'l', "list", PARSE_OPT_EXCLUSIVE);
++#ifdef HAVE_DWARF_SUPPORT
++	set_option_flag(options, 'L', "line", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'V', "vars", PARSE_OPT_EXCLUSIVE);
++#endif
++
+ 	argc = parse_options(argc, argv, options, probe_usage,
+ 			     PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (argc > 0) {
+@@ -409,22 +417,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
+ 
+ 	if (params.list_events) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --list with --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_lines) {
+-			pr_err("  Error: Don't use --list with --line.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err(" Error: Don't use --list with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_funcs) {
+-			pr_err("  Error: Don't use --list with --funcs.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (params.uprobes) {
+ 			pr_warning("  Error: Don't use --list with --exec.\n");
+ 			usage_with_options(probe_usage, options);
+@@ -435,19 +427,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return ret;
  	}
+ 	if (params.show_funcs) {
+-		if (params.nevents != 0 || params.dellist) {
+-			pr_err("  Error: Don't use --funcs with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_lines) {
+-			pr_err("  Error: Don't use --funcs with --line.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err("  Error: Don't use --funcs with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
+ 						       NULL);
+@@ -462,16 +441,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
  
--	if (ret)
-+	if (ret) {
-+		ret = -1;
- 		goto done;
-+	}
- 
- 	s = buf;
- 
-@@ -965,7 +967,8 @@ static int write_total_mem(int fd, struct perf_header *h __maybe_unused,
- 		n = sscanf(buf, "%*s %"PRIu64, &mem);
- 		if (n == 1)
- 			ret = do_write(fd, &mem, sizeof(mem));
--	}
-+	} else
-+		ret = -1;
- 	free(buf);
- 	fclose(fp);
- 	return ret;
+ #ifdef HAVE_DWARF_SUPPORT
+ 	if (params.show_lines) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --line with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err(" Error: Don't use --line with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-
+ 		ret = show_line_range(&params.line_range, params.target,
+ 				      params.uprobes);
+ 		if (ret < 0)
+@@ -479,11 +448,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return ret;
+ 	}
+ 	if (params.show_vars) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --vars with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_VAR_FILTER,
+ 						       NULL);
