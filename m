@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759543AbaJ3Q1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 12:27:34 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:55961 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758647AbaJ3Q1c (ORCPT
+	id S932956AbaJ3Q27 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 12:28:59 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:59703 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758128AbaJ3Q25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 12:27:32 -0400
+	Thu, 30 Oct 2014 12:28:57 -0400
+Date: Thu, 30 Oct 2014 09:28:52 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Giedrius Statkevicius <giedriuswork@gmail.com>, eric.piel@tremplin-utc.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] platform: hp_accel: add a i8042 filter to remove HPQ6000
+ data from kb bus stream
+Message-ID: <20141030162852.GA36444@dtor-ws>
+References: <1414610182-28702-1-git-send-email-giedriuswork@gmail.com>
+ <20141030014056.GD14609@vmdeb7>
 MIME-Version: 1.0
-In-Reply-To: <545250FD.8030509@fb.com>
-References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
-	<yq1k33il3b3.fsf@sermon.lab.mkp.net>
-	<5451A3F5.9020903@fb.com>
-	<yq1bnoukzhe.fsf@sermon.lab.mkp.net>
-	<545250FD.8030509@fb.com>
-Date: Thu, 30 Oct 2014 09:27:31 -0700
-Message-ID: <CAPcyv4gNwPrcU1CbCfUcnjqFfor5YfX6rynaoZmvEbRQMPvwMA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
-From: Dan Williams <dan.j.williams@intel.com>
-To: Jens Axboe <axboe@fb.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Jason B. Akers" <jason.b.akers@intel.com>,
-        "IDE/ATA development list" <linux-ide@vger.kernel.org>,
-        "Karkra, Kapil" <kapil.karkra@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141030014056.GD14609@vmdeb7>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 7:53 AM, Jens Axboe <axboe@fb.com> wrote:
-> On 2014-10-29 21:28, Martin K. Petersen wrote:
->> The notion of telling the storage *why* you're doing I/O instead of
->> telling it how to manage its cache and where to put stuff is closely
->> aligned with our internal experiences with I/O hints over the last
->> decade. But it's a bit of a departure from where things are going in the
->> standards bodies. In any case I thought it was interesting that pretty
->> much every use case that people came up with could be adequately
->> described by a handful of I/O classes.
->
->
-> Definitely agree on this, it's about notifying storage on what type of IO
-> this is, or why we are doing it. I'm just still worried that this will then
-> end up being unusable by applications, since they can't rely on anything.
-> Say one vendor treats WONTNEED in a much colder fashion than others, the
-> user/application will then complain about the access latencies for the next
-> IO to that location. "Yes it's cold, but I didn't expect it to be THAT cold"
-> and then come to the conclusion that they can't feasibly use these hints as
-> they don't do exactly what they want.
->
-> It'd be nice if we could augment this with a query interface of some sort,
-> that could give the application some idea of what happens for each of the
-> passed in hints. That would improve the situation from a "lets set this hint
-> and hope it does what we think it does" to a more predictable and robust
-> environment.
->
+On Wed, Oct 29, 2014 at 06:40:56PM -0700, Darren Hart wrote:
+> On Wed, Oct 29, 2014 at 09:16:22PM +0200, Giedrius Statkevicius wrote:
+> > Add a i8042 filter to hp_accel to remove accelerometer's data with acpi
+> > id HPQ6000 from keyboard bus stream. The codes sent by accelerometer are
+> > e0 25, e0 26, e0 27 and e0 28. The relevant information is already
+> > passed through /dev/freefall so no need to send these undocumented weird
+> > signals through the keyboard bus. Also, unclogs `dmesg` because atkbd
+> > complained about weird scan codes, saves processing power and disk
+> > space.
+> > 
+> > Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
+> > ---
+> > First of all, any Tested-Bys are very welcome by people who also have a
+> > accelerometer with acpi id HPQ6000. If it happens with HPQ6007 too we
+> > can easily modify this to install the filter when HPQ6007 is detected.
+> > For the time being the filter is only installed when HPQ6000 is
+> > detected. 
+> > 
+> > Now moving to what was changed since the RFC. I reworked the filter
+> > function to hopefully make it more clear what it is doing. Since the
+> > codes sent by the accelerometer are extended then we need to filter all
+> > of 0xe0's and then send one 0xe0 back when the actual key isn't in the
+> > range of 0x25-0x28. Also, I've removed the check for errors for
+> > i8042_install_filter() because it's unnecessary to check if it failed.
+> > If multiple HPQ6000's are in the system then no issue occurs even if
+> > multiple i8042_install_filter() are issued because this is handled by
+> > i8042 and it's smart enough not to install the same filter two or more
+> > times.
+> > 
+> >  drivers/platform/x86/hp_accel.c | 45 ++++++++++++++++++++++++++++++++++++++++-
+> >  1 file changed, 44 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
+> > index 13e14ec..a751621 100644
+> > --- a/drivers/platform/x86/hp_accel.c
+> > +++ b/drivers/platform/x86/hp_accel.c
+> > @@ -38,6 +38,8 @@
+> >  #include <linux/atomic.h>
+> >  #include <linux/acpi.h>
+> >  #include "../../misc/lis3lv02d/lis3lv02d.h"
+> > +#include <linux/i8042.h>
+> > +#include <linux/serio.h>
+> 
+> Please include before the relative path includes.
+> 
+> Otherwise, I'm happy with this - but I'd like a serio / i8042 person to weigh
+> in.... Dmitry?
 
-I'm skeptical we (Linux kernel) can ever get this right.  If an
-application wants strict determinism in the meaning of hints it seems
-it will need to qualify them against component-vendor /
-platform-vendor provided transport-translation.  For this RFC we had
-consumer platforms in mind where "mostly better than baseline" is the
-acceptance criteria vs "hard QOS".
+Yes, this is fine. Such uses with platform injecting weird bits into
+keyboard/mouse data stream was the reason for introducing i8042 filter
+facility.
+
+I ma not sure what is more efficient, a case with 5 branches or
+strchr(), but regardless:
+
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+Thanks.
+
+-- 
+Dmitry
