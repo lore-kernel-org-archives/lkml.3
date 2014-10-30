@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759980AbaJ3NbP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:31:15 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54417 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759803AbaJ3NbN (ORCPT
+	id S1760003AbaJ3Ncx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:32:53 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37331 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759506AbaJ3Ncw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:31:13 -0400
-Date: Thu, 30 Oct 2014 11:31:00 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com
-Subject: Re: [PATCH v5 18/20] perf: Allocate ring buffers for inherited
- per-task kernel events
-Message-ID: <20141030133100.GB1313@kernel.org>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1413207948-28202-19-git-send-email-alexander.shishkin@linux.intel.com>
- <20141023123855.GC12706@worktop.programming.kicks-ass.net>
- <87egtx3o95.fsf@ashishki-desk.ger.corp.intel.com>
- <20141030084359.GD23531@worktop.programming.kicks-ass.net>
+	Thu, 30 Oct 2014 09:32:52 -0400
+Message-ID: <54523DDE.9000904@oracle.com>
+Date: Thu, 30 Oct 2014 09:32:14 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030084359.GD23531@worktop.programming.kicks-ass.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Michal Hocko <mhocko@suse.cz>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, riel@redhat.com,
+        hannes@cmpxchg.org, peterz@infradead.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
+References: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com> <20141030082712.GB4664@dhcp22.suse.cz>
+In-Reply-To: <20141030082712.GB4664@dhcp22.suse.cz>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Oct 30, 2014 at 09:43:59AM +0100, Peter Zijlstra escreveu:
-> On Fri, Oct 24, 2014 at 10:44:54AM +0300, Alexander Shishkin wrote:
-> > Peter Zijlstra <peterz@infradead.org> writes:
-> > > On Mon, Oct 13, 2014 at 04:45:46PM +0300, Alexander Shishkin wrote:
-> > >> When a new event is inherited from a per-task kernel event that has a
-> > >> ring buffer, allocate a new buffer for this event so that data from the
-> > >> child task is collected and can later be retrieved for sample annotation
-> > >> or core dump inclusion. This ring buffer is released when the event is
-> > >> freed, for example, when the child task exits.
+On 10/30/2014 04:27 AM, Michal Hocko wrote:
+> On Wed 29-10-14 21:44:24, Sasha Levin wrote:
+>> > Commit "mm: memcontrol: fix missed end-writeback page accounting" has changed
+>> > the behaviour of mem_cgroup_begin_page_stat() to not always set the "locked"
+>> > parameter.
+>> > 
+>> > We should initialize it at the callers to prevent garbage being used in a
+>> > later call to mem_cgroup_end_page_stat().
+> The contract is that if the returned memcg is non-NULL then the locked
+> is always initialized. Nobody but mem_cgroup_end_page_stat should touch
+> this variable and this function makes sure it uses it properly. Similar
+> applies to flags which is initialized only if we really take the slow
+> path (has a meaning only if locked == true).
+> 
+> So this is not really needed. Was this triggered by a compiler warning?
 
-> > > This causes a pinned memory explosion, not at all nice that.
+The problem is that you are attempting to read 'locked' when you call
+mem_cgroup_end_page_stat(), so it gets used even before you enter the
+function - and using uninitialized variables is undefined.
 
-> > > I think I see why and all, but it would be ever so good to not have to
-> > > allocate so much memory.
+Yes, it's a compiler warning.
 
-> > Are there any controls we could use to limit such memory usage?
 
-> I'd say the same limit we're already accounting the mmap()s against. But
-> the question is; what do we do when we run out?
+Thanks,
+Sasha
 
-> Will we fail clone()? That might 'surprise' quite a few people, that
-
-> their application won't work when profiled.
-
-Can't we just emit PERF_RECORD_THROTTLE or similar stuff then? I.e.
-somehow mark the cloned process as not being profiled due to ENOMEM?
-
-- Arnaldo
