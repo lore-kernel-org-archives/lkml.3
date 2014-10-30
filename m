@@ -1,94 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933897AbaJ3Man (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 08:30:43 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:10650 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759052AbaJ3Maj (ORCPT
+	id S1759410AbaJ3MhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 08:37:04 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:27933 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269AbaJ3MhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 08:30:39 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-89-54522f6d59bb
-Message-id: <1414672235.23399.7.camel@AMDC1943>
-Subject: Re: [RFT v3 06/14] regulator: max77802: Remove support for board files
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Date: Thu, 30 Oct 2014 13:30:35 +0100
-In-reply-to: <54522D2C.9050002@collabora.co.uk>
-References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
- <1414668053-31370-7-git-send-email-k.kozlowski@samsung.com>
- <54522615.7040002@collabora.co.uk> <1414671037.23399.2.camel@AMDC1943>
- <54522D2C.9050002@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
+	Thu, 30 Oct 2014 08:37:01 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-d9-545230eabac5
+Message-id: <545230E8.5060100@samsung.com>
+Date: Thu, 30 Oct 2014 13:36:56 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
 MIME-version: 1.0
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drm/exynos: remove ifdeferry from initialization code
+References: <1410349980-10473-1-git-send-email-a.hajda@samsung.com>
+In-reply-to: <1410349980-10473-1-git-send-email-a.hajda@samsung.com>
+Content-type: text/plain; charset=windows-1252
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t/xq7q5+kEhBqubmSw2zljPajFp3QEm
-	i6kPn7BZXP/ynNVi/pFzrBZHfxdY9C64ymZxtukNu8X9r0cZLb5d6WCy2PT4GqvF5V1z2Cxm
-	nN/HZHH7Mq/F2iN32S1Od7M6CHi0NPewefx9fp3F4++qF8weO2fdZffYtKqTzePOtT1sHvNO
-	BnpsXlLv0bdlFaPH501yAVxRXDYpqTmZZalF+nYJXBl3d3kVPOCt+PFzMmMDYyd3FyMHh4SA
-	icTNtfFdjJxAppjEhXvr2boYuTiEBJYySrR/2soO4XxmlPj6r4URpIpXQF9i37xvzCC2sIC/
-	RPffyawgNpuAscTm5UvYQGwRATuJG6sfMoM0MwscZpFY9OA6WIJFQFXi97t5LCA2J9CgY0cX
-	scJtuNPyGWwDs4C6xKR5i5ghzlOWaOx3g1gsKPFj8j0WiBJ5ic1r3jJPYBSYhaRjFpKyWUjK
-	FjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P3cQIibMvOxgXH7M6xCjAwajEw+uwMSBEiDWx
-	rLgy9xCjBAezkgjvUZ2gECHelMTKqtSi/Pii0pzU4kOMTBycUg2Mjhsjn+qbdJgU/EvR8hA7
-	9Ea7M8rxz6ltCn2bpVaf11GWPvLpcuykfMHfxoqTlv66oNT+kSHuX8/j/k7b8k5jw5Znz+4f
-	OmSkfzvo9iqbrjfP+RmLfq66c0b1ckKr75z1s764X2s96LIws6HI51+2hMsZ2a9bfK+7cGse
-	e6wQ8X7p7/THs/oUlViKMxINtZiLihMBgqQLgJECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xK7qvDIJCDB58YbPoPXeSyeLK1/ds
+	FpPuT2CxeHHvIotF74KrbBZnm96wW1zeNYfNYsb5fUwWMya/ZHPg9Nj+7QGrx/3u40wefVtW
+	MXp83iQXwBLFZZOSmpNZllqkb5fAlXHzxzz2gh7Pisk3XzA2MB616WLk5JAQMJGYd30jC4Qt
+	JnHh3no2EFtIYCmjxMlGnS5GLiD7E6PE9I8bwRK8AloSbV0QNouAqsSGL4eZQWw2AU2Jv5tv
+	gsVFBSIkrqyZwwhRLyjxY/I9sAUiAsoSq/a1s4MMZRboZJaYO+cBWJGwgJfE2dv/2SE2O0tc
+	nn4fbBCngIvEzdNHgeIcQA16EvcvaoGEmQXkJTavecs8gVFgFpIVsxCqZiGpWsDIvIpRNLU0
+	uaA4KT3XUK84Mbe4NC9dLzk/dxMjJNi/7GBcfMzqEKMAB6MSD6/DxoAQIdbEsuLK3EOMEhzM
+	SiK8R3WCQoR4UxIrq1KL8uOLSnNSiw8xMnFwSjUwJuloa1YwvJ4qFqtm0rRt8uFNz8ztbd5y
+	39sbd9xz15movvkKP25oGNqaCkeynlL3lV7slP6rVXG1d8bno7PN1+4NMLnvfutQTLsJR6P5
+	rd6HNd0W53nYI1vb4q7o7rv0l6fBprB4ef8aX+En957feHC9yV25eVtfw8WOtC/Td6zbpzRP
+	vvqSEktxRqKhFnNRcSIA4kbnjFQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-10-30 at 13:21 +0100, Javier Martinez Canillas wrote:
-> Hello Krzysztof,
-> 
-> On 10/30/2014 01:10 PM, Krzysztof Kozlowski wrote:
-> >> 
-> >> I may be missing something but I don't understand why a compatible string
-> >> for the regulators sub-node is needed. Isn't enough to just fill the
-> >> .regulators_node field in the struct regulator_desc? e.g:
-> >> 
-> >>     .regulators_node = of_match_ptr("regulators") for max77802
-> >>     .regulators_node = of_match_ptr("voltage-regulators") for max77686
-> >> 
-> >> AFAIU this should be enough for the core to extract the init_data and will
-> >> make your change much more simpler and you can drop patches 1-3 and 13-14.
-> >> 
-> >> Or maybe I misread the regulator_of_get_init_data() function?
-> > 
-> > The regulator_of_get_init_data() searches from dev->of_node or its child
-> > node.
-> > 
-> > But dev->of_node is NULL.
-> > 
-> > That's why of_compatible is needed.
-> 
-> Yes but regulator_register() does dev = config->dev and config->dev is set
-> to config.dev = iodev->dev in the driver probe function which is the
-> pdev->dev.parent (the PMIC struct device) that has an associated of_node.
-> 
-> So, regulator_of_get_init_data() will call of_get_child_by_name() passing
-> the PMIC of_node and the sub-node name that contains the regulators. That
-> is, whatever was set in desc->regulators_node and that should be enough.
+On 09/10/2014 01:53 PM, Andrzej Hajda wrote:
+> The patch replaces separate calls to driver (de)registration by
+> loops over the array of drivers. As a result it significantly
+> decreases number of ifdefs. Additionally it moves device registration
+> related ifdefs to header file.
+>
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 
-I missed that one in max77802 (in max77686: config.dev = &pdev->dev).
-Now I wonder if it is proper to attach regulators to driver's parent
-device. Consider regulator_register, around line 3640:
-	rdev->dev.parent = dev;
-The parent of regulators will be equal to parent of regulator driver -
-main MFD driver.
+ping
 
-Best regards,
-Krzysztof
+Regards
+Andrzej
 
+> ---
+> Hi Inki,
+>
+> During testing your component match support patch [1] I have prepared patch
+> removing most ifdefs from exynos_drm_drv.c. It is based on your patch, but
+> I can rebase it if necessary.
+>
+> [1]: http://permalink.gmane.org/gmane.linux.kernel.samsung-soc/37031
+>
+> Regards
+> Andrzej
+> ---
+>  drivers/gpu/drm/exynos/exynos_drm_drv.c | 170 +++++++-------------------------
+>  drivers/gpu/drm/exynos/exynos_drm_drv.h |  25 +++--
+>  2 files changed, 48 insertions(+), 147 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> index b2c710a..a660e46 100644
+> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> @@ -553,74 +553,54 @@ static const struct component_master_ops exynos_drm_ops = {
+>  	.unbind		= exynos_drm_unbind,
+>  };
+>  
+> -static int exynos_drm_platform_probe(struct platform_device *pdev)
+> -{
+> -	struct component_match *match;
+> -	int ret;
+> -
+> -	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+> -	exynos_drm_driver.num_ioctls = ARRAY_SIZE(exynos_ioctls);
+> -
+> +static struct platform_driver * const exynos_drm_drivers[] = {
+>  #ifdef CONFIG_DRM_EXYNOS_FIMD
+> -	ret = platform_driver_register(&fimd_driver);
+> -	if (ret < 0)
+> -		return ret;
+> +	&fimd_driver,
+>  #endif
+> -
+>  #ifdef CONFIG_DRM_EXYNOS_DP
+> -	ret = platform_driver_register(&dp_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_fimd_drv;
+> +	&dp_driver,
+>  #endif
+> -
+>  #ifdef CONFIG_DRM_EXYNOS_DSI
+> -	ret = platform_driver_register(&dsi_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_dp_drv;
+> +	&dsi_driver,
+>  #endif
+> -
+>  #ifdef CONFIG_DRM_EXYNOS_HDMI
+> -	ret = platform_driver_register(&mixer_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_dsi_drv;
+> -	ret = platform_driver_register(&hdmi_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_mixer_drv;
+> +	&mixer_driver,
+> +	&hdmi_driver,
+>  #endif
+> -
+>  #ifdef CONFIG_DRM_EXYNOS_G2D
+> -	ret = platform_driver_register(&g2d_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_hdmi_drv;
+> +	&g2d_driver,
+>  #endif
+> -
+>  #ifdef CONFIG_DRM_EXYNOS_FIMC
+> -	ret = platform_driver_register(&fimc_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_g2d_drv;
+> +	&fimc_driver,
+>  #endif
+> -
+>  #ifdef CONFIG_DRM_EXYNOS_ROTATOR
+> -	ret = platform_driver_register(&rotator_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_fimc_drv;
+> +	&rotator_driver,
+>  #endif
+> -
+>  #ifdef CONFIG_DRM_EXYNOS_GSC
+> -	ret = platform_driver_register(&gsc_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_rotator_drv;
+> +	&gsc_driver,
+>  #endif
+> -
+>  #ifdef CONFIG_DRM_EXYNOS_IPP
+> -	ret = platform_driver_register(&ipp_driver);
+> -	if (ret < 0)
+> -		goto err_unregister_gsc_drv;
+> +	&ipp_driver,
+> +#endif
+> +};
+> +
+> +static int exynos_drm_platform_probe(struct platform_device *pdev)
+> +{
+> +	struct component_match *match;
+> +	int ret, i;
+> +
+> +	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+> +	exynos_drm_driver.num_ioctls = ARRAY_SIZE(exynos_ioctls);
+> +
+> +	for (i = 0; i < ARRAY_SIZE(exynos_drm_drivers); ++i) {
+> +		ret = platform_driver_register(exynos_drm_drivers[i]);
+> +		if (ret < 0)
+> +			goto err_unregister_drivers;
+> +	}
+>  
+>  	ret = exynos_platform_device_ipp_register();
+>  	if (ret < 0)
+> -		goto err_unregister_ipp_drv;
+> -#endif
+> +		goto err_unregister_drivers;
+>  
+>  	match = exynos_drm_match_add(&pdev->dev);
+>  	if (IS_ERR(match)) {
+> @@ -632,96 +612,24 @@ static int exynos_drm_platform_probe(struct platform_device *pdev)
+>  						match);
+>  
+>  err_unregister_ipp_dev:
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_IPP
+>  	exynos_platform_device_ipp_unregister();
+> -err_unregister_ipp_drv:
+> -	platform_driver_unregister(&ipp_driver);
+> -err_unregister_gsc_drv:
+> -#endif
+>  
+> -#ifdef CONFIG_DRM_EXYNOS_GSC
+> -	platform_driver_unregister(&gsc_driver);
+> -err_unregister_rotator_drv:
+> -#endif
+> +err_unregister_drivers:
+> +	while (--i >= 0)
+> +		platform_driver_unregister(exynos_drm_drivers[i]);
+>  
+> -#ifdef CONFIG_DRM_EXYNOS_ROTATOR
+> -	platform_driver_unregister(&rotator_driver);
+> -err_unregister_fimc_drv:
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_FIMC
+> -	platform_driver_unregister(&fimc_driver);
+> -err_unregister_g2d_drv:
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_G2D
+> -	platform_driver_unregister(&g2d_driver);
+> -err_unregister_hdmi_drv:
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_HDMI
+> -	platform_driver_unregister(&hdmi_driver);
+> -err_unregister_mixer_drv:
+> -	platform_driver_unregister(&mixer_driver);
+> -err_unregister_dsi_drv:
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_DSI
+> -	platform_driver_unregister(&dsi_driver);
+> -err_unregister_dp_drv:
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_DP
+> -	platform_driver_unregister(&dp_driver);
+> -err_unregister_fimd_drv:
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_FIMD
+> -	platform_driver_unregister(&fimd_driver);
+> -#endif
+>  	return ret;
+>  }
+>  
+>  static int exynos_drm_platform_remove(struct platform_device *pdev)
+>  {
+> -#ifdef CONFIG_DRM_EXYNOS_IPP
+> -	exynos_platform_device_ipp_unregister();
+> -	platform_driver_unregister(&ipp_driver);
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_GSC
+> -	platform_driver_unregister(&gsc_driver);
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_ROTATOR
+> -	platform_driver_unregister(&rotator_driver);
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_FIMC
+> -	platform_driver_unregister(&fimc_driver);
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_G2D
+> -	platform_driver_unregister(&g2d_driver);
+> -#endif
+> -
+> -#ifdef CONFIG_DRM_EXYNOS_HDMI
+> -	platform_driver_unregister(&mixer_driver);
+> -	platform_driver_unregister(&hdmi_driver);
+> -#endif
+> +	int i;
+>  
+> -#ifdef CONFIG_DRM_EXYNOS_FIMD
+> -	platform_driver_unregister(&fimd_driver);
+> -#endif
+> +	exynos_platform_device_ipp_unregister();
+>  
+> -#ifdef CONFIG_DRM_EXYNOS_DSI
+> -	platform_driver_unregister(&dsi_driver);
+> -#endif
+> +	for (i = ARRAY_SIZE(exynos_drm_drivers) - 1; i >= 0; --i)
+> +		platform_driver_unregister(exynos_drm_drivers[i]);
+>  
+> -#ifdef CONFIG_DRM_EXYNOS_DP
+> -	platform_driver_unregister(&dp_driver);
+> -#endif
+>  	component_master_del(&pdev->dev, &exynos_drm_ops);
+>  	return 0;
+>  }
+> @@ -745,11 +653,9 @@ static int exynos_drm_init(void)
+>  	if (IS_ERR(exynos_drm_pdev))
+>  		return PTR_ERR(exynos_drm_pdev);
+>  
+> -#ifdef CONFIG_DRM_EXYNOS_VIDI
+>  	ret = exynos_drm_probe_vidi();
+>  	if (ret < 0)
+>  		goto err_unregister_pd;
+> -#endif
+>  
+>  	ret = platform_driver_register(&exynos_drm_platform_driver);
+>  	if (ret)
+> @@ -758,11 +664,9 @@ static int exynos_drm_init(void)
+>  	return 0;
+>  
+>  err_remove_vidi:
+> -#ifdef CONFIG_DRM_EXYNOS_VIDI
+>  	exynos_drm_remove_vidi();
+>  
+>  err_unregister_pd:
+> -#endif
+>  	platform_device_unregister(exynos_drm_pdev);
+>  
+>  	return ret;
+> @@ -771,9 +675,9 @@ err_unregister_pd:
+>  static void exynos_drm_exit(void)
+>  {
+>  	platform_driver_unregister(&exynos_drm_platform_driver);
+> -#ifdef CONFIG_DRM_EXYNOS_VIDI
+> +
+>  	exynos_drm_remove_vidi();
+> -#endif
+> +
+>  	platform_device_unregister(exynos_drm_pdev);
+>  }
+>  
+> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.h b/drivers/gpu/drm/exynos/exynos_drm_drv.h
+> index 69a6fa3..76d5d02 100644
+> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.h
+> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.h
+> @@ -324,15 +324,14 @@ int exynos_platform_device_hdmi_register(void);
+>   */
+>  void exynos_platform_device_hdmi_unregister(void);
+>  
+> -/*
+> - * this function registers exynos drm ipp platform device.
+> - */
+> +#ifdef CONFIG_DRM_EXYNOS_IPP
+>  int exynos_platform_device_ipp_register(void);
+> -
+> -/*
+> - * this function unregisters exynos drm ipp platform device if it exists.
+> - */
+>  void exynos_platform_device_ipp_unregister(void);
+> +#else
+> +static inline int exynos_platform_device_ipp_register(void) { return 0; }
+> +static inline void exynos_platform_device_ipp_unregister(void) {}
+> +#endif
+> +
+>  
+>  #ifdef CONFIG_DRM_EXYNOS_DPI
+>  struct exynos_drm_display * exynos_dpi_probe(struct device *dev);
+> @@ -343,15 +342,13 @@ exynos_dpi_probe(struct device *dev) { return NULL; }
+>  static inline int exynos_dpi_remove(struct device *dev) { return 0; }
+>  #endif
+>  
+> -/*
+> - * this function registers exynos drm vidi platform device/driver.
+> - */
+> +#ifdef CONFIG_DRM_EXYNOS_VIDI
+>  int exynos_drm_probe_vidi(void);
+> -
+> -/*
+> - * this function unregister exynos drm vidi platform device/driver.
+> - */
+>  void exynos_drm_remove_vidi(void);
+> +#else
+> +static inline int exynos_drm_probe_vidi(void) { return 0; }
+> +static inline void exynos_drm_remove_vidi(void) {}
+> +#endif
+>  
+>  /* This function creates a encoder and a connector, and initializes them. */
+>  int exynos_drm_create_enc_conn(struct drm_device *dev,
 
