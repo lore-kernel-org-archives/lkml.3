@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760261AbaJ3RlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:41:25 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:52751 "EHLO
+	id S1760617AbaJ3Rl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:41:28 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:52774 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758245AbaJ3RlY (ORCPT
+	with ESMTP id S1759251AbaJ3Rl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:41:24 -0400
+	Thu, 30 Oct 2014 13:41:26 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
         kishon@ti.com, stern@rowland.harvard.edu
@@ -15,95 +15,44 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v8 0/7] usb: add support for the generic PHY framework
-Date: Thu, 30 Oct 2014 18:41:12 +0100
-Message-Id: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v8 3/7] usb: add support to the generic PHY framework in OTG
+Date: Thu, 30 Oct 2014 18:41:15 +0100
+Message-Id: <1414690879-7184-4-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The series can be found at:
-git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+This patch adds support of the PHY framework in OTG and keeps the USB
+PHY compatibility. Here the only modification is to add PHY member in
+the OTG structure, along with the USB PHY one.
 
-Changes since v7:
-	- rebased on top of Felipe's testing/next branch
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+---
+ include/linux/usb/otg.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Changes since v6:
-	- rebased on top of v3.18-rc2
-
-Changes since v5:
-        - rebased on the latest version of Sergei's series[1]
-        - fixed one modifiaction made in the wrong patch
-
-Changes since v4:
-        - reworked the PHY handling in ci_hdrc_probe()
-        - fixed a rebase error
-
-Changes since v3:
-        - moved phy_exit() after phy_power_on()
-        - fixed the PHY handling in ci_hdrc_probe()
-        - some little fixes
-
-Changes since v2:
-        - rebased the series on top of v3.17-rc1
-        - switched to devm_phy_get() to handle non DT cases
-        - moved usb_otg into the ci_hdrc structure
-
-Changes since v1:
-        - rebased the series on top of [2] (generic PHY support for HCD)
-        - split s/phy/usb_phy/ renaming and generic PHY support in separate
-          patches
-
-[1] https://www.mail-archive.com/linux-usb%40vger.kernel.org/msg48068.html
-
-Antoine Tenart (7):
-  usb: move the OTG state from the USB PHY to the OTG structure
-  usb: rename phy to usb_phy in OTG
-  usb: add support to the generic PHY framework in OTG
-  usb: allow to supply the PHY in the drivers when using HCD
-  usb: chipidea: rename transceiver and phy to usb_phy
-  usb: chipidea: move usb_otg into struct ci_hdrc
-  usb: chipidea: add support to the generic PHY framework
-
- drivers/phy/phy-omap-usb2.c         | 14 ++----
- drivers/usb/chipidea/ci.h           |  8 +++-
- drivers/usb/chipidea/ci_hdrc_imx.c  |  2 +-
- drivers/usb/chipidea/ci_hdrc_msm.c  |  8 ++--
- drivers/usb/chipidea/core.c         | 89 ++++++++++++++++++++++++++--------
- drivers/usb/chipidea/debug.c        |  2 +-
- drivers/usb/chipidea/host.c         | 10 ++--
- drivers/usb/chipidea/otg_fsm.c      | 30 +++++-------
- drivers/usb/chipidea/udc.c          |  4 +-
- drivers/usb/common/usb-otg-fsm.c    |  8 ++--
- drivers/usb/core/hcd.c              |  7 +--
- drivers/usb/host/ohci-omap.c        |  2 +-
- drivers/usb/musb/am35x.c            | 28 +++++------
- drivers/usb/musb/blackfin.c         | 18 +++----
- drivers/usb/musb/da8xx.c            | 28 +++++------
- drivers/usb/musb/davinci.c          | 18 +++----
- drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++------------------
- drivers/usb/musb/musb_dsps.c        | 26 +++++-----
- drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
- drivers/usb/musb/musb_host.c        |  8 ++--
- drivers/usb/musb/musb_virthub.c     | 22 ++++-----
- drivers/usb/musb/omap2430.c         | 30 ++++++------
- drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
- drivers/usb/musb/ux500.c            | 10 ++--
- drivers/usb/phy/phy-ab8500-usb.c    | 16 +++----
- drivers/usb/phy/phy-fsl-usb.c       | 23 ++++-----
- drivers/usb/phy/phy-generic.c       |  6 +--
- drivers/usb/phy/phy-gpio-vbus-usb.c | 14 +++---
- drivers/usb/phy/phy-isp1301-omap.c  | 10 ++--
- drivers/usb/phy/phy-msm-usb.c       | 95 +++++++++++++++++++------------------
- drivers/usb/phy/phy-mv-usb.c        | 50 +++++++++----------
- drivers/usb/phy/phy-tahvo.c         |  8 ++--
- drivers/usb/phy/phy-ulpi.c          |  6 +--
- include/linux/usb/chipidea.h        |  4 +-
- include/linux/usb/otg.h             |  7 ++-
- include/linux/usb/phy.h             |  1 -
- 36 files changed, 420 insertions(+), 362 deletions(-)
-
+diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
+index 978fbbb0e266..52661c5da690 100644
+--- a/include/linux/usb/otg.h
++++ b/include/linux/usb/otg.h
+@@ -9,11 +9,14 @@
+ #ifndef __LINUX_USB_OTG_H
+ #define __LINUX_USB_OTG_H
+ 
++#include <linux/phy/phy.h>
+ #include <linux/usb/phy.h>
+ 
+ struct usb_otg {
+ 	u8			default_a;
+ 
++	struct phy		*phy;
++	/* old usb_phy interface */
+ 	struct usb_phy		*usb_phy;
+ 	struct usb_bus		*host;
+ 	struct usb_gadget	*gadget;
 -- 
 2.1.0
 
