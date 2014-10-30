@@ -1,92 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161229AbaJ3Q7S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 12:59:18 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51070 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933737AbaJ3Q7Q (ORCPT
+	id S1161238AbaJ3Q7i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 12:59:38 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:60485 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933566AbaJ3Q7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 12:59:16 -0400
-Date: Thu, 30 Oct 2014 16:59:07 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO
- accessors
-Message-ID: <20141030165907.GK32589@arm.com>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
- <2811016.mhqlsl6pTS@wuerfel>
+	Thu, 30 Oct 2014 12:59:36 -0400
+From: Giedrius Statkevicius <giedriuswork@gmail.com>
+To: eric.piel@tremplin-utc.net
+Cc: dvhart@infradead.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
+        =?UTF-8?q?Giedrius=20Statkevi=C4=8Dius?= <giedriuswork@gmail.com>
+Subject: [PATCH v2] platform: hp_accel: add a i8042 filter to remove HPQ6000 data from kb bus stream
+Date: Thu, 30 Oct 2014 18:57:47 +0200
+Message-Id: <1414688267-29676-1-git-send-email-giedriuswork@gmail.com>
+X-Mailer: git-send-email 2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2811016.mhqlsl6pTS@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Add a i8042 filter to hp_accel to remove accelerometer's data with acpi
+id HPQ6000 from keyboard bus stream. The codes sent by accelerometer are
+e0 25, e0 26, e0 27 and e0 28. The relevant information is already
+passed through /dev/freefall so no need to send these undocumented weird
+signals through the keyboard bus. Also, unclogs `dmesg` because atkbd
+complained about weird scan codes, saves processing power and disk
+space.
 
-On Thu, Sep 25, 2014 at 02:15:10PM +0100, Arnd Bergmann wrote:
-> On Wednesday 24 September 2014 18:17:19 Will Deacon wrote:
-> > Hello everybody,
-> > 
-> > This is version three of the series I've originally posted here:
-> > 
-> >   v1: https://lkml.org/lkml/2014/4/17/269
-> >   v2: https://lkml.org/lkml/2014/5/22/468
-> > 
-> > This is basically just a rebase on top of 3.17-rc6, minus the alpha patch
-> > (which was merged into mainline).
-> > 
-> > I looked at reworking the non-relaxed accessors to imply mmiowb, but it
-> > quickly got messy as some architectures (e.g. mips) deliberately keep
-> > mmiowb and readX/writeX separate whilst others (e.g. powerpc) don't trust
-> > drivers to get mmiowb correct, so add barriers to both. Given that
-> > arm/arm64/x86 don't care about mmiowb, I've left that as an exercise for
-> > an architecture that does care.
-> > 
-> > In order to get this lot merged, we probably want to merge the asm-generic
-> > patch (1/17) first, so Acks would be much appreciated on the architecture
-> > bits.
-> > 
-> > As before, I've included the original cover letter below, as that describes
-> > what I'm trying to do in more detail.
-> > 
-> 
-> I've now applied the parts of your series that are required to have
-> every architecture provide all the 'relaxed' accessors to the
-> asm-generic tree, on top of Thierry's series.
+Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+Changes in v2:
+* Remove a unnecessary deletion of a blank line
+* Move #includes of i8042.h and serio.h before the relative path
+  includes.
 
-Since these didn't make it for 3.18, would you like me to repost the series,
-or do you already have a branch suitable for 3.19?
+First of all, any Tested-Bys are very welcome by people who also have a
+accelerometer with acpi id HPQ6000. If it happens with HPQ6007 too we
+can easily modify this to install the filter when HPQ6007 is detected.
+For the time being the filter is only installed when HPQ6000 is
+detected. 
 
-Cheers,
+Now moving to what was changed since the RFC. I reworked the filter
+function to hopefully make it more clear what it is doing. Since the
+codes sent by the accelerometer are extended then we need to filter all
+of 0xe0's and then send one 0xe0 back when the actual key isn't in the
+range of 0x25-0x28. Also, I've removed the check for errors for
+i8042_install_filter() because it's unnecessary to check if it failed.
+If multiple HPQ6000's are in the system then no issue occurs even if
+multiple i8042_install_filter() are issued because this is handled by
+i8042 and it's smart enough not to install the same filter two or more
+times.
 
-Will
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=84941.
+
+ drivers/platform/x86/hp_accel.c | 44 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
+index 13e14ec..6bec745 100644
+--- a/drivers/platform/x86/hp_accel.c
++++ b/drivers/platform/x86/hp_accel.c
+@@ -37,6 +37,8 @@
+ #include <linux/leds.h>
+ #include <linux/atomic.h>
+ #include <linux/acpi.h>
++#include <linux/i8042.h>
++#include <linux/serio.h>
+ #include "../../misc/lis3lv02d/lis3lv02d.h"
+ 
+ #define DRIVER_NAME     "hp_accel"
+@@ -73,6 +75,13 @@ static inline void delayed_sysfs_set(struct led_classdev *led_cdev,
+ 
+ /* HP-specific accelerometer driver ------------------------------------ */
+ 
++/* e0 25, e0 26, e0 27, e0 28 are scan codes that the accelerometer with acpi id
++ * HPQ6000 sends through the keyboard bus */
++#define ACCEL_1 0x25
++#define ACCEL_2 0x26
++#define ACCEL_3 0x27
++#define ACCEL_4 0x28
++
+ /* For automatic insertion of the module */
+ static const struct acpi_device_id lis3lv02d_device_ids[] = {
+ 	{"HPQ0004", 0}, /* HP Mobile Data Protection System PNP */
+@@ -294,6 +303,35 @@ static void lis3lv02d_enum_resources(struct acpi_device *device)
+ 		printk(KERN_DEBUG DRIVER_NAME ": Error getting resources\n");
+ }
+ 
++static bool hp_accel_i8042_filter(unsigned char data, unsigned char str,
++				  struct serio *port)
++{
++	static bool extended;
++
++	if (str & I8042_STR_AUXDATA)
++		return false;
++
++	if (data == 0xe0) {
++		extended = true;
++		return true;
++	} else if (unlikely(extended)) {
++		extended = false;
++
++		switch (data) {
++		case ACCEL_1:
++		case ACCEL_2:
++		case ACCEL_3:
++		case ACCEL_4:
++			return true;
++		default:
++			serio_interrupt(port, 0xe0, 0);
++			return false;
++		}
++	}
++
++	return false;
++}
++
+ static int lis3lv02d_add(struct acpi_device *device)
+ {
+ 	int ret;
+@@ -326,6 +364,11 @@ static int lis3lv02d_add(struct acpi_device *device)
+ 	if (ret)
+ 		return ret;
+ 
++	/* filter to remove HPQ6000 accelerometer data
++	 * from keyboard bus stream */
++	if (strstr(dev_name(&device->dev), "HPQ6000"))
++		i8042_install_filter(hp_accel_i8042_filter);
++
+ 	INIT_WORK(&hpled_led.work, delayed_set_status_worker);
+ 	ret = led_classdev_register(NULL, &hpled_led.led_classdev);
+ 	if (ret) {
+@@ -343,6 +386,7 @@ static int lis3lv02d_remove(struct acpi_device *device)
+ 	if (!device)
+ 		return -EINVAL;
+ 
++	i8042_remove_filter(hp_accel_i8042_filter);
+ 	lis3lv02d_joystick_disable(&lis3_dev);
+ 	lis3lv02d_poweroff(&lis3_dev);
+ 
+-- 
+2.1.2
+
