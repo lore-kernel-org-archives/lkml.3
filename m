@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758958AbaJ3JHI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:07:08 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:65232 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758311AbaJ3JHB (ORCPT
+	id S1758644AbaJ3JI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:08:57 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:33000 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839AbaJ3JIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:07:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kevin Cernekee <cernekee@gmail.com>, f.fainelli@gmail.com,
-        jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH V2 03/15] genirq: Generic chip: Move irq_reg_{readl,writel} accessors into generic-chip.c
-Date: Thu, 30 Oct 2014 10:06:51 +0100
-Message-ID: <6552163.gt4ABVyYlA@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.11.1410300941290.5308@nanos>
-References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-4-git-send-email-cernekee@gmail.com> <alpine.DEB.2.11.1410300941290.5308@nanos>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:gfzDjLTecc2L7VX+0HAgY1/wdJkjqZy0Zay/zOLZhK+
- Vu0K7I+ZdhuxNrAMlbkpvua7VgTqt+8KyXnmN4YcC0WhxrGQkY
- sz9oKRqbxbNMj7665jbwkg2jqNuW2HJROWVL2PLPH6iEqhjgCp
- +cAMhwWdNhHfLrVqrCHl3CzxMmO7pni5859GKPVg5K2E/ZYvqX
- m1nrzDt1Js2pcMnxprF8D/A/CrzS7he5lJh4t0wmnX5aehJ/V8
- 7lniCt7Aokd8TraRH+/Ei+ibpm9y+vYynXfn2JpzJ7KXrWOJks
- HAM8SBz4kzZypukJ/a3omRvt74bfs/PmE+XlILmnTeTswEQtw0
- VWJu55w0FDlDkzeReqnw=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 30 Oct 2014 05:08:54 -0400
+From: "Eric Rannaud" <e@nanocritical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Rannaud <e@nanocritical.com>
+Subject: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+Date: Thu, 30 Oct 2014 02:08:47 -0700
+Message-Id: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 October 2014 09:43:02 Thomas Gleixner wrote:
-> > diff --git a/include/linux/irq.h b/include/linux/irq.h
-> > index 03f48d9..8049e93 100644
-> > --- a/include/linux/irq.h
-> > +++ b/include/linux/irq.h
-> > @@ -639,13 +639,6 @@ void arch_teardown_hwirq(unsigned int irq);
-> >  void irq_init_desc(unsigned int irq);
-> >  #endif
-> >  
-> > -#ifndef irq_reg_writel
-> > -# define irq_reg_writel(val, addr)   writel(val, addr)
-> > -#endif
-> > -#ifndef irq_reg_readl
-> > -# define irq_reg_readl(addr)         readl(addr)
-> > -#endif
-> > -
-> 
-> Brilliant patch that.
-> 
-> # git grep -l irq_reg_readl drivers/irqchip/
-> drivers/irqchip/irq-atmel-aic.c
-> drivers/irqchip/irq-atmel-aic5.c
-> drivers/irqchip/irq-sunxi-nmi.c
-> drivers/irqchip/irq-tb10x.c
+The man page for open(2) indicates that when O_CREAT is specified, the
+'mode' argument applies only to future accesses to the file:
 
-Patch 1/15 changes these all. I think it's still broken because patch 2/15
-is wrong, but it's not /that/ obviously broken.
+	Note that this mode applies only to future accesses of the newly
+	created file; the open() call that creates a read-only file
+	may well return a read/write file descriptor.
 
-	Arnd
+The man page for open(2) implies that 'mode' is treated identically by
+O_CREAT and O_TMPFILE.
+
+O_TMPFILE, however, behaves differently:
+
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0);
+	assert(fd == -1);
+	assert(errno == EACCES);
+
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0600);
+	assert(fd > 0);
+
+For O_CREAT, do_last() sets acc_mode to MAY_OPEN only:
+
+	if (*opened & FILE_CREATED) {
+		/* Don't check for write permission, don't truncate */
+		open_flag &= ~O_TRUNC;
+		will_truncate = false;
+		acc_mode = MAY_OPEN;
+		path_to_nameidata(path, nd);
+		goto finish_open_created;
+	}
+
+But for O_TMPFILE, do_tmpfile() passes the full op->acc_mode to
+may_open().
+
+This patch lines up the behavior of O_TMPFILE with O_CREAT. After the
+inode is created, may_open() is called with acc_mode = MAY_OPEN, in
+do_tmpfile().
+
+A different, but related glibc bug revealed the discrepancy:
+https://sourceware.org/bugzilla/show_bug.cgi?id=17523
+
+The glibc lazily loads the 'mode' argument of open() and openat() using
+va_arg() only if O_CREAT is present in 'flags' (to support both the 2
+argument and the 3 argument forms of open; same idea for openat()).
+However, the glibc ignores the 'mode' argument if O_TMPFILE is in
+'flags'.
+
+On x86_64, for open(), it magically works anyway, as 'mode' is in
+RDX when entering open(), and is still in RDX on SYSCALL, which is where
+the kernel looks for the 3rd argument of a syscall.
+
+But openat() is not quite so lucky: 'mode' is in RCX when entering the
+glibc wrapper for openat(), while the kernel looks for the 4th argument
+of a syscall in R10. Indeed, the syscall calling convention differs from
+the regular calling convention in this respect on x86_64. So the kernel
+sees mode = 0 when trying to use glibc openat() with O_TMPFILE, and
+fails with EACCES.
+
+Signed-off-by: Eric Rannaud <e@nanocritical.com>
+---
+ fs/namei.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 42df664e95e5..78512898d3ba 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3154,7 +3154,8 @@ static int do_tmpfile(int dfd, struct filename *pathname,
+ 	if (error)
+ 		goto out2;
+ 	audit_inode(pathname, nd->path.dentry, 0);
+-	error = may_open(&nd->path, op->acc_mode, op->open_flag);
++	/* Don't check for other permissions, the inode was just created */
++	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
+ 	if (error)
+ 		goto out2;
+ 	file->f_path.mnt = nd->path.mnt;
+-- 
+2.1.2
+
