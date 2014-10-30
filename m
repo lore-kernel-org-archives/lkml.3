@@ -1,96 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357AbaJ3Dd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 23:33:58 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:58897 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaJ3Dd4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 23:33:56 -0400
-Message-ID: <5451B1A1.2030901@martingkelly.com>
-Date: Wed, 29 Oct 2014 20:33:53 -0700
-From: Martin Kelly <martin@martingkelly.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1756923AbaJ3DeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 23:34:12 -0400
+Received: from [103.239.73.48] ([103.239.73.48]:52530 "EHLO a.1-hour-pay.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754868AbaJ3DeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 23:34:10 -0400
+Date: Thu, 30 Oct 2014 11:35:43 +0800
+From: "LED Light" <hw5@a.1-hour-pay.com>
+Reply-To: shadow@hk29.eidc.cn
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Milky LED BULBS  Ceramic ceiling lamps LED FLOOD LIGHTS
+Message-ID: <201410301135439379369@a.1-hour-pay.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>, Jonathan Corbet <corbet@lwn.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CodingStyle: Add a chapter on conditional compilation
-References: <430ce084b015d22a597ef7e4f6436dadaea7b23d.1414606455.git.josh@joshtriplett.org>
-In-Reply-To: <430ce084b015d22a597ef7e4f6436dadaea7b23d.1414606455.git.josh@joshtriplett.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9U3YH7k008645
 
-On 10/29/2014 11:15 AM, Josh Triplett wrote:
-> Document several common practices and conventions regarding conditional
-> compilation, most notably the preference for ifdefs in headers rather
-> than .c files.
-> 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> ---
-> 
-> I found myself explaining a few of these unwritten rules in patch
-> feedback, so I figured I'd document them.
-> 
->  Documentation/CodingStyle | 43 +++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 43 insertions(+)
-> 
-> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
-> index 3171822..9f28b14 100644
-> --- a/Documentation/CodingStyle
-> +++ b/Documentation/CodingStyle
-> @@ -845,6 +845,49 @@ next instruction in the assembly output:
->  	     : /* outputs */ : /* inputs */ : /* clobbers */);
->  
->  
-> +		Chapter 20: Conditional Compilation
-> +
-> +Wherever possible, don't use preprocessor conditionals (#if, #ifdef) in .c
-> +files; doing so makes code harder to read and logic harder to follow.  Instead,
-> +use such conditionals in a header file defining functions for use in those .c
-> +files, providing no-op stub versions in the #else case, and then call those
-> +functions unconditionally from .c files.  The compiler will avoid generating
-> +any code for the stub calls, producing identical results, but the logic will
-> +remain easy to follow.
-> +
-> +Prefer to compile out entire functions, rather than portions of functions or
-> +portions of expressions.  Rather than putting an ifdef in an expression, factor
-> +out part or all of the expression into a separate helper function and apply the
-> +conditional to that function.
-> +
-> +If you have a function or variable which may potentially go unused in a
-> +particular configuration, and the compiler would warn about its definition
-> +going unused, mark the definition as __maybe_unused rather than wrapping it in
-> +a preprocessor conditional.  (However, if a function or variable *always* goes
-> +unused, delete it.)
-> +
-> +Within code, where possible, use the IS_ENABLED macro to convert a Kconfig
-> +symbol into a C boolean expression, and use it in a normal C conditional:
-> +
-> +	if (IS_ENABLED(CONFIG_SOMETHING)) {
-> +		...
-> +	}
-> +
-> +The compiler will constant-fold the conditional away, and include or exclude
-> +the block of code just as with an #ifdef, so this will not add any runtime
-> +overhead.  However, this approach still allows the C compiler to see the code
-> +inside the block, and check it for correctness (syntax, types, symbol
-> +references, etc).  Thus, you still have to use an #ifdef if the code inside the
-> +block references symbols that will not exist if the condition is not met.
-> +
-> +At the end of any non-trivial #if or #ifdef block (more than a few lines),
-> +place a comment after the #endif on the same line, noting the conditional
-> +expression used.  For instance:
-> +
-> +#ifdef CONFIG_SOMETHING
-> +...
-> +#endif /* CONFIG_SOMETHING */
-> +
->  
->  		Appendix I: References
->  
-> 
+have a nice day,friend.
 
-I like that you're formalizing this in the official document; thanks!
+Glad to know you are interested in LED bean gall ligh and ceiling light. We do all sorts of LED light Wholesale in china.
+If you need,we will offer you every model with competitive price and high quality.
+For more information,Please kindly visit our websit: jrs-LED.net
+Waitting for your reply.
+
+Best regards
+JRS Technology Co.,Ltd
+shadow
+
+Email£º  shadow@JRS-Tech.net
+Skype£º  techjrsb
+MSN£º    techjrsb@msn.cn
+Websit£º www.jrs-LED.net
+
+
+we would be grateful if you will be our led lamps catalogue reserved for your supervisor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
