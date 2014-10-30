@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759745AbaJ3Mrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 08:47:41 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:36349 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759539AbaJ3Mrj (ORCPT
+	id S1760196AbaJ3Mr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 08:47:59 -0400
+Received: from smtp89.iad3a.emailsrvr.com ([173.203.187.89]:55882 "EHLO
+	smtp89.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759884AbaJ3MnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 08:47:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <87vbn1222e.fsf@ptsecurity.com>
-References: <87vbn1222e.fsf@ptsecurity.com>
-Date: Thu, 30 Oct 2014 13:47:36 +0100
-Message-ID: <CAH6sp9PWt9ZyctdqRF5LMQdm1K8Ph-KJ4ODNv69y6L2kbYrMHg@mail.gmail.com>
-Subject: Re: Fun with looping binds over proc
-From: Frans Klaver <fransklaver@gmail.com>
-To: Serge Kosyrev <skosyrev@ptsecurity.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 30 Oct 2014 08:43:07 -0400
+X-Sender-Id: abbotti@mev.co.uk
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <driverdev-devel@linuxdriverproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 6/7] staging: comedi: check command direction in poll() file operation
+Date: Thu, 30 Oct 2014 12:42:31 +0000
+Message-Id: <1414672952-1587-7-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk>
+References: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+`comedi_poll()` handles the poll() file operation for comedi devices.
 
-On Thu, Oct 30, 2014 at 1:07 PM, Serge Kosyrev <skosyrev@ptsecurity.com> wrote:
->
-> [deepfire@andromedae:~/repro-kernel-loop-mount]$ uname -a
-> Linux andromedae 3.14.22 #1-NixOS SMP Thu Jan 1 00:00:01 UTC 1970 x86_64 GNU/Linux
->
+If no asynchronous command has been set up on the current "read"
+subdevice, it sets the `POLLIN` and `POLLRDNORM` bits in the return
+value to indicate that the read() file operation would not block as it
+would return an error.  Add a check so it also does that if the
+asynchronous command has been set up in the "write" direction as that
+also causes the read() file operation to return an error.
 
-<snip>
+Similarly, if no asynchronous command has need set up on the current
+"write" subdevice, it sets the `POLLOUT` and `POLLWRNORM` bits in the
+return value to indicate that the write() file operation would not block
+as it would return an error.  Add a check so it also does that if the
+asynchronous command has been set up in the "read" direction as that
+also causes the write() file operation to return an error.
 
-> [deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh
->
-> real    0m3.186s
-> user    0m0.010s
-> sys     0m3.023s
->
-> [deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh
->
-> real    0m6.732s
-> user    0m0.013s
-> sys     0m6.032s
->
-> [deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh
->
-> real    0m14.541s
-> user    0m0.008s
-> sys     0m12.115s
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/comedi_fops.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-I don't seem to be able to reproduce this on 3.17.0-rc3. Tried the
-latest rc release?
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 6328965..d55f709 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -2017,6 +2017,7 @@ static unsigned int comedi_poll(struct file *file, poll_table *wait)
+ 	if (s && s->async) {
+ 		poll_wait(file, &s->async->wait_head, wait);
+ 		if (!s->busy || !comedi_is_subdevice_running(s) ||
++		    (s->async->cmd.flags & CMDF_WRITE) ||
+ 		    comedi_buf_read_n_available(s) > 0)
+ 			mask |= POLLIN | POLLRDNORM;
+ 	}
+@@ -2028,6 +2029,7 @@ static unsigned int comedi_poll(struct file *file, poll_table *wait)
+ 		poll_wait(file, &s->async->wait_head, wait);
+ 		comedi_buf_write_alloc(s, s->async->prealloc_bufsz);
+ 		if (!s->busy || !comedi_is_subdevice_running(s) ||
++		    !(s->async->cmd.flags & CMDF_WRITE) ||
+ 		    comedi_buf_write_n_allocated(s) >= bps)
+ 			mask |= POLLOUT | POLLWRNORM;
+ 	}
+-- 
+2.1.1
 
-Frans
