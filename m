@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933404AbaJ3CX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:23:27 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:39961 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758080AbaJ3CTq (ORCPT
+	id S1758239AbaJ3CXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:23:48 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:63210 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924AbaJ3CXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:19:46 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-To: arnd@arndb.de, f.fainelli@gmail.com, tglx@linutronix.de,
-        jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: [PATCH V2 05/15] genirq: Generic chip: Add big endian I/O accessors
-Date: Wed, 29 Oct 2014 19:17:58 -0700
-Message-Id: <1414635488-14137-6-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414635488-14137-1-git-send-email-cernekee@gmail.com>
-References: <1414635488-14137-1-git-send-email-cernekee@gmail.com>
+	Wed, 29 Oct 2014 22:23:46 -0400
+Date: Thu, 30 Oct 2014 10:23:31 +0800 (CST)
+From: Xiong Zhou <jencce.kernel@gmail.com>
+X-X-Sender: zx@dhcp12-144.nay.redhat.com
+To: linux-kernel@vger.kernel.org
+cc: kernel-team@android.com, nnk@google.com, john.stultz@linaro.org,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        jencce.kernel@gmail.com, arnd@arndb.de
+Subject: [PATCH] staging: android: logger: fix kuid/uid in logger_entry
+Message-ID: <alpine.LFD.2.11.1410301007090.3316@dhcp12-144.nay.redhat.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use io{read,write}32be if the caller specified IRQ_GC_BE_IO when creating
-the irqchip.
+From: Xiong Zhou <jencce.kernel@gmail.com>
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+struct logger_entry can be returned to userspace via ioctl,
+so it is wrong to have a kuid_t member, fixing it to uid_t.
+This was introduced by commit bd471258f2, to pass uidguid
+type checks : UIDGID_STRICT_TYPE_CHECKS, which has been
+removed from kernel in commit 261000a56b6.
+
+Fixes: bd471258f2 (logger: use kuid_t instead of uid_t)
+Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
 ---
- include/linux/irq.h       |  1 +
- kernel/irq/generic-chip.c | 15 +++++++++++++--
- 2 files changed, 14 insertions(+), 2 deletions(-)
+  drivers/staging/android/logger.c | 4 ++--
+  drivers/staging/android/logger.h | 2 +-
+  2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 8049e93..e69b7b2 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -739,6 +739,7 @@ enum irq_gc_flags {
- 	IRQ_GC_INIT_NESTED_LOCK		= 1 << 1,
- 	IRQ_GC_MASK_CACHE_PER_TYPE	= 1 << 2,
- 	IRQ_GC_NO_MASK			= 1 << 3,
-+	IRQ_GC_BE_IO			= 1 << 4,
- };
- 
- /*
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index b2ee65d..c1890bb 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -17,16 +17,27 @@
- static LIST_HEAD(gc_list);
- static DEFINE_RAW_SPINLOCK(gc_lock);
- 
-+static int is_big_endian(struct irq_chip_generic *gc)
-+{
-+	return !!(gc->domain->gc->gc_flags & IRQ_GC_BE_IO);
-+}
-+
- static void irq_reg_writel(struct irq_chip_generic *gc,
- 			   u32 val, int reg_offset)
- {
--	writel(val, gc->reg_base + reg_offset);
-+	if (is_big_endian(gc))
-+		iowrite32be(val, gc->reg_base + reg_offset);
-+	else
-+		writel(val, gc->reg_base + reg_offset);
- }
- 
- static u32 irq_reg_readl(struct irq_chip_generic *gc,
- 			 int reg_offset)
- {
--	return readl(gc->reg_base + reg_offset);
-+	if (is_big_endian(gc))
-+		return ioread32be(gc->reg_base + reg_offset);
-+	else
-+		return readl(gc->reg_base + reg_offset);
- }
- 
- /**
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index 28b93d3..fb06bf2 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -252,7 +252,7 @@ static size_t get_next_entry_by_uid(struct logger_log *log,
+
+  		entry = get_entry_header(log, off, &scratch);
+
+-		if (uid_eq(entry->euid, euid))
++		if (entry->euid == __kuid_val(euid))
+  			return off;
+
+  		next_len = sizeof(struct logger_entry) + entry->len;
+@@ -430,7 +430,7 @@ static ssize_t logger_write_iter(struct kiocb *iocb, struct iov_iter *from)
+  	header.tid = current->pid;
+  	header.sec = now.tv_sec;
+  	header.nsec = now.tv_nsec;
+-	header.euid = current_euid();
++	header.euid = __kuid_val(current_euid());
+  	header.len = count;
+  	header.hdr_size = sizeof(struct logger_entry);
+
+diff --git a/drivers/staging/android/logger.h b/drivers/staging/android/logger.h
+index 70af7d8..cc6bbd9 100644
+--- a/drivers/staging/android/logger.h
++++ b/drivers/staging/android/logger.h
+@@ -66,7 +66,7 @@ struct logger_entry {
+  	__s32		tid;
+  	__s32		sec;
+  	__s32		nsec;
+-	kuid_t		euid;
++	uid_t		euid;
+  	char		msg[0];
+  };
+
 -- 
-2.1.1
+1.9.3
 
