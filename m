@@ -1,65 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161258AbaJ3UiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 16:38:21 -0400
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:33029 "EHLO
-	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934774AbaJ3UiS (ORCPT
+	id S934783AbaJ3Un0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 16:43:26 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45786 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933193AbaJ3UnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 16:38:18 -0400
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <5452A1B1.7010809@mev.co.uk>
-Date: Thu, 30 Oct 2014 20:38:09 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Thu, 30 Oct 2014 16:43:25 -0400
+Date: Thu, 30 Oct 2014 13:43:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: Remove redundant rcu_is_cpu_rrupt_from_idle()
+ function
+Message-ID: <20141030204318.GR5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1414580827-19545-1-git-send-email-agordeev@redhat.com>
+ <20141029124728.GL5718@linux.vnet.ibm.com>
+ <20141029134519.GC30198@agordeev.usersys.redhat.com>
+ <20141029143439.GN5718@linux.vnet.ibm.com>
+ <20141029151622.GD30198@agordeev.usersys.redhat.com>
+ <20141029154615.GR5718@linux.vnet.ibm.com>
+ <20141029210916.GB13273@agordeev.usersys.redhat.com>
+ <20141030000524.GG5718@linux.vnet.ibm.com>
+ <20141030175435.GC13273@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: comedi: comedi_test: fix timer lock-up
-References: <1414501642-14261-1-git-send-email-abbotti@mev.co.uk> <1414663433-11137-1-git-send-email-abbotti@mev.co.uk> <20141030202918.GA27910@kroah.com>
-In-Reply-To: <20141030202918.GA27910@kroah.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030175435.GC13273@agordeev.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14103020-0021-0000-0000-000005CB792F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/10/14 20:29, Greg Kroah-Hartman wrote:
-> On Thu, Oct 30, 2014 at 10:03:53AM +0000, Ian Abbott wrote:
->> Commit 240512474424 ("staging: comedi: comedi_test: use
->> comedi_handle_events()") resulted in the timer routine
->> `waveform_ai_interrupt()` calling `comedi_handle_events()` instead of
->> `comedi_events()`.  That had the advantage of automatically stopping the
->> acquisition on overflow/error/end-of-acquisition conditions (by calling
->> the comedi subdevice's "cancel" handler), but currently results in the
->> timer routine locking when one of those conditions occur.  This is
->> because the "cancel" handler `waveform_ai_cancel()` calls
->> `del_timer_sync()`.
->>
->> Fix it by adding a bit to the device private data that indicates whether
->> the acquisition is active or not, and changing the "cancel" handler to
->> use `del_timer()` instead of `del_timer_sync()`.  The bit is set when
->> starting the acquisition, cleared when ending the acquisition (in the
->> "cancel" handler), and tested in the timer routine, which will do
->> nothing if the acquisition is inactive.  Also, make sure any scheduled
->> timeout event gets cancelled when the low-level device gets "detached"
->> from the comedi core by calling `del_timer_sync()` in the "detach"
->> handler `waveform_detach()`.
->>
->> Fixes: 240512474424 ("staging: comedi: comedi_test: use comedi_handle_events()")
->> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
->> ---
->> v2: rebased after commit dd28153b2a8ca
->> Greg, this fix is for "linux-next" and "staging-next".
->
-> I don't understand, I've already taken this patch, right?  It doesn't
-> apply to my branch :(
+On Thu, Oct 30, 2014 at 05:54:35PM +0000, Alexander Gordeev wrote:
+> On Wed, Oct 29, 2014 at 05:05:24PM -0700, Paul E. McKenney wrote:
+> > > > Although it is true that tiny RCU cannot hang a synchronize_rcu()
+> > > > grace period, it most certainly can hang a call_rcu() grace period
+> > > > in exactly the same way.
+> > > 
+> > > Sorry for being a pain in the neck - just want to make sure I am following.
+> > 
+> > No worries!
+> > 
+> > > I only see possibility to cause callbacks not being called for "too long"
+> > > in case a system has lots of nested interrupts and rcu_idle_enter_common()
+> > > is not being called from hardware interrupt context as result. How could
+> > > rcu_is_cpu_rrupt_from_idle() help here?
+> > 
+> > Let's start assuming that something in the idle loop posts a callback,
+> > and then let me see if I understand your reasoning...
+> > 
+> > 1.	The system is idle and stays that way, no runnable tasks.
+> > 
+> > 2.	An interrupt occurs.  Upon return from interrupt, rcu_irq_exit()
+> > 	is invoked, which calls rcu_idle_enter_common(), which in turn
+> > 	calls rcu_sched_qs(), which does a raise_softirq(RCU_SOFTIRQ).
+> > 
+> > 3.	The softirq happens shortly and invokes rcu_process_callbacks(),
+> > 	which invokes __rcu_process_callbacks().
+> > 
+> > 4.	So now callbacks can be invoked.  At least they can be if
+> > 	->donetail has been updated.  Which it will have been because
+> > 	rcu_sched_qs() invokes rcu_qsctr_help().
+> 
+> Yes, that is exactly my reasoning.
+> 
+> > So your point that rcu_is_cpu_rrupt_from_idle() might be redundant could
+> > well be valid -- sorry for being so dismissive earlier.
+> >
+> > > > > > Now, if you -can- get the userspace-execution indication into
+> > > > > > rcu_irq_exit(), this might be of interest.  However, it might be faster
+> > > > > > to simply let the scheduling-clock interrupt do the job as it currently
+> > > > > > does, especially for workloads with lots of interrupts.
+> > > > > > 
+> > > > > > Or did you have something else in mind?
+> > > > > 
+> > > > > Nope. I would even leave as is tiny RCU's rcu_is_cpu_rrupt_from_idle()
+> > > > > for clarity then ;)
+> > > > 
+> > > > Also to avoid userspace execution from preventing RCU callbacks from
+> > > > ever being invoked.  ;-)
+> > > 
+> > > Hmm.. Am I missing something else? I did not remove the userspace check
+> > > from the scheduling-clock interrupt:
+> > > 
+> > > @@ -250,7 +240,7 @@ void rcu_bh_qs(void)
+> > >  void rcu_check_callbacks(int cpu, int user)
+> > >  {
+> > >  	RCU_TRACE(check_cpu_stalls());
+> > > -	if (user || rcu_is_cpu_rrupt_from_idle())
+> > > +	if (user)
+> > >  		rcu_sched_qs();
+> > >  	else if (!in_softirq())
+> > >  		rcu_bh_qs();
+> > 
+> > Probably just me being confused.  Hopefully so, as shrinking TINY_RCU
+> > further will probably be welcome.
+> 
+> Should I resend tiny-only patch?
 
-So you have.  Ignore v2 then.  (I got a merge merge conflict when I 
-tried it, which is why I sent the rebased version.)
+Please, but also expand the commit log to contain the above reasoning.
 
-Thanks.
+> > Have you done any testing of this change?
+> 
+> Just booted to a unicore kernel and dd'ed 1G of /dev/sda to /dev/null.
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+OK, that is a start. Could I convince you to build a kernel?
+
+							Thanx, Paul
+
