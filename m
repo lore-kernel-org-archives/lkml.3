@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760646AbaJ3PGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 11:06:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6316 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760228AbaJ3PGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 11:06:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,286,1413270000"; 
-   d="scan'208";a="628356409"
-Date: Thu, 30 Oct 2014 23:05:41 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Junjie Mao <eternal.n08@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, kaslr: Prevent .bss from overlaping initrd
-Message-ID: <20141030150541.GA17461@wfg-t540p.sh.intel.com>
-References: <1414672901-29118-1-git-send-email-eternal.n08@gmail.com>
+	id S1760654AbaJ3PIA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 11:08:00 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:58694 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126AbaJ3PH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 11:07:58 -0400
+Date: Thu, 30 Oct 2014 11:07:54 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, axboe@kernel.dk,
+        rafael.j.wysocki@intel.com, mingo@kernel.org,
+        preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
+        mturquette@linaro.org, tuukka.tikkanen@linaro.org, patches@linaro.org
+Subject: Re: [RFD PATCH 10/10] sched: io_latency: Tracking via buckets
+In-Reply-To: <20141030144634.GH23531@worktop.programming.kicks-ass.net>
+Message-ID: <alpine.LFD.2.11.1410301059180.20099@knanqh.ubzr>
+References: <1413986273-28522-1-git-send-email-daniel.lezcano@linaro.org> <1413986273-28522-11-git-send-email-daniel.lezcano@linaro.org> <20141030144634.GH23531@worktop.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414672901-29118-1-git-send-email-eternal.n08@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Junjie,
+On Thu, 30 Oct 2014, Peter Zijlstra wrote:
 
-I got one error with this script:
+> On Wed, Oct 22, 2014 at 03:57:53PM +0200, Daniel Lezcano wrote:
+> > The size of the bucket is the bucket interval and represent the resolution
+> > of the statistic model. Eg with a bucket interval of 1us, it leads us to
+> > do statitics on all numbers, with of course a bad prediction because the
+> > number of latencies is big. A big interval can give better statistics,
+> > but can give us a misprediction as the interval is larger.
+> > 
+> > Choosing the size of the bucket interval vs the idle sleep time is the
+> > tradeoff to find. With a 200us bucket interval, the measurements show
+> > we still have good predictions, less mispredictions and cover the idle
+> > state target residency.
+> > 
+> 
+> For the record:
+> 
+> The suggestion in DUS was to align the bucket sizes with the various
+> break even times of the actual C states.
+> 
+> I forgot who suggested this; it might have been Morten; but it seems to
+> make sense.
 
-awk: arch/x86/tools/calc_reserved.awk: line 23: function strtonum never defined
+I suggested that a while ago too.  But IIRC Daniel envisioned some 
+possible additional use for those buckets in the future e.g.. a measure 
+of how many tasks can be packed on a CPU knowing their sleep periods.
 
-Have you tried both gawk/mawk?
+However, if the IO latency can be predicted at the driver level with 
+good accuracy (it normally should) then there is no need to do any kind 
+of averaging and bucketing since the driver should be able to provide a 
+relatively precise number almost every time.
 
-Thanks,
-Fengguang
 
-> diff --git a/arch/x86/tools/calc_reserved.awk b/arch/x86/tools/calc_reserved.awk
-> new file mode 100644
-> index 000000000000..2ca69682338a
-> --- /dev/null
-> +++ b/arch/x86/tools/calc_reserved.awk
-> @@ -0,0 +1,21 @@
-> +#!/bin/awk -f
-> +#
-> +# Calculate the amount of space that we have to reserve for .bss and .brk
-> +# sections
-> +#
-> +# Usage:
-> +# objdump -h a.out | awk -f calc_reserved.awk
-> +
-> +BEGIN {
-> +	sections = "^.bss$|^.brk$"
-> +	size = 0;
-> +}
-> +
-> +/^ *[0-9]+ [a-z._]+ *[0-9a-f]+/ {
-> +	if (match($2, sections))
-> +		size += strtonum("0x" $3);
-> +}
-> +
-> +END {
-> +	printf("%d\n", size);
-> +}
-> --
-> 1.9.3
+Nicolas
