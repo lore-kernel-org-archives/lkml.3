@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759661AbaJ3LY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:24:27 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:42895 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759232AbaJ3LV1 (ORCPT
+	id S1759223AbaJ3LVZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:21:25 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:59728 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758794AbaJ3LVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:21:27 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-44-54521f34fb4b
+	Thu, 30 Oct 2014 07:21:22 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-2a-54521f2e6aa1
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
@@ -22,169 +22,118 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3 08/14] mfd: max77686/802: Remove support for board files
-Date: Thu, 30 Oct 2014 12:20:47 +0100
-Message-id: <1414668053-31370-9-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v3 00/14] regulator: max77686: Add GPIO control
+Date: Thu, 30 Oct 2014 12:20:39 +0100
+Message-id: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
-References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t/xq7om8kEhBtNbJCw2zljPajFp3QEm
-	i6kPn7BZXP/ynNVi/pFzrBZHfxdYvH5haNG74CqbxdmmN+wW978eZbT4dqWDyWLT42usFpd3
-	zWGzmHF+H5PF7cu8FmuP3GW3ON3N6iDo0dLcw+bx9/l1Fo+/q14we+ycdZfdY9OqTjaPO9f2
-	sHnMOxnosXlJvUffllWMHp83yQVwRXHZpKTmZJalFunbJXBlTFjxjKlghXLF9MWdbA2Mv2S6
-	GDk4JARMJNYtzupi5AQyxSQu3FvP1sXIxSEksJRR4vPueSwQTh+TxLcDn9hBqtgEjCU2L18C
-	ViUi0Mks0XOwlxnEYRZYzSTx88opZpCxwgLeEjPX1oE0sAioShy8dZgRxOYVcJeY2PyNEWKd
-	nMTJY5NZQWxOAQ+JNR/bWUFahYBq7n3TnsDIu4CRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+
-	7iZGSHh/2cG4+JjVIUYBDkYlHl6HjQEhQqyJZcWVuYcYJTiYlUR4V4sFhQjxpiRWVqUW5ccX
-	leakFh9iZOLglGpgVJf4yWOUbdZ275qG8f0pn+sTl61QbLi7Ocl46+5Xr6z4ZK3bg3bPufXD
-	LK7cva/9dFBZ/8QFV/W2zckxnj5193rG7fHtnZo1d6O2JsVq7A67e+Tjh4K5wTP0zWTPTfOY
-	rZCqKbT7plJ/+BaXO4w/k1k2Z3feVCrpLTg7//pxR2NRf2ZN/d4oJZbijERDLeai4kQAfpA2
-	gk0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCLMWRmVeSWpSXmKPExsVy+t/xq7p68kEhBocWKFpsnLGe1WLSugNM
+	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
+	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
+	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DK2PfLouCyXMWv5uVMDYzfxbsY
+	OTkkBEwk7v5bwAxhi0lcuLeerYuRi0NIYCmjxMFnb6CcPiaJO9/+soFUsQkYS2xevgQsISLQ
+	ySzRc7CXGcRhFljNJPHzyimwWcIC9hLnt5xnBLFZBFQlLj5rZAKxeQXcJX6v38UCsU9O4uSx
+	yawTGLkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJ2S87GBcfszrEKMDBqMTD67Ax
+	IESINbGsuDL3EKMEB7OSCO9qsaAQId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyr5IuZI//cD95X
+	+8T+UBTvw2dHUx1jlNYnKX+aOl3kkfP3iYxKO59rhKlM4T2/6vtyoTuxbh6OeyS1p1e+jbgx
+	PSBKqT665JFmJZP75F2vbUQPz++NMog0evpK/OdEQ8mZnE7pXJMF+X9uWtDxNX7OisdLGqtO
+	f7IOEVuvvf0vs1i3YPFmtWAlluKMREMt5qLiRADqQnOJNwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is used only on Exynos based boards with DTS support.
-Convert the driver to DTS-only version. This simplifies a little the
-code:
-1. No dead (unused) entries in platform_data structure.
-2. More code removed.
-3. Regulator driver does not depend on allocated memory
-   from MFD driver.
-4. It makes also easier extending the regulator driver.
+Hi,
 
-Add to the max77686 MFD driver dependency on CONFIG_OF because without
-DTS the regulator drivers won't bind.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
- drivers/mfd/Kconfig                  |  1 +
- drivers/mfd/max77686.c               | 23 -----------------------
- include/linux/mfd/max77686-private.h |  1 -
- include/linux/mfd/max77686.h         | 28 ----------------------------
- 4 files changed, 1 insertion(+), 52 deletions(-)
+Patches touching max77802 were not tested on hardware.
+I am kindly asking for testing it because I don't have the board
+with Maxim 77802.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index cbdb10918af1..fd9d19ccf8c0 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -401,6 +401,7 @@ config MFD_MAX14577
- config MFD_MAX77686
- 	bool "Maxim Semiconductor MAX77686/802 PMIC Support"
- 	depends on I2C=y
-+	depends on OF
- 	select MFD_CORE
- 	select REGMAP_I2C
- 	select REGMAP_IRQ
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 9e1046bdef90..418b08b6c066 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -211,24 +211,10 @@ static const struct of_device_id max77686_pmic_dt_match[] = {
- 	{ },
- };
- 
--static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
--								  *dev)
--{
--	struct max77686_platform_data *pd;
--
--	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
--	if (!pd)
--		return NULL;
--
--	dev->platform_data = pd;
--	return pd;
--}
--
- static int max77686_i2c_probe(struct i2c_client *i2c,
- 			      const struct i2c_device_id *id)
- {
- 	struct max77686_dev *max77686 = NULL;
--	struct max77686_platform_data *pdata = dev_get_platdata(&i2c->dev);
- 	const struct of_device_id *match;
- 	unsigned int data;
- 	int ret = 0;
-@@ -239,14 +225,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	const struct mfd_cell *cells;
- 	int n_devs;
- 
--	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node && !pdata)
--		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
--
--	if (!pdata) {
--		dev_err(&i2c->dev, "No platform data found.\n");
--		return -EINVAL;
--	}
--
- 	max77686 = devm_kzalloc(&i2c->dev,
- 				sizeof(struct max77686_dev), GFP_KERNEL);
- 	if (!max77686)
-@@ -265,7 +243,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	max77686->dev = &i2c->dev;
- 	max77686->i2c = i2c;
- 
--	max77686->wakeup = pdata->wakeup;
- 	max77686->irq = i2c->irq;
- 
- 	if (max77686->type == TYPE_MAX77686) {
-diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
-index 960b92ad450d..f5043490d67c 100644
---- a/include/linux/mfd/max77686-private.h
-+++ b/include/linux/mfd/max77686-private.h
-@@ -447,7 +447,6 @@ struct max77686_dev {
- 	struct regmap_irq_chip_data *rtc_irq_data;
- 
- 	int irq;
--	bool wakeup;
- 	struct mutex irqlock;
- 	int irq_masks_cur[MAX77686_IRQ_GROUP_NR];
- 	int irq_masks_cache[MAX77686_IRQ_GROUP_NR];
-diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
-index 553f7d09258a..bb995ab9a575 100644
---- a/include/linux/mfd/max77686.h
-+++ b/include/linux/mfd/max77686.h
-@@ -119,12 +119,6 @@ enum max77802_regulators {
- 	MAX77802_REG_MAX,
- };
- 
--struct max77686_regulator_data {
--	int id;
--	struct regulator_init_data *initdata;
--	struct device_node *of_node;
--};
--
- enum max77686_opmode {
- 	MAX77686_OPMODE_NORMAL,
- 	MAX77686_OPMODE_LP,
-@@ -136,26 +130,4 @@ struct max77686_opmode_data {
- 	int mode;
- };
- 
--struct max77686_platform_data {
--	int ono;
--	int wakeup;
--
--	/* ---- PMIC ---- */
--	struct max77686_regulator_data *regulators;
--	int num_regulators;
--
--	struct max77686_opmode_data *opmode_data;
--
--	/*
--	 * GPIO-DVS feature is not enabled with the current version of
--	 * MAX77686 driver. Buck2/3/4_voltages[0] is used as the default
--	 * voltage at probe. DVS/SELB gpios are set as OUTPUT-LOW.
--	 */
--	int buck234_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
--	int buck234_gpio_selb[3]; /* [0]SELB2, [1]SELB3, [2]SELB4 */
--	unsigned int buck2_voltage[8]; /* buckx_voltage in uV */
--	unsigned int buck3_voltage[8];
--	unsigned int buck4_voltage[8];
--};
--
- #endif /* __LINUX_MFD_MAX77686_H */
+Changes since v2
+================
+Re-work the board file support removal after Javier's comments: use
+new DT style parsing. This imposes a lot of changes.
+1. Add "of_compatible" for regulator drivers.
+2. Provide backward compatibility if such "of_compatible" is not present.
+   The driver will search for regulators node and use it as dev->of_node.
+   Everything should be bisect-friendly.
+3. New patches: 1, 2, 3, 5, 13 and 14.
+4. Because of new style DT parsing it is much easier to put "gpio"
+   properties in regulators top node (not in each regulator).
+   This will be also new-gpio-lib friendly.
+
+Changes since v1
+================
+1. Add patch: 1/8 "regulator: max77686: Consistently index opmode
+   array by rdev id".
+2. Remove patch "regulator: max77686: Make regulator_desc array
+   const" (applied).
+3. Re-work patches removing from regulators board file support (2/8
+   and 3/8). Parse regulators with of_regulator_match() at once, remove
+   num_regulators.
+4. Patch 4/8: Add depends on OF to mfd/Kconfig. Add Javier's
+   reviewed-by.
+5. Patch 5/8: Add Javier's reviewed-by.
+6. Patch 6/8: Add depends on GPIOLIB to regulator/Kconfig. Rename
+   "external control" to "GPIO control" and "ext_control_gpios" to
+   simpler "gpios".
+   I tried to use new GPIO API but it ended with more problems
+   https://lkml.org/lkml/2014/10/29/239
+
+
+Description
+===========
+This patch helps in proper description of max77686 regulators in DTS by
+allowing to control them over GPIO. This allows removal of
+fixed regulators from DTS which duplicate the description of hardware.
+
+The first five patches are cleanups, including board support removal.
+
+The whole patchset should be taken at once.
+
+Patchset is rebased on next-20141023 AND:
+1. ARM: EXYNOS: Call regulator suspend prepare/finish
+   https://lkml.org/lkml/2014/10/20/545
+2. regulator: max77686/trats2: Disable some regulators in suspend
+   https://lkml.org/lkml/2014/10/27/280
+
+
+Best regards,
+Krzysztof
+
+*** BLURB HERE ***
+
+Krzysztof Kozlowski (14):
+  mfd: max77686/802: Map regulator driver to its own of_node
+  mfd/regulator: dt-bindings: max77686: Document of_compatible for
+    regulator
+  regulator: dt-bindings: max77802: Document of_compatible for regulator
+  regulator: max77686: Consistently index opmode array by rdev id
+  regulator: max77802: Don't ignore return value of current opmode
+  regulator: max77802: Remove support for board files
+  regulator: max77686: Remove support for board files
+  mfd: max77686/802: Remove support for board files
+  regulator: max77686: Initialize opmode explicitly to normal mode
+  regulator: max77686: Add GPIO control
+  mfd/regulator: dt-bindings: max77686: Document gpio properties
+  ARM: dts: exynos4412-trats: Switch max77686 regulators to GPIO control
+  ARM: dts: exynos5420-peach: Update to new max77802 regulator
+    compatible
+  ARM: dts: exynos5800-peach: Update to new max77802 regulator
+    compatible
+
+ Documentation/devicetree/bindings/mfd/max77686.txt |  16 +-
+ .../devicetree/bindings/regulator/max77802.txt     |   8 +-
+ arch/arm/boot/dts/exynos4412-trats2.dts            |  28 +---
+ arch/arm/boot/dts/exynos5420-peach-pit.dts         |   2 +
+ arch/arm/boot/dts/exynos5800-peach-pi.dts          |   2 +
+ drivers/mfd/Kconfig                                |   1 +
+ drivers/mfd/max77686.c                             |  33 +---
+ drivers/regulator/max77686.c                       | 186 +++++++++++++--------
+ drivers/regulator/max77802.c                       | 116 +++++--------
+ include/linux/mfd/max77686-private.h               |   1 -
+ include/linux/mfd/max77686.h                       |  28 ----
+ 11 files changed, 200 insertions(+), 221 deletions(-)
+
 -- 
 1.9.1
 
