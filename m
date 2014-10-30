@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759235AbaJ3LMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:12:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42391 "EHLO mail.skyhub.de"
+	id S1759259AbaJ3LMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:12:42 -0400
+Received: from mail.gnuher.de ([78.47.12.54]:42053 "EHLO mail.gnuher.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759208AbaJ3LMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:12:10 -0400
-Date: Thu, 30 Oct 2014 12:12:04 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Greg KH <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH - resend] checkpatch: Remove unnecessary + after {8,8}
-Message-ID: <20141030111204.GA11295@pd.tnic>
-References: <1405128087.6751.12.camel@joe-AO725>
- <20140712013927.GA30781@kroah.com>
- <1405129612.6751.24.camel@joe-AO725>
- <20140712020114.GA12301@kroah.com>
- <20140712020520.GA18611@kroah.com>
- <1409590506.2614.4.camel@joe-AO725>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1409590506.2614.4.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758162AbaJ3LMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 07:12:40 -0400
+X-Greylist: delayed 1179 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Oct 2014 07:12:40 EDT
+To: linux-kernel@vger.kernel.org
+Path: not-for-mail
+From: Sven Geggus <lists@fuchsschwanzdomain.de>
+Subject: overlayfs (3.18-rc2): NFS completely unsupported?
+Date: Thu, 30 Oct 2014 10:52:57 +0000 (UTC)
+Organization: Geggus clan, virtual section
+Message-ID: <m2t5a9$7fd$1@home.geggus.net>
+NNTP-Posting-Host: home.geggus.net
+X-Trace: home.geggus.net 1414666377 7661 192.168.3.1 (30 Oct 2014 10:52:57 GMT)
+X-Complaints-To: usenet@geggus.net
+NNTP-Posting-Date: Thu, 30 Oct 2014 10:52:57 +0000 (UTC)
+User-Agent: tin/2.1.1-20120623 ("Mulindry") (UNIX) (Linux/3.16.1 (x86_64))
+Cancel-Lock: sha1:W9XZDftHrnL7em1BiXrY7KC8F+U=
+X-TERMINAL: rxvt-unicode-256color
+X-OS: Debian GNU/Linux (Kernel 3.16.1)
+X-remote-host: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Andrew,
+Hello,
 
-can we get this one applied already - I'm seeing this warning at least
-since before my summer vacation started! :-P
+I'm testing overlayfs in kernel 3.18-rc2 because I hoped to be able to
+replace aufs and would be able to return to mainline kernels in future.
 
-Thanks.
+overlayfs documentation states, that NFS is unsupported in "upper
+filesystem", but I do not manage to make it work with a ro NFS lowerdir as
+well. All I get is:
 
-On Mon, Sep 01, 2014 at 09:55:06AM -0700, Joe Perches wrote:
-> There's a useless "+" use that needs to be removed as perl 5.20
-> emits a "Useless use of greediness modifier '+'" message each
-> time it's hit.
-> 
-> Reported-by: Greg KH <gregkh@linuxfoundation.org>
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> 
-> Resending, maybe Andrew's all-seeing eye blinked...
-> 
-> On Fri, 2014-07-11 at 19:05 -0700, Greg KH wrote:
-> > Ok, with linux-next I get the same thing:
-> 
-> Thanks Greg.
-> 
->  scripts/checkpatch.pl | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index d5ac001..370a974 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2376,7 +2376,7 @@ sub process {
->  				"please, no space before tabs\n" . $herevet) &&
->  			    $fix) {
->  				while ($fixed[$fixlinenr] =~
-> -					   s/(^\+.*) {8,8}+\t/$1\t\t/) {}
-> +					   s/(^\+.*) {8,8}\t/$1\t\t/) {}
->  				while ($fixed[$fixlinenr] =~
->  					   s/(^\+.*) +\t/$1\t/) {}
->  			}
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+overlayfs: filesystem of lowerdir is not supported
+
+This is what I try:
+mount -t overlayfs -olowerdir=/etc,upperdir=/local/etc,workdir=/local/ovldir overlayfs /mnt
+
+/local is tmpfs in this case.
+
+If this is _not_ supposed to work I would strongly suggest, to clarify NFS
+support in Documentation/filesystems/overlayfs.txt
+
+Regards
+
+Sven
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+"Das ist halt der Unterschied: Unix ist ein Betriebssystem mit Tradition,
+ die anderen sind einfach von sich aus unlogisch."
+                          (Anselm Lingnau in de.comp.os.unix.discussion)
+/me ist giggls@ircnet, http://sven.gegg.us/ im WWW
