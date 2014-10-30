@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760702AbaJ3SG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 14:06:26 -0400
-Received: from tex.lwn.net ([70.33.254.29]:53238 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760178AbaJ3SGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 14:06:25 -0400
-Date: Thu, 30 Oct 2014 14:06:22 -0400
-From: Jonathan Corbet <corbet@lwn.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Various documentation fixes
-Message-ID: <20141030140622.7b2df134@lwn.net>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1760791AbaJ3SHr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 14:07:47 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:36139
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759765AbaJ3SHq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 14:07:46 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 5/7] staging: comedi: don't allow write() on async
+ command set up for "read"
+Thread-Topic: [PATCH 5/7] staging: comedi: don't allow write() on async
+ command set up for "read"
+Thread-Index: AQHP9D8NeNklhsIE8UCM1SSPyB51qJxI750A
+Date: Thu, 30 Oct 2014 18:07:43 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D882600D3B7@P3PWEX4MB008.ex4.secureserver.net>
+References: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk>
+ <1414672952-1587-6-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1414672952-1587-6-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So this is my first pull request since I rashly agreed to look after the
-documentation subtree.  It contains some typo fixes, a few minor
-documentation improvements, and, most importantly, fixes for a couple of
-build problems in various bits of sample code.
+On Thursday, October 30, 2014 5:43 AM, Ian Abbott wrote:
+> If a Comedi asynchronous command has been set up for data transfer in
+> the "read" direction on the current "write" subdevice (for those
+> subdevices that support both directions), don't allow the "write" file
+> operation as that would mess with the data in the comedi data buffer
+> that is written by the low-level comedi hardware driver.
+>
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+>  drivers/staging/comedi/comedi_fops.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+>
+> diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+> index 6805ec9..6328965 100644
+> --- a/drivers/staging/comedi/comedi_fops.c
+> +++ b/drivers/staging/comedi/comedi_fops.c
+> @@ -2075,6 +2075,10 @@ static ssize_t comedi_write(struct file *file, const char __user *buf,
+>  		retval = -EACCES;
+>  		goto out;
+>  	}
+> +	if (!(async->cmd.flags & CMDF_WRITE)) {
+> +		retval = -EINVAL;
+> +		goto out;
+> +	}
+>  
+>  	add_wait_queue(&async->wait_head, &wait);
+>  	on_wait_queue = true;
+> @@ -2146,6 +2150,10 @@ static ssize_t comedi_write(struct file *file, const char __user *buf,
+>  				retval = -EACCES;
+>  				break;
+>  			}
+> +			if (!(async->cmd.flags & CMDF_WRITE)) {
+> +				retval = -EINVAL;
+> +				break;
+> +			}
 
-I fully intend to start sending pull requests with signed tags.  However,
-due to poor planning on my part and the general obnoxiousness of life,
-I'm 2000 miles away from my private key which is sitting on a
-powered-down machine.  This should be fixed before my next request.
-Meanwhile git.lwn.net is a machine under my control, the patches are all
-trivial, and all have done time in linux-next.
+Same question as with PATCH 4/7.
 
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+Is this test needed in the while () loop. Also, are the s->busy tests needed here?
 
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+>  			continue;
+>  		}
 
-are available in the git repository at:
+Regards,
+Hartley
 
-  git://git.lwn.net/linux-2.6.git/ tags/docs-for-linus
-
-for you to fetch changes up to d75ef707ea5eb3015f7b72cb3b81c6cdca376fea:
-
-  Documentation/SubmittingPatches: Reported-by tags and permission (2014-10-29 08:56:46 -0400)
-
-----------------------------------------------------------------
-Alexander Graf (1):
-      Documentation: Restrict TSC test code to x86
-
-Dan Carpenter (1):
-      Documentation/SubmittingPatches: Reported-by tags and permission
-
-Javier Martinez Canillas (1):
-      Documentation: dt-bindings: Explain order in patch series
-
-Jeff Mahoney (1):
-      vdso: don't require 64-bit math in standalone test
-
-Jim Davis (1):
-      Documentation: remove outdated references to the linux-next wiki
-
-Kirill Smelkov (1):
-      Docs: Document that the sticky bit is understood by hugetlbfs
-
-Maciej W. Rozycki (1):
-      doc: kernel-parameters.txt: Add ide-generic.probe-mask
-
-Masanari Iida (2):
-      Documentation: Add default kmemleak off case in kernel-parameters.txt
-      Documentation: Add CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF case
-
-Peter Foley (1):
-      Documentation: fix vdso_standalone_test_x86 on 32-bit
-
-Takashi Iwai (1):
-      DocBook: Reduce noise from make cleandocs
-
-WANG Chao (1):
-      Documentation/ABI/testing/sysfs-ibft: fix a typo
-
- Documentation/ABI/testing/sysfs-ibft                     |  2 +-
- Documentation/DocBook/media/Makefile                     |  2 +-
- Documentation/HOWTO                                      |  1 -
- Documentation/SubmittingPatches                          | 10 ++++------
- Documentation/development-process/2.Process              |  4 ----
- Documentation/development-process/8.Conclusion           |  4 ----
- Documentation/devicetree/bindings/submitting-patches.txt |  3 +++
- Documentation/kernel-parameters.txt                      | 14 ++++++++++++++
- Documentation/kmemleak.txt                               |  4 ++++
- Documentation/prctl/Makefile                             |  2 +-
- Documentation/vDSO/Makefile                              |  3 +++
- Documentation/vDSO/vdso_standalone_test_x86.c            |  2 +-
- Documentation/vm/hugetlbpage.txt                         |  2 +-
- 13 files changed, 33 insertions(+), 20 deletions(-)
-
-Thanks,
-
-jon
