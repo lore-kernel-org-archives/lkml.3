@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760366AbaJ3OTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:19:34 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46391 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759180AbaJ3OTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:19:31 -0400
-Date: Thu, 30 Oct 2014 09:18:57 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <balbi@ti.com>, Huang Rui <ray.huang@amd.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
-        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 01/20] usb: dwc3: enable hibernation if to be supported
-Message-ID: <20141030141857.GJ6482@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414663725-2195-1-git-send-email-ray.huang@amd.com>
- <4077930.b7qzaS4pBb@wuerfel>
- <20141030140832.GH6482@saruman>
- <2025342.7A7Ashtuyx@wuerfel>
+	id S1760328AbaJ3OUO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:20:14 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51715 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757996AbaJ3OUM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:20:12 -0400
+X-Originating-IP: 50.43.41.112
+Date: Thu, 30 Oct 2014 07:19:56 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu 1/6] torture: Run Linux-kernel binary out of
+ results directory
+Message-ID: <20141030141956.GG32353@thin>
+References: <20141028222929.GA29476@linux.vnet.ibm.com>
+ <1414535405-30228-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cDtQGJ/EJIRf/Cpq"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2025342.7A7Ashtuyx@wuerfel>
+In-Reply-To: <1414535405-30228-1-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---cDtQGJ/EJIRf/Cpq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 28, 2014 at 03:30:00PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The rcutorture scripts create a qemu-cmd script containing the actual
+> qemu command.  However, this command references the build directory,
+> which will be overwritten by later builds.  This commit therefore runs
+> the kernel out of the results directory so that less hand-editing is
+> required to re-run a previous test.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-On Thu, Oct 30, 2014 at 03:14:17PM +0100, Arnd Bergmann wrote:
-> On Thursday 30 October 2014 09:08:32 Felipe Balbi wrote:
-> > On Thu, Oct 30, 2014 at 12:35:56PM +0100, Arnd Bergmann wrote:
-> > > On Thursday 30 October 2014 18:08:26 Huang Rui wrote:
-> > > > It enables hibernation if the function is set in coreConsultant.
-> > > >=20
-> > > > Suggested-by: Felipe Balbi <balbi@ti.com>
-> > > > Signed-off-by: Huang Rui <ray.huang@amd.com>
-> > > > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > > >=20
-> > >=20
-> > > Something went wrong with the Signed-off-by lines here.=20
-> > > You should never add someone else's Signed-off-by below yours.
-> > >=20
-> > > I took a brief look at the entire series and the patches all look good
-> > > to me, but you have made the same mistake with the Signed-off-by
-> > > multiple times.
-> >=20
-> > there are no mistakes, I just asked Huang to resend what I had on my
-> > testing/next because it had not been sent to devicetree mailing list.
-> >=20
->=20
-> It's definitely a tricky question what the right Signed-off-by
-> chain is in this case, I guess strictly speaking it could have
-> been=20
->=20
-> Suggested-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Huang Rui <ray.huang@amd.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Huang Rui <ray.huang@amd.com>
->=20
-> which could correctly track where the patches went, but it's also
-> somewhat silly.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-somewhat ? You don't need to be so black and white.
-
---=20
-balbi
-
---cDtQGJ/EJIRf/Cpq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUUkjRAAoJEIaOsuA1yqREjk8P/1ZrLRuZqVFKhnwUAAE3ZVzA
-5QsPgWItY6dIvCRDESvI0y4QMJGJZ/IZqtcgH3D86hjLIoGntQJicuUCeiEniwXR
-Z94v9U8CjaZuUUB78pdXtzmgWuykw9yyVdhKNHTz4hS2azpG8nMl1AFgYOiCMjub
-a+9cLLKs/Eov3YLGwfet5mShMgrnb/2SG/JgHafL6E/jIieaISFcRfEq5Sn6r7Gi
-iEFj2sdNsjilOYnL+MdoL6aBn6h0Q/NnUY7ao6s+Mw1+3G/NCQ8+QYxLDQ6fP02p
-h2RSmy+R7w8bNRFK3hj0cx/qSX5jdSkLtdb4EbszJZIfWSlWNWsy4RRE2Nd/QwmE
-0my/nOMfy1QHSK8dgwb+PKpuNlAKXeKpg6Z+Zjm+R1xwFPIzwZennR0LRHWgYjT6
-n9G2A4XOww9yOIQnSVymsTbU+AneyDAnmic4wu5XgR6uOM6hvE9BGCDyRNOpwktk
-dQMgR1QSIQRwFxJevv+IsMWfyqwHawBBZHmtjx7E7+bQtoxXC2rGNhpn5SUrTWVx
-KWI7pG65Y5Y/yQHVLIjkf8IsgBaIanYhYCVMQiLYp90uSCGUzaQ+dgTWRSuU1SB6
-egA4m98N31hJzZ2gctduFYtCHPSurzhVSG0NceR5YGs2E5lAUSVhHBCE00e0oULm
-jCA0LeYb4AFee/QGEPlr
-=mF9r
------END PGP SIGNATURE-----
-
---cDtQGJ/EJIRf/Cpq--
+>  tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> index f6b2b4771b78..e0f896999d6b 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> @@ -168,8 +168,8 @@ then
+>  	touch $resdir/buildonly
+>  	exit 0
+>  fi
+> -echo $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
+> -( $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval ) &
+> +echo $QEMU $qemu_args -m 512 -kernel $resdir/bzImage -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
+> +( $QEMU $qemu_args -m 512 -kernel $resdir/bzImage -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval ) &
+>  qemu_pid=$!
+>  commandcompleted=0
+>  echo Monitoring qemu job at pid $qemu_pid
+> -- 
+> 1.8.1.5
+> 
