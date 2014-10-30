@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346AbaJ3Bci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 21:32:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45548 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636AbaJ3Bch (ORCPT
+	id S1757727AbaJ3Beu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 21:34:50 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:36061 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755700AbaJ3Bes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 21:32:37 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com
-Cc: peter@hurleysoftware.com, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] Bluetooth: Revert "Bluetooth: rfcomm: Remove unnecessary krfcommd event"
-Date: Wed, 29 Oct 2014 21:32:16 -0400
-Message-Id: <1414632736-18782-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.9.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 29 Oct 2014 21:34:48 -0400
+Date: Thu, 30 Oct 2014 10:34:44 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux-sh list <linux-sh@vger.kernel.org>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: non-Multiplatform APE6EVM broken in v3.18-rc1
+Message-ID: <20141030013444.GI22052@verge.net.au>
+References: <20141028004131.GA8280@verge.net.au>
+ <CAMuHMdXmOeJowF9FSQtoUzNK4zohvSYm+r3qp41-JigAOJ=+fg@mail.gmail.com>
+ <20141028092305.GA11937@verge.net.au>
+ <CAMuHMdUnwT7a1Gewz3AW-R9EaQBfYkJ2y7ZQ6uW4GaxBAHXzXg@mail.gmail.com>
+ <20141029001258.GE20702@verge.net.au>
+ <20141029020833.GA29787@verge.net.au>
+ <CAMuHMdWkP=t2WL64X8vKdOPXW_ZpbibXQ66un8GfVTWoc-o+tw@mail.gmail.com>
+ <20141029090502.GA32069@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029090502.GA32069@verge.net.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit e5842cdb0f4f2c68f6acd39e286e5d10d8c073e8.
+On Wed, Oct 29, 2014 at 06:05:03PM +0900, Simon Horman wrote:
+> On Wed, Oct 29, 2014 at 09:13:11AM +0100, Geert Uytterhoeven wrote:
+> > On Wed, Oct 29, 2014 at 3:08 AM, Simon Horman <horms@verge.net.au> wrote:
+> > > On Wed, Oct 29, 2014 at 09:12:58AM +0900, Simon Horman wrote:
+> > >> On Tue, Oct 28, 2014 at 10:32:32AM +0100, Geert Uytterhoeven wrote:
+> > >> > On Tue, Oct 28, 2014 at 10:23 AM, Simon Horman <horms@verge.net.au> wrote:
+> > >> > > On Tue, Oct 28, 2014 at 08:59:28AM +0100, Geert Uytterhoeven wrote:
+> > >> > >> On Tue, Oct 28, 2014 at 1:41 AM, Simon Horman <horms@verge.net.au> wrote:
+> > >> > >> > I have noticed that there appears to be a regression between v3.17 and
+> > >> > >> > v3.18-rc1 such that non-multiplatform APE6EVM (ape6evm_defconfig) no longer
+> > >> > >> > boots.  This appears to be the case using both reference DT (MACH_APE6EVM)
+> > 
+> > > It seems that the boot stops here:
+> > >
+> > > ...
+> > > smsc911x smsc911x eth0: MAC Address: 00:08:f7:00:02:4b
+> > > rcar_thermal rcar_thermal: Runtime PM disabled, clock forced on.
+> > > rcar_thermal rcar_thermal: 3 sensor probed
+> > > sh_mobile_sdhi sh_mobile_sdhi.0: Runtime PM disabled, clock forced on.
+> > > sh_mobile_sdhi sh_mobile_sdhi.0: No vqmmc regulator found
+> > >
+> > > I re-ran my bisection and this time the following showed up as the culprit.
+> > >
+> > > I suspect that the initialisation of mmcif, which is usually the next
+> > > device to be initialised, sleeps and never wakes up because the timer is
+> > > disabled.
+> > >
+> > > commit c387f07e6205cc13f57c1def5f885bf0a20e1c2d
+> > > Author: Sudeep Holla <sudeep.holla@arm.com>
+> > > Date:   Mon Sep 29 01:50:05 2014 +0200
+> > >
+> > >     clocksource: arm_arch_timer: Discard unavailable timers correctly
+> > 
+> > Apparently reported and fixed by Laurent and a few others, cfr.
+> > http://www.spinics.net/lists/arm-kernel/msg371615.html
 
-We can't call rfcomm_process_sessions() while our task state is not
-TASK_RUNNING since rfcomm_process_sessions() tries to lock mutexes
-and sleep. The scheduler even complains about it:
+I have temporarily cherry-picked the following, which is no present in
+linux-next, into the devel branch of the renesas tree. It appears to
+resolve the problem I reported.
 
-[   21.683959] WARNING: CPU: 13 PID: 8165 at kernel/sched/core.c:7305 __might_sleep+0xe5/0x1b0()
-[   21.683962] do not call blocking ops when !TASK_RUNNING; state=1 set at rfcomm_run (net/bluetooth/rfcomm/core.c:2096)
-[   21.683963] Modules linked in:
-[   21.683966] CPU: 13 PID: 8165 Comm: krfcommd Tainted: G        W      3.18.0-rc2-next-20141029-sasha-00035-gd14bbcb-dirty #1425
-[   21.683969]  ffffffffae2b4d0e 0000000000000000 ffff8805c0b23c00 ffff8805c0b23b98
-[   21.683972]  ffffffffad010b76 0000000000000000 ffff8805c0b23bf8 ffff8805c0b23be8
-[   21.683975]  ffffffffa3298dd8 ffffffffad0a0910 ffffffffa3309f95 ffff8805c0b23bc8
-[   21.683976] Call Trace:
-[   21.683979] dump_stack (lib/dump_stack.c:52)
-[   21.683982] warn_slowpath_common (kernel/panic.c:432)
-[   21.683985] ? __schedule (kernel/sched/core.c:2840)
-[   21.683987] ? __might_sleep (kernel/sched/core.c:7311)
-[   21.683990] warn_slowpath_fmt (kernel/panic.c:446)
-[   21.683993] ? rfcomm_run (net/bluetooth/rfcomm/core.c:2096)
-[   21.683996] ? rfcomm_run (net/bluetooth/rfcomm/core.c:2096)
-[   21.683999] __might_sleep (kernel/sched/core.c:7311)
-[   21.684002] mutex_lock_nested (kernel/locking/mutex.c:508 kernel/locking/mutex.c:622)
-[   21.684004] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2937 kernel/sched/core.c:2845)
-[   21.684008] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[   21.684011] rfcomm_run (net/bluetooth/rfcomm/core.c:1990 net/bluetooth/rfcomm/core.c:2102)
-[   21.684014] ? preempt_count_sub (kernel/sched/core.c:2641)
-[   21.684017] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2937 kernel/sched/core.c:2845)
-[   21.684020] ? rfcomm_process_rx (net/bluetooth/rfcomm/core.c:2088)
-[   21.684023] ? rfcomm_process_rx (net/bluetooth/rfcomm/core.c:2088)
-[   21.684025] kthread (kernel/kthread.c:207)
-[   21.684029] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
-[   21.684032] ? flush_kthread_work (kernel/kthread.c:176)
-[   21.684035] ret_from_fork (arch/x86/kernel/entry_64.S:348)
-[   21.684038] ? flush_kthread_work (kernel/kthread.c:176)
-
-Instead, just go to the old way oftracking wakeups.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- net/bluetooth/rfcomm/core.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
-
-diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
-index bce9c3d..942de7765 100644
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -48,6 +48,7 @@ static DEFINE_MUTEX(rfcomm_mutex);
- #define rfcomm_lock()	mutex_lock(&rfcomm_mutex)
- #define rfcomm_unlock()	mutex_unlock(&rfcomm_mutex)
- 
-+static unsigned long rfcomm_event;
- 
- static LIST_HEAD(session_list);
- 
-@@ -105,6 +106,7 @@ static void rfcomm_schedule(void)
- {
- 	if (!rfcomm_thread)
- 		return;
-+	set_bit(RFCOMM_SCHED_WAKEUP, &rfcomm_event);
- 	wake_up_process(rfcomm_thread);
- }
- 
-@@ -2092,18 +2094,19 @@ static int rfcomm_run(void *unused)
- 
- 	rfcomm_add_listener(BDADDR_ANY);
- 
--	while (1) {
-+	while (!kthread_should_stop()) {
- 		set_current_state(TASK_INTERRUPTIBLE);
--
--		if (kthread_should_stop())
--			break;
-+		if (!test_bit(RFCOMM_SCHED_WAKEUP, &rfcomm_event)) {
-+			/* No pending events. Let's sleep.
-+			 * Incoming connections and data will wake us up. */
-+			schedule();
-+		}
-+		set_current_state(TASK_RUNNING);
- 
- 		/* Process stuff */
-+		clear_bit(RFCOMM_SCHED_WAKEUP, &rfcomm_event);
- 		rfcomm_process_sessions();
--
--		schedule();
- 	}
--	__set_current_state(TASK_RUNNING);
- 
- 	rfcomm_kill_listener();
- 
--- 
-1.7.10.4
+b0ad5917960ca80f96bae ("ARM/ARM64: arch-timer: fix arch_timer_probed logic")
 
