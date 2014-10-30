@@ -1,167 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933056AbaJ3CVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:21:51 -0400
-Received: from regular1.263xmail.com ([211.150.99.131]:54306 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997AbaJ3CVt (ORCPT
+	id S1758204AbaJ3CTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:19:51 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:50720 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758146AbaJ3CTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:21:49 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <958b9dd3ef664ebdd02df8c54dfb916c>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Addy Ke <addy.ke@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net, dianders@chromium.org,
-        sonnyrao@chromium.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
-        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
-        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH] mmc: dw_mmc: add a quirk for the defferent bit of sdio interrupt
-Date: Thu, 30 Oct 2014 10:21:19 +0800
-Message-Id: <1414635679-12565-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 29 Oct 2014 22:19:44 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: arnd@arndb.de, f.fainelli@gmail.com, tglx@linutronix.de,
+        jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
+Subject: [PATCH V2 04/15] genirq: Generic chip: Change irq_reg_{readl,writel} arguments
+Date: Wed, 29 Oct 2014 19:17:57 -0700
+Message-Id: <1414635488-14137-5-git-send-email-cernekee@gmail.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414635488-14137-1-git-send-email-cernekee@gmail.com>
+References: <1414635488-14137-1-git-send-email-cernekee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a quirk: DW_MCI_QUIRK_SDIO_INT_24BIT.
+Instead of taking a raw register virtual address, we will take an
+irq_chip_generic struct and a register offset.  This makes it possible to
+implement different behavior on different irqchips.
 
-The bit of sdio interrupt is 16 in designware implementation, but
-is 24 in RK3288. To support RK3288 mmc controller, we need add
-a quirk for it.
-
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- drivers/mmc/host/dw_mmc.c  | 32 +++++++++++++++++++++++++++-----
- drivers/mmc/host/dw_mmc.h  |  1 +
- include/linux/mmc/dw_mmc.h |  2 ++
- 3 files changed, 30 insertions(+), 5 deletions(-)
+ kernel/irq/generic-chip.c | 30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 69f0cc6..db29621 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -778,6 +778,12 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
- 	u32 div;
- 	u32 clk_en_a;
- 	u32 sdmmc_cmd_bits = SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT;
-+	u32 sdio_int_bit;
-+
-+	if (host->quirks & DW_MCI_QUIRK_SDIO_INT_24BIT)
-+		sdio_int_bit = SDMMC_INT_SDIO_24BIT(slot->id);
-+	else
-+		sdio_int_bit = SDMMC_INT_SDIO(slot->id);
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index 380595f..b2ee65d 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -17,14 +17,16 @@
+ static LIST_HEAD(gc_list);
+ static DEFINE_RAW_SPINLOCK(gc_lock);
  
- 	/* We must continue to set bit 28 in CMD until the change is complete */
- 	if (host->state == STATE_WAITING_CMD11_DONE)
-@@ -819,7 +825,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
+-static void irq_reg_writel(u32 val, void __iomem *addr)
++static void irq_reg_writel(struct irq_chip_generic *gc,
++			   u32 val, int reg_offset)
+ {
+-	writel(val, addr);
++	writel(val, gc->reg_base + reg_offset);
+ }
  
- 		/* enable clock; only low power if no SDIO */
- 		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
--		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
-+		if (!(mci_readl(host, INTMASK) & sdio_int_bit))
- 			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
- 		mci_writel(host, CLKENA, clk_en_a);
+-static u32 irq_reg_readl(void __iomem *addr)
++static u32 irq_reg_readl(struct irq_chip_generic *gc,
++			 int reg_offset)
+ {
+-	return readl(addr);
++	return readl(gc->reg_base + reg_offset);
+ }
  
-@@ -1167,6 +1173,12 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
- 	struct dw_mci_slot *slot = mmc_priv(mmc);
- 	struct dw_mci *host = slot->host;
- 	u32 int_mask;
-+	u32 sdio_int_bit;
-+
-+	if (host->quirks & DW_MCI_QUIRK_SDIO_INT_24BIT)
-+		sdio_int_bit = SDMMC_INT_SDIO_24BIT(slot->id);
-+	else
-+		sdio_int_bit = SDMMC_INT_SDIO(slot->id);
+ /**
+@@ -49,7 +51,7 @@ void irq_gc_mask_disable_reg(struct irq_data *d)
+ 	u32 mask = d->mask;
  
- 	/* Enable/disable Slot Specific SDIO interrupt */
- 	int_mask = mci_readl(host, INTMASK);
-@@ -1180,10 +1192,10 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
- 		dw_mci_disable_low_power(slot);
+ 	irq_gc_lock(gc);
+-	irq_reg_writel(mask, gc->reg_base + ct->regs.disable);
++	irq_reg_writel(gc, mask, ct->regs.disable);
+ 	*ct->mask_cache &= ~mask;
+ 	irq_gc_unlock(gc);
+ }
+@@ -69,7 +71,7 @@ void irq_gc_mask_set_bit(struct irq_data *d)
  
- 		mci_writel(host, INTMASK,
--			   (int_mask | SDMMC_INT_SDIO(slot->id)));
-+			   (int_mask | sdio_int_bit));
- 	} else {
- 		mci_writel(host, INTMASK,
--			   (int_mask & ~SDMMC_INT_SDIO(slot->id)));
-+			   (int_mask & ~sdio_int_bit));
+ 	irq_gc_lock(gc);
+ 	*ct->mask_cache |= mask;
+-	irq_reg_writel(*ct->mask_cache, gc->reg_base + ct->regs.mask);
++	irq_reg_writel(gc, *ct->mask_cache, ct->regs.mask);
+ 	irq_gc_unlock(gc);
+ }
+ EXPORT_SYMBOL_GPL(irq_gc_mask_set_bit);
+@@ -89,7 +91,7 @@ void irq_gc_mask_clr_bit(struct irq_data *d)
+ 
+ 	irq_gc_lock(gc);
+ 	*ct->mask_cache &= ~mask;
+-	irq_reg_writel(*ct->mask_cache, gc->reg_base + ct->regs.mask);
++	irq_reg_writel(gc, *ct->mask_cache, ct->regs.mask);
+ 	irq_gc_unlock(gc);
+ }
+ EXPORT_SYMBOL_GPL(irq_gc_mask_clr_bit);
+@@ -108,7 +110,7 @@ void irq_gc_unmask_enable_reg(struct irq_data *d)
+ 	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+-	irq_reg_writel(mask, gc->reg_base + ct->regs.enable);
++	irq_reg_writel(gc, mask, ct->regs.enable);
+ 	*ct->mask_cache |= mask;
+ 	irq_gc_unlock(gc);
+ }
+@@ -124,7 +126,7 @@ void irq_gc_ack_set_bit(struct irq_data *d)
+ 	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+-	irq_reg_writel(mask, gc->reg_base + ct->regs.ack);
++	irq_reg_writel(gc, mask, ct->regs.ack);
+ 	irq_gc_unlock(gc);
+ }
+ EXPORT_SYMBOL_GPL(irq_gc_ack_set_bit);
+@@ -140,7 +142,7 @@ void irq_gc_ack_clr_bit(struct irq_data *d)
+ 	u32 mask = ~d->mask;
+ 
+ 	irq_gc_lock(gc);
+-	irq_reg_writel(mask, gc->reg_base + ct->regs.ack);
++	irq_reg_writel(gc, mask, ct->regs.ack);
+ 	irq_gc_unlock(gc);
+ }
+ 
+@@ -155,8 +157,8 @@ void irq_gc_mask_disable_reg_and_ack(struct irq_data *d)
+ 	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+-	irq_reg_writel(mask, gc->reg_base + ct->regs.mask);
+-	irq_reg_writel(mask, gc->reg_base + ct->regs.ack);
++	irq_reg_writel(gc, mask, ct->regs.mask);
++	irq_reg_writel(gc, mask, ct->regs.ack);
+ 	irq_gc_unlock(gc);
+ }
+ 
+@@ -171,7 +173,7 @@ void irq_gc_eoi(struct irq_data *d)
+ 	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+-	irq_reg_writel(mask, gc->reg_base + ct->regs.eoi);
++	irq_reg_writel(gc, mask, ct->regs.eoi);
+ 	irq_gc_unlock(gc);
+ }
+ 
+@@ -255,7 +257,7 @@ irq_gc_init_mask_cache(struct irq_chip_generic *gc, enum irq_gc_flags flags)
+ 		}
+ 		ct[i].mask_cache = mskptr;
+ 		if (flags & IRQ_GC_INIT_MASK_CACHE)
+-			*mskptr = irq_reg_readl(gc->reg_base + mskreg);
++			*mskptr = irq_reg_readl(gc, mskreg);
  	}
  }
  
-@@ -2035,8 +2047,15 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- 		/* Handle SDIO Interrupts */
- 		for (i = 0; i < host->num_slots; i++) {
- 			struct dw_mci_slot *slot = host->slot[i];
--			if (pending & SDMMC_INT_SDIO(i)) {
--				mci_writel(host, RINTSTS, SDMMC_INT_SDIO(i));
-+			u32 sdio_int_bit;
-+
-+			if (host->quirks & DW_MCI_QUIRK_SDIO_INT_24BIT)
-+				sdio_int_bit = SDMMC_INT_SDIO_24BIT(i);
-+			else
-+				sdio_int_bit = SDMMC_INT_SDIO(i);
-+
-+			if (pending & sdio_int_bit) {
-+				mci_writel(host, RINTSTS, sdio_int_bit);
- 				mmc_signal_sdio_irq(slot->mmc);
- 			}
- 		}
-@@ -2452,6 +2471,9 @@ static struct dw_mci_of_quirks {
- 	}, {
- 		.quirk	= "disable-wp",
- 		.id	= DW_MCI_QUIRK_NO_WRITE_PROTECT,
-+	}, {
-+		.quirk	= "sdio-int-24bit",
-+		.id	= DW_MCI_QUIRK_SDIO_INT_24BIT,
- 	},
- };
- 
-diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 01b99e8..6a48015 100644
---- a/drivers/mmc/host/dw_mmc.h
-+++ b/drivers/mmc/host/dw_mmc.h
-@@ -92,6 +92,7 @@
- #define SDMMC_CTYPE_4BIT		BIT(0)
- #define SDMMC_CTYPE_1BIT		0
- /* Interrupt status & mask register defines */
-+#define SDMMC_INT_SDIO_24BIT(n)		BIT(24 + (n))
- #define SDMMC_INT_SDIO(n)		BIT(16 + (n))
- #define SDMMC_INT_EBE			BIT(15)
- #define SDMMC_INT_ACD			BIT(14)
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index 0013669..6d4669e 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -217,6 +217,8 @@ struct dw_mci_dma_ops {
- #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
- /* No write protect */
- #define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
-+/* In RK3288, the bit of sdio interrupt is 24 */
-+#define DW_MCI_QUIRK_SDIO_INT_24BIT		BIT(5)
- 
- /* Slot level quirks */
- /* This slot has no write protect */
 -- 
-1.8.3.2
-
+2.1.1
 
