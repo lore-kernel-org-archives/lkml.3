@@ -1,90 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595AbaJ3JVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:21:20 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:49552 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181AbaJ3JVT (ORCPT
+	id S1758622AbaJ3JX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:23:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47070 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758505AbaJ3JX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:21:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
-        ralf@linux-mips.org, lethal@linux-sh.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH V2 05/15] genirq: Generic chip: Add big endian I/O accessors
-Date: Thu, 30 Oct 2014 10:21:12 +0100
-Message-ID: <14243833.KJsSScVrGS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414635488-14137-6-git-send-email-cernekee@gmail.com>
-References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-6-git-send-email-cernekee@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:iGl9KGp6Vdq4t+Tvsv5XbZgFUCigZzvXZzLkhNS9a+6
- twWHe/TX7CkeSA2inSjrA37RzubSKmX/aay2D1JIYznmwmhJoi
- e1lzsa+YJ50OOY5dd85zp2QKU08Jl7yZok7PxUHAt2T2s6ZnGM
- 8mnLpRud/3UISa0IqVBOj/RLyXLSAbBPZ2XmFhujKWEGph7Dvb
- ZgInjrRI8z3EOtKlDwz7C67eF30WfxEVS7FA/APOWBHIWVZ0vk
- 99CnTb+vCVEiW3Y2cymPMosYYisuRxViUFMULHpygaKlEzWiYt
- zI/uqYrg+vAnSN/OPwCiLDdyd3NA1hjws0kcdkfi//71aOoXEv
- WNDIMiN5CzyCVFrLwi4A=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 30 Oct 2014 05:23:27 -0400
+Message-ID: <1414660985.3069.6.camel@pengutronix.de>
+Subject: Re: [PATCH 1/3] ARM: mediatek: Add Reset Controller for MediaTek SoC
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: flora.fu@mediatek.com
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, arm@kernel.org,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        srv_heupstream@mediatek.com, Sascha Hauer <kernel@pengutronix.de>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 30 Oct 2014 10:23:05 +0100
+In-Reply-To: <1414638733-10080-2-git-send-email-flora.fu@mediatek.com>
+References: <1414638733-10080-1-git-send-email-flora.fu@mediatek.com>
+	 <1414638733-10080-2-git-send-email-flora.fu@mediatek.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 October 2014 19:17:58 Kevin Cernekee wrote:
->  static LIST_HEAD(gc_list);
->  static DEFINE_RAW_SPINLOCK(gc_lock);
->  
-> +static int is_big_endian(struct irq_chip_generic *gc)
+Hi Flora,
+
+apart from the question about whether the regmap should be looked up by
+phandle or from the parent device if we can put reset nodes as children
+of the syscon nodes, I have two small nitpicks below.
+
+Am Donnerstag, den 30.10.2014, 11:12 +0800 schrieb
+flora.fu@mediatek.com:
+> From: Flora Fu <flora.fu@mediatek.com>
+> 
+> Add a driver in reset controller.
+> 
+> Signed-off-by: Flora Fu <flora.fu@mediatek.com>
+> ---
+>  drivers/reset/Makefile    |   1 +
+>  drivers/reset/reset-mtk.c | 149 ++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 150 insertions(+)
+>  create mode 100644 drivers/reset/reset-mtk.c
+> 
+> diff --git a/drivers/reset/Makefile b/drivers/reset/Makefile
+> index 60fed3d..adcebdf 100644
+> --- a/drivers/reset/Makefile
+> +++ b/drivers/reset/Makefile
+> @@ -2,3 +2,4 @@ obj-$(CONFIG_RESET_CONTROLLER) += core.o
+>  obj-$(CONFIG_ARCH_SOCFPGA) += reset-socfpga.o
+>  obj-$(CONFIG_ARCH_SUNXI) += reset-sunxi.o
+>  obj-$(CONFIG_ARCH_STI) += sti/
+> +obj-$(CONFIG_ARCH_MEDIATEK) += reset-mtk.o
+> diff --git a/drivers/reset/reset-mtk.c b/drivers/reset/reset-mtk.c
+> new file mode 100644
+> index 0000000..e2211f7
+> --- /dev/null
+> +++ b/drivers/reset/reset-mtk.c
+> @@ -0,0 +1,149 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Flora.Fu <flora.fu@mediatek.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +#include <linux/reset-controller.h>
+> +#include <linux/slab.h>
+
+Do you need to include <linux/slab.h>?
+
+> +struct mt_reset_data {
+> +	struct regmap *regmap;
+> +	unsigned int resetbase;
+> +	unsigned int size;
+> +	struct reset_controller_dev rcdev;
+> +};
+> +
+> +static int mt_reset_assert(struct reset_controller_dev *rcdev,
+> +			      unsigned long id)
 > +{
-> +       return !!(gc->domain->gc->gc_flags & IRQ_GC_BE_IO);
+> +	struct regmap *regmap;
+> +	unsigned addr;
+> +	unsigned mask;
+> +	struct mt_reset_data *data = container_of(rcdev,
+> +						     struct mt_reset_data,
+> +						     rcdev);
+> +	regmap = data->regmap;
+> +	addr = data->resetbase + ((id / 32) << 2);
+> +	mask = BIT(id % 32);
+> +
+> +	return regmap_update_bits(regmap, addr, mask, mask);
 > +}
 > +
->  static void irq_reg_writel(struct irq_chip_generic *gc,
->                            u32 val, int reg_offset)
->  {
-> -       writel(val, gc->reg_base + reg_offset);
-> +       if (is_big_endian(gc))
-> +               iowrite32be(val, gc->reg_base + reg_offset);
-> +       else
-> +               writel(val, gc->reg_base + reg_offset);
->  }
->  
+> +static int mt_reset_deassert(struct reset_controller_dev *rcdev,
+> +				unsigned long id)
+> +{
+> +	struct regmap *regmap;
+> +	unsigned addr;
+> +	unsigned mask;
+> +	struct mt_reset_data *data = container_of(rcdev,
+> +						     struct mt_reset_data,
+> +						     rcdev);
+> +
+> +	regmap = data->regmap;
+> +	addr = data->resetbase + ((id / 32) << 2);
+> +	mask = BIT(id % 32);
+> +
+> +	return regmap_update_bits(regmap, addr, mask, ~mask);
+> +}
+> +
+> +static struct reset_control_ops mt_reset_ops = {
+> +	.assert = mt_reset_assert,
+> +	.deassert = mt_reset_deassert,
+> +};
+> +
+> +static int mt_reset_probe(struct platform_device *pdev)
+> +{
+> +	struct mt_reset_data *data;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	unsigned int resetbase;
+> +	unsigned int width;
+> +	int ret;
+> +
+> +	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	data->regmap = syscon_regmap_lookup_by_phandle(np,
+> +		"mediatek,syscon-reset");
+> +	if (IS_ERR(data->regmap)) {
+> +		dev_err(&pdev->dev, "couldn't get syscon-reset regmap\n");
+> +		return PTR_ERR(data->regmap);
+> +	}
+> +
+> +	ret = of_property_read_u32_index(np, "mediatek,syscon-reset", 1,
+> +		&resetbase);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "couldn't read reset base from syscon!\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = of_property_read_u32_index(np, "mediatek,syscon-reset", 2,
+> +		&width);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "couldn't read reset bytes from syscon!\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	data->resetbase = resetbase;
+> +	data->size = width >> 2;
 
-What I had in mind was to use indirect function calls instead, like
+It is common to measure size of a resource in bytes, so maybe it would
+be easier to understand if you renamed width to size and renamed
+data->size to something like data->num_regs.
 
-#ifndef irq_reg_writel
-static inline void irq_reg_writel_le(u32 val, void __iomem *addr)
-{
-	return writel(val, addr);
-}
-#endif
+> +	data->rcdev.owner = THIS_MODULE;
+> +	data->rcdev.nr_resets = data->size * 32;
+> +	data->rcdev.ops = &mt_reset_ops;
+> +	data->rcdev.of_node = pdev->dev.of_node;
+> +
+> +	return reset_controller_register(&data->rcdev);
+> +}
+> +
+> +static int mt_reset_remove(struct platform_device *pdev)
+> +{
+> +	struct mt_reset_data *data = platform_get_drvdata(pdev);
+> +
+> +	reset_controller_unregister(&data->rcdev);
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id mt_reset_dt_ids[] = {
+> +	{ .compatible = "mediatek,reset", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, mt_reset_dt_ids);
+> +
+> +static struct platform_driver mt_reset_driver = {
+> +	.probe = mt_reset_probe,
+> +	.remove = mt_reset_remove,
+> +	.driver = {
+> +		.name = "mtk-reset",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = mt_reset_dt_ids,
+> +	},
+> +};
+> +
+> +static int __init mt_reset_init(void)
+> +{
+> +	return platform_driver_register(&mt_reset_driver);
+> +}
+> +module_init(mt_reset_init);
+> +
+> +static void __exit mt_reset_exit(void)
+> +{
+> +	platform_driver_unregister(&mt_reset_driver);
+> +}
+> +module_exit(mt_reset_exit);
 
-#ifndef irq_reg_writel_be
-static inline void irq_reg_writel_be(u32 val, void __iomem *addr)
-{
-	return iowrite32_be(val, addr);
-}
-#endif
+You can use the module_platform_driver(mt_reset_driver); macro here.
 
+> +MODULE_AUTHOR("Flora Fu <flora.fu@mediatek.com>");
+> +MODULE_DESCRIPTION("MediaTek SoC Generic Reset Controller");
+> +MODULE_LICENSE("GPL");
 
-static inline void irq_reg_writel(struct irq_chip_generic *gc, u32 val, int reg_offset)
-{
-       if (IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP) &&
-           !IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP_BE))
-		return irq_reg_writel_le(val, gc->reg_base + reg_offset);
+regards
+Philipp
 
-       if (IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP) &&
-           !IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP_BE))
-		return irq_reg_writel_be(val, gc->reg_base + reg_offset);
-
-	return gc->writel(val, gc->reg_base + reg_offset);
-}
-
-This would take the condition out of the callers.
-
-	Arnd
