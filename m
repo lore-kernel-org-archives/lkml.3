@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758074AbaJ3A5n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 20:57:43 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:51178 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496AbaJ3A5l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 20:57:41 -0400
+	id S1757852AbaJ3BDR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 21:03:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58879 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756762AbaJ3BDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 21:03:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="408190545"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Haojian Zhuang" <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>
+Subject: RE: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters'
+ accessing
+Thread-Topic: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters'
+ accessing
+Thread-Index: AQHP4s22TpHaDKncQEG+hgnoBCOPqpxGWjFggAAw1QCAAWjMwA==
+Date: Thu, 30 Oct 2014 01:02:16 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9A92B3@SHSMSX101.ccr.corp.intel.com>
+References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
+ <1412783423-9408-2-git-send-email-alvin.chen@intel.com>
+ <4656BEB6164FC34F8171C6538F1A595B2E9A90E6@SHSMSX101.ccr.corp.intel.com>
+ <5450CF36.7060105@nexus-software.ie>
+In-Reply-To: <5450CF36.7060105@nexus-software.ie>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <cover.1414629045.git.luto@amacapital.net>
-References: <cover.1414629045.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 29 Oct 2014 17:57:19 -0700
-Message-ID: <CALCETrWfRMyMkReQmtbmK75jyAKDCGn7tWeqh2UBsuSKFAA+sQ@mail.gmail.com>
-Subject: Re: [RFC 0/6] mm, x86: New special mapping ops
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, X86 ML <x86@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9U13NuB008063
 
-On Wed, Oct 29, 2014 at 5:42 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> This is an attempt to make the core special mapping infrastructure
-> track what arch vdso code needs better than it currently does.  It
-> adds:
->
-> .start_addr_set: A callback to notify arch code that a special mapping
-> was mremapped.  (CRIU does this.  Without something like this, it's
-> somewhat broken for 64-bit userspace and completely broken for 32-bit
-> userspace on Intel hardware.  Apparently no one has noticed the 64-bit
-> breakage, and no one ever ported CRIU to 32-bit in the first place.)
->
-> .fault: Directly fault handling on the vdso.  Imagine that!  It turns
-> out that storing a list of struct page pointers in the special mapping
-> data is awkward for pretty much everyone and completely precludes
-> mapping things that aren't pages without dirty hacks.  (x86 uses dirty
-> hacks for the HPET mapping.  See below.)
+> >
+> 
+> Hi Alvin, Weike.
+> 
+> I'm not clear if these patches apply to the current tip-of-tree.
+> 
+> I thought the action required here, was for a resend of patches to ensure they
+> applied to tip-of-tree ?
+> 
+As I said before, it is based on the slave-dma tree (git.infraded.org) for-linus branch, which will be reapplied on top of v3.19-rc1. 
 
-I should add that there's further motivation for this.  I want to change the x86
-vdso code so that the HPET is only mapped if it's actually in use.  Getting
-this right is delicate, but it's almost impossible without this change.
+That is to say these patches will be applied to slave-dma tree for-linus branch, and then the slave-dma tree for-linus branch will be applied to v3.19.
+Andy, am I right?
 
-In particular, if the HPET gets selected due to TSC instability after
-boot, then there's no good way to start allowing access right now.
-I'd have to remap_pfn_range on all mms at (egads!) an unknown address,
-whereas now I can just start accepting the reference in .fault.
-Getting the other direction right is tricky, but it's doable in a
-number of ways.
 
---Andy
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
