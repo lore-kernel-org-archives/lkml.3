@@ -1,55 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759212AbaJ3QTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 12:19:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35728 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758593AbaJ3QTE (ORCPT
+	id S1759568AbaJ3QUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 12:20:50 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:52127 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758667AbaJ3QUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 12:19:04 -0400
-Date: Thu, 30 Oct 2014 09:17:52 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Thu, 30 Oct 2014 12:20:47 -0400
+Date: Thu, 30 Oct 2014 17:20:44 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org, tj@kernel.org, marcel@holtmann.org,
-        desrt@desrt.ca, hadess@hadess.net, dh.herrmann@gmail.com,
-        tixxdz@opendz.org, simon.mcvittie@collabora.co.uk, daniel@zonque.org,
-        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
-        teg@jklm.no
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-Message-ID: <20141030161752.GB21989@kroah.com>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <4382138.U2ODUIQ55c@wuerfel>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-watchdog@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: Re: [PATCH] watchdog: at91rm9200: allow building when using device
+ tree
+Message-ID: <20141030162044.GH17398@piout.net>
+References: <1414678534-2677-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <2000678.14fQbcst9s@wuerfel>
+ <20141030151719.GG17398@piout.net>
+ <3649339.YOqvibXDK5@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4382138.U2ODUIQ55c@wuerfel>
+In-Reply-To: <3649339.YOqvibXDK5@wuerfel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 09:33:56AM +0100, Arnd Bergmann wrote:
-> On Wednesday 29 October 2014 15:00:44 Greg Kroah-Hartman wrote:
-> >  drivers/misc/Kconfig                             |    1 +
-> >  drivers/misc/Makefile                            |    1 +
-> >  drivers/misc/kdbus/Kconfig                       |   11 +
-> >  drivers/misc/kdbus/Makefile                      |   19 +
-> >  drivers/misc/kdbus/bus.c                         |  450 ++++++
-> >  drivers/misc/kdbus/bus.h                         |  107 ++
-> >  drivers/misc/kdbus/connection.c                  | 1751 +++++++++++++++++++++
-> >  drivers/misc/kdbus/connection.h                  |  177 +++
-> >  drivers/misc/kdbus/domain.c                      |  477 ++++++
+On 30/10/2014 at 16:43:09 +0100, Arnd Bergmann wrote :
+> On Thursday 30 October 2014 16:17:19 Alexandre Belloni wrote:
+> > 
+> > On 30/10/2014 at 15:43:43 +0100, Arnd Bergmann wrote :
+> > > On Thursday 30 October 2014 15:36:24 Boris Brezillon wrote:
+> > > > On Thu, 30 Oct 2014 15:15:34 +0100
+> > > > Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+> > > > 
+> > > > > When building with device tree, ARCH_AT91RM9200 may not be selected. Allow
+> > > > > building that driver by also depending on ARCH_AT91.
+> > > > > 
+> > > > > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > > > 
+> > > > Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > > 
+> > > 
+> > > Doesn't this reintroduce the bug fixed by commit 09549cd0172 ("watchdog:
+> > > Revert the AT91RM9200_WATCHDOG dependency")?
+> > > 
+> > > At least in 3.18-rc2, the driver still uses at91_st_write/at91_st_read.
+> > > 
+> > 
+> > Hum, right, then we have no better way to express that than depends on
+> > SOC_AT91RM9200, would that be acceptable ?
 > > 
 > 
-> One very high-level common:
-> 
-> Since this is going to be a very commonly used IPC mechanism, I don't
-> like the idea of stuffing it into drivers/misc.
-> 
-> How about putting it into drivers/kdbus or ipc/kdbus instead?
+> Sounds fine to me, but why can't we just fix the dependency?
 
-ipc/kdbus seems good to me.  I didn't want to "pollute" drivers/ with
-any new subdirectories, it seems to grow fast enough as it is...
+My plan was to create a driver for the system time in
+drivers/clocksource from at91rm9200_time.c, export a syscon from there
+that could be used by the watchdog driver.
 
-greg k-h
+But meanwhile, we can go with your patch.
+
+> 
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> diff --git a/arch/arm/mach-at91/at91rm9200_devices.c b/arch/arm/mach-at91/at91rm9200_devices.c
+> index 74f1eaf97801..7f51e406b240 100644
+> --- a/arch/arm/mach-at91/at91rm9200_devices.c
+> +++ b/arch/arm/mach-at91/at91rm9200_devices.c
+> @@ -719,10 +719,19 @@ static void __init at91_add_device_rtc(void) {}
+>   * -------------------------------------------------------------------- */
+>  
+>  #if defined(CONFIG_AT91RM9200_WATCHDOG) || defined(CONFIG_AT91RM9200_WATCHDOG_MODULE)
+> +static struct resource wdt_resources[] = {
+> +	[0] = {
+> +		.start	= AT91RM9200_BASE_ST,
+> +		.end	= AT91RM9200_BASE_ST + SZ_256 - 1,
+> +		.flags	= IORESOURCE_MEM,
+> +	};
+> +};
+> +
+>  static struct platform_device at91rm9200_wdt_device = {
+> -	.name		= "at91_wdt",
+> +	.name		= "at91rm9200_wdt",
+>  	.id		= -1,
+> -	.num_resources	= 0,
+> +	.resource	= wdt_resources,
+> +	.num_resources	= 1,
+>  };
+>  
+>  static void __init at91_add_device_watchdog(void)
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index d0107d424ee4..0592db68f3a8 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -154,14 +154,14 @@ config ARM_SP805_WATCHDOG
+>  
+>  config AT91RM9200_WATCHDOG
+>  	tristate "AT91RM9200 watchdog"
+> -	depends on ARCH_AT91RM9200
+> +	depends on ARCH_AT91 || COMPILE_TEST
+>  	help
+>  	  Watchdog timer embedded into AT91RM9200 chips. This will reboot your
+>  	  system when the timeout is reached.
+>  
+>  config AT91SAM9X_WATCHDOG
+>  	tristate "AT91SAM9X / AT91CAP9 watchdog"
+> -	depends on ARCH_AT91 && !ARCH_AT91RM9200
+> +	depends on ARCH_AT91
+>  	select WATCHDOG_CORE
+>  	help
+>  	  Watchdog timer embedded into AT91SAM9X and AT91CAP9 chips. This will
+> diff --git a/drivers/watchdog/at91rm9200_wdt.c b/drivers/watchdog/at91rm9200_wdt.c
+> index dee6cc21d270..6b846e009268 100644
+> --- a/drivers/watchdog/at91rm9200_wdt.c
+> +++ b/drivers/watchdog/at91rm9200_wdt.c
+> @@ -26,11 +26,27 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/of.h>
+>  #include <linux/of_device.h>
+> -#include <mach/at91_st.h>
+>  
+>  #define WDT_DEFAULT_TIME	5	/* seconds */
+>  #define WDT_MAX_TIME		256	/* seconds */
+>  
+> +static void __iomem *at91_st_base;
+> +
+> +#define at91_st_read(field) \
+> +	readl(at91_st_base + field)
+> +
+> +#define at91_st_write(field, value) \
+> +	writel(value, at91_st_base + field)
+> +
+> +#define	AT91_ST_CR		0x00			/* Control Register */
+> +#define 	AT91_ST_WDRST		(1 << 0)		/* Watchdog Timer Restart */
+> +
+> +#define	AT91_ST_WDMR		0x08			/* Watchdog Mode Register */
+> +#define		AT91_ST_WDV		(0xffff <<  0)		/* Watchdog Counter Value */
+> +#define		AT91_ST_RSTEN		(1	<< 16)		/* Reset Enable */
+> +#define		AT91_ST_EXTEN		(1	<< 17)		/* External Signal Assertion Enable */
+> +
+> +
+>  static int wdt_time = WDT_DEFAULT_TIME;
+>  static bool nowayout = WATCHDOG_NOWAYOUT;
+>  
+> @@ -203,12 +222,17 @@ static struct miscdevice at91wdt_miscdev = {
+>  
+>  static int at91wdt_probe(struct platform_device *pdev)
+>  {
+> +	struct resource *regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	int res;
+>  
+>  	if (at91wdt_miscdev.parent)
+>  		return -EBUSY;
+>  	at91wdt_miscdev.parent = &pdev->dev;
+>  
+> +	at91_st_base = devm_ioremap_resource(&pdev->dev, regs);
+> +	if (!at91_st_base)
+> +		return -ENXIO;
+> +
+>  	res = misc_register(&at91wdt_miscdev);
+>  	if (res)
+>  		return res;
+> @@ -255,6 +279,7 @@ static int at91wdt_resume(struct platform_device *pdev)
+>  #endif
+>  
+>  static const struct of_device_id at91_wdt_dt_ids[] = {
+> +	{ .compatible = "atmel,at91rm9200-st" },
+>  	{ .compatible = "atmel,at91rm9200-wdt" },
+>  	{ /* sentinel */ }
+>  };
+> @@ -267,7 +292,7 @@ static struct platform_driver at91wdt_driver = {
+>  	.suspend	= at91wdt_suspend,
+>  	.resume		= at91wdt_resume,
+>  	.driver		= {
+> -		.name	= "at91_wdt",
+> +		.name	= "at91rm9200_wdt",
+>  		.owner	= THIS_MODULE,
+>  		.of_match_table = at91_wdt_dt_ids,
+>  	},
+> 
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
