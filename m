@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760634AbaJ3PUq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 11:20:46 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:57457 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583AbaJ3PUp (ORCPT
+	id S933739AbaJ3PVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 11:21:10 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:46384 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760433AbaJ3PVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 11:20:45 -0400
+	Thu, 30 Oct 2014 11:21:08 -0400
+Message-ID: <54525761.8070800@gmail.com>
+Date: Thu, 30 Oct 2014 10:21:05 -0500
+From: Don Brace <brace77070@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1414404914-163837-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1414404914-163837-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Thu, 30 Oct 2014 16:20:44 +0100
-Message-ID: <CACRpkdag38GawJEZ+m+P-qcRQk24asSaP8GCmu6ssvDPHud4eg@mail.gmail.com>
-Subject: Re: [PATCH] net: rfkill: gpio: Add default GPIO driver mappings for ACPI
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>, iss_storagedev@hp.com,
+        linux-scsi@vger.kernel.org, don.brace@pmcs.com, hch@infradead.org
+Subject: Re: [PATCH 1/1 linux-next] hpsa: remove set but unused variable rc
+References: <1414595704-3119-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1414595704-3119-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 11:15 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-
-> The driver uses devm_gpiod_get_index(..., index) so that the index refers
-> directly to the GpioIo resource under the ACPI device. The problem with
-> this is that if the ordering changes we get wrong GPIOs.
+On 10/29/2014 10:15 AM, Fabian Frederick wrote:
+> Fix -Wunused-but-set-variable warning
 >
-> With ACPI 5.1 _DSD we can now use names instead to reference GPIOs
-> analogous to Device Tree. However, we still have systems out there that do
-> not provide _DSD at all. These systems must be supported as well.
->
-> Luckily we now have acpi_dev_add_driver_gpios() that can be used to provide
-> mappings for systems where _DSD is not provided and still take advantage of
-> _DSD if it exists.
->
-> This patch changes the driver to create default GPIO mappings if we are
-> running on ACPI system.
->
-> While there we can drop the indices completely and use devm_gpiod_get()
-> with name instead.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 > ---
-> Hi,
+>   drivers/scsi/hpsa.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
 >
-> This patch is based on top of linux-pm/device-properties [1] and following
-> patch from Rafael [2].
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index cef5d49..34330e1 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -6619,11 +6619,11 @@ static void hpsa_free_cmd_pool(struct ctlr_info *h)
 >
-> Johannes, John,
+>   static void hpsa_irq_affinity_hints(struct ctlr_info *h)
+>   {
+> -	int i, cpu, rc;
+> +	int i, cpu;
 >
-> If you are happy with the patch, can you ACK it so that we can merge it
-> with the rest of the device-properties patches. Thanks.
+>   	cpu = cpumask_first(cpu_online_mask);
+>   	for (i = 0; i < h->msix_vector; i++) {
+> -		rc = irq_set_affinity_hint(h->intr[i], get_cpu_mask(cpu));
+> +		irq_set_affinity_hint(h->intr[i], get_cpu_mask(cpu));
+>   		cpu = cpumask_next(cpu, cpu_online_mask);
+>   	}
+>   }
 >
-> [1] git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
-> [2] https://lkml.org/lkml/2014/10/24/690
-(...)
-> +static const struct acpi_gpio_params reset_gpios = { 0, 0, false };
-> +static const struct acpi_gpio_params shutdown_gpios = { 1, 0, false };
-> +
-> +static const struct acpi_gpio_mapping acpi_rfkill_default_gpios[] = {
-> +       { "reset-gpios", &reset_gpios, 1 },
-> +       { "shutdown-gpios", &shutdown_gpios, 1 },
-> +       { },
-> +};
 
-Jaysis, it could use a comment above the map telling the poor code
-reader what is actually going on.
+I can add this patch to my current set of patches for 3.19 or ack this 
+now, What would you prefer?
 
-Other than that, this is what we have to live with I guess so:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+---
+Don Brace
+don.brace@pmcs.com
