@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124AbaJ3FS0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 01:18:26 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:63222 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802AbaJ3FSY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 01:18:24 -0400
-Message-ID: <1414646300.5306.22.camel@marge.simpson.net>
-Subject: Re: [PATCH] futex: fix a race condition between REQUEUE_PI and task
- death
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Brian Silverman <bsilver16384@gmail.com>, tglx@linutronix.de,
-        Austin Schuh <austin.linux@gmail.com>, linux-kernel@vger.kernel.org
-Date: Thu, 30 Oct 2014 06:18:20 +0100
-In-Reply-To: <20141030042852.GI14609@vmdeb7>
-References: <1414092159-17697-1-git-send-email-bsilver16384@gmail.com>
-	 <CAP01z6LSTyS5FDgZTma96BY5eWycpHgECNwZSy2Afyn2UFH5yA@mail.gmail.com>
-	 <20141030042852.GI14609@vmdeb7>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757393AbaJ3FTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 01:19:31 -0400
+Received: from ozlabs.org ([103.22.144.67]:33278 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752367AbaJ3FT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 01:19:29 -0400
+Date: Thu, 30 Oct 2014 16:19:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: linux-next: build warning after merge of the akpm-current tree
+Message-ID: <20141030161921.0e204257@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/5PF5IDHTxHxGAS0buGLKRkW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-29 at 21:28 -0700, Darren Hart wrote: 
-> On Thu, Oct 23, 2014 at 03:28:07PM -0400, Brian Silverman wrote:
-> > Here's the test code:
-> > 
-> 
-> I want to say "Thanks!" and pull it into futextest... but destroying filesystems
-> and BIOS errors?!? may not be ideal failure detection modes.
+--Sig_/5PF5IDHTxHxGAS0buGLKRkW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yup, suse now has a test farm box with a slightly bent up btrfs root.
-I'll have to remember to poke the install button when I return it :)
+Hi Andrew,
 
--Mike
+After merging the akpm tree, today's linux-next build (arm multi_v7_defconf=
+ig)
+produced this warning:
 
+In file included from include/linux/mm.h:52:0,
+                 from mm/gup.c:7:
+arch/arm/include/asm/pgtable.h:184:0: warning: "pgd_huge" redefined
+ #define pgd_huge(pgd)  (0)
+ ^
+In file included from mm/gup.c:6:0:
+include/linux/hugetlb.h:183:0: note: this is the location of the previous d=
+efinition
+ #define pgd_huge(x) 0
+ ^
+
+Introduced by commit fee025d5dd4e ("mm: update generic gup
+implementation to handle hugepage directory").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/5PF5IDHTxHxGAS0buGLKRkW
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUUcpeAAoJEMDTa8Ir7ZwVOLAP/jj/ytM7C1c6dCM1IlBX8b6s
+m2BIXDukmvWquMwyB0VQh4Qzs/P8Ys7p5+O8jFpjlEetv0P5CxraRF7rBkzEP3TM
+Dg+ua/HwwLqpuS0DkYJEy5BwMhfh8LLixKXHxPK9mygFRB+P40v/cpgnTSbPvgpJ
+hKha6gte29F0mO8tAEU0EDULCDxjMAVkMSHMttPQVIBvI1y+IfAX+6iTvU6u7gTT
+FT+6E+Jvwi5VdY/afjxa4rLrKxCcqBowI189kq46GOd7yUG1u/lQoUjCibvtOmcT
+bgu7zSCe+qaK27NrnUd5rEhMOvXIqcf0LcYZHIAiWMs75Sj8xzvb3BH6nStCkuLr
+S6nr5j3wDdAk4YxjsEu1U07z0WUb523aIdkk8jD1yvxfaPT7Iiboxs3YwRV+MJnz
+F7grNwGGTDK7+N0q2X4zlHTj5W8MO9UmVeJv6+knHAtyOlUiLpiAYjf6Lv6sHF31
+MsF9woDqircxVeBD3Pc+Kfq7hpXanewocUv40qEHC1DaIWBmnfhS8c8Ug7lnlK4v
+xllczXhjREoE+xmCzDQwgtprydbY5a7hyV4fD/bqOwzOY+qLaND0HdWPMDxtn2tI
+Yn8sBRod27ufxXNZt7od6jfdUlXS5XiaVQsYhJeB7orQw77r/ClTvZPqjJHejtU5
+F2Y5XB6USqcRLbmI87b0
+=rkff
+-----END PGP SIGNATURE-----
+
+--Sig_/5PF5IDHTxHxGAS0buGLKRkW--
