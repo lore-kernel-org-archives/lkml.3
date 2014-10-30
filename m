@@ -1,99 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759811AbaJ3NSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:18:34 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:60498 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759431AbaJ3NSc (ORCPT
+	id S1759925AbaJ3NSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:18:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46818 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759887AbaJ3NSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:18:32 -0400
-Message-ID: <54523AA4.9010307@acm.org>
-Date: Thu, 30 Oct 2014 14:18:28 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 30 Oct 2014 09:18:52 -0400
+Date: Thu, 30 Oct 2014 14:18:45 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vikas Shivappa <vikas.shivappa@intel.com>,
+        "Auld, Will" <will.auld@intel.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141030131845.GI3337@twins.programming.kicks-ass.net>
+References: <20141028232215.GO12020@console-pimps.org>
+ <20141029081640.GT3337@twins.programming.kicks-ass.net>
+ <20141029124834.GQ12020@console-pimps.org>
+ <20141029134526.GC3337@twins.programming.kicks-ass.net>
+ <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
+ <20141029172845.GP12706@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
+ <20141029182234.GA13393@mtj.dyndns.org>
+ <20141030070725.GG3337@twins.programming.kicks-ass.net>
+ <20141030124333.GA29540@htj.dyndns.org>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Christoph Hellwig <hch@lst.de>, Robert Elliott <Elliott@hp.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] blk-mq: Fix a use-after-free
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030124333.GA29540@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the tag set structure can be embedded in a structure that
-is freed before the last queue put occurs (e.g. the SCSI host
-structure), the block layer must not access the tag set after the
-SCSI host structure has been freed. This patch avoids that the
-following kernel oops is triggered with memory poisoning enabled:
+On Thu, Oct 30, 2014 at 08:43:33AM -0400, Tejun Heo wrote:
+> Hello, Peter.
+> 
+> On Thu, Oct 30, 2014 at 08:07:25AM +0100, Peter Zijlstra wrote:
+> > If this means echo $tid > tasks, then sorry we can't do. There is a
+> > limited number of hardware resources backing this thing. At some point
+> > they're consumed and something must give.
+> 
+> And that something shouldn't be disallowing task migration across
+> cgroups.  This simply doesn't work with co-mounting or unified
+> hierarchy.  cpuset automatically takes on the nearest ancestor's
+> configuration which has enough execution resources.  Maybe that can be
+> an option for this too?
 
-general protection fault: 0000 [#1] SMP
-RAX: 0000000000000000 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000000
-Call Trace:
- [<ffffffff8109a7c4>] lock_acquire+0xc4/0x270
- [<ffffffff814ce111>] mutex_lock_nested+0x61/0x380
- [<ffffffff812575f0>] blk_mq_free_queue+0x30/0x180
- [<ffffffff8124d654>] blk_release_queue+0x84/0xd0
- [<ffffffff8126c29b>] kobject_cleanup+0x7b/0x1a0
- [<ffffffff8126c140>] kobject_put+0x30/0x70
- [<ffffffff81245895>] blk_put_queue+0x15/0x20
- [<ffffffff8125c409>] disk_release+0x99/0xd0
- [<ffffffff8133d056>] device_release+0x36/0xb0
- [<ffffffff8126c29b>] kobject_cleanup+0x7b/0x1a0
- [<ffffffff8126c140>] kobject_put+0x30/0x70
- [<ffffffff8125a78a>] put_disk+0x1a/0x20
- [<ffffffff811d4cb5>] __blkdev_put+0x135/0x1b0
- [<ffffffff811d56a0>] blkdev_put+0x50/0x160
- [<ffffffff81199eb4>] kill_block_super+0x44/0x70
- [<ffffffff8119a2a4>] deactivate_locked_super+0x44/0x60
- [<ffffffff8119a87e>] deactivate_super+0x4e/0x70
- [<ffffffff811b9833>] cleanup_mnt+0x43/0x90
- [<ffffffff811b98d2>] __cleanup_mnt+0x12/0x20
- [<ffffffff8107252c>] task_work_run+0xac/0xe0
- [<ffffffff81002c01>] do_notify_resume+0x61/0xa0
- [<ffffffff814d2c58>] int_signal+0x12/0x17
+It will give very random and nondeterministic behaviour and basically
+destroy the entire purpose of the controller (which are the very same
+reasons I detest that 'new' behaviour in cpusets).
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Robert Elliott  <Elliott@hp.com>
-Cc: Ming Lei <ming.lei@canonical.com>
-Cc: <stable@vger.kernel.org> # v3.12+
----
- block/blk-core.c  | 3 +++
- block/blk-sysfs.c | 4 +---
- 2 files changed, 4 insertions(+), 3 deletions(-)
+> One of the problems is that we generally assume that a task can run
+> some point in time in a lot of places in the kernel and can't just not
+> run a task indefinitely because it's in a cgroup configured certain
+> way.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 0421b53..93f9152 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -525,6 +525,9 @@ void blk_cleanup_queue(struct request_queue *q)
- 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
- 	blk_sync_queue(q);
- 
-+	if (q->mq_ops)
-+		blk_mq_free_queue(q);
-+
- 	spin_lock_irq(lock);
- 	if (q->queue_lock != &q->__queue_lock)
- 		q->queue_lock = &q->__queue_lock;
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 1fac434..3ce0da1 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -517,9 +517,7 @@ static void blk_release_queue(struct kobject *kobj)
- 	if (q->queue_tags)
- 		__blk_queue_free_tags(q);
- 
--	if (q->mq_ops)
--		blk_mq_free_queue(q);
--	else
-+	if (!q->mq_ops)
- 		blk_free_flush_queue(q->fq);
- 
- 	blk_trace_shutdown(q);
--- 
-1.8.4.5
+Refusing tasks into a previously empty cgroup creates no such problems.
+Its already in a cgroup (wherever its parent was) and it can run there,
+failing to move it to another does not affect things.
 
+> > So either we fail mkdir, but that means allocating CLOS IDs for possibly
+> > empty cgroups, or we allocate on demand which means failing task
+> > assignment.
+> 
+> Can't fail mkdir or css enabling either.  Again, co-mounting and
+> unified hierarchy.  Also, the behavior is just horrible to use from
+> userland.
+
+In order to fix the co-mounting and unified hierarchy I still need to
+hear a proposal for that tasks vs processes thing.
+
+Traditionally the cgroups were task based, but many controllers are
+process based (simply because what they control is process wide, not per
+task), and there was talk (2-3 years ago or so) about making the entire
+cgroup thing per process, which obviously fails for all scheduler
+related cgroups.
+
+> > The same -- albeit for a different reason -- is true of the RT sched
+> > groups, we simply cannot instantiate them such that tasks can join,
+> > sysads _have_ to configure them before we can add tasks to them.
+> 
+> Yeah, RT is one of the main items which is problematic, more so
+> because it's currently coupled with the normal sched controller and
+> the default config doesn't have any RT slice. 
+
+Simply because you cannot give a slice on creation; or if you did that
+would mean failing mkdir when a new cgroup would exceed the available
+time.
+
+Also any !0 slice is wrong because it will not match the requirements of
+the proposed workload, the administrator will have to set it to match
+the workload.
+
+Therefore 0.
+
+> Do we completely block RT task w/o slice?  Is that okay?
+
+We will not allow an RT task in, the write to the tasks file will fail.
+
+The same will be true for deadline tasks, we'll fail entry into a cgroup
+when the combined requirements of the tasks exceed the provisions of the
+group.
+
+There is just no way around that and still provide sane semantics.
