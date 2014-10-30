@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161088AbaJ3Rlo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:41:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54495 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760674AbaJ3Rll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:41:41 -0400
-Date: Thu, 30 Oct 2014 18:41:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 4/8] x86, microcode, intel: add error logging to early
- update driver
-Message-ID: <20141030174134.GE11178@pd.tnic>
-References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
- <1410197875-19252-5-git-send-email-hmh@hmh.eng.br>
- <20141020150801.GE3524@pd.tnic>
- <20141021141015.GD22528@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141021141015.GD22528@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1760757AbaJ3Rla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:41:30 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:52774 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760461AbaJ3Rl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 13:41:28 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v8 6/7] usb: chipidea: move usb_otg into struct ci_hdrc
+Date: Thu, 30 Oct 2014 18:41:18 +0100
+Message-Id: <1414690879-7184-7-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 12:10:15PM -0200, Henrique de Moraes Holschuh wrote:
-> In fact, I have a patch somewhere that needs to add a new failure message:
-> we have several failure cases which we want to differentiate, at the very
-> least "processor didn't like it" and "it looks corrupt, so we didn't even
-> try to install it".
+Move the usb_otg member from struct usb_phy to struct ci_hdrc. Rework
+its initialization taking in account this modification.
 
-Actually, I don't want to be too chatty with the loader: if the
-microcode blob passes checks but it is not for the current processor
-we're running, not saying anything is what I want to do.
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Acked-by: Peter Chen <peter.chen@freescale.com>
+---
+ drivers/usb/chipidea/ci.h      |  1 +
+ drivers/usb/chipidea/debug.c   |  2 +-
+ drivers/usb/chipidea/host.c    |  5 +++--
+ drivers/usb/chipidea/otg_fsm.c | 16 +++-------------
+ 4 files changed, 8 insertions(+), 16 deletions(-)
 
-Why? Because I don't want to disturb people unnecessarily - if the
-microcode doesn't apply and everything else checks out, you simply don't
-need it.
-
-If one really wants to know, one can always check /proc/cpuinfo and read
-out the microcode revision from the blob. But that is for the 1% of the
-curious ones - everyone else should simply install microcode blob and
-boot machine. Fire and forget.
-
-Only the abnormal error cases should be vocal in saying what's wrong so
-that we can actually address those.
-
+diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
+index b7f589b348e6..9015139a8027 100644
+--- a/drivers/usb/chipidea/ci.h
++++ b/drivers/usb/chipidea/ci.h
+@@ -177,6 +177,7 @@ struct ci_hdrc {
+ 	struct ci_role_driver		*roles[CI_ROLE_END];
+ 	enum ci_role			role;
+ 	bool				is_otg;
++	struct usb_otg			otg;
+ 	struct otg_fsm			fsm;
+ 	struct ci_otg_fsm_timer_list	*fsm_timer;
+ 	struct work_struct		work;
+diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
+index 8f437e1512fa..999e9d683d7a 100644
+--- a/drivers/usb/chipidea/debug.c
++++ b/drivers/usb/chipidea/debug.c
+@@ -220,7 +220,7 @@ static int ci_otg_show(struct seq_file *s, void *unused)
+ 
+ 	/* ------ State ----- */
+ 	seq_printf(s, "OTG state: %s\n\n",
+-		usb_otg_state_string(ci->usb_phy->otg.state));
++		   usb_otg_state_string(ci->otg.state));
+ 
+ 	/* ------ State Machine Variables ----- */
+ 	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
+diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
+index 51b086d3bb11..789809f680aa 100644
+--- a/drivers/usb/chipidea/host.c
++++ b/drivers/usb/chipidea/host.c
+@@ -86,10 +86,11 @@ static int host_start(struct ci_hdrc *ci)
+ 	if (ret) {
+ 		goto disable_reg;
+ 	} else {
+-		struct usb_otg *otg = ci->usb_phy->otg;
++		struct usb_otg *otg = &ci->otg;
+ 
+ 		ci->hcd = hcd;
+-		if (otg) {
++
++		if (ci_otg_is_fsm_mode(ci)) {
+ 			otg->host = &hcd->self;
+ 			hcd->self.otg_port = 1;
+ 		}
+diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
+index 8a64ce87364e..862d7cb01b92 100644
+--- a/drivers/usb/chipidea/otg_fsm.c
++++ b/drivers/usb/chipidea/otg_fsm.c
+@@ -778,20 +778,10 @@ void ci_hdrc_otg_fsm_start(struct ci_hdrc *ci)
+ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
+ {
+ 	int retval = 0;
+-	struct usb_otg *otg;
+ 
+-	otg = devm_kzalloc(ci->dev,
+-			sizeof(struct usb_otg), GFP_KERNEL);
+-	if (!otg) {
+-		dev_err(ci->dev,
+-		"Failed to allocate usb_otg structure for ci hdrc otg!\n");
+-		return -ENOMEM;
+-	}
+-
+-	otg->usb_phy = ci->usb_phy;
+-	otg->gadget = &ci->gadget;
+-	ci->fsm.otg = otg;
+-	ci->usb_phy->otg = ci->fsm.otg;
++	ci->otg.usb_phy = ci->usb_phy;
++	ci->otg.gadget = &ci->gadget;
++	ci->fsm.otg = &ci->otg;
+ 	ci->fsm.power_up = 1;
+ 	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
+ 	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
 -- 
-Regards/Gruss,
-    Boris.
+2.1.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
