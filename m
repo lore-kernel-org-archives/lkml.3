@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956AbaJ3Q27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 12:28:59 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:59703 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758128AbaJ3Q25 (ORCPT
+	id S934051AbaJ3QaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 12:30:07 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:62116 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933539AbaJ3QaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 12:28:57 -0400
-Date: Thu, 30 Oct 2014 09:28:52 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Giedrius Statkevicius <giedriuswork@gmail.com>, eric.piel@tremplin-utc.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] platform: hp_accel: add a i8042 filter to remove HPQ6000
- data from kb bus stream
-Message-ID: <20141030162852.GA36444@dtor-ws>
-References: <1414610182-28702-1-git-send-email-giedriuswork@gmail.com>
- <20141030014056.GD14609@vmdeb7>
+	Thu, 30 Oct 2014 12:30:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141030014056.GD14609@vmdeb7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.11.1410301444100.5308@nanos>
+References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org>
+	<1414667745-7703-4-git-send-email-pang.xunlei@linaro.org>
+	<alpine.DEB.2.11.1410301444100.5308@nanos>
+Date: Fri, 31 Oct 2014 00:30:04 +0800
+Message-ID: <CADcy93WzP-y8HXNrfx-vOCkruEdXVOhP2Up=KqW=vLuxHM7_YQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 03/11] time: Add rtc_tm_to_time64() safe
+ version(using time64_t)
+From: "pang.xunlei" <pang.xunlei@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        xen-devel@lists.xenproject.org, John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 06:40:56PM -0700, Darren Hart wrote:
-> On Wed, Oct 29, 2014 at 09:16:22PM +0200, Giedrius Statkevicius wrote:
-> > Add a i8042 filter to hp_accel to remove accelerometer's data with acpi
-> > id HPQ6000 from keyboard bus stream. The codes sent by accelerometer are
-> > e0 25, e0 26, e0 27 and e0 28. The relevant information is already
-> > passed through /dev/freefall so no need to send these undocumented weird
-> > signals through the keyboard bus. Also, unclogs `dmesg` because atkbd
-> > complained about weird scan codes, saves processing power and disk
-> > space.
-> > 
-> > Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
-> > ---
-> > First of all, any Tested-Bys are very welcome by people who also have a
-> > accelerometer with acpi id HPQ6000. If it happens with HPQ6007 too we
-> > can easily modify this to install the filter when HPQ6007 is detected.
-> > For the time being the filter is only installed when HPQ6000 is
-> > detected. 
-> > 
-> > Now moving to what was changed since the RFC. I reworked the filter
-> > function to hopefully make it more clear what it is doing. Since the
-> > codes sent by the accelerometer are extended then we need to filter all
-> > of 0xe0's and then send one 0xe0 back when the actual key isn't in the
-> > range of 0x25-0x28. Also, I've removed the check for errors for
-> > i8042_install_filter() because it's unnecessary to check if it failed.
-> > If multiple HPQ6000's are in the system then no issue occurs even if
-> > multiple i8042_install_filter() are issued because this is handled by
-> > i8042 and it's smart enough not to install the same filter two or more
-> > times.
-> > 
-> >  drivers/platform/x86/hp_accel.c | 45 ++++++++++++++++++++++++++++++++++++++++-
-> >  1 file changed, 44 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
-> > index 13e14ec..a751621 100644
-> > --- a/drivers/platform/x86/hp_accel.c
-> > +++ b/drivers/platform/x86/hp_accel.c
-> > @@ -38,6 +38,8 @@
-> >  #include <linux/atomic.h>
-> >  #include <linux/acpi.h>
-> >  #include "../../misc/lis3lv02d/lis3lv02d.h"
-> > +#include <linux/i8042.h>
-> > +#include <linux/serio.h>
-> 
-> Please include before the relative path includes.
-> 
-> Otherwise, I'm happy with this - but I'd like a serio / i8042 person to weigh
-> in.... Dmitry?
+On 30 October 2014 21:55, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 30 Oct 2014, pang.xunlei wrote:
+>
+> Same $subject issue.
+>
+>> As part of addressing 2038 saftey for in-kernel uses, this patch
+>> adds safe rtc_tm_to_time64() using time64_t. After this patch,
+>> rtc_tm_to_time() should be replaced by rtc_tm_to_time64() one by
+>> one. Eventually, rtc_tm_to_time() will be removed from the kernel
+>> when it has no users.
+>>
+>> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+>> ---
+>>  drivers/rtc/rtc-lib.c |   15 ++++++++++++++-
+>>  include/linux/rtc.h   |    1 +
+>>  2 files changed, 15 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/rtc/rtc-lib.c b/drivers/rtc/rtc-lib.c
+>> index c4cf057..6948cbd 100644
+>> --- a/drivers/rtc/rtc-lib.c
+>> +++ b/drivers/rtc/rtc-lib.c
+>> @@ -110,10 +110,23 @@ EXPORT_SYMBOL(rtc_valid_tm);
+>>
+>>  /*
+>>   * Convert Gregorian date to seconds since 01-01-1970 00:00:00.
+>> + * Safe version for 2038 safety.
+>
+> Docbook comment missing. See the previous replies.
+>
+>> + */
+>> +int rtc_tm_to_time64(struct rtc_time *tm, time64_t *time)
+>
+> What's the point of the return value? Just because rtc_tm_to_time()
+> has one?
+>
+> Yes it does, but that does not mean that we blindly copy the existing
+> nonsense when we implement a replacement interface.
+>
+> What's wrong with changing it to:
+>
+> time64_t rtc_tm_to_time64(struct rtc_time *tm)
+> {
+>         return mktime64(......);
+> }
 
-Yes, this is fine. Such uses with platform injecting weird bits into
-keyboard/mouse data stream was the reason for introducing i8042 filter
-facility.
+Thank you for reminding me of this, and also a valuable principle when
+doing things.
 
-I ma not sure what is more efficient, a case with 5 branches or
-strchr(), but regardless:
+I wanna change it to:
+void rtc_tm_to_time64(struct rtc_time *tm, time64_t *time)
+{
+    time = mktime64(......);
+}
 
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Just keep it the similar format as rtc_time64_to_tm(), is this acceptable?
 
-Thanks.
-
--- 
-Dmitry
+>
+>> +/*
+>> + * Convert Gregorian date to seconds since 01-01-1970 00:00:00.
+>> + * TODO: [2038 safety] should be replaced by rtc_tm_to_time64.
+>
+> Groan.
+>
+>>   */
+>>  int rtc_tm_to_time(struct rtc_time *tm, unsigned long *time)
+>>  {
+>> -       *time = mktime(tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+>> +       *time = (unsigned long) mktime64(tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+>>                         tm->tm_hour, tm->tm_min, tm->tm_sec);
+>
+> And that would become
+>
+>          *time = rtc_time_to_time64(tm);
+>
+>>         return 0;
+>>  }
+>
+> Please stop doing purely mechanical changes. Just blindly copying
+> stuff and make it take time64_t instead of unsigned long can be done
+> with a script as well.
+>
+> Thanks,
+>
+>         tglx
