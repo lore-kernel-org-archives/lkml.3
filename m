@@ -1,45 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250AbaJ3HOb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 03:14:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49870 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaJ3HO3 (ORCPT
+	id S1758187AbaJ3HVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 03:21:19 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:57653 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752528AbaJ3HVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 03:14:29 -0400
-Date: Thu, 30 Oct 2014 08:14:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Vikas Shivappa <vikas.shivappa@intel.com>,
-        "Auld, Will" <will.auld@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>
-Subject: Re: Cache Allocation Technology Design
-Message-ID: <20141030071424.GE10476@twins.programming.kicks-ass.net>
-References: <20141024105306.GI12706@worktop.programming.kicks-ass.net>
- <20141028232215.GO12020@console-pimps.org>
- <20141029081640.GT3337@twins.programming.kicks-ass.net>
- <20141029124834.GQ12020@console-pimps.org>
- <20141029134526.GC3337@twins.programming.kicks-ass.net>
- <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
- <20141029172845.GP12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
- <20141029182234.GA13393@mtj.dyndns.org>
- <20141030070725.GG3337@twins.programming.kicks-ass.net>
+	Thu, 30 Oct 2014 03:21:17 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlRLAIDlUVR5LbBUPGdsb2JhbABcgw6BLIc9sl0BAQEBAQEGlV6FagICAQECgR0XAQEBAQEGAQEBATg7hAIBAQEDAScTHBESBQsIAxgJJQ8FJQMHGhOIOAjHbQEBCAIBHxiGHoluI0kHhEsFnWmBMoZ5kiEpL4EHCBeBJQEBAQ
+Date: Thu, 30 Oct 2014 18:21:11 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Jens Axboe <axboe@fb.com>, "Jason B. Akers" <jason.b.akers@intel.com>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        "Karkra, Kapil" <kapil.karkra@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
+Message-ID: <20141030072111.GJ13323@dastard>
+References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
+ <20141029201417.GK16186@dastard>
+ <545157DB.70304@fb.com>
+ <20141029220905.GL16186@dastard>
+ <CAPcyv4iiqfeWQyZpzYwASFV+7Ztjcjrp0DEq3ThOmdwgWGGJUw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141030070725.GG3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAPcyv4iiqfeWQyZpzYwASFV+7Ztjcjrp0DEq3ThOmdwgWGGJUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 08:07:25AM +0100, Peter Zijlstra wrote:
-> > and always allow execution of member tasks.
+On Wed, Oct 29, 2014 at 03:24:11PM -0700, Dan Williams wrote:
+> On Wed, Oct 29, 2014 at 3:09 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > On Wed, Oct 29, 2014 at 03:10:51PM -0600, Jens Axboe wrote:
+> >> As for the fs accessing this, the io nice fields are readily exposed
+> >> through the ->bi_rw setting. So while the above example uses ionice to
+> >> set a task io priority (that a bio will then inherit), nothing prevents
+> >> you from passing it in directly from the kernel.
+> >
+> > Right, but now the filesystem needs to provide that on a per-inode
+> > basis, not from the task structure as the task that is submitting
+> > the bio is not necesarily the task doing the read/write syscall.
+> >
+> > e.g. the write case above doesn't actually inherit the task priority
+> > at the bio level at all because the IO is being dispatched by a
+> > background flusher thread, not the ioniced task calling write(2).
+> 
+> When the ioniced task calling write(2) inserts the page into the page
+> cache then the current priority is recorded in the struct page.  The
 
-This too btw is not strictly speaking possible for all controllers. Most
-all sched controllers live by the grace of forcing tasks not to run at
-times (eg. the bandwidth controls), falsifying the 'always'.
+It does? Can you point me to where the page cache code does this,
+because I've clearly missed something important go by in the past
+few months...
+
+> background flusher likely runs at a lower / neutral caching priority
+> and the priority carried in the page will be the effective caching
+> priority applied to the bio.
+
+How? The writepage code that adds the pages to the bio doesn't look
+at priorities at all. If we're supposed to be doing this, then it
+isn't being done in XFS when we are building bios, and nobody has
+told me we need to do it...
+
+Hmmm - ok, so what happens if an IO is made up of pages from
+different tasks with different priorities? what then? ;)
+
+> > from a user and application perspective as cache residency is a
+> > property of the data being read/written, not the task doing the IO.
+> > e.g. a database will want it's indexes in flash and bulk
+> > data in non-cached storage.
+> 
+> Right, if those are doing direct-i/o then have a separate thread-id
+> for those write(2) calls.
+
+Which, again, is not how applications are designed or implemented.
+If the current transaction needs to read/write index blocks, it does
+it directly, not have to wait for some other dispatch thread to do
+it for it....
+
+> Otherwise if they are dirtying page cache
+> the struct page carries the hint.
+> 
+> > IOWs, to make effective use of this the task will need different
+> > cache hints for each different type of data needs to do IO on, and
+> > so overloading IO priorities just seems the wrong direction to be
+> > starting from.
+> 
+> There's also the fadvise() enabling that could be bolted on top of
+> this capability.  But, before that step, is a thread-id per-caching
+> context too much to ask?
+
+If we do it that way, we are stuck with it forever. So let's get our
+ducks in line first before pulling the trigger...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
