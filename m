@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150AbaJ3CIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:08:51 -0400
-Received: from mail-bn1bbn0104.outbound.protection.outlook.com ([157.56.111.104]:24092
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755837AbaJ3CIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:08:50 -0400
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] devres: Improve grp->id setting logics in devres_open_group()
-Date: Thu, 30 Oct 2014 09:58:19 +0800
-Message-ID: <1414634299-18078-1-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 2.1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(4396001)(106466001)(107046002)(77156001)(21056001)(88136002)(31966008)(89996001)(36756003)(44976005)(105606002)(50986999)(95666004)(110136001)(50226001)(87936001)(87286001)(48376002)(2351001)(19580405001)(229853001)(104016003)(92566001)(50466002)(62966002)(86362001)(92726001)(104166001)(93916002)(19580395003)(6806004)(68736004)(80022003)(20776003)(85306004)(64706001)(99396003)(26826002)(102836001)(46102003)(47776003)(120916001)(76482002)(97736003)(85852003)(84676001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0628;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
-X-Forefront-PRVS: 038002787A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1758031AbaJ3CTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:19:41 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:61073 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757540AbaJ3CTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 22:19:39 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: arnd@arndb.de, f.fainelli@gmail.com, tglx@linutronix.de,
+        jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
+Subject: [PATCH V2 00/15] genirq endian fixes; bcm7120/brcmstb IRQ updates
+Date: Wed, 29 Oct 2014 19:17:53 -0700
+Message-Id: <1414635488-14137-1-git-send-email-cernekee@gmail.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of setting grp->id directly with a temporary value and
-then changing it if a certain condition meets, we may check
-the condition first and then decide which value should be set
-to grp->id.  This may save two lines of code and potentially
-reduces a writing operation.
+I don't know if this will make everyone 100% happy but hopefully we're
+inching slightly closer to a solution...
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
----
-v1->v2:
-* Fix a typo in the commit head line.
+V1->V2:
 
- drivers/base/devres.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ - Rework big endian support per the discussion on the list
+ - Get rid of the global compile-time irq_reg_{readl,writel} accessors
+   and make them private to generic-chip.c, so that on multiplatform
+   kernels, different irqchip drivers can specify different MMIO behavior
+ - Rebase on Linus's head of tree
 
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index c8a53d1..39e1856 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -544,9 +544,7 @@ void * devres_open_group(struct device *dev, void *id, gfp_t gfp)
- 	INIT_LIST_HEAD(&grp->node[1].entry);
- 	set_node_dbginfo(&grp->node[0], "grp<", 0);
- 	set_node_dbginfo(&grp->node[1], "grp>", 0);
--	grp->id = grp;
--	if (id)
--		grp->id = id;
-+	grp->id = id ? id : grp;
- 
- 	spin_lock_irqsave(&dev->devres_lock, flags);
- 	add_dr(dev, &grp->node[0]);
+Patch 06/15 still feels a bit like premature optimization to me.  Perhaps
+we can drop it if nobody reports a measurable performance advantage in
+any known configuration?
+
+
+Kevin Cernekee (15):
+  irqchip: Replace irq_reg_{readl,writel} with {readl,writel}
+  sh: Eliminate unused irq_reg_{readl,writel} accessors
+  genirq: Generic chip: Move irq_reg_{readl,writel} accessors into
+    generic-chip.c
+  genirq: Generic chip: Change irq_reg_{readl,writel} arguments
+  genirq: Generic chip: Add big endian I/O accessors
+  genirq: Generic chip: Optimize for fixed-endian systems
+  irqchip: brcmstb-l2: Eliminate dependency on ARM code
+  irqchip: bcm7120-l2: Eliminate bad IRQ check
+  irqchip: Remove ARM dependency for bcm7120-l2 and brcmstb-l2
+  irqchip: bcm7120-l2: Make sure all register accesses use base+offset
+  irqchip: bcm7120-l2: Fix missing nibble in gc->unused mask
+  irqchip: bcm7120-l2: Use gc->mask_cache to simplify suspend/resume
+    functions
+  irqchip: bcm7120-l2: Extend driver to support 64+ bit controllers
+  irqchip: Decouple bcm7120-l2 from brcmstb-l2
+  irqchip: bcm7120-l2: Enable big endian register accesses on BE kernels
+
+ .../interrupt-controller/brcm,bcm7120-l2-intc.txt  |  26 +++-
+ arch/arm/mach-bcm/Kconfig                          |   1 +
+ arch/sh/boards/mach-se/7343/irq.c                  |   3 -
+ arch/sh/boards/mach-se/7722/irq.c                  |   3 -
+ drivers/irqchip/Kconfig                            |   8 +-
+ drivers/irqchip/Makefile                           |   4 +-
+ drivers/irqchip/irq-atmel-aic.c                    |  40 ++---
+ drivers/irqchip/irq-atmel-aic5.c                   |  63 ++++----
+ drivers/irqchip/irq-bcm7120-l2.c                   | 169 +++++++++++++--------
+ drivers/irqchip/irq-brcmstb-l2.c                   |   7 +-
+ drivers/irqchip/irq-sunxi-nmi.c                    |   4 +-
+ drivers/irqchip/irq-tb10x.c                        |   4 +-
+ include/linux/irq.h                                |   8 +-
+ kernel/irq/Kconfig                                 |   5 +
+ kernel/irq/Makefile                                |   1 +
+ kernel/irq/generic-chip.c                          |  51 +++++--
+ 16 files changed, 237 insertions(+), 160 deletions(-)
+
 -- 
-2.1.0
+2.1.1
 
