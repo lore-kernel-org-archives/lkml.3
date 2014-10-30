@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161566AbaJ3XSd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:18:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33743 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161351AbaJ3XSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:18:31 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: linux-security-module@vger.kernel.org, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, eparis@redhat.com, sgrubb@redhat.com
-Subject: Re: [PATCH] lsm: get comm using lock to avoid race in string printing
-Date: Thu, 30 Oct 2014 19:18:17 -0400
-Message-ID: <1478341.K6oVWdhYQd@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.2 (Linux/3.17.1-gentoo-r1; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <735f28048636878e638add7d6129a8c2fd79a09e.1411141022.git.rgb@redhat.com>
-References: <735f28048636878e638add7d6129a8c2fd79a09e.1411141022.git.rgb@redhat.com>
+	id S1161582AbaJ3XTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 19:19:20 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49459 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161351AbaJ3XTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 19:19:19 -0400
+Date: Thu, 30 Oct 2014 23:19:04 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Bastien Nocera <hadess@hadess.net>, Pavel Machek <pavel@ucw.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: A desktop environment[1] kernel wishlist
+Message-ID: <20141030231904.40eb7097@alan.etchedpixels.co.uk>
+In-Reply-To: <20141030150501.GD31927@thunk.org>
+References: <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+	<1413911644.30379.12.camel@hadess.net>
+	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+	<1413914978.30379.14.camel@hadess.net>
+	<20141027092804.GB9807@amd>
+	<1414420292.30379.55.camel@hadess.net>
+	<54513DDC.2020700@amacapital.net>
+	<20141029202616.GC5000@thunk.org>
+	<20141029211608.GA32576@amd>
+	<1414680302.2406.55.camel@hadess.net>
+	<20141030150501.GD31927@thunk.org>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 19, 2014 11:41:15 AM Richard Guy Briggs wrote:
-> When task->comm is passed directly to audit_log_untrustedstring() without
-> getting a copy or using the task_lock, there is a race that could happen
-> that would output a NULL (\0) in the output string that would effectively
-> truncate the rest of the report text after the comm= field in the audit,
-> losing fields.
-> 
-> Use get_task_comm() to get a copy while acquiring the task_lock to prevent
-> this and to prevent the result from being a mixture of old and new values of
-> comm.
-> 
-> Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> It matters because for laptops, what's important is whether the lid is
+> closed or not.  Whether and how the laptop was "woken" is really
+> beside the point, as others have argued.  Your counter argument is
+> that tablets don't have lids.  But tablets are going to be using
+> schemes similar to Android, Tizen, and Maemo, and they are *not* going
+> to be using the legacy suspend-to-RAM model, because it's not
+> sufficiently good at power saving.
 
-The above is a bit odd ... is that a "Signed-off-by:" from Tetsuo Handa or a 
-"From:"?
+There's no longer a tablet/laptop divide in the general case. Many
+tablets are convertables and many not convertables are only "non
+convertable" in the sense that they are screwed together not fitted with
+funky connectors.
 
-> ---
-> I've manually checked for locking issues and found none.  I've also enabled
-> all the kernel lock debugging options and it came up clean.
-> 
->  security/lsm_audit.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/lsm_audit.c b/security/lsm_audit.c
-> index 69fdf3b..4773b91 100644
-> --- a/security/lsm_audit.c
-> +++ b/security/lsm_audit.c
-> @@ -212,6 +212,7 @@ static void dump_common_audit_data(struct audit_buffer
-> *ab, struct common_audit_data *a)
->  {
->  	struct task_struct *tsk = current;
-> +	char comm[sizeof(tsk->comm)];
-
-This makes me a bit nervous for a potential race condition between allocation 
-and use below.  How about using TASK_COMM_LEN instead?
-
->  	/*
->  	 * To keep stack sizes in check force programers to notice if they
-> @@ -221,7 +222,7 @@ static void dump_common_audit_data(struct audit_buffer
-> *ab, BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
-> 
->  	audit_log_format(ab, " pid=%d comm=", task_pid_nr(tsk));
-> -	audit_log_untrustedstring(ab, tsk->comm);
-> +	audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
-> 
->  	switch (a->type) {
->  	case LSM_AUDIT_DATA_NONE:
-> @@ -282,7 +283,7 @@ static void dump_common_audit_data(struct audit_buffer
-> *ab, pid_t pid = task_pid_nr(tsk);
->  			if (pid) {
->  				audit_log_format(ab, " pid=%d comm=", pid);
-> -				audit_log_untrustedstring(ab, tsk->comm);
-> +				audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
->  			}
->  		}
->  		break;
-
--- 
-paul moore
-security and virtualization @ redhat
-
+There are also a host of reasons (tried making a high speed bus go round
+a hinge ?) that this is going to become more common.
