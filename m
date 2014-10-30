@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760606AbaJ3PQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 11:16:39 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:63909 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623AbaJ3PQh (ORCPT
+	id S1760729AbaJ3PR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 11:17:58 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:51735 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760225AbaJ3PR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 11:16:37 -0400
+	Thu, 30 Oct 2014 11:17:56 -0400
+Date: Thu, 30 Oct 2014 16:17:19 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: at91rm9200: allow building when using device
+ tree
+Message-ID: <20141030151719.GG17398@piout.net>
+References: <1414678534-2677-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <20141030153624.6643c1b4@bbrezillon>
+ <2000678.14fQbcst9s@wuerfel>
 MIME-Version: 1.0
-In-Reply-To: <20141029102754.GM1304@lahna.fi.intel.com>
-References: <1414153014-152246-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1414153014-152246-2-git-send-email-mika.westerberg@linux.intel.com>
-	<CACRpkdZ=+NmhivkNyjcgjDonypnXLdSBPdHQnbm8KS17pxK9NA@mail.gmail.com>
-	<20141029102754.GM1304@lahna.fi.intel.com>
-Date: Thu, 30 Oct 2014 16:16:36 +0100
-Message-ID: <CACRpkdbUb_cxbF=GtX=Q-zafx_7OiEHGPZuuxSfFvQ0nCtqs_g@mail.gmail.com>
-Subject: Re: [PATCH 1/4] gpio / ACPI: Add knowledge about pin controllers to acpi_get_gpiod()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2000678.14fQbcst9s@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 11:27 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Wed, Oct 29, 2014 at 10:41:19AM +0100, Linus Walleij wrote:
+On 30/10/2014 at 15:43:43 +0100, Arnd Bergmann wrote :
+> On Thursday 30 October 2014 15:36:24 Boris Brezillon wrote:
+> > On Thu, 30 Oct 2014 15:15:34 +0100
+> > Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+> > 
+> > > When building with device tree, ARCH_AT91RM9200 may not be selected. Allow
+> > > building that driver by also depending on ARCH_AT91.
+> > > 
+> > > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > 
+> > Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > 
+> 
+> Doesn't this reintroduce the bug fixed by commit 09549cd0172 ("watchdog:
+> Revert the AT91RM9200_WATCHDOG dependency")?
+> 
+> At least in 3.18-rc2, the driver still uses at91_st_write/at91_st_read.
+> 
 
->> But I have a vague idea that there is something like a numberspace
->> concept inside ACPI as well, and that is all magic to me...
->> mixing that into this is a bit scary to me.
-(...)
->         # grep SATA_GP1 pins
->         pin 76 (SATA_GP1) mode 1 ctrl0 0x00010200 ctrl1 0x04c00000
->
->         # cat gpio-ranges
->         GPIO ranges handled:
->         0: INT33FF:00 GPIOS [456 - 463] PINS [0 - 7]
->         8: INT33FF:00 GPIOS [464 - 471] PINS [15 - 22]
->         16: INT33FF:00 GPIOS [472 - 479] PINS [30 - 37]
->         24: INT33FF:00 GPIOS [480 - 487] PINS [45 - 52]
->         32: INT33FF:00 GPIOS [488 - 495] PINS [60 - 67]
->         40: INT33FF:00 GPIOS [496 - 503] PINS [75 - 82]
->         48: INT33FF:00 GPIOS [504 - 511] PINS [90 - 97]
->
-> In other words GPIO number for pin 76 is 496 (in Linux global number
-> space) and 41 in the GPIO driver local number space.
->
-> In order to translate the ACPI GPIO number 76 to the right GPIO number
-> we iterate over each range in the GPIO driver and look for the match.
-> Note that it actually uses the local number (41) here:
+Hum, right, then we have no better way to express that than depends on
+SOC_AT91RM9200, would that be acceptable ?
 
-OK what I was mainly worrying about was that it would go and
-use the Linux GPIO numbers in any way. As long as the mechanism
-relies on the local pin controller or GPIO chip offsets I'm happy.
-
-Yours,
-Linus Walleij
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
