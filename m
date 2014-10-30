@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758676AbaJ3JBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:01:36 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:38197 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758621AbaJ3JBV (ORCPT
+	id S1758710AbaJ3JBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:01:46 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:54830 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758680AbaJ3JBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:01:21 -0400
+	Thu, 30 Oct 2014 05:01:42 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the akpm-current tree
+In-Reply-To: <20141030161921.0e204257@canb.auug.org.au>
+References: <20141030161921.0e204257@canb.auug.org.au>
+User-Agent: Notmuch/0.18.2+145~g9619379 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
+Date: Thu, 30 Oct 2014 14:30:39 +0530
+Message-ID: <87lhny7wzs.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1414639400.5833.11.camel@mtksdaap41>
-References: <1406824943-24052-1-git-send-email-matthias.bgg@gmail.com>
-	<1406824943-24052-7-git-send-email-matthias.bgg@gmail.com>
-	<CACRpkdbRhGE8tcKj+W_4F9-xmcm-fxcYuCmLOqX-ESC+3PAmyA@mail.gmail.com>
-	<CABuKBe+Q3tnN0s22EMY-dK_6FeN_xN9SmrsW3dPONR6QDJ+V_w@mail.gmail.com>
-	<CACRpkdZOB=9wQ3R3sfcBEiNXLVRtgob4iLZ9QWXyVrgjqyvGXQ@mail.gmail.com>
-	<CABuKBeJOgkDZ8drPf3LnT2jPH7PEWX2__HDM7_jZbg2BhDRy3g@mail.gmail.com>
-	<1414158814.14830.610.camel@mtksdaap41>
-	<CABuKBe++mqhMCPxci9_4KKgq9vdoLLwZQkdb2xAGMud+=YVhkw@mail.gmail.com>
-	<1414639400.5833.11.camel@mtksdaap41>
-Date: Thu, 30 Oct 2014 10:01:19 +0100
-Message-ID: <CABuKBeLFjQ+B-QVtQf3nBZtBYf9HF=yQWZv17fOdNyZTm9C34A@mail.gmail.com>
-Subject: Re: [PATCH 6/7] arm: mediatek: enable gpt6 on boot up to make arch
- timer working
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stefan@agner.ch" <stefan@agner.ch>,
-        Stephen Warren <swarren@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "Berg, Anders" <anders.berg@lsi.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14103009-0017-0000-0000-0000006D73BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-30 4:23 GMT+01:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
-> Hi Matthias,
->
-> On Mon, 2014-10-27 at 11:28 +0100, Matthias Brugger wrote:
->> Hi Joe,
->>
->> 2014-10-24 15:53 GMT+02:00 Yingjoe Chen <srv_yingjoe.chen@mediatek.com>:
->> >
->> > Hi Matthias,
->> >
->> > I didn't saw this in v3.18-rc1, are you working on version 2 of this?
->> > mt8135 and m8127 also need this fixup and we need this to have SMP
->> > working.
->>
->> I had a discussion with Mark Rutland from ARM on this [0].
->> At that point he convinced me that this was not critical.
->>
->> If we need this for SMP, things really change here I think.
->
-> We have some driver now, and we started to implement SMP enable method
-> internally. I think it is reasonable to discuss this now.
-> We could include this patch in our SMP patch series. Do you prefer we do
-> this?
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-Alright. Please remind that we don't need to set the cntfreq register
-here but define the clock frequency in the dts.
-
-Thanks,
-Matthias
-
+> Hi Andrew,
 >
-> Joe.C
+> After merging the akpm tree, today's linux-next build (arm multi_v7_defconfig)
+> produced this warning:
 >
+> In file included from include/linux/mm.h:52:0,
+>                  from mm/gup.c:7:
+> arch/arm/include/asm/pgtable.h:184:0: warning: "pgd_huge" redefined
+>  #define pgd_huge(pgd)  (0)
+>  ^
+> In file included from mm/gup.c:6:0:
+> include/linux/hugetlb.h:183:0: note: this is the location of the previous definition
+>  #define pgd_huge(x) 0
+>  ^
 >
->
+> Introduced by commit fee025d5dd4e ("mm: update generic gup
+> implementation to handle hugepage directory").
 
 
+Should be fixed by.
+http://mid.gmane.org/1414570785-18966-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
+IIUC the changes are going via powerpc tree. So not sure how it gets updated.
 
--- 
-motzblog.wordpress.com
+-aneesh
+
