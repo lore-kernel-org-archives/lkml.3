@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713AbaJ3ETG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 00:19:06 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:43729 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756565AbaJ3ETD (ORCPT
+	id S1752421AbaJ3EV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 00:21:26 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:40409 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaJ3EVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 00:19:03 -0400
+	Thu, 30 Oct 2014 00:21:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <yq1bnoukzhe.fsf@sermon.lab.mkp.net>
-References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
-	<yq1k33il3b3.fsf@sermon.lab.mkp.net>
-	<5451A3F5.9020903@fb.com>
-	<yq1bnoukzhe.fsf@sermon.lab.mkp.net>
-Date: Wed, 29 Oct 2014 21:19:02 -0700
-Message-ID: <CAPcyv4ggAXzWows0PayvspOX4aP9G0PmLDes+0Q+m6VXQcF9Mw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
-From: Dan Williams <dan.j.williams@intel.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Jens Axboe <axboe@fb.com>, "Jason B. Akers" <jason.b.akers@intel.com>,
-        "IDE/ATA development list" <linux-ide@vger.kernel.org>,
-        "Karkra, Kapil" <kapil.karkra@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org
+In-Reply-To: <54519019.6010903@rock-chips.com>
+References: <1414577167-25666-1-git-send-email-kever.yang@rock-chips.com>
+	<CAD=FV=Vnt7Pg9V_cE0S8u-2X2hDsPN8huwy8xKv1UwvWEo-Hyw@mail.gmail.com>
+	<13348555.zj6gsMcCpK@diego>
+	<54519019.6010903@rock-chips.com>
+Date: Wed, 29 Oct 2014 21:21:24 -0700
+X-Google-Sender-Auth: qG-mvmvSAdCVyaRQF6o6MUASxKQ
+Message-ID: <CAD=FV=XSqW1nNYfkXTRrWxVWL5qexisjwb77rNeczKsn0-md6A@mail.gmail.com>
+Subject: Re: [PATCH] clk: rockchip: disable unused clocks
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 8:28 PM, Martin K. Petersen
-<martin.petersen@oracle.com> wrote:
-> The next step was trying to map these hints into what was available in
-> xadvise(), NFS 4.2 and the recent T10/T13 efforts. That wasn't trivial
-> and there really isn't a 1:1 mapping that works. So I went to T10 and
-> tried to nudge things in the same direction as NFS 4.2. Mainly because
-> that's closer to what we already have in xadvise().
+Kever,
 
-In case you still have hair left to pull wrangling these multiple
-specifications, Matthew reminds me that NVME also has cache advice at
-the transport layer.
-
-> Jens> I think we've needed a proper API for passing in appropriate hints
-> Jens> on a per-io basis for a LONG time.
+On Wed, Oct 29, 2014 at 6:10 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+>>> I'll also say that when I applied this atop my local tree that USB
+>>> stopped working.  I just see:
+>>>
+>>> [ 1647.626747] hub 2-1:1.0: hub_port_status failed (err = -110)
+>>> [ 1657.626746] hub 2-1:1.0: hub_port_status failed (err = -110)
+>>>
+>>> ...over and over and over again.
+>>
+>> maybe Kever's dwc2 clock-handling patch [0] might help there, as the
+>> dwc2-host
+>> currently does not seem to do any clock handling at all.
 >
-> Yup.
-
-I understand the desire to have per-io / per-inode xadvise()-style
-hints, but I don't see why not also include a per-pid capability?
-
-Per-pid was not "icky" for flashcache [1].  It let's you flag
-processes that should not pollute the cache, as well "cache warming"
-processes pre-loading sub-ranges of files that is awkward to do with a
-per-inode hint.  Per-pid also allows hinting on behalf of other
-otherwise cache-unaware processes.
-
-> Jens> That is the big challenge. We've tried (and failed) in the past to
-> Jens> define a set of hints that make sense. It'd be a shame to add
-> Jens> something that's specific to a given transport/technology.
+> I think Heiko is right, I test in my evb with following change and dwc2
+> works well:
+> --- a/drivers/clk/rockchip/clk-rk3288.c
+> +++ b/drivers/clk/rockchip/clk-rk3288.c
+> @@ -654,8 +654,8 @@ static struct rockchip_clk_branch rk3288_clk_branches[]
+> __initdata = {
 >
-> Absolutely!
+>         /* hclk_peri gates */
+>         GATE(0, "hclk_peri_matrix", "hclk_peri", CLK_IGNORE_UNUSED,
+> RK3288_CLKGATE_CON(6), 0, GFLAGS),
+> -       GATE(HCLK_OTG0, "hclk_otg0", "hclk_peri", 0, RK3288_CLKGATE_CON(7),
+> 4, GFLAGS),
+> -       GATE(HCLK_USBHOST0, "hclk_host0", "hclk_peri", 0,
+> RK3288_CLKGATE_CON(7), 6, GFLAGS),
+> +       GATE(HCLK_OTG0, "hclk_otg0", "hclk_peri", CLK_IGNORE_UNUSED,
+> RK3288_CLKGATE_CON(7), 4, GFLAGS),
+> +       GATE(HCLK_USBHOST0, "hclk_host0", "hclk_peri", CLK_IGNORE_UNUSED,
+> RK3288_CLKGATE_CON(7), 6, GFLAGS),
+>         GATE(HCLK_USBHOST1, "hclk_host1", "hclk_peri", 0,
+> RK3288_CLKGATE_CON(7), 7, GFLAGS),
+>         GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, RK3288_CLKGATE_CON(7),
+> 8, GFLAGS),
+>         GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED,
+> RK3288_CLKGATE_CON(7), 9, GFLAGS),
 
-In this RFC we end up punting the ultimate kernel-to-transport hint
-translation to userspace.  The kernel has a default interpretation,
-but it seems it will almost always be inadequate trying to account for
-per-device-quirks and platform performance policies.
-
-[1]: https://github.com/facebook/flashcache/blob/master/doc/flashcache-doc.txt#L139
+Yeah, that fixes it for me.  Since the USB patches are still RFC-level
+I assume you'll add these to your next version.
