@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152AbaJ3CWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:22:13 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:63950 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758200AbaJ3CTv (ORCPT
+	id S1758177AbaJ3CTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:19:49 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:64258 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757540AbaJ3CTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:19:51 -0400
+	Wed, 29 Oct 2014 22:19:43 -0400
 From: Kevin Cernekee <cernekee@gmail.com>
 To: arnd@arndb.de, f.fainelli@gmail.com, tglx@linutronix.de,
         jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org
 Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: [PATCH V2 08/15] irqchip: bcm7120-l2: Eliminate bad IRQ check
-Date: Wed, 29 Oct 2014 19:18:01 -0700
-Message-Id: <1414635488-14137-9-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V2 03/15] genirq: Generic chip: Move irq_reg_{readl,writel} accessors into generic-chip.c
+Date: Wed, 29 Oct 2014 19:17:56 -0700
+Message-Id: <1414635488-14137-4-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414635488-14137-1-git-send-email-cernekee@gmail.com>
 References: <1414635488-14137-1-git-send-email-cernekee@gmail.com>
@@ -22,59 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This check may be prone to race conditions, e.g.
-
-1) Some external event (e.g. GPIO level) causes an IRQ to become pending
-2) Peripheral asserts the L2 IRQ
-3) CPU takes an interrupt
-4) The event from #1 goes away
-5) bcm7120_l2_intc_irq_handle() reads back a 0 status
-
-Unlike the hardware supported by brcmstb-l2, the bcm7120-l2 controller
-does not latch the IRQ status.  Bits can change if the inputs to the
-controller change.  Also, do_bad_IRQ() is an ARM-specific macro.
-
-So let's just nuke it.
+This allows us to implement per-irqchip behavior when necessary, instead
+of hardcoding the behavior for all irqchip drivers at compile time.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 ---
- drivers/irqchip/irq-bcm7120-l2.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ include/linux/irq.h       |  7 -------
+ kernel/irq/generic-chip.c | 10 ++++++++++
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
-index b9f4fb8..49d8f3d 100644
---- a/drivers/irqchip/irq-bcm7120-l2.c
-+++ b/drivers/irqchip/irq-bcm7120-l2.c
-@@ -27,8 +27,6 @@
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 03f48d9..8049e93 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -639,13 +639,6 @@ void arch_teardown_hwirq(unsigned int irq);
+ void irq_init_desc(unsigned int irq);
+ #endif
  
- #include "irqchip.h"
- 
--#include <asm/mach/irq.h>
+-#ifndef irq_reg_writel
+-# define irq_reg_writel(val, addr)	writel(val, addr)
+-#endif
+-#ifndef irq_reg_readl
+-# define irq_reg_readl(addr)		readl(addr)
+-#endif
 -
- /* Register offset in the L2 interrupt controller */
- #define IRQEN		0x00
- #define IRQSTAT		0x04
-@@ -51,19 +49,12 @@ static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
- 	chained_irq_enter(chip, desc);
+ /**
+  * struct irq_chip_regs - register offsets for struct irq_gci
+  * @enable:	Enable register offset to reg_base
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index cf80e7b..380595f 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -17,6 +17,16 @@
+ static LIST_HEAD(gc_list);
+ static DEFINE_RAW_SPINLOCK(gc_lock);
  
- 	status = __raw_readl(b->base + IRQSTAT);
--
--	if (status == 0) {
--		do_bad_IRQ(irq, desc);
--		goto out;
--	}
--
- 	do {
- 		irq = ffs(status) - 1;
- 		status &= ~(1 << irq);
- 		generic_handle_irq(irq_find_mapping(b->domain, irq));
- 	} while (status);
- 
--out:
- 	chained_irq_exit(chip, desc);
- }
- 
++static void irq_reg_writel(u32 val, void __iomem *addr)
++{
++	writel(val, addr);
++}
++
++static u32 irq_reg_readl(void __iomem *addr)
++{
++	return readl(addr);
++}
++
+ /**
+  * irq_gc_noop - NOOP function
+  * @d: irq_data
 -- 
 2.1.1
 
