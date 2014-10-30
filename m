@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252AbaJaIXc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 04:23:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57843 "EHLO mx2.suse.de"
+	id S1756870AbaJaIYL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 04:24:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57845 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930AbaJaIX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 04:23:27 -0400
+	id S1752297AbaJaIX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 04:23:28 -0400
+Date: Thu, 30 Oct 2014 20:56:14 +0100
 From: Jan Kara <jack@suse.cz>
-To: axboe@kernel.dk
-Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        stable@vger.kernel.org
-Subject: [PATCH] block: Fix computation of merged request priority
-Date: Thu, 30 Oct 2014 20:43:38 +0100
-Message-Id: <1414698218-11199-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: IO request merging
+Message-ID: <20141030195614.GL28444@quack.suse.cz>
+References: <20141016122740.GI6085@quack.suse.cz>
+ <543FEDFF.2000105@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543FEDFF.2000105@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Priority of a merged request is computed by ioprio_best(). If one of the
-requests has undefined priority (IOPRIO_CLASS_NONE) and another request
-has priority from IOPRIO_CLASS_BE, the function will return the
-undefined priority which is wrong. Fix the function to properly return
-priority of a request with the defined priority.
+On Thu 16-10-14 10:10:39, Jens Axboe wrote:
+> On 10/16/2014 06:27 AM, Jan Kara wrote:
+> >   Hello,
+> > 
+> >   one of our customers was complaining that elv_attempt_insert_merge()
+> > merges two requests (via blk_attempt_req_merge()) without asking IO
+> > scheduler for permission (->elevator_allow_merge_fn() callback). Now for
+> > them this is a problem because of their custom IO scheduler but looking
+> > into the code this can result in somewhat suboptimal behavior for CFQ as
+> > well (merging two requests from different IO contexts, possibly merging
+> > sync & async request). What do others think about this?
+> > 
+> > Regarding possible fix, we cannot really call ->elevator_allow_merge_fn()
+> > because that assumes it is called from a context of a process submitting the
+> > passed bio. So we would need to create a separate allow merge callback for
+> > this.
+  Sorry for a delayed reply, I was asking the customer for some more
+details and it took them a while to get back to me...
 
-Fixes: d58cdfb89ce0c6bd5f81ae931a984ef298dbda20
-CC: stable@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- block/ioprio.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+> It would need a new (rq to rq) merge hook, if they have a custom IO
+> scheduler, they should submit a change to allow that kind of behaviour.
+  OK, but since they would be the only ones using the hook, I don't think
+upstream kernel would be that much interested in carrying it... That's why
+I was asking whether CFQ wouldn't use the hook as well. But from what you
+write below, I tend to agree that it would be an overkill for CFQ.
 
-diff --git a/block/ioprio.c b/block/ioprio.c
-index e50170ca7c33..3a71df7f38cb 100644
---- a/block/ioprio.c
-+++ b/block/ioprio.c
-@@ -157,14 +157,16 @@ out:
- 
- int ioprio_best(unsigned short aprio, unsigned short bprio)
- {
--	unsigned short aclass = IOPRIO_PRIO_CLASS(aprio);
--	unsigned short bclass = IOPRIO_PRIO_CLASS(bprio);
-+	unsigned short aclass;
-+	unsigned short bclass;
- 
--	if (aclass == IOPRIO_CLASS_NONE)
--		aclass = IOPRIO_CLASS_BE;
--	if (bclass == IOPRIO_CLASS_NONE)
--		bclass = IOPRIO_CLASS_BE;
-+	if (!ioprio_valid(aprio))
-+		aprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
-+	if (!ioprio_valid(bprio))
-+		bprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
- 
-+ 	aclass = IOPRIO_PRIO_CLASS(aprio);
-+	bclass = IOPRIO_PRIO_CLASS(bprio);
- 	if (aclass == bclass)
- 		return min(aprio, bprio);
- 	if (aclass > bclass)
+> Outside of potentially mixing sync and async IO (which seems like
+> something that should rarely/never happen), not sure I see a lot of
+> downsides. And that case could be explicitly checked in attempt_merge()
+> or blk_attempt_req_merge() without having to define a new hook to catch
+> that specific case. For the hook, cfq would lookup the io contexts and
+> compare, and basically disallow any merge that crosses a cfq io context
+> boundary. But given that I would only expect these types of merges to
+> happen very rarely, the sync vs async check would be good enough for me.
+  Yeah. So what is a real problem for their custom scheduler is when two
+requests with different IO priorities get merged (BTW, ioprio_best() has
+a bug which they found and I just submitted a patch to fix it). For some
+reason they don't want requests with different priorities merged (even if
+resulting priority is computed properly). And we don't want checks like
+this in generic code.
+
+								Honza
 -- 
-1.8.1.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
