@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887AbaJ3Kda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:33:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33957 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758431AbaJ3Kd3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:33:29 -0400
-Date: Thu, 30 Oct 2014 11:33:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Kevin Cernekee <cernekee@gmail.com>, f.fainelli@gmail.com,
-        jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH V2 03/15] genirq: Generic chip: Move irq_reg_{readl,writel}
- accessors into generic-chip.c
-In-Reply-To: <6552163.gt4ABVyYlA@wuerfel>
-Message-ID: <alpine.DEB.2.11.1410301103300.5308@nanos>
-References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-4-git-send-email-cernekee@gmail.com> <alpine.DEB.2.11.1410300941290.5308@nanos> <6552163.gt4ABVyYlA@wuerfel>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1758505AbaJ3KhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:37:01 -0400
+Received: from roy.gaast.net ([80.101.33.21]:60798 "EHLO mail.gaast.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175AbaJ3KhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 06:37:00 -0400
+Message-ID: <545214C5.6070004@gaast.net>
+Date: Thu, 30 Oct 2014 10:36:53 +0000
+From: Wilmer van der Gaast <wilmer@gaast.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Machine crashes right *after* ~successful resume
+References: <543F049F.5090605@gaast.net> <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com> <544033CF.3080104@gaast.net> <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com> <5442FE58.5020700@gaast.net> <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com> <5446D2D8.2090203@gaast.net> <CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com> <20141022125354.GA3832@gaast.net> <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com> <544E235C.5010908@gaast.net> <CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com> <544EC59D.9080303@gaast.net> <CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com> <544EDD40.1040107@gaast.net> <CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com> <545027F9.1040703@gaast.net> <CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com> <5450B55E.6010103@gaast.net> <CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmai
+ l.com>
+In-Reply-To: <CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct 2014, Arnd Bergmann wrote:
-> On Thursday 30 October 2014 09:43:02 Thomas Gleixner wrote:
-> > > diff --git a/include/linux/irq.h b/include/linux/irq.h
-> > > index 03f48d9..8049e93 100644
-> > > --- a/include/linux/irq.h
-> > > +++ b/include/linux/irq.h
-> > > @@ -639,13 +639,6 @@ void arch_teardown_hwirq(unsigned int irq);
-> > >  void irq_init_desc(unsigned int irq);
-> > >  #endif
-> > >  
-> > > -#ifndef irq_reg_writel
-> > > -# define irq_reg_writel(val, addr)   writel(val, addr)
-> > > -#endif
-> > > -#ifndef irq_reg_readl
-> > > -# define irq_reg_readl(addr)         readl(addr)
-> > > -#endif
-> > > -
-> > 
-> > Brilliant patch that.
-> > 
-> > # git grep -l irq_reg_readl drivers/irqchip/
-> > drivers/irqchip/irq-atmel-aic.c
-> > drivers/irqchip/irq-atmel-aic5.c
-> > drivers/irqchip/irq-sunxi-nmi.c
-> > drivers/irqchip/irq-tb10x.c
-> 
-> Patch 1/15 changes these all. I think it's still broken because patch 2/15
-> is wrong, but it's not /that/ obviously broken.
+Hello,
 
-Oops. Missed that.
+On 30-10-14 00:53, Yinghai Lu wrote:
+>> Done, and that did work! Four suspend+resume cycles later and it's still
+>> stable.
+> Then can you test attached simplified one.
+>
+Sadly, with that patch (applied against a vanilla 3.17 tree like all the 
+others) the second resume fails already. :-(
 
+
+Wilmer v/d Gaast.
+
+-- 
++-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
+| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
+| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
++--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
