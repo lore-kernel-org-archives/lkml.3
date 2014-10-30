@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759250AbaJ3Lzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:55:45 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:38519 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758922AbaJ3Lzn (ORCPT
+	id S932839AbaJ3L73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:59:29 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:32785 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758890AbaJ3L72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:55:43 -0400
-Date: Thu, 30 Oct 2014 07:55:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>, Rabin Vincent <rabin@rab.in>,
-        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing/syscalls: ignore numbers outside NR_syscalls'
- range
-Message-ID: <20141030075541.3bbe3609@gandalf.local.home>
-In-Reply-To: <20141030075223.721e23d6@gandalf.local.home>
-References: <1414620418-29472-1-git-send-email-rabin@rab.in>
-	<20141030082606.GA7945@infradead.org>
-	<20141030101808.GO27405@n2100.arm.linux.org.uk>
-	<20141030071039.37633bf5@gandalf.local.home>
-	<20141030075223.721e23d6@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Thu, 30 Oct 2014 07:59:28 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] drm: Fix warning caused by missing description in drm_modeset_lock.h
+Date: Thu, 30 Oct 2014 20:59:13 +0900
+Message-Id: <1414670353-8198-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.1.2.555.gfbecd99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct 2014 07:52:23 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+This patch fix following warning while "make xmldocs".
 
- 
-> Bah, I misread the patch. I shouldn't read patches before having my
-> morning coffee :-/
-> 
+Warning(.//include/drm/drm_modeset_lock.h:61): No description
+found for parameter 'trylock_only'
 
-That's what I get by reading email before doing my morning Physical
-Therapy treatment.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ include/drm/drm_modeset_lock.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-I'm off to do my PT exercises and then have breakfast. I'll pull the
-patch in today, test it out, and then push it off for 3.18-rcX.
+diff --git a/include/drm/drm_modeset_lock.h b/include/drm/drm_modeset_lock.h
+index 75a5c45..60b2da6 100644
+--- a/include/drm/drm_modeset_lock.h
++++ b/include/drm/drm_modeset_lock.h
+@@ -33,6 +33,7 @@ struct drm_modeset_lock;
+  * @ww_ctx: base acquire ctx
+  * @contended: used internally for -EDEADLK handling
+  * @locked: list of held locks
++ * @trylock_only: Trylock mode, use only for panic handlers
+  *
+  * Each thread competing for a set of locks must use one acquire
+  * ctx.  And if any lock fxn returns -EDEADLK, it must backoff and
+-- 
+2.1.2.555.gfbecd99
 
-Thanks,
-
--- Steve
