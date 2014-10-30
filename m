@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119AbaJ3An2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 20:43:28 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:38940 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758046AbaJ3Amc (ORCPT
+	id S1757098AbaJ3AxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 20:53:16 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:47914 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392AbaJ3AxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 20:42:32 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: akpm@linux-foundation.org, linux-mm@kvack.org, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 3/6] mm: Add a vm_special_mapping .fault method
-Date: Wed, 29 Oct 2014 17:42:13 -0700
-Message-Id: <c4e198aff7953d25290a8f70910da235f1fd2464.1414629045.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1414629045.git.luto@amacapital.net>
-References: <cover.1414629045.git.luto@amacapital.net>
-In-Reply-To: <cover.1414629045.git.luto@amacapital.net>
-References: <cover.1414629045.git.luto@amacapital.net>
+	Wed, 29 Oct 2014 20:53:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <5450B55E.6010103@gaast.net>
+References: <543F049F.5090605@gaast.net>
+	<CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com>
+	<543F9182.9000004@gaast.net>
+	<CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com>
+	<544033CF.3080104@gaast.net>
+	<CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com>
+	<5442FE58.5020700@gaast.net>
+	<CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com>
+	<5446D2D8.2090203@gaast.net>
+	<CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com>
+	<20141022125354.GA3832@gaast.net>
+	<CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
+	<544E235C.5010908@gaast.net>
+	<CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
+	<544EC59D.9080303@gaast.net>
+	<CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
+	<544EDD40.1040107@gaast.net>
+	<CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com>
+	<545027F9.1040703@gaast.net>
+	<CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com>
+	<5450B55E.6010103@gaast.net>
+Date: Wed, 29 Oct 2014 17:53:14 -0700
+X-Google-Sender-Auth: wggXiPJfwd6qhTYv93Sd3BQZG_0
+Message-ID: <CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com>
+Subject: Re: Machine crashes right *after* ~successful resume
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wilmer van der Gaast <wilmer@gaast.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001a113ee2a02374470506994e5a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Requiring special mappings to give a list of struct pages is
-inflexible: it prevents sane use of IO memory in a special mapping,
-it's inefficient (it requires arch code to initialize a list of
-struct pages, and it requires the mm core to walk the entire list
-just to figure out how long it is), and it prevents arch code from
-doing anything fancy when a special mapping fault occurs.
+--001a113ee2a02374470506994e5a
+Content-Type: text/plain; charset=UTF-8
 
-Add a .fault method as an alternative to filling in a .pages array.
+On Wed, Oct 29, 2014 at 2:37 AM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
+>
+>> Anyway please try attached patched on top of 3.17.
+>>
+> Done, and that did work! Four suspend+resume cycles later and it's still
+> stable.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- include/linux/mm_types.h | 18 +++++++++++++++++-
- mm/mmap.c                | 14 ++++++++++----
- 2 files changed, 27 insertions(+), 5 deletions(-)
+Then can you test attached simplified one.
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index ad6652fe3671..cc96c63b1002 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -511,12 +511,28 @@ static inline void clear_tlb_flush_pending(struct mm_struct *mm)
- }
- #endif
- 
-+struct vm_fault;
-+
- struct vm_special_mapping
- {
--	const char *name;
-+	const char *name;	/* The name, e.g. "[vdso]". */
-+
-+	/*
-+	 * If .fault is not provided, this is points to a
-+	 * NULL-terminated array of pages that back the special mapping.
-+	 *
-+	 * This must not be NULL unless .fault is provided.
-+	 */
- 	struct page **pages;
- 
- 	/*
-+	 * If non-NULL, then this is called to resolve page faults
-+	 * on the special mapping.  If used, .pages is not checked.
-+	 */
-+	int (*fault)(struct vm_special_mapping *sm, struct vm_area_struct *vma,
-+		     struct vm_fault *vmf);
-+
-+	/*
- 	 * If non-NULL, this is called when installed and when mremap
- 	 * moves the first page of the mapping.
- 	 */
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 8c398b9ee225..d27572e3e4f4 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2950,11 +2950,17 @@ static int special_mapping_fault(struct vm_area_struct *vma,
- 	 */
- 	pgoff = vmf->pgoff - vma->vm_pgoff;
- 
--	if (vma->vm_ops == &legacy_special_mapping_vmops)
-+	if (vma->vm_ops == &legacy_special_mapping_vmops) {
- 		pages = vma->vm_private_data;
--	else
--		pages = ((struct vm_special_mapping *)vma->vm_private_data)->
--			pages;
-+	} else {
-+		struct vm_special_mapping *sm = vma->vm_private_data;
-+		if (sm->fault) {
-+			vmf->pgoff = pgoff;
-+			return sm->fault(sm, vma, vmf);
-+		} else {
-+			pages = sm->pages;
-+		}
-+	}
- 
- 	for (; pgoff && *pages; ++pages)
- 		pgoff--;
--- 
-1.9.3
+--001a113ee2a02374470506994e5a
+Content-Type: text/x-patch; charset=US-ASCII; name="debug_suspend_resume_z_yy.patch"
+Content-Disposition: attachment; filename="debug_suspend_resume_z_yy.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i1vefvk10
 
+LS0tCiBkcml2ZXJzL3BjaS9wY2kuYyB8ICAgMTMgKysrKysrKysrKysrKwogMSBmaWxlIGNoYW5n
+ZWQsIDEzIGluc2VydGlvbnMoKykKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvcGNpLmMK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvcGNpLmMKKysrIGxpbnV4
+LTIuNi9kcml2ZXJzL3BjaS9wY2kuYwpAQCAtMTI2NSw2ICsxMjY1LDE5IEBAIHN0YXRpYyB2b2lk
+IHBjaV9lbmFibGVfYnJpZGdlKHN0cnVjdCBwY2kKIAlwY2lfc2V0X21hc3RlcihkZXYpOwogfQog
+CitzdGF0aWMgdm9pZCBpdGVfc2V0X2QwKHN0cnVjdCBwY2lfZGV2ICpkZXYpCit7CisJaWYgKGRl
+di0+cG1fY2FwKSB7CisJCXUxNiBwbWNzcjsKKwkJcGNpX3JlYWRfY29uZmlnX3dvcmQoZGV2LCBk
+ZXYtPnBtX2NhcCArIFBDSV9QTV9DVFJMLCAmcG1jc3IpOworCQlkZXYtPmN1cnJlbnRfc3RhdGUg
+PSAocG1jc3IgJiBQQ0lfUE1fQ1RSTF9TVEFURV9NQVNLKTsKKwl9CisKKwlwY2lfc2V0X3Bvd2Vy
+X3N0YXRlKGRldiwgUENJX0QwKTsKK30KK0RFQ0xBUkVfUENJX0ZJWFVQX0ZJTkFMKFBDSV9WRU5E
+T1JfSURfSU5URUwsIDB4MjQ0ZSwgaXRlX3NldF9kMCk7CitERUNMQVJFX1BDSV9GSVhVUF9GSU5B
+TChQQ0lfVkVORE9SX0lEX0lURSwgMHg4ODkyLCBpdGVfc2V0X2QwKTsKKwogc3RhdGljIGludCBw
+Y2lfZW5hYmxlX2RldmljZV9mbGFncyhzdHJ1Y3QgcGNpX2RldiAqZGV2LCB1bnNpZ25lZCBsb25n
+IGZsYWdzKQogewogCXN0cnVjdCBwY2lfZGV2ICpicmlkZ2U7Cg==
+--001a113ee2a02374470506994e5a--
