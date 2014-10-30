@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759504AbaJ3Lw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:52:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:27628 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759446AbaJ3Lw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:52:26 -0400
-Date: Thu, 30 Oct 2014 07:52:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>, Rabin Vincent <rabin@rab.in>,
-        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing/syscalls: ignore numbers outside NR_syscalls'
- range
-Message-ID: <20141030075223.721e23d6@gandalf.local.home>
-In-Reply-To: <20141030071039.37633bf5@gandalf.local.home>
-References: <1414620418-29472-1-git-send-email-rabin@rab.in>
-	<20141030082606.GA7945@infradead.org>
-	<20141030101808.GO27405@n2100.arm.linux.org.uk>
-	<20141030071039.37633bf5@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1759532AbaJ3LxE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:53:04 -0400
+Received: from svenfoo.org ([82.94.215.22]:47364 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759051AbaJ3LxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 07:53:01 -0400
+Message-ID: <5452269A.9050003@zonque.org>
+Date: Thu, 30 Oct 2014 12:52:58 +0100
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: Arnd Bergmann <arnd@arndb.de>, Tom Gundersen <teg@jklm.no>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Marcel Holtmann <marcel@holtmann.org>, Ryan Lortie <desrt@desrt.ca>,
+        Bastien Nocera <hadess@hadess.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Djalal Harouni <tixxdz@opendz.org>,
+        Simon McVittie <simon.mcvittie@collabora.co.uk>,
+        "alban.crequy" <alban.crequy@collabora.co.uk>,
+        "javier.martinez" <javier.martinez@collabora.co.uk>
+Subject: Re: kdbus: add header file
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <3546486.lOZcZMmXYe@wuerfel> <CAG-2HqV_mXyARMs=9GOpbCBHPU+2XMkDcm=sGekYnnujNPAYqQ@mail.gmail.com> <6078917.F7Y7rNpK9C@wuerfel>
+In-Reply-To: <6078917.F7Y7rNpK9C@wuerfel>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct 2014 07:10:39 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On 10/30/2014 12:26 PM, Arnd Bergmann wrote:
+> On Thursday 30 October 2014 12:02:39 Tom Gundersen wrote:
 
-> On Thu, 30 Oct 2014 10:18:08 +0000
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+>> The nice thing about enums is of course that it helps with debugging
+>> as gdb can show the string representation rather than the number,
+>> because in contrast to #defines, an enum is something the compliler
+>> knows about.
 > 
-> > On Thu, Oct 30, 2014 at 01:26:06AM -0700, Christoph Hellwig wrote:
-> > > On Wed, Oct 29, 2014 at 11:06:58PM +0100, Rabin Vincent wrote:
-> > > > ARM has some private syscalls (for example, set_tls(2)) which lie
-> > > > outside the range of NR_syscalls.  If any of these are called while
-> > > > syscall tracing is being performed, out-of-bounds array access will
-> > > > occur in the ftrace and perf sys_{enter,exit} handlers.
-> > > 
-> > > While this patch looks like good caution, having syscalls outside of
-> > > NR_syscalls seems like a receipe for a disaster.  Can you try to fix
-> > > that issue as ell, please?
-> > 
-> > No.  We've had them since the inception of Linux on ARM.  They predate
-> > this tracing crap by more than a decade.  We're not changing them
-> > because that would be a massive user API breakage.
-> > 
-> 
-> Since syscall tracing is only broken on ARM, then the fix needs to be
-> ARM specific, and not remove the check for all other architectures that
-> have a sane NR_syscalls variable.
+> This doesn't get passed as an enum in user space though, and when debugging
+> the kernel it only helps within one function.
 
-Bah, I misread the patch. I shouldn't read patches before having my
-morning coffee :-/
+Hmm, this is the header exported to userspace, so having enums in would
+make our lives easier, right?
 
-I read it backwards. I thought it was removing the checks for
-NR_syscalls, and not adding them.
+Hence, for now, I'd propose we keep it the way it is, and add new ioctls
+with defines once they are implemented. Are you okay with this? I'll add
+a comment to the file to give a heads-up.
 
-I'm fine with the patch as is, and will take it.
 
-But I agree that the syscall tracing code needs a rewrite to handle
-these types of issues. It has problems with compat calls as well, which
-we simply ignore.
+Thanks,
+Daniel
 
-Sorry for the confusion.
-
--- Steve
