@@ -1,45 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaJ3BN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 21:13:59 -0400
-Received: from mail-am1hn0252.outbound.protection.outlook.com ([157.56.112.252]:63936
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756618AbaJ3BN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 21:13:58 -0400
-X-Greylist: delayed 1808 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Oct 2014 21:13:57 EDT
-Reply-To: <ru_garang156@mail.com>
-From: Mrs Rebecca Garang <info@mtmoriahmbc.org>
-Subject: We can do this Investment
-Date: Wed, 29 Oct 2014 16:12:35 -0700
+	id S932733AbaJ3BOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 21:14:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:53788 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442AbaJ3BOJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 21:14:09 -0400
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Chris Ball <chris@printf.net>, Kevin Hilman <khilman@kernel.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] mmc: atmel-mci: add pm runtime support
+Thread-Topic: [PATCH] mmc: atmel-mci: add pm runtime support
+Thread-Index: AQHP8x6qHu3moThWBUmo1lm312ASmJxGU6KAgAGDRHA=
+Date: Thu, 30 Oct 2014 01:13:49 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641BF5A0F78@penmbx01>
+References: <1414548958-10537-1-git-send-email-wenyou.yang@atmel.com>
+ <CAPDyKFr30M3kR9rC8RFYwc2MZDDgV3o9LPta4WT4uiSemrd4Jg@mail.gmail.com>
+In-Reply-To: <CAPDyKFr30M3kR9rC8RFYwc2MZDDgV3o9LPta4WT4uiSemrd4Jg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <ARTHURKiJa21NdWQNqQ00024985@hjweir.co.uk>
-X-OriginalArrivalTime: 29 Oct 2014 23:12:47.0425 (UTC) FILETIME=[DA5A9B10:01CFF3CD]
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130591034270705244;(b504ccec-b765-4e2f-5846-08d168caef57);()
-X-Forefront-Antispam-Report: CIP:217.40.154.18;CTRY:GB;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10009020)(6009001)(252514010)(189002)(199003)(87286001)(44976005)(50986999)(217433001)(19580395003)(19580405001)(69596002)(81686999)(53806999)(81816999)(4396001)(50226001)(85852003)(62236002)(44716002)(87936001)(88136002)(58726001)(62966002)(20776003)(47776003)(64706001)(89996001)(85306004)(558084003)(50466002)(77096002)(110136001)(1671002)(104016003)(107046002)(107886001)(229853001)(77156001)(35302002)(46102003)(80022003)(36756003)(43066003)(120916001)(21056001)(99396003)(76482002)(104166001)(102836001)(81156004)(106466001)(95666004)(105596002)(92726001)(93916002)(86362001)(40036004)(23686002)(61296003)(5456002);DIR:OUT;SFP:1501;SCL:6;SRVR:AM3PR06MB050;H:hjweir.co.uk;FPR:;MLV:spm;PTR:mail.h-j-weir.co.uk;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:AM3PR06MB050;
-X-Forefront-PRVS: 038002787A
-Authentication-Results: spf=softfail (sender IP is 217.40.154.18)
- smtp.mailfrom=info@mtmoriahmbc.org; 
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9U1EHFf008131
 
+Hello Ulf,
 
-Hello dear Friend
-May I ask if you would be eligible to pursue a Business investment of US$57.3m with me in your country,
-if you dont mind? (Let me know if you are interested For more details,
-Email: ru_garang156@mail.com).
-Thank you.
-Regards,
-Ms. Rebecca Garang
+Thank you very much for so many comments.
 
+I will do it.
+
+> -----Original Message-----
+> From: Ulf Hansson [mailto:ulf.hansson@linaro.org]
+> Sent: Wednesday, October 29, 2014 6:06 PM
+> To: Yang, Wenyou
+> Cc: Chris Ball; Kevin Hilman; Ferre, Nicolas; Desroches, Ludovic; linux-mmc; linux-
+> kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH] mmc: atmel-mci: add pm runtime support
+> 
+> On 29 October 2014 03:15, Wenyou Yang <wenyou.yang@atmel.com> wrote:
+> 
+> Hi Wenyou,
+> 
+> Could you please provide some more information in the commit message.
+> 
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > ---
+> >  drivers/mmc/host/atmel-mci.c |  116
+> > ++++++++++++++++++++++++++++++++++--------
+> >  1 file changed, 94 insertions(+), 22 deletions(-)
+> >
+> > diff --git a/drivers/mmc/host/atmel-mci.c
+> > b/drivers/mmc/host/atmel-mci.c index 0b9ddf8..e9d32d0 100644
+> > --- a/drivers/mmc/host/atmel-mci.c
+> > +++ b/drivers/mmc/host/atmel-mci.c
+> > @@ -37,6 +37,8 @@
+> >
+> >  #include <linux/atmel-mci.h>
+> >  #include <linux/atmel_pdc.h>
+> > +#include <linux/pm.h>
+> > +#include <linux/pm_runtime.h>
+> >
+> >  #include <asm/cacheflush.h>
+> >  #include <asm/io.h>
+> > @@ -44,6 +46,8 @@
+> >
+> >  #include "atmel-mci-regs.h"
+> >
+> > +#define AUTOSUSPEND_DELAY      50
+> > +
+> >  #define ATMCI_DATA_ERROR_FLAGS (ATMCI_DCRCE | ATMCI_DTOE |
+> ATMCI_OVRE | ATMCI_UNRE)
+> >  #define ATMCI_DMA_THRESHOLD    16
+> >
+> > @@ -386,20 +390,19 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+> >         if (!buf)
+> >                 return -ENOMEM;
+> >
+> > +       pm_runtime_get_sync(&host->pdev->dev);
+> > +
+> >         /*
+> >          * Grab a more or less consistent snapshot. Note that we're
+> >          * not disabling interrupts, so IMR and SR may not be
+> >          * consistent.
+> >          */
+> > -       ret = clk_prepare_enable(host->mck);
+> > -       if (ret)
+> > -               goto out;
+> > -
+> >         spin_lock_bh(&host->lock);
+> >         memcpy_fromio(buf, host->regs, ATMCI_REGS_SIZE);
+> >         spin_unlock_bh(&host->lock);
+> >
+> > -       clk_disable_unprepare(host->mck);
+> > +       pm_runtime_mark_last_busy(&host->pdev->dev);
+> > +       pm_runtime_put_autosuspend(&host->pdev->dev);
+> >
+> >         seq_printf(s, "MR:\t0x%08x%s%s ",
+> >                         buf[ATMCI_MR / 4], @@ -449,7 +452,6 @@ static
+> > int atmci_regs_show(struct seq_file *s, void *v)
+> >                                 val & ATMCI_CFG_LSYNC ? " LSYNC" : "");
+> >         }
+> >
+> > -out:
+> >         kfree(buf);
+> >
+> >         return ret;
+> > @@ -1252,6 +1254,8 @@ static void atmci_request(struct mmc_host *mmc,
+> struct mmc_request *mrq)
+> >         WARN_ON(slot->mrq);
+> >         dev_dbg(&host->pdev->dev, "MRQ: cmd %u\n", mrq->cmd->opcode);
+> >
+> > +       pm_runtime_get_sync(&host->pdev->dev);
+> > +
+> >         /*
+> >          * We may "know" the card is gone even though there's still an
+> >          * electrical connection. If so, we really need to communicate
+> > @@ -1281,7 +1285,8 @@ static void atmci_set_ios(struct mmc_host *mmc,
+> struct mmc_ios *ios)
+> >         struct atmel_mci_slot   *slot = mmc_priv(mmc);
+> >         struct atmel_mci        *host = slot->host;
+> >         unsigned int            i;
+> > -       bool                    unprepare_clk;
+> > +
+> > +       pm_runtime_get_sync(&host->pdev->dev);
+> >
+> >         slot->sdc_reg &= ~ATMCI_SDCBUS_MASK;
+> >         switch (ios->bus_width) {
+> > @@ -1297,13 +1302,8 @@ static void atmci_set_ios(struct mmc_host *mmc,
+> struct mmc_ios *ios)
+> >                 unsigned int clock_min = ~0U;
+> >                 u32 clkdiv;
+> >
+> > -               clk_prepare(host->mck);
+> > -               unprepare_clk = true;
+> > -
+> >                 spin_lock_bh(&host->lock);
+> >                 if (!host->mode_reg) {
+> > -                       clk_enable(host->mck);
+> > -                       unprepare_clk = false;
+> >                         atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
+> >                         atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIEN);
+> >                         if (host->caps.has_cfg_reg) @@ -1371,8 +1371,6
+> > @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+> >         } else {
+> >                 bool any_slot_active = false;
+> >
+> > -               unprepare_clk = false;
+> > -
+> >                 spin_lock_bh(&host->lock);
+> >                 slot->clock = 0;
+> >                 for (i = 0; i < ATMCI_MAX_NR_SLOTS; i++) { @@ -1385,17
+> > +1383,12 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios
+> *ios)
+> >                         atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
+> >                         if (host->mode_reg) {
+> >                                 atmci_readl(host, ATMCI_MR);
+> > -                               clk_disable(host->mck);
+> > -                               unprepare_clk = true;
+> >                         }
+> >                         host->mode_reg = 0;
+> >                 }
+> >                 spin_unlock_bh(&host->lock);
+> >         }
+> >
+> > -       if (unprepare_clk)
+> > -               clk_unprepare(host->mck);
+> > -
+> >         switch (ios->power_mode) {
+> >         case MMC_POWER_OFF:
+> >                 if (!IS_ERR(mmc->supply.vmmc)) @@ -1421,6 +1414,9 @@
+> > static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+> >                  */
+> >                 break;
+> >         }
+> > +
+> > +       pm_runtime_mark_last_busy(&host->pdev->dev);
+> > +       pm_runtime_put_autosuspend(&host->pdev->dev);
+> >  }
+> >
+> >  static int atmci_get_ro(struct mmc_host *mmc) @@ -1512,6 +1508,9 @@
+> > static void atmci_request_end(struct atmel_mci *host, struct mmc_request *mrq)
+> >         spin_unlock(&host->lock);
+> >         mmc_request_done(prev_mmc, mrq);
+> >         spin_lock(&host->lock);
+> > +
+> > +       pm_runtime_mark_last_busy(&host->pdev->dev);
+> > +       pm_runtime_put_autosuspend(&host->pdev->dev);
+> >  }
+> >
+> >  static void atmci_command_complete(struct atmel_mci *host, @@ -2417,7
+> > +2416,6 @@ static int __init atmci_probe(struct platform_device *pdev)
+> >
+> >         atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
+> >         host->bus_hz = clk_get_rate(host->mck);
+> > -       clk_disable_unprepare(host->mck);
+> >
+> >         host->mapbase = regs->start;
+> >
+> > @@ -2449,6 +2447,12 @@ static int __init atmci_probe(struct
+> > platform_device *pdev)
+> >
+> >         setup_timer(&host->timer, atmci_timeout_timer, (unsigned
+> > long)host);
+> >
+> > +       pm_runtime_enable(&pdev->dev);
+> > +       pm_runtime_get_sync(&pdev->dev);
+> > +       pm_runtime_set_autosuspend_delay(&pdev->dev,
+> AUTOSUSPEND_DELAY);
+> > +       pm_runtime_use_autosuspend(&pdev->dev);
+> 
+> The above is wrong. You will get clock unbalance issues, meaning that the clock
+> will never be gated at runtime PM suspend.
+> 
+> Fix it by change the hole chunk of code above to:
+> 
+> pm_runtime_get_noresume();
+> pm_runtime_set_active();
+> pm_runtime_set_autosuspend_delay();
+> pm_runtime_use_autosuspend();
+> pm_runtime_enable();
+> 
+> > +       pm_suspend_ignore_children(&pdev->dev, 1);
+> 
+> Is this needed?
+> 
+> > +
+> >         /* We need at least one slot to succeed */
+> >         nr_slots = 0;
+> >         ret = -ENODEV;
+> > @@ -2491,6 +2495,9 @@ static int __init atmci_probe(struct platform_device
+> *pdev)
+> >                         "Atmel MCI controller at 0x%08lx irq %d, %u slots\n",
+> >                         host->mapbase, irq, nr_slots);
+> >
+> > +       pm_runtime_mark_last_busy(&host->pdev->dev);
+> > +       pm_runtime_put_autosuspend(&pdev->dev);
+> > +
+> >         return 0;
+> >
+> >  err_dma_alloc:
+> > @@ -2499,6 +2506,9 @@ err_dma_alloc:
+> >                         atmci_cleanup_slot(host->slot[i], i);
+> >         }
+> >  err_init_slot:
+> > +       pm_runtime_put_sync(&pdev->dev);
+> > +       pm_runtime_disable(&pdev->dev);
+> 
+> According to upper comment, you must switch order, and you should use
+> pm_runtime_put_noidle() instead.
+> 
+> Moreover you needs to have a clk_disable_uprepare() in the error handling and
+> prior the above.
+> 
+> > +
+> >         del_timer_sync(&host->timer);
+> >         if (host->dma.chan)
+> >                 dma_release_channel(host->dma.chan);
+> > @@ -2511,6 +2521,8 @@ static int __exit atmci_remove(struct platform_device
+> *pdev)
+> >         struct atmel_mci        *host = platform_get_drvdata(pdev);
+> >         unsigned int            i;
+> >
+> > +       pm_runtime_get_sync(&pdev->dev);
+> > +
+> >         if (host->buffer)
+> >                 dma_free_coherent(&pdev->dev, host->buf_size,
+> >                                   host->buffer, host->buf_phys_addr);
+> > @@ -2520,11 +2532,9 @@ static int __exit atmci_remove(struct platform_device
+> *pdev)
+> >                         atmci_cleanup_slot(host->slot[i], i);
+> >         }
+> >
+> > -       clk_prepare_enable(host->mck);
+> >         atmci_writel(host, ATMCI_IDR, ~0UL);
+> >         atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
+> >         atmci_readl(host, ATMCI_SR);
+> > -       clk_disable_unprepare(host->mck);
+> >
+> >         del_timer_sync(&host->timer);
+> >         if (host->dma.chan)
+> > @@ -2532,14 +2542,76 @@ static int __exit atmci_remove(struct
+> > platform_device *pdev)
+> >
+> >         free_irq(platform_get_irq(pdev, 0), host);
+> >
+> > +       pm_runtime_put_sync(&pdev->dev);
+> > +       pm_runtime_disable(&pdev->dev);
+> > +
+> > +       clk_disable_unprepare(host->mck);
+> 
+> Same comment as for fixing the error handling in ->probe().
+> 
+> > +
+> >         return 0;
+> >  }
+> >
+> > +#ifdef CONFIG_PM
+> > +static int atmci_suspend(struct device *dev) {
+> > +       struct atmel_mci *host = dev_get_drvdata(dev);
+> > +
+> > +       pm_runtime_get_sync(dev);
+> > +
+> > +       clk_disable_unprepare(host->mck);
+> > +
+> > +       pm_runtime_mark_last_busy(dev);
+> > +       pm_runtime_put_autosuspend(dev);
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static int atmci_resume(struct device *dev) {
+> > +       struct atmel_mci *host = dev_get_drvdata(dev);
+> > +       int ret;
+> > +
+> > +       pm_runtime_get_sync(dev);
+> > +
+> > +       ret = clk_prepare_enable(host->mck);
+> > +
+> > +       pm_runtime_mark_last_busy(dev);
+> > +       pm_runtime_put_autosuspend(dev);
+> > +
+> > +       return ret;
+> > +}
+> > +
+> > +static int atmci_runtime_suspend(struct device *dev) {
+> > +       struct atmel_mci *host = dev_get_drvdata(dev);
+> > +
+> > +       clk_disable_unprepare(host->mck);
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static int atmci_runtime_resume(struct device *dev) {
+> > +       struct atmel_mci *host = dev_get_drvdata(dev);
+> > +
+> > +       return clk_prepare_enable(host->mck); }
+> > +
+> > +static const struct dev_pm_ops atmci_dev_pm_ops = {
+> > +       SET_SYSTEM_SLEEP_PM_OPS(atmci_suspend, atmci_resume)
+> > +       SET_RUNTIME_PM_OPS(atmci_runtime_suspend,
+> > +atmci_runtime_resume, NULL) };
+> 
+> I would suggest the following changes to simplify code and to improve runtime
+> PM support a bit.
+> 
+> SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
+> pm_runtime_force_resume) SET_PM_RUNTIME_PM_OPS(atmci_runtime_suspend,
+> atmci_runtime_resume, NULL)
+> 
+> Do note the change from SET_RUNTIME_PM_OPS ->
+> SET_PM_RUNTIME_PM_OPS.
+> 
+> That means you will be able to remove atmci_suspend|resume() functions entirely.
+> 
+> > +
+> > +#define ATMCI_PM_OPS   (&atmci_dev_pm_ops)
+> > +#else
+> > +#define ATMCI_PM_OPS   NULL
+> > +#endif
+> 
+> This is micro optimization, not needed. Just use the atmci_dev_pm_ops directly
+> below instead.
+> 
+> > +
+> >  static struct platform_driver atmci_driver = {
+> >         .remove         = __exit_p(atmci_remove),
+> >         .driver         = {
+> >                 .name           = "atmel_mci",
+> >                 .of_match_table = of_match_ptr(atmci_dt_ids),
+> > +               .pm             = ATMCI_PM_OPS,
+> >         },
+> >  };
+> >
+> > --
+> > 1.7.9.5
+> >
+> 
+> Kind regards
+> Ulf Hansson
+
+Best Regards,
+Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
