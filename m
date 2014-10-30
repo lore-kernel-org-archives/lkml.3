@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056AbaJ3BGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 21:06:37 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:57787 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758000AbaJ3BGg (ORCPT
+	id S1757983AbaJ3BJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 21:09:06 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:43521 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756618AbaJ3BJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 21:06:36 -0400
-Date: Wed, 29 Oct 2014 21:06:33 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Florian Westphal <fw@strlen.de>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
-Subject: Re: [RFA][PATCH 2/8] netfilter: Remove return values for
- print_conntrack callbacks
-Message-ID: <20141029210633.4b28faed@gandalf.local.home>
-In-Reply-To: <20141029221601.GB10069@breakpoint.cc>
-References: <20141029215602.535533597@goodmis.org>
-	<20141029220107.465008329@goodmis.org>
-	<20141029221601.GB10069@breakpoint.cc>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Wed, 29 Oct 2014 21:09:04 -0400
+X-AuditID: cbfee690-f79ab6d0000046f7-33-54518fad2fd4
+Date: Thu, 30 Oct 2014 01:09:01 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: [PATCH] staging: octeon-ethernet: disable load balance for receiving
+ packet when CONFIG_RPS is enabled.
+To: "ralf@linux-mips.org" <ralf@linux-mips.org>, david.daney@cavium.com
+Cc: gregkh@linuxfoundation.org, linux-mips@linux-mips.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20141030010643849@eunb.song
+Msgkey: 20141030010643849@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20141030010643849@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <141769840.281701414631339613.JavaMail.weblogic@epmlwas07d>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLJsWRmVeSWpSXmKPExsVy+t8zHd21/YEhBtfb9Cwu75rD5sDo8XmT
+	XABjVAOjTWJRckZmWapCal5yfkpmXrqtUmiIm66FkkJGfnGJrVK0kYGxnpGpiZ6RibmepUGs
+	lZGpkkJeYm6qrVKFLlSvkkJRcgFQbW5lMdCAnFQ9qLhecWpeikNWfinIJXrFibnFpXnpesn5
+	uUoKZYk5pUAjlPQTpjJmPLvRxF7wgLvi2LVetgbGLdxdjJwcQgIqEi3/vzOC2BICJhKH7k9k
+	h7DFJC7cW8/WxcgFVLOMUaLr8xUmmKJnnY3sEIk5jBKPJ64D62YRUJV4/XsaG4jNJqAt8ePA
+	VWYQW1igQGJl1y4wW0TAT+LY7f9gzcwCbYwS/9++Z4c4Q15i8unLYDavgKDEyZlPWCC2KUnc
+	eNQCFVeWuDD3EDNEXEJi1vQLrBA2r8SM9qdQ9XIS076ugaqRljg/awMjzDuLvz+GivMDHbED
+	6hsBialnDkLVqEts23KfDcLmk1iz8C3UTEGJ09e6mWF23d8ylwnmhq0tT8BuYBZQlJjS/ZAd
+	wtaS+PJjHxu6X3gF3CXat/SCg1RCYCKHxJspRxknMCrNQlI3C8msWUhmIatZwMiyilE0tSC5
+	oDgpvcgEOcI3MULS4YQdjPcOWB9iFOBgVOLhdUgLCBFiTSwrrsw9xJgMjKiJzFKiyfnApJtX
+	Em9obGZkYWpiamxkbmmGIWxiamFhYoRDWEmc97XUz2AhgfTEktTs1NSC1KL4otKc1OJDjEwc
+	nFINjCp+fj5Cc67vWf9998252wz0JJx2rSgyFelq+3dU+Mm+q+ryVkpmnVld+964nKzy3Xx+
+	bUqT/Z+idzy/xLpU1zbc2ejlaRLoWdh+Zd3bWa8lp3JzTgw19Zu2IGqL2H+WFXfiWeYuYPBd
+	O6lw/qX01BU8ORKpPXN3fzw+x9Te+Fhi/cVlHfN3sSuxFGckGmoxFxUnAgBw2ZlysAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t/tPt21/YEhBk/6tS0u75rD5sDo8XmT
+	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
+	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
+	xrMbTewFD7grjl3rZWtg3MLdxcjJISSgItHy/zsjiC0hYCLxrLORHcIWk7hwbz1bFyMXUM0c
+	RonHE9eBFbEIqEq8/j2NDcRmE9CW+HHgKjOILSxQILGyaxeYLSLgJ3Hs9n92kGZmgTZGif9v
+	37NDbJOXmHz6MpjNKyAocXLmExaIbUoSNx61QMWVJS7MPcQMEZeQmDX9AiuEzSsxo/0pVL2c
+	xLSva6BqpCXOz9rACHP14u+PoeL8QEfsYIKwBSSmnjkIVaMusW3LfTYIm09izcK3UDMFJU5f
+	62aG2XV/y1wmmBu2tjwBu4FZQFFiSvdDdghbS+LLj31s6H7hFXCXaN/SyzaBUXYWktQsJO2z
+	kLQjq1nAyLKKUTS1ILmgOCm9wlivODG3uDQvXS85P3cTIzgdPVu8g/H/eetDjAIcjEo8vC+S
+	A0KEWBPLiitzDzFKcDArifCKdASGCPGmJFZWpRblxxeV5qQWH2I0BUbbRGYp0eR8YKrMK4k3
+	NDYwNjS0NDcwNTSyUBLnjb+VFCQkkJ5YkpqdmlqQWgTTx8TBKdXAOOm+3ZX2F5IlXH+XBtlk
+	7t8/8X2Kzbn5uqaFm7d8M3sTxfmfufGfRx/zadPJuz3e3T6z6nXaKtk7+gsN3Yyiki3PC+x8
+	eqFz9Vzn6ddthOVeJKq+sM84sVd6tfcLq1mVXaxFWzbNsDzpFqMapFgeyn7nFJOC934du+9m
+	hk9q3iSmxkn+vmzyQImlOCPRUIu5qDgRABBHFG1dAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9U19Cik008107
 
-On Wed, 29 Oct 2014 23:16:01 +0100
-Florian Westphal <fw@strlen.de> wrote:
 
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > 
-> > [ REQUEST FOR ACKS ]
-> > 
-> > The seq_printf() and friends are having their return values removed.
-> > The print_conntrack() returns the result of seq_printf(), which is
-> > meaningless when seq_printf() returns void. Might as well remove the
-> > return values of print_conntrack() as well.
-> [..]
-> 
-> > diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> > index 4c48e434bb1f..91f207c2cb69 100644
-> > --- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> > +++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> > @@ -147,7 +147,10 @@ static int ct_seq_show(struct seq_file *s, void *v)
-> >  		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
-> >  		goto release;
-> >  
-> > -	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
-> > +	if (l4proto->print_conntrack)
-> > +		l4proto->print_conntrack(s, ct);
-> > +
-> > +	if (seq_has_overflowed(s))
-> >  		goto release;
-> 
-> Its not obvious to me why nf_conntrack_l3proto_ipv4_compat now calls
-> seq_has_overflowed ...
-> 
-> > > diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-> > index cf65a1e040dd..348aa3602787 100644
-> > --- a/net/netfilter/nf_conntrack_standalone.c
-> > +++ b/net/netfilter/nf_conntrack_standalone.c
-> > @@ -199,8 +199,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
-> >  		       ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
-> >  		goto release;
-> >  
-> > -	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
-> > -		goto release;
-> > +	if (l4proto->print_conntrack)
-> > +		l4proto->print_conntrack(s, ct);
-> >  
-> >  	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
-> >  			l3proto, l4proto))
-> 
-> ... while nf_conntrack_standalone does not.
+It's better disable load balance for receiving packet when CONFIG_RPS is enabled.
+If not, octeon-ethernet driver select CPU and then the rps select again CPU.
+It can be ipi interrupts overhead and packet reordering could be possible.
 
-Oh, looks like it was added here in patch 3/8.
+Signed-off-by: Eunbong Song <eunb.song@samsung.com>
+---
+ drivers/staging/octeon/ethernet-rx.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-The reason for the two patches is that patch 3/8 is from Joe. I added
-places that he missed, and put that patch before his (2/8).
-
--- Steve
-
+diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+index b2b6c3c..44e372f 100644
+--- a/drivers/staging/octeon/ethernet-rx.c
++++ b/drivers/staging/octeon/ethernet-rx.c
+@@ -286,6 +286,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 			did_work_request = 1;
+ 		}
+ 
++#ifndef CONFIG_RPS
+ 		if (rx_count == 0) {
+ 			/*
+ 			 * First time through, see if there is enough
+@@ -300,6 +301,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 			if (backlog > budget * cores_in_use && napi != NULL)
+ 				cvm_oct_enable_one_cpu();
+ 		}
++#endif
+ 		rx_count++;
+ 
+ 		skb_in_hw = USE_SKBUFFS_IN_HW && work->word2.s.bufs == 1;
+-- 
+1.7.0.1
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
