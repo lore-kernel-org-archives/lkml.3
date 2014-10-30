@@ -1,42 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923AbaJ3DeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 23:34:12 -0400
-Received: from [103.239.73.48] ([103.239.73.48]:52530 "EHLO a.1-hour-pay.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754868AbaJ3DeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 23:34:10 -0400
-Date: Thu, 30 Oct 2014 11:35:43 +0800
-From: "LED Light" <hw5@a.1-hour-pay.com>
-Reply-To: shadow@hk29.eidc.cn
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Milky LED BULBS  Ceramic ceiling lamps LED FLOOD LIGHTS
-Message-ID: <201410301135439379369@a.1-hour-pay.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1756284AbaJ3Dqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 23:46:54 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:55324 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093AbaJ3Dqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 23:46:52 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9U3klH4008196, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] r8152: set RTL8152_UNPLUG when finding -ENODEV
+Date: Thu, 30 Oct 2014 11:46:40 +0800
+Message-ID: <1394712342-15778-73-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9U3YH7k008645
 
-have a nice day,friend.
+Set RTL8152_UNPLUG when finding -ENODEV. This could accelerate
+unloading the driver when the device is unplugged.
 
-Glad to know you are interested in LED bean gall ligh and ceiling light. We do all sorts of LED light Wholesale in china.
-If you need,we will offer you every model with competitive price and high quality.
-For more information,Please kindly visit our websit: jrs-LED.net
-Waitting for your reply.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-Best regards
-JRS Technology Co.,Ltd
-shadow
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index e1810bc..f116335 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -690,6 +690,9 @@ static int generic_ocp_read(struct r8152 *tp, u16 index, u16 size,
+ 		}
+ 	}
+ 
++	if (ret == -ENODEV)
++		set_bit(RTL8152_UNPLUG, &tp->flags);
++
+ 	return ret;
+ }
+ 
+@@ -757,6 +760,9 @@ static int generic_ocp_write(struct r8152 *tp, u16 index, u16 byteen,
+ 	}
+ 
+ error1:
++	if (ret == -ENODEV)
++		set_bit(RTL8152_UNPLUG, &tp->flags);
++
+ 	return ret;
+ }
+ 
+@@ -1083,6 +1089,7 @@ static void read_bulk_callback(struct urb *urb)
+ 
+ 	result = r8152_submit_rx(tp, agg, GFP_ATOMIC);
+ 	if (result == -ENODEV) {
++		set_bit(RTL8152_UNPLUG, &tp->flags);
+ 		netif_device_detach(tp->netdev);
+ 	} else if (result) {
+ 		spin_lock(&tp->rx_lock);
+@@ -1187,11 +1194,13 @@ static void intr_callback(struct urb *urb)
+ 
+ resubmit:
+ 	res = usb_submit_urb(urb, GFP_ATOMIC);
+-	if (res == -ENODEV)
++	if (res == -ENODEV) {
++		set_bit(RTL8152_UNPLUG, &tp->flags);
+ 		netif_device_detach(tp->netdev);
+-	else if (res)
++	} else if (res) {
+ 		netif_err(tp, intr, tp->netdev,
+ 			  "can't resubmit intr, status %d\n", res);
++	}
+ }
+ 
+ static inline void *rx_agg_align(void *data)
+@@ -1755,6 +1764,7 @@ static void tx_bottom(struct r8152 *tp)
+ 			struct net_device *netdev = tp->netdev;
+ 
+ 			if (res == -ENODEV) {
++				set_bit(RTL8152_UNPLUG, &tp->flags);
+ 				netif_device_detach(netdev);
+ 			} else {
+ 				struct net_device_stats *stats = &netdev->stats;
+-- 
+1.9.3
 
-Email£º  shadow@JRS-Tech.net
-Skype£º  techjrsb
-MSN£º    techjrsb@msn.cn
-Websit£º www.jrs-LED.net
-
-
-we would be grateful if you will be our led lamps catalogue reserved for your supervisor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
