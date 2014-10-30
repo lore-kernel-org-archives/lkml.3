@@ -1,172 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760630AbaJ3RDh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:03:37 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:61731 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758594AbaJ3RDf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:03:35 -0400
-Date: Thu, 30 Oct 2014 13:03:31 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vikas Shivappa <vikas.shivappa@intel.com>,
-        "Auld, Will" <will.auld@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>
-Subject: Re: Cache Allocation Technology Design
-Message-ID: <20141030170331.GB378@htj.dyndns.org>
-References: <20141029081640.GT3337@twins.programming.kicks-ass.net>
- <20141029124834.GQ12020@console-pimps.org>
- <20141029134526.GC3337@twins.programming.kicks-ass.net>
- <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
- <20141029172845.GP12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
- <20141029182234.GA13393@mtj.dyndns.org>
- <20141030070725.GG3337@twins.programming.kicks-ass.net>
- <20141030124333.GA29540@htj.dyndns.org>
- <20141030131845.GI3337@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030131845.GI3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1161065AbaJ3REk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:04:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758787AbaJ3REh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 13:04:37 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
+        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
+        linux-api@vger.kernel.org
+Subject: [PATCH] kernel, add panic_on_warn
+Date: Thu, 30 Oct 2014 13:03:47 -0400
+Message-Id: <1414688627-5298-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Peter.
+There have been several times where I have had to rebuild a kernel to
+cause a panic when hitting a WARN() in the code in order to get a crash
+dump from a system.  Sometimes this is easy to do, other times (such as
+in the case of a remote admin) it is not trivial to send new images to the
+user.
 
-On Thu, Oct 30, 2014 at 02:18:45PM +0100, Peter Zijlstra wrote:
-> On Thu, Oct 30, 2014 at 08:43:33AM -0400, Tejun Heo wrote:
-> > And that something shouldn't be disallowing task migration across
-> > cgroups.  This simply doesn't work with co-mounting or unified
-> > hierarchy.  cpuset automatically takes on the nearest ancestor's
-> > configuration which has enough execution resources.  Maybe that can be
-> > an option for this too?
-> 
-> It will give very random and nondeterministic behaviour and basically
-> destroy the entire purpose of the controller (which are the very same
-> reasons I detest that 'new' behaviour in cpusets).
+A much easier method would be a switch to change the WARN() over to a
+panic.  This makes debugging easier in that I can now test the actual
+image the WARN() was seen on and I do not have to engage in remote
+debugging.
 
-I agree with you that this is a corner case behavior which deviates
-from the usual behavior; however, the deviation is inherent.  This
-stems from the fact that the kernel in general doesn't allow tasks
-which cannot be run.  You say that you detest the new behaviors of
-cpuset; however, the old behaviors were just as sucky - bouncing tasks
-to an ancestor cgroup forcifully and without any indication or way to
-restore the previous configuration.  What's different with the new
-behavior is that it explicitly distinguishes between the configured
-and effective configurations as the kernel isn't capable for actually
-enforcing certain subset of configurations.
+This patch adds a panic_on_warn kernel parameter and
+/proc/sys/kernel/panic_on_warn calls panic() in the warn_slowpath_common()
+path.  The function will still print out the location of the warning.
 
-So, the inherent problem is always there no matter what we do and the
-question is that of a policy to deal with it.  One of the main issues
-I see with failing cgroup-level operations for controller specific
-reasons is lack of visibility.  All you can get out of a failed
-operation is a single error return and there's no good way to
-communicate why something isn't working, well not even who's the
-culprit.  Having "effective" vs "configured" makes it explicit that
-the kernel isn't capable of honoring all configurations and make the
-details of the situation visible.
+An example of the panic_on_warn output:
 
-Another part is inconsistencies across controllers.  This sure is
-worse when there are multiple controllers involved but inconsistent
-behaviors across different hierarchies are annoying all the same with
-single controller multiple hierarchies.  Userland often manages some
-of those hierarchies together and it can get horribly confusing.  No
-matter what, we need to settle on a single policy and having effective
-configuration seems like the better one.
+The first line below is from the WARN_ON() to output the WARN_ON()'s location.
+After that the panic() output is displayed.
 
-> > One of the problems is that we generally assume that a task can run
-> > some point in time in a lot of places in the kernel and can't just not
-> > run a task indefinitely because it's in a cgroup configured certain
-> > way.
-> 
-> Refusing tasks into a previously empty cgroup creates no such problems.
-> Its already in a cgroup (wherever its parent was) and it can run there,
-> failing to move it to another does not affect things.
+WARNING: CPU: 30 PID: 11698 at /home/prarit/dummy_module/dummy-module.c:25 init_dummy+0x1f/0x30 [dummy_module]()
+Kernel panic - not syncing: panic_on_warn set ...
 
-Yeah, sure, hard failing can work too.  It didn't work well for cpuset
-because a runnable configuration may become not so if the system
-config changes afterwards but this probably doesn't have an issue like
-that.  I'm not saying something like the above won't work.  It'd but I
-don't think that's the right place to fail.
+CPU: 30 PID: 11698 Comm: insmod Tainted: G        W  OE  3.17.0+ #57
+Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.00.29.D696.1311111329 11/11/2013
+ 0000000000000000 000000008e3f87df ffff88080f093c38 ffffffff81665190
+ 0000000000000000 ffffffff818aea3d ffff88080f093cb8 ffffffff8165e2ec
+ ffffffff00000008 ffff88080f093cc8 ffff88080f093c68 000000008e3f87df
+Call Trace:
+ [<ffffffff81665190>] dump_stack+0x46/0x58
+ [<ffffffff8165e2ec>] panic+0xd0/0x204
+ [<ffffffffa038e05f>] ? init_dummy+0x1f/0x30 [dummy_module]
+ [<ffffffff81076b90>] warn_slowpath_common+0xd0/0xd0
+ [<ffffffffa038e040>] ? dummy_greetings+0x40/0x40 [dummy_module]
+ [<ffffffff81076c8a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffffa038e05f>] init_dummy+0x1f/0x30 [dummy_module]
+ [<ffffffff81002144>] do_one_initcall+0xd4/0x210
+ [<ffffffff811b52c2>] ? __vunmap+0xc2/0x110
+ [<ffffffff810f8889>] load_module+0x16a9/0x1b30
+ [<ffffffff810f3d30>] ? store_uevent+0x70/0x70
+ [<ffffffff810f49b9>] ? copy_module_from_fd.isra.44+0x129/0x180
+ [<ffffffff810f8ec6>] SyS_finit_module+0xa6/0xd0
+ [<ffffffff8166cf29>] system_call_fastpath+0x12/0x17
 
-This controller might not even require the distinction between
-configured and effective tho?  Can't a new child just inherit the
-parent's configuration and never allow the config to become completely
-empty?  The problem cpuset faces is that of underlying hardware
-configuration changing.  This one doesn't have that.
+Successfully tested by me.
 
-> > > So either we fail mkdir, but that means allocating CLOS IDs for possibly
-> > > empty cgroups, or we allocate on demand which means failing task
-> > > assignment.
-> > 
-> > Can't fail mkdir or css enabling either.  Again, co-mounting and
-> > unified hierarchy.  Also, the behavior is just horrible to use from
-> > userland.
-> 
-> In order to fix the co-mounting and unified hierarchy I still need to
-> hear a proposal for that tasks vs processes thing.
-> 
-> Traditionally the cgroups were task based, but many controllers are
-> process based (simply because what they control is process wide, not per
-> task), and there was talk (2-3 years ago or so) about making the entire
-> cgroup thing per process, which obviously fails for all scheduler
-> related cgroups.
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Fabian Frederick <fabf@skynet.be>
+Cc: vgoyal@redhat.com
+Cc: isimatu.yasuaki@jp.fujitsu.com
+Cc: jbaron@akamai.com
+Cc: linux-doc@vger.kernel.org
+Cc: kexec@lists.infradead.org
+Cc: linux-api@vger.kernel.org
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 
-Yeah, it needs to be a separate interface where a given userland task
-can access its own knobs in a race-free way (cgroup interface can't
-even do that) whether that's a pseudo filesystem, say,
-/proc/self/BLAHBLAH or new syscalls.  This one is necessary regardless
-of what happens with cgroup.  cgroup simply isn't a suitable mechanism
-to expose these types of knobs to individual userland threads.
+[v2]: add /proc/sys/kernel/panic_on_warn, additional documentation, modify
+      !slowpath cases
+[v3]: use proc_dointvec_minmax() in sysctl handler
+[v4]: remove !slowpath cases, and add __read_mostly
+[v5]: change to panic_on_warn, re-alphabetize Documentation/sysctl/kernel.txt
+[v6]: fix typo in kernel/sysctl_binary.c
+---
+ Documentation/kdump/kdump.txt       |    7 ++++++
+ Documentation/kernel-parameters.txt |    3 +++
+ Documentation/sysctl/kernel.txt     |   40 +++++++++++++++++++++++------------
+ include/linux/kernel.h              |    1 +
+ include/uapi/linux/sysctl.h         |    1 +
+ kernel/panic.c                      |   20 +++++++++++++++++-
+ kernel/sysctl.c                     |    9 ++++++++
+ kernel/sysctl_binary.c              |    1 +
+ 8 files changed, 67 insertions(+), 15 deletions(-)
 
-> > Yeah, RT is one of the main items which is problematic, more so
-> > because it's currently coupled with the normal sched controller and
-> > the default config doesn't have any RT slice. 
-> 
-> Simply because you cannot give a slice on creation; or if you did that
-> would mean failing mkdir when a new cgroup would exceed the available
-> time.
-> 
-> Also any !0 slice is wrong because it will not match the requirements of
-> the proposed workload, the administrator will have to set it to match
-> the workload.
-> 
-> Therefore 0.
-
-As long as RT is separate from normal sched controller, this *could*
-be fine.  The main problem now is that userland which wants to use the
-cpu controller but doesn't want to fully manage RT slices end up
-disabling RT slices.  It might work if a new child can share the
-parent's slice till explicitly configured.  Another problem is when
-you wanna change the configuration after the hierarchy is already
-populated.  I don't know.  I'd even be happy with cgroup not having
-anything to do with RT slice distribution.  Do you have any ideas
-which can make RT slice distribution more palatable?  If we can't
-decouple the two, we'd be effectively requiring whoever is managing
-the cpu controller to also become a full-fledged RT slice arbitrator,
-which might actually work too.
-
-> > Do we completely block RT task w/o slice?  Is that okay?
-> 
-> We will not allow an RT task in, the write to the tasks file will fail.
-> 
-> The same will be true for deadline tasks, we'll fail entry into a cgroup
-> when the combined requirements of the tasks exceed the provisions of the
-> group.
-> 
-> There is just no way around that and still provide sane semantics.
-
-Can't a task just lose RT / deadline properties when migrating into a
-different RT / deadline domain?  We already modify task properties on
-migration for cpuset after all.  It'd be far simpler that way.
-
-Thanks.
-
+diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+index 6c0b9f2..bc4bd5a 100644
+--- a/Documentation/kdump/kdump.txt
++++ b/Documentation/kdump/kdump.txt
+@@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
+ 
+    http://people.redhat.com/~anderson/
+ 
++Trigger Kdump on WARN()
++=======================
++
++The kernel parameter, panic_on_warn, calls panic() in all WARN() paths.  This
++will cause a kdump to occur at the panic() call.  In cases where a user wants
++to specify this during runtime, /proc/sys/kernel/panic_on_warn can be set to 1
++to achieve the same behaviour.
+ 
+ Contact
+ =======
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 74339c5..262ff3b 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2495,6 +2495,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			timeout < 0: reboot immediately
+ 			Format: <timeout>
+ 
++	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
++			on a WARN().
++
+ 	crash_kexec_post_notifiers
+ 			Run kdump after running panic-notifiers and dumping
+ 			kmsg. This only for the users who doubt kdump always
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 57baff5..b5d0c85 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -54,8 +54,9 @@ show up in /proc/sys/kernel:
+ - overflowuid
+ - panic
+ - panic_on_oops
+-- panic_on_unrecovered_nmi
+ - panic_on_stackoverflow
++- panic_on_unrecovered_nmi
++- panic_on_warn
+ - pid_max
+ - powersave-nap               [ PPC only ]
+ - printk
+@@ -527,19 +528,6 @@ the recommended setting is 60.
+ 
+ ==============================================================
+ 
+-panic_on_unrecovered_nmi:
+-
+-The default Linux behaviour on an NMI of either memory or unknown is
+-to continue operation. For many environments such as scientific
+-computing it is preferable that the box is taken out and the error
+-dealt with than an uncorrected parity/ECC error get propagated.
+-
+-A small number of systems do generate NMI's for bizarre random reasons
+-such as power management so the default is off. That sysctl works like
+-the existing panic controls already in that directory.
+-
+-==============================================================
+-
+ panic_on_oops:
+ 
+ Controls the kernel's behaviour when an oops or BUG is encountered.
+@@ -563,6 +551,30 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
+ 
+ ==============================================================
+ 
++panic_on_unrecovered_nmi:
++
++The default Linux behaviour on an NMI of either memory or unknown is
++to continue operation. For many environments such as scientific
++computing it is preferable that the box is taken out and the error
++dealt with than an uncorrected parity/ECC error get propagated.
++
++A small number of systems do generate NMI's for bizarre random reasons
++such as power management so the default is off. That sysctl works like
++the existing panic controls already in that directory.
++
++==============================================================
++
++panic_on_warn:
++
++Calls panic() in the WARN() path when set to 1.  This is useful to avoid
++a kernel rebuild when attempting to kdump at the location of a WARN().
++
++0: only WARN(), default behaviour.
++
++1: call panic() after printing out WARN() location.
++
++==============================================================
++
+ perf_cpu_time_max_percent:
+ 
+ Hints to the kernel how much CPU time it should be allowed to
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 3d770f55..d60d31d 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -422,6 +422,7 @@ extern int panic_timeout;
+ extern int panic_on_oops;
+ extern int panic_on_unrecovered_nmi;
+ extern int panic_on_io_nmi;
++extern int panic_on_warn;
+ extern int sysctl_panic_on_stackoverflow;
+ /*
+  * Only to be used by arch init code. If the user over-wrote the default
+diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
+index 43aaba1..0956373 100644
+--- a/include/uapi/linux/sysctl.h
++++ b/include/uapi/linux/sysctl.h
+@@ -153,6 +153,7 @@ enum
+ 	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+ 	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+ 	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
++	KERN_PANIC_ON_WARN=77, /* int: call panic() in WARN() functions */
+ };
+ 
+ 
+diff --git a/kernel/panic.c b/kernel/panic.c
+index d09dc5c..2ab2168 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -33,6 +33,7 @@ static int pause_on_oops;
+ static int pause_on_oops_flag;
+ static DEFINE_SPINLOCK(pause_on_oops_lock);
+ static bool crash_kexec_post_notifiers;
++int panic_on_warn __read_mostly;
+ 
+ int panic_timeout = CONFIG_PANIC_TIMEOUT;
+ EXPORT_SYMBOL_GPL(panic_timeout);
+@@ -420,13 +421,23 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+ {
+ 	disable_trace_on_warning();
+ 
+-	pr_warn("------------[ cut here ]------------\n");
++	if (!panic_on_warn)
++		pr_warn("------------[ cut here ]------------\n");
+ 	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
+ 		raw_smp_processor_id(), current->pid, file, line, caller);
+ 
+ 	if (args)
+ 		vprintk(args->fmt, args->args);
+ 
++	if (panic_on_warn) {
++		/*
++		 * A flood of WARN()s may occur.  Prevent further WARN()s
++		 * from panicking the system.
++		 */
++		panic_on_warn = 0;
++		panic("panic_on_warn set ... \n");
++	}
++
+ 	print_modules();
+ 	dump_stack();
+ 	print_oops_end_marker();
+@@ -501,3 +512,10 @@ static int __init oops_setup(char *s)
+ 	return 0;
+ }
+ early_param("oops", oops_setup);
++
++static int __init panic_on_warn_setup(char *s)
++{
++	panic_on_warn = 1;
++	return 0;
++}
++early_param("panic_on_warn", panic_on_warn_setup);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4aada6d..38deafa 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1103,6 +1103,15 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++	{
++		.procname	= "panic_on_warn",
++		.data		= &panic_on_warn,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
+ 	{ }
+ };
+ 
+diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+index 9a4f750..7e7746a 100644
+--- a/kernel/sysctl_binary.c
++++ b/kernel/sysctl_binary.c
+@@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
+ 	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
+ 	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
+ 	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
++	{ CTL_INT,	KERN_PANIC_ON_WARN,		"panic_on_warn" },
+ 	{}
+ };
+ 
 -- 
-tejun
+1.7.9.3
+
