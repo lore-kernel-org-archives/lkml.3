@@ -1,311 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161419AbaJ3XA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:00:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40190 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422669AbaJ3XAY (ORCPT
+	id S1422678AbaJ3XCe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 19:02:34 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:60195 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161370AbaJ3XCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:00:24 -0400
-From: Gilad Avidov <gavidov@codeaurora.org>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        grant.likely@linaro.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sdharia@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        Gilad Avidov <gavidov@codeaurora.org>
-Subject: [PATCH 1/1] of_propery_map: compact interface for Device-Tree
-Date: Thu, 30 Oct 2014 16:59:24 -0600
-Message-Id: <1414709964-27284-2-git-send-email-gavidov@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1414709964-27284-1-git-send-email-gavidov@codeaurora.org>
-References: <1414709964-27284-1-git-send-email-gavidov@codeaurora.org>
+	Thu, 30 Oct 2014 19:02:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <5452B3A6.7060100@gaast.net>
+References: <543F049F.5090605@gaast.net>
+	<CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com>
+	<5442FE58.5020700@gaast.net>
+	<CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com>
+	<5446D2D8.2090203@gaast.net>
+	<CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com>
+	<20141022125354.GA3832@gaast.net>
+	<CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
+	<544E235C.5010908@gaast.net>
+	<CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
+	<544EC59D.9080303@gaast.net>
+	<CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
+	<544EDD40.1040107@gaast.net>
+	<CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com>
+	<545027F9.1040703@gaast.net>
+	<CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com>
+	<5450B55E.6010103@gaast.net>
+	<CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com>
+	<545214C5.6070004@gaast.net>
+	<CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com>
+	<5452B3A6.7060100@gaast.net>
+Date: Thu, 30 Oct 2014 16:02:32 -0700
+X-Google-Sender-Auth: fJl0BO3gUpAlf2IirK07bYUiRI4
+Message-ID: <CAE9FiQUGm-gvqpzPymxqa6vdfV7xhv8-fb433irZE1AT-eNg9A@mail.gmail.com>
+Subject: Re: Machine crashes right *after* ~successful resume
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wilmer van der Gaast <wilmer@gaast.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=089e01184afe1fdf990506abe0f7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compact API for populating variables with values
-from Device-Tree properties.
+--089e01184afe1fdf990506abe0f7
+Content-Type: text/plain; charset=UTF-8
 
-Change-Id: Ib0f17d32941605b0c431a1815cfcf5e8b76fb07c
-Signed-off-by: Gilad Avidov <gavidov@codeaurora.org>
----
- Documentation/devicetree/of_property_map.txt |   76 ++++++++++++++++++++++
- drivers/of/Makefile                          |    2 +-
- drivers/of/of_property_map.c                 |   88 ++++++++++++++++++++++++++
- include/linux/of_property_map.h              |   74 ++++++++++++++++++++++
- 4 files changed, 239 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/of_property_map.txt
- create mode 100644 drivers/of/of_property_map.c
- create mode 100644 include/linux/of_property_map.h
+On Thu, Oct 30, 2014 at 2:54 PM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
 
-diff --git a/Documentation/devicetree/of_property_map.txt b/Documentation/devicetree/of_property_map.txt
-new file mode 100644
-index 0000000..307bf57
---- /dev/null
-+++ b/Documentation/devicetree/of_property_map.txt
-@@ -0,0 +1,76 @@
-+* of_property_map:
-+
-+of_property_map is a compact API for reading Device-Tree nodes.
-+The following snippet demonstrates reading the aliased-ID and four other
-+properties of the Device-Tree node defined at the bottom.
-+
-+Example:
-+
-+struct of_prop_map map[] = {
-+	{"i2c",			&dev->id,		OF_REQ,  OF_ID,  -1},
-+	{"qcom,clk-freq-out",	&dev->clk_freq_out,	OF_REQ,  OF_U32,  0},
-+	{"qcom,clk-freq-in",	&dev->clk_freq_in,	OF_REQ,  OF_U32,  0},
-+	{"qcom,disable-dma",	&dev->disable_dma,	OF_OPT,  OF_BOOL, 0},
-+	{"qcom,master-id",	&dev->mstr_id,		OF_SGST, OF_U32,  0},
-+	{NULL,			NULL,			0,       0,       0},
-+};
-+
-+ret = of_prop_populate(dev, dev->of_node, map);
-+
-+
-+An equivalent code snippet using the traditional of_property_read_XXXX() API.
-+Note that the equivalent is longer and more difficult to follow and debug.
-+
-+Example:
-+
-+/* optional property */
-+dev->disable_dma = of_property_read_bool(node, "qcom,disable-dma");
-+
-+ret = of_property_read_u32(dev->node, "qcom,clk-freq-out", &dev->clk_freq_out);
-+if (ret) {
-+	dev_err(dev, "error: missing 'qcom,clk-freq-out' DT property\n");
-+	if (!err)
-+		err = ret;
-+}
-+
-+ret = of_property_read_u32(dev->node, "qcom,clk-freq-in", &dev->clk_freq_in);
-+if (ret) {
-+	dev_err(dev, "error: missing 'qcom,clk-freq-in' DT property\n");
-+	if (!err)
-+		err = ret;
-+}
-+
-+/* suggested property */
-+ret = of_property_read_u32(dev->node, "qcom,master-id", &dev->mstr_id);
-+if (ret && !err)
-+	err = ret;
-+
-+
-+ret = of_alias_get_id(dev->node, "i2c");
-+if (ret < 0) {
-+	dev_err(dev, "error: missing '"i2c"' DT property\n");
-+	if (!err)
-+		err = ret;
-+} else {
-+	dev->id = ret;
-+}
-+
-+
-+The Device-Tree node and alias which are read by the above code snippets.
-+
-+Example:
-+
-+	aliases {
-+		i2c0 = &i2c_0; /* I2C0 controller device */
-+	};
-+
-+	i2c_0: i2c@78b6000 { /* BLSP1 QUP2 */
-+		compatible = "qcom,i2c-msm-v2";
-+		reg-names = "qup_phys_addr", "bam_phys_addr";
-+		reg = <0x78b6000 0x600>,
-+		      <0x7884000 0x23000>;
-+		qcom,clk-freq-out = <100000>;
-+		qcom,clk-freq-in  = <19200000>;
-+		qcom,disable-dma;
-+		qcom,master-id = <86>;
-+	};
-diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index ca9209c..c60eeb0 100644
---- a/drivers/of/Makefile
-+++ b/drivers/of/Makefile
-@@ -1,4 +1,4 @@
--obj-y = base.o device.o platform.o
-+obj-y = base.o device.o platform.o of_property_map.o
- obj-$(CONFIG_OF_DYNAMIC) += dynamic.o
- obj-$(CONFIG_OF_FLATTREE) += fdt.o
- obj-$(CONFIG_OF_EARLY_FLATTREE) += fdt_address.o
-diff --git a/drivers/of/of_property_map.c b/drivers/of/of_property_map.c
-new file mode 100644
-index 0000000..8145f1c
---- /dev/null
-+++ b/drivers/of/of_property_map.c
-@@ -0,0 +1,88 @@
-+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/of.h>
-+#include <linux/device.h>
-+#include <linux/of_property_map.h>
-+
-+int of_prop_populate(struct device *dev, struct device_node *np,
-+						struct of_prop_map *itr)
-+{
-+	int  ret, err = 0;
-+
-+	for (; itr->propname; ++itr) {
-+		switch (itr->type) {
-+		case OF_BOOL:
-+			*((bool *) itr->var_ptr) =
-+				of_property_read_bool(np, itr->propname);
-+			ret = 0;
-+			break;
-+		case OF_U8:
-+			ret = of_property_read_u8(np, itr->propname,
-+							(u8 *) itr->var_ptr);
-+			break;
-+		case OF_U16:
-+			ret = of_property_read_u16(np, itr->propname,
-+							(u16 *) itr->var_ptr);
-+			break;
-+		case OF_U32:
-+			ret = of_property_read_u32(np, itr->propname,
-+							(u32 *) itr->var_ptr);
-+			break;
-+		case OF_U64:
-+			ret = of_property_read_u64(np, itr->propname,
-+							(u64 *) itr->var_ptr);
-+			break;
-+		case OF_STR:
-+			ret = of_property_read_string(np, itr->propname,
-+								itr->var_ptr);
-+			break;
-+		case OF_ID:
-+			ret = of_alias_get_id(np, itr->propname);
-+			if (ret >= 0) {
-+				*((int *) itr->var_ptr) = ret;
-+				ret = 0;
-+			}
-+			break;
-+		default:
-+			dev_err(dev, "error: %d is unknown DT property type\n",
-+								itr->type);
-+			ret = -EINVAL;
-+		}
-+
-+		dev_dbg(dev, "of_property: name:%s val:%d ret:%d\n",
-+				itr->propname, *((int *)itr->var_ptr), ret);
-+
-+		if (ret) {
-+			/* on error set value to default */
-+			*((long long int *)itr->var_ptr) = itr->default_val;
-+
-+			if (itr->criticality < OF_OPT) {
-+				dev_err(dev,
-+					"error: missing '%s' DT property\n",
-+					itr->propname);
-+
-+				/*
-+				 * Do not stop on errors. Keep running to
-+				 * dump messages for all missing properties.
-+				 * On error return the first one found.
-+				 */
-+				if (itr->criticality == OF_REQ && !err)
-+					err = ret;
-+			}
-+		}
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL(of_prop_populate);
-diff --git a/include/linux/of_property_map.h b/include/linux/of_property_map.h
-new file mode 100644
-index 0000000..0c61673
---- /dev/null
-+++ b/include/linux/of_property_map.h
-@@ -0,0 +1,74 @@
-+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+/*
-+ * Higher level and compact interface for reading Device-Tree nodes. Uses
-+ * a direct visual mapping table of the node's property name to the
-+ * driver's/module's fields.
-+ *
-+ * Usage exapmle:
-+ * struct of_prop_map map[] = {
-+ *	{"i2c",			&dev->id,		OF_REQ,  OF_ID,  -1},
-+ *	{"qcom,clk-freq-out",	&dev->clk_freq_out,	OF_REQ,  OF_U32,  0},
-+ *	{"qcom,clk-freq-in",	&dev->clk_freq_in,	OF_REQ,  OF_U32,  0},
-+ *	{"qcom,bam-disable",	&dev->disable_dma,	OF_OPT,  OF_BOOL, 0},
-+ *	{"qcom,master-id",	&dev->mstr_id,		OF_SGST, OF_U32,  0},
-+ *	{NULL,			NULL,			0,       0,       0},
-+ * };
-+ *
-+ * ret = of_prop_populate(dev, dev->of_node, map);
-+ */
-+
-+#ifndef _OF_PROPERTY_MAP_H
-+#define _OF_PROPERTY_MAP_H
-+
-+enum of_prop_criticality {
-+	OF_REQ,		/* Required : fail if missing       */
-+	OF_SGST,	/* Suggested: warn if missing       */
-+	OF_OPT,		/* Optional : don't warn if missing */
-+};
-+
-+enum of_prop_type {
-+	OF_BOOL,	/* of_property_read_bool()	*/
-+	OF_U8,		/* of_property_read_u8()	*/
-+	OF_U16,		/* of_property_read_u16()	*/
-+	OF_U32,		/* of_property_read_u32()	*/
-+	OF_U64,		/* of_property_read_u64()	*/
-+	OF_STR,		/* of_property_read_string()	*/
-+	OF_ID,		/* of_alias_get_id()		*/
-+};
-+
-+/*
-+ * of_prop_map: mapping Device-Tree property name to the dev's variable
-+ *
-+ * @propname property name in Device-Tree
-+ * @var_ptr pointer to the device's variable to store the value in.
-+ * @default_val if propname is not found then *var_ptr = default_val
-+ */
-+struct of_prop_map {
-+	const char		*propname;
-+	void			*var_ptr;
-+	enum of_prop_criticality criticality;
-+	enum of_prop_type	 type;
-+	long long int		 default_val;
-+};
-+
-+/*
-+ * of_prop_populate: read Device-Tree properites and populate the mapped fields
-+ *
-+ * @node the Device-Tree node corresponding to dev
-+ * @itr pointer to a NULL terminated property mapping
-+ */
-+int of_prop_populate(struct device *dev, struct device_node *node,
-+						struct of_prop_map *itr);
-+
-+#endif /*_OF_PROPERTY_MAP_H*/
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> http://gaast.net/~wilmer/.lkml/good3.17-patched-megadebug.txt
 
+no difference except on 00:1c.3
+
+--- before.txt    2014-10-30 15:20:35.782886485 -0700
++++ after.txt    2014-10-30 15:21:37.034882515 -0700
+@@ -49,10 +49,10 @@
+ 02f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 0300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 0310: 00 00 00 00 1b 36 3a 74 00 00 14 14 31 17 42 00
+-0320: 5b 60 09 00 00 20 00 0a ec 19 b8 04 eb 09 b9 06
++0320: 5b 60 09 00 00 20 00 0a 33 1a b8 04 32 0a 00 07
+ 0330: 16 00 00 28 bc b5 bc 4a 00 00 00 00 74 4c 85 00
+-0340: 33 03 33 00 64 03 3f 00 30 00 0c 00 45 02 b9 00
+-0350: 4b 02 c1 00 01 00 08 00 00 00 00 00 00 00 00 00
++0340: 33 03 33 00 64 03 3f 00 30 00 0c 00 46 02 00 00
++0350: 4c 02 08 00 01 00 08 00 00 00 00 00 00 00 00 00
+ 0360: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 0370: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 0380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+Please try attached patch on top of 3.17 without other patches.
+
+If it is working, please dump acpi tables include dsdt.
+need to check if there extra work in _PRT.
+
+Thanks
+
+Yinghai
+
+--089e01184afe1fdf990506abe0f7
+Content-Type: text/x-patch; charset=US-ASCII; name="debug_suspend_resume_xxx.patch"
+Content-Disposition: attachment; filename="debug_suspend_resume_xxx.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i1wpus7k0
+
+LS0tCiBhcmNoL3g4Ni9wY2kvY29tbW9uLmMgfCAgICA4ICsrKysrKysrCiAxIGZpbGUgY2hhbmdl
+ZCwgOCBpbnNlcnRpb25zKCspCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L3BjaS9jb21tb24u
+Ywo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKKysr
+IGxpbnV4LTIuNi9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKQEAgLTcxOSw2ICs3MTksMTQgQEAgaW50
+IHBjaWJpb3NfZW5hYmxlX2RldmljZShzdHJ1Y3QgcGNpX2RldgogCXJldHVybiAwOwogfQogCitz
+dGF0aWMgdm9pZCBwY2lfZW5hYmxlX2lycV9pdGUoc3RydWN0IHBjaV9kZXYgKmRldikKK3sKKwlp
+ZiAoIXBjaV9kZXZfbXNpX2VuYWJsZWQoZGV2KSkKKwkJcGNpYmlvc19lbmFibGVfaXJxKGRldik7
+Cit9CitERUNMQVJFX1BDSV9GSVhVUF9GSU5BTChQQ0lfVkVORE9SX0lEX0lOVEVMLCAweDI0NGUs
+IHBjaV9lbmFibGVfaXJxX2l0ZSk7CitERUNMQVJFX1BDSV9GSVhVUF9GSU5BTChQQ0lfVkVORE9S
+X0lEX0lURSwgMHg4ODkyLCBwY2lfZW5hYmxlX2lycV9pdGUpOworCiB2b2lkIHBjaWJpb3NfZGlz
+YWJsZV9kZXZpY2UgKHN0cnVjdCBwY2lfZGV2ICpkZXYpCiB7CiAJaWYgKCFwY2lfZGV2X21zaV9l
+bmFibGVkKGRldikgJiYgcGNpYmlvc19kaXNhYmxlX2lycSkK
+--089e01184afe1fdf990506abe0f7--
