@@ -1,83 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760791AbaJ3SHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 14:07:47 -0400
-Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:36139
-	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759765AbaJ3SHq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 14:07:46 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 5/7] staging: comedi: don't allow write() on async
- command set up for "read"
-Thread-Topic: [PATCH 5/7] staging: comedi: don't allow write() on async
- command set up for "read"
-Thread-Index: AQHP9D8NeNklhsIE8UCM1SSPyB51qJxI750A
-Date: Thu, 30 Oct 2014 18:07:43 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D882600D3B7@P3PWEX4MB008.ex4.secureserver.net>
-References: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk>
- <1414672952-1587-6-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1414672952-1587-6-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760802AbaJ3SIV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 14:08:21 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:44550 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758517AbaJ3SIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 14:08:18 -0400
+Date: Thu, 30 Oct 2014 19:08:13 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
+        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Simon McVittie <simon.mcvittie@collabora.co.uk>,
+        Daniel Mack <daniel@zonque.org>,
+        "alban.crequy" <alban.crequy@collabora.co.uk>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tom Gundersen <teg@jklm.no>
+Subject: Re: kdbus: add code for buses, domains and endpoints
+Message-ID: <20141030180813.GA11850@dztty>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+ <1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
+ <8738a6w6kv.fsf@x220.int.ebiederm.org>
+ <20141030095854.GA4716@dztty>
+ <87wq7hiwjb.fsf@x220.int.ebiederm.org>
+ <20141030144855.GA9705@dztty>
+ <CALCETrXeNQUuwiyaJrbbbZUrSW3NTucRgpg0kKEuS3yszP-09w@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXeNQUuwiyaJrbbbZUrSW3NTucRgpg0kKEuS3yszP-09w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 30, 2014 5:43 AM, Ian Abbott wrote:
-> If a Comedi asynchronous command has been set up for data transfer in
-> the "read" direction on the current "write" subdevice (for those
-> subdevices that support both directions), don't allow the "write" file
-> operation as that would mess with the data in the comedi data buffer
-> that is written by the low-level comedi hardware driver.
+Hi Andy,
+
+On Thu, Oct 30, 2014 at 07:58:04AM -0700, Andy Lutomirski wrote:
+> On Thu, Oct 30, 2014 at 7:48 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Thu, Oct 30, 2014 at 05:15:04AM -0700, Eric W. Biederman wrote:
+> >> Djalal Harouni <tixxdz@opendz.org> writes:
+> >> What others are doing makes it very hard to safely use allow those
+> >> ioctls in a tightly sandboxed application, as it is unpredictable
+> >> what the sandboxed ioctl can do with the file descriptor.
+> >>
+> >> Further an application that calls setresuid at different times during
+> >> it's application will behave differently.  Which makes ioctls that do
+> >> not have consistent behavior after open time inappropriate for use in
+> >> userspace libraries.
+> > We are consistent in our checks, you say that the application will
+> > behave differently when it calls setresuid() sure! If it changes its
+> > creds then regain of course it will behave differently! and the checks
+> > are here to make sure that setresuid() and alike work correctly when the
+> > application changes its creds and calls-in.
+> >
+> 
+> Except that it isn't consistent.
 >
-> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-> ---
->  drivers/staging/comedi/comedi_fops.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
->
-> diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-> index 6805ec9..6328965 100644
-> --- a/drivers/staging/comedi/comedi_fops.c
-> +++ b/drivers/staging/comedi/comedi_fops.c
-> @@ -2075,6 +2075,10 @@ static ssize_t comedi_write(struct file *file, const char __user *buf,
->  		retval = -EACCES;
->  		goto out;
->  	}
-> +	if (!(async->cmd.flags & CMDF_WRITE)) {
-> +		retval = -EINVAL;
-> +		goto out;
-> +	}
->  
->  	add_wait_queue(&async->wait_head, &wait);
->  	on_wait_queue = true;
-> @@ -2146,6 +2150,10 @@ static ssize_t comedi_write(struct file *file, const char __user *buf,
->  				retval = -EACCES;
->  				break;
->  			}
-> +			if (!(async->cmd.flags & CMDF_WRITE)) {
-> +				retval = -EINVAL;
-> +				break;
-> +			}
+> If I open a postgresql socket that wants me to be root and then I drop
+> privileges, I can keep talking to postresql.  This is a good thing,
+> because it means that I can keep talking to postgresql but I lose my
+> privilege to do other things.
+Yes, that's nice :-)
 
-Same question as with PATCH 4/7.
+But here you are not following about those capable() checks in ioctl(),
+here you are referring to the send (talking) logic! which is another
+thing. But hey we do not break that use case, we support it.
 
-Is this test needed in the while () loop. Also, are the s->busy tests needed here?
 
->  			continue;
->  		}
+> The new kdbus model breaks this.  If I start as root and drop
+> privileges to UID_PRIVSEP, then my attempts to communicate over
+> already-open connections shouldn't consider UID_PRIVSEP.  In the, they
+> shouldn't tell the other endpoints that UID_PRIVSEP exists at all
+> unless I've explicitly asked the kernel for this behavior.
+Yes, but kdbus tries to follow D-Bus which is primarily an RPC system,
+not just a stream of bytes.
 
-Regards,
-Hartley
+So we really want to be able to perform real time checks and authorise
+method calls on the bus, and not just connections. I mean yes we do our
+kdbus talk access checks on send (Talk) requests using creds of the
+connection at creation time, but in the other hand we also need and have
+to deal with D-Bus method requests which is the primary usecase here.
 
+So, this is similar to AF_UNIX sockets. For them there's SCM_CREDENTIALS
+and SO_PEERCRED. The former uses credentials at the time of when
+messages are being sent, the latter uses the credentials at the time
+when when the connection was initially established. So to not break
+things, we provide similar APIs for services:
+
+1) To get the creds of the connection (when the connection was created).
+
+2) To get the creds of the sender of the message during send time. This
+is specially relevent to authorize specific D-Bus method calls, by
+checking the creds of the caller, not the one who created the kdbus
+connection.
+
+Hmm, a comparison for this model can be made with the kernel's own
+syscalls: the same way syscalls are authorized or refused based on the
+caller's creds at the time of the syscall... you can't hide that
+information. We follow the same semantics here, and use it to allow
+inter-process method calls. Having an fd passed is just a detail, the
+focus should be put on the methode calls and how to perform the correct
+access checks against realtime creds.
+
+Thank you Andy for your comments!
+
+
+-- 
+Djalal Harouni
+http://opendz.org
