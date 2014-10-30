@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641AbaJ3Gov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 02:44:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38013 "EHLO
+	id S1758303AbaJ3GpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 02:45:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38040 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933553AbaJ3Gos (ORCPT
+	with ESMTP id S1757327AbaJ3GpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 02:44:48 -0400
-Date: Wed, 29 Oct 2014 23:43:55 -0700
+	Thu, 30 Oct 2014 02:45:04 -0400
+Date: Wed, 29 Oct 2014 23:44:11 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-d152d1be5962ace0706066db71b4f05dff8764eb@git.kernel.org>
-Cc: namhyung@kernel.org, yarygin@linux.vnet.ibm.com, hemant@linux.vnet.ibm.com,
-        mingo@kernel.org, acme@redhat.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, dsahern@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, peterz@infradead.org,
-        jolsa@redhat.com, hpa@zytor.com
-Reply-To: masami.hiramatsu.pt@hitachi.com, peterz@infradead.org,
-        jolsa@redhat.com, hpa@zytor.com, namhyung@kernel.org,
-        yarygin@linux.vnet.ibm.com, hemant@linux.vnet.ibm.com, acme@redhat.com,
-        mingo@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        dsahern@gmail.com
-In-Reply-To: <1413990949-13953-2-git-send-email-namhyung@kernel.org>
-References: <1413990949-13953-2-git-send-email-namhyung@kernel.org>
+Message-ID: <tip-e5b2c20755d37d781bb6e1e733faec5c39bd087a@git.kernel.org>
+Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
+        hemant@linux.vnet.ibm.com, hpa@zytor.com, peterz@infradead.org,
+        mingo@kernel.org, tglx@linutronix.de, dsahern@gmail.com,
+        acme@redhat.com, jolsa@redhat.com, namhyung@kernel.org,
+        yarygin@linux.vnet.ibm.com
+Reply-To: namhyung@kernel.org, yarygin@linux.vnet.ibm.com, jolsa@redhat.com,
+        acme@redhat.com, dsahern@gmail.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, hpa@zytor.com,
+        hemant@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <1413990949-13953-3-git-send-email-namhyung@kernel.org>
+References: <1413990949-13953-3-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add PARSE_OPT_DISABLED flag
-Git-Commit-ID: d152d1be5962ace0706066db71b4f05dff8764eb
+Subject: [tip:perf/core] perf tools:
+  Export usage string and option table of perf record
+Git-Commit-ID: e5b2c20755d37d781bb6e1e733faec5c39bd087a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,18 +38,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d152d1be5962ace0706066db71b4f05dff8764eb
-Gitweb:     http://git.kernel.org/tip/d152d1be5962ace0706066db71b4f05dff8764eb
+Commit-ID:  e5b2c20755d37d781bb6e1e733faec5c39bd087a
+Gitweb:     http://git.kernel.org/tip/e5b2c20755d37d781bb6e1e733faec5c39bd087a
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Thu, 23 Oct 2014 00:15:45 +0900
+AuthorDate: Thu, 23 Oct 2014 00:15:46 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 29 Oct 2014 10:32:47 -0200
 
-perf tools: Add PARSE_OPT_DISABLED flag
+perf tools: Export usage string and option table of perf record
 
-In some cases, we need to reuse exising options with some of them
-disabled.  To do that, add PARSE_OPT_DISABLED flag and
-set_option_flag() function.
+Those are shared with other builtin commands like kvm, script.  So
+make it accessable from them.  This is a preparation of later change
+that limiting possible options.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
@@ -59,67 +60,104 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1413990949-13953-2-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1413990949-13953-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-options.c | 17 +++++++++++++++++
- tools/perf/util/parse-options.h |  2 ++
- 2 files changed, 19 insertions(+)
+ tools/perf/builtin-record.c    | 7 +++++--
+ tools/perf/builtin-script.c    | 1 -
+ tools/perf/builtin-timechart.c | 7 ++++---
+ tools/perf/perf.h              | 3 +++
+ 4 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index bf48092..b601610 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -42,6 +42,8 @@ static int get_value(struct parse_opt_ctx_t *p,
- 		return opterror(opt, "takes no value", flags);
- 	if (unset && (opt->flags & PARSE_OPT_NONEG))
- 		return opterror(opt, "isn't available", flags);
-+	if (opt->flags & PARSE_OPT_DISABLED)
-+		return opterror(opt, "is not usable", flags);
- 
- 	if (!(flags & OPT_SHORT) && p->opt) {
- 		switch (opt->type) {
-@@ -509,6 +511,8 @@ static void print_option_help(const struct option *opts, int full)
- 	}
- 	if (!full && (opts->flags & PARSE_OPT_HIDDEN))
- 		return;
-+	if (opts->flags & PARSE_OPT_DISABLED)
-+		return;
- 
- 	pos = fprintf(stderr, "    ");
- 	if (opts->short_name)
-@@ -679,3 +683,16 @@ int parse_opt_verbosity_cb(const struct option *opt,
- 	}
- 	return 0;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 2583a9b..5091a27 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -680,11 +680,12 @@ static int perf_record_config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
  }
-+
-+void set_option_flag(struct option *opts, int shortopt, const char *longopt,
-+		     int flag)
-+{
-+	for (; opts->type != OPTION_END; opts++) {
-+		if ((shortopt && opts->short_name == shortopt) ||
-+		    (opts->long_name && longopt &&
-+		     !strcmp(opts->long_name, longopt))) {
-+			opts->flags |= flag;
-+			break;
-+		}
-+	}
-+}
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index b59ba85..b7c80db 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -38,6 +38,7 @@ enum parse_opt_option_flags {
- 	PARSE_OPT_NONEG   = 4,
- 	PARSE_OPT_HIDDEN  = 8,
- 	PARSE_OPT_LASTARG_DEFAULT = 16,
-+	PARSE_OPT_DISABLED = 32,
+ 
+-static const char * const record_usage[] = {
++static const char * const __record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+ 	NULL
+ };
++const char * const *record_usage = __record_usage;
+ 
+ /*
+  * XXX Ideally would be local to cmd_record() and passed to a record__new
+@@ -725,7 +726,7 @@ const char record_callchain_help[] = CALLCHAIN_HELP "fp";
+  * perf_evlist__prepare_workload, etc instead of fork+exec'in 'perf record',
+  * using pipes, etc.
+  */
+-const struct option record_options[] = {
++struct option __record_options[] = {
+ 	OPT_CALLBACK('e', "event", &record.evlist, "event",
+ 		     "event selector. use 'perf list' to list available events",
+ 		     parse_events_option),
+@@ -802,6 +803,8 @@ const struct option record_options[] = {
+ 	OPT_END()
  };
  
- struct option;
-@@ -211,4 +212,5 @@ extern int parse_opt_verbosity_cb(const struct option *, const char *, int);
++struct option *record_options = __record_options;
++
+ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int err = -ENOMEM;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index b35517f..ce304df 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -23,7 +23,6 @@ static char const		*generate_script_lang;
+ static bool			debug_mode;
+ static u64			last_timestamp;
+ static u64			nr_unordered;
+-extern const struct option	record_options[];
+ static bool			no_callchain;
+ static bool			latency_format;
+ static bool			system_wide;
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index f5fb256..f3bb1a4 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -1963,7 +1963,7 @@ int cmd_timechart(int argc, const char **argv,
+ 		NULL
+ 	};
  
- extern const char *parse_options_fix_filename(const char *prefix, const char *file);
+-	const struct option record_options[] = {
++	const struct option timechart_record_options[] = {
+ 	OPT_BOOLEAN('P', "power-only", &tchart.power_only, "output power data only"),
+ 	OPT_BOOLEAN('T', "tasks-only", &tchart.tasks_only,
+ 		    "output processes data only"),
+@@ -1972,7 +1972,7 @@ int cmd_timechart(int argc, const char **argv,
+ 	OPT_BOOLEAN('g', "callchain", &tchart.with_backtrace, "record callchain"),
+ 	OPT_END()
+ 	};
+-	const char * const record_usage[] = {
++	const char * const timechart_record_usage[] = {
+ 		"perf timechart record [<options>]",
+ 		NULL
+ 	};
+@@ -1985,7 +1985,8 @@ int cmd_timechart(int argc, const char **argv,
+ 	}
  
-+void set_option_flag(struct option *opts, int sopt, const char *lopt, int flag);
- #endif /* __PERF_PARSE_OPTIONS_H */
+ 	if (argc && !strncmp(argv[0], "rec", 3)) {
+-		argc = parse_options(argc, argv, record_options, record_usage,
++		argc = parse_options(argc, argv, timechart_record_options,
++				     timechart_record_usage,
+ 				     PARSE_OPT_STOP_AT_NON_OPTION);
+ 
+ 		if (tchart.power_only && tchart.tasks_only) {
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 220d44e..511c2831 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -62,4 +62,7 @@ struct record_opts {
+ 	unsigned     initial_delay;
+ };
+ 
++struct option;
++extern const char * const *record_usage;
++extern struct option *record_options;
+ #endif
