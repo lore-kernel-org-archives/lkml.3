@@ -1,154 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759679AbaJ3RYp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:24:45 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:44869 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757327AbaJ3RYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:24:42 -0400
-Date: Thu, 30 Oct 2014 18:24:35 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH RESEND V4 5/9] of: Add NVIDIA Tegra xHCI controller
- binding
-Message-ID: <20141030172432.GA8944@ulmo.nvidia.com>
-References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
- <1414535277-15645-6-git-send-email-abrestic@chromium.org>
- <20141029094338.GA28356@ulmo.nvidia.com>
- <CAL1qeaEf0mTQfMgnY8jHGDBvbQ7ivtzAQRWaE9K24TJ86hWYMg@mail.gmail.com>
- <20141030135500.GC19802@ulmo.nvidia.com>
- <CAL1qeaG701hKtcUL5a67b=X38hbcYunUOUBziZMpxemvhhAayA@mail.gmail.com>
+	id S1760601AbaJ3RZa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:25:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42374 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758469AbaJ3RZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 13:25:28 -0400
+Message-ID: <54527443.6030007@zytor.com>
+Date: Thu, 30 Oct 2014 10:24:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
-Content-Disposition: inline
-In-Reply-To: <CAL1qeaG701hKtcUL5a67b=X38hbcYunUOUBziZMpxemvhhAayA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
+CC: Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
+        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] kernel, add panic_on_warn
+References: <1414688627-5298-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <1414688627-5298-1-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/30/2014 10:03 AM, Prarit Bhargava wrote:
+> There have been several times where I have had to rebuild a kernel to
+> cause a panic when hitting a WARN() in the code in order to get a crash
+> dump from a system.  Sometimes this is easy to do, other times (such as
+> in the case of a remote admin) it is not trivial to send new images to the
+> user.
+> 
+> A much easier method would be a switch to change the WARN() over to a
+> panic.  This makes debugging easier in that I can now test the actual
+> image the WARN() was seen on and I do not have to engage in remote
+> debugging.
+> 
+> This patch adds a panic_on_warn kernel parameter and
+> /proc/sys/kernel/panic_on_warn calls panic() in the warn_slowpath_common()
+> path.  The function will still print out the location of the warning.
+> 
+> An example of the panic_on_warn output:
+> 
+> The first line below is from the WARN_ON() to output the WARN_ON()'s location.
+> After that the panic() output is displayed.
+> 
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There is another very valid use for this: many operators would rather a
+machine shuts down than being potentially compromised either
+functionally or security-wise.
 
-On Thu, Oct 30, 2014 at 10:19:21AM -0700, Andrew Bresticker wrote:
-> On Thu, Oct 30, 2014 at 6:55 AM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
-> > On Wed, Oct 29, 2014 at 09:37:14AM -0700, Andrew Bresticker wrote:
-> >> On Wed, Oct 29, 2014 at 2:43 AM, Thierry Reding
-> >> <thierry.reding@gmail.com> wrote:
-> >> > On Tue, Oct 28, 2014 at 03:27:50PM -0700, Andrew Bresticker wrote:
-> >> > [...]
-> >> >> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra=
-124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegr=
-a124-xusb-padctl.txt
-> >> > [...]
-> >> >> +Optional properties:
-> >> >> +-------------------
-> >> >> +- vbus-{0,1,2}-supply: VBUS regulator for the corresponding UTMI p=
-ad.
-> >> >> +- vddio-hsic-supply: VDDIO regulator for the HSIC pads.
-> >> >> +- nvidia,usb3-port-{0,1}-lane: PCIe/SATA lane to which the corresp=
-onding USB3
-> >> >> +  port is mapped.  See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> =
-for the list
-> >> >> +  of valid values.
-> >> >
-> >> > I dislike how we now need to provide a list of all pins in the header
-> >> > file, where previously we used strings for this. This could become v=
-ery
-> >> > ugly if the set of pins changes in future generations of this IP blo=
-ck.
-> >> >
-> >> > Could we instead derive this from the pinmux nodes? For example you =
-have
-> >> > this in the example below:
-> >> >
-> >> >         usb3p0 {
-> >> >                 nvidia,lanes =3D "pcie-0";
-> >> >                 ...
-> >> >         };
-> >> >
-> >> > Perhaps what we need is to either key off the node name or add anoth=
-er
-> >> > property, such as:
-> >> >
-> >> >         nvidia,usb3-port =3D <0>;
-> >> >
-> >> > This would match the nvidia,usb2-port property that you've added bel=
-ow.
-> >>
-> >> That is actually how I described the USB3 port to SS lane mapping
-> >> originally, but in review of an earlier version of this series,
-> >> Stephen suggested that I make it a separate, not pinconfig property
-> >> since it wasn't a value written directly to the hardware.  I'm fine
-> >> with changing it back as the pinconfig property makes more sense to me
-> >> as well.
-> >
-> > Hmm... I had considered it a mux option of the specific lane. If the
-> > function is usb3, it'd still need to be muxed to one of the ports. So
-> > it's additional information associated with the usb3 function.
-> >
-> > I did look through the driver changes and can't really make out which
-> > part of the code actually performs this assignment. Can you point me to
-> > it?
->=20
-> There's not really an assignment.  The property is used to map between
-> a lane (e.g. PCIe-0 or SATA) and the USB3.0 port it's mapped to.  For
-> an example of where it's used, take a look at usb3_phy_power_on().
-> There are certain per-lane registers which need to be programmed in
-> addition to the per-USB3.0 port pad registers.  This mapping is used
-> to determine which lane needs to be programmed.
+	-hpa
 
-Are you saying the mapping of lane to USB port is fixed? That is, PCIe-0
-lane is always used for USB port X and SATA always for USB port Y?
 
-If so I'd argue that we don't need this property in DT at all.
-
-Thierry
-
---envbJBWh7q8WU6mo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUUnRQAAoJEN0jrNd/PrOhe/YP/2mClLN/esxCslbFF7qRnhKt
-QccEEJMAMaFYXYAbqbogGtQzJAFyutVqjtnm1LM4ChdD2t232OpkGT24RHfVtckt
-aP/2uK7TALPBONF/dVg/TJ9z3+CCsIgfvDpoQwU9MXL3FlcqWZEnlwDuIMOJ7uwO
-AHjmfAQrvkVWotqvmlIBXubj0+/gtx1Wfr7afokbIKlNc3p5Kurf3kGQ/3vMgWqm
-2T9HPHLwMH+yKX4+jXs/JSyaByPhk57IwGB9l7ycHcipZ1SvSO3J89fF3Eu9yN+6
-KkePDC2uaautsvpVdtyzDh1VrmNDkH5R6BmRIFHdYY+OZMUiSZQq+EEbte/mirsg
-r/8erGfrWhQZbA8H9E4qWXxnasJBBF+y+I98xvZgP6bnVUiSmI/RqmWEjnef0lDe
-lJwJ53MQt7AU/uIPqmyJmDvJ3XFsxNohvjlCi4zz2XTR33PQutegJ/ISzUDBPHaf
-LzLKPWYukolwZneQMZevQNAV+JSiBRrW1rc73gsIR+q2Q1MsEOu2KOVnaOhM/bcM
-naJkP0YsHyN+dCiWh3uRjOkjh41JnsEt4vwaPPU3Aar2HXeRCjLcdXTAo/j7Oguh
-y3m8F7yqjqnsxltIkQpm0qOUYErL/HK+bVglu3yNiTpE+ZPPU+Gl0oZ8T/JqFhE2
-ZWOV81HdPRd7WeU6hVUt
-=UifO
------END PGP SIGNATURE-----
-
---envbJBWh7q8WU6mo--
