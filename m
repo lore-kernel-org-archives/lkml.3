@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760091AbaJ3NeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:34:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:31751 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759803AbaJ3Nd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:33:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,286,1413270000"; 
-   d="scan'208";a="614090993"
-Date: Thu, 30 Oct 2014 21:12:59 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Juri Lelli <juri.lelli@arm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: [PATCH 5/6] sched/dl: reschedule if successfully pull earlier
- deadline task
-Message-ID: <20141030131259.GA474@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1414374067-7209-1-git-send-email-wanpeng.li@linux.intel.com>
- <1414374067-7209-5-git-send-email-wanpeng.li@linux.intel.com>
- <5452110C.40108@arm.com>
+	id S1760100AbaJ3Neg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:34:36 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:60325 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759802AbaJ3Ned (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 09:34:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5452110C.40108@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [46.116.140.208]
+In-Reply-To: <20141030003806.GU28611@sonymobile.com>
+References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1412037291-16880-6-git-send-email-bjorn.andersson@sonymobile.com>
+ <CADMYwHxLtAZZMUGX3jo0URAezqGuho5XB=hQJp8k+acBiENrhg@mail.gmail.com> <20141030003806.GU28611@sonymobile.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 30 Oct 2014 15:34:12 +0200
+Message-ID: <CAK=WgbbP8UQAbFauE80PnF5bj3FTAkB2KfF0kFE8Pt23jQrDhA@mail.gmail.com>
+Subject: Re: [RFC 5/7] soc: qcom: Add Shared Memory Driver
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
-On Thu, Oct 30, 2014 at 10:21:00AM +0000, Juri Lelli wrote:
->Hi,
->
->On 27/10/14 01:41, Wanpeng Li wrote:
->> Reschedule if successfully pull earlier deadline task.
->> 
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->>  kernel/sched/deadline.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->> 
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index 97141e2..21de865 100644
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -1583,8 +1583,8 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
->>  	 * this is the right place to try to pull some other one
->>  	 * from an overloaded cpu, if any.
->>  	 */
->> -	if (!rq->dl.dl_nr_running)
->> -		pull_dl_task(rq);
->> +	if (!rq->dl.dl_nr_running && pull_dl_task(rq))
->> +			resched_curr(rq);
->
->Right, we have to reschedule. But, how about we fully align to -rt?
->
->Peter, is the task_on_rq_queued() check for cases in which p is not
->enqueued but its class changes after a setscheduler/rt_mutex_setprio?
->
->Thanks,
->
->- Juri
->
->>From 404749782e493cb6019193f347163b640ebd552d Mon Sep 17 00:00:00 2001
->From: Juri Lelli <juri.lelli@arm.com>
->Date: Thu, 30 Oct 2014 10:15:40 +0000
->Subject: [PATCH] sched/deadline: reschedule from switched_from_dl() after a
-> successful pull
->
->In switched_from_dl() we have to issue a resched if we
->successfully pulled some task from other cpus.
->This patch also aligns the behaviour with -rt.
->
+Hi Bjorn,
 
-Good idea.
+On Thu, Oct 30, 2014 at 2:38 AM, Bjorn Andersson
+<bjorn.andersson@sonymobile.com> wrote:
+> My concern is that merging SMD into rpmsg will still give us two different
+> solutions, except that they will be deeply tangled.
 
->Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+I agree.
 
-I will send out version two of this patchset with the update of 2/6 and
-5/6 with *your Suggested-by*. Thanks for your great proposal. ;-)
+It's very clear that SMD and rpmsg are different. But fundamentally,
+they do exactly the same: new messages are placed in a ring buffer and
+then an interrupt is triggered.
 
-Regards,
-Wanpeng Li
+If Qualcomm wanted to adopt rpmsg I'm confident there would have been
+no technical barriers to do so.
 
->Suggested-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->---
-> kernel/sched/deadline.c | 7 +++++--
-> 1 file changed, 5 insertions(+), 2 deletions(-)
->
->diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->index db6ad38..e8943fc 100644
->--- a/kernel/sched/deadline.c
->+++ b/kernel/sched/deadline.c
->@@ -1623,8 +1623,11 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
-> 	 * this is the right place to try to pull some other one
-> 	 * from an overloaded cpu, if any.
-> 	 */
->-	if (!rq->dl.dl_nr_running)
->-		pull_dl_task(rq);
->+	if (!task_on_rq_queued(p) || rq->dl.dl_nr_running)
->+		return;
->+
->+	if (pull_dl_task(rq))
->+		resched_curr(rq);
-> #endif
-> }
-> 
->-- 
->2.1.2
+But given that SMD is not going anywhere, I personally hope that you
+could at least avoid having two different implementations of it merged
+upstream.
+
+Good luck,
+Ohad.
