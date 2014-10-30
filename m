@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758664AbaJ3JKQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:10:16 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:55204 "EHLO
+	id S1758705AbaJ3JKa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:10:30 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:58258 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758503AbaJ3JKO (ORCPT
+	with ESMTP id S1752993AbaJ3JKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:10:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>
-Subject: Re: [PATCH 10/11] irqchip: bcm7120-l2: Extend driver to support 64+ bit controllers
-Date: Thu, 30 Oct 2014 10:10:03 +0100
-Message-ID: <1819614.RKinL4RR5c@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAJiQ=7D+QhFjg7mR49KE2Lu1SC72djBLhbv4sC37tSTga+BVCQ@mail.gmail.com>
-References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <7518897.LmfE2WsusV@wuerfel> <CAJiQ=7D+QhFjg7mR49KE2Lu1SC72djBLhbv4sC37tSTga+BVCQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:jbNa0XWXVSPjIKP3903oQzg6yEIckIBIV4MJOoTZtVn
- cwRqT8a80s0LlcZTh1p/xhYJnVshA2ppI409oUm3ChjTkC7sA7
- znKEQg3XYqDjXnpzk18M/4ncemMuHTjVEdwj/PaSX8zg1EAxcM
- 8ExSp4hDYX+1qQj139wTWGXyxySTTGbb5HliewO7LH+54fJPZX
- tW5Uuw2FttQ9cFvKMRrwZDIB/s4N/1YvsNZhYEbmo1jKHZem2m
- SP6hP61ugZx1/1HF5q1e/sFbQ6TXaMbcXD+ZlZGI87PP0lZ7K7
- j5dCWsIsLCYn4YCsGp56neiV3/f1J0KLk5NfhoDhi2lVBwrlQT
- qTfJKQPkett+DPz33EvQ=
+	Thu, 30 Oct 2014 05:10:25 -0400
+From: Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND v2] ipv4: Do not cache routing failures due to disabled forwarding.
+Date: Thu, 30 Oct 2014 10:09:53 +0100
+Message-Id: <1414660193-4177-1-git-send-email-nicolas.cavallari@green-communications.fr>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <20141029.150328.530876391340346443.davem@davemloft.net>
+References: <20141029.150328.530876391340346443.davem@davemloft.net>
+X-Provags-ID: V02:K0:QFCeTREVYENky/+VlH0vx1dxkEQy0OgjljqJS1pKUGO
+ kaHCKY3KoW8Mx3KI5c+by6KAkZ1OmGMfslmfS6iRrgpYhntWOZ
+ HcqVoyUo1PgEnl+s4qOyeJ3OIMoXVVrnIqT3L+DhEx3P+lVIR4
+ Nmq+zqApfuBrBQPXdXn/GO2AgxAepnPAKRNpoNNjpdnye4vrhk
+ ZBb1t1YMFn0dDLdYtnR7p+UYMS8hV+m59ZRsuZHR4dm28LHx0J
+ FwPk7vpHLs3/UuFUmMs8iznqYNyfkuC0lwvPZTiyo7cuBI6eZz
+ fJVCDjCD4OT6EN13xhH7MtXKM/TdfHtNWEYnAVASs3HSJUBh0u
+ 3WuQCGMK8vlsVU+pAdlISftwvTli79RCUs/QG7OJ0iIC1DELot
+ znTlj+3wKBainSt4K7AFX1fdAeltdYce3bhPUmKPxqgKHwzjGV
+ rkBvtMtfbQ8ZGPs2B1My32lMmC4gUEgW9xT7NQFpfFTzT+rKM2
+ xiXSltn5/Jyw0UCF1Rf
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 October 2014 16:22:31 Kevin Cernekee wrote:
-> 
-> This uses one domain per bcm7120-l2 DT node.  If the DT node defines
-> multiple enable/status pairs (i.e. >=64 IRQs) then the driver will
-> create a single IRQ domain with 2+ generic chips.
-> 
-> Multiple generic chips are required because the generic-chip code can
-> only handle one enable/status register pair per instance.
-> 
+If we cache them, the kernel will reuse them, independently of
+whether forwarding is enabled or not.  Which means that if forwarding is
+disabled on the input interface where the first routing request comes
+from, then that unreachable result will be cached and reused for
+other interfaces, even if forwarding is enabled on them.  The opposite
+is also true.
 
-Makes sense. Just make sure you have that explanation in the patch
-description.
+This can be verified with two interfaces A and B and an output interface
+C, where B has forwarding enabled, but not A and trying
+ip route get $dst iif A from $src && ip route get $dst iif B from $src
 
-	Arnd
+Signed-off-by: Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
+Reviewed-by: Julian Anastasov <ja@ssi.bg>
+---
+> Sorry Nicolas, this seems to have fallen on the floor.  Could you please
+> resubmit your most uptodate version of this patch so I can apply it?
+
+Here you are.
+
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 2d4ae46..6a2155b 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1798,6 +1798,7 @@ local_input:
+ no_route:
+ 	RT_CACHE_STAT_INC(in_no_route);
+ 	res.type = RTN_UNREACHABLE;
++	res.fi = NULL;
+ 	goto local_input;
+ 
+ 	/*
+-- 
+2.1.1
+
