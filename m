@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758097AbaJ3Amn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 20:42:43 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:33523 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963AbaJ3Amj (ORCPT
+	id S1757946AbaJ3Amy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 20:42:54 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57882 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756210AbaJ3Aml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 20:42:39 -0400
+	Wed, 29 Oct 2014 20:42:41 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: akpm@linux-foundation.org, linux-mm@kvack.org, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 5/6] x86,vdso: Use .fault instead of remap_pfn_range for the vvar mapping
-Date: Wed, 29 Oct 2014 17:42:15 -0700
-Message-Id: <d095edc4f5ec0eea526c34b672f1725f7edaf969.1414629045.git.luto@amacapital.net>
+Subject: [RFC 6/6] x86,vdso: Use .fault for the vdso text mapping
+Date: Wed, 29 Oct 2014 17:42:16 -0700
+Message-Id: <a465d74dc8d7e9af51f8b942d62fdd66ddca3b32.1414629045.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1414629045.git.luto@amacapital.net>
 References: <cover.1414629045.git.luto@amacapital.net>
@@ -22,116 +22,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is IMO much less ugly, and it also opens the door to
-disallowing unprivileged userspace HPET access on systems with
-usable TSCs.
+The old scheme for mapping the vdso text is rather complicated.  vdso2c
+generates a struct vm_special_mapping and a blank .pages array of the
+correct size for each vdso image.  Init code in vdso/vma.c populates
+the .pages array for each vdso image, and the mapping code selects
+the appropriate struct vm_special_mapping.
+
+With .fault, we can use a less roundabout approach: vdso_fault
+just returns the appropriate page for the selected vdso image.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/vdso/vma.c | 68 +++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 42 insertions(+), 26 deletions(-)
+ arch/x86/include/asm/vdso.h |  3 ---
+ arch/x86/vdso/vdso2c.h      |  7 -------
+ arch/x86/vdso/vma.c         | 26 +++++++++++++++++++-------
+ 3 files changed, 19 insertions(+), 17 deletions(-)
 
+diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
+index 3aa1f830c551..b730e7a74323 100644
+--- a/arch/x86/include/asm/vdso.h
++++ b/arch/x86/include/asm/vdso.h
+@@ -13,9 +13,6 @@ struct vdso_image {
+ 	void *data;
+ 	unsigned long size;   /* Always a multiple of PAGE_SIZE */
+ 
+-	/* text_mapping.pages is big enough for data/size page pointers */
+-	struct vm_special_mapping text_mapping;
+-
+ 	unsigned long alt, alt_len;
+ 
+ 	long sym_vvar_start;  /* Negative offset to the vvar area */
+diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+index fd57829b30d8..279f7af7cf5e 100644
+--- a/arch/x86/vdso/vdso2c.h
++++ b/arch/x86/vdso/vdso2c.h
+@@ -148,16 +148,9 @@ static void BITSFUNC(go)(void *raw_addr, size_t raw_len,
+ 	}
+ 	fprintf(outfile, "\n};\n\n");
+ 
+-	fprintf(outfile, "static struct page *pages[%lu];\n\n",
+-		mapping_size / 4096);
+-
+ 	fprintf(outfile, "const struct vdso_image %s = {\n", name);
+ 	fprintf(outfile, "\t.data = raw_data,\n");
+ 	fprintf(outfile, "\t.size = %lu,\n", mapping_size);
+-	fprintf(outfile, "\t.text_mapping = {\n");
+-	fprintf(outfile, "\t\t.name = \"[vdso]\",\n");
+-	fprintf(outfile, "\t\t.pages = pages,\n");
+-	fprintf(outfile, "\t},\n");
+ 	if (alt_sec) {
+ 		fprintf(outfile, "\t.alt = %lu,\n",
+ 			(unsigned long)GET_LE(&alt_sec->sh_offset));
 diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 7f99c2ed1a3e..5cde3b82d1e9 100644
+index 5cde3b82d1e9..0ae947eb7433 100644
 --- a/arch/x86/vdso/vma.c
 +++ b/arch/x86/vdso/vma.c
-@@ -121,16 +121,54 @@ static void vvar_start_set(struct vm_special_mapping *sm,
+@@ -25,13 +25,7 @@ extern unsigned short vdso_sync_cpuid;
  
+ void __init init_vdso_image(const struct vdso_image *image)
+ {
+-	int i;
+-	int npages = (image->size) / PAGE_SIZE;
+-
+ 	BUG_ON(image->size % PAGE_SIZE != 0);
+-	for (i = 0; i < npages; i++)
+-		image->text_mapping.pages[i] =
+-			virt_to_page(image->data + i*PAGE_SIZE);
+ 
+ 	apply_alternatives((struct alt_instr *)(image->data + image->alt),
+ 			   (struct alt_instr *)(image->data + image->alt +
+@@ -160,6 +154,24 @@ static int vvar_fault(struct vm_special_mapping *sm,
+ 	return VM_FAULT_SIGBUS;
  }
  
-+static int vvar_fault(struct vm_special_mapping *sm,
++static int vdso_fault(struct vm_special_mapping *sm,
 +		      struct vm_area_struct *vma, struct vm_fault *vmf)
 +{
 +	const struct vdso_image *image = vma->vm_mm->context.vdso_image;
-+	long sym_offset;
-+	int ret = -EFAULT;
 +
-+	if (!image)
-+		return VM_FAULT_SIGBUS;
-+	sym_offset = (long)(vmf->pgoff << PAGE_SHIFT) +
-+		image->sym_vvar_start;
-+
-+	/*
-+	 * Sanity check: a symbol offset of zero means that the page
-+	 * does not exist for this vdso image, not that the page is at
-+	 * offset zero relative to the text mapping.  This should be
-+	 * impossible here, because sym_offset should only be zero for
-+	 * the page past the end of the vvar mapping.
-+	 */
-+	if (sym_offset == 0)
++	if (!image || (vmf->pgoff << PAGE_SHIFT) >= image->size)
 +		return VM_FAULT_SIGBUS;
 +
-+	if (sym_offset == image->sym_vvar_page)
-+		ret = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address,
-+				    __pa_symbol(&__vvar_page) >> PAGE_SHIFT);
-+#ifdef CONFIG_HPET_TIMER
-+	else if (hpet_address && sym_offset == image->sym_hpet_page)
-+		ret = vm_insert_pfn_prot(vma,
-+					 (unsigned long)vmf->virtual_address,
-+					 hpet_address >> PAGE_SHIFT,
-+					 pgprot_noncached(PAGE_READONLY));
-+#endif
-+
-+	if (ret == 0)
-+		return VM_FAULT_NOPAGE;
-+
-+	return VM_FAULT_SIGBUS;
++	vmf->page = virt_to_page(image->data + (vmf->pgoff << PAGE_SHIFT));
++	get_page(vmf->page);
++	return 0;
 +}
++
++static struct vm_special_mapping text_mapping = {
++	.name = "[vdso]",
++	.fault = vdso_fault,
++};
 +
  static int map_vdso(const struct vdso_image *image, bool calculate_addr)
  {
  	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma;
- 	unsigned long addr, text_start;
- 	int ret = 0;
--	static struct page *no_pages[] = {NULL};
- 	static struct vm_special_mapping vvar_mapping = {
- 		.name = "[vvar]",
--		.pages = no_pages,
-+		.fault = vvar_fault,
- 
- 		/*
- 		 * Tracking the vdso is roughly equivalent to tracking the
-@@ -176,7 +214,8 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
- 	vma = _install_special_mapping(mm,
- 				       addr,
- 				       -image->sym_vvar_start,
--				       VM_READ|VM_MAYREAD,
-+				       VM_READ|VM_MAYREAD|VM_IO|VM_DONTDUMP|
-+				       VM_PFNMAP,
- 				       &vvar_mapping);
+@@ -204,7 +216,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+ 				       image->size,
+ 				       VM_READ|VM_EXEC|
+ 				       VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
+-				       &image->text_mapping);
++				       &text_mapping);
  
  	if (IS_ERR(vma)) {
-@@ -184,29 +223,6 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
- 		goto up_fail;
- 	}
- 
--	if (image->sym_vvar_page)
--		ret = remap_pfn_range(vma,
--				      text_start + image->sym_vvar_page,
--				      __pa_symbol(&__vvar_page) >> PAGE_SHIFT,
--				      PAGE_SIZE,
--				      PAGE_READONLY);
--
--	if (ret)
--		goto up_fail;
--
--#ifdef CONFIG_HPET_TIMER
--	if (hpet_address && image->sym_hpet_page) {
--		ret = io_remap_pfn_range(vma,
--			text_start + image->sym_hpet_page,
--			hpet_address >> PAGE_SHIFT,
--			PAGE_SIZE,
--			pgprot_noncached(PAGE_READONLY));
--
--		if (ret)
--			goto up_fail;
--	}
--#endif
--
- up_fail:
- 	if (ret)
- 		current->mm->context.vdso_image = NULL;
+ 		ret = PTR_ERR(vma);
 -- 
 1.9.3
 
