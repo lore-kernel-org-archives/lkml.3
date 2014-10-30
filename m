@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893AbaJ3EjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 00:39:22 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54039 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaJ3EjU (ORCPT
+	id S1756835AbaJ3Eks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 00:40:48 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:56320 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaJ3Ekq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 00:39:20 -0400
-Date: Wed, 29 Oct 2014 21:39:18 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: kernel test robot <fengguang.wu@intel.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Subject: Re: [LKP] [futex] 76835b0ebf8: -12.1% will-it-scale.per_process_ops
-Message-ID: <20141030043918.GK14609@vmdeb7>
-References: <20141027021822.GH27038@yliu-dev.sh.intel.com>
+	Thu, 30 Oct 2014 00:40:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027021822.GH27038@yliu-dev.sh.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAG-aW04ttpDq7miggd4_F6OHCbJcfjjntDPKDvGVjCncekMZVg@mail.gmail.com>
+References: <CAG-aW04ttpDq7miggd4_F6OHCbJcfjjntDPKDvGVjCncekMZVg@mail.gmail.com>
+From: Timofey Titovets <nefelim4ag@gmail.com>
+Date: Thu, 30 Oct 2014 07:40:05 +0300
+Message-ID: <CAGqmi74NnQXS1OUFwARmuYsPat5svKLJc9_bWfzRE25-5a6t8g@mail.gmail.com>
+Subject: Re: UKSM: What's maintainers think about it?
+To: Matt <jackdachef@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 10:18:22AM +0800, kernel test robot wrote:
-> FYI, we noticed the below changes on
-> 
-> commit 76835b0ebf8a7fe85beb03c75121419a7dec52f0 ("futex: Ensure get_futex_key_refs() always implies a barrier")
+2014-10-30 6:19 GMT+03:00 Matt <jackdachef@gmail.com>:
+> Hi Timofey,
+> Hi List,
+> don't forget to consider PKSM - it's supposed to be an improvement
+> over UKSM & KSM:
+>
+> http://www.phoronix.com/scan.php?page=news_item&px=MTM0OTQ
+> https://code.google.com/p/pksm/
+>
+> Kind Regards
+>
+> Matt
 
-Wow, this is great information to get for free. Thanks Fengguang!
+I can mistaking, as i know UKSM use some (or full?) PKSM code.
+As example uksm have (by Figo.zhang dev of PKSM)
+Full Zero Page consideration (i can't find proof link now)
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+Have a nice day,
+Timofey.
