@@ -1,110 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760442AbaJ3QdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 12:33:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36944 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758498AbaJ3QdV (ORCPT
+	id S1760572AbaJ3QeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 12:34:19 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:33145 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758867AbaJ3QeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 12:33:21 -0400
-Date: Thu, 30 Oct 2014 11:32:48 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <Peter.Chen@freescale.com>,
-        <kishon@ti.com>, <stern@rowland.harvard.edu>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 0/7] usb: add support for the generic PHY framework
-Message-ID: <20141030163248.GH10130@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
+	Thu, 30 Oct 2014 12:34:17 -0400
+Message-ID: <54526862.4000700@gmail.com>
+Date: Thu, 30 Oct 2014 18:33:38 +0200
+From: Giedrius Statkevicius <giedriuswork@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nO3oAMapP4dBpMZi"
-Content-Disposition: inline
-In-Reply-To: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Darren Hart <dvhart@infradead.org>
+CC: eric.piel@tremplin-utc.net, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] platform: hp_accel: add a i8042 filter to remove HPQ6000
+ data from kb bus stream
+References: <1414610182-28702-1-git-send-email-giedriuswork@gmail.com> <20141030014056.GD14609@vmdeb7> <20141030162852.GA36444@dtor-ws>
+In-Reply-To: <20141030162852.GA36444@dtor-ws>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nO3oAMapP4dBpMZi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2014.10.30 18:28, Dmitry Torokhov wrote:
+> On Wed, Oct 29, 2014 at 06:40:56PM -0700, Darren Hart wrote:
+>> On Wed, Oct 29, 2014 at 09:16:22PM +0200, Giedrius Statkevicius wrote:
+>>> Add a i8042 filter to hp_accel to remove accelerometer's data with acpi
+>>> id HPQ6000 from keyboard bus stream. The codes sent by accelerometer are
+>>> e0 25, e0 26, e0 27 and e0 28. The relevant information is already
+>>> passed through /dev/freefall so no need to send these undocumented weird
+>>> signals through the keyboard bus. Also, unclogs `dmesg` because atkbd
+>>> complained about weird scan codes, saves processing power and disk
+>>> space.
+>>>
+>>> Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
+>>> ---
+>>> First of all, any Tested-Bys are very welcome by people who also have a
+>>> accelerometer with acpi id HPQ6000. If it happens with HPQ6007 too we
+>>> can easily modify this to install the filter when HPQ6007 is detected.
+>>> For the time being the filter is only installed when HPQ6000 is
+>>> detected. 
+>>>
+>>> Now moving to what was changed since the RFC. I reworked the filter
+>>> function to hopefully make it more clear what it is doing. Since the
+>>> codes sent by the accelerometer are extended then we need to filter all
+>>> of 0xe0's and then send one 0xe0 back when the actual key isn't in the
+>>> range of 0x25-0x28. Also, I've removed the check for errors for
+>>> i8042_install_filter() because it's unnecessary to check if it failed.
+>>> If multiple HPQ6000's are in the system then no issue occurs even if
+>>> multiple i8042_install_filter() are issued because this is handled by
+>>> i8042 and it's smart enough not to install the same filter two or more
+>>> times.
+>>>
+>>>  drivers/platform/x86/hp_accel.c | 45 ++++++++++++++++++++++++++++++++++++++++-
+>>>  1 file changed, 44 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
+>>> index 13e14ec..a751621 100644
+>>> --- a/drivers/platform/x86/hp_accel.c
+>>> +++ b/drivers/platform/x86/hp_accel.c
+>>> @@ -38,6 +38,8 @@
+>>>  #include <linux/atomic.h>
+>>>  #include <linux/acpi.h>
+>>>  #include "../../misc/lis3lv02d/lis3lv02d.h"
+>>> +#include <linux/i8042.h>
+>>> +#include <linux/serio.h>
+>>
+>> Please include before the relative path includes.
+>>
+>> Otherwise, I'm happy with this - but I'd like a serio / i8042 person to weigh
+>> in.... Dmitry?
+> 
+> Yes, this is fine. Such uses with platform injecting weird bits into
+> keyboard/mouse data stream was the reason for introducing i8042 filter
+> facility.
+> 
+> I ma not sure what is more efficient, a case with 5 branches or
+> strchr(), but regardless:
+> 
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> 
+> Thanks.
+> 
 
-Hi,
+I'll resend the v2 in a minute. The changes in that patch:
+* Move the two new includes before the relative include of lis3lv02d.h
+* Remove a unnecessary deletion of a blank line
 
-On Tue, Oct 28, 2014 at 05:35:34PM +0100, Antoine Tenart wrote:
-> The series can be found at:
-> git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
->=20
-> Changes since v6:
-> 	- rebased on top of v3.18-rc2
->=20
-> Changes since v5:
->         - rebased on the latest version of Sergei's series[1]
->         - fixed one modifiaction made in the wrong patch
->=20
-> Changes since v4:
->         - reworked the PHY handling in ci_hdrc_probe()
->         - fixed a rebase error
->=20
-> Changes since v3:
->         - moved phy_exit() after phy_power_on()
->         - fixed the PHY handling in ci_hdrc_probe()
->         - some little fixes
->=20
-> Changes since v2:
->         - rebased the series on top of v3.17-rc1
->         - switched to devm_phy_get() to handle non DT cases
->         - moved usb_otg into the ci_hdrc structure
->=20
-> Changes since v1:
->         - rebased the series on top of [2] (generic PHY support for HCD)
->         - split s/phy/usb_phy/ renaming and generic PHY support in separa=
-te
->           patches
->=20
-> [1] https://www.mail-archive.com/linux-usb%40vger.kernel.org/msg48068.html
->=20
-> Antoine Tenart (7):
->   usb: move the OTG state from the USB PHY to the OTG structure
->   usb: rename phy to usb_phy in OTG
->   usb: add support to the generic PHY framework in OTG
->   usb: allow to supply the PHY in the drivers when using HCD
->   usb: rename transceiver and phy to usb_phy in ChipIdea
->   usb: chipidea: move usb_otg into struct ci_hdrc
->   usb: chipidea: add support to the generic PHY framework in ChipIdea
-
-quick question, who do you guys want this patchset to go through ? If
-it's me, I can take them no problem.
-
---=20
-balbi
-
---nO3oAMapP4dBpMZi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUUmgwAAoJEIaOsuA1yqREuO0P/0nMPOD0x0k/No4X/dVVEt6/
-/v0Rqfa6azZ83DqsIwBCcnlaRj2dpPebTszwOV1sHYq2D90CAkjEtcNl9OBpo7kF
-+7jepjNs6Ln6npjJUS/rH6iPifZ0nGECfKc7bfznRcPQZjhyWuArQVppRtTyAjNS
-7lJjVEI087qxjYxU37elJ0OFp+AcFl6fJkH/j+TQaB4YWaaG/6rVofp43iFl5MXd
-nwTbTUIZPInqEQOYUju0I6eqE0QDriao3v+nQzYvMsQervCK0z+9BcAwfy2Y1mpb
-Aa3+Ul9H0wl4Qt+3J88N6OxOlpPgDbal//ghKPisdcC2cgjWvEMAkxKThOCBHFOt
-6SzLzBJsEgzL/ZpleR+gmG3b/IDZaz+Bn5uzMCw6/tbeT9/b0MSDdJPNlEvmNerR
-Wli6pmij87XnsCvG8soc16X6Ao/jIjOhoVytpSVuJN4hypOz1sYinu3g+w4bzAIg
-ojdmfNlTp+CzM7iBay2RnUtTokcXqxurRww1BK9isOqE28OxfU8hMaoE+Ue1KDrU
-HlP4sjnzxvsIJh5r6wcrP1Ltm06gwqU4n8GK2fuOsz4I+QkZ8e5zYclC0Diad7hh
-Ld090mo0Oa0rVeY6MZOkBu7abUVFJpG1dTDGbukVZjENY++D2letnViCRZae3RH0
-eK8yLLMru6hp9z7wQT9L
-=p1Od
------END PGP SIGNATURE-----
-
---nO3oAMapP4dBpMZi--
+Thanks,
+Giedrius
