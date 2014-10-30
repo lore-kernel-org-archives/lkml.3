@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161290AbaJ3U2d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 16:28:33 -0400
-Received: from plane.gmane.org ([80.91.229.3]:56171 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932513AbaJ3U2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 16:28:32 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Alex Elsayed <eternaleye@gmail.com>
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-Date: Thu, 30 Oct 2014 13:28:09 -0700
-Message-ID: <m2u70q$gtl$2@ger.gmane.org>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <alpine.LRH.2.00.1410292354480.11562@twin.jikos.cz> <20141029231106.GB16548@kroah.com> <alpine.LRH.2.00.1410300019570.11562@twin.jikos.cz> <20141029234001.GB16520@kroah.com> <CALCETrXY90YAXA9-GLc0EowmRCtWZzh8br8seiqrzOkmNn8_Hw@mail.gmail.com> <CAG-2HqX9RUQHiF1U_CXiDVVLS-7aUOQdYn7EVNSMZNdbe38cTA@mail.gmail.com> <CALCETrXv_CevG7166++ZHBok0ae7mNhF83VjrRVQ2AKF22Vf_g@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7Bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 50.245.141.77
-User-Agent: KNode/4.14
-Cc: linux-api@vger.kernel.org
+	id S1161197AbaJ3U3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 16:29:24 -0400
+Received: from smtp73.iad3a.emailsrvr.com ([173.203.187.73]:34917 "EHLO
+	smtp73.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933358AbaJ3U3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 16:29:24 -0400
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54529FA1.8000702@mev.co.uk>
+Date: Thu, 30 Oct 2014 20:29:21 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Hartley Sweeten <HartleyS@visionengravers.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] staging: comedi: don't allow write() on async command
+ set up for "read"
+References: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk> <1414672952-1587-6-git-send-email-abbotti@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D882600D3B7@P3PWEX4MB008.ex4.secureserver.net>
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D882600D3B7@P3PWEX4MB008.ex4.secureserver.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski wrote:
+On 30/10/14 18:07, Hartley Sweeten wrote:
+> On Thursday, October 30, 2014 5:43 AM, Ian Abbott wrote:
+[snip]
+>>   	add_wait_queue(&async->wait_head, &wait);
+>>   	on_wait_queue = true;
+>> @@ -2146,6 +2150,10 @@ static ssize_t comedi_write(struct file *file, const char __user *buf,
+>>   				retval = -EACCES;
+>>   				break;
+>>   			}
+>> +			if (!(async->cmd.flags & CMDF_WRITE)) {
+>> +				retval = -EINVAL;
+>> +				break;
+>> +			}
+>
+> Same question as with PATCH 4/7.
+>
+> Is this test needed in the while () loop. Also, are the s->busy tests needed here?
 
-<snip>
-> There should be a number measured in, say, nanoseconds in here
-> somewhere.  The actual extent of the speedup is unmeasurable here.
-> Also, it's worth reading at least one of Linus' many rants about
-> zero-copy.  It's not an automatic win.
+Yes, for similar reasons.
 
-It's well-understood that it's not an automatic win; significant testing on 
-multiple architectures indicated that 512K is a surprisingly universal 
-crossover point. The userspace code, therefore, switches from copying 
-(normal kdbus parameters) to zero-copy (memfds) right around there.
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
