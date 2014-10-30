@@ -1,155 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142AbaJ3CER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:04:17 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:25898 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757991AbaJ3CEP (ORCPT
+	id S1758152AbaJ3CGA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:06:00 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19703 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837AbaJ3CF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:04:15 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: Dan Streetman <ddstreet@ieee.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "nfont@linux.vnet.ibm.com" <nfont@linux.vnet.ibm.com>
-Date: Wed, 29 Oct 2014 19:03:20 -0700
-Subject: RE: [PATCH V2] Driver cpu: update online when cpu_up/down besides
- sysfs
-Thread-Topic: [PATCH V2] Driver cpu: update online when cpu_up/down besides
- sysfs
-Thread-Index: Ac/zwqUFLG6ZsBrrSwivv/loniIgLwAIqUvA
-Message-ID: <9034CBD80F070943B59700D7F8149ED9024ED2A331@SC-VEXCH4.marvell.com>
-References: <1414378748-8855-1-git-send-email-zhangwm@marvell.com>
- <544EBB70.6020507@intel.com>
- <CALZtONCkQVeau8JETKtxuQsoGnVymKPOgwvcidHH=EFVmhKc5g@mail.gmail.com>
- <4115047.A3orYVLyA3@vostro.rjw.lan>
- <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
-In-Reply-To: <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 29 Oct 2014 22:05:58 -0400
+To: "Jason B. Akers" <jason.b.akers@intel.com>
+Cc: linux-ide@vger.kernel.org, axboe@fb.com, dan.j.williams@intel.com,
+        kapil.karkra@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
+Date: Wed, 29 Oct 2014 22:05:52 -0400
+In-Reply-To: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
+	(Jason B. Akers's message of "Wed, 29 Oct 2014 11:23:38 -0700")
+Message-ID: <yq1k33il3b3.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-30_01:2014-10-29,2014-10-29,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1410300021
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9U24MNM008300
 
-Dan,
+>>>>> "Jason" == Jason B Akers <jason.b.akers@intel.com> writes:
 
-> -----Original Message-----
-> From: ddstreet@gmail.com [mailto:ddstreet@gmail.com] On Behalf Of Dan
-> Streetman
-> Sent: 2014å¹´10æœˆ30æ—¥ 5:52
-> To: Rafael J. Wysocki
-> Cc: Rafael J. Wysocki; Neil Zhang; linux-kernel; Greg Kroah-Hartman;
-> nfont@linux.vnet.ibm.com
-> Subject: Re: [PATCH V2] Driver cpu: update online when cpu_up/down besides
-> sysfs
-> 
-> On Wed, Oct 29, 2014 at 5:46 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Monday, October 27, 2014 08:46:08 PM Dan Streetman wrote:
-> >> On Mon, Oct 27, 2014 at 5:38 PM, Rafael J. Wysocki
-> >> <rafael.j.wysocki@intel.com> wrote:
-> >> > On 10/27/2014 3:59 AM, Neil Zhang wrote:
-> >> >>
-> >> >> The current per-cpu offline info won't be updated when we use any
-> >> >> other method besides sysfs to call cpu_up/down.
-> >> >> Thus the cpu/online can't reflect the real online status.
-> >> >>
-> >> >> This patch is going to fix the issue introduced by commit
-> >> >> 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c (Driver core:
-> >> >> Use generic offline/online for CPU offline/online)
-> >> >>
-> >> >> CC: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >> Tested-by: Dan Streetman <ddstreet@ieee.org>
-> >> >> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> >> >
-> >> >
-> >> > Oh dear, no.
-> >> >
-> >> > Please first tell me what exactly the problem you're seeing is.
-> >>
-> >> For some background, here is my last comment on the first email thread on
-> this:
-> >> https://lkml.org/lkml/2014/10/27/595
-> >>
-> >> I didn't create this patch, but the problem essentially is that
-> >> before your commit the individual cpu online nodes
-> >> (/sys/devices/system/cpu/cpuN/online) stayed in sync during
-> >> cpu_down/up, because they used the cpu_online_mask; while after the
-> >> commit, they are tracked by the cpu's generic dev->offline flag,
-> >> which isn't updated during cpu_down/up.
-> >
-> > Which is not triggered from sysfs.
-> >
-> >> So now, any place in the kernel
-> >> that brings a cpu up or down must also update the cpu->dev->offline
-> >> flag.
-> >
-> > Not any place.  In particular, system suspend-resume doesn't need to
-> > do that, because it takes CPUs offline and then brings them back
-> > online.
-> >
-> > If there's a place in the kernel where CPUs are taken offline and left
-> > in that state, then it needs to be updated.
-> 
-> The only place I know of is ppc's dlpar code, as mentioned below.
-> 
-> Neil, as you crafted the original patch, I assume you know of some other place
-> in the kernel doing cpu_up/down directly, where you're seeing this problem?
-> 
+Jason> The following series enables the use of Solid State hybrid drives
+Jason> ATA standard 3.2 defines the hybrid information feature, which
+Jason> provides a means for the host driver to provide hints to the
+Jason> SSHDs to guide what to place on the SSD/NAND portion and what to
+Jason> place on the magnetic media.
 
-As I replied to Rafael many ARM SoCs will use an in kernel profiler to romove/add 
-a core via cpu_up /down for power and performance consideration.
-But actually we can fix these issues as Rafael suggested.
-Thanks for the discussion in these days.
+I have been ripping my hair out in this department for a while.
 
-> >
-> >> My interest in the patch was coincidental because I was seeing the
-> >> same problem when using dlpar operations to hotplug cpus, which uses
-> >> the arch/powerpc/platform/pseries/dlpar.c code; that code brings a
-> >> cpu offline when it's hot-removed (and the cpu online when it's
-> >> hot-added), but it hasn't been changed to also update the cpu's
-> >> dev->offline flag.
-> >
-> > It should be modified to do that.
-> >
-> >> As I said in the previous email to the first thread, the ppc dlpar
-> >> operation might be changed in the future to fully unregister a cpu
-> >> when it's hot-removed, which would remove the entire sysfs cpuN
-> >> directory.  Alternately and/or until then, it could be updated to
-> >> simply update the cpu'd dev->offline flag (that's what I originally
-> >> did for my own testing).  However, without a central place to update
-> >> the cpu's dev->offline field, like this, or possibly in
-> >> set_cpu_online(), or elsewhere during cpu_down/up, each place in the
-> >> kernel that calls cpu_down() or cpu_up() also needs to update the
-> >> dev->offline flag.  It's possible that the ppc dlpar code is the only
-> >> place in the kernel that has this problem; I haven't searched.
-> >
-> > It is quite likely to be the only place like that.
-> >
-> > While I'm not familiar with the code in question, the most
-> > straightforward way to fix the problem would be to replace cpu_down()
-> > in there with device_offline(get_cpu_device(cpu)), but that needs to
-> > be called under device_hotplug_lock.
-> 
-> Ok, will do.
-> 
-> >
-> > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
+A colleague and I presented our findings at SNIA SDC a few weeks
+ago. I'm trying to find out if there's an embargo on the slides or if I
+can post them.
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+First of all I completely agree with Dave's comments about hooking into
+fadvise()/madvise().
+
+For my testing I also overloaded the existing priority fields but ended
+up deciding that it would be better to have a separate field (and
+cleaning up the priority high byte in bi_rw but that's part of a
+different patch set).
+
+My challenge with hints has been trying to bridge all the various
+existing approaches with the new stuff that's coming down the pipe in
+T10/T13 (LBMD hints) and NFS v4.2 ditto. That turned into a huge mapping
+table as well as a few amendments to what's currently being worked on in
+the standards bodies.
+
+I didn't actively pursue the hybrid drive hints because I didn't think
+there was much interest. But since there is we should combine our
+efforts. From an application and kernel perspective we need to have one
+type of hints that then get translated into whatever is suitable for
+NFS, T10, T13 or SATA-IO SSHDs. It looks like the SSHD hints are
+reasonably close to fadvise() which is great.
+
+I'll see if I can get a link to the slides out tomorrow. Otherwise I'll
+just redo them.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
