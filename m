@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161119AbaJ3QDg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 12:03:36 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48036 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758284AbaJ3QDf (ORCPT
+	id S1161192AbaJ3QDl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 12:03:41 -0400
+Received: from 4.mo68.mail-out.ovh.net ([46.105.59.63]:43737 "EHLO
+	mo68.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758284AbaJ3QDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 12:03:35 -0400
-Message-ID: <5452612C.5090609@oracle.com>
-Date: Thu, 30 Oct 2014 12:02:52 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, peterz@infradead.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
-References: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com> <20141030082712.GB4664@dhcp22.suse.cz> <54523DDE.9000904@oracle.com> <20141030141401.GA24520@phnom.home.cmpxchg.org> <54524A2F.5050907@oracle.com> <20141030150624.GA24818@phnom.home.cmpxchg.org>
-In-Reply-To: <20141030150624.GA24818@phnom.home.cmpxchg.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 30 Oct 2014 12:03:39 -0400
+From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+To: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Rockchip
+	SoC...),
+        linux-rockchip@lists.infradead.org (open list:ARM/Rockchip SoC...),
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Subject: [PATCH] ARM: dts: rockchip: add serial aliases for rk3066 and rk3188
+Date: Thu, 30 Oct 2014 16:51:17 +0100
+Message-Id: <1414684277-17248-1-git-send-email-julien.chauveau@neo-technologies.fr>
+X-Mailer: git-send-email 2.1.0
+X-Ovh-Tracer-Id: 6869959757051330785
+X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-01-116-88.w193-248.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrfeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrfeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2014 11:06 AM, Johannes Weiner wrote:
->> You're using that value as soon as you are passing it to a function, it
->> > doesn't matter what happens inside that function.
-> It's copied as part of the pass-by-value protocol, but we really don't
-> do anything with it.  So why does it matter?
+Add aliases for UARTs on rk3066 and rk3188 in order to fix the numbering scheme.
+This will keep the debug console on ttyS2 when UART 1 is disabled, for example.
 
-Because it's undefined behaviour, which gives your compiler a license to
-do whatever it wants?
+Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+---
+ arch/arm/boot/dts/rk3xxx.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-
-Thanks,
-Sasha
+diff --git a/arch/arm/boot/dts/rk3xxx.dtsi b/arch/arm/boot/dts/rk3xxx.dtsi
+index 499468d..d8027c4 100644
+--- a/arch/arm/boot/dts/rk3xxx.dtsi
++++ b/arch/arm/boot/dts/rk3xxx.dtsi
+@@ -29,6 +29,10 @@
+ 		mshc0 = &emmc;
+ 		mshc1 = &mmc0;
+ 		mshc2 = &mmc1;
++		serial0 = &uart0;
++		serial1 = &uart1;
++		serial2 = &uart2;
++		serial3 = &uart3;
+ 		spi0 = &spi0;
+ 		spi1 = &spi1;
+ 	};
+-- 
+2.1.0
 
