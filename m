@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760470AbaJ3OL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:11:27 -0400
+	id S1760563AbaJ3OLj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:11:39 -0400
 Received: from mga14.intel.com ([192.55.52.115]:24875 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760445AbaJ3OLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:11:22 -0400
+	id S1760530AbaJ3OLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:11:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="408517871"
+   d="scan'208";a="408517989"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/7] perf tools: Add a thread stack for synthesizing call chains
-Date: Thu, 30 Oct 2014 16:09:42 +0200
-Message-Id: <1414678188-14946-2-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 6/7] perf tools: Add call information to Python export
+Date: Thu, 30 Oct 2014 16:09:47 +0200
+Message-Id: <1414678188-14946-7-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414678188-14946-1-git-send-email-adrian.hunter@intel.com>
 References: <1414678188-14946-1-git-send-email-adrian.hunter@intel.com>
@@ -27,336 +27,325 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a thread stack for synthesizing call chains from call
-and return events.
+Add the ability to export detailed information about
+paired calls and returns to Python db export and
+the export-to-postgresql.py script.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Makefile.perf       |   2 +
- tools/perf/util/event.h        |  26 +++++++
- tools/perf/util/thread-stack.c | 172 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/thread-stack.h |  32 ++++++++
- tools/perf/util/thread.c       |   3 +
- tools/perf/util/thread.h       |   3 +
- 6 files changed, 238 insertions(+)
- create mode 100644 tools/perf/util/thread-stack.c
- create mode 100644 tools/perf/util/thread-stack.h
+ .../scripts/python/bin/export-to-postgresql-report | 15 ++--
+ tools/perf/scripts/python/export-to-postgresql.py  | 66 ++++++++++++++++-
+ .../util/scripting-engines/trace-event-python.c    | 84 +++++++++++++++++++++-
+ 3 files changed, 158 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 3caf7da..0ebcc4a 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -317,6 +317,7 @@ LIB_H += ui/util.h
- LIB_H += ui/ui.h
- LIB_H += util/data.h
- LIB_H += util/kvm-stat.h
-+LIB_H += util/thread-stack.h
+diff --git a/tools/perf/scripts/python/bin/export-to-postgresql-report b/tools/perf/scripts/python/bin/export-to-postgresql-report
+index a8fdd15..cd335b6 100644
+--- a/tools/perf/scripts/python/bin/export-to-postgresql-report
++++ b/tools/perf/scripts/python/bin/export-to-postgresql-report
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ # description: export perf data to a postgresql database
+-# args: [database name] [columns]
++# args: [database name] [columns] [calls]
+ n_args=0
+ for i in "$@"
+ do
+@@ -9,11 +9,16 @@ do
+     fi
+     n_args=$(( $n_args + 1 ))
+ done
+-if [ "$n_args" -gt 2 ] ; then
+-    echo "usage: export-to-postgresql-report [database name] [columns]"
++if [ "$n_args" -gt 3 ] ; then
++    echo "usage: export-to-postgresql-report [database name] [columns] [calls]"
+     exit
+ fi
+-if [ "$n_args" -gt 1 ] ; then
++if [ "$n_args" -gt 2 ] ; then
++    dbname=$1
++    columns=$2
++    calls=$3
++    shift 3
++elif [ "$n_args" -gt 1 ] ; then
+     dbname=$1
+     columns=$2
+     shift 2
+@@ -21,4 +26,4 @@ elif [ "$n_args" -gt 0 ] ; then
+     dbname=$1
+     shift
+ fi
+-perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/export-to-postgresql.py $dbname $columns
++perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/export-to-postgresql.py $dbname $columns $calls
+diff --git a/tools/perf/scripts/python/export-to-postgresql.py b/tools/perf/scripts/python/export-to-postgresql.py
+index bb79aec..4cdafd8 100644
+--- a/tools/perf/scripts/python/export-to-postgresql.py
++++ b/tools/perf/scripts/python/export-to-postgresql.py
+@@ -40,10 +40,12 @@ sys.path.append(os.environ['PERF_EXEC_PATH'] + \
+ #from Core import *
  
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -394,6 +395,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
- LIB_OBJS += $(OUTPUT)util/data.o
- LIB_OBJS += $(OUTPUT)util/tsc.o
- LIB_OBJS += $(OUTPUT)util/cloexec.o
-+LIB_OBJS += $(OUTPUT)util/thread-stack.o
+ perf_db_export_mode = True
++perf_db_export_calls = False
  
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 8c7fe9d..7be3897 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -143,6 +143,32 @@ struct branch_stack {
- 	struct branch_entry	entries[0];
+ def usage():
+-	print >> sys.stderr, "Usage is: export-to-postgresql.py <database name> [<columns>]"
++	print >> sys.stderr, "Usage is: export-to-postgresql.py <database name> [<columns>] [<calls>]"
+ 	print >> sys.stderr, "where:	columns		'all' or 'branches'"
++	print >> sys.stderr, "		calls		'calls' => create calls table"
+ 	raise Exception("Too few arguments")
+ 
+ if (len(sys.argv) < 2):
+@@ -61,6 +63,12 @@ if columns not in ("all", "branches"):
+ 
+ branches = (columns == "branches")
+ 
++if (len(sys.argv) >= 4):
++	if (sys.argv[3] == "calls"):
++		perf_db_export_calls = True
++	else:
++		usage()
++
+ output_dir_name = os.getcwd() + "/" + dbname + "-perf-data"
+ os.mkdir(output_dir_name)
+ 
+@@ -170,6 +178,25 @@ else:
+ 		'branch_type	integer,'
+ 		'in_tx		boolean)')
+ 
++if perf_db_export_calls:
++	do_query(query, 'CREATE TABLE call_paths ('
++		'id		bigint		NOT NULL,'
++		'parent_id	bigint,'
++		'symbol_id	bigint,'
++		'ip		bigint)')
++	do_query(query, 'CREATE TABLE calls ('
++		'id		bigint		NOT NULL,'
++		'thread_id	bigint,'
++		'comm_id	bigint,'
++		'call_path_id	bigint,'
++		'call_time	bigint,'
++		'return_time	bigint,'
++		'branch_count	bigint,'
++		'call_id	bigint,'
++		'return_id	bigint,'
++		'parent_call_path_id	bigint,'
++		'flags		integer)')
++
+ do_query(query, 'CREATE VIEW samples_view AS '
+ 	'SELECT '
+ 		'id,'
+@@ -246,6 +273,9 @@ dso_file		= open_output_file("dso_table.bin")
+ symbol_file		= open_output_file("symbol_table.bin")
+ branch_type_file	= open_output_file("branch_type_table.bin")
+ sample_file		= open_output_file("sample_table.bin")
++if perf_db_export_calls:
++	call_path_file		= open_output_file("call_path_table.bin")
++	call_file		= open_output_file("call_table.bin")
+ 
+ def trace_begin():
+ 	print datetime.datetime.today(), "Writing to intermediate files..."
+@@ -256,6 +286,9 @@ def trace_begin():
+ 	comm_table(0, "unknown")
+ 	dso_table(0, 0, "unknown", "unknown", "")
+ 	symbol_table(0, 0, 0, 0, 0, "unknown")
++	sample_table(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
++	if perf_db_export_calls:
++		call_path_table(0, 0, 0, 0)
+ 
+ unhandled_count = 0
+ 
+@@ -270,6 +303,9 @@ def trace_end():
+ 	copy_output_file(symbol_file,		"symbols")
+ 	copy_output_file(branch_type_file,	"branch_types")
+ 	copy_output_file(sample_file,		"samples")
++	if perf_db_export_calls:
++		copy_output_file(call_path_file,	"call_paths")
++		copy_output_file(call_file,		"calls")
+ 
+ 	print datetime.datetime.today(), "Removing intermediate files..."
+ 	remove_output_file(evsel_file)
+@@ -281,6 +317,9 @@ def trace_end():
+ 	remove_output_file(symbol_file)
+ 	remove_output_file(branch_type_file)
+ 	remove_output_file(sample_file)
++	if perf_db_export_calls:
++		remove_output_file(call_path_file)
++		remove_output_file(call_file)
+ 	os.rmdir(output_dir_name)
+ 	print datetime.datetime.today(), "Adding primary keys"
+ 	do_query(query, 'ALTER TABLE selected_events ADD PRIMARY KEY (id)')
+@@ -292,6 +331,9 @@ def trace_end():
+ 	do_query(query, 'ALTER TABLE symbols         ADD PRIMARY KEY (id)')
+ 	do_query(query, 'ALTER TABLE branch_types    ADD PRIMARY KEY (id)')
+ 	do_query(query, 'ALTER TABLE samples         ADD PRIMARY KEY (id)')
++	if perf_db_export_calls:
++		do_query(query, 'ALTER TABLE call_paths      ADD PRIMARY KEY (id)')
++		do_query(query, 'ALTER TABLE calls           ADD PRIMARY KEY (id)')
+ 
+ 	print datetime.datetime.today(), "Adding foreign keys"
+ 	do_query(query, 'ALTER TABLE threads '
+@@ -313,6 +355,18 @@ def trace_end():
+ 					'ADD CONSTRAINT symbolfk   FOREIGN KEY (symbol_id)    REFERENCES symbols    (id),'
+ 					'ADD CONSTRAINT todsofk    FOREIGN KEY (to_dso_id)    REFERENCES dsos       (id),'
+ 					'ADD CONSTRAINT tosymbolfk FOREIGN KEY (to_symbol_id) REFERENCES symbols    (id)')
++	if perf_db_export_calls:
++		do_query(query, 'ALTER TABLE call_paths '
++					'ADD CONSTRAINT parentfk    FOREIGN KEY (parent_id)    REFERENCES call_paths (id),'
++					'ADD CONSTRAINT symbolfk    FOREIGN KEY (symbol_id)    REFERENCES symbols    (id)')
++		do_query(query, 'ALTER TABLE calls '
++					'ADD CONSTRAINT threadfk    FOREIGN KEY (thread_id)    REFERENCES threads    (id),'
++					'ADD CONSTRAINT commfk      FOREIGN KEY (comm_id)      REFERENCES comms      (id),'
++					'ADD CONSTRAINT call_pathfk FOREIGN KEY (call_path_id) REFERENCES call_paths (id),'
++					'ADD CONSTRAINT callfk      FOREIGN KEY (call_id)      REFERENCES samples    (id),'
++					'ADD CONSTRAINT returnfk    FOREIGN KEY (return_id)    REFERENCES samples    (id),'
++					'ADD CONSTRAINT parent_call_pathfk FOREIGN KEY (parent_call_path_id) REFERENCES call_paths (id)')
++		do_query(query, 'CREATE INDEX pcpid_idx ON calls (parent_call_path_id)')
+ 
+ 	if (unhandled_count):
+ 		print datetime.datetime.today(), "Warning: ", unhandled_count, " unhandled events"
+@@ -378,3 +432,13 @@ def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, sy
+ 	else:
+ 		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiqiiiB", 21, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src, 4, branch_type, 1, in_tx)
+ 	sample_file.write(value)
++
++def call_path_table(cp_id, parent_id, symbol_id, ip, *x):
++	fmt = "!hiqiqiqiq"
++	value = struct.pack(fmt, 4, 8, cp_id, 8, parent_id, 8, symbol_id, 8, ip)
++	call_path_file.write(value)
++
++def call_return_table(cr_id, thread_id, comm_id, call_path_id, call_time, return_time, branch_count, call_id, return_id, parent_call_path_id, flags, *x):
++	fmt = "!hiqiqiqiqiqiqiqiqiqiqii"
++	value = struct.pack(fmt, 11, 8, cr_id, 8, thread_id, 8, comm_id, 8, call_path_id, 8, call_time, 8, return_time, 8, branch_count, 8, call_id, 8, return_id, 8, parent_call_path_id, 4, flags)
++	call_file.write(value)
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index f3ca779..cb1d960 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -37,6 +37,7 @@
+ #include "../comm.h"
+ #include "../machine.h"
+ #include "../db-export.h"
++#include "../thread-stack.h"
+ #include "../trace-event.h"
+ #include "../machine.h"
+ 
+@@ -68,6 +69,8 @@ struct tables {
+ 	PyObject		*symbol_handler;
+ 	PyObject		*branch_type_handler;
+ 	PyObject		*sample_handler;
++	PyObject		*call_path_handler;
++	PyObject		*call_return_handler;
+ 	bool			db_export_mode;
  };
  
-+enum {
-+	PERF_IP_FLAG_BRANCH		= 1ULL << 0,
-+	PERF_IP_FLAG_CALL		= 1ULL << 1,
-+	PERF_IP_FLAG_RETURN		= 1ULL << 2,
-+	PERF_IP_FLAG_CONDITIONAL	= 1ULL << 3,
-+	PERF_IP_FLAG_SYSCALLRET		= 1ULL << 4,
-+	PERF_IP_FLAG_ASYNC		= 1ULL << 5,
-+	PERF_IP_FLAG_INTERRUPT		= 1ULL << 6,
-+	PERF_IP_FLAG_TX_ABORT		= 1ULL << 7,
-+	PERF_IP_FLAG_TRACE_BEGIN	= 1ULL << 8,
-+	PERF_IP_FLAG_TRACE_END		= 1ULL << 9,
-+	PERF_IP_FLAG_IN_TX		= 1ULL << 10,
-+};
-+
-+#define PERF_BRANCH_MASK		(\
-+	PERF_IP_FLAG_BRANCH		|\
-+	PERF_IP_FLAG_CALL		|\
-+	PERF_IP_FLAG_RETURN		|\
-+	PERF_IP_FLAG_CONDITIONAL	|\
-+	PERF_IP_FLAG_SYSCALLRET		|\
-+	PERF_IP_FLAG_ASYNC		|\
-+	PERF_IP_FLAG_INTERRUPT		|\
-+	PERF_IP_FLAG_TX_ABORT		|\
-+	PERF_IP_FLAG_TRACE_BEGIN	|\
-+	PERF_IP_FLAG_TRACE_END)
-+
- struct perf_sample {
- 	u64 ip;
- 	u32 pid, tid;
-diff --git a/tools/perf/util/thread-stack.c b/tools/perf/util/thread-stack.c
-new file mode 100644
-index 0000000..85b60d2
---- /dev/null
-+++ b/tools/perf/util/thread-stack.c
-@@ -0,0 +1,172 @@
-+/*
-+ * thread-stack.c: Synthesize a thread's stack using call / return events
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#include "thread.h"
-+#include "event.h"
-+#include "util.h"
-+#include "debug.h"
-+#include "thread-stack.h"
-+
-+#define STACK_GROWTH 4096
-+
-+struct thread_stack_entry {
-+	u64 ret_addr;
-+};
-+
-+struct thread_stack {
-+	struct thread_stack_entry *stack;
-+	size_t cnt;
-+	size_t sz;
-+	u64 trace_nr;
-+};
-+
-+static int thread_stack__grow(struct thread_stack *ts)
+@@ -720,6 +723,64 @@ static int python_export_sample(struct db_export *dbe,
+ 	return 0;
+ }
+ 
++static int python_export_call_path(struct db_export *dbe, struct call_path *cp)
 +{
-+	struct thread_stack_entry *new_stack;
-+	size_t sz, new_sz;
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++	u64 parent_db_id, sym_db_id;
 +
-+	new_sz = ts->sz + STACK_GROWTH;
-+	sz = new_sz * sizeof(struct thread_stack_entry);
++	parent_db_id = cp->parent ? cp->parent->db_id : 0;
++	sym_db_id = cp->sym ? *(u64 *)symbol__priv(cp->sym) : 0;
 +
-+	new_stack = realloc(ts->stack, sz);
-+	if (!new_stack)
-+		return -ENOMEM;
++	t = tuple_new(4);
 +
-+	ts->stack = new_stack;
-+	ts->sz = new_sz;
++	tuple_set_u64(t, 0, cp->db_id);
++	tuple_set_u64(t, 1, parent_db_id);
++	tuple_set_u64(t, 2, sym_db_id);
++	tuple_set_u64(t, 3, cp->ip);
++
++	call_object(tables->call_path_handler, t, "call_path_table");
++
++	Py_DECREF(t);
 +
 +	return 0;
 +}
 +
-+static struct thread_stack *thread_stack__new(void)
++static int python_export_call_return(struct db_export *dbe,
++				     struct call_return *cr)
 +{
-+	struct thread_stack *ts;
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	u64 comm_db_id = cr->comm ? cr->comm->db_id : 0;
++	PyObject *t;
 +
-+	ts = zalloc(sizeof(struct thread_stack));
-+	if (!ts)
-+		return NULL;
++	t = tuple_new(11);
 +
-+	if (thread_stack__grow(ts)) {
-+		free(ts);
-+		return NULL;
-+	}
++	tuple_set_u64(t, 0, cr->db_id);
++	tuple_set_u64(t, 1, cr->thread->db_id);
++	tuple_set_u64(t, 2, comm_db_id);
++	tuple_set_u64(t, 3, cr->cp->db_id);
++	tuple_set_u64(t, 4, cr->call_time);
++	tuple_set_u64(t, 5, cr->return_time);
++	tuple_set_u64(t, 6, cr->branch_count);
++	tuple_set_u64(t, 7, cr->call_ref);
++	tuple_set_u64(t, 8, cr->return_ref);
++	tuple_set_u64(t, 9, cr->cp->parent->db_id);
++	tuple_set_s32(t, 10, cr->flags);
 +
-+	return ts;
-+}
++	call_object(tables->call_return_handler, t, "call_return_table");
 +
-+static int thread_stack__push(struct thread_stack *ts, u64 ret_addr)
-+{
-+	int err = 0;
-+
-+	if (ts->cnt == ts->sz) {
-+		err = thread_stack__grow(ts);
-+		if (err) {
-+			pr_warning("Out of memory: discarding thread stack\n");
-+			ts->cnt = 0;
-+		}
-+	}
-+
-+	ts->stack[ts->cnt++].ret_addr = ret_addr;
-+
-+	return err;
-+}
-+
-+static void thread_stack__pop(struct thread_stack *ts, u64 ret_addr)
-+{
-+	size_t i;
-+
-+	/*
-+	 * In some cases there may be functions which are not seen to return.
-+	 * For example when setjmp / longjmp has been used.  Or the perf context
-+	 * switch in the kernel which doesn't stop and start tracing in exactly
-+	 * the same code path.  When that happens the return address will be
-+	 * further down the stack.  If the return address is not found at all,
-+	 * we assume the opposite (i.e. this is a return for a call that wasn't
-+	 * seen for some reason) and leave the stack alone.
-+	 */
-+	for (i = ts->cnt; i; ) {
-+		if (ts->stack[--i].ret_addr == ret_addr) {
-+			ts->cnt = i;
-+			return;
-+		}
-+	}
-+}
-+
-+int thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
-+			u64 to_ip, u16 insn_len, u64 trace_nr)
-+{
-+	if (!thread)
-+		return -EINVAL;
-+
-+	if (!thread->ts) {
-+		thread->ts = thread_stack__new();
-+		if (!thread->ts) {
-+			pr_warning("Out of memory: no thread stack\n");
-+			return -ENOMEM;
-+		}
-+		thread->ts->trace_nr = trace_nr;
-+	}
-+
-+	/*
-+	 * When the trace is discontinuous, the trace_nr changes.  In that case
-+	 * the stack might be completely invalid.  Better to report nothing than
-+	 * to report something misleading, so reset the stack count to zero.
-+	 */
-+	if (trace_nr != thread->ts->trace_nr) {
-+		thread->ts->trace_nr = trace_nr;
-+		thread->ts->cnt = 0;
-+	}
-+
-+	if (flags & PERF_IP_FLAG_CALL) {
-+		u64 ret_addr;
-+
-+		if (!to_ip)
-+			return 0;
-+		ret_addr = from_ip + insn_len;
-+		if (ret_addr == to_ip)
-+			return 0; /* Zero-length calls are excluded */
-+		return thread_stack__push(thread->ts, ret_addr);
-+	} else if (flags & PERF_IP_FLAG_RETURN) {
-+		if (!from_ip)
-+			return 0;
-+		thread_stack__pop(thread->ts, to_ip);
-+	}
++	Py_DECREF(t);
 +
 +	return 0;
 +}
 +
-+void thread_stack__free(struct thread *thread)
++static int python_process_call_return(struct call_return *cr, void *data)
 +{
-+	if (thread->ts) {
-+		zfree(&thread->ts->stack);
-+		zfree(&thread->ts);
-+	}
++	struct db_export *dbe = data;
++
++	return db_export__call_return(dbe, cr);
 +}
 +
-+void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
-+			  size_t sz, u64 ip)
-+{
-+	size_t i;
-+
-+	if (!thread || !thread->ts)
-+		chain->nr = 1;
-+	else
-+		chain->nr = min(sz, thread->ts->cnt + 1);
-+
-+	chain->ips[0] = ip;
-+
-+	for (i = 1; i < chain->nr; i++)
-+		chain->ips[i] = thread->ts->stack[thread->ts->cnt - i].ret_addr;
-+}
-diff --git a/tools/perf/util/thread-stack.h b/tools/perf/util/thread-stack.h
-new file mode 100644
-index 0000000..7c41579
---- /dev/null
-+++ b/tools/perf/util/thread-stack.h
-@@ -0,0 +1,32 @@
-+/*
-+ * thread-stack.h: Synthesize a thread's stack using call / return events
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#ifndef __PERF_THREAD_STACK_H
-+#define __PERF_THREAD_STACK_H
-+
-+#include <sys/types.h>
-+
-+#include <linux/types.h>
-+
-+struct thread;
-+struct ip_callchain;
-+
-+int thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
-+			u64 to_ip, u16 insn_len, u64 trace_nr);
-+void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
-+			  size_t sz, u64 ip);
-+void thread_stack__free(struct thread *thread);
-+
-+#endif
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index bf5bf85..a2157f0 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -4,6 +4,7 @@
- #include <string.h>
- #include "session.h"
- #include "thread.h"
-+#include "thread-stack.h"
- #include "util.h"
- #include "debug.h"
- #include "comm.h"
-@@ -66,6 +67,8 @@ void thread__delete(struct thread *thread)
+ static void python_process_general_event(struct perf_sample *sample,
+ 					 struct perf_evsel *evsel,
+ 					 struct thread *thread,
+@@ -852,7 +913,9 @@ error:
+ static void set_table_handlers(struct tables *tables)
  {
- 	struct comm *comm, *tmp;
+ 	const char *perf_db_export_mode = "perf_db_export_mode";
+-	PyObject *db_export_mode;
++	const char *perf_db_export_calls = "perf_db_export_calls";
++	PyObject *db_export_mode, *db_export_calls;
++	bool export_calls = false;
+ 	int ret;
  
-+	thread_stack__free(thread);
+ 	memset(tables, 0, sizeof(struct tables));
+@@ -869,6 +932,23 @@ static void set_table_handlers(struct tables *tables)
+ 	if (!ret)
+ 		return;
+ 
++	tables->dbe.crp = NULL;
++	db_export_calls = PyDict_GetItemString(main_dict, perf_db_export_calls);
++	if (db_export_calls) {
++		ret = PyObject_IsTrue(db_export_calls);
++		if (ret == -1)
++			handler_call_die(perf_db_export_calls);
++		export_calls = !!ret;
++	}
 +
- 	if (thread->mg) {
- 		map_groups__put(thread->mg);
- 		thread->mg = NULL;
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index d34cf5c..160fd06 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -8,6 +8,8 @@
- #include "symbol.h"
- #include <strlist.h>
- 
-+struct thread_stack;
++	if (export_calls) {
++		tables->dbe.crp =
++			call_return_processor__new(python_process_call_return,
++						   &tables->dbe);
++		if (!tables->dbe.crp)
++			Py_FatalError("failed to create calls processor");
++	}
 +
- struct thread {
- 	union {
- 		struct rb_node	 rb_node;
-@@ -26,6 +28,7 @@ struct thread {
- 	u64			db_id;
+ 	tables->db_export_mode = true;
+ 	/*
+ 	 * Reserve per symbol space for symbol->db_id via symbol__priv()
+@@ -884,6 +964,8 @@ static void set_table_handlers(struct tables *tables)
+ 	SET_TABLE_HANDLER(symbol);
+ 	SET_TABLE_HANDLER(branch_type);
+ 	SET_TABLE_HANDLER(sample);
++	SET_TABLE_HANDLER(call_path);
++	SET_TABLE_HANDLER(call_return);
+ }
  
- 	void			*priv;
-+	struct thread_stack	*ts;
- };
- 
- struct machine;
+ /*
 -- 
 1.9.1
 
