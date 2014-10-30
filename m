@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760269AbaJ3O62 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:58:28 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:41648 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaJ3O60 (ORCPT
+	id S1760413AbaJ3O6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:58:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35799 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759887AbaJ3O6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:58:26 -0400
+	Thu, 30 Oct 2014 10:58:49 -0400
+Date: Thu, 30 Oct 2014 15:58:46 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Vrabel <david.vrabel@citrix.com>
+cc: "pang.xunlei" <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        John Stultz <john.stultz@linaro.org>, xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [RFC PATCH v2 08/11] time: Convert xen_read_wallclock()
+ to use timespec64
+In-Reply-To: <54522159.8070204@citrix.com>
+Message-ID: <alpine.DEB.2.11.1410301557350.5308@nanos>
+References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org> <1414667745-7703-9-git-send-email-pang.xunlei@linaro.org> <54522159.8070204@citrix.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20141030144855.GA9705@dztty>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
- <8738a6w6kv.fsf@x220.int.ebiederm.org> <20141030095854.GA4716@dztty>
- <87wq7hiwjb.fsf@x220.int.ebiederm.org> <20141030144855.GA9705@dztty>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 30 Oct 2014 07:58:04 -0700
-Message-ID: <CALCETrXeNQUuwiyaJrbbbZUrSW3NTucRgpg0kKEuS3yszP-09w@mail.gmail.com>
-Subject: Re: kdbus: add code for buses, domains and endpoints
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>,
-        Daniel Mack <daniel@zonque.org>,
-        "alban.crequy" <alban.crequy@collabora.co.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 7:48 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> On Thu, Oct 30, 2014 at 05:15:04AM -0700, Eric W. Biederman wrote:
->> Djalal Harouni <tixxdz@opendz.org> writes:
->> What others are doing makes it very hard to safely use allow those
->> ioctls in a tightly sandboxed application, as it is unpredictable
->> what the sandboxed ioctl can do with the file descriptor.
->>
->> Further an application that calls setresuid at different times during
->> it's application will behave differently.  Which makes ioctls that do
->> not have consistent behavior after open time inappropriate for use in
->> userspace libraries.
-> We are consistent in our checks, you say that the application will
-> behave differently when it calls setresuid() sure! If it changes its
-> creds then regain of course it will behave differently! and the checks
-> are here to make sure that setresuid() and alike work correctly when the
-> application changes its creds and calls-in.
->
+On Thu, 30 Oct 2014, David Vrabel wrote:
 
-Except that it isn't consistent.
+> On 30/10/14 11:15, pang.xunlei wrote:
+> > As part of addressing 2038 safety for in-kernel uses, this patch
+> > creates no functional change, converts xen_read_wallclock() to
+> > use timespec64 instead of timespec.
+> 
+> Acked-by: David Vrabel <david.vrabel@citrix.com>
+> 
+> But I do think all the TODOs for things that are fixed by later patches
+> in the series aren't necessary.
 
-If I open a postgresql socket that wants me to be root and then I drop
-privileges, I can keep talking to postresql.  This is a good thing,
-because it means that I can keep talking to postgresql but I lose my
-privilege to do other things.
+Amen to that.
 
-The new kdbus model breaks this.  If I start as root and drop
-privileges to UID_PRIVSEP, then my attempts to communicate over
-already-open connections shouldn't consider UID_PRIVSEP.  In the, they
-shouldn't tell the other endpoints that UID_PRIVSEP exists at all
-unless I've explicitly asked the kernel for this behavior.
+And of course the whole XEN part should be a seperate series on top of
+the series which provides the new core interfaces.
 
-I suggest reading up on the object capability model.  Linux isn't one,
-but large deviations (like kdbus') from an object capability model are
-rarely a good thing.
+Thanks,
 
---Andy
+	tglx
