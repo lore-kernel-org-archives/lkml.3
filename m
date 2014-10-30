@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285AbaJ3D2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 23:28:39 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:40145 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165AbaJ3D2h (ORCPT
+	id S1753607AbaJ3Dao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 23:30:44 -0400
+Received: from mail-bn1bon0110.outbound.protection.outlook.com ([157.56.111.110]:36329
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751046AbaJ3Dan convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 23:28:37 -0400
-To: Jens Axboe <axboe@fb.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Jason B. Akers" <jason.b.akers@intel.com>,
-        <linux-ide@vger.kernel.org>, <dan.j.williams@intel.com>,
-        <kapil.karkra@intel.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
-	<yq1k33il3b3.fsf@sermon.lab.mkp.net> <5451A3F5.9020903@fb.com>
-Date: Wed, 29 Oct 2014 23:28:29 -0400
-In-Reply-To: <5451A3F5.9020903@fb.com> (Jens Axboe's message of "Wed, 29 Oct
-	2014 20:35:33 -0600")
-Message-ID: <yq1bnoukzhe.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 29 Oct 2014 23:30:43 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>, Huan Wang <alison.wang@freescale.com>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "tiwai@suse.de" <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] audio: sai: Add Power Management support
+Thread-Topic: [PATCH] audio: sai: Add Power Management support
+Thread-Index: AQHP8ygBbuZKeBfKBUWxqqFbaRT46JxG8t4AgAD7S5A=
+Date: Thu, 30 Oct 2014 03:30:40 +0000
+Message-ID: <718ee124537a4f4091bdf5242d256705@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1414552896-20797-1-git-send-email-b18965@freescale.com>
+ <20141029113634.GF18557@sirena.org.uk>
+In-Reply-To: <20141029113634.GF18557@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0693;
+x-forefront-prvs: 038002787A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(43544003)(164054003)(24454002)(13464003)(51704005)(189002)(199003)(377454003)(97736003)(106116001)(4396001)(74316001)(77096002)(120916001)(92566001)(101416001)(99396003)(76576001)(107046002)(108616004)(21056001)(105586002)(64706001)(99286002)(106356001)(95666004)(20776003)(66066001)(19580395003)(33646002)(19580405001)(87936001)(76482002)(86362001)(46102003)(122556002)(2656002)(85852003)(31966008)(85306004)(50986999)(54356999)(40100003)(80022003)(76176999)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0693;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Jens" == Jens Axboe <axboe@fb.com> writes:
+Hi,
 
-Jens> The problem with xadvise() is that it handles only one part of
-Jens> this - it handles the case of tying some sort of IO related
-Jens> priority information to an inode. It does not handle the case of
-Jens> different parts of the file, at least not without adding specific
-Jens> extra tracking for this on the kernel side.
 
-Are there actually people asking for sub-file granularity? I didn't get
-any requests for that in the survey I did this summer.
+> -----Original Message-----
+> From: linux-arm-kernel [mailto:linux-arm-kernel-bounces@lists.infradead.org]
+> On Behalf Of Mark Brown
+> Sent: Wednesday, October 29, 2014 7:37 PM
+> To: Wang Huan-B18965
+> Cc: alsa-devel@alsa-project.org; tiwai@suse.de; linux-kernel@vger.kernel.org;
+> lgirdwood@gmail.com; perex@perex.cz; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH] audio: sai: Add Power Management support
+> 
+> On Wed, Oct 29, 2014 at 11:21:36AM +0800, Alison Wang wrote:
+> > This patch adds Power Management support for SAI.
+> > Activate regmap cache with REGCACHE_RBTREE, and use
+> 
+> Are you sure that REGCACHE_RBTREE is the best option here?  For MMIO
+> devices the cost tradeoff for the rbtree is usually higher than people
+> like so flat caches are preferred.  But if it works for you that's fine,
+> this shouldn't be *that* performance critical.
+> 
 
-I talked to several application people about what they really needed and
-wanted. That turned into a huge twisted mess of a table with ponies of
-various sizes.
+Yes, the flat caches will have higher performance and can also fix the
+Register defaults and spinlock issue here.
 
-I condensed all those needs and desires into something like this:
+One more thing, if the device is not performance critical, then shouldn't we
+Take care of the cache memory consumption to determine using flat or rbtree
+Type ?
 
-+-----------------+------------+----------+------------+
-| I/O Class       | Command    | Desired  | Predicted  |
-|                 | Completion | Future   | Future     |
-|                 | Urgency    | Access   | Access     |
-|                 |            | Latency  | Frequency  |
-+-----------------+------------+----------+------------+
-| Transaction     | High       | Low      | High       |
-+-----------------+------------+----------+------------+
-| Metadata        | High       | Low      | Normal     |
-+-----------------+------------+----------+------------+
-| Paging          | High       | Normal   | Normal     |
-+-----------------+------------+----------+------------+
-| Streaming       | High       | Normal   | Low        |
-+-----------------+------------+----------+------------+
-| Data            | Normal     | Normal   | Normal     |
-+-----------------+------------+----------+------------+
-| Background      | Low        | Normal*  | Low        |
-+-----------------+------------+----------+------------+
+Thanks,
 
-Command completion urgency is really just the existing I/O priority.
-Desired future access latency affects data placement in a tiered
-device. Predicted future access frequency is essentially a caching hint.
+BRs
+Xiubo
 
-The names and I/O classes themselves are not really important. It's just
-a reduced version of all the things people asked for. Essentially:
-Relative priority, data placement and caching.
 
-I had also asked why people wanted to specify any hints. And that boiled
-down to the I/O classes in the left column above. People wanted stuff on
-a low latency storage tier because it was a transactional or metadata
-type of I/O. Or to isolate production I/O from any side effects of a
-background scrub or backup run.
-
-Incidentally, the classes data, transaction and background covered
-almost all the use cases that people had asked for. The metadata class
-mostly came about from good results with REQ_META tagging in a previous
-prototype. A few vendors wanted to be able to identify swap to prevent
-platter spin-ups. Streaming was requested by a couple of video folks.
-
-The notion of telling the storage *why* you're doing I/O instead of
-telling it how to manage its cache and where to put stuff is closely
-aligned with our internal experiences with I/O hints over the last
-decade. But it's a bit of a departure from where things are going in the
-standards bodies. In any case I thought it was interesting that pretty
-much every use case that people came up with could be adequately
-described by a handful of I/O classes.
-
-The next step was trying to map these hints into what was available in
-xadvise(), NFS 4.2 and the recent T10/T13 efforts. That wasn't trivial
-and there really isn't a 1:1 mapping that works. So I went to T10 and
-tried to nudge things in the same direction as NFS 4.2. Mainly because
-that's closer to what we already have in xadvise().
-
-Jens> I think we've needed a proper API for passing in appropriate hints
-Jens> on a per-io basis for a LONG time.
-
-Yup.
-
-Jens> That is the big challenge. We've tried (and failed) in the past to
-Jens> define a set of hints that make sense. It'd be a shame to add
-Jens> something that's specific to a given transport/technology.
-
-Absolutely!
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+> I'm also a bit surprised that this works without register defaults being
+> provided since we need to make sure we allocate the rbtree nodes outside
+> of the spinlock we use to lock MMIO access - was this tested with
+> mainline?
