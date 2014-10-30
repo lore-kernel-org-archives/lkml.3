@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161168AbaJ3PcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 11:32:15 -0400
-Received: from mail-bn1bon0080.outbound.protection.outlook.com ([157.56.111.80]:22979
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1161183AbaJ3PcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 11:32:20 -0400
+Received: from mail-by2on0073.outbound.protection.outlook.com ([207.46.100.73]:29344
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932947AbaJ3PcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 11:32:10 -0400
+	id S932947AbaJ3PcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 11:32:16 -0400
 From: <tthayer@opensource.altera.com>
 To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
         <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
@@ -17,9 +17,9 @@ CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
         <tthayer@opensource.altera.com>
-Subject: [PATCHv3 2/5] arm: socfpga: Enable OCRAM ECC on startup.
-Date: Thu, 30 Oct 2014 10:32:08 -0500
-Message-ID: <1414683131-20786-3-git-send-email-tthayer@opensource.altera.com>
+Subject: [PATCHv3 3/5] edac: altera: Remove SDRAM module compile
+Date: Thu, 30 Oct 2014 10:32:09 -0500
+Message-ID: <1414683131-20786-4-git-send-email-tthayer@opensource.altera.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414683131-20786-1-git-send-email-tthayer@opensource.altera.com>
 References: <1414683131-20786-1-git-send-email-tthayer@opensource.altera.com>
@@ -32,7 +32,7 @@ X-MS-Exchange-Transport-FromEntityHeader: Hosted
 X-Microsoft-Antispam: UriScan:;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB127;
 X-Forefront-PRVS: 038002787A
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(22564002)(199003)(189002)(101416001)(87286001)(88136002)(15202345003)(50226001)(81156004)(50466002)(106356001)(85306004)(40100003)(33646002)(87976001)(95666004)(21056001)(122386002)(77156001)(76482002)(48376002)(4396001)(86362001)(31966008)(575784001)(120916001)(93916002)(229853001)(107046002)(102836001)(53416004)(86152002)(47776003)(2201001)(92566001)(97736003)(50986999)(19580395003)(62966002)(19580405001)(76176999)(64706001)(89996001)(85852003)(105586002)(69596002)(104166001)(92726001)(66066001)(77096002)(42186005)(46102003)(15975445006)(20776003)(80022003)(1121002)(921003)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB127;H:dinh-ubuntu.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(101416001)(87286001)(88136002)(50226001)(81156004)(50466002)(106356001)(85306004)(40100003)(33646002)(87976001)(95666004)(21056001)(122386002)(77156001)(76482002)(48376002)(4396001)(86362001)(31966008)(120916001)(93916002)(229853001)(107046002)(102836001)(53416004)(86152002)(47776003)(2201001)(92566001)(97736003)(50986999)(19580395003)(62966002)(19580405001)(76176999)(64706001)(89996001)(85852003)(105586002)(69596002)(104166001)(92726001)(66066001)(77096002)(42186005)(46102003)(20776003)(80022003)(1121002)(921003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB127;H:dinh-ubuntu.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
 X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -40,204 +40,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thor Thayer <tthayer@opensource.altera.com>
 
-This patch enables the ECC for On-Chip RAM on machine
-startup.  The ECC has to be enabled before data is
-is stored in memory otherwise the ECC will fail on
-reads.
+The SDRAM EDAC requires SDRAM configuration/initialization before
+SDRAM is accessed (in the preloader). Having a module compile is
+not desired so force to be built into kernel.
 
 Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
 ---
-v2: Split OCRAM ECC portion separately. Addition of iounmap()
-and reorganization of gen_pool_free. Remove defconfig from patch.
-
-v3: No change
+v3: Added in this version as a separate patch.
 ---
- MAINTAINERS                     |    1 +
- arch/arm/mach-socfpga/Makefile  |    1 +
- arch/arm/mach-socfpga/ocram.c   |   90 +++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-socfpga/ocram.h   |   28 ++++++++++++
- arch/arm/mach-socfpga/socfpga.c |    8 ++++
- 5 files changed, 128 insertions(+)
- create mode 100644 arch/arm/mach-socfpga/ocram.c
- create mode 100644 arch/arm/mach-socfpga/ocram.h
+ drivers/edac/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index d0c7752..c6d390e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1408,6 +1408,7 @@ M:	Thor Thayer <tthayer@opensource.altera.com>
- S:	Maintained
- F:	drivers/edac/altera_edac.
- F:	arch/arm/mach-socfpga/l2_cache.*
-+F:	arch/arm/mach-socfpga/ocram.*
+diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+index 7072c28..1719975 100644
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -377,8 +377,8 @@ config EDAC_OCTEON_PCI
+ 	  Cavium Octeon family of SOCs.
  
- ARM/STI ARCHITECTURE
- M:	Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-diff --git a/arch/arm/mach-socfpga/Makefile b/arch/arm/mach-socfpga/Makefile
-index 142609e..1552ca5 100644
---- a/arch/arm/mach-socfpga/Makefile
-+++ b/arch/arm/mach-socfpga/Makefile
-@@ -5,3 +5,4 @@
- obj-y					:= socfpga.o
- obj-$(CONFIG_SMP)	+= headsmp.o platsmp.o
- obj-$(CONFIG_EDAC_ALTERA_L2C) += l2_cache.o
-+obj-$(CONFIG_EDAC_ALTERA_OCRAM) += ocram.o
-diff --git a/arch/arm/mach-socfpga/ocram.c b/arch/arm/mach-socfpga/ocram.c
-new file mode 100644
-index 0000000..9136009
---- /dev/null
-+++ b/arch/arm/mach-socfpga/ocram.c
-@@ -0,0 +1,90 @@
-+/*
-+ * Copyright Altera Corporation (C) 2014. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/genalloc.h>
-+#include <linux/of_platform.h>
-+
-+#include "ocram.h"
-+
-+void socfpga_init_ocram_ecc(void)
-+{
-+	struct device_node *np;
-+	const __be32 *prop;
-+	u32 ocr_edac_addr, iram_addr, len;
-+	void __iomem  *mapped_ocr_edac_addr;
-+	size_t size;
-+	struct gen_pool *gp;
-+
-+	np = of_find_compatible_node(NULL, NULL, "altr,ocram-edac");
-+	if (!np) {
-+		pr_err("SOCFPGA: Unable to find altr,ocram-edac in dtb\n");
-+		return;
-+	}
-+
-+	prop = of_get_property(np, "reg", &size);
-+	ocr_edac_addr = be32_to_cpup(prop++);
-+	len = be32_to_cpup(prop);
-+	if (!prop || size < sizeof(*prop)) {
-+		pr_err("SOCFPGA: Unable to find OCRAM ECC mapping in dtb\n");
-+		return;
-+	}
-+
-+	gp = of_get_named_gen_pool(np, "iram", 0);
-+	if (!gp) {
-+		pr_err("SOCFPGA: OCRAM cannot find gen pool\n");
-+		return;
-+	}
-+
-+	np = of_find_compatible_node(NULL, NULL, "mmio-sram");
-+	if (!np) {
-+		pr_err("SOCFPGA: Unable to find mmio-sram in dtb\n");
-+		return;
-+	}
-+	/* Determine the OCRAM address and size */
-+	prop = of_get_property(np, "reg", &size);
-+	iram_addr = be32_to_cpup(prop++);
-+	len = be32_to_cpup(prop);
-+
-+	if (!prop || size < sizeof(*prop)) {
-+		pr_err("SOCFPGA: Unable to find OCRAM mapping in dtb\n");
-+		return;
-+	}
-+
-+	iram_addr = gen_pool_alloc(gp, len);
-+	if (iram_addr == 0) {
-+		pr_err("SOCFPGA: cannot alloc from gen pool\n");
-+		return;
-+	}
-+
-+	memset((void *)iram_addr, 0, len);
-+
-+	gen_pool_free(gp, iram_addr, len);
-+
-+	mapped_ocr_edac_addr = ioremap(ocr_edac_addr, 4);
-+	if (!mapped_ocr_edac_addr) {
-+		pr_err("SOCFPGA: Unable to map OCRAM ecc regs.\n");
-+		return;
-+	}
-+
-+	/* Clear any pending OCRAM ECC interrupts, then enable ECC */
-+	writel(0x18, mapped_ocr_edac_addr);
-+	writel(0x19, mapped_ocr_edac_addr);
-+
-+	iounmap(mapped_ocr_edac_addr);
-+
-+	pr_debug("SOCFPGA: Success Initializing OCRAM\n");
-+}
-+
-diff --git a/arch/arm/mach-socfpga/ocram.h b/arch/arm/mach-socfpga/ocram.h
-new file mode 100644
-index 0000000..f93cf84
---- /dev/null
-+++ b/arch/arm/mach-socfpga/ocram.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright Altera Corporation (C) 2014. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#ifndef MACH_SOCFPGA_OCRAM_H
-+#define MACH_SOCFPGA_OCRAM_H
-+
-+#ifdef CONFIG_EDAC_ALTERA_OCRAM
-+void socfpga_init_ocram_ecc(void);
-+#else
-+inline void socfpga_init_ocram_ecc(void)
-+{
-+}
-+#endif
-+
-+#endif /* #ifndef MACH_SOCFPGA_OCRAM_H */
-diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
-index af6413a..fb41aca 100644
---- a/arch/arm/mach-socfpga/socfpga.c
-+++ b/arch/arm/mach-socfpga/socfpga.c
-@@ -101,6 +101,13 @@ static void socfpga_cyclone5_restart(enum reboot_mode mode, const char *cmd)
- 	writel(temp, rst_manager_base_addr + SOCFPGA_RSTMGR_CTRL);
- }
- 
-+static void __init socfpga_cyclone5_init(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+			     NULL, NULL);
-+	socfpga_init_ocram_ecc();
-+}
-+
- static const char *altera_dt_match[] = {
- 	"altr,socfpga",
- 	NULL
-@@ -112,6 +119,7 @@ DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
- 	.smp		= smp_ops(socfpga_smp_ops),
- 	.map_io		= socfpga_map_io,
- 	.init_irq	= socfpga_init_irq,
-+	.init_machine	= socfpga_cyclone5_init,
- 	.restart	= socfpga_cyclone5_restart,
- 	.dt_compat	= altera_dt_match,
- MACHINE_END
+ config EDAC_ALTERA_MC
+-	tristate "Altera SDRAM Memory Controller EDAC"
+-	depends on EDAC_MM_EDAC && ARCH_SOCFPGA
++	bool "Altera SDRAM Memory Controller EDAC"
++	depends on EDAC_MM_EDAC=y && ARCH_SOCFPGA
+ 	help
+ 	  Support for error detection and correction on the
+ 	  Altera SDRAM memory controller. Note that the
 -- 
 1.7.9.5
 
