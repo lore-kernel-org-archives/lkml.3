@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759183AbaJ3QRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 12:17:18 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56350 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758647AbaJ3QRQ convert rfc822-to-8bit (ORCPT
+	id S1759212AbaJ3QTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 12:19:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35728 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758593AbaJ3QTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 12:17:16 -0400
-Date: Thu, 30 Oct 2014 12:17:10 -0400 (EDT)
-Message-Id: <20141030.121710.1524000348187962764.davem@davemloft.net>
-To: LW@KARO-electronics.de
-Cc: netdev@vger.kernel.org, rmk+kernel@arm.linux.org.uk,
-        Frank.Li@freescale.com, fabio.estevam@freescale.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: net: fec: fix regression on i.MX28 introduced by rx_copybreak
- support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141030075104.05e44b43@ipc1.ka-ro>
-References: <1414502584-10583-1-git-send-email-LW@KARO-electronics.de>
-	<20141029.153430.1036004676442879956.davem@davemloft.net>
-	<20141030075104.05e44b43@ipc1.ka-ro>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 30 Oct 2014 09:17:14 -0700 (PDT)
+	Thu, 30 Oct 2014 12:19:04 -0400
+Date: Thu, 30 Oct 2014 09:17:52 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, tj@kernel.org, marcel@holtmann.org,
+        desrt@desrt.ca, hadess@hadess.net, dh.herrmann@gmail.com,
+        tixxdz@opendz.org, simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+Message-ID: <20141030161752.GB21989@kroah.com>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+ <4382138.U2ODUIQ55c@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4382138.U2ODUIQ55c@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lothar Waﬂmann <LW@KARO-electronics.de>
-Date: Thu, 30 Oct 2014 07:51:04 +0100
+On Thu, Oct 30, 2014 at 09:33:56AM +0100, Arnd Bergmann wrote:
+> On Wednesday 29 October 2014 15:00:44 Greg Kroah-Hartman wrote:
+> >  drivers/misc/Kconfig                             |    1 +
+> >  drivers/misc/Makefile                            |    1 +
+> >  drivers/misc/kdbus/Kconfig                       |   11 +
+> >  drivers/misc/kdbus/Makefile                      |   19 +
+> >  drivers/misc/kdbus/bus.c                         |  450 ++++++
+> >  drivers/misc/kdbus/bus.h                         |  107 ++
+> >  drivers/misc/kdbus/connection.c                  | 1751 +++++++++++++++++++++
+> >  drivers/misc/kdbus/connection.h                  |  177 +++
+> >  drivers/misc/kdbus/domain.c                      |  477 ++++++
+> > 
+> 
+> One very high-level common:
+> 
+> Since this is going to be a very commonly used IPC mechanism, I don't
+> like the idea of stuffing it into drivers/misc.
+> 
+> How about putting it into drivers/kdbus or ipc/kdbus instead?
 
->> Also, I don't thnk your DIV_ROUND_UP() eliminate for the loop
->> in swap_buffer() is valid.  The whole point is that the current
->> code handles buffers which have a length which is not a multiple
->> of 4 properly, after your change it will no longer do so.
->>
-> Do you really think so?
+ipc/kdbus seems good to me.  I didn't want to "pollute" drivers/ with
+any new subdirectories, it seems to grow fast enough as it is...
 
-Yes, because you're rounding down so you'll miss the final
-partial word (if any).
+greg k-h
