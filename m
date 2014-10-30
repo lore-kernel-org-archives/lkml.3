@@ -1,164 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426AbaJ3BlD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 21:41:03 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57652 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050AbaJ3BlB (ORCPT
+	id S1757913AbaJ3BpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 21:45:09 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49878 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756623AbaJ3BpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 21:41:01 -0400
-Date: Wed, 29 Oct 2014 18:40:56 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Giedrius Statkevicius <giedriuswork@gmail.com>, dmitry.torokhov@gmail.com
-Cc: eric.piel@tremplin-utc.net, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] platform: hp_accel: add a i8042 filter to remove HPQ6000
- data from kb bus stream
-Message-ID: <20141030014056.GD14609@vmdeb7>
-References: <1414610182-28702-1-git-send-email-giedriuswork@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414610182-28702-1-git-send-email-giedriuswork@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 29 Oct 2014 21:45:07 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org, peterz@infradead.org, linux-mm@kvack.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
+Date: Wed, 29 Oct 2014 21:44:24 -0400
+Message-Id: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.9.1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 09:16:22PM +0200, Giedrius Statkevicius wrote:
-> Add a i8042 filter to hp_accel to remove accelerometer's data with acpi
-> id HPQ6000 from keyboard bus stream. The codes sent by accelerometer are
-> e0 25, e0 26, e0 27 and e0 28. The relevant information is already
-> passed through /dev/freefall so no need to send these undocumented weird
-> signals through the keyboard bus. Also, unclogs `dmesg` because atkbd
-> complained about weird scan codes, saves processing power and disk
-> space.
-> 
-> Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
-> ---
-> First of all, any Tested-Bys are very welcome by people who also have a
-> accelerometer with acpi id HPQ6000. If it happens with HPQ6007 too we
-> can easily modify this to install the filter when HPQ6007 is detected.
-> For the time being the filter is only installed when HPQ6000 is
-> detected. 
-> 
-> Now moving to what was changed since the RFC. I reworked the filter
-> function to hopefully make it more clear what it is doing. Since the
-> codes sent by the accelerometer are extended then we need to filter all
-> of 0xe0's and then send one 0xe0 back when the actual key isn't in the
-> range of 0x25-0x28. Also, I've removed the check for errors for
-> i8042_install_filter() because it's unnecessary to check if it failed.
-> If multiple HPQ6000's are in the system then no issue occurs even if
-> multiple i8042_install_filter() are issued because this is handled by
-> i8042 and it's smart enough not to install the same filter two or more
-> times.
-> 
->  drivers/platform/x86/hp_accel.c | 45 ++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 44 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
-> index 13e14ec..a751621 100644
-> --- a/drivers/platform/x86/hp_accel.c
-> +++ b/drivers/platform/x86/hp_accel.c
-> @@ -38,6 +38,8 @@
->  #include <linux/atomic.h>
->  #include <linux/acpi.h>
->  #include "../../misc/lis3lv02d/lis3lv02d.h"
-> +#include <linux/i8042.h>
-> +#include <linux/serio.h>
+Commit "mm: memcontrol: fix missed end-writeback page accounting" has changed
+the behaviour of mem_cgroup_begin_page_stat() to not always set the "locked"
+parameter.
 
-Please include before the relative path includes.
+We should initialize it at the callers to prevent garbage being used in a
+later call to mem_cgroup_end_page_stat().
 
-Otherwise, I'm happy with this - but I'd like a serio / i8042 person to weigh
-in.... Dmitry?
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ mm/page-writeback.c |    4 ++--
+ mm/rmap.c           |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
->  
->  #define DRIVER_NAME     "hp_accel"
->  #define ACPI_MDPS_CLASS "accelerometer"
-> @@ -73,6 +75,13 @@ static inline void delayed_sysfs_set(struct led_classdev *led_cdev,
->  
->  /* HP-specific accelerometer driver ------------------------------------ */
->  
-> +/* e0 25, e0 26, e0 27, e0 28 are scan codes that the accelerometer with acpi id
-> + * HPQ6000 sends through the keyboard bus */
-> +#define ACCEL_1 0x25
-> +#define ACCEL_2 0x26
-> +#define ACCEL_3 0x27
-> +#define ACCEL_4 0x28
-> +
->  /* For automatic insertion of the module */
->  static const struct acpi_device_id lis3lv02d_device_ids[] = {
->  	{"HPQ0004", 0}, /* HP Mobile Data Protection System PNP */
-> @@ -82,7 +91,6 @@ static const struct acpi_device_id lis3lv02d_device_ids[] = {
->  };
->  MODULE_DEVICE_TABLE(acpi, lis3lv02d_device_ids);
->  
-> -
->  /**
->   * lis3lv02d_acpi_init - ACPI _INI method: initialize the device.
->   * @lis3: pointer to the device struct
-> @@ -294,6 +302,35 @@ static void lis3lv02d_enum_resources(struct acpi_device *device)
->  		printk(KERN_DEBUG DRIVER_NAME ": Error getting resources\n");
->  }
->  
-> +static bool hp_accel_i8042_filter(unsigned char data, unsigned char str,
-> +				  struct serio *port)
-> +{
-> +	static bool extended;
-> +
-> +	if (str & I8042_STR_AUXDATA)
-> +		return false;
-> +
-> +	if (data == 0xe0) {
-> +		extended = true;
-> +		return true;
-> +	} else if (unlikely(extended)) {
-> +		extended = false;
-> +
-> +		switch (data) {
-> +		case ACCEL_1:
-> +		case ACCEL_2:
-> +		case ACCEL_3:
-> +		case ACCEL_4:
-> +			return true;
-> +		default:
-> +			serio_interrupt(port, 0xe0, 0);
-> +			return false;
-> +		}
-> +	}
-> +
-> +	return false;
-> +}
-> +
->  static int lis3lv02d_add(struct acpi_device *device)
->  {
->  	int ret;
-> @@ -326,6 +363,11 @@ static int lis3lv02d_add(struct acpi_device *device)
->  	if (ret)
->  		return ret;
->  
-> +	/* filter to remove HPQ6000 accelerometer data
-> +	 * from keyboard bus stream */
-> +	if (strstr(dev_name(&device->dev), "HPQ6000"))
-> +		i8042_install_filter(hp_accel_i8042_filter);
-> +
->  	INIT_WORK(&hpled_led.work, delayed_set_status_worker);
->  	ret = led_classdev_register(NULL, &hpled_led.led_classdev);
->  	if (ret) {
-> @@ -343,6 +385,7 @@ static int lis3lv02d_remove(struct acpi_device *device)
->  	if (!device)
->  		return -EINVAL;
->  
-> +	i8042_remove_filter(hp_accel_i8042_filter);
->  	lis3lv02d_joystick_disable(&lis3_dev);
->  	lis3lv02d_poweroff(&lis3_dev);
->  
-> -- 
-> 2.1.2
-> 
-> 
-
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 19ceae8..7a02c97 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2329,7 +2329,7 @@ int test_clear_page_writeback(struct page *page)
+ 	struct address_space *mapping = page_mapping(page);
+ 	unsigned long memcg_flags;
+ 	struct mem_cgroup *memcg;
+-	bool locked;
++	bool locked = false;
+ 	int ret;
+ 
+ 	memcg = mem_cgroup_begin_page_stat(page, &locked, &memcg_flags);
+@@ -2366,7 +2366,7 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
+ 	struct address_space *mapping = page_mapping(page);
+ 	unsigned long memcg_flags;
+ 	struct mem_cgroup *memcg;
+-	bool locked;
++	bool locked = false;
+ 	int ret;
+ 
+ 	memcg = mem_cgroup_begin_page_stat(page, &locked, &memcg_flags);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 19886fb..4a4dc84 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1044,7 +1044,7 @@ void page_add_file_rmap(struct page *page)
+ {
+ 	struct mem_cgroup *memcg;
+ 	unsigned long flags;
+-	bool locked;
++	bool locked = false;
+ 
+ 	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
+ 	if (atomic_inc_and_test(&page->_mapcount)) {
+@@ -1058,7 +1058,7 @@ static void page_remove_file_rmap(struct page *page)
+ {
+ 	struct mem_cgroup *memcg;
+ 	unsigned long flags;
+-	bool locked;
++	bool locked = false;
+ 
+ 	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
+ 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.7.10.4
+
