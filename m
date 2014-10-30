@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422744AbaJ3XVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:21:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60687 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161351AbaJ3XVT (ORCPT
+	id S1422758AbaJ3XVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 19:21:44 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49469 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161351AbaJ3XVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:21:19 -0400
-Date: Thu, 30 Oct 2014 19:21:15 -0400 (EDT)
-Message-Id: <20141030.192115.918754566952396661.davem@davemloft.net>
-To: nicolas.cavallari@green-communications.fr
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2] ipv4: Do not cache routing failures due to
- disabled forwarding.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1414660193-4177-1-git-send-email-nicolas.cavallari@green-communications.fr>
-References: <20141029.150328.530876391340346443.davem@davemloft.net>
-	<1414660193-4177-1-git-send-email-nicolas.cavallari@green-communications.fr>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 30 Oct 2014 19:21:43 -0400
+Date: Thu, 30 Oct 2014 23:21:25 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Bastien Nocera <hadess@hadess.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: A desktop environment[1] kernel wishlist
+Message-ID: <20141030232125.78fd1d28@alan.etchedpixels.co.uk>
+In-Reply-To: <1414682115.2406.59.camel@hadess.net>
+References: <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+	<1413911644.30379.12.camel@hadess.net>
+	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+	<1413914978.30379.14.camel@hadess.net>
+	<20141027092804.GB9807@amd>
+	<1414420292.30379.55.camel@hadess.net>
+	<54513DDC.2020700@amacapital.net>
+	<20141029202616.GC5000@thunk.org>
+	<20141029211608.GA32576@amd>
+	<1414680302.2406.55.camel@hadess.net>
+	<20141030150501.GD31927@thunk.org>
+	<1414682115.2406.59.camel@hadess.net>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 30 Oct 2014 16:21:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
-Date: Thu, 30 Oct 2014 10:09:53 +0100
+> I wouldn't consider this "suspend to RAM", but that's because I expect
+> the firmware to implement most of that. Anyway, that's splitting hair.
 
-> If we cache them, the kernel will reuse them, independently of
-> whether forwarding is enabled or not.  Which means that if forwarding is
-> disabled on the input interface where the first routing request comes
-> from, then that unreachable result will be cached and reused for
-> other interfaces, even if forwarding is enabled on them.  The opposite
-> is also true.
-> 
-> This can be verified with two interfaces A and B and an output interface
-> C, where B has forwarding enabled, but not A and trying
-> ip route get $dst iif A from $src && ip route get $dst iif B from $src
-> 
-> Signed-off-by: Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
-> Reviewed-by: Julian Anastasov <ja@ssi.bg>
+Quite the reverse in many cases. If your hardware has low power idle you
+probably have almost no firmware involved (if any). It's the old world
+model of S3 which is all firmware powered.
 
-Applied and queued up for -stable, thanks.
+The extreme case of this is that there are processors out there where
+the equivalent of a 'wait for IRQ' instruction is the entire thing.
+ 
+Alan
