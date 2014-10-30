@@ -1,212 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760688AbaJ3RCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:02:44 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:13342 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758161AbaJ3RCm (ORCPT
+	id S1760630AbaJ3RDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:03:37 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:61731 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758594AbaJ3RDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:02:42 -0400
-Date: Thu, 30 Oct 2014 13:02:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [for-next][PATCH 4/4] ftrace: Add more information to
- ftrace_bug() output
-Message-ID: <20141030130239.351d945e@gandalf.local.home>
-In-Reply-To: <20141027182948.733905051@goodmis.org>
-References: <20141027182702.778680710@goodmis.org>
-	<20141027182948.733905051@goodmis.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Thu, 30 Oct 2014 13:03:35 -0400
+Date: Thu, 30 Oct 2014 13:03:31 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vikas Shivappa <vikas.shivappa@intel.com>,
+        "Auld, Will" <will.auld@intel.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141030170331.GB378@htj.dyndns.org>
+References: <20141029081640.GT3337@twins.programming.kicks-ass.net>
+ <20141029124834.GQ12020@console-pimps.org>
+ <20141029134526.GC3337@twins.programming.kicks-ass.net>
+ <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
+ <20141029172845.GP12706@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
+ <20141029182234.GA13393@mtj.dyndns.org>
+ <20141030070725.GG3337@twins.programming.kicks-ass.net>
+ <20141030124333.GA29540@htj.dyndns.org>
+ <20141030131845.GI3337@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030131845.GI3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben and H. Peter,
+Hey, Peter.
 
-Can you give me your acked-bys for this?
-
-Thanks!
-
--- Steve
-
-
-On Mon, 27 Oct 2014 14:27:06 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thu, Oct 30, 2014 at 02:18:45PM +0100, Peter Zijlstra wrote:
+> On Thu, Oct 30, 2014 at 08:43:33AM -0400, Tejun Heo wrote:
+> > And that something shouldn't be disallowing task migration across
+> > cgroups.  This simply doesn't work with co-mounting or unified
+> > hierarchy.  cpuset automatically takes on the nearest ancestor's
+> > configuration which has enough execution resources.  Maybe that can be
+> > an option for this too?
 > 
-> With the introduction of the dynamic trampolines, it is useful that if
-> things go wrong that ftrace_bug() produces more information about what
-> the current state is. This can help debug issues that may arise.
-> 
-> Ftrace has lots of checks to make sure that the state of the system it
-> touchs is exactly what it expects it to be. When it detects an abnormality
-> it calls ftrace_bug() and disables itself to prevent any further damage.
-> It is crucial that ftrace_bug() produces sufficient information that
-> can be used to debug the situation.
-> 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/powerpc/kernel/ftrace.c |  2 +-
->  arch/x86/kernel/ftrace.c     |  2 +-
->  include/linux/ftrace.h       |  4 +++-
->  kernel/trace/ftrace.c        | 38 +++++++++++++++++++++++++++++---------
->  4 files changed, 34 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
-> index 390311c0f03d..e66af6d265e8 100644
-> --- a/arch/powerpc/kernel/ftrace.c
-> +++ b/arch/powerpc/kernel/ftrace.c
-> @@ -449,7 +449,7 @@ void ftrace_replace_code(int enable)
->  		rec = ftrace_rec_iter_record(iter);
->  		ret = __ftrace_replace_code(rec, enable);
->  		if (ret) {
-> -			ftrace_bug(ret, rec->ip);
-> +			ftrace_bug(ret, rec);
->  			return;
->  		}
->  	}
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index 4cfeca6ffe11..1aea94d336c7 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -583,7 +583,7 @@ void ftrace_replace_code(int enable)
->  
->   remove_breakpoints:
->  	pr_warn("Failed on %s (%d):\n", report, count);
-> -	ftrace_bug(ret, rec ? rec->ip : 0);
-> +	ftrace_bug(ret, rec);
->  	for_ftrace_rec_iter(iter) {
->  		rec = ftrace_rec_iter_record(iter);
->  		/*
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index 06e3ca5a5083..619e37cc17fd 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -263,7 +263,9 @@ struct ftrace_func_command {
->  int ftrace_arch_code_modify_prepare(void);
->  int ftrace_arch_code_modify_post_process(void);
->  
-> -void ftrace_bug(int err, unsigned long ip);
-> +struct dyn_ftrace;
-> +
-> +void ftrace_bug(int err, struct dyn_ftrace *rec);
->  
->  struct seq_file;
->  
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index eab3123a1fbe..4043332f6720 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -1738,10 +1738,13 @@ static void print_ip_ins(const char *fmt, unsigned char *p)
->  		printk(KERN_CONT "%s%02x", i ? ":" : "", p[i]);
->  }
->  
-> +static struct ftrace_ops *
-> +ftrace_find_tramp_ops_any(struct dyn_ftrace *rec);
-> +
->  /**
->   * ftrace_bug - report and shutdown function tracer
->   * @failed: The failed type (EFAULT, EINVAL, EPERM)
-> - * @ip: The address that failed
-> + * @rec: The record that failed
->   *
->   * The arch code that enables or disables the function tracing
->   * can call ftrace_bug() when it has detected a problem in
-> @@ -1750,8 +1753,10 @@ static void print_ip_ins(const char *fmt, unsigned char *p)
->   * EINVAL - if what is read at @ip is not what was expected
->   * EPERM - if the problem happens on writting to the @ip address
->   */
-> -void ftrace_bug(int failed, unsigned long ip)
-> +void ftrace_bug(int failed, struct dyn_ftrace *rec)
->  {
-> +	unsigned long ip = rec ? rec->ip : 0;
-> +
->  	switch (failed) {
->  	case -EFAULT:
->  		FTRACE_WARN_ON_ONCE(1);
-> @@ -1763,7 +1768,7 @@ void ftrace_bug(int failed, unsigned long ip)
->  		pr_info("ftrace failed to modify ");
->  		print_ip_sym(ip);
->  		print_ip_ins(" actual: ", (unsigned char *)ip);
-> -		printk(KERN_CONT "\n");
-> +		pr_cont("\n");
->  		break;
->  	case -EPERM:
->  		FTRACE_WARN_ON_ONCE(1);
-> @@ -1775,6 +1780,24 @@ void ftrace_bug(int failed, unsigned long ip)
->  		pr_info("ftrace faulted on unknown error ");
->  		print_ip_sym(ip);
->  	}
-> +	if (rec) {
-> +		struct ftrace_ops *ops = NULL;
-> +
-> +		pr_info("ftrace record flags: %lx\n", rec->flags);
-> +		pr_cont(" (%ld)%s", ftrace_rec_count(rec),
-> +			rec->flags & FTRACE_FL_REGS ? " R" : "  ");
-> +		if (rec->flags & FTRACE_FL_TRAMP_EN) {
-> +			ops = ftrace_find_tramp_ops_any(rec);
-> +			if (ops)
-> +				pr_cont("\ttramp: %pS",
-> +					(void *)ops->trampoline);
-> +			else
-> +				pr_cont("\ttramp: ERROR!");
-> +
-> +		}
-> +		ip = ftrace_get_addr_curr(rec);
-> +		pr_cont(" expected tramp: %lx\n", ip);
-> +	}
->  }
->  
->  static int ftrace_check_record(struct dyn_ftrace *rec, int enable, int update)
-> @@ -2097,7 +2120,7 @@ void __weak ftrace_replace_code(int enable)
->  	do_for_each_ftrace_rec(pg, rec) {
->  		failed = __ftrace_replace_code(rec, enable);
->  		if (failed) {
-> -			ftrace_bug(failed, rec->ip);
-> +			ftrace_bug(failed, rec);
->  			/* Stop processing */
->  			return;
->  		}
-> @@ -2179,17 +2202,14 @@ struct dyn_ftrace *ftrace_rec_iter_record(struct ftrace_rec_iter *iter)
->  static int
->  ftrace_code_disable(struct module *mod, struct dyn_ftrace *rec)
->  {
-> -	unsigned long ip;
->  	int ret;
->  
-> -	ip = rec->ip;
-> -
->  	if (unlikely(ftrace_disabled))
->  		return 0;
->  
->  	ret = ftrace_make_nop(mod, rec, MCOUNT_ADDR);
->  	if (ret) {
-> -		ftrace_bug(ret, ip);
-> +		ftrace_bug(ret, rec);
->  		return 0;
->  	}
->  	return 1;
-> @@ -2633,7 +2653,7 @@ static int ftrace_update_code(struct module *mod, struct ftrace_page *new_pgs)
->  			if (ftrace_start_up && cnt) {
->  				int failed = __ftrace_replace_code(p, 1);
->  				if (failed)
-> -					ftrace_bug(failed, p->ip);
-> +					ftrace_bug(failed, p);
->  			}
->  		}
->  	}
+> It will give very random and nondeterministic behaviour and basically
+> destroy the entire purpose of the controller (which are the very same
+> reasons I detest that 'new' behaviour in cpusets).
 
+I agree with you that this is a corner case behavior which deviates
+from the usual behavior; however, the deviation is inherent.  This
+stems from the fact that the kernel in general doesn't allow tasks
+which cannot be run.  You say that you detest the new behaviors of
+cpuset; however, the old behaviors were just as sucky - bouncing tasks
+to an ancestor cgroup forcifully and without any indication or way to
+restore the previous configuration.  What's different with the new
+behavior is that it explicitly distinguishes between the configured
+and effective configurations as the kernel isn't capable for actually
+enforcing certain subset of configurations.
+
+So, the inherent problem is always there no matter what we do and the
+question is that of a policy to deal with it.  One of the main issues
+I see with failing cgroup-level operations for controller specific
+reasons is lack of visibility.  All you can get out of a failed
+operation is a single error return and there's no good way to
+communicate why something isn't working, well not even who's the
+culprit.  Having "effective" vs "configured" makes it explicit that
+the kernel isn't capable of honoring all configurations and make the
+details of the situation visible.
+
+Another part is inconsistencies across controllers.  This sure is
+worse when there are multiple controllers involved but inconsistent
+behaviors across different hierarchies are annoying all the same with
+single controller multiple hierarchies.  Userland often manages some
+of those hierarchies together and it can get horribly confusing.  No
+matter what, we need to settle on a single policy and having effective
+configuration seems like the better one.
+
+> > One of the problems is that we generally assume that a task can run
+> > some point in time in a lot of places in the kernel and can't just not
+> > run a task indefinitely because it's in a cgroup configured certain
+> > way.
+> 
+> Refusing tasks into a previously empty cgroup creates no such problems.
+> Its already in a cgroup (wherever its parent was) and it can run there,
+> failing to move it to another does not affect things.
+
+Yeah, sure, hard failing can work too.  It didn't work well for cpuset
+because a runnable configuration may become not so if the system
+config changes afterwards but this probably doesn't have an issue like
+that.  I'm not saying something like the above won't work.  It'd but I
+don't think that's the right place to fail.
+
+This controller might not even require the distinction between
+configured and effective tho?  Can't a new child just inherit the
+parent's configuration and never allow the config to become completely
+empty?  The problem cpuset faces is that of underlying hardware
+configuration changing.  This one doesn't have that.
+
+> > > So either we fail mkdir, but that means allocating CLOS IDs for possibly
+> > > empty cgroups, or we allocate on demand which means failing task
+> > > assignment.
+> > 
+> > Can't fail mkdir or css enabling either.  Again, co-mounting and
+> > unified hierarchy.  Also, the behavior is just horrible to use from
+> > userland.
+> 
+> In order to fix the co-mounting and unified hierarchy I still need to
+> hear a proposal for that tasks vs processes thing.
+> 
+> Traditionally the cgroups were task based, but many controllers are
+> process based (simply because what they control is process wide, not per
+> task), and there was talk (2-3 years ago or so) about making the entire
+> cgroup thing per process, which obviously fails for all scheduler
+> related cgroups.
+
+Yeah, it needs to be a separate interface where a given userland task
+can access its own knobs in a race-free way (cgroup interface can't
+even do that) whether that's a pseudo filesystem, say,
+/proc/self/BLAHBLAH or new syscalls.  This one is necessary regardless
+of what happens with cgroup.  cgroup simply isn't a suitable mechanism
+to expose these types of knobs to individual userland threads.
+
+> > Yeah, RT is one of the main items which is problematic, more so
+> > because it's currently coupled with the normal sched controller and
+> > the default config doesn't have any RT slice. 
+> 
+> Simply because you cannot give a slice on creation; or if you did that
+> would mean failing mkdir when a new cgroup would exceed the available
+> time.
+> 
+> Also any !0 slice is wrong because it will not match the requirements of
+> the proposed workload, the administrator will have to set it to match
+> the workload.
+> 
+> Therefore 0.
+
+As long as RT is separate from normal sched controller, this *could*
+be fine.  The main problem now is that userland which wants to use the
+cpu controller but doesn't want to fully manage RT slices end up
+disabling RT slices.  It might work if a new child can share the
+parent's slice till explicitly configured.  Another problem is when
+you wanna change the configuration after the hierarchy is already
+populated.  I don't know.  I'd even be happy with cgroup not having
+anything to do with RT slice distribution.  Do you have any ideas
+which can make RT slice distribution more palatable?  If we can't
+decouple the two, we'd be effectively requiring whoever is managing
+the cpu controller to also become a full-fledged RT slice arbitrator,
+which might actually work too.
+
+> > Do we completely block RT task w/o slice?  Is that okay?
+> 
+> We will not allow an RT task in, the write to the tasks file will fail.
+> 
+> The same will be true for deadline tasks, we'll fail entry into a cgroup
+> when the combined requirements of the tasks exceed the provisions of the
+> group.
+> 
+> There is just no way around that and still provide sane semantics.
+
+Can't a task just lose RT / deadline properties when migrating into a
+different RT / deadline domain?  We already modify task properties on
+migration for cpuset after all.  It'd be far simpler that way.
+
+Thanks.
+
+-- 
+tejun
