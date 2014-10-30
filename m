@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759719AbaJ3MoW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 08:44:22 -0400
+	id S1760063AbaJ3Moi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 08:44:38 -0400
 Received: from mailout1.samsung.com ([203.254.224.24]:23881 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759953AbaJ3Mnc (ORCPT
+	with ESMTP id S1759800AbaJ3Mnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 08:43:32 -0400
-X-AuditID: cbfee690-f79ab6d0000046f7-3d-5452326ac5e7
+	Thu, 30 Oct 2014 08:43:31 -0400
+X-AuditID: cbfee68d-f79296d000004278-17-5452326a8ea4
 From: Jonghwa Lee <jonghwa3.lee@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, sre@kernel.org, dbaryshkov@gmail.com,
         dwmw2@infradead.org, anton@enomsg.org, pavel@ucw.cz,
         myungjoo.ham@samsung.com, cw00.choi@samsung.com,
         Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH 09/10] power: charger-manager: Support different polling mode
- for sleep state.
-Date: Thu, 30 Oct 2014 21:43:15 +0900
-Message-id: <1414672996-28355-10-git-send-email-jonghwa3.lee@samsung.com>
+Subject: [PATCH 08/10] power: charger-manager: Not to start charging directly
+ in cable nofitication.
+Date: Thu, 30 Oct 2014 21:43:14 +0900
+Message-id: <1414672996-28355-9-git-send-email-jonghwa3.lee@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1414672996-28355-1-git-send-email-jonghwa3.lee@samsung.com>
 References: <1414672996-28355-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsWyRsSkRDfLKCjE4PYuVYuDWzUtrn95zmox
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsWyRsSkUDfLKCjE4Ox6IYuDWzUtrn95zmox
 	6cl7ZouJKyczW3SefcJscXnXHDaLz71HGC1uN65gs7h76iibxendJQ5cHhP6PzF67Jx1l91j
-	8wotj02rOtk8+rasYvRYsfo7u8fnTXIB7FFcNimpOZllqUX6dglcGdtOTmQqeCJR8W/VBZYG
-	xssiXYycHBICJhJdF74zQ9hiEhfurWfrYuTiEBJYyihxccZvdpiirev2skIkFjFKvN6yjRnC
-	aWOSuNO0AqyKTUBH4v++m2C2iICCxObeZ2AdzAJXGCVuLl7PBJIQFkiQWLRtPVgRi4CqxI43
-	txlBbF4BT4kze5cCTeUAWqcgMWeSDUiYEyi86cpMFhBbSMBD4sGuLnaQmRIC+9glVs6awggx
-	R0Di2+RDLBC9shKbDkC9IylxcMUNlgmMwgsYGVYxiqYWJBcUJ6UXmegVJ+YWl+al6yXn525i
-	BEbF6X/PJuxgvHfA+hCjAAejEg+v5onAECHWxLLiytxDjKZAGyYyS4km5wNjL68k3tDYzMjC
-	1MTU2Mjc0kxJnPe11M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwa1g6L1l2zMl2Q+ebe
-	17O+eRb/s9ny/s+wK+vle7NAl1E64cviCaoPf5srJx8wOZFslZrLr8d3aH/D8Xa7otxKyfXV
-	SzTenmzz49vOWD6301bsyQKluoP5KyP2fDihaZFsNZPRLnLdclZrkdS0jcGHPhXOKeY0OnZe
-	ep3VRYd9U4I4J1fzVSixFGckGmoxFxUnAgBUX5OQhQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t9jAd0so6AQg87TshYHt2paXP/ynNVi
-	0pP3zBYTV05mtug8+4TZ4vKuOWwWn3uPMFrcblzBZnH31FE2i9O7Sxy4PCb0f2L02DnrLrvH
-	5hVaHptWdbJ59G1ZxeixYvV3do/Pm+QC2KMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0M
-	DHUNLS3MlRTyEnNTbZVcfAJ03TJzgK5TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTX
-	Y2SABhLWMGZsOzmRqeCJRMW/VRdYGhgvi3QxcnJICJhIbF23lxXCFpO4cG89WxcjF4eQwCJG
-	iddbtjFDOG1MEneaVrCDVLEJ6Ej833cTzBYRUJDY3PuMFaSIWeAKo8TNxeuZQBLCAgkSi7at
-	BytiEVCV2PHmNiOIzSvgKXFm71KgqRxA6xQk5kyyAQlzAoU3XZnJAmILCXhIPNjVxT6BkXcB
-	I8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOCYeya1g3Flg8UhRgEORiUeXo0TgSFCrIll
-	xZW5hxglOJiVRHiP6gSFCPGmJFZWpRblxxeV5qQWH2I0BTpqIrOUaHI+MB3klcQbGpuYGVka
-	mRtaGBmbK4nzHmi1DhQSSE8sSc1OTS1ILYLpY+LglGpgXCj65u5JIbuGIwYzHXfxzJ6lVTLt
-	a2GGa4GAoMhxdpns3a/8Zm2dJ8K5tvrPvJ2eIfXznExzbBy+XG/g4J5eocMbV3blQK9G7NW+
-	8IXS/zh9N6lIpdz3XRZxIMAx/uyvrAWSys1rd0+ckKn7JME2eJ2YhGvx+2+qutwnOBPdb9e0
-	9PgElXsqsRRnJBpqMRcVJwIA7BfqwM8CAAA=
+	8wotj02rOtk8+rasYvRYsfo7u8fnTXIB7FFcNimpOZllqUX6dglcGY8+RRbs4a64fOwAYwPj
+	Yc4uRk4OCQETid5HvYwQtpjEhXvr2boYuTiEBJYyShyb2soCU7Rxy0JWiMQiRon/7+YyQjht
+	TBJ3mlawg1SxCehI/N93E8wWEVCQ2Nz7DKyDWeAKo8TNxeuZQBLCAmkSh1s+gRWxCKhKzL98
+	HmgSBwevgIfE4ccKIKYEUO+cSTYgFZwCnhKbrswEO0IIqOLBri52kJESAvvYJQ7vu80EMUZA
+	4tvkQywQvbISmw4wQxwtKXFwxQ2WCYzCCxgZVjGKphYkFxQnpRcZ6hUn5haX5qXrJefnbmIE
+	RsTpf896dzDePmB9iFGAg1GJh1fjRGCIEGtiWXFl7iFGU6ANE5mlRJPzgXGXVxJvaGxmZGFq
+	YmpsZG5ppiTOqyj1M1hIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDoz7XLv+8VRdeM+7OWPvu
+	7H2uw5P59tXunhlxP+fpnnX9/87ovdR97PdQ4hb3+Q8SufYqH78oHjQT3CFo46js9f28y3q9
+	Lt/TXXu6UgJ6UvfNDf6VKvXLoTDre53gmdWy3HZfjyUpvM8wcJ//xiSliOHh123VmpFiKxdN
+	v2bKseDdmvenP39t9lRiKc5INNRiLipOBADcfOYrgwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd0so6AQg/l3uSwObtW0uP7lOavF
+	pCfvmS0mrpzMbNF59gmzxeVdc9gsPvceYbS43biCzeLuqaNsFqd3lzhweUzo/8TosXPWXXaP
+	zSu0PDat6mTz6NuyitFjxerv7B6fN8kFsEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZ
+	GOoaWlqYKynkJeam2iq5+AToumXmAF2npFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiu
+	x8gADSSsYcx49CmyYA93xeVjBxgbGA9zdjFyckgImEhs3LKQFcIWk7hwbz1bFyMXh5DAIkaJ
+	/+/mMkI4bUwSd5pWsINUsQnoSPzfdxPMFhFQkNjc+4wVpIhZ4AqjxM3F65lAEsICaRKHWz6B
+	FbEIqErMv3weaBIHB6+Ah8ThxwogpgRQ75xJNiAVnAKeEpuuzGQBsYWAKh7s6mKfwMi7gJFh
+	FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwvD2T3sG4qsHiEKMAB6MSD6/GicAQIdbEsuLK
+	3EOMEhzMSiK8R3WCQoR4UxIrq1KL8uOLSnNSiw8xmgLdNJFZSjQ5H5gK8kriDY1NzIwsjcwN
+	LYyMzZXEeQ+2WgcKCaQnlqRmp6YWpBbB9DFxcEo1MM4uiGjZnHO+5kLtlLUu8kKuM+6tNC7e
+	mJaVb+DtE3T6/gvDlCefLjZYl9tEzVH2/uJ6+FqUffpVUbmtu79P0bKZ++rVtJUnHFfy8q/Z
+	90BwusnDD7UGorNaXxXf2eocYVejtz/PfNGeG3b/3//Y83XnkpRnwfztBfdn7ppTeODZSV3u
+	sC0PJbKUWIozEg21mIuKEwGpMjfzzQIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,91 +53,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add additional polling mode for sleep state to define different mode with
-normal state. With this change, charger-manager can work differently in
-normal state or sleep state. e.g, polling aways for normal and polling
-only when charing for sleep. If there is no defined polling mode for
-sleep state it just follows the normal state's.
-In addition to, polling rate is still same in sleep.
+This patch prevents direct charging control in cable notification.
+It sets only input current limit according to cable type and yields charging
+control to be done by cm_monitor() where charging management proceeds.
+It may loose few ms to enable charging compared to before, even though it's
+more important that charging is enabled always in safe context.
 
 Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 ---
- drivers/power/charger-manager.c       |   20 +++++++++++++++++---
- include/linux/power/charger-manager.h |    9 ++++++---
- 2 files changed, 23 insertions(+), 6 deletions(-)
+ drivers/power/charger-manager.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 1ccb9be..0a0834f 100644
+index 065b92a..1ccb9be 100644
 --- a/drivers/power/charger-manager.c
 +++ b/drivers/power/charger-manager.c
-@@ -291,7 +291,15 @@ static bool is_full_charged(struct charger_manager *cm)
-  */
- static bool is_polling_required(struct charger_manager *cm)
- {
--	switch (cm->desc->polling_mode) {
-+	enum polling_modes polling_mode;
-+
-+	if (cm_suspended
-+		&& cm->desc->poll_mode_sleep >= 0)
-+		polling_mode = cm->desc->poll_mode_sleep;
-+	else
-+		polling_mode = cm->desc->poll_mode_normal;
-+
-+	switch (polling_mode) {
- 	case CM_POLL_DISABLE:
- 		return false;
- 	case CM_POLL_ALWAYS:
-@@ -302,7 +310,7 @@ static bool is_polling_required(struct charger_manager *cm)
- 		return is_charging(cm);
- 	default:
- 		dev_warn(cm->dev, "Incorrect polling_mode (%d)\n",
--			 cm->desc->polling_mode);
-+			 polling_mode);
+@@ -849,7 +849,8 @@ static void charger_extcon_work(struct work_struct *work)
+ 			cable->min_uA, cable->max_uA);
  	}
  
- 	return false;
-@@ -1158,7 +1166,13 @@ static struct charger_desc *of_cm_parse_desc(struct device *dev)
- 	of_property_read_string(np, "cm-name", &desc->psy_name);
+-	try_charger_enable(cable->cm, cable->attached);
++	cancel_delayed_work(&cm_monitor_work);
++	queue_delayed_work(cm_wq, &cm_monitor_work, 0);
+ }
  
- 	of_property_read_u32(np, "cm-poll-mode", &poll_mode);
--	desc->polling_mode = poll_mode;
-+	desc->poll_mode_normal = poll_mode;
-+
-+	/* Polling mode in sleep state */
-+	if (!of_property_read_u32(np, "cm-poll-mode-sleep", &poll_mode))
-+		desc->poll_mode_sleep = poll_mode;
-+	else
-+		desc->poll_mode_sleep = -EINVAL;
- 
- 	of_property_read_u32(np, "cm-poll-interval",
- 				&desc->polling_interval_ms);
-diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
-index 37fb181..a30a0b6 100644
---- a/include/linux/power/charger-manager.h
-+++ b/include/linux/power/charger-manager.h
-@@ -131,8 +131,10 @@ struct charger_regulator {
  /**
-  * struct charger_desc
-  * @psy_name: the name of power-supply-class for charger manager
-- * @polling_mode:
-- *	Determine which polling mode will be used
-+ * @poll_mode_normal:
-+ *	Determine which polling mode will be used in normal state.
-+ * @poll_mode_sleep:
-+ *	Determine which polling mode will be used in sleep state.
-  * @fullbatt_vchkdrop_uV:
-  *	Check voltage drop after the battery is fully charged.
-  *	If it has dropped more than fullbatt_vchkdrop_uV
-@@ -170,7 +172,8 @@ struct charger_regulator {
- struct charger_desc {
- 	const char *psy_name;
+@@ -873,15 +874,6 @@ static int charger_extcon_notifier(struct notifier_block *self,
+ 	cable->attached = event;
  
--	enum polling_modes polling_mode;
-+	enum polling_modes poll_mode_normal;
-+	enum polling_modes poll_mode_sleep;
- 	unsigned int polling_interval_ms;
- 
- 	unsigned int fullbatt_vchkdrop_uV;
+ 	/*
+-	 * Setup monitoring to check battery state
+-	 * when charger cable is attached.
+-	 */
+-	if (cable->attached && is_polling_required(cable->cm)) {
+-		cancel_work_sync(&setup_polling);
+-		schedule_work(&setup_polling);
+-	}
+-
+-	/*
+ 	 * Setup work for controlling charger(regulator)
+ 	 * according to charger cable.
+ 	 */
 -- 
 1.7.9.5
 
