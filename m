@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161395AbaJ3WgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 18:36:08 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:58201 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161035AbaJ3WgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 18:36:06 -0400
+	id S1161403AbaJ3WiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 18:38:22 -0400
+Received: from mga03.intel.com ([134.134.136.65]:25785 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161035AbaJ3WiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 18:38:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,289,1413270000"; 
+   d="scan'208";a="628645501"
+Message-ID: <5452BDD8.2080605@intel.com>
+Date: Thu, 30 Oct 2014 15:38:16 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <20141030171247.GC378@htj.dyndns.org>
-References: <20141029081640.GT3337@twins.programming.kicks-ass.net>
- <20141029124834.GQ12020@console-pimps.org> <20141029134526.GC3337@twins.programming.kicks-ass.net>
- <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
- <20141029172845.GP12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk> <20141029182234.GA13393@mtj.dyndns.org>
- <20141030070725.GG3337@twins.programming.kicks-ass.net> <20141030124333.GA29540@htj.dyndns.org>
- <CAAAKZwvJOKsrj_yczDGaNLaNYo+_=HzsTLwDdcaTJqO2VMy8uA@mail.gmail.com> <20141030171247.GC378@htj.dyndns.org>
-From: Tim Hockin <thockin@hockin.org>
-Date: Thu, 30 Oct 2014 15:35:44 -0700
-X-Google-Sender-Auth: Bcpzy6Hfd93Lzg8QFBXuAX2SkTs
-Message-ID: <CAAAKZwsGs4e1T8Xb=kEGY3O=ZJS4DgOe7Oi5UPUXz5cwiRcH9g@mail.gmail.com>
-Subject: Re: Cache Allocation Technology Design
-To: Tejun Heo <tj@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Auld, Will" <will.auld@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        Vikas Shivappa <vikas.shivappa@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH v9 09/12] x86, mpx: decode MPX instruction to get bound
+ violation information
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-10-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1413088915-13428-10-git-send-email-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 10:12 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Oct 30, 2014 at 07:58:34AM -0700, Tim Hockin wrote:
->> Another reason unified hierarchy is a bad model.
->
-> Things wrong with this message.
->
-> 1. Top posted.  It isn't clear which part you're referring to and this
->    was pointed out to you multiple times in the past.
+> +void do_mpx_bounds(struct pt_regs *regs, siginfo_t *info,
+> +		struct xsave_struct *xsave_buf)
+> +{
+> +	struct mpx_insn insn;
+> +	uint8_t bndregno;
+> +	unsigned long addr_vio;
+> +
+> +	addr_vio = mpx_insn_decode(&insn, regs);
+> +
+> +	bndregno = X86_MODRM_REG(insn.modrm.value);
+> +	if (bndregno > 3)
+> +		return;
+> +
+> +	/* Note: the upper 32 bits are ignored in 32-bit mode. */
+> +	info->si_lower = (void __user *)(unsigned long)
+> +		(xsave_buf->bndregs.bndregs[2*bndregno]);
+> +	info->si_upper = (void __user *)(unsigned long)
+> +		(~xsave_buf->bndregs.bndregs[2*bndregno+1]);
+> +	info->si_addr_lsb = 0;
+> +	info->si_signo = SIGSEGV;
+> +	info->si_errno = 0;
+> +	info->si_code = SEGV_BNDERR;
+> +	info->si_addr = (void __user *)addr_vio;
+> +}
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 611b6ec..b2a916b 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -284,6 +284,7 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
+>  	unsigned long status;
+>  	struct xsave_struct *xsave_buf;
+>  	struct task_struct *tsk = current;
+> +	siginfo_t info;
+>  
+>  	prev_state = exception_enter();
+>  	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
+> @@ -316,6 +317,11 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
+>  		break;
+>  
+>  	case 1: /* Bound violation. */
+> +		do_mpx_bounds(regs, &info, xsave_buf);
+> +		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs,
+> +				error_code, &info);
+> +		break;
+> +
+>  	case 0: /* No exception caused by Intel MPX operations. */
+>  		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
+>  		break;
+> 
 
-I occasionally fall victim to gmail's defaults.  I apologize for that.
+So, siginfo is stack-allocarted here.  do_mpx_bounds() can error out if
+it sees an invalid bndregno.  We still send the signal with the &info
+whether or not we filled the 'info' in do_mpx_bounds().
 
-> 2. No real thoughts or technical details.  Maybe you had some in your
->    head but nothing was elaborated.  This forces me to guess what you
->    had on mind when you produced the above sentence and of course me
->    not being you this takes a considerable amount of brain cycle and
->    I'd still end up with multiple alternative scenarios that I'll have
->    to cover.
-
-I think the conversation is well enough understood by the people for
-whom this bit of snark was intended that reading my mind was not that
-hard.  That said, it was overly snark-tastic, and sent in haste.
-
-My point, of course, was that here is an example of something which
-maps very well to the idea of cgroups (a set of processes that share
-some controller) but DOES NOT map well to the unified hierarchy model.
-It must be managed more carefully than arbitrary hierarchy can
-enforce.  The result is the mish-mash of workarounds proposed in this
-thread to force it into arbitrary hierarchy mode, including this
-no-win situation of running out of hardware resources - it is going to
-fail.  Will it fail at cgroup creation time (doesn't scale to
-arbitrary hierarchy) or will it fail when you add processes to it
-(awkward at best) or will it fail when you flip some control file to
-enable the feature?
-
-I know the unified hierarchy ship has sailed, so there's not
-non-snarky way to argue the point any further, but this is such an
-obvious case, to me, that I had to say something.
-
-Tim
+Can't this leak some kernel stack out in the 'info'?
