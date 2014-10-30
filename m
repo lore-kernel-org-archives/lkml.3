@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760685AbaJ3STt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 14:19:49 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39350 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758559AbaJ3STr (ORCPT
+	id S1760488AbaJ3SXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 14:23:36 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54661 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758594AbaJ3SXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 14:19:47 -0400
-X-Sasl-enc: Hk5cqebPKytgk3g3+u669Nwwzh3jMfLTxaxb2SH3NiNr 1414693186
-Date: Thu, 30 Oct 2014 11:18:34 -0700
-From: Greg KH <greg@kroah.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        debian-kernel@lists.debian.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, lwn@lwn.net
-Subject: Re: [ANNOUNCE] Linux 3.16.y.z extended stable support
-Message-ID: <20141030181834.GA31223@kroah.com>
-References: <20141030181701.GD9032@hercules>
+	Thu, 30 Oct 2014 14:23:35 -0400
+Date: Thu, 30 Oct 2014 19:23:33 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Bastien Nocera <hadess@hadess.net>
+Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: A desktop environment[1] kernel wishlist
+Message-ID: <20141030182333.GC14412@amd>
+References: <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+ <1413914978.30379.14.camel@hadess.net>
+ <20141027092804.GB9807@amd>
+ <1414420292.30379.55.camel@hadess.net>
+ <54513DDC.2020700@amacapital.net>
+ <20141029202616.GC5000@thunk.org>
+ <20141029211608.GA32576@amd>
+ <1414680302.2406.55.camel@hadess.net>
+ <CALCETrXWha=rYB5hzg7xuB-ztw6MGRi=Q9nrJu1mZp6d=US8+A@mail.gmail.com>
+ <1414681655.2406.57.camel@hadess.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141030181701.GD9032@hercules>
+In-Reply-To: <1414681655.2406.57.camel@hadess.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 06:17:01PM +0000, Luis Henriques wrote:
-> The Ubuntu kernel team is pleased to announce that we will be
-> providing extended stable support for the Linux 3.16 kernel until
-> April 2016 as a third party effort maintained on our infrastructure.
-> The team will pick up stable maintenance where Greg KH left off with
-> v3.16.7 [1].  Thank you, Greg.
+On Thu 2014-10-30 16:07:35, Bastien Nocera wrote:
+> On Thu, 2014-10-30 at 07:53 -0700, Andy Lutomirski wrote:
+> > On Thu, Oct 30, 2014 at 7:45 AM, Bastien Nocera <hadess@hadess.net> wrote:
+> > > On Wed, 2014-10-29 at 22:16 +0100, Pavel Machek wrote:
+> > >> On Wed 2014-10-29 16:26:16, Theodore Ts'o wrote:
+> > >> > On Wed, Oct 29, 2014 at 12:19:56PM -0700, Andy Lutomirski wrote:
+> > >> > > For a tablet, isn't the relevant piece of information whether the power
+> > >> > > button was recently pressed, not whether the power button caused the wakeup?
+> > >> >
+> > >> > For Android L devices, it has been reported that the device might
+> > >> > power up its screen fully (note I didn't say 'wake up') automatically
+> > >> > when it detects that you are picking it up, or when you double-tap the
+> > >> > screen.  It also reportedly has a low power black and white "ambient
+> > >> > display" (ala the Android Wear devics) which allows you to see
+> > >> > notifications without waking up the phone all the way[1].  (All of
+> > >> > this assuming appropriate hardware support, of course.)
+> > >> >
+> > >> > [1] http://www.androidauthority.com/ambient-display-lollipop-541198/
+> > >> >
+> > >> > Which goes back to the concept of having a "suspend" mode is legacy
+> > >> > thinking.  Modern devices will soon have not just a "awake" and a
+> > >> > "asleep" modes; there will be (well, is now) a much wider spectrum of
+> > >> > modes, with the goal of using the minimum amount of power while still
+> > >> > providing use functionality to the user.
+> > >>
+> > >> Actually Maemo people (on Nokia N900 and friends) got it right: unlike
+> > >> android devices, it does not suspend to RAM at any point, and still
+> > >> has reasonable battery life.
+> > >
+> > > Android devices don't suspend to RAM. Neither do Tizen devices AFAIK.
+> > >
+> > >> So I agree -- using suspend to RAM on "active" cell phone is just a
+> > >> bad design.
+> > >
+> > > I don't think anyone was discussing cell phones in particular in this
+> > > thread, and knowing when user-space got woken up because of the baseband
+> > > processor having information for us would still be useful.
+> > >
+> > 
+> > You still haven't addressed what problem this solves that isn't solved
+> > by merely knowing whether the baseband processor has useful
+> > information.
 > 
-> In addition to the Ubuntu 14.10 "Utopic Unicorn" release, the Debian 8
-> "Jessie" release will also be based on this kernel [2].  Since the
-> regular support for "Jessie" will go beyond April 2016, after this
-> date Ben Hutchings (or myself) will continue the Linux 3.16 kernel
-> maintenance.
-> 
-> Our linux-3.16.y{-queue,-review} stable branches will fork from
-> v3.16.7
-> and will be published here:
-> 
->     git://kernel.ubuntu.com/ubuntu/linux.git
-> 
-> We will use the same stable request/review workflow and follow the
-> standard upstream stable kernel rules.  More details are available
-> here [3].
-> 
-> We welcome any feedback and contribution to this effort.  We will be
-> posting the first review cycle patch set in a week or two.
-> 
-> [1] https://lkml.org/lkml/2014/10/30/583
-> [2] https://lists.debian.org/debian-kernel/2014/07/msg00413.html
-> [3] http://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+> We don't know that the baseband processor has useful information if
+> we're not in the "path" for the interrupt that it would send. This event
+> might end up dying somewhere inside the kernel for all we know.
 
-Can you _PLEASE_ use a '-somename' format of the kernel release
-numbering scheme for this release, if you are going to do this, to
-reduce the confusion that has been happening with your kernel releases?
+See, that would be something to fix. If baseband has incoming data,
+and kernel fails to notify userspace about that data after resume,
+that is a kernel bug.
 
-thanks,
-
-greg k-h
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
