@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946AbaJ3Amy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 20:42:54 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:57882 "EHLO
+	id S1758119AbaJ3An2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 20:43:28 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:38940 "EHLO
 	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210AbaJ3Aml (ORCPT
+	with ESMTP id S1758046AbaJ3Amc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 20:42:41 -0400
+	Wed, 29 Oct 2014 20:42:32 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: akpm@linux-foundation.org, linux-mm@kvack.org, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 6/6] x86,vdso: Use .fault for the vdso text mapping
-Date: Wed, 29 Oct 2014 17:42:16 -0700
-Message-Id: <a465d74dc8d7e9af51f8b942d62fdd66ddca3b32.1414629045.git.luto@amacapital.net>
+Subject: [RFC 3/6] mm: Add a vm_special_mapping .fault method
+Date: Wed, 29 Oct 2014 17:42:13 -0700
+Message-Id: <c4e198aff7953d25290a8f70910da235f1fd2464.1414629045.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1414629045.git.luto@amacapital.net>
 References: <cover.1414629045.git.luto@amacapital.net>
@@ -22,109 +22,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old scheme for mapping the vdso text is rather complicated.  vdso2c
-generates a struct vm_special_mapping and a blank .pages array of the
-correct size for each vdso image.  Init code in vdso/vma.c populates
-the .pages array for each vdso image, and the mapping code selects
-the appropriate struct vm_special_mapping.
+Requiring special mappings to give a list of struct pages is
+inflexible: it prevents sane use of IO memory in a special mapping,
+it's inefficient (it requires arch code to initialize a list of
+struct pages, and it requires the mm core to walk the entire list
+just to figure out how long it is), and it prevents arch code from
+doing anything fancy when a special mapping fault occurs.
 
-With .fault, we can use a less roundabout approach: vdso_fault
-just returns the appropriate page for the selected vdso image.
+Add a .fault method as an alternative to filling in a .pages array.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/vdso.h |  3 ---
- arch/x86/vdso/vdso2c.h      |  7 -------
- arch/x86/vdso/vma.c         | 26 +++++++++++++++++++-------
- 3 files changed, 19 insertions(+), 17 deletions(-)
+ include/linux/mm_types.h | 18 +++++++++++++++++-
+ mm/mmap.c                | 14 ++++++++++----
+ 2 files changed, 27 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-index 3aa1f830c551..b730e7a74323 100644
---- a/arch/x86/include/asm/vdso.h
-+++ b/arch/x86/include/asm/vdso.h
-@@ -13,9 +13,6 @@ struct vdso_image {
- 	void *data;
- 	unsigned long size;   /* Always a multiple of PAGE_SIZE */
- 
--	/* text_mapping.pages is big enough for data/size page pointers */
--	struct vm_special_mapping text_mapping;
--
- 	unsigned long alt, alt_len;
- 
- 	long sym_vvar_start;  /* Negative offset to the vvar area */
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index fd57829b30d8..279f7af7cf5e 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -148,16 +148,9 @@ static void BITSFUNC(go)(void *raw_addr, size_t raw_len,
- 	}
- 	fprintf(outfile, "\n};\n\n");
- 
--	fprintf(outfile, "static struct page *pages[%lu];\n\n",
--		mapping_size / 4096);
--
- 	fprintf(outfile, "const struct vdso_image %s = {\n", name);
- 	fprintf(outfile, "\t.data = raw_data,\n");
- 	fprintf(outfile, "\t.size = %lu,\n", mapping_size);
--	fprintf(outfile, "\t.text_mapping = {\n");
--	fprintf(outfile, "\t\t.name = \"[vdso]\",\n");
--	fprintf(outfile, "\t\t.pages = pages,\n");
--	fprintf(outfile, "\t},\n");
- 	if (alt_sec) {
- 		fprintf(outfile, "\t.alt = %lu,\n",
- 			(unsigned long)GET_LE(&alt_sec->sh_offset));
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 5cde3b82d1e9..0ae947eb7433 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -25,13 +25,7 @@ extern unsigned short vdso_sync_cpuid;
- 
- void __init init_vdso_image(const struct vdso_image *image)
- {
--	int i;
--	int npages = (image->size) / PAGE_SIZE;
--
- 	BUG_ON(image->size % PAGE_SIZE != 0);
--	for (i = 0; i < npages; i++)
--		image->text_mapping.pages[i] =
--			virt_to_page(image->data + i*PAGE_SIZE);
- 
- 	apply_alternatives((struct alt_instr *)(image->data + image->alt),
- 			   (struct alt_instr *)(image->data + image->alt +
-@@ -160,6 +154,24 @@ static int vvar_fault(struct vm_special_mapping *sm,
- 	return VM_FAULT_SIGBUS;
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index ad6652fe3671..cc96c63b1002 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -511,12 +511,28 @@ static inline void clear_tlb_flush_pending(struct mm_struct *mm)
  }
+ #endif
  
-+static int vdso_fault(struct vm_special_mapping *sm,
-+		      struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	const struct vdso_image *image = vma->vm_mm->context.vdso_image;
++struct vm_fault;
 +
-+	if (!image || (vmf->pgoff << PAGE_SHIFT) >= image->size)
-+		return VM_FAULT_SIGBUS;
-+
-+	vmf->page = virt_to_page(image->data + (vmf->pgoff << PAGE_SHIFT));
-+	get_page(vmf->page);
-+	return 0;
-+}
-+
-+static struct vm_special_mapping text_mapping = {
-+	.name = "[vdso]",
-+	.fault = vdso_fault,
-+};
-+
- static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+ struct vm_special_mapping
  {
- 	struct mm_struct *mm = current->mm;
-@@ -204,7 +216,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
- 				       image->size,
- 				       VM_READ|VM_EXEC|
- 				       VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
--				       &image->text_mapping);
-+				       &text_mapping);
+-	const char *name;
++	const char *name;	/* The name, e.g. "[vdso]". */
++
++	/*
++	 * If .fault is not provided, this is points to a
++	 * NULL-terminated array of pages that back the special mapping.
++	 *
++	 * This must not be NULL unless .fault is provided.
++	 */
+ 	struct page **pages;
  
- 	if (IS_ERR(vma)) {
- 		ret = PTR_ERR(vma);
+ 	/*
++	 * If non-NULL, then this is called to resolve page faults
++	 * on the special mapping.  If used, .pages is not checked.
++	 */
++	int (*fault)(struct vm_special_mapping *sm, struct vm_area_struct *vma,
++		     struct vm_fault *vmf);
++
++	/*
+ 	 * If non-NULL, this is called when installed and when mremap
+ 	 * moves the first page of the mapping.
+ 	 */
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 8c398b9ee225..d27572e3e4f4 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2950,11 +2950,17 @@ static int special_mapping_fault(struct vm_area_struct *vma,
+ 	 */
+ 	pgoff = vmf->pgoff - vma->vm_pgoff;
+ 
+-	if (vma->vm_ops == &legacy_special_mapping_vmops)
++	if (vma->vm_ops == &legacy_special_mapping_vmops) {
+ 		pages = vma->vm_private_data;
+-	else
+-		pages = ((struct vm_special_mapping *)vma->vm_private_data)->
+-			pages;
++	} else {
++		struct vm_special_mapping *sm = vma->vm_private_data;
++		if (sm->fault) {
++			vmf->pgoff = pgoff;
++			return sm->fault(sm, vma, vmf);
++		} else {
++			pages = sm->pages;
++		}
++	}
+ 
+ 	for (; pgoff && *pages; ++pages)
+ 		pgoff--;
 -- 
 1.9.3
 
