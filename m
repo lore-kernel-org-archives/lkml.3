@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760773AbaJ3TaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 15:30:15 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47330 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaJ3TaN (ORCPT
+	id S1758602AbaJ3Tgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 15:36:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58464 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaJ3Tgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 15:30:13 -0400
-Date: Thu, 30 Oct 2014 20:30:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Sasha Levin <sasha.levin@oracle.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
-Message-ID: <20141030193005.GX12706@worktop.programming.kicks-ass.net>
-References: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com>
- <20141030082712.GB4664@dhcp22.suse.cz>
- <54523DDE.9000904@oracle.com>
- <20141030141401.GA24520@phnom.home.cmpxchg.org>
- <54524A2F.5050907@oracle.com>
- <20141030153159.GA3639@dhcp22.suse.cz>
- <20141030172632.GA25217@phnom.home.cmpxchg.org>
- <20141030174241.GD3639@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030174241.GD3639@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Thu, 30 Oct 2014 15:36:54 -0400
+Date: Thu, 30 Oct 2014 15:36:50 -0400 (EDT)
+Message-Id: <20141030.153650.2021747141086689600.davem@davemloft.net>
+To: stephen@networkplumber.org
+Cc: jim.epost@gmail.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org,
+        kyeyoonp@codeaurora.org
+Subject: Re: randconfig build error with next-20141028, in net/bridge
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141030101708.12113903@urahara>
+References: <CA+r1ZhjGo_pWi5hsxra65fCm0kwLfit4ai4_sAiwKKj0fPLxVg@mail.gmail.com>
+	<20141029.153745.182320154112584088.davem@davemloft.net>
+	<20141030101708.12113903@urahara>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 30 Oct 2014 12:36:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 06:42:41PM +0100, Michal Hocko wrote:
-> Well, I would use a typedef to obfuscate those values because nobody
-> except for mem_cgroup_{begin,end}_page_stat should touch them. But we
-> are not doing typedefs in kernel...
+From: Stephen Hemminger <stephen@networkplumber.org>
+Date: Thu, 30 Oct 2014 10:17:08 -0700
 
-$ git grep typedef | wc -l
-11379
+> On Wed, 29 Oct 2014 15:37:45 -0400 (EDT)
+> David Miller <davem@davemloft.net> wrote:
+> 
+>> From: Jim Davis <jim.epost@gmail.com>
+>> Date: Tue, 28 Oct 2014 07:52:47 -0700
+>> 
+>> > Building with the attached random configuration file,
+>> > 
+>> > net/built-in.o: In function `br_handle_frame_finish':
+>> > (.text+0x40edf): undefined reference to `arp_tbl'
+>> > net/built-in.o: In function `br_handle_frame_finish':
+>> > (.text+0x40f3a): undefined reference to `arp_send'
+>> > make: *** [vmlinux] Error 1
+>> 
+>> Kyeyoon-ssi, you will need to do something about this.
+>> 
+>> Your choices are either selecting INET (and thus also
+>> CRYPTO and CRYPTO_AES, since INET needs those in order
+>> to build properly), making bridging depeng on INET,
+>> or protecting the new proxy-arp code with INET ifdef
+>> checks.
+> 
+> Maybe make ARP proxy a config option under bridge and have
+> it depend on INET?
+
+I'd be fine with that too.
