@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197AbaJ3AHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 20:07:08 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:41785 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398AbaJ3AHH (ORCPT
+	id S932645AbaJ3AK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 20:10:59 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:6454 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932318AbaJ3AK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 20:07:07 -0400
+	Wed, 29 Oct 2014 20:10:58 -0400
+Date: Wed, 29 Oct 2014 20:10:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFA][PATCH 1/8] seq_file: Rename seq_overflow() to
+ seq_has_overflowed() and make public
+Message-ID: <20141029201048.698eb701@gandalf.local.home>
+In-Reply-To: <1414626810.2542.5.camel@perches.com>
+References: <20141029215602.535533597@goodmis.org>
+	<20141029220107.333126455@goodmis.org>
+	<1414620516.2542.3.camel@perches.com>
+	<20141029194215.44e86ffb@gandalf.local.home>
+	<1414626810.2542.5.camel@perches.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141029041811.GA12382@htj.dyndns.org>
-References: <1414249558-6677-1-git-send-email-zzhsuny@gmail.com>
-	<20141027140826.GJ4436@htj.dyndns.org>
-	<CADFvMYKRcqcZSbMz8sHGGknUC7p7i3MvGO5vKabrrzeWj+qUTw@mail.gmail.com>
-	<20141028035651.GB4751@mtj.dyndns.org>
-	<CADFvMY+VUNaLhsJaPjH_DC91uJ8Hdgnaj9D44QEm0qV3Rr2-kA@mail.gmail.com>
-	<20141029041811.GA12382@htj.dyndns.org>
-Date: Wed, 29 Oct 2014 20:07:06 -0400
-Message-ID: <CADFvMY+qcNQMTKUgm3coGM6x_WGKJn-tv5XECBtOpTdVK1r1hw@mail.gmail.com>
-Subject: Re: [PATCH] [percpu] Make the unit size of the first chunk the same
- as other chunks
-From: Zhihui Zhang <zzhsuny@gmail.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see your point. Thanks.
+On Wed, 29 Oct 2014 16:53:30 -0700
+Joe Perches <joe@perches.com> wrote:
 
--Zhihui
+> On Wed, 2014-10-29 at 19:42 -0400, Steven Rostedt wrote:
+> > On Wed, 29 Oct 2014 15:08:36 -0700 Joe Perches <joe@perches.com> wrote:
+> > > On Wed, 2014-10-29 at 17:56 -0400, Steven Rostedt wrote:
+> > > > +A true return from seq_has_overflowed means that the seq_file buffer is full
+> > > > +and further output will be discarded.
+> > > Perhaps the description is a bit unclear here.
+> > > Doesn't a return of true to seq_has_overflowed mean that
+> > > more characters have already been written than the buffer
+> > > can accept?
+> > Actually, right now the comment is correct and the name is misleading.
+> > But I have a patch that will make the comment incorrect (and will be
+> > fixed) and the name correct.
+> > 
+> > But since seq_has_overflowed() is to be used throughout the kernel, I
+> > didn't want to have to go do patches all over again for a temporary
+> > misnomer.
+> 
+> I think it'd be better if the first submission
+> of the function has the correct operation for
+> the name.
 
-On Wed, Oct 29, 2014 at 12:18 AM, Tejun Heo <tj@kernel.org> wrote:
-> Plesae restore lkml cc when replying.
->
-> On Tue, Oct 28, 2014 at 08:12:30PM -0400, Zhihui Zhang wrote:
->> My patch just increases the dynamic area in the first chunk slightly
->> to cover the round up surplus. On my 64-bit laptop, it is 12288 bytes.
->
-> As I wrote before, it's 12288 bytes on your laptop but it can be much
-> larger on other setups.
->
->> It will mostly likely be used, and in fact, a second chunk will be
->> most likely needed as well.  So in theory you are right, but in
->> practice, it probably won't matter.
->
-> If the initial dynamic reserve is too small, which could be the case
-> given the overall increase in percpu memory, increase
-> PERCPU_DYNAMIC_EARLY_SIZE.
->
-> --
-> tejun
+I'm hoping that both of these will make it into 3.19, so it really
+doesn't matter the order. I'm working on this patch first, because, as
+you said earlier, it is important to get the call to
+seq_has_overflowed() out there.
+
+> 
+> > In other words, I'm going to change the function to really return only
+> > if it did overflow and not just be full. But that's another patch set
+> > to come.
+> 
+> Why would it be a set and not a single patch?
+> 
+
+That particular change is a single patch. But it is in with other
+patches I'm doing, so I called it a patch set.
+
+-- Steve
+
