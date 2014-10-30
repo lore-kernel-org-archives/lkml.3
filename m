@@ -1,163 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761330AbaJaH0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 03:26:12 -0400
-Received: from [65.55.169.110] ([65.55.169.110]:63024 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1761043AbaJaH0I convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 03:26:08 -0400
-From: "qiang.zhao@freescale.com" <qiang.zhao@freescale.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>, Xiaobo Xie <X.Xie@freescale.com>
-Subject: RE: [PATCH v3 1/3] QE: move qe code from arch/powerpc to drivers/soc
-Thread-Topic: [PATCH v3 1/3] QE: move qe code from arch/powerpc to drivers/soc
-Thread-Index: AQHP9BOXGb72x87NtkKPpYeSVCDOwZxIpPkAgAEo3SA=
-Date: Fri, 31 Oct 2014 07:24:49 +0000
-Message-ID: <58731211e1a24702a8b5e18834e88663@BLUPR03MB341.namprd03.prod.outlook.com>
-References: <1414654264-2596-1-git-send-email-B45475@freescale.com>
- <845EBC7E-52A3-48D6-826D-886FC18B0B88@kernel.crashing.org>
-In-Reply-To: <845EBC7E-52A3-48D6-826D-886FC18B0B88@kernel.crashing.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0736;
-x-forefront-prvs: 03818C953D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(199003)(377454003)(24454002)(189002)(13464003)(92566001)(106356001)(106116001)(99396003)(86362001)(85852003)(31966008)(105586002)(97736003)(54356999)(50986999)(4396001)(101416001)(107046002)(95666004)(99286002)(87936001)(66066001)(20776003)(64706001)(21056001)(120916001)(2656002)(76482002)(85306004)(40100003)(19580395003)(122556002)(80022003)(76176999)(19580405001)(74316001)(33646002)(110136001)(46102003)(76576001)(108616004)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0736;H:BLUPR03MB341.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1753632AbaJaHb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 03:31:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52623 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918AbaJaHb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 03:31:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="408960465"
+From: Yuyang Du <yuyang.du@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org
+Cc: pjt@google.com, bsegall@google.com, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, mark.gross@intel.com,
+        fengguang.wu@intel.com, dietmar.eggemann@arm.com,
+        umgwanakikbuti@gmail.com, Yuyang Du <yuyang.du@intel.com>
+Subject: [PATCH 0/3 v6] sched: Rewrite per entity runnable load average tracking
+Date: Fri, 31 Oct 2014 07:32:25 +0800
+Message-Id: <1414711948-10475-1-git-send-email-yuyang.du@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 30, 2014, at 9:37 AM, Kumar Gala wrote:
+Many thanks to PeterZ for his review, to Dietmar, and to Fengguang for 0Day and LKP.
 
+v6 changes:
 
-> -----Original Message-----
-> From: Kumar Gala [mailto:galak@kernel.crashing.org]
-> Sent: Thursday, October 30, 2014 9:37 PM
-> To: Zhao Qiang-B45475
-> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Wood
-> Scott-B07421; Xie Xiaobo-R63061
-> Subject: Re: [PATCH v3 1/3] QE: move qe code from arch/powerpc to
-> drivers/soc
-> 
-> 
-> On Oct 30, 2014, at 2:31 AM, Zhao Qiang <B45475@freescale.com> wrote:
-> 
-> > LS1 is arm cpu and it has qe ip block.
-> > move qe code from platform directory to public directory.
-> >
-> > QE is an IP block integrates several comunications peripheral
-> > controllers. It can implement a variety of applications, such as uart,
-> > usb and tdm and so on.
-> >
-> > Signed-off-by: Zhao Qiang <B45475@freescale.com>
-> > ---
-> > Changes for v2:
-> > 	- move code to driver/soc
-> > Changes for v3:
-> > 	- change drivers/soc/qe to drivers/soc/fsl-qe
-> >
-> > arch/powerpc/Kconfig                               |  2 -
-> > arch/powerpc/platforms/83xx/km83xx.c               |  4 +-
-> > arch/powerpc/platforms/83xx/misc.c                 |  2 +-
-> > arch/powerpc/platforms/83xx/mpc832x_mds.c          |  4 +-
-> > arch/powerpc/platforms/83xx/mpc832x_rdb.c          |  4 +-
-> > arch/powerpc/platforms/83xx/mpc836x_mds.c          |  4 +-
-> > arch/powerpc/platforms/83xx/mpc836x_rdk.c          |  4 +-
-> > arch/powerpc/platforms/85xx/common.c               |  2 +-
-> > arch/powerpc/platforms/85xx/corenet_generic.c      |  2 +-
-> > arch/powerpc/platforms/85xx/mpc85xx_mds.c          |  4 +-
-> > arch/powerpc/platforms/85xx/mpc85xx_rdb.c          |  4 +-
-> > arch/powerpc/platforms/85xx/twr_p102x.c            |  4 +-
-> > arch/powerpc/platforms/Kconfig                     | 19 ---------
-> > arch/powerpc/sysdev/Makefile                       |  1 -
-> > arch/powerpc/sysdev/qe_lib/Kconfig                 | 27 -------------
-> > drivers/net/ethernet/freescale/fsl_pq_mdio.c       |  2 +-
-> > drivers/net/ethernet/freescale/ucc_geth.c          |  8 ++--
-> > drivers/net/ethernet/freescale/ucc_geth.h          |  8 ++--
-> > drivers/soc/Kconfig                                |  2 +
-> > drivers/soc/Makefile                               |  1 +
-> > drivers/soc/fsl-qe/Kconfig                         | 45
-> ++++++++++++++++++++++
-> > .../sysdev/qe_lib => drivers/soc/fsl-qe}/Makefile  |  0
-> > .../sysdev/qe_lib => drivers/soc/fsl-qe}/gpio.c    |  2 +-
-> > .../sysdev/qe_lib => drivers/soc/fsl-qe}/qe.c      |  4 +-
-> > .../sysdev/qe_lib => drivers/soc/fsl-qe}/qe_ic.c   |  2 +-
-> > .../sysdev/qe_lib => drivers/soc/fsl-qe}/qe_ic.h   |  2 +-
-> > .../sysdev/qe_lib => drivers/soc/fsl-qe}/qe_io.c   |  2 +-
-> > .../sysdev/qe_lib => drivers/soc/fsl-qe}/ucc.c     |  6 +--
-> > .../qe_lib => drivers/soc/fsl-qe}/ucc_fast.c       |  8 ++--
-> > .../qe_lib => drivers/soc/fsl-qe}/ucc_slow.c       |  8 ++--
-> > .../sysdev/qe_lib => drivers/soc/fsl-qe}/usb.c     |  4 +-
-> > drivers/spi/spi-fsl-cpm.c                          |  2 +-
-> > drivers/tty/serial/ucc_uart.c                      |  2 +-
-> > drivers/usb/gadget/fsl_qe_udc.c                    |  2 +-
-> > drivers/usb/host/fhci-hcd.c                        |  2 +-
-> > drivers/usb/host/fhci-hub.c                        |  2 +-
-> > drivers/usb/host/fhci-sched.c                      |  2 +-
-> > drivers/usb/host/fhci.h                            |  4 +-
-> > .../include/asm => include/linux/fsl}/immap_qe.h   |  0
-> > .../powerpc/include/asm => include/linux/fsl}/qe.h |  2 +-
-> > .../include/asm => include/linux/fsl}/qe_ic.h      |  0
-> > .../include/asm => include/linux/fsl}/ucc.h        |  4 +-
-> > .../include/asm => include/linux/fsl}/ucc_fast.h   |  6 +--
-> > .../include/asm => include/linux/fsl}/ucc_slow.h   |  6 +--
-> > 44 files changed, 112 insertions(+), 113 deletions(-) delete mode
-> > 100644 arch/powerpc/sysdev/qe_lib/Kconfig
-> > create mode 100644 drivers/soc/fsl-qe/Kconfig rename
-> > {arch/powerpc/sysdev/qe_lib => drivers/soc/fsl-qe}/Makefile (100%)
-> > rename {arch/powerpc/sysdev/qe_lib => drivers/soc/fsl-qe}/gpio.c (99%)
-> > rename {arch/powerpc/sysdev/qe_lib => drivers/soc/fsl-qe}/qe.c (99%)
-> > rename {arch/powerpc/sysdev/qe_lib => drivers/soc/fsl-qe}/qe_ic.c
-> > (99%) rename {arch/powerpc/sysdev/qe_lib =>
-> > drivers/soc/fsl-qe}/qe_ic.h (98%) rename {arch/powerpc/sysdev/qe_lib
-> > => drivers/soc/fsl-qe}/qe_io.c (99%) rename
-> > {arch/powerpc/sysdev/qe_lib => drivers/soc/fsl-qe}/ucc.c (98%) rename
-> > {arch/powerpc/sysdev/qe_lib => drivers/soc/fsl-qe}/ucc_fast.c (98%)
-> > rename {arch/powerpc/sysdev/qe_lib => drivers/soc/fsl-qe}/ucc_slow.c
-> > (98%) rename {arch/powerpc/sysdev/qe_lib => drivers/soc/fsl-qe}/usb.c
-> > (96%) rename {arch/powerpc/include/asm =>
-> > include/linux/fsl}/immap_qe.h (100%) rename {arch/powerpc/include/asm
-> > => include/linux/fsl}/qe.h (99%) rename {arch/powerpc/include/asm =>
-> > include/linux/fsl}/qe_ic.h (100%) rename {arch/powerpc/include/asm =>
-> > include/linux/fsl}/ucc.h (96%) rename {arch/powerpc/include/asm =>
-> > include/linux/fsl}/ucc_fast.h (98%) rename {arch/powerpc/include/asm
-> > => include/linux/fsl}/ucc_slow.h (99%)
-> 
-> 
-> So you should be moving things to drivers/soc/fsl/qe/ not
-> drivers/soc/fsl-qe/
-> 
-> The headers should be in include/soc/fsl, not include/linux/fsl
+Based on v3.18-rc2.
 
-I don't understand why I need to put headers in include/soc/fsl,
-Can you explain more?
+- Unify decay_load 32 and 64 bits by mul_u64_u32_shr
+- Add force option in update_tg_load_avg
+- Read real-time cfs's load_avg for calc_tg_weight
+- Have tg_load_avg_contrib ifdef CONFIG_FAIR_GROUP_SCHED
+- Bug fix
 
-> 
-> In addition before this move is accepted, other changes need to be made
-> to convert to using standard frameworks for various functionality in QE
-> lib.
-> 
-> 1. gpio.c -> needs to be converted to GPIO framework and placed in
-> drivers/gpio 2. qe_ic* should probably move into drivers/irqchip 3.
-> qe_io.c should be converted over to pinmux and put in drivers/pinctrl 4.
-> Some of the clock could should be looked to be converted to use the clk
-> framework
-> 
-> These changes need to be addressed before any of the qe_lib code can get
-> moved into drivers/soc
-> 
-> - k
+v5 changes:
 
-Best Regards
-Zhao Qiang
+Thank Peter intensively for reviewing this patchset in detail and all his comments.
+And Mike for general and cgroup pipe-test. Morten, Ben, and Vincent in the discussion.
+
+- Remove dead task and task group load_avg
+- Do not update trivial delta to task_group load_avg (threshold 1/64 old_contrib)
+- mul_u64_u32_shr() is used in decay_load, so on 64bit, load_sum can afford
+  about 4353082796 (=2^64/47742/88761) entities with the highest weight (=88761)
+  always runnable, greater than previous theoretical maximum 132845
+- Various code efficiency and style changes
+
+We carried out some performance tests (thanks to Fengguang and his LKP). The results
+are shown as follows. The patchset (including threepatches) is on top of mainline
+v3.16-rc5. We may report more perf numbers later.
+
+Overall, this rewrite has better performance, and reduced net overhead in load
+average tracking, flat efficiency in multi-layer cgroup pipe-test.
+
+v4 changes:
+
+Thanks to Morten, Ben, and Fengguang for v4 revision.
+
+- Insert memory barrier before writing cfs_rq->load_last_update_copy.
+- Fix typos.
+
+v3 changes:
+
+Many thanks to Ben for v3 revision.
+
+Regarding the overflow issue, we now have for both entity and cfs_rq:
+
+struct sched_avg {
+    .....
+    u64 load_sum;
+    unsigned long load_avg;
+    .....
+};
+
+Given the weight for both entity and cfs_rq is:
+
+struct load_weight {
+    unsigned long weight;
+    .....
+};
+
+So, load_sum's max is 47742 * load.weight (which is unsigned long), then on 32bit,
+it is absolutly safe. On 64bit, with unsigned long being 64bit, but we can afford
+about 4353082796 (=2^64/47742/88761) entities with the highest weight (=88761)
+always runnable, even considering we may multiply 1<<15 in decay_load64, we can
+still support 132845 (=4353082796/2^15) always runnable, which should be acceptible.
+
+load_avg = load_sum / 47742 = load.weight (which is unsigned long), so it should be
+perfectly safe for both entity (even with arbitrary user group share) and cfs_rq on
+both 32bit and 64bit. Originally, we saved this division, but have to get it back
+because of the overflow issue on 32bit (actually load average itself is safe from
+overflow, but the rest of the code referencing it always uses long, such as cpu_load,
+etc., which prevents it from saving).
+
+- Fix overflow issue both for entity and cfs_rq on both 32bit and 64bit.
+- Track all entities (both task and group entity) due to group entity's clock issue.
+  This actually improves code simplicity.
+- Make a copy of cfs_rq sched_avg's last_update_time, to read an intact 64bit
+  variable on 32bit machine when in data race (hope I did it right).
+- Minor fixes and code improvement.
+
+v2 changes:
+
+Thanks to PeterZ and Ben for their help in fixing the issues and improving
+the quality, and Fengguang and his 0Day in finding compile errors in different
+configurations for version 2.
+
+- Batch update the tg->load_avg, making sure it is up-to-date before update_cfs_shares
+- Remove migrating task from the old CPU/cfs_rq, and do so with atomic operations
+
+Yuyang Du (3):
+  sched: Remove update_rq_runnable_avg
+  sched: Rewrite per entity runnable load average tracking
+  sched: Remove task and group entity load_avg when they are dead
+
+ include/linux/sched.h |   21 +-
+ kernel/sched/debug.c  |   29 +--
+ kernel/sched/fair.c   |  584 ++++++++++++++++---------------------------------
+ kernel/sched/proc.c   |    2 +-
+ kernel/sched/sched.h  |   24 +-
+ 5 files changed, 215 insertions(+), 445 deletions(-)
+
+-- 
+1.7.9.5
+
