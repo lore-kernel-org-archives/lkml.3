@@ -1,188 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029AbaJ3AjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 20:39:10 -0400
-Received: from leo.clearchain.com ([199.73.29.74]:40323 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755630AbaJ3AjI (ORCPT
+	id S1757868AbaJ3AmY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 20:42:24 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36592 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755630AbaJ3AmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 20:39:08 -0400
-Date: Thu, 30 Oct 2014 10:38:55 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Andrew Duggan <aduggan@synaptics.com>, Hans de Goede <hdegoede@redhat.com>,
-        linux-input@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
-Message-ID: <20141030003855.GA15677@jelly.redhat.com>
-References: <20140908165520.GA35051@core.coreip.homeip.net>
- <540EAFD1.2040307@redhat.com>
- <20140909170636.GA28774@core.coreip.homeip.net>
- <540F7A19.3070704@synaptics.com>
- <20140909225725.GA18901@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909225725.GA18901@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (mail.clearchain.com [127.0.0.1]); Thu, 30 Oct 2014 11:08:58 +1030 (CST)
+	Wed, 29 Oct 2014 20:42:23 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: akpm@linux-foundation.org, linux-mm@kvack.org, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC 0/6] mm, x86: New special mapping ops
+Date: Wed, 29 Oct 2014 17:42:10 -0700
+Message-Id: <cover.1414629045.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 03:57:25PM -0700, Dmitry Torokhov wrote:
-> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> 
-> ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
-> physical buttons, instead they generate primary button click when user
-> presses somewhat hard on the surface of the touchpad. Unfortunately they
-> also report primary button click whenever there are 2 or more contacts
-> on the pad, messing up all multi-finger gestures (2-finger scrolling,
-> multi-finger tapping, etc). To cope with this behavior we introduce a
-> delay (currently 50 msecs) in reporting primary press in case more
-> contacts appear.
+This is an attempt to make the core special mapping infrastructure
+track what arch vdso code needs better than it currently does.  It
+adds:
 
-can we assign INPUT_PROP_FORCEPAD to this? or PRESSUREPAD or something if
-we're worried about trademarks. This is something I'd like to know in
-userspace, we can then ignore clicks completely and do the rest ourselves. 
+.start_addr_set: A callback to notify arch code that a special mapping
+was mremapped.  (CRIU does this.  Without something like this, it's
+somewhat broken for 64-bit userspace and completely broken for 32-bit
+userspace on Intel hardware.  Apparently no one has noticed the 64-bit
+breakage, and no one ever ported CRIU to 32-bit in the first place.)
 
-Cheers,
-   Peter
+.fault: Directly fault handling on the vdso.  Imagine that!  It turns
+out that storing a list of struct page pointers in the special mapping
+data is awkward for pretty much everyone and completely precludes
+mapping things that aren't pages without dirty hacks.  (x86 uses dirty
+hacks for the HPET mapping.  See below.)
 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/input/mouse/synaptics.c |   68 ++++++++++++++++++++++++++++++---------
->  drivers/input/mouse/synaptics.h |   11 ++++++
->  2 files changed, 63 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index e8573c6..fd23181 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -629,10 +629,61 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->  			 ((buf[0] & 0x04) >> 1) |
->  			 ((buf[3] & 0x04) >> 2));
->  
-> +		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-> +			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
-> +		    hw->w == 2) {
-> +			synaptics_parse_agm(buf, priv, hw);
-> +			return 1;
-> +		}
-> +
-> +		hw->x = (((buf[3] & 0x10) << 8) |
-> +			 ((buf[1] & 0x0f) << 8) |
-> +			 buf[4]);
-> +		hw->y = (((buf[3] & 0x20) << 7) |
-> +			 ((buf[1] & 0xf0) << 4) |
-> +			 buf[5]);
-> +		hw->z = buf[2];
-> +
->  		hw->left  = (buf[0] & 0x01) ? 1 : 0;
->  		hw->right = (buf[0] & 0x02) ? 1 : 0;
->  
-> -		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
-> +		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
-> +			/*
-> +			 * ForcePads, like Clickpads, use middle button
-> +			 * bits to report primary button clicks.
-> +			 * Unfortunately they report primary button not
-> +			 * only when user presses on the pad above certain
-> +			 * threshold, but also when there are more than one
-> +			 * finger on the touchpad, which interferes with
-> +			 * out multi-finger gestures.
-> +			 */
-> +			if (hw->z == 0) {
-> +				/* No contacts */
-> +				priv->press = priv->report_press = false;
-> +			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
-> +				/*
-> +				 * Single-finger touch with pressure above
-> +				 * the threshold. If pressure stays long
-> +				 * enough, we'll start reporting primary
-> +				 * button. We rely on the device continuing
-> +				 * sending data even if finger does not
-> +				 * move.
-> +				 */
-> +				if  (!priv->press) {
-> +					priv->press_start = jiffies;
-> +					priv->press = true;
-> +				} else if (time_after(jiffies,
-> +						priv->press_start +
-> +							msecs_to_jiffies(50))) {
-> +					priv->report_press = true;
-> +				}
-> +			} else {
-> +				priv->press = false;
-> +			}
-> +
-> +			hw->left = priv->report_press;
-> +
-> +		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
->  			/*
->  			 * Clickpad's button is transmitted as middle button,
->  			 * however, since it is primary button, we will report
-> @@ -651,21 +702,6 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->  			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
->  		}
->  
-> -		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-> -			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
-> -		    hw->w == 2) {
-> -			synaptics_parse_agm(buf, priv, hw);
-> -			return 1;
-> -		}
-> -
-> -		hw->x = (((buf[3] & 0x10) << 8) |
-> -			 ((buf[1] & 0x0f) << 8) |
-> -			 buf[4]);
-> -		hw->y = (((buf[3] & 0x20) << 7) |
-> -			 ((buf[1] & 0xf0) << 4) |
-> -			 buf[5]);
-> -		hw->z = buf[2];
-> -
->  		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
->  		    ((buf[0] ^ buf[3]) & 0x02)) {
->  			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
-> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-> index e594af0..fb2e076 100644
-> --- a/drivers/input/mouse/synaptics.h
-> +++ b/drivers/input/mouse/synaptics.h
-> @@ -78,6 +78,11 @@
->   * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
->   *					reports 2.
->   * 2	0x20	report min		query 0x0f gives min coord reported
-> + * 2	0x80	forcepad		forcepad is a variant of clickpad that
-> + *					does not have physical buttons but rather
-> + *					uses pressure above certain threshold to
-> + *					report primary clicks. Forcepads also have
-> + *					clickpad bit set.
->   */
->  #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
->  #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
-> @@ -86,6 +91,7 @@
->  #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
->  #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
->  #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
-> +#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
->  
->  /* synaptics modes query bits */
->  #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
-> @@ -177,6 +183,11 @@ struct synaptics_data {
->  	 */
->  	struct synaptics_hw_state agm;
->  	bool agm_pending;			/* new AGM packet received */
-> +
-> +	/* ForcePad handling */
-> +	unsigned long				press_start;
-> +	bool					press;
-> +	bool					report_press;
->  };
->  
->  void synaptics_module_init(void);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+vm_insert_pfn_prot: The only way to support VMAs with different
+protections on different pages right now is to either use
+(io_)remap_pfn_range or to twiddle the ptes directly.  This is annoying.
+
+One might ask why anyone would ever want different prot values in the
+same VMA.  It turns out that x86 maps the HPET into the vvar area, and
+the HPET needs to be uncached.
+
+I think that this kind of trick makes no sense on a COW-able mapping or
+on any mapping that isn't a pure PFN mapping.  The new interface
+enforces this.
+
+The x86 parts are in here mainly as examples for how the new core
+interfaces would be used.  I don't know of anything wrong with them,
+but I would not go so far as to pretend that I've tested them adequately.
+
+Andy Lutomirski (6):
+  mm: Add a mechanism to track the current address of a special mapping
+  x86,vdso: Use special mapping tracking for the vdso
+  mm: Add a vm_special_mapping .fault method
+  mm: Add vm_insert_pfn_prot
+  x86,vdso: Use .fault instead of remap_pfn_range for the vvar mapping
+  x86,vdso: Use .fault for the vdso text mapping
+
+ arch/x86/ia32/ia32_signal.c |  11 ++--
+ arch/x86/include/asm/elf.h  |  26 +++-----
+ arch/x86/include/asm/mmu.h  |   4 +-
+ arch/x86/include/asm/vdso.h |  19 +++++-
+ arch/x86/kernel/signal.c    |   9 +--
+ arch/x86/vdso/vdso2c.h      |   7 ---
+ arch/x86/vdso/vma.c         | 141 +++++++++++++++++++++++++++++++-------------
+ include/linux/mm.h          |   5 ++
+ include/linux/mm_types.h    |  26 +++++++-
+ mm/memory.c                 |  25 +++++++-
+ mm/mmap.c                   |  38 +++++++++---
+ mm/mremap.c                 |   2 +
+ 12 files changed, 221 insertions(+), 92 deletions(-)
+
+-- 
+1.9.3
+
