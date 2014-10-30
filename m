@@ -1,183 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759193AbaJ3Kvq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:51:46 -0400
-Received: from regular1.263xmail.com ([211.150.99.132]:56522 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759166AbaJ3Kvl (ORCPT
+	id S1759197AbaJ3Kvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:51:51 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:44855 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759170AbaJ3Kvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:51:41 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <eaaa6fc93ab5a3031a909d1e002b1716>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Addy Ke <addy.ke@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net, dianders@chromium.org,
-        sonnyrao@chromium.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
-        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
-        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH] mmc: dw_mmc: add support for the other bit of sdio interrupt
-Date: Thu, 30 Oct 2014 18:50:40 +0800
-Message-Id: <1414666240-16782-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1414635679-12565-1-git-send-email-addy.ke@rock-chips.com>
-References: <1414635679-12565-1-git-send-email-addy.ke@rock-chips.com>
+	Thu, 30 Oct 2014 06:51:48 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 7/7] clk: Add floor and ceiling constraints to clock rates
+Date: Thu, 30 Oct 2014 11:48:33 +0100
+Message-Id: <1414666135-14313-8-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1414666135-14313-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1414666135-14313-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bit of sdio interrupt is 16 in designware implementation,
-but it is 24 in RK3288. This patch add sdio_id0 for the number
-of slot0 in the SDIO interrupt registers, which can be set in
-platform DT table, such as:
-- rockchip,sdio-interrupt-slot0 = <8>;
+Adds a way for clock consumers to set maximum and minimum rates. This can be
+used for thermal drivers to set ceiling rates, or by misc. drivers to set
+floor rates to assure a minimum performance level.
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+
 ---
- drivers/mmc/host/dw_mmc-rockchip.c | 13 +++++++++++++
- drivers/mmc/host/dw_mmc.c          | 12 +++++++-----
- drivers/mmc/host/dw_mmc.h          |  2 ++
- include/linux/mmc/dw_mmc.h         |  3 +++
- 4 files changed, 25 insertions(+), 5 deletions(-)
+v5:	* Initialize clk.ceiling_constraint to ULONG_MAX
+	* Warn about inconsistent constraints
 
-diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
-index f0c2cb1..54655e7 100644
---- a/drivers/mmc/host/dw_mmc-rockchip.c
-+++ b/drivers/mmc/host/dw_mmc-rockchip.c
-@@ -65,6 +65,18 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
- 	}
+v4:	* Copy function docs from header
+	* Move WARN out of critical section
+	* Refresh rate after removing a per-user clk
+	* Rename clk_core.per_user_clks to clk_core.clks
+	* Store requested rate and re-apply it when constraints are updated
+---
+ drivers/clk/clk.c           | 144 +++++++++++++++++++++++++++++++++++---------
+ include/linux/clk-private.h |   6 ++
+ include/linux/clk.h         |  18 ++++++
+ 3 files changed, 140 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 9fae072..72685c2 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1599,30 +1599,11 @@ static void clk_change_rate(struct clk_core *clk)
+ 		clk_change_rate(clk->new_child);
  }
  
-+static int dw_mci_rk3288_parse_dt(struct dw_mci *host)
+-/**
+- * clk_set_rate - specify a new rate for clk
+- * @clk: the clk whose rate is being changed
+- * @rate: the new rate for clk
+- *
+- * In the simplest case clk_set_rate will only adjust the rate of clk.
+- *
+- * Setting the CLK_SET_RATE_PARENT flag allows the rate change operation to
+- * propagate up to clk's parent; whether or not this happens depends on the
+- * outcome of clk's .round_rate implementation.  If *parent_rate is unchanged
+- * after calling .round_rate then upstream parent propagation is ignored.  If
+- * *parent_rate comes back with a new rate for clk's parent then we propagate
+- * up to clk's parent and set its rate.  Upward propagation will continue
+- * until either a clk does not support the CLK_SET_RATE_PARENT flag or
+- * .round_rate stops requesting changes to clk's parent_rate.
+- *
+- * Rate changes are accomplished via tree traversal that also recalculates the
+- * rates for the clocks and fires off POST_RATE_CHANGE notifiers.
+- *
+- * Returns 0 on success, -EERROR otherwise.
+- */
+-int clk_set_rate(struct clk *clk, unsigned long rate)
++static int clk_core_set_rate(struct clk_core *clk, unsigned long req_rate)
+ {
+ 	struct clk_core *top, *fail_clk;
++	struct clk *clk_user;
++	unsigned long rate = req_rate;
+ 	int ret = 0;
+ 
+ 	if (!clk)
+@@ -1631,18 +1612,26 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
+ 	/* prevent racing with updates to the clock topology */
+ 	clk_prepare_lock();
+ 
++	hlist_for_each_entry(clk_user, &clk->clks, child_node) {
++		rate = max(rate, clk_user->floor_constraint);
++	}
++
++	hlist_for_each_entry(clk_user, &clk->clks, child_node) {
++		rate = min(rate, clk_user->ceiling_constraint);
++	}
++
+ 	/* bail early if nothing to do */
+-	if (rate == clk_get_rate(clk))
++	if (rate == clk_core_get_rate_nolock(clk))
+ 		goto out;
+ 
+-	if ((clk->core->flags & CLK_SET_RATE_GATE) &&
+-	    clk->core->prepare_count) {
++	if ((clk->flags & CLK_SET_RATE_GATE) &&
++	    clk->prepare_count) {
+ 		ret = -EBUSY;
+ 		goto out;
+ 	}
+ 
+ 	/* calculate new rates and get the topmost changed clock */
+-	top = clk_calc_new_rates(clk->core, rate);
++	top = clk_calc_new_rates(clk, rate);
+ 	if (!top) {
+ 		ret = -EINVAL;
+ 		goto out;
+@@ -1661,13 +1650,95 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
+ 	/* change the rates */
+ 	clk_change_rate(top);
+ 
++	clk->req_rate = req_rate;
++
+ out:
+ 	clk_prepare_unlock();
+ 
+ 	return ret;
+ }
++
++/**
++ * clk_set_rate - specify a new rate for clk
++ * @clk: the clk whose rate is being changed
++ * @rate: the new rate for clk
++ *
++ * In the simplest case clk_set_rate will only adjust the rate of clk.
++ *
++ * Setting the CLK_SET_RATE_PARENT flag allows the rate change operation to
++ * propagate up to clk's parent; whether or not this happens depends on the
++ * outcome of clk's .round_rate implementation.  If *parent_rate is unchanged
++ * after calling .round_rate then upstream parent propagation is ignored.  If
++ * *parent_rate comes back with a new rate for clk's parent then we propagate
++ * up to clk's parent and set its rate.  Upward propagation will continue
++ * until either a clk does not support the CLK_SET_RATE_PARENT flag or
++ * .round_rate stops requesting changes to clk's parent_rate.
++ *
++ * Rate changes are accomplished via tree traversal that also recalculates the
++ * rates for the clocks and fires off POST_RATE_CHANGE notifiers.
++ *
++ * Returns 0 on success, -EERROR otherwise.
++ */
++int clk_set_rate(struct clk *clk, unsigned long rate)
 +{
-+	struct device_node *np = host->dev->of_node;
-+	int sdio_id0;
++	return clk_core_set_rate(clk->core, rate);
++}
+ EXPORT_SYMBOL_GPL(clk_set_rate);
+ 
++/**
++ * clk_set_floor_rate - set a minimum clock rate for a clock source
++ * @clk: clock source
++ * @rate: desired minimum clock rate in Hz
++ *
++ * Returns success (0) or negative errno.
++ */
++int clk_set_floor_rate(struct clk *clk, unsigned long rate)
++{
++	int ret;
 +
-+	if (!of_property_read_u32(np, "rockchip,sdio-interrupt-slot0",
-+				  &sdio_id0))
-+		host->sdio_id0 = sdio_id0;
++	WARN(rate > clk->ceiling_constraint,
++	     "clk %s dev %s con %s: new floor %lu higher than existing ceiling %lu\n",
++	     clk->core->name, clk->dev_id, clk->con_id, rate,
++	     clk->ceiling_constraint);
 +
-+	return 0;
++	clk_prepare_lock();
++
++	clk->floor_constraint = rate;
++	ret = clk_set_rate(clk, clk->core->req_rate);
++
++	clk_prepare_unlock();
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_set_floor_rate);
++
++/**
++ * clk_set_ceiling_rate - set a maximum clock rate for a clock source
++ * @clk: clock source
++ * @rate: desired maximum clock rate in Hz
++ *
++ * Returns success (0) or negative errno.
++ */
++int clk_set_ceiling_rate(struct clk *clk, unsigned long rate)
++{
++	int ret;
++
++	WARN(rate < clk->floor_constraint,
++	     "clk %s dev %s con %s: new ceiling %lu lower than existing floor %lu\n",
++	     clk->core->name, clk->dev_id, clk->con_id, rate,
++	     clk->floor_constraint);
++
++	clk_prepare_lock();
++
++	clk->ceiling_constraint = rate;
++	ret = clk_set_rate(clk, clk->core->req_rate);
++
++	clk_prepare_unlock();
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
++
+ static struct clk_core *clk_core_get_parent(struct clk_core *core)
+ {
+ 	struct clk_core *parent;
+@@ -2084,6 +2155,8 @@ int __clk_init(struct device *dev, struct clk *clk_user)
+ 			}
+ 	 }
+ 
++	INIT_HLIST_HEAD(&clk->clks);
++
+ 	/*
+ 	 * optional platform-specific magic
+ 	 *
+@@ -2145,6 +2218,16 @@ struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
+ }
+ EXPORT_SYMBOL_GPL(__clk_register);
+ 
++static void __clk_free_clk(struct clk *clk)
++{
++	struct clk_core *core = clk->core;
++
++	hlist_del(&clk->child_node);
++	kfree(clk);
++
++	clk_core_set_rate(core, core->req_rate);
 +}
 +
- static const struct dw_mci_drv_data rk2928_drv_data = {
- 	.prepare_command        = dw_mci_rockchip_prepare_command,
- };
-@@ -73,6 +85,7 @@ static const struct dw_mci_drv_data rk3288_drv_data = {
- 	.prepare_command        = dw_mci_rockchip_prepare_command,
- 	.set_ios		= dw_mci_rk3288_set_ios,
- 	.setup_clock    = dw_mci_rk3288_setup_clock,
-+	.parse_dt	= dw_mci_rk3288_parse_dt,
- };
+ /**
+  * clk_register - allocate a new clock, register it and return an opaque cookie
+  * @dev: device that is registering this clock
+@@ -2209,7 +2292,7 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
+ 	if (!ret)
+ 		return hw->clk;
  
- static const struct of_device_id dw_mci_rockchip_match[] = {
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 69f0cc6..2ea7467 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -819,7 +819,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
- 
- 		/* enable clock; only low power if no SDIO */
- 		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
--		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
-+		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->sdio_id)))
- 			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
- 		mci_writel(host, CLKENA, clk_en_a);
- 
-@@ -1180,10 +1180,10 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
- 		dw_mci_disable_low_power(slot);
- 
- 		mci_writel(host, INTMASK,
--			   (int_mask | SDMMC_INT_SDIO(slot->id)));
-+			   (int_mask | SDMMC_INT_SDIO(slot->sdio_id)));
- 	} else {
- 		mci_writel(host, INTMASK,
--			   (int_mask & ~SDMMC_INT_SDIO(slot->id)));
-+			   (int_mask & ~SDMMC_INT_SDIO(slot->sdio_id)));
- 	}
+-	kfree(hw->clk);
++	__clk_free_clk(hw->clk);
+ fail_parent_names_copy:
+ 	while (--i >= 0)
+ 		kfree(clk->parent_names[i]);
+@@ -2415,7 +2498,7 @@ int __clk_get(struct clk *clk)
+ void __clk_put(struct clk *clk)
+ {
+ 	clk_core_put(clk->core);
+-	kfree(clk);
++	__clk_free_clk(clk);
  }
  
-@@ -2035,8 +2035,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- 		/* Handle SDIO Interrupts */
- 		for (i = 0; i < host->num_slots; i++) {
- 			struct dw_mci_slot *slot = host->slot[i];
--			if (pending & SDMMC_INT_SDIO(i)) {
--				mci_writel(host, RINTSTS, SDMMC_INT_SDIO(i));
-+			if (pending & SDMMC_INT_SDIO(slot->sdio_id)) {
-+				mci_writel(host, RINTSTS,
-+					   SDMMC_INT_SDIO(slot->sdio_id));
- 				mmc_signal_sdio_irq(slot->mmc);
- 			}
- 		}
-@@ -2206,6 +2207,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 
- 	slot = mmc_priv(mmc);
- 	slot->id = id;
-+	slot->sdio_id = host->sdio_id0 + id;
- 	slot->mmc = mmc;
- 	slot->host = host;
- 	host->slot[id] = slot;
-diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 01b99e8..3e966a9 100644
---- a/drivers/mmc/host/dw_mmc.h
-+++ b/drivers/mmc/host/dw_mmc.h
-@@ -214,6 +214,7 @@ extern int dw_mci_resume(struct dw_mci *host);
-  *	with CONFIG_MMC_CLKGATE.
-  * @flags: Random state bits associated with the slot.
-  * @id: Number of this slot.
-+ * @sdio_id: Number of this slot in the SDIO interrupt registers.
-  * @last_detect_state: Most recently observed card detect state.
-  */
- struct dw_mci_slot {
-@@ -234,6 +235,7 @@ struct dw_mci_slot {
- #define DW_MMC_CARD_PRESENT	0
- #define DW_MMC_CARD_NEED_INIT	1
- 	int			id;
-+	int			sdio_id;
- 	int			last_detect_state;
- };
- 
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index 0013669..4c0d3f2 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -96,6 +96,7 @@ struct mmc_data;
-  * @quirks: Set of quirks that apply to specific versions of the IP.
-  * @irq_flags: The flags to be passed to request_irq.
-  * @irq: The irq value to be passed to request_irq.
-+ * @sdio_id0: Number of slot0 in the SDIO interrupt registers.
-  *
-  * Locking
-  * =======
-@@ -193,6 +194,8 @@ struct dw_mci {
- 	bool			vqmmc_enabled;
- 	unsigned long		irq_flags; /* IRQ flags */
- 	int			irq;
+ /***        clk rate change notifiers        ***/
+@@ -2542,6 +2625,11 @@ struct clk *__clk_create_clk(struct clk_hw *hw, const char *dev_id,
+ 	clk->core = hw->core;
+ 	clk->dev_id = dev_id;
+ 	clk->con_id = con_id;
++	clk->ceiling_constraint = ULONG_MAX;
 +
-+	int			sdio_id0;
++	clk_prepare_lock();
++	hlist_add_head(&clk->child_node, &hw->core->clks);
++	clk_prepare_unlock();
+ 
+ 	return clk;
+ }
+diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+index 1cdb727..8479d81 100644
+--- a/include/linux/clk-private.h
++++ b/include/linux/clk-private.h
+@@ -39,6 +39,7 @@ struct clk_core {
+ 	u8			num_parents;
+ 	u8			new_parent_index;
+ 	unsigned long		rate;
++	unsigned long		req_rate;
+ 	unsigned long		new_rate;
+ 	struct clk_core		*new_parent;
+ 	struct clk_core		*new_child;
+@@ -50,6 +51,7 @@ struct clk_core {
+ 	struct hlist_head	children;
+ 	struct hlist_node	child_node;
+ 	struct hlist_node	debug_node;
++	struct hlist_head	clks;
+ 	unsigned int		notifier_count;
+ #ifdef CONFIG_DEBUG_FS
+ 	struct dentry		*dentry;
+@@ -61,6 +63,10 @@ struct clk {
+ 	struct clk_core	*core;
+ 	const char *dev_id;
+ 	const char *con_id;
++
++	unsigned long floor_constraint;
++	unsigned long ceiling_constraint;
++	struct hlist_node child_node;
  };
  
- /* DMA ops for Internal/External DMAC interface */
+ /*
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index c7f258a..0d55570 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -302,6 +302,24 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
+ int clk_set_rate(struct clk *clk, unsigned long rate);
+ 
+ /**
++ * clk_set_floor_rate - set a minimum clock rate for a clock source
++ * @clk: clock source
++ * @rate: desired minimum clock rate in Hz
++ *
++ * Returns success (0) or negative errno.
++ */
++int clk_set_floor_rate(struct clk *clk, unsigned long rate);
++
++/**
++ * clk_set_ceiling_rate - set a maximum clock rate for a clock source
++ * @clk: clock source
++ * @rate: desired maximum clock rate in Hz
++ *
++ * Returns success (0) or negative errno.
++ */
++int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
++
++/**
+  * clk_set_parent - set the parent clock source for this clock
+  * @clk: clock source
+  * @parent: parent clock source
 -- 
-1.8.3.2
-
+1.9.3
 
