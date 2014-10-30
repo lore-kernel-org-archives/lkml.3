@@ -1,125 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571AbaJ3KEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:04:43 -0400
-Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:52889 "EHLO
-	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754839AbaJ3KEm (ORCPT
+	id S1758694AbaJ3KE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:04:57 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:40084 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758629AbaJ3KEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:04:42 -0400
-X-Sender-Id: abbotti@mev.co.uk
-From: Ian Abbott <abbotti@mev.co.uk>
-To: <driverdev-devel@linuxdriverproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] staging: comedi: comedi_test: fix timer lock-up
-Date: Thu, 30 Oct 2014 10:03:53 +0000
-Message-Id: <1414663433-11137-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414501642-14261-1-git-send-email-abbotti@mev.co.uk>
-References: <1414501642-14261-1-git-send-email-abbotti@mev.co.uk>
+	Thu, 30 Oct 2014 06:04:55 -0400
+Date: Thu, 30 Oct 2014 11:01:43 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Johan Hovold <johan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, nsekhar@ti.com, t-kristo@ti.com,
+        j-keerthy@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
+Message-ID: <20141030100143.GA7846@localhost>
+References: <20141028002552.GX12379@n2100.arm.linux.org.uk>
+ <20141028081616.GL2006@localhost>
+ <20141028084745.GY12379@n2100.arm.linux.org.uk>
+ <20141028131257.GS2006@localhost>
+ <20141028151610.GA12379@n2100.arm.linux.org.uk>
+ <20141029123418.GB2265@localhost>
+ <20141029131020.GB12379@n2100.arm.linux.org.uk>
+ <20141029132244.GD2265@localhost>
+ <20141029152502.GA20565@roeck-us.net>
+ <20141029155109.GH2265@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029155109.GH2265@localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 240512474424 ("staging: comedi: comedi_test: use
-comedi_handle_events()") resulted in the timer routine
-`waveform_ai_interrupt()` calling `comedi_handle_events()` instead of
-`comedi_events()`.  That had the advantage of automatically stopping the
-acquisition on overflow/error/end-of-acquisition conditions (by calling
-the comedi subdevice's "cancel" handler), but currently results in the
-timer routine locking when one of those conditions occur.  This is
-because the "cancel" handler `waveform_ai_cancel()` calls
-`del_timer_sync()`.
+On Wed, Oct 29, 2014 at 04:51:09PM +0100, Johan Hovold wrote:
+> On Wed, Oct 29, 2014 at 08:25:02AM -0700, Guenter Roeck wrote:
+> > On Wed, Oct 29, 2014 at 02:22:44PM +0100, Johan Hovold wrote:
+> > > On Wed, Oct 29, 2014 at 01:10:20PM +0000, Russell King - ARM Linux wrote:
+> > > > On Wed, Oct 29, 2014 at 01:34:18PM +0100, Johan Hovold wrote:
+> > > > > On Tue, Oct 28, 2014 at 03:16:10PM +0000, Russell King - ARM Linux wrote:
+> > > > > > And how is that different from having a set of power-off handlers, and
+> > > > > > reporting when each individual one fails?  Don't you want to know if
+> > > > > > your primary high priority reboot handler fails, just as much as you
+> > > > > > want to know if your final last-resort power-off handler fails?
+> > > > > 
+> > > > > Good point. Failed power-off should probably be logged by the power-off
+> > > > > call chain implementation (which seems to makes notifier chains a bad
+> > > > > fit).
+> > > > > 
+> > > > > And what about any power-off latencies? Should this always be dealt with
+> > > > > in the power-off handler?
+> > > > > 
+> > > > > Again, if it's predictable and high, as in the OMAP RTC case, it should
+> > > > > go in the handler. But what if it's just normal bus latencies
+> > > > > (peripheral busses, i2c, or whatever people may come up with)?
+> > > > > 
+> > > > > Should there always be a short delay before calling the next handler?
+> > > > 
+> > > > If the handler has determined that it has failed, then why delay before
+> > > > trying the next handler?  At the point it has decided it has failed,
+> > > > surely that's after it has waited sufficient time to determine that
+> > > > failure?
+> > > 
+> > > The current handlers we have are not expecting any other handler to be
+> > > run after they return. My question was whether all these handlers should
+> > > get a short mdelay added to them (e.g. to compensate for bus latencies)
+> > 
+> > Some of them do add a delay.
+> 
+> Yes, but not all.
+> 
+> > > or if this could be done in the power-off handler (e.g. before printing
+> > > the error message).
+> > > 
+> > That might make sense, but it would have to be configurable, since the delay
+> > is platform specific and power-off handler does not know how long to wait
+> > (the longest delay I have seen is 10 seconds).
+> 
+> We've already concluded in this thread that such delays must be encoded
+> in the actual handler (even if it's an argument to the power-off call
+> chain code). The only exception should be generic handlers such as
+> gpio-poweroff, which may need to define different delays depending on
+> board. This could of course just be an argument of the corresponding DT
+> node.
 
-Fix it by adding a bit to the device private data that indicates whether
-the acquisition is active or not, and changing the "cancel" handler to
-use `del_timer()` instead of `del_timer_sync()`.  The bit is set when
-starting the acquisition, cleared when ending the acquisition (in the
-"cancel" handler), and tested in the timer routine, which will do
-nothing if the acquisition is inactive.  Also, make sure any scheduled
-timeout event gets cancelled when the low-level device gets "detached"
-from the comedi core by calling `del_timer_sync()` in the "detach"
-handler `waveform_detach()`.
+There probably should be a generic device-tree property for this, even
+if some delays would be device specific (e.g. the two second delay for
+omap rtc).
 
-Fixes: 240512474424 ("staging: comedi: comedi_test: use comedi_handle_events()")
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
-v2: rebased after commit dd28153b2a8ca
-Greg, this fix is for "linux-next" and "staging-next".
----
- drivers/staging/comedi/drivers/comedi_test.c | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+But on top of that, external latencies would be quite board specific.
+The PMIC on the Beaglebone black adds a 50ms deglitch time, for
+instance.
 
-diff --git a/drivers/staging/comedi/drivers/comedi_test.c b/drivers/staging/comedi/drivers/comedi_test.c
-index 4d4358c..e1a11c4 100644
---- a/drivers/staging/comedi/drivers/comedi_test.c
-+++ b/drivers/staging/comedi/drivers/comedi_test.c
-@@ -56,6 +56,10 @@ zero volts).
- 
- #define N_CHANS 8
- 
-+enum waveform_state_bits {
-+	WAVEFORM_AI_RUNNING = 0
-+};
-+
- /* Data unique to this driver */
- struct waveform_private {
- 	struct timer_list timer;
-@@ -65,6 +69,7 @@ struct waveform_private {
- 	unsigned long usec_current;	/* current time (mod waveform period) */
- 	unsigned long usec_remainder;	/* usec since last scan */
- 	unsigned long ai_count;		/* number of conversions remaining */
-+	unsigned long state_bits;
- 	unsigned int scan_period;	/* scan period in usec */
- 	unsigned int convert_period;	/* conversion period in usec */
- 	unsigned int ao_loopbacks[N_CHANS];
-@@ -175,6 +180,10 @@ static void waveform_ai_interrupt(unsigned long arg)
- 	ktime_t now;
- 	bool stopping = false;
- 
-+	/* check command is still active */
-+	if (!test_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits))
-+		return;
-+
- 	now = ktime_get();
- 
- 	elapsed_time = ktime_to_us(ktime_sub(now, devpriv->last));
-@@ -322,6 +331,10 @@ static int waveform_ai_cmd(struct comedi_device *dev,
- 	devpriv->usec_remainder = 0;
- 
- 	devpriv->timer.expires = jiffies + 1;
-+	/* mark command as active */
-+	smp_mb__before_atomic();
-+	set_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits);
-+	smp_mb__after_atomic();
- 	add_timer(&devpriv->timer);
- 	return 0;
- }
-@@ -331,7 +344,11 @@ static int waveform_ai_cancel(struct comedi_device *dev,
- {
- 	struct waveform_private *devpriv = dev->private;
- 
--	del_timer_sync(&devpriv->timer);
-+	/* mark command as no longer active */
-+	clear_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits);
-+	smp_mb__after_atomic();
-+	/* cannot call del_timer_sync() as may be called from timer routine */
-+	del_timer(&devpriv->timer);
- 	return 0;
- }
- 
-@@ -433,7 +450,7 @@ static void waveform_detach(struct comedi_device *dev)
- 	struct waveform_private *devpriv = dev->private;
- 
- 	if (devpriv)
--		waveform_ai_cancel(dev, dev->read_subdev);
-+		del_timer_sync(&devpriv->timer);
- }
- 
- static struct comedi_driver waveform_driver = {
--- 
-2.1.1
+> My question above was if it was reasonable to add some generic short
+> delay after calling each power-off handler to handle short power-off
+> latencies (e.g. bus latencies) so that not every handler needs an
+> explicit delay.
 
+I just added a 500ms margin to the OMAP rtc power-off handler. That
+should be more than enough, and perhaps something like that could be a
+default in the power-off call chain. Consider that arch-arm has a 1s
+grace period before reporting failed reboot already today.
+
+Johan
