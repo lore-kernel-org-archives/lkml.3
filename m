@@ -1,75 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760263AbaJ3OAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:00:09 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:50723 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760214AbaJ3N7l (ORCPT
+	id S1760106AbaJ3OCt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:02:49 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33549 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaJ3OCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:59:41 -0400
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thierry Reding <thierry.reding@gmail.com>
-Subject: [PATCH 3/3] i2c: core: Map OF IRQ at probe time
-Date: Thu, 30 Oct 2014 15:59:38 +0200
-Message-Id: <1414677578-27412-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1414677578-27412-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1414677578-27412-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	Thu, 30 Oct 2014 10:02:47 -0400
+Message-ID: <54524501.8030604@collabora.co.uk>
+Date: Thu, 30 Oct 2014 15:02:41 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [RFT v3 06/14] regulator: max77802: Remove support for board
+ files
+References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com> <1414668053-31370-7-git-send-email-k.kozlowski@samsung.com> <54522615.7040002@collabora.co.uk> <1414671037.23399.2.camel@AMDC1943> <54522D2C.9050002@collabora.co.uk> <1414672235.23399.7.camel@AMDC1943> <54523224.3010407@collabora.co.uk> <1414673587.23399.13.camel@AMDC1943>
+In-Reply-To: <1414673587.23399.13.camel@AMDC1943>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I2C clients instantiated from OF get their IRQ mapped at device
-registration time. This leads to the IRQ being silently ignored if the
-related irqchip hasn't been proved yet.
+Hello Krzysztof,
 
-Fix this by moving IRQ mapping at probe time using of_get_irq(). The
-function operates as irq_of_parse_and_map() but additionally returns
--EPROBE_DEFER if the irqchip isn't available, allowing us to defer I2C
-client probing.
+On 10/30/2014 01:53 PM, Krzysztof Kozlowski wrote:
+> 
+> To me a intuitive structure would be:
+> MFD device
+>   |
+>   - clock device
+>      |
+>      - clock1
+>      - clock2
+>   - regulator device
+>      |
+>      - LDO1
+>      - LDO2
+> etc.
+> 
+> This also maps to structure in DTS. dev_err* messages and any
+> allocations should be done on behalf of regulator device, not parent.
+>
+> Various drivers do this differently... The wm8* drivers set it mostly to
+> parent (MFD)...
+>
+> I do not insists, especially because using parent's device would make
+> this driver simpler.
+>
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/i2c/i2c-core.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+Another reason to set it to the parent is to lookup the regulator input supply
+node. The regulator_register() function does:
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 258765b29684..c6694f232240 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -631,6 +631,15 @@ static int i2c_device_probe(struct device *dev)
- 	if (!client)
- 		return 0;
+	if (supply) {
+		struct regulator_dev *r;
+
+		r = regulator_dev_lookup(dev, supply, &ret);
+
+where dev = config->dev so that will determine on which device node your
+input supplies have to be defined. For example on the Peach Pit DTS has this:
+
+	max77802: max77802-pmic@9 {
+		...
+		inb1-supply = <&tps65090_dcdc2>;
+		...
+		inb10-supply = <&tps65090_dcdc1>;
+
+		inl1-supply = <&buck5_reg>;
+		...
+		inl10-supply = <&buck7_reg>;
+		...
+
+		regulators {
+		...
+		};
+	};
+
+which is how most (all?) DTS define the input supplies. If you instead
+do config.dev = &pdev->dev, then the input supplies have to be in the
+"regulators" node which is not the standard AFAICT.
+
+This is not a problem for max77686 because I see that DTS don't define
+the input supplies but I guess that is because the power scheme is not
+completely modeled.
  
-+	if (!client->irq && dev->of_node) {
-+		int irq = of_irq_get(dev->of_node, 0);
-+
-+		if (irq < 0)
-+			return irq;
-+
-+		client->irq = irq;
-+	}
-+
- 	driver = to_i2c_driver(dev->driver);
- 	if (!driver->probe || !driver->id_table)
- 		return -ENODEV;
-@@ -1412,7 +1421,6 @@ static void of_i2c_register_devices(struct i2c_adapter *adap)
- 			continue;
- 		}
- 
--		info.irq = irq_of_parse_and_map(node, 0);
- 		info.of_node = of_node_get(node);
- 		info.archdata = &dev_ad;
- 
-@@ -1426,7 +1434,6 @@ static void of_i2c_register_devices(struct i2c_adapter *adap)
- 			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
- 				node->full_name);
- 			of_node_put(node);
--			irq_dispose_mapping(info.irq);
- 			continue;
- 		}
- 	}
--- 
-2.0.4
+> Mark, maybe you could shed light on it?
+> 
+> 
+> Best regards,
+> Krzysztof
+> 
+> 
 
+Best regards,
+Javier
