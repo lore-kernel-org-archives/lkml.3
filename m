@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759836AbaJ3NFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:05:13 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:50659 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759685AbaJ3NFK (ORCPT
+	id S1759688AbaJ3NIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:08:07 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:41500 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759020AbaJ3NIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:05:10 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: Re: I2C OF IRQ parsing issue due to probe ordering
-Date: Thu, 30 Oct 2014 15:05:18 +0200
-Message-ID: <1441244.9DO8HMds24@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20141030125645.GA19386@ulmo>
-References: <2287003.09eTeKUr1V@avalon> <20141027125819.GA12641@katana> <20141030125645.GA19386@ulmo>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 30 Oct 2014 09:08:05 -0400
+From: Isamu Mogi <isamu@leafytree.jp>
+To: ralf@linux-mips.org
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        isamu@leafytree.jp
+Subject: [PATCH v2 0/3] MIPS: R3000: Fix debug output for Virtual page number
+Date: Thu, 30 Oct 2014 22:07:35 +0900
+Message-Id: <1414674458-7583-1-git-send-email-isamu@leafytree.jp>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410278429-8541-1-git-send-email-isamu@leafytree.jp>
+References: <1410278429-8541-1-git-send-email-isamu@leafytree.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+This patch set fixes the bit mask for MIPS R3000's virtual page number in
+debug output. Also replace magic numbers with macros to decrease the
+likelihood of issues like this.
 
-On Thursday 30 October 2014 13:56:46 Thierry Reding wrote:
-> On Mon, Oct 27, 2014 at 01:58:19PM +0100, Wolfram Sang wrote:
-> > > The i2c@e6520000 node is probed before the gpio@e6051000 node. The
-> > > of_i2c_register_devices() function tries to register all children,
-> > > including hdmi@39. It tries to parse and map the I2C client IRQ by
-> > > calling irq_of_parse_and_map(), which returns 0 as the interrupt
-> > > controller isn't probed yet. The adv7511 driver later probes the hdmi@39
-> > > device and gets client->irq set to 0.
-> > 
-> > I've got this strange feeling of deja vu... Ah, here: Thierry Reding
-> > tackled this problem a year ago. His series:
-> > 
-> > https://lkml.org/lkml/2013/9/16/111 (of/irq: Defer interrupt reference
-> > resolution)
-> > 
-> > He did a V2 (which never made it to the i2c list). Seems like the first
-> > two patches made it and the rest got stalled without discussion?
-> > 
-> > https://lkml.org/lkml/2013/9/18/216
-> > 
-> > Adding Thierry to the queue. Maybe he can bring some light to what
-> > happened to his series.
-> 
-> I tried to fix it in a proper way, but it seems people were uneasy with
-> how invasive the change was.
+Changes in v2:
+- Replace magic numbers with macros
+- Remove redundant parentheses
 
-It was a bit invasive indeed and I can share the uneasiness, but on the other 
-hand there was no real nack. I think I still prefer your approach, but can 
-live with something simpler.
+Isamu Mogi (3):
+  MIPS: R3000: Fix debug output for Virtual page number
+  MIPS: R3000: Replace magic numbers with macros
+  MIPS: R3000: Remove redundant parentheses
 
-> At some point I lost interest. People ended up merging something that was
-> similar, but side-stepped the issue of propagating error codes all the way
-> up by introducing a new API and in case of of_irq_parse_one() failing doing
-> an additional check to see if the reason was the missing IRQ domain.
-> 
-> See:
-> 
-> 	9ec36cafe43b of/irq: do irq resolution in platform_get_irq
-> 
-> I suspect a similar thing could be done for I2C.
-
-That could work. We would need to introduce a new i2c_get_irq() function 
-though. Wolfram, would you be fine with that ?
+ arch/mips/lib/r3k_dump_tlb.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
 -- 
-Regards,
-
-Laurent Pinchart
+1.9.1
 
