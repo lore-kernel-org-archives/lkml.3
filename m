@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759375AbaJ3Lpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:45:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59668 "EHLO
+	id S1759214AbaJ3LsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:48:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52554 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759041AbaJ3Lpo (ORCPT
+	with ESMTP id S1758972AbaJ3LsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:45:44 -0400
+	Thu, 30 Oct 2014 07:48:24 -0400
+Message-ID: <54522584.2030102@cogentembedded.com>
+Date: Thu, 30 Oct 2014 14:48:20 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFqFOb9L6WyFhLbSY-dQy_75YVUhTzVsBku1BKcEMmgpBg@mail.gmail.com>
-References: <1414655193-16952-1-git-send-email-pramod.gurav@smartplayin.com>
-	<CAPDyKFqFOb9L6WyFhLbSY-dQy_75YVUhTzVsBku1BKcEMmgpBg@mail.gmail.com>
-Date: Thu, 30 Oct 2014 17:15:42 +0530
-Message-ID: <CAMf-jSm-Fc6gcnSqB4cixjqZSQOrvSLaQ2hXqy1TZncFrjn8hw@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: davinci: Fix and simplify probe failure path
-From: Pramod Gurav <pramod.gurav.etc@gmail.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Kevin Cernekee <cernekee@gmail.com>, f.fainelli@gmail.com,
+        tglx@linutronix.de, jason@lakedaemon.net, ralf@linux-mips.org,
+        lethal@linux-sh.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH V2 09/15] irqchip: Remove ARM dependency for bcm7120-l2
+ and brcmstb-l2
+References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-10-git-send-email-cernekee@gmail.com> <54521CA6.1000802@cogentembedded.com> <3334166.jta5WKHbUO@wuerfel>
+In-Reply-To: <3334166.jta5WKHbUO@wuerfel>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Ulf,
+Hello.
 
-On Thu, Oct 30, 2014 at 4:38 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 30 October 2014 08:46, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
->> The sequence of resource release in probe failure path in this
->> driver was wrong and needed fixes to cleanly unload the driver.
->> This changes does the same by switching to managed resources and
->> fixes return path to release resource in proper sequence.
->>
->> Cc: Chris Ball <chris@printf.net>
->> Cc: Ulf Hansson <ulf.hansson@linaro.org>
->> Cc: linux-mmc@vger.kernel.org
->
-> Please remove these Ccs above from the commit message. It's not needed
-> when you anyway need to send the patches directly to these addresses.
-Will remove Cc.
+On 10/30/2014 2:24 PM, Arnd Bergmann wrote:
 
->
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->> ---
-..
+>>> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+>>> index b21f12f..09c79d1 100644
+>>> --- a/drivers/irqchip/Kconfig
+>>> +++ b/drivers/irqchip/Kconfig
+>>> @@ -50,7 +50,6 @@ config ATMEL_AIC5_IRQ
+>>>
+>>>    config BRCMSTB_L2_IRQ
+>>>        bool
+>>> -     depends on ARM
 
->>
->>         host = mmc_priv(mmc);
->>         host->mmc = mmc;        /* Important */
->> @@ -1275,15 +1273,16 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
->>                 host->txdma = r->start;
->>
->>         host->mem_res = mem;
->> -       host->base = ioremap(mem->start, mem_size);
->> -       if (!host->base)
->> -               goto out;
->> +       host->base = devm_ioremap(&pdev->dev, mem->start, mem_size);
->
-> I realized that you should use devm_ioremap_resource() instead. That
-> would simplify the code even more.
->
-Yes, we could have used devm_ioremap_resource() but this driver stores
-the return from devm_request_mem_region() in host->mem_res and uses
-the same in the other part of drivers. Is there a way to work this
-around?
+>>      How about the following?
 
-> [...]
->
-> Kind regards
-> Uffe
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>>          depends on ARM || MIPS || COMPILE_TEST
 
+> Makes no sense when the driver isn't user-selectable.
 
+    Ah, I was just blind. :-/
 
--- 
-Thanks and Regards
-Pramod
+> 	Arnd
+
+WBR, Sergei
+
