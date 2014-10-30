@@ -1,131 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315AbaJ3NzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:55:11 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:61782 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaJ3NzI (ORCPT
+	id S1759897AbaJ3NzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:55:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35290 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758423AbaJ3NzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:55:08 -0400
-Date: Thu, 30 Oct 2014 14:55:02 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH RESEND V4 5/9] of: Add NVIDIA Tegra xHCI controller
- binding
-Message-ID: <20141030135500.GC19802@ulmo.nvidia.com>
-References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
- <1414535277-15645-6-git-send-email-abrestic@chromium.org>
- <20141029094338.GA28356@ulmo.nvidia.com>
- <CAL1qeaEf0mTQfMgnY8jHGDBvbQ7ivtzAQRWaE9K24TJ86hWYMg@mail.gmail.com>
+	Thu, 30 Oct 2014 09:55:17 -0400
+Date: Thu, 30 Oct 2014 14:55:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        xen-devel@lists.xenproject.org, John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [RFC PATCH v2 03/11] time: Add rtc_tm_to_time64() safe version(using
+ time64_t)
+In-Reply-To: <1414667745-7703-4-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1410301444100.5308@nanos>
+References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org> <1414667745-7703-4-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ABTtc+pdwF7KHXCz"
-Content-Disposition: inline
-In-Reply-To: <CAL1qeaEf0mTQfMgnY8jHGDBvbQ7ivtzAQRWaE9K24TJ86hWYMg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 30 Oct 2014, pang.xunlei wrote:
 
---ABTtc+pdwF7KHXCz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Same $subject issue.
 
-On Wed, Oct 29, 2014 at 09:37:14AM -0700, Andrew Bresticker wrote:
-> On Wed, Oct 29, 2014 at 2:43 AM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
-> > On Tue, Oct 28, 2014 at 03:27:50PM -0700, Andrew Bresticker wrote:
-> > [...]
-> >> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124=
--xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra12=
-4-xusb-padctl.txt
-> > [...]
-> >> +Optional properties:
-> >> +-------------------
-> >> +- vbus-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
-> >> +- vddio-hsic-supply: VDDIO regulator for the HSIC pads.
-> >> +- nvidia,usb3-port-{0,1}-lane: PCIe/SATA lane to which the correspond=
-ing USB3
-> >> +  port is mapped.  See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for=
- the list
-> >> +  of valid values.
-> >
-> > I dislike how we now need to provide a list of all pins in the header
-> > file, where previously we used strings for this. This could become very
-> > ugly if the set of pins changes in future generations of this IP block.
-> >
-> > Could we instead derive this from the pinmux nodes? For example you have
-> > this in the example below:
-> >
-> >         usb3p0 {
-> >                 nvidia,lanes =3D "pcie-0";
-> >                 ...
-> >         };
-> >
-> > Perhaps what we need is to either key off the node name or add another
-> > property, such as:
-> >
-> >         nvidia,usb3-port =3D <0>;
-> >
-> > This would match the nvidia,usb2-port property that you've added below.
->=20
-> That is actually how I described the USB3 port to SS lane mapping
-> originally, but in review of an earlier version of this series,
-> Stephen suggested that I make it a separate, not pinconfig property
-> since it wasn't a value written directly to the hardware.  I'm fine
-> with changing it back as the pinconfig property makes more sense to me
-> as well.
+> As part of addressing 2038 saftey for in-kernel uses, this patch
+> adds safe rtc_tm_to_time64() using time64_t. After this patch,
+> rtc_tm_to_time() should be replaced by rtc_tm_to_time64() one by
+> one. Eventually, rtc_tm_to_time() will be removed from the kernel
+> when it has no users.
+> 
+> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+> ---
+>  drivers/rtc/rtc-lib.c |   15 ++++++++++++++-
+>  include/linux/rtc.h   |    1 +
+>  2 files changed, 15 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rtc/rtc-lib.c b/drivers/rtc/rtc-lib.c
+> index c4cf057..6948cbd 100644
+> --- a/drivers/rtc/rtc-lib.c
+> +++ b/drivers/rtc/rtc-lib.c
+> @@ -110,10 +110,23 @@ EXPORT_SYMBOL(rtc_valid_tm);
+>  
+>  /*
+>   * Convert Gregorian date to seconds since 01-01-1970 00:00:00.
+> + * Safe version for 2038 safety.
 
-Hmm... I had considered it a mux option of the specific lane. If the
-function is usb3, it'd still need to be muxed to one of the ports. So
-it's additional information associated with the usb3 function.
+Docbook comment missing. See the previous replies.
 
-I did look through the driver changes and can't really make out which
-part of the code actually performs this assignment. Can you point me to
-it?
+> + */
+> +int rtc_tm_to_time64(struct rtc_time *tm, time64_t *time)
 
-Thierry
+What's the point of the return value? Just because rtc_tm_to_time()
+has one? 
 
---ABTtc+pdwF7KHXCz
-Content-Type: application/pgp-signature
+Yes it does, but that does not mean that we blindly copy the existing
+nonsense when we implement a replacement interface.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+What's wrong with changing it to:
 
-iQIcBAEBAgAGBQJUUkM0AAoJEN0jrNd/PrOhMS8P/i/lGqgEusOrtNYyZhrYikX9
-/3mOb4M3tfpY5A9yt5sWZrnTXRa+Yg0mDg3ct5I9uPcO231miVdCI+X3VmLXtMzx
-7JKA7xfdO530WaEbjJWZQnocm8Ofy2bVmwgy2beWJoMyKOE22+Ibe1pRs/Ew27B/
-QiCAzvJY0AA+GoKbfwUIRblg3vRUc9iqMf8Za6RvHfgM0xzRRz68KgYneDaoW/lV
-DKSXu+pPXxVzCU4EAu+jqA5Vusj96S3dPdZp05Jk3jEyLKswlveb5xZgWzZkssVN
-Cvjjknlde6pPlvtRsm/3eT1XdF719A2+8l5FL1Dixv2ZatsXx3IW210tHrTg0D6Q
-hSpBMGbLBF4TMlbDOaVQplgVDCKIMQSpk8F6rSxFK0kO8qQ4EbMlt+u4Cqi6xQXi
-hAyBc4gdq0NWmq+EU0YvaPgn5B+o4Ohsxaqa4maikEXlbL0hf6TlrIRkLQx/VDGD
-LliNkRszMrRhaPiSr+6VHdREtWWd/YjFzplbNW22R1Bd6iSbPj8E8LBcKHvUzb/T
-MixEf8JmYyaB7xJ9ok+ObSTIytxsedEt1pXXVdKHoA4dZVW7DTSH0cnA4xvHFiuC
-zpkK7P1fpGu+UOIz/KrT05xXt37g/vba0PIfYwe2BB0GS16rtlj77GFBBx35alvi
-TvZ/tempujyTIThhNrOa
-=+NwF
------END PGP SIGNATURE-----
+time64_t rtc_tm_to_time64(struct rtc_time *tm)
+{
+	return mktime64(......);
+}
 
---ABTtc+pdwF7KHXCz--
+> +/*
+> + * Convert Gregorian date to seconds since 01-01-1970 00:00:00.
+> + * TODO: [2038 safety] should be replaced by rtc_tm_to_time64.
+
+Groan.
+
+>   */
+>  int rtc_tm_to_time(struct rtc_time *tm, unsigned long *time)
+>  {
+> -       *time = mktime(tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+> +       *time = (unsigned long) mktime64(tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+>                         tm->tm_hour, tm->tm_min, tm->tm_sec);
+
+And that would become
+
+    	 *time = rtc_time_to_time64(tm);
+
+>         return 0;
+>  }
+
+Please stop doing purely mechanical changes. Just blindly copying
+stuff and make it take time64_t instead of unsigned long can be done
+with a script as well.
+
+Thanks,
+
+	tglx
