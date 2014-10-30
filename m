@@ -1,100 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758384AbaJ3KEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:04:04 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:35768 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaJ3KED convert rfc822-to-8bit (ORCPT
+	id S1758571AbaJ3KEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:04:43 -0400
+Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:52889 "EHLO
+	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754839AbaJ3KEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:04:03 -0400
-Message-ID: <54520D13.7020904@arm.com>
-Date: Thu, 30 Oct 2014 10:04:03 +0000
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Wanpeng Li <kernellwp@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: [PATCH 2/6] sched/dl: fix yield task artificial overrun
-References: <1414374067-7209-1-git-send-email-wanpeng.li@linux.intel.com> <1414374067-7209-2-git-send-email-wanpeng.li@linux.intel.com> <545116F7.7080607@arm.com> <54516F0F.7000901@gmail.com>
-In-Reply-To: <54516F0F.7000901@gmail.com>
-X-OriginalArrivalTime: 30 Oct 2014 10:03:56.0036 (UTC) FILETIME=[D10F8C40:01CFF428]
-X-MC-Unique: 114103010035701501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Oct 2014 06:04:42 -0400
+X-Sender-Id: abbotti@mev.co.uk
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <driverdev-devel@linuxdriverproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] staging: comedi: comedi_test: fix timer lock-up
+Date: Thu, 30 Oct 2014 10:03:53 +0000
+Message-Id: <1414663433-11137-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414501642-14261-1-git-send-email-abbotti@mev.co.uk>
+References: <1414501642-14261-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit 240512474424 ("staging: comedi: comedi_test: use
+comedi_handle_events()") resulted in the timer routine
+`waveform_ai_interrupt()` calling `comedi_handle_events()` instead of
+`comedi_events()`.  That had the advantage of automatically stopping the
+acquisition on overflow/error/end-of-acquisition conditions (by calling
+the comedi subdevice's "cancel" handler), but currently results in the
+timer routine locking when one of those conditions occur.  This is
+because the "cancel" handler `waveform_ai_cancel()` calls
+`del_timer_sync()`.
 
-On 29/10/14 22:49, Wanpeng Li wrote:
-> Hi Juri,
-> 2014/10/30 0:33, Juri Lelli:
->> Hi,
->>
->> On 27/10/14 01:41, Wanpeng Li wrote:
->>> The yield semantic of deadline class is to reduce remaining runtime to
->>> zero, and then update_curr_dl() will stop it. However, comsumed bandwidth
->>> is reduced from the budget of yield task again even if it has already been
->>> set to zero which leads to artificial overrun. This patch fix it by reduce
->>> remaining runtime to zero if there is still remaining runtime after comsumed
->>> bandwidth is accumulated.
->>>
->> Oh, right. But, how about what below instead (with a proper comment
->> and changelog)?
->>
->> Thanks,
->>
->> - Juri
->>
->>  From 108ecdff52b154ea2c79d4aac552ddf1ead871c7 Mon Sep 17 00:00:00 2001
->> From: Juri Lelli <juri.lelli@arm.com>
->> Date: Wed, 29 Oct 2014 16:09:06 +0000
->> Subject: [PATCH] sched/deadline: fix artificial overrun introduced by
->>   yield_task_dl
->>
->> Signed-off-by: Juri Lelli <juri.lelli@arm.com>
->> ---
->>   kernel/sched/deadline.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index 2e31a30..db6ad38 100644
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -633,7 +633,7 @@ static void update_curr_dl(struct rq *rq)
->>   
->>   	sched_rt_avg_update(rq, delta_exec);
->>   
->> -	dl_se->runtime -= delta_exec;
->> +	dl_se->runtime -= dl_se->dl_yielded ? 0 : delta_exec;
-> 
-> +	if (dl_se->dl_yielded && dl_se->runtime > 0)
-> +		dl_se->runtime = 0;
-> 
+Fix it by adding a bit to the device private data that indicates whether
+the acquisition is active or not, and changing the "cancel" handler to
+use `del_timer()` instead of `del_timer_sync()`.  The bit is set when
+starting the acquisition, cleared when ending the acquisition (in the
+"cancel" handler), and tested in the timer routine, which will do
+nothing if the acquisition is inactive.  Also, make sure any scheduled
+timeout event gets cancelled when the low-level device gets "detached"
+from the comedi core by calling `del_timer_sync()` in the "detach"
+handler `waveform_detach()`.
 
-We already did this in yield_task_dl(). In update_curr_dl() we now
-just have to make sure we don't steal some more runtime from the
-task that yielded (but we do all other accounting).
+Fixes: 240512474424 ("staging: comedi: comedi_test: use comedi_handle_events()")
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+v2: rebased after commit dd28153b2a8ca
+Greg, this fix is for "linux-next" and "staging-next".
+---
+ drivers/staging/comedi/drivers/comedi_test.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
-Thanks,
-
-- Juri
-
-> Maybe this can be moved to update_curr_dl().
-> 
-> I think the consumed bandwidth still should be reduced from remaining 
-> runtime even if yield, then the remaining runtime will be reset to 0 if 
-> there is still remaining runtime as what my patch do. What's your option?
-> 
-> Regards,
-> Wanpeng Li
-> 
->>   	if (dl_runtime_exceeded(rq, dl_se)) {
->>   		__dequeue_task_dl(rq, curr, 0);
->>   		if (likely(start_dl_timer(dl_se, curr->dl.dl_boosted)))
-> 
-> 
+diff --git a/drivers/staging/comedi/drivers/comedi_test.c b/drivers/staging/comedi/drivers/comedi_test.c
+index 4d4358c..e1a11c4 100644
+--- a/drivers/staging/comedi/drivers/comedi_test.c
++++ b/drivers/staging/comedi/drivers/comedi_test.c
+@@ -56,6 +56,10 @@ zero volts).
+ 
+ #define N_CHANS 8
+ 
++enum waveform_state_bits {
++	WAVEFORM_AI_RUNNING = 0
++};
++
+ /* Data unique to this driver */
+ struct waveform_private {
+ 	struct timer_list timer;
+@@ -65,6 +69,7 @@ struct waveform_private {
+ 	unsigned long usec_current;	/* current time (mod waveform period) */
+ 	unsigned long usec_remainder;	/* usec since last scan */
+ 	unsigned long ai_count;		/* number of conversions remaining */
++	unsigned long state_bits;
+ 	unsigned int scan_period;	/* scan period in usec */
+ 	unsigned int convert_period;	/* conversion period in usec */
+ 	unsigned int ao_loopbacks[N_CHANS];
+@@ -175,6 +180,10 @@ static void waveform_ai_interrupt(unsigned long arg)
+ 	ktime_t now;
+ 	bool stopping = false;
+ 
++	/* check command is still active */
++	if (!test_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits))
++		return;
++
+ 	now = ktime_get();
+ 
+ 	elapsed_time = ktime_to_us(ktime_sub(now, devpriv->last));
+@@ -322,6 +331,10 @@ static int waveform_ai_cmd(struct comedi_device *dev,
+ 	devpriv->usec_remainder = 0;
+ 
+ 	devpriv->timer.expires = jiffies + 1;
++	/* mark command as active */
++	smp_mb__before_atomic();
++	set_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits);
++	smp_mb__after_atomic();
+ 	add_timer(&devpriv->timer);
+ 	return 0;
+ }
+@@ -331,7 +344,11 @@ static int waveform_ai_cancel(struct comedi_device *dev,
+ {
+ 	struct waveform_private *devpriv = dev->private;
+ 
+-	del_timer_sync(&devpriv->timer);
++	/* mark command as no longer active */
++	clear_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits);
++	smp_mb__after_atomic();
++	/* cannot call del_timer_sync() as may be called from timer routine */
++	del_timer(&devpriv->timer);
+ 	return 0;
+ }
+ 
+@@ -433,7 +450,7 @@ static void waveform_detach(struct comedi_device *dev)
+ 	struct waveform_private *devpriv = dev->private;
+ 
+ 	if (devpriv)
+-		waveform_ai_cancel(dev, dev->read_subdev);
++		del_timer_sync(&devpriv->timer);
+ }
+ 
+ static struct comedi_driver waveform_driver = {
+-- 
+2.1.1
 
