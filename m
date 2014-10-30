@@ -1,184 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161070AbaJ3Pny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 11:43:54 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:62847 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933358AbaJ3Pnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 11:43:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-watchdog@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: [PATCH] watchdog: at91rm9200: allow building when using device tree
-Date: Thu, 30 Oct 2014 16:43:09 +0100
-Message-ID: <3649339.YOqvibXDK5@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141030151719.GG17398@piout.net>
-References: <1414678534-2677-1-git-send-email-alexandre.belloni@free-electrons.com> <2000678.14fQbcst9s@wuerfel> <20141030151719.GG17398@piout.net>
+	id S1161067AbaJ3Pyc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 11:54:32 -0400
+Received: from svenfoo.org ([82.94.215.22]:48655 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758284AbaJ3Pya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 11:54:30 -0400
+Message-ID: <54525F32.3040502@zonque.org>
+Date: Thu, 30 Oct 2014 16:54:26 +0100
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:LQ1cM9W3L8jdVKeJiMN477kZD4zyjTt0zctjNT4gnuV
- 921ix3F/cLMacRK+wLiWr4DD7tC6f4FANomCmm2P9oc6HfFQkx
- Euz/pttT/PiP6hoxu2dA667ONwz5DNYl1a3mW8ld9DsZmuHEYF
- n7qxMyJCaewCIhrUIi/SuBvou4bTanqBjVQntpVFhRGSOo5O0u
- MCiKR8qlVL9+pNhBbKZ/IzAYEm9Nt2xgIII//50mzgLFOveHUs
- kycH6orgI+RxXcNA6EaZmakVIeiXeNNb38lWDwFNpHGHsOmC2k
- D1R5r/t3nvWQgvISr2nFqwbBQ2OlYZwy48UvabFwPrqTUpiVWG
- vfpJPYdi2+mttTWcR4cY=
-X-UI-Out-Filterresults: notjunk:1;
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
+        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Djalal Harouni <tixxdz@opendz.org>,
+        Simon McVittie <simon.mcvittie@collabora.co.uk>,
+        alban.crequy@collabora.co.uk,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tom Gundersen <teg@jklm.no>
+Subject: Re: kdbus: add code to gather metadata
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <1414620056-6675-7-git-send-email-gregkh@linuxfoundation.org> <CALCETrWqbpxk83L0k0_78JZCO+ntZhx_hHMcRu=vxs6VE2f5JQ@mail.gmail.com> <CALCETrVkuKxMMEw3HBEOZoFUuw8PndXtB13+bLWmcp_E34SaFw@mail.gmail.com> <5451FA9B.8070501@zonque.org> <CALCETrWjOS0AHF33zN0Vy1NC1441To7AgNPge3sKCz8bn2d8gg@mail.gmail.com>
+In-Reply-To: <CALCETrWjOS0AHF33zN0Vy1NC1441To7AgNPge3sKCz8bn2d8gg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 October 2014 16:17:19 Alexandre Belloni wrote:
+On 10/30/2014 03:07 PM, Andy Lutomirski wrote:
+> On Thu, Oct 30, 2014 at 1:45 AM, Daniel Mack <daniel@zonque.org> wrote:
+>>
+>> 1. At open() time, So we can tell peers (through KDBUS_CMD_CONN_INFO)
+>> about the credentials a connection had when it was created with
+>> KDBUS_CMD_HELLO.
 > 
-> On 30/10/2014 at 15:43:43 +0100, Arnd Bergmann wrote :
-> > On Thursday 30 October 2014 15:36:24 Boris Brezillon wrote:
-> > > On Thu, 30 Oct 2014 15:15:34 +0100
-> > > Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
-> > > 
-> > > > When building with device tree, ARCH_AT91RM9200 may not be selected. Allow
-> > > > building that driver by also depending on ARCH_AT91.
-> > > > 
-> > > > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > > 
-> > > Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > > 
-> > 
-> > Doesn't this reintroduce the bug fixed by commit 09549cd0172 ("watchdog:
-> > Revert the AT91RM9200_WATCHDOG dependency")?
-> > 
-> > At least in 3.18-rc2, the driver still uses at91_st_write/at91_st_read.
-> > 
+> Then the API that tells peers about this information needs to make
+> this very clear.
+
+Yes, that's an API that tells you something about a connection, and with
+that KDBUS_CMD_CONN_INFO call, you'll always get the information about
+the creator of the connection. IOW: by calling that particular ioctl,
+you'll always get the same kind of information. I guess it's valid to
+just define the API that way?
+
+>> 2. When a new bus is created through KDBUS_CMD_BUS_MAKE, so peers can
+>> later query the credentials of the owner of the bus they're connected to.
 > 
-> Hum, right, then we have no better way to express that than depends on
-> SOC_AT91RM9200, would that be acceptable ?
+> Ditto.  Although, why on earth should a bus have credentials?  This
+> sounds like a misdesign.  It seems to me that this type of policy
+> belongs all the way in userspace.  If you want a bus, you ask the
+> owner of the entire domain to make you a bus.  Or you make it yourself
+> and hand off references in some authenticated way.
+
+Yes, that's the way it works. However, the idea is that a bus stays
+alive as long as the file descriptor that was used to the create that
+bus remains open, and it is immediately shut down when the fd is closed.
+We merely allow user that are connected to a bus to query the
+credentials of the creator of the bus they're connected to. So it's not
+the bus which has credentials, but its original creator, at the time of
+creation.
+
+>> 3. When we dispatch a KDBUS_CMD_MSG_SEND ioctl(), because we want to
+>> attach the metadata that was authoritative when the message was sent.
+>> IOW: We want metadata that actually matches the message payload.
 > 
+> What does that "metadata that actually matches the message payload"
+> mean? 
 
-Sounds fine to me, but why can't we just fix the dependency?
+A bus client posted something in some point in time. We want metadata of
+the time the message was posted.
 
+> If I create an endpoint and delegate some processing to a less
+> privileged child, other things on the bus MUST NOT be able to detect
+> that delegation in any sensible design.  Otherwise everything will
+> appear to work in testing because other processes never checked the
+> problematic credential, but then it will randomly fail because someone
+> decided to do something daft and validate my unprivileged child's
+> argv[0], which is, of course, not what they expected.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Not sure whether I got your point, but if a privileged service that
+takes action on behalf of unprivileged clients, it may well depend on
+certain credential information to be present along with the message, and
+refuse to take action otherwise.
 
-diff --git a/arch/arm/mach-at91/at91rm9200_devices.c b/arch/arm/mach-at91/at91rm9200_devices.c
-index 74f1eaf97801..7f51e406b240 100644
---- a/arch/arm/mach-at91/at91rm9200_devices.c
-+++ b/arch/arm/mach-at91/at91rm9200_devices.c
-@@ -719,10 +719,19 @@ static void __init at91_add_device_rtc(void) {}
-  * -------------------------------------------------------------------- */
- 
- #if defined(CONFIG_AT91RM9200_WATCHDOG) || defined(CONFIG_AT91RM9200_WATCHDOG_MODULE)
-+static struct resource wdt_resources[] = {
-+	[0] = {
-+		.start	= AT91RM9200_BASE_ST,
-+		.end	= AT91RM9200_BASE_ST + SZ_256 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	};
-+};
-+
- static struct platform_device at91rm9200_wdt_device = {
--	.name		= "at91_wdt",
-+	.name		= "at91rm9200_wdt",
- 	.id		= -1,
--	.num_resources	= 0,
-+	.resource	= wdt_resources,
-+	.num_resources	= 1,
- };
- 
- static void __init at91_add_device_watchdog(void)
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index d0107d424ee4..0592db68f3a8 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -154,14 +154,14 @@ config ARM_SP805_WATCHDOG
- 
- config AT91RM9200_WATCHDOG
- 	tristate "AT91RM9200 watchdog"
--	depends on ARCH_AT91RM9200
-+	depends on ARCH_AT91 || COMPILE_TEST
- 	help
- 	  Watchdog timer embedded into AT91RM9200 chips. This will reboot your
- 	  system when the timeout is reached.
- 
- config AT91SAM9X_WATCHDOG
- 	tristate "AT91SAM9X / AT91CAP9 watchdog"
--	depends on ARCH_AT91 && !ARCH_AT91RM9200
-+	depends on ARCH_AT91
- 	select WATCHDOG_CORE
- 	help
- 	  Watchdog timer embedded into AT91SAM9X and AT91CAP9 chips. This will
-diff --git a/drivers/watchdog/at91rm9200_wdt.c b/drivers/watchdog/at91rm9200_wdt.c
-index dee6cc21d270..6b846e009268 100644
---- a/drivers/watchdog/at91rm9200_wdt.c
-+++ b/drivers/watchdog/at91rm9200_wdt.c
-@@ -26,11 +26,27 @@
- #include <linux/uaccess.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
--#include <mach/at91_st.h>
- 
- #define WDT_DEFAULT_TIME	5	/* seconds */
- #define WDT_MAX_TIME		256	/* seconds */
- 
-+static void __iomem *at91_st_base;
-+
-+#define at91_st_read(field) \
-+	readl(at91_st_base + field)
-+
-+#define at91_st_write(field, value) \
-+	writel(value, at91_st_base + field)
-+
-+#define	AT91_ST_CR		0x00			/* Control Register */
-+#define 	AT91_ST_WDRST		(1 << 0)		/* Watchdog Timer Restart */
-+
-+#define	AT91_ST_WDMR		0x08			/* Watchdog Mode Register */
-+#define		AT91_ST_WDV		(0xffff <<  0)		/* Watchdog Counter Value */
-+#define		AT91_ST_RSTEN		(1	<< 16)		/* Reset Enable */
-+#define		AT91_ST_EXTEN		(1	<< 17)		/* External Signal Assertion Enable */
-+
-+
- static int wdt_time = WDT_DEFAULT_TIME;
- static bool nowayout = WATCHDOG_NOWAYOUT;
- 
-@@ -203,12 +222,17 @@ static struct miscdevice at91wdt_miscdev = {
- 
- static int at91wdt_probe(struct platform_device *pdev)
- {
-+	struct resource *regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	int res;
- 
- 	if (at91wdt_miscdev.parent)
- 		return -EBUSY;
- 	at91wdt_miscdev.parent = &pdev->dev;
- 
-+	at91_st_base = devm_ioremap_resource(&pdev->dev, regs);
-+	if (!at91_st_base)
-+		return -ENXIO;
-+
- 	res = misc_register(&at91wdt_miscdev);
- 	if (res)
- 		return res;
-@@ -255,6 +279,7 @@ static int at91wdt_resume(struct platform_device *pdev)
- #endif
- 
- static const struct of_device_id at91_wdt_dt_ids[] = {
-+	{ .compatible = "atmel,at91rm9200-st" },
- 	{ .compatible = "atmel,at91rm9200-wdt" },
- 	{ /* sentinel */ }
- };
-@@ -267,7 +292,7 @@ static struct platform_driver at91wdt_driver = {
- 	.suspend	= at91wdt_suspend,
- 	.resume		= at91wdt_resume,
- 	.driver		= {
--		.name	= "at91_wdt",
-+		.name	= "at91rm9200_wdt",
- 		.owner	= THIS_MODULE,
- 		.of_match_table = at91_wdt_dt_ids,
- 	},
+For example, if a privileged service can reboot the system, it checks
+whether the asking peer has CAP_SYS_BOOT set. If it checks for uid==0
+instead, and it works in your tests because you happen to test as root,
+that just a bug in the service, right? But I might have missed your point.
+
+> I suspect that, if you make credential sending opt-in, you will
+> quickly discover that the current model for which credentials matter
+> makes no sense.
+
+While for the example above, opting-in for creds items on the sender
+side might actually work (the asking service would be refused in his
+request to reboot the machine). However, for any sort of logging or
+system services, for example, allowing the sender to select which creds
+it wants to reveal is supporting a hide-and-seek game, and that's
+something that won't work.
+
+Thanks for sharing your thoughts on this - I appreciate this discussion
+stays on such technical grounds :)
+
+Daniel
+
 
