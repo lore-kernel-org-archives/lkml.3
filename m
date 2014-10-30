@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760795AbaJ3TmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 15:42:25 -0400
-Received: from theshire.emacs.cl ([192.155.80.235]:36080 "EHLO
+	id S1760873AbaJ3Tm2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 15:42:28 -0400
+Received: from theshire.emacs.cl ([192.155.80.235]:36078 "EHLO
 	theshire.emacs.cl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756785AbaJ3TmV (ORCPT
+	with ESMTP id S1757081AbaJ3TmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Oct 2014 15:42:21 -0400
 From: Davidlohr Bueso <dave@stgolabs.net>
@@ -12,9 +12,9 @@ To: akpm@linux-foundation.org
 Cc: hughd@google.com, riel@redhat.com, mgorman@suse.de, peterz@infradead.org,
         mingo@kernel.org, linux-kernel@vger.kernel.org, dbueso@suse.de,
         linux-mm@kvack.org, Davidlohr Bueso <dave@stgolabs.net>
-Subject: [PATCH 08/10] mm/mremap: share the i_mmap_rwsem
-Date: Thu, 30 Oct 2014 12:34:15 -0700
-Message-Id: <1414697657-1678-9-git-send-email-dave@stgolabs.net>
+Subject: [PATCH 09/10] mm/nommu: share the i_mmap_rwsem
+Date: Thu, 30 Oct 2014 12:34:16 -0700
+Message-Id: <1414697657-1678-10-git-send-email-dave@stgolabs.net>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1414697657-1678-1-git-send-email-dave@stgolabs.net>
 References: <1414697657-1678-1-git-send-email-dave@stgolabs.net>
@@ -22,39 +22,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per the comment in move_ptes(), we only require taking the
-anon vma and i_mmap locks to ensure that rmap will always observe
-either the old or new ptes, in the case of need_rmap_lock=true.
-No modifications to the tree itself, thus share the i_mmap_rwsem.
+Shrinking/truncate logic can call nommu_shrink_inode_mappings()
+to verify that any shared mappings of the inode in question aren't
+broken (dead zone). afaict the only user being ramfs to handle
+the size change attribute.
+
+Pretty much a no-brainer to share the lock.
 
 Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
 Acked-by: Kirill A. Shutemov <kirill.shutemov@intel.linux.com>
 ---
- mm/mremap.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/nommu.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/mm/mremap.c b/mm/mremap.c
-index c929324..09bd644 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -119,7 +119,7 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
- 	if (need_rmap_locks) {
- 		if (vma->vm_file) {
- 			mapping = vma->vm_file->f_mapping;
--			i_mmap_lock_write(mapping);
-+			i_mmap_lock_read(mapping);
- 		}
- 		if (vma->anon_vma) {
- 			anon_vma = vma->anon_vma;
-@@ -156,7 +156,7 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
- 	if (anon_vma)
- 		anon_vma_unlock_read(anon_vma);
- 	if (mapping)
--		i_mmap_unlock_write(mapping);
-+		i_mmap_unlock_read(mapping);
- }
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 4201a38..2266a34 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -2086,14 +2086,14 @@ int nommu_shrink_inode_mappings(struct inode *inode, size_t size,
+ 	high = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
  
- #define LATENCY_LIMIT	(64 * PAGE_SIZE)
+ 	down_write(&nommu_region_sem);
+-	i_mmap_lock_write(inode->i_mapping);
++	i_mmap_lock_read(inode->i_mapping);
+ 
+ 	/* search for VMAs that fall within the dead zone */
+ 	vma_interval_tree_foreach(vma, &inode->i_mapping->i_mmap, low, high) {
+ 		/* found one - only interested if it's shared out of the page
+ 		 * cache */
+ 		if (vma->vm_flags & VM_SHARED) {
+-			i_mmap_unlock_write(inode->i_mapping);
++			i_mmap_unlock_read(inode->i_mapping);
+ 			up_write(&nommu_region_sem);
+ 			return -ETXTBSY; /* not quite true, but near enough */
+ 		}
+@@ -2105,8 +2105,7 @@ int nommu_shrink_inode_mappings(struct inode *inode, size_t size,
+ 	 * we don't check for any regions that start beyond the EOF as there
+ 	 * shouldn't be any
+ 	 */
+-	vma_interval_tree_foreach(vma, &inode->i_mapping->i_mmap,
+-				  0, ULONG_MAX) {
++	vma_interval_tree_foreach(vma, &inode->i_mapping->i_mmap, 0, ULONG_MAX) {
+ 		if (!(vma->vm_flags & VM_SHARED))
+ 			continue;
+ 
+@@ -2121,7 +2120,7 @@ int nommu_shrink_inode_mappings(struct inode *inode, size_t size,
+ 		}
+ 	}
+ 
+-	i_mmap_unlock_write(inode->i_mapping);
++	i_mmap_unlock_read(inode->i_mapping);
+ 	up_write(&nommu_region_sem);
+ 	return 0;
+ }
 -- 
 1.8.4.5
 
