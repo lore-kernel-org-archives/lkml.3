@@ -1,53 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759997AbaJ3NTQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:19:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52656 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759961AbaJ3NTO (ORCPT
+	id S1760011AbaJ3NUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:20:03 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:39090 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759278AbaJ3NT7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:19:14 -0400
-Date: Thu, 30 Oct 2014 14:19:04 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Vikas Shivappa <vikas.shivappa@intel.com>,
-        "Auld, Will" <will.auld@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>
-Subject: Re: Cache Allocation Technology Design
-Message-ID: <20141030131904.GJ3337@twins.programming.kicks-ass.net>
-References: <20141029081640.GT3337@twins.programming.kicks-ass.net>
- <20141029124834.GQ12020@console-pimps.org>
- <20141029134526.GC3337@twins.programming.kicks-ass.net>
- <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
- <20141029172845.GP12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
- <20141029182234.GA13393@mtj.dyndns.org>
- <20141030070725.GG3337@twins.programming.kicks-ass.net>
- <20141030071424.GE10476@twins.programming.kicks-ass.net>
- <20141030124440.GB29540@htj.dyndns.org>
+	Thu, 30 Oct 2014 09:19:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030124440.GB29540@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <54522CF7.6030302@samsung.com>
+References: <1410786785-9838-1-git-send-email-gautam.vivek@samsung.com>
+	<1410786785-9838-3-git-send-email-gautam.vivek@samsung.com>
+	<54522CF7.6030302@samsung.com>
+Date: Thu, 30 Oct 2014 18:49:58 +0530
+X-Google-Sender-Auth: uFayvWDqbl-OmraFEkAFkfsWHCM
+Message-ID: <CAFp+6iFLo2sRWC6=KhY4XObZjj4D+HOXv1L2fU2GRe1r6gom3A@mail.gmail.com>
+Subject: Re: [PATCH 2/3] drm/exynos: dp: Remove support for unused dptx-phy
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sean Paul <seanpaul@google.com>, kishon <kishon@ti.com>,
+        Ajay Kumar <ajaykumar.rs@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, "cpgs ." <cpgs@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 08:44:40AM -0400, Tejun Heo wrote:
-> On Thu, Oct 30, 2014 at 08:14:24AM +0100, Peter Zijlstra wrote:
-> > On Thu, Oct 30, 2014 at 08:07:25AM +0100, Peter Zijlstra wrote:
-> > > > and always allow execution of member tasks.
-> > 
-> > This too btw is not strictly speaking possible for all controllers. Most
-> > all sched controllers live by the grace of forcing tasks not to run at
-> > times (eg. the bandwidth controls), falsifying the 'always'.
-> 
-> Oh sure, the a task just has to run in a foreseeable future, or
-> rather, a task must not be blocked indefinitely requiring userland
-> intervention to become executable again.
+Hi Inki,
 
-Like the freezer cgroup you mean? ;-)
+
+On Thu, Oct 30, 2014 at 5:50 PM, Inki Dae <inki.dae@samsung.com> wrote:
+>
+> Sorry for late. I missed this patch a little bit for long time.
+
+Thanks for reviewing.
+
+>
+>
+> On 2014년 09월 15일 22:13, Vivek Gautam wrote:
+>> Now that we have moved to generic phy based bindings,
+>> we don't need to have any code related to older dptx-phy.
+>> Nobody is using this dptx-phy anymore, so removing the
+>> same.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> Cc: Jingoo Han <jg1.han@samsung.com>
+>> ---
+>>  drivers/gpu/drm/exynos/exynos_dp_core.c |   58 +++++++------------------------
+>>  drivers/gpu/drm/exynos/exynos_dp_core.h |    2 --
+>>  2 files changed, 13 insertions(+), 47 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.c b/drivers/gpu/drm/exynos/exynos_dp_core.c
+>> index 4f3c7eb..5ffc1b2 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_dp_core.c
+>> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.c
+>> @@ -1050,28 +1050,14 @@ static int exynos_dp_create_connector(struct exynos_drm_display *display,
+>>
+>>  static void exynos_dp_phy_init(struct exynos_dp_device *dp)
+>>  {
+>> -     if (dp->phy) {
+>> +     if (dp->phy)
+>>               phy_power_on(dp->phy);
+>> -     } else if (dp->phy_addr) {
+>> -             u32 reg;
+>> -
+>> -             reg = __raw_readl(dp->phy_addr);
+>> -             reg |= dp->enable_mask;
+>> -             __raw_writel(reg, dp->phy_addr);
+>> -     }
+>>  }
+>>
+>>  static void exynos_dp_phy_exit(struct exynos_dp_device *dp)
+>>  {
+>> -     if (dp->phy) {
+>> +     if (dp->phy)
+>>               phy_power_off(dp->phy);
+>> -     } else if (dp->phy_addr) {
+>> -             u32 reg;
+>> -
+>> -             reg = __raw_readl(dp->phy_addr);
+>> -             reg &= ~(dp->enable_mask);
+>> -             __raw_writel(reg, dp->phy_addr);
+>> -     }
+>>  }
+>>
+>>  static void exynos_dp_poweron(struct exynos_drm_display *display)
+>> @@ -1210,39 +1196,21 @@ static struct video_info *exynos_dp_dt_parse_pdata(struct device *dev)
+>>
+>>  static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
+>>  {
+>> -     struct device_node *dp_phy_node = of_node_get(dp->dev->of_node);
+>> -     u32 phy_base;
+>>       int ret = 0;
+>>
+>> -     dp_phy_node = of_find_node_by_name(dp_phy_node, "dptx-phy");
+>> -     if (!dp_phy_node) {
+>> -             dp->phy = devm_phy_get(dp->dev, "dp");
+>> -             return PTR_ERR_OR_ZERO(dp->phy);
+>> -     }
+>> -
+>> -     if (of_property_read_u32(dp_phy_node, "reg", &phy_base)) {
+>> -             dev_err(dp->dev, "failed to get reg for dptx-phy\n");
+>> -             ret = -EINVAL;
+>> -             goto err;
+>> -     }
+>> -
+>> -     if (of_property_read_u32(dp_phy_node, "samsung,enable-mask",
+>> -                             &dp->enable_mask)) {
+>> -             dev_err(dp->dev, "failed to get enable-mask for dptx-phy\n");
+>> -             ret = -EINVAL;
+>> -             goto err;
+>> -     }
+>> -
+>> -     dp->phy_addr = ioremap(phy_base, SZ_4);
+>> -     if (!dp->phy_addr) {
+>> -             dev_err(dp->dev, "failed to ioremap dp-phy\n");
+>> -             ret = -ENOMEM;
+>> -             goto err;
+>> +     dp->phy = devm_phy_get(dp->dev, "dp");
+>> +     if (IS_ERR(dp->phy)) {
+>> +             ret = PTR_ERR(dp->phy);
+>> +             if (ret == -ENOSYS || ret == -ENODEV) {
+>> +                     dp->phy = NULL;
+>> +             } else if (ret == -EPROBE_DEFER) {
+>> +                     return ret;
+>> +             } else {
+>
+> WARNING: else is not generally useful after a break or return
+> #146: FILE: drivers/gpu/drm/exynos/exynos_dp_core.c:1208:
+> +                       return ret;
+> +               } else {
+>
+> How about just returning ret like below?
+>                 if (IS_ERR(dp->phy)) {
+>                         dev_err(dp->dev, "no DP phy configured\n");
+>                         return PTR_ERR(ret);
+>                 }
+>
+> And then you can handle the error at probe function properly.
+
+Right, point taken. Will post the reworked patch.
+
+[snip]
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
