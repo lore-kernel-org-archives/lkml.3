@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934663AbaJ3UF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 16:05:59 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:50449 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072AbaJ3UF4 (ORCPT
+	id S934767AbaJ3UM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 16:12:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58871 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932513AbaJ3UMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 16:05:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO accessors
-Date: Thu, 30 Oct 2014 21:04:54 +0100
-Message-ID: <6420333.oMJU1UYt9n@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141030165907.GK32589@arm.com>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <2811016.mhqlsl6pTS@wuerfel> <20141030165907.GK32589@arm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Qe37bcfzTfIqUfJbLH+IMLWxdFZ2yqRJUX6WKfyabN+
- MSxT2s4CjqY5+35I9PyAV8YYSkaJu7GZInSdfvQpf2qUisOddZ
- mMmCD67yTcQ3u9IE60PvveXoaWyOxKVt8HfWY2lOsrlYBSxuuU
- OSOC+Z3+FktNhMXlgGZ/XuzUbO5IIeE8zu1i6UFspgJLzT3Cfj
- oIqzP0GeISEc+Lz85o5PKqBcxdS5wMcJ5NKWFgxaoPLzfRacbG
- o5fvf414X6unYwHX8s/6+5TKHf7PAl97eO7fR1O+pRtR4gjmJI
- JITyNwpJxGlcI14cM+B0lmPfzHexUcqTskNagLBxBvTcG1xqs1
- QPAy7RRqhmPfcgbk4Ln0=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 30 Oct 2014 16:12:54 -0400
+Date: Thu, 30 Oct 2014 16:12:52 -0400 (EDT)
+Message-Id: <20141030.161252.246867972287253209.davem@davemloft.net>
+To: lsorense@csclub.uwaterloo.ca
+Cc: linux-kernel@vger.kernel.org, mugunthanvnm@ti.com, netdev@vger.kernel.org
+Subject: Re: PATCH: Add IFF_ALLMULTI support to cpsw (and fix IFF_PROMISC
+ support too)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141029190612.GH24110@csclub.uwaterloo.ca>
+References: <20141029190612.GH24110@csclub.uwaterloo.ca>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 30 Oct 2014 13:12:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 October 2014 16:59:07 Will Deacon wrote:
-> On Thu, Sep 25, 2014 at 02:15:10PM +0100, Arnd Bergmann wrote:
-> > On Wednesday 24 September 2014 18:17:19 Will Deacon wrote:
-> > > Hello everybody,
-> > > 
-> > > This is version three of the series I've originally posted here:
-> > > 
-> > >   v1: https://lkml.org/lkml/2014/4/17/269
-> > >   v2: https://lkml.org/lkml/2014/5/22/468
-> > > 
-> > > This is basically just a rebase on top of 3.17-rc6, minus the alpha patch
-> > > (which was merged into mainline).
-> > > 
-> > > I looked at reworking the non-relaxed accessors to imply mmiowb, but it
-> > > quickly got messy as some architectures (e.g. mips) deliberately keep
-> > > mmiowb and readX/writeX separate whilst others (e.g. powerpc) don't trust
-> > > drivers to get mmiowb correct, so add barriers to both. Given that
-> > > arm/arm64/x86 don't care about mmiowb, I've left that as an exercise for
-> > > an architecture that does care.
-> > > 
-> > > In order to get this lot merged, we probably want to merge the asm-generic
-> > > patch (1/17) first, so Acks would be much appreciated on the architecture
-> > > bits.
-> > > 
-> > > As before, I've included the original cover letter below, as that describes
-> > > what I'm trying to do in more detail.
-> > > 
-> > 
-> > I've now applied the parts of your series that are required to have
-> > every architecture provide all the 'relaxed' accessors to the
-> > asm-generic tree, on top of Thierry's series.
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Wed, 29 Oct 2014 15:06:12 -0400
+
+> The cpsw driver did not support the IFF_ALLMULTI flag which makes dynamic
+> multicast routing rather hard to handle.  Related to this, when enabling
+> IFF_PROMISC in non dual_emac mode, all registered vlans are flushed,
+> and only broadcast and unicast are allowed which isn't what you would
+> want from IFF_PROMISC.
 > 
-> Since these didn't make it for 3.18, would you like me to repost the series,
-> or do you already have a branch suitable for 3.19?
+> A new cpsw_ale_set_allmulti function now scans through the ALE entry
+> table and adds or removes the host port from the unregistered multicast
+> port mask depending on the state of IFF_ALLMULTI.  In promisc mode,
+> it is also called to enable reception of all multicast traffic.
+> 
+> With this change I am now able to run dynamic multicast routing and also
+> use tcpdump and actually see multicast traffic.
+> 
+> Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
 
-I still need to figure out how to do this right in combination with Thierry's
-patches. Last time I had his patches first and yours on top, and I didn't
-manage to rebase your series when his broke.
+Please fix your Subject line and resubmit this patch.
 
-	Arnd
+Subject lines end up as the commit message header text, and
+therefore must be of the form:
+
+subsystem: Description.
+
+In this case "cpsw: " is probably an appropriate subsystem
+prefix.
