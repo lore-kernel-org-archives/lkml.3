@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760328AbaJ3OUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:20:14 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51715 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757996AbaJ3OUM (ORCPT
+	id S1760432AbaJ3OUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:20:18 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:53502 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757996AbaJ3OUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:20:12 -0400
-X-Originating-IP: 50.43.41.112
-Date: Thu, 30 Oct 2014 07:19:56 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH tip/core/rcu 1/6] torture: Run Linux-kernel binary out of
- results directory
-Message-ID: <20141030141956.GG32353@thin>
-References: <20141028222929.GA29476@linux.vnet.ibm.com>
- <1414535405-30228-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	Thu, 30 Oct 2014 10:20:15 -0400
+Date: Thu, 30 Oct 2014 14:14:13 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Vikas Shivappa <vikas.shivappa@intel.com>,
+        "Auld, Will" <will.auld@intel.com>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141030141413.GT12020@console-pimps.org>
+References: <20141028232215.GO12020@console-pimps.org>
+ <20141029081640.GT3337@twins.programming.kicks-ass.net>
+ <20141029124834.GQ12020@console-pimps.org>
+ <20141029134526.GC3337@twins.programming.kicks-ass.net>
+ <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
+ <20141029172845.GP12706@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
+ <20141029182234.GA13393@mtj.dyndns.org>
+ <20141030070725.GG3337@twins.programming.kicks-ass.net>
+ <20141030124333.GA29540@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414535405-30228-1-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141030124333.GA29540@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 03:30:00PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Thu, 30 Oct, at 08:43:33AM, Tejun Heo wrote:
+> Hello, Peter.
 > 
-> The rcutorture scripts create a qemu-cmd script containing the actual
-> qemu command.  However, this command references the build directory,
-> which will be overwritten by later builds.  This commit therefore runs
-> the kernel out of the results directory so that less hand-editing is
-> required to re-run a previous test.
+> On Thu, Oct 30, 2014 at 08:07:25AM +0100, Peter Zijlstra wrote:
+> > If this means echo $tid > tasks, then sorry we can't do. There is a
+> > limited number of hardware resources backing this thing. At some point
+> > they're consumed and something must give.
 > 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> And that something shouldn't be disallowing task migration across
+> cgroups.  This simply doesn't work with co-mounting or unified
+> hierarchy.  cpuset automatically takes on the nearest ancestor's
+> configuration which has enough execution resources.  Maybe that can be
+> an option for this too?
+ 
+Oh, you can always add more tasks to a cgroup, or move tasks between
+cgroups. What you can't always do is create more cgroups.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> index f6b2b4771b78..e0f896999d6b 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> @@ -168,8 +168,8 @@ then
->  	touch $resdir/buildonly
->  	exit 0
->  fi
-> -echo $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
-> -( $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval ) &
-> +echo $QEMU $qemu_args -m 512 -kernel $resdir/bzImage -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
-> +( $QEMU $qemu_args -m 512 -kernel $resdir/bzImage -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval ) &
->  qemu_pid=$!
->  commandcompleted=0
->  echo Monitoring qemu job at pid $qemu_pid
-> -- 
-> 1.8.1.5
-> 
+-- 
+Matt Fleming, Intel Open Source Technology Center
