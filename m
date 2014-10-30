@@ -1,178 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043AbaJ3GnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 02:43:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37916 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975AbaJ3GnN (ORCPT
+	id S933114AbaJ3Gnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 02:43:41 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40587 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932920AbaJ3GnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 02:43:13 -0400
-Date: Wed, 29 Oct 2014 23:42:26 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-y6zgaqsvhrf04v57u15e4ybm@git.kernel.org>
-Cc: paulus@samba.org, fweisbec@gmail.com, efault@gmx.de,
-        linux-kernel@vger.kernel.org, jolsa@redhat.com, peterz@infradead.org,
-        adrian.hunter@intel.com, dzickus@redhat.com, dsahern@gmail.com,
-        jean.pihet@linaro.org, namhyung@kernel.org, eranian@google.com,
-        hpa@zytor.com, acme@redhat.com, tglx@linutronix.de, bp@suse.de,
-        mingo@kernel.org
-Reply-To: tglx@linutronix.de, mingo@kernel.org, bp@suse.de, hpa@zytor.com,
-        acme@redhat.com, jean.pihet@linaro.org, namhyung@kernel.org,
-        eranian@google.com, dzickus@redhat.com, peterz@infradead.org,
-        adrian.hunter@intel.com, dsahern@gmail.com, efault@gmx.de,
-        jolsa@redhat.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        paulus@samba.org
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Set thread->mg.machine in all places
-Git-Commit-ID: 11246c708acdfa9512d7b69c18938810c20fd6ab
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 30 Oct 2014 02:43:03 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <4202809.cQlU8Tr5kS@lenovobook>
+References: <4202809.cQlU8Tr5kS@lenovobook>
+Date: Thu, 30 Oct 2014 07:43:02 +0100
+Message-ID: <CAJKbBDDPU5mysMPB78oQtkH8B=2q1pSH0yJBxu_qr3Zo=xhx3Q@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] dt: bindings: tps65217: add compatible property
+ for backlight subnode
+From: Johannes Pointner <johannes.pointner@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  11246c708acdfa9512d7b69c18938810c20fd6ab
-Gitweb:     http://git.kernel.org/tip/11246c708acdfa9512d7b69c18938810c20fd6ab
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 21 Oct 2014 17:29:02 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 Oct 2014 10:32:46 -0200
+ping
 
-perf tools: Set thread->mg.machine in all places
-
-We were setting this only in machine__init(), i.e. for the map_groups that
-holds the kernel module maps, not for the one used for a thread's executable
-mmaps.
-
-Now we are sure that we can obtain the machine where a thread is by going
-via thread->mg->machine, thus we can, in the following patch, make all
-codepaths that receive machine _and_ thread, drop the machine one.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-y6zgaqsvhrf04v57u15e4ybm@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/machine.c | 5 ++---
- tools/perf/util/map.c     | 8 ++++----
- tools/perf/util/map.h     | 4 ++--
- tools/perf/util/thread.c  | 2 +-
- 4 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 34fc7c8..c70b3ff 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -21,7 +21,7 @@ static void dsos__init(struct dsos *dsos)
- 
- int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- {
--	map_groups__init(&machine->kmaps);
-+	map_groups__init(&machine->kmaps, machine);
- 	RB_CLEAR_NODE(&machine->rb_node);
- 	dsos__init(&machine->user_dsos);
- 	dsos__init(&machine->kernel_dsos);
-@@ -32,7 +32,6 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- 
- 	machine->vdso_info = NULL;
- 
--	machine->kmaps.machine = machine;
- 	machine->pid = pid;
- 
- 	machine->symbol_filter = NULL;
-@@ -319,7 +318,7 @@ static void machine__update_thread_pid(struct machine *machine,
- 		goto out_err;
- 
- 	if (!leader->mg)
--		leader->mg = map_groups__new();
-+		leader->mg = map_groups__new(machine);
- 
- 	if (!leader->mg)
- 		goto out_err;
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 2137c45..040a785 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -413,14 +413,14 @@ u64 map__objdump_2mem(struct map *map, u64 ip)
- 	return ip + map->reloc;
- }
- 
--void map_groups__init(struct map_groups *mg)
-+void map_groups__init(struct map_groups *mg, struct machine *machine)
- {
- 	int i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i) {
- 		mg->maps[i] = RB_ROOT;
- 		INIT_LIST_HEAD(&mg->removed_maps[i]);
- 	}
--	mg->machine = NULL;
-+	mg->machine = machine;
- 	mg->refcnt = 1;
- }
- 
-@@ -471,12 +471,12 @@ bool map_groups__empty(struct map_groups *mg)
- 	return true;
- }
- 
--struct map_groups *map_groups__new(void)
-+struct map_groups *map_groups__new(struct machine *machine)
- {
- 	struct map_groups *mg = malloc(sizeof(*mg));
- 
- 	if (mg != NULL)
--		map_groups__init(mg);
-+		map_groups__init(mg, machine);
- 
- 	return mg;
- }
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 2f83954..6951a9d 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -64,7 +64,7 @@ struct map_groups {
- 	int		 refcnt;
- };
- 
--struct map_groups *map_groups__new(void);
-+struct map_groups *map_groups__new(struct machine *machine);
- void map_groups__delete(struct map_groups *mg);
- bool map_groups__empty(struct map_groups *mg);
- 
-@@ -150,7 +150,7 @@ void maps__remove(struct rb_root *maps, struct map *map);
- struct map *maps__find(struct rb_root *maps, u64 addr);
- struct map *maps__first(struct rb_root *maps);
- struct map *maps__next(struct map *map);
--void map_groups__init(struct map_groups *mg);
-+void map_groups__init(struct map_groups *mg, struct machine *machine);
- void map_groups__exit(struct map_groups *mg);
- int map_groups__clone(struct map_groups *mg,
- 		      struct map_groups *parent, enum map_type type);
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index c414117..8db9626 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -15,7 +15,7 @@ int thread__init_map_groups(struct thread *thread, struct machine *machine)
- 	pid_t pid = thread->pid_;
- 
- 	if (pid == thread->tid || pid == -1) {
--		thread->mg = map_groups__new();
-+		thread->mg = map_groups__new(machine);
- 	} else {
- 		leader = machine__findnew_thread(machine, pid, pid);
- 		if (leader)
+2014-10-08 23:20 GMT+02:00 Johannes Pointner <johannes.pointner@gmail.com>:
+> Add documentation for compatible property of backlight subnode.
+>
+> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
+> ---
+> Changes since v2:
+> 1. Removed the pmic part of the patch.
+> 2. Added newline before subnode in the example.
+> ---
+>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt | 10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> index 5fb9279..63ef699 100644
+> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> @@ -6,19 +6,23 @@ used to drive LEDs for use as backlights.
+>  Required properties:
+>  - compatible: "ti,tps65217"
+>  - reg: I2C slave address
+> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
+> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
+> +
+> +Required subnode properties:
+> +- compatible: "ti,tps65217-bl"
+>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
+>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
+>  - default-brightness: valid values: 0-100
+>
+> -Each regulator is defined using the standard binding for regulators.
+>
+>  Example:
+>
+>         tps: tps@24 {
+>                 reg = <0x24>;
+>                 compatible = "ti,tps65217";
+> -               backlight {
+> +
+> +               tps_bl: backlight {
+> +                       compatible = "ti,tps65217-bl";
+>                         isel = <1>;  /* 1 - ISET1, 2 ISET2 */
+>                         fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
+>                         default-brightness = <50>;
+> --
+> 2.1.2
