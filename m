@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759598AbaJ3LWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:22:39 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:64132 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759280AbaJ3LV3 (ORCPT
+	id S1759406AbaJ3LV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:21:28 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:59728 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758827AbaJ3LVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:21:29 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-b7-54521f3738ca
+	Thu, 30 Oct 2014 07:21:23 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-90-54521f2f49c8
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
@@ -22,108 +22,64 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3 12/14] ARM: dts: exynos4412-trats: Switch max77686
- regulators to GPIO control
-Date: Thu, 30 Oct 2014 12:20:51 +0100
-Message-id: <1414668053-31370-13-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v3 02/14] mfd/regulator: dt-bindings: max77686: Document
+ of_compatible for regulator
+Date: Thu, 30 Oct 2014 12:20:41 +0100
+Message-id: <1414668053-31370-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
 References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xq7rm8kEhBqu+CFtsnLGe1WLSugNM
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xq7oG8kEhBu9OM1psnLGe1WLSugNM
 	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
 	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
-	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DKmNs7hbXglUjF49l3GBsYnwh0
-	MXJySAiYSLxt+sIOYYtJXLi3nq2LkYtDSGApo8S+ZVNZIZw+JolnZ4+zglSxCRhLbF6+BKxK
-	RKCTWaLnYC8ziMMssJpJ4ueVU8wgVcICSRIv1rUBzeXgYBFQlZj23A4kzCvgIbF53k5miHVy
-	EiePTQYbygkUX/OxnRWkXEjAXeLeN+0JjLwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+du
-	YoQE+NcdjEuPWR1iFOBgVOLhjTgWECLEmlhWXJl7iFGCg1lJhHe1WFCIEG9KYmVValF+fFFp
-	TmrxIUYmDk6pBsYps3Y+aY02cpyderD6QKTQi38PeLL5krfPnHtqQki1frtrQdX/vK9X3jqJ
-	thjE2rKzfOc4uPb0Y385qeAlquuvrhHuiU+xetN6x2dSuzyL7/8DnLYT785/HCM+SYLxabPb
-	moo0Br87hWKniowZ7Gw8v76JfGEm2XEtZZv1Sb9jEXWS+lOFJyqxFGckGmoxFxUnAgBK4Vpy
-	TgIAAA==
+	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DKmPB6I3vBI66KyTd7mRoY/3J0
+	MXJySAiYSNz4/owdwhaTuHBvPVsXIxeHkMBSRolL35exQjh9TBLN87YzglSxCRhLbF6+BKxK
+	RKCTWaLnYC8ziMMssJpJ4ueVU8wgVcICaRJvWx+xgtgsAqoSD1d2s4DYvALuErMWTmOC2Ccn
+	cfLYZLAaTgEPiTUf24FsDqB17hL3vmlPYORdwMiwilE0tTS5oDgpPddIrzgxt7g0L10vOT93
+	EyMkxL/uYFx6zOoQowAHoxIPb8SxgBAh1sSy4srcQ4wSHMxKIryrxYJChHhTEiurUovy44tK
+	c1KLDzEycXBKNTBaBwcFaC8Van4yMzNre1T78vccbrYP5Wsdr5d9ksqf+yRf/2R5r+1r4xen
+	ToaWWb+avej8Qw0lw6maOiUyTMd01WbaHE+brKQavLtsm9jSucXFEXrHc3e+bQxhtu1w5rsX
+	euWVv5fMr7ob2WsXhk5n5Xq84Ox/YZ1Lu/zEpD+8mmy9KmnyPT0lluKMREMt5qLiRADI8Zj/
+	TwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove fixed regulators (duplicating what max77686 provides) and
-add GPIO control to max77686 regulators. Add of_compatible to
-voltage-regulators node.
-
-This gives the system full control over those regulators. Previously
-the state of such regulators was a mixture of what max77686 driver set
-over I2C and what regulator-fixed set through GPIO.
-
-Removal of 'regulator-always-on' from CAM_ISP_CORE_1.2V (buck9) allows
-disabling it when it is not used. Previously this regulator was always
-enabled because its enable state is a OR of:
- - ENB9 GPIO (turned by regulator-fixed),
- - BUCK9EN field in BUCK9CTRL register (max77686 through I2C).
+Document new required property for regulator driver: of_compatible. The
+property allows MFD core to bind the driver to node with regulators and
+this simplifies parsing regulators init data from DTS
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/arm/boot/dts/exynos4412-trats2.dts | 28 ++++++++--------------------
- 1 file changed, 8 insertions(+), 20 deletions(-)
+ Documentation/devicetree/bindings/mfd/max77686.txt | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
-index 7a68e0832cd6..ebbd12d1fe9a 100644
---- a/arch/arm/boot/dts/exynos4412-trats2.dts
-+++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-@@ -58,15 +58,6 @@
- 		#address-cells = <1>;
- 		#size-cells = <0>;
+diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+index 75fdfaf41831..f4010a9f66eb 100644
+--- a/Documentation/devicetree/bindings/mfd/max77686.txt
++++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+@@ -18,8 +18,11 @@ Required properties:
  
--		vemmc_reg: regulator-0 {
--			compatible = "regulator-fixed";
--			regulator-name = "VMEM_VDD_2.8V";
--			regulator-min-microvolt = <2800000>;
--			regulator-max-microvolt = <2800000>;
--			gpio = <&gpk0 2 0>;
--			enable-active-high;
--		};
--
- 		cam_io_reg: voltage-regulator-1 {
- 			compatible = "regulator-fixed";
- 			regulator-name = "CAM_SENSOR_A";
-@@ -94,16 +85,6 @@
- 			enable-active-high;
- 		};
+ Optional node:
+ - voltage-regulators : The regulators of max77686 have to be instantiated
+-  under subnode named "voltage-regulators" using the following format.
++  under subnode named "voltage-regulators".
++  Required property:
++  - compatible : Must be "maxim,max77686-pmic"
  
--		cam_isp_core_reg: voltage-regulator-4 {
--			compatible = "regulator-fixed";
--			regulator-name = "CAM_ISP_CORE_1.2V_EN";
--			regulator-min-microvolt = <1200000>;
--			regulator-max-microvolt = <1200000>;
--			gpio = <&gpm0 3 0>;
--			enable-active-high;
--			regulator-always-on;
--		};
--
- 		ps_als_reg: voltage-regulator-5 {
- 			compatible = "regulator-fixed";
- 			regulator-name = "LED_A_3.0V";
-@@ -221,6 +202,13 @@
- 			#clock-cells = <1>;
++  Optional properties: For each regulator use following format:
+ 	regulator_name {
+ 		regulator-compatible = LDOn/BUCKn
+ 		standard regulator constraints....
+@@ -49,6 +52,8 @@ Example:
+ 		reg = <0x09>;
  
- 			voltage-regulators {
-+				compatible = "maxim,max77686-pmic";
+ 		voltage-regulators {
++			compatible = "maxim,max77686-pmic";
 +
-+				ldo21-gpio = <&gpy2 0 GPIO_ACTIVE_HIGH>;
-+				ldo22-gpio = <&gpk0 2 GPIO_ACTIVE_HIGH>;
-+				buck8-gpio = <&gpk0 2 GPIO_ACTIVE_HIGH>;
-+				buck9-gpio = <&gpm0 3 GPIO_ACTIVE_HIGH>;
-+
- 				ldo1_reg: ldo1 {
- 					regulator-compatible = "LDO1";
- 					regulator-name = "VALIVE_1.0V_AP";
-@@ -591,7 +579,7 @@
- 		broken-cd;
- 		non-removable;
- 		card-detect-delay = <200>;
--		vmmc-supply = <&vemmc_reg>;
-+		vmmc-supply = <&ldo22_reg>;
- 		clock-frequency = <400000000>;
- 		samsung,dw-mshc-ciu-div = <0>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
+ 			ldo11_reg {
+ 				regulator-compatible = "LDO11";
+ 				regulator-name = "vdd_ldo11";
 -- 
 1.9.1
 
