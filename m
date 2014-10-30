@@ -1,83 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007AbaJ3Cft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:35:49 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:30895 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752117AbaJ3Cfq (ORCPT
+	id S1753524AbaJ3Con (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:44:43 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:50427 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaJ3Col (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:35:46 -0400
-Message-ID: <5451A3F5.9020903@fb.com>
-Date: Wed, 29 Oct 2014 20:35:33 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 29 Oct 2014 22:44:41 -0400
+Date: Wed, 29 Oct 2014 22:44:29 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/33] thermal: exynos: convert the driver to use per-SoC
+ type operations
+Message-ID: <20141030024426.GA29689@developer>
+References: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Jason B. Akers" <jason.b.akers@intel.com>
-CC: <linux-ide@vger.kernel.org>, <dan.j.williams@intel.com>,
-        <kapil.karkra@intel.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
-References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox> <yq1k33il3b3.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1k33il3b3.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-30_01:2014-10-29,2014-10-29,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1410300026
-X-FB-Internal: deliver
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Disposition: inline
+In-Reply-To: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-29 20:05, Martin K. Petersen wrote:
->>>>>> "Jason" == Jason B Akers <jason.b.akers@intel.com> writes:
->
-> Jason> The following series enables the use of Solid State hybrid drives
-> Jason> ATA standard 3.2 defines the hybrid information feature, which
-> Jason> provides a means for the host driver to provide hints to the
-> Jason> SSHDs to guide what to place on the SSD/NAND portion and what to
-> Jason> place on the magnetic media.
->
-> I have been ripping my hair out in this department for a while.
->
-> A colleague and I presented our findings at SNIA SDC a few weeks
-> ago. I'm trying to find out if there's an embargo on the slides or if I
-> can post them.
->
-> First of all I completely agree with Dave's comments about hooking into
-> fadvise()/madvise().
 
-The problem with xadvise() is that it handles only one part of this - it 
-handles the case of tying some sort of IO related priority information 
-to an inode. It does not handle the case of different parts of the file, 
-at least not without adding specific extra tracking for this on the 
-kernel side.
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think we've needed a proper API for passing in appropriate hints on a 
-per-io basis for a LONG time.
+Bartlomiej,
 
-> My challenge with hints has been trying to bridge all the various
-> existing approaches with the new stuff that's coming down the pipe in
-> T10/T13 (LBMD hints) and NFS v4.2 ditto. That turned into a huge mapping
-> table as well as a few amendments to what's currently being worked on in
-> the standards bodies.
+On Thu, Sep 18, 2014 at 05:27:17PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> Hi,
+>=20
+> This patch series replaces the hardware registers abstractions in
+> the Exynos thermal driver by the usage of per-SoC type operations.
+> Such solution provides simpler, easier to understand code and
+> allows removal of ~250 LOCs (~11% of the whole source code) from
+> the driver.  Some other driver improvements are now also possible
+> thanks to these changes but are scheduled at later time (like
+> consolidating code for clearing IRQs using INTCLEAR register).
+>=20
+> The patchset should not cause any functionality changes.  This
+> means that unless there are some bugs in the patches itself there
+> should be no behavior changes for the driver (this also includes
+> lack of changes in the way hardware is accessed by the driver).
+>=20
+> All testing was done on (Exynos4412 SoC based) ODROID U3 board
+> (some additional patches are needed to make the Exynos thermal
+> driver work on this hardware).
+>=20
+> Depends on:
+> - 'next' branch of linux-soc-thermal.git kernel tree from Eduardo
+> - [PATCH] thermal: exynos: use correct offset for TMU_CONTROL
+>   register on Exynos5260
+>   (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg36529=
+=2Ehtml)
+>=20
 
-That is the big challenge. We've tried (and failed) in the past to 
-define a set of hints that make sense. It'd be a shame to add something 
-that's specific to a given transport/technology. That said, this set of 
-hints do seem pretty basic and would not necessarily be a bad place to 
-start. But they are still very specific to this use case. And who knows 
-what will happen on the device side. I might assume that WILLNEED is the 
-same as HOT, and that DONTNEED is the same as cold. And then 
-applications get upset when vendor X and Y treat them somewhat 
-differently, because that's how it fit into their architecture.
+Could you please refresh this series?
 
-This is the primary reason that hints never happened previously.
+I checked until patch 09, but patch 10 fails to apply:
+patching file drivers/thermal/samsung/exynos_tmu.c
+Hunk #1 succeeded at 414 (offset 15 lines).
+patching file drivers/thermal/samsung/exynos_tmu.h
+Hunk #1 succeeded at 92 with fuzz 2 (offset -4 lines).
+Hunk #2 succeeded at 117 (offset -8 lines).
+patching file drivers/thermal/samsung/exynos_tmu_data.c
+Hunk #1 FAILED at 422.
+1 out of 1 hunk FAILED -- saving rejects to file
+drivers/thermal/samsung/exynos_tmu_data.c.rej
 
--- 
-Jens Axboe
+I also have in my local tree the dependency patch you mention above.
 
+Cheers,
+
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>=20
+>=20
+> Bartlomiej Zolnierkiewicz (33):
+>   thermal: exynos: remove needless triminfo_data abstraction
+>   thermal: exynos: remove needless tmu_status abstraction
+>   thermal: exynos: remove needless threshold_temp abstraction
+>   thermal: exynos: remove needless triminfo_ctrl abstraction
+>   thermal: exynos: remove needless test_mux_addr_shift abstraction
+>   thermal: exynos: remove needless therm_trip_[mode,mask]_shift
+>     abstractions
+>   thermal: exynos: remove needless therm_trip_en_shift abstraction
+>   thermal: exynos: remove needless emul_temp_shift abstraction
+>   thermal: exynos: remove needless emul_time_shift abstraction
+>   thermal: exynos: replace tmu_irqstatus check by Exynos5440 one
+>   thermal: exynos: replace tmu_pmin check by Exynos5440 one
+>   thermal: exynos: simplify HW_TRIP level setting
+>   thermal: exynos: replace threshold_falling check by Exynos SoC type
+>     one
+>   thermal: exynos: remove TMU_SUPPORT_READY_STATUS flag
+>   thermal: exynos: remove TMU_SUPPORT_TRIM_RELOAD flag
+>   thermal: exynos: add sanitize_temp_error() helper
+>   thermal: exynos: add get_th_reg() helper
+>   thermal: exynos: add ->tmu_initialize method
+>   thermal: exynos: add get_con_reg() helper
+>   thermal: exynos: add ->tmu_control method
+>   thermal: exynos: add ->tmu_read method
+>   thermal: exynos: add get_emul_con_reg() helper
+>   thermal: exynos: add ->tmu_set_emulation method
+>   thermal: exynos: add ->tmu_clear_irqs method
+>   thermal: exynos: remove TMU_SUPPORT_FALLING_TRIP flag
+>   thermal: exynos: remove TMU_SUPPORT_EMUL_TIME flag
+>   thermal: exynos: remove TMU_SUPPORT_EMULATION flag
+>   thermal: exynos: remove TMU_SUPPORT_ADDRESS_MULTIPLE flag
+>   thermal: exynos: remove TMU_SUPPORT_MULTI_INST flag
+>   thermal: exynos: remove test_mux pdata field
+>   thermal: exynos: remove SoC type ifdefs
+>   thermal: exynos: remove __EXYNOS5420_TMU_DATA macro
+>   thermal: exynos: remove exynos_tmu_data.h include
+>=20
+>  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
+>  drivers/thermal/samsung/exynos_tmu.c            | 706 +++++++++++++++++-=
+------
+>  drivers/thermal/samsung/exynos_tmu.h            | 131 +----
+>  drivers/thermal/samsung/exynos_tmu_data.c       | 260 +--------
+>  drivers/thermal/samsung/exynos_tmu_data.h       | 174 ------
+>  5 files changed, 509 insertions(+), 763 deletions(-)
+>  delete mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
+>=20
+> --=20
+> 1.8.2.3
+>=20
+
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUUaYCAAoJEMLUO4d9pOJWan4H/2YDAd8+bVQmCWRmwXupVsgV
+uGCnV8TPa0lNxHWj49Kt4eWPKmDdn6v7/0aIAUGiAcUpwEd1+KOC+Lb/46GT5Tmn
+mnBS8F5XARBZZmtQvW3eX9i4xoOYEtfCl35Whuud1rdcsJQbRs8eEgJE9Lq/5k15
+tMvmElmZcJJBufQbJ2aBDoEFAFyajjIm3jzvk4WVuDgJ+0vaGvgdv+f86jui3HMg
+hYArjxrKzxX9Vmc9IREPj0qnSkGBUWVwncppD/PfM4ZMsc4R9zukZr2wcUZaPfvN
+rmrOLLJvSrVbmxjyfNkne7LmaOR4LJwZy9drRTCDiATpK5+hskI6srI+RB9pjMU=
+=gdVE
+-----END PGP SIGNATURE-----
+
+--r5Pyd7+fXNt84Ff3--
