@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835AbaJ3GmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 02:42:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37863 "EHLO
+	id S932906AbaJ3Gme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 02:42:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37879 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188AbaJ3GmC (ORCPT
+	with ESMTP id S1758212AbaJ3Gmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 02:42:02 -0400
-Date: Wed, 29 Oct 2014 23:41:42 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-288a4b91fc0dc7c0ce3509339e8dec7b590a4d73@git.kernel.org>
-Cc: acme@redhat.com, cjashfor@linux.vnet.ibm.com, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, fweisbec@gmail.com,
-        tglx@linutronix.de, ak@linux.intel.com, dsahern@gmail.com,
-        linux-kernel@vger.kernel.org, paulus@samba.org, mingo@kernel.org,
-        hpa@zytor.com
-Reply-To: jolsa@kernel.org, acme@redhat.com, cjashfor@linux.vnet.ibm.com,
-        fweisbec@gmail.com, tglx@linutronix.de, namhyung@kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, dsahern@gmail.com,
-        linux-kernel@vger.kernel.org, ak@linux.intel.com, hpa@zytor.com,
-        mingo@kernel.org
-In-Reply-To: <1413468427-31049-8-git-send-email-jolsa@kernel.org>
-References: <1413468427-31049-8-git-send-email-jolsa@kernel.org>
+	Thu, 30 Oct 2014 02:42:32 -0400
+Date: Wed, 29 Oct 2014 23:42:11 -0700
+From: tip-bot for Sukadev Bhattiprolu <tipbot@zytor.com>
+Message-ID: <tip-7d073b335edc8d97af730c2e3b83ed6642bd3c27@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, jolsa@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, anton@samba.org, acme@redhat.com,
+        sukadev@linux.vnet.ibm.com, anton@au1.ibm.com
+Reply-To: anton@samba.org, acme@redhat.com, sukadev@linux.vnet.ibm.com,
+        anton@au1.ibm.com, mingo@kernel.org, jolsa@redhat.com,
+        tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20141022000958.GB2228@us.ibm.com>
+References: <20141022000958.GB2228@us.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Fix report -F dso_from for data without branch info
-Git-Commit-ID: 288a4b91fc0dc7c0ce3509339e8dec7b590a4d73
+Subject: [tip:perf/core] perf tools powerpc: Cache the DWARF debug info
+Git-Commit-ID: 7d073b335edc8d97af730c2e3b83ed6642bd3c27
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,66 +33,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  288a4b91fc0dc7c0ce3509339e8dec7b590a4d73
-Gitweb:     http://git.kernel.org/tip/288a4b91fc0dc7c0ce3509339e8dec7b590a4d73
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Thu, 16 Oct 2014 16:07:07 +0200
+Commit-ID:  7d073b335edc8d97af730c2e3b83ed6642bd3c27
+Gitweb:     http://git.kernel.org/tip/7d073b335edc8d97af730c2e3b83ed6642bd3c27
+Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+AuthorDate: Tue, 21 Oct 2014 17:09:58 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 Oct 2014 10:29:05 -0200
+CommitDate: Wed, 29 Oct 2014 10:32:46 -0200
 
-perf tools: Fix report -F dso_from for data without branch info
+perf tools powerpc: Cache the DWARF debug info
 
-The branch field sorting code assumes hist_entry::branch_info is
-allocated, which is wrong and following perf session ends up with report
-segfault.
+Cache the DWARF debug info for DSO so we don't have to rebuild it for each
+address in the DSO.
 
-  $ perf record ls
-  $ perf report -F dso_from
-  perf: Segmentation fault
+Note that dso__new() uses calloc() so don't need to set dso->dwfl to NULL.
 
-Checking that hist_entry::branch_info is valid and display "N/A" string
-in snprint callback if it's not.
+	$ /tmp/perf.orig --version
+	perf version 3.18.rc1.gc2661b8
+	$ /tmp/perf.new --version
+	perf version 3.18.rc1.g402d62
+	$ perf stat -e cycles,instructions /tmp/perf.orig report -g > orig
 
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1413468427-31049-8-git-send-email-jolsa@kernel.org
+	 Performance counter stats for '/tmp/perf.orig report -g':
+
+	     6,428,177,183 cycles                    #    0.000 GHz
+	     4,176,288,391 instructions              #    0.65  insns per cycle
+
+	       1.840666132 seconds time elapsed
+
+	$ perf stat -e cycles,instructions /tmp/perf.new report -g > new
+
+	 Performance counter stats for '/tmp/perf.new report -g':
+
+	       305,773,142 cycles                    #    0.000 GHz
+	       276,048,272 instructions              #    0.90  insns per cycle
+
+	       0.087693543 seconds time elapsed
+	$ diff orig new
+	$
+
+Changelog[v2]:
+
+[Arnaldo Carvalho] Cache in existing global objects rather than create
+                   new static/globals in functions.
+
+Reported-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/20141022000958.GB2228@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ tools/perf/arch/powerpc/util/skip-callchain-idx.c | 33 +++++++++++++++--------
+ tools/perf/util/dso.h                             |  1 +
+ 2 files changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 7a9054a..9402885 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -373,6 +373,9 @@ struct sort_entry sort_cpu = {
- static int64_t
- sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right)
+diff --git a/tools/perf/arch/powerpc/util/skip-callchain-idx.c b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+index d73ef8b..9892b0f 100644
+--- a/tools/perf/arch/powerpc/util/skip-callchain-idx.c
++++ b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+@@ -145,7 +145,7 @@ static Dwarf_Frame *get_dwarf_frame(Dwfl_Module *mod, Dwarf_Addr pc)
+  *		yet used)
+  *	-1 in case of errors
+  */
+-static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
++static int check_return_addr(struct dso *dso, Dwarf_Addr pc)
  {
-+	if (!left->branch_info || !right->branch_info)
-+		return cmp_null(left->branch_info, right->branch_info);
+ 	int		rc = -1;
+ 	Dwfl		*dwfl;
+@@ -156,15 +156,27 @@ static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
+ 	Dwarf_Addr	end = pc;
+ 	bool		signalp;
+ 
+-	dwfl = dwfl_begin(&offline_callbacks);
+-	if (!dwfl) {
+-		pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
+-		return -1;
+-	}
++	dwfl = dso->dwfl;
+ 
+-	if (dwfl_report_offline(dwfl, "",  exec_file, -1) == NULL) {
+-		pr_debug("dwfl_report_offline() failed %s\n", dwarf_errmsg(-1));
+-		goto out;
++	if (!dwfl) {
++		dwfl = dwfl_begin(&offline_callbacks);
++		if (!dwfl) {
++			pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
++			return -1;
++		}
 +
- 	return _sort__dso_cmp(left->branch_info->from.map,
- 			      right->branch_info->from.map);
- }
-@@ -380,8 +383,11 @@ sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__dso_from_snprintf(struct hist_entry *he, char *bf,
- 				    size_t size, unsigned int width)
- {
--	return _hist_entry__dso_snprintf(he->branch_info->from.map,
--					 bf, size, width);
-+	if (he->branch_info)
-+		return _hist_entry__dso_snprintf(he->branch_info->from.map,
-+						 bf, size, width);
-+	else
-+		return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
++		if (dwfl_report_offline(dwfl, "", dso->long_name, -1) == NULL) {
++			pr_debug("dwfl_report_offline() failed %s\n",
++						dwarf_errmsg(-1));
++			/*
++			 * We normally cache the DWARF debug info and never
++			 * call dwfl_end(). But to prevent fd leak, free in
++			 * case of error.
++			 */
++			dwfl_end(dwfl);
++			goto out;
++		}
++		dso->dwfl = dwfl;
+ 	}
+ 
+ 	mod = dwfl_addrmodule(dwfl, pc);
+@@ -194,7 +206,6 @@ static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
+ 	rc = check_return_reg(ra_regno, frame);
+ 
+ out:
+-	dwfl_end(dwfl);
+ 	return rc;
  }
  
- static int64_t
+@@ -246,7 +257,7 @@ int arch_skip_callchain_idx(struct machine *machine, struct thread *thread,
+ 		return skip_slot;
+ 	}
+ 
+-	rc = check_return_addr(dso->long_name, ip);
++	rc = check_return_addr(dso, ip);
+ 
+ 	pr_debug("DSO %s, nr %" PRIx64 ", ip 0x%" PRIx64 "rc %d\n",
+ 				dso->long_name, chain->nr, ip, rc);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index acb651a..3c9b391 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -127,6 +127,7 @@ struct dso {
+ 	const char	 *long_name;
+ 	u16		 long_name_len;
+ 	u16		 short_name_len;
++	void		*dwfl;			/* DWARF debug info */
+ 
+ 	/* dso data file */
+ 	struct {
