@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760162AbaJ3Oce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:32:34 -0400
-Received: from mailout.micron.com ([137.201.242.129]:47624 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758166AbaJ3Occ convert rfc822-to-8bit (ORCPT
+	id S1760227AbaJ3Oeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:34:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33278 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaJ3Oeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:32:32 -0400
-From: bpqw <bpqw@micron.com>
-To: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1 v3] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Index: AQHP8XpVc/mNyIQ5hUavHsDkiAfiSJxIuKXg
-Date: Thu, 30 Oct 2014 14:31:42 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E9252@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>
-       <A765B125120D1346A63912DDE6D8B6315E7AC2@NTXXIAMBX02.xacn.micron.com>
-In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E7AC2@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21062.005
-X-TM-AS-Result: No-0.398000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Oct 2014 10:34:36 -0400
+Date: Thu, 30 Oct 2014 07:33:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anton Staaf <robotboy@chromium.org>
+Cc: Johan Hovold <jhovold@gmail.com>, Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: simple: add Google simple serial SubClass support
+Message-ID: <20141030143324.GA19307@kroah.com>
+References: <1414617716-39377-1-git-send-email-robotboy@chromium.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414617716-39377-1-git-send-email-robotboy@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+On Wed, Oct 29, 2014 at 02:21:56PM -0700, Anton Staaf wrote:
+> Add support for Google devices that export simple serial
+> interfaces using the vendor specific SubClass/Protocol pair
+> 0x50/0x01.
+> 
+> Signed-off-by: Anton Staaf <robotboy@chromium.org>
+> 
+> ---
+>  drivers/usb/serial/usb-serial-simple.c | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/drivers/usb/serial/usb-serial-simple.c b/drivers/usb/serial/usb-serial-simple.c
+> index fb79775..85bb973 100644
+> --- a/drivers/usb/serial/usb-serial-simple.c
+> +++ b/drivers/usb/serial/usb-serial-simple.c
+> @@ -8,6 +8,7 @@
+>   * Copyright (C) 2010 Zilogic Systems <code@zilogic.com>
+>   * Copyright (C) 2013 Wei Shuai <cpuwolf@gmail.com>
+>   * Copyright (C) 2013 Linux Foundation
+> + * Copyright (C) 2014 Google, Inc.
+>   *
+>   *	This program is free software; you can redistribute it and/or
+>   *	modify it under the terms of the GNU General Public License version
 
->For Micron SPI NOR flash, enabling or disabling quad I/O 
->protocol is controlled by EVCR (Enhanced Volatile Configuration
->Register), Quad I/O protocol bit 7.When EVCR bit 7 is reset to 0,
->the SPI NOR flash will operate in quad I/O mode.
+Based on advice from my lawyer, a change this size does not warrent a
+copyright notice at the top of a file.  If your lawyers feel otherwise,
+please let me know and I will be glad to discuss it with them.
 
->Signed-off-by: bean huo <beanhuo@micron.com>
->Acked-by: Marek Vasut <marex@denx.de>
+So, care to resend this without this change to the file?
 
-Hi,Brian
-How about this patch?if can be accepted?
-It has been long time.
+thanks,
+
+greg k-h
