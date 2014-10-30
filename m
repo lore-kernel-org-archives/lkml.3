@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759442AbaJ3LRh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:17:37 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:43417 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759381AbaJ3LRe (ORCPT
+	id S1759421AbaJ3LRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:17:32 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:33342 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759381AbaJ3LR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:17:34 -0400
+	Thu, 30 Oct 2014 07:17:29 -0400
 From: "pang.xunlei" <pang.xunlei@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: rtc-linux@googlegroups.com, xen-devel@lists.xenproject.org,
@@ -15,9 +15,9 @@ Cc: rtc-linux@googlegroups.com, xen-devel@lists.xenproject.org,
         Alessandro Zummo <a.zummo@towertech.it>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [RFC PATCH v2 08/11] time: Convert xen_read_wallclock() to use timespec64
-Date: Thu, 30 Oct 2014 19:15:42 +0800
-Message-Id: <1414667745-7703-9-git-send-email-pang.xunlei@linaro.org>
+Subject: [RFC PATCH v2 07/11] time: Convert alarm_set_rtc() to use timespec64
+Date: Thu, 30 Oct 2014 19:15:41 +0800
+Message-Id: <1414667745-7703-8-git-send-email-pang.xunlei@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org>
 References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org>
@@ -25,75 +25,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of addressing 2038 safety for in-kernel uses, this patch
-creates no functional change, converts xen_read_wallclock() to
-use timespec64 instead of timespec.
+As part of addressing 2038 saftey for in-kernel uses, this patch
+creates no functional change, and converts alarm_set_rtc() to use
+timespec64.
 
 Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
 ---
- arch/x86/xen/time.c |   23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ drivers/staging/android/alarm-dev.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 16fce39..4e14439 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -169,20 +169,27 @@ static cycle_t xen_clocksource_get_cycles(struct clocksource *cs)
- 	return xen_clocksource_read();
+diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+index 01017ff..dfa24f0 100644
+--- a/drivers/staging/android/alarm-dev.c
++++ b/drivers/staging/android/alarm-dev.c
+@@ -152,19 +152,16 @@ static int alarm_wait(void)
+ 	return rv;
  }
  
--static void xen_read_wallclock(struct timespec *ts)
-+static void xen_read_wallclock(struct timespec64 *ts)
+-/* TODO: [2038 safety] alarm_set_rtc() uses timespec64 */
+-static int alarm_set_rtc(struct timespec *ts)
++static int alarm_set_rtc(struct timespec64 *ts)
  {
-+	struct timespec ts_unsafe;
- 	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct pvclock_wall_clock *wall_clock = &(s->wc);
-         struct pvclock_vcpu_time_info *vcpu_time;
+-	struct timespec ts64;
+ 	struct rtc_time new_rtc_tm;
+ 	struct rtc_device *rtc_dev;
+ 	unsigned long flags;
+ 	int rv = 0;
  
- 	vcpu_time = &get_cpu_var(xen_vcpu)->time;
--	pvclock_read_wallclock(wall_clock, vcpu_time, ts);
-+	/* TODO: [2038 safety] pvclock_read_wallclock() uses timespec64 */
-+	pvclock_read_wallclock(wall_clock, vcpu_time, &ts_unsafe);
-+	*ts = timespec_to_timespec64(ts_unsafe);
- 	put_cpu_var(xen_vcpu);
+-	ts64 = timespec_to_timespec64(*ts);
+-	rtc_time_to_tm64(ts64.tv_sec, &new_rtc_tm);
++	rtc_time_to_tm64(ts->tv_sec, &new_rtc_tm);
+ 	rtc_dev = alarmtimer_get_rtcdev();
+-	rv = do_settimeofday64(&ts64);
++	rv = do_settimeofday64(ts);
+ 	if (rv < 0)
+ 		return rv;
+ 	if (rtc_dev)
+@@ -201,9 +198,14 @@ static int alarm_get_time(enum android_alarm_type alarm_type,
+ 	return rv;
  }
  
-+/* TODO: [2038 safety] xen_get_wallclock() uses timespec64 */
- static void xen_get_wallclock(struct timespec *now)
++/*
++* TODO: [2038 safety] alarm_do_ioctl() should be fixed to use timespec64,
++*  once timespec64 is promoted to userspace.
++*/
+ static long alarm_do_ioctl(struct file *file, unsigned int cmd,
+ 							struct timespec *ts)
  {
--	xen_read_wallclock(now);
-+	struct timespec64 now64;
-+
-+	xen_read_wallclock(&now64);
-+	*now = timespec64_to_timespec(now64);
- }
- 
- static int xen_set_wallclock(const struct timespec *now)
-@@ -485,8 +492,7 @@ static const struct pv_time_ops xen_time_ops __initconst = {
- static void __init xen_time_init(void)
- {
- 	int cpu = smp_processor_id();
--	struct timespec tp;
--	struct timespec64 tp64;
-+	struct timespec64 tp;
- 
- 	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
- 
-@@ -497,13 +503,8 @@ static void __init xen_time_init(void)
- 		xen_clockevent = &xen_vcpuop_clockevent;
- 	}
- 
--	/*
--	 * Set initial system time with full resolution
--	 * TODO: [2038 safety] xen_read_wallclock() uses timespec64
--	 */
- 	xen_read_wallclock(&tp);
--	tp64 = timespec_to_timespec64(tp);
--	do_settimeofday64(&tp64);
-+	do_settimeofday64(&tp);
- 
- 	setup_force_cpu_cap(X86_FEATURE_TSC);
- 
++	struct timespec64 ts64;
+ 	int rv = 0;
+ 	unsigned long flags;
+ 	enum android_alarm_type alarm_type = ANDROID_ALARM_IOCTL_TO_TYPE(cmd);
+@@ -241,7 +243,8 @@ static long alarm_do_ioctl(struct file *file, unsigned int cmd,
+ 		rv = alarm_wait();
+ 		break;
+ 	case ANDROID_ALARM_SET_RTC:
+-		rv = alarm_set_rtc(ts);
++		ts64 = timespec_to_timespec64(*ts);
++		rv = alarm_set_rtc(&ts64);
+ 		break;
+ 	case ANDROID_ALARM_GET_TIME(0):
+ 		rv = alarm_get_time(alarm_type, ts);
 -- 
 1.7.9.5
 
