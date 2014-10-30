@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422718AbaJ3XjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:39:19 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49486 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161211AbaJ3XjS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:39:18 -0400
-Date: Thu, 30 Oct 2014 23:39:06 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141030233906.6647d005@alan.etchedpixels.co.uk>
-In-Reply-To: <1414680060.2406.51.camel@hadess.net>
-References: <1413881397.30379.7.camel@hadess.net>
-	<CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	<1413911644.30379.12.camel@hadess.net>
-	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	<1413914978.30379.14.camel@hadess.net>
-	<CALAqxLX2Q-2RBF1zY6JAWrqNiqBFG3vxUwUSLVS3qXpgSOb9xA@mail.gmail.com>
-	<1414419579.30379.49.camel@hadess.net>
-	<CALAqxLXyaL55JuDuHAcWX0PEdem-jpVxK0rbJaNrBbBJ3rQY5Q@mail.gmail.com>
-	<20141028225740.2cd0ea5f@alan.etchedpixels.co.uk>
-	<1414680060.2406.51.camel@hadess.net>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1161584AbaJ3Xkp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 19:40:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37459 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161211AbaJ3Xkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 19:40:41 -0400
+Date: Thu, 30 Oct 2014 19:40:29 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: a.p.zijlstra@chello.nl
+Subject: 3.18-rc2 perf add_event_to_ctx warning
+Message-ID: <20141030234029.GA28961@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, a.p.zijlstra@chello.nl
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > You'd have to solve it in the firmware.
-> 
-> Not if the kernel can tell us that the event occurred and when.
+WARNING: CPU: 3 PID: 5167 at kernel/events/core.c:1133 add_event_to_ctx+0x1ce/0x1f0()
+Modules linked in: 8021q garp bridge stp snd_seq_dummy fuse tun hidp sctp libcrc32c rfcomm scsi_transport_iscsi can_raw can_bcm nfnetlink nfc caif_socket caif af
+_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill co
+retemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel microcode btrfs xor usb_debug snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda
+_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec pcspkr serio_raw shpchp raid6_pq snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer snd soundcore e1000e ptp pps_c
+ore
+CPU: 3 PID: 5167 Comm: trinity-c4 Not tainted 3.18.0-rc2+ #79
+ 0000000000000009 0000000071bbcfa0 ffff880235ef3c48 ffffffffbd86ef44
+ 0000000000000000 0000000000000000 ffff880235ef3c88 ffffffffbd07f1f1
+ ffff880235ef3c78 ffff880233e6eee8 ffff880089e4c0f8 0000000001a2978c
+Call Trace:
+ [<ffffffffbd86ef44>] dump_stack+0x4f/0x7c
+ [<ffffffffbd07f1f1>] warn_slowpath_common+0x81/0xa0
+ [<ffffffffbd07f30a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffffbd19a68e>] add_event_to_ctx+0x1ce/0x1f0
+ [<ffffffffbd1a03a3>] __perf_install_in_context+0xe3/0x1b0
+ [<ffffffffbd19a0a3>] remote_function+0x53/0x70
+ [<ffffffffbd19a050>] ? schedule_orphans_remove.part.49+0x60/0x60
+ [<ffffffffbd1247b6>] generic_exec_single+0x156/0x1d0
+ [<ffffffffbd19a050>] ? schedule_orphans_remove.part.49+0x60/0x60
+ [<ffffffffbd124896>] smp_call_function_single+0x66/0x110
+ [<ffffffffbd0f460e>] ? wait_rcu_gp+0x8e/0xb0
+ [<ffffffffbd198f93>] task_function_call+0x53/0x80
+ [<ffffffffbd1a02c0>] ? perf_cpu_hrtimer_handler+0x260/0x260
+ [<ffffffffbd19a733>] perf_install_in_context+0x83/0xf0
+ [<ffffffffbd1a4d80>] SYSC_perf_event_open+0xb70/0xc70
+ [<ffffffffbd3ebf27>] ? debug_smp_processor_id+0x17/0x20
+ [<ffffffffbd1a52c9>] SyS_perf_event_open+0x9/0x10
+ [<ffffffffbd87a009>] tracesys_phase2+0xd4/0xd9
+---[ end trace 88ffecbb23768dcb ]---
 
-Which it can only do if the firmware told the kernel meaningfully !
 
-> And I think I have one of those devices, an Intel Baytrail tablet.
-> 
-> > - Suspend/Resume on such machines are a Linux fake to keep legacy code
-> >   happy
-> 
-> Do you have a link to how this is implemented currently?
+1133         WARN_ON_ONCE(event->attach_state & PERF_ATTACH_CONTEXT);
 
-You ask for suspend and we put all the devices into lowest power state if
-they are not already there then sit on our backsides issuing mwaits
-asking for C7 state on BYT (C10 I think on HSW).
-
-If you box is ever passive enough you can even randomly enter this state
-in the idle loop. You generally won't do this on current devices because
-you won't have suitable panels and most desktop OS's are far too noisy on
-wakeups. There's nothing preventing you having half your processors in
-deep idle.
-
-That's where it is all heading though. Suspend will eventually go away.
-
-> [1]: Reason for wake-up for each wake-up-able device, along with a
-> timestamp.
-
-We may not know and the answer in many cases will be extremely device
-specific. It's a reasonable ask but answers even if available are likely
-to be things like "because GPE36" and GPE36 will just be some connection
-to something that could be anything from a lid switch to a light sensor
-or even a smart wifi chip deciding it wants the CPU to help out because
-you are out of range of the base station. We may not even know what it
-relates to.
-
-A non suspend system will exit deep idle type status because they got
-an IRQ or perhaps some DMA needed the cache coherency. That doesn't mean
-they've got the foggiest which IRQ kicked them out if idle, just that hey
-I'm awake and there are four pending interrupts. That of course is
-assuming it even noticed it entered a deep idle state - you don't want to
-wake an idle CPU to tell it that its more idle than it was before.
-
-Alan
