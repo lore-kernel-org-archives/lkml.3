@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759605AbaJ3NAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:00:04 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:40019 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974AbaJ3NAB (ORCPT
+	id S1759665AbaJ3NCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:02:06 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:47331 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759020AbaJ3NCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:00:01 -0400
+	Thu, 30 Oct 2014 09:02:03 -0400
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68e-f79b46d000002b74-38-5452364fbd7e
+X-AuditID: cbfee691-f79b86d000004a5a-21-545236c94aae
 Content-transfer-encoding: 8BIT
-Message-id: <5452364F.2070402@samsung.com>
-Date: Thu, 30 Oct 2014 21:59:59 +0900
+Message-id: <545236C8.4010101@samsung.com>
+Date: Thu, 30 Oct 2014 22:02:00 +0900
 From: Inki Dae <inki.dae@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
  Thunderbird/17.0.8
 To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
         Seung-Woo Kim <sw0312.kim@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
         "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
         "moderated list:ARM/S5P EXYNOS AR..." 
 	<linux-samsung-soc@vger.kernel.org>,
         open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] drm/exynos/dsi: remove global display variable
-References: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
- <5452318C.1030107@samsung.com>
-In-reply-to: <5452318C.1030107@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsWyRsSkUNffLCjE4P4kKYtb686xWlz5+p7N
-	4sW9iywWvQuuslmcbXrDbnF51xw2ixnn9zFZrD1yl91ixuSXbA6cHve7jzN59G1ZxejxeZNc
-	AHMUl01Kak5mWWqRvl0CV8aaJS9ZCy5yVZw7toSlgfEMRxcjJ4eEgIlEz69+VghbTOLCvfVs
-	XYxcHEICSxklXhzewghT9HLnHnaIxCJGid03fjGBJHgFBCV+TL7H0sXIwcEsIC9x5FI2SJhZ
-	QF1i0rxFzCC2kMArRolFXRIQ5VoSx/99ZgexWQRUJRa+OMwGYrMB2RNX3AezRQXCJF682gXW
-	KwI0Z/bJO8wge5kFpjJLXFjUwwKSEBZwl3i0eg0LxIIUiderfrGB3MApoC3R+JQDpF5C4BK7
-	RM+EVcwQywQkvk0+BHanhICsxKYDzBB/SUocXHGDZQKj2Cwk38xC+GYWkm8WMDKvYhRNLUgu
-	KE5KLzLSK07MLS7NS9dLzs/dxAiMudP/nvXtYLx5wPoQowAHoxIPr8aJwBAh1sSy4srcQ4ym
-	QEdMZJYSTc4HRnZeSbyhsZmRhamJqbGRuaWZkjhvgtTPYCGB9MSS1OzU1ILUovii0pzU4kOM
-	TBycUg2MYRG6rBdZNtw59CN5J+8y3+OR1zMN++VM5O7JKrLzBpyYfErSoGjBdvn5bacfvfT7
-	nqJW/NxZ7PFcFotlet37ctdwr3ZcWOF1uj/qwwfBi9mWK5qD0pYuOsa2dtNS9y+PHqrqOu6W
-	n3+TZS3ThKmXv3Kr7/x4d9XsF5z3YzwkL/9a92HxbfHrNUosxRmJhlrMRcWJAHyW3e+0AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jAV1/s6AQg+sThSxurTvHanHl63s2
-	ixf3LrJY9C64ymZxtukNu8XlXXPYLGac38dksfbIXXaLGZNfsjlwetzvPs7k0bdlFaPH501y
-	AcxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUB3
-	KCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz1ix5yVpwkavi3LElLA2M
-	Zzi6GDk5JARMJF7u3MMOYYtJXLi3nq2LkYtDSGARo8TuG7+YQBK8AoISPybfY+li5OBgFpCX
-	OHIpGyTMLKAuMWneImYQW0jgFaPEoi4JiHItieP/PoPNZBFQlVj44jAbiM0GZE9ccR/MFhUI
-	k3jxahdYrwjQnNkn7zCD7GUWmMoscWFRDwtIQljAXeLR6jUsEAtSJF6v+sUGcgOngLZE41OO
-	CYwCs5BcNwvhullIrlvAyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIziin0nvYFzVYHGI
-	UYCDUYmHV+NEYIgQa2JZcWXuIUYJDmYlEd6jOkEhQrwpiZVVqUX58UWlOanFhxhNgZ6byCwl
-	mpwPTDZ5JfGGxiZmRpZG5oYWRsbmSuK8B1utA4UE0hNLUrNTUwtSi2D6mDg4pRoYPR7+YPUv
-	fW5jNFUv+FqHRPZODdey+eH7vvzoy828Wdly8s4fg+f96jcfT7kdGcts9NBHaXqXwh/fPZsU
-	GVfbtIUGzfp2rmCJ0YMP01dmTZD5yeiy9GKC2IGQvil6uamvOtqYzjw0/xaYPmv23xdRVgyq
-	J5/YZJyKCDt0R//SU4vJD/c/1tT3V2Ipzkg01GIuKk4EACRbPRT+AgAA
+Subject: Re: [PATCH] drm/exynos: remove ifdeferry from initialization code
+References: <1410349980-10473-1-git-send-email-a.hajda@samsung.com>
+ <545230E8.5060100@samsung.com>
+In-reply-to: <545230E8.5060100@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkSPekWVCIweElXBa31p1jteg9d5LJ
+	4srX92wWL+5dZLHoXXCVzeJs0xt2i8u75rBZzDi/j8lixuSXbA6cHtu/PWD1uN99nMmjb8sq
+	Ro/Pm+QCWKK4bFJSczLLUov07RK4MhYvfsJYMNm/YveP1AbGt45djJwcEgImEmsf7GCEsMUk
+	Ltxbz9bFyMUhJLCUUeJDUxcjTNGV7ivsILaQwCJGibk3vEFsXgFBiR+T77F0MXJwMAvISxy5
+	lA0SZhZQl5g0bxEzxJxXjBJdV2exQtRrSVzo2McGYrMIqEpc/bMbzGYDsieuuA9miwqESbx4
+	tYsZxBYBGjT75B2wQcwCncwSc+c8ADtIWMBL4uzt/1AHpUjcm9AEFucU0Jb4d7iTHaRBQuAS
+	u8SJt2fYIbYJSHybfAjsUgkBWYlNB5ghHpOUOLjiBssERrFZSP6ZhfDPLCT/LGBkXsUomlqQ
+	XFCclF5kqlecmFtcmpeul5yfu4kRGH2n/z2buIPx/gHrQ4wCHIxKPLwXjgaGCLEmlhVX5h5i
+	NAU6YiKzlGhyPjDG80riDY3NjCxMTUyNjcwtzZTEeXWkfwYLCaQnlqRmp6YWpBbFF5XmpBYf
+	YmTi4JRqYORJutob5zO7LV3f93SA8p4nu4Ljjih5G+7YucDkzfK+S3nnGyyfvt/9hSkhRify
+	wGWubfwP7hndm2ijFzHhWL7klf3BM1aUKDM+0KhMCrix9/HVXSeYbE1XXf/vZb+ZnWPVCZcC
+	6zc7LrTfkpq8OFg4YpfVXgG9+q8C2fUnrBuVqhnOlvTfdlNiKc5INNRiLipOBABRnUsvuQIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t9jAd0TZkEhBs++2ljcWneO1aL33Ekm
+	iytf37NZvLh3kcWid8FVNouzTW/YLS7vmsNmMeP8PiaLGZNfsjlwemz/9oDV4373cSaPvi2r
+	GD0+b5ILYIlqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQ
+	dcvMATpGSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ixePETxoLJ/hW7
+	f6Q2ML517GLk5JAQMJG40n2FHcIWk7hwbz0biC0ksIhRYu4NbxCbV0BQ4sfkeyxdjBwczALy
+	EkcuZYOEmQXUJSbNW8TcxcgFVP6KUaLr6ixWiHotiQsd+8DmsAioSlz9sxvMZgOyJ664D2aL
+	CoRJvHi1ixnEFgEaNPvkHbBBzAKdzBJz5zxgBEkIC3hJnL39nx3ioBSJexOawOKcAtoS/w53
+	sk9gFJiF5L5ZCPfNQnLfAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBsf1MegfjqgaL
+	Q4wCHIxKPLwaJwJDhFgTy4orcw8xSnAwK4nwHtUJChHiTUmsrEotyo8vKs1JLT7EaAr03URm
+	KdHkfGDaySuJNzQ2MTOyNDI3tDAyNlcS5z3Yah0oJJCeWJKanZpakFoE08fEwSnVwLj2oAx7
+	eNamXK7eY9fcM5LM36cvcd4h02F62IxtFsOkC6+y1q2amGQWuEbFaYJR1cwSRZFLyjYri91P
+	KpQE+zke4T4V6Poq4HsN7+TIsvrAqndTHmpqCp6LFJbVW6V9dms9R3ZQtvvcH7zFO5d0bDg9
+	4+Z7Rw3tyZf0myxO8AcGpFcUiSouUWIpzkg01GIuKk4EALu4ttsDAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,48 +61,341 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014년 10월 30일 21:39, Andrzej Hajda wrote:
-> On 10/07/2014 02:01 PM, Andrzej Hajda wrote:
->> Hi Inki,
+On 2014년 10월 30일 21:36, Andrzej Hajda wrote:
+> On 09/10/2014 01:53 PM, Andrzej Hajda wrote:
+>> The patch replaces separate calls to driver (de)registration by
+>> loops over the array of drivers. As a result it significantly
+>> decreases number of ifdefs. Additionally it moves device registration
+>> related ifdefs to header file.
 >>
->> Many Exynos DRM drivers uses global variables to represent associated devices
->> in Exynos DRM internal framework. It is quite confusing, it adds data duplication
->> and finally it does not allow to handle more than one device in system.
->> It seems better to embed such structures in private context of the device.
+>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 > 
-> Gently ping.
+> ping
+> 
 
-This patch series already is in exynos-drm-next-todo branch. I will move
-it to exynos-drm-next after checking.
+Oops, this is one of them I missed. Sorry for this. Can you rebase this
+patch on top of exynos-drm-next?. I just had a setup to exynos-drm-next.
 
 Thanks,
 Inki Dae
 
-> 
 > Regards
 > Andrzej
 > 
+>> ---
+>> Hi Inki,
 >>
->> The patchset is based on exynos_drm_next plus my patch [1]:
->> 'drm/exynos: remove explicit encoder/connector de-initialization'.
+>> During testing your component match support patch [1] I have prepared patch
+>> removing most ifdefs from exynos_drm_drv.c. It is based on your patch, but
+>> I can rebase it if necessary.
 >>
->> If the patchset is OK for you I can prepare similar patches for other Exynos DRM components.
->>
->> [1]: https://lkml.org/lkml/2014/9/22/148
+>> [1]: http://permalink.gmane.org/gmane.linux.kernel.samsung-soc/37031
 >>
 >> Regards
 >> Andrzej
+>> ---
+>>  drivers/gpu/drm/exynos/exynos_drm_drv.c | 170 +++++++-------------------------
+>>  drivers/gpu/drm/exynos/exynos_drm_drv.h |  25 +++--
+>>  2 files changed, 48 insertions(+), 147 deletions(-)
 >>
->>
->> Andrzej Hajda (4):
->>   drm/exynos/dsi: remove global variable exynos_dsi_display
->>   drm/exynos/dsi: simplify device pointer evaluation
->>   drm/exynos/dsi: remove redundant encoder field
->>   drm/exynos/dsi: stop using display->ctx pointer
->>
->>  drivers/gpu/drm/exynos/exynos_drm_dsi.c | 96 ++++++++++++++++-----------------
->>  1 file changed, 47 insertions(+), 49 deletions(-)
->>
+>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>> index b2c710a..a660e46 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>> @@ -553,74 +553,54 @@ static const struct component_master_ops exynos_drm_ops = {
+>>  	.unbind		= exynos_drm_unbind,
+>>  };
+>>  
+>> -static int exynos_drm_platform_probe(struct platform_device *pdev)
+>> -{
+>> -	struct component_match *match;
+>> -	int ret;
+>> -
+>> -	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>> -	exynos_drm_driver.num_ioctls = ARRAY_SIZE(exynos_ioctls);
+>> -
+>> +static struct platform_driver * const exynos_drm_drivers[] = {
+>>  #ifdef CONFIG_DRM_EXYNOS_FIMD
+>> -	ret = platform_driver_register(&fimd_driver);
+>> -	if (ret < 0)
+>> -		return ret;
+>> +	&fimd_driver,
+>>  #endif
+>> -
+>>  #ifdef CONFIG_DRM_EXYNOS_DP
+>> -	ret = platform_driver_register(&dp_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_fimd_drv;
+>> +	&dp_driver,
+>>  #endif
+>> -
+>>  #ifdef CONFIG_DRM_EXYNOS_DSI
+>> -	ret = platform_driver_register(&dsi_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_dp_drv;
+>> +	&dsi_driver,
+>>  #endif
+>> -
+>>  #ifdef CONFIG_DRM_EXYNOS_HDMI
+>> -	ret = platform_driver_register(&mixer_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_dsi_drv;
+>> -	ret = platform_driver_register(&hdmi_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_mixer_drv;
+>> +	&mixer_driver,
+>> +	&hdmi_driver,
+>>  #endif
+>> -
+>>  #ifdef CONFIG_DRM_EXYNOS_G2D
+>> -	ret = platform_driver_register(&g2d_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_hdmi_drv;
+>> +	&g2d_driver,
+>>  #endif
+>> -
+>>  #ifdef CONFIG_DRM_EXYNOS_FIMC
+>> -	ret = platform_driver_register(&fimc_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_g2d_drv;
+>> +	&fimc_driver,
+>>  #endif
+>> -
+>>  #ifdef CONFIG_DRM_EXYNOS_ROTATOR
+>> -	ret = platform_driver_register(&rotator_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_fimc_drv;
+>> +	&rotator_driver,
+>>  #endif
+>> -
+>>  #ifdef CONFIG_DRM_EXYNOS_GSC
+>> -	ret = platform_driver_register(&gsc_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_rotator_drv;
+>> +	&gsc_driver,
+>>  #endif
+>> -
+>>  #ifdef CONFIG_DRM_EXYNOS_IPP
+>> -	ret = platform_driver_register(&ipp_driver);
+>> -	if (ret < 0)
+>> -		goto err_unregister_gsc_drv;
+>> +	&ipp_driver,
+>> +#endif
+>> +};
+>> +
+>> +static int exynos_drm_platform_probe(struct platform_device *pdev)
+>> +{
+>> +	struct component_match *match;
+>> +	int ret, i;
+>> +
+>> +	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>> +	exynos_drm_driver.num_ioctls = ARRAY_SIZE(exynos_ioctls);
+>> +
+>> +	for (i = 0; i < ARRAY_SIZE(exynos_drm_drivers); ++i) {
+>> +		ret = platform_driver_register(exynos_drm_drivers[i]);
+>> +		if (ret < 0)
+>> +			goto err_unregister_drivers;
+>> +	}
+>>  
+>>  	ret = exynos_platform_device_ipp_register();
+>>  	if (ret < 0)
+>> -		goto err_unregister_ipp_drv;
+>> -#endif
+>> +		goto err_unregister_drivers;
+>>  
+>>  	match = exynos_drm_match_add(&pdev->dev);
+>>  	if (IS_ERR(match)) {
+>> @@ -632,96 +612,24 @@ static int exynos_drm_platform_probe(struct platform_device *pdev)
+>>  						match);
+>>  
+>>  err_unregister_ipp_dev:
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_IPP
+>>  	exynos_platform_device_ipp_unregister();
+>> -err_unregister_ipp_drv:
+>> -	platform_driver_unregister(&ipp_driver);
+>> -err_unregister_gsc_drv:
+>> -#endif
+>>  
+>> -#ifdef CONFIG_DRM_EXYNOS_GSC
+>> -	platform_driver_unregister(&gsc_driver);
+>> -err_unregister_rotator_drv:
+>> -#endif
+>> +err_unregister_drivers:
+>> +	while (--i >= 0)
+>> +		platform_driver_unregister(exynos_drm_drivers[i]);
+>>  
+>> -#ifdef CONFIG_DRM_EXYNOS_ROTATOR
+>> -	platform_driver_unregister(&rotator_driver);
+>> -err_unregister_fimc_drv:
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_FIMC
+>> -	platform_driver_unregister(&fimc_driver);
+>> -err_unregister_g2d_drv:
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_G2D
+>> -	platform_driver_unregister(&g2d_driver);
+>> -err_unregister_hdmi_drv:
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_HDMI
+>> -	platform_driver_unregister(&hdmi_driver);
+>> -err_unregister_mixer_drv:
+>> -	platform_driver_unregister(&mixer_driver);
+>> -err_unregister_dsi_drv:
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_DSI
+>> -	platform_driver_unregister(&dsi_driver);
+>> -err_unregister_dp_drv:
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_DP
+>> -	platform_driver_unregister(&dp_driver);
+>> -err_unregister_fimd_drv:
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_FIMD
+>> -	platform_driver_unregister(&fimd_driver);
+>> -#endif
+>>  	return ret;
+>>  }
+>>  
+>>  static int exynos_drm_platform_remove(struct platform_device *pdev)
+>>  {
+>> -#ifdef CONFIG_DRM_EXYNOS_IPP
+>> -	exynos_platform_device_ipp_unregister();
+>> -	platform_driver_unregister(&ipp_driver);
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_GSC
+>> -	platform_driver_unregister(&gsc_driver);
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_ROTATOR
+>> -	platform_driver_unregister(&rotator_driver);
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_FIMC
+>> -	platform_driver_unregister(&fimc_driver);
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_G2D
+>> -	platform_driver_unregister(&g2d_driver);
+>> -#endif
+>> -
+>> -#ifdef CONFIG_DRM_EXYNOS_HDMI
+>> -	platform_driver_unregister(&mixer_driver);
+>> -	platform_driver_unregister(&hdmi_driver);
+>> -#endif
+>> +	int i;
+>>  
+>> -#ifdef CONFIG_DRM_EXYNOS_FIMD
+>> -	platform_driver_unregister(&fimd_driver);
+>> -#endif
+>> +	exynos_platform_device_ipp_unregister();
+>>  
+>> -#ifdef CONFIG_DRM_EXYNOS_DSI
+>> -	platform_driver_unregister(&dsi_driver);
+>> -#endif
+>> +	for (i = ARRAY_SIZE(exynos_drm_drivers) - 1; i >= 0; --i)
+>> +		platform_driver_unregister(exynos_drm_drivers[i]);
+>>  
+>> -#ifdef CONFIG_DRM_EXYNOS_DP
+>> -	platform_driver_unregister(&dp_driver);
+>> -#endif
+>>  	component_master_del(&pdev->dev, &exynos_drm_ops);
+>>  	return 0;
+>>  }
+>> @@ -745,11 +653,9 @@ static int exynos_drm_init(void)
+>>  	if (IS_ERR(exynos_drm_pdev))
+>>  		return PTR_ERR(exynos_drm_pdev);
+>>  
+>> -#ifdef CONFIG_DRM_EXYNOS_VIDI
+>>  	ret = exynos_drm_probe_vidi();
+>>  	if (ret < 0)
+>>  		goto err_unregister_pd;
+>> -#endif
+>>  
+>>  	ret = platform_driver_register(&exynos_drm_platform_driver);
+>>  	if (ret)
+>> @@ -758,11 +664,9 @@ static int exynos_drm_init(void)
+>>  	return 0;
+>>  
+>>  err_remove_vidi:
+>> -#ifdef CONFIG_DRM_EXYNOS_VIDI
+>>  	exynos_drm_remove_vidi();
+>>  
+>>  err_unregister_pd:
+>> -#endif
+>>  	platform_device_unregister(exynos_drm_pdev);
+>>  
+>>  	return ret;
+>> @@ -771,9 +675,9 @@ err_unregister_pd:
+>>  static void exynos_drm_exit(void)
+>>  {
+>>  	platform_driver_unregister(&exynos_drm_platform_driver);
+>> -#ifdef CONFIG_DRM_EXYNOS_VIDI
+>> +
+>>  	exynos_drm_remove_vidi();
+>> -#endif
+>> +
+>>  	platform_device_unregister(exynos_drm_pdev);
+>>  }
+>>  
+>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.h b/drivers/gpu/drm/exynos/exynos_drm_drv.h
+>> index 69a6fa3..76d5d02 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.h
+>> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.h
+>> @@ -324,15 +324,14 @@ int exynos_platform_device_hdmi_register(void);
+>>   */
+>>  void exynos_platform_device_hdmi_unregister(void);
+>>  
+>> -/*
+>> - * this function registers exynos drm ipp platform device.
+>> - */
+>> +#ifdef CONFIG_DRM_EXYNOS_IPP
+>>  int exynos_platform_device_ipp_register(void);
+>> -
+>> -/*
+>> - * this function unregisters exynos drm ipp platform device if it exists.
+>> - */
+>>  void exynos_platform_device_ipp_unregister(void);
+>> +#else
+>> +static inline int exynos_platform_device_ipp_register(void) { return 0; }
+>> +static inline void exynos_platform_device_ipp_unregister(void) {}
+>> +#endif
+>> +
+>>  
+>>  #ifdef CONFIG_DRM_EXYNOS_DPI
+>>  struct exynos_drm_display * exynos_dpi_probe(struct device *dev);
+>> @@ -343,15 +342,13 @@ exynos_dpi_probe(struct device *dev) { return NULL; }
+>>  static inline int exynos_dpi_remove(struct device *dev) { return 0; }
+>>  #endif
+>>  
+>> -/*
+>> - * this function registers exynos drm vidi platform device/driver.
+>> - */
+>> +#ifdef CONFIG_DRM_EXYNOS_VIDI
+>>  int exynos_drm_probe_vidi(void);
+>> -
+>> -/*
+>> - * this function unregister exynos drm vidi platform device/driver.
+>> - */
+>>  void exynos_drm_remove_vidi(void);
+>> +#else
+>> +static inline int exynos_drm_probe_vidi(void) { return 0; }
+>> +static inline void exynos_drm_remove_vidi(void) {}
+>> +#endif
+>>  
+>>  /* This function creates a encoder and a connector, and initializes them. */
+>>  int exynos_drm_create_enc_conn(struct drm_device *dev,
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
