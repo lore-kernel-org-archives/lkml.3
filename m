@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934783AbaJ3Un0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 16:43:26 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45786 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933193AbaJ3UnZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 16:43:25 -0400
-Date: Thu, 30 Oct 2014 13:43:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: Remove redundant rcu_is_cpu_rrupt_from_idle()
- function
-Message-ID: <20141030204318.GR5718@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1414580827-19545-1-git-send-email-agordeev@redhat.com>
- <20141029124728.GL5718@linux.vnet.ibm.com>
- <20141029134519.GC30198@agordeev.usersys.redhat.com>
- <20141029143439.GN5718@linux.vnet.ibm.com>
- <20141029151622.GD30198@agordeev.usersys.redhat.com>
- <20141029154615.GR5718@linux.vnet.ibm.com>
- <20141029210916.GB13273@agordeev.usersys.redhat.com>
- <20141030000524.GG5718@linux.vnet.ibm.com>
- <20141030175435.GC13273@agordeev.usersys.redhat.com>
+	id S1161151AbaJ3Upz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 16:45:55 -0400
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:37003
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933386AbaJ3Upy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 16:45:54 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 4/7] staging: comedi: don't allow read() on async
+ command set up for "write"
+Thread-Topic: [PATCH 4/7] staging: comedi: don't allow read() on async
+ command set up for "write"
+Thread-Index: AQHP9D8MkQ4h3yYEcUmBaoU/Io570pxI7omAgACeMID//4rPcA==
+Date: Thu, 30 Oct 2014 20:45:53 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8826017050@P3PWEX4MB008.ex4.secureserver.net>
+References: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk>
+ <1414672952-1587-5-git-send-email-abbotti@mev.co.uk>
+ <DC148C5AA1CEBA4E87973D432B1C2D882600D340@P3PWEX4MB008.ex4.secureserver.net>
+ <54529F35.1060108@mev.co.uk>
+In-Reply-To: <54529F35.1060108@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030175435.GC13273@agordeev.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14103020-0021-0000-0000-000005CB792F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 05:54:35PM +0000, Alexander Gordeev wrote:
-> On Wed, Oct 29, 2014 at 05:05:24PM -0700, Paul E. McKenney wrote:
-> > > > Although it is true that tiny RCU cannot hang a synchronize_rcu()
-> > > > grace period, it most certainly can hang a call_rcu() grace period
-> > > > in exactly the same way.
-> > > 
-> > > Sorry for being a pain in the neck - just want to make sure I am following.
-> > 
-> > No worries!
-> > 
-> > > I only see possibility to cause callbacks not being called for "too long"
-> > > in case a system has lots of nested interrupts and rcu_idle_enter_common()
-> > > is not being called from hardware interrupt context as result. How could
-> > > rcu_is_cpu_rrupt_from_idle() help here?
-> > 
-> > Let's start assuming that something in the idle loop posts a callback,
-> > and then let me see if I understand your reasoning...
-> > 
-> > 1.	The system is idle and stays that way, no runnable tasks.
-> > 
-> > 2.	An interrupt occurs.  Upon return from interrupt, rcu_irq_exit()
-> > 	is invoked, which calls rcu_idle_enter_common(), which in turn
-> > 	calls rcu_sched_qs(), which does a raise_softirq(RCU_SOFTIRQ).
-> > 
-> > 3.	The softirq happens shortly and invokes rcu_process_callbacks(),
-> > 	which invokes __rcu_process_callbacks().
-> > 
-> > 4.	So now callbacks can be invoked.  At least they can be if
-> > 	->donetail has been updated.  Which it will have been because
-> > 	rcu_sched_qs() invokes rcu_qsctr_help().
-> 
-> Yes, that is exactly my reasoning.
-> 
-> > So your point that rcu_is_cpu_rrupt_from_idle() might be redundant could
-> > well be valid -- sorry for being so dismissive earlier.
-> >
-> > > > > > Now, if you -can- get the userspace-execution indication into
-> > > > > > rcu_irq_exit(), this might be of interest.  However, it might be faster
-> > > > > > to simply let the scheduling-clock interrupt do the job as it currently
-> > > > > > does, especially for workloads with lots of interrupts.
-> > > > > > 
-> > > > > > Or did you have something else in mind?
-> > > > > 
-> > > > > Nope. I would even leave as is tiny RCU's rcu_is_cpu_rrupt_from_idle()
-> > > > > for clarity then ;)
-> > > > 
-> > > > Also to avoid userspace execution from preventing RCU callbacks from
-> > > > ever being invoked.  ;-)
-> > > 
-> > > Hmm.. Am I missing something else? I did not remove the userspace check
-> > > from the scheduling-clock interrupt:
-> > > 
-> > > @@ -250,7 +240,7 @@ void rcu_bh_qs(void)
-> > >  void rcu_check_callbacks(int cpu, int user)
-> > >  {
-> > >  	RCU_TRACE(check_cpu_stalls());
-> > > -	if (user || rcu_is_cpu_rrupt_from_idle())
-> > > +	if (user)
-> > >  		rcu_sched_qs();
-> > >  	else if (!in_softirq())
-> > >  		rcu_bh_qs();
-> > 
-> > Probably just me being confused.  Hopefully so, as shrinking TINY_RCU
-> > further will probably be welcome.
-> 
-> Should I resend tiny-only patch?
+On Thursday, October 30, 2014 1:28 PM, Ian Abbott wrote:
+> On 30/10/14 18:05, Hartley Sweeten wrote:
+>> On Thursday, October 30, 2014 5:42 AM, Ian Abbott wrote:
+>  [snip]
+>>>   	add_wait_queue(&async->wait_head, &wait);
+>>>   	while (nbytes > 0 && !retval) {
+>>> @@ -2249,6 +2253,10 @@ static ssize_t comedi_read(struct file *file, char __user *buf, size_t nbytes,
+>>>   				retval = -EACCES;
+>>>   				break;
+>>>   			}
+>>> +			if (async->cmd.flags & CMDF_WRITE) {
+>>> +				retval = -EINVAL;
+>>> +				break;
+>>> +			}
+>>
+>> Is this second test really needed in the while() loop?
+>>
+>> For that matter, are the s->busy tests needed in the while() loop?
+>
+> To answer your second question, some other thread using the same file 
+> object might have cancelled the asynchronous command, causing the 
+> current thread to see that the command is no longer active when it wakes up.
+>
+> To answer your first question, that other thread might have managed to 
+> set up another asynchronous command in before we wake up, and it might 
+> have been set up as a "write" command (if the subdevice supports 
+> commands in both directions).  This doesn't detect the case when the 
+> other thread has managed to set up another "read" command, but since the 
+> current read() call hasn't read any data yet, we can just pretend we 
+> didn't know about the original command and read data from the new 
+> command instead.  (After all, the calling thread can't prove the read() 
+> started before the first command was cancelled, so we can just pretend 
+> it didn't.)
 
-Please, but also expand the commit log to contain the above reasoning.
+But when the command is first started by do_cmd_ioctl() we have this sequence:
 
-> > Have you done any testing of this change?
-> 
-> Just booted to a unicore kernel and dd'ed 1G of /dev/sda to /dev/null.
+	if (s->busy)
+		return -EBUSY;
+	...
+	s->busy = file;
+	ret = s->do_cmd(dev, s);
 
-OK, that is a start. Could I convince you to build a kernel?
+>From then on the s->busy pointer can only be cleared in do_become_nonbusy()
+(by way of a (*cancel)). So another command cannot be started until the current
+command is completed.
 
-							Thanx, Paul
+The user could do a (*do_cmdtest) while a command is running but that does not
+effect the read/write of the async buffer.
+
+Hartley
+
 
