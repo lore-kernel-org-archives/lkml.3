@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760841AbaJ3SSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 14:18:32 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54523 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759304AbaJ3SSb (ORCPT
+	id S1760685AbaJ3STt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 14:19:49 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39350 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758559AbaJ3STr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 14:18:31 -0400
-Date: Thu, 30 Oct 2014 19:18:29 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Tina Ruchandani <ruchandani.tina@gmail.com>
-Cc: len.brown@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de,
-        opw-kernel@googlegroups.com, rjw@rjwysocki.net
-Subject: Re: [PATCH] PM / Hibernate: Migrate to ktime_t
-Message-ID: <20141030181829.GB14412@amd>
-References: <20141030180453.GA55907@localhost>
+	Thu, 30 Oct 2014 14:19:47 -0400
+X-Sasl-enc: Hk5cqebPKytgk3g3+u669Nwwzh3jMfLTxaxb2SH3NiNr 1414693186
+Date: Thu, 30 Oct 2014 11:18:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        debian-kernel@lists.debian.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>, lwn@lwn.net
+Subject: Re: [ANNOUNCE] Linux 3.16.y.z extended stable support
+Message-ID: <20141030181834.GA31223@kroah.com>
+References: <20141030181701.GD9032@hercules>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141030180453.GA55907@localhost>
+In-Reply-To: <20141030181701.GD9032@hercules>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-10-30 11:04:53, Tina Ruchandani wrote:
-> This patch migrates swsusp_show_speed and its callers to using ktime_t instead
-> of 'struct timeval' which suffers from the y2038 problem.
+On Thu, Oct 30, 2014 at 06:17:01PM +0000, Luis Henriques wrote:
+> The Ubuntu kernel team is pleased to announce that we will be
+> providing extended stable support for the Linux 3.16 kernel until
+> April 2016 as a third party effort maintained on our infrastructure.
+> The team will pick up stable maintenance where Greg KH left off with
+> v3.16.7 [1].  Thank you, Greg.
 > 
-> Changes to swsusp_show_speed:
->         - use ktime_t for start and stop times
->         - pass start and stop times by value
-> Calling functions affected:
->         - load_image
->         - load_image_lzo
->         - save_image
->         - save_image_lzo
->         - hibernate_preallocate_memory
-> Design decisions:
->         - use ktime_t to preserve same granularity of reporting as before
->         - use centisecs logic as before to avoid 'div by zero' issues caused by
->           using seconds and nanoseconds directly
->         - use monotonic time (ktime_get()) since we only care about elapsed time.
+> In addition to the Ubuntu 14.10 "Utopic Unicorn" release, the Debian 8
+> "Jessie" release will also be based on this kernel [2].  Since the
+> regular support for "Jessie" will go beyond April 2016, after this
+> date Ben Hutchings (or myself) will continue the Linux 3.16 kernel
+> maintenance.
 > 
-> Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> Our linux-3.16.y{-queue,-review} stable branches will fork from
+> v3.16.7
+> and will be published here:
+> 
+>     git://kernel.ubuntu.com/ubuntu/linux.git
+> 
+> We will use the same stable request/review workflow and follow the
+> standard upstream stable kernel rules.  More details are available
+> here [3].
+> 
+> We welcome any feedback and contribution to this effort.  We will be
+> posting the first review cycle patch set in a week or two.
+> 
+> [1] https://lkml.org/lkml/2014/10/30/583
+> [2] https://lists.debian.org/debian-kernel/2014/07/msg00413.html
+> [3] http://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-Acked-by: Pavel Machek <pavel@ucw.cz> 
+Can you _PLEASE_ use a '-somename' format of the kernel release
+numbering scheme for this release, if you are going to do this, to
+reduce the confusion that has been happening with your kernel releases?
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+thanks,
+
+greg k-h
