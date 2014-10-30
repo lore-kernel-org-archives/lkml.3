@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378AbaJ3Lde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:33:34 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:37298 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759093AbaJ3Ldd (ORCPT
+	id S1759484AbaJ3Ldt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:33:49 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:59820 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759059AbaJ3Ldq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:33:33 -0400
-Message-ID: <5452204F.9090800@linaro.org>
-Date: Thu, 30 Oct 2014 11:26:07 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 30 Oct 2014 07:33:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH v5 29/29] nios2: Build infrastructure
+Date: Thu, 30 Oct 2014 12:33:38 +0100
+Message-ID: <11875981.eJaWCbGJJT@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFiDJ59LZSwKBzVuuzfH_5772-BR74EH=d=FeBbWvEXjfpisug@mail.gmail.com>
+References: <1414139071-3818-1-git-send-email-lftan@altera.com> <2095416.INZmt8AD1y@wuerfel> <CAFiDJ59LZSwKBzVuuzfH_5772-BR74EH=d=FeBbWvEXjfpisug@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        Frank Rowand <frank.rowand@sonymobile.com>
-Subject: Re: [PATCH 1/2] tty: serial: msm: Fix sysrq spinlock recursion on
- non-DM
-References: <1414606478-13709-1-git-send-email-sboyd@codeaurora.org> <1414606478-13709-2-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1414606478-13709-2-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:z8cWEWU9Y8x5IBqRbtz+vf0cE/oZ3dqCIRKURd23cFF
+ qBGA8fKaPbLXSg1W7DV9KRZImfDDMn/kVjK4vcqfsbjGU8D+a+
+ +yb/6KFJ0xnYv1Uv36fDk1Y2dZzksyhitgxvshsgR5Tp4GrCAl
+ YTxsDuf/NDx7aqeaWL/N1tqn9WOl4/jGelXcU8EwMOaQixn/XJ
+ 0oJ/zwJz8x1fn3dyL/dHnD00i5lw4eZO6CXCcA7nchklDu0+67
+ Nrvn8TDxX+zyaOV//SkqTU+2dFGoo575h0xC5utB3NWbyfinUn
+ F+19QrLB9pfQ8WGQYk4py9ldewbX2HaV2wAlRJw4WteKhES1Kp
+ GykwWi7RrIkIsWWGIJfA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/14 18:14, Stephen Boyd wrote:
-> The handle_rx() path calls uart_handle_sysrq_char() with the port
-> lock held. This causes a spinlock recursion. Release and
-> reacquire the lock here to avoid this.
-> 
-> BUG: spinlock recursion on CPU#0, swapper/0
->  lock: msm_uart_ports+0x1e0/0x2d0, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
-> CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-rc7-00012-gb38ee8265941 #69
-> [<c0013964>] (unwind_backtrace) from [<c0011f74>] (show_stack+0x10/0x14)
-> [<c0011f74>] (show_stack) from [<c004ed1c>] (do_raw_spin_lock+0x11c/0x13c)
-> [<c004ed1c>] (do_raw_spin_lock) from [<c02d44c0>] (msm_console_write+0x78/0x188)
-> [<c02d44c0>] (msm_console_write) from [<c0052880>] (call_console_drivers.constprop.22+0xb4/0x144)
-> [<c0052880>] (call_console_drivers.constprop.22) from [<c0053570>] (console_unlock+0x27c/0x4ac)
-> [<c0053570>] (console_unlock) from [<c0053bb4>] (vprintk_emit+0x1f4/0x5a8)
-> [<c0053bb4>] (vprintk_emit) from [<c04ad0ac>] (printk+0x30/0x40)
-> [<c04ad0ac>] (printk) from [<c02c2990>] (__handle_sysrq+0x58/0x1b8)
-> [<c02c2990>] (__handle_sysrq) from [<c02d41b0>] (msm_irq+0x694/0x6f8)
-> [<c02d41b0>] (msm_irq) from [<c0055740>] (handle_irq_event_percpu+0x58/0x270)
-> [<c0055740>] (handle_irq_event_percpu) from [<c0055994>] (handle_irq_event+0x3c/0x5c)
-> [<c0055994>] (handle_irq_event) from [<c0057e84>] (handle_level_irq+0x9c/0x138)
-> [<c0057e84>] (handle_level_irq) from [<c005509c>] (generic_handle_irq+0x24/0x38)
-> [<c005509c>] (generic_handle_irq) from [<c000f730>] (handle_IRQ+0x44/0xb0)
-> [<c000f730>] (handle_IRQ) from [<c0008518>] (msm_vic_handle_irq+0x44/0x64)
-> [<c0008518>] (msm_vic_handle_irq) from [<c04b5ac4>] (__irq_svc+0x44/0x7c)
-> Exception stack(0xc0719f68 to 0xc0719fb0)
-> 9f60:                   00000001 00000001 00000000 c0722938 c0718000 c0769acc
-> 9f80: 00000000 c0720098 c0769305 4117b362 c0769acc 00000000 01000000 c0719fb0
-> 9fa0: c004cab0 c000f880 20000013 ffffffff
-> [<c04b5ac4>] (__irq_svc) from [<c000f880>] (arch_cpu_idle+0x20/0x30)
-> [<c000f880>] (arch_cpu_idle) from [<c004691c>] (cpu_startup_entry+0xf4/0x23c)
-> [<c004691c>] (cpu_startup_entry) from [<c06d8b70>] (start_kernel+0x32c/0x394)
-> 
-> Cc: Frank Rowand <frank.rowand@sonymobile.com>
-> Cc: Daniel Thompson <daniel.thompson@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/tty/serial/msm_serial.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-> index 4b6c78331a64..cedcc36762a2 100644
-> --- a/drivers/tty/serial/msm_serial.c
-> +++ b/drivers/tty/serial/msm_serial.c
-> @@ -174,6 +174,7 @@ static void handle_rx(struct uart_port *port)
->  	while ((sr = msm_read(port, UART_SR)) & UART_SR_RX_READY) {
->  		unsigned int c;
->  		char flag = TTY_NORMAL;
-> +		int sysrq;
->  
->  		c = msm_read(port, UART_RF);
->  
-> @@ -195,7 +196,10 @@ static void handle_rx(struct uart_port *port)
->  		else if (sr & UART_SR_PAR_FRAME_ERR)
->  			flag = TTY_FRAME;
->  
-> -		if (!uart_handle_sysrq_char(port, c))
-> +		spin_unlock(&port->lock);
-> +		sysrq = uart_handle_sysrq_char(port, c);
-> +		spin_lock(&port->lock);
-> +		if (!sysrq)
->  			tty_insert_flip_char(tport, c, flag);
+On Thursday 30 October 2014 18:44:37 Ley Foon Tan wrote:
+> >
+> > I don't remember what all of these are, but at least some of them seem
+> > to be concerned with 64-bit division. By convention, we don't provide those
+> > in the Linux kernel but instead require all code to use the do_div()
+> > macro instead.
+> Do you mean kernel doesn't support 64 bit division result for a 32-bit
+> architecture? Because do_div() only support 32-bit division result for
+> 32-bit architecture.
 
-Does tty_insert_flip_char() need the port to be locked?
+Correct. If you need a full 64-bit division on a 32-bit kernel, the
+assumption is that your driver has a bug.
 
+	Arnd
