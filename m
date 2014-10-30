@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934323AbaJ3TIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 15:08:24 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:51187 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaJ3TIX (ORCPT
+	id S1759038AbaJ3TIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 15:08:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55148 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249AbaJ3TIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 15:08:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tina Ruchandani <ruchandani.tina@gmail.com>
-Cc: pavel@ucw.cz, len.brown@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com,
-        rjw@rjwysocki.net
-Subject: Re: [PATCH] PM / Hibernate: Migrate to ktime_t
-Date: Thu, 30 Oct 2014 20:08:17 +0100
-Message-ID: <3436721.isgG5Fql2m@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141030180453.GA55907@localhost>
-References: <20141030180453.GA55907@localhost>
+	Thu, 30 Oct 2014 15:08:45 -0400
+Date: Thu, 30 Oct 2014 20:08:41 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Bragg <robert@sixbynine.org>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Rob Clark <robdclark@gmail.com>,
+        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Expose gpu counters via perf pmu driver
+Message-ID: <20141030190841.GI23531@worktop.programming.kicks-ass.net>
+References: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:mugUDOMwjLRF2ZZrmNaV57ogBVJXwo7QWl2+KliBVz+
- +r0IEhlHEqpOxfFnigDFdsRWLfEAKYO1bHHal93hG/QrEGeSa6
- UVUL/Et+1roZQGiKMXcfwXtJ1khpeTXdmkSebqlFfCJSMe245S
- KzVZyZa/2Ss7Fkum83fsJCwauFU3hMiAsU9qdtewbeDOOgYhDE
- 4lhqgGPo++3xMTdGjvfwH6icuhY0hu7QNjrNKrGyJ+VReKXUE6
- /IRFG2nZiMElfGZoVPQoPBck9zdplEhXU7emmeLLEMXKNuCitt
- P9LCzqOcF6nFtMN8Evk9QnXKjBTh2U0SW9WJiKdq3dTXQizajS
- 8hNSMVw1L0dcXb5L3Jrk=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 October 2014 11:04:53 Tina Ruchandani wrote:
-> This patch migrates swsusp_show_speed and its callers to using ktime_t instead
-> of 'struct timeval' which suffers from the y2038 problem.
+On Wed, Oct 22, 2014 at 04:28:48PM +0100, Robert Bragg wrote:
+> Our desired permission model seems consistent with perf's current model
+> whereby you would need privileges if you want to profile across all gpu
+> contexts but not need special permissions to profile your own context.
 > 
-> Changes to swsusp_show_speed:
->         - use ktime_t for start and stop times
->         - pass start and stop times by value
-> Calling functions affected:
->         - load_image
->         - load_image_lzo
->         - save_image
->         - save_image_lzo
->         - hibernate_preallocate_memory
-> Design decisions:
->         - use ktime_t to preserve same granularity of reporting as before
->         - use centisecs logic as before to avoid 'div by zero' issues caused by
->           using seconds and nanoseconds directly
->         - use monotonic time (ktime_get()) since we only care about elapsed time.
-> 
-> Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> The awkward part is that it doesn't make sense for us to have userspace
+> open a perf event with a specific pid as the way to avoid needing root
+> permissions because a side effect of doing this is that the events will
+> be dynamically added/deleted so as to only monitor while that process is
+> scheduled and that's not really meaningful when we're monitoring the
+> gpu.
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+There is precedent in PERF_FLAG_PID_CGROUP to replace the pid argument
+with a fd to your object.
 
-> --
-> Changes in v4:
->  - Rebased patch off of 3.18-rc1
-> Changes in v3:
-> 
+And do I take it right that if you're able/allowed/etc.. to open/have
+the fd to the GPU/DRM/DRI whatever context you have the right
+credentials to also observe these counters?
 
-Note: you need three '-' characters to separate the patch description from
-any extra information that you want in the mail but not in the changelog.
+> Conceptually I suppose we want to be able to open an event that's not
+> associated with any cpu or process, but to keep things simple and fit
+> with perf's current design, the pmu I have a.t.m expects an event to be
+> opened for a specific cpu and unspecified process.
 
-	Arnd
+There are no actual scheduling ramifications right? Let me ponder his
+for a little while more..
