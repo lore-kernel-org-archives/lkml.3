@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161027AbaJ3PWt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 11:22:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36944 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934118AbaJ3PWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 11:22:47 -0400
-Date: Thu, 30 Oct 2014 16:22:40 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Thor Thayer <tthayer@opensource.altera.com>
-Cc: dougthompson@xmission.com, m.chehab@samsung.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, dinguyen@opensource.altera.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tthayer.linux@gmail.com,
-        tthayer@altera.com
-Subject: Re: [PATCHv2 0/4] Add Altera peripheral memories to EDAC framework
-Message-ID: <20141030152240.GD11178@pd.tnic>
-References: <1413578029-13205-1-git-send-email-tthayer@opensource.altera.com>
- <544E93F0.3030409@opensource.altera.com>
- <20141027204307.GB4741@pd.tnic>
- <544EBA84.7080109@opensource.altera.com>
- <20141027215908.GC4741@pd.tnic>
- <544ECBB1.2040600@opensource.altera.com>
+	id S934460AbaJ3PZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 11:25:08 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:63315 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbaJ3PZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 11:25:06 -0400
+Date: Thu, 30 Oct 2014 11:25:02 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vikas Shivappa <vikas.shivappa@intel.com>,
+        "Auld, Will" <will.auld@intel.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141030152502.GA378@htj.dyndns.org>
+References: <20141029124834.GQ12020@console-pimps.org>
+ <20141029134526.GC3337@twins.programming.kicks-ass.net>
+ <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
+ <20141029172845.GP12706@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
+ <20141029182234.GA13393@mtj.dyndns.org>
+ <20141030070725.GG3337@twins.programming.kicks-ass.net>
+ <20141030071424.GE10476@twins.programming.kicks-ass.net>
+ <20141030124440.GB29540@htj.dyndns.org>
+ <20141030131904.GJ3337@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <544ECBB1.2040600@opensource.altera.com>
+In-Reply-To: <20141030131904.GJ3337@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 05:48:17PM -0500, Thor Thayer wrote:
-> Would the L2 cache and OCRAM specific functions also be in altera_edac.c?
-> Each of these EDAC pieces is independent and can be compiled in without the
-> others. I've read that the use of #ifdef's is discouraged and having
-> separate files in the Makefile solves that.
+Hello, Peter.
 
-Let's keep it simple and put all the altera bits in one file for now. If
-we need to split some of the functionality out, we can always do that
-later.
+On Thu, Oct 30, 2014 at 02:19:04PM +0100, Peter Zijlstra wrote:
+> On Thu, Oct 30, 2014 at 08:44:40AM -0400, Tejun Heo wrote:
+> > On Thu, Oct 30, 2014 at 08:14:24AM +0100, Peter Zijlstra wrote:
+> > > On Thu, Oct 30, 2014 at 08:07:25AM +0100, Peter Zijlstra wrote:
+> > > > > and always allow execution of member tasks.
+> > > 
+> > > This too btw is not strictly speaking possible for all controllers. Most
+> > > all sched controllers live by the grace of forcing tasks not to run at
+> > > times (eg. the bandwidth controls), falsifying the 'always'.
+> > 
+> > Oh sure, the a task just has to run in a foreseeable future, or
+> > rather, a task must not be blocked indefinitely requiring userland
+> > intervention to become executable again.
+> 
+> Like the freezer cgroup you mean? ;-)
+
+Oh yeah, that's horribly broken.  Merging it with jobctl stop is a
+todo item.  This "stuck in a random place in kernel" thing made sense
+for suspend/hibernation only because the kernel wasn't gonna run
+anymore.  The fact that this got exposed to userland on a running
+system just shows how little we were thinking while implementing all
+the controllers.  It should be equivalent to layered job control stop
+so that what's prevented from running is the userland part, not
+kernel.
 
 Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+tejun
