@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760693AbaJ3PPF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 11:15:05 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:40491 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760581AbaJ3PPC (ORCPT
+	id S1760628AbaJ3PP7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 11:15:59 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:38880 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759963AbaJ3PP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 11:15:02 -0400
-Date: Thu, 30 Oct 2014 11:14:59 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk,
-        rafael.j.wysocki@intel.com, mingo@kernel.org,
-        preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
-        mturquette@linaro.org, tuukka.tikkanen@linaro.org, patches@linaro.org
-Subject: Re: [RFD PATCH 00/10] cpuidle: Predict the next events with the IO
- latencies
-In-Reply-To: <20141030143853.GF23531@worktop.programming.kicks-ass.net>
-Message-ID: <alpine.LFD.2.11.1410301108400.20099@knanqh.ubzr>
-References: <1413986273-28522-1-git-send-email-daniel.lezcano@linaro.org> <20141030143853.GF23531@worktop.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 30 Oct 2014 11:15:58 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1414682115.2406.59.camel@hadess.net>
+Subject: Re: A desktop environment[1] kernel wishlist
+From: Bastien Nocera <hadess@hadess.net>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Pavel Machek <pavel@ucw.cz>, Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 30 Oct 2014 16:15:15 +0100
+In-Reply-To: <20141030150501.GD31927@thunk.org>
+References: <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+	 <1413911644.30379.12.camel@hadess.net>
+	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd>
+	 <1414420292.30379.55.camel@hadess.net> <54513DDC.2020700@amacapital.net>
+	 <20141029202616.GC5000@thunk.org> <20141029211608.GA32576@amd>
+	 <1414680302.2406.55.camel@hadess.net> <20141030150501.GD31927@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct 2014, Peter Zijlstra wrote:
-
-> On Wed, Oct 22, 2014 at 03:57:43PM +0200, Daniel Lezcano wrote:
-> > After discussing at the LPC2014 Dusseldorf, it appears the idea is
-> > good but the approach is wrong. The latency tracking must be done at
-> > the device level, per device and not in the task as what is doing this
-> > patchset.
+On Thu, 2014-10-30 at 11:05 -0400, Theodore Ts'o wrote:
+> On Thu, Oct 30, 2014 at 03:45:02PM +0100, Bastien Nocera wrote:
+> > > Actually Maemo people (on Nokia N900 and friends) got it right: unlike
+> > > android devices, it does not suspend to RAM at any point, and still
+> > > has reasonable battery life.
+> > 
+> > Android devices don't suspend to RAM. Neither do Tizen devices AFAIK.
 > 
-> end_page_writeback()->test_clear_page_writeback()->__bdi_writeout_inc()
+> Actually, Android devices have historically always suspended the CPU
+> whenever there wasn't a wakelock keeping the device to suspend.  You
+> might not consider this "suspend to RAM" but in fact it uses the
+> identical kernel and hardware facilities as the legacy "suspend to
+> RAM" mechanism.
+
+I wouldn't consider this "suspend to RAM", but that's because I expect
+the firmware to implement most of that. Anyway, that's splitting hair.
+
+> > I don't think anyone was discussing cell phones in particular in this
+> > thread, and knowing when user-space got woken up because of the baseband
+> > processor having information for us would still be useful.
 > 
-> Is the IO completion path that has a fair amount of statistics in, maybe
-> some of that is usable.
+> It matters because for laptops, what's important is whether the lid is
+> closed or not.  Whether and how the laptop was "woken" is really
+> beside the point, as others have argued.  Your counter argument is
+> that tablets don't have lids.  But tablets are going to be using
+> schemes similar to Android, Tizen, and Maemo, and they are *not* going
+> to be using the legacy suspend-to-RAM model, because it's not
+> sufficiently good at power saving.
 
-I had a look and I don't think it does what we need.  The statistics in 
-there are about estimating the device throughput for throttling writers. 
-That doesn't help much for predicting when the next interrupt for the 
-device is going to fire (some devices can do scatter-gather, some don't, 
-etc.)
+There are plenty of tablets around that aren't Android devices. There
+are plenty of laptops that can be switched to a tablet mode for which
+this wouldn't apply either.
 
-And this doesn't cover the read path.
-
-
-Nicolas
