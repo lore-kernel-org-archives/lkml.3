@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758941AbaJ3JG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:06:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39520 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758311AbaJ3JG4 (ORCPT
+	id S1758958AbaJ3JHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:07:08 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:65232 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758311AbaJ3JHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:06:56 -0400
-Date: Thu, 30 Oct 2014 10:06:52 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>, daniel@zonque.org,
-        alban.crequy@collabora.co.uk,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tom Gundersen <teg@jklm.no>
-Subject: Re: kdbus: add connection, queue handling and message validation code
-Message-ID: <20141030090652.GA2773@dztty>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <1414620056-6675-6-git-send-email-gregkh@linuxfoundation.org>
- <87k33iw759.fsf@x220.int.ebiederm.org>
- <CALCETrXm116+eRvYY7QNbHcrOpZYOCqvC_WPguPZm-G+UEHeGw@mail.gmail.com>
+	Thu, 30 Oct 2014 05:07:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kevin Cernekee <cernekee@gmail.com>, f.fainelli@gmail.com,
+        jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH V2 03/15] genirq: Generic chip: Move irq_reg_{readl,writel} accessors into generic-chip.c
+Date: Thu, 30 Oct 2014 10:06:51 +0100
+Message-ID: <6552163.gt4ABVyYlA@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.11.1410300941290.5308@nanos>
+References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-4-git-send-email-cernekee@gmail.com> <alpine.DEB.2.11.1410300941290.5308@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXm116+eRvYY7QNbHcrOpZYOCqvC_WPguPZm-G+UEHeGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:gfzDjLTecc2L7VX+0HAgY1/wdJkjqZy0Zay/zOLZhK+
+ Vu0K7I+ZdhuxNrAMlbkpvua7VgTqt+8KyXnmN4YcC0WhxrGQkY
+ sz9oKRqbxbNMj7665jbwkg2jqNuW2HJROWVL2PLPH6iEqhjgCp
+ +cAMhwWdNhHfLrVqrCHl3CzxMmO7pni5859GKPVg5K2E/ZYvqX
+ m1nrzDt1Js2pcMnxprF8D/A/CrzS7he5lJh4t0wmnX5aehJ/V8
+ 7lniCt7Aokd8TraRH+/Ei+ibpm9y+vYynXfn2JpzJ7KXrWOJks
+ HAM8SBz4kzZypukJ/a3omRvt74bfs/PmE+XlILmnTeTswEQtw0
+ VWJu55w0FDlDkzeReqnw=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 08:55:58PM -0700, Andy Lutomirski wrote:
-> On Wed, Oct 29, 2014 at 8:47 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
-> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> >
-> >> From: Daniel Mack <daniel@zonque.org>
-> >>
-> >> This patch adds code to create and destroy connections, to validate
-> >> incoming messages and to maintain the queue of messages that are
-> >> associated with a connection.
-> >>
-> >> Note that connection and queue have a 1:1 relation, the code is only
-> >> split in two parts for cleaner separation and better readability.
-> >
-> > You are not performing capability checks at open time.
-> >
-> > As such this API is suceptible to a host of file descriptor passing attacks.
+On Thursday 30 October 2014 09:43:02 Thomas Gleixner wrote:
+> > diff --git a/include/linux/irq.h b/include/linux/irq.h
+> > index 03f48d9..8049e93 100644
+> > --- a/include/linux/irq.h
+> > +++ b/include/linux/irq.h
+> > @@ -639,13 +639,6 @@ void arch_teardown_hwirq(unsigned int irq);
+> >  void irq_init_desc(unsigned int irq);
+> >  #endif
+> >  
+> > -#ifndef irq_reg_writel
+> > -# define irq_reg_writel(val, addr)   writel(val, addr)
+> > -#endif
+> > -#ifndef irq_reg_readl
+> > -# define irq_reg_readl(addr)         readl(addr)
+> > -#endif
+> > -
 > 
-> To be fair, write(2) doesn't work on these fds, so the usual attacks
-> don't work.  But who knows what absurd things kdbus clients will do
-> with fd passing?
-Yes, we use ioctl() so we are safe here! if there is a a suid process
-that does perform arbitrary ioctl() on intrusted passed fds,
-then we are already in truble given all the already available ioctl()
-(not only kdbus, all available ioctl()... we blame the client), so yes
-usual write()/read() do not work here.
+> Brilliant patch that.
+> 
+> # git grep -l irq_reg_readl drivers/irqchip/
+> drivers/irqchip/irq-atmel-aic.c
+> drivers/irqchip/irq-atmel-aic5.c
+> drivers/irqchip/irq-sunxi-nmi.c
+> drivers/irqchip/irq-tb10x.c
 
-But we do perform the creds check against the cred of connection
-creation time, if you open the fd you do not have the connection,
-you still need a KDBUS_CMD_HELLO ioctl() on the fd, and during that time
-we store the creds, and we perform all the TALK, SEE and OWN against
-those creds (uid/gid). It is like a second connect() call, unless you
-perform the KDBUS_CMD_HELLO you are not connected, and after turning
-your fd to a connection, a service can restrict its access (TALK, OWN
-and SEE) policies, not all connected peers can TALK (send messages) to
-a service.
+Patch 1/15 changes these all. I think it's still broken because patch 2/15
+is wrong, but it's not /that/ obviously broken.
 
-
--- 
-Djalal Harouni
-http://opendz.org
+	Arnd
