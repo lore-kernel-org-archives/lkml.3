@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161375AbaJ3W20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 18:28:26 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41214 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161293AbaJ3W2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 18:28:25 -0400
-Date: Thu, 30 Oct 2014 23:28:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Matt Fleming <matt@console-pimps.org>,
-        Vince Weaver <vince@deater.net>, Andy Lutomirski <luto@amacapital.net>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFD] perf syscall error handling
-Message-ID: <20141030222814.GF15602@worktop.programming.kicks-ass.net>
+	id S1161388AbaJ3Wc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 18:32:28 -0400
+Received: from imp03.mtu.ru ([62.5.255.20]:44806 "EHLO imp03.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161035AbaJ3Wc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 18:32:27 -0400
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Oct 2014 18:32:27 EDT
+X-Spam-Flag: NO
+Message-ID: <5452BAD5.7080007@pavlinux.ru>
+Date: Fri, 31 Oct 2014 01:25:25 +0300
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.2.63-rt92
+References: <20141030180729.256bb5b9@gandalf.local.home>
+In-Reply-To: <20141030180729.256bb5b9@gandalf.local.home>
+X-Mailer: Lotus Unsquirrel
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+31.10.2014 01:07, Steven Rostedt пишет:
+>
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.2.63-rt92 stable release.
 
-Earlier today I was reminded that perf syscall error handling sucks arse
--- albeit not in those words.
+Cool!!!
 
-Now I know we've had this discussion before, but nothing really
-happened. I think back then the suggestion was having the kernel write a
-string back or somesuch.
+For latest, stable,... 3.14/3.16/3.18 will be?
 
-The problem with a string is, its hard for machines to interpret, its
-English, so near impossible for some humans too.
 
-So would something simple, like an offset into the struct
-perf_event_attr pointing at the current field we're trying to process
-make sense? Maybe with negative offsets to indicate the syscall
-arguments?
+-- 
 
-That would narrow down the 'WTF is wrong noaw' a lot I think. But then,
-I've not actually done a lot of userspace the last few years, so maybe
-I'm just dreaming things.
-
-Anybody?
-
+                                                          Pavel.
