@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167AbaJ3GhI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 02:37:08 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:2020 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757999AbaJ3GhE (ORCPT
+	id S1758236AbaJ3Gh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 02:37:58 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:15186 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758148AbaJ3GhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 02:37:04 -0400
+	Thu, 30 Oct 2014 02:37:08 -0400
 X-IronPort-AV: E=Sophos;i="5.07,284,1413270000"; 
-   d="scan'208";a="49320875"
+   d="scan'208";a="49476493"
 From: Scott Branden <sbranden@broadcom.com>
 To: Ulf Hansson <ulf.hansson@linaro.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>,
@@ -19,9 +19,9 @@ CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Joe Perches <joe@perches.com>, <linux-rpi-kernel@lists.infradead.org>,
         Ray Jui <rjui@broadcom.com>, <bcm-kernel-feedback-list@broadcom.com>,
         Scott Branden <sbranden@broadcom.com>
-Subject: [PATCHv2 1/5] mmc: sdhci-bcm2835: group read and write functions to improve readability
-Date: Wed, 29 Oct 2014 23:36:53 -0700
-Message-ID: <1414651017-3545-2-git-send-email-sbranden@broadcom.com>
+Subject: [PATCHv2 4/5] mmc: shdci-bcm2835: add verify for 32-bit back-to-back workaround
+Date: Wed, 29 Oct 2014 23:36:56 -0700
+Message-ID: <1414651017-3545-5-git-send-email-sbranden@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414651017-3545-1-git-send-email-sbranden@broadcom.com>
 References: <Scott Branden <sbranden@broadcom.com>
@@ -32,116 +32,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Group the read and write functions to improve readability.  Now all
-similar functions are grouped together to evaluate behaviours.
+Add a verify option to driver to print out an error message if a
+potential back to back write could cause a clock domain issue.
 
 Signed-off-by: Scott Branden <sbranden@broadcom.com>
 ---
- drivers/mmc/host/sdhci-bcm2835.c |   61 +++++++++++++++++++-------------------
- 1 file changed, 31 insertions(+), 30 deletions(-)
+ drivers/mmc/host/Kconfig         |    9 +++++++++
+ drivers/mmc/host/sdhci-bcm2835.c |   17 +++++++++++++++++
+ 2 files changed, 26 insertions(+)
 
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 1386065..020de98 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -292,6 +292,15 @@ config MMC_SDHCI_BCM2835
+ 
+ 	  If unsure, say N.
+ 
++config MMC_SDHCI_BCM2835_VERIFY_WORKAROUND
++	bool "Verify BCM2835 workaround does not do back to back writes"
++	depends on MMC_SDHCI_BCM2835
++	default y
++	help
++	  This enables code that verifies the bcm2835 workaround.
++	  The verification code checks that back to back writes to the same
++	  register do not occur.
++
+ config MMC_MOXART
+ 	tristate "MOXART SD/MMC Host Controller support"
+ 	depends on ARCH_MOXART && MMC
 diff --git a/drivers/mmc/host/sdhci-bcm2835.c b/drivers/mmc/host/sdhci-bcm2835.c
-index 439d259..c8ee02c 100644
+index f8c450a..11af27f 100644
 --- a/drivers/mmc/host/sdhci-bcm2835.c
 +++ b/drivers/mmc/host/sdhci-bcm2835.c
-@@ -54,13 +54,6 @@ struct bcm2835_sdhci {
- 	u32 shadow;
+@@ -27,6 +27,9 @@
+ struct bcm2835_sdhci_host {
+ 	u32 shadow_cmd;
+ 	u32 shadow_blk;
++#ifdef CONFIG_MMC_SDHCI_BCM2835_VERIFY_WORKAROUND
++	int previous_reg;
++#endif
  };
  
--static void bcm2835_sdhci_writel(struct sdhci_host *host, u32 val, int reg)
--{
--	writel(val, host->ioaddr + reg);
--
--	udelay(BCM2835_SDHCI_WRITE_DELAY);
--}
--
- static inline u32 bcm2835_sdhci_readl(struct sdhci_host *host, int reg)
+ #define REG_OFFSET_IN_BITS(reg) ((reg) << 3 & 0x18)
+@@ -58,6 +61,20 @@ static u8 bcm2835_sdhci_readb(struct sdhci_host *host, int reg)
+ static inline void bcm2835_sdhci_writel(struct sdhci_host *host,
+ 						u32 val, int reg)
  {
- 	u32 val = readl(host->ioaddr + reg);
-@@ -71,6 +64,34 @@ static inline u32 bcm2835_sdhci_readl(struct sdhci_host *host, int reg)
- 	return val;
++#ifdef CONFIG_MMC_SDHCI_BCM2835_VERIFY_WORKAROUND
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct bcm2835_sdhci_host *bcm2835_host = pltfm_host->priv;
++
++	if (bcm2835_host->previous_reg == reg) {
++		if ((reg != SDHCI_HOST_CONTROL)
++			&& (reg != SDHCI_CLOCK_CONTROL)) {
++			dev_err(mmc_dev(host->mmc),
++			"back-to-back write to 0x%x\n", reg);
++		}
++	}
++	bcm2835_host->previous_reg = reg;
++#endif
++
+ 	writel(val, host->ioaddr + reg);
  }
  
-+static u16 bcm2835_sdhci_readw(struct sdhci_host *host, int reg)
-+{
-+	u32 val = bcm2835_sdhci_readl(host, (reg & ~3));
-+	u32 word_num = (reg >> 1) & 1;
-+	u32 word_shift = word_num * 16;
-+	u32 word = (val >> word_shift) & 0xffff;
-+
-+	return word;
-+}
-+
-+static u8 bcm2835_sdhci_readb(struct sdhci_host *host, int reg)
-+{
-+	u32 val = bcm2835_sdhci_readl(host, (reg & ~3));
-+	u32 byte_num = reg & 3;
-+	u32 byte_shift = byte_num * 8;
-+	u32 byte = (val >> byte_shift) & 0xff;
-+
-+	return byte;
-+}
-+
-+static void bcm2835_sdhci_writel(struct sdhci_host *host, u32 val, int reg)
-+{
-+	writel(val, host->ioaddr + reg);
-+
-+	udelay(BCM2835_SDHCI_WRITE_DELAY);
-+}
-+
-+
- static void bcm2835_sdhci_writew(struct sdhci_host *host, u16 val, int reg)
- {
- 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-@@ -88,16 +109,6 @@ static void bcm2835_sdhci_writew(struct sdhci_host *host, u16 val, int reg)
- 		bcm2835_sdhci_writel(host, newval, reg & ~3);
- }
- 
--static u16 bcm2835_sdhci_readw(struct sdhci_host *host, int reg)
--{
--	u32 val = bcm2835_sdhci_readl(host, (reg & ~3));
--	u32 word_num = (reg >> 1) & 1;
--	u32 word_shift = word_num * 16;
--	u32 word = (val >> word_shift) & 0xffff;
--
--	return word;
--}
--
- static void bcm2835_sdhci_writeb(struct sdhci_host *host, u8 val, int reg)
- {
- 	u32 oldval = bcm2835_sdhci_readl(host, reg & ~3);
-@@ -109,28 +120,18 @@ static void bcm2835_sdhci_writeb(struct sdhci_host *host, u8 val, int reg)
- 	bcm2835_sdhci_writel(host, newval, reg & ~3);
- }
- 
--static u8 bcm2835_sdhci_readb(struct sdhci_host *host, int reg)
--{
--	u32 val = bcm2835_sdhci_readl(host, (reg & ~3));
--	u32 byte_num = reg & 3;
--	u32 byte_shift = byte_num * 8;
--	u32 byte = (val >> byte_shift) & 0xff;
--
--	return byte;
--}
--
- static unsigned int bcm2835_sdhci_get_min_clock(struct sdhci_host *host)
- {
- 	return MIN_FREQ;
- }
- 
- static const struct sdhci_ops bcm2835_sdhci_ops = {
--	.write_l = bcm2835_sdhci_writel,
--	.write_w = bcm2835_sdhci_writew,
--	.write_b = bcm2835_sdhci_writeb,
- 	.read_l = bcm2835_sdhci_readl,
- 	.read_w = bcm2835_sdhci_readw,
- 	.read_b = bcm2835_sdhci_readb,
-+	.write_l = bcm2835_sdhci_writel,
-+	.write_w = bcm2835_sdhci_writew,
-+	.write_b = bcm2835_sdhci_writeb,
- 	.set_clock = sdhci_set_clock,
- 	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
- 	.get_min_clock = bcm2835_sdhci_get_min_clock,
 -- 
 1.7.9.5
 
