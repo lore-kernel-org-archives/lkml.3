@@ -1,327 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760751AbaJ3RZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:25:46 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:59971 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760674AbaJ3RZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:25:44 -0400
+	id S1760767AbaJ3R0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:26:42 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:43349 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758594AbaJ3R0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 13:26:41 -0400
+Date: Thu, 30 Oct 2014 13:26:32 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Sasha Levin <sasha.levin@oracle.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, peterz@infradead.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
+Message-ID: <20141030172632.GA25217@phnom.home.cmpxchg.org>
+References: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com>
+ <20141030082712.GB4664@dhcp22.suse.cz>
+ <54523DDE.9000904@oracle.com>
+ <20141030141401.GA24520@phnom.home.cmpxchg.org>
+ <54524A2F.5050907@oracle.com>
+ <20141030153159.GA3639@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1414672901-29118-1-git-send-email-eternal.n08@gmail.com>
-References: <1414672901-29118-1-git-send-email-eternal.n08@gmail.com>
-Date: Thu, 30 Oct 2014 10:25:43 -0700
-X-Google-Sender-Auth: fFwvhxy5m3I0uZzRbdAND8umOgU
-Message-ID: <CAGXu5jLG_c8vZ5_v7WMaZxKgLdJXhorarCFGcB4fFLUYmLK--Q@mail.gmail.com>
-Subject: Re: [PATCH] x86, kaslr: Prevent .bss from overlaping initrd
-From: Kees Cook <keescook@chromium.org>
-To: Junjie Mao <eternal.n08@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030153159.GA3639@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ah! Thank you for tracking this bug down. I had never been able to reproduce it!
+On Thu, Oct 30, 2014 at 04:31:59PM +0100, Michal Hocko wrote:
+> On Thu 30-10-14 10:24:47, Sasha Levin wrote:
+> > On 10/30/2014 10:14 AM, Johannes Weiner wrote:
+> > >> The problem is that you are attempting to read 'locked' when you call
+> > >> > mem_cgroup_end_page_stat(), so it gets used even before you enter the
+> > >> > function - and using uninitialized variables is undefined.
+> > > We are not using that value anywhere if !memcg.  What path are you
+> > > referring to?
+> > 
+> > You're using that value as soon as you are passing it to a function, it
+> > doesn't matter what happens inside that function.
+> 
+> I have discussed that with our gcc guys and you are right. Strictly
+> speaking the compiler is free to do
+> if (!memcg) abort();
+> mem_cgroup_end_page_stat(...);
+> 
+> but it is highly unlikely that this will ever happen. Anyway better be
+> safe than sorry. I guess the following should be sufficient and even
+> more symmetric:
 
-On Thu, Oct 30, 2014 at 5:41 AM, Junjie Mao <eternal.n08@gmail.com> wrote:
-> When choosing a random address, the current implementation does not take into
-> account the reversed space for .bss and .brk sections. Thus the relocated kernel
-> may overlap other components in memory, e.g. the initrd image:
->
-> +-------------------+
-> |   decompressed    |
-> |      kernel       |
-> |   (relocated)     |
+The functional aspect of this is a terrible motivation for this
+change.  Sure the compiler could, but it doesn't, and it won't.
 
-Strictly speaking, the relocation table follows the decompressed
-kernel, though it is part of the decompressed data. It isn't in use
-once the kernel starts. Does (should) .bss overlap it?
+But there is some merit in keeping the checker's output meaningful as
+long as it doesn't obfuscate the interface too much.
 
-> +-------------------+--
-> |                   |  \
-> +-------------------+   .bss and .brk section
-> |                   |  /
-> |      initrd       |--
-> |                   |
-> +-------------------+
->
-> Here is an example of the overlap from a x86_64 kernel in qemu (the ranges of
-> physical addresses are presented):
->
-> compressed kernel:      [0x0449626e, 0x04e30aa3]
-> initrd:                 [0x13ce6000, 0x13fef373]
-> relocated kernel:       [0x0fe00000, 0x13c1c2bb]
-> .bss and .brk sections: [0x13c1c2bc, 0x148262bb]
+> From 6c3e748af7ee24984477e850bb93d65f83914903 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Thu, 30 Oct 2014 16:18:23 +0100
+> Subject: [PATCH] mm, memcg: fix potential undefined when for page stat
+>  accounting
+> 
+> since d7365e783edb (mm: memcontrol: fix missed end-writeback page
+> accounting) mem_cgroup_end_page_stat consumes locked and flags variables
+> directly rather than via pointers which might trigger C undefined
+> behavior as those variables are initialized only in the slow path of
+> mem_cgroup_begin_page_stat.
+> Although mem_cgroup_end_page_stat handles parameters correctly and
+> touches them only when they hold a sensible value it is caller which
+> loads a potentially uninitialized value which then might allow compiler
+> to do crazy things.
 
-What did you use to instrument this? I'd be curious to see how large
-the relocation table is too.
+I'm not opposed to passing pointers into end_page_stat(), but please
+mention the checker in the changelog.
 
-> The initrd image will then be overwritten by the memset during early
-> initialization:
->
-> [    1.655204] Unpacking initramfs...
-> [    1.662831] Initramfs unpacking failed: junk in compressed archive
->
-> This patch prevents the above situation by requiring a larger space when looking
-> for a random kernel base, so that existing logic can effectively avoids the
-> overlap.
+> Fix this by using pointer parameters for both locked and flags. This is
+> even better from the API point of view because it is symmetrical to
+> mem_cgroup_begin_page_stat.
 
-Yes, thank you again for tracking this down!
+Uhm, locked and flags are return values in begin_page_stat() but input
+arguments in end_page_stat().  Symmetry obfuscates that, so that's not
+an upside at all.  It's a cost that we can pay to keep the checker
+benefits, but the underlying nastiness remains.  It comes from the
+fact that we use conditional locking to avoid the read-side spinlock,
+rather than using a reader-friendly lock to begin with.
 
->
-> Fixes: 82fa9637a2 ("x86, kaslr: Select random position from e820 maps")
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Junjie Mao <eternal.n08@gmail.com>
+So let's change it to pointers, but at the same time be clear that
+this doesn't make the code better.  It just fixes the checker.
 
-This should also go to stable:
-
-Cc: stable@vger.kernel.org
-
-> ---
->  arch/x86/boot/compressed/Makefile  |  3 ++-
->  arch/x86/boot/compressed/aslr.c    |  5 +++--
->  arch/x86/boot/compressed/head_32.S |  3 ++-
->  arch/x86/boot/compressed/head_64.S |  3 +++
->  arch/x86/boot/compressed/misc.c    |  6 ++++--
->  arch/x86/boot/compressed/misc.h    |  6 ++++--
->  arch/x86/boot/compressed/mkpiggy.c |  8 ++++++--
->  arch/x86/tools/calc_reserved.awk   | 21 +++++++++++++++++++++
->  8 files changed, 45 insertions(+), 10 deletions(-)
->  create mode 100644 arch/x86/tools/calc_reserved.awk
->
-> diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-> index 704f58aa79cd..419e12b203d9 100644
-> --- a/arch/x86/boot/compressed/Makefile
-> +++ b/arch/x86/boot/compressed/Makefile
-> @@ -76,8 +76,9 @@ suffix-$(CONFIG_KERNEL_XZ)    := xz
->  suffix-$(CONFIG_KERNEL_LZO)    := lzo
->  suffix-$(CONFIG_KERNEL_LZ4)    := lz4
->
-> +RESERVED_SIZE = $(shell objdump -h vmlinux | awk -f $(srctree)/arch/x86/tools/calc_reserved.awk)
->  quiet_cmd_mkpiggy = MKPIGGY $@
-> -      cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
-> +      cmd_mkpiggy = $(obj)/mkpiggy $< $(RESERVED_SIZE) > $@ || ( rm -f $@ ; false )
->
->  targets += piggy.S
->  $(obj)/piggy.S: $(obj)/vmlinux.bin.$(suffix-y) $(obj)/mkpiggy FORCE
-> diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-> index bb1376381985..d4695b022971 100644
-> --- a/arch/x86/boot/compressed/aslr.c
-> +++ b/arch/x86/boot/compressed/aslr.c
-> @@ -298,7 +298,8 @@ static unsigned long find_random_addr(unsigned long minimum,
->  unsigned char *choose_kernel_location(unsigned char *input,
->                                       unsigned long input_size,
->                                       unsigned char *output,
-> -                                     unsigned long output_size)
-> +                                     unsigned long output_size,
-> +                                     unsigned long reserved_size)
->  {
->         unsigned long choice = (unsigned long)output;
->         unsigned long random;
-> @@ -320,7 +321,7 @@ unsigned char *choose_kernel_location(unsigned char *input,
->                        (unsigned long)output, output_size);
->
->         /* Walk e820 and find a random address. */
-> -       random = find_random_addr(choice, output_size);
-> +       random = find_random_addr(choice, output_size + reserved_size);
->         if (!random) {
->                 debug_putstr("KASLR could not find suitable E820 region...\n");
->                 goto out;
-> diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
-> index cbed1407a5cd..06c18f6d1f13 100644
-> --- a/arch/x86/boot/compressed/head_32.S
-> +++ b/arch/x86/boot/compressed/head_32.S
-> @@ -207,6 +207,7 @@ relocated:
->   * Do the decompression, and jump to the new kernel..
->   */
->                                 /* push arguments for decompress_kernel: */
-> +       pushl   $reserved_size
->         pushl   $z_output_len   /* decompressed length */
->         leal    z_extract_offset_negative(%ebx), %ebp
->         pushl   %ebp            /* output address */
-> @@ -217,7 +218,7 @@ relocated:
->         pushl   %eax            /* heap area */
->         pushl   %esi            /* real mode pointer */
->         call    decompress_kernel /* returns kernel location in %eax */
-> -       addl    $24, %esp
-> +       addl    $28, %esp
->
->  /*
->   * Jump to the decompressed kernel.
-> diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-> index 2884e0c3e8a5..02c518f8aca5 100644
-> --- a/arch/x86/boot/compressed/head_64.S
-> +++ b/arch/x86/boot/compressed/head_64.S
-> @@ -402,6 +402,8 @@ relocated:
->   * Do the decompression, and jump to the new kernel..
->   */
->         pushq   %rsi                    /* Save the real mode argument */
-> +       movq    $reserved_size, %r9
-> +       pushq   %r9
->         movq    %rsi, %rdi              /* real mode address */
->         leaq    boot_heap(%rip), %rsi   /* malloc area for uncompression */
->         leaq    input_data(%rip), %rdx  /* input_data */
-> @@ -409,6 +411,7 @@ relocated:
->         movq    %rbp, %r8               /* output target address */
->         movq    $z_output_len, %r9      /* decompressed length */
->         call    decompress_kernel       /* returns kernel location in %rax */
-> +       popq    %r9
->         popq    %rsi
->
->  /*
-> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-> index 57ab74df7eea..173062d32898 100644
-> --- a/arch/x86/boot/compressed/misc.c
-> +++ b/arch/x86/boot/compressed/misc.c
-> @@ -358,7 +358,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
->                                   unsigned char *input_data,
->                                   unsigned long input_len,
->                                   unsigned char *output,
-> -                                 unsigned long output_len)
-> +                                 unsigned long output_len,
-> +                                 unsigned long reserved_size)
->  {
->         real_mode = rmode;
->
-> @@ -382,7 +383,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
->         free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
->
->         output = choose_kernel_location(input_data, input_len,
-> -                                       output, output_len);
-> +                                       output, output_len,
-> +                                       reserved_size);
->
->         /* Validate memory location choices. */
->         if ((unsigned long)output & (MIN_KERNEL_ALIGN - 1))
-> diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
-> index 24e3e569a13c..fae4cef40f1f 100644
-> --- a/arch/x86/boot/compressed/misc.h
-> +++ b/arch/x86/boot/compressed/misc.h
-> @@ -59,7 +59,8 @@ int cmdline_find_option_bool(const char *option);
->  unsigned char *choose_kernel_location(unsigned char *input,
->                                       unsigned long input_size,
->                                       unsigned char *output,
-> -                                     unsigned long output_size);
-> +                                     unsigned long output_size,
-> +                                     unsigned long reserved_size);
->  /* cpuflags.c */
->  bool has_cpuflag(int flag);
->  #else
-> @@ -67,7 +68,8 @@ static inline
->  unsigned char *choose_kernel_location(unsigned char *input,
->                                       unsigned long input_size,
->                                       unsigned char *output,
-> -                                     unsigned long output_size)
-> +                                     unsigned long output_size,
-> +                                     unsigned long reserved_size)
->  {
->         return output;
->  }
-> diff --git a/arch/x86/boot/compressed/mkpiggy.c b/arch/x86/boot/compressed/mkpiggy.c
-> index b669ab65bf6c..a31983ced81b 100644
-> --- a/arch/x86/boot/compressed/mkpiggy.c
-> +++ b/arch/x86/boot/compressed/mkpiggy.c
-> @@ -36,11 +36,12 @@ int main(int argc, char *argv[])
->         uint32_t olen;
->         long ilen;
->         unsigned long offs;
-> +       unsigned long reserved_size;
->         FILE *f = NULL;
->         int retval = 1;
->
-> -       if (argc < 2) {
-> -               fprintf(stderr, "Usage: %s compressed_file\n", argv[0]);
-> +       if (argc < 3) {
-> +               fprintf(stderr, "Usage: %s compressed_file reserved_size\n", argv[0]);
->                 goto bail;
->         }
->
-> @@ -74,6 +75,7 @@ int main(int argc, char *argv[])
->         offs += olen >> 12;     /* Add 8 bytes for each 32K block */
->         offs += 64*1024 + 128;  /* Add 64K + 128 bytes slack */
->         offs = (offs+4095) & ~4095; /* Round to a 4K boundary */
-> +       reserved_size = atoi(argv[2]);
->
->         printf(".section \".rodata..compressed\",\"a\",@progbits\n");
->         printf(".globl z_input_len\n");
-> @@ -85,6 +87,8 @@ int main(int argc, char *argv[])
->         /* z_extract_offset_negative allows simplification of head_32.S */
->         printf(".globl z_extract_offset_negative\n");
->         printf("z_extract_offset_negative = -0x%lx\n", offs);
-> +       printf(".globl reserved_size\n");
-> +       printf("reserved_size = 0x%lx\n", reserved_size);
->
->         printf(".globl input_data, input_data_end\n");
->         printf("input_data:\n");
-> diff --git a/arch/x86/tools/calc_reserved.awk b/arch/x86/tools/calc_reserved.awk
-> new file mode 100644
-> index 000000000000..2ca69682338a
-> --- /dev/null
-> +++ b/arch/x86/tools/calc_reserved.awk
-> @@ -0,0 +1,21 @@
-> +#!/bin/awk -f
-> +#
-> +# Calculate the amount of space that we have to reserve for .bss and .brk
-> +# sections
-> +#
-> +# Usage:
-> +# objdump -h a.out | awk -f calc_reserved.awk
-> +
-> +BEGIN {
-> +       sections = "^.bss$|^.brk$"
-> +       size = 0;
-> +}
-> +
-> +/^ *[0-9]+ [a-z._]+ *[0-9a-f]+/ {
-> +       if (match($2, sections))
-> +               size += strtonum("0x" $3);
-> +}
-> +
-> +END {
-> +       printf("%d\n", size);
-> +}
-> --
-> 1.9.3
-
-Should mkpiggy.c do the work itself instead of taking an argument?
-
-Regardless, I want to make sure we've got the right values here. On
-one of my builds:
-
-vmlinux.bin, size 21186672, "objdump -h" shows:
-
- 25 .bss          00da2000  ffffffff82034000  0000000002034000  01434000  2**12
-                  ALLOC
- 26 .brk          00026000  ffffffff82dd6000  0000000002dd6000  01434000  2**0
-                  ALLOC
-
-vmlinux.relocs, size 1058872
-
-vmlinux.bin.gz, size 7549715, shows a decompressed size of 22245544:
-$ dd if=vmlinux.bin.gz bs=1 skip=7549711 2>/dev/null | hexdump -C
-00000000  a8 70 53 01                                       |.pS.|
-00000004
-
-0x015370a8 == 22245544 == 21186672 + 1058872
-
-This means relocs are overlapping .bss, since .bss starts at
-0x01434000 (21184512). The actually needed reserved space is
-0x01434000 + 0x00da2000 + 0x00026000 (35635200), rather than 22245544
-+ 0x00da2000 + 0x00026000 (36696232).
-
-So, since z_output_len is really "end of relocs table" and not "end of
-kernel", we actually need two offsets:
-
-- relocs table end (exists already via z_output_len)
-- end of actual kernel plus .bss and .brk, which is the sum of:
-  - actual size of decompressed kernel image (vmlinux.bin: 21186672)
-  - size of .bss + .brk (0x00da2000 + 0x00026000)
-
-And kASLR needs to use the larger of these two values.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Thanks
