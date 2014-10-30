@@ -1,300 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161363AbaJ3WL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 18:11:59 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:62163 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161298AbaJ3WL5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 18:11:57 -0400
-Date: Thu, 30 Oct 2014 15:11:52 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Krishnamoorthy, Jagadish" <jagadish.krishnamoorthy@intel.com>
-Cc: "bleung@chromium.org" <bleung@chromium.org>,
-        "dusonlin@emc.com.tw" <dusonlin@emc.com.tw>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] input: add gpio based irq support to Elan touchpad
-Message-ID: <20141030221152.GJ36444@dtor-ws>
-References: <1414542444-27184-1-git-send-email-jagadish.krishnamoorthy@intel.com>
- <20141029005031.GE19675@dtor-ws>
- <26D9772FB34B1342A924594C590213A88001FB@ORSMSX107.amr.corp.intel.com>
+	id S1161307AbaJ3WUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 18:20:11 -0400
+Received: from mga14.intel.com ([192.55.52.115]:36029 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161035AbaJ3WUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 18:20:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,289,1413270000"; 
+   d="scan'208";a="614385857"
+Date: Fri, 31 Oct 2014 05:59:15 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@arm.com>, juri.lelli@gmail.com,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v2 1/6] sched/rt: check if curr can be pushed/pulled
+ somewhere else in advance
+Message-ID: <20141030215915.GA7478@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1414678623-13576-1-git-send-email-wanpeng.li@linux.intel.com>
+ <1414681265.8574.83.camel@tkhai>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <26D9772FB34B1342A924594C590213A88001FB@ORSMSX107.amr.corp.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414681265.8574.83.camel@tkhai>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 10:03:18PM +0000, Krishnamoorthy, Jagadish wrote:
-> Completely agree to the point that platform data can be modified to put the irq number  instead of gpio number.
-> But with this change I am trying to make the driver more robust and functional irrespective of what is provided on the platform. 
+Hi Kirill,
+On Thu, Oct 30, 2014 at 06:01:05PM +0300, Kirill Tkhai wrote:
+>Hi,
+>
+>В Чт, 30/10/2014 в 22:16 +0800, Wanpeng Li пишет:
+>> This patch checks if current can be pushed/pulled somewhere else 
+>> in advance to make logic clear, the same behavior as rt class.
+>> 
+>> - If current can't be migrated, useless to reschedule, let's hope 
+>>   task can move out.
+>> - If task is migratable, so let's not schedule it and see if it 
+>>   can be pushed or pulled somewhere else.
+>
+>No functional changes, are they? So I'd suggest to change subject
+>on something connected with "cleanup".
+>
+>Also, the description confuses. Please, write that code was cleaned
+>up, and that comments were added.
+>
 
-And then you are going to add the similar code to the other 1000s or
-i2c, spi, etc driver in the kernel? No, you need to change your platform
-to describe the hardware in a way that the core code can understand and
-perform the setup as needed?
+Ok.
 
-Thanks.
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>>  kernel/sched/rt.c | 14 ++++++++++----
+>>  1 file changed, 10 insertions(+), 4 deletions(-)
+>> 
+>> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+>> index d024e6c..a0b51aa 100644
+>> --- a/kernel/sched/rt.c
+>> +++ b/kernel/sched/rt.c
+>> @@ -1351,16 +1351,22 @@ out:
+>>  
+>>  static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
+>>  {
+>> -	if (rq->curr->nr_cpus_allowed == 1)
+>> +	/*
+>> +	 * Current can't be migrated, useless to reschedule,
+>> +	 * let's hope p can move out.
+>> +	 */
+>> +	if (rq->curr->nr_cpus_allowed == 1 ||
+>> +		!cpupri_find(&rq->rd->cpupri, rq->curr, NULL))
+>>  		return;
+>
+>All conditions of multi-line if() should be aligned the same:
+>
+>+	if (rq->curr->nr_cpus_allowed == 1 ||
+>+	    !cpupri_find(&rq->rd->cpupri, rq->curr, NULL))
+>
 
-> 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com] 
-> Sent: Tuesday, October 28, 2014 5:51 PM
-> To: Krishnamoorthy, Jagadish
-> Cc: bleung@chromium.org; dusonlin@emc.com.tw; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] input: add gpio based irq support to Elan touchpad
-> 
-> On Tue, Oct 28, 2014 at 05:27:24PM -0700, jagadish.krishnamoorthy@intel.com wrote:
-> > From: Jagadish Krishnamoorthy <jagadish.krishnamoorthy@intel.com>
-> > 
-> > Adding new member 'irq' in main device structure.
-> > On some of the platforms, gpio is passed in platform data instead of 
-> > irq. Convert the gpio to irq and store it in the driver data.
-> 
-> No, please adjust your platform to set up i2c client data properly.
-> There is absolutely no reason for the driver to know if it delas with gpio or some other interrupt source.
-> 
-> Thanks.
-> 
-> > 
-> > Signed-off-by: Jagadish Krishnamoorthy 
-> > <jagadish.krishnamoorthy@intel.com>
-> > ---
-> >  drivers/input/mouse/elan_i2c.h       |    3 ++-
-> >  drivers/input/mouse/elan_i2c_core.c  |   44 ++++++++++++++++++++++++----------
-> >  drivers/input/mouse/elan_i2c_i2c.c   |    7 +++---
-> >  drivers/input/mouse/elan_i2c_smbus.c |    3 ++-
-> >  4 files changed, 39 insertions(+), 18 deletions(-)
-> > 
-> > diff --git a/drivers/input/mouse/elan_i2c.h 
-> > b/drivers/input/mouse/elan_i2c.h index 2e83862..bb94a96 100644
-> > --- a/drivers/input/mouse/elan_i2c.h
-> > +++ b/drivers/input/mouse/elan_i2c.h
-> > @@ -76,7 +76,8 @@ struct elan_transport_ops {
-> >  	int (*write_fw_block)(struct i2c_client *client,
-> >  			      const u8 *page, u16 checksum, int idx);
-> >  	int (*finish_fw_update)(struct i2c_client *client,
-> > -				struct completion *reset_done);
-> > +				struct completion *reset_done,
-> > +				unsigned int irq);
-> >  
-> >  	int (*get_report)(struct i2c_client *client, u8 *report);  }; diff 
-> > --git a/drivers/input/mouse/elan_i2c_core.c 
-> > b/drivers/input/mouse/elan_i2c_core.c
-> > index 0cb2be4..9c5c5d3 100644
-> > --- a/drivers/input/mouse/elan_i2c_core.c
-> > +++ b/drivers/input/mouse/elan_i2c_core.c
-> > @@ -35,6 +35,7 @@
-> >  #include <linux/completion.h>
-> >  #include <linux/of.h>
-> >  #include <linux/regulator/consumer.h>
-> > +#include <linux/gpio.h>
-> >  #include <asm/unaligned.h>
-> >  
-> >  #include "elan_i2c.h"
-> > @@ -75,6 +76,7 @@ struct elan_tp_data {
-> >  	unsigned int		width_y;
-> >  	unsigned int		x_res;
-> >  	unsigned int		y_res;
-> > +	unsigned int		irq;
-> >  
-> >  	u8			product_id;
-> >  	u8			fw_version;
-> > @@ -331,7 +333,8 @@ static int __elan_update_firmware(struct elan_tp_data *data,
-> >  	/* Wait WDT reset and power on reset */
-> >  	msleep(600);
-> >  
-> > -	error = data->ops->finish_fw_update(client, &data->fw_completion);
-> > +	error = data->ops->finish_fw_update(client, &data->fw_completion,
-> > +					    data->irq);
-> >  	if (error)
-> >  		return error;
-> >  
-> > @@ -356,7 +359,7 @@ static int elan_update_firmware(struct 
-> > elan_tp_data *data,
-> >  
-> >  	dev_dbg(&client->dev, "Starting firmware update....\n");
-> >  
-> > -	disable_irq(client->irq);
-> > +	disable_irq(data->irq);
-> >  	data->in_fw_update = true;
-> >  
-> >  	retval = __elan_update_firmware(data, fw); @@ -370,7 +373,7 @@ 
-> > static int elan_update_firmware(struct elan_tp_data *data,
-> >  	}
-> >  
-> >  	data->in_fw_update = false;
-> > -	enable_irq(client->irq);
-> > +	enable_irq(data->irq);
-> >  
-> >  	return retval;
-> >  }
-> > @@ -482,7 +485,7 @@ static ssize_t calibrate_store(struct device *dev,
-> >  	if (retval)
-> >  		return retval;
-> >  
-> > -	disable_irq(client->irq);
-> > +	disable_irq(data->irq);
-> >  
-> >  	data->mode |= ETP_ENABLE_CALIBRATE;
-> >  	retval = data->ops->set_mode(client, data->mode); @@ -528,7 +531,7 
-> > @@ out_disable_calibrate:
-> >  			retval = error;
-> >  	}
-> >  out:
-> > -	enable_irq(client->irq);
-> > +	enable_irq(data->irq);
-> >  	mutex_unlock(&data->sysfs_mutex);
-> >  	return retval ?: count;
-> >  }
-> > @@ -594,7 +597,7 @@ static ssize_t acquire_store(struct device *dev, struct device_attribute *attr,
-> >  	if (retval)
-> >  		return retval;
-> >  
-> > -	disable_irq(client->irq);
-> > +	disable_irq(data->irq);
-> >  
-> >  	data->baseline_ready = false;
-> >  
-> > @@ -636,7 +639,7 @@ out_disable_calibrate:
-> >  			retval = error;
-> >  	}
-> >  out:
-> > -	enable_irq(client->irq);
-> > +	enable_irq(data->irq);
-> >  	mutex_unlock(&data->sysfs_mutex);
-> >  	return retval ?: count;
-> >  }
-> > @@ -900,6 +903,7 @@ static int elan_probe(struct i2c_client *client,
-> >  	const struct elan_transport_ops *transport_ops;
-> >  	struct device *dev = &client->dev;
-> >  	struct elan_tp_data *data;
-> > +	struct gpio_desc *desc;
-> >  	unsigned long irqflags;
-> >  	int error;
-> >  
-> > @@ -992,17 +996,31 @@ static int elan_probe(struct i2c_client *client,
-> >  		return error;
-> >  
-> >  	/*
-> > +	 * Check for the irq number in platform data.
-> > +	 * If that fails check for gpio based irq.
-> > +	 */
-> > +	if (client->irq >= 0) {
-> > +		data->irq = client->irq;
-> > +	} else {
-> > +		desc = devm_gpiod_get_index(&client->dev, "ELAN_GPIO_IRQ", 0);
-> > +		if (IS_ERR(desc) || gpiod_direction_input(desc)) {
-> > +			dev_err(&client->dev, "failed to initialize gpio\n");
-> > +			return error;
-> > +		}
-> > +		data->irq = gpiod_to_irq(desc);
-> > +	}
-> > +	/*
-> >  	 * Systems using device tree should set up interrupt via DTS,
-> >  	 * the rest will use the default falling edge interrupts.
-> >  	 */
-> >  	irqflags = client->dev.of_node ? 0 : IRQF_TRIGGER_FALLING;
-> >  
-> > -	error = devm_request_threaded_irq(&client->dev, client->irq,
-> > +	error = devm_request_threaded_irq(&client->dev, data->irq,
-> >  					  NULL, elan_isr,
-> >  					  irqflags | IRQF_ONESHOT,
-> >  					  client->name, data);
-> >  	if (error) {
-> > -		dev_err(&client->dev, "cannot register irq=%d\n", client->irq);
-> > +		dev_err(&client->dev, "cannot register irq=%d\n", data->irq);
-> >  		return error;
-> >  	}
-> >  
-> > @@ -1055,12 +1073,12 @@ static int __maybe_unused elan_suspend(struct device *dev)
-> >  	if (ret)
-> >  		return ret;
-> >  
-> > -	disable_irq(client->irq);
-> > +	disable_irq(data->irq);
-> >  
-> >  	if (device_may_wakeup(dev)) {
-> >  		ret = elan_sleep(data);
-> >  		/* Enable wake from IRQ */
-> > -		data->irq_wake = (enable_irq_wake(client->irq) == 0);
-> > +		data->irq_wake = (enable_irq_wake(data->irq) == 0);
-> >  	} else {
-> >  		ret = elan_disable_power(data);
-> >  	}
-> > @@ -1076,7 +1094,7 @@ static int __maybe_unused elan_resume(struct device *dev)
-> >  	int error;
-> >  
-> >  	if (device_may_wakeup(dev) && data->irq_wake) {
-> > -		disable_irq_wake(client->irq);
-> > +		disable_irq_wake(data->irq);
-> >  		data->irq_wake = false;
-> >  	}
-> >  
-> > @@ -1088,7 +1106,7 @@ static int __maybe_unused elan_resume(struct device *dev)
-> >  	if (error)
-> >  		dev_err(dev, "initialize when resuming failed: %d\n", error);
-> >  
-> > -	enable_irq(data->client->irq);
-> > +	enable_irq(data->irq);
-> >  
-> >  	return 0;
-> >  }
-> > diff --git a/drivers/input/mouse/elan_i2c_i2c.c 
-> > b/drivers/input/mouse/elan_i2c_i2c.c
-> > index 97d4937..5e897cd 100644
-> > --- a/drivers/input/mouse/elan_i2c_i2c.c
-> > +++ b/drivers/input/mouse/elan_i2c_i2c.c
-> > @@ -520,7 +520,8 @@ static int elan_i2c_write_fw_block(struct 
-> > i2c_client *client,  }
-> >  
-> >  static int elan_i2c_finish_fw_update(struct i2c_client *client,
-> > -				     struct completion *completion)
-> > +				     struct completion *completion,
-> > +				     unsigned int irq)
-> >  {
-> >  	struct device *dev = &client->dev;
-> >  	long ret;
-> > @@ -529,13 +530,13 @@ static int elan_i2c_finish_fw_update(struct i2c_client *client,
-> >  	u8 buffer[ETP_I2C_INF_LENGTH];
-> >  
-> >  	reinit_completion(completion);
-> > -	enable_irq(client->irq);
-> > +	enable_irq(irq);
-> >  
-> >  	error = elan_i2c_write_cmd(client, ETP_I2C_STAND_CMD, ETP_I2C_RESET);
-> >  	if (!error)
-> >  		ret = wait_for_completion_interruptible_timeout(completion,
-> >  							msecs_to_jiffies(300));
-> > -	disable_irq(client->irq);
-> > +	disable_irq(irq);
-> >  
-> >  	if (error) {
-> >  		dev_err(dev, "device reset failed: %d\n", error); diff --git 
-> > a/drivers/input/mouse/elan_i2c_smbus.c 
-> > b/drivers/input/mouse/elan_i2c_smbus.c
-> > index 359bf85..a81b8fb 100644
-> > --- a/drivers/input/mouse/elan_i2c_smbus.c
-> > +++ b/drivers/input/mouse/elan_i2c_smbus.c
-> > @@ -477,7 +477,8 @@ static int elan_smbus_get_report(struct i2c_client 
-> > *client, u8 *report)  }
-> >  
-> >  static int elan_smbus_finish_fw_update(struct i2c_client *client,
-> > -				       struct completion *fw_completion)
-> > +				       struct completion *fw_completion,
-> > +				       unsigned int irq)
-> >  {
-> >  	/* No special handling unlike I2C transport */
-> >  	return 0;
-> > --
-> > 1.7.9.5
-> > 
-> 
-> -- 
-> Dmitry
+I will update the patch in next version, thanks for your review.
 
--- 
-Dmitry
+Regards,
+Wanpeng Li
+
+>>  
+>> +	/*
+>> +	 * p is migratable, so let's not schedule it and
+>> +	 * see if it is pushed or pulled somewhere else.
+>> +	 */
+>>  	if (p->nr_cpus_allowed != 1
+>>  	    && cpupri_find(&rq->rd->cpupri, p, NULL))
+>>  		return;
+>>  
+>> -	if (!cpupri_find(&rq->rd->cpupri, rq->curr, NULL))
+>> -		return;
+>> -
+>>  	/*
+>>  	 * There appears to be other cpus that can accept
+>>  	 * current and none to run 'p', so lets reschedule
+>
+>Thanks,
+>Kirill
+>
