@@ -1,157 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759806AbaJ3NoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:44:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35222 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759468AbaJ3NoC (ORCPT
+	id S1760018AbaJ3NoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:44:20 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:43721 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759610AbaJ3NoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:44:02 -0400
-Date: Thu, 30 Oct 2014 14:43:57 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "pang.xunlei" <pang.xunlei@linaro.org>
-cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        xen-devel@lists.xenproject.org, John Stultz <john.stultz@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [RFC PATCH v2 02/11] time: Add mktime64() safe version(using
- time64_t)
-In-Reply-To: <1414667745-7703-3-git-send-email-pang.xunlei@linaro.org>
-Message-ID: <alpine.DEB.2.11.1410301424510.5308@nanos>
-References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org> <1414667745-7703-3-git-send-email-pang.xunlei@linaro.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 30 Oct 2014 09:44:04 -0400
+Date: Thu, 30 Oct 2014 14:43:57 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
+Subject: Re: I2C OF IRQ parsing issue due to probe ordering
+Message-ID: <20141030134354.GA19802@ulmo.nvidia.com>
+References: <2287003.09eTeKUr1V@avalon>
+ <1441244.9DO8HMds24@avalon>
+ <20141030132136.GA23852@katana>
+ <2020186.tp9cWKgsNl@avalon>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
+Content-Disposition: inline
+In-Reply-To: <2020186.tp9cWKgsNl@avalon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct 2014, pang.xunlei wrote:
 
-Same problem with the $subject as in the previous patch.
+--zhXaljGHf11kAtnf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> As part of addressing 2038 saftey for in-kernel uses, this patch
+On Thu, Oct 30, 2014 at 03:22:49PM +0200, Laurent Pinchart wrote:
+> Hi Wolfram,
+>=20
+> On Thursday 30 October 2014 14:21:36 Wolfram Sang wrote:
+> > > > See:
+> > > > 	9ec36cafe43b of/irq: do irq resolution in platform_get_irq
+> > > >=20
+> > > > I suspect a similar thing could be done for I2C.
+> > >=20
+> > > That could work. We would need to introduce a new i2c_get_irq() funct=
+ion
+> > > though. Wolfram, would you be fine with that ?
+> >=20
+> > I'd think it will look pretty similar to platform_get_irq, no? That is
+> > fine with me.
+>=20
+> It would, but as Thierry pointed out it should be possible to hide the de=
+tails=20
+> in the I2C core. I'll submit a patch shortly.
 
-  s/saftey/safety/ 
+i2c_device_probe() seems exactly the right place to do this. It's in
+fact the equivalent of what I had proposed in my original patch series
+where this was done in platform_drv_probe().
 
-  saftey is something completely different.
-  
-> +/* 
-> + * Converts Gregorian date to seconds since 1970-01-01 00:00:00.
-> + * Assumes input in normal date format, i.e. 1980-12-31 23:59:59
-> + * => year=1980, mon=12, day=31, hour=23, min=59, sec=59.
-> + *
-> + * [For the Julian calendar (which was used in Russia before 1917,
-> + * Britain & colonies before 1752, anywhere else before 1582,
-> + * and is still in use by some communities) leave out the
-> + * -year/100+year/400 terms, and add 10.]
-> + *
-> + * This algorithm was first published by Gauss (I think).
-> + *
+Thierry
 
-So this blindly copies the comment from mktime but misses to add a
-proper docbook comment for the function.
+--zhXaljGHf11kAtnf
+Content-Type: application/pgp-signature
 
-> + * Safe version 2038 safety on 32-bit systems.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-This sentence makes no sense at all. Aside of that you want to do the
-same as I suggested for do_settimeofday64
+iQIcBAEBAgAGBQJUUkCaAAoJEN0jrNd/PrOhzgwQAILjAvOl6g5yQSNdJy/NBxT7
+/w02zO5QzMWsWlQropceIhAQ6g/pO3ULs+HmrpKanmi1xjKsXubNos835uR8bpDS
+gxP4YHOZ5V8WKNvU0yFHZ2nQSiw0FG3nCTY1TkUza0EykNZjNuAAOVIzZKcFbKY1
+lrdEVU3KvwWup15NhfFH4HAZDZioRxuwhGszHzQI0om8II6+VCpxQXc5z+Fv2ZLs
+5uRHGEQvr0ZLCoY9g8oetsqBei+8cpPyz1SvyyFKHPqfkplylU0fcXKS1lWZ2epm
+LYdFl13MN5ytZWbH0A/p1oXlDvEy16zL+QgVVFYB+u0J+G5p16aRK8CoBobajKul
+t//PRiXkEvaPL56gDhdUGeALmFJo0U7QKZ3dg+s5g9JTSCrSauEBp6C37kICvZ/B
+7ZAXnfI4a8xiSBTLccwRF44Xabiw28vMQiV/hwnRg78NZ/0XtuCeqqMZ1Ggu1g4o
+EMhcLpAOOQzL3yhMSSRZG8+p6rQOp49k1Tc6/cu1w40PIFadfcixQfLyvqmJ979k
+yIapSbypR1Ueex4Ffwg9jAP0YB3+IrqjikUKtP24702M2Ui9nEQgk9s1NCj+pzup
+AgmSGlcMWT6bmWBDu17DhK1+2Y1ICJy/G6Tu2JlErv1p0wPRVOlKZVhGOtc8/Npl
+u8w4e7dxvcKtuU6rD+Bs
+=BuxV
+-----END PGP SIGNATURE-----
 
-* mktime64 - Convert gregrorian date to seconds since 1970. y2038 safe
-
-> + */
-> +time64_t
-> +mktime64(const unsigned int year0, const unsigned int mon0,
-> +       const unsigned int day, const unsigned int hour,
-> +       const unsigned int min, const unsigned int sec)
-
-Make this
-
-time64_t mktime64(const unsigned int year0, const unsigned int mon0,
-       	 	  const unsigned int day, const unsigned int hour,
-       		  const unsigned int min, const unsigned int sec)
-
-please.
-
-> +{
-> +	time64_t ret;
-> +	unsigned int mon = mon0, year = year0;
-
-I pretty much prefer the following style:
-
-+	unsigned int mon = mon0, year = year0;
-+	time64_t ret;
-
-Way simpler to parse.
-
-
-> +	 /* 1..12 -> 11,12,1..10 */
-> +	if (0 >= (int) (mon -= 2)) {
-> +		mon += 12;  /* Puts Feb last since it has leap day */
-
-Please get rid of the tail comments while you are at it:
-
-       	        /* Put Feb last since it has a leap day */
-		mon += 12;
-
-Again simpler to parse.
-
-> +		year -= 1;
-> +	}
-> +
-> +	ret = (year/4 - year/100 + year/400 + 367*mon/12 + day) + year*365 - 719499;
-
-For readability sake
-
-> +	ret = ret*24 + hour; /* now have hours */
-
-Please kill these pointless comments. The calculation above is the one
-which could do with a comment not the obvious days to hrs and hrs to
-min and min to sec conversions.
-
-We do not blindly copy code and leave the mess unchanged.
-
-> +	ret = ret*60 + min; /* now have minutes */
-> +	ret = ret*60 + sec; /* finally seconds */
-> +
-> +	return ret;
-> +}
-> +
-> +EXPORT_SYMBOL(mktime64);
-
-EXPORT_SYMBOL_GPL please.
-
-> +
->  /* Converts Gregorian date to seconds since 1970-01-01 00:00:00.
->   * Assumes input in normal date format, i.e. 1980-12-31 23:59:59
->   * => year=1980, mon=12, day=31, hour=23, min=59, sec=59.
-> @@ -318,6 +356,7 @@ EXPORT_SYMBOL(timespec_trunc);
->   * WARNING: this function will overflow on 2106-02-07 06:28:16 on
->   * machines where long is 32-bit! (However, as time_t is signed, we
->   * will already get problems at other places on 2038-01-19 03:14:08)
-> + * TODO: [2038 safety] should be replaced by mktime64().
->   */
->  unsigned long
->  mktime(const unsigned int year0, const unsigned int mon0,
-
-Why are you keeping this implementation instead of replacing the
-comment by a simple one liner
-
-/*
- * mktime - Convert gregrorian date to seconds since 1970. Deprecated. Use mktime64
- */
-
-No need to add a full docbook comment as this is going away anyway.
-
-and change the implementation to
-
-{
-	return mktime64(....);
-}
-
-Thanks,
-
-	tglx
+--zhXaljGHf11kAtnf--
