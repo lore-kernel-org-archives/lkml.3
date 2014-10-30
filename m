@@ -1,54 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361AbaJ3FYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 01:24:34 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53838 "EHLO arroyo.ext.ti.com"
+	id S1756793AbaJ3F1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 01:27:36 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54675 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032AbaJ3FYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 01:24:33 -0400
+	id S1750795AbaJ3F1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 01:27:34 -0400
+Message-ID: <5451CC27.7000604@ti.com>
+Date: Thu, 30 Oct 2014 10:57:03 +0530
 From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-CC: <gregkh@linuxfoundation.org>, <lee.jones@linaro.org>
-Subject: [PATCH] phy: phy-core: use the np present in of_phandle_args to get the PHY
-Date: Thu, 30 Oct 2014 10:54:24 +0530
-Message-ID: <1414646664-10178-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>, <balbi@ti.com>
+CC: =?windows-1252?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/5] phy: berlin-sata: Move PHY_BASE into private data
+ struct
+References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com> <54462865.6000205@ti.com> <544629F0.3090505@gmail.com> <544AB33F.9030701@gmail.com> <20141024202510.GK11455@saruman> <544E3A1F.2060304@ti.com> <544E8FDB.109@gmail.com>
+In-Reply-To: <544E8FDB.109@gmail.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using the node pointer of the PHY provider and then scanning its
-child nodes to get a reference to the PHY, directly use the node pointer
-present in of_phandle_args to get a reference to the PHY.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/phy/phy-core.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index ff5eec5..25913f4 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -420,15 +420,9 @@ struct phy *of_phy_simple_xlate(struct device *dev, struct of_phandle_args
- 	class_dev_iter_init(&iter, phy_class, NULL, NULL);
- 	while ((dev = class_dev_iter_next(&iter))) {
- 		phy = to_phy(dev);
--		if (node != phy->dev.of_node) {
--			for_each_child_of_node(node, child) {
--				if (child == phy->dev.of_node)
--					goto phy_found;
--			}
-+		if (args->np != phy->dev.node)
- 			continue;
--		}
- 
--phy_found:
- 		class_dev_iter_exit(&iter);
- 		return phy;
- 	}
--- 
-1.7.9.5
+On Tuesday 28 October 2014 12:02 AM, Sebastian Hesselbarth wrote:
+> On 10/27/2014 01:27 PM, Kishon Vijay Abraham I wrote:
+>> On Saturday 25 October 2014 01:55 AM, Felipe Balbi wrote:
+>>> On Fri, Oct 24, 2014 at 10:14:55PM +0200, Sebastian Hesselbarth wrote:
+>>>> On 21.10.2014 11:40, Sebastian Hesselbarth wrote:
+>>>>> On 10/21/2014 11:33 AM, Kishon Vijay Abraham I wrote:
+>>>>>> On Tuesday 21 October 2014 02:37 PM, Sebastian Hesselbarth wrote:
+>>>>>>> Currently, Berlin SATA PHY driver assumes PHY_BASE address being
+>>>>>>> constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
+>>>>>>> is different. Prepare the driver for BG2 support by moving the phy_base
+>>>>>>> into private driver data.
+>>>>>>>
+>>>>>>> Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+>>>>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>>>> ...
+>>>>>>> ---
+>>>>>>>   drivers/phy/phy-berlin-sata.c | 42
+>>>>>>> ++++++++++++++++++++++++++++--------------
+>>>>>>>   1 file changed, 28 insertions(+), 14 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/drivers/phy/phy-berlin-sata.c
+>>>>>>> b/drivers/phy/phy-berlin-sata.c
+>>>>>>> index 69ced52d72aa..9682b0f66177 100644
+>>>>>>> --- a/drivers/phy/phy-berlin-sata.c
+>>>>>>> +++ b/drivers/phy/phy-berlin-sata.c
+>>>>>>> @@ -30,7 +30,7 @@
+>>>>>>>   #define MBUS_WRITE_REQUEST_SIZE_128    (BIT(2) << 16)
+>>>>>>>   #define MBUS_READ_REQUEST_SIZE_128    (BIT(2) << 19)
+>>>>>>>
+>>>>>>> -#define PHY_BASE        0x200
+>>>>>>> +#define BG2Q_PHY_BASE        0x200
+>>>>> [...]
+>>>>>>> +static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
+>>>>>>> +
+>>>>>>> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+>>>>>>> +    {
+>>>>>>> +        .compatible = "marvell,berlin2q-sata-phy",
+>>>>>>> +        .data = &bg2q_sata_phy_base,
+>>>>>>
+>>>>>> Can't the base directly come from dt?
+>>>>>
+>>>>> You are suggesting a "marvell,phy-base-address" property, right?
+>>>>> I have no strong opinion about it, I accept your call (or DT maintainer
+>>>>> ones).
+>>>>
+>>>> I still have the DT patches for BG2Q queued up for v3.19 (I missed the
+>>>> arm-soc merge window for v3.18). That means, there has been no release
+>>>> with the phy binding used and I can rework a little more.
+>>>>
+>>>> Can you please confirm that you want a DT property for the phy base address,
+>>>> e.g. marvell,phy-base-address = <{0x200,0x80}> ?
+>>>>
+>>>> If so, I'd also rename the compatible from berlin2q-sata-phy to more
+>>>> generic berlin-sata-phy.
+>>>
+>>> I think what Kishon is asking, is why this 0x200 offset isn't already on
+>>> reg. so that instead of, e.g.:
+>>>
+>>>     reg = <0x40000000 0x1000>;
+>>>
+>>> you would have:
+>>>
+>>>     reg = <0x40000200 0x1000>;
+>>
+>> I had something similar to what Sebastian suggested in mind. I think phy_base
+>> is used for a different reason and can't be directly used in 'reg'.
+> 
+> Kishon,
+> 
+> thanks for the clarification. While the extra marvell,phy-base-address
+> property basically works and I agree with it, I may have some
+> _potential_ draw-backs:
+> 
+> The Marvell BSP code (which I have no clue _why_ it does what it does
+> or if it is required) has some magic writes to "improve" serial signal
+> quality. I left them out as my HDD was detected with and without them.
+> 
+> Now, if we find that they are required, we have to find a way to make
+> the PHY driver know about the PHY revision. We'd usually add a
+> different compatible and deal with it accordingly.
+> 
+> So, not adding the compatible now _may_ just postpone a follow-up patch
+> for the different PHY setup of BG2 and render the new phy_base property
+> basically useless.
+> 
+> If you are just unhappy with the "static u32 bg2q_sata_phy_base"
+> assigned to of_device_id.data, I can convert that to Felipe's proposal.
 
+Either way is fine with me.
+
+Thanks
+Kishon
