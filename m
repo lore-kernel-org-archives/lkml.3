@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933934AbaJ3KLh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:11:37 -0400
-Received: from mail-bn1on0144.outbound.protection.outlook.com ([157.56.110.144]:50763
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S934213AbaJ3KNB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:13:01 -0400
+Received: from mail-by2on0122.outbound.protection.outlook.com ([207.46.100.122]:19808
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933546AbaJ3KL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:11:28 -0400
-X-WSS-ID: 0NE95MX-07-XUY-02
+	id S933938AbaJ3KLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 06:11:39 -0400
+X-WSS-ID: 0NE95N9-07-XVB-02
 X-M-MSG: 
 From: Huang Rui <ray.huang@amd.com>
 To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
@@ -20,19 +20,18 @@ CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
         Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, Huang Rui <ray.huang@amd.com>
-Subject: [PATCH v4 15/20] usb: dwc3: add disable usb3 suspend phy quirk
-Date: Thu, 30 Oct 2014 18:08:40 +0800
-Message-ID: <1414663725-2195-16-git-send-email-ray.huang@amd.com>
+Subject: [PATCH v4 18/20] PCI: Prevent xHCI driver from claiming AMD Nolan USB3 DRD device
+Date: Thu, 30 Oct 2014 18:08:43 +0800
+Message-ID: <1414663725-2195-19-git-send-email-ray.huang@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414663725-2195-1-git-send-email-ray.huang@amd.com>
 References: <1414663725-2195-1-git-send-email-ray.huang@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(19580405001)(107046002)(105586002)(102836001)(87936001)(120916001)(77156001)(84676001)(85852003)(50466002)(106466001)(2171001)(46102003)(95666004)(21056001)(97736003)(68736004)(229853001)(36756003)(19580395003)(44976005)(48376002)(50986999)(33646002)(104166001)(47776003)(88136002)(99396003)(31966008)(89996001)(64706001)(86362001)(76176999)(92566001)(80022003)(85306004)(53416004)(87286001)(92726001)(4396001)(77096002)(93916002)(62966002)(20776003)(101416001)(50226001)(76482002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB208;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(104166001)(62966002)(87936001)(50466002)(19580405001)(88136002)(44976005)(92566001)(84676001)(53416004)(92726001)(48376002)(68736004)(105586002)(77096002)(2171001)(89996001)(87286001)(101416001)(99396003)(106466001)(85852003)(19580395003)(107046002)(31966008)(95666004)(76482002)(120916001)(102836001)(97736003)(50986999)(33646002)(4396001)(50226001)(20776003)(76176999)(47776003)(64706001)(21056001)(229853001)(85306004)(36756003)(93916002)(86362001)(46102003)(575784001)(80022003)(77156001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
-X-Exchange-Antispam-Report-Test: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
 X-Forefront-PRVS: 038002787A
 Authentication-Results: spf=none (sender IP is 165.204.84.221)
  smtp.mailfrom=Ray.Huang@amd.com; 
@@ -41,93 +40,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds disable usb3 suspend phy quirk, and some special platforms
-can configure that if it is needed.
+The AMD Nolan (NL) SoC contains a DesignWare USB3 Dual-Role Device that can
+be operated either as a USB Host or a USB Device.  In the AMD NL platform,
+this device ([1022:7912]) has a class code of PCI_CLASS_SERIAL_USB_XHCI
+(0x0c0330), which means the xhci driver will claim it.
 
+But the dwc3 driver is a more specific driver for this device, and we'd
+prefer to use it instead of xhci.  To prevent xhci from claiming the
+device, change the class code to 0x0c03fe, which the PCI r3.0 spec defines
+as "USB device (not host controller)".  The dwc3 driver can then claim it
+based on its Vendor and Device ID.
+
+Suggested-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jason Chang <jason.chang@amd.com>
 Signed-off-by: Huang Rui <ray.huang@amd.com>
 ---
- Documentation/devicetree/bindings/usb/dwc3.txt | 1 +
- drivers/usb/dwc3/core.c                        | 7 +++++++
- drivers/usb/dwc3/core.h                        | 2 ++
- drivers/usb/dwc3/platform_data.h               | 1 +
- 4 files changed, 11 insertions(+)
+ drivers/pci/quirks.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
-index a9e54ae..3720fca 100644
---- a/Documentation/devicetree/bindings/usb/dwc3.txt
-+++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-@@ -32,6 +32,7 @@ Optional properties:
-  - snps,tx_de_emphasis_quirk: when set core will set Tx de-emphasis value.
-  - snps,tx_de_emphasis: the value driven to the PHY is controlled by the
- 			LTSSM during USB3 Compliance mode.
-+ - snps,dis_u3_susphy_quirk: when set core will disable USB3 suspend phy.
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 90acb32..ed6f89b 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -379,6 +379,26 @@ static void quirk_ati_exploding_mce(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI,	PCI_DEVICE_ID_ATI_RS100,   quirk_ati_exploding_mce);
  
- This is usually a subnode to DWC3 glue to which it is connected.
- 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index b55fa5b..fdc715a 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -404,6 +404,10 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
- 	if (dwc->tx_de_emphasis_quirk)
- 		reg |= DWC3_GUSB3PIPECTL_TX_DEEPH(dwc->tx_de_emphasis);
- 
-+	/* FIXME will move FPGA flag when AMD NL taps out */
-+	if (dwc->dis_u3_susphy_quirk && dwc->is_fpga)
-+		reg &= ~DWC3_GUSB3PIPECTL_SUSPHY;
+ /*
++ * In the AMD NL platform, this device ([1022:7912]) has a class code of
++ * PCI_CLASS_SERIAL_USB_XHCI (0x0c0330), which means the xhci driver will
++ * claim it.
++ * But the dwc3 driver is a more specific driver for this device, and we'd
++ * prefer to use it instead of xhci. To prevent xhci from claiming the
++ * device, change the class code to 0x0c03fe, which the PCI r3.0 spec
++ * defines as "USB device (not host controller)". The dwc3 driver can then
++ * claim it based on its Vendor and Device ID.
++ */
++static void quirk_amd_nl_class(struct pci_dev *pdev)
++{
++	/*
++	 * Use 'USB Device' (0x0c03fe) instead of PCI header provided
++	 */
++	pdev->class = 0x0c03fe;
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_NL_USB,
++		quirk_amd_nl_class);
 +
- 	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
- 
- 	mdelay(100);
-@@ -809,6 +813,8 @@ static int dwc3_probe(struct platform_device *pdev)
- 				"snps,lfps_filter_quirk");
- 		dwc->rx_detect_poll_quirk = of_property_read_bool(node,
- 				"snps,rx_detect_poll_quirk");
-+		dwc->dis_u3_susphy_quirk = of_property_read_bool(node,
-+				"snps,dis_u3_susphy_quirk");
- 
- 		dwc->tx_de_emphasis_quirk = of_property_read_bool(node,
- 				"snps,tx_de_emphasis_quirk");
-@@ -831,6 +837,7 @@ static int dwc3_probe(struct platform_device *pdev)
- 		dwc->del_phy_power_chg_quirk = pdata->del_phy_power_chg_quirk;
- 		dwc->lfps_filter_quirk = pdata->lfps_filter_quirk;
- 		dwc->rx_detect_poll_quirk = pdata->rx_detect_poll_quirk;
-+		dwc->dis_u3_susphy_quirk = pdata->dis_u3_susphy_quirk;
- 
- 		dwc->tx_de_emphasis_quirk = pdata->tx_de_emphasis_quirk;
- 		if (pdata->tx_de_emphasis)
-diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index 469ee13..be793f7 100644
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -697,6 +697,7 @@ struct dwc3_scratchpad_array {
-  * @del_phy_power_chg_quirk: set if we enable delay phy power change quirk
-  * @lfps_filter_quirk: set if we enable LFPS filter quirk
-  * @rx_detect_poll_quirk: set if we enable rx_detect to polling LFPS quirk
-+ * @dis_u3_susphy_quirk: set if we disable usb3 suspend phy
-  * @tx_de_emphasis_quirk: set if we enable Tx de-emphasis quirk
-  * @tx_de_emphasis: Tx de-emphasis value
-  * 	0       - -6dB de-emphasis
-@@ -818,6 +819,7 @@ struct dwc3 {
- 	unsigned		del_phy_power_chg_quirk:1;
- 	unsigned		lfps_filter_quirk:1;
- 	unsigned		rx_detect_poll_quirk:1;
-+	unsigned		dis_u3_susphy_quirk:1;
- 
- 	unsigned		tx_de_emphasis_quirk:1;
- 	unsigned		tx_de_emphasis:2;
-diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
-index e1ab900..0f1d5ad 100644
---- a/drivers/usb/dwc3/platform_data.h
-+++ b/drivers/usb/dwc3/platform_data.h
-@@ -36,6 +36,7 @@ struct dwc3_platform_data {
- 	unsigned del_phy_power_chg_quirk:1;
- 	unsigned lfps_filter_quirk:1;
- 	unsigned rx_detect_poll_quirk:1;
-+	unsigned dis_u3_susphy_quirk:1;
- 
- 	unsigned tx_de_emphasis_quirk:1;
- 	unsigned tx_de_emphasis:2;
++/*
+  * Let's make the southbridge information explicit instead
+  * of having to worry about people probing the ACPI areas,
+  * for example.. (Yes, it happens, and if you read the wrong
 -- 
 1.9.1
 
