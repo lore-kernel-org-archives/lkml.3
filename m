@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934099AbaJ3ORM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:17:12 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:50741 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934023AbaJ3ORL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:17:11 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: [PATCH 1/3] of/irq: Export of_irq_get()
-Date: Thu, 30 Oct 2014 16:17:19 +0200
-Message-ID: <2139081.L8ZrMAojpq@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20141030141644.GE23852@katana>
-References: <1414677578-27412-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1414677578-27412-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <20141030141644.GE23852@katana>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S934172AbaJ3ORv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:17:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53723 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751127AbaJ3ORu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:17:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,286,1413270000"; 
+   d="scan'208";a="628327921"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        juri.lelli@gmail.com, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v2 3/6] sched/dl: add deadline rq status print
+Date: Thu, 30 Oct 2014 22:17:00 +0800
+Message-Id: <1414678623-13576-3-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1414678623-13576-1-git-send-email-wanpeng.li@linux.intel.com>
+References: <1414678623-13576-1-git-send-email-wanpeng.li@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 October 2014 15:16:44 Wolfram Sang wrote:
-> On Thu, Oct 30, 2014 at 03:59:36PM +0200, Laurent Pinchart wrote:
-> > The function will be used by the I2C core which can be compiled as a
-> > module.
-> > 
-> > Signed-off-by: Laurent Pinchart
-> > <laurent.pinchart+renesas@ideasonboard.com>
-> 
-> I think it makes sense if I take this via I2C to get the dependencies
-> for the later patches right?
+This patch add deadline rq status print.
 
-It would be easier, yes.
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ kernel/sched/deadline.c | 9 +++++++++
+ kernel/sched/debug.c    | 7 +++++++
+ kernel/sched/sched.h    | 1 +
+ 3 files changed, 17 insertions(+)
 
-> > ---
-> > 
-> >  drivers/of/irq.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> > index 1471e0a223a5..0d7765807f49 100644
-> > --- a/drivers/of/irq.c
-> > +++ b/drivers/of/irq.c
-> > @@ -405,6 +405,7 @@ int of_irq_get(struct device_node *dev, int index)
-> > 
-> >  	return irq_create_of_mapping(&oirq);
-> >  
-> >  }
-> > 
-> > +EXPORT_SYMBOL_GPL(of_irq_get);
-> > 
-> >  /**
-> >  
-> >   * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq
-> >   number
-
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index db6ad38..4c5fdf5 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1727,3 +1727,12 @@ const struct sched_class dl_sched_class = {
+ 	.switched_from		= switched_from_dl,
+ 	.switched_to		= switched_to_dl,
+ };
++
++#ifdef CONFIG_SCHED_DEBUG
++extern void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq);
++
++void print_dl_stats(struct seq_file *m, int cpu)
++{
++	print_dl_rq(m, cpu, &cpu_rq(cpu)->dl);
++}
++#endif /* CONFIG_SCHED_DEBUG */
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index ce33780..eeb6046 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -261,6 +261,12 @@ void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
+ #undef P
+ }
+ 
++void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq)
++{
++	SEQ_printf(m, "\ndl_rq[%d]:\n", cpu);
++	SEQ_printf(m, "  .%-30s: %ld\n", "dl_nr_running", dl_rq->dl_nr_running);
++}
++
+ extern __read_mostly int sched_clock_running;
+ 
+ static void print_cpu(struct seq_file *m, int cpu)
+@@ -329,6 +335,7 @@ do {									\
+ 	spin_lock_irqsave(&sched_debug_lock, flags);
+ 	print_cfs_stats(m, cpu);
+ 	print_rt_stats(m, cpu);
++	print_dl_stats(m, cpu);
+ 
+ 	print_rq(m, rq, cpu);
+ 	spin_unlock_irqrestore(&sched_debug_lock, flags);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index ec3917c..3c6cac6 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1532,6 +1532,7 @@ extern struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq);
+ extern struct sched_entity *__pick_last_entity(struct cfs_rq *cfs_rq);
+ extern void print_cfs_stats(struct seq_file *m, int cpu);
+ extern void print_rt_stats(struct seq_file *m, int cpu);
++extern void print_dl_stats(struct seq_file *m, int cpu);
+ 
+ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
 -- 
-Regards,
-
-Laurent Pinchart
+1.9.1
 
