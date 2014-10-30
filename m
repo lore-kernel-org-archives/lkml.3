@@ -1,297 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435AbaJ3EDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 00:03:43 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:37972 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752060AbaJ3EDm (ORCPT
+	id S1752666AbaJ3EFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 00:05:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56374 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaJ3EFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 00:03:42 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <ulf.hansson@linaro.org>, <chris@printf.net>
-CC: <khilman@kernel.org>, <nicolas.ferre@atmel.com>,
-        <ludovic.desroches@atmel.com>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <wenyou.yang@atmel.com>
-Subject: [PATCH v2] mmc: atmel-mci: add runtime pm support
-Date: Thu, 30 Oct 2014 12:00:41 +0800
-Message-ID: <1414641641-32691-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 30 Oct 2014 00:05:42 -0400
+Message-ID: <5451B914.6020300@wwwdotorg.org>
+Date: Wed, 29 Oct 2014 22:05:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sascha Hauer <s.hauer@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [RFC] pinctrl: Provide a generic device tree binding for per-pin
+ pin controllers
+References: <20141023132305.GG14443@pengutronix.de>
+In-Reply-To: <20141023132305.GG14443@pengutronix.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add runtime pm support to atmel mci controller.
-Use runtime pm APIs to enable/disable atmel mci's clock.
-Use runtime autosuspend APIs to enable auto suspend delay.
+On 10/23/2014 07:23 AM, Sascha Hauer wrote:
+> Most iomux controllers allow a configuration per pin. These currently
+> have no common device tree binding. There are many different SoC
+> specific bindings for this class of iomux controllers. Some controllers
+> artificially group pins together where in hardware no groups exist (for
+> example lantiq). Other controllers just put each pin into a separate
+> group which explodes to many many strings to parse (Tegra30).
+> 
+> 
+> A pin controller has n pins, each muxable to m different positions.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
-Changes v1 -> v2:
-* Adjust the APIs and invoking sequence to avoid clock unbalance issue during ->probe.
-* Fix miss to invoke clk_disable_unprepare() in the error handling in ->probe.
-* Remove atmci_suspend/resume and use pm_runtime_force_suspend/resume() to simplify code.
+I assume that sentence is meant to say something more specific:
 
- drivers/mmc/host/atmel-mci.c |   90 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 67 insertions(+), 23 deletions(-)
+This binding is intended to apply to pin controllers where each pin has
+an independently selectable mux function.
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index 0b9ddf8..f8f2bbe 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -37,6 +37,8 @@
- 
- #include <linux/atmel-mci.h>
- #include <linux/atmel_pdc.h>
-+#include <linux/pm.h>
-+#include <linux/pm_runtime.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/io.h>
-@@ -44,6 +46,8 @@
- 
- #include "atmel-mci-regs.h"
- 
-+#define AUTOSUSPEND_DELAY	50
-+
- #define ATMCI_DATA_ERROR_FLAGS	(ATMCI_DCRCE | ATMCI_DTOE | ATMCI_OVRE | ATMCI_UNRE)
- #define ATMCI_DMA_THRESHOLD	16
- 
-@@ -386,20 +390,19 @@ static int atmci_regs_show(struct seq_file *s, void *v)
- 	if (!buf)
- 		return -ENOMEM;
- 
-+	pm_runtime_get_sync(&host->pdev->dev);
-+
- 	/*
- 	 * Grab a more or less consistent snapshot. Note that we're
- 	 * not disabling interrupts, so IMR and SR may not be
- 	 * consistent.
- 	 */
--	ret = clk_prepare_enable(host->mck);
--	if (ret)
--		goto out;
--
- 	spin_lock_bh(&host->lock);
- 	memcpy_fromio(buf, host->regs, ATMCI_REGS_SIZE);
- 	spin_unlock_bh(&host->lock);
- 
--	clk_disable_unprepare(host->mck);
-+	pm_runtime_mark_last_busy(&host->pdev->dev);
-+	pm_runtime_put_autosuspend(&host->pdev->dev);
- 
- 	seq_printf(s, "MR:\t0x%08x%s%s ",
- 			buf[ATMCI_MR / 4],
-@@ -449,7 +452,6 @@ static int atmci_regs_show(struct seq_file *s, void *v)
- 				val & ATMCI_CFG_LSYNC ? " LSYNC" : "");
- 	}
- 
--out:
- 	kfree(buf);
- 
- 	return ret;
-@@ -1252,6 +1254,8 @@ static void atmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 	WARN_ON(slot->mrq);
- 	dev_dbg(&host->pdev->dev, "MRQ: cmd %u\n", mrq->cmd->opcode);
- 
-+	pm_runtime_get_sync(&host->pdev->dev);
-+
- 	/*
- 	 * We may "know" the card is gone even though there's still an
- 	 * electrical connection. If so, we really need to communicate
-@@ -1281,7 +1285,8 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 	struct atmel_mci_slot	*slot = mmc_priv(mmc);
- 	struct atmel_mci	*host = slot->host;
- 	unsigned int		i;
--	bool			unprepare_clk;
-+
-+	pm_runtime_get_sync(&host->pdev->dev);
- 
- 	slot->sdc_reg &= ~ATMCI_SDCBUS_MASK;
- 	switch (ios->bus_width) {
-@@ -1297,13 +1302,8 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 		unsigned int clock_min = ~0U;
- 		u32 clkdiv;
- 
--		clk_prepare(host->mck);
--		unprepare_clk = true;
--
- 		spin_lock_bh(&host->lock);
- 		if (!host->mode_reg) {
--			clk_enable(host->mck);
--			unprepare_clk = false;
- 			atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
- 			atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIEN);
- 			if (host->caps.has_cfg_reg)
-@@ -1371,8 +1371,6 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 	} else {
- 		bool any_slot_active = false;
- 
--		unprepare_clk = false;
--
- 		spin_lock_bh(&host->lock);
- 		slot->clock = 0;
- 		for (i = 0; i < ATMCI_MAX_NR_SLOTS; i++) {
-@@ -1385,17 +1383,12 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 			atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
- 			if (host->mode_reg) {
- 				atmci_readl(host, ATMCI_MR);
--				clk_disable(host->mck);
--				unprepare_clk = true;
- 			}
- 			host->mode_reg = 0;
- 		}
- 		spin_unlock_bh(&host->lock);
- 	}
- 
--	if (unprepare_clk)
--		clk_unprepare(host->mck);
--
- 	switch (ios->power_mode) {
- 	case MMC_POWER_OFF:
- 		if (!IS_ERR(mmc->supply.vmmc))
-@@ -1421,6 +1414,9 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 		 */
- 		break;
- 	}
-+
-+	pm_runtime_mark_last_busy(&host->pdev->dev);
-+	pm_runtime_put_autosuspend(&host->pdev->dev);
- }
- 
- static int atmci_get_ro(struct mmc_host *mmc)
-@@ -1512,6 +1508,9 @@ static void atmci_request_end(struct atmel_mci *host, struct mmc_request *mrq)
- 	spin_unlock(&host->lock);
- 	mmc_request_done(prev_mmc, mrq);
- 	spin_lock(&host->lock);
-+
-+	pm_runtime_mark_last_busy(&host->pdev->dev);
-+	pm_runtime_put_autosuspend(&host->pdev->dev);
- }
- 
- static void atmci_command_complete(struct atmel_mci *host,
-@@ -2417,15 +2416,16 @@ static int __init atmci_probe(struct platform_device *pdev)
- 
- 	atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
- 	host->bus_hz = clk_get_rate(host->mck);
--	clk_disable_unprepare(host->mck);
- 
- 	host->mapbase = regs->start;
- 
- 	tasklet_init(&host->tasklet, atmci_tasklet_func, (unsigned long)host);
- 
- 	ret = request_irq(irq, atmci_interrupt, 0, dev_name(&pdev->dev), host);
--	if (ret)
-+	if (ret) {
-+		clk_disable_unprepare(host->mck);
- 		return ret;
-+	}
- 
- 	/* Get MCI capabilities and set operations according to it */
- 	atmci_get_cap(host);
-@@ -2449,6 +2449,12 @@ static int __init atmci_probe(struct platform_device *pdev)
- 
- 	setup_timer(&host->timer, atmci_timeout_timer, (unsigned long)host);
- 
-+	pm_runtime_get_noresume(&pdev->dev);
-+	pm_runtime_set_active(&pdev->dev);
-+	pm_runtime_set_autosuspend_delay(&pdev->dev, AUTOSUSPEND_DELAY);
-+	pm_runtime_use_autosuspend(&pdev->dev);
-+	pm_runtime_enable(&pdev->dev);
-+
- 	/* We need at least one slot to succeed */
- 	nr_slots = 0;
- 	ret = -ENODEV;
-@@ -2491,6 +2497,9 @@ static int __init atmci_probe(struct platform_device *pdev)
- 			"Atmel MCI controller at 0x%08lx irq %d, %u slots\n",
- 			host->mapbase, irq, nr_slots);
- 
-+	pm_runtime_mark_last_busy(&host->pdev->dev);
-+	pm_runtime_put_autosuspend(&pdev->dev);
-+
- 	return 0;
- 
- err_dma_alloc:
-@@ -2499,6 +2508,11 @@ err_dma_alloc:
- 			atmci_cleanup_slot(host->slot[i], i);
- 	}
- err_init_slot:
-+	clk_disable_unprepare(host->mck);
-+
-+	pm_runtime_disable(&pdev->dev);
-+	pm_runtime_put_noidle(&pdev->dev);
-+
- 	del_timer_sync(&host->timer);
- 	if (host->dma.chan)
- 		dma_release_channel(host->dma.chan);
-@@ -2511,6 +2525,8 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 	struct atmel_mci	*host = platform_get_drvdata(pdev);
- 	unsigned int		i;
- 
-+	pm_runtime_get_sync(&pdev->dev);
-+
- 	if (host->buffer)
- 		dma_free_coherent(&pdev->dev, host->buf_size,
- 		                  host->buffer, host->buf_phys_addr);
-@@ -2520,11 +2536,9 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 			atmci_cleanup_slot(host->slot[i], i);
- 	}
- 
--	clk_prepare_enable(host->mck);
- 	atmci_writel(host, ATMCI_IDR, ~0UL);
- 	atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
- 	atmci_readl(host, ATMCI_SR);
--	clk_disable_unprepare(host->mck);
- 
- 	del_timer_sync(&host->timer);
- 	if (host->dma.chan)
-@@ -2532,14 +2546,44 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 
- 	free_irq(platform_get_irq(pdev, 0), host);
- 
-+	clk_disable_unprepare(host->mck);
-+
-+	pm_runtime_disable(&pdev->dev);
-+	pm_runtime_put_noidle(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int atmci_runtime_suspend(struct device *dev)
-+{
-+	struct atmel_mci *host = dev_get_drvdata(dev);
-+
-+	clk_disable_unprepare(host->mck);
-+
- 	return 0;
- }
- 
-+static int atmci_runtime_resume(struct device *dev)
-+{
-+	struct atmel_mci *host = dev_get_drvdata(dev);
-+
-+	return clk_prepare_enable(host->mck);
-+}
-+
-+static const struct dev_pm_ops atmci_dev_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
-+				pm_runtime_force_resume)
-+	SET_PM_RUNTIME_PM_OPS(atmci_runtime_suspend, atmci_runtime_resume, NULL)
-+};
-+#endif
-+
- static struct platform_driver atmci_driver = {
- 	.remove		= __exit_p(atmci_remove),
- 	.driver		= {
- 		.name		= "atmel_mci",
- 		.of_match_table	= of_match_ptr(atmci_dt_ids),
-+		.pm		= &atmci_dev_pm_ops,
- 	},
- };
- 
--- 
-1.7.9.5
+"A pin controller ..." sounds like a general statement that is intended
+to apply to any pin controller. If that were intended, the statement you
+made certainly wouldn't be true.
 
+> There exists a logical numbering for all pins, for most SoCs this will
+> be defined by the register ordering so that the pin number can directly
+> be translated to a register offset without the need of tables in the
+> driver. The register usually takes m different numbers to specify the
+> function the pin should have. Both the pin and its function can be
+> described as a single 32bit number:
+> 
+> #define PINMUX_PIN(no, fn) (((no) & 0xffffff) << 8) | (fn) & 0xff)
+> 
+> This allows to put multiple pins into a single device tree property
+> which is very efficiently parsable by the driver (or the pinmux core).
+> We suggest to name this property 'pins' and to put it next to the
+> generic pinconf binding.  This allows to describe multiple pins with the
+> same pinconf settings in a single device tree node. Multiple of these
+> nodes can be grouped under a pinctrl state node. This allows to put pins
+> with different pinconf settings to a single state.
+> 
+> Example:
+> 
+> 	uart2 {
+> 		uart2_default_mode: uart2_default {
+> 			pins1 {
+> 				pins = <PINMUX_PIN(127, 3), PINMUX_PIN(128, 3)>;
+
+Within each of the nodes, the binding for pinmux is defined
+independently by each pin controller. I don't have any /strong/
+objection to any particular pin controller using this binding, or even
+it being re-used across many similar pin controllers, or even being
+the/a default binding style for new pin controllers.
+
+I'm not totally sure whether blending the pin ID and mux function ID
+into the same value is a good idea. That said, it does have advantages
+as you state, and shouldn't cause any significant issues. In any case
+where it would be a bad idea, the binding for the pin controller in
+question can still choose to use some more appropriate binding, so
+allowing this binding for some controllers won't force issues onto other
+controllers. So, it seems fine.
+
+Note however that we can't change existing bindings. Well, I suppose
+certain bindings could be enhanced to support either a string-based or
+an integer-base binding, but I don't think that'd be a good idea.
