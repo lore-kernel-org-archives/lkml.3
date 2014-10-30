@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161502AbaJ3Wkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 18:40:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46204 "EHLO mga01.intel.com"
+	id S1161514AbaJ3Wl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 18:41:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40896 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161393AbaJ3Wj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 18:39:59 -0400
+	id S1161419AbaJ3Wjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 18:39:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,289,1413270000"; 
-   d="scan'208";a="623777863"
+   d="scan'208";a="623777793"
 From: Wanpeng Li <wanpeng.li@linux.intel.com>
 To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
 Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
         juri.lelli@gmail.com, linux-kernel@vger.kernel.org,
         Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v3 6/6] sched/deadline: don't check CONFIG_SMP in switched_from_dl
-Date: Fri, 31 Oct 2014 06:39:36 +0800
-Message-Id: <1414708776-124078-6-git-send-email-wanpeng.li@linux.intel.com>
+Subject: [PATCH v3 3/6] sched/deadline: add deadline rq status print
+Date: Fri, 31 Oct 2014 06:39:33 +0800
+Message-Id: <1414708776-124078-3-git-send-email-wanpeng.li@linux.intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1414708776-124078-1-git-send-email-wanpeng.li@linux.intel.com>
 References: <1414708776-124078-1-git-send-email-wanpeng.li@linux.intel.com>
@@ -24,34 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are both UP and SMP version of pull_dl_task(), so don't need 
-to check CONFIG_SMP in switched_from_dl();
+This patch add deadline rq status print.
 
 Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 ---
- kernel/sched/deadline.c | 2 --
- 1 file changed, 2 deletions(-)
+ kernel/sched/deadline.c | 9 +++++++++
+ kernel/sched/debug.c    | 7 +++++++
+ kernel/sched/sched.h    | 1 +
+ 3 files changed, 17 insertions(+)
 
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 2b23d50..c262eeb 100644
+index db6ad38..4c5fdf5 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
-@@ -1617,7 +1617,6 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
- 
- 	__dl_clear_params(p);
- 
--#ifdef CONFIG_SMP
- 	/*
- 	 * Since this might be the only -deadline task on the rq,
- 	 * this is the right place to try to pull some other one
-@@ -1628,7 +1627,6 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
- 
- 	if (pull_dl_task(rq))
- 		resched_curr(rq);
--#endif
+@@ -1727,3 +1727,12 @@ const struct sched_class dl_sched_class = {
+ 	.switched_from		= switched_from_dl,
+ 	.switched_to		= switched_to_dl,
+ };
++
++#ifdef CONFIG_SCHED_DEBUG
++extern void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq);
++
++void print_dl_stats(struct seq_file *m, int cpu)
++{
++	print_dl_rq(m, cpu, &cpu_rq(cpu)->dl);
++}
++#endif /* CONFIG_SCHED_DEBUG */
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index ce33780..eeb6046 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -261,6 +261,12 @@ void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
+ #undef P
  }
  
- /*
++void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq)
++{
++	SEQ_printf(m, "\ndl_rq[%d]:\n", cpu);
++	SEQ_printf(m, "  .%-30s: %ld\n", "dl_nr_running", dl_rq->dl_nr_running);
++}
++
+ extern __read_mostly int sched_clock_running;
+ 
+ static void print_cpu(struct seq_file *m, int cpu)
+@@ -329,6 +335,7 @@ do {									\
+ 	spin_lock_irqsave(&sched_debug_lock, flags);
+ 	print_cfs_stats(m, cpu);
+ 	print_rt_stats(m, cpu);
++	print_dl_stats(m, cpu);
+ 
+ 	print_rq(m, rq, cpu);
+ 	spin_unlock_irqrestore(&sched_debug_lock, flags);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index ec3917c..3c6cac6 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1532,6 +1532,7 @@ extern struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq);
+ extern struct sched_entity *__pick_last_entity(struct cfs_rq *cfs_rq);
+ extern void print_cfs_stats(struct seq_file *m, int cpu);
+ extern void print_rt_stats(struct seq_file *m, int cpu);
++extern void print_dl_stats(struct seq_file *m, int cpu);
+ 
+ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
 -- 
 1.9.1
 
