@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645AbaJ3AK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 20:10:59 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:6454 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932318AbaJ3AK6 (ORCPT
+	id S1756920AbaJ3AN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 20:13:58 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:42153 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755207AbaJ3AN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 20:10:58 -0400
-Date: Wed, 29 Oct 2014 20:10:48 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFA][PATCH 1/8] seq_file: Rename seq_overflow() to
- seq_has_overflowed() and make public
-Message-ID: <20141029201048.698eb701@gandalf.local.home>
-In-Reply-To: <1414626810.2542.5.camel@perches.com>
-References: <20141029215602.535533597@goodmis.org>
-	<20141029220107.333126455@goodmis.org>
-	<1414620516.2542.3.camel@perches.com>
-	<20141029194215.44e86ffb@gandalf.local.home>
-	<1414626810.2542.5.camel@perches.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 29 Oct 2014 20:13:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CALCETrWqbpxk83L0k0_78JZCO+ntZhx_hHMcRu=vxs6VE2f5JQ@mail.gmail.com>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+ <1414620056-6675-7-git-send-email-gregkh@linuxfoundation.org> <CALCETrWqbpxk83L0k0_78JZCO+ntZhx_hHMcRu=vxs6VE2f5JQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 29 Oct 2014 17:13:34 -0700
+Message-ID: <CALCETrVkuKxMMEw3HBEOZoFUuw8PndXtB13+bLWmcp_E34SaFw@mail.gmail.com>
+Subject: Re: kdbus: add code to gather metadata
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
+        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Djalal Harouni <tixxdz@opendz.org>,
+        Simon McVittie <simon.mcvittie@collabora.co.uk>, daniel@zonque.org,
+        alban.crequy@collabora.co.uk,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tom Gundersen <teg@jklm.no>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014 16:53:30 -0700
-Joe Perches <joe@perches.com> wrote:
+On Wed, Oct 29, 2014 at 3:33 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Oct 29, 2014 at 3:00 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> From: Daniel Mack <daniel@zonque.org>
+>>
+>> A connection chooses which metadata it wants to have attached to each
+>> message it receives with kdbus_cmd_hello.attach_flags. The metadata
+>> will be attached as items to the messages. All metadata refers to
+>> information about the sending task at sending time, unless otherwise
+>> stated. Also, the metadata is copied, not referenced, so even if the
+>> sending task doesn't exist anymore at the time the message is received,
+>> the information is still preserved.
+>>
 
-> On Wed, 2014-10-29 at 19:42 -0400, Steven Rostedt wrote:
-> > On Wed, 29 Oct 2014 15:08:36 -0700 Joe Perches <joe@perches.com> wrote:
-> > > On Wed, 2014-10-29 at 17:56 -0400, Steven Rostedt wrote:
-> > > > +A true return from seq_has_overflowed means that the seq_file buffer is full
-> > > > +and further output will be discarded.
-> > > Perhaps the description is a bit unclear here.
-> > > Doesn't a return of true to seq_has_overflowed mean that
-> > > more characters have already been written than the buffer
-> > > can accept?
-> > Actually, right now the comment is correct and the name is misleading.
-> > But I have a patch that will make the comment incorrect (and will be
-> > fixed) and the name correct.
-> > 
-> > But since seq_has_overflowed() is to be used throughout the kernel, I
-> > didn't want to have to go do patches all over again for a temporary
-> > misnomer.
-> 
-> I think it'd be better if the first submission
-> of the function has the correct operation for
-> the name.
+Also, in general, the comments seem to talk about capturing metadata
+at the time that a connection is opened, but the actual code seems to
+capture metadata all over the place.  I think it needs to be very
+clear, both in the code and the interface, when metadata is captured.
 
-I'm hoping that both of these will make it into 3.19, so it really
-doesn't matter the order. I'm working on this patch first, because, as
-you said earlier, it is important to get the call to
-seq_has_overflowed() out there.
+And the ns_eq stuff is too far buried (and not even contained in this
+patch!) to be easily verified as being correct, whatever correct means
+in that context.
 
-> 
-> > In other words, I'm going to change the function to really return only
-> > if it did overflow and not just be full. But that's another patch set
-> > to come.
-> 
-> Why would it be a set and not a single patch?
-> 
-
-That particular change is a single patch. But it is in with other
-patches I'm doing, so I called it a patch set.
-
--- Steve
-
+--Andy
