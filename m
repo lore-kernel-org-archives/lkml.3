@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272AbaJ3OI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:08:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32869 "EHLO mx1.redhat.com"
+	id S1760355AbaJ3OJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:09:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45916 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760163AbaJ3OIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:08:54 -0400
-From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH 2/3] KVM: x86: detect LVTT changes under APICv
-Date: Thu, 30 Oct 2014 15:06:46 +0100
-Message-Id: <1414678007-9377-3-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1414678007-9377-1-git-send-email-rkrcmar@redhat.com>
-References: <1414678007-9377-1-git-send-email-rkrcmar@redhat.com>
+	id S1760326AbaJ3OJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:09:09 -0400
+Date: Thu, 30 Oct 2014 09:08:32 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
+        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4 01/20] usb: dwc3: enable hibernation if to be supported
+Message-ID: <20141030140832.GH6482@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414663725-2195-1-git-send-email-ray.huang@amd.com>
+ <1414663725-2195-2-git-send-email-ray.huang@amd.com>
+ <4077930.b7qzaS4pBb@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X1xGqyAVbSpAWs5A"
+Content-Disposition: inline
+In-Reply-To: <4077930.b7qzaS4pBb@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-APICv traps register writes, so we can't retrieve previous value and
-omit timer cancelation when mode changes.
+--X1xGqyAVbSpAWs5A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-timer_mode_mask shouldn't be changing as it depends on cpuid.
+On Thu, Oct 30, 2014 at 12:35:56PM +0100, Arnd Bergmann wrote:
+> On Thursday 30 October 2014 18:08:26 Huang Rui wrote:
+> > It enables hibernation if the function is set in coreConsultant.
+> >=20
+> > Suggested-by: Felipe Balbi <balbi@ti.com>
+> > Signed-off-by: Huang Rui <ray.huang@amd.com>
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> >=20
+>=20
+> Something went wrong with the Signed-off-by lines here.=20
+> You should never add someone else's Signed-off-by below yours.
+>=20
+> I took a brief look at the entire series and the patches all look good
+> to me, but you have made the same mistake with the Signed-off-by
+> multiple times.
 
-Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
----
-#define assign(a, b) (a == b ? false : (a = b, true))
+there are no mistakes, I just asked Huang to resend what I had on my
+testing/next because it had not been sent to devicetree mailing list.
 
- arch/x86/kvm/lapic.c | 12 ++++++++----
- arch/x86/kvm/lapic.h |  1 +
- 2 files changed, 9 insertions(+), 4 deletions(-)
+--=20
+balbi
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index f538b14..d3a3a1c 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1205,17 +1205,20 @@ static int apic_reg_write(struct kvm_lapic *apic, u32 reg, u32 val)
- 
- 		break;
- 
--	case APIC_LVTT:
--		if ((kvm_apic_get_reg(apic, APIC_LVTT) &
--		    apic->lapic_timer.timer_mode_mask) !=
--		   (val & apic->lapic_timer.timer_mode_mask))
-+	case APIC_LVTT: {
-+		u32 timer_mode = val & apic->lapic_timer.timer_mode_mask;
-+
-+		if (apic->lapic_timer.timer_mode != timer_mode) {
-+			apic->lapic_timer.timer_mode = timer_mode;
- 			hrtimer_cancel(&apic->lapic_timer.timer);
-+		}
- 
- 		if (!kvm_apic_sw_enabled(apic))
- 			val |= APIC_LVT_MASKED;
- 		val &= (apic_lvt_mask[0] | apic->lapic_timer.timer_mode_mask);
- 		apic_set_reg(apic, APIC_LVTT, val);
- 		break;
-+	}
- 
- 	case APIC_TMICT:
- 		if (apic_lvtt_tscdeadline(apic))
-@@ -1449,6 +1452,7 @@ void kvm_lapic_reset(struct kvm_vcpu *vcpu)
- 
- 	for (i = 0; i < APIC_LVT_NUM; i++)
- 		apic_set_reg(apic, APIC_LVTT + 0x10 * i, APIC_LVT_MASKED);
-+	apic->lapic_timer.timer_mode = 0;
- 	apic_set_reg(apic, APIC_LVT0,
- 		     SET_APIC_DELIVERY_MODE(0, APIC_MODE_EXTINT));
- 
-diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
-index 5fcc3d3..755a954 100644
---- a/arch/x86/kvm/lapic.h
-+++ b/arch/x86/kvm/lapic.h
-@@ -11,6 +11,7 @@
- struct kvm_timer {
- 	struct hrtimer timer;
- 	s64 period; 				/* unit: ns */
-+	u32 timer_mode;
- 	u32 timer_mode_mask;
- 	u64 tscdeadline;
- 	atomic_t pending;			/* accumulated triggered timers */
--- 
-2.1.0
+--X1xGqyAVbSpAWs5A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUUkZgAAoJEIaOsuA1yqREgMMQAKMXQfr0PWErwr7WmC0dOSOi
+9UauOEaMI/MzTxBDSVqsjdKjmtyk41QUFucSWxaRcQELyCmgLef5//wj0zS0ucqP
+X0Bu7rL/NAuQSRfXq+ZYfBjjWDtCdTMijlELjoMKhQqyaydZkHFuiHsModh3XjJb
+GJ65WigMBLdKXBOVZp9si1FpwkcdOPFnMrPwyiUrVEoDlG1yTyiXUl+QfZFagfjw
+a/osgH0HJ4lgq53D19VPTj5Ybz7Cxv0ba0crdIcebKFN9yoRu8jSLf/u8y9uRSnk
+GdlIYWOivrIx/HtT64B5mjWhXtaS+9eQTKs4Xm9A1Rj4ZvvgTknwtYlPp8FKzXqs
+gjaaMTKESVRn3V5o7pgtj2jg7AORvQs0eE8gDBMqoMAxyHjn7Sf3xHNIum+Kscau
+fvV+XBK123eX64P7Rzky60fZZXwtp7MTd0m1eAVUsGbz3JuCzGvJOe6z1+EVc/n4
+hSPf6BQQDxzwkSrZLXz6Ey//fAqgNoLzQ6smYQBNYIoqfGLgmDW3a8PfkERda/qJ
+bc9dvjA7iFNB/xMUx3/fTRlq8cMMaFE50s0tkh17vA7K9w2KFQP8+a8mGwlpoJ4I
+x158x/QWVYNESdrrnA4P08T5fWo31BDTI/jwDmyNeZtAi+Dg99Zm97ViwidIBsZK
+J6sE8O4FvE4PF2ZR69EY
+=hiSZ
+-----END PGP SIGNATURE-----
+
+--X1xGqyAVbSpAWs5A--
