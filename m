@@ -1,193 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774AbaJ3HnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 03:43:06 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:46373 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752188AbaJ3HnD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 03:43:03 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Subject: [PATCH v2] mmc: davinci: Fix and simplify probe failure path
-Date: Thu, 30 Oct 2014 13:16:33 +0530
-Message-Id: <1414655193-16952-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758156AbaJ3HoR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 03:44:17 -0400
+Received: from svenfoo.org ([82.94.215.22]:45899 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752340AbaJ3HoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 03:44:15 -0400
+Message-ID: <5451EC4C.3010205@zonque.org>
+Date: Thu, 30 Oct 2014 08:44:12 +0100
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
+        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Djalal Harouni <tixxdz@opendz.org>, simon.mcvittie@collabora.co.uk,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        Tom Gundersen <teg@jklm.no>
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <CALCETrUBegZ4F1sKq3LxUgANX3=syYOrqOp9=F--g9pkVHHgUA@mail.gmail.com> <20141029222531.GA8129@kroah.com> <CALCETrX6vf7cKy=XDhDtn9hn1W930MRxBa=pk93RnyuZ-EaNyw@mail.gmail.com>
+In-Reply-To: <CALCETrX6vf7cKy=XDhDtn9hn1W930MRxBa=pk93RnyuZ-EaNyw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sequence of resource release in probe failure path in this
-driver was wrong and needed fixes to cleanly unload the driver.
-This changes does the same by switching to managed resources and
-fixes return path to release resource in proper sequence.
+On 10/29/2014 11:28 PM, Andy Lutomirski wrote:
+> On Wed, Oct 29, 2014 at 3:25 PM, Greg Kroah-Hartman
 
-Cc: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
-Changes since v1:
-- Dropped IS_ERR check on devm_ioremap() return.
-- Fixed sequence on mmc_remove_host in fail as well as in remove function
+>> You do have to opt-in for this information at time of capture, so
+>> I don't understand the issue here.  This is the same type of thing
+>> that dbus does today, and I don't see the information leaks
+>> happening there, do you?
+> 
+> The docs suggest that the *receiver* opts in.
 
- drivers/mmc/host/davinci_mmc.c |   91 +++++++++++++++-------------------------
- 1 file changed, 33 insertions(+), 58 deletions(-)
+Yes, that's true.
 
-diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
-index 5d4c5e0..dc49b22 100644
---- a/drivers/mmc/host/davinci_mmc.c
-+++ b/drivers/mmc/host/davinci_mmc.c
-@@ -1242,22 +1242,20 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
--	ret = -ENODEV;
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	irq = platform_get_irq(pdev, 0);
- 	if (!r || irq == NO_IRQ)
--		goto out;
-+		return -ENODEV;
- 
--	ret = -EBUSY;
- 	mem_size = resource_size(r);
--	mem = request_mem_region(r->start, mem_size, pdev->name);
-+	mem = devm_request_mem_region(&pdev->dev, r->start, mem_size,
-+				      pdev->name);
- 	if (!mem)
--		goto out;
-+		return -EBUSY;
- 
--	ret = -ENOMEM;
- 	mmc = mmc_alloc_host(sizeof(struct mmc_davinci_host), &pdev->dev);
- 	if (!mmc)
--		goto out;
-+		return -ENOMEM;
- 
- 	host = mmc_priv(mmc);
- 	host->mmc = mmc;	/* Important */
-@@ -1275,15 +1273,16 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 		host->txdma = r->start;
- 
- 	host->mem_res = mem;
--	host->base = ioremap(mem->start, mem_size);
--	if (!host->base)
--		goto out;
-+	host->base = devm_ioremap(&pdev->dev, mem->start, mem_size);
-+	if (!host->base) {
-+		ret = -ENOMEM;
-+		goto err_ioremap;
-+	}
- 
--	ret = -ENXIO;
--	host->clk = clk_get(&pdev->dev, "MMCSDCLK");
-+	host->clk = devm_clk_get(&pdev->dev, "MMCSDCLK");
- 	if (IS_ERR(host->clk)) {
- 		ret = PTR_ERR(host->clk);
--		goto out;
-+		goto err_ioremap;
- 	}
- 	clk_enable(host->clk);
- 	host->mmc_input_clk = clk_get_rate(host->clk);
-@@ -1350,20 +1349,22 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 	ret = mmc_davinci_cpufreq_register(host);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to register cpufreq\n");
--		goto cpu_freq_fail;
-+		goto err_cpu_freq;
- 	}
- 
- 	ret = mmc_add_host(mmc);
- 	if (ret < 0)
--		goto out;
-+		goto err_mmc_add;
- 
--	ret = request_irq(irq, mmc_davinci_irq, 0, mmc_hostname(mmc), host);
-+	ret = devm_request_irq(&pdev->dev, irq, mmc_davinci_irq, 0,
-+			       mmc_hostname(mmc), host);
- 	if (ret)
--		goto out;
-+		goto err_request_irq;
- 
- 	if (host->sdio_irq >= 0) {
--		ret = request_irq(host->sdio_irq, mmc_davinci_sdio_irq, 0,
--				  mmc_hostname(mmc), host);
-+		ret = devm_request_irq(&pdev->dev, host->sdio_irq,
-+				       mmc_davinci_sdio_irq, 0,
-+				       mmc_hostname(mmc), host);
- 		if (!ret)
- 			mmc->caps |= MMC_CAP_SDIO_IRQ;
- 	}
-@@ -1376,27 +1377,15 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--out:
-+err_request_irq:
-+	mmc_remove_host(mmc);
-+err_mmc_add:
- 	mmc_davinci_cpufreq_deregister(host);
--cpu_freq_fail:
--	if (host) {
--		davinci_release_dma_channels(host);
--
--		if (host->clk) {
--			clk_disable(host->clk);
--			clk_put(host->clk);
--		}
--
--		if (host->base)
--			iounmap(host->base);
--	}
--
--	if (mmc)
--		mmc_free_host(mmc);
--
--	if (mem)
--		release_resource(mem);
--
-+err_cpu_freq:
-+	davinci_release_dma_channels(host);
-+	clk_disable(host->clk);
-+err_ioremap:
-+	mmc_free_host(mmc);
- 	dev_dbg(&pdev->dev, "probe err %d\n", ret);
- 
- 	return ret;
-@@ -1406,25 +1395,11 @@ static int __exit davinci_mmcsd_remove(struct platform_device *pdev)
- {
- 	struct mmc_davinci_host *host = platform_get_drvdata(pdev);
- 
--	if (host) {
--		mmc_davinci_cpufreq_deregister(host);
--
--		mmc_remove_host(host->mmc);
--		free_irq(host->mmc_irq, host);
--		if (host->mmc->caps & MMC_CAP_SDIO_IRQ)
--			free_irq(host->sdio_irq, host);
--
--		davinci_release_dma_channels(host);
--
--		clk_disable(host->clk);
--		clk_put(host->clk);
--
--		iounmap(host->base);
--
--		release_resource(host->mem_res);
--
--		mmc_free_host(host->mmc);
--	}
-+	mmc_remove_host(host->mmc);
-+	mmc_davinci_cpufreq_deregister(host);
-+	davinci_release_dma_channels(host);
-+	clk_disable(host->clk);
-+	mmc_free_host(host->mmc);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+> I don't think that current dbus has severe information leaks because 
+> the total scope for information transparently sent to dbus is rather 
+> small (struct ucred only, presumably).
 
+Which piece of credential information are you concerned about,
+particularly? I might miss something, but AFAICS, all of that
+information can be queried by a remote peer anyway, through /proc for
+instance. The reason why we (optionally) attach them to messages is that
+we want to let the other side know which information was authoritative,
+precisely at the time the message was sent. Current implementation can't
+do that in a race-free way.
+
+Also note that we currently drop all such metadata whenever a message
+crosses a PID or user namespace boundary. This is because we currently
+don't know yet which information we would want to transport in such
+cases, and how the translation in both directions would look like, from
+a semantic perspective. Hence, we decided to leave that for later.
+
+I'll go through your other replies during the day. Thanks for your input
+on that RFC, everyone.
+
+
+Daniel
