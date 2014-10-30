@@ -1,122 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760297AbaJ3OAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:00:23 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:43645 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760179AbaJ3OAU (ORCPT
+	id S1760315AbaJ3OAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:00:37 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57255 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760179AbaJ3OAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:00:20 -0400
+	Thu, 30 Oct 2014 10:00:33 -0400
+Date: Thu, 30 Oct 2014 08:57:40 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: <dinguyen@opensource.altera.com>
+CC: <paulz@synopsys.com>, <balbi@ti.com>, <dinh.linux@gmail.com>,
+        <swarren@wwwdotorg.org>, <b.zolnierkie@samsung.com>,
+        <matthijs@stdin.nl>, <r.baldyga@samsung.com>, <jg1.han@samsung.com>,
+        <sachin.kamat@linaro.org>, <ben-linux@fluff.org>,
+        <dianders@chromium.org>, <kever.yang@rock-chips.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv6 2/8] usb: dwc2: Move gadget probe function into
+ platform code
+Message-ID: <20141030135740.GC6482@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
+ <1414538749-14735-3-git-send-email-dinguyen@opensource.altera.com>
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqX9RUQHiF1U_CXiDVVLS-7aUOQdYn7EVNSMZNdbe38cTA@mail.gmail.com>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <alpine.LRH.2.00.1410292354480.11562@twin.jikos.cz> <20141029231106.GB16548@kroah.com>
- <alpine.LRH.2.00.1410300019570.11562@twin.jikos.cz> <20141029234001.GB16520@kroah.com>
- <CALCETrXY90YAXA9-GLc0EowmRCtWZzh8br8seiqrzOkmNn8_Hw@mail.gmail.com> <CAG-2HqX9RUQHiF1U_CXiDVVLS-7aUOQdYn7EVNSMZNdbe38cTA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 30 Oct 2014 06:59:57 -0700
-Message-ID: <CALCETrXv_CevG7166++ZHBok0ae7mNhF83VjrRVQ2AKF22Vf_g@mail.gmail.com>
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-To: Tom Gundersen <teg@jklm.no>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>,
-        Daniel Mack <daniel@zonque.org>,
-        "alban.crequy" <alban.crequy@collabora.co.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DIOMP1UsTsWJauNi"
+Content-Disposition: inline
+In-Reply-To: <1414538749-14735-3-git-send-email-dinguyen@opensource.altera.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 4:52 AM, Tom Gundersen <teg@jklm.no> wrote:
-> On 10/30/2014 12:55 AM, Andy Lutomirski wrote:> It's worth noting that:
->>
->>  - Proper credential passing could be added to UNIX sockets, and we
->> may want to do that anyway.  Also, the current kdbus semantics seem to
->> be "spew lots of credentials and other miscellaneous
->> potentially-sensitive and sometime spoofable information all over the
->> place", which isn't obviously an improvement.  (This is fixable, but
->> it will almost certainly not be compatible with current systemd kdbus
->> code if fixed.)
->
-> Care to elaborate on what you think is spoofable, and what needs to be fixed?
+--DIOMP1UsTsWJauNi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-cmd and comm are trivially replaceable by any sender.
+On Tue, Oct 28, 2014 at 06:25:43PM -0500, dinguyen@opensource.altera.com wr=
+ote:
+> From: Dinh Nguyen <dinguyen@opensource.altera.com>
+>=20
+> This patch will aggregate the probing of gadget/hcd driver into platform.=
+c.
+> The gadget probe funtion is converted into gadget_init that is now only
+> responsible for gadget only initialization. All the gadget resources is n=
+ow
 
->
-> Anyway, the idea is that by simply connecting to the bus and sending a
-> message to some service, you implicitly agree to passing some metadata
-> along to the service (and to a lesser extent to the bus). It's not
-> that this information is leaked, or that the peer could actively
-> access any of the sender's private memory.
+s/resources is/resources are
 
-To me, this smells like bad design.  By using kdbus, I implicitly
-agree to send everyone my command line?!?  If I'm in a cgroup that
-policy decrees should be privileged, then I should invoke that
-privilege by specifically asking, *at the time of capture*, to send
-that cgroup.  Otherwise it becomes unclear what things convey
-privilege when, and that will lead immediately to incomprehensible
-security models, and that will lead to exploits.
+> handled by platform.c
+>=20
+> Since the host workqueue will not get initialized if the driver is config=
+ured
+> for peripheral mode only. Thus we need to check for wq_otg before calling
+> queue_work().
 
-<snark>Sorry, but "implicitly agree" sounds a lot like using my
-esteemed cellphone carrier.  When I use it, some argue that I
-implicitly agree to have my identity prepended to all outgoing HTTP
-requests.  This is *not* a good thing.</snark>
+this period character in the middle of the sentence doesn't make sense,
+perhaps a comma is what you want ? The sentence can be improved too:
 
-> Also note that this kind of
-> metadata information is also available via /proc/$PID, and via
-> SCM_CREDENTIALS/SO_PEERCRED and the socket seclabel APIs.
+"Since the host workqueue will not get initialized if the drier is
+configured for peripheral mode only, we add a check for wq_otg before
+calling queue_work()."
 
-Not if you have a sensible LSM policy or if you use hidepid.  And,
-once you've fixed the namespacing issues, not if the sender and
-receiver are in different PID namespaces or if they don't have /proc
-mounted at all.
+> Also, we move spin_lock_init to common location for both host and gadget =
+that
+> is either in platform.c or pci.c.
+>=20
+> We also ove suspend/resume code to common platform code, and update it to=
+ use
+> the new PM API (struct dev_pm_ops).
 
->
-> When credential information is passed between processes of different
-> (PID) namespaces most of the attached metadata is suppressed.
+updating to dev_pm_ops should really be a separate patch.
 
-This is a bug.  It prevents users from usefully sandboxing themselves
-in a kdbus world.  If you create and enter a user namespace, then your
-outside identity (which should be unchanged) is suppressed.  (Note
-that anything that captures credentials other than at open time is
-also an issue for sandboxes in the other direction: it may interfere
-with selective privilege dropping.)
+--=20
+balbi
 
-> This
-> isn't too different from how SCM_CREDENTIALS works, which will zero
-> out the bits it cannot translate as well.
+--DIOMP1UsTsWJauNi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-SCM_CREDENTIALS translates the translatable parts.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> There are some major benefits regarding performance:
->
-> * fewer userspace context switches. For a full-duplex method call it's
-> down from five to two: instead of sender -> dbus daemon -> service ->
-> dbus daemon -> sender it's just sender -> service -> sender.
-> * fewer message copies in userspace. For a full-duplex method call
-> it's down from eight to two: instead of copying the method call data
-> into a socket, out of a socket, into a socket, out of a socket, and
-> the same for the method reply, we just copy one message directly to
-> the receiver, and the reply back.
-> * generally fewer syscalls involved. A synchronous method call is now
-> doable in a single ioctl on the sender side.
-> * memfds can be used for transport purposes of larger payload. This
-> way, we can cover substantial payload sizes instead of just small
-> control messages, with no extra copies. kdbus, in its transport layer,
-> makes sure only sealed memfds are passed in as payload, so the sender
-> cannot modify the contents while the receiver is already parsing it.
+iQIcBAEBAgAGBQJUUkPUAAoJEIaOsuA1yqREDggP/AxqV/35QDxjDPBltHctGKH4
+iMtQpej6aZrAnrMv+A9INoyXFQ8rY6YEN93/FcCFzuluLo+yHPRsjK6LohTNLb+N
+MABpinRaIOPPHaM1ExSwh25dD53Ea9qn7atrz+lNJ7Jw8pfV0jrV7ZAlnO83K3YP
+gVjaEC0WCEhBdrHrPzLYhqJLh8nazADHKtBqiaiaKfx+mQ4ugXHHASjop8rMsB++
+xXs05AtIatWahnXHZR9APZsfBxCauMzQ7EORoitVRtYb63QDQT354lKTPzee4n8D
+ZQL+1emcrSUe3Hd1G5thoUdGWbWyvUfxHUDi7+a9j4p+ZV7A2/2aD0M5MXUoyW2P
+b2U2U4MMjowr9LDChOs2dreiwj1rn9BeY4s/Y6m7eim5QnTI9W5IAPCosoJTcauv
+YM1tgTfahC8Z14H+zuWx+DEFo+ZkIoXynDCjD57d6q5ldQbzmUbkAQ4krsfENtgx
+733ao6qB0qdUCoIdULB4mOyKFgVuZVU0al2O4aDc8kWVZ1aoIE+ud8Pql+teNXr9
+5P7iwqyN+QjvYQUo6sLs6xq8QPbAon+nH6F3Agq+t+1KuVRaj6fqlSvzmKK3ioJl
+T93l32oljGjmCvtAVMZDKj37DtCI9CSeqahgwk6lwj158cOLlkxKyeWw7ThWN7zN
++e2KorlED5JlHdxy3evv
+=GLkx
+-----END PGP SIGNATURE-----
 
-There should be a number measured in, say, nanoseconds in here
-somewhere.  The actual extent of the speedup is unmeasurable here.
-Also, it's worth reading at least one of Linus' many rants about
-zero-copy.  It's not an automatic win.
-
---Andy
+--DIOMP1UsTsWJauNi--
