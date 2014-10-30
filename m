@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230AbaJ3HMZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 03:12:25 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60996 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758122AbaJ3HMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 03:12:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,284,1413270000"; 
-   d="scan'208";a="623291564"
-Message-ID: <1414653134.2396.67.camel@linux.intel.com>
-Subject: Re: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters'
- accessing
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Chen, Alvin" <alvin.chen@intel.com>
-Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+	id S1758250AbaJ3HOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 03:14:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49870 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbaJ3HO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 03:14:29 -0400
+Date: Thu, 30 Oct 2014 08:14:24 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vikas Shivappa <vikas.shivappa@intel.com>,
+        "Auld, Will" <will.auld@intel.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Tan, Raymond" <raymond.tan@intel.com>
-Date: Thu, 30 Oct 2014 09:12:14 +0200
-In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E9A92B3@SHSMSX101.ccr.corp.intel.com>
-References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
-	 <1412783423-9408-2-git-send-email-alvin.chen@intel.com>
-	 <4656BEB6164FC34F8171C6538F1A595B2E9A90E6@SHSMSX101.ccr.corp.intel.com>
-	 <5450CF36.7060105@nexus-software.ie>
-	 <4656BEB6164FC34F8171C6538F1A595B2E9A92B3@SHSMSX101.ccr.corp.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "Fleming, Matt" <matt.fleming@intel.com>
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141030071424.GE10476@twins.programming.kicks-ass.net>
+References: <20141024105306.GI12706@worktop.programming.kicks-ass.net>
+ <20141028232215.GO12020@console-pimps.org>
+ <20141029081640.GT3337@twins.programming.kicks-ass.net>
+ <20141029124834.GQ12020@console-pimps.org>
+ <20141029134526.GC3337@twins.programming.kicks-ass.net>
+ <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
+ <20141029172845.GP12706@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
+ <20141029182234.GA13393@mtj.dyndns.org>
+ <20141030070725.GG3337@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030070725.GG3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-30 at 01:02 +0000, Chen, Alvin wrote:
-> > >
-> > 
-> > Hi Alvin, Weike.
-> > 
-> > I'm not clear if these patches apply to the current tip-of-tree.
-> > 
-> > I thought the action required here, was for a resend of patches to ensure they
-> > applied to tip-of-tree ?
-> > 
-> As I said before, it is based on the slave-dma tree (git.infraded.org) for-linus branch, which will be reapplied on top of v3.19-rc1. 
-> 
-> That is to say these patches will be applied to slave-dma tree for-linus branch, and then the slave-dma tree for-linus branch will be applied to v3.19.
-> Andy, am I right?
+On Thu, Oct 30, 2014 at 08:07:25AM +0100, Peter Zijlstra wrote:
+> > and always allow execution of member tasks.
 
-All of those patches are in v3.18-rc1, so you may rebase on top of
-3.18-rcX safely I guess.
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+This too btw is not strictly speaking possible for all controllers. Most
+all sched controllers live by the grace of forcing tasks not to run at
+times (eg. the bandwidth controls), falsifying the 'always'.
