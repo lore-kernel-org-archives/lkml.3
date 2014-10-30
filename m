@@ -1,74 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117AbaJ3CDs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:03:48 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:42989 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757991AbaJ3CDr (ORCPT
+	id S1758142AbaJ3CER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:04:17 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:25898 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757991AbaJ3CEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:03:47 -0400
-X-IronPort-AV: E=Sophos;i="5.04,814,1406563200"; 
-   d="scan'208";a="42575558"
-Message-ID: <54519D35.3060708@cn.fujitsu.com>
-Date: Thu, 30 Oct 2014 10:06:45 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Wed, 29 Oct 2014 22:04:15 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Dan Streetman <ddstreet@ieee.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "nfont@linux.vnet.ibm.com" <nfont@linux.vnet.ibm.com>
+Date: Wed, 29 Oct 2014 19:03:20 -0700
+Subject: RE: [PATCH V2] Driver cpu: update online when cpu_up/down besides
+ sysfs
+Thread-Topic: [PATCH V2] Driver cpu: update online when cpu_up/down besides
+ sysfs
+Thread-Index: Ac/zwqUFLG6ZsBrrSwivv/loniIgLwAIqUvA
+Message-ID: <9034CBD80F070943B59700D7F8149ED9024ED2A331@SC-VEXCH4.marvell.com>
+References: <1414378748-8855-1-git-send-email-zhangwm@marvell.com>
+ <544EBB70.6020507@intel.com>
+ <CALZtONCkQVeau8JETKtxuQsoGnVymKPOgwvcidHH=EFVmhKc5g@mail.gmail.com>
+ <4115047.A3orYVLyA3@vostro.rjw.lan>
+ <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
+In-Reply-To: <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <pang.xunlei@zte.com.cn>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] idr: optimize ida_init() to avoid an extra memset
-References: <OF73B80F6F.959BED11-ON48257D80.00327936-48257D80.00341CEF@zte.com.cn> <20141029143838.GC25226@htj.dyndns.org>
-In-Reply-To: <20141029143838.GC25226@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-30_01:2014-10-29,2014-10-29,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410300021
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9U24MNM008300
 
-On 10/29/2014 10:38 PM, Tejun Heo wrote:
-> On Wed, Oct 29, 2014 at 05:26:34PM +0800, pang.xunlei@zte.com.cn wrote:
->> The memset in ida_init() already handles idr, so there's some
->> redundancy in the following idr_init().
->>
->> This patch removes the memset, and clears ida->free_bitmap instead.
->>
->> Signed-off-by: pang.xunlei <pang.xunlei@zte.com.cn>
->> ---
->>  lib/idr.c |    3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/lib/idr.c b/lib/idr.c
->> index e654aeb..bbe5779 100644
->> --- a/lib/idr.c
->> +++ b/lib/idr.c
->> @@ -1141,8 +1141,7 @@ EXPORT_SYMBOL(ida_simple_remove);
->>   */
->>  void ida_init(struct ida *ida)
->>  {
->> -   memset(ida, 0, sizeof(struct ida));
->>     idr_init(&ida->idr);
->> -
->> +   ida->free_bitmap = NULL;
+Dan,
+
+> -----Original Message-----
+> From: ddstreet@gmail.com [mailto:ddstreet@gmail.com] On Behalf Of Dan
+> Streetman
+> Sent: 2014å¹´10æœˆ30æ—¥ 5:52
+> To: Rafael J. Wysocki
+> Cc: Rafael J. Wysocki; Neil Zhang; linux-kernel; Greg Kroah-Hartman;
+> nfont@linux.vnet.ibm.com
+> Subject: Re: [PATCH V2] Driver cpu: update online when cpu_up/down besides
+> sysfs
 > 
-> I don't know.  Does this matter?  If this *really* matters, I'd much
-> rather have memset(&ida->FIRST_FIELD, 0, sizeof(struct ida) - offset
-> of FIRST_FIELD) to ensure that all fields get reset or implement an
-> internal function like __idr_init_without_zeroing(); however, given
-> the size of an idr and the low frequency of the operation, I'd prefer
-> to just leave it as-is.
+> On Wed, Oct 29, 2014 at 5:46 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Monday, October 27, 2014 08:46:08 PM Dan Streetman wrote:
+> >> On Mon, Oct 27, 2014 at 5:38 PM, Rafael J. Wysocki
+> >> <rafael.j.wysocki@intel.com> wrote:
+> >> > On 10/27/2014 3:59 AM, Neil Zhang wrote:
+> >> >>
+> >> >> The current per-cpu offline info won't be updated when we use any
+> >> >> other method besides sysfs to call cpu_up/down.
+> >> >> Thus the cpu/online can't reflect the real online status.
+> >> >>
+> >> >> This patch is going to fix the issue introduced by commit
+> >> >> 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c (Driver core:
+> >> >> Use generic offline/online for CPU offline/online)
+> >> >>
+> >> >> CC: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> >> Tested-by: Dan Streetman <ddstreet@ieee.org>
+> >> >> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> >> >
+> >> >
+> >> > Oh dear, no.
+> >> >
+> >> > Please first tell me what exactly the problem you're seeing is.
+> >>
+> >> For some background, here is my last comment on the first email thread on
+> this:
+> >> https://lkml.org/lkml/2014/10/27/595
+> >>
+> >> I didn't create this patch, but the problem essentially is that
+> >> before your commit the individual cpu online nodes
+> >> (/sys/devices/system/cpu/cpuN/online) stayed in sync during
+> >> cpu_down/up, because they used the cpu_online_mask; while after the
+> >> commit, they are tracked by the cpu's generic dev->offline flag,
+> >> which isn't updated during cpu_down/up.
+> >
+> > Which is not triggered from sysfs.
+> >
+> >> So now, any place in the kernel
+> >> that brings a cpu up or down must also update the cpu->dev->offline
+> >> flag.
+> >
+> > Not any place.  In particular, system suspend-resume doesn't need to
+> > do that, because it takes CPUs offline and then brings them back
+> > online.
+> >
+> > If there's a place in the kernel where CPUs are taken offline and left
+> > in that state, then it needs to be updated.
+> 
+> The only place I know of is ppc's dlpar code, as mentioned below.
+> 
+> Neil, as you crafted the original patch, I assume you know of some other place
+> in the kernel doing cpu_up/down directly, where you're seeing this problem?
 > 
 
-memset(ptr, 0, sizeof()) or kzalloc() is convenient and good for buffers
-but bad for structures, objects...
+As I replied to Rafael many ARM SoCs will use an in kernel profiler to romove/add 
+a core via cpu_up /down for power and performance consideration.
+But actually we can fix these issues as Rafael suggested.
+Thanks for the discussion in these days.
 
-general way for object initialization is:
+> >
+> >> My interest in the patch was coincidental because I was seeing the
+> >> same problem when using dlpar operations to hotplug cpus, which uses
+> >> the arch/powerpc/platform/pseries/dlpar.c code; that code brings a
+> >> cpu offline when it's hot-removed (and the cpu online when it's
+> >> hot-added), but it hasn't been changed to also update the cpu's
+> >> dev->offline flag.
+> >
+> > It should be modified to do that.
+> >
+> >> As I said in the previous email to the first thread, the ppc dlpar
+> >> operation might be changed in the future to fully unregister a cpu
+> >> when it's hot-removed, which would remove the entire sysfs cpuN
+> >> directory.  Alternately and/or until then, it could be updated to
+> >> simply update the cpu'd dev->offline flag (that's what I originally
+> >> did for my own testing).  However, without a central place to update
+> >> the cpu's dev->offline field, like this, or possibly in
+> >> set_cpu_online(), or elsewhere during cpu_down/up, each place in the
+> >> kernel that calls cpu_down() or cpu_up() also needs to update the
+> >> dev->offline flag.  It's possible that the ppc dlpar code is the only
+> >> place in the kernel that has this problem; I haven't searched.
+> >
+> > It is quite likely to be the only place like that.
+> >
+> > While I'm not familiar with the code in question, the most
+> > straightforward way to fix the problem would be to replace cpu_down()
+> > in there with device_offline(get_cpu_device(cpu)), but that needs to
+> > be called under device_hotplug_lock.
+> 
+> Ok, will do.
+> 
+> >
+> > --
+> > I speak only for myself.
+> > Rafael J. Wysocki, Intel Open Source Technology Center.
 
-xxx_init()
-{
-	explicitly init every field...
-
-	/* maybe complicated, over elaborate */
-}
-
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
