@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934724AbaJ3RMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:12:52 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:64231 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758111AbaJ3RMv (ORCPT
+	id S934726AbaJ3RP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:15:29 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51102 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933054AbaJ3RP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:12:51 -0400
-Date: Thu, 30 Oct 2014 13:12:47 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tim Hockin <thockin@hockin.org>
-Cc: linux-kernel@vger.kernel.org, "Auld, Will" <will.auld@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        Vikas Shivappa <vikas.shivappa@intel.com>
-Subject: Re: Cache Allocation Technology Design
-Message-ID: <20141030171247.GC378@htj.dyndns.org>
-References: <20141029081640.GT3337@twins.programming.kicks-ass.net>
- <20141029124834.GQ12020@console-pimps.org>
- <20141029134526.GC3337@twins.programming.kicks-ass.net>
- <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
- <20141029172845.GP12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
- <20141029182234.GA13393@mtj.dyndns.org>
- <20141030070725.GG3337@twins.programming.kicks-ass.net>
- <20141030124333.GA29540@htj.dyndns.org>
- <CAAAKZwvJOKsrj_yczDGaNLaNYo+_=HzsTLwDdcaTJqO2VMy8uA@mail.gmail.com>
+	Thu, 30 Oct 2014 13:15:28 -0400
+Date: Thu, 30 Oct 2014 17:15:22 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "ghackmann@google.com" <ghackmann@google.com>,
+        "ijc@hellion.org.uk" <ijc@hellion.org.uk>,
+        Serban Constantinescu <Serban.Constantinescu@arm.com>,
+        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/1] arm64: Fix up /proc/cpuinfo
+Message-ID: <20141030171521.GL32589@arm.com>
+References: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
+ <1414159000-27059-2-git-send-email-mark.rutland@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAAKZwvJOKsrj_yczDGaNLaNYo+_=HzsTLwDdcaTJqO2VMy8uA@mail.gmail.com>
+In-Reply-To: <1414159000-27059-2-git-send-email-mark.rutland@arm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 07:58:34AM -0700, Tim Hockin wrote:
-> Another reason unified hierarchy is a bad model.
+Hi Mark,
 
-Things wrong with this message.
+On Fri, Oct 24, 2014 at 02:56:40PM +0100, Mark Rutland wrote:
+> Commit d7a49086f263164a (arm64: cpuinfo: print info for all CPUs)
+> attempted to clean up /proc/cpuinfo, but due to concerns regarding
+> further changes was reverted in commit 5e39977edf6500fd (Revert "arm64:
+> cpuinfo: print info for all CPUs").
 
-1. Top posted.  It isn't clear which part you're referring to and this
-   was pointed out to you multiple times in the past.
+I've applied this on our devel branch, with a view to queuing it for -next
+in a week or two. I think we should also CC stable on this, so could you
+see how far back it applies please? (note that I already had to resolve
+a conflict with a patch we've got queued from Ard).
 
-2. No real thoughts or technical details.  Maybe you had some in your
-   head but nothing was elaborated.  This forces me to guess what you
-   had on mind when you produced the above sentence and of course me
-   not being you this takes a considerable amount of brain cycle and
-   I'd still end up with multiple alternative scenarios that I'll have
-   to cover.
+Cheers,
 
-3. Needlessly loaded expression, which forces me to respond.
-
-Combined, this is just rude and you've been showing this type of
-behavior multiple times.  Behave yourself.
-
--- 
-tejun
+Will
