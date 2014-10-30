@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758653AbaJ3JBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:01:22 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:56940 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758616AbaJ3JBT (ORCPT
+	id S1758676AbaJ3JBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:01:36 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:38197 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758621AbaJ3JBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:01:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
-        ralf@linux-mips.org, lethal@linux-sh.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH V2 02/15] sh: Eliminate unused irq_reg_{readl,writel} accessors
-Date: Thu, 30 Oct 2014 10:00:53 +0100
-Message-ID: <2294092.AHz8W66sEP@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414635488-14137-3-git-send-email-cernekee@gmail.com>
-References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-3-git-send-email-cernekee@gmail.com>
+	Thu, 30 Oct 2014 05:01:21 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:e3TtAz2L9mLbIRap6VmEIxNB0pAGCkL7rgiCN6la9qN
- LEU493gLcJoel3khvC/egfUOs22deG2U92iY1ImEg9bkw1o8Os
- TNPrEpbgbm2iE7zo8dwncRdtUaySMO/p9NeE/XNbF1SxtmDXtS
- nShMuaOpkNSWu/sCGVurcGhVfkbwGfLXodw1DMXDqKslG/17FN
- DdB6uPfgLX4XdEYsHzib2JRlkYG9F/Yi2fhuKxKYHv5odaYnAb
- kWTaLnQjxW0a2ogZPBDORlnJ3ctkpFRVM9mU3chfuCa9JGl+94
- cZSRsgTTyXQU/2fEm7fDtAxnb5dcFaEYtJHFAfFDT/0Z2HAtCi
- U0CZJrYIuBqYOECqgj30=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1414639400.5833.11.camel@mtksdaap41>
+References: <1406824943-24052-1-git-send-email-matthias.bgg@gmail.com>
+	<1406824943-24052-7-git-send-email-matthias.bgg@gmail.com>
+	<CACRpkdbRhGE8tcKj+W_4F9-xmcm-fxcYuCmLOqX-ESC+3PAmyA@mail.gmail.com>
+	<CABuKBe+Q3tnN0s22EMY-dK_6FeN_xN9SmrsW3dPONR6QDJ+V_w@mail.gmail.com>
+	<CACRpkdZOB=9wQ3R3sfcBEiNXLVRtgob4iLZ9QWXyVrgjqyvGXQ@mail.gmail.com>
+	<CABuKBeJOgkDZ8drPf3LnT2jPH7PEWX2__HDM7_jZbg2BhDRy3g@mail.gmail.com>
+	<1414158814.14830.610.camel@mtksdaap41>
+	<CABuKBe++mqhMCPxci9_4KKgq9vdoLLwZQkdb2xAGMud+=YVhkw@mail.gmail.com>
+	<1414639400.5833.11.camel@mtksdaap41>
+Date: Thu, 30 Oct 2014 10:01:19 +0100
+Message-ID: <CABuKBeLFjQ+B-QVtQf3nBZtBYf9HF=yQWZv17fOdNyZTm9C34A@mail.gmail.com>
+Subject: Re: [PATCH 6/7] arm: mediatek: enable gpt6 on boot up to make arch
+ timer working
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan@agner.ch" <stefan@agner.ch>,
+        Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "Berg, Anders" <anders.berg@lsi.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 October 2014 19:17:55 Kevin Cernekee wrote:
-> Defining these macros way down in arch/sh/.../irq.c doesn't cause
-> kernel/irq/generic-chip.c to use them.  As far as I can tell this code
-> has no effect.
-> 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+2014-10-30 4:23 GMT+01:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
+> Hi Matthias,
+>
+> On Mon, 2014-10-27 at 11:28 +0100, Matthias Brugger wrote:
+>> Hi Joe,
+>>
+>> 2014-10-24 15:53 GMT+02:00 Yingjoe Chen <srv_yingjoe.chen@mediatek.com>:
+>> >
+>> > Hi Matthias,
+>> >
+>> > I didn't saw this in v3.18-rc1, are you working on version 2 of this?
+>> > mt8135 and m8127 also need this fixup and we need this to have SMP
+>> > working.
+>>
+>> I had a discussion with Mark Rutland from ARM on this [0].
+>> At that point he convinced me that this was not critical.
+>>
+>> If we need this for SMP, things really change here I think.
+>
+> We have some driver now, and we started to implement SMP enable method
+> internally. I think it is reasonable to discuss this now.
+> We could include this patch in our SMP patch series. Do you prefer we do
+> this?
 
-Actually it overrides the 32-bit accessors with 16-bit accessors,
-which does seem intentional and certainly has an effect.
+Alright. Please remind that we don't need to set the cntfreq register
+here but define the clock frequency in the dts.
 
-	Arnd
+Thanks,
+Matthias
 
->  arch/sh/boards/mach-se/7343/irq.c | 3 ---
->  arch/sh/boards/mach-se/7722/irq.c | 3 ---
->  2 files changed, 6 deletions(-)
-> 
-> diff --git a/arch/sh/boards/mach-se/7343/irq.c b/arch/sh/boards/mach-se/7343/irq.c
-> index 7646bf0..1087dba 100644
-> --- a/arch/sh/boards/mach-se/7343/irq.c
-> +++ b/arch/sh/boards/mach-se/7343/irq.c
-> @@ -14,9 +14,6 @@
->  #define DRV_NAME "SE7343-FPGA"
->  #define pr_fmt(fmt) DRV_NAME ": " fmt
->  
-> -#define irq_reg_readl  ioread16
-> -#define irq_reg_writel iowrite16
-> -
->  #include <linux/init.h>
->  #include <linux/irq.h>
->  #include <linux/interrupt.h>
+>
+> Joe.C
+>
+>
+>
 
+
+
+-- 
+motzblog.wordpress.com
