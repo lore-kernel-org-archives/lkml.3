@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760273AbaJ3OTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:19:30 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:5534 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759180AbaJ3OS0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:18:26 -0400
-Message-ID: <54524894.8040604@fb.com>
-Date: Thu, 30 Oct 2014 08:17:56 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1760366AbaJ3OTe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:19:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46391 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759180AbaJ3OTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:19:31 -0400
+Date: Thu, 30 Oct 2014 09:18:57 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <balbi@ti.com>, Huang Rui <ray.huang@amd.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
+        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4 01/20] usb: dwc3: enable hibernation if to be supported
+Message-ID: <20141030141857.GJ6482@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414663725-2195-1-git-send-email-ray.huang@amd.com>
+ <4077930.b7qzaS4pBb@wuerfel>
+ <20141030140832.GH6482@saruman>
+ <2025342.7A7Ashtuyx@wuerfel>
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: "Jason B. Akers" <jason.b.akers@intel.com>,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        "Karkra, Kapil" <kapil.karkra@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-nvme@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
-References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>	<yq1k33il3b3.fsf@sermon.lab.mkp.net>	<5451A3F5.9020903@fb.com>	<yq1bnoukzhe.fsf@sermon.lab.mkp.net> <CAPcyv4ggAXzWows0PayvspOX4aP9G0PmLDes+0Q+m6VXQcF9Mw@mail.gmail.com>
-In-Reply-To: <CAPcyv4ggAXzWows0PayvspOX4aP9G0PmLDes+0Q+m6VXQcF9Mw@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-30_06:2014-10-30,2014-10-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=119.615883501382
- compositescore=0.98609165920913 urlsuspect_oldscore=0.98609165920913
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.98609165920913 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1410300134
-X-FB-Internal: deliver
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cDtQGJ/EJIRf/Cpq"
+Content-Disposition: inline
+In-Reply-To: <2025342.7A7Ashtuyx@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-29 22:19, Dan Williams wrote:
-> I understand the desire to have per-io / per-inode xadvise()-style
-> hints, but I don't see why not also include a per-pid capability?
->
-> Per-pid was not "icky" for flashcache [1].  It let's you flag
-> processes that should not pollute the cache, as well "cache warming"
-> processes pre-loading sub-ranges of files that is awkward to do with a
-> per-inode hint.  Per-pid also allows hinting on behalf of other
-> otherwise cache-unaware processes.
+--cDtQGJ/EJIRf/Cpq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-per-pid is imho fine as well, as long as it's not the primary interface. 
-I quite like how the io priority works in this regard. If the task has a 
-priority set, we use that. If you pass in something else, that overrides 
-the task set one.
+On Thu, Oct 30, 2014 at 03:14:17PM +0100, Arnd Bergmann wrote:
+> On Thursday 30 October 2014 09:08:32 Felipe Balbi wrote:
+> > On Thu, Oct 30, 2014 at 12:35:56PM +0100, Arnd Bergmann wrote:
+> > > On Thursday 30 October 2014 18:08:26 Huang Rui wrote:
+> > > > It enables hibernation if the function is set in coreConsultant.
+> > > >=20
+> > > > Suggested-by: Felipe Balbi <balbi@ti.com>
+> > > > Signed-off-by: Huang Rui <ray.huang@amd.com>
+> > > > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > > >=20
+> > >=20
+> > > Something went wrong with the Signed-off-by lines here.=20
+> > > You should never add someone else's Signed-off-by below yours.
+> > >=20
+> > > I took a brief look at the entire series and the patches all look good
+> > > to me, but you have made the same mistake with the Signed-off-by
+> > > multiple times.
+> >=20
+> > there are no mistakes, I just asked Huang to resend what I had on my
+> > testing/next because it had not been sent to devicetree mailing list.
+> >=20
+>=20
+> It's definitely a tricky question what the right Signed-off-by
+> chain is in this case, I guess strictly speaking it could have
+> been=20
+>=20
+> Suggested-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Huang Rui <ray.huang@amd.com>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Huang Rui <ray.huang@amd.com>
+>=20
+> which could correctly track where the patches went, but it's also
+> somewhat silly.
 
-per-pid allows you to modify how we treat applications without modifying 
-the application itself. This is handy for eg streamed backup and 
-similar, which is most likely why flashcache has it.
+somewhat ? You don't need to be so black and white.
 
--- 
-Jens Axboe
+--=20
+balbi
 
+--cDtQGJ/EJIRf/Cpq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUUkjRAAoJEIaOsuA1yqREjk8P/1ZrLRuZqVFKhnwUAAE3ZVzA
+5QsPgWItY6dIvCRDESvI0y4QMJGJZ/IZqtcgH3D86hjLIoGntQJicuUCeiEniwXR
+Z94v9U8CjaZuUUB78pdXtzmgWuykw9yyVdhKNHTz4hS2azpG8nMl1AFgYOiCMjub
+a+9cLLKs/Eov3YLGwfet5mShMgrnb/2SG/JgHafL6E/jIieaISFcRfEq5Sn6r7Gi
+iEFj2sdNsjilOYnL+MdoL6aBn6h0Q/NnUY7ao6s+Mw1+3G/NCQ8+QYxLDQ6fP02p
+h2RSmy+R7w8bNRFK3hj0cx/qSX5jdSkLtdb4EbszJZIfWSlWNWsy4RRE2Nd/QwmE
+0my/nOMfy1QHSK8dgwb+PKpuNlAKXeKpg6Z+Zjm+R1xwFPIzwZennR0LRHWgYjT6
+n9G2A4XOww9yOIQnSVymsTbU+AneyDAnmic4wu5XgR6uOM6hvE9BGCDyRNOpwktk
+dQMgR1QSIQRwFxJevv+IsMWfyqwHawBBZHmtjx7E7+bQtoxXC2rGNhpn5SUrTWVx
+KWI7pG65Y5Y/yQHVLIjkf8IsgBaIanYhYCVMQiLYp90uSCGUzaQ+dgTWRSuU1SB6
+egA4m98N31hJzZ2gctduFYtCHPSurzhVSG0NceR5YGs2E5lAUSVhHBCE00e0oULm
+jCA0LeYb4AFee/QGEPlr
+=mF9r
+-----END PGP SIGNATURE-----
+
+--cDtQGJ/EJIRf/Cpq--
