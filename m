@@ -1,75 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114AbaJ3Gnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 02:43:41 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:40587 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932920AbaJ3GnD (ORCPT
+	id S933203AbaJ3Gns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 02:43:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37945 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932920AbaJ3Gno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 02:43:03 -0400
+	Thu, 30 Oct 2014 02:43:44 -0400
+Date: Wed, 29 Oct 2014 23:42:55 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-5wb6css280ty0cel5p0zo2b1@git.kernel.org>
+Cc: jolsa@redhat.com, mingo@kernel.org, namhyung@kernel.org,
+        tglx@linutronix.de, acme@redhat.com, bp@suse.de, eranian@google.com,
+        peterz@infradead.org, dzickus@redhat.com, jean.pihet@linaro.org,
+        efault@gmx.de, dsahern@gmail.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        adrian.hunter@intel.com, paulus@samba.org
+Reply-To: peterz@infradead.org, eranian@google.com, dzickus@redhat.com,
+        jolsa@redhat.com, mingo@kernel.org, namhyung@kernel.org,
+        tglx@linutronix.de, bp@suse.de, acme@redhat.com,
+        adrian.hunter@intel.com, paulus@samba.org, jean.pihet@linaro.org,
+        efault@gmx.de, dsahern@gmail.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf thread:
+  Adopt resolve_callchain method from machine
+Git-Commit-ID: cc8b7c2bf553151a579a8009020875faa1d43e29
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <4202809.cQlU8Tr5kS@lenovobook>
-References: <4202809.cQlU8Tr5kS@lenovobook>
-Date: Thu, 30 Oct 2014 07:43:02 +0100
-Message-ID: <CAJKbBDDPU5mysMPB78oQtkH8B=2q1pSH0yJBxu_qr3Zo=xhx3Q@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] dt: bindings: tps65217: add compatible property
- for backlight subnode
-From: Johannes Pointner <johannes.pointner@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
+Commit-ID:  cc8b7c2bf553151a579a8009020875faa1d43e29
+Gitweb:     http://git.kernel.org/tip/cc8b7c2bf553151a579a8009020875faa1d43e29
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 23 Oct 2014 15:26:17 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 29 Oct 2014 10:32:46 -0200
 
-2014-10-08 23:20 GMT+02:00 Johannes Pointner <johannes.pointner@gmail.com>:
-> Add documentation for compatible property of backlight subnode.
->
-> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
-> ---
-> Changes since v2:
-> 1. Removed the pmic part of the patch.
-> 2. Added newline before subnode in the example.
-> ---
->  .../devicetree/bindings/video/backlight/tps65217-backlight.txt | 10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> index 5fb9279..63ef699 100644
-> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> @@ -6,19 +6,23 @@ used to drive LEDs for use as backlights.
->  Required properties:
->  - compatible: "ti,tps65217"
->  - reg: I2C slave address
-> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
-> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
-> +
-> +Required subnode properties:
-> +- compatible: "ti,tps65217-bl"
->  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
->  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
->  - default-brightness: valid values: 0-100
->
-> -Each regulator is defined using the standard binding for regulators.
->
->  Example:
->
->         tps: tps@24 {
->                 reg = <0x24>;
->                 compatible = "ti,tps65217";
-> -               backlight {
-> +
-> +               tps_bl: backlight {
-> +                       compatible = "ti,tps65217-bl";
->                         isel = <1>;  /* 1 - ISET1, 2 ISET2 */
->                         fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
->                         default-brightness = <50>;
-> --
-> 2.1.2
+perf thread: Adopt resolve_callchain method from machine
+
+Shortening function signature lenght too, since a thread's machine can be
+obtained from thread->mg->machine, no need to pass thread, machine.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-5wb6css280ty0cel5p0zo2b1@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/callchain.c                            |  4 ++--
+ tools/perf/util/machine.c                              | 15 +++++++--------
+ tools/perf/util/machine.h                              | 13 ++++++-------
+ tools/perf/util/scripting-engines/trace-event-python.c |  6 +++---
+ tools/perf/util/session.c                              |  6 +++---
+ 5 files changed, 21 insertions(+), 23 deletions(-)
+
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index c84d3f8..0022980 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -754,8 +754,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+ 
+ 	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain ||
+ 	    sort__has_parent) {
+-		return machine__resolve_callchain(al->machine, evsel, al->thread,
+-						  sample, parent, al, max_stack);
++		return thread__resolve_callchain(al->thread, evsel, sample,
++						 parent, al, max_stack);
+ 	}
+ 	return 0;
+ }
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 08e63fd..fd192e4 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1464,13 +1464,12 @@ static int unwind_entry(struct unwind_entry *entry, void *arg)
+ 				       entry->map, entry->sym);
+ }
+ 
+-int machine__resolve_callchain(struct machine *machine,
+-			       struct perf_evsel *evsel,
+-			       struct thread *thread,
+-			       struct perf_sample *sample,
+-			       struct symbol **parent,
+-			       struct addr_location *root_al,
+-			       int max_stack)
++int thread__resolve_callchain(struct thread *thread,
++			      struct perf_evsel *evsel,
++			      struct perf_sample *sample,
++			      struct symbol **parent,
++			      struct addr_location *root_al,
++			      int max_stack)
+ {
+ 	int ret = thread__resolve_callchain_sample(thread, sample->callchain,
+ 						   parent, root_al, max_stack);
+@@ -1487,7 +1486,7 @@ int machine__resolve_callchain(struct machine *machine,
+ 	    (!sample->user_stack.size))
+ 		return 0;
+ 
+-	return unwind__get_entries(unwind_entry, &callchain_cursor, machine,
++	return unwind__get_entries(unwind_entry, &callchain_cursor, thread->mg->machine,
+ 				   thread, sample, max_stack);
+ 
+ }
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 2b651a7..88ec74e 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -122,13 +122,12 @@ struct branch_info *sample__resolve_bstack(struct perf_sample *sample,
+ 					   struct addr_location *al);
+ struct mem_info *sample__resolve_mem(struct perf_sample *sample,
+ 				     struct addr_location *al);
+-int machine__resolve_callchain(struct machine *machine,
+-			       struct perf_evsel *evsel,
+-			       struct thread *thread,
+-			       struct perf_sample *sample,
+-			       struct symbol **parent,
+-			       struct addr_location *root_al,
+-			       int max_stack);
++int thread__resolve_callchain(struct thread *thread,
++			      struct perf_evsel *evsel,
++			      struct perf_sample *sample,
++			      struct symbol **parent,
++			      struct addr_location *root_al,
++			      int max_stack);
+ 
+ /*
+  * Default guest kernel is defined by parameter --guestkallsyms
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 496f21c..25e5a23 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -312,9 +312,9 @@ static PyObject *python_process_callchain(struct perf_sample *sample,
+ 	if (!symbol_conf.use_callchain || !sample->callchain)
+ 		goto exit;
+ 
+-	if (machine__resolve_callchain(al->machine, evsel, al->thread,
+-					   sample, NULL, NULL,
+-					   PERF_MAX_STACK_DEPTH) != 0) {
++	if (thread__resolve_callchain(al->thread, evsel,
++				      sample, NULL, NULL,
++				      PERF_MAX_STACK_DEPTH) != 0) {
+ 		pr_err("Failed to resolve callchain. Skipping\n");
+ 		goto exit;
+ 	}
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 6702ac2..7760108 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1417,9 +1417,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
+ 	if (symbol_conf.use_callchain && sample->callchain) {
+ 		struct addr_location node_al;
+ 
+-		if (machine__resolve_callchain(al->machine, evsel, al->thread,
+-					       sample, NULL, NULL,
+-					       PERF_MAX_STACK_DEPTH) != 0) {
++		if (thread__resolve_callchain(al->thread, evsel,
++					      sample, NULL, NULL,
++					      PERF_MAX_STACK_DEPTH) != 0) {
+ 			if (verbose)
+ 				error("Failed to resolve callchain. Skipping\n");
+ 			return;
