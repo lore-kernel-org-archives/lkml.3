@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297AbaJ3FmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 01:42:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50701 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaJ3FmK (ORCPT
+	id S1757415AbaJ3FpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 01:45:22 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64385 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaJ3FpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 01:42:10 -0400
-Date: Thu, 30 Oct 2014 05:42:09 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
-Subject: [PATCH] fix a leak in bch_cached_dev_run()
-Message-ID: <20141030054208.GE7996@ZenIV.linux.org.uk>
+	Thu, 30 Oct 2014 01:45:21 -0400
+Date: Thu, 30 Oct 2014 11:15:14 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Mikael Svantesson <mikael@distopic.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: skein: skein_api.c: removed space before ','
+Message-ID: <20141030054514.GB3519@sudip-PC>
+References: <545117FC.6030704@distopic.net>
+ <1414604714-13306-1-git-send-email-mikael@distopic.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1414604714-13306-1-git-send-email-mikael@distopic.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+On Wed, Oct 29, 2014 at 06:45:14PM +0100, Mikael Svantesson wrote:
+> Signed-off-by: Mikael Svantesson <mikael@distopic.net>
+> ---
+better to send this as a new thread and start the subject
+as [PATCH v3]
+and also mention a commit message.
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -878,8 +878,11 @@ void bch_cached_dev_run(struct cached_dev *dc)
- 	buf[SB_LABEL_SIZE] = '\0';
- 	env[2] = kasprintf(GFP_KERNEL, "CACHED_LABEL=%s", buf);
- 
--	if (atomic_xchg(&dc->running, 1))
-+	if (atomic_xchg(&dc->running, 1)) {
-+		kfree(env[1]);
-+		kfree(env[2]);
- 		return;
-+	}
- 
- 	if (!d->c &&
- 	    BDEV_STATE(&dc->sb) != BDEV_STATE_NONE) {
+thanks
+sudip
+
+>  drivers/staging/skein/skein_api.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/skein/skein_api.c b/drivers/staging/skein/skein_api.c
+> index 6e700ee..5bfce07 100644
+> --- a/drivers/staging/skein/skein_api.c
+> +++ b/drivers/staging/skein/skein_api.c
+> @@ -31,7 +31,7 @@ int skein_ctx_prepare(struct skein_ctx *ctx, enum skein_size size)
+>  {
+>  	skein_assert_ret(ctx && size, SKEIN_FAIL);
+>  
+> -	memset(ctx , 0, sizeof(struct skein_ctx));
+> +	memset(ctx, 0, sizeof(struct skein_ctx));
+>  	ctx->skein_size = size;
+>  
+>  	return SKEIN_SUCCESS;
+> -- 
+> 2.1.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
