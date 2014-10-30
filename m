@@ -1,71 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176AbaJ3NYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:24:16 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:53827 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933727AbaJ3NYN (ORCPT
+	id S934268AbaJ3NYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:24:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35115 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933727AbaJ3NYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:24:13 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: dri-devel@lists.freedesktop.org, linux-samsung-soc@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        seanpaul@google.com, ajaykumar.rs@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH v2 2/2] arm: dts: Exynos5: Use pmu_system_controller phandle for dp phy
-Date: Thu, 30 Oct 2014 18:54:02 +0530
-Message-Id: <1414675442-3471-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1414675442-3471-1-git-send-email-gautam.vivek@samsung.com>
-References: <1414675442-3471-1-git-send-email-gautam.vivek@samsung.com>
+	Thu, 30 Oct 2014 09:24:47 -0400
+Date: Thu, 30 Oct 2014 14:24:41 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        xen-devel@lists.xenproject.org, John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [RFC PATCH v2 01/11] time: Add do_settimeofday64() safe
+ version(using timespec64)
+In-Reply-To: <1414667745-7703-2-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1410301411290.5308@nanos>
+References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org> <1414667745-7703-2-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DP PHY now require pmu-system-controller to handle PMU register
-to control PHY's power isolation. Adding the same to dp-phy
-node.
+On Thu, 30 Oct 2014, pang.xunlei wrote:
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
----
+Your subject line
 
-Changes from V1:
- - none.
+> time: Add do_settimeofday64() safe version(using timespec64)
 
- arch/arm/boot/dts/exynos5250.dtsi |    2 +-
- arch/arm/boot/dts/exynos5420.dtsi |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+is confusing at best.
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 012b021..69f5eb0 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -732,7 +732,7 @@
- 
- 	dp_phy: video-phy@10040720 {
- 		compatible = "samsung,exynos5250-dp-video-phy";
--		reg = <0x10040720 4>;
-+		samsung,pmu-syscon = <&pmu_system_controller>;
- 		#phy-cells = <0>;
- 	};
- 
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index 8617a03..1353a09 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -503,8 +503,8 @@
- 	};
- 
- 	dp_phy: video-phy@10040728 {
--		compatible = "samsung,exynos5250-dp-video-phy";
--		reg = <0x10040728 4>;
-+		compatible = "samsung,exynos5420-dp-video-phy";
-+		samsung,pmu-syscon = <&pmu_system_controller>;
- 		#phy-cells = <0>;
- 	};
- 
--- 
-1.7.10.4
+time: Provide y2038 safe do_settimeofday() replacement
 
+That explains what the patch is doing in a very precice way.
+
+>  /**
+> - * do_settimeofday - Sets the time of day
+> - * @tv:		pointer to the timespec variable containing the new time
+> + * do_settimeofday64 - Sets the time of day
+> + * @ts:     pointer to the timespec64 variable containing the new time
+>   *
+>   * Sets the time of day to the new time and update NTP and notify hrtimers
+> + * Safe version for 2038 safety.
+
+I rather put this into the function description above:
+
++ * do_settimeofday64 - Sets the time of day. 2038 safe.
+
+Way simpler to grep for.
+
+>   */
+> -int do_settimeofday(const struct timespec *tv)
+> +int do_settimeofday64(const struct timespec64 *ts)
+>  {
+>  	struct timekeeper *tk = &tk_core.timekeeper;
+> -	struct timespec64 ts_delta, xt, tmp;
+> +	struct timespec64 ts_delta, xt;
+>  	unsigned long flags;
+>  
+> -	if (!timespec_valid_strict(tv))
+> +	if (!timespec64_valid_strict(ts))
+>  		return -EINVAL;
+>  
+>  	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+> @@ -723,13 +724,12 @@ int do_settimeofday(const struct timespec *tv)
+>  	timekeeping_forward_now(tk);
+>  
+>  	xt = tk_xtime(tk);
+> -	ts_delta.tv_sec = tv->tv_sec - xt.tv_sec;
+> -	ts_delta.tv_nsec = tv->tv_nsec - xt.tv_nsec;
+> +	ts_delta.tv_sec = ts->tv_sec - xt.tv_sec;
+> +	ts_delta.tv_nsec = ts->tv_nsec - xt.tv_nsec;
+>  
+>  	tk_set_wall_to_mono(tk, timespec64_sub(tk->wall_to_monotonic, ts_delta));
+>  
+> -	tmp = timespec_to_timespec64(*tv);
+> -	tk_set_xtime(tk, &tmp);
+> +	tk_set_xtime(tk, ts);
+>  
+>  	timekeeping_update(tk, TK_CLEAR_NTP | TK_MIRROR | TK_CLOCK_WAS_SET);
+>  
+> @@ -741,6 +741,22 @@ int do_settimeofday(const struct timespec *tv)
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL(do_settimeofday64);
+
+EXPORT_SYMBOL_GPL please.
+
+> +
+> +/**
+> + * do_settimeofday - Sets the time of day
+> + * @tv:		pointer to the timespec variable containing the new time
+> + *
+> + * Sets the time of day to the new time and update NTP and notify hrtimers
+> + * TODO: [2038 safety] should be replaced by do_settimeofday64().
+
+The TODO is not to replace do_settimeofday() by do_settimeofday64(). The TODO
+is to fix the call sites.
+
+So instead of adding this you can simply say:
+
++ * do_settimeofday - Sets the time of day. Deprecated. Use do_settimeofday64()
+
+We want things like this easy to find and not be burried in some
+cryptic comment.
+
+Thanks,
+
+	tglx
