@@ -1,81 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759653AbaJ3Mjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 08:39:47 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:28083 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759060AbaJ3Mjn (ORCPT
+	id S1759697AbaJ3MkT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 08:40:19 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:57584 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbaJ3MkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 08:39:43 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-7d-5452318d5b0d
-Message-id: <5452318C.1030107@samsung.com>
-Date: Thu, 30 Oct 2014 13:39:40 +0100
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Inki Dae <inki.dae@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] drm/exynos/dsi: remove global display variable
-References: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
-In-reply-to: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t/xy7q9hkEhBi9+KVpc+fqezWLS/Qks
-	Fi/uXWSx6F1wlc3ibNMbdovLu+awWcw4v4/JYu2Ru+wWMya/ZHPg9LjffZzJo2/LKkaPz5vk
-	ApijuGxSUnMyy1KL9O0SuDKOH3zDVPCIo+J/X1ED4wT2LkZODgkBE4nvnW+YIWwxiQv31rOB
-	2EICSxklji3w7GLkArI/MUp0/TnJ2sXIwcEroCWxZrc5SA2LgKrEj1WPwOrZBDQl/m6+CWaL
-	CkRIXFkzhxHE5hUQlPgx+R4LiC0ioCyxal87O8hMZoGpzBIXFvWAJYQF3CUerV7DArHYWWLy
-	6a1MIDangIvEvA2v2ED2MgvoSdy/qAUSZhaQl9i85i3zBEaBWUhWzEKomoWkagEj8ypG0dTS
-	5ILipPRcQ73ixNzi0rx0veT83E2MkPD+soNx8TGrQ4wCHIxKPLwOGwNChFgTy4orcw8xSnAw
-	K4nwHtUJChHiTUmsrEotyo8vKs1JLT7EyMTBKdXAKNFw/fC56t9Wj6wfzb/TcUv7PfsyBgkT
-	fkvuHHE+c67lrzo2MV0U9n/51VFZcGl6w+dOjqt/vXL99M7+vV4Rf0Wq/V2z6cw9n0oW9y71
-	/Xjk8bl74QIJFpGKtf/97gQuPWRQaMNs3jx5+hbd+ma9hAWLV2u7v1EpvmN8wKTlkce9fT/t
-	7/66ocRSnJFoqMVcVJwIABeGfT9NAgAA
+	Thu, 30 Oct 2014 08:40:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kevin Cernekee <cernekee@gmail.com>, f.fainelli@gmail.com,
+        jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH V2 05/15] genirq: Generic chip: Add big endian I/O accessors
+Date: Thu, 30 Oct 2014 13:40:03 +0100
+Message-ID: <2056740.mEUKBXLZZT@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.11.1410301233500.5308@nanos>
+References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <14243833.KJsSScVrGS@wuerfel> <alpine.DEB.2.11.1410301233500.5308@nanos>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:yFkYUm65yngN2K53Vluq1YbA8bE1f+vg0Diq/E+ZOeO
+ hlL09aoXpRphfkBNDzhAAT7xpZAdyrmAGyZwUoD7RYix4kBmRv
+ +zh3lV9rnji60H5dzvm3GX3kVybx3AaJqXfDSw8x3u1gxixXUb
+ Bv9xkec0r/lAzusyBxhrlXdceOc1nxM0k+kVO0yw2E9s134Bz5
+ 1VHXT7Akztmgy43DVsRVRI+wCUzXIuiKpoDmFEBwtoSMxtRdZx
+ 3c2LbX96RuKoczRsUaf1FH2puxMuKMp1g04twLyvK9TIufibV1
+ l/H2iCZVibJNHjCRGLkFiUJ1D+dMoAqD8/jV5C8V+tQn1nhbAI
+ v2oktuLCzXcMlMAV+tUc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 02:01 PM, Andrzej Hajda wrote:
-> Hi Inki,
->
-> Many Exynos DRM drivers uses global variables to represent associated devices
-> in Exynos DRM internal framework. It is quite confusing, it adds data duplication
-> and finally it does not allow to handle more than one device in system.
-> It seems better to embed such structures in private context of the device.
+On Thursday 30 October 2014 13:30:04 Thomas Gleixner wrote:
+> On Thu, 30 Oct 2014, Arnd Bergmann wrote:
+> > On Wednesday 29 October 2014 19:17:58 Kevin Cernekee wrote:
+> > >  static LIST_HEAD(gc_list);
+> > >  static DEFINE_RAW_SPINLOCK(gc_lock);
+> > >  
+> > > +static int is_big_endian(struct irq_chip_generic *gc)
+> > > +{
+> > > +       return !!(gc->domain->gc->gc_flags & IRQ_GC_BE_IO);
+> > > +}
+> > > +
+> > >  static void irq_reg_writel(struct irq_chip_generic *gc,
+> > >                            u32 val, int reg_offset)
+> > >  {
+> > > -       writel(val, gc->reg_base + reg_offset);
+> > > +       if (is_big_endian(gc))
+> > > +               iowrite32be(val, gc->reg_base + reg_offset);
+> > > +       else
+> > > +               writel(val, gc->reg_base + reg_offset);
+> > >  }
+> > >  
+> > 
+> > What I had in mind was to use indirect function calls instead, like
+> > 
+> > #ifndef irq_reg_writel
+> > static inline void irq_reg_writel_le(u32 val, void __iomem *addr)
+> > {
+> > 	return writel(val, addr);
+> > }
+> > #endif
+> > 
+> > #ifndef irq_reg_writel_be
+> > static inline void irq_reg_writel_be(u32 val, void __iomem *addr)
+> > {
+> > 	return iowrite32_be(val, addr);
+> > }
+> > #endif
+> > 
+> > 
+> > static inline void irq_reg_writel(struct irq_chip_generic *gc, u32 val, int reg_offset)
+> > {
+> >        if (IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP) &&
+> 
+> That's inside of the generic irq chip, so CONFIG_GENERIC_IRQ_CHIP is
+> always set when this is compiled.
 
-Gently ping.
+The part that I mentioned in the other mail and omitted here is that
+I'd then build the kernel/irq/generic-chip.c file when one or both of
+CONFIG_GENERIC_IRQ_CHIP or CONFIG_GENERIC_IRQ_CHIP_BE is set.
 
-Regards
-Andrzej
+The alternative would be to introduce CONFIG_GENERIC_IRQ_CHIP_LE along
+with CONFIG_GENERIC_IRQ_CHIP_BE, which might be cleaner, but requires
+all existing 39 'select GENERIC_IRQ_CHIP' statements to be changed to
+'GENERIC_IRQ_CHIP_LE'.
 
->
-> The patchset is based on exynos_drm_next plus my patch [1]:
-> 'drm/exynos: remove explicit encoder/connector de-initialization'.
->
-> If the patchset is OK for you I can prepare similar patches for other Exynos DRM components.
->
-> [1]: https://lkml.org/lkml/2014/9/22/148
->
-> Regards
-> Andrzej
->
->
-> Andrzej Hajda (4):
->   drm/exynos/dsi: remove global variable exynos_dsi_display
->   drm/exynos/dsi: simplify device pointer evaluation
->   drm/exynos/dsi: remove redundant encoder field
->   drm/exynos/dsi: stop using display->ctx pointer
->
->  drivers/gpu/drm/exynos/exynos_drm_dsi.c | 96 ++++++++++++++++-----------------
->  1 file changed, 47 insertions(+), 49 deletions(-)
->
+Either way would work.
 
+> >            !IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP_BE))
+> > 		return irq_reg_writel_le(val, gc->reg_base + reg_offset);
+> > 
+> >        if (IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP) &&
+> >            !IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP_BE))
+> 
+> 	     s/!// ?
+
+typo: I put the ! in the wrong line, sorry.
+
+> > 		return irq_reg_writel_be(val, gc->reg_base + reg_offset);
+> 
+> I don't think the above will cover all combinations.
+> 
+> ..._CHIP_BE	...CHIP_LE
+> N		N			; Default behaviour: readl/writel
+
+that would not be allowed with my approach. It should probably cause
+a compile-error if we introduce all three symbols.
+
+> Y		N			; ioread/write32be
+> N		Y			; Default behaviour: readl/writel
+> Y		Y			; Runtime selected
+
+
+
+> > 	return gc->writel(val, gc->reg_base + reg_offset);
+> > }
+> > 
+> > This would take the condition out of the callers.
+> 
+> So you trade a conditional for an indirect call. Not sure what's more
+> expensive. The indirect call is definitely a smaller text footprint,
+> so we should opt for this.
+
+It depends on the register pressure in the caller and on the pipeline
+of the CPU. My guess was that indirect call is generally more efficient,
+but you are right that this is not obvious, and I have no reliable data
+to back up my guess.
+
+If we do the conditional, we could also just add an extra byte swap,
+instead of choosing between two function calls.
+
+	Arnd
