@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760110AbaJ3Rfb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:35:31 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:48945 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758498AbaJ3Rf3 (ORCPT
+	id S934508AbaJ3Rg3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:36:29 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:48494 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932947AbaJ3Rg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:35:29 -0400
-Date: Thu, 30 Oct 2014 10:35:24 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Hutterer <peter.hutterer@who-t.net>
-Cc: Andrew Duggan <aduggan@synaptics.com>, Hans de Goede <hdegoede@redhat.com>,
-        linux-input@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
-Message-ID: <20141030173524.GC36444@dtor-ws>
-References: <20140908165520.GA35051@core.coreip.homeip.net>
- <540EAFD1.2040307@redhat.com>
- <20140909170636.GA28774@core.coreip.homeip.net>
- <540F7A19.3070704@synaptics.com>
- <20140909225725.GA18901@core.coreip.homeip.net>
- <20141030003855.GA15677@jelly.redhat.com>
+	Thu, 30 Oct 2014 13:36:28 -0400
+Date: Thu, 30 Oct 2014 11:36:24 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jeff Epler <jepler@unpythonic.net>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: fix name of 'enable' sysfs file
+Message-ID: <20141030173624.GB6982@google.com>
+References: <20141030163028.GA22250@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141030003855.GA15677@jelly.redhat.com>
+In-Reply-To: <20141030163028.GA22250@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 10:38:55AM +1000, Peter Hutterer wrote:
-> On Tue, Sep 09, 2014 at 03:57:25PM -0700, Dmitry Torokhov wrote:
-> > From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > 
-> > ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
-> > physical buttons, instead they generate primary button click when user
-> > presses somewhat hard on the surface of the touchpad. Unfortunately they
-> > also report primary button click whenever there are 2 or more contacts
-> > on the pad, messing up all multi-finger gestures (2-finger scrolling,
-> > multi-finger tapping, etc). To cope with this behavior we introduce a
-> > delay (currently 50 msecs) in reporting primary press in case more
-> > contacts appear.
+On Thu, Oct 30, 2014 at 09:30:28AM -0700, Greg Kroah-Hartman wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> can we assign INPUT_PROP_FORCEPAD to this? or PRESSUREPAD or something if
-> we're worried about trademarks. This is something I'd like to know in
-> userspace, we can then ignore clicks completely and do the rest ourselves. 
+> Back in commit 5136b2da770d ("PCI: convert bus code to use dev_groups"),
+> I misstyped the 'enable' sysfs file as 'enabled', which broke the
+> userspace api.  This patch fixes that issue by renaming the file back.
+> 
+> Reported-by: Jeff Epler <jepler@unpythonic.net>
+> Cc: stable <stable@vger.kernel.org> # 3.13
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Hmm, I think we can, but I'd like to wait to see if there are more
-models with such touchpads (I sure hope there isn't; lack of tactile
-feedback on presses is not the best user experience so I hope this
-initiative dies a quick death).
+I applied this to for-linus for v3.18.  If a symlink turns out to be
+needed, we can also add that.  Jeff, if you test this, I'll update it with
+your Tested-by.
 
-Thanks.
-
--- 
-Dmitry
+> ---
+> 
+> Jeff, if you could test this to make sure I got it right, that would be
+> great.  Again, sorry about this, it was a dumb typo on my part.
+> 
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index 92b6d9ab00e4..2c6643fdc0cf 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -185,7 +185,7 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
+>  }
+>  static DEVICE_ATTR_RO(modalias);
+>  
+> -static ssize_t enabled_store(struct device *dev, struct device_attribute *attr,
+> +static ssize_t enable_store(struct device *dev, struct device_attribute *attr,
+>  			     const char *buf, size_t count)
+>  {
+>  	struct pci_dev *pdev = to_pci_dev(dev);
+> @@ -210,7 +210,7 @@ static ssize_t enabled_store(struct device *dev, struct device_attribute *attr,
+>  	return result < 0 ? result : count;
+>  }
+>  
+> -static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
+> +static ssize_t enable_show(struct device *dev, struct device_attribute *attr,
+>  			    char *buf)
+>  {
+>  	struct pci_dev *pdev;
+> @@ -218,7 +218,7 @@ static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
+>  	pdev = to_pci_dev(dev);
+>  	return sprintf(buf, "%u\n", atomic_read(&pdev->enable_cnt));
+>  }
+> -static DEVICE_ATTR_RW(enabled);
+> +static DEVICE_ATTR_RW(enable);
+>  
+>  #ifdef CONFIG_NUMA
+>  static ssize_t numa_node_show(struct device *dev, struct device_attribute *attr,
+> @@ -563,7 +563,7 @@ static struct attribute *pci_dev_attrs[] = {
+>  #endif
+>  	&dev_attr_dma_mask_bits.attr,
+>  	&dev_attr_consistent_dma_mask_bits.attr,
+> -	&dev_attr_enabled.attr,
+> +	&dev_attr_enable.attr,
+>  	&dev_attr_broken_parity_status.attr,
+>  	&dev_attr_msi_bus.attr,
+>  #if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
