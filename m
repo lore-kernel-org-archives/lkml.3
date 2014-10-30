@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760496AbaJ3OLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:11:30 -0400
+	id S1760578AbaJ3OLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:11:42 -0400
 Received: from mga14.intel.com ([192.55.52.115]:24875 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760450AbaJ3OL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:11:28 -0400
+	id S1760560AbaJ3OLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:11:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="408517914"
+   d="scan'208";a="408518004"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/7] perf tools: Add branch_type and in_tx to Python export
-Date: Thu, 30 Oct 2014 16:09:44 +0200
-Message-Id: <1414678188-14946-4-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 7/7] perf tools: Defer export of comms that were not 'set'
+Date: Thu, 30 Oct 2014 16:09:48 +0200
+Message-Id: <1414678188-14946-8-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414678188-14946-1-git-send-email-adrian.hunter@intel.com>
 References: <1414678188-14946-1-git-send-email-adrian.hunter@intel.com>
@@ -27,189 +27,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add branch_type and in_tx to Python db export and
-the export-to-postgresql.py script.
+Tracing for a workload begins before the comm event
+is seen, which results in the initial comm having a
+string of the form ":<pid>" (e.g. ":12345").  In order
+to export the correct string, defer the export until
+the new script 'flush' callback.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/scripts/python/export-to-postgresql.py  | 32 ++++++++++++++++++----
- .../util/scripting-engines/trace-event-python.c    | 30 +++++++++++++++++++-
- 2 files changed, 55 insertions(+), 7 deletions(-)
+ tools/perf/util/db-export.c                        | 62 +++++++++++++++++++++-
+ tools/perf/util/db-export.h                        |  3 ++
+ .../util/scripting-engines/trace-event-python.c    |  4 +-
+ 3 files changed, 67 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/scripts/python/export-to-postgresql.py b/tools/perf/scripts/python/export-to-postgresql.py
-index d8f6df0..bb79aec 100644
---- a/tools/perf/scripts/python/export-to-postgresql.py
-+++ b/tools/perf/scripts/python/export-to-postgresql.py
-@@ -123,6 +123,10 @@ do_query(query, 'CREATE TABLE symbols ('
- 		'sym_end	bigint,'
- 		'binding	integer,'
- 		'name		varchar(2048))')
-+do_query(query, 'CREATE TABLE branch_types ('
-+		'id		integer		NOT NULL,'
-+		'name		varchar(80))')
+diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+index 017ecbb..c81dae3 100644
+--- a/tools/perf/util/db-export.c
++++ b/tools/perf/util/db-export.c
+@@ -21,17 +21,74 @@
+ #include "comm.h"
+ #include "symbol.h"
+ #include "event.h"
++#include "util.h"
+ #include "thread-stack.h"
+ #include "db-export.h"
+ 
++struct deferred_export {
++	struct list_head node;
++	struct comm *comm;
++};
 +
- if branches:
- 	do_query(query, 'CREATE TABLE samples ('
- 		'id		bigint		NOT NULL,'
-@@ -139,7 +143,9 @@ if branches:
- 		'to_dso_id	bigint,'
- 		'to_symbol_id	bigint,'
- 		'to_sym_offset	bigint,'
--		'to_ip		bigint)')
-+		'to_ip		bigint,'
-+		'branch_type	integer,'
-+		'in_tx		boolean)')
- else:
- 	do_query(query, 'CREATE TABLE samples ('
- 		'id		bigint		NOT NULL,'
-@@ -160,7 +166,9 @@ else:
- 		'period		bigint,'
- 		'weight		bigint,'
- 		'transaction	bigint,'
--		'data_src	bigint)')
-+		'data_src	bigint,'
-+		'branch_type	integer,'
-+		'in_tx		boolean)')
- 
- do_query(query, 'CREATE VIEW samples_view AS '
- 	'SELECT '
-@@ -178,7 +186,9 @@ do_query(query, 'CREATE VIEW samples_view AS '
- 		'to_hex(to_ip) AS to_ip_hex,'
- 		'(SELECT name FROM symbols WHERE id = to_symbol_id) AS to_symbol,'
- 		'to_sym_offset,'
--		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name'
-+		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name,'
-+		'(SELECT name FROM branch_types WHERE id = branch_type) AS branch_type_name,'
-+		'in_tx'
- 	' FROM samples')
- 
- 
-@@ -234,6 +244,7 @@ comm_file		= open_output_file("comm_table.bin")
- comm_thread_file	= open_output_file("comm_thread_table.bin")
- dso_file		= open_output_file("dso_table.bin")
- symbol_file		= open_output_file("symbol_table.bin")
-+branch_type_file	= open_output_file("branch_type_table.bin")
- sample_file		= open_output_file("sample_table.bin")
- 
- def trace_begin():
-@@ -257,6 +268,7 @@ def trace_end():
- 	copy_output_file(comm_thread_file,	"comm_threads")
- 	copy_output_file(dso_file,		"dsos")
- 	copy_output_file(symbol_file,		"symbols")
-+	copy_output_file(branch_type_file,	"branch_types")
- 	copy_output_file(sample_file,		"samples")
- 
- 	print datetime.datetime.today(), "Removing intermediate files..."
-@@ -267,6 +279,7 @@ def trace_end():
- 	remove_output_file(comm_thread_file)
- 	remove_output_file(dso_file)
- 	remove_output_file(symbol_file)
-+	remove_output_file(branch_type_file)
- 	remove_output_file(sample_file)
- 	os.rmdir(output_dir_name)
- 	print datetime.datetime.today(), "Adding primary keys"
-@@ -277,6 +290,7 @@ def trace_end():
- 	do_query(query, 'ALTER TABLE comm_threads    ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE dsos            ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE symbols         ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE branch_types    ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE samples         ADD PRIMARY KEY (id)')
- 
- 	print datetime.datetime.today(), "Adding foreign keys"
-@@ -352,9 +366,15 @@ def symbol_table(symbol_id, dso_id, sym_start, sym_end, binding, symbol_name, *x
- 	value = struct.pack(fmt, 6, 8, symbol_id, 8, dso_id, 8, sym_start, 8, sym_end, 4, binding, n, symbol_name)
- 	symbol_file.write(value)
- 
--def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, *x):
-+def branch_type_table(branch_type, name, *x):
-+	n = len(name)
-+	fmt = "!hiii" + str(n) + "s"
-+	value = struct.pack(fmt, 2, 4, branch_type, n, name)
-+	branch_type_file.write(value)
-+
-+def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, branch_type, in_tx, *x):
- 	if branches:
--		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiq", 15, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip)
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiiiB", 17, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 4, branch_type, 1, in_tx)
- 	else:
--		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiq", 19, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src)
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiqiiiB", 21, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src, 4, branch_type, 1, in_tx)
- 	sample_file.write(value)
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 2fd7ee8..f3ca779 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -66,6 +66,7 @@ struct tables {
- 	PyObject		*comm_thread_handler;
- 	PyObject		*dso_handler;
- 	PyObject		*symbol_handler;
-+	PyObject		*branch_type_handler;
- 	PyObject		*sample_handler;
- 	bool			db_export_mode;
- };
-@@ -664,13 +665,31 @@ static int python_export_symbol(struct db_export *dbe, struct symbol *sym,
- 	return 0;
- }
- 
-+static int python_export_branch_type(struct db_export *dbe, u32 branch_type,
-+				     const char *name)
++static int db_export__deferred(struct db_export *dbe)
 +{
-+	struct tables *tables = container_of(dbe, struct tables, dbe);
-+	PyObject *t;
++	struct deferred_export *de;
++	int err;
 +
-+	t = tuple_new(2);
-+
-+	tuple_set_s32(t, 0, branch_type);
-+	tuple_set_string(t, 1, name);
-+
-+	call_object(tables->branch_type_handler, t, "branch_type_table");
-+
-+	Py_DECREF(t);
++	while (!list_empty(&dbe->deferred)) {
++		de = list_entry(dbe->deferred.next, struct deferred_export,
++				node);
++		err = dbe->export_comm(dbe, de->comm);
++		list_del(&de->node);
++		free(de);
++		if (err)
++			return err;
++	}
 +
 +	return 0;
 +}
 +
- static int python_export_sample(struct db_export *dbe,
- 				struct export_sample *es)
++static void db_export__free_deferred(struct db_export *dbe)
++{
++	struct deferred_export *de;
++
++	while (!list_empty(&dbe->deferred)) {
++		de = list_entry(dbe->deferred.next, struct deferred_export,
++				node);
++		list_del(&de->node);
++		free(de);
++	}
++}
++
++static int db_export__defer_comm(struct db_export *dbe, struct comm *comm)
++{
++	struct deferred_export *de;
++
++	de = zalloc(sizeof(struct deferred_export));
++	if (!de)
++		return -ENOMEM;
++
++	de->comm = comm;
++	list_add_tail(&de->node, &dbe->deferred);
++
++	return 0;
++}
++
+ int db_export__init(struct db_export *dbe)
  {
- 	struct tables *tables = container_of(dbe, struct tables, dbe);
- 	PyObject *t;
- 
--	t = tuple_new(19);
-+	t = tuple_new(21);
- 
- 	tuple_set_u64(t, 0, es->db_id);
- 	tuple_set_u64(t, 1, es->evsel->db_id);
-@@ -691,6 +710,8 @@ static int python_export_sample(struct db_export *dbe,
- 	tuple_set_u64(t, 16, es->sample->weight);
- 	tuple_set_u64(t, 17, es->sample->transaction);
- 	tuple_set_u64(t, 18, es->sample->data_src);
-+	tuple_set_s32(t, 19, es->sample->flags & PERF_BRANCH_MASK);
-+	tuple_set_s32(t, 20, !!(es->sample->flags & PERF_IP_FLAG_IN_TX));
- 
- 	call_object(tables->sample_handler, t, "sample_table");
- 
-@@ -861,6 +882,7 @@ static void set_table_handlers(struct tables *tables)
- 	SET_TABLE_HANDLER(comm_thread);
- 	SET_TABLE_HANDLER(dso);
- 	SET_TABLE_HANDLER(symbol);
-+	SET_TABLE_HANDLER(branch_type);
- 	SET_TABLE_HANDLER(sample);
+ 	memset(dbe, 0, sizeof(struct db_export));
++	INIT_LIST_HEAD(&dbe->deferred);
+ 	return 0;
  }
  
-@@ -910,6 +932,12 @@ static int python_start_script(const char *script, int argc, const char **argv)
- 
- 	set_table_handlers(tables);
- 
-+	if (tables->db_export_mode) {
-+		err = db_export__branch_types(&tables->dbe);
-+		if (err)
-+			goto error;
-+	}
++int db_export__flush(struct db_export *dbe)
++{
++	return db_export__deferred(dbe);
++}
 +
- 	return err;
- error:
- 	Py_Finalize();
+ void db_export__exit(struct db_export *dbe)
+ {
++	db_export__free_deferred(dbe);
+ 	call_return_processor__free(dbe->crp);
+ 	dbe->crp = NULL;
+ }
+@@ -115,7 +172,10 @@ int db_export__comm(struct db_export *dbe, struct comm *comm,
+ 	comm->db_id = ++dbe->comm_last_db_id;
+ 
+ 	if (dbe->export_comm) {
+-		err = dbe->export_comm(dbe, comm);
++		if (main_thread->comm_set)
++			err = dbe->export_comm(dbe, comm);
++		else
++			err = db_export__defer_comm(dbe, comm);
+ 		if (err)
+ 			return err;
+ 	}
+diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
+index dd5ac2a..adbd22d 100644
+--- a/tools/perf/util/db-export.h
++++ b/tools/perf/util/db-export.h
+@@ -17,6 +17,7 @@
+ #define __PERF_DB_EXPORT_H
+ 
+ #include <linux/types.h>
++#include <linux/list.h>
+ 
+ struct perf_evsel;
+ struct machine;
+@@ -74,9 +75,11 @@ struct db_export {
+ 	u64 sample_last_db_id;
+ 	u64 call_path_last_db_id;
+ 	u64 call_return_last_db_id;
++	struct list_head deferred;
+ };
+ 
+ int db_export__init(struct db_export *dbe);
++int db_export__flush(struct db_export *dbe);
+ void db_export__exit(struct db_export *dbe);
+ int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel);
+ int db_export__machine(struct db_export *dbe, struct machine *machine);
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index cb1d960..118bc62 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -1030,7 +1030,9 @@ error:
+ 
+ static int python_flush_script(void)
+ {
+-	return 0;
++	struct tables *tables = &tables_global;
++
++	return db_export__flush(&tables->dbe);
+ }
+ 
+ /*
 -- 
 1.9.1
 
