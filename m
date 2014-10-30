@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760115AbaJ3OZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:25:27 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:35136 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125AbaJ3OZZ (ORCPT
+	id S1760268AbaJ3OZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:25:54 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:53373 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758147AbaJ3OZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:25:25 -0400
-Message-ID: <54524A2F.5050907@oracle.com>
-Date: Thu, 30 Oct 2014 10:24:47 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 30 Oct 2014 10:25:53 -0400
+Date: Thu, 30 Oct 2014 15:25:47 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] i2c: core: Dispose OF IRQ mapping at client removal
+ time
+Message-ID: <20141030142543.GA20072@ulmo.nvidia.com>
+References: <1414677578-27412-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+ <1414677578-27412-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, peterz@infradead.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
-References: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com> <20141030082712.GB4664@dhcp22.suse.cz> <54523DDE.9000904@oracle.com> <20141030141401.GA24520@phnom.home.cmpxchg.org>
-In-Reply-To: <20141030141401.GA24520@phnom.home.cmpxchg.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+In-Reply-To: <1414677578-27412-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2014 10:14 AM, Johannes Weiner wrote:
->> The problem is that you are attempting to read 'locked' when you call
->> > mem_cgroup_end_page_stat(), so it gets used even before you enter the
->> > function - and using uninitialized variables is undefined.
-> We are not using that value anywhere if !memcg.  What path are you
-> referring to?
 
-You're using that value as soon as you are passing it to a function, it
-doesn't matter what happens inside that function.
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> > Yes, it's a compiler warning.
-> Could you provide that please, including arch, and gcc version?
+On Thu, Oct 30, 2014 at 03:59:37PM +0200, Laurent Pinchart wrote:
+> Clients instantiated from OF get an IRQ mapping created at device
+> registration time. Dispose the mapping when the client is removed.
+>=20
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.co=
+m>
+> ---
+>  drivers/i2c/i2c-core.c | 3 +++
+>  1 file changed, 3 insertions(+)
 
-On x86,
+If this is needed regardless of patch 3/3, then presumably it should be
+Cc'ed to stable@vger.kernel.org since it fixes a bug that's been there
+for quite some time?
 
-$ gcc --version
-gcc (GCC) 5.0.0 20141029 (experimental)
+Thierry
 
-[   26.868116] ================================================================================
-[   26.870376] UBSan: Undefined behaviour in mm/rmap.c:1084:2
-[   26.871792] load of value 255 is not a valid value for type '_Bool'
-[   26.873256] CPU: 4 PID: 8304 Comm: rngd Not tainted 3.18.0-rc2-next-20141029-sasha-00039-g77ed13d-dirty #1427
-[   26.875636]  ffff8800cac17ff0 0000000000000000 0000000000000000 ffff880069ffbb28
-[   26.877611]  ffffffffaf010c16 0000000000000037 ffffffffb1c0d050 ffff880069ffbb38
-[   26.879140]  ffffffffa6e97899 ffff880069ffbbb8 ffffffffa6e97cc7 ffff880069ffbbb8
-[   26.880765] Call Trace:
-[   26.881185] dump_stack (lib/dump_stack.c:52)
-[   26.882755] ubsan_epilogue (lib/ubsan.c:159)
-[   26.883555] __ubsan_handle_load_invalid_value (lib/ubsan.c:482)
-[   26.884492] ? mem_cgroup_begin_page_stat (mm/memcontrol.c:1962)
-[   26.885441] ? unmap_page_range (./arch/x86/include/asm/paravirt.h:694 mm/memory.c:1091 mm/memory.c:1258 mm/memory.c:1279 mm/memory.c:1303)
-[   26.886242] page_remove_rmap (mm/rmap.c:1084 mm/rmap.c:1096)
-[   26.886922] unmap_page_range (./arch/x86/include/asm/atomic.h:27 include/linux/mm.h:463 mm/memory.c:1146 mm/memory.c:1258 mm/memory.c:1279 mm/memory.c:1303)
-[   26.887824] unmap_single_vma (mm/memory.c:1348)
-[   26.888582] unmap_vmas (mm/memory.c:1377 (discriminator 3))
-[   26.889430] exit_mmap (mm/mmap.c:2837)
-[   26.890060] mmput (kernel/fork.c:659)
-[   26.890656] do_exit (./arch/x86/include/asm/thread_info.h:168 kernel/exit.c:462 kernel/exit.c:747)
-[   26.891359] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[   26.892287] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
-[   26.893107] ? syscall_trace_enter_phase2 (arch/x86/kernel/ptrace.c:1598 (discriminator 2))
-[   26.893974] do_group_exit (include/linux/sched.h:775 kernel/exit.c:873)
-[   26.894695] SyS_exit_group (kernel/exit.c:901)
-[   26.895433] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
-[   26.896134] ================================================================================
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 2f90ac6a7f79..258765b29684 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -670,6 +670,9 @@ static int i2c_device_remove(struct device *dev)
+>  		status =3D driver->remove(client);
+>  	}
+> =20
+> +	if (dev->of_node)
+> +		irq_dispose_mapping(client->irq);
+> +
+>  	dev_pm_domain_detach(&client->dev, true);
+>  	return status;
+>  }
+> --=20
+> 2.0.4
+>=20
 
+--UlVJffcvxoiEqYs2
+Content-Type: application/pgp-signature
 
-Thanks,
-Sasha
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUUkpnAAoJEN0jrNd/PrOhHFEP/j0gVhg1NzMsGaOQ4Fn6wteW
+02QIeCKIHeYDp7xS456XHpSGc43XT2MuDatAvIobnmTNfpryfZSGikA3m9NwxYF1
+qBqRQYEnsF0NFkYmCCTnQDfZf6IoBtYd3OdrPUMIQELCyRGVTsSlYWFf2yicJSju
+oh+ONYYRf59/kMTRFT8OoeKnPp0fwFZdiUefa0ZqjaBflFEMQO2xoVR3+TDzodwD
+6bvdpBOWDHcwwG/o1w6bMWZGgFFW9y+dGvNMLQkRa2URgvAQgzqapNoR62eZlEPK
+RlPlM1FoNsVa3sWbEHivIYymyGWd6N8VZBoOM1yvYvonHutwfJjxpqYb1+k8Te3t
+wfqR15cNy8kkWPpXI9jBOiA+dup1gEnxnN1KQayTGaqcRyS1R6oJO/Pagc1EM2iK
+ka6BF97c+2cpesxMf6G9ZAA/P+jmIjAv4heaY4x4xo1r1HxUCXT0jXCikIypPGmt
+DkPh6L3+wvGiVVbFMEmhqHUw7Np5flhiKvWDYcfBRTqDNwXgnsCSO0JbRDzoY5Ur
+Vcmahz/9bJv9PQXzPBuaRSEi4eIH0P/7njOQS6PZmRtuMMKVUBFyoJZCXfn70Ale
+rUq6jf5pRYvdmjiLm9XgsJHFUmZfWNtkMGtQ1SI00bofe9xeUq6Wxv9utH36F59D
+OIIVXASW9Rp4EOr1FK9f
+=Rzsr
+-----END PGP SIGNATURE-----
+
+--UlVJffcvxoiEqYs2--
