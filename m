@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759732AbaJ3L1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:27:15 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:51496 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759538AbaJ3L1K (ORCPT
+	id S1759176AbaJ3Lal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:30:41 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:15871 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758559AbaJ3Lak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:27:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tom Gundersen <teg@jklm.no>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Tejun Heo <tj@kernel.org>,
-        Marcel Holtmann <marcel@holtmann.org>, Ryan Lortie <desrt@desrt.ca>,
-        Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>,
-        Daniel Mack <daniel@zonque.org>,
-        "alban.crequy" <alban.crequy@collabora.co.uk>,
-        "javier.martinez" <javier.martinez@collabora.co.uk>
-Subject: Re: kdbus: add header file
-Date: Thu, 30 Oct 2014 12:26:58 +0100
-Message-ID: <6078917.F7Y7rNpK9C@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAG-2HqV_mXyARMs=9GOpbCBHPU+2XMkDcm=sGekYnnujNPAYqQ@mail.gmail.com>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <3546486.lOZcZMmXYe@wuerfel> <CAG-2HqV_mXyARMs=9GOpbCBHPU+2XMkDcm=sGekYnnujNPAYqQ@mail.gmail.com>
+	Thu, 30 Oct 2014 07:30:40 -0400
+Date: Thu, 30 Oct 2014 07:30:28 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>, Rabin Vincent <rabin@rab.in>,
+        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing/syscalls: ignore numbers outside NR_syscalls'
+ range
+Message-ID: <20141030073028.284c468c@gandalf.local.home>
+In-Reply-To: <20141030111441.GP27405@n2100.arm.linux.org.uk>
+References: <1414620418-29472-1-git-send-email-rabin@rab.in>
+	<20141030082606.GA7945@infradead.org>
+	<20141030101808.GO27405@n2100.arm.linux.org.uk>
+	<20141030071039.37633bf5@gandalf.local.home>
+	<20141030111441.GP27405@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Osmef+fr0oRUwxpMxDoqv0Y/Wf9uLkdMjyF3/WwlJPz
- kvf8cQch6oVPyYXrDupXAz7t4mQX7Z0zYL0i9M1fPazkbhqD16
- MJOwd76Cy6am2vdAa/ziRu4k3OlzdzNOFAtsEBArZgwP/dHgql
- L+ZDRY7FutYBULqdxUhsfYwm4zccilGxiFae2INIe/MRhK/Ckm
- gpRRcUrTIRBvfyC8IVEbYpeANQ8K4O1JFUPCYLw1TCrHSHWsST
- tMiqwoUT9lNzwWCo2NPKIPYX5E60lxw0CjCl36lL8QPtpEpVIC
- vG1PIcOTGLiT1WI0msJ85e9L6WDHswVrcEkYVXynYQzfVOq0ZV
- ob9aBatyOuoHbHVW5eCs=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 October 2014 12:02:39 Tom Gundersen wrote:
-> On Thu, Oct 30, 2014 at 9:20 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > I think in general, using enum is great, but for ioctl command numbers,
-> > we probably want to have defines so the user space implementation can
-> > use #ifdef to see if the kernel version that it is being built for
-> > knows a particular command.
+On Thu, 30 Oct 2014 11:14:41 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+
+
+> We have always had syscall number range of 0x900000 or so.  The tracing
+> design does not expect that.  Therefore, the tracing design did not take
+> account of ARM when it was created.  Therefore, it's up to the tracing
+> people to decide how to properly fit their ill-designed subsystem into
+> one of the popular and well-established kernel architectures - or at
+> least suggest a way to work around this issue.
 > 
-> Does that make sense for the first version? I agree that we should use
->  #define to allow #ifdef for when we add more ioctls in the future,
-> but these ioctls will always exist...
 
-It's mainly for consistency really.
 
-> The nice thing about enums is of course that it helps with debugging
-> as gdb can show the string representation rather than the number,
-> because in contrast to #defines, an enum is something the compliler
-> knows about.
+Fine, lets define a MAX_SYSCALL_NR that is by default NR_syscalls, but
+an architecture can override it.
 
-This doesn't get passed as an enum in user space though, and when debugging
-the kernel it only helps within one function.
+In trace_syscalls.c, where the checks are done, have this:
 
-	Arnd
+#ifndef MAX_SYSCALL_NR
+# define MAX_SYSCALL_NR NR_syscalls
+#endif
+
+change all the checks to test against MAX_SYSCALL_NR instead of
+NR_syscalls.
+
+Then in arch/arm/include/asm/syscall.h have:
+
+#define MAX_SYSCALL_NR 0xa00000
+
+or whatever would be the highest syscall number for ARM.
+
+-- Steve
