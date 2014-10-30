@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311AbaJ3Lnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:43:46 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:50093 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758890AbaJ3Lno (ORCPT
+	id S1759375AbaJ3Lpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:45:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59668 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759041AbaJ3Lpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:43:44 -0400
-Date: Thu, 30 Oct 2014 12:43:41 +0100
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Peter.Chen@freescale.com
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] usb: chipidea: setup ci_hdrc_platform_data in core
- driver
-Message-ID: <20141030114341.GA7798@kwain>
-References: <1414669007-9850-1-git-send-email-antoine.tenart@free-electrons.com>
+	Thu, 30 Oct 2014 07:45:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414669007-9850-1-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPDyKFqFOb9L6WyFhLbSY-dQy_75YVUhTzVsBku1BKcEMmgpBg@mail.gmail.com>
+References: <1414655193-16952-1-git-send-email-pramod.gurav@smartplayin.com>
+	<CAPDyKFqFOb9L6WyFhLbSY-dQy_75YVUhTzVsBku1BKcEMmgpBg@mail.gmail.com>
+Date: Thu, 30 Oct 2014 17:15:42 +0530
+Message-ID: <CAMf-jSm-Fc6gcnSqB4cixjqZSQOrvSLaQ2hXqy1TZncFrjn8hw@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc: davinci: Fix and simplify probe failure path
+From: Pramod Gurav <pramod.gurav.etc@gmail.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 12:36:41PM +0100, Antoine Tenart wrote:
-> Hello,
-> 
-> This series introduce the ci_hdrc_get_platdata function to help setting up the
-> ChipIdea internal ci_hdrc_platform_data structure. This helps avoiding
-> duplicating code.
-> 
-> This series comes from a duscission on Berlin's USB pacthes where it was asked
-> to move the PHY phandle handling in the ChipIdea core[1].
-> 
-> With the introduction of the ci_hdrc_get_platdata function, the old
-> ci_get_platdata function is removed. Changes in ChipIdea drivers have also been
-> made.
-> 
-> This series is needed for the Berlin USB support and has been tested with an
-> updated version of the USB Berlin driver (not in mainline yet).
-> 
-> Thanks,
-> 
-> Antoine
-> 
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/292383.html
-> 
+Thanks Ulf,
 
-Of course, this is the cover letter so it should be [PATCH 0/6].
+On Thu, Oct 30, 2014 at 4:38 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 30 October 2014 08:46, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
+>> The sequence of resource release in probe failure path in this
+>> driver was wrong and needed fixes to cleanly unload the driver.
+>> This changes does the same by switching to managed resources and
+>> fixes return path to release resource in proper sequence.
+>>
+>> Cc: Chris Ball <chris@printf.net>
+>> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+>> Cc: linux-mmc@vger.kernel.org
+>
+> Please remove these Ccs above from the commit message. It's not needed
+> when you anyway need to send the patches directly to these addresses.
+Will remove Cc.
 
-This series depends on the generic PHY framework support in USB and CI:
-https://lkml.org/lkml/2014/10/28/807
+>
+>> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+>> ---
+..
+
+>>
+>>         host = mmc_priv(mmc);
+>>         host->mmc = mmc;        /* Important */
+>> @@ -1275,15 +1273,16 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+>>                 host->txdma = r->start;
+>>
+>>         host->mem_res = mem;
+>> -       host->base = ioremap(mem->start, mem_size);
+>> -       if (!host->base)
+>> -               goto out;
+>> +       host->base = devm_ioremap(&pdev->dev, mem->start, mem_size);
+>
+> I realized that you should use devm_ioremap_resource() instead. That
+> would simplify the code even more.
+>
+Yes, we could have used devm_ioremap_resource() but this driver stores
+the return from devm_request_mem_region() in host->mem_res and uses
+the same in the other part of drivers. Is there a way to work this
+around?
+
+> [...]
+>
+> Kind regards
+> Uffe
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
-Antoine
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thanks and Regards
+Pramod
