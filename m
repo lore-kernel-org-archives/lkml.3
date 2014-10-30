@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760370AbaJ3OPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:15:04 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:52481 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759789AbaJ3OPB (ORCPT
+	id S1760632AbaJ3OPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:15:24 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:53022 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760266AbaJ3OPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:15:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: balbi@ti.com
-Cc: Huang Rui <ray.huang@amd.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
-        Tony Li <tony.li@amd.com>, linux-usb@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 01/20] usb: dwc3: enable hibernation if to be supported
-Date: Thu, 30 Oct 2014 15:14:17 +0100
-Message-ID: <2025342.7A7Ashtuyx@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141030140832.GH6482@saruman>
-References: <1414663725-2195-1-git-send-email-ray.huang@amd.com> <4077930.b7qzaS4pBb@wuerfel> <20141030140832.GH6482@saruman>
+	Thu, 30 Oct 2014 10:15:21 -0400
+Message-ID: <545247F4.9010000@fb.com>
+Date: Thu, 30 Oct 2014 08:15:16 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:XK5Tlano+3n8TMUgxQN5JeVLZCtUe/pNCpNG9flHcN3
- KR65nBX9WSiBJ5RmL6Hp+GTGsA/Hkb0UfGtFtNXFRf8qf8bdy5
- dB0s2Wm7AFFslqItJ3bkiANBdxYdtXs3WatrvRLccCXNbycPSf
- x00Ihjjb1ovG4lNkt5WUEJKJmCa8vk3jr6jFzNqHcG1xIwttwD
- 5nauFjQONj96aDQWT4jYUPeZr2VNPYDkXG84baiCDlN2YrryIG
- M15KxQ4Dmbin/7LdQOa15/0AYze+zVPMP3vosnhDs+MbHKx61S
- R5DZIQjDwGtK6td7ZVuqJGxy21NBesQdAtNYxFzsZuro9vk7Cw
- gW3NsyUjKXYLUsupgMMs=
-X-UI-Out-Filterresults: notjunk:1;
+To: Dave Chinner <david@fromorbit.com>,
+        Dan Williams <dan.j.williams@intel.com>
+CC: "Jason B. Akers" <jason.b.akers@intel.com>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        "Karkra, Kapil" <kapil.karkra@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
+References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox> <20141029201417.GK16186@dastard> <545157DB.70304@fb.com> <20141029220905.GL16186@dastard> <CAPcyv4iiqfeWQyZpzYwASFV+7Ztjcjrp0DEq3ThOmdwgWGGJUw@mail.gmail.com> <20141030072111.GJ13323@dastard>
+In-Reply-To: <20141030072111.GJ13323@dastard>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-30_06:2014-10-30,2014-10-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.930852144804552 urlsuspect_oldscore=0.930852144804552
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.930852144804552 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410300133
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 October 2014 09:08:32 Felipe Balbi wrote:
-> On Thu, Oct 30, 2014 at 12:35:56PM +0100, Arnd Bergmann wrote:
-> > On Thursday 30 October 2014 18:08:26 Huang Rui wrote:
-> > > It enables hibernation if the function is set in coreConsultant.
-> > > 
-> > > Suggested-by: Felipe Balbi <balbi@ti.com>
-> > > Signed-off-by: Huang Rui <ray.huang@amd.com>
-> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > > 
-> > 
-> > Something went wrong with the Signed-off-by lines here. 
-> > You should never add someone else's Signed-off-by below yours.
-> > 
-> > I took a brief look at the entire series and the patches all look good
-> > to me, but you have made the same mistake with the Signed-off-by
-> > multiple times.
-> 
-> there are no mistakes, I just asked Huang to resend what I had on my
-> testing/next because it had not been sent to devicetree mailing list.
-> 
+On 2014-10-30 01:21, Dave Chinner wrote:
+> On Wed, Oct 29, 2014 at 03:24:11PM -0700, Dan Williams wrote:
+>> On Wed, Oct 29, 2014 at 3:09 PM, Dave Chinner <david@fromorbit.com> wrote:
+>>> On Wed, Oct 29, 2014 at 03:10:51PM -0600, Jens Axboe wrote:
+>>>> As for the fs accessing this, the io nice fields are readily exposed
+>>>> through the ->bi_rw setting. So while the above example uses ionice to
+>>>> set a task io priority (that a bio will then inherit), nothing prevents
+>>>> you from passing it in directly from the kernel.
+>>>
+>>> Right, but now the filesystem needs to provide that on a per-inode
+>>> basis, not from the task structure as the task that is submitting
+>>> the bio is not necesarily the task doing the read/write syscall.
+>>>
+>>> e.g. the write case above doesn't actually inherit the task priority
+>>> at the bio level at all because the IO is being dispatched by a
+>>> background flusher thread, not the ioniced task calling write(2).
+>>
+>> When the ioniced task calling write(2) inserts the page into the page
+>> cache then the current priority is recorded in the struct page.  The
+>
+> It does? Can you point me to where the page cache code does this,
+> because I've clearly missed something important go by in the past
+> few months...
 
-It's definitely a tricky question what the right Signed-off-by
-chain is in this case, I guess strictly speaking it could have
-been 
+I was puzzled too, but then I realized that Dan is referring to patch 
+4/5 in the series...
 
-Suggested-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Huang Rui <ray.huang@amd.com>
 
-which could correctly track where the patches went, but it's also
-somewhat silly.
+-- 
+Jens Axboe
 
-I would probably just have dropped the second Signed-off-by,
-so that the last S-o-b in the patch matches the "From", as we expect.
-
-It's definitely good to know that Huang Rui was not faking your
-Signed-off-by but that you had actually provided it yourself.
-
-	Arnd
