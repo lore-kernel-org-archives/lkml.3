@@ -1,160 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaJ3Con (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:44:43 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:50427 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaJ3Col (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:44:41 -0400
-Date: Wed, 29 Oct 2014 22:44:29 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/33] thermal: exynos: convert the driver to use per-SoC
- type operations
-Message-ID: <20141030024426.GA29689@developer>
-References: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
+	id S1753160AbaJ3C6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:58:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29770 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751473AbaJ3C6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 22:58:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,282,1413270000"; 
+   d="scan'208";a="598743152"
+Message-ID: <5451A94F.1090200@linux.intel.com>
+Date: Thu, 30 Oct 2014 10:58:23 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
-Content-Disposition: inline
-In-Reply-To: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-pm@vger.kernel.org >> Linux PM list" 
+	<linux-pm@vger.kernel.org>
+Subject: [PATCH v2] PM / Sleep: Timer quiesce in freeze state
+References: <5446787E.60202@linux.intel.com> <20141024153656.GM12706@worktop.programming.kicks-ass.net> <544DE5CF.9040501@linux.intel.com> <20141027074419.GE10501@worktop.programming.kicks-ass.net> <544F4B31.7050308@linux.intel.com> <20141028082503.GN3337@twins.programming.kicks-ass.net> <5450253B.5020802@linux.intel.com> <20141029082432.GV3337@twins.programming.kicks-ass.net>
+In-Reply-To: <20141029082432.GV3337@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The patch is based on v3.17, merged with Rafael's pm+acpi-3.18-rc1 tag from
+linux-pm.git tree.
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The patch is based on the patch PeterZ initially wrote.
+---
+Freeze is a general power saving state that processes are frozen, devices
+are suspended and CPUs are in idle state. However, when the system enters
+freeze state, there are a few timers keep ticking and hence consumes more
+power unnecessarily. The observed timer events in freeze state are:
+- tick_sched_timer
+- watchdog lockup detector
+- realtime scheduler period timer
 
-Bartlomiej,
+The system power consumption in freeze state will be reduced significantly
+if we quiesce these timers.
 
-On Thu, Sep 18, 2014 at 05:27:17PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
->=20
-> This patch series replaces the hardware registers abstractions in
-> the Exynos thermal driver by the usage of per-SoC type operations.
-> Such solution provides simpler, easier to understand code and
-> allows removal of ~250 LOCs (~11% of the whole source code) from
-> the driver.  Some other driver improvements are now also possible
-> thanks to these changes but are scheduled at later time (like
-> consolidating code for clearing IRQs using INTCLEAR register).
->=20
-> The patchset should not cause any functionality changes.  This
-> means that unless there are some bugs in the patches itself there
-> should be no behavior changes for the driver (this also includes
-> lack of changes in the way hardware is accessed by the driver).
->=20
-> All testing was done on (Exynos4412 SoC based) ODROID U3 board
-> (some additional patches are needed to make the Exynos thermal
-> driver work on this hardware).
->=20
-> Depends on:
-> - 'next' branch of linux-soc-thermal.git kernel tree from Eduardo
-> - [PATCH] thermal: exynos: use correct offset for TMU_CONTROL
->   register on Exynos5260
->   (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg36529=
-=2Ehtml)
->=20
+On Baytrail-T(ASUS_T100) platform, when the system is freezed to low power
+idle state(S0ix), quiescing these timers saves 29.8% power(94.48mw -> 66.32mw).
 
-Could you please refresh this series?
+The patch is also tested on:
+- Sandybrdige-EP system, both RTC alarm and power button are able to wake
+  the system up from freeze state.
+- HP laptop EliteBook 8460p, both RTC alarm and power button are able to
+  wake the system up from freeze state.
 
-I checked until patch 09, but patch 10 fails to apply:
-patching file drivers/thermal/samsung/exynos_tmu.c
-Hunk #1 succeeded at 414 (offset 15 lines).
-patching file drivers/thermal/samsung/exynos_tmu.h
-Hunk #1 succeeded at 92 with fuzz 2 (offset -4 lines).
-Hunk #2 succeeded at 117 (offset -8 lines).
-patching file drivers/thermal/samsung/exynos_tmu_data.c
-Hunk #1 FAILED at 422.
-1 out of 1 hunk FAILED -- saving rejects to file
-drivers/thermal/samsung/exynos_tmu_data.c.rej
+Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Alan Cox <alan@linux.intel.com>
+---
+ arch/x86/kernel/apic/apic.c        |   8 ++
+ drivers/cpuidle/cpuidle.c          |  12 +++
+ kernel/power/suspend.c             | 185 +++++++++++++++++++++++++++++++++++--
+ kernel/time/timekeeping.c          |   4 +-
+ kernel/time/timekeeping_internal.h |   3 +
+ 5 files changed, 204 insertions(+), 8 deletions(-)
 
-I also have in my local tree the dependency patch you mention above.
-
-Cheers,
-
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->=20
->=20
-> Bartlomiej Zolnierkiewicz (33):
->   thermal: exynos: remove needless triminfo_data abstraction
->   thermal: exynos: remove needless tmu_status abstraction
->   thermal: exynos: remove needless threshold_temp abstraction
->   thermal: exynos: remove needless triminfo_ctrl abstraction
->   thermal: exynos: remove needless test_mux_addr_shift abstraction
->   thermal: exynos: remove needless therm_trip_[mode,mask]_shift
->     abstractions
->   thermal: exynos: remove needless therm_trip_en_shift abstraction
->   thermal: exynos: remove needless emul_temp_shift abstraction
->   thermal: exynos: remove needless emul_time_shift abstraction
->   thermal: exynos: replace tmu_irqstatus check by Exynos5440 one
->   thermal: exynos: replace tmu_pmin check by Exynos5440 one
->   thermal: exynos: simplify HW_TRIP level setting
->   thermal: exynos: replace threshold_falling check by Exynos SoC type
->     one
->   thermal: exynos: remove TMU_SUPPORT_READY_STATUS flag
->   thermal: exynos: remove TMU_SUPPORT_TRIM_RELOAD flag
->   thermal: exynos: add sanitize_temp_error() helper
->   thermal: exynos: add get_th_reg() helper
->   thermal: exynos: add ->tmu_initialize method
->   thermal: exynos: add get_con_reg() helper
->   thermal: exynos: add ->tmu_control method
->   thermal: exynos: add ->tmu_read method
->   thermal: exynos: add get_emul_con_reg() helper
->   thermal: exynos: add ->tmu_set_emulation method
->   thermal: exynos: add ->tmu_clear_irqs method
->   thermal: exynos: remove TMU_SUPPORT_FALLING_TRIP flag
->   thermal: exynos: remove TMU_SUPPORT_EMUL_TIME flag
->   thermal: exynos: remove TMU_SUPPORT_EMULATION flag
->   thermal: exynos: remove TMU_SUPPORT_ADDRESS_MULTIPLE flag
->   thermal: exynos: remove TMU_SUPPORT_MULTI_INST flag
->   thermal: exynos: remove test_mux pdata field
->   thermal: exynos: remove SoC type ifdefs
->   thermal: exynos: remove __EXYNOS5420_TMU_DATA macro
->   thermal: exynos: remove exynos_tmu_data.h include
->=20
->  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
->  drivers/thermal/samsung/exynos_tmu.c            | 706 +++++++++++++++++-=
-------
->  drivers/thermal/samsung/exynos_tmu.h            | 131 +----
->  drivers/thermal/samsung/exynos_tmu_data.c       | 260 +--------
->  drivers/thermal/samsung/exynos_tmu_data.h       | 174 ------
->  5 files changed, 509 insertions(+), 763 deletions(-)
->  delete mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
->=20
-> --=20
-> 1.8.2.3
->=20
-
---r5Pyd7+fXNt84Ff3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUUaYCAAoJEMLUO4d9pOJWan4H/2YDAd8+bVQmCWRmwXupVsgV
-uGCnV8TPa0lNxHWj49Kt4eWPKmDdn6v7/0aIAUGiAcUpwEd1+KOC+Lb/46GT5Tmn
-mnBS8F5XARBZZmtQvW3eX9i4xoOYEtfCl35Whuud1rdcsJQbRs8eEgJE9Lq/5k15
-tMvmElmZcJJBufQbJ2aBDoEFAFyajjIm3jzvk4WVuDgJ+0vaGvgdv+f86jui3HMg
-hYArjxrKzxX9Vmc9IREPj0qnSkGBUWVwncppD/PfM4ZMsc4R9zukZr2wcUZaPfvN
-rmrOLLJvSrVbmxjyfNkne7LmaOR4LJwZy9drRTCDiATpK5+hskI6srI+RB9pjMU=
-=gdVE
------END PGP SIGNATURE-----
-
---r5Pyd7+fXNt84Ff3--
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 6776027..f2bb645 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -917,6 +917,14 @@ static void local_apic_timer_interrupt(void)
+ 	 */
+ 	inc_irq_stat(apic_timer_irqs);
+ 
++	/*
++	 * if timekeeping is suspended, the clock event device will be
++	 * suspended as well, so we are not supposed to invoke the event
++	 * handler of clock event device.
++	 */
++	if (unlikely(timekeeping_suspended))
++		return;
++
+ 	evt->event_handler(evt);
+ }
+ 
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index ee9df5e..8f84f40 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -119,6 +119,18 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+ 	ktime_t time_start, time_end;
+ 	s64 diff;
+ 
++	/*
++	 * under the scenario of use deepest idle state, the timekeeping
++	 * could be suspended as well as the clock source device, so we
++	 * bypass the idle counter update for this case
++	 */
++	if (unlikely(use_deepest_state)) {
++		entered_state = target_state->enter(dev, drv, index);
++		if (!cpuidle_state_is_coupled(dev, drv, entered_state))
++			local_irq_enable();
++		return entered_state;
++	}
++
+ 	trace_cpu_idle_rcuidle(index, dev->cpu);
+ 	time_start = ktime_get();
+ 
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 4ca9a33..660fd15 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -28,16 +28,20 @@
+ #include <linux/ftrace.h>
+ #include <trace/events/power.h>
+ #include <linux/compiler.h>
++#include <linux/stop_machine.h>
++#include <linux/clockchips.h>
++#include <linux/hrtimer.h>
+ 
+ #include "power.h"
++#include "../time/tick-internal.h"
++#include "../time/timekeeping_internal.h"
+ 
+ const char *pm_labels[] = { "mem", "standby", "freeze", NULL };
+ const char *pm_states[PM_SUSPEND_MAX];
+ 
+ static const struct platform_suspend_ops *suspend_ops;
+ static const struct platform_freeze_ops *freeze_ops;
+-static DECLARE_WAIT_QUEUE_HEAD(suspend_freeze_wait_head);
+-static bool suspend_freeze_wake;
++static int suspend_freeze_wake;
+ 
+ void freeze_set_ops(const struct platform_freeze_ops *ops)
+ {
+@@ -48,22 +52,191 @@ void freeze_set_ops(const struct platform_freeze_ops *ops)
+ 
+ static void freeze_begin(void)
+ {
+-	suspend_freeze_wake = false;
++	suspend_freeze_wake = -1;
++}
++
++enum freezer_state {
++	FREEZER_NONE,
++	FREEZER_PICK_TK,
++	FREEZER_SUSPEND_CLKEVT,
++	FREEZER_SUSPEND_TK,
++	FREEZER_IDLE,
++	FREEZER_RESUME_TK,
++	FREEZER_RESUME_CLKEVT,
++	FREEZER_EXIT,
++};
++
++struct freezer_data {
++	int			thread_num;
++	atomic_t		thread_ack;
++	enum freezer_state	state;
++};
++
++static void set_state(struct freezer_data *fd, enum freezer_state state)
++{
++	/* set ack counter */
++	atomic_set(&fd->thread_ack, fd->thread_num);
++	/* guarantee the write ordering between ack counter and state */
++	smp_wmb();
++	fd->state = state;
++}
++
++static void ack_state(struct freezer_data *fd)
++{
++	if (atomic_dec_and_test(&fd->thread_ack))
++		set_state(fd, fd->state + 1);
++}
++
++static void freezer_pick_tk(int cpu)
++{
++	if (tick_do_timer_cpu == TICK_DO_TIMER_NONE) {
++		static DEFINE_SPINLOCK(lock);
++
++		spin_lock(&lock);
++		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
++			tick_do_timer_cpu = cpu;
++		spin_unlock(&lock);
++	}
++}
++
++static void freezer_suspend_clkevt(int cpu)
++{
++	if (tick_do_timer_cpu == cpu)
++		return;
++
++	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
++}
++
++static void freezer_suspend_tk(int cpu)
++{
++	if (tick_do_timer_cpu != cpu)
++		return;
++
++	timekeeping_suspend();
++
++}
++
++static void freezer_idle(int cpu)
++{
++	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
++	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
++
++	stop_critical_timings();
++
++	while (suspend_freeze_wake == -1) {
++		int next_state;
++
++		/*
++		 * interrupt must be disabled before cpu enters idle
++		 */
++		local_irq_disable();
++
++		next_state = cpuidle_select(drv, dev);
++		if (next_state < 0) {
++			arch_cpu_idle();
++			continue;
++		}
++		/*
++		 * cpuidle_enter will return with interrupt enabled
++		 */
++		cpuidle_enter(drv, dev, next_state);
++	}
++
++	if (suspend_freeze_wake == cpu)
++		kick_all_cpus_sync();
++
++	/*
++	 * We disable interrupt here for the rest of resume operations
++	 */
++	local_irq_disable();
++	start_critical_timings();
++}
++
++static void freezer_resume_tk(int cpu)
++{
++	if (tick_do_timer_cpu != cpu)
++		return;
++
++	timekeeping_resume();
++}
++
++static void freezer_resume_clkevt(int cpu)
++{
++	if (tick_do_timer_cpu == cpu) {
++		/*
++		 * Turn on the interrupt on the tick timer CPU as freezer
++		 * tasks are finished.
++		 */
++		local_irq_enable();
++		return;
++	}
++
++	touch_softlockup_watchdog();
++	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
++	hrtimers_resume();
++	/*
++	 * Turn on the interrupt on the non-tick-timer CPUs as freezer
++	 * tasks are finished
++	 */
++	local_irq_enable();
++}
++
++typedef void (*freezer_fn)(int);
++
++static freezer_fn freezer_func[FREEZER_EXIT] = {
++	NULL,
++	freezer_pick_tk,
++	freezer_suspend_clkevt,
++	freezer_suspend_tk,
++	freezer_idle,
++	freezer_resume_tk,
++	freezer_resume_clkevt,
++};
++
++static int freezer_stopper_fn(void *arg)
++{
++	struct freezer_data *fd = arg;
++	enum freezer_state state = FREEZER_NONE;
++	int cpu = smp_processor_id();
++
++	do {
++		cpu_relax();
++		if (fd->state != state) {
++			state = fd->state;
++			if (freezer_func[state])
++				(*freezer_func[state])(cpu);
++			ack_state(fd);
++		}
++	} while (fd->state != FREEZER_EXIT);
++
++	return 0;
+ }
+ 
+ static void freeze_enter(void)
+ {
++	struct freezer_data fd;
++
+ 	cpuidle_use_deepest_state(true);
+ 	cpuidle_resume();
+-	wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
++
++	get_online_cpus();
++
++	fd.thread_num = num_online_cpus();
++	set_state(&fd, FREEZER_PICK_TK);
++
++	__stop_machine(freezer_stopper_fn, &fd, cpu_online_mask);
++
++	put_online_cpus();
++
+ 	cpuidle_pause();
+ 	cpuidle_use_deepest_state(false);
+ }
+ 
+ void freeze_wake(void)
+ {
+-	suspend_freeze_wake = true;
+-	wake_up(&suspend_freeze_wait_head);
++	if (suspend_freeze_wake != -1)
++		return;
++	suspend_freeze_wake = smp_processor_id();
+ }
+ EXPORT_SYMBOL_GPL(freeze_wake);
+ 
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index ec1791f..23d8feb 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1114,7 +1114,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
+  * xtime/wall_to_monotonic/jiffies/etc are
+  * still managed by arch specific suspend/resume code.
+  */
+-static void timekeeping_resume(void)
++void timekeeping_resume(void)
+ {
+ 	struct timekeeper *tk = &tk_core.timekeeper;
+ 	struct clocksource *clock = tk->tkr.clock;
+@@ -1195,7 +1195,7 @@ static void timekeeping_resume(void)
+ 	hrtimers_resume();
+ }
+ 
+-static int timekeeping_suspend(void)
++int timekeeping_suspend(void)
+ {
+ 	struct timekeeper *tk = &tk_core.timekeeper;
+ 	unsigned long flags;
+diff --git a/kernel/time/timekeeping_internal.h b/kernel/time/timekeeping_internal.h
+index 4ea005a..ed7a574 100644
+--- a/kernel/time/timekeeping_internal.h
++++ b/kernel/time/timekeeping_internal.h
+@@ -26,4 +26,7 @@ static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
+ }
+ #endif
+ 
++extern int timekeeping_suspend(void);
++extern void timekeeping_resume(void);
++
+ #endif /* _TIMEKEEPING_INTERNAL_H */
+-- 
+1.9.1
