@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759117AbaJ3LmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:42:19 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33347 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759085AbaJ3LmQ (ORCPT
+	id S1759311AbaJ3Lnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:43:46 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:50093 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758890AbaJ3Lno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:42:16 -0400
-Message-ID: <54522412.1070808@collabora.co.uk>
-Date: Thu, 30 Oct 2014 12:42:10 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Thu, 30 Oct 2014 07:43:44 -0400
+Date: Thu, 30 Oct 2014 12:43:41 +0100
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Peter.Chen@freescale.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] usb: chipidea: setup ci_hdrc_platform_data in core
+ driver
+Message-ID: <20141030114341.GA7798@kwain>
+References: <1414669007-9850-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [RFT v3 05/14] regulator: max77802: Don't ignore return value
- of current opmode
-References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com> <1414668053-31370-6-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1414668053-31370-6-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414669007-9850-1-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
-
-On 10/30/2014 12:20 PM, Krzysztof Kozlowski wrote:
-> The return value of regmap_read() of current opmode for regulator was
-> silently ignored and whatever happened to be in 'val' variable was used
-> as new opmode. This could lead to using bogus opmode.
+On Thu, Oct 30, 2014 at 12:36:41PM +0100, Antoine Tenart wrote:
+> Hello,
 > 
-> Don't ignore what regmap_read() returns. If it fails just fall back to
-> normal opmode.
+> This series introduce the ci_hdrc_get_platdata function to help setting up the
+> ChipIdea internal ci_hdrc_platform_data structure. This helps avoiding
+> duplicating code.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/regulator/max77802.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
+> This series comes from a duscission on Berlin's USB pacthes where it was asked
+> to move the PHY phandle handling in the ChipIdea core[1].
 > 
-> diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-> index b9958d927297..60daca2028e9 100644
-> --- a/drivers/regulator/max77802.c
-> +++ b/drivers/regulator/max77802.c
-> @@ -606,7 +606,13 @@ static int max77802_pmic_probe(struct platform_device *pdev)
->  		config.of_node = pdata->regulators[i].of_node;
->  
->  		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
-> -		val = val >> shift & MAX77802_OPMODE_MASK;
-> +		if (ret < 0) {
-> +			dev_warn(&pdev->dev,
-> +				"cannot read current mode for %d\n", i);
-> +			val = MAX77802_OPMODE_NORMAL;
-> +		} else {
-> +			val = val >> shift & MAX77802_OPMODE_MASK;
-> +		}
->  
->  		/*
->  		 * If the regulator is disabled and the system warm rebooted,
+> With the introduction of the ci_hdrc_get_platdata function, the old
+> ci_get_platdata function is removed. Changes in ChipIdea drivers have also been
+> made.
+> 
+> This series is needed for the Berlin USB support and has been tested with an
+> updated version of the USB Berlin driver (not in mainline yet).
+> 
+> Thanks,
+> 
+> Antoine
+> 
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/292383.html
 > 
 
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Of course, this is the cover letter so it should be [PATCH 0/6].
 
-Best regards,
-Javier
+This series depends on the generic PHY framework support in USB and CI:
+https://lkml.org/lkml/2014/10/28/807
+
+
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
