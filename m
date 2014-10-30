@@ -1,156 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760011AbaJ3NUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:20:03 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:39090 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759278AbaJ3NT7 convert rfc822-to-8bit (ORCPT
+	id S933249AbaJ3NUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:20:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55357 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760013AbaJ3NUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:19:59 -0400
+	Thu, 30 Oct 2014 09:20:15 -0400
+Message-ID: <54523B0B.8010003@ti.com>
+Date: Thu, 30 Oct 2014 15:20:11 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <54522CF7.6030302@samsung.com>
-References: <1410786785-9838-1-git-send-email-gautam.vivek@samsung.com>
-	<1410786785-9838-3-git-send-email-gautam.vivek@samsung.com>
-	<54522CF7.6030302@samsung.com>
-Date: Thu, 30 Oct 2014 18:49:58 +0530
-X-Google-Sender-Auth: uFayvWDqbl-OmraFEkAFkfsWHCM
-Message-ID: <CAFp+6iFLo2sRWC6=KhY4XObZjj4D+HOXv1L2fU2GRe1r6gom3A@mail.gmail.com>
-Subject: Re: [PATCH 2/3] drm/exynos: dp: Remove support for unused dptx-phy
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sean Paul <seanpaul@google.com>, kishon <kishon@ti.com>,
-        Ajay Kumar <ajaykumar.rs@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, "cpgs ." <cpgs@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.18
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="4CBQKDreR6C7sBvXt7OEsmCJ5fRkHj6e4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Inki,
+--4CBQKDreR6C7sBvXt7OEsmCJ5fRkHj6e4
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Hi Linus,
+
+Please pull fbdev fixes for 3.18.
+
+ Tomi
+
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355=
+e1:
+
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-fixes-3.18
+
+for you to fetch changes up to a942535d6e5c23f0015d6674d28c91dd59a720e4:
+
+  Merge branch '3.18/omapdss-fixes' into 3.18/fbdev-fixes (2014-10-30 14:=
+53:49 +0200)
+
+----------------------------------------------------------------
+fbdev fixes for 3.18
+
+* Fix fb console option parsing
+* Fixes for OMAPDSS/OMAPFB crashes related to module unloading and
+  device/driver binding & unbinding.
+* Fix for OMAP HDMI PLL locking failing in certain cases
+* Misc minor fixes for atmel lcdfb and OMAP
+
+----------------------------------------------------------------
+Alexandre Belloni (1):
+      drivers: video: fbdev: atmel_lcdfb.c: remove unnecessary header
+
+Felipe Balbi (2):
+      OMAPFB: add missing MODULE_ALIAS()
+      OMAPFB: remove __exit annotation
+
+Maarten ter Huurne (1):
+      fbcon: Fix option parsing control flow in fb_console_setup
+
+Marek Belisko (1):
+      omap: dss: connector-analog-tv: Add missing module device table
+
+Mark Rustad (1):
+      video/console: Resolve several shadow warnings
+
+Tomi Valkeinen (10):
+      OMAPDSS: set suppress_bind_attrs
+      OMAPDSS: apply: wait pending updates on manager disable
+      OMAPFB: fix overlay disable when freeing resources.
+      OMAPFB: fix releasing overlays
+      OMAPDSS: HDMI: fix PLL GO bit handling
+      OMAPDSS: HDMI: fix regsd write
+      OMAPDSS: DISPC: fix mflag offset
+      OMAPDSS: fix dispc register dump for preload & mflag
+      OMAPDSS: DSI: Fix PLL_SELFEQDCO field width
+      Merge branch '3.18/omapdss-fixes' into 3.18/fbdev-fixes
+
+ drivers/video/console/fbcon.c                      | 19 ++++++++--------=
+-
+ drivers/video/console/vgacon.c                     | 24 +++++++++++-----=
+------
+ drivers/video/fbdev/atmel_lcdfb.c                  |  1 -
+ .../fbdev/omap2/displays-new/connector-analog-tv.c |  3 +++
+ .../video/fbdev/omap2/displays-new/connector-dvi.c |  1 +
+ .../fbdev/omap2/displays-new/connector-hdmi.c      |  1 +
+ .../fbdev/omap2/displays-new/encoder-tfp410.c      |  1 +
+ .../fbdev/omap2/displays-new/encoder-tpd12s015.c   |  1 +
+ drivers/video/fbdev/omap2/displays-new/panel-dpi.c |  1 +
+ .../video/fbdev/omap2/displays-new/panel-dsi-cm.c  |  1 +
+ .../omap2/displays-new/panel-lgphilips-lb035q02.c  |  1 +
+ .../omap2/displays-new/panel-nec-nl8048hl11.c      |  1 +
+ .../omap2/displays-new/panel-sharp-ls037v7dw01.c   |  1 +
+ .../omap2/displays-new/panel-sony-acx565akm.c      |  1 +
+ .../omap2/displays-new/panel-tpo-td028ttec1.c      |  1 +
+ .../omap2/displays-new/panel-tpo-td043mtea1.c      |  1 +
+ drivers/video/fbdev/omap2/dss/apply.c              |  2 ++
+ drivers/video/fbdev/omap2/dss/dispc.c              |  8 ++++----
+ drivers/video/fbdev/omap2/dss/dispc.h              |  3 +--
+ drivers/video/fbdev/omap2/dss/dpi.c                |  1 +
+ drivers/video/fbdev/omap2/dss/dsi.c                |  3 ++-
+ drivers/video/fbdev/omap2/dss/dss.c                |  1 +
+ drivers/video/fbdev/omap2/dss/hdmi4.c              |  1 +
+ drivers/video/fbdev/omap2/dss/hdmi5.c              |  1 +
+ drivers/video/fbdev/omap2/dss/hdmi_pll.c           | 13 ++++++------
+ drivers/video/fbdev/omap2/dss/rfbi.c               |  1 +
+ drivers/video/fbdev/omap2/dss/sdi.c                |  1 +
+ drivers/video/fbdev/omap2/dss/venc.c               |  1 +
+ drivers/video/fbdev/omap2/omapfb/omapfb-main.c     | 18 ++++++++--------=
+
+ 29 files changed, 67 insertions(+), 46 deletions(-)
 
 
-On Thu, Oct 30, 2014 at 5:50 PM, Inki Dae <inki.dae@samsung.com> wrote:
->
-> Sorry for late. I missed this patch a little bit for long time.
+--4CBQKDreR6C7sBvXt7OEsmCJ5fRkHj6e4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Thanks for reviewing.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
->
->
-> On 2014년 09월 15일 22:13, Vivek Gautam wrote:
->> Now that we have moved to generic phy based bindings,
->> we don't need to have any code related to older dptx-phy.
->> Nobody is using this dptx-phy anymore, so removing the
->> same.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> Cc: Jingoo Han <jg1.han@samsung.com>
->> ---
->>  drivers/gpu/drm/exynos/exynos_dp_core.c |   58 +++++++------------------------
->>  drivers/gpu/drm/exynos/exynos_dp_core.h |    2 --
->>  2 files changed, 13 insertions(+), 47 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.c b/drivers/gpu/drm/exynos/exynos_dp_core.c
->> index 4f3c7eb..5ffc1b2 100644
->> --- a/drivers/gpu/drm/exynos/exynos_dp_core.c
->> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.c
->> @@ -1050,28 +1050,14 @@ static int exynos_dp_create_connector(struct exynos_drm_display *display,
->>
->>  static void exynos_dp_phy_init(struct exynos_dp_device *dp)
->>  {
->> -     if (dp->phy) {
->> +     if (dp->phy)
->>               phy_power_on(dp->phy);
->> -     } else if (dp->phy_addr) {
->> -             u32 reg;
->> -
->> -             reg = __raw_readl(dp->phy_addr);
->> -             reg |= dp->enable_mask;
->> -             __raw_writel(reg, dp->phy_addr);
->> -     }
->>  }
->>
->>  static void exynos_dp_phy_exit(struct exynos_dp_device *dp)
->>  {
->> -     if (dp->phy) {
->> +     if (dp->phy)
->>               phy_power_off(dp->phy);
->> -     } else if (dp->phy_addr) {
->> -             u32 reg;
->> -
->> -             reg = __raw_readl(dp->phy_addr);
->> -             reg &= ~(dp->enable_mask);
->> -             __raw_writel(reg, dp->phy_addr);
->> -     }
->>  }
->>
->>  static void exynos_dp_poweron(struct exynos_drm_display *display)
->> @@ -1210,39 +1196,21 @@ static struct video_info *exynos_dp_dt_parse_pdata(struct device *dev)
->>
->>  static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
->>  {
->> -     struct device_node *dp_phy_node = of_node_get(dp->dev->of_node);
->> -     u32 phy_base;
->>       int ret = 0;
->>
->> -     dp_phy_node = of_find_node_by_name(dp_phy_node, "dptx-phy");
->> -     if (!dp_phy_node) {
->> -             dp->phy = devm_phy_get(dp->dev, "dp");
->> -             return PTR_ERR_OR_ZERO(dp->phy);
->> -     }
->> -
->> -     if (of_property_read_u32(dp_phy_node, "reg", &phy_base)) {
->> -             dev_err(dp->dev, "failed to get reg for dptx-phy\n");
->> -             ret = -EINVAL;
->> -             goto err;
->> -     }
->> -
->> -     if (of_property_read_u32(dp_phy_node, "samsung,enable-mask",
->> -                             &dp->enable_mask)) {
->> -             dev_err(dp->dev, "failed to get enable-mask for dptx-phy\n");
->> -             ret = -EINVAL;
->> -             goto err;
->> -     }
->> -
->> -     dp->phy_addr = ioremap(phy_base, SZ_4);
->> -     if (!dp->phy_addr) {
->> -             dev_err(dp->dev, "failed to ioremap dp-phy\n");
->> -             ret = -ENOMEM;
->> -             goto err;
->> +     dp->phy = devm_phy_get(dp->dev, "dp");
->> +     if (IS_ERR(dp->phy)) {
->> +             ret = PTR_ERR(dp->phy);
->> +             if (ret == -ENOSYS || ret == -ENODEV) {
->> +                     dp->phy = NULL;
->> +             } else if (ret == -EPROBE_DEFER) {
->> +                     return ret;
->> +             } else {
->
-> WARNING: else is not generally useful after a break or return
-> #146: FILE: drivers/gpu/drm/exynos/exynos_dp_core.c:1208:
-> +                       return ret;
-> +               } else {
->
-> How about just returning ret like below?
->                 if (IS_ERR(dp->phy)) {
->                         dev_err(dp->dev, "no DP phy configured\n");
->                         return PTR_ERR(ret);
->                 }
->
-> And then you can handle the error at probe function properly.
+iQIcBAEBAgAGBQJUUjsLAAoJEPo9qoy8lh71gOwQAIjG4xI2BiAyOcK6QVc9fftX
+1ya7qr7m6Z2nBmmUdBxPfb2EXxYA+47SO4gJivwJMAQHr8nQfiapJ73MqHQheh++
+yaIqwAAypztiYaH9QF7hnx8DyFzcWnwi82c34jnYXbWDAkqLVvWUEDEAE3ya1udn
+eQE0IMyfHQ/u1baQWEp5ps6q5gHci+ysI/JUTYTddoPfOqzzLADkkocYqxZRcZ1V
+2DZ+splqErMwAflcCL7Dy27n9OJx+LjfM/h3n4HIBPw7K3ujfimnOZfl1HzhmLtU
+szhIk8JvqNh5suGBaH4SeWLsPWAGOTuS42hlZUCCObRjYmOh4uJmL39bWB9KtLKC
+Cs8LXInik+/0aHctblqXNt89z07juWkiDUdB8oe9oY0VZ6/GHh3k1ndWOXNDyEzR
+TlKxOq1NuX/cVHiQykBhdOetoETxOo5IuB9z7LfoGKXnoC1id1hyWOlC8Z7CIHiB
+rYu6z/bzUq3csLD21d3nSVeV5CClRHJpFGqn4w3bS6dBrI5scQKqOjJlJgo71Y+R
+2eFWTdfAsadODt0YISt0uc6IG4rMIOSYMtRB0bedKsF/h2OFZvJQ0n1TWaBlo49t
+ACmuGdYk4H9LvxBURCxKCFqV/hAcZVAwWj3/2gWHzNpb0z8WlYPWUKh1+U5lOmMQ
+DxdaDHT6dBSnoo6IstlJ
+=oTki
+-----END PGP SIGNATURE-----
 
-Right, point taken. Will post the reworked patch.
-
-[snip]
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+--4CBQKDreR6C7sBvXt7OEsmCJ5fRkHj6e4--
