@@ -1,190 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759520AbaJ3MTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 08:19:44 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47727 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759041AbaJ3MTn convert rfc822-to-8bit (ORCPT
+	id S1759398AbaJ3MUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 08:20:13 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:30485 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759392AbaJ3MUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 08:19:43 -0400
-Message-ID: <54522CE2.6090806@arm.com>
-Date: Thu, 30 Oct 2014 12:19:46 +0000
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH v3] sched/dl: Implement cancel_dl_timer() to use in switched_from_dl()
-References: <1414420852.19914.186.camel@tkhai>
-In-Reply-To: <1414420852.19914.186.camel@tkhai>
-X-OriginalArrivalTime: 30 Oct 2014 12:19:38.0880 (UTC) FILETIME=[C692F000:01CFF43B]
-X-MC-Unique: 114103012193908901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Oct 2014 08:20:10 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68f-f791c6d000004834-a9-54522cf75c5d
+Content-transfer-encoding: 8BIT
+Message-id: <54522CF7.6030302@samsung.com>
+Date: Thu, 30 Oct 2014 21:20:07 +0900
+From: Inki Dae <inki.dae@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: dri-devel@lists.freedesktop.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        seanpaul@google.com, kishon@ti.com, ajaykumar.rs@samsung.com,
+        Jingoo Han <jg1.han@samsung.com>, "cpgs ." <cpgs@samsung.com>
+Subject: Re: [PATCH 2/3] drm/exynos: dp: Remove support for unused dptx-phy
+References: <1410786785-9838-1-git-send-email-gautam.vivek@samsung.com>
+ <1410786785-9838-3-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1410786785-9838-3-git-send-email-gautam.vivek@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsWyRsSkRPe7TlCIweFTahYH3h9ksXh5SNNi
+	/pFzrBZXvr5ns2i7cpDd4vLCS6wWF572sFlc3jWHzWLG+X1MFnMP5jpweSzYVOpxv/s4k0ff
+	llWMHsdvbGfy+LxJLoA1issmJTUnsyy1SN8ugStj0hGWgk75imeXV7I1MF6V6GLk5JAQMJG4
+	OG8xM4QtJnHh3nq2LkYuDiGBpYwSV2+vZ4UpevHpDStEYhGjxJp/ZxhBErwCghI/Jt9j6WLk
+	4GAWkJc4cikbJMwsoC4xad4iZoj6V4wS1/5cgKrXklh2vYcFxGYRUJV4sfUu2AI2IHviivts
+	ILaoQJjEi1e7wC4SEdCW2D53EivE0GYmia39giC7hAW8JV7c4wMJCwm0Mkos+OgLYnMKeEi8
+	fb+OCWSvhMAjdomH6x4zQewSkPg2+RDYnRICshKbDkA9LClxcMUNlgmMYrOQfDML4ZtZSL5Z
+	wMi8ilE0tSC5oDgpvchYrzgxt7g0L10vOT93EyMwEk//e9a/g/HuAetDjAIcjEo8vBonAkOE
+	WBPLiitzDzGaAh0xkVlKNDkfGO95JfGGxmZGFqYmpsZG5pZmSuK8C6V+BgsJpCeWpGanphak
+	FsUXleakFh9iZOLglGpgPKYqu0Y0ojHY6Zkph86jw6HJ97sDtgrkFFye3dii1HzCbEbNc8fY
+	+7f/B52ueP6+MV3f9c4csxU/GzWUS36u7NpgvumfepX9VjY5IZ2Fs2b15f2LWyAmuO26bQar
+	+K3SUG7pCXkyuRdWnXOcF3zpec435VNP72d/efHIX1O3dirjPOeTd+4sVmIpzkg01GIuKk4E
+	AF+Z6vO/AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t9jAd3vOkEhBjeOy1oceH+QxeLlIU2L
+	+UfOsVpc+fqezaLtykF2i8sLL7FaXHjaw2ZxedccNosZ5/cxWcw9mOvA5bFgU6nH/e7jTB59
+	W1Yxehy/sZ3J4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE
+	3FRbJRefAF23zBygm5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGZOO
+	sBR0ylc8u7ySrYHxqkQXIyeHhICJxItPb1ghbDGJC/fWs3UxcnEICSxilFjz7wwjSIJXQFDi
+	x+R7LF2MHBzMAvISRy5lg4SZBdQlJs1bxAxR/4pR4tqfC1D1WhLLrvewgNgsAqoSL7beBVvA
+	BmRPXHGfDcQWFQiTePFqFzOILSKgLbF97iRWiKHNTBJb+wVBdgkLeEu8uMcHEhYSaGWUWPDR
+	F8TmFPCQePt+HdMERoFZSK6bhXDdLCTXLWBkXsUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kR
+	HOfPpHYwrmywOMQowMGoxMOrcSIwRIg1say4MvcQowQHs5IIr6BCUIgQb0piZVVqUX58UWlO
+	avEhRlOg3yYyS4km5wNTUF5JvKGxiZmRpZG5oYWRsbmSOO+BVutAIYH0xJLU7NTUgtQimD4m
+	Dk6pBsajRdc3fpdgX+a3WHH6W3+F/dHdjzd5frjHa61re4vPc32U3Yrlbre/Re0zXrjEvEOY
+	XT4wtWqx57GIvIn/j5h9vRHh8uziX1cvnqxLK34miNXInJzJG+yuFNtaNCfiBZfWosnXq2Vn
+	uFnG+E5sFTkvZZiQl/ln34a+337O73i3WUrOPsr56qwSS3FGoqEWc1FxIgAufD43CQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
 
-On 27/10/14 14:40, Kirill Tkhai wrote:
-> 
-> Currently used hrtimer_try_to_cancel() is racy:
-> 
-> raw_spin_lock(&rq->lock)
-> ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
-> ...                               raw_spin_lock(&rq->lock)   ...
->    switched_from_dl()             ...                        ...
->       hrtimer_try_to_cancel()     ...                        ...
->    switched_to_fair()             ...                        ...
-> ...                               ...                        ...
-> ...                               ...                        ...
-> raw_spin_unlock(&rq->lock)        ...                        (asquired)
-> ...                               ...                        ...
-> ...                               ...                        ...
-> do_exit()                         ...                        ...
->    schedule()                     ...                        ...
->       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
->       ...                         ...                        ...
->       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
->       ...                         ...                        (asquired)
->       put_task_struct()           ...                        ...
->           free_task_struct()      ...                        ...
->       ...                         ...                        raw_spin_unlock(&rq->lock)
-> ...                               (asquired)                 ...
-> ...                               ...                        ...
-> ...                               (use after free)           ...
-> 
-> 
-> So, let's implement 100% guaranteed way to cancel the timer and let's
-> be sure we are safe even in very unlikely situations.
-> 
-> rq unlocking does not limit the area of switched_from_dl() use, because
-> this has already been possible in pull_dl_task() below.
-> 
-> Let's consider the safety of of this unlocking. New code in the patch
-> is working when hrtimer_try_to_cancel() fails. This means the callback
-> is running. In this case hrtimer_cancel() is just waiting till the
-> callback is finished. Two
-> 
-> 1)Since we are in switched_from_dl(), new class is not dl_sched_class and
-> new prio is not less MAX_DL_PRIO. So, the callback returns early; it's
-> right after !dl_task() check. After that hrtimer_cancel() returns back too.
-> 
-> The above is:
-> 
-> raw_spin_lock(rq->lock);                  ...
-> ...                                       dl_task_timer()
-> ...                                          raw_spin_lock(rq->lock);
->    switched_from_dl()                        ...
->        hrtimer_try_to_cancel()               ...
->           raw_spin_unlock(rq->lock);         ...
->           hrtimer_cancel()                   ...
->           ...                                raw_spin_unlock(rq->lock);
->           ...                                return HRTIMER_NORESTART;
->           ...                             ...
->           raw_spin_lock(rq->lock);        ...
-> 
-> 2)But the below is also possible:
->                                    dl_task_timer()
->                                       raw_spin_lock(rq->lock);
->                                       ...
->                                       raw_spin_unlock(rq->lock);
-> raw_spin_lock(rq->lock);              ...
->    switched_from_dl()                 ...
->        hrtimer_try_to_cancel()        ...
->        ...                            return HRTIMER_NORESTART;
->        raw_spin_unlock(rq->lock);  ...
->        hrtimer_cancel();           ...
->        raw_spin_lock(rq->lock);    ...
-> 
-> In this case hrtimer_cancel() returns immediately. Very unlikely case,
-> just to mention.
-> 
-> 
-> Nobody can manipulate the task, because check_class_changed() is
-> always called with pi_lock locked. Nobody can force the task to
-> participate in (concurrent) priority inheritance schemes (the same reason).
-> 
-> All concurrent task operations require pi_lock, which is held by us.
-> No deadlocks with dl_task_timer() are possible, because it returns
-> right after !dl_task() check (it does nothing).
-> 
-> If we receive a new dl_task during the time of unlocked rq, we just
-> don't have to do pull_dl_task() in switched_from_dl() further.
-> 
-> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Sorry for late. I missed this patch a little bit for long time.
 
-So, it passed simple tests. I guess it is ok :).
 
-Acked-by: Juri Lelli <juri.lelli@arm.com>
-
-Thanks,
-
-- Juri
-
+On 2014년 09월 15일 22:13, Vivek Gautam wrote:
+> Now that we have moved to generic phy based bindings,
+> we don't need to have any code related to older dptx-phy.
+> Nobody is using this dptx-phy anymore, so removing the
+> same.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
 > ---
->  kernel/sched/deadline.c |   34 +++++++++++++++++++++++++++-------
->  1 file changed, 27 insertions(+), 7 deletions(-)
+>  drivers/gpu/drm/exynos/exynos_dp_core.c |   58 +++++++------------------------
+>  drivers/gpu/drm/exynos/exynos_dp_core.h |    2 --
+>  2 files changed, 13 insertions(+), 47 deletions(-)
 > 
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 256e577..9435e05 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -555,11 +555,6 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
->  {
->  	struct hrtimer *timer = &dl_se->dl_timer;
+> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.c b/drivers/gpu/drm/exynos/exynos_dp_core.c
+> index 4f3c7eb..5ffc1b2 100644
+> --- a/drivers/gpu/drm/exynos/exynos_dp_core.c
+> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.c
+> @@ -1050,28 +1050,14 @@ static int exynos_dp_create_connector(struct exynos_drm_display *display,
 >  
-> -	if (hrtimer_active(timer)) {
-> -		hrtimer_try_to_cancel(timer);
-> -		return;
+>  static void exynos_dp_phy_init(struct exynos_dp_device *dp)
+>  {
+> -	if (dp->phy) {
+> +	if (dp->phy)
+>  		phy_power_on(dp->phy);
+> -	} else if (dp->phy_addr) {
+> -		u32 reg;
+> -
+> -		reg = __raw_readl(dp->phy_addr);
+> -		reg |= dp->enable_mask;
+> -		__raw_writel(reg, dp->phy_addr);
+> -	}
+>  }
+>  
+>  static void exynos_dp_phy_exit(struct exynos_dp_device *dp)
+>  {
+> -	if (dp->phy) {
+> +	if (dp->phy)
+>  		phy_power_off(dp->phy);
+> -	} else if (dp->phy_addr) {
+> -		u32 reg;
+> -
+> -		reg = __raw_readl(dp->phy_addr);
+> -		reg &= ~(dp->enable_mask);
+> -		__raw_writel(reg, dp->phy_addr);
+> -	}
+>  }
+>  
+>  static void exynos_dp_poweron(struct exynos_drm_display *display)
+> @@ -1210,39 +1196,21 @@ static struct video_info *exynos_dp_dt_parse_pdata(struct device *dev)
+>  
+>  static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
+>  {
+> -	struct device_node *dp_phy_node = of_node_get(dp->dev->of_node);
+> -	u32 phy_base;
+>  	int ret = 0;
+>  
+> -	dp_phy_node = of_find_node_by_name(dp_phy_node, "dptx-phy");
+> -	if (!dp_phy_node) {
+> -		dp->phy = devm_phy_get(dp->dev, "dp");
+> -		return PTR_ERR_OR_ZERO(dp->phy);
 > -	}
 > -
->  	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
->  	timer->function = dl_task_timer;
->  }
-> @@ -1567,10 +1562,35 @@ void init_sched_dl_class(void)
->  
->  #endif /* CONFIG_SMP */
->  
-> +/*
-> + *  Ensure p's dl_timer is cancelled. May drop rq->lock for a while.
-> + */
-> +static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
-> +{
-> +	struct hrtimer *dl_timer = &p->dl.dl_timer;
-> +
-> +	/* Nobody will change task's class if pi_lock is held */
-> +	lockdep_assert_held(&p->pi_lock);
-> +
-> +	if (hrtimer_active(dl_timer)) {
-> +		int ret = hrtimer_try_to_cancel(dl_timer);
-> +
-> +		if (unlikely(ret == -1)) {
-> +			/*
-> +			 * Note, p may migrate OR new deadline tasks
-> +			 * may appear in rq when we are unlocking it.
-> +			 * A caller of us must be fine with that.
-> +			 */
-> +			raw_spin_unlock(&rq->lock);
-> +			hrtimer_cancel(dl_timer);
-> +			raw_spin_lock(&rq->lock);
+> -	if (of_property_read_u32(dp_phy_node, "reg", &phy_base)) {
+> -		dev_err(dp->dev, "failed to get reg for dptx-phy\n");
+> -		ret = -EINVAL;
+> -		goto err;
+> -	}
+> -
+> -	if (of_property_read_u32(dp_phy_node, "samsung,enable-mask",
+> -				&dp->enable_mask)) {
+> -		dev_err(dp->dev, "failed to get enable-mask for dptx-phy\n");
+> -		ret = -EINVAL;
+> -		goto err;
+> -	}
+> -
+> -	dp->phy_addr = ioremap(phy_base, SZ_4);
+> -	if (!dp->phy_addr) {
+> -		dev_err(dp->dev, "failed to ioremap dp-phy\n");
+> -		ret = -ENOMEM;
+> -		goto err;
+> +	dp->phy = devm_phy_get(dp->dev, "dp");
+> +	if (IS_ERR(dp->phy)) {
+> +		ret = PTR_ERR(dp->phy);
+> +		if (ret == -ENOSYS || ret == -ENODEV) {
+> +			dp->phy = NULL;
+> +		} else if (ret == -EPROBE_DEFER) {
+> +			return ret;
+> +		} else {
+
+WARNING: else is not generally useful after a break or return
+#146: FILE: drivers/gpu/drm/exynos/exynos_dp_core.c:1208:
++			return ret;
++		} else {
+
+How about just returning ret like below?
+		if (IS_ERR(dp->phy)) {
+			dev_err(dp->dev, "no DP phy configured\n");
+			return PTR_ERR(ret);
+		}
+
+And then you can handle the error at probe function properly.
+
+Thanks,
+Inki Dae
+
+
+> +			dev_err(dp->dev, "no DP phy configured\n");
+> +			return ret;
 > +		}
-> +	}
-> +}
-> +
->  static void switched_from_dl(struct rq *rq, struct task_struct *p)
->  {
-> -	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
-> -		hrtimer_try_to_cancel(&p->dl.dl_timer);
-> +	cancel_dl_timer(rq, p);
+>  	}
 >  
->  	__dl_clear_params(p);
+> -err:
+> -	of_node_put(dp_phy_node);
+> -
+>  	return ret;
+>  }
 >  
-> 
-> 
-> 
+> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.h b/drivers/gpu/drm/exynos/exynos_dp_core.h
+> index a1aee69..6426201 100644
+> --- a/drivers/gpu/drm/exynos/exynos_dp_core.h
+> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.h
+> @@ -153,8 +153,6 @@ struct exynos_dp_device {
+>  	struct clk		*clock;
+>  	unsigned int		irq;
+>  	void __iomem		*reg_base;
+> -	void __iomem		*phy_addr;
+> -	unsigned int		enable_mask;
+>  
+>  	struct video_info	*video_info;
+>  	struct link_train	link_train;
 > 
 
