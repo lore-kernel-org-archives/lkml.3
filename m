@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934815AbaJ3VmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 17:42:20 -0400
-Received: from theshire.emacs.cl ([192.155.80.235]:36342 "EHLO
-	theshire.emacs.cl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933193AbaJ3VmT (ORCPT
+	id S934869AbaJ3VnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 17:43:13 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:47538 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934832AbaJ3VnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 17:42:19 -0400
-Message-ID: <1414705328.1821.7.camel@linux-t7sj.site>
-Subject: Re: [PATCH] kernel: Refactor task_struct to use numa_faults instead
- of numa_* pointers
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Iulia Manda <iulia.manda21@gmail.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@redhat.com,
-        peterz@infradead.org, mgorman@suse.de
-Date: Thu, 30 Oct 2014 14:42:08 -0700
-In-Reply-To: <20141030193817.GA17859@winterfell>
-References: <20141030193817.GA17859@winterfell>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Oct 2014 17:43:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <s5h38a54idb.wl-tiwai@suse.de>
+References: <s5h38a54idb.wl-tiwai@suse.de>
+Date: Thu, 30 Oct 2014 14:43:11 -0700
+Message-ID: <CAADnVQK=Nj=zJxoGqariPLoGcXYdGmVit39e1Srp4ygKHn16sA@mail.gmail.com>
+Subject: Re: suspicious rcu_dereference_check() usage warning with 3.18-rc2
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>, Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-30 at 21:38 +0200, Iulia Manda wrote:
-> This patch simplifies task_struct by removing the four numa_* pointers
-> in the same array and replacing them with the array pointer. By doing this,
-> the size of task_struct is reduced.
+On Thu, Oct 30, 2014 at 9:44 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> Hi,
+>
+> I've got a warning with the latest Linus tree like below:
+>
+> [ INFO: suspicious RCU usage. ]
+> 3.18.0-rc2-test2+ #70 Not tainted
+> -------------------------------
+> include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
+>
+> other info that might help us debug this:
+>
+> rcu_scheduler_active = 1, debug_locks = 0
+> 1 lock held by qemu-system-x86/2371:
+>  #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
+>
+> stack backtrace:
+> CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
+> Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
+>  0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
+>  ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
+>  ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
+> Call Trace:
+>  [<ffffffff816f514f>] dump_stack+0x4e/0x71
+>  [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
+>  [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
+>  [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
+>  [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
+>  [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
+>  [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
+>  [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
+>  [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+>  [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
+>  [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
+>  [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
+>  [<ffffffff8122ee45>] ? __fget+0x5/0x250
+>  [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
+>  [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
+>  [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
+> kvm: zapping shadow pages for mmio generation wraparound
+> kvm [2369]: vcpu0 disabled perfctr wrmsr: 0xc1 data 0xffff
+>
+>
+> The machine itself and KVM work fine even after this warning.  I'm not
+> sure whether this is new, maybe it's triggered now since I changed my
+> Kconfig to cover more RCU testing recently.  The warning is
+> reproducible, I can see it at the first invocation of kvm after each
+> fresh boot.
+>
+> Does this ring a bell to anyone?
 
-This is always welcome, but for completeness you should specify by how
-much on <insert your favorite arch>. afaict you're removing 3 ulong
-pointers.
-
-> A new parameter is added to the task_faults_idx function so that it can return
-> an index to the correct offset, corresponding with the old precalculated
-> pointers.
-> 
-> All of the code in sched/ that depended on task_faults_idx and numa_* was
-> changed in order to match the new logic.
-> 
-> Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
-
-Acked-by: Davidlohr Bueso <dave@stgolabs.net>
-
-With some suggestions below.
-
-> ---
->  include/linux/sched.h |   40 ++++++++++--------
->  kernel/sched/core.c   |    3 +-
->  kernel/sched/debug.c  |    4 +-
->  kernel/sched/fair.c   |  110 +++++++++++++++++++++++++------------------------
->  4 files changed, 82 insertions(+), 75 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 5e344bb..bf8c19f 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -796,6 +796,15 @@ struct sched_info {
->  };
->  #endif /* defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT) */
->  
-> +#ifdef CONFIG_NUMA_BALANCING
-> +enum numa_faults_stats {
-> +	NUMA_MEM = 0,
-> +	NUMA_CPU,
-> +	NUMA_MEMBUF,
-> +	NUMA_CPUBUF
-> +};
-> +#endif
-> +
->  #ifdef CONFIG_TASK_DELAY_ACCT
->  struct task_delay_info {
->  	spinlock_t	lock;
-> @@ -1558,28 +1567,23 @@ struct task_struct {
->  	struct numa_group *numa_group;
->  
->  	/*
-> -	 * Exponential decaying average of faults on a per-node basis.
-> -	 * Scheduling placement decisions are made based on the these counts.
-> -	 * The values remain static for the duration of a PTE scan
-> +	 * numa_faults is an array split into four regions:
-> +	 * faults_memory, faults_cpu, faults_memory_buffer, faults_cpu_buffer
-> +	 * in this precise order.
-> +	 *
-> +	 * faults_memory: Exponential decaying average of faults on a per-node
-> +	 * basis. Scheduling placement decisions are made based on these
-> +	 * counts. The values remain static for the duration of a PTE scan.
-> +	 * faults_cpu: Track the nodes the process was running on when a NUMA
-> +	 * hinting fault was incurred.
-> +	 * faults_memory_buffer and faults_cpu_buffer: Record faults per node
-> +	 * during the current scan window. When the scan completes, the counts
-> +	 * in faults_memory and faults_cpu decay and these values are copied.
-
-How about moving these comments to where you have the enum
-numa_faults_stats? And just point to that here.
-
-[...]
-> -static inline int task_faults_idx(int nid, int priv)
-> +/*
-> + * The averaged statistics, shared & private, memory & cpu,
-> + * occupy the first half of the array. The second half of the
-> + * array is for current counters, which are averaged into the
-> + * first set by task_numa_placement.
-> + */
-> +static inline int task_faults_idx(enum numa_faults_stats s, int nid, int priv)
->  {
-> -	return NR_NUMA_HINT_FAULT_TYPES * nid + priv;
-> +	return s * NR_NUMA_HINT_FAULT_TYPES * nr_node_ids +
-> +		NR_NUMA_HINT_FAULT_TYPES * nid + priv;
-
-parenthesis here?
-
-Thanks,
-Davidlohr
-
+see exactly the same trace when lockdep is on.
