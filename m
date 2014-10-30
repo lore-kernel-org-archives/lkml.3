@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161340AbaJ3Vsy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 17:48:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63476 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161019AbaJ3Vsx (ORCPT
+	id S1161224AbaJ3VzH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 17:55:07 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:52526 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933193AbaJ3VzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 17:48:53 -0400
-Message-ID: <5452B241.5010603@amacapital.net>
-Date: Thu, 30 Oct 2014 14:48:49 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 30 Oct 2014 17:55:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, jslaby@suse.cz,
+        gregkh@linuxfoundation.org, devicetree@vger.kernel.org,
+        jingchang.lu@freescale.com, gregory.0xf0@gmail.com
+Subject: Re: [PATCH] serial: of-serial: zero-out struct of_serial_info
+Date: Thu, 30 Oct 2014 22:55 +0100
+Message-ID: <5481851.EJfv4DSzbT@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414703913-1343-1-git-send-email-f.fainelli@gmail.com>
+References: <1414703913-1343-1-git-send-email-f.fainelli@gmail.com>
 MIME-Version: 1.0
-To: Eric Rannaud <e@nanocritical.com>, linux-kernel@vger.kernel.org
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-References: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
-In-Reply-To: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:9g+JPkvXKCW0fhwbnbjjVPjga/n9A6E0H/w5tdSTdnJ
+ hfV31HpZkqjZ3rSY3Dmq3QfTmZUDdhsIZo9cYlmlLWA8wOM0mp
+ Or4J5lMvuDMEPi+/VHQAmwvK3nrdq5jpdQ14fRAJ5sm0wEBviN
+ jlIiy5Lv0zYuzTJbl6CtaPPbjPE5erWGiXXfXjot8TlWOWuuo4
+ Zcly4RvDTFhz7vHcNQvQS0iPseLbX4T0lutgWOWsAgCQqzjI83
+ U6fqkneGqSwksbwssT1fI5hmdlMIiKoWGEeomgfrw7qdF/Yd59
+ m9V6Wd05t+34bbirKPCjag1RF3PANhALWIc6gY+PTn/fflFogZ
+ x/bVTECv3MJ+yyZsytII=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2014 02:08 AM, Eric Rannaud wrote:
-> The man page for open(2) indicates that when O_CREAT is specified, the
-> 'mode' argument applies only to future accesses to the file:
+On Thursday 30 October 2014 14:18:33 Florian Fainelli wrote:
+> of_platform_serial_probe() invokes of_platform_serial_setup() with a
+> kmalloc'd struct of_serial_info cookie, which is not much of a problem
+> for most of the struct of_serial_info fields we access but info->clk.
 > 
-> 	Note that this mode applies only to future accesses of the newly
-> 	created file; the open() call that creates a read-only file
-> 	may well return a read/write file descriptor.
+> On platforms which do not provide a clock phandle for their UART nodes
+> but do provide a 'clock-frequency' property, we basically leave the
+> info->clk variable uninitialized, and this craps out during
+> suspend/resume with oopses, crashes or warnings in the clock code.
 > 
-> The man page for open(2) implies that 'mode' is treated identically by
-> O_CREAT and O_TMPFILE.
+> Fix this by using kzalloc() which also zeroes-out the structure and
+> provides an initialized info->clk member set to NULL.
 > 
-> O_TMPFILE, however, behaves differently:
-> 
-> 	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0);
-> 	assert(fd == -1);
-> 	assert(errno == EACCES);
-> 
-> 	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0600);
-> 	assert(fd > 0);
-> 
-> For O_CREAT, do_last() sets acc_mode to MAY_OPEN only:
-> 
-> 	if (*opened & FILE_CREATED) {
-> 		/* Don't check for write permission, don't truncate */
-> 		open_flag &= ~O_TRUNC;
-> 		will_truncate = false;
-> 		acc_mode = MAY_OPEN;
-> 		path_to_nameidata(path, nd);
-> 		goto finish_open_created;
-> 	}
-> 
-> But for O_TMPFILE, do_tmpfile() passes the full op->acc_mode to
-> may_open().
-> 
-> This patch lines up the behavior of O_TMPFILE with O_CREAT. After the
-> inode is created, may_open() is called with acc_mode = MAY_OPEN, in
-> do_tmpfile().
-> 
-> A different, but related glibc bug revealed the discrepancy:
-> https://sourceware.org/bugzilla/show_bug.cgi?id=17523
-> 
-> The glibc lazily loads the 'mode' argument of open() and openat() using
-> va_arg() only if O_CREAT is present in 'flags' (to support both the 2
-> argument and the 3 argument forms of open; same idea for openat()).
-> However, the glibc ignores the 'mode' argument if O_TMPFILE is in
-> 'flags'.
-> 
-> On x86_64, for open(), it magically works anyway, as 'mode' is in
-> RDX when entering open(), and is still in RDX on SYSCALL, which is where
-> the kernel looks for the 3rd argument of a syscall.
-> 
-> But openat() is not quite so lucky: 'mode' is in RCX when entering the
-> glibc wrapper for openat(), while the kernel looks for the 4th argument
-> of a syscall in R10. Indeed, the syscall calling convention differs from
-> the regular calling convention in this respect on x86_64. So the kernel
-> sees mode = 0 when trying to use glibc openat() with O_TMPFILE, and
-> fails with EACCES.
-
-Looks sensible.  Should this be Cc: stable?
-
---Andy
-
-> 
-> Signed-off-by: Eric Rannaud <e@nanocritical.com>
-> ---
->  fs/namei.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 42df664e95e5..78512898d3ba 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -3154,7 +3154,8 @@ static int do_tmpfile(int dfd, struct filename *pathname,
->  	if (error)
->  		goto out2;
->  	audit_inode(pathname, nd->path.dentry, 0);
-> -	error = may_open(&nd->path, op->acc_mode, op->open_flag);
-> +	/* Don't check for other permissions, the inode was just created */
-> +	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
->  	if (error)
->  		goto out2;
->  	file->f_path.mnt = nd->path.mnt;
+> Fixes: 2dea53bf57783 ("serial: of-serial: add PM suspend/resume support")
+> Fixes: e34b9c94b6e8d ("[POWERPC] of_serial: add port type checking")
+> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 > 
 
+I thought I'd acked this patch before, maybe someone else sent the same
+one. This is definitely required, so
+
+Acked-by: Arnd Bergmann <arnd@arndb.de>
