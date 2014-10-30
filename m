@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934726AbaJ3RP3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:15:29 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51102 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933054AbaJ3RP2 (ORCPT
+	id S1759415AbaJ3RRY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:17:24 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:32943 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126AbaJ3RRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:15:28 -0400
-Date: Thu, 30 Oct 2014 17:15:22 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "ghackmann@google.com" <ghackmann@google.com>,
-        "ijc@hellion.org.uk" <ijc@hellion.org.uk>,
-        Serban Constantinescu <Serban.Constantinescu@arm.com>,
-        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/1] arm64: Fix up /proc/cpuinfo
-Message-ID: <20141030171521.GL32589@arm.com>
-References: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
- <1414159000-27059-2-git-send-email-mark.rutland@arm.com>
+	Thu, 30 Oct 2014 13:17:22 -0400
+Date: Thu, 30 Oct 2014 10:17:08 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: David Miller <davem@davemloft.net>
+Cc: jim.epost@gmail.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org,
+        kyeyoonp@codeaurora.org
+Subject: Re: randconfig build error with next-20141028, in net/bridge
+Message-ID: <20141030101708.12113903@urahara>
+In-Reply-To: <20141029.153745.182320154112584088.davem@davemloft.net>
+References: <CA+r1ZhjGo_pWi5hsxra65fCm0kwLfit4ai4_sAiwKKj0fPLxVg@mail.gmail.com>
+	<20141029.153745.182320154112584088.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414159000-27059-2-git-send-email-mark.rutland@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Wed, 29 Oct 2014 15:37:45 -0400 (EDT)
+David Miller <davem@davemloft.net> wrote:
 
-On Fri, Oct 24, 2014 at 02:56:40PM +0100, Mark Rutland wrote:
-> Commit d7a49086f263164a (arm64: cpuinfo: print info for all CPUs)
-> attempted to clean up /proc/cpuinfo, but due to concerns regarding
-> further changes was reverted in commit 5e39977edf6500fd (Revert "arm64:
-> cpuinfo: print info for all CPUs").
+> From: Jim Davis <jim.epost@gmail.com>
+> Date: Tue, 28 Oct 2014 07:52:47 -0700
+> 
+> > Building with the attached random configuration file,
+> > 
+> > net/built-in.o: In function `br_handle_frame_finish':
+> > (.text+0x40edf): undefined reference to `arp_tbl'
+> > net/built-in.o: In function `br_handle_frame_finish':
+> > (.text+0x40f3a): undefined reference to `arp_send'
+> > make: *** [vmlinux] Error 1
+> 
+> Kyeyoon-ssi, you will need to do something about this.
+> 
+> Your choices are either selecting INET (and thus also
+> CRYPTO and CRYPTO_AES, since INET needs those in order
+> to build properly), making bridging depeng on INET,
+> or protecting the new proxy-arp code with INET ifdef
+> checks.
 
-I've applied this on our devel branch, with a view to queuing it for -next
-in a week or two. I think we should also CC stable on this, so could you
-see how far back it applies please? (note that I already had to resolve
-a conflict with a patch we've got queued from Ard).
-
-Cheers,
-
-Will
+Maybe make ARP proxy a config option under bridge and have
+it depend on INET?
