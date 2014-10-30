@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933784AbaJ3TEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 15:04:25 -0400
-Received: from mail-bl2on0120.outbound.protection.outlook.com ([65.55.169.120]:60537
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755522AbaJ3TEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 15:04:23 -0400
-X-WSS-ID: 0NE9UB5-07-G4B-02
-X-M-MSG: 
-Message-ID: <54528BB1.7080401@amd.com>
-Date: Thu, 30 Oct 2014 14:04:17 -0500
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934323AbaJ3TIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 15:08:24 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:51187 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbaJ3TIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 15:08:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tina Ruchandani <ruchandani.tina@gmail.com>
+Cc: pavel@ucw.cz, len.brown@intel.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com,
+        rjw@rjwysocki.net
+Subject: Re: [PATCH] PM / Hibernate: Migrate to ktime_t
+Date: Thu, 30 Oct 2014 20:08:17 +0100
+Message-ID: <3436721.isgG5Fql2m@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141030180453.GA55907@localhost>
+References: <20141030180453.GA55907@localhost>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Chen Yucong <slaoub@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Fwd: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before machine_check_poll()
- resets it
-References: <CAOjmkp9qQiTbqU3NUhUDAoQAa8wAPJnE_qXbDuBKrA3ee1_APQ@mail.gmail.com>
- <5435B206.60402@amd.com> <20141008225750.GH16892@pd.tnic>
- <20141009165339.GA11360@arav-dinar> <20141009173529.GC17647@pd.tnic>
- <5436DB72.1090507@amd.com> <20141021202840.GD4420@pd.tnic>
- <1413942678.17435.11.camel@debian> <20141022081618.GA2511@pd.tnic>
- <1413968014.7070.12.camel@debian> <20141022093042.GB2511@pd.tnic>
- <54510EFC.2080107@amd.com>
-In-Reply-To: <54510EFC.2080107@amd.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(164054003)(189002)(24454002)(51704005)(479174003)(377454003)(2473001)(199003)(68736004)(97736003)(84676001)(83506001)(59896002)(15975445006)(110136001)(44976005)(21056001)(19580395003)(80316001)(86362001)(575784001)(23676002)(33656002)(4396001)(92566001)(99136001)(101416001)(92726001)(85852003)(31966008)(50466002)(93886004)(87936001)(76176999)(50986999)(87266999)(54356999)(64126003)(65816999)(85306004)(76482002)(95666004)(99396003)(80022003)(46102003)(107046002)(120916001)(120886001)(64706001)(47776003)(20776003)(36756003)(106466001)(65956001)(105586002)(65806001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB197;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
-X-Forefront-PRVS: 038002787A
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:mugUDOMwjLRF2ZZrmNaV57ogBVJXwo7QWl2+KliBVz+
+ +r0IEhlHEqpOxfFnigDFdsRWLfEAKYO1bHHal93hG/QrEGeSa6
+ UVUL/Et+1roZQGiKMXcfwXtJ1khpeTXdmkSebqlFfCJSMe245S
+ KzVZyZa/2Ss7Fkum83fsJCwauFU3hMiAsU9qdtewbeDOOgYhDE
+ 4lhqgGPo++3xMTdGjvfwH6icuhY0hu7QNjrNKrGyJ+VReKXUE6
+ /IRFG2nZiMElfGZoVPQoPBck9zdplEhXU7emmeLLEMXKNuCitt
+ P9LCzqOcF6nFtMN8Evk9QnXKjBTh2U0SW9WJiKdq3dTXQizajS
+ 8hNSMVw1L0dcXb5L3Jrk=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2014 10:59 AM, Aravind Gopalakrishnan wrote:
-> On 10/22/2014 4:30 AM, Borislav Petkov wrote:
->> Hi Aravind,
->>
->> question: what's the story with MC?_MISC[IntP], is that bit still there?
->> Because I don't see it in my BKDGs here.
->
-> Yep, It exists.
-> Maybe you are referring to Fam15h M0h BKDG? I think the bit was 
-> introduced only from F15h M30h onwards.
-> The bit does *not* exist for bank=4, But-
-> if (bank ==4)
->   return true;
->
-> takes care of that.
->
->> The background of the story is
->>
->> https://lkml.org/lkml/2014/10/7/84
->>
->> There's this thing we did at the time
->>
->> f227d4306cf3 ("x86, MCE, AMD: Make APIC LVT thresholding interrupt 
->> optional")
->>
->> which, AFAICR, is about some F15h versions having a counter but *not*
->> generating a thresholding interrupt. Can you confirm that is still
->> the case and we can have a counter but no interrupt gets generated on
->> overflow?
->>
->
-> So yes, moving the assignment inside the if condition should work just 
-> fine.
->
-> I see the patch on your 'ras-for-3.19' branch does not have this, so 
-> I'll make this modification
-> to the branch before I test it.
->
+On Thursday 30 October 2014 11:04:53 Tina Ruchandani wrote:
+> This patch migrates swsusp_show_speed and its callers to using ktime_t instead
+> of 'struct timeval' which suffers from the y2038 problem.
+> 
+> Changes to swsusp_show_speed:
+>         - use ktime_t for start and stop times
+>         - pass start and stop times by value
+> Calling functions affected:
+>         - load_image
+>         - load_image_lzo
+>         - save_image
+>         - save_image_lzo
+>         - hibernate_preallocate_memory
+> Design decisions:
+>         - use ktime_t to preserve same granularity of reporting as before
+>         - use centisecs logic as before to avoid 'div by zero' issues caused by
+>           using seconds and nanoseconds directly
+>         - use monotonic time (ktime_get()) since we only care about elapsed time.
+> 
+> Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
+> Suggested-by: Arnd Bergmann <arnd@arndb.de>
 
-Hi Boris,
-I have tested the branch with this bit:
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-  if (b.interrupt_capable) {
-             ... ...
-             if (mce_threshold_vector != amd_threshold_interrupt)
-                     mce_threshold_vector = amd_threshold_interrupt;
-     }
+> --
+> Changes in v4:
+>  - Rebased patch off of 3.18-rc1
+> Changes in v3:
+> 
 
-and it works fine.
+Note: you need three '-' characters to separate the patch description from
+any extra information that you want in the mail but not in the changelog.
 
-Thanks,
--Aravind.
-
-
+	Arnd
