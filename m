@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759630AbaJ3T0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 15:26:47 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:40447 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318AbaJ3T0o (ORCPT
+	id S1760372AbaJ3T1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 15:27:37 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:37410 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759855AbaJ3T1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 15:26:44 -0400
-Date: Thu, 30 Oct 2014 20:26:38 +0100
-From: Robert Richter <rric@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Robert Richter <rrichter@cavium.com>,
-        Andrew Bresticker <abrestic@google.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>
-Subject: Re: [GIT PULL] dts, kbuild: Implement support for dtb vendor subdirs
-Message-ID: <20141030192638.GX20170@rric.localhost>
-References: <1409899692-1455-1-git-send-email-rric@kernel.org>
- <20141021181504.GV20170@rric.localhost>
+	Thu, 30 Oct 2014 15:27:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141021181504.GV20170@rric.localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAE9FiQVU7F=MXUVEwmemz61=TbL5imFecHexUik+3DtqWKOHGA@mail.gmail.com>
+References: <1414621570-20777-1-git-send-email-yinghai@kernel.org>
+ <20141030170913.GA6982@google.com> <CAE9FiQVU7F=MXUVEwmemz61=TbL5imFecHexUik+3DtqWKOHGA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 30 Oct 2014 13:27:15 -0600
+Message-ID: <CAErSpo4E+ObyKb8wggT6rKQsT+VCXyoY4xqSFHitgq2bkSk6Pg@mail.gmail.com>
+Subject: Re: [PATCH] PCI: fix sriov enabling with virtual bus
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+On Thu, Oct 30, 2014 at 12:57 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Oct 30, 2014 at 10:09 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-On 21.10.14 20:15:04, Robert Richter wrote:
-> please pull this series for inclusion into v3.19 from:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git dts-subdirs-for-arm-soc-v3.19
-> 
-> I have updated and rebased the patches to v3.18-rc1. No changes except
-> conflict resolution of patch 5/6.
+>>> Fixing: commit 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
+>>
+>> Thanks for including this, but why not use the same format everybody else
+>> does:
+>>
+>> Fixes: 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
+>
+> will do that later. Is that formalized ?
 
-have you had the chance to look at this?
+I don't know that it's formalized, but it seems to be a common
+convention, and using "Fixing: commit" instead of "Fixes:" doesn't
+seem to add value.  I guess I must spend more time reading git
+logs than most people :)
 
-Thanks,
-
--Robert
+> checkpatch.pl only need 12 commit code, and (" ..") format.
