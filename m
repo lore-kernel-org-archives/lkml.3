@@ -1,91 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451AbaJ3MPh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 08:15:37 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:50606 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759059AbaJ3MPf (ORCPT
+	id S1759510AbaJ3MQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 08:16:04 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:34629 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759033AbaJ3MQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 08:15:35 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: I2C OF IRQ parsing issue due to probe ordering
-Date: Thu, 30 Oct 2014 14:15:43 +0200
-Message-ID: <15051800.BQpGCgk7GR@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <545227E4.5070507@vanguardiasur.com.ar>
-References: <2287003.09eTeKUr1V@avalon> <545227E4.5070507@vanguardiasur.com.ar>
+	Thu, 30 Oct 2014 08:16:01 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, john.stultz@linaro.org, arnd@arndb.de,
+        tj@kernel.org, marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
+        dh.herrmann@gmail.com, simon.mcvittie@collabora.co.uk,
+        daniel@zonque.org, alban.crequy@collabora.co.uk,
+        javier.martinez@collabora.co.uk, teg@jklm.no,
+        Andy Lutomirski <luto@amacapital.net>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+	<1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
+	<8738a6w6kv.fsf@x220.int.ebiederm.org> <20141030095854.GA4716@dztty>
+Date: Thu, 30 Oct 2014 05:15:04 -0700
+In-Reply-To: <20141030095854.GA4716@dztty> (Djalal Harouni's message of "Thu,
+	30 Oct 2014 10:58:54 +0100")
+Message-ID: <87wq7hiwjb.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19xoaEkubPDVrQEaxEJg12v1sxxYyqteoc=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Djalal Harouni <tixxdz@opendz.org>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 388 ms - load_scoreonly_sql: 0.05 (0.0%),
+	signal_user_changed: 2.8 (0.7%), b_tie_ro: 2.0 (0.5%), parse: 0.76 (0.2%),
+	extract_message_metadata: 16 (4.1%), get_uri_detail_list: 2.8 (0.7%),
+	tests_pri_-1000: 8 (1.9%), tests_pri_-950: 1.03 (0.3%), tests_pri_-900: 0.92
+	(0.2%), tests_pri_-400: 35 (9.0%), check_bayes: 34 (8.7%), b_tokenize: 8
+	(2.1%), b_tok_get_all: 17 (4.4%), b_comp_prob: 2.6 (0.7%), b_tok_touch_all:
+	2.6 (0.7%), b_finish: 0.62 (0.2%), tests_pri_0: 317 (81.6%), tests_pri_500:
+	5.0 (1.3%), rewrite_mail: 0.00 (0.0%)
+Subject: Re: kdbus: add code for buses, domains and endpoints
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ezequiel,
+Djalal Harouni <tixxdz@opendz.org> writes:
 
-On Thursday 30 October 2014 08:58:28 Ezequiel Garcia wrote:
-> On 10/25/2014 07:13 PM, Laurent Pinchart wrote:
-> > Hello,
-> > 
-> > I recently ran into an issue with the OF IRQ parsing code in the I2C core
-> > (of_i2c_register_devices in drivers/i2c/i2c-core.c).
-> > 
-> > My DT contains the following nodes.
-> > 
-> >         gpio1: gpio@e6051000 {
-> >                 ...
-> >                 #interrupt-cells = <2>;
-> >                 interrupt-controller;
-> >                 clocks = <&mstp9_clks R8A7790_CLK_GPIO1>;
-> >         };
-> >         
-> >         iic2: i2c@e6520000 {
-> >                 #address-cells = <1>;
-> >                 #size-cells = <0>;
-> >                 ...
-> >                 hdmi@39 {
-> >                         compatible = "adi,adv7511w";
-> >                         reg = <0x39>;
-> >                         interrupt-parent = <&gpio1>;
-> >                         interrupts = <15 IRQ_TYPE_EDGE_FALLING>;
-> >                         ...
-> >                 };
-> >         };
-> >         
-> >         mstp9_clks: mstp9_clks@e6150994 {
-> >                 ...
-> >         };
-> > 
-> > The i2c@e6520000 node is probed before the gpio@e6051000 node. The
-> > of_i2c_register_devices() function tries to register all children,
-> > including hdmi@39. It tries to parse and map the I2C client IRQ by
-> > calling irq_of_parse_and_map(), which returns 0 as the interrupt
-> > controller isn't probed yet. The adv7511 driver later probes the hdmi@39
-> > device and gets client->irq set to 0.
-> > 
-> > We can't control the probe order.
-> 
-> Maybe I'm missing something, but I think your i2c adapter is probed with
-> a subsys_initcall (as many other adapters). Otherwise, I can't see why
-> it would be probed before the the gpio controller.
-> 
-> I think this initcall is your problem. Have you tried just using
-> platform_driver's probe?
+> On Wed, Oct 29, 2014 at 08:59:44PM -0700, Eric W. Biederman wrote:
+>> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+>> 
+>> The way capabilities are checked in this patch make me very nervous.
+>> 
+>> We are not checking permissions at open time.  Every other location
+>> of calling capable on file like objects has been show to be suceptible
+>> to file descriptor pass attacks.
+> Yes, I do understand the concern, this is valid for some cases! but we
+> can't apply it on the ioctl API ?! please see below:
+>
+> All (perhaps not all) the current ioctl do not check for fd passing
+> attacks! if a privileged do arbitrary ioctl on untrusted fds we are
+> already owned... the dumb privileged process is the one to blame, right?
+>
+>
+> Example:
+> 1) fs/ext4/ioctl.c:ext4_ioctl()
+>    they have:
+>    inode_owner_or_capable() + capable() checks
+>
+>    for all the restricted ioctl()
+>
+> 2) fs/xfs/xfs_ioctl.c:xfs_file_ioctl()
+>    they have:
+>    capable() checks
+>
+> 3) fs/btrfs/ioctl.c:btrfs_ioctl()
+>    they have capable() + inode_owner_or_capable()
+>
+> ... long list
+>
+> These are sensible API and they do not care at all about fd passing,
+> so I don't think we should care either ?! or perhaps I'm missing
+> something ?
 
-My I2C controller driver uses module_platform_driver(). The reason why the 
-GPIO controller is probed later is because the GPIO requires a clock, and the 
-clock device is probed after the I2C controller, resulting in a deferred 
-probing the first time the GPIO controller is probed.
+- It is an easy mistake to make.
+- We have not performed extensive audits of the capable calls at this
+  time to veryify that fd passing is safe.
+- Unless it is egregious we are likely to grandfather the existing usage
+  in to avoid breaking userspace.
 
-In the general case probe ordering can't be controlled, especially with DT. I 
-believe we thus need a generic solution.
+None of that is an excuse for kdbus to get it wrong once it has been
+pointed out in review.
+ 
+> The capable() is done as it is, and for the inode_owner_or_capable() you
+> will notice that we followed the same logic and did use it in our
+> kdbus_bus_uid_is_privileged() to stay safe and follow what other API are
+> doing.
 
--- 
-Regards,
+What others are doing makes it very hard to safely use allow those
+ioctls in a tightly sandboxed application, as it is unpredictable
+what the sandboxed ioctl can do with the file descriptor.
 
-Laurent Pinchart
+Further an application that calls setresuid at different times during
+it's application will behave differently.  Which makes ioctls that do
+not have consistent behavior after open time inappropriate for use in
+userspace libraries.
 
+Eric
+
+
+> Thank you for the comments!
+>
+>
+>> > See Documentation/kdbus.txt for more details.
+>> >
+>> > Signed-off-by: Daniel Mack <daniel@zonque.org>
+>> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> > ---
+>> 
+>> > diff --git a/drivers/misc/kdbus/bus.c b/drivers/misc/kdbus/bus.c
+>> > new file mode 100644
+>> > index 000000000000..6dcaf22f5d59
+>> > --- /dev/null
+>> > +++ b/drivers/misc/kdbus/bus.c
+>> > @@ -0,0 +1,450 @@
+>> 
+>> > +/**
+>> > + * kdbus_bus_cred_is_privileged() - check whether the given credentials in
+>> > + *				    combination with the capabilities of the
+>> > + *				    current thead are privileged on the bus
+>> > + * @bus:		The bus to check
+>> > + * @cred:		The credentials to match
+>> > + *
+>> > + * Return: true if the credentials are privileged, otherwise false.
+>> > + */
+>> > +bool kdbus_bus_cred_is_privileged(const struct kdbus_bus *bus,
+>> > +				  const struct cred *cred)
+>> > +{
+>> > +	/* Capabilities are *ALWAYS* tested against the current thread, they're
+>> > +	 * never remembered from conn-credentials. */
+>> > +	if (ns_capable(&init_user_ns, CAP_IPC_OWNER))
+>> > +		return true;
+>> > +
+>> > +	return uid_eq(bus->uid_owner, cred->fsuid);
+>> > +}
+>> > +
+>> > +/**
+>> > + * kdbus_bus_uid_is_privileged() - check whether the current user is a
+>> > + *				   priviledged bus user
+>> > + * @bus:		The bus to check
+>> > + *
+>> > + * Return: true if the current user has CAP_IPC_OWNER capabilities, or
+>> > + * if it has the same UID as the user that created the bus. Otherwise,
+>> > + * false is returned.
+>> > + */
+>> > +bool kdbus_bus_uid_is_privileged(const struct kdbus_bus *bus)
+>> > +{
+>> > +	return kdbus_bus_cred_is_privileged(bus, current_cred());
+>> > +}
+>> 
+>> 
+>> > +/**
+>> > + * kdbus_bus_new() - create a new bus
+>> > + * @domain:		The domain to work on
+>> > + * @make:		Pointer to a struct kdbus_cmd_make containing the
+>> > + *			details for the bus creation
+>> > + * @name:		Name of the bus
+>> > + * @bloom:		Bloom parameters for this bus
+>> > + * @mode:		The access mode for the device node
+>> > + * @uid:		The uid of the device node
+>> > + * @gid:		The gid of the device node
+>> > + * @bus:		Pointer to a reference where the new bus is stored
+>> > + *
+>> > + * This function will allocate a new kdbus_bus and link it to the given
+>> > + * domain.
+>> > + *
+>> > + * Return: 0 on success, negative errno on failure.
+>> > + */
+>> > +int kdbus_bus_new(struct kdbus_domain *domain,
+>> > +		  const struct kdbus_cmd_make *make,
+>> > +		  const char *name,
+>> > +		  const struct kdbus_bloom_parameter *bloom,
+>> > +		  umode_t mode, kuid_t uid, kgid_t gid,
+>> > +		  struct kdbus_bus **bus)
+>> > +{
+>> [snip]
+>> > +
+>> > +	if (!capable(CAP_IPC_OWNER) &&
+>> > +	    atomic_inc_return(&b->user->buses) > KDBUS_USER_MAX_BUSES) {
+>> > +		atomic_dec(&b->user->buses);
+>> > +		ret = -EMFILE;
+>> > +		goto exit_unref_user_unlock;
+>> > +	}
+>> > +
