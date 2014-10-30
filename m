@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaJ3EFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 00:05:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56374 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaJ3EFm (ORCPT
+	id S1754484AbaJ3EF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 00:05:57 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:56049 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaJ3EFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 00:05:42 -0400
-Message-ID: <5451B914.6020300@wwwdotorg.org>
-Date: Wed, 29 Oct 2014 22:05:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 30 Oct 2014 00:05:54 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org,
+        marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
+        dh.herrmann@gmail.com, tixxdz@opendz.org,
+        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no, Andy Lutomirski <luto@amacapital.net>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+	<20141029221505.GA7812@kroah.com>
+Date: Wed, 29 Oct 2014 21:04:58 -0700
+In-Reply-To: <20141029221505.GA7812@kroah.com> (Greg KH's message of "Wed, 29
+	Oct 2014 15:15:05 -0700")
+Message-ID: <87egtqurrp.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [RFC] pinctrl: Provide a generic device tree binding for per-pin
- pin controllers
-References: <20141023132305.GG14443@pengutronix.de>
-In-Reply-To: <20141023132305.GG14443@pengutronix.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19n31gKZsOvDXe5g/8vylnCJEmk+Z6H4mY=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4993]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Greg KH <gregkh@linuxfoundation.org>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 420 ms - load_scoreonly_sql: 0.07 (0.0%),
+	signal_user_changed: 3.7 (0.9%), b_tie_ro: 2.6 (0.6%), parse: 1.12 (0.3%),
+	extract_message_metadata: 23 (5.6%), get_uri_detail_list: 1.48 (0.4%),
+	tests_pri_-1000: 10 (2.4%), tests_pri_-950: 2.1 (0.5%), tests_pri_-900: 1.77
+	(0.4%), tests_pri_-400: 28 (6.6%), check_bayes: 26 (6.1%), b_tokenize: 9
+	(2.2%), b_tok_get_all: 7 (1.7%), b_comp_prob: 3.4 (0.8%), b_tok_touch_all:
+	2.3 (0.5%), b_finish: 0.86 (0.2%), tests_pri_0: 336 (80.1%), tests_pri_500: 8
+	(1.9%), rewrite_mail: 0.00 (0.0%)
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2014 07:23 AM, Sascha Hauer wrote:
-> Most iomux controllers allow a configuration per pin. These currently
-> have no common device tree binding. There are many different SoC
-> specific bindings for this class of iomux controllers. Some controllers
-> artificially group pins together where in hardware no groups exist (for
-> example lantiq). Other controllers just put each pin into a separate
-> group which explodes to many many strings to parse (Tegra30).
-> 
-> 
-> A pin controller has n pins, each muxable to m different positions.
+Greg KH <gregkh@linuxfoundation.org> writes:
 
-I assume that sentence is meant to say something more specific:
+> On Wed, Oct 29, 2014 at 03:00:44PM -0700, Greg Kroah-Hartman wrote:
+>> kdbus is a kernel-level IPC implementation that aims for resemblance to
+>> the the protocol layer with the existing userspace D-Bus daemon while
+>> enabling some features that couldn't be implemented before in userspace.
+>
+> {sigh}
+>
+> I'll blame it on the jet-lag for the lack of [XX/12] markings on the
+> patches.  I'll give it a day for review before resending if people
+> really want to know the ordering.  It doesn't matter except for the
+> final patch that adds the code to the build file.
+>
+> sorry about that,
 
-This binding is intended to apply to pin controllers where each pin has
-an independently selectable mux function.
+For what it is worth these patches are also poorly split up.  Every
+patch I looked at in detail had functions that were being introduced
+that did not have callers.
 
-"A pin controller ..." sounds like a general statement that is intended
-to apply to any pin controller. If that were intended, the statement you
-made certainly wouldn't be true.
+That poor split up of the patches makes it difficult to see how
+the functionality that is being introduced is being used.
 
-> There exists a logical numbering for all pins, for most SoCs this will
-> be defined by the register ordering so that the pin number can directly
-> be translated to a register offset without the need of tables in the
-> driver. The register usually takes m different numbers to specify the
-> function the pin should have. Both the pin and its function can be
-> described as a single 32bit number:
-> 
-> #define PINMUX_PIN(no, fn) (((no) & 0xffffff) << 8) | (fn) & 0xff)
-> 
-> This allows to put multiple pins into a single device tree property
-> which is very efficiently parsable by the driver (or the pinmux core).
-> We suggest to name this property 'pins' and to put it next to the
-> generic pinconf binding.  This allows to describe multiple pins with the
-> same pinconf settings in a single device tree node. Multiple of these
-> nodes can be grouped under a pinctrl state node. This allows to put pins
-> with different pinconf settings to a single state.
-> 
-> Example:
-> 
-> 	uart2 {
-> 		uart2_default_mode: uart2_default {
-> 			pins1 {
-> 				pins = <PINMUX_PIN(127, 3), PINMUX_PIN(128, 3)>;
-
-Within each of the nodes, the binding for pinmux is defined
-independently by each pin controller. I don't have any /strong/
-objection to any particular pin controller using this binding, or even
-it being re-used across many similar pin controllers, or even being
-the/a default binding style for new pin controllers.
-
-I'm not totally sure whether blending the pin ID and mux function ID
-into the same value is a good idea. That said, it does have advantages
-as you state, and shouldn't cause any significant issues. In any case
-where it would be a bad idea, the binding for the pin controller in
-question can still choose to use some more appropriate binding, so
-allowing this binding for some controllers won't force issues onto other
-controllers. So, it seems fine.
-
-Note however that we can't change existing bindings. Well, I suppose
-certain bindings could be enhanced to support either a string-based or
-an integer-base binding, but I don't think that'd be a good idea.
+Eric
