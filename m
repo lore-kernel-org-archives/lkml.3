@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760175AbaJ3N6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:58:03 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:50944 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759871AbaJ3N6A (ORCPT
+	id S1760207AbaJ3N6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:58:10 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:44302 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760177AbaJ3N6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:58:00 -0400
-Date: Thu, 30 Oct 2014 13:57:49 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC V5 3/3] arm64:add bitrev.h file to support rbit instruction
-Message-ID: <20141030135749.GE32589@arm.com>
-References: <1414392371.8884.2.camel@perches.com>
- <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18260@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
- <20141030120127.GC32589@arm.com>
- <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 30 Oct 2014 09:58:07 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1414677442.2406.47.camel@hadess.net>
+Subject: Re: suspend to partition Re: A desktop environment[1] kernel
+ wishlist
+From: Bastien Nocera <hadess@hadess.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 30 Oct 2014 14:57:22 +0100
+In-Reply-To: <20141028185028.GA13410@amd>
+References: <1413881397.30379.7.camel@hadess.net>
+	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+	 <1413911644.30379.12.camel@hadess.net>
+	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd>
+	 <1414420292.30379.55.camel@hadess.net> <20141028185028.GA13410@amd>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 12:26:42PM +0000, Ard Biesheuvel wrote:
-> On 30 October 2014 13:01, Will Deacon <will.deacon@arm.com> wrote:
-> > On Wed, Oct 29, 2014 at 05:52:00AM +0000, Wang, Yalin wrote:
-> >> This patch add bitrev.h file to support rbit instruction,
-> >> so that we can do bitrev operation by hardware.
-> >> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> >> ---
-> >>  arch/arm64/Kconfig              |  1 +
-> >>  arch/arm64/include/asm/bitrev.h | 28 ++++++++++++++++++++++++++++
-> >>  2 files changed, 29 insertions(+)
-> >>  create mode 100644 arch/arm64/include/asm/bitrev.h
-> >>
-> >> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> >> index 9532f8d..b1ec1dd 100644
-> >> --- a/arch/arm64/Kconfig
-> >> +++ b/arch/arm64/Kconfig
-> >> @@ -35,6 +35,7 @@ config ARM64
-> >>       select HANDLE_DOMAIN_IRQ
-> >>       select HARDIRQS_SW_RESEND
-> >>       select HAVE_ARCH_AUDITSYSCALL
-> >> +     select HAVE_ARCH_BITREVERSE
-> >>       select HAVE_ARCH_JUMP_LABEL
-> >>       select HAVE_ARCH_KGDB
-> >>       select HAVE_ARCH_TRACEHOOK
-> >> diff --git a/arch/arm64/include/asm/bitrev.h b/arch/arm64/include/asm/bitrev.h
-> >> new file mode 100644
-> >> index 0000000..292a5de
-> >> --- /dev/null
-> >> +++ b/arch/arm64/include/asm/bitrev.h
-> >> @@ -0,0 +1,28 @@
-> >> +#ifndef __ASM_ARM64_BITREV_H
-> >> +#define __ASM_ARM64_BITREV_H
-> >> +
-> >> +static __always_inline __attribute_const__ u32 __arch_bitrev32(u32 x)
-> >> +{
-> >> +     if (__builtin_constant_p(x)) {
-> >> +             x = (x >> 16) | (x << 16);
-> >> +             x = ((x & 0xFF00FF00) >> 8) | ((x & 0x00FF00FF) << 8);
-> >> +             x = ((x & 0xF0F0F0F0) >> 4) | ((x & 0x0F0F0F0F) << 4);
-> >> +             x = ((x & 0xCCCCCCCC) >> 2) | ((x & 0x33333333) << 2);
-> >> +             return ((x & 0xAAAAAAAA) >> 1) | ((x & 0x55555555) << 1);
-> >
-> > Shouldn't this part be in the generic code?
-> >
-> >> +     }
-> >> +     __asm__ ("rbit %w0, %w1" : "=r" (x) : "r" (x));
-> >
-> > You can write this more neatly as:
-> >
-> >   asm ("rbit %w0, %w0" : "+r" (x));
-> >
+On Tue, 2014-10-28 at 19:50 +0100, Pavel Machek wrote:
+> Hi!
 > 
-> This forces GCC to use the same register as input and output, which
-> doesn't necessarily result in the fastest code. (e.g., if the
-> un-bitrev()'ed value is reused again afterwards).
-> On the other hand, the original notation does allow GCC to use the
-> same register, but doesn't force it to, so I prefer the original one.
+> > > > >   For mobile
+> > > > > devices this is an expected design point, but for off-the-shelf
+> > > > > laptops with big fans and exhaust vents, I'm not sure how safe this
+> > > > > would be, so you may need to constrain this functionality somehow (or
+> > > > > look to see if a enforced low-power resume is possible).
+> > > > 
+> > > > I think that we won't know whether it's a problem until the point that
+> > > > somebody actually implements it.
+> > > 
+> > > Kernel does not stop you at this point, right?
+> > > 
+> > > Suspend-to-partition is also doable today (see suspend.sf.net),
+> > 
+> > Is it perfect? Because no releases in 3 years kind of scares me.
+> 
+> Yes, it is perfect :-). 
+> 
+> [It is in use by SUSE, so it should be good; and if anything, it shows
+> that suspend-to-partition does not need kernel help.]
 
-That's a good point, especially since this is __always_inline.
+Does SUSE have patches to integrate this functionality into systemd, by
+any chance?
 
-Will
+> > >  or you
+> > > can just swapon before starting. You can take it off the list, I
+> > > believe.
+> > 
+> > Or we could create a new filesystem type that isn't swap, that isn't
+> > used by swap at all, but could be created by distributions' installers.
+> > Then I wouldn't need to hope that the swap didn't start being used in
+> > between me enabling it, and the suspend actually occurring (making it
+> > impossible to disable afterwards).
+> 
+> I see there's a race, but is it big enough to matter in practice? I
+> don't think so.
+
+I'd certainly prefer not to chance it...
+
+>  Anyway -- suspend.sf.net is way to go for advanced
+> features.
+
+Noted, thanks.
+
