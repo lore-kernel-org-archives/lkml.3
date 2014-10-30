@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761076AbaJ3TpY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 15:45:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58550 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761055AbaJ3TpS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 15:45:18 -0400
-Date: Thu, 30 Oct 2014 15:45:15 -0400 (EDT)
-Message-Id: <20141030.154515.250654452794791308.davem@davemloft.net>
-To: ast@plumgrid.com
-Cc: hannes@stressinduktion.org, edumazet@google.com, dborkman@redhat.com,
-        luto@amacapital.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 0/3] reduce verifier memory consumption and
- add tests
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1414534303-9906-1-git-send-email-ast@plumgrid.com>
-References: <1414534303-9906-1-git-send-email-ast@plumgrid.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1760858AbaJ3TrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 15:47:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755306AbaJ3TrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 15:47:10 -0400
+Message-ID: <54529504.3040101@redhat.com>
+Date: Thu, 30 Oct 2014 15:44:04 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Iulia Manda <iulia.manda21@gmail.com>, linux-kernel@vger.kernel.org
+CC: mingo@redhat.com, peterz@infradead.org, mgorman@suse.de
+Subject: Re: [PATCH] kernel: Refactor task_struct to use numa_faults instead
+ of numa_* pointers
+References: <20141030193817.GA17859@winterfell>
+In-Reply-To: <20141030193817.GA17859@winterfell>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 30 Oct 2014 12:45:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Tue, 28 Oct 2014 15:11:40 -0700
+On 10/30/2014 03:38 PM, Iulia Manda wrote:
+> This patch simplifies task_struct by removing the four numa_* pointers
+> in the same array and replacing them with the array pointer. By doing this,
+> the size of task_struct is reduced.
+> 
+> A new parameter is added to the task_faults_idx function so that it can return
+> an index to the correct offset, corresponding with the old precalculated
+> pointers.
+> 
+> All of the code in sched/ that depended on task_faults_idx and numa_* was
+> changed in order to match the new logic.
+> 
+> Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
 
-> Small set of cleanups:
->  - reduce verifier memory consumption
->  - add verifier test to check register state propagation and state equivalence
->  - add JIT test reduced from recent nmap triggered crash
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Series applied, thanks.
