@@ -1,263 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161159AbaJ3Rmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:42:44 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:52786 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760380AbaJ3Rl1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:41:27 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v8 5/7] usb: chipidea: rename transceiver and phy to usb_phy
-Date: Thu, 30 Oct 2014 18:41:17 +0100
-Message-Id: <1414690879-7184-6-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1161205AbaJ3Rm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:42:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48847 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934023AbaJ3Rmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 13:42:43 -0400
+Date: Thu, 30 Oct 2014 18:42:41 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, peterz@infradead.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
+Message-ID: <20141030174241.GD3639@dhcp22.suse.cz>
+References: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com>
+ <20141030082712.GB4664@dhcp22.suse.cz>
+ <54523DDE.9000904@oracle.com>
+ <20141030141401.GA24520@phnom.home.cmpxchg.org>
+ <54524A2F.5050907@oracle.com>
+ <20141030153159.GA3639@dhcp22.suse.cz>
+ <20141030172632.GA25217@phnom.home.cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030172632.GA25217@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares the introduction of the generic PHY support in the
-USB ChipIdea common functions. The USB PHY member of the ChipIdea
-structure ('transceiver') is renamed to 'usb_phy', the 'phy' member of
-the ChipIdea pdata structure is renamed to 'usb_phy' and modifications
-are done in all drivers accessing it. Renaming this pointer will allow
-to keep the compatibility for USB PHY drivers.
+On Thu 30-10-14 13:26:32, Johannes Weiner wrote:
+> On Thu, Oct 30, 2014 at 04:31:59PM +0100, Michal Hocko wrote:
+> > On Thu 30-10-14 10:24:47, Sasha Levin wrote:
+> > > On 10/30/2014 10:14 AM, Johannes Weiner wrote:
+> > > >> The problem is that you are attempting to read 'locked' when you call
+> > > >> > mem_cgroup_end_page_stat(), so it gets used even before you enter the
+> > > >> > function - and using uninitialized variables is undefined.
+> > > > We are not using that value anywhere if !memcg.  What path are you
+> > > > referring to?
+> > > 
+> > > You're using that value as soon as you are passing it to a function, it
+> > > doesn't matter what happens inside that function.
+> > 
+> > I have discussed that with our gcc guys and you are right. Strictly
+> > speaking the compiler is free to do
+> > if (!memcg) abort();
+> > mem_cgroup_end_page_stat(...);
+> > 
+> > but it is highly unlikely that this will ever happen. Anyway better be
+> > safe than sorry. I guess the following should be sufficient and even
+> > more symmetric:
+> 
+> The functional aspect of this is a terrible motivation for this
+> change.  Sure the compiler could, but it doesn't, and it won't.
+> 
+> But there is some merit in keeping the checker's output meaningful as
+> long as it doesn't obfuscate the interface too much.
+> 
+> > From 6c3e748af7ee24984477e850bb93d65f83914903 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Thu, 30 Oct 2014 16:18:23 +0100
+> > Subject: [PATCH] mm, memcg: fix potential undefined when for page stat
+> >  accounting
+> > 
+> > since d7365e783edb (mm: memcontrol: fix missed end-writeback page
+> > accounting) mem_cgroup_end_page_stat consumes locked and flags variables
+> > directly rather than via pointers which might trigger C undefined
+> > behavior as those variables are initialized only in the slow path of
+> > mem_cgroup_begin_page_stat.
+> > Although mem_cgroup_end_page_stat handles parameters correctly and
+> > touches them only when they hold a sensible value it is caller which
+> > loads a potentially uninitialized value which then might allow compiler
+> > to do crazy things.
+> 
+> I'm not opposed to passing pointers into end_page_stat(), but please
+> mention the checker in the changelog.
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Peter Chen <peter.chen@freescale.com>
+Done.
+ 
+> > Fix this by using pointer parameters for both locked and flags. This is
+> > even better from the API point of view because it is symmetrical to
+> > mem_cgroup_begin_page_stat.
+> 
+> Uhm, locked and flags are return values in begin_page_stat() but input
+> arguments in end_page_stat().  Symmetry obfuscates that, so that's not
+> an upside at all.  It's a cost that we can pay to keep the checker
+
+Well, I would use a typedef to obfuscate those values because nobody
+except for mem_cgroup_{begin,end}_page_stat should touch them. But we
+are not doing typedefs in kernel...
+
+> benefits, but the underlying nastiness remains.  It comes from the
+> fact that we use conditional locking to avoid the read-side spinlock,
+> rather than using a reader-friendly lock to begin with.
+ 
+> So let's change it to pointers, but at the same time be clear that
+> this doesn't make the code better.  It just fixes the checker.
+
+No it is not about the checker which is correct here actually. A simple
+load to setup parameter from an uninitialized variable is an undefined
+behavior (that load happens unconditionally). This has nothing to do
+with the way how we use locked and flags inside the function.
+
+New version with an updated changelog
 ---
- drivers/usb/chipidea/ci.h          |  4 ++--
- drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
- drivers/usb/chipidea/ci_hdrc_msm.c |  8 ++++----
- drivers/usb/chipidea/core.c        | 20 ++++++++++----------
- drivers/usb/chipidea/debug.c       |  2 +-
- drivers/usb/chipidea/host.c        |  4 ++--
- drivers/usb/chipidea/otg_fsm.c     |  4 ++--
- drivers/usb/chipidea/udc.c         |  4 ++--
- include/linux/usb/chipidea.h       |  2 +-
- 9 files changed, 25 insertions(+), 25 deletions(-)
+>From b2762f30d3896172c5666066e72938b3f5f9158a Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Thu, 30 Oct 2014 18:35:19 +0100
+Subject: [PATCH] mm, memcg: fix potential undefined when for page stat
+ accounting
 
-diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-index ea40626e0246..b7f589b348e6 100644
---- a/drivers/usb/chipidea/ci.h
-+++ b/drivers/usb/chipidea/ci.h
-@@ -161,7 +161,7 @@ struct hw_bank {
-  * @test_mode: the selected test mode
-  * @platdata: platform specific information supplied by parent device
-  * @vbus_active: is VBUS active
-- * @transceiver: pointer to USB PHY, if any
-+ * @usb_phy: pointer to USB PHY, if any
-  * @hcd: pointer to usb_hcd for ehci host driver
-  * @debugfs: root dentry for this controller in debugfs
-  * @id_event: indicates there is an id event, and handled at ci_otg_work
-@@ -201,7 +201,7 @@ struct ci_hdrc {
+since d7365e783edb (mm: memcontrol: fix missed end-writeback page
+accounting) mem_cgroup_end_page_stat consumes locked and flags variables
+directly rather than via pointers which might trigger C undefined
+behavior as those variables are initialized only in the slow path of
+mem_cgroup_begin_page_stat.
+Although mem_cgroup_end_page_stat handles parameters correctly and
+touches them only when they hold a sensible value it is caller which
+loads a potentially uninitialized value which then might allow compiler
+to do crazy things.
+
+I haven't seen any warning from gcc and it seems that the current
+version (4.9) doesn't exploit this type undefined behavior but Sasha has
+reported the following:
+[   26.868116] ================================================================================
+[   26.870376] UBSan: Undefined behaviour in mm/rmap.c:1084:2
+[   26.871792] load of value 255 is not a valid value for type '_Bool'
+[   26.873256] CPU: 4 PID: 8304 Comm: rngd Not tainted 3.18.0-rc2-next-20141029-sasha-00039-g77ed13d-dirty #1427
+[   26.875636]  ffff8800cac17ff0 0000000000000000 0000000000000000 ffff880069ffbb28
+[   26.877611]  ffffffffaf010c16 0000000000000037 ffffffffb1c0d050 ffff880069ffbb38
+[   26.879140]  ffffffffa6e97899 ffff880069ffbbb8 ffffffffa6e97cc7 ffff880069ffbbb8
+[   26.880765] Call Trace:
+[   26.881185] dump_stack (lib/dump_stack.c:52)
+[   26.882755] ubsan_epilogue (lib/ubsan.c:159)
+[   26.883555] __ubsan_handle_load_invalid_value (lib/ubsan.c:482)
+[   26.884492] ? mem_cgroup_begin_page_stat (mm/memcontrol.c:1962)
+[   26.885441] ? unmap_page_range (./arch/x86/include/asm/paravirt.h:694 mm/memory.c:1091 mm/memory.c:1258 mm/memory.c:1279 mm/memory.c:1303)
+[   26.886242] page_remove_rmap (mm/rmap.c:1084 mm/rmap.c:1096)
+[   26.886922] unmap_page_range (./arch/x86/include/asm/atomic.h:27 include/linux/mm.h:463 mm/memory.c:1146 mm/memory.c:1258 mm/memory.c:1279 mm/memory.c:1303)
+[   26.887824] unmap_single_vma (mm/memory.c:1348)
+[   26.888582] unmap_vmas (mm/memory.c:1377 (discriminator 3))
+[   26.889430] exit_mmap (mm/mmap.c:2837)
+[   26.890060] mmput (kernel/fork.c:659)
+[   26.890656] do_exit (./arch/x86/include/asm/thread_info.h:168 kernel/exit.c:462 kernel/exit.c:747)
+[   26.891359] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[   26.892287] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
+[   26.893107] ? syscall_trace_enter_phase2 (arch/x86/kernel/ptrace.c:1598 (discriminator 2))
+[   26.893974] do_group_exit (include/linux/sched.h:775 kernel/exit.c:873)
+[   26.894695] SyS_exit_group (kernel/exit.c:901)
+[   26.895433] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+[   26.896134] ================================================================================
+
+Fix this by using pointer parameters for both locked and flags and be
+more robust for future compiler changes even though the current code is
+implemented correctly.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/memcontrol.h | 6 +++---
+ mm/memcontrol.c            | 8 ++++----
+ mm/page-writeback.c        | 4 ++--
+ mm/rmap.c                  | 4 ++--
+ 4 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index d4575a1d6e99..de018766be45 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -141,8 +141,8 @@ static inline bool mem_cgroup_disabled(void)
  
- 	struct ci_hdrc_platform_data	*platdata;
- 	int				vbus_active;
--	struct usb_phy			*transceiver;
-+	struct usb_phy			*usb_phy;
- 	struct usb_hcd			*hcd;
- 	struct dentry			*debugfs;
- 	bool				id_event;
-diff --git a/drivers/usb/chipidea/ci_hdrc_imx.c b/drivers/usb/chipidea/ci_hdrc_imx.c
-index a7ab0f15926e..6f8b1b1045b5 100644
---- a/drivers/usb/chipidea/ci_hdrc_imx.c
-+++ b/drivers/usb/chipidea/ci_hdrc_imx.c
-@@ -147,7 +147,7 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
- 		goto err_clk;
- 	}
+ struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page, bool *locked,
+ 					      unsigned long *flags);
+-void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool locked,
+-			      unsigned long flags);
++void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool *locked,
++			      unsigned long *flags);
+ void mem_cgroup_update_page_stat(struct mem_cgroup *memcg,
+ 				 enum mem_cgroup_stat_index idx, int val);
  
--	pdata.phy = data->phy;
-+	pdata.usb_phy = data->phy;
- 
- 	if (imx_platform_flag->flags & CI_HDRC_IMX_IMX28_WRITE_FIX)
- 		pdata.flags |= CI_HDRC_IMX28_WRITE_FIX;
-diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
-index 4935ac38fd00..3edf969ed797 100644
---- a/drivers/usb/chipidea/ci_hdrc_msm.c
-+++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-@@ -26,15 +26,15 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
- 		dev_dbg(dev, "CI_HDRC_CONTROLLER_RESET_EVENT received\n");
- 		writel(0, USB_AHBBURST);
- 		writel(0, USB_AHBMODE);
--		usb_phy_init(ci->transceiver);
-+		usb_phy_init(ci->usb_phy);
- 		break;
- 	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
- 		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
- 		/*
--		 * Put the transceiver in non-driving mode. Otherwise host
-+		 * Put the phy in non-driving mode. Otherwise host
- 		 * may not detect soft-disconnection.
- 		 */
--		usb_phy_notify_disconnect(ci->transceiver, USB_SPEED_UNKNOWN);
-+		usb_phy_notify_disconnect(ci->usb_phy, USB_SPEED_UNKNOWN);
- 		break;
- 	default:
- 		dev_dbg(dev, "unknown ci_hdrc event\n");
-@@ -68,7 +68,7 @@ static int ci_hdrc_msm_probe(struct platform_device *pdev)
- 	if (IS_ERR(phy))
- 		return PTR_ERR(phy);
- 
--	ci_hdrc_msm_platdata.phy = phy;
-+	ci_hdrc_msm_platdata.usb_phy = phy;
- 
- 	plat_ci = ci_hdrc_add_device(&pdev->dev,
- 				pdev->resource, pdev->num_resources,
-diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index 3df5005c554d..b7b01694d52e 100644
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -312,7 +312,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
- 	case USBPHY_INTERFACE_MODE_UTMI:
- 	case USBPHY_INTERFACE_MODE_UTMIW:
- 	case USBPHY_INTERFACE_MODE_HSIC:
--		ret = usb_phy_init(ci->transceiver);
-+		ret = usb_phy_init(ci->usb_phy);
- 		if (ret)
- 			return ret;
- 		hw_phymode_configure(ci);
-@@ -320,12 +320,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
- 	case USBPHY_INTERFACE_MODE_ULPI:
- 	case USBPHY_INTERFACE_MODE_SERIAL:
- 		hw_phymode_configure(ci);
--		ret = usb_phy_init(ci->transceiver);
-+		ret = usb_phy_init(ci->usb_phy);
- 		if (ret)
- 			return ret;
- 		break;
- 	default:
--		ret = usb_phy_init(ci->transceiver);
-+		ret = usb_phy_init(ci->usb_phy);
- 	}
- 
- 	return ret;
-@@ -605,13 +605,13 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	if (ci->platdata->phy)
--		ci->transceiver = ci->platdata->phy;
-+	if (ci->platdata->usb_phy)
-+		ci->usb_phy = ci->platdata->usb_phy;
- 	else
--		ci->transceiver = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
- 
--	if (IS_ERR(ci->transceiver)) {
--		ret = PTR_ERR(ci->transceiver);
-+	if (IS_ERR(ci->usb_phy)) {
-+		ret = PTR_ERR(ci->usb_phy);
- 		/*
- 		 * if -ENXIO is returned, it means PHY layer wasn't
- 		 * enabled, so it makes no sense to return -EPROBE_DEFER
-@@ -728,7 +728,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- stop:
- 	ci_role_destroy(ci);
- deinit_phy:
--	usb_phy_shutdown(ci->transceiver);
-+	usb_phy_shutdown(ci->usb_phy);
- 
- 	return ret;
+@@ -297,7 +297,7 @@ static inline struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page,
  }
-@@ -741,7 +741,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
- 	free_irq(ci->irq, ci);
- 	ci_role_destroy(ci);
- 	ci_hdrc_enter_lpm(ci, true);
--	usb_phy_shutdown(ci->transceiver);
-+	usb_phy_shutdown(ci->usb_phy);
- 	kfree(ci->hw_bank.regmap);
  
- 	return 0;
-diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-index 8878eea38d44..8f437e1512fa 100644
---- a/drivers/usb/chipidea/debug.c
-+++ b/drivers/usb/chipidea/debug.c
-@@ -220,7 +220,7 @@ static int ci_otg_show(struct seq_file *s, void *unused)
- 
- 	/* ------ State ----- */
- 	seq_printf(s, "OTG state: %s\n\n",
--		usb_otg_state_string(ci->transceiver->otg.state));
-+		usb_otg_state_string(ci->usb_phy->otg.state));
- 
- 	/* ------ State Machine Variables ----- */
- 	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
-diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-index ebde7b6ce687..51b086d3bb11 100644
---- a/drivers/usb/chipidea/host.c
-+++ b/drivers/usb/chipidea/host.c
-@@ -59,7 +59,7 @@ static int host_start(struct ci_hdrc *ci)
- 	hcd->has_tt = 1;
- 
- 	hcd->power_budget = ci->platdata->power_budget;
--	hcd->usb_phy = ci->transceiver;
-+	hcd->usb_phy = ci->usb_phy;
- 	hcd->tpl_support = ci->platdata->tpl_support;
- 
- 	ehci = hcd_to_ehci(hcd);
-@@ -86,7 +86,7 @@ static int host_start(struct ci_hdrc *ci)
- 	if (ret) {
- 		goto disable_reg;
- 	} else {
--		struct usb_otg *otg = ci->transceiver->otg;
-+		struct usb_otg *otg = ci->usb_phy->otg;
- 
- 		ci->hcd = hcd;
- 		if (otg) {
-diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-index d8490e758a74..8a64ce87364e 100644
---- a/drivers/usb/chipidea/otg_fsm.c
-+++ b/drivers/usb/chipidea/otg_fsm.c
-@@ -788,10 +788,10 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
- 		return -ENOMEM;
- 	}
- 
--	otg->usb_phy = ci->transceiver;
-+	otg->usb_phy = ci->usb_phy;
- 	otg->gadget = &ci->gadget;
- 	ci->fsm.otg = otg;
--	ci->transceiver->otg = ci->fsm.otg;
-+	ci->usb_phy->otg = ci->fsm.otg;
- 	ci->fsm.power_up = 1;
- 	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
- 	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
-diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
-index f4397b29891f..a2d80ab3d9c4 100644
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -1519,8 +1519,8 @@ static int ci_udc_vbus_draw(struct usb_gadget *_gadget, unsigned ma)
+ static inline void mem_cgroup_end_page_stat(struct mem_cgroup *memcg,
+-					bool locked, unsigned long flags)
++					bool *locked, unsigned long *flags)
  {
- 	struct ci_hdrc *ci = container_of(_gadget, struct ci_hdrc, gadget);
- 
--	if (ci->transceiver)
--		return usb_phy_set_power(ci->transceiver, ma);
-+	if (ci->usb_phy)
-+		return usb_phy_set_power(ci->usb_phy, ma);
- 	return -ENOTSUPP;
  }
  
-diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
-index e14c09a45c5a..4fe161a84c7d 100644
---- a/include/linux/usb/chipidea.h
-+++ b/include/linux/usb/chipidea.h
-@@ -13,7 +13,7 @@ struct ci_hdrc_platform_data {
- 	/* offset of the capability registers */
- 	uintptr_t	 capoffset;
- 	unsigned	 power_budget;
--	struct usb_phy	*phy;
-+	struct usb_phy	*usb_phy;
- 	enum usb_phy_interface phy_mode;
- 	unsigned long	 flags;
- #define CI_HDRC_REGS_SHARED		BIT(0)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b841bf430179..031ca345677b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2053,11 +2053,11 @@ again:
+  * @locked: value received from mem_cgroup_begin_page_stat()
+  * @flags: value received from mem_cgroup_begin_page_stat()
+  */
+-void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool locked,
+-			      unsigned long flags)
++void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool *locked,
++			      unsigned long *flags)
+ {
+-	if (memcg && locked)
+-		spin_unlock_irqrestore(&memcg->move_lock, flags);
++	if (memcg && *locked)
++		spin_unlock_irqrestore(&memcg->move_lock, *flags);
+ 
+ 	rcu_read_unlock();
+ }
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 19ceae87522d..d5d81f5384d1 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2357,7 +2357,7 @@ int test_clear_page_writeback(struct page *page)
+ 		dec_zone_page_state(page, NR_WRITEBACK);
+ 		inc_zone_page_state(page, NR_WRITTEN);
+ 	}
+-	mem_cgroup_end_page_stat(memcg, locked, memcg_flags);
++	mem_cgroup_end_page_stat(memcg, &locked, &memcg_flags);
+ 	return ret;
+ }
+ 
+@@ -2399,7 +2399,7 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
+ 		mem_cgroup_inc_page_stat(memcg, MEM_CGROUP_STAT_WRITEBACK);
+ 		inc_zone_page_state(page, NR_WRITEBACK);
+ 	}
+-	mem_cgroup_end_page_stat(memcg, locked, memcg_flags);
++	mem_cgroup_end_page_stat(memcg, &locked, &memcg_flags);
+ 	return ret;
+ 
+ }
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 740dd7d15806..f782b6c2ae48 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1051,7 +1051,7 @@ void page_add_file_rmap(struct page *page)
+ 		__inc_zone_page_state(page, NR_FILE_MAPPED);
+ 		mem_cgroup_inc_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
+ 	}
+-	mem_cgroup_end_page_stat(memcg, locked, flags);
++	mem_cgroup_end_page_stat(memcg, &locked, &flags);
+ }
+ 
+ static void page_remove_file_rmap(struct page *page)
+@@ -1081,7 +1081,7 @@ static void page_remove_file_rmap(struct page *page)
+ 	if (unlikely(PageMlocked(page)))
+ 		clear_page_mlock(page);
+ out:
+-	mem_cgroup_end_page_stat(memcg, locked, flags);
++	mem_cgroup_end_page_stat(memcg, &locked, &flags);
+ }
+ 
+ /**
 -- 
-2.1.0
+2.1.1
 
+-- 
+Michal Hocko
+SUSE Labs
