@@ -1,85 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760807AbaJ3Rlk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:41:40 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53614 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760674AbaJ3Rlh (ORCPT
+	id S1760780AbaJ3Rle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:41:34 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:52799 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760674AbaJ3Rla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:41:37 -0400
-Date: Thu, 30 Oct 2014 18:41:35 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141030174135.GA13814@amd>
-References: <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
- <1413914978.30379.14.camel@hadess.net>
- <20141027092804.GB9807@amd>
- <1414420292.30379.55.camel@hadess.net>
- <54513DDC.2020700@amacapital.net>
- <20141029202616.GC5000@thunk.org>
- <20141029211608.GA32576@amd>
- <1414680302.2406.55.camel@hadess.net>
- <20141030150501.GD31927@thunk.org>
- <1414682115.2406.59.camel@hadess.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414682115.2406.59.camel@hadess.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 30 Oct 2014 13:41:30 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v8 7/7] usb: chipidea: add support to the generic PHY framework
+Date: Thu, 30 Oct 2014 18:41:19 +0100
+Message-Id: <1414690879-7184-8-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-10-30 16:15:15, Bastien Nocera wrote:
-> On Thu, 2014-10-30 at 11:05 -0400, Theodore Ts'o wrote:
-> > On Thu, Oct 30, 2014 at 03:45:02PM +0100, Bastien Nocera wrote:
-> > > > Actually Maemo people (on Nokia N900 and friends) got it right: unlike
-> > > > android devices, it does not suspend to RAM at any point, and still
-> > > > has reasonable battery life.
-> > > 
-> > > Android devices don't suspend to RAM. Neither do Tizen devices AFAIK.
-> > 
-> > Actually, Android devices have historically always suspended the CPU
-> > whenever there wasn't a wakelock keeping the device to suspend.  You
-> > might not consider this "suspend to RAM" but in fact it uses the
-> > identical kernel and hardware facilities as the legacy "suspend to
-> > RAM" mechanism.
-> 
-> I wouldn't consider this "suspend to RAM", but that's because I expect
-> the firmware to implement most of that. Anyway, that's splitting
-> hair.
+This patch adds support of the PHY framework for ChipIdea drivers.
+Changes are done in both the ChipIdea common code and in the drivers
+accessing the PHY. This is done by adding a new PHY member in
+ChipIdea's structures and by taking care of it in the code.
 
-Could you rephrase that?
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Acked-by: Peter Chen <peter.chen@freescale.com>
+---
+ drivers/usb/chipidea/ci.h      |  5 ++-
+ drivers/usb/chipidea/core.c    | 83 +++++++++++++++++++++++++++++++++---------
+ drivers/usb/chipidea/host.c    |  5 ++-
+ drivers/usb/chipidea/otg_fsm.c |  6 ++-
+ include/linux/usb/chipidea.h   |  2 +
+ 5 files changed, 80 insertions(+), 21 deletions(-)
 
-Anyway, this is "echo mem > /sys/power/state" or
-suspend-to-RAM. Android does the same, with more tricky wakeup logic. 
-
-> > > I don't think anyone was discussing cell phones in particular in this
-> > > thread, and knowing when user-space got woken up because of the baseband
-> > > processor having information for us would still be useful.
-> > 
-> > It matters because for laptops, what's important is whether the lid is
-> > closed or not.  Whether and how the laptop was "woken" is really
-> > beside the point, as others have argued.  Your counter argument is
-> > that tablets don't have lids.  But tablets are going to be using
-> > schemes similar to Android, Tizen, and Maemo, and they are *not* going
-> > to be using the legacy suspend-to-RAM model, because it's not
-> > sufficiently good at power saving.
-> 
-> There are plenty of tablets around that aren't Android devices. There
-> are plenty of laptops that can be switched to a tablet mode for which
-> this wouldn't apply either.
-
-Yes, still the right question is "was the power button pressed while
-userland was suspended" not "was the system woken by power
-button"... and yes, I guess kernel should add the "power button" event
-to the input queue, even if that press was used to wake up the system.
-
-								Pavel
+diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
+index 9015139a8027..5bbfcc73cf70 100644
+--- a/drivers/usb/chipidea/ci.h
++++ b/drivers/usb/chipidea/ci.h
+@@ -161,7 +161,8 @@ struct hw_bank {
+  * @test_mode: the selected test mode
+  * @platdata: platform specific information supplied by parent device
+  * @vbus_active: is VBUS active
+- * @usb_phy: pointer to USB PHY, if any
++ * @phy: pointer to PHY, if any
++ * @usb_phy: pointer to USB PHY, if any and if using the USB PHY framework
+  * @hcd: pointer to usb_hcd for ehci host driver
+  * @debugfs: root dentry for this controller in debugfs
+  * @id_event: indicates there is an id event, and handled at ci_otg_work
+@@ -202,6 +203,8 @@ struct ci_hdrc {
+ 
+ 	struct ci_hdrc_platform_data	*platdata;
+ 	int				vbus_active;
++	struct phy			*phy;
++	/* old usb_phy interface */
+ 	struct usb_phy			*usb_phy;
+ 	struct usb_hcd			*hcd;
+ 	struct dentry			*debugfs;
+diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+index b7b01694d52e..ba0ac2723098 100644
+--- a/drivers/usb/chipidea/core.c
++++ b/drivers/usb/chipidea/core.c
+@@ -47,6 +47,7 @@
+ #include <linux/delay.h>
+ #include <linux/device.h>
+ #include <linux/dma-mapping.h>
++#include <linux/phy/phy.h>
+ #include <linux/platform_device.h>
+ #include <linux/module.h>
+ #include <linux/idr.h>
+@@ -299,6 +300,49 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
+ }
+ 
+ /**
++ * _ci_usb_phy_init: initialize phy taking in account both phy and usb_phy
++ * interfaces
++ * @ci: the controller
++ *
++ * This function returns an error code if the phy failed to init
++ */
++static int _ci_usb_phy_init(struct ci_hdrc *ci)
++{
++	int ret;
++
++	if (ci->phy) {
++		ret = phy_init(ci->phy);
++		if (ret)
++			return ret;
++
++		ret = phy_power_on(ci->phy);
++		if (ret) {
++			phy_exit(ci->phy);
++			return ret;
++		}
++	} else {
++		ret = usb_phy_init(ci->usb_phy);
++	}
++
++	return ret;
++}
++
++/**
++ * _ci_usb_phy_exit: deinitialize phy taking in account both phy and usb_phy
++ * interfaces
++ * @ci: the controller
++ */
++static void ci_usb_phy_exit(struct ci_hdrc *ci)
++{
++	if (ci->phy) {
++		phy_power_off(ci->phy);
++		phy_exit(ci->phy);
++	} else {
++		usb_phy_shutdown(ci->usb_phy);
++	}
++}
++
++/**
+  * ci_usb_phy_init: initialize phy according to different phy type
+  * @ci: the controller
+  *
+@@ -312,7 +356,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
+ 	case USBPHY_INTERFACE_MODE_UTMI:
+ 	case USBPHY_INTERFACE_MODE_UTMIW:
+ 	case USBPHY_INTERFACE_MODE_HSIC:
+-		ret = usb_phy_init(ci->usb_phy);
++		ret = _ci_usb_phy_init(ci);
+ 		if (ret)
+ 			return ret;
+ 		hw_phymode_configure(ci);
+@@ -320,12 +364,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
+ 	case USBPHY_INTERFACE_MODE_ULPI:
+ 	case USBPHY_INTERFACE_MODE_SERIAL:
+ 		hw_phymode_configure(ci);
+-		ret = usb_phy_init(ci->usb_phy);
++		ret = _ci_usb_phy_init(ci);
+ 		if (ret)
+ 			return ret;
+ 		break;
+ 	default:
+-		ret = usb_phy_init(ci->usb_phy);
++		ret = _ci_usb_phy_init(ci);
+ 	}
+ 
+ 	return ret;
+@@ -605,23 +649,26 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	if (ci->platdata->usb_phy)
++	if (ci->platdata->phy) {
++		ci->phy = ci->platdata->phy;
++	} else if (ci->platdata->usb_phy) {
+ 		ci->usb_phy = ci->platdata->usb_phy;
+-	else
++	} else {
++		ci->phy = devm_phy_get(dev, "usb-phy");
+ 		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+ 
+-	if (IS_ERR(ci->usb_phy)) {
+-		ret = PTR_ERR(ci->usb_phy);
+-		/*
+-		 * if -ENXIO is returned, it means PHY layer wasn't
+-		 * enabled, so it makes no sense to return -EPROBE_DEFER
+-		 * in that case, since no PHY driver will ever probe.
+-		 */
+-		if (ret == -ENXIO)
+-			return ret;
++		/* if both generic PHY and USB PHY layers aren't enabled */
++		if (PTR_ERR(ci->phy) == -ENOSYS &&
++				PTR_ERR(ci->usb_phy) == -ENXIO)
++			return -ENXIO;
++
++		if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))
++			return -EPROBE_DEFER;
+ 
+-		dev_err(dev, "no usb2 phy configured\n");
+-		return -EPROBE_DEFER;
++		if (IS_ERR(ci->phy))
++			ci->phy = NULL;
++		else if (IS_ERR(ci->usb_phy))
++			ci->usb_phy = NULL;
+ 	}
+ 
+ 	ret = ci_usb_phy_init(ci);
+@@ -728,7 +775,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+ stop:
+ 	ci_role_destroy(ci);
+ deinit_phy:
+-	usb_phy_shutdown(ci->usb_phy);
++	ci_usb_phy_exit(ci);
+ 
+ 	return ret;
+ }
+@@ -741,7 +788,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
+ 	free_irq(ci->irq, ci);
+ 	ci_role_destroy(ci);
+ 	ci_hdrc_enter_lpm(ci, true);
+-	usb_phy_shutdown(ci->usb_phy);
++	ci_usb_phy_exit(ci);
+ 	kfree(ci->hw_bank.regmap);
+ 
+ 	return 0;
+diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
+index 789809f680aa..4f8eb40ad93a 100644
+--- a/drivers/usb/chipidea/host.c
++++ b/drivers/usb/chipidea/host.c
+@@ -59,8 +59,11 @@ static int host_start(struct ci_hdrc *ci)
+ 	hcd->has_tt = 1;
+ 
+ 	hcd->power_budget = ci->platdata->power_budget;
+-	hcd->usb_phy = ci->usb_phy;
+ 	hcd->tpl_support = ci->platdata->tpl_support;
++	if (ci->phy)
++		hcd->phy = ci->phy;
++	else
++		hcd->usb_phy = ci->usb_phy;
+ 
+ 	ehci = hcd_to_ehci(hcd);
+ 	ehci->caps = ci->hw_bank.cap;
+diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
+index 862d7cb01b92..3c2ab1ae00fc 100644
+--- a/drivers/usb/chipidea/otg_fsm.c
++++ b/drivers/usb/chipidea/otg_fsm.c
+@@ -779,7 +779,11 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
+ {
+ 	int retval = 0;
+ 
+-	ci->otg.usb_phy = ci->usb_phy;
++	if (ci->phy)
++		ci->otg.phy = ci->phy;
++	else
++		ci->otg.usb_phy = ci->usb_phy;
++
+ 	ci->otg.gadget = &ci->gadget;
+ 	ci->fsm.otg = &ci->otg;
+ 	ci->fsm.power_up = 1;
+diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
+index 4fe161a84c7d..c01bf4ea27b9 100644
+--- a/include/linux/usb/chipidea.h
++++ b/include/linux/usb/chipidea.h
+@@ -13,6 +13,8 @@ struct ci_hdrc_platform_data {
+ 	/* offset of the capability registers */
+ 	uintptr_t	 capoffset;
+ 	unsigned	 power_budget;
++	struct phy	*phy;
++	/* old usb_phy interface */
+ 	struct usb_phy	*usb_phy;
+ 	enum usb_phy_interface phy_mode;
+ 	unsigned long	 flags;
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+2.1.0
+
