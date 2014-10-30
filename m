@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760554AbaJ3SZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 14:25:04 -0400
-Received: from relay1.sgi.com ([192.48.180.66]:43943 "EHLO relay.sgi.com"
+	id S1759367AbaJ3SdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 14:33:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758517AbaJ3SZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 14:25:02 -0400
-Date: Thu, 30 Oct 2014 13:25:42 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alex Thorlton <athorlton@sgi.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vladimir Davydov <vdavydov@parallels.com>,
+	id S1758593AbaJ3SdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 14:33:18 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Hans de Goede <hdegoede@redhat.com>
+Cc: Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
-Message-ID: <20141030182542.GB2984@sgi.com>
-References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
- <87lho0pf4l.fsf@tassilo.jf.intel.com>
- <20141029215839.GO2979@sgi.com>
- <20141030083544.GX12538@two.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030083544.GX12538@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH 2/2] Input: synaptics: remove duplicated code
+Date: Thu, 30 Oct 2014 14:33:07 -0400
+Message-Id: <1414693987-6059-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1414693987-6059-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1414693987-6059-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 09:35:44AM +0100, Andi Kleen wrote:
-> We already have too many VM tunables. Better would be to switch
-> automatically somehow.
-> 
-> I guess you could use some kind of work stealing scheduler, but these
-> are fairly complicated. Maybe some simpler heuristics can be found.
+synaptics_profile_sensor_process() and synaptics_report_mt_data() now
+share the exact same code. Remove one implementation and rely on the
+other where it was used.
 
-That would be a better option in general, but (admittedly not having
-thought about it much), I can't think of a good way to determine when to
-make that switch.  The main problem being that we're not really seeing a
-negative performance impact from khugepaged, but some undesired
-behavior, which always exists.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/input/mouse/synaptics.c | 38 +-------------------------------------
+ 1 file changed, 1 insertion(+), 37 deletions(-)
 
-Perhaps we could make a decision based on the number of remote
-allocations made by khugepaged?  If we see a lot of allocations to
-distant nodes, then maybe we tell khugepaged to stop running scans for a
-particular process/mm and let the job handle things itself, either using
-the task_work style scan that I've proposed, or just banning khugepaged,
-period.  Again, I don't think this is a very good way to make the
-decision, but something to think about.
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index fd89249..8ae1841 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -851,42 +851,6 @@ static void synaptics_image_sensor_process(struct psmouse *psmouse,
+ 	synaptics_report_mt_data(psmouse, sgm, num_fingers);
+ }
+ 
+-static void synaptics_profile_sensor_process(struct psmouse *psmouse,
+-					     struct synaptics_hw_state *sgm,
+-					     int num_fingers)
+-{
+-	struct input_dev *dev = psmouse->dev;
+-	struct synaptics_data *priv = psmouse->private;
+-	struct synaptics_hw_state *hw[2] = { sgm, &priv->agm };
+-	struct input_mt_pos pos[2];
+-	int slot[2], nsemi, i;
+-
+-	nsemi = clamp_val(num_fingers, 0, 2);
+-
+-	for (i = 0; i < nsemi; i++) {
+-		pos[i].x = hw[i]->x;
+-		pos[i].y = synaptics_invert_y(hw[i]->y);
+-	}
+-
+-	input_mt_assign_slots(dev, slot, pos, nsemi);
+-
+-	for (i = 0; i < nsemi; i++) {
+-		input_mt_slot(dev, slot[i]);
+-		input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
+-		input_report_abs(dev, ABS_MT_POSITION_X, pos[i].x);
+-		input_report_abs(dev, ABS_MT_POSITION_Y, pos[i].y);
+-		input_report_abs(dev, ABS_MT_PRESSURE, hw[i]->z);
+-	}
+-
+-	input_mt_drop_unused(dev);
+-	input_mt_report_pointer_emulation(dev, false);
+-	input_mt_report_finger_count(dev, num_fingers);
+-
+-	synaptics_report_buttons(psmouse, sgm);
+-
+-	input_sync(dev);
+-}
+-
+ /*
+  *  called for each full received packet from the touchpad
+  */
+@@ -951,7 +915,7 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 	}
+ 
+ 	if (cr48_profile_sensor) {
+-		synaptics_profile_sensor_process(psmouse, &hw, num_fingers);
++		synaptics_report_mt_data(psmouse, &hw, num_fingers);
+ 		return;
+ 	}
+ 
+-- 
+2.1.0
 
-> BTW my thinking has been usually to actually use more khugepageds to 
-> scan large address spaces faster.
-
-I hadn't thought of it, but I suppose that is an option as well.  Unless
-I've completely missed something in the code, I don't think there's a
-way to do this now, right?  Either way, I suppose it wouldn't be too hard
-to do, but this still leaves the window wide open for allocations to be
-made far away from where the process really needs them.  Maybe if we had
-a way to spin up a new khugepaged on the fly, so that users can pin it
-where they want it, that would work?  Just brainstorming here...
-
-- Alex
