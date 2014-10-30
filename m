@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758775AbaJ3KaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:30:03 -0400
-Received: from smtp103.mer-nm.internl.net ([217.149.192.139]:42604 "EHLO
-	smtp103.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758662AbaJ3KaA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:30:00 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.899
-X-Spam-Languages: en
-Message-ID: <5452131F.9000307@topic.nl>
-Date: Thu, 30 Oct 2014 11:29:51 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1758887AbaJ3Kda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:33:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33957 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758431AbaJ3Kd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 06:33:29 -0400
+Date: Thu, 30 Oct 2014 11:33:23 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Kevin Cernekee <cernekee@gmail.com>, f.fainelli@gmail.com,
+        jason@lakedaemon.net, ralf@linux-mips.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH V2 03/15] genirq: Generic chip: Move irq_reg_{readl,writel}
+ accessors into generic-chip.c
+In-Reply-To: <6552163.gt4ABVyYlA@wuerfel>
+Message-ID: <alpine.DEB.2.11.1410301103300.5308@nanos>
+References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-4-git-send-email-cernekee@gmail.com> <alpine.DEB.2.11.1410300941290.5308@nanos> <6552163.gt4ABVyYlA@wuerfel>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add ltc3562 voltage regulator driver
-References: <1414570560-10320-1-git-send-email-mike.looijmans@topic.nl> <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl> <20141029123005.GH18557@sirena.org.uk> <5451DF10.7030605@topic.nl> <20141030101555.GT18557@sirena.org.uk>
-In-Reply-To: <20141030101555.GT18557@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.80.45]
-X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
-X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿On 10/30/2014 11:15 AM, Mark Brown wrote:
-> On Thu, Oct 30, 2014 at 07:47:44AM +0100, Mike Looijmans wrote:
->> ﻿On 10/29/2014 01:30 PM, Mark Brown wrote:
->
->>> A couple of problems here:
->
->>>   - This contains DT code but no DT bindings documentation; the binding
->>>     documentation is mandatory for any new bindings.
->
->> Should I submit a new patch to add the DT bindings and CC to the dt mailing
->> list, or do you want it included in this patch? I was basically waiting for
->> feedback on the driver first.
->
-> I'm not going to review a driver with bindings without those bindings
-> being documented, it's a well documented requirement and apart from
-> anything else it's not really possible to review the code that manages
-> the bindings without seeing the bindings.
->
->> The "default voltage" may not be device specific, but regulator.txt doesn't
->> have a property that describes what we needed here, because we can't get
->> away with specifying min=max as fixed-regulator does. We also cannot assume
->> that default=min or default=max, because that might harm hardware connected
->> to the other side of the IO bank.
->
-> No, if you need a generic property add it in the generic code rather
-> than just hacking a device specific property into your driver.
+On Thu, 30 Oct 2014, Arnd Bergmann wrote:
+> On Thursday 30 October 2014 09:43:02 Thomas Gleixner wrote:
+> > > diff --git a/include/linux/irq.h b/include/linux/irq.h
+> > > index 03f48d9..8049e93 100644
+> > > --- a/include/linux/irq.h
+> > > +++ b/include/linux/irq.h
+> > > @@ -639,13 +639,6 @@ void arch_teardown_hwirq(unsigned int irq);
+> > >  void irq_init_desc(unsigned int irq);
+> > >  #endif
+> > >  
+> > > -#ifndef irq_reg_writel
+> > > -# define irq_reg_writel(val, addr)   writel(val, addr)
+> > > -#endif
+> > > -#ifndef irq_reg_readl
+> > > -# define irq_reg_readl(addr)         readl(addr)
+> > > -#endif
+> > > -
+> > 
+> > Brilliant patch that.
+> > 
+> > # git grep -l irq_reg_readl drivers/irqchip/
+> > drivers/irqchip/irq-atmel-aic.c
+> > drivers/irqchip/irq-atmel-aic5.c
+> > drivers/irqchip/irq-sunxi-nmi.c
+> > drivers/irqchip/irq-tb10x.c
+> 
+> Patch 1/15 changes these all. I think it's still broken because patch 2/15
+> is wrong, but it's not /that/ obviously broken.
 
-So I should add "regulator-default-voltage" to the generic code? That would 
-indeed be better than trying to do it into this driver.
-
-But would that need a separate patch for regulator core to add the property?
-
-Mike.
-
-
-
-Met vriendelijke groet / kind regards,
-
-Mike Looijmans
-System Expert
-
-
-TOPIC Embedded Systems
-Eindhovenseweg 32-C, NL-5683 KH Best
-Postbus 440, NL-5680 AK Best
-Telefoon: (+31) (0) 499 33 69 79
-Telefax:  (+31) (0) 499 33 69 70
-E-mail: mike.looijmans@topic.nl
-Website: www.topic.nl
-
-Please consider the environment before printing this e-mail
-
-Topic zoekt gedreven (embedded) software specialisten!
-http://topic.nl/vacatures/topic-zoekt-software-engineers/
+Oops. Missed that.
 
