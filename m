@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845AbaJ3AUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 20:20:54 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:16650 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755558AbaJ3AUx (ORCPT
+	id S1757910AbaJ3AXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 20:23:01 -0400
+Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:13214 "EHLO
+	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757285AbaJ3AXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 20:20:53 -0400
-Date: Wed, 29 Oct 2014 20:20:45 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFA][PATCH 1/8] seq_file: Rename seq_overflow() to
- seq_has_overflowed() and make public
-Message-ID: <20141029202045.1988662c@gandalf.local.home>
-In-Reply-To: <1414620516.2542.3.camel@perches.com>
-References: <20141029215602.535533597@goodmis.org>
-	<20141029220107.333126455@goodmis.org>
-	<1414620516.2542.3.camel@perches.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 29 Oct 2014 20:23:00 -0400
+Date: Wed, 29 Oct 2014 19:22:58 -0500
+From: Jeff Epler <jepler@unpythonic.net>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: incompatible pci sysfs change since 3.12 (5136b2da770d)
+Message-ID: <20141030002258.GA59253@unpythonic.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014 15:08:36 -0700
-Joe Perches <joe@perches.com> wrote:
+Hi.
 
-> On Wed, 2014-10-29 at 17:56 -0400, Steven Rostedt wrote:
-> > +A true return from seq_has_overflowed means that the seq_file buffer is full
-> > +and further output will be discarded.
-> 
-> Perhaps the description is a bit unclear here.
-> 
-> Doesn't a return of true to seq_has_overflowed mean that
-> more characters have already been written than the buffer
-> can accept?
-> 
+I am an author of LinuxCNC, a GPL'd CNC control for Linux.
 
-Actually, come to think about it. It really doesn't matter. As if it is
-"full" or overflowed, the buffer currently gets discarded regardless.
-Thus, it could mean that the buffer was already overflowed. Because the
-current logic is full == overflowed. Really, a full buffer is a buffer
-with all but one byte left used. If size == len, then it has indeed
-overflowed.
+Recently we added support for userspace PCI drivers.  This worked with
+kernel 3.2 but doesn't with kernel 3.16.  The software fails early with
+    Failed to open "/sys/devices/pci0000:00/.../enable" (Permission denied)
 
-That is what my other patch changes.
+This appears to be because our software relies on the documented
+"enable" sysfs file for pci devices (Documentation/filesystem/sysfs-pci.txt)
+which was (unintentionally?) changed to "enabled" in the above-named
+patch:
 
-I'll change the comment about that.
+5136b2da770d PCI: convert bus code to use dev_groups
+...
++static DEVICE_ATTR_RW(enabled);
+...
+-   __ATTR(enable, 0600, is_enabled_show, is_enabled_store),
 
--- Steve
+Are we in the LinuxCNC project wrong in thinking that stuff in /sys (and
+not /sys/debug) is supposed to be a durable API/interface for userspace
+to the kernel?  (It must be a low-usage API if it went unnoticed for a
+year :-/)
+
+We'll have to work around it by modifying our software (since we'd like
+to work with the kernels people already have) in any case.
+
+Even if it is not going to be changed compatibly with older kernels, it
+seems like the documentation should be updated!
+
+Jeff
