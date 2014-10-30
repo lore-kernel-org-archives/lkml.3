@@ -1,124 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760398AbaJ3OmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:42:18 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41217 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757737AbaJ3OmR convert rfc822-to-8bit (ORCPT
+	id S1760467AbaJ3OnY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:43:24 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:43340 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758137AbaJ3OnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:42:17 -0400
-Message-ID: <54524E4E.9060504@arm.com>
-Date: Thu, 30 Oct 2014 14:42:22 +0000
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: [PATCH 5/6] sched/dl: reschedule if successfully pull earlier
- deadline task
-References: <1414374067-7209-1-git-send-email-wanpeng.li@linux.intel.com> <1414374067-7209-5-git-send-email-wanpeng.li@linux.intel.com> <5452110C.40108@arm.com> <20141030131259.GA474@kernel>
-In-Reply-To: <20141030131259.GA474@kernel>
-X-OriginalArrivalTime: 30 Oct 2014 14:42:14.0668 (UTC) FILETIME=[B23894C0:01CFF44F]
-X-MC-Unique: 114103014421402901
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Oct 2014 10:43:22 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1414680160.2406.53.camel@hadess.net>
+Subject: Re: A desktop environment[1] kernel wishlist
+From: Bastien Nocera <hadess@hadess.net>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andy Lutomirski <luto@amacapital.net>, Pavel Machek <pavel@ucw.cz>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 30 Oct 2014 15:42:40 +0100
+In-Reply-To: <20141029202616.GC5000@thunk.org>
+References: <1413881397.30379.7.camel@hadess.net>
+	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+	 <1413911644.30379.12.camel@hadess.net>
+	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd>
+	 <1414420292.30379.55.camel@hadess.net> <54513DDC.2020700@amacapital.net>
+	 <20141029202616.GC5000@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2014-10-29 at 16:26 -0400, Theodore Ts'o wrote:
+> On Wed, Oct 29, 2014 at 12:19:56PM -0700, Andy Lutomirski wrote:
+> > For a tablet, isn't the relevant piece of information whether the power
+> > button was recently pressed, not whether the power button caused the wakeup?
+> 
+> For Android L devices, it has been reported that the device might
+> power up its screen fully (note I didn't say 'wake up') automatically
+> when it detects that you are picking it up, or when you double-tap the
+> screen.
 
-On 30/10/14 13:12, Wanpeng Li wrote:
-> Hi Juri,
-> On Thu, Oct 30, 2014 at 10:21:00AM +0000, Juri Lelli wrote:
->> Hi,
->>
->> On 27/10/14 01:41, Wanpeng Li wrote:
->>> Reschedule if successfully pull earlier deadline task.
->>>
->>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>> ---
->>>  kernel/sched/deadline.c | 4 ++--
->>>  1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->>> index 97141e2..21de865 100644
->>> --- a/kernel/sched/deadline.c
->>> +++ b/kernel/sched/deadline.c
->>> @@ -1583,8 +1583,8 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
->>>  	 * this is the right place to try to pull some other one
->>>  	 * from an overloaded cpu, if any.
->>>  	 */
->>> -	if (!rq->dl.dl_nr_running)
->>> -		pull_dl_task(rq);
->>> +	if (!rq->dl.dl_nr_running && pull_dl_task(rq))
->>> +			resched_curr(rq);
->>
->> Right, we have to reschedule. But, how about we fully align to -rt?
->>
->> Peter, is the task_on_rq_queued() check for cases in which p is not
->> enqueued but its class changes after a setscheduler/rt_mutex_setprio?
->>
->> Thanks,
->>
->> - Juri
->>
->> >From 404749782e493cb6019193f347163b640ebd552d Mon Sep 17 00:00:00 2001
->> From: Juri Lelli <juri.lelli@arm.com>
->> Date: Thu, 30 Oct 2014 10:15:40 +0000
->> Subject: [PATCH] sched/deadline: reschedule from switched_from_dl() after a
->> successful pull
->>
->> In switched_from_dl() we have to issue a resched if we
->> successfully pulled some task from other cpus.
->> This patch also aligns the behaviour with -rt.
->>
-> 
-> Good idea.
-> 
->> Signed-off-by: Juri Lelli <juri.lelli@arm.com>
-> 
-> I will send out version two of this patchset with the update of 2/6 and
-> 5/6 with *your Suggested-by*. Thanks for your great proposal. ;-)
-> 
+Power up the screen or the touchscreen?
 
-Well, I've actually *wrote* (especially 2/6 is a different fix w.r.t.
-your version) and *tested* the updates . But, I'm not really getting
-anxious about signing patches, so fair enough.
-
-Thanks,
-
-- Juri
-
-> Regards,
-> Wanpeng Li
+>   It also reportedly has a low power black and white "ambient
+> display" (ala the Android Wear devics) which allows you to see
+> notifications without waking up the phone all the way[1].  (All of
+> this assuming appropriate hardware support, of course.)
 > 
->> Suggested-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->> kernel/sched/deadline.c | 7 +++++--
->> 1 file changed, 5 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index db6ad38..e8943fc 100644
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -1623,8 +1623,11 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
->> 	 * this is the right place to try to pull some other one
->> 	 * from an overloaded cpu, if any.
->> 	 */
->> -	if (!rq->dl.dl_nr_running)
->> -		pull_dl_task(rq);
->> +	if (!task_on_rq_queued(p) || rq->dl.dl_nr_running)
->> +		return;
->> +
->> +	if (pull_dl_task(rq))
->> +		resched_curr(rq);
->> #endif
->> }
->>
->> -- 
->> 2.1.2
+> [1] http://www.androidauthority.com/ambient-display-lollipop-541198/
 > 
+> Which goes back to the concept of having a "suspend" mode is legacy
+> thinking.  Modern devices will soon have not just a "awake" and a
+> "asleep" modes; there will be (well, is now) a much wider spectrum of
+> modes, with the goal of using the minimum amount of power while still
+> providing use functionality to the user.
+
+We still have a huge install base that does use suspend though, and for
+which this information would be useful.
 
