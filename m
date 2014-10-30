@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759760AbaJ3NCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:02:17 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:61270 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759687AbaJ3NCO (ORCPT
+	id S1759775AbaJ3NEW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:04:22 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:16100 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759274AbaJ3NEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:02:14 -0400
-Date: Thu, 30 Oct 2014 14:02:09 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: Re: I2C OF IRQ parsing issue due to probe ordering
-Message-ID: <20141030130207.GB19386@ulmo>
-References: <2287003.09eTeKUr1V@avalon>
- <20141027125819.GA12641@katana>
- <1718941.Qj8UzhsRTh@avalon>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cmJC7u66zC7hs+87"
-Content-Disposition: inline
-In-Reply-To: <1718941.Qj8UzhsRTh@avalon>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 30 Oct 2014 09:04:20 -0400
+X-AuditID: cbfec372-b7f666d000001846-7b-545237537c73
+Date: Thu, 30 Oct 2014 11:04:13 -0200
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Behan Webster <behanw@converseincode.com>
+Cc: archit@ti.com, b.zolnierkie@samsung.com, hans.verkuil@cisco.com,
+        k.debski@samsung.com, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] media, platform,
+ LLVMLinux: Remove nested function from ti-vpe
+Message-id: <20141030110413.6a71631e.m.chehab@samsung.com>
+In-reply-to: <1411780305-5685-1-git-send-email-behanw@converseincode.com>
+References: <1411780305-5685-1-git-send-email-behanw@converseincode.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/hEN1g86AQg437RS1u7/vNaPF30jF2
+	i40z1rNanDqTY7Hk5y4mix+vL7BZXN41h82iZ8NWVgcOj9+/JjF6TPm9kdVjZ9t8Vo++LasY
+	PY7f2M7k8XmTXABbFJdNSmpOZllqkb5dAlfGkRV7mQtuCle8v3+ErYGxQ6CLkZNDQsBEYs3k
+	BYwQtpjEhXvr2boYuTiEBJYwSjxuPwflNDJJnPl6hxWkikVAVWJLwx92EJtNwEjiVWMLWFxE
+	QFdi8/QPrCANzALbGSXuLnkElhAWCJW4/vg1WAOvgJXEkrevwdZxCnhKTDl7HcwWEvCQ+HZz
+	EVA9B9AZzhLzP2dDlAtK/Jh8jwXEZhbQkti8rYkVwpaX2LzmLfMERoFZSMpmISmbhaRsASPz
+	KkbR0uLkguKk9FxDveLE3OLSvHS95PzcTYyQwC/awfhsg9UhRgEORiUeXo8ngSFCrIllxZW5
+	hxglOJiVRHiP6gSFCPGmJFZWpRblxxeV5qQWH2Jk4uCUamA8+6T1rNtBt0tC878qNUx4WLGx
+	QF3kxKOl74wiFyR8umRzPVl+d7+1yY2831ZvGZdduD/7S6vQotWs3dIKK6WWRPfbv5L22tau
+	+Kbhk8F0reJFYZyTW0xXMH8wClpk6vcr8qXg7RoWbfZ9O8NudxrdXsFTI/P12LFP3m/t/y3P
+	EN0npMPL+NZciaU4I9FQi7moOBEAJn88XVoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Fri, 26 Sep 2014 18:11:45 -0700
+Behan Webster <behanw@converseincode.com> escreveu:
 
---cmJC7u66zC7hs+87
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Replace the use of nested functions where a normal function will suffice.
+> 
+> Nested functions are not liked by upstream kernel developers in general. Their
+> use breaks the use of clang as a compiler, and doesn't make the code any
+> better.
+> 
+> This code now works for both gcc and clang.
 
-On Thu, Oct 30, 2014 at 02:53:42PM +0200, Laurent Pinchart wrote:
-> Hi Wolfram and Thierry,
->=20
-> On Monday 27 October 2014 13:58:19 Wolfram Sang wrote:
-> > > The i2c@e6520000 node is probed before the gpio@e6051000 node. The
-> > > of_i2c_register_devices() function tries to register all children,
-> > > including hdmi@39. It tries to parse and map the I2C client IRQ by
-> > > calling irq_of_parse_and_map(), which returns 0 as the interrupt
-> > > controller isn't probed yet. The adv7511 driver later probes the hdmi=
-@39
-> > > device and gets client->irq set to 0.
-> >=20
-> > I've got this strange feeling of deja vu... Ah, here: Thierry Reding
-> > tackled this problem a year ago. His series:
->=20
-> Thanks for the pointer.
->=20
-> > https://lkml.org/lkml/2013/9/16/111 (of/irq: Defer interrupt reference
-> > resolution)
-> >=20
-> > He did a V2 (which never made it to the i2c list). Seems like the first
-> > two patches made it and the rest got stalled without discussion?
-> >=20
-> > https://lkml.org/lkml/2013/9/18/216
-> >=20
-> > Adding Thierry to the queue. Maybe he can bring some light to what
-> > happened to his series.
->=20
-> That's exactly what I need :-) Thierry, do you plan to respin the series ?
+I'm ok with this patch, as it makes the code cleaner, but in a few
+cases, such functions could be useful, for example for doing things
+like typecasting or when we need to use multiple versions of the same
+code, one to be used internally and another to be used externally
+with a different set of arguments inside the function call
+(none of this applies here, it seems).
 
-Not really. Like I said in my reply to Wolfram, a different set of
-patches was merged subsequently to solve this issue for platform
-devices, which makes my patchset mostly obsolete. But I think the
-solution that you proposed would work well if you do:
+So, I think clang should be fixed anyway to support it.
 
--		int irq =3D irq_of_parse_and_map(dev->of_node, 0);
-+		int irq =3D of_irq_get(dev->of_node, 0);
+Anyway, I'll be applying this patch.
 
-And then changing irq_create_of_mapping() should no longer be necessary.
-I still think it's kind of lame to handle -EPROBE_DEFER specially as was
-done in of_irq_get(), but given how worried people were about the more
-invasive changes needed to propagate the correct error code all the way
-up it seems like that's as good as it's going to get.
+Regards,
+Mauro
 
-Thierry
-
---cmJC7u66zC7hs+87
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUUjbPAAoJEN0jrNd/PrOhYEQP/1OV8S2O7LOs9k7dXH9aX260
-9YfqKJh6rppVMNwfeJSPTmKCEe5WKtbExU1IsyGy1aIRSXYy77CJqtuZ9BIA+PGp
-Gviz14pq93dEtlZeEIVsyQXxdktMOahpriFC+i4qKanKXKfeKeUTYkxHKZXz9g1s
-H0jUJfU12rg3Hmq3YNtH1FtLYGrCX6en8iyQ7pqU4ute+fFMPeN8LRDQv7c89BvD
-MJ+wCiZHEwnSe1uqKpqeEoj3whXC0IDf1z5x+STbvjAsf4Um1tcYNtDkmAdwDoub
-40ZaAAflr+MSDSaVqTIMxOUQDAYFodLDYrTvRyY1FXONYS+rdzMXOsydtclPSx+n
-VIuzT4T1ec6HdE8Aj7lgsr2Ju4eCANvabYNQYKU9bXzchVM5z0FqGKrc4Bt0V1P7
-KxOjPPjfoNZwgj3Crli9qq3JDaA234wFqclwIPDIx6yCF3hBBfWerFubAtiUDQpt
-tNXsrkupqIMZY27L/5S51FkFLpJDigMwqgyktT0yxo/wo6DbL3GU2wkk/EF5G2nH
-ZLA9sEk3jJ0Cw8rmJ/7griuwtq9LjchwQihqDkln8NMrESWSyUgYVt1LguvGSYla
-lIzTg29yAlhdkD3LtWqWteIM1VyJmwAy6qI7gTXNUm0IbRfgoG95mu85eqjUaGJ+
-VpwOzCCPLsD9NsrZYXwq
-=NXz+
------END PGP SIGNATURE-----
-
---cmJC7u66zC7hs+87--
+> 
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/media/platform/ti-vpe/csc.c | 8 ++------
+>  drivers/media/platform/ti-vpe/sc.c  | 8 ++------
+>  2 files changed, 4 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/media/platform/ti-vpe/csc.c b/drivers/media/platform/ti-vpe/csc.c
+> index 940df40..44fbf41 100644
+> --- a/drivers/media/platform/ti-vpe/csc.c
+> +++ b/drivers/media/platform/ti-vpe/csc.c
+> @@ -93,12 +93,8 @@ void csc_dump_regs(struct csc_data *csc)
+>  {
+>  	struct device *dev = &csc->pdev->dev;
+>  
+> -	u32 read_reg(struct csc_data *csc, int offset)
+> -	{
+> -		return ioread32(csc->base + offset);
+> -	}
+> -
+> -#define DUMPREG(r) dev_dbg(dev, "%-35s %08x\n", #r, read_reg(csc, CSC_##r))
+> +#define DUMPREG(r) dev_dbg(dev, "%-35s %08x\n", #r, \
+> +	ioread32(csc->base + CSC_##r))
+>  
+>  	DUMPREG(CSC00);
+>  	DUMPREG(CSC01);
+> diff --git a/drivers/media/platform/ti-vpe/sc.c b/drivers/media/platform/ti-vpe/sc.c
+> index 6314171..1088381 100644
+> --- a/drivers/media/platform/ti-vpe/sc.c
+> +++ b/drivers/media/platform/ti-vpe/sc.c
+> @@ -24,12 +24,8 @@ void sc_dump_regs(struct sc_data *sc)
+>  {
+>  	struct device *dev = &sc->pdev->dev;
+>  
+> -	u32 read_reg(struct sc_data *sc, int offset)
+> -	{
+> -		return ioread32(sc->base + offset);
+> -	}
+> -
+> -#define DUMPREG(r) dev_dbg(dev, "%-35s %08x\n", #r, read_reg(sc, CFG_##r))
+> +#define DUMPREG(r) dev_dbg(dev, "%-35s %08x\n", #r, \
+> +	ioread32(sc->base + CFG_##r))
+>  
+>  	DUMPREG(SC0);
+>  	DUMPREG(SC1);
