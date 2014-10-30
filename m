@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934481AbaJ3O4p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:56:45 -0400
-Received: from mail-bn1on0116.outbound.protection.outlook.com ([157.56.110.116]:20143
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932860AbaJ3O4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:56:44 -0400
-From: Huan Wang <alison.wang@freescale.com>
-To: Fabio Estevam <festevam@gmail.com>
-CC: "perex@perex.cz" <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "Liam Girdwood" <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Nicolin Chen <nicoleotsuka@gmail.com>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Subject: Re: [PATCH] audio: sai: Add Power Management support
-Thread-Topic: [PATCH] audio: sai: Add Power Management support
-Thread-Index: AQHP83SZa8Mh/U0xYkW2IwDuBTMksJxItVl+
-Date: Thu, 30 Oct 2014 14:56:42 +0000
-Message-ID: <1414680990680.12980@freescale.com>
-References: <1414552896-20797-1-git-send-email-b18965@freescale.com>,<CAOMZO5Ah4H1WDvFOBMhw7RS7XwSNSEet3u_emELFZTGD7rUzyw@mail.gmail.com>
-In-Reply-To: <CAOMZO5Ah4H1WDvFOBMhw7RS7XwSNSEet3u_emELFZTGD7rUzyw@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [221.223.183.133]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0610;
-x-forefront-prvs: 038002787A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(377454003)(199003)(189002)(122556002)(76176999)(86362001)(97736003)(76482002)(46102003)(36756003)(54356999)(80022003)(117636001)(77096002)(50986999)(40100003)(21056001)(110136001)(92566001)(92726001)(120916001)(85852003)(99286002)(95666004)(66066001)(107046002)(2656002)(19580405001)(19580395003)(106116001)(106356001)(101416001)(87936001)(31966008)(20776003)(64706001)(85306004)(4396001)(105586002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0610;H:BN1PR0301MB0689.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="gb2312"
+	id S1161013AbaJ3O5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:57:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35769 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932954AbaJ3O5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:57:07 -0400
+Date: Thu, 30 Oct 2014 15:57:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        xen-devel@lists.xenproject.org, John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [RFC PATCH v2 09/11] time: Convert pvclock_read_wallclock() to
+ use timespec64
+In-Reply-To: <1414667745-7703-10-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1410301553040.5308@nanos>
+References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org> <1414667745-7703-10-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9UEuoNR013134
 
-Hi, Fabio,
+On Thu, 30 Oct 2014, pang.xunlei wrote:
+>  	/* get wallclock at system boot */
+>  	do {
+>  		version = wall_clock->version;
+>  		rmb();		/* fetch version before time */
+> -		now.tv_sec  = wall_clock->sec;
+> +		/* TODO: [2038 safety] wall_clock->sec uses time64_t */
 
-Please always add the driver maintainers (Xiubo Li and Nicolin Chen).
-[Alison Wang] ok, thanks for your reminder.
+Wrong. This is part of the hypervisor ABI and you can add as many
+TODOs here as you want. They will not change the ABI ever. If XEN
+wants to fix that it needs to implement a new hypervisor interface.
 
-On Wed, Oct 29, 2014 at 1:21 AM, Alison Wang <b18965@freescale.com> wrote:
+> +		now.tv_sec  = (time64_t)wall_clock->sec;
 
-> +#ifdef CONFIG_PM_SLEEP
-> +static int fsl_sai_suspend(struct device *dev)
-> +{
-> +       struct fsl_sai *sai = dev_get_drvdata(dev);
-> +
-> +       regcache_cache_only(sai->regmap, true);
-> +       regcache_mark_dirty(sai->regmap);
-> +
-> +       return 0;
-> +}
-> +
-> +static int fsl_sai_resume(struct device *dev)
-> +{
-> +       struct fsl_sai *sai = dev_get_drvdata(dev);
-> +
-> +       /* Restore all registers */
-> +       regcache_cache_only(sai->regmap, false);
-> +       regcache_sync(sai->regmap);
-> +
-> +       return 0;
-> +};
-> +#endif /* CONFIG_PM_SLEEP */
-> +
-> +static const struct dev_pm_ops fsl_sai_pm = {
-> +       SET_SYSTEM_SLEEP_PM_OPS(fsl_sai_suspend, fsl_sai_resume)
+copy & paste does not solve all these problems magically.
 
-This could be simplified to:
-static SIMPLE_DEV_PM_OPS(fsl_sai_pm, fsl_sai_suspend, fsl_sai_resume);
-[Alison Wang] ok.
+Thanks,
 
-I am also curious as to how you tested it, as I noticed that
-suspend/resume is broken on 3.18-rc for mx6sx.
-
-Are you able to do suspend/resume on 3.18-rc on a mx6sx sdb board?
-[Alison Wang] No, I don't have that board. I tested on LS1021A QDS board which supports deep sleep.
-
-Best Regards,
-Alison WangˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+	tglx
