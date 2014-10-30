@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760748AbaJ3Q6E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 12:58:04 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:33500 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759469AbaJ3Q6A (ORCPT
+	id S1161229AbaJ3Q7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 12:59:18 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51070 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933737AbaJ3Q7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 12:58:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141030132239.GC19386@ulmo>
-References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
-	<1414535277-15645-3-git-send-email-abrestic@chromium.org>
-	<20141029113415.GD28356@ulmo.nvidia.com>
-	<CAL1qeaG2DFyfsPa2wgDqOkYTbnJ-tXoiV48AF9EaSCf1QCtOyQ@mail.gmail.com>
-	<20141030132239.GC19386@ulmo>
-Date: Thu, 30 Oct 2014 09:57:59 -0700
-X-Google-Sender-Auth: kJkdjbU9WuX2l3MezNea-Fi2r10
-Message-ID: <CAL1qeaFUKmkRGRr06bWK-yqypHCg_U1qJmUJc9p24xiDLDoaug@mail.gmail.com>
-Subject: Re: [PATCH RESEND V4 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Thu, 30 Oct 2014 12:59:16 -0400
+Date: Thu, 30 Oct 2014 16:59:07 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "chris@zankel.net" <chris@zankel.net>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
+        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "starvik@axis.com" <starvik@axis.com>,
+        "takata@linux-m32r.org" <takata@linux-m32r.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO
+ accessors
+Message-ID: <20141030165907.GK32589@arm.com>
+References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
+ <2811016.mhqlsl6pTS@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2811016.mhqlsl6pTS@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 6:22 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Wed, Oct 29, 2014 at 11:02:36AM -0700, Andrew Bresticker wrote:
-> [...]
->> > Maybe something like this patch would be more correct in handling
->> > this:
->> >
->> > diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
->> > index afcb430508ec..85691a7d8ca6 100644
->> > --- a/drivers/mailbox/mailbox.c
->> > +++ b/drivers/mailbox/mailbox.c
->> > @@ -117,10 +117,11 @@ static void poll_txdone(unsigned long data)
->> >                 struct mbox_chan *chan = &mbox->chans[i];
->> >
->> >                 if (chan->active_req && chan->cl) {
->> > -                       resched = true;
->> >                         txdone = chan->mbox->ops->last_tx_done(chan);
->> >                         if (txdone)
->> >                                 tx_tick(chan, 0);
->> > +                       else
->> > +                               resched = true;
->> >                 }
->> >         }
->>
->> ... but we still need to re-arm the timer if tx_tick() submits another
->> message.  Perhaps the better thing to do is to have msg_submit() arm
->> the timer.
->
-> I think we need both. If the last transmission isn't done yet we still
-> want to keep polling. And we also want to poll if a new message is sent
-> subsequently.
->
-> Perhaps it would be as easy as moving the poll handling code from
-> mbox_send_message() (if (chan->txdone_method == TXDONE_BY_POLL)) into
-> msg_submit()? That has the additional advantage of being able to omit
-> the polling when an error happens during the mbox' .send_data().
+Hi Arnd,
 
-Yes, this is exactly what I've done :).
+On Thu, Sep 25, 2014 at 02:15:10PM +0100, Arnd Bergmann wrote:
+> On Wednesday 24 September 2014 18:17:19 Will Deacon wrote:
+> > Hello everybody,
+> > 
+> > This is version three of the series I've originally posted here:
+> > 
+> >   v1: https://lkml.org/lkml/2014/4/17/269
+> >   v2: https://lkml.org/lkml/2014/5/22/468
+> > 
+> > This is basically just a rebase on top of 3.17-rc6, minus the alpha patch
+> > (which was merged into mainline).
+> > 
+> > I looked at reworking the non-relaxed accessors to imply mmiowb, but it
+> > quickly got messy as some architectures (e.g. mips) deliberately keep
+> > mmiowb and readX/writeX separate whilst others (e.g. powerpc) don't trust
+> > drivers to get mmiowb correct, so add barriers to both. Given that
+> > arm/arm64/x86 don't care about mmiowb, I've left that as an exercise for
+> > an architecture that does care.
+> > 
+> > In order to get this lot merged, we probably want to merge the asm-generic
+> > patch (1/17) first, so Acks would be much appreciated on the architecture
+> > bits.
+> > 
+> > As before, I've included the original cover letter below, as that describes
+> > what I'm trying to do in more detail.
+> > 
+> 
+> I've now applied the parts of your series that are required to have
+> every architecture provide all the 'relaxed' accessors to the
+> asm-generic tree, on top of Thierry's series.
+
+Since these didn't make it for 3.18, would you like me to repost the series,
+or do you already have a branch suitable for 3.19?
+
+Cheers,
+
+Will
