@@ -1,65 +1,443 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758747AbaJ3GsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 02:48:00 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:58964 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758338AbaJ3Gru (ORCPT
+	id S1758766AbaJ3GsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 02:48:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38183 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758277AbaJ3GsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 02:47:50 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] MAINTAINERS: remove list iss_storagedev@hp.com
-Date: Thu, 30 Oct 2014 12:17:39 +0530
-Message-Id: <1414651659-4485-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 30 Oct 2014 02:48:11 -0400
+Date: Wed, 29 Oct 2014 23:47:03 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-df919b400ad3f9e6aac392ce421d710207abf9be@git.kernel.org>
+Cc: adrian.hunter@intel.com, namhyung@gmail.com, eranian@google.com,
+        peterz@infradead.org, dsahern@gmail.com, jolsa@redhat.com,
+        mingo@kernel.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, hpa@zytor.com, tglx@linutronix.de, acme@redhat.com
+Reply-To: namhyung@gmail.com, eranian@google.com, adrian.hunter@intel.com,
+        mingo@kernel.org, dsahern@gmail.com, jolsa@redhat.com,
+        peterz@infradead.org, linux-kernel@vger.kernel.org, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, tglx@linutronix.de, fweisbec@gmail.com
+In-Reply-To: <1414061124-26830-7-git-send-email-adrian.hunter@intel.com>
+References: <1414061124-26830-7-git-send-email-adrian.hunter@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf scripting python:
+  Extend interface to export data in a database-friendly way
+Git-Commit-ID: df919b400ad3f9e6aac392ce421d710207abf9be
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when sending mail to iss_storagedev@hp.com it failed permanently
+Commit-ID:  df919b400ad3f9e6aac392ce421d710207abf9be
+Gitweb:     http://git.kernel.org/tip/df919b400ad3f9e6aac392ce421d710207abf9be
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Thu, 23 Oct 2014 13:45:14 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 29 Oct 2014 10:32:49 -0200
 
-"Google tried to deliver your message, but it was rejected by the
-server for the recipient domain hp.com by smtp.hp.com.
-[15.201.208.57].
-The error that the other server returned was:
-550 5.1.1 <iss_storagedev@hp.com>: Recipient address
-rejected: User unknown in virtual alias table"
+perf scripting python: Extend interface to export data in a database-friendly way
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+Use the new db_export facility to export data in a database-friendly
+way.
+
+A Python script selects the db_export mode by setting a global variable
+'perf_db_export_mode' to True.  The script then optionally implements
+functions to receive table rows.  The functions are:
+
+	evsel_table
+	machine_table
+	thread_table
+	comm_table
+	dso_table
+	symbol_table
+	sample_table
+
+An example script is provided in a subsequent patch.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1414061124-26830-7-git-send-email-adrian.hunter@intel.com
+[ Reserve space for per symbol db_id space when perf_db_export_mode is on ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- MAINTAINERS | 3 ---
- 1 file changed, 3 deletions(-)
+ .../util/scripting-engines/trace-event-python.c    | 286 ++++++++++++++++++++-
+ 1 file changed, 284 insertions(+), 2 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 2bca5f1..6042da0 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4301,14 +4301,12 @@ S:	Maintained
- F:	drivers/media/dvb-frontends/hd29l2*
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 25e5a23..2fd7ee8 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -24,6 +24,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdbool.h>
+ #include <errno.h>
  
- HEWLETT-PACKARD SMART2 RAID DRIVER
--L:	iss_storagedev@hp.com
- S:	Orphan
- F:	Documentation/blockdev/cpqarray.txt
- F:	drivers/block/cpqarray.*
+ #include "../../perf.h"
+@@ -33,6 +34,9 @@
+ #include "../util.h"
+ #include "../event.h"
+ #include "../thread.h"
++#include "../comm.h"
++#include "../machine.h"
++#include "../db-export.h"
+ #include "../trace-event.h"
+ #include "../machine.h"
  
- HEWLETT-PACKARD SMART ARRAY RAID DRIVER (hpsa)
- M:	"Stephen M. Cameron" <scameron@beardog.cce.hp.com>
--L:	iss_storagedev@hp.com
- S:	Supported
- F:	Documentation/scsi/hpsa.txt
- F:	drivers/scsi/hpsa*.[ch]
-@@ -4317,7 +4315,6 @@ F:	include/uapi/linux/cciss*.h
+@@ -53,6 +57,21 @@ static int zero_flag_atom;
  
- HEWLETT-PACKARD SMART CISS RAID DRIVER (cciss)
- M:	Mike Miller <mike.miller@hp.com>
--L:	iss_storagedev@hp.com
- S:	Supported
- F:	Documentation/blockdev/cciss.txt
- F:	drivers/block/cciss*
--- 
-1.8.1.2
-
+ static PyObject *main_module, *main_dict;
+ 
++struct tables {
++	struct db_export	dbe;
++	PyObject		*evsel_handler;
++	PyObject		*machine_handler;
++	PyObject		*thread_handler;
++	PyObject		*comm_handler;
++	PyObject		*comm_thread_handler;
++	PyObject		*dso_handler;
++	PyObject		*symbol_handler;
++	PyObject		*sample_handler;
++	bool			db_export_mode;
++};
++
++static struct tables tables_global;
++
+ static void handler_call_die(const char *handler_name) NORETURN;
+ static void handler_call_die(const char *handler_name)
+ {
+@@ -475,6 +494,211 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 	Py_DECREF(t);
+ }
+ 
++static PyObject *tuple_new(unsigned int sz)
++{
++	PyObject *t;
++
++	t = PyTuple_New(sz);
++	if (!t)
++		Py_FatalError("couldn't create Python tuple");
++	return t;
++}
++
++static int tuple_set_u64(PyObject *t, unsigned int pos, u64 val)
++{
++#if BITS_PER_LONG == 64
++	return PyTuple_SetItem(t, pos, PyInt_FromLong(val));
++#endif
++#if BITS_PER_LONG == 32
++	return PyTuple_SetItem(t, pos, PyLong_FromLongLong(val));
++#endif
++}
++
++static int tuple_set_s32(PyObject *t, unsigned int pos, s32 val)
++{
++	return PyTuple_SetItem(t, pos, PyInt_FromLong(val));
++}
++
++static int tuple_set_string(PyObject *t, unsigned int pos, const char *s)
++{
++	return PyTuple_SetItem(t, pos, PyString_FromString(s));
++}
++
++static int python_export_evsel(struct db_export *dbe, struct perf_evsel *evsel)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(2);
++
++	tuple_set_u64(t, 0, evsel->db_id);
++	tuple_set_string(t, 1, perf_evsel__name(evsel));
++
++	call_object(tables->evsel_handler, t, "evsel_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_machine(struct db_export *dbe,
++				 struct machine *machine)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(3);
++
++	tuple_set_u64(t, 0, machine->db_id);
++	tuple_set_s32(t, 1, machine->pid);
++	tuple_set_string(t, 2, machine->root_dir ? machine->root_dir : "");
++
++	call_object(tables->machine_handler, t, "machine_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_thread(struct db_export *dbe, struct thread *thread,
++				u64 main_thread_db_id, struct machine *machine)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(5);
++
++	tuple_set_u64(t, 0, thread->db_id);
++	tuple_set_u64(t, 1, machine->db_id);
++	tuple_set_u64(t, 2, main_thread_db_id);
++	tuple_set_s32(t, 3, thread->pid_);
++	tuple_set_s32(t, 4, thread->tid);
++
++	call_object(tables->thread_handler, t, "thread_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_comm(struct db_export *dbe, struct comm *comm)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(2);
++
++	tuple_set_u64(t, 0, comm->db_id);
++	tuple_set_string(t, 1, comm__str(comm));
++
++	call_object(tables->comm_handler, t, "comm_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_comm_thread(struct db_export *dbe, u64 db_id,
++				     struct comm *comm, struct thread *thread)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(3);
++
++	tuple_set_u64(t, 0, db_id);
++	tuple_set_u64(t, 1, comm->db_id);
++	tuple_set_u64(t, 2, thread->db_id);
++
++	call_object(tables->comm_thread_handler, t, "comm_thread_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_dso(struct db_export *dbe, struct dso *dso,
++			     struct machine *machine)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
++	PyObject *t;
++
++	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
++
++	t = tuple_new(5);
++
++	tuple_set_u64(t, 0, dso->db_id);
++	tuple_set_u64(t, 1, machine->db_id);
++	tuple_set_string(t, 2, dso->short_name);
++	tuple_set_string(t, 3, dso->long_name);
++	tuple_set_string(t, 4, sbuild_id);
++
++	call_object(tables->dso_handler, t, "dso_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_symbol(struct db_export *dbe, struct symbol *sym,
++				struct dso *dso)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	u64 *sym_db_id = symbol__priv(sym);
++	PyObject *t;
++
++	t = tuple_new(6);
++
++	tuple_set_u64(t, 0, *sym_db_id);
++	tuple_set_u64(t, 1, dso->db_id);
++	tuple_set_u64(t, 2, sym->start);
++	tuple_set_u64(t, 3, sym->end);
++	tuple_set_s32(t, 4, sym->binding);
++	tuple_set_string(t, 5, sym->name);
++
++	call_object(tables->symbol_handler, t, "symbol_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_sample(struct db_export *dbe,
++				struct export_sample *es)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(19);
++
++	tuple_set_u64(t, 0, es->db_id);
++	tuple_set_u64(t, 1, es->evsel->db_id);
++	tuple_set_u64(t, 2, es->al->machine->db_id);
++	tuple_set_u64(t, 3, es->thread->db_id);
++	tuple_set_u64(t, 4, es->comm_db_id);
++	tuple_set_u64(t, 5, es->dso_db_id);
++	tuple_set_u64(t, 6, es->sym_db_id);
++	tuple_set_u64(t, 7, es->offset);
++	tuple_set_u64(t, 8, es->sample->ip);
++	tuple_set_u64(t, 9, es->sample->time);
++	tuple_set_s32(t, 10, es->sample->cpu);
++	tuple_set_u64(t, 11, es->addr_dso_db_id);
++	tuple_set_u64(t, 12, es->addr_sym_db_id);
++	tuple_set_u64(t, 13, es->addr_offset);
++	tuple_set_u64(t, 14, es->sample->addr);
++	tuple_set_u64(t, 15, es->sample->period);
++	tuple_set_u64(t, 16, es->sample->weight);
++	tuple_set_u64(t, 17, es->sample->transaction);
++	tuple_set_u64(t, 18, es->sample->data_src);
++
++	call_object(tables->sample_handler, t, "sample_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
+ static void python_process_general_event(struct perf_sample *sample,
+ 					 struct perf_evsel *evsel,
+ 					 struct thread *thread,
+@@ -551,19 +775,25 @@ exit:
+ 	Py_DECREF(t);
+ }
+ 
+-static void python_process_event(union perf_event *event __maybe_unused,
++static void python_process_event(union perf_event *event,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct thread *thread,
+ 				 struct addr_location *al)
+ {
++	struct tables *tables = &tables_global;
++
+ 	switch (evsel->attr.type) {
+ 	case PERF_TYPE_TRACEPOINT:
+ 		python_process_tracepoint(sample, evsel, thread, al);
+ 		break;
+ 	/* Reserve for future process_hw/sw/raw APIs */
+ 	default:
+-		python_process_general_event(sample, evsel, thread, al);
++		if (tables->db_export_mode)
++			db_export__sample(&tables->dbe, event, sample, evsel,
++					  thread, al);
++		else
++			python_process_general_event(sample, evsel, thread, al);
+ 	}
+ }
+ 
+@@ -589,11 +819,57 @@ error:
+ 	return -1;
+ }
+ 
++#define SET_TABLE_HANDLER_(name, handler_name, table_name) do {		\
++	tables->handler_name = get_handler(#table_name);		\
++	if (tables->handler_name)					\
++		tables->dbe.export_ ## name = python_export_ ## name;	\
++} while (0)
++
++#define SET_TABLE_HANDLER(name) \
++	SET_TABLE_HANDLER_(name, name ## _handler, name ## _table)
++
++static void set_table_handlers(struct tables *tables)
++{
++	const char *perf_db_export_mode = "perf_db_export_mode";
++	PyObject *db_export_mode;
++	int ret;
++
++	memset(tables, 0, sizeof(struct tables));
++	if (db_export__init(&tables->dbe))
++		Py_FatalError("failed to initialize export");
++
++	db_export_mode = PyDict_GetItemString(main_dict, perf_db_export_mode);
++	if (!db_export_mode)
++		return;
++
++	ret = PyObject_IsTrue(db_export_mode);
++	if (ret == -1)
++		handler_call_die(perf_db_export_mode);
++	if (!ret)
++		return;
++
++	tables->db_export_mode = true;
++	/*
++	 * Reserve per symbol space for symbol->db_id via symbol__priv()
++	 */
++	symbol_conf.priv_size = sizeof(u64);
++
++	SET_TABLE_HANDLER(evsel);
++	SET_TABLE_HANDLER(machine);
++	SET_TABLE_HANDLER(thread);
++	SET_TABLE_HANDLER(comm);
++	SET_TABLE_HANDLER(comm_thread);
++	SET_TABLE_HANDLER(dso);
++	SET_TABLE_HANDLER(symbol);
++	SET_TABLE_HANDLER(sample);
++}
++
+ /*
+  * Start trace script
+  */
+ static int python_start_script(const char *script, int argc, const char **argv)
+ {
++	struct tables *tables = &tables_global;
+ 	const char **command_line;
+ 	char buf[PATH_MAX];
+ 	int i, err = 0;
+@@ -632,6 +908,8 @@ static int python_start_script(const char *script, int argc, const char **argv)
+ 
+ 	free(command_line);
+ 
++	set_table_handlers(tables);
++
+ 	return err;
+ error:
+ 	Py_Finalize();
+@@ -650,8 +928,12 @@ static int python_flush_script(void)
+  */
+ static int python_stop_script(void)
+ {
++	struct tables *tables = &tables_global;
++
+ 	try_call_object("trace_end", NULL);
+ 
++	db_export__exit(&tables->dbe);
++
+ 	Py_XDECREF(main_dict);
+ 	Py_XDECREF(main_module);
+ 	Py_Finalize();
