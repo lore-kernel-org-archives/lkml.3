@@ -1,213 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533AbaJ3DWU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 23:22:20 -0400
-Received: from mailgw02.mediatek.com ([210.61.82.184]:37045 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752552AbaJ3DVy (ORCPT
+	id S1757048AbaJ3DX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 23:23:27 -0400
+Received: from mailgw01.mediatek.com ([210.61.82.183]:43011 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752169AbaJ3DXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 23:21:54 -0400
+	Wed, 29 Oct 2014 23:23:25 -0400
 X-Listener-Flag: 11101
-From: <flora.fu@mediatek.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, <arm@kernel.org>
-CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Flora Fu <flora.fu@mediatek.com>
-Subject: [PATCH 1/3] ARM: mediatek: Add Reset Controller for MediaTek SoC
-Date: Thu, 30 Oct 2014 11:12:11 +0800
-Message-ID: <1414638733-10080-2-git-send-email-flora.fu@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
-In-Reply-To: <1414638733-10080-1-git-send-email-flora.fu@mediatek.com>
-References: <1414638733-10080-1-git-send-email-flora.fu@mediatek.com>
+Subject: Re: [PATCH 6/7] arm: mediatek: enable gpt6 on boot up to make arch
+ timer working
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan@agner.ch" <stefan@agner.ch>,
+        Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "Berg, Anders" <anders.berg@lsi.com>,
+        Jason Cooper <jason@lakedaemon.net>
+In-Reply-To: <CABuKBe++mqhMCPxci9_4KKgq9vdoLLwZQkdb2xAGMud+=YVhkw@mail.gmail.com>
+References: <1406824943-24052-1-git-send-email-matthias.bgg@gmail.com>
+	 <1406824943-24052-7-git-send-email-matthias.bgg@gmail.com>
+	 <CACRpkdbRhGE8tcKj+W_4F9-xmcm-fxcYuCmLOqX-ESC+3PAmyA@mail.gmail.com>
+	 <CABuKBe+Q3tnN0s22EMY-dK_6FeN_xN9SmrsW3dPONR6QDJ+V_w@mail.gmail.com>
+	 <CACRpkdZOB=9wQ3R3sfcBEiNXLVRtgob4iLZ9QWXyVrgjqyvGXQ@mail.gmail.com>
+	 <CABuKBeJOgkDZ8drPf3LnT2jPH7PEWX2__HDM7_jZbg2BhDRy3g@mail.gmail.com>
+	 <1414158814.14830.610.camel@mtksdaap41>
+	 <CABuKBe++mqhMCPxci9_4KKgq9vdoLLwZQkdb2xAGMud+=YVhkw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 30 Oct 2014 11:23:20 +0800
+Message-ID: <1414639400.5833.11.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Flora Fu <flora.fu@mediatek.com>
+Hi Matthias,
 
-Add a driver in reset controller.
+On Mon, 2014-10-27 at 11:28 +0100, Matthias Brugger wrote:
+> Hi Joe,
+> 
+> 2014-10-24 15:53 GMT+02:00 Yingjoe Chen <srv_yingjoe.chen@mediatek.com>:
+> >
+> > Hi Matthias,
+> >
+> > I didn't saw this in v3.18-rc1, are you working on version 2 of this?
+> > mt8135 and m8127 also need this fixup and we need this to have SMP
+> > working.
+> 
+> I had a discussion with Mark Rutland from ARM on this [0].
+> At that point he convinced me that this was not critical.
+> 
+> If we need this for SMP, things really change here I think.
 
-Signed-off-by: Flora Fu <flora.fu@mediatek.com>
----
- drivers/reset/Makefile    |   1 +
- drivers/reset/reset-mtk.c | 149 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 150 insertions(+)
- create mode 100644 drivers/reset/reset-mtk.c
+We have some driver now, and we started to implement SMP enable method
+internally. I think it is reasonable to discuss this now.
+We could include this patch in our SMP patch series. Do you prefer we do
+this?
 
-diff --git a/drivers/reset/Makefile b/drivers/reset/Makefile
-index 60fed3d..adcebdf 100644
---- a/drivers/reset/Makefile
-+++ b/drivers/reset/Makefile
-@@ -2,3 +2,4 @@ obj-$(CONFIG_RESET_CONTROLLER) += core.o
- obj-$(CONFIG_ARCH_SOCFPGA) += reset-socfpga.o
- obj-$(CONFIG_ARCH_SUNXI) += reset-sunxi.o
- obj-$(CONFIG_ARCH_STI) += sti/
-+obj-$(CONFIG_ARCH_MEDIATEK) += reset-mtk.o
-diff --git a/drivers/reset/reset-mtk.c b/drivers/reset/reset-mtk.c
-new file mode 100644
-index 0000000..e2211f7
---- /dev/null
-+++ b/drivers/reset/reset-mtk.c
-@@ -0,0 +1,149 @@
-+/*
-+ * Copyright (c) 2014 MediaTek Inc.
-+ * Author: Flora.Fu <flora.fu@mediatek.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/mfd/syscon.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/reset-controller.h>
-+#include <linux/slab.h>
-+
-+struct mt_reset_data {
-+	struct regmap *regmap;
-+	unsigned int resetbase;
-+	unsigned int size;
-+	struct reset_controller_dev rcdev;
-+};
-+
-+static int mt_reset_assert(struct reset_controller_dev *rcdev,
-+			      unsigned long id)
-+{
-+	struct regmap *regmap;
-+	unsigned addr;
-+	unsigned mask;
-+	struct mt_reset_data *data = container_of(rcdev,
-+						     struct mt_reset_data,
-+						     rcdev);
-+	regmap = data->regmap;
-+	addr = data->resetbase + ((id / 32) << 2);
-+	mask = BIT(id % 32);
-+
-+	return regmap_update_bits(regmap, addr, mask, mask);
-+}
-+
-+static int mt_reset_deassert(struct reset_controller_dev *rcdev,
-+				unsigned long id)
-+{
-+	struct regmap *regmap;
-+	unsigned addr;
-+	unsigned mask;
-+	struct mt_reset_data *data = container_of(rcdev,
-+						     struct mt_reset_data,
-+						     rcdev);
-+
-+	regmap = data->regmap;
-+	addr = data->resetbase + ((id / 32) << 2);
-+	mask = BIT(id % 32);
-+
-+	return regmap_update_bits(regmap, addr, mask, ~mask);
-+}
-+
-+static struct reset_control_ops mt_reset_ops = {
-+	.assert = mt_reset_assert,
-+	.deassert = mt_reset_deassert,
-+};
-+
-+static int mt_reset_probe(struct platform_device *pdev)
-+{
-+	struct mt_reset_data *data;
-+	struct device_node *np = pdev->dev.of_node;
-+	unsigned int resetbase;
-+	unsigned int width;
-+	int ret;
-+
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->regmap = syscon_regmap_lookup_by_phandle(np,
-+		"mediatek,syscon-reset");
-+	if (IS_ERR(data->regmap)) {
-+		dev_err(&pdev->dev, "couldn't get syscon-reset regmap\n");
-+		return PTR_ERR(data->regmap);
-+	}
-+
-+	ret = of_property_read_u32_index(np, "mediatek,syscon-reset", 1,
-+		&resetbase);
-+	if (ret) {
-+		dev_err(&pdev->dev, "couldn't read reset base from syscon!\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = of_property_read_u32_index(np, "mediatek,syscon-reset", 2,
-+		&width);
-+	if (ret) {
-+		dev_err(&pdev->dev, "couldn't read reset bytes from syscon!\n");
-+		return -EINVAL;
-+	}
-+
-+	data->resetbase = resetbase;
-+	data->size = width >> 2;
-+	data->rcdev.owner = THIS_MODULE;
-+	data->rcdev.nr_resets = data->size * 32;
-+	data->rcdev.ops = &mt_reset_ops;
-+	data->rcdev.of_node = pdev->dev.of_node;
-+
-+	return reset_controller_register(&data->rcdev);
-+}
-+
-+static int mt_reset_remove(struct platform_device *pdev)
-+{
-+	struct mt_reset_data *data = platform_get_drvdata(pdev);
-+
-+	reset_controller_unregister(&data->rcdev);
-+	return 0;
-+}
-+
-+static const struct of_device_id mt_reset_dt_ids[] = {
-+	{ .compatible = "mediatek,reset", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, mt_reset_dt_ids);
-+
-+static struct platform_driver mt_reset_driver = {
-+	.probe = mt_reset_probe,
-+	.remove = mt_reset_remove,
-+	.driver = {
-+		.name = "mtk-reset",
-+		.owner = THIS_MODULE,
-+		.of_match_table = mt_reset_dt_ids,
-+	},
-+};
-+
-+static int __init mt_reset_init(void)
-+{
-+	return platform_driver_register(&mt_reset_driver);
-+}
-+module_init(mt_reset_init);
-+
-+static void __exit mt_reset_exit(void)
-+{
-+	platform_driver_unregister(&mt_reset_driver);
-+}
-+module_exit(mt_reset_exit);
-+
-+MODULE_AUTHOR("Flora Fu <flora.fu@mediatek.com>");
-+MODULE_DESCRIPTION("MediaTek SoC Generic Reset Controller");
-+MODULE_LICENSE("GPL");
--- 
-1.8.1.1.dirty
+Joe.C
+
+
 
