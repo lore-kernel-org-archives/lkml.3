@@ -1,64 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161321AbaJ3VzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 17:55:19 -0400
-Received: from roy.gaast.net ([80.101.33.21]:36099 "EHLO mail.gaast.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161234AbaJ3VzP convert rfc822-to-8bit (ORCPT
+	id S934823AbaJ3V6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 17:58:09 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56724 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934742AbaJ3V6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 17:55:15 -0400
-Message-ID: <5452B3A6.7060100@gaast.net>
-Date: Thu, 30 Oct 2014 21:54:46 +0000
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Machine crashes right *after* ~successful resume
-References: <543F049F.5090605@gaast.net> <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com> <5442FE58.5020700@gaast.net> <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com> <5446D2D8.2090203@gaast.net> <CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com> <20141022125354.GA3832@gaast.net> <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com> <544E235C.5010908@gaast.net> <CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com> <544EC59D.9080303@gaast.net> <CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com> <544EDD40.1040107@gaast.net> <CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com> <545027F9.1040703@gaast.net> <CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com> <5450B55E.6010103@gaast.net> <CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com> <545214C5.6070004@gaast.net> <CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmai
- l.com>
-In-Reply-To: <CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Oct 2014 17:58:07 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3] x86,vdso: Use LSL unconditionally for vgetcpu
+Date: Thu, 30 Oct 2014 14:58:01 -0700
+Message-Id: <72f73d5ec4514e02bba345b9759177ef03742efb.1414706021.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+LSL is faster than RDTSCP and works everywhere; there's no need to
+switch between them depending on CPU.
 
-On 30-10-14 16:57, Yinghai Lu wrote:
->> Sadly, with that patch (applied against a vanilla 3.17 tree like all the> others) the second resume fails already. :-(
->
-> oh, no. Really want to know which bit causes the problem.
->
-Good question. And I think you will find my new finding even more 
-confusing: With your two patches from this e-mail, I could 
-suspend+resume 3× with no problems.. With just your two debugging 
-patches applied.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
-Lovely heisenbug here. I'll add that for every test so far I've removed 
-the kernel source tree, re-untarred it and applied the patches from your 
-e-mails on that, so the tests should be consistent. As is the bug 
-normally, before we started testing patches the crashes were already 
-always *very* reliably happening exactly after the third resume.
+This applies to tip/x86/vdso.  It was 8/8 of the series that the seven
+most recent commits in that branch came from :)
 
-Just to be sure this morning was not a fluke, I've retested your patch 
-from this morning, and still a crash on the second resume.
+Changes from v2: Dropped #undef CONFIG_X86_DEBUG_STATIC_CPU_HAS (Andi Kleen)
 
-> Please check debug patch...that will print out pci conf space before
-> ...and after...
->
-http://gaast.net/~wilmer/.lkml/good3.17-patched-megadebug.txt
+Changes from v1: Use LSL unconditionally (drop static_cpu_has)
 
+ arch/x86/include/asm/vgtod.h    | 19 +++++++++++++++++++
+ arch/x86/include/asm/vsyscall.h | 29 -----------------------------
+ arch/x86/include/asm/vvar.h     |  1 -
+ arch/x86/kernel/cpu/common.c    | 10 ----------
+ arch/x86/kernel/vsyscall_64.c   |  2 --
+ arch/x86/vdso/vgetcpu.c         |  1 -
+ 6 files changed, 19 insertions(+), 43 deletions(-)
 
-Wilmer v/d Gaast.
-
+diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
+index 3c3366c2e37f..e7e9682a33e9 100644
+--- a/arch/x86/include/asm/vgtod.h
++++ b/arch/x86/include/asm/vgtod.h
+@@ -70,4 +70,23 @@ static inline void gtod_write_end(struct vsyscall_gtod_data *s)
+ 	++s->seq;
+ }
+ 
++#ifdef CONFIG_X86_64
++
++#define VGETCPU_CPU_MASK 0xfff
++
++static inline unsigned int __getcpu(void)
++{
++	unsigned int p;
++
++	/*
++	 * Load per CPU data from GDT.  LSL is faster than RDTSCP and
++	 * works on all CPUs.
++	 */
++	asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
++
++	return p;
++}
++
++#endif /* CONFIG_X86_64 */
++
+ #endif /* _ASM_X86_VGTOD_H */
+diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
+index 2a46ca720afc..34f7d8857542 100644
+--- a/arch/x86/include/asm/vsyscall.h
++++ b/arch/x86/include/asm/vsyscall.h
+@@ -4,15 +4,6 @@
+ #include <linux/seqlock.h>
+ #include <uapi/asm/vsyscall.h>
+ 
+-#define VGETCPU_RDTSCP	1
+-#define VGETCPU_LSL	2
+-
+-/* kernel space (writeable) */
+-extern int vgetcpu_mode;
+-extern struct timezone sys_tz;
+-
+-#include <asm/vvar.h>
+-
+ extern void map_vsyscall(void);
+ 
+ /*
+@@ -21,24 +12,4 @@ extern void map_vsyscall(void);
+  */
+ extern bool emulate_vsyscall(struct pt_regs *regs, unsigned long address);
+ 
+-#ifdef CONFIG_X86_64
+-
+-#define VGETCPU_CPU_MASK 0xfff
+-
+-static inline unsigned int __getcpu(void)
+-{
+-	unsigned int p;
+-
+-	if (VVAR(vgetcpu_mode) == VGETCPU_RDTSCP) {
+-		/* Load per CPU data from RDTSCP */
+-		native_read_tscp(&p);
+-	} else {
+-		/* Load per CPU data from GDT */
+-		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
+-	}
+-
+-	return p;
+-}
+-#endif /* CONFIG_X86_64 */
+-
+ #endif /* _ASM_X86_VSYSCALL_H */
+diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
+index 5f6d40734a3b..3f32dfc2ab73 100644
+--- a/arch/x86/include/asm/vvar.h
++++ b/arch/x86/include/asm/vvar.h
+@@ -44,7 +44,6 @@ extern char __vvar_page;
+ 
+ /* DECLARE_VVAR(offset, type, name) */
+ 
+-DECLARE_VVAR(16, int, vgetcpu_mode)
+ DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
+ 
+ #undef DECLARE_VVAR
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 4b4f78c9ba19..175372b854be 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -956,14 +956,6 @@ static void identify_cpu(struct cpuinfo_x86 *c)
+ }
+ 
+ #ifdef CONFIG_X86_64
+-static void vgetcpu_set_mode(void)
+-{
+-	if (cpu_has(&boot_cpu_data, X86_FEATURE_RDTSCP))
+-		vgetcpu_mode = VGETCPU_RDTSCP;
+-	else
+-		vgetcpu_mode = VGETCPU_LSL;
+-}
+-
+ #ifdef CONFIG_IA32_EMULATION
+ /* May not be __init: called during resume */
+ static void syscall32_cpu_init(void)
+@@ -1006,8 +998,6 @@ void __init identify_boot_cpu(void)
+ #ifdef CONFIG_X86_32
+ 	sysenter_setup();
+ 	enable_sep_cpu();
+-#else
+-	vgetcpu_set_mode();
+ #endif
+ 	cpu_detect_tlb(&boot_cpu_data);
+ }
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 2f9ef0c1d112..419e83b58436 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -52,8 +52,6 @@
+ #define CREATE_TRACE_POINTS
+ #include "vsyscall_trace.h"
+ 
+-DEFINE_VVAR(int, vgetcpu_mode);
+-
+ static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
+ 
+ static int __init vsyscall_setup(char *str)
+diff --git a/arch/x86/vdso/vgetcpu.c b/arch/x86/vdso/vgetcpu.c
+index add1d98d2477..8ec3d1f4ce9a 100644
+--- a/arch/x86/vdso/vgetcpu.c
++++ b/arch/x86/vdso/vgetcpu.c
+@@ -8,7 +8,6 @@
+ #include <linux/kernel.h>
+ #include <linux/getcpu.h>
+ #include <linux/time.h>
+-#include <asm/vsyscall.h>
+ #include <asm/vgtod.h>
+ 
+ notrace long
 -- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
+1.9.3
 
