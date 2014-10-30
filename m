@@ -1,1256 +1,994 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161295AbaJ3VNE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 17:13:04 -0400
-Received: from smtp.gaealink.net ([108.166.122.24]:36795 "EHLO
-	smtp.gaealink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161050AbaJ3VM7 (ORCPT
+	id S1161310AbaJ3VPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 17:15:23 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:38142 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161050AbaJ3VPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 17:12:59 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Oct 2014 17:12:59 EDT
-Message-ID: <5452A809.9020207@julianfamily.org>
-Date: Thu, 30 Oct 2014 14:05:13 -0700
-From: Joe Julian <joe@julianfamily.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 30 Oct 2014 17:15:20 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: working around acpi dsdt bug
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Thu, 30 Oct 2014 14:15:17 -0700
+Message-ID: <CA+r1ZhgE9C0N+X8ecNNtZzL_pxUZfb8G+pB-wdf59buMUgKCNw@mail.gmail.com>
+Subject: randconfig build error with next-20141030, in sound/soc/codecs/cs42l51-i2c.c
+From: Jim Davis <jim.epost@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, brian.austin@cirrus.com,
+        Paul.Handrigan@cirrus.com, broonie <broonie@kernel.org>,
+        perex <perex@perex.cz>, tiwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Content-Type: multipart/mixed; boundary=001a11c353f68f4e670506aa6062
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a flawed bios and MSI refuses to fix it, so I'm trying to work 
-around it. I created a repaired version but, even though grub2 loads it 
-via the acpi module, the kernel still uses the hardware version.
+--001a11c353f68f4e670506aa6062
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Am I doing it wrong?
+Building with the attached random configuration file,
 
-I'm using the fedora build of 3.16.6 (though I've also tried vanilla 
-kernels).
+  CC [M]  sound/soc/codecs/cs42l51-i2c.o
+sound/soc/codecs/cs42l51-i2c.c:55:1: warning: data definition has no
+type or storage class [enabled by default]
+ module_i2c_driver(cs42l51_i2c_driver);
+ ^
+sound/soc/codecs/cs42l51-i2c.c:55:1: error: type defaults to =E2=80=98int=
+=E2=80=99 in
+declaration of =E2=80=98module_i2c_driver=E2=80=99 [-Werror=3Dimplicit-int]
+sound/soc/codecs/cs42l51-i2c.c:55:1: warning: parameter names (without
+types) in function declaration [enabled by default]
+sound/soc/codecs/cs42l51-i2c.c:45:26: warning: =E2=80=98cs42l51_i2c_driver=
+=E2=80=99
+defined but not used [-Wunused-variable]
+ static struct i2c_driver cs42l51_i2c_driver =3D {
+                          ^
+cc1: some warnings being treated as errors
+make[3]: *** [sound/soc/codecs/cs42l51-i2c.o] Error 1
 
-The problem I'm trying to solve is that the MSI dsdt's ATRM method 
-overruns its buffer (TVGA) producing an ACPI error:
+--001a11c353f68f4e670506aa6062
+Content-Type: text/plain; charset=US-ASCII; name="randconfig-1414698248.txt"
+Content-Disposition: attachment; filename="randconfig-1414698248.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i1wm0tmr0
 
-[    3.135241] ACPI Error: Field [TEMP] at 524288 exceeds Buffer [TVGA] 
-size 512000 (bits) (20140424/dsopcode-236)
-[    3.135295] ACPI Error: Method parse/execution failed 
-[\_SB_.PCI0.VGA_.ATRM] (Node ffff880236c35ca8), AE_AML_BUFFER_LIMIT 
-(20140424/psparse-536)
-[    3.135359] failed to evaluate ATRM got AE_AML_BUFFER_LIMIT
-
-This causes the radeon driver to fail to get the correct vram ranges 
-which, in turn, causes dma failures.
-
-This is the bad ACPI code:
-
-         OperationRegion (REVD, SystemMemory, 0x8D79111D, 0x00010004)
-         Field (REVD, AnyAcc, NoLock, Preserve)
-         {
-             SROM,   32,
-             VROM,   524288
-         }
-
-         Name (TVGA, Buffer (0xFA00)
-         {
-              0x00                                             /* . */
-         })
-         Method (ATRM, 2, Serialized)
-         {
-             Add (Arg0, Arg1, Local0)
-             If (LLessEqual (Local0, SROM))
-             {
-                 Multiply (Arg1, 0x08, Local1)
-                 Multiply (Arg0, 0x08, Local2)
-                 Store (VROM, TVGA) /* \_SB_.PCI0.VGA_.TVGA */
-                 CreateField (TVGA, Local2, Local1, TEMP)
-                 Name (RETB, Buffer (Arg1) {})
-                 Store (TEMP, RETB) /* \_SB_.PCI0.VGA_.ATRM.RETB */
-                 Return (RETB) /* \_SB_.PCI0.VGA_.ATRM.RETB */
-             }
-             Else
-             {
-                 If (LLess (Arg0, SROM))
-                 {
-                     Subtract (SROM, Arg0, Local3)
-                     Multiply (Local3, 0x08, Local1)
-                     Multiply (Arg0, 0x08, Local2)
-                     Store (VROM, TVGA) /* \_SB_.PCI0.VGA_.TVGA */
-                     CreateField (TVGA, Local2, Local1, TEM)
-                     Name (RETC, Buffer (Local3) {})
-                     Store (TEM, RETC) /* \_SB_.PCI0.VGA_.ATRM.RETC */
-                     Return (RETC) /* \_SB_.PCI0.VGA_.ATRM.RETC */
-                 }
-                 Else
-                 {
-                     Name (RETD, Buffer (One) {})
-                     Return (RETD) /* \_SB_.PCI0.VGA_.ATRM.RETD */
-                 }
-             }
-         }
-
------------------------
-
-[    0.000000] Initializing cgroup subsys cpuset
-[    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Initializing cgroup subsys cpuacct
-[    0.000000] Linux version 3.16.6-203.fc20.x86_64 (mockbuild@bkernel02.phx2.fedoraproject.org) (gcc version 4.8.3 20140911 (Red Hat 4.8.3-7) (GCC) ) #1 SMP Sat Oct 25 12:44:32 UTC 2014
-[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-3.16.6-203.fc20.x86_64 root=/dev/mapper/fedora-root ro rd.lvm.lv=fedora/swap rd.md=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 rd.lvm.lv=fedora/root systemd.unit=multi-user.target
-[    0.000000] e820: BIOS-provided physical RAM map:
-[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009ffff] usable
-[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000008d330fff] usable
-[    0.000000] BIOS-e820: [mem 0x000000008d331000-0x000000008d352fff] ACPI data
-[    0.000000] BIOS-e820: [mem 0x000000008d353000-0x000000008dbaefff] ACPI NVS
-[    0.000000] BIOS-e820: [mem 0x000000008dbaf000-0x000000008eb28fff] reserved
-[    0.000000] BIOS-e820: [mem 0x000000008eb29000-0x000000008eb29fff] usable
-[    0.000000] BIOS-e820: [mem 0x000000008eb2a000-0x000000008ed2ffff] ACPI NVS
-[    0.000000] BIOS-e820: [mem 0x000000008ed30000-0x000000008ee7ffff] usable
-[    0.000000] BIOS-e820: [mem 0x000000008ee80000-0x000000008f440fff] reserved
-[    0.000000] BIOS-e820: [mem 0x000000008f441000-0x000000008f480fff] usable
-[    0.000000] BIOS-e820: [mem 0x000000008f481000-0x000000008f7f1fff] reserved
-[    0.000000] BIOS-e820: [mem 0x000000008f7f2000-0x000000008f7fffff] usable
-[    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec00fff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fec10000-0x00000000fec10fff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed00fff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed80000-0x00000000fed8ffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000ff000000-0x00000000ffffffff] reserved
-[    0.000000] BIOS-e820: [mem 0x0000000100001000-0x000000023effffff] usable
-[    0.000000] NX (Execute Disable) protection: active
-[    0.000000] e820: update [mem 0x6732f018-0x6733f057] usable ==> usable
-[    0.000000] extended physical RAM map:
-[    0.000000] reserve setup_data: [mem 0x0000000000000000-0x000000000009ffff] usable
-[    0.000000] reserve setup_data: [mem 0x0000000000100000-0x000000006732f017] usable
-[    0.000000] reserve setup_data: [mem 0x000000006732f018-0x000000006733f057] usable
-[    0.000000] reserve setup_data: [mem 0x000000006733f058-0x000000008d330fff] usable
-[    0.000000] reserve setup_data: [mem 0x000000008d331000-0x000000008d352fff] ACPI data
-[    0.000000] reserve setup_data: [mem 0x000000008d353000-0x000000008dbaefff] ACPI NVS
-[    0.000000] reserve setup_data: [mem 0x000000008dbaf000-0x000000008eb28fff] reserved
-[    0.000000] reserve setup_data: [mem 0x000000008eb29000-0x000000008eb29fff] usable
-[    0.000000] reserve setup_data: [mem 0x000000008eb2a000-0x000000008ed2ffff] ACPI NVS
-[    0.000000] reserve setup_data: [mem 0x000000008ed30000-0x000000008ee7ffff] usable
-[    0.000000] reserve setup_data: [mem 0x000000008ee80000-0x000000008f440fff] reserved
-[    0.000000] reserve setup_data: [mem 0x000000008f441000-0x000000008f480fff] usable
-[    0.000000] reserve setup_data: [mem 0x000000008f481000-0x000000008f7f1fff] reserved
-[    0.000000] reserve setup_data: [mem 0x000000008f7f2000-0x000000008f7fffff] usable
-[    0.000000] reserve setup_data: [mem 0x00000000fec00000-0x00000000fec00fff] reserved
-[    0.000000] reserve setup_data: [mem 0x00000000fec10000-0x00000000fec10fff] reserved
-[    0.000000] reserve setup_data: [mem 0x00000000fed00000-0x00000000fed00fff] reserved
-[    0.000000] reserve setup_data: [mem 0x00000000fed80000-0x00000000fed8ffff] reserved
-[    0.000000] reserve setup_data: [mem 0x00000000ff000000-0x00000000ffffffff] reserved
-[    0.000000] reserve setup_data: [mem 0x0000000100001000-0x000000023effffff] usable
-[    0.000000] efi: EFI v2.31 by American Megatrends
-[    0.000000] efi:  ACPI=0x8d342000  ACPI 2.0=0x8d342000  SMBIOS=0x8ead6918
-[    0.000000] efi: mem00: type=7, attr=0xf, range=[0x0000000000000000-0x0000000000001000) (0MB)
-[    0.000000] efi: mem01: type=2, attr=0xf, range=[0x0000000000001000-0x0000000000002000) (0MB)
-[    0.000000] efi: mem02: type=7, attr=0xf, range=[0x0000000000002000-0x00000000000a0000) (0MB)
-[    0.000000] efi: mem03: type=7, attr=0xf, range=[0x0000000000100000-0x0000000001000000) (15MB)
-[    0.000000] efi: mem04: type=2, attr=0xf, range=[0x0000000001000000-0x0000000001100000) (1MB)
-[    0.000000] efi: mem05: type=7, attr=0xf, range=[0x0000000001100000-0x0000000002000000) (15MB)
-[    0.000000] efi: mem06: type=2, attr=0xf, range=[0x0000000002000000-0x000000000342a000) (20MB)
-[    0.000000] efi: mem07: type=7, attr=0xf, range=[0x000000000342a000-0x000000003dece000) (938MB)
-[    0.000000] efi: mem08: type=2, attr=0xf, range=[0x000000003dece000-0x0000000040000000) (33MB)
-[    0.000000] efi: mem09: type=7, attr=0xf, range=[0x0000000040000000-0x000000006732f000) (627MB)
-[    0.000000] efi: mem10: type=2, attr=0xf, range=[0x000000006732f000-0x000000008a038000) (557MB)
-[    0.000000] efi: mem11: type=7, attr=0xf, range=[0x000000008a038000-0x000000008a03d000) (0MB)
-[    0.000000] efi: mem12: type=2, attr=0xf, range=[0x000000008a03d000-0x000000008a208000) (1MB)
-[    0.000000] efi: mem13: type=1, attr=0xf, range=[0x000000008a208000-0x000000008a343000) (1MB)
-[    0.000000] efi: mem14: type=7, attr=0xf, range=[0x000000008a343000-0x000000008b4f6000) (17MB)
-[    0.000000] efi: mem15: type=4, attr=0xf, range=[0x000000008b4f6000-0x000000008b521000) (0MB)
-[    0.000000] efi: mem16: type=7, attr=0xf, range=[0x000000008b521000-0x000000008b540000) (0MB)
-[    0.000000] efi: mem17: type=4, attr=0xf, range=[0x000000008b540000-0x000000008b546000) (0MB)
-[    0.000000] efi: mem18: type=7, attr=0xf, range=[0x000000008b546000-0x000000008b549000) (0MB)
-[    0.000000] efi: mem19: type=4, attr=0xf, range=[0x000000008b549000-0x000000008ccce000) (23MB)
-[    0.000000] efi: mem20: type=7, attr=0xf, range=[0x000000008ccce000-0x000000008d02d000) (3MB)
-[    0.000000] efi: mem21: type=3, attr=0xf, range=[0x000000008d02d000-0x000000008d2ce000) (2MB)
-[    0.000000] efi: mem22: type=7, attr=0xf, range=[0x000000008d2ce000-0x000000008d331000) (0MB)
-[    0.000000] efi: mem23: type=9, attr=0xf, range=[0x000000008d331000-0x000000008d353000) (0MB)
-[    0.000000] efi: mem24: type=10, attr=0xf, range=[0x000000008d353000-0x000000008d705000) (3MB)
-[    0.000000] efi: mem25: type=10, attr=0xf, range=[0x000000008d705000-0x000000008dbaf000) (4MB)
-[    0.000000] efi: mem26: type=6, attr=0x800000000000000f, range=[0x000000008dbaf000-0x000000008e7e6000) (12MB)
-[    0.000000] efi: mem27: type=6, attr=0x800000000000000f, range=[0x000000008e7e6000-0x000000008ea14000) (2MB)
-[    0.000000] efi: mem28: type=6, attr=0x800000000000000f, range=[0x000000008ea14000-0x000000008ea17000) (0MB)
-[    0.000000] efi: mem29: type=6, attr=0x800000000000000f, range=[0x000000008ea17000-0x000000008ead8000) (0MB)
-[    0.000000] efi: mem30: type=5, attr=0x800000000000000f, range=[0x000000008ead8000-0x000000008eae8000) (0MB)
-[    0.000000] efi: mem31: type=5, attr=0x800000000000000f, range=[0x000000008eae8000-0x000000008eb29000) (0MB)
-[    0.000000] efi: mem32: type=4, attr=0xf, range=[0x000000008eb29000-0x000000008eb2a000) (0MB)
-[    0.000000] efi: mem33: type=10, attr=0xf, range=[0x000000008eb2a000-0x000000008ed30000) (2MB)
-[    0.000000] efi: mem34: type=4, attr=0xf, range=[0x000000008ed30000-0x000000008ee80000) (1MB)
-[    0.000000] efi: mem35: type=6, attr=0x800000000000000f, range=[0x000000008ee80000-0x000000008f441000) (5MB)
-[    0.000000] efi: mem36: type=4, attr=0xf, range=[0x000000008f441000-0x000000008f45a000) (0MB)
-[    0.000000] efi: mem37: type=3, attr=0xf, range=[0x000000008f45a000-0x000000008f474000) (0MB)
-[    0.000000] efi: mem38: type=4, attr=0xf, range=[0x000000008f474000-0x000000008f475000) (0MB)
-[    0.000000] efi: mem39: type=3, attr=0xf, range=[0x000000008f475000-0x000000008f477000) (0MB)
-[    0.000000] efi: mem40: type=4, attr=0xf, range=[0x000000008f477000-0x000000008f481000) (0MB)
-[    0.000000] efi: mem41: type=6, attr=0x800000000000000f, range=[0x000000008f481000-0x000000008f7f2000) (3MB)
-[    0.000000] efi: mem42: type=4, attr=0xf, range=[0x000000008f7f2000-0x000000008f800000) (0MB)
-[    0.000000] efi: mem43: type=7, attr=0xf, range=[0x0000000100001000-0x000000023f000000) (5103MB)
-[    0.000000] efi: mem44: type=11, attr=0x8000000000000001, range=[0x00000000fec00000-0x00000000fec01000) (0MB)
-[    0.000000] efi: mem45: type=11, attr=0x8000000000000001, range=[0x00000000fec10000-0x00000000fec11000) (0MB)
-[    0.000000] efi: mem46: type=11, attr=0x8000000000000001, range=[0x00000000fed00000-0x00000000fed01000) (0MB)
-[    0.000000] efi: mem47: type=11, attr=0x8000000000000001, range=[0x00000000fed80000-0x00000000fed81000) (0MB)
-[    0.000000] efi: mem48: type=11, attr=0x8000000000000001, range=[0x00000000fed81000-0x00000000fed90000) (0MB)
-[    0.000000] efi: mem49: type=11, attr=0x8000000000000001, range=[0x00000000ff000000-0x0000000100000000) (16MB)
-[    0.000000] SMBIOS 2.7 present.
-[    0.000000] DMI: Micro-Star International Co., Ltd. GX70 3BE/MS-176K, BIOS E176KAMS.70F 12/02/2013
-[    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
-[    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
-[    0.000000] e820: last_pfn = 0x23f000 max_arch_pfn = 0x400000000
-[    0.000000] MTRR default type: uncachable
-[    0.000000] MTRR fixed ranges enabled:
-[    0.000000]   00000-9FFFF write-back
-[    0.000000]   A0000-BFFFF write-through
-[    0.000000]   C0000-DFFFF uncachable
-[    0.000000]   E0000-FFFFF write-protect
-[    0.000000] MTRR variable ranges enabled:
-[    0.000000]   0 base 000000000000 mask FFFF80000000 write-back
-[    0.000000]   1 base 000080000000 mask FFFFF0000000 write-back
-[    0.000000]   2 base 00008F800000 mask FFFFFF800000 uncachable
-[    0.000000]   3 disabled
-[    0.000000]   4 disabled
-[    0.000000]   5 disabled
-[    0.000000]   6 disabled
-[    0.000000]   7 disabled
-[    0.000000] TOM2: 000000023f000000 aka 9200M
-[    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
-[    0.000000] e820: update [mem 0x8f800000-0xffffffff] usable ==> reserved
-[    0.000000] e820: last_pfn = 0x8f800 max_arch_pfn = 0x400000000
-[    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
-[    0.000000] Using GB pages for direct mapping
-[    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
-[    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-[    0.000000] BRK [0x03006000, 0x03006fff] PGTABLE
-[    0.000000] BRK [0x03007000, 0x03007fff] PGTABLE
-[    0.000000] BRK [0x03008000, 0x03008fff] PGTABLE
-[    0.000000] init_memory_mapping: [mem 0x23ee00000-0x23effffff]
-[    0.000000]  [mem 0x23ee00000-0x23effffff] page 2M
-[    0.000000] BRK [0x03009000, 0x03009fff] PGTABLE
-[    0.000000] init_memory_mapping: [mem 0x23c000000-0x23edfffff]
-[    0.000000]  [mem 0x23c000000-0x23edfffff] page 2M
-[    0.000000] init_memory_mapping: [mem 0x200000000-0x23bffffff]
-[    0.000000]  [mem 0x200000000-0x23bffffff] page 2M
-[    0.000000] init_memory_mapping: [mem 0x00100000-0x8d330fff]
-[    0.000000]  [mem 0x00100000-0x001fffff] page 4k
-[    0.000000]  [mem 0x00200000-0x3fffffff] page 2M
-[    0.000000]  [mem 0x40000000-0x7fffffff] page 1G
-[    0.000000]  [mem 0x80000000-0x8d1fffff] page 2M
-[    0.000000]  [mem 0x8d200000-0x8d330fff] page 4k
-[    0.000000] init_memory_mapping: [mem 0x8eb29000-0x8eb29fff]
-[    0.000000]  [mem 0x8eb29000-0x8eb29fff] page 4k
-[    0.000000] BRK [0x0300a000, 0x0300afff] PGTABLE
-[    0.000000] init_memory_mapping: [mem 0x8ed30000-0x8ee7ffff]
-[    0.000000]  [mem 0x8ed30000-0x8ee7ffff] page 4k
-[    0.000000] BRK [0x0300b000, 0x0300bfff] PGTABLE
-[    0.000000] init_memory_mapping: [mem 0x8f441000-0x8f480fff]
-[    0.000000]  [mem 0x8f441000-0x8f480fff] page 4k
-[    0.000000] init_memory_mapping: [mem 0x8f7f2000-0x8f7fffff]
-[    0.000000]  [mem 0x8f7f2000-0x8f7fffff] page 4k
-[    0.000000] init_memory_mapping: [mem 0x100001000-0x1ffffffff]
-[    0.000000]  [mem 0x100001000-0x1001fffff] page 4k
-[    0.000000]  [mem 0x100200000-0x13fffffff] page 2M
-[    0.000000]  [mem 0x140000000-0x1ffffffff] page 1G
-[    0.000000] RAMDISK: [mem 0x3dece000-0x3ebd0fff]
-[    0.000000] ACPI: Early table checksum verification disabled
-[    0.000000] ACPI: RSDP 0x000000008D342000 000024 (v02 MSI_NB)
-[    0.000000] ACPI: XSDT 0x000000008D342080 000084 (v01 MSI_NB MEGABOOK 01072009 AMI  00010013)
-[    0.000000] ACPI: FACP 0x000000008D34AB68 00010C (v05 MSI_NB MEGABOOK 01072009 AMI  00010013)
-[    0.000000] ACPI BIOS Warning (bug): Optional FADT field Pm2ControlBlock has zero address or length: 0x0000000000000000/0x1 (20140424/tbfadt-649)
-[    0.000000] ACPI: DSDT 0x000000008D342198 0089CE (v02 MSI_NB MEGABOOK 00000000 INTL 20051117)
-[    0.000000] ACPI: FACS 0x000000008DBA5080 000040
-[    0.000000] ACPI: APIC 0x000000008D34AC78 000072 (v03 MSI_NB MEGABOOK 01072009 AMI  00010013)
-[    0.000000] ACPI: FPDT 0x000000008D34ACF0 000044 (v01 MSI_NB MEGABOOK 01072009 AMI  00010013)
-[    0.000000] ACPI: MCFG 0x000000008D34AD38 00003C (v01 MSI_NB MEGABOOK 01072009 MSFT 00010013)
-[    0.000000] ACPI: MSDM 0x000000008D34AD78 000055 (v03 MSI_NB MEGABOOK 01072009 AMI  00010013)
-[    0.000000] ACPI: SLIC 0x000000008D34ADD0 000176 (v01 MSI_NB MEGABOOK 01072009 AMI  00010013)
-[    0.000000] ACPI: HPET 0x000000008D34AF48 000038 (v01 MSI_NB MEGABOOK 01072009 AMI  00000005)
-[    0.000000] ACPI: MSFF 0x000000008D34AF80 000029 (v01 MSI_NB MEGABOOK 00000010 AMI  00010013)
-[    0.000000] ACPI: VFCT 0x000000008D34AFB0 005084 (v01 MSI_NB MEGABOOK 00000001 AMD  31504F47)
-[    0.000000] ACPI: SSDT 0x000000008D350038 000A9C (v01 AMD    PUMORI   00000001 AMD  00000001)
-[    0.000000] ACPI: SSDT 0x000000008D350AD8 001F6E (v02 AMD    PUMORI   00000001 MSFT 04000000)
-[    0.000000] ACPI: CRAT 0x000000008D352A48 0002A8 (v01 AMD    PUMORI   00000001 AMD  00000001)
-[    0.000000] ACPI: Local APIC address 0xfee00000
-[    0.000000] No NUMA configuration found
-[    0.000000] Faking a node at [mem 0x0000000000000000-0x000000023effffff]
-[    0.000000] Initmem setup node 0 [mem 0x00000000-0x23effffff]
-[    0.000000]   NODE_DATA [mem 0x23efe5000-0x23eff8fff]
-[    0.000000]  [ffffea0000000000-ffffea0008ffffff] PMD -> [ffff880237200000-ffff88023e5fffff] on node 0
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   [mem 0x100000000-0x23effffff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x0009ffff]
-[    0.000000]   node   0: [mem 0x00100000-0x8d330fff]
-[    0.000000]   node   0: [mem 0x8eb29000-0x8eb29fff]
-[    0.000000]   node   0: [mem 0x8ed30000-0x8ee7ffff]
-[    0.000000]   node   0: [mem 0x8f441000-0x8f480fff]
-[    0.000000]   node   0: [mem 0x8f7f2000-0x8f7fffff]
-[    0.000000]   node   0: [mem 0x100001000-0x23effffff]
-[    0.000000] On node 0 totalpages: 1885294
-[    0.000000]   DMA zone: 64 pages used for memmap
-[    0.000000]   DMA zone: 22 pages reserved
-[    0.000000]   DMA zone: 3999 pages, LIFO batch:0
-[    0.000000]   DMA32 zone: 8980 pages used for memmap
-[    0.000000]   DMA32 zone: 574672 pages, LIFO batch:31
-[    0.000000]   Normal zone: 20416 pages used for memmap
-[    0.000000]   Normal zone: 1306623 pages, LIFO batch:31
-[    0.000000] tboot: non-0 tboot_addr but it is not of type E820_RESERVED
-[    0.000000] ACPI: PM-Timer IO Port: 0x808
-[    0.000000] ACPI: Local APIC address 0xfee00000
-[    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x10] enabled)
-[    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x11] enabled)
-[    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x12] enabled)
-[    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x13] enabled)
-[    0.000000] ACPI: LAPIC_NMI (acpi_id[0xff] high edge lint[0x1])
-[    0.000000] ACPI: IOAPIC (id[0x05] address[0xfec00000] gsi_base[0])
-[    0.000000] IOAPIC[0]: apic_id 5, version 33, address 0xfec00000, GSI 0-23
-[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
-[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
-[    0.000000] ACPI: IRQ0 used by override.
-[    0.000000] ACPI: IRQ2 used by override.
-[    0.000000] ACPI: IRQ9 used by override.
-[    0.000000] Using ACPI (MADT) for SMP configuration information
-[    0.000000] ACPI: HPET id: 0x10228210 base: 0xfed00000
-[    0.000000] smpboot: Allowing 4 CPUs, 0 hotplug CPUs
-[    0.000000] nr_irqs_gsi: 40
-[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
-[    0.000000] PM: Registered nosave memory: [mem 0x6732f000-0x6732ffff]
-[    0.000000] PM: Registered nosave memory: [mem 0x6733f000-0x6733ffff]
-[    0.000000] PM: Registered nosave memory: [mem 0x8d331000-0x8d352fff]
-[    0.000000] PM: Registered nosave memory: [mem 0x8d353000-0x8dbaefff]
-[    0.000000] PM: Registered nosave memory: [mem 0x8dbaf000-0x8eb28fff]
-[    0.000000] PM: Registered nosave memory: [mem 0x8eb2a000-0x8ed2ffff]
-[    0.000000] PM: Registered nosave memory: [mem 0x8ee80000-0x8f440fff]
-[    0.000000] PM: Registered nosave memory: [mem 0x8f481000-0x8f7f1fff]
-[    0.000000] PM: Registered nosave memory: [mem 0x8f800000-0xfebfffff]
-[    0.000000] PM: Registered nosave memory: [mem 0xfec00000-0xfec00fff]
-[    0.000000] PM: Registered nosave memory: [mem 0xfec01000-0xfec0ffff]
-[    0.000000] PM: Registered nosave memory: [mem 0xfec10000-0xfec10fff]
-[    0.000000] PM: Registered nosave memory: [mem 0xfec11000-0xfecfffff]
-[    0.000000] PM: Registered nosave memory: [mem 0xfed00000-0xfed00fff]
-[    0.000000] PM: Registered nosave memory: [mem 0xfed01000-0xfed7ffff]
-[    0.000000] PM: Registered nosave memory: [mem 0xfed80000-0xfed8ffff]
-[    0.000000] PM: Registered nosave memory: [mem 0xfed90000-0xfeffffff]
-[    0.000000] PM: Registered nosave memory: [mem 0xff000000-0xffffffff]
-[    0.000000] PM: Registered nosave memory: [mem 0x100000000-0x100000fff]
-[    0.000000] e820: [mem 0x8f800000-0xfebfffff] available for PCI devices
-[    0.000000] Booting paravirtualized kernel on bare hardware
-[    0.000000] setup_percpu: NR_CPUS:1024 nr_cpumask_bits:4 nr_cpu_ids:4 nr_node_ids:1
-[    0.000000] PERCPU: Embedded 29 pages/cpu @ffff88023ec00000 s86784 r8192 d23808 u524288
-[    0.000000] pcpu-alloc: s86784 r8192 d23808 u524288 alloc=1*2097152
-[    0.000000] pcpu-alloc: [0] 0 1 2 3
-[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 1855812
-[    0.000000] Policy zone: Normal
-[    0.000000] Kernel command line: BOOT_IMAGE=/vmlinuz-3.16.6-203.fc20.x86_64 root=/dev/mapper/fedora-root ro rd.lvm.lv=fedora/swap rd.md=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 rd.lvm.lv=fedora/root systemd.unit=multi-user.target
-[    0.000000] PID hash table entries: 4096 (order: 3, 32768 bytes)
-[    0.000000] xsave: enabled xstate_bv 0x7, cntxt size 0x340
-[    0.000000] Memory: 7296968K/7541176K available (7249K kernel code, 1128K rwdata, 3136K rodata, 1456K init, 1496K bss, 244208K reserved)
-[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
-[    0.000000] Hierarchical RCU implementation.
-[    0.000000] 	RCU restricting CPUs from NR_CPUS=1024 to nr_cpu_ids=4.
-[    0.000000] 	Offload RCU callbacks from all CPUs
-[    0.000000] 	Offload RCU callbacks from CPUs: 0-3.
-[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
-[    0.000000] NR_IRQS:65792 nr_irqs:712 16
-[    0.000000] Console: colour dummy device 80x25
-[    0.000000] console [tty0] enabled
-[    0.000000] allocated 30408704 bytes of page_cgroup
-[    0.000000] please try 'cgroup_disable=memory' option if you don't want memory cgroups
-[    0.000000] hpet clockevent registered
-[    0.000000] tsc: Fast TSC calibration using PIT
-[    0.000000] tsc: Detected 2495.310 MHz processor
-[    0.000025] Calibrating delay loop (skipped), value calculated using timer frequency.. 4990.62 BogoMIPS (lpj=2495310)
-[    0.000030] pid_max: default: 32768 minimum: 301
-[    0.000041] ACPI: Core revision 20140424
-[    0.005807] ACPI: All ACPI Tables successfully acquired
-[    0.006862] Security Framework initialized
-[    0.006875] SELinux:  Initializing.
-[    0.006883] SELinux:  Starting in permissive mode
-[    0.007580] Dentry cache hash table entries: 1048576 (order: 11, 8388608 bytes)
-[    0.010194] Inode-cache hash table entries: 524288 (order: 10, 4194304 bytes)
-[    0.011347] Mount-cache hash table entries: 16384 (order: 5, 131072 bytes)
-[    0.011364] Mountpoint-cache hash table entries: 16384 (order: 5, 131072 bytes)
-[    0.011652] Initializing cgroup subsys memory
-[    0.011680] Initializing cgroup subsys devices
-[    0.011687] Initializing cgroup subsys freezer
-[    0.011692] Initializing cgroup subsys net_cls
-[    0.011697] Initializing cgroup subsys blkio
-[    0.011702] Initializing cgroup subsys perf_event
-[    0.011705] Initializing cgroup subsys net_prio
-[    0.011713] Initializing cgroup subsys hugetlb
-[    0.011734] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support.
-[    0.011740] tseg: 008f800000
-[    0.011742] CPU: Physical Processor ID: 0
-[    0.011744] CPU: Processor Core ID: 0
-[    0.011746] mce: CPU supports 7 MCE banks
-[    0.011759] Last level iTLB entries: 4KB 512, 2MB 1024, 4MB 512
-Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 512, 1GB 0
-tlb_flushall_shift: 6
-[    0.011857] Freeing SMP alternatives memory: 24K (ffffffff81e88000 - ffffffff81e8e000)
-[    0.013804] ftrace: allocating 26727 entries in 105 pages
-[    0.022985] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-[    0.032985] smpboot: CPU0: AMD A10-5750M APU with Radeon(tm) HD Graphics (fam: 15, model: 13, stepping: 01)
-[    0.134703] Performance Events: Fam15h core perfctr, AMD PMU driver.
-[    0.134711] ... version:                0
-[    0.134714] ... bit width:              48
-[    0.134716] ... generic registers:      6
-[    0.134718] ... value mask:             0000ffffffffffff
-[    0.134720] ... max period:             00007fffffffffff
-[    0.134723] ... fixed-purpose events:   0
-[    0.134725] ... event mask:             000000000000003f
-[    0.136209] NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
-[    0.136302] x86: Booting SMP configuration:
-[    0.136305] .... node  #0, CPUs:      #1
-[    0.147325] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support.
-[    0.149543]  #2
-[    0.160565] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support.
-[    0.173757]  #3
-[    0.173757] [Firmware Info]: CPU: Re-enabling disabled Topology Extensions Support.
-[    0.175860] x86: Booted up 1 node, 4 CPUs
-[    0.175869] smpboot: Total of 4 processors activated (19962.48 BogoMIPS)
-[    0.176765] devtmpfs: initialized
-[    0.180047] PM: Registering ACPI NVS region [mem 0x8d353000-0x8dbaefff] (8765440 bytes)
-[    0.180233] PM: Registering ACPI NVS region [mem 0x8eb2a000-0x8ed2ffff] (2121728 bytes)
-[    0.181303] atomic64_test: passed for x86-64 platform with CX8 and with SSE
-[    0.181307] pinctrl core: initialized pinctrl subsystem
-[    0.181344] RTC time: 19:17:36, date: 10/29/14
-[    0.181400] NET: Registered protocol family 16
-[    0.181551] cpuidle: using governor menu
-[    0.181751] ACPI: bus type PCI registered
-[    0.181754] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
-[    0.181838] PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0xe0000000-0xefffffff] (base 0xe0000000)
-[    0.181844] PCI: not using MMCONFIG
-[    0.181847] PCI: Using configuration type 1 for base access
-[    0.181850] PCI: Using configuration type 1 for extended access
-[    0.186328] ACPI: Added _OSI(Module Device)
-[    0.186335] ACPI: Added _OSI(Processor Device)
-[    0.186338] ACPI: Added _OSI(3.0 _SCP Extensions)
-[    0.186341] ACPI: Added _OSI(Processor Aggregator Device)
-[    0.188351] ACPI Error: No handler for Region [EC__] (ffff880236c23c18) [EmbeddedControl] (20140424/evregion-163)
-[    0.188359] ACPI Error: Region EmbeddedControl (ID=3) has no handler (20140424/exfldio-299)
-[    0.188368] ACPI Error: Method parse/execution failed [\_SB_.PCI0.SBRG.EC__.EOSV] (Node ffff880236c29fa0), AE_NOT_EXIST (20140424/psparse-536)
-[    0.188378] ACPI Error: Method parse/execution failed [\_SB_.PCI0.SBRG.EC__._REG] (Node ffff880236c29fc8), AE_NOT_EXIST (20140424/psparse-536)
-[    0.189104] ACPI: Executed 1 blocks of module-level executable AML code
-[    0.200289] ACPI: Interpreter enabled
-[    0.200298] ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [\_S1_] (20140424/hwxface-580)
-[    0.200306] ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [\_S2_] (20140424/hwxface-580)
-[    0.200327] ACPI: (supports S0 S3 S4 S5)
-[    0.200330] ACPI: Using IOAPIC for interrupt routing
-[    0.200355] PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0xe0000000-0xefffffff] (base 0xe0000000)
-[    0.200419] PCI: MMCONFIG at [mem 0xe0000000-0xefffffff] reserved in ACPI motherboard resources
-[    0.200812] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
-[    0.232053] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
-[    0.232065] acpi PNP0A03:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI]
-[    0.232298] acpi PNP0A03:00: _OSC: platform does not support [PME]
-[    0.232519] acpi PNP0A03:00: _OSC: OS now controls [PCIeHotplug AER PCIeCapability]
-[    0.233056] PCI host bridge to bus 0000:00
-[    0.233060] pci_bus 0000:00: root bus resource [bus 00-ff]
-[    0.233064] pci_bus 0000:00: root bus resource [io  0x0000-0x03af]
-[    0.233068] pci_bus 0000:00: root bus resource [io  0x03e0-0x0cf7]
-[    0.233072] pci_bus 0000:00: root bus resource [io  0x03b0-0x03df]
-[    0.233076] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff]
-[    0.233079] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff]
-[    0.233083] pci_bus 0000:00: root bus resource [mem 0x000c0000-0x000dffff]
-[    0.233087] pci_bus 0000:00: root bus resource [mem 0xc0000000-0xffffffff]
-[    0.233096] pci 0000:00:00.0: [1022:1410] type 00 class 0x060000
-[    0.233212] pci 0000:00:01.0: [1002:990b] type 00 class 0x030000
-[    0.233222] pci 0000:00:01.0: reg 0x10: [mem 0xc0000000-0xcfffffff pref]
-[    0.233227] pci 0000:00:01.0: reg 0x14: [io  0xf000-0xf0ff]
-[    0.233233] pci 0000:00:01.0: reg 0x18: [mem 0xfeb00000-0xfeb3ffff]
-[    0.233268] pci 0000:00:01.0: supports D1 D2
-[    0.233363] pci 0000:00:01.1: [1002:9902] type 00 class 0x040300
-[    0.233370] pci 0000:00:01.1: reg 0x10: [mem 0xfeb44000-0xfeb47fff]
-[    0.233409] pci 0000:00:01.1: supports D1 D2
-[    0.233495] pci 0000:00:03.0: [1022:1413] type 01 class 0x060400
-[    0.233538] pci 0000:00:03.0: PME# supported from D0 D3hot D3cold
-[    0.233660] pci 0000:00:10.0: [1022:7814] type 00 class 0x0c0330
-[    0.233681] pci 0000:00:10.0: reg 0x10: [mem 0xfeb4a000-0xfeb4bfff 64bit]
-[    0.233776] pci 0000:00:10.0: PME# supported from D0 D3hot D3cold
-[    0.233841] pci 0000:00:10.0: System wakeup disabled by ACPI
-[    0.233900] pci 0000:00:10.1: [1022:7814] type 00 class 0x0c0330
-[    0.233921] pci 0000:00:10.1: reg 0x10: [mem 0xfeb48000-0xfeb49fff 64bit]
-[    0.234015] pci 0000:00:10.1: PME# supported from D0 D3hot D3cold
-[    0.234078] pci 0000:00:10.1: System wakeup disabled by ACPI
-[    0.234133] pci 0000:00:11.0: [1022:7800] type 00 class 0x01018f
-[    0.234148] pci 0000:00:11.0: reg 0x10: [io  0xf190-0xf197]
-[    0.234156] pci 0000:00:11.0: reg 0x14: [io  0xf180-0xf183]
-[    0.234164] pci 0000:00:11.0: reg 0x18: [io  0xf170-0xf177]
-[    0.234172] pci 0000:00:11.0: reg 0x1c: [io  0xf160-0xf163]
-[    0.234181] pci 0000:00:11.0: reg 0x20: [io  0xf150-0xf15f]
-[    0.234189] pci 0000:00:11.0: reg 0x24: [mem 0xfeb51000-0xfeb517ff]
-[    0.234206] pci 0000:00:11.0: set SATA to AHCI mode
-[    0.234309] pci 0000:00:12.0: [1022:7807] type 00 class 0x0c0310
-[    0.234323] pci 0000:00:12.0: reg 0x10: [mem 0xfeb50000-0xfeb50fff]
-[    0.234426] pci 0000:00:12.0: System wakeup disabled by ACPI
-[    0.234477] pci 0000:00:12.2: [1022:7808] type 00 class 0x0c0320
-[    0.234493] pci 0000:00:12.2: reg 0x10: [mem 0xfeb4f000-0xfeb4f0ff]
-[    0.234562] pci 0000:00:12.2: supports D1 D2
-[    0.234564] pci 0000:00:12.2: PME# supported from D0 D1 D2 D3hot D3cold
-[    0.234620] pci 0000:00:12.2: System wakeup disabled by ACPI
-[    0.234670] pci 0000:00:13.0: [1022:7807] type 00 class 0x0c0310
-[    0.234682] pci 0000:00:13.0: reg 0x10: [mem 0xfeb4e000-0xfeb4efff]
-[    0.234776] pci 0000:00:13.0: System wakeup disabled by ACPI
-[    0.234835] pci 0000:00:13.2: [1022:7808] type 00 class 0x0c0320
-[    0.234852] pci 0000:00:13.2: reg 0x10: [mem 0xfeb4d000-0xfeb4d0ff]
-[    0.234921] pci 0000:00:13.2: supports D1 D2
-[    0.234922] pci 0000:00:13.2: PME# supported from D0 D1 D2 D3hot D3cold
-[    0.234977] pci 0000:00:13.2: System wakeup disabled by ACPI
-[    0.235026] pci 0000:00:14.0: [1022:780b] type 00 class 0x0c0500
-[    0.235144] pci 0000:00:14.1: [1022:780c] type 00 class 0x01018a
-[    0.235154] pci 0000:00:14.1: reg 0x10: [io  0xf140-0xf147]
-[    0.235160] pci 0000:00:14.1: reg 0x14: [io  0xf130-0xf133]
-[    0.235166] pci 0000:00:14.1: reg 0x18: [io  0xf120-0xf127]
-[    0.235173] pci 0000:00:14.1: reg 0x1c: [io  0xf110-0xf113]
-[    0.235179] pci 0000:00:14.1: reg 0x20: [io  0xf100-0xf10f]
-[    0.235193] pci 0000:00:14.1: legacy IDE quirk: reg 0x10: [io  0x01f0-0x01f7]
-[    0.235196] pci 0000:00:14.1: legacy IDE quirk: reg 0x14: [io  0x03f6]
-[    0.235200] pci 0000:00:14.1: legacy IDE quirk: reg 0x18: [io  0x0170-0x0177]
-[    0.235204] pci 0000:00:14.1: legacy IDE quirk: reg 0x1c: [io  0x0376]
-[    0.235293] pci 0000:00:14.2: [1022:780d] type 00 class 0x040300
-[    0.235312] pci 0000:00:14.2: reg 0x10: [mem 0xfeb40000-0xfeb43fff 64bit]
-[    0.235372] pci 0000:00:14.2: PME# supported from D0 D3hot D3cold
-[    0.235465] pci 0000:00:14.3: [1022:780e] type 00 class 0x060100
-[    0.235603] pci 0000:00:14.4: [1022:780f] type 01 class 0x060401
-[    0.235679] pci 0000:00:14.4: System wakeup disabled by ACPI
-[    0.235726] pci 0000:00:14.7: [1022:7806] type 00 class 0x080501
-[    0.235739] pci 0000:00:14.7: reg 0x10: [mem 0xfeb4c000-0xfeb4c0ff 64bit]
-[    0.235853] pci 0000:00:15.0: [1022:43a0] type 01 class 0x060400
-[    0.235920] pci 0000:00:15.0: supports D1 D2
-[    0.235977] pci 0000:00:15.0: System wakeup disabled by ACPI
-[    0.236026] pci 0000:00:15.1: [1022:43a1] type 01 class 0x060400
-[    0.236092] pci 0000:00:15.1: supports D1 D2
-[    0.236148] pci 0000:00:15.1: System wakeup disabled by ACPI
-[    0.236199] pci 0000:00:18.0: [1022:1400] type 00 class 0x060000
-[    0.236289] pci 0000:00:18.1: [1022:1401] type 00 class 0x060000
-[    0.236379] pci 0000:00:18.2: [1022:1402] type 00 class 0x060000
-[    0.236467] pci 0000:00:18.3: [1022:1403] type 00 class 0x060000
-[    0.236557] pci 0000:00:18.4: [1022:1404] type 00 class 0x060000
-[    0.236644] pci 0000:00:18.5: [1022:1405] type 00 class 0x060000
-[    0.236816] pci 0000:01:00.0: [1002:6801] type 00 class 0x030000
-[    0.236832] pci 0000:01:00.0: reg 0x10: [mem 0xd0000000-0xdfffffff 64bit pref]
-[    0.236842] pci 0000:01:00.0: reg 0x18: [mem 0xfea00000-0xfea3ffff 64bit]
-[    0.236849] pci 0000:01:00.0: reg 0x20: [io  0xe000-0xe0ff]
-[    0.236860] pci 0000:01:00.0: reg 0x30: [mem 0xfea40000-0xfea5ffff pref]
-[    0.236921] pci 0000:01:00.0: supports D1 D2
-[    0.236923] pci 0000:01:00.0: PME# supported from D1 D2 D3hot
-[    0.238705] pci 0000:00:03.0: PCI bridge to [bus 01]
-[    0.238718] pci 0000:00:03.0:   bridge window [io  0xe000-0xefff]
-[    0.238721] pci 0000:00:03.0:   bridge window [mem 0xfea00000-0xfeafffff]
-[    0.238726] pci 0000:00:03.0:   bridge window [mem 0xd0000000-0xdfffffff 64bit pref]
-[    0.238833] pci 0000:00:14.4: PCI bridge to [bus 02] (subtractive decode)
-[    0.238844] pci 0000:00:14.4:   bridge window [io  0x0000-0x03af] (subtractive decode)
-[    0.238846] pci 0000:00:14.4:   bridge window [io  0x03e0-0x0cf7] (subtractive decode)
-[    0.238848] pci 0000:00:14.4:   bridge window [io  0x03b0-0x03df] (subtractive decode)
-[    0.238850] pci 0000:00:14.4:   bridge window [io  0x0d00-0xffff] (subtractive decode)
-[    0.238852] pci 0000:00:14.4:   bridge window [mem 0x000a0000-0x000bffff] (subtractive decode)
-[    0.238853] pci 0000:00:14.4:   bridge window [mem 0x000c0000-0x000dffff] (subtractive decode)
-[    0.238855] pci 0000:00:14.4:   bridge window [mem 0xc0000000-0xffffffff] (subtractive decode)
-[    0.238933] pci 0000:03:00.0: [1969:e091] type 00 class 0x020000
-[    0.238962] pci 0000:03:00.0: reg 0x10: [mem 0xfe900000-0xfe93ffff 64bit]
-[    0.238974] pci 0000:03:00.0: reg 0x18: [io  0xd000-0xd07f]
-[    0.239089] pci 0000:03:00.0: PME# supported from D0 D1 D2 D3hot D3cold
-[    0.240704] pci 0000:00:15.0: PCI bridge to [bus 03]
-[    0.240717] pci 0000:00:15.0:   bridge window [io  0xd000-0xdfff]
-[    0.240722] pci 0000:00:15.0:   bridge window [mem 0xfe900000-0xfe9fffff]
-[    0.240831] pci 0000:04:00.0: [10ec:8723] type 00 class 0x028000
-[    0.240854] pci 0000:04:00.0: reg 0x10: [io  0xc000-0xc0ff]
-[    0.240880] pci 0000:04:00.0: reg 0x18: [mem 0xfe800000-0xfe803fff 64bit]
-[    0.240987] pci 0000:04:00.0: supports D1 D2
-[    0.240989] pci 0000:04:00.0: PME# supported from D0 D1 D2 D3hot D3cold
-[    0.242701] pci 0000:00:15.1: PCI bridge to [bus 04]
-[    0.242715] pci 0000:00:15.1:   bridge window [io  0xc000-0xcfff]
-[    0.242720] pci 0000:00:15.1:   bridge window [mem 0xfe800000-0xfe8fffff]
-[    0.246711] ACPI: PCI Interrupt Link [LNKA] (IRQs 4 5 7 10 11 14 15) *0
-[    0.246797] ACPI: PCI Interrupt Link [LNKB] (IRQs 4 5 7 10 11 14 15) *0
-[    0.246882] ACPI: PCI Interrupt Link [LNKC] (IRQs 4 5 7 10 11 14 15) *0
-[    0.246964] ACPI: PCI Interrupt Link [LNKD] (IRQs 4 5 7 10 11 14 15) *0
-[    0.247033] ACPI: PCI Interrupt Link [LNKE] (IRQs 4 5 7 10 11 14 15) *0
-[    0.247088] ACPI: PCI Interrupt Link [LNKF] (IRQs 4 5 7 10 11 14 15) *0
-[    0.247143] ACPI: PCI Interrupt Link [LNKG] (IRQs 4 5 7 10 11 14 15) *0
-[    0.247197] ACPI: PCI Interrupt Link [LNKH] (IRQs 4 5 7 10 11 14 15) *0
-[    0.247407] ACPI : EC: GPE = 0x3, I/O: command/status = 0x66, data = 0x62
-[    0.247538] vgaarb: setting as boot device: PCI:0000:00:01.0
-[    0.247542] vgaarb: device added: PCI:0000:00:01.0,decodes=io+mem,owns=io+mem,locks=none
-[    0.247553] vgaarb: device added: PCI:0000:01:00.0,decodes=io+mem,owns=none,locks=none
-[    0.247557] vgaarb: loaded
-[    0.247559] vgaarb: bridge control possible 0000:01:00.0
-[    0.247562] vgaarb: no bridge control possible 0000:00:01.0
-[    0.247662] SCSI subsystem initialized
-[    0.247735] libata version 3.00 loaded.
-[    0.247771] ACPI: bus type USB registered
-[    0.247800] usbcore: registered new interface driver usbfs
-[    0.247815] usbcore: registered new interface driver hub
-[    0.247845] usbcore: registered new device driver usb
-[    0.247988] PCI: Using ACPI for IRQ routing
-[    0.255088] PCI: pci_cache_line_size set to 64 bytes
-[    0.255151] e820: reserve RAM buffer [mem 0x6732f018-0x67ffffff]
-[    0.255153] e820: reserve RAM buffer [mem 0x8d331000-0x8fffffff]
-[    0.255155] e820: reserve RAM buffer [mem 0x8eb2a000-0x8fffffff]
-[    0.255157] e820: reserve RAM buffer [mem 0x8ee80000-0x8fffffff]
-[    0.255158] e820: reserve RAM buffer [mem 0x8f481000-0x8fffffff]
-[    0.255159] e820: reserve RAM buffer [mem 0x8f800000-0x8fffffff]
-[    0.255161] e820: reserve RAM buffer [mem 0x23f000000-0x23fffffff]
-[    0.255287] NetLabel: Initializing
-[    0.255290] NetLabel:  domain hash size = 128
-[    0.255292] NetLabel:  protocols = UNLABELED CIPSOv4
-[    0.255316] NetLabel:  unlabeled traffic allowed by default
-[    0.255400] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
-[    0.255405] hpet0: 3 comparators, 32-bit 14.318180 MHz counter
-[    0.257460] Switched to clocksource hpet
-[    0.266254] pnp: PnP ACPI init
-[    0.266278] ACPI: bus type PNP registered
-[    0.266423] system 00:00: [mem 0xe0000000-0xefffffff] has been reserved
-[    0.266429] system 00:00: Plug and Play ACPI device, IDs PNP0c01 (active)
-[    0.266491] pnp 00:01: Plug and Play ACPI device, IDs PNP0b00 (active)
-[    0.266540] system 00:02: Plug and Play ACPI device, IDs PNP0c02 (active)
-[    0.266608] system 00:03: [io  0x04d0-0x04d1] has been reserved
-[    0.266613] system 00:03: [io  0x034d-0x034f] has been reserved
-[    0.266617] system 00:03: Plug and Play ACPI device, IDs PNP0c02 (active)
-[    0.266668] pnp 00:04: Plug and Play ACPI device, IDs PNP0303 (active)
-[    0.266727] pnp 00:05: Plug and Play ACPI device, IDs ETD0300 PNP0f13 (active)
-[    0.270482] system 00:06: [io  0x04d0-0x04d1] has been reserved
-[    0.270487] system 00:06: [io  0x040b] has been reserved
-[    0.270491] system 00:06: [io  0x04d6] has been reserved
-[    0.270494] system 00:06: [io  0x0c00-0x0c01] has been reserved
-[    0.270498] system 00:06: [io  0x0c14] has been reserved
-[    0.270502] system 00:06: [io  0x0c50-0x0c51] has been reserved
-[    0.270506] system 00:06: [io  0x0c52] has been reserved
-[    0.270509] system 00:06: [io  0x0c6c] has been reserved
-[    0.270513] system 00:06: [io  0x0c6f] has been reserved
-[    0.270516] system 00:06: [io  0x0cd0-0x0cd1] has been reserved
-[    0.270520] system 00:06: [io  0x0cd2-0x0cd3] has been reserved
-[    0.270523] system 00:06: [io  0x0cd4-0x0cd5] has been reserved
-[    0.270527] system 00:06: [io  0x0cd6-0x0cd7] has been reserved
-[    0.270531] system 00:06: [io  0x0cd8-0x0cdf] has been reserved
-[    0.270535] system 00:06: [io  0x0800-0x089f] could not be reserved
-[    0.270539] system 00:06: [io  0x0b20-0x0b3f] has been reserved
-[    0.270542] system 00:06: [io  0x0900-0x090f] has been reserved
-[    0.270546] system 00:06: [io  0x0910-0x091f] has been reserved
-[    0.270550] system 00:06: [io  0xfe00-0xfefe] has been reserved
-[    0.270555] system 00:06: [mem 0xfec00000-0xfec00fff] could not be reserved
-[    0.270559] system 00:06: [mem 0xfee00000-0xfee00fff] has been reserved
-[    0.270563] system 00:06: [mem 0xfed80000-0xfed8ffff] has been reserved
-[    0.270567] system 00:06: [mem 0xfed61000-0xfed70fff] has been reserved
-[    0.270571] system 00:06: [mem 0xfec10000-0xfec10fff] has been reserved
-[    0.270576] system 00:06: [mem 0xfed00000-0xfed00fff] could not be reserved
-[    0.270580] system 00:06: [mem 0xff000000-0xffffffff] has been reserved
-[    0.270585] system 00:06: Plug and Play ACPI device, IDs PNP0c02 (active)
-[    0.270726] system 00:07: [mem 0x90000000-0xbfffffff] has been reserved
-[    0.270731] system 00:07: Plug and Play ACPI device, IDs PNP0c02 (active)
-[    0.270926] pnp: PnP ACPI: found 8 devices
-[    0.270928] ACPI: bus type PNP unregistered
-[    0.277812] pci 0000:00:03.0: PCI bridge to [bus 01]
-[    0.277818] pci 0000:00:03.0:   bridge window [io  0xe000-0xefff]
-[    0.277823] pci 0000:00:03.0:   bridge window [mem 0xfea00000-0xfeafffff]
-[    0.277828] pci 0000:00:03.0:   bridge window [mem 0xd0000000-0xdfffffff 64bit pref]
-[    0.277834] pci 0000:00:14.4: PCI bridge to [bus 02]
-[    0.277845] pci 0000:00:15.0: PCI bridge to [bus 03]
-[    0.277849] pci 0000:00:15.0:   bridge window [io  0xd000-0xdfff]
-[    0.277855] pci 0000:00:15.0:   bridge window [mem 0xfe900000-0xfe9fffff]
-[    0.277863] pci 0000:00:15.1: PCI bridge to [bus 04]
-[    0.277867] pci 0000:00:15.1:   bridge window [io  0xc000-0xcfff]
-[    0.277872] pci 0000:00:15.1:   bridge window [mem 0xfe800000-0xfe8fffff]
-[    0.277881] pci_bus 0000:00: resource 4 [io  0x0000-0x03af]
-[    0.277883] pci_bus 0000:00: resource 5 [io  0x03e0-0x0cf7]
-[    0.277884] pci_bus 0000:00: resource 6 [io  0x03b0-0x03df]
-[    0.277886] pci_bus 0000:00: resource 7 [io  0x0d00-0xffff]
-[    0.277888] pci_bus 0000:00: resource 8 [mem 0x000a0000-0x000bffff]
-[    0.277889] pci_bus 0000:00: resource 9 [mem 0x000c0000-0x000dffff]
-[    0.277891] pci_bus 0000:00: resource 10 [mem 0xc0000000-0xffffffff]
-[    0.277893] pci_bus 0000:01: resource 0 [io  0xe000-0xefff]
-[    0.277895] pci_bus 0000:01: resource 1 [mem 0xfea00000-0xfeafffff]
-[    0.277896] pci_bus 0000:01: resource 2 [mem 0xd0000000-0xdfffffff 64bit pref]
-[    0.277898] pci_bus 0000:02: resource 4 [io  0x0000-0x03af]
-[    0.277900] pci_bus 0000:02: resource 5 [io  0x03e0-0x0cf7]
-[    0.277901] pci_bus 0000:02: resource 6 [io  0x03b0-0x03df]
-[    0.277903] pci_bus 0000:02: resource 7 [io  0x0d00-0xffff]
-[    0.277904] pci_bus 0000:02: resource 8 [mem 0x000a0000-0x000bffff]
-[    0.277906] pci_bus 0000:02: resource 9 [mem 0x000c0000-0x000dffff]
-[    0.277907] pci_bus 0000:02: resource 10 [mem 0xc0000000-0xffffffff]
-[    0.277909] pci_bus 0000:03: resource 0 [io  0xd000-0xdfff]
-[    0.277910] pci_bus 0000:03: resource 1 [mem 0xfe900000-0xfe9fffff]
-[    0.277912] pci_bus 0000:04: resource 0 [io  0xc000-0xcfff]
-[    0.277914] pci_bus 0000:04: resource 1 [mem 0xfe800000-0xfe8fffff]
-[    0.277942] NET: Registered protocol family 2
-[    0.278203] TCP established hash table entries: 65536 (order: 7, 524288 bytes)
-[    0.278474] TCP bind hash table entries: 65536 (order: 8, 1048576 bytes)
-[    0.278745] TCP: Hash tables configured (established 65536 bind 65536)
-[    0.278788] TCP: reno registered
-[    0.278805] UDP hash table entries: 4096 (order: 5, 131072 bytes)
-[    0.278860] UDP-Lite hash table entries: 4096 (order: 5, 131072 bytes)
-[    0.278963] NET: Registered protocol family 1
-[    0.278983] pci 0000:00:01.0: Video device with shadowed ROM
-[    0.280240] pci 0000:03:00.0: set MSI_INTX_DISABLE_BUG flag
-[    0.280248] PCI: CLS 64 bytes, default 64
-[    0.280320] Unpacking initramfs...
-[    0.475444] Freeing initrd memory: 13324K (ffff88003dece000 - ffff88003ebd1000)
-[    0.475461] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
-[    0.475466] software IO TLB [mem 0x8603d000-0x8a03d000] (64MB) mapped at [ffff88008603d000-ffff88008a03cfff]
-[    0.475780] perf: AMD NB counters detected
-[    0.475808] LVT offset 0 assigned for vector 0x400
-[    0.475823] perf: AMD IBS detected (0x000000ff)
-[    0.476443] AVX version of gcm_enc/dec engaged.
-[    0.478967] alg: No test for __gcm-aes-aesni (__driver-gcm-aes-aesni)
-[    0.479485] futex hash table entries: 1024 (order: 4, 65536 bytes)
-[    0.479513] Initialise system trusted keyring
-[    0.479536] audit: initializing netlink subsys (disabled)
-[    0.479558] audit: type=2000 audit(1414610256.370:1): initialized
-[    0.480037] HugeTLB registered 2 MB page size, pre-allocated 0 pages
-[    0.482010] zbud: loaded
-[    0.482299] VFS: Disk quotas dquot_6.5.2
-[    0.482343] Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
-[    0.482790] msgmni has been set to 14333
-[    0.482856] Key type big_key registered
-[    0.482860] SELinux:  Registering netfilter hooks
-[    0.484087] alg: No test for stdrng (krng)
-[    0.484099] NET: Registered protocol family 38
-[    0.484107] Key type asymmetric registered
-[    0.484111] Asymmetric key parser 'x509' registered
-[    0.484159] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)
-[    0.484222] io scheduler noop registered
-[    0.484226] io scheduler deadline registered
-[    0.484298] io scheduler cfq registered (default)
-[    0.484577] pcieport 0000:00:03.0: irq 40 for MSI/MSI-X
-[    0.484908] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
-[    0.484951] pciehp 0000:00:03.0:pcie04: Slot #0 AttnBtn- AttnInd- PwrInd- PwrCtrl- MRL- Interlock- NoCompl+ LLActRep+
-[    0.485004] pciehp 0000:00:03.0:pcie04: service driver pciehp loaded
-[    0.485009] pciehp: PCI Express Hot Plug Controller Driver version: 0.4
-[    0.485080] efifb: probing for efifb
-[    0.485105] efifb: framebuffer at 0xc0000000, mapped to 0xffffc90010f00000, using 8100k, total 8100k
-[    0.485109] efifb: mode is 1920x1080x32, linelength=7680, pages=1
-[    0.485112] efifb: scrolling: redraw
-[    0.485115] efifb: Truecolor: size=8:8:8:8, shift=24:16:8:0
-[    0.489509] Console: switching to colour frame buffer device 240x67
-[    0.493488] fb0: EFI VGA frame buffer device
-[    0.500219] ACPI: AC Adapter [ADP1] (on-line)
-[    0.502447] input: Lid Switch as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A03:00/device:07/PNP0C09:00/PNP0C0D:00/input/input0
-[    0.509123] ACPI: Lid Switch [LID0]
-[    0.509194] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input1
-[    0.509227] ACPI: Power Button [PWRB]
-[    0.509305] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input2
-[    0.509336] ACPI: Power Button [PWRF]
-[    0.509439] ACPI: acpi_idle registered with cpuidle
-[    0.520652] thermal LNXTHERM:00: registered as thermal_zone0
-[    0.520675] ACPI: Thermal Zone [THRM] (63 C)
-[    0.520730] GHES: HEST is not enabled!
-[    0.520836] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-[    0.521514] Non-volatile memory driver v1.3
-[    0.521533] Linux agpgart interface v0.103
-[    0.521934] ahci 0000:00:11.0: version 3.0
-[    0.521940] ahci 0000:00:11.0: enabling device (0005 -> 0007)
-[    0.522136] ahci 0000:00:11.0: AHCI 0001.0300 32 slots 2 ports 3 Gbps 0xc impl SATA mode
-[    0.522168] ahci 0000:00:11.0: flags: 64bit ncq sntf ilck pm led clo pmp pio slum part
-[    0.522807] scsi0 : ahci
-[    0.522985] scsi1 : ahci
-[    0.523127] scsi2 : ahci
-[    0.523254] scsi3 : ahci
-[    0.523318] ata1: DUMMY
-[    0.523329] ata2: DUMMY
-[    0.523341] ata3: SATA max UDMA/133 abar m2048@0xfeb51000 port 0xfeb51200 irq 19
-[    0.523370] ata4: SATA max UDMA/133 abar m2048@0xfeb51000 port 0xfeb51280 irq 19
-[    0.523527] libphy: Fixed MDIO Bus: probed
-[    0.523628] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-[    0.523657] ehci-pci: EHCI PCI platform driver
-[    0.523802] QUIRK: Enable AMD PLL fix
-[    0.523819] ehci-pci 0000:00:12.2: EHCI Host Controller
-[    0.523891] ehci-pci 0000:00:12.2: new USB bus registered, assigned bus number 1
-[    0.523923] ehci-pci 0000:00:12.2: applying AMD SB700/SB800/Hudson-2/3 EHCI dummy qh workaround
-[    0.523963] ehci-pci 0000:00:12.2: debug port 1
-[    0.524017] ehci-pci 0000:00:12.2: irq 17, io mem 0xfeb4f000
-[    0.529350] ehci-pci 0000:00:12.2: USB 2.0 started, EHCI 1.00
-[    0.529456] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
-[    0.529483] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[    0.529511] usb usb1: Product: EHCI Host Controller
-[    0.530621] usb usb1: Manufacturer: Linux 3.16.6-203.fc20.x86_64 ehci_hcd
-[    0.531731] usb usb1: SerialNumber: 0000:00:12.2
-[    0.533012] hub 1-0:1.0: USB hub found
-[    0.534114] hub 1-0:1.0: 5 ports detected
-[    0.535571] ehci-pci 0000:00:13.2: EHCI Host Controller
-[    0.536743] ehci-pci 0000:00:13.2: new USB bus registered, assigned bus number 2
-[    0.537857] ehci-pci 0000:00:13.2: applying AMD SB700/SB800/Hudson-2/3 EHCI dummy qh workaround
-[    0.538991] ehci-pci 0000:00:13.2: debug port 1
-[    0.540137] ehci-pci 0000:00:13.2: irq 17, io mem 0xfeb4d000
-[    0.547308] ehci-pci 0000:00:13.2: USB 2.0 started, EHCI 1.00
-[    0.548491] usb usb2: New USB device found, idVendor=1d6b, idProduct=0002
-[    0.549593] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[    0.550715] usb usb2: Product: EHCI Host Controller
-[    0.551827] usb usb2: Manufacturer: Linux 3.16.6-203.fc20.x86_64 ehci_hcd
-[    0.552947] usb usb2: SerialNumber: 0000:00:13.2
-[    0.554236] hub 2-0:1.0: USB hub found
-[    0.555336] hub 2-0:1.0: 5 ports detected
-[    0.556600] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-[    0.557697] ohci-pci: OHCI PCI platform driver
-[    0.558936] ohci-pci 0000:00:12.0: OHCI PCI host controller
-[    0.560068] ohci-pci 0000:00:12.0: new USB bus registered, assigned bus number 3
-[    0.561178] ohci-pci 0000:00:12.0: irq 18, io mem 0xfeb50000
-[    0.617345] usb usb3: New USB device found, idVendor=1d6b, idProduct=0001
-[    0.618360] usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[    0.619350] usb usb3: Product: OHCI PCI host controller
-[    0.620333] usb usb3: Manufacturer: Linux 3.16.6-203.fc20.x86_64 ohci_hcd
-[    0.621325] usb usb3: SerialNumber: 0000:00:12.0
-[    0.622508] hub 3-0:1.0: USB hub found
-[    0.623549] hub 3-0:1.0: 5 ports detected
-[    0.624792] ohci-pci 0000:00:13.0: OHCI PCI host controller
-[    0.625854] ohci-pci 0000:00:13.0: new USB bus registered, assigned bus number 4
-[    0.626836] ohci-pci 0000:00:13.0: irq 18, io mem 0xfeb4e000
-[    0.676301] ACPI: Battery Slot [BAT1] (battery present)
-[    0.682275] usb usb4: New USB device found, idVendor=1d6b, idProduct=0001
-[    0.683224] usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[    0.684160] usb usb4: Product: OHCI PCI host controller
-[    0.685088] usb usb4: Manufacturer: Linux 3.16.6-203.fc20.x86_64 ohci_hcd
-[    0.686015] usb usb4: SerialNumber: 0000:00:13.0
-[    0.687157] hub 4-0:1.0: USB hub found
-[    0.688171] hub 4-0:1.0: 5 ports detected
-[    0.689258] uhci_hcd: USB Universal Host Controller Interface driver
-[    0.690383] xhci_hcd 0000:00:10.0: xHCI Host Controller
-[    0.691420] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 5
-[    0.692560] xhci_hcd 0000:00:10.0: irq 41 for MSI/MSI-X
-[    0.692565] xhci_hcd 0000:00:10.0: irq 42 for MSI/MSI-X
-[    0.692569] xhci_hcd 0000:00:10.0: irq 43 for MSI/MSI-X
-[    0.692573] xhci_hcd 0000:00:10.0: irq 44 for MSI/MSI-X
-[    0.692576] xhci_hcd 0000:00:10.0: irq 45 for MSI/MSI-X
-[    0.692675] usb usb5: New USB device found, idVendor=1d6b, idProduct=0002
-[    0.693621] usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[    0.694578] usb usb5: Product: xHCI Host Controller
-[    0.695538] usb usb5: Manufacturer: Linux 3.16.6-203.fc20.x86_64 xhci_hcd
-[    0.696517] usb usb5: SerialNumber: 0000:00:10.0
-[    0.697620] hub 5-0:1.0: USB hub found
-[    0.698687] hub 5-0:1.0: 2 ports detected
-[    0.699735] xhci_hcd 0000:00:10.0: xHCI Host Controller
-[    0.700807] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
-[    0.701843] usb usb6: New USB device found, idVendor=1d6b, idProduct=0003
-[    0.702819] usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[    0.703796] usb usb6: Product: xHCI Host Controller
-[    0.704764] usb usb6: Manufacturer: Linux 3.16.6-203.fc20.x86_64 xhci_hcd
-[    0.705737] usb usb6: SerialNumber: 0000:00:10.0
-[    0.706844] hub 6-0:1.0: USB hub found
-[    0.707907] hub 6-0:1.0: 2 ports detected
-[    0.709076] xhci_hcd 0000:00:10.1: xHCI Host Controller
-[    0.710190] xhci_hcd 0000:00:10.1: new USB bus registered, assigned bus number 7
-[    0.711353] xhci_hcd 0000:00:10.1: irq 46 for MSI/MSI-X
-[    0.711359] xhci_hcd 0000:00:10.1: irq 47 for MSI/MSI-X
-[    0.711363] xhci_hcd 0000:00:10.1: irq 48 for MSI/MSI-X
-[    0.711368] xhci_hcd 0000:00:10.1: irq 49 for MSI/MSI-X
-[    0.711371] xhci_hcd 0000:00:10.1: irq 50 for MSI/MSI-X
-[    0.711462] usb usb7: New USB device found, idVendor=1d6b, idProduct=0002
-[    0.712435] usb usb7: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[    0.713407] usb usb7: Product: xHCI Host Controller
-[    0.714377] usb usb7: Manufacturer: Linux 3.16.6-203.fc20.x86_64 xhci_hcd
-[    0.715361] usb usb7: SerialNumber: 0000:00:10.1
-[    0.716477] hub 7-0:1.0: USB hub found
-[    0.717544] hub 7-0:1.0: 2 ports detected
-[    0.718607] xhci_hcd 0000:00:10.1: xHCI Host Controller
-[    0.719674] xhci_hcd 0000:00:10.1: new USB bus registered, assigned bus number 8
-[    0.720722] usb usb8: New USB device found, idVendor=1d6b, idProduct=0003
-[    0.721706] usb usb8: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-[    0.722685] usb usb8: Product: xHCI Host Controller
-[    0.723661] usb usb8: Manufacturer: Linux 3.16.6-203.fc20.x86_64 xhci_hcd
-[    0.724642] usb usb8: SerialNumber: 0000:00:10.1
-[    0.725796] hub 8-0:1.0: USB hub found
-[    0.726866] hub 8-0:1.0: 2 ports detected
-[    0.728085] usbcore: registered new interface driver usbserial
-[    0.729166] usbcore: registered new interface driver usbserial_generic
-[    0.730139] usbserial: USB Serial support registered for generic
-[    0.731144] i8042: PNP: PS/2 Controller [PNP0303:PS2K,PNP0f13:PS2M] at 0x60,0x64 irq 1,12
-[    0.743853] serio: i8042 KBD port at 0x60,0x64 irq 1
-[    0.744913] serio: i8042 AUX port at 0x60,0x64 irq 12
-[    0.746172] mousedev: PS/2 mouse device common for all mice
-[    0.747608] rtc_cmos 00:01: RTC can wake from S4
-[    0.748821] rtc_cmos 00:01: rtc core: registered rtc_cmos as rtc0
-[    0.749905] rtc_cmos 00:01: alarms up to one month, y3k, 114 bytes nvram, hpet irqs
-[    0.751082] device-mapper: uevent: version 1.0.3
-[    0.752273] device-mapper: ioctl: 4.27.0-ioctl (2013-10-30) initialised: dm-devel@redhat.com
-[    0.753882] EFI Variables Facility v0.08 2004-May-17
-[    0.760701] hidraw: raw HID events driver (C) Jiri Kosina
-[    0.761878] usbcore: registered new interface driver usbhid
-[    0.762973] usbhid: USB HID core driver
-[    0.764034] drop_monitor: Initializing network drop monitor service
-[    0.765123] ip_tables: (C) 2000-2006 Netfilter Core Team
-[    0.766306] TCP: cubic registered
-[    0.767360] Initializing XFRM netlink socket
-[    0.767425] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input3
-[    0.769628] NET: Registered protocol family 10
-[    0.770862] mip6: Mobile IPv6
-[    0.771966] NET: Registered protocol family 17
-[    0.775767] Loading compiled-in X.509 certificates
-[    0.777707] Loaded X.509 cert 'Fedora kernel signing key: 02642c464f7245b989a1e346e277bb39f1c1fa2d'
-[    0.778857] registered taskstats version 1
-[    0.780351]   Magic number: 2:939:294
-[    0.781458] ata_device dev2.0: hash matches
-[    0.782479]  dev2.0: hash matches
-[    0.783506] misc hpet: hash matches
-[    0.784629] tty tty27: hash matches
-[    0.785756] rtc_cmos 00:01: setting system clock to 2014-10-29 19:17:36 UTC (1414610256)
-[    0.786944] PM: Hibernation image not present or could not be loaded.
-[    0.982956] ata3: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-[    0.984211] ata4: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[    0.986171] ata3.00: ATAPI: TSSTcorp DVDWBD SN-406AB, TM00, max UDMA/100
-[    0.987621] ata4.00: ATA-8: Hitachi HTS727575A9E364, JF4OA0D0, max UDMA/133
-[    0.988651] ata4.00: 1465149168 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
-[    0.991144] ata4.00: configured for UDMA/133
-[    0.992471] ata3.00: configured for UDMA/100
-[    0.999341] scsi 2:0:0:0: CD-ROM            TSSTcorp DVDWBD SN-406AB  TM00 PQ: 0 ANSI: 5
-[    1.020800] sr0: scsi3-mmc drive: 24x/24x writer dvd-ram cd/rw xa/form2 cdda tray
-[    1.021861] cdrom: Uniform CD-ROM driver Revision: 3.20
-[    1.023048] sr 2:0:0:0: Attached scsi CD-ROM sr0
-[    1.023137] sr 2:0:0:0: Attached scsi generic sg0 type 5
-[    1.024576] scsi 3:0:0:0: Direct-Access     ATA      Hitachi HTS72757 A0D0 PQ: 0 ANSI: 5
-[    1.026047] sd 3:0:0:0: [sda] 1465149168 512-byte logical blocks: (750 GB/698 GiB)
-[    1.026111] sd 3:0:0:0: Attached scsi generic sg1 type 0
-[    1.028221] sd 3:0:0:0: [sda] 4096-byte physical blocks
-[    1.029388] sd 3:0:0:0: [sda] Write Protect is off
-[    1.030423] sd 3:0:0:0: [sda] Mode Sense: 00 3a 00 00
-[    1.030436] sd 3:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-[    1.076098]  sda: sda1 sda2 sda3 sda4 sda5 sda6 sda7 sda8 sda9
-[    1.077935] sd 3:0:0:0: [sda] Attached SCSI disk
-[    1.080225] Freeing unused kernel memory: 1456K (ffffffff81d1c000 - ffffffff81e88000)
-[    1.081311] Write protecting the kernel read-only data: 12288k
-[    1.085883] Freeing unused kernel memory: 932K (ffff880002717000 - ffff880002800000)
-[    1.090469] Freeing unused kernel memory: 960K (ffff880002b10000 - ffff880002c00000)
-[    1.105045] systemd[1]: systemd 208 running in system mode. (+PAM +LIBWRAP +AUDIT +SELINUX +IMA +SYSVINIT +LIBCRYPTSETUP +GCRYPT +ACL +XZ)
-[    1.106398] systemd[1]: Running in initial RAM disk.
-[    1.111382] systemd[1]: Set hostname to <bunion-ii.julianfamily.org>.
-[    1.113177] random: systemd urandom read with 21 bits of entropy available
-[    1.147135] systemd[1]: Expecting device dev-mapper-fedora\x2droot.device...
-[    1.149798] systemd[1]: Starting -.slice.
-[    1.152634] systemd[1]: Created slice -.slice.
-[    1.153793] systemd[1]: Starting System Slice.
-[    1.156362] systemd[1]: Created slice System Slice.
-[    1.157592] systemd[1]: Starting Slices.
-[    1.160028] systemd[1]: Reached target Slices.
-[    1.161194] systemd[1]: Starting Timers.
-[    1.163566] systemd[1]: Reached target Timers.
-[    1.164781] systemd[1]: Starting Journal Socket.
-[    1.167235] systemd[1]: Listening on Journal Socket.
-[    1.168499] systemd[1]: Starting dracut cmdline hook...
-[    1.171460] systemd[1]: Started Load Kernel Modules.
-[    1.172688] systemd[1]: Starting Create list of required static device nodes for the current kernel...
-[    1.175665] systemd[1]: Starting Apply Kernel Variables...
-[    1.178759] systemd[1]: Starting Setup Virtual Console...
-[    1.181694] systemd[1]: Starting Journal Service...
-[    1.186456] systemd[1]: Started Journal Service.
-[    1.263094] systemd-udevd[217]: starting version 208
-[    1.316709] [drm] Initialized drm 1.1.0 20060810
-[    1.323610] pata_atiixp 0000:00:14.1: enabling device (0000 -> 0001)
-[    1.326484] scsi4 : pata_atiixp
-[    1.328077] scsi5 : pata_atiixp
-[    1.329610] ata5: PATA max UDMA/100 cmd 0x1f0 ctl 0x3f6 bmdma 0xf100 irq 14
-[    1.331061] ata6: PATA max UDMA/100 cmd 0x170 ctl 0x376 bmdma 0xf108 irq 15
-[    1.356865] [drm] radeon kernel modesetting enabled.
-[    1.358127] VGA switcheroo: detected switching method \_SB_.PCI0.VGA_.ATPX handle
-[    1.359378] checking generic (c0000000 7e9000) vs hw (c0000000 10000000)
-[    1.359380] fb: switching to radeondrmfb from EFI VGA
-[    1.360560] Console: switching to colour dummy device 80x25
-[    1.361120] [drm] initializing kernel modesetting (ARUBA 0x1002:0x990B 0x1462:0x10EF).
-[    1.361135] [drm] register mmio base: 0xFEB00000
-[    1.361138] [drm] register mmio size: 262144
-[    1.361144] [drm] ACPI VFCT contains a BIOS for 00:01.0 1002:990b, size 20480
-[    1.361155] ATOM BIOS: MSI_176K_Richland_APU
-[    1.361219] radeon 0000:00:01.0: VRAM: 768M 0x0000000000000000 - 0x000000002FFFFFFF (768M used)
-[    1.361224] radeon 0000:00:01.0: GTT: 1024M 0x0000000030000000 - 0x000000006FFFFFFF
-[    1.361228] [drm] Detected VRAM RAM=768M, BAR=256M
-[    1.361231] [drm] RAM width 32bits DDR
-[    1.361321] [TTM] Zone  kernel: Available graphics memory: 3671148 kiB
-[    1.361330] [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
-[    1.361333] [TTM] Initializing pool allocator
-[    1.361341] [TTM] Initializing DMA pool allocator
-[    1.361368] [drm] radeon: 768M of VRAM memory ready
-[    1.361371] [drm] radeon: 1024M of GTT memory ready.
-[    1.361393] [drm] Loading ARUBA Microcode
-[    1.361468] [drm] Internal thermal controller without fan control
-[    1.361654] [drm] radeon: dpm initialized
-[    1.361811] [drm] GART: num cpu pages 262144, num gpu pages 262144
-[    1.376318] [drm] PCIE GART of 1024M enabled (table at 0x0000000000276000).
-[    1.376495] radeon 0000:00:01.0: WB enabled
-[    1.376503] radeon 0000:00:01.0: fence driver on ring 0 use gpu addr 0x0000000030000c00 and cpu addr 0xffff88003e4b7c00
-[    1.377240] radeon 0000:00:01.0: fence driver on ring 5 use gpu addr 0x0000000000075a18 and cpu addr 0xffffc90011c35a18
-[    1.377247] radeon 0000:00:01.0: fence driver on ring 1 use gpu addr 0x0000000030000c04 and cpu addr 0xffff88003e4b7c04
-[    1.377254] radeon 0000:00:01.0: fence driver on ring 2 use gpu addr 0x0000000030000c08 and cpu addr 0xffff88003e4b7c08
-[    1.377261] radeon 0000:00:01.0: fence driver on ring 3 use gpu addr 0x0000000030000c0c and cpu addr 0xffff88003e4b7c0c
-[    1.377267] radeon 0000:00:01.0: fence driver on ring 4 use gpu addr 0x0000000030000c10 and cpu addr 0xffff88003e4b7c10
-[    1.377274] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-[    1.377277] [drm] Driver supports precise vblank timestamp query.
-[    1.377306] radeon 0000:00:01.0: irq 51 for MSI/MSI-X
-[    1.377320] radeon 0000:00:01.0: radeon: using MSI.
-[    1.377619] [drm] radeon: irq initialized.
-[    1.396998] [drm] ring test on 0 succeeded in 2 usecs
-[    1.397013] [drm] ring test on 3 succeeded in 2 usecs
-[    1.397022] [drm] ring test on 4 succeeded in 1 usecs
-[    1.453063] [drm] ring test on 5 succeeded in 1 usecs
-[    1.473069] [drm] UVD initialized successfully.
-[    1.474094] [drm] ib test on ring 0 succeeded in 0 usecs
-[    1.474647] [drm] ib test on ring 3 succeeded in 0 usecs
-[    1.475184] [drm] ib test on ring 4 succeeded in 1 usecs
-[    1.475409] tsc: Refined TSC clocksource calibration: 2495.337 MHz
-[    1.477496] usb 4-1: new full-speed USB device number 2 using ohci-pci
-[    1.496030] [drm] ib test on ring 5 succeeded
-[    1.518286] [drm] radeon atom DIG backlight initialized
-[    1.518295] [drm] Radeon Display Connectors
-[    1.518299] [drm] Connector 0:
-[    1.518302] [drm]   LVDS-1
-[    1.518305] [drm]   HPD1
-[    1.518308] [drm]   DDC: 0x6530 0x6530 0x6534 0x6534 0x6538 0x6538 0x653c 0x653c
-[    1.518313] [drm]   Encoders:
-[    1.518316] [drm]     LCD1: INTERNAL_UNIPHY2
-[    1.518319] [drm]     LCD1: TRAVIS
-[    1.518321] [drm] Connector 1:
-[    1.518324] [drm]   VGA-1
-[    1.518326] [drm]   HPD2
-[    1.518330] [drm]   DDC: 0x6540 0x6540 0x6544 0x6544 0x6548 0x6548 0x654c 0x654c
-[    1.518351] [drm]   Encoders:
-[    1.518354] [drm]     CRT1: INTERNAL_UNIPHY2
-[    1.518357] [drm]     CRT1: NUTMEG
-[    1.518360] [drm] Connector 2:
-[    1.518362] [drm]   DP-1
-[    1.518365] [drm]   HPD3
-[    1.518368] [drm]   DDC: 0x6550 0x6550 0x6554 0x6554 0x6558 0x6558 0x655c 0x655c
-[    1.518372] [drm]   Encoders:
-[    1.518375] [drm]     DFP1: INTERNAL_UNIPHY
-[    1.518378] [drm] Connector 3:
-[    1.518380] [drm]   HDMI-A-1
-[    1.518383] [drm]   HPD6
-[    1.518386] [drm]   DDC: 0x6580 0x6580 0x6584 0x6584 0x6588 0x6588 0x658c 0x658c
-[    1.518390] [drm]   Encoders:
-[    1.518393] [drm]     DFP2: INTERNAL_UNIPHY
-[    1.639494] usb 4-1: New USB device found, idVendor=13d3, idProduct=3394
-[    1.639505] usb 4-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-[    1.639511] usb 4-1: Product: RT Bluetooth Radio
-[    1.639515] usb 4-1: Manufacturer: Realtek
-[    1.639519] usb 4-1: SerialNumber: 00e04c000001
-[    1.674803] psmouse serio1: elantech: assuming hardware version 3 (with firmware version 0x250f01)
-[    1.698810] psmouse serio1: elantech: Synaptics capabilities query result 0x18, 0x17, 0x0b.
-[    1.777944] random: nonblocking pool is initialized
-[    1.788233] input: ETPS/2 Elantech Touchpad as /devices/platform/i8042/serio1/input/input5
-[    1.872246] usb 3-4: new full-speed USB device number 2 using ohci-pci
-[    2.023152] usb 3-4: New USB device found, idVendor=1770, idProduct=ff00
-[    2.023161] usb 3-4: New USB device strings: Mfr=1, Product=1, SerialNumber=1
-[    2.023166] usb 3-4: Product: MSI EPF USB
-[    2.023169] usb 3-4: Manufacturer: MSI EPF USB
-[    2.023172] usb 3-4: SerialNumber: MSI EPF USB
-[    2.031440] hid-generic 0003:1770:FF00.0001: hiddev0,hidraw0: USB HID v1.10 Device [MSI EPF USB MSI EPF USB] on usb-0000:00:12.0-4/input0
-[    2.038796] [drm] fb mappable at 0xC047A000
-[    2.038804] [drm] vram apper at 0xC0000000
-[    2.038806] [drm] size 8294400
-[    2.038809] [drm] fb depth is 24
-[    2.038811] [drm]    pitch is 7680
-[    2.039016] fbcon: radeondrmfb (fb0) is primary device
-[    2.212701] Console: switching to colour frame buffer device 240x67
-[    2.217114] radeon 0000:00:01.0: fb0: radeondrmfb frame buffer device
-[    2.217114] radeon 0000:00:01.0: registered panic notifier
-[    2.224615] [drm] Initialized radeon 2.39.0 20080528 for 0000:00:01.0 on minor 0
-[    2.224776] radeon 0000:01:00.0: enabling device (0000 -> 0003)
-[    2.225049] [drm] initializing kernel modesetting (PITCAIRN 0x1002:0x6801 0x1462:0x10F1).
-[    2.225102] [drm] register mmio base: 0xFEA00000
-[    2.225125] [drm] register mmio size: 262144
-[    2.225148] vga_switcheroo: enabled
-[    2.225284] ATPX version 1, functions 0x00000003
-[    2.474809] Switched to clocksource tsc
-[    3.135241] ACPI Error: Field [TEMP] at 524288 exceeds Buffer [TVGA] size 512000 (bits) (20140424/dsopcode-236)
-[    3.135295] ACPI Error: Method parse/execution failed [\_SB_.PCI0.VGA_.ATRM] (Node ffff880236c35ca8), AE_AML_BUFFER_LIMIT (20140424/psparse-536)
-[    3.135359] failed to evaluate ATRM got AE_AML_BUFFER_LIMIT
-[    3.135385] ATOM BIOS: MSI
-[    3.135424] [drm] GPU not posted. posting now...
-[    3.139750] [drm] Probable bad vram size: 0x03800800
-[    3.139772] radeon 0000:01:00.0: VRAM: 2048M 0x0000000000000000 - 0x000000007FFFFFFF (2048M used)
-[    3.139803] radeon 0000:01:00.0: GTT: 1024M 0x0000000080000000 - 0x00000000BFFFFFFF
-[    3.139830] [drm] Detected VRAM RAM=2048M, BAR=256M
-[    3.139847] [drm] RAM width 256bits DDR
-[    3.139877] [drm] radeon: 2048M of VRAM memory ready
-[    3.139910] [drm] radeon: 1024M of GTT memory ready.
-[    3.139950] [drm] Loading PITCAIRN Microcode
-[    3.140118] [drm] radeon/PITCAIRN_mc2.bin: 31100 bytes
-[    3.140180] [drm] Internal thermal controller without fan control
-[    3.140295] [drm] probing gen 2 caps for device 1022:1413 = 700d01/6
-[    3.147369] [drm] radeon: dpm initialized
-[    3.147402] [drm] GART: num cpu pages 262144, num gpu pages 262144
-[    3.149179] [drm] probing gen 2 caps for device 1022:1413 = 700d01/6
-[    3.149212] [drm] enabling PCIE gen 2 link speeds, disable with radeon.pcie_gen2=0
-[    3.479837] [drm] PCIE GART of 1024M enabled (table at 0x0000000000276000).
-[    3.480025] radeon 0000:01:00.0: WB enabled
-[    3.480045] radeon 0000:01:00.0: fence driver on ring 0 use gpu addr 0x0000000080000c00 and cpu addr 0xffff880230667c00
-[    3.480084] radeon 0000:01:00.0: fence driver on ring 1 use gpu addr 0x0000000080000c04 and cpu addr 0xffff880230667c04
-[    3.480124] radeon 0000:01:00.0: fence driver on ring 2 use gpu addr 0x0000000080000c08 and cpu addr 0xffff880230667c08
-[    3.480163] radeon 0000:01:00.0: fence driver on ring 3 use gpu addr 0x0000000080000c0c and cpu addr 0xffff880230667c0c
-[    3.480203] radeon 0000:01:00.0: fence driver on ring 4 use gpu addr 0x0000000080000c10 and cpu addr 0xffff880230667c10
-[    3.481813] radeon 0000:01:00.0: fence driver on ring 5 use gpu addr 0x0000000000075a18 and cpu addr 0xffffc90012735a18
-[    3.481850] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-[    3.481873] [drm] Driver supports precise vblank timestamp query.
-[    3.481917] radeon 0000:01:00.0: irq 52 for MSI/MSI-X
-[    3.481931] radeon 0000:01:00.0: radeon: using MSI.
-[    3.483141] [drm] radeon: irq initialized.
-[    3.885461] [drm:r600_ring_test] *ERROR* radeon: ring 0 test failed (scratch(0x850C)=0xCAFEDEAD)
-[    3.886629] radeon 0000:01:00.0: disabling GPU acceleration
-[    4.087951] [drm] Radeon Display Connectors
-[    4.089172] [drm] Connector 0:
-[    4.090396] [drm]   VGA-2
-[    4.091608] [drm]   DDC: 0x65c0 0x65c0 0x65c4 0x65c4 0x65c8 0x65c8 0x65cc 0x65cc
-[    4.092824] [drm]   Encoders:
-[    4.094029] [drm]     CRT1: INTERNAL_KLDSCP_DAC1
-[    4.125465] radeon 0000:01:00.0: No connectors reported connected with modes
-[    4.126601] [drm] Cannot find any crtc or sizes - going 1024x768
-[    4.129953] [drm] fb mappable at 0xD0477000
-[    4.131084] [drm] vram apper at 0xD0000000
-[    4.132287] [drm] size 3145728
-[    4.133466] [drm] fb depth is 24
-[    4.134649] [drm]    pitch is 4096
-[    4.135939] radeon 0000:01:00.0: fb1: radeondrmfb frame buffer device
-[    4.140502] [drm] Initialized radeon 2.39.0 20080528 for 0000:01:00.0 on minor 1
-[    5.396153] PM: Starting manual resume from disk
-[    5.397352] PM: Hibernation image partition 253:1 present
-[    5.397354] PM: Looking for hibernation image.
-[    5.397545] PM: Image not found (code -22)
-[    5.397547] PM: Hibernation image not present or could not be loaded.
-[    5.526506] EXT4-fs (dm-0): mounted filesystem with ordered data mode. Opts: (null)
-[    5.740004] systemd-journald[142]: Received SIGTERM
-[    6.494345] audit: type=1404 audit(1414610262.212:2): enforcing=1 old_enforcing=0 auid=4294967295 ses=4294967295
-[    6.606280] SELinux: 2048 avtab hash slots, 101275 rules.
-[    6.624814] SELinux: 2048 avtab hash slots, 101275 rules.
-[    6.656829] SELinux:  8 users, 86 roles, 4853 types, 288 bools, 1 sens, 1024 cats
-[    6.656833] SELinux:  83 classes, 101275 rules
-[    6.662517] SELinux:  Permission audit_read in class capability2 not defined in policy.
-[    6.663629] SELinux: the above unknown classes and permissions will be allowed
-[    6.664703] SELinux:  Completing initialization.
-[    6.664704] SELinux:  Setting up existing superblocks.
-[    6.664712] SELinux: initialized (dev rootfs, type rootfs), uses genfs_contexts
-[    6.664722] SELinux: initialized (dev bdev, type bdev), uses genfs_contexts
-[    6.664728] SELinux: initialized (dev proc, type proc), uses genfs_contexts
-[    6.664765] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
-[    6.664857] SELinux: initialized (dev devtmpfs, type devtmpfs), uses transition SIDs
-[    6.666061] SELinux: initialized (dev debugfs, type debugfs), uses genfs_contexts
-[    6.667466] SELinux: initialized (dev sockfs, type sockfs), uses task SIDs
-[    6.667469] SELinux: initialized (dev pipefs, type pipefs), uses task SIDs
-[    6.667474] SELinux: initialized (dev anon_inodefs, type anon_inodefs), uses genfs_contexts
-[    6.667476] SELinux: initialized (dev aio, type aio), not configured for labeling
-[    6.667479] SELinux: initialized (dev devpts, type devpts), uses transition SIDs
-[    6.667497] SELinux: initialized (dev hugetlbfs, type hugetlbfs), uses transition SIDs
-[    6.667504] SELinux: initialized (dev mqueue, type mqueue), uses transition SIDs
-[    6.667512] SELinux: initialized (dev selinuxfs, type selinuxfs), uses genfs_contexts
-[    6.667527] SELinux: initialized (dev sysfs, type sysfs), uses genfs_contexts
-[    6.668042] SELinux: initialized (dev securityfs, type securityfs), uses genfs_contexts
-[    6.668044] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
-[    6.668052] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
-[    6.668189] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
-[    6.668242] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668249] SELinux: initialized (dev pstore, type pstore), uses genfs_contexts
-[    6.668252] SELinux: initialized (dev efivarfs, type efivarfs), uses genfs_contexts
-[    6.668272] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668274] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668276] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668285] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668289] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668291] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668292] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668302] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668304] SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
-[    6.668307] SELinux: initialized (dev configfs, type configfs), uses genfs_contexts
-[    6.668309] SELinux: initialized (dev drm, type drm), not configured for labeling
-[    6.668316] SELinux: initialized (dev dm-0, type ext4), uses xattr
-[    6.678900] audit: type=1403 audit(1414610262.397:3): policy loaded auid=4294967295 ses=4294967295
-[    6.694110] systemd[1]: Successfully loaded SELinux policy in 231.153ms.
-[    6.840437] systemd[1]: RTC configured in localtime, applying delta of -420 minutes to system time.
-[    6.876801] systemd[1]: Relabelled /dev and /run in 18.398ms.
-[    8.506157] SELinux: initialized (dev autofs, type autofs), uses genfs_contexts
-[    9.402503] SELinux: initialized (dev hugetlbfs, type hugetlbfs), uses transition SIDs
-[    9.402856] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
-[    9.696441] RPC: Registered named UNIX socket transport module.
-[    9.697597] RPC: Registered udp transport module.
-[    9.698790] RPC: Registered tcp transport module.
-[    9.699960] RPC: Registered tcp NFSv4.1 backchannel transport module.
-[    9.701481] SELinux: initialized (dev rpc_pipefs, type rpc_pipefs), uses genfs_contexts
-[    9.956508] Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
-[    9.958143] SELinux: initialized (dev nfsd, type nfsd), uses genfs_contexts
-[   10.424973] SELinux: initialized (dev binfmt_misc, type binfmt_misc), uses genfs_contexts
-[   10.470738] systemd-udevd[472]: starting version 208
-[   10.525065] EXT4-fs (dm-0): re-mounted. Opts: (null)
-[   11.717426] acpi-cpufreq: overriding BIOS provided _PSD data
-[   11.782509] piix4_smbus 0000:00:14.0: SMBus Host Controller at 0xb00, revision 0
-[   11.783796] piix4_smbus 0000:00:14.0: Auxiliary SMBus Host Controller at 0xb20
-[   11.895385] wmi: Mapper loaded
-[   11.901982] shpchp: Standard Hot Plug PCI Controller Driver version: 0.4
-[   11.926275] ACPI: Video Device [VGA] (multi-head: yes  rom: no  post: no)
-[   11.927928] input: Video Bus as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A03:00/device:18/LNXVIDEO:00/input/input6
-[   11.929748] ACPI: Video Device [VGA1] (multi-head: yes  rom: no  post: no)
-[   11.931368] input: Video Bus as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A03:00/LNXVIDEO:01/input/input7
-[   11.998756] microcode: CPU0: patch_level=0x06001119
-[   12.131298] microcode: CPU1: patch_level=0x06001119
-[   12.132982] microcode: CPU2: patch_level=0x06001119
-[   12.135950] microcode: CPU3: patch_level=0x06001119
-[   12.138941] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
-[   12.422383] sdhci: Secure Digital Host Controller Interface driver
-[   12.425010] sdhci: Copyright(c) Pierre Ossman
-[   12.500022] sdhci-pci 0000:00:14.7: SDHCI controller found [1022:7806] (rev 0)
-[   12.502627] sdhci-pci 0000:00:14.7: enabling device (0000 -> 0002)
-[   12.505400] mmc0: no vqmmc regulator found
-[   12.506916] mmc0: no vmmc regulator found
-[   12.508490] mmc0: SDHCI controller on PCI [0000:00:14.7] using ADMA
-[   12.513886] alg: No test for crc32 (crc32-pclmul)
-[   12.602296] cfg80211: Calling CRDA to update world regulatory domain
-[   12.641348] Bluetooth: Core ver 2.19
-[   12.644357] NET: Registered protocol family 31
-[   12.645677] Bluetooth: HCI device and connection manager initialized
-[   12.646931] Bluetooth: HCI socket layer initialized
-[   12.648207] Bluetooth: L2CAP socket layer initialized
-[   12.649751] Bluetooth: SCO socket layer initialized
-[   12.756997] alx 0000:03:00.0 eth0: Qualcomm Atheros AR816x/AR817x Ethernet [8c:89:a5:0b:c8:be]
-[   12.831963] input: MSI WMI hotkeys as /devices/virtual/input/input8
-[   12.942625] usbcore: registered new interface driver btusb
-[   13.144790] cfg80211: World regulatory domain updated:
-[   13.146756] cfg80211:  DFS Master region: unset
-[   13.146783] cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp), (dfs_cac_time)
-[   13.151270] cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (N/A, 2000 mBm), (N/A)
-[   13.153695] cfg80211:   (2457000 KHz - 2482000 KHz @ 40000 KHz), (N/A, 2000 mBm), (N/A)
-[   13.156083] cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (N/A, 2000 mBm), (N/A)
-[   13.158115] cfg80211:   (5170000 KHz - 5250000 KHz @ 160000 KHz), (N/A, 2000 mBm), (N/A)
-[   13.160097] cfg80211:   (5250000 KHz - 5330000 KHz @ 160000 KHz), (N/A, 2000 mBm), (0 s)
-[   13.162070] cfg80211:   (5490000 KHz - 5730000 KHz @ 160000 KHz), (N/A, 2000 mBm), (0 s)
-[   13.164109] cfg80211:   (5735000 KHz - 5835000 KHz @ 80000 KHz), (N/A, 2000 mBm), (N/A)
-[   13.164159] kvm: Nested Virtualization enabled
-[   13.164162] kvm: Nested Paging enabled
-[   13.169868] cfg80211:   (57240000 KHz - 63720000 KHz @ 2160000 KHz), (N/A, 0 mBm), (N/A)
-[   13.245086] snd_hda_intel 0000:00:01.1: enabling device (0000 -> 0002)
-[   13.248348] snd_hda_intel 0000:00:01.1: Force to non-snoop mode
-[   13.251287] snd_hda_intel 0000:00:01.1: irq 52 for MSI/MSI-X
-[   13.268831] rtl8723ae 0000:04:00.0: enabling device (0000 -> 0003)
-[   13.286771] rtl8723ae: Using firmware rtlwifi/rtl8723fw_B.bin
-[   13.384424] sound hdaudioC1D0: autoconfig: line_outs=1 (0x17/0x0/0x0/0x0/0x0) type:line
-[   13.387431] sound hdaudioC1D0:    speaker_outs=1 (0x1b/0x0/0x0/0x0/0x0)
-[   13.390320] sound hdaudioC1D0:    hp_outs=1 (0x14/0x0/0x0/0x0/0x0)
-[   13.393186] sound hdaudioC1D0:    mono: mono_out=0x0
-[   13.396029] sound hdaudioC1D0:    dig-out=0x1e/0x0
-[   13.398870] sound hdaudioC1D0:    inputs:
-[   13.403029] sound hdaudioC1D0:      Mic=0x18
-[   13.406238] sound hdaudioC1D0:      Internal Mic=0x12
-[   13.409252] sound hdaudioC1D0:      Line=0x1a
-[   13.421024] input: HDA ATI HDMI HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:01.1/sound/card0/input9
-[   13.424194] input: HDA ATI HDMI HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:01.1/sound/card0/input10
-[   13.436627] input: HD-Audio Generic Mic as /devices/pci0000:00/0000:00:14.2/sound/card1/input11
-[   13.440100] input: HD-Audio Generic Line as /devices/pci0000:00/0000:00:14.2/sound/card1/input12
-[   13.442815] input: HD-Audio Generic Line Out as /devices/pci0000:00/0000:00:14.2/sound/card1/input13
-[   13.444279] input: HD-Audio Generic Headphone as /devices/pci0000:00/0000:00:14.2/sound/card1/input14
-[   13.680896] ieee80211 phy0: Selected rate control algorithm 'rtl_rc'
-[   13.681166] rtlwifi: wireless switch is on
-[   13.809843] systemd-udevd[508]: renamed network interface wlan0 to wlp4s0
-[   13.947413] Adding 7356412k swap on /dev/mapper/fedora-swap.  Priority:-1 extents:1 across:7356412k FS
-[   14.745946] systemd-udevd[495]: renamed network interface eth0 to enp3s0
-[   15.372275] EXT4-fs (sda6): mounted filesystem with ordered data mode. Opts: (null)
-[   15.527489] SELinux: initialized (dev sda6, type ext4), uses xattr
-[   15.678058] FAT-fs (sda2): Volume was not properly unmounted. Some data may be corrupt. Please run fsck.
-[   15.681109] SELinux: initialized (dev sda2, type vfat), uses genfs_contexts
-[   15.757794] EXT4-fs (dm-2): mounted filesystem with ordered data mode. Opts: (null)
-[   15.760858] SELinux: initialized (dev dm-2, type ext4), uses xattr
-[   15.778434] systemd-journald[450]: Received request to flush runtime journal from PID 1
-[   16.386401] audit: type=1305 audit(1414635472.114:4): audit_pid=673 old=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:auditd_t:s0 res=1
-[   17.643202] systemd[1]: Received SIGRTMIN+21 from PID 243 (plymouthd).
-[   17.683114] systemd[1]: Unit rngd.service entered failed state.
-[   17.736042] systemd[1]: Unit mcelog.service entered failed state.
-[   23.469899] Bluetooth: BNEP (Ethernet Emulation) ver 1.3
-[   23.469968] Bluetooth: BNEP filters: protocol multicast
-[   23.470032] Bluetooth: BNEP socket layer initialized
-[   26.355209] nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
-[   26.822465] ip6_tables: (C) 2000-2006 Netfilter Core Team
-[   28.902325] Ebtables v2.0 registered
-[   29.024248] Bridge firewalling registered
-[   33.490512] alx 0000:03:00.0: irq 53 for MSI/MSI-X
-
-
+IwojIEF1dG9tYXRpY2FsbHkgZ2VuZXJhdGVkIGZpbGU7IERPIE5PVCBFRElULgojIExpbnV4L3g4
+NiAzLjE4LjAtcmMyIEtlcm5lbCBDb25maWd1cmF0aW9uCiMKIyBDT05GSUdfNjRCSVQgaXMgbm90
+IHNldApDT05GSUdfWDg2XzMyPXkKQ09ORklHX1g4Nj15CkNPTkZJR19JTlNUUlVDVElPTl9ERUNP
+REVSPXkKQ09ORklHX09VVFBVVF9GT1JNQVQ9ImVsZjMyLWkzODYiCkNPTkZJR19BUkNIX0RFRkNP
+TkZJRz0iYXJjaC94ODYvY29uZmlncy9pMzg2X2RlZmNvbmZpZyIKQ09ORklHX0xPQ0tERVBfU1VQ
+UE9SVD15CkNPTkZJR19TVEFDS1RSQUNFX1NVUFBPUlQ9eQpDT05GSUdfSEFWRV9MQVRFTkNZVE9Q
+X1NVUFBPUlQ9eQpDT05GSUdfTU1VPXkKQ09ORklHX05FRURfU0dfRE1BX0xFTkdUSD15CkNPTkZJ
+R19HRU5FUklDX0lTQV9ETUE9eQpDT05GSUdfR0VORVJJQ19IV0VJR0hUPXkKQ09ORklHX0FSQ0hf
+TUFZX0hBVkVfUENfRkRDPXkKQ09ORklHX1JXU0VNX1hDSEdBRERfQUxHT1JJVEhNPXkKQ09ORklH
+X0dFTkVSSUNfQ0FMSUJSQVRFX0RFTEFZPXkKQ09ORklHX0FSQ0hfSEFTX0NQVV9SRUxBWD15CkNP
+TkZJR19BUkNIX0hBU19DQUNIRV9MSU5FX1NJWkU9eQpDT05GSUdfSEFWRV9TRVRVUF9QRVJfQ1BV
+X0FSRUE9eQpDT05GSUdfTkVFRF9QRVJfQ1BVX0VNQkVEX0ZJUlNUX0NIVU5LPXkKQ09ORklHX05F
+RURfUEVSX0NQVV9QQUdFX0ZJUlNUX0NIVU5LPXkKQ09ORklHX0FSQ0hfSElCRVJOQVRJT05fUE9T
+U0lCTEU9eQpDT05GSUdfQVJDSF9TVVNQRU5EX1BPU1NJQkxFPXkKQ09ORklHX0FSQ0hfV0FOVF9I
+VUdFX1BNRF9TSEFSRT15CkNPTkZJR19BUkNIX1dBTlRfR0VORVJBTF9IVUdFVExCPXkKIyBDT05G
+SUdfWk9ORV9ETUEzMiBpcyBub3Qgc2V0CiMgQ09ORklHX0FVRElUX0FSQ0ggaXMgbm90IHNldApD
+T05GSUdfQVJDSF9TVVBQT1JUU19PUFRJTUlaRURfSU5MSU5JTkc9eQpDT05GSUdfQVJDSF9TVVBQ
+T1JUU19ERUJVR19QQUdFQUxMT0M9eQpDT05GSUdfWDg2XzMyX1NNUD15CkNPTkZJR19YODZfSFQ9
+eQpDT05GSUdfWDg2XzMyX0xBWllfR1M9eQpDT05GSUdfQVJDSF9IV0VJR0hUX0NGTEFHUz0iLWZj
+YWxsLXNhdmVkLWVjeCAtZmNhbGwtc2F2ZWQtZWR4IgpDT05GSUdfQVJDSF9TVVBQT1JUU19VUFJP
+QkVTPXkKQ09ORklHX0ZJWF9FQVJMWUNPTl9NRU09eQpDT05GSUdfREVGQ09ORklHX0xJU1Q9Ii9s
+aWIvbW9kdWxlcy8kVU5BTUVfUkVMRUFTRS8uY29uZmlnIgpDT05GSUdfSVJRX1dPUks9eQpDT05G
+SUdfQlVJTERUSU1FX0VYVEFCTEVfU09SVD15CgojCiMgR2VuZXJhbCBzZXR1cAojCkNPTkZJR19J
+TklUX0VOVl9BUkdfTElNSVQ9MzIKQ09ORklHX0NST1NTX0NPTVBJTEU9IiIKQ09ORklHX0NPTVBJ
+TEVfVEVTVD15CkNPTkZJR19MT0NBTFZFUlNJT049IiIKIyBDT05GSUdfTE9DQUxWRVJTSU9OX0FV
+VE8gaXMgbm90IHNldApDT05GSUdfSEFWRV9LRVJORUxfR1pJUD15CkNPTkZJR19IQVZFX0tFUk5F
+TF9CWklQMj15CkNPTkZJR19IQVZFX0tFUk5FTF9MWk1BPXkKQ09ORklHX0hBVkVfS0VSTkVMX1ha
+PXkKQ09ORklHX0hBVkVfS0VSTkVMX0xaTz15CkNPTkZJR19IQVZFX0tFUk5FTF9MWjQ9eQpDT05G
+SUdfS0VSTkVMX0daSVA9eQojIENPTkZJR19LRVJORUxfQlpJUDIgaXMgbm90IHNldAojIENPTkZJ
+R19LRVJORUxfTFpNQSBpcyBub3Qgc2V0CiMgQ09ORklHX0tFUk5FTF9YWiBpcyBub3Qgc2V0CiMg
+Q09ORklHX0tFUk5FTF9MWk8gaXMgbm90IHNldAojIENPTkZJR19LRVJORUxfTFo0IGlzIG5vdCBz
+ZXQKQ09ORklHX0RFRkFVTFRfSE9TVE5BTUU9Iihub25lKSIKIyBDT05GSUdfU1lTVklQQyBpcyBu
+b3Qgc2V0CkNPTkZJR19DUk9TU19NRU1PUllfQVRUQUNIPXkKQ09ORklHX0ZIQU5ETEU9eQojIENP
+TkZJR19VU0VMSUIgaXMgbm90IHNldApDT05GSUdfSEFWRV9BUkNIX0FVRElUU1lTQ0FMTD15Cgoj
+CiMgSVJRIHN1YnN5c3RlbQojCkNPTkZJR19HRU5FUklDX0lSUV9QUk9CRT15CkNPTkZJR19HRU5F
+UklDX0lSUV9TSE9XPXkKQ09ORklHX0dFTkVSSUNfSVJRX0xFR0FDWV9BTExPQ19IV0lSUT15CkNP
+TkZJR19HRU5FUklDX1BFTkRJTkdfSVJRPXkKQ09ORklHX0lSUV9ET01BSU49eQpDT05GSUdfSVJR
+X0RPTUFJTl9ERUJVRz15CkNPTkZJR19JUlFfRk9SQ0VEX1RIUkVBRElORz15CkNPTkZJR19TUEFS
+U0VfSVJRPXkKQ09ORklHX0NMT0NLU09VUkNFX1dBVENIRE9HPXkKQ09ORklHX0FSQ0hfQ0xPQ0tT
+T1VSQ0VfREFUQT15CkNPTkZJR19DTE9DS1NPVVJDRV9WQUxJREFURV9MQVNUX0NZQ0xFPXkKQ09O
+RklHX0dFTkVSSUNfVElNRV9WU1lTQ0FMTD15CkNPTkZJR19HRU5FUklDX0NMT0NLRVZFTlRTPXkK
+Q09ORklHX0dFTkVSSUNfQ0xPQ0tFVkVOVFNfQlVJTEQ9eQpDT05GSUdfR0VORVJJQ19DTE9DS0VW
+RU5UU19CUk9BRENBU1Q9eQpDT05GSUdfR0VORVJJQ19DTE9DS0VWRU5UU19NSU5fQURKVVNUPXkK
+Q09ORklHX0dFTkVSSUNfQ01PU19VUERBVEU9eQoKIwojIFRpbWVycyBzdWJzeXN0ZW0KIwpDT05G
+SUdfVElDS19PTkVTSE9UPXkKQ09ORklHX0haX1BFUklPRElDPXkKIyBDT05GSUdfTk9fSFpfSURM
+RSBpcyBub3Qgc2V0CiMgQ09ORklHX05PX0haIGlzIG5vdCBzZXQKQ09ORklHX0hJR0hfUkVTX1RJ
+TUVSUz15CgojCiMgQ1BVL1Rhc2sgdGltZSBhbmQgc3RhdHMgYWNjb3VudGluZwojCkNPTkZJR19U
+SUNLX0NQVV9BQ0NPVU5USU5HPXkKIyBDT05GSUdfSVJRX1RJTUVfQUNDT1VOVElORyBpcyBub3Qg
+c2V0CiMgQ09ORklHX0JTRF9QUk9DRVNTX0FDQ1QgaXMgbm90IHNldAoKIwojIFJDVSBTdWJzeXN0
+ZW0KIwpDT05GSUdfVFJFRV9SQ1U9eQpDT05GSUdfVEFTS1NfUkNVPXkKQ09ORklHX1JDVV9TVEFM
+TF9DT01NT049eQpDT05GSUdfUkNVX0ZBTk9VVD0zMgpDT05GSUdfUkNVX0ZBTk9VVF9MRUFGPTE2
+CiMgQ09ORklHX1JDVV9GQU5PVVRfRVhBQ1QgaXMgbm90IHNldApDT05GSUdfVFJFRV9SQ1VfVFJB
+Q0U9eQojIENPTkZJR19SQ1VfTk9DQl9DUFUgaXMgbm90IHNldApDT05GSUdfQlVJTERfQklOMkM9
+eQpDT05GSUdfSUtDT05GSUc9eQpDT05GSUdfTE9HX0JVRl9TSElGVD0xNwpDT05GSUdfTE9HX0NQ
+VV9NQVhfQlVGX1NISUZUPTEyCkNPTkZJR19IQVZFX1VOU1RBQkxFX1NDSEVEX0NMT0NLPXkKIyBD
+T05GSUdfQ0dST1VQUyBpcyBub3Qgc2V0CiMgQ09ORklHX0NIRUNLUE9JTlRfUkVTVE9SRSBpcyBu
+b3Qgc2V0CiMgQ09ORklHX05BTUVTUEFDRVMgaXMgbm90IHNldAojIENPTkZJR19TQ0hFRF9BVVRP
+R1JPVVAgaXMgbm90IHNldApDT05GSUdfU1lTRlNfREVQUkVDQVRFRD15CkNPTkZJR19TWVNGU19E
+RVBSRUNBVEVEX1YyPXkKQ09ORklHX1JFTEFZPXkKQ09ORklHX0JMS19ERVZfSU5JVFJEPXkKQ09O
+RklHX0lOSVRSQU1GU19TT1VSQ0U9IiIKIyBDT05GSUdfUkRfR1pJUCBpcyBub3Qgc2V0CkNPTkZJ
+R19SRF9CWklQMj15CkNPTkZJR19SRF9MWk1BPXkKQ09ORklHX1JEX1haPXkKQ09ORklHX1JEX0xa
+Tz15CiMgQ09ORklHX1JEX0xaNCBpcyBub3Qgc2V0CkNPTkZJR19DQ19PUFRJTUlaRV9GT1JfU0la
+RT15CiMgQ09ORklHX0xUT19NRU5VIGlzIG5vdCBzZXQKQ09ORklHX0FOT05fSU5PREVTPXkKQ09O
+RklHX0hBVkVfVUlEMTY9eQpDT05GSUdfU1lTQ1RMX0VYQ0VQVElPTl9UUkFDRT15CkNPTkZJR19I
+QVZFX1BDU1BLUl9QTEFURk9STT15CkNPTkZJR19FWFBFUlQ9eQpDT05GSUdfVUlEMTY9eQojIENP
+TkZJR19TR0VUTUFTS19TWVNDQUxMIGlzIG5vdCBzZXQKQ09ORklHX1NZU0ZTX1NZU0NBTEw9eQpD
+T05GSUdfS0FMTFNZTVM9eQpDT05GSUdfS0FMTFNZTVNfQUxMPXkKQ09ORklHX1BSSU5USz15CiMg
+Q09ORklHX0JVRyBpcyBub3Qgc2V0CkNPTkZJR19QQ1NQS1JfUExBVEZPUk09eQpDT05GSUdfQkFT
+RV9GVUxMPXkKIyBDT05GSUdfRlVURVggaXMgbm90IHNldApDT05GSUdfRVBPTEw9eQpDT05GSUdf
+U0lHTkFMRkQ9eQojIENPTkZJR19USU1FUkZEIGlzIG5vdCBzZXQKIyBDT05GSUdfRVZFTlRGRCBp
+cyBub3Qgc2V0CiMgQ09ORklHX0JQRl9TWVNDQUxMIGlzIG5vdCBzZXQKIyBDT05GSUdfU0hNRU0g
+aXMgbm90IHNldAojIENPTkZJR19BSU8gaXMgbm90IHNldAojIENPTkZJR19BRFZJU0VfU1lTQ0FM
+TFMgaXMgbm90IHNldAojIENPTkZJR19FTUJFRERFRCBpcyBub3Qgc2V0CkNPTkZJR19IQVZFX1BF
+UkZfRVZFTlRTPXkKCiMKIyBLZXJuZWwgUGVyZm9ybWFuY2UgRXZlbnRzIEFuZCBDb3VudGVycwoj
+CkNPTkZJR19QRVJGX0VWRU5UUz15CiMgQ09ORklHX0RFQlVHX1BFUkZfVVNFX1ZNQUxMT0MgaXMg
+bm90IHNldApDT05GSUdfVk1fRVZFTlRfQ09VTlRFUlM9eQpDT05GSUdfU0xVQl9ERUJVRz15CkNP
+TkZJR19DT01QQVRfQlJLPXkKIyBDT05GSUdfU0xBQiBpcyBub3Qgc2V0CkNPTkZJR19TTFVCPXkK
+IyBDT05GSUdfU0xPQiBpcyBub3Qgc2V0CkNPTkZJR19TTFVCX0NQVV9QQVJUSUFMPXkKQ09ORklH
+X1NZU1RFTV9UUlVTVEVEX0tFWVJJTkc9eQojIENPTkZJR19QUk9GSUxJTkcgaXMgbm90IHNldApD
+T05GSUdfSEFWRV9PUFJPRklMRT15CkNPTkZJR19PUFJPRklMRV9OTUlfVElNRVI9eQojIENPTkZJ
+R19LUFJPQkVTIGlzIG5vdCBzZXQKIyBDT05GSUdfSlVNUF9MQUJFTCBpcyBub3Qgc2V0CiMgQ09O
+RklHX1VQUk9CRVMgaXMgbm90IHNldAojIENPTkZJR19IQVZFXzY0QklUX0FMSUdORURfQUNDRVNT
+IGlzIG5vdCBzZXQKQ09ORklHX0hBVkVfRUZGSUNJRU5UX1VOQUxJR05FRF9BQ0NFU1M9eQpDT05G
+SUdfQVJDSF9VU0VfQlVJTFRJTl9CU1dBUD15CkNPTkZJR19IQVZFX0lPUkVNQVBfUFJPVD15CkNP
+TkZJR19IQVZFX0tQUk9CRVM9eQpDT05GSUdfSEFWRV9LUkVUUFJPQkVTPXkKQ09ORklHX0hBVkVf
+T1BUUFJPQkVTPXkKQ09ORklHX0hBVkVfS1BST0JFU19PTl9GVFJBQ0U9eQpDT05GSUdfSEFWRV9B
+UkNIX1RSQUNFSE9PSz15CkNPTkZJR19IQVZFX0RNQV9BVFRSUz15CkNPTkZJR19IQVZFX0RNQV9D
+T05USUdVT1VTPXkKQ09ORklHX0dFTkVSSUNfU01QX0lETEVfVEhSRUFEPXkKQ09ORklHX0hBVkVf
+UkVHU19BTkRfU1RBQ0tfQUNDRVNTX0FQST15CkNPTkZJR19IQVZFX0RNQV9BUElfREVCVUc9eQpD
+T05GSUdfSEFWRV9IV19CUkVBS1BPSU5UPXkKQ09ORklHX0hBVkVfTUlYRURfQlJFQUtQT0lOVFNf
+UkVHUz15CkNPTkZJR19IQVZFX1VTRVJfUkVUVVJOX05PVElGSUVSPXkKQ09ORklHX0hBVkVfUEVS
+Rl9FVkVOVFNfTk1JPXkKQ09ORklHX0hBVkVfUEVSRl9SRUdTPXkKQ09ORklHX0hBVkVfUEVSRl9V
+U0VSX1NUQUNLX0RVTVA9eQpDT05GSUdfSEFWRV9BUkNIX0pVTVBfTEFCRUw9eQpDT05GSUdfQVJD
+SF9IQVZFX05NSV9TQUZFX0NNUFhDSEc9eQpDT05GSUdfSEFWRV9BTElHTkVEX1NUUlVDVF9QQUdF
+PXkKQ09ORklHX0hBVkVfQ01QWENIR19MT0NBTD15CkNPTkZJR19IQVZFX0NNUFhDSEdfRE9VQkxF
+PXkKQ09ORklHX0FSQ0hfV0FOVF9JUENfUEFSU0VfVkVSU0lPTj15CkNPTkZJR19IQVZFX0FSQ0hf
+U0VDQ09NUF9GSUxURVI9eQpDT05GSUdfSEFWRV9DQ19TVEFDS1BST1RFQ1RPUj15CiMgQ09ORklH
+X0NDX1NUQUNLUFJPVEVDVE9SIGlzIG5vdCBzZXQKQ09ORklHX0NDX1NUQUNLUFJPVEVDVE9SX05P
+TkU9eQojIENPTkZJR19DQ19TVEFDS1BST1RFQ1RPUl9SRUdVTEFSIGlzIG5vdCBzZXQKIyBDT05G
+SUdfQ0NfU1RBQ0tQUk9URUNUT1JfU1RST05HIGlzIG5vdCBzZXQKQ09ORklHX0hBVkVfSVJRX1RJ
+TUVfQUNDT1VOVElORz15CkNPTkZJR19IQVZFX0FSQ0hfVFJBTlNQQVJFTlRfSFVHRVBBR0U9eQpD
+T05GSUdfTU9EVUxFU19VU0VfRUxGX1JFTD15CkNPTkZJR19DTE9ORV9CQUNLV0FSRFM9eQpDT05G
+SUdfT0xEX1NJR1NVU1BFTkQzPXkKQ09ORklHX09MRF9TSUdBQ1RJT049eQoKIwojIEdDT1YtYmFz
+ZWQga2VybmVsIHByb2ZpbGluZwojCiMgQ09ORklHX0dDT1ZfS0VSTkVMIGlzIG5vdCBzZXQKQ09O
+RklHX0FSQ0hfSEFTX0dDT1ZfUFJPRklMRV9BTEw9eQpDT05GSUdfSEFWRV9HRU5FUklDX0RNQV9D
+T0hFUkVOVD15CkNPTkZJR19CQVNFX1NNQUxMPTAKQ09ORklHX01PRFVMRVM9eQojIENPTkZJR19N
+T0RVTEVfRk9SQ0VfTE9BRCBpcyBub3Qgc2V0CiMgQ09ORklHX01PRFVMRV9VTkxPQUQgaXMgbm90
+IHNldApDT05GSUdfTU9EVkVSU0lPTlM9eQpDT05GSUdfTU9EVUxFX1NSQ1ZFUlNJT05fQUxMPXkK
+Q09ORklHX01PRFVMRV9TSUc9eQojIENPTkZJR19NT0RVTEVfU0lHX0ZPUkNFIGlzIG5vdCBzZXQK
+Q09ORklHX01PRFVMRV9TSUdfQUxMPXkKQ09ORklHX01PRFVMRV9TSUdfU0hBMT15CiMgQ09ORklH
+X01PRFVMRV9TSUdfU0hBMjI0IGlzIG5vdCBzZXQKIyBDT05GSUdfTU9EVUxFX1NJR19TSEEyNTYg
+aXMgbm90IHNldAojIENPTkZJR19NT0RVTEVfU0lHX1NIQTM4NCBpcyBub3Qgc2V0CiMgQ09ORklH
+X01PRFVMRV9TSUdfU0hBNTEyIGlzIG5vdCBzZXQKQ09ORklHX01PRFVMRV9TSUdfSEFTSD0ic2hh
+MSIKIyBDT05GSUdfTU9EVUxFX0NPTVBSRVNTIGlzIG5vdCBzZXQKQ09ORklHX1NUT1BfTUFDSElO
+RT15CiMgQ09ORklHX0JMT0NLIGlzIG5vdCBzZXQKQ09ORklHX1BBREFUQT15CkNPTkZJR19BU04x
+PXkKQ09ORklHX1VOSU5MSU5FX1NQSU5fVU5MT0NLPXkKQ09ORklHX0FSQ0hfU1VQUE9SVFNfQVRP
+TUlDX1JNVz15CkNPTkZJR19SV1NFTV9TUElOX09OX09XTkVSPXkKQ09ORklHX0FSQ0hfVVNFX1FV
+RVVFX1JXTE9DSz15CkNPTkZJR19RVUVVRV9SV0xPQ0s9eQpDT05GSUdfRlJFRVpFUj15CgojCiMg
+UHJvY2Vzc29yIHR5cGUgYW5kIGZlYXR1cmVzCiMKIyBDT05GSUdfWk9ORV9ETUEgaXMgbm90IHNl
+dApDT05GSUdfU01QPXkKQ09ORklHX1g4Nl9GRUFUVVJFX05BTUVTPXkKIyBDT05GSUdfWDg2X01Q
+UEFSU0UgaXMgbm90IHNldAojIENPTkZJR19YODZfQklHU01QIGlzIG5vdCBzZXQKQ09ORklHX1g4
+Nl9FWFRFTkRFRF9QTEFURk9STT15CiMgQ09ORklHX1g4Nl9HT0xERklTSCBpcyBub3Qgc2V0CkNP
+TkZJR19YODZfUkRDMzIxWD15CiMgQ09ORklHX1g4Nl8zMl9OT05fU1RBTkRBUkQgaXMgbm90IHNl
+dAojIENPTkZJR19YODZfMzJfSVJJUyBpcyBub3Qgc2V0CkNPTkZJR19TQ0hFRF9PTUlUX0ZSQU1F
+X1BPSU5URVI9eQojIENPTkZJR19IWVBFUlZJU09SX0dVRVNUIGlzIG5vdCBzZXQKQ09ORklHX05P
+X0JPT1RNRU09eQpDT05GSUdfTUVNVEVTVD15CiMgQ09ORklHX000ODYgaXMgbm90IHNldAojIENP
+TkZJR19NNTg2IGlzIG5vdCBzZXQKIyBDT05GSUdfTTU4NlRTQyBpcyBub3Qgc2V0CiMgQ09ORklH
+X001ODZNTVggaXMgbm90IHNldApDT05GSUdfTTY4Nj15CiMgQ09ORklHX01QRU5USVVNSUkgaXMg
+bm90IHNldAojIENPTkZJR19NUEVOVElVTUlJSSBpcyBub3Qgc2V0CiMgQ09ORklHX01QRU5USVVN
+TSBpcyBub3Qgc2V0CiMgQ09ORklHX01QRU5USVVNNCBpcyBub3Qgc2V0CiMgQ09ORklHX01LNiBp
+cyBub3Qgc2V0CiMgQ09ORklHX01LNyBpcyBub3Qgc2V0CiMgQ09ORklHX01LOCBpcyBub3Qgc2V0
+CiMgQ09ORklHX01DUlVTT0UgaXMgbm90IHNldAojIENPTkZJR19NRUZGSUNFT04gaXMgbm90IHNl
+dAojIENPTkZJR19NV0lOQ0hJUEM2IGlzIG5vdCBzZXQKIyBDT05GSUdfTVdJTkNISVAzRCBpcyBu
+b3Qgc2V0CiMgQ09ORklHX01FTEFOIGlzIG5vdCBzZXQKIyBDT05GSUdfTUdFT0RFR1gxIGlzIG5v
+dCBzZXQKIyBDT05GSUdfTUdFT0RFX0xYIGlzIG5vdCBzZXQKIyBDT05GSUdfTUNZUklYSUlJIGlz
+IG5vdCBzZXQKIyBDT05GSUdfTVZJQUMzXzIgaXMgbm90IHNldAojIENPTkZJR19NVklBQzcgaXMg
+bm90IHNldAojIENPTkZJR19NQ09SRTIgaXMgbm90IHNldAojIENPTkZJR19NQVRPTSBpcyBub3Qg
+c2V0CiMgQ09ORklHX1g4Nl9HRU5FUklDIGlzIG5vdCBzZXQKQ09ORklHX1g4Nl9JTlRFUk5PREVf
+Q0FDSEVfU0hJRlQ9NQpDT05GSUdfWDg2X0wxX0NBQ0hFX1NISUZUPTUKQ09ORklHX1g4Nl9QUFJP
+X0ZFTkNFPXkKQ09ORklHX1g4Nl9VU0VfUFBST19DSEVDS1NVTT15CkNPTkZJR19YODZfVFNDPXkK
+Q09ORklHX1g4Nl9DTVBYQ0hHNjQ9eQpDT05GSUdfWDg2X0NNT1Y9eQpDT05GSUdfWDg2X01JTklN
+VU1fQ1BVX0ZBTUlMWT01CkNPTkZJR19YODZfREVCVUdDVExNU1I9eQpDT05GSUdfUFJPQ0VTU09S
+X1NFTEVDVD15CiMgQ09ORklHX0NQVV9TVVBfSU5URUwgaXMgbm90IHNldApDT05GSUdfQ1BVX1NV
+UF9DWVJJWF8zMj15CiMgQ09ORklHX0NQVV9TVVBfQU1EIGlzIG5vdCBzZXQKQ09ORklHX0NQVV9T
+VVBfQ0VOVEFVUj15CiMgQ09ORklHX0NQVV9TVVBfVFJBTlNNRVRBXzMyIGlzIG5vdCBzZXQKQ09O
+RklHX0NQVV9TVVBfVU1DXzMyPXkKQ09ORklHX0hQRVRfVElNRVI9eQpDT05GSUdfSFBFVF9FTVVM
+QVRFX1JUQz15CkNPTkZJR19ETUk9eQpDT05GSUdfTlJfQ1BVUz04CiMgQ09ORklHX1NDSEVEX1NN
+VCBpcyBub3Qgc2V0CiMgQ09ORklHX1NDSEVEX01DIGlzIG5vdCBzZXQKQ09ORklHX1BSRUVNUFRf
+Tk9ORT15CiMgQ09ORklHX1BSRUVNUFRfVk9MVU5UQVJZIGlzIG5vdCBzZXQKIyBDT05GSUdfUFJF
+RU1QVCBpcyBub3Qgc2V0CkNPTkZJR19QUkVFTVBUX0NPVU5UPXkKQ09ORklHX1g4Nl9MT0NBTF9B
+UElDPXkKQ09ORklHX1g4Nl9JT19BUElDPXkKQ09ORklHX1g4Nl9SRVJPVVRFX0ZPUl9CUk9LRU5f
+Qk9PVF9JUlFTPXkKIyBDT05GSUdfWDg2X01DRSBpcyBub3Qgc2V0CkNPTkZJR19WTTg2PXkKIyBD
+T05GSUdfWDg2XzE2QklUIGlzIG5vdCBzZXQKIyBDT05GSUdfVE9TSElCQSBpcyBub3Qgc2V0CiMg
+Q09ORklHX0k4SyBpcyBub3Qgc2V0CkNPTkZJR19YODZfUkVCT09URklYVVBTPXkKIyBDT05GSUdf
+TUlDUk9DT0RFX0lOVEVMX0VBUkxZIGlzIG5vdCBzZXQKIyBDT05GSUdfTUlDUk9DT0RFX0FNRF9F
+QVJMWSBpcyBub3Qgc2V0CiMgQ09ORklHX1g4Nl9NU1IgaXMgbm90IHNldApDT05GSUdfWDg2X0NQ
+VUlEPW0KIyBDT05GSUdfTk9ISUdITUVNIGlzIG5vdCBzZXQKQ09ORklHX0hJR0hNRU00Rz15CiMg
+Q09ORklHX0hJR0hNRU02NEcgaXMgbm90IHNldApDT05GSUdfVk1TUExJVF8zRz15CiMgQ09ORklH
+X1ZNU1BMSVRfM0dfT1BUIGlzIG5vdCBzZXQKIyBDT05GSUdfVk1TUExJVF8yRyBpcyBub3Qgc2V0
+CiMgQ09ORklHX1ZNU1BMSVRfMkdfT1BUIGlzIG5vdCBzZXQKIyBDT05GSUdfVk1TUExJVF8xRyBp
+cyBub3Qgc2V0CkNPTkZJR19QQUdFX09GRlNFVD0weEMwMDAwMDAwCkNPTkZJR19ISUdITUVNPXkK
+Q09ORklHX0FSQ0hfRkxBVE1FTV9FTkFCTEU9eQpDT05GSUdfQVJDSF9TUEFSU0VNRU1fRU5BQkxF
+PXkKQ09ORklHX0FSQ0hfU0VMRUNUX01FTU9SWV9NT0RFTD15CkNPTkZJR19JTExFR0FMX1BPSU5U
+RVJfVkFMVUU9MApDT05GSUdfU0VMRUNUX01FTU9SWV9NT0RFTD15CkNPTkZJR19GTEFUTUVNX01B
+TlVBTD15CiMgQ09ORklHX1NQQVJTRU1FTV9NQU5VQUwgaXMgbm90IHNldApDT05GSUdfRkxBVE1F
+TT15CkNPTkZJR19GTEFUX05PREVfTUVNX01BUD15CkNPTkZJR19TUEFSU0VNRU1fU1RBVElDPXkK
+Q09ORklHX0hBVkVfTUVNQkxPQ0s9eQpDT05GSUdfSEFWRV9NRU1CTE9DS19OT0RFX01BUD15CkNP
+TkZJR19BUkNIX0RJU0NBUkRfTUVNQkxPQ0s9eQpDT05GSUdfTUVNT1JZX0lTT0xBVElPTj15CiMg
+Q09ORklHX0hBVkVfQk9PVE1FTV9JTkZPX05PREUgaXMgbm90IHNldApDT05GSUdfUEFHRUZMQUdT
+X0VYVEVOREVEPXkKQ09ORklHX1NQTElUX1BUTE9DS19DUFVTPTQKQ09ORklHX01FTU9SWV9CQUxM
+T09OPXkKIyBDT05GSUdfQ09NUEFDVElPTiBpcyBub3Qgc2V0CkNPTkZJR19NSUdSQVRJT049eQoj
+IENPTkZJR19QSFlTX0FERFJfVF82NEJJVCBpcyBub3Qgc2V0CkNPTkZJR19aT05FX0RNQV9GTEFH
+PTAKQ09ORklHX1ZJUlRfVE9fQlVTPXkKQ09ORklHX0tTTT15CkNPTkZJR19ERUZBVUxUX01NQVBf
+TUlOX0FERFI9NDA5NgojIENPTkZJR19UUkFOU1BBUkVOVF9IVUdFUEFHRSBpcyBub3Qgc2V0CkNP
+TkZJR19DTEVBTkNBQ0hFPXkKQ09ORklHX0NNQT15CkNPTkZJR19DTUFfREVCVUc9eQpDT05GSUdf
+Q01BX0FSRUFTPTcKIyBDT05GSUdfWlBPT0wgaXMgbm90IHNldApDT05GSUdfWkJVRD1tCiMgQ09O
+RklHX1pTTUFMTE9DIGlzIG5vdCBzZXQKQ09ORklHX0dFTkVSSUNfRUFSTFlfSU9SRU1BUD15CkNP
+TkZJR19ISUdIUFRFPXkKIyBDT05GSUdfWDg2X0NIRUNLX0JJT1NfQ09SUlVQVElPTiBpcyBub3Qg
+c2V0CkNPTkZJR19YODZfUkVTRVJWRV9MT1c9NjQKIyBDT05GSUdfTUFUSF9FTVVMQVRJT04gaXMg
+bm90IHNldApDT05GSUdfTVRSUj15CkNPTkZJR19NVFJSX1NBTklUSVpFUj15CkNPTkZJR19NVFJS
+X1NBTklUSVpFUl9FTkFCTEVfREVGQVVMVD0wCkNPTkZJR19NVFJSX1NBTklUSVpFUl9TUEFSRV9S
+RUdfTlJfREVGQVVMVD0xCkNPTkZJR19YODZfUEFUPXkKQ09ORklHX0FSQ0hfVVNFU19QR19VTkNB
+Q0hFRD15CiMgQ09ORklHX0FSQ0hfUkFORE9NIGlzIG5vdCBzZXQKQ09ORklHX1g4Nl9TTUFQPXkK
+IyBDT05GSUdfU0VDQ09NUCBpcyBub3Qgc2V0CiMgQ09ORklHX0haXzEwMCBpcyBub3Qgc2V0CkNP
+TkZJR19IWl8yNTA9eQojIENPTkZJR19IWl8zMDAgaXMgbm90IHNldAojIENPTkZJR19IWl8xMDAw
+IGlzIG5vdCBzZXQKQ09ORklHX0haPTI1MApDT05GSUdfU0NIRURfSFJUSUNLPXkKIyBDT05GSUdf
+S0VYRUMgaXMgbm90IHNldApDT05GSUdfQ1JBU0hfRFVNUD15CkNPTkZJR19QSFlTSUNBTF9TVEFS
+VD0weDEwMDAwMDAKIyBDT05GSUdfUkVMT0NBVEFCTEUgaXMgbm90IHNldApDT05GSUdfUEhZU0lD
+QUxfQUxJR049MHgyMDAwMDAKQ09ORklHX0hPVFBMVUdfQ1BVPXkKQ09ORklHX0JPT1RQQVJBTV9I
+T1RQTFVHX0NQVTA9eQojIENPTkZJR19ERUJVR19IT1RQTFVHX0NQVTAgaXMgbm90IHNldApDT05G
+SUdfQ09NUEFUX1ZEU089eQpDT05GSUdfQ01ETElORV9CT09MPXkKQ09ORklHX0NNRExJTkU9IiIK
+Q09ORklHX0NNRExJTkVfT1ZFUlJJREU9eQpDT05GSUdfQVJDSF9FTkFCTEVfTUVNT1JZX0hPVFBM
+VUc9eQoKIwojIFBvd2VyIG1hbmFnZW1lbnQgYW5kIEFDUEkgb3B0aW9ucwojCkNPTkZJR19TVVNQ
+RU5EPXkKQ09ORklHX1NVU1BFTkRfRlJFRVpFUj15CkNPTkZJR19QTV9TTEVFUD15CkNPTkZJR19Q
+TV9TTEVFUF9TTVA9eQpDT05GSUdfUE1fQVVUT1NMRUVQPXkKIyBDT05GSUdfUE1fV0FLRUxPQ0tT
+IGlzIG5vdCBzZXQKQ09ORklHX1BNX1JVTlRJTUU9eQpDT05GSUdfUE09eQpDT05GSUdfUE1fREVC
+VUc9eQpDT05GSUdfUE1fQURWQU5DRURfREVCVUc9eQojIENPTkZJR19QTV9URVNUX1NVU1BFTkQg
+aXMgbm90IHNldApDT05GSUdfUE1fU0xFRVBfREVCVUc9eQojIENPTkZJR19QTV9UUkFDRV9SVEMg
+aXMgbm90IHNldAojIENPTkZJR19XUV9QT1dFUl9FRkZJQ0lFTlRfREVGQVVMVCBpcyBub3Qgc2V0
+CkNPTkZJR19TRkk9eQojIENPTkZJR19BUE0gaXMgbm90IHNldAoKIwojIENQVSBGcmVxdWVuY3kg
+c2NhbGluZwojCkNPTkZJR19DUFVfRlJFUT15CkNPTkZJR19DUFVfRlJFUV9HT1ZfQ09NTU9OPXkK
+Q09ORklHX0NQVV9GUkVRX1NUQVQ9eQojIENPTkZJR19DUFVfRlJFUV9TVEFUX0RFVEFJTFMgaXMg
+bm90IHNldApDT05GSUdfQ1BVX0ZSRVFfREVGQVVMVF9HT1ZfUEVSRk9STUFOQ0U9eQojIENPTkZJ
+R19DUFVfRlJFUV9ERUZBVUxUX0dPVl9QT1dFUlNBVkUgaXMgbm90IHNldAojIENPTkZJR19DUFVf
+RlJFUV9ERUZBVUxUX0dPVl9VU0VSU1BBQ0UgaXMgbm90IHNldAojIENPTkZJR19DUFVfRlJFUV9E
+RUZBVUxUX0dPVl9PTkRFTUFORCBpcyBub3Qgc2V0CiMgQ09ORklHX0NQVV9GUkVRX0RFRkFVTFRf
+R09WX0NPTlNFUlZBVElWRSBpcyBub3Qgc2V0CkNPTkZJR19DUFVfRlJFUV9HT1ZfUEVSRk9STUFO
+Q0U9eQpDT05GSUdfQ1BVX0ZSRVFfR09WX1BPV0VSU0FWRT15CkNPTkZJR19DUFVfRlJFUV9HT1Zf
+VVNFUlNQQUNFPXkKIyBDT05GSUdfQ1BVX0ZSRVFfR09WX09OREVNQU5EIGlzIG5vdCBzZXQKQ09O
+RklHX0NQVV9GUkVRX0dPVl9DT05TRVJWQVRJVkU9bQoKIwojIHg4NiBDUFUgZnJlcXVlbmN5IHNj
+YWxpbmcgZHJpdmVycwojCkNPTkZJR19YODZfSU5URUxfUFNUQVRFPXkKIyBDT05GSUdfWDg2X1BP
+V0VSTk9XX0s2IGlzIG5vdCBzZXQKQ09ORklHX1g4Nl9QT1dFUk5PV19LNz1tCiMgQ09ORklHX1g4
+Nl9TUEVFRFNURVBfQ0VOVFJJTk8gaXMgbm90IHNldApDT05GSUdfWDg2X1NQRUVEU1RFUF9JQ0g9
+bQpDT05GSUdfWDg2X1NQRUVEU1RFUF9TTUk9eQpDT05GSUdfWDg2X1A0X0NMT0NLTU9EPXkKIyBD
+T05GSUdfWDg2X0NQVUZSRVFfTkZPUkNFMiBpcyBub3Qgc2V0CiMgQ09ORklHX1g4Nl9MT05HUlVO
+IGlzIG5vdCBzZXQKCiMKIyBzaGFyZWQgb3B0aW9ucwojCkNPTkZJR19YODZfU1BFRURTVEVQX0xJ
+Qj15CiMgQ09ORklHX1g4Nl9TUEVFRFNURVBfUkVMQVhFRF9DQVBfQ0hFQ0sgaXMgbm90IHNldAoK
+IwojIENQVSBJZGxlCiMKQ09ORklHX0NQVV9JRExFPXkKQ09ORklHX0NQVV9JRExFX0dPVl9MQURE
+RVI9eQojIENPTkZJR19DUFVfSURMRV9HT1ZfTUVOVSBpcyBub3Qgc2V0CiMgQ09ORklHX0FSQ0hf
+TkVFRFNfQ1BVX0lETEVfQ09VUExFRCBpcyBub3Qgc2V0CgojCiMgQnVzIG9wdGlvbnMgKFBDSSBl
+dGMuKQojCiMgQ09ORklHX1BDSSBpcyBub3Qgc2V0CkNPTkZJR19QQ0lfTEFCRUw9eQpDT05GSUdf
+SVNBX0RNQV9BUEk9eQojIENPTkZJR19JU0EgaXMgbm90IHNldApDT05GSUdfU0N4MjAwPW0KIyBD
+T05GSUdfU0N4MjAwSFJfVElNRVIgaXMgbm90IHNldApDT05GSUdfT0xQQz15CkNPTkZJR19BTElY
+PXkKIyBDT05GSUdfTkVUNTUwMSBpcyBub3Qgc2V0CkNPTkZJR19HRU9TPXkKQ09ORklHX1BDQ0FS
+RD15CkNPTkZJR19QQ01DSUE9eQpDT05GSUdfUENNQ0lBX0xPQURfQ0lTPXkKCiMKIyBQQy1jYXJk
+IGJyaWRnZXMKIwojIENPTkZJR19YODZfU1lTRkIgaXMgbm90IHNldAoKIwojIEV4ZWN1dGFibGUg
+ZmlsZSBmb3JtYXRzIC8gRW11bGF0aW9ucwojCiMgQ09ORklHX0JJTkZNVF9FTEYgaXMgbm90IHNl
+dApDT05GSUdfQVJDSF9CSU5GTVRfRUxGX1JBTkRPTUlaRV9QSUU9eQpDT05GSUdfQklORk1UX1ND
+UklQVD15CkNPTkZJR19IQVZFX0FPVVQ9eQpDT05GSUdfQklORk1UX0FPVVQ9bQpDT05GSUdfQklO
+Rk1UX01JU0M9eQojIENPTkZJR19DT1JFRFVNUCBpcyBub3Qgc2V0CkNPTkZJR19IQVZFX0FUT01J
+Q19JT01BUD15CiMgQ09ORklHX05FVCBpcyBub3Qgc2V0CgojCiMgRGV2aWNlIERyaXZlcnMKIwoK
+IwojIEdlbmVyaWMgRHJpdmVyIE9wdGlvbnMKIwpDT05GSUdfVUVWRU5UX0hFTFBFUj15CkNPTkZJ
+R19VRVZFTlRfSEVMUEVSX1BBVEg9IiIKIyBDT05GSUdfREVWVE1QRlMgaXMgbm90IHNldAojIENP
+TkZJR19TVEFOREFMT05FIGlzIG5vdCBzZXQKIyBDT05GSUdfUFJFVkVOVF9GSVJNV0FSRV9CVUlM
+RCBpcyBub3Qgc2V0CkNPTkZJR19GV19MT0FERVI9eQpDT05GSUdfRklSTVdBUkVfSU5fS0VSTkVM
+PXkKQ09ORklHX0VYVFJBX0ZJUk1XQVJFPSIiCkNPTkZJR19GV19MT0FERVJfVVNFUl9IRUxQRVI9
+eQpDT05GSUdfRldfTE9BREVSX1VTRVJfSEVMUEVSX0ZBTExCQUNLPXkKQ09ORklHX0RJU0FCTEVf
+REVWX0NPUkVEVU1QPXkKQ09ORklHX0RFQlVHX0RSSVZFUj15CkNPTkZJR19ERUJVR19ERVZSRVM9
+eQojIENPTkZJR19TWVNfSFlQRVJWSVNPUiBpcyBub3Qgc2V0CiMgQ09ORklHX0dFTkVSSUNfQ1BV
+X0RFVklDRVMgaXMgbm90IHNldApDT05GSUdfR0VORVJJQ19DUFVfQVVUT1BST0JFPXkKQ09ORklH
+X1JFR01BUD15CkNPTkZJR19SRUdNQVBfU1BJPXkKQ09ORklHX1JFR01BUF9NTUlPPXkKQ09ORklH
+X1JFR01BUF9JUlE9eQpDT05GSUdfRE1BX1NIQVJFRF9CVUZGRVI9eQojIENPTkZJR19GRU5DRV9U
+UkFDRSBpcyBub3Qgc2V0CiMgQ09ORklHX0RNQV9DTUEgaXMgbm90IHNldAoKIwojIEJ1cyBkZXZp
+Y2VzCiMKIyBDT05GSUdfTVREIGlzIG5vdCBzZXQKQ09ORklHX09GPXkKCiMKIyBEZXZpY2UgVHJl
+ZSBhbmQgT3BlbiBGaXJtd2FyZSBzdXBwb3J0CiMKQ09ORklHX09GX1BST01UUkVFPXkKQ09ORklH
+X09GX0FERFJFU1M9eQpDT05GSUdfT0ZfSVJRPXkKQ09ORklHX0FSQ0hfTUlHSFRfSEFWRV9QQ19Q
+QVJQT1JUPXkKIyBDT05GSUdfUEFSUE9SVCBpcyBub3Qgc2V0CgojCiMgTWlzYyBkZXZpY2VzCiMK
+Q09ORklHX1NFTlNPUlNfTElTM0xWMDJEPW0KQ09ORklHX0FENTI1WF9EUE9UPXkKQ09ORklHX0FE
+NTI1WF9EUE9UX1NQST1tCkNPTkZJR19EVU1NWV9JUlE9eQojIENPTkZJR19BVE1FTF9TU0MgaXMg
+bm90IHNldApDT05GSUdfRU5DTE9TVVJFX1NFUlZJQ0VTPW0KIyBDT05GSUdfVElfREFDNzUxMiBp
+cyBub3Qgc2V0CkNPTkZJR19CTVAwODU9eQpDT05GSUdfQk1QMDg1X1NQST1tCkNPTkZJR19MQVRU
+SUNFX0VDUDNfQ09ORklHPW0KIyBDT05GSUdfU1JBTSBpcyBub3Qgc2V0CkNPTkZJR19DMlBPUlQ9
+eQpDT05GSUdfQzJQT1JUX0RVUkFNQVJfMjE1MD15CgojCiMgRUVQUk9NIHN1cHBvcnQKIwpDT05G
+SUdfRUVQUk9NX0FUMjU9eQpDT05GSUdfRUVQUk9NXzkzQ1g2PXkKIyBDT05GSUdfRUVQUk9NXzkz
+WFg0NiBpcyBub3Qgc2V0CgojCiMgVGV4YXMgSW5zdHJ1bWVudHMgc2hhcmVkIHRyYW5zcG9ydCBs
+aW5lIGRpc2NpcGxpbmUKIwpDT05GSUdfU0VOU09SU19MSVMzX1NQST1tCgojCiMgQWx0ZXJhIEZQ
+R0EgZmlybXdhcmUgZG93bmxvYWQgbW9kdWxlCiMKCiMKIyBJbnRlbCBNSUMgQnVzIERyaXZlcgoj
+CgojCiMgSW50ZWwgTUlDIEhvc3QgRHJpdmVyCiMKCiMKIyBJbnRlbCBNSUMgQ2FyZCBEcml2ZXIK
+IwpDT05GSUdfRUNITz1tCiMgQ09ORklHX0NYTF9CQVNFIGlzIG5vdCBzZXQKQ09ORklHX0hBVkVf
+SURFPXkKCiMKIyBTQ1NJIGRldmljZSBzdXBwb3J0CiMKQ09ORklHX1NDU0lfTU9EPXkKIyBDT05G
+SUdfU0NTSV9ETUEgaXMgbm90IHNldAoKIwojIElFRUUgMTM5NCAoRmlyZVdpcmUpIHN1cHBvcnQK
+IwpDT05GSUdfRklSRVdJUkU9eQpDT05GSUdfTUFDSU5UT1NIX0RSSVZFUlM9eQoKIwojIElucHV0
+IGRldmljZSBzdXBwb3J0CiMKQ09ORklHX0lOUFVUPW0KQ09ORklHX0lOUFVUX0ZGX01FTUxFU1M9
+bQpDT05GSUdfSU5QVVRfUE9MTERFVj1tCkNPTkZJR19JTlBVVF9TUEFSU0VLTUFQPW0KQ09ORklH
+X0lOUFVUX01BVFJJWEtNQVA9bQoKIwojIFVzZXJsYW5kIGludGVyZmFjZXMKIwpDT05GSUdfSU5Q
+VVRfTU9VU0VERVY9bQpDT05GSUdfSU5QVVRfTU9VU0VERVZfUFNBVVg9eQpDT05GSUdfSU5QVVRf
+TU9VU0VERVZfU0NSRUVOX1g9MTAyNApDT05GSUdfSU5QVVRfTU9VU0VERVZfU0NSRUVOX1k9NzY4
+CkNPTkZJR19JTlBVVF9KT1lERVY9bQpDT05GSUdfSU5QVVRfRVZERVY9bQpDT05GSUdfSU5QVVRf
+RVZCVUc9bQoKIwojIElucHV0IERldmljZSBEcml2ZXJzCiMKIyBDT05GSUdfSU5QVVRfS0VZQk9B
+UkQgaXMgbm90IHNldApDT05GSUdfSU5QVVRfTEVEUz15CiMgQ09ORklHX0lOUFVUX01PVVNFIGlz
+IG5vdCBzZXQKIyBDT05GSUdfSU5QVVRfSk9ZU1RJQ0sgaXMgbm90IHNldApDT05GSUdfSU5QVVRf
+VEFCTEVUPXkKIyBDT05GSUdfVEFCTEVUX1VTQl9BQ0VDQUQgaXMgbm90IHNldApDT05GSUdfVEFC
+TEVUX1VTQl9BSVBURUs9bQpDT05GSUdfVEFCTEVUX1VTQl9HVENPPW0KIyBDT05GSUdfVEFCTEVU
+X1VTQl9IQU5XQU5HIGlzIG5vdCBzZXQKIyBDT05GSUdfVEFCTEVUX1VTQl9LQlRBQiBpcyBub3Qg
+c2V0CkNPTkZJR19UQUJMRVRfU0VSSUFMX1dBQ09NND1tCiMgQ09ORklHX0lOUFVUX1RPVUNIU0NS
+RUVOIGlzIG5vdCBzZXQKIyBDT05GSUdfSU5QVVRfTUlTQyBpcyBub3Qgc2V0CgojCiMgSGFyZHdh
+cmUgSS9PIHBvcnRzCiMKQ09ORklHX1NFUklPPW0KQ09ORklHX0FSQ0hfTUlHSFRfSEFWRV9QQ19T
+RVJJTz15CkNPTkZJR19TRVJJT19JODA0Mj1tCiMgQ09ORklHX1NFUklPX0NUODJDNzEwIGlzIG5v
+dCBzZXQKQ09ORklHX1NFUklPX0xJQlBTMj1tCkNPTkZJR19TRVJJT19SQVc9bQojIENPTkZJR19T
+RVJJT19BTFRFUkFfUFMyIGlzIG5vdCBzZXQKQ09ORklHX1NFUklPX1BTMk1VTFQ9bQpDT05GSUdf
+U0VSSU9fQVJDX1BTMj1tCiMgQ09ORklHX1NFUklPX0FQQlBTMiBpcyBub3Qgc2V0CkNPTkZJR19T
+RVJJT19PTFBDX0FQU1A9bQojIENPTkZJR19HQU1FUE9SVCBpcyBub3Qgc2V0CgojCiMgQ2hhcmFj
+dGVyIGRldmljZXMKIwojIENPTkZJR19UVFkgaXMgbm90IHNldApDT05GSUdfREVWS01FTT15CkNP
+TkZJR19JUE1JX0hBTkRMRVI9eQojIENPTkZJR19JUE1JX1BBTklDX0VWRU5UIGlzIG5vdCBzZXQK
+Q09ORklHX0lQTUlfREVWSUNFX0lOVEVSRkFDRT1tCkNPTkZJR19JUE1JX1NJPW0KQ09ORklHX0lQ
+TUlfU0lfUFJPQkVfREVGQVVMVFM9eQojIENPTkZJR19JUE1JX1dBVENIRE9HIGlzIG5vdCBzZXQK
+Q09ORklHX0lQTUlfUE9XRVJPRkY9eQojIENPTkZJR19IV19SQU5ET00gaXMgbm90IHNldAojIENP
+TkZJR19OVlJBTSBpcyBub3Qgc2V0CgojCiMgUENNQ0lBIGNoYXJhY3RlciBkZXZpY2VzCiMKQ09O
+RklHX0NBUkRNQU5fNDAwMD15CkNPTkZJR19DQVJETUFOXzQwNDA9bQojIENPTkZJR19TQ3gyMDBf
+R1BJTyBpcyBub3Qgc2V0CkNPTkZJR19QQzg3MzZ4X0dQSU89eQpDT05GSUdfTlNDX0dQSU89eQpD
+T05GSUdfSEFOR0NIRUNLX1RJTUVSPXkKIyBDT05GSUdfVENHX1RQTSBpcyBub3Qgc2V0CkNPTkZJ
+R19URUxDTE9DSz1tCiMgQ09ORklHX1hJTExZQlVTIGlzIG5vdCBzZXQKCiMKIyBJMkMgc3VwcG9y
+dAojCiMgQ09ORklHX0kyQyBpcyBub3Qgc2V0CkNPTkZJR19TUEk9eQpDT05GSUdfU1BJX0RFQlVH
+PXkKQ09ORklHX1NQSV9NQVNURVI9eQoKIwojIFNQSSBNYXN0ZXIgQ29udHJvbGxlciBEcml2ZXJz
+CiMKQ09ORklHX1NQSV9BTFRFUkE9bQpDT05GSUdfU1BJX0FUTUVMPXkKQ09ORklHX1NQSV9CQ00y
+ODM1PXkKQ09ORklHX1NQSV9CQ002M1hYX0hTU1BJPW0KQ09ORklHX1NQSV9CSVRCQU5HPXkKIyBD
+T05GSUdfU1BJX0NMUFM3MTFYIGlzIG5vdCBzZXQKQ09ORklHX1NQSV9FUDkzWFg9bQpDT05GSUdf
+U1BJX0dQSU89bQojIENPTkZJR19TUElfSU1YIGlzIG5vdCBzZXQKIyBDT05GSUdfU1BJX0ZTTF9T
+UEkgaXMgbm90IHNldApDT05GSUdfU1BJX0ZTTF9EU1BJPXkKQ09ORklHX1NQSV9PQ19USU5ZPW0K
+Q09ORklHX1NQSV9USV9RU1BJPXkKIyBDT05GSUdfU1BJX09NQVBfMTAwSyBpcyBub3Qgc2V0CkNP
+TkZJR19TUElfT1JJT049eQojIENPTkZJR19TUElfUFhBMlhYX1BDSSBpcyBub3Qgc2V0CiMgQ09O
+RklHX1NQSV9SU1BJIGlzIG5vdCBzZXQKQ09ORklHX1NQSV9TSD1tCiMgQ09ORklHX1NQSV9TSF9I
+U1BJIGlzIG5vdCBzZXQKIyBDT05GSUdfU1BJX1NVTjRJIGlzIG5vdCBzZXQKQ09ORklHX1NQSV9U
+WFg5PXkKQ09ORklHX1NQSV9YSUxJTlg9bQpDT05GSUdfU1BJX1hURU5TQV9YVEZQR0E9bQpDT05G
+SUdfU1BJX0RFU0lHTldBUkU9bQpDT05GSUdfU1BJX0RXX01NSU89bQoKIwojIFNQSSBQcm90b2Nv
+bCBNYXN0ZXJzCiMKIyBDT05GSUdfU1BJX1NQSURFViBpcyBub3Qgc2V0CkNPTkZJR19TUElfVExF
+NjJYMD1tCkNPTkZJR19TUE1JPW0KQ09ORklHX0hTST15CkNPTkZJR19IU0lfQk9BUkRJTkZPPXkK
+CiMKIyBIU0kgY29udHJvbGxlcnMKIwoKIwojIEhTSSBjbGllbnRzCiMKQ09ORklHX0hTSV9DSEFS
+PW0KCiMKIyBQUFMgc3VwcG9ydAojCkNPTkZJR19QUFM9eQojIENPTkZJR19QUFNfREVCVUcgaXMg
+bm90IHNldAojIENPTkZJR19OVFBfUFBTIGlzIG5vdCBzZXQKCiMKIyBQUFMgY2xpZW50cyBzdXBw
+b3J0CiMKIyBDT05GSUdfUFBTX0NMSUVOVF9LVElNRVIgaXMgbm90IHNldApDT05GSUdfUFBTX0NM
+SUVOVF9HUElPPW0KCiMKIyBQUFMgZ2VuZXJhdG9ycyBzdXBwb3J0CiMKCiMKIyBQVFAgY2xvY2sg
+c3VwcG9ydAojCgojCiMgRW5hYmxlIFBIWUxJQiBhbmQgTkVUV09SS19QSFlfVElNRVNUQU1QSU5H
+IHRvIHNlZSB0aGUgYWRkaXRpb25hbCBjbG9ja3MuCiMKQ09ORklHX0FSQ0hfV0FOVF9PUFRJT05B
+TF9HUElPTElCPXkKQ09ORklHX0dQSU9MSUI9eQpDT05GSUdfR1BJT19ERVZSRVM9eQpDT05GSUdf
+T0ZfR1BJTz15CiMgQ09ORklHX0RFQlVHX0dQSU8gaXMgbm90IHNldAojIENPTkZJR19HUElPX1NZ
+U0ZTIGlzIG5vdCBzZXQKQ09ORklHX0dQSU9fR0VORVJJQz15CkNPTkZJR19HUElPX0RBOTA1Mj15
+CkNPTkZJR19HUElPX01BWDczMFg9eQoKIwojIE1lbW9yeSBtYXBwZWQgR1BJTyBkcml2ZXJzOgoj
+CkNPTkZJR19HUElPXzc0WFhfTU1JTz15CkNPTkZJR19HUElPX0NMUFM3MTFYPXkKQ09ORklHX0dQ
+SU9fR0VORVJJQ19QTEFURk9STT15CkNPTkZJR19HUElPX0lUODc2MUU9eQpDT05GSUdfR1BJT19G
+NzE4OFg9eQpDT05GSUdfR1BJT19TQ0gzMTFYPW0KQ09ORklHX0dQSU9fVFM1NTAwPXkKQ09ORklH
+X0dQSU9fR1JHUElPPXkKCiMKIyBJMkMgR1BJTyBleHBhbmRlcnM6CiMKIyBDT05GSUdfR1BJT19B
+UklaT05BIGlzIG5vdCBzZXQKCiMKIyBQQ0kgR1BJTyBleHBhbmRlcnM6CiMKCiMKIyBTUEkgR1BJ
+TyBleHBhbmRlcnM6CiMKQ09ORklHX0dQSU9fTUFYNzMwMT15CiMgQ09ORklHX0dQSU9fTUNQMjNT
+MDggaXMgbm90IHNldAojIENPTkZJR19HUElPX01DMzM4ODAgaXMgbm90IHNldApDT05GSUdfR1BJ
+T183NFgxNjQ9bQoKIwojIEFDOTcgR1BJTyBleHBhbmRlcnM6CiMKCiMKIyBMUEMgR1BJTyBleHBh
+bmRlcnM6CiMKIyBDT05GSUdfR1BJT19LRU1QTEQgaXMgbm90IHNldAoKIwojIE1PRFVMYnVzIEdQ
+SU8gZXhwYW5kZXJzOgojCkNPTkZJR19HUElPX0JDTV9LT05BPXkKCiMKIyBVU0IgR1BJTyBleHBh
+bmRlcnM6CiMKQ09ORklHX1cxPW0KCiMKIyAxLXdpcmUgQnVzIE1hc3RlcnMKIwojIENPTkZJR19X
+MV9NQVNURVJfRFMyNDkwIGlzIG5vdCBzZXQKQ09ORklHX1cxX01BU1RFUl9NWEM9bQojIENPTkZJ
+R19XMV9NQVNURVJfRFMxV00gaXMgbm90IHNldApDT05GSUdfVzFfTUFTVEVSX0dQSU89bQoKIwoj
+IDEtd2lyZSBTbGF2ZXMKIwojIENPTkZJR19XMV9TTEFWRV9USEVSTSBpcyBub3Qgc2V0CkNPTkZJ
+R19XMV9TTEFWRV9TTUVNPW0KQ09ORklHX1cxX1NMQVZFX0RTMjQwOD1tCkNPTkZJR19XMV9TTEFW
+RV9EUzI0MDhfUkVBREJBQ0s9eQojIENPTkZJR19XMV9TTEFWRV9EUzI0MTMgaXMgbm90IHNldApD
+T05GSUdfVzFfU0xBVkVfRFMyNDA2PW0KQ09ORklHX1cxX1NMQVZFX0RTMjQyMz1tCkNPTkZJR19X
+MV9TTEFWRV9EUzI0MzE9bQpDT05GSUdfVzFfU0xBVkVfRFMyNDMzPW0KQ09ORklHX1cxX1NMQVZF
+X0RTMjQzM19DUkM9eQojIENPTkZJR19XMV9TTEFWRV9EUzI3NjAgaXMgbm90IHNldApDT05GSUdf
+VzFfU0xBVkVfRFMyNzgwPW0KQ09ORklHX1cxX1NMQVZFX0RTMjc4MT1tCkNPTkZJR19XMV9TTEFW
+RV9EUzI4RTA0PW0KQ09ORklHX1cxX1NMQVZFX0JRMjcwMDA9bQpDT05GSUdfUE9XRVJfU1VQUExZ
+PXkKIyBDT05GSUdfUE9XRVJfU1VQUExZX0RFQlVHIGlzIG5vdCBzZXQKQ09ORklHX1BEQV9QT1dF
+Uj1tCkNPTkZJR19HRU5FUklDX0FEQ19CQVRURVJZPXkKIyBDT05GSUdfVEVTVF9QT1dFUiBpcyBu
+b3Qgc2V0CkNPTkZJR19CQVRURVJZX0RTMjc4MD1tCkNPTkZJR19CQVRURVJZX0RTMjc4MT1tCiMg
+Q09ORklHX0JBVFRFUllfT0xQQyBpcyBub3Qgc2V0CkNPTkZJR19CQVRURVJZX0JRMjd4MDA9eQpD
+T05GSUdfQkFUVEVSWV9CUTI3WDAwX1BMQVRGT1JNPXkKQ09ORklHX0JBVFRFUllfREE5MDUyPXkK
+Q09ORklHX0NIQVJHRVJfSVNQMTcwND1tCkNPTkZJR19DSEFSR0VSX01BWDg5MDM9bQpDT05GSUdf
+Q0hBUkdFUl9HUElPPW0KQ09ORklHX0JBVFRFUllfR09MREZJU0g9eQojIENPTkZJR19QT1dFUl9S
+RVNFVCBpcyBub3Qgc2V0CiMgQ09ORklHX1BPV0VSX0FWUyBpcyBub3Qgc2V0CkNPTkZJR19IV01P
+Tj1tCkNPTkZJR19IV01PTl9WSUQ9bQojIENPTkZJR19IV01PTl9ERUJVR19DSElQIGlzIG5vdCBz
+ZXQKCiMKIyBOYXRpdmUgZHJpdmVycwojCkNPTkZJR19TRU5TT1JTX0FCSVRVR1VSVT1tCiMgQ09O
+RklHX1NFTlNPUlNfQUJJVFVHVVJVMyBpcyBub3Qgc2V0CkNPTkZJR19TRU5TT1JTX0FENzMxND1t
+CkNPTkZJR19TRU5TT1JTX0FEVDdYMTA9bQpDT05GSUdfU0VOU09SU19BRFQ3MzEwPW0KQ09ORklH
+X1NFTlNPUlNfQVBQTEVTTUM9bQpDT05GSUdfU0VOU09SU19EQTkwNTJfQURDPW0KQ09ORklHX1NF
+TlNPUlNfRjcxODA1Rj1tCiMgQ09ORklHX1NFTlNPUlNfRjcxODgyRkcgaXMgbm90IHNldApDT05G
+SUdfU0VOU09SU19NQzEzNzgzX0FEQz1tCkNPTkZJR19TRU5TT1JTX0dQSU9fRkFOPW0KIyBDT05G
+SUdfU0VOU09SU19JQk1BRU0gaXMgbm90IHNldApDT05GSUdfU0VOU09SU19JQk1QRVg9bQpDT05G
+SUdfU0VOU09SU19JSU9fSFdNT049bQpDT05GSUdfU0VOU09SU19DT1JFVEVNUD1tCiMgQ09ORklH
+X1NFTlNPUlNfSVQ4NyBpcyBub3Qgc2V0CkNPTkZJR19TRU5TT1JTX01BWDExMTE9bQojIENPTkZJ
+R19TRU5TT1JTX01BWDE5NyBpcyBub3Qgc2V0CiMgQ09ORklHX1NFTlNPUlNfQURDWFggaXMgbm90
+IHNldApDT05GSUdfU0VOU09SU19MTTcwPW0KQ09ORklHX1NFTlNPUlNfUEM4NzM2MD1tCiMgQ09O
+RklHX1NFTlNPUlNfUEM4NzQyNyBpcyBub3Qgc2V0CiMgQ09ORklHX1NFTlNPUlNfTlRDX1RIRVJN
+SVNUT1IgaXMgbm90IHNldAojIENPTkZJR19TRU5TT1JTX05DVDY2ODMgaXMgbm90IHNldAojIENP
+TkZJR19TRU5TT1JTX05DVDY3NzUgaXMgbm90IHNldAojIENPTkZJR19TRU5TT1JTX1BXTV9GQU4g
+aXMgbm90IHNldAojIENPTkZJR19TRU5TT1JTX1NIVDE1IGlzIG5vdCBzZXQKIyBDT05GSUdfU0VO
+U09SU19TTVNDNDdNMSBpcyBub3Qgc2V0CiMgQ09ORklHX1NFTlNPUlNfU01TQzQ3QjM5NyBpcyBu
+b3Qgc2V0CkNPTkZJR19TRU5TT1JTX1NDSDU2WFhfQ09NTU9OPW0KQ09ORklHX1NFTlNPUlNfU0NI
+NTYyNz1tCkNPTkZJR19TRU5TT1JTX1NDSDU2MzY9bQojIENPTkZJR19TRU5TT1JTX0FEUzc4NzEg
+aXMgbm90IHNldApDT05GSUdfU0VOU09SU19WSUFfQ1BVVEVNUD1tCiMgQ09ORklHX1NFTlNPUlNf
+VlQxMjExIGlzIG5vdCBzZXQKIyBDT05GSUdfU0VOU09SU19XODM2MjdIRiBpcyBub3Qgc2V0CkNP
+TkZJR19TRU5TT1JTX1c4MzYyN0VIRj1tCiMgQ09ORklHX1RIRVJNQUwgaXMgbm90IHNldApDT05G
+SUdfV0FUQ0hET0c9eQpDT05GSUdfV0FUQ0hET0dfQ09SRT15CiMgQ09ORklHX1dBVENIRE9HX05P
+V0FZT1VUIGlzIG5vdCBzZXQKCiMKIyBXYXRjaGRvZyBEZXZpY2UgRHJpdmVycwojCkNPTkZJR19T
+T0ZUX1dBVENIRE9HPXkKIyBDT05GSUdfREE5MDUyX1dBVENIRE9HIGlzIG5vdCBzZXQKQ09ORklH
+X0dQSU9fV0FUQ0hET0c9eQojIENPTkZJR19YSUxJTlhfV0FUQ0hET0cgaXMgbm90IHNldApDT05G
+SUdfRFdfV0FUQ0hET0c9eQpDT05GSUdfVEVHUkFfV0FUQ0hET0c9bQojIENPTkZJR19BQ1FVSVJF
+X1dEVCBpcyBub3Qgc2V0CkNPTkZJR19BRFZBTlRFQ0hfV0RUPXkKQ09ORklHX0Y3MTgwOEVfV0RU
+PW0KIyBDT05GSUdfU0JDX0ZJVFBDMl9XQVRDSERPRyBpcyBub3Qgc2V0CiMgQ09ORklHX0VVUk9U
+RUNIX1dEVCBpcyBub3Qgc2V0CiMgQ09ORklHX0lCNzAwX1dEVCBpcyBub3Qgc2V0CkNPTkZJR19J
+Qk1BU1I9bQojIENPTkZJR19XQUZFUl9XRFQgaXMgbm90IHNldAojIENPTkZJR19JVDg3MTJGX1dE
+VCBpcyBub3Qgc2V0CkNPTkZJR19JVDg3X1dEVD15CkNPTkZJR19LRU1QTERfV0RUPW0KQ09ORklH
+X1NDMTIwMF9XRFQ9bQojIENPTkZJR19QQzg3NDEzX1dEVCBpcyBub3Qgc2V0CkNPTkZJR19SREMz
+MjFYX1dEVD15CkNPTkZJR182MFhYX1dEVD1tCkNPTkZJR19TQkM4MzYwX1dEVD15CkNPTkZJR19T
+QkM3MjQwX1dEVD15CkNPTkZJR19DUFU1X1dEVD15CkNPTkZJR19TTVNDX1NDSDMxMVhfV0RUPW0K
+Q09ORklHX1NNU0MzN0I3ODdfV0RUPW0KQ09ORklHX1c4MzYyN0hGX1dEVD15CiMgQ09ORklHX1c4
+Mzg3N0ZfV0RUIGlzIG5vdCBzZXQKIyBDT05GSUdfVzgzOTc3Rl9XRFQgaXMgbm90IHNldAojIENP
+TkZJR19NQUNIWl9XRFQgaXMgbm90IHNldAojIENPTkZJR19TQkNfRVBYX0MzX1dBVENIRE9HIGlz
+IG5vdCBzZXQKQ09ORklHX01FTl9BMjFfV0RUPXkKCiMKIyBVU0ItYmFzZWQgV2F0Y2hkb2cgQ2Fy
+ZHMKIwojIENPTkZJR19VU0JQQ1dBVENIRE9HIGlzIG5vdCBzZXQKQ09ORklHX1NTQl9QT1NTSUJM
+RT15CgojCiMgU29uaWNzIFNpbGljb24gQmFja3BsYW5lCiMKIyBDT05GSUdfU1NCIGlzIG5vdCBz
+ZXQKQ09ORklHX0JDTUFfUE9TU0lCTEU9eQoKIwojIEJyb2FkY29tIHNwZWNpZmljIEFNQkEKIwpD
+T05GSUdfQkNNQT1tCkNPTkZJR19CQ01BX0hPU1RfU09DPXkKQ09ORklHX0JDTUFfRFJJVkVSX0dN
+QUNfQ01OPXkKIyBDT05GSUdfQkNNQV9EUklWRVJfR1BJTyBpcyBub3Qgc2V0CiMgQ09ORklHX0JD
+TUFfREVCVUcgaXMgbm90IHNldAoKIwojIE11bHRpZnVuY3Rpb24gZGV2aWNlIGRyaXZlcnMKIwpD
+T05GSUdfTUZEX0NPUkU9eQpDT05GSUdfTUZEX0NST1NfRUM9eQpDT05GSUdfTUZEX0NST1NfRUNf
+U1BJPW0KQ09ORklHX1BNSUNfREE5MDUyPXkKQ09ORklHX01GRF9EQTkwNTJfU1BJPXkKQ09ORklH
+X01GRF9NQzEzWFhYPW0KQ09ORklHX01GRF9NQzEzWFhYX1NQST1tCiMgQ09ORklHX01GRF9ISTY0
+MjFfUE1JQyBpcyBub3Qgc2V0CiMgQ09ORklHX0hUQ19QQVNJQzMgaXMgbm90IHNldApDT05GSUdf
+TUZEX0tFTVBMRD1tCiMgQ09ORklHX0VaWF9QQ0FQIGlzIG5vdCBzZXQKIyBDT05GSUdfTUZEX1ZJ
+UEVSQk9BUkQgaXMgbm90IHNldAojIENPTkZJR19NRkRfU1BNSV9QTUlDIGlzIG5vdCBzZXQKQ09O
+RklHX01GRF9SVFNYX1VTQj1tCiMgQ09ORklHX01GRF9TTTUwMSBpcyBub3Qgc2V0CkNPTkZJR19B
+Qlg1MDBfQ09SRT15CiMgQ09ORklHX01GRF9TVE1QRSBpcyBub3Qgc2V0CiMgQ09ORklHX01GRF9T
+WVNDT04gaXMgbm90IHNldApDT05GSUdfTUZEX1RJX0FNMzM1WF9UU0NBREM9bQojIENPTkZJR19N
+RkRfVFBTNjU5MTIgaXMgbm90IHNldAojIENPTkZJR19NRkRfVFBTNjU5MTJfU1BJIGlzIG5vdCBz
+ZXQKIyBDT05GSUdfTUZEX1RNSU8gaXMgbm90IHNldApDT05GSUdfTUZEX0FSSVpPTkE9eQpDT05G
+SUdfTUZEX0FSSVpPTkFfU1BJPW0KQ09ORklHX01GRF9XTTUxMDI9eQojIENPTkZJR19NRkRfV001
+MTEwIGlzIG5vdCBzZXQKIyBDT05GSUdfTUZEX1dNODk5NyBpcyBub3Qgc2V0CiMgQ09ORklHX01G
+RF9XTTgzMVhfU1BJIGlzIG5vdCBzZXQKIyBDT05GSUdfUkVHVUxBVE9SIGlzIG5vdCBzZXQKQ09O
+RklHX01FRElBX1NVUFBPUlQ9bQoKIwojIE11bHRpbWVkaWEgY29yZSBzdXBwb3J0CiMKIyBDT05G
+SUdfTUVESUFfQ0FNRVJBX1NVUFBPUlQgaXMgbm90IHNldAojIENPTkZJR19NRURJQV9BTkFMT0df
+VFZfU1VQUE9SVCBpcyBub3Qgc2V0CiMgQ09ORklHX01FRElBX0RJR0lUQUxfVFZfU1VQUE9SVCBp
+cyBub3Qgc2V0CkNPTkZJR19NRURJQV9SQURJT19TVVBQT1JUPXkKIyBDT05GSUdfTUVESUFfU0RS
+X1NVUFBPUlQgaXMgbm90IHNldAojIENPTkZJR19NRURJQV9SQ19TVVBQT1JUIGlzIG5vdCBzZXQK
+Q09ORklHX1ZJREVPX0RFVj1tCkNPTkZJR19WSURFT19WNEwyPW0KIyBDT05GSUdfVklERU9fQURW
+X0RFQlVHIGlzIG5vdCBzZXQKQ09ORklHX1ZJREVPX0ZJWEVEX01JTk9SX1JBTkdFUz15CkNPTkZJ
+R19WSURFT0JVRjJfQ09SRT1tCkNPTkZJR19WSURFT0JVRjJfTUVNT1BTPW0KQ09ORklHX1ZJREVP
+QlVGMl9WTUFMTE9DPW0KCiMKIyBNZWRpYSBkcml2ZXJzCiMKQ09ORklHX01FRElBX1VTQl9TVVBQ
+T1JUPXkKCiMKIyBTdXBwb3J0ZWQgTU1DL1NESU8gYWRhcHRlcnMKIwpDT05GSUdfUkFESU9fQURB
+UFRFUlM9eQpDT05GSUdfUkFESU9fVEVBNTc1WD1tCkNPTkZJR19SQURJT19TSTQ3MFg9eQpDT05G
+SUdfVVNCX1NJNDcwWD1tCiMgQ09ORklHX1JBRElPX1NJNDcxMyBpcyBub3Qgc2V0CkNPTkZJR19V
+U0JfTVI4MDA9bQojIENPTkZJR19VU0JfRFNCUiBpcyBub3Qgc2V0CkNPTkZJR19SQURJT19TSEFS
+Sz1tCiMgQ09ORklHX1JBRElPX1NIQVJLMiBpcyBub3Qgc2V0CkNPTkZJR19VU0JfS0VFTkU9bQpD
+T05GSUdfVVNCX1JBUkVNT05PPW0KIyBDT05GSUdfVVNCX01BOTAxIGlzIG5vdCBzZXQKCiMKIyBU
+ZXhhcyBJbnN0cnVtZW50cyBXTDEyOHggRk0gZHJpdmVyIChTVCBiYXNlZCkKIwpDT05GSUdfQ1lQ
+UkVTU19GSVJNV0FSRT1tCgojCiMgTWVkaWEgYW5jaWxsYXJ5IGRyaXZlcnMgKHR1bmVycywgc2Vu
+c29ycywgaTJjLCBmcm9udGVuZHMpCiMKQ09ORklHX01FRElBX0FUVEFDSD15CgojCiMgRW5jb2Rl
+cnMsIGRlY29kZXJzLCBzZW5zb3JzIGFuZCBvdGhlciBoZWxwZXIgY2hpcHMKIwoKIwojIEF1ZGlv
+IGRlY29kZXJzLCBwcm9jZXNzb3JzIGFuZCBtaXhlcnMKIwoKIwojIFJEUyBkZWNvZGVycwojCgoj
+CiMgVmlkZW8gZGVjb2RlcnMKIwoKIwojIFZpZGVvIGFuZCBhdWRpbyBkZWNvZGVycwojCgojCiMg
+VmlkZW8gZW5jb2RlcnMKIwoKIwojIENhbWVyYSBzZW5zb3IgZGV2aWNlcwojCgojCiMgRmxhc2gg
+ZGV2aWNlcwojCgojCiMgVmlkZW8gaW1wcm92ZW1lbnQgY2hpcHMKIwoKIwojIEF1ZGlvL1ZpZGVv
+IGNvbXByZXNzaW9uIGNoaXBzCiMKCiMKIyBNaXNjZWxsYW5lb3VzIGhlbHBlciBjaGlwcwojCgoj
+CiMgU2Vuc29ycyB1c2VkIG9uIHNvY19jYW1lcmEgZHJpdmVyCiMKCiMKIyBDdXN0b21pemUgVFYg
+dHVuZXJzCiMKIyBDT05GSUdfTUVESUFfVFVORVJfTVNJMDAxIGlzIG5vdCBzZXQKCiMKIyBDdXN0
+b21pc2UgRFZCIEZyb250ZW5kcwojCgojCiMgVG9vbHMgdG8gZGV2ZWxvcCBuZXcgZnJvbnRlbmRz
+CiMKIyBDT05GSUdfRFZCX0RVTU1ZX0ZFIGlzIG5vdCBzZXQKCiMKIyBHcmFwaGljcyBzdXBwb3J0
+CiMKCiMKIyBEaXJlY3QgUmVuZGVyaW5nIE1hbmFnZXIKIwojIENPTkZJR19EUk0gaXMgbm90IHNl
+dAoKIwojIEZyYW1lIGJ1ZmZlciBEZXZpY2VzCiMKQ09ORklHX0ZCPXkKIyBDT05GSUdfRklSTVdB
+UkVfRURJRCBpcyBub3Qgc2V0CkNPTkZJR19GQl9DTURMSU5FPXkKIyBDT05GSUdfRkJfRERDIGlz
+IG5vdCBzZXQKIyBDT05GSUdfRkJfQk9PVF9WRVNBX1NVUFBPUlQgaXMgbm90IHNldApDT05GSUdf
+RkJfQ0ZCX0ZJTExSRUNUPXkKQ09ORklHX0ZCX0NGQl9DT1BZQVJFQT15CkNPTkZJR19GQl9DRkJf
+SU1BR0VCTElUPXkKIyBDT05GSUdfRkJfQ0ZCX1JFVl9QSVhFTFNfSU5fQllURSBpcyBub3Qgc2V0
+CkNPTkZJR19GQl9TWVNfRklMTFJFQ1Q9bQpDT05GSUdfRkJfU1lTX0NPUFlBUkVBPW0KQ09ORklH
+X0ZCX1NZU19JTUFHRUJMSVQ9bQpDT05GSUdfRkJfRk9SRUlHTl9FTkRJQU49eQpDT05GSUdfRkJf
+Qk9USF9FTkRJQU49eQojIENPTkZJR19GQl9CSUdfRU5ESUFOIGlzIG5vdCBzZXQKIyBDT05GSUdf
+RkJfTElUVExFX0VORElBTiBpcyBub3Qgc2V0CkNPTkZJR19GQl9TWVNfRk9QUz1tCkNPTkZJR19G
+Ql9ERUZFUlJFRF9JTz15CkNPTkZJR19GQl9IRUNVQkE9bQojIENPTkZJR19GQl9TVkdBTElCIGlz
+IG5vdCBzZXQKIyBDT05GSUdfRkJfTUFDTU9ERVMgaXMgbm90IHNldAojIENPTkZJR19GQl9CQUNL
+TElHSFQgaXMgbm90IHNldApDT05GSUdfRkJfTU9ERV9IRUxQRVJTPXkKQ09ORklHX0ZCX1RJTEVC
+TElUVElORz15CgojCiMgRnJhbWUgYnVmZmVyIGhhcmR3YXJlIGRyaXZlcnMKIwpDT05GSUdfRkJf
+Q0xQUzcxMVg9bQpDT05GSUdfRkJfQVJDPW0KIyBDT05GSUdfRkJfVkdBMTYgaXMgbm90IHNldAoj
+IENPTkZJR19GQl9WRVNBIGlzIG5vdCBzZXQKQ09ORklHX0ZCX040MTE9bQpDT05GSUdfRkJfSEdB
+PW0KIyBDT05GSUdfRkJfT1BFTkNPUkVTIGlzIG5vdCBzZXQKIyBDT05GSUdfRkJfUzFEMTNYWFgg
+aXMgbm90IHNldApDT05GSUdfRkJfVE1JTz15CkNPTkZJR19GQl9UTUlPX0FDQ0VMTD15CiMgQ09O
+RklHX0ZCX1NNU0NVRlggaXMgbm90IHNldApDT05GSUdfRkJfVURMPW0KQ09ORklHX0ZCX0dPTERG
+SVNIPW0KQ09ORklHX0ZCX1ZJUlRVQUw9bQpDT05GSUdfRkJfTUVUUk9OT01FPW0KIyBDT05GSUdf
+RkJfQlJPQURTSEVFVCBpcyBub3Qgc2V0CkNPTkZJR19GQl9BVU9fSzE5MFg9bQpDT05GSUdfRkJf
+QVVPX0sxOTAwPW0KQ09ORklHX0ZCX0FVT19LMTkwMT1tCiMgQ09ORklHX0ZCX1NJTVBMRSBpcyBu
+b3Qgc2V0CkNPTkZJR19CQUNLTElHSFRfTENEX1NVUFBPUlQ9eQpDT05GSUdfTENEX0NMQVNTX0RF
+VklDRT1tCiMgQ09ORklHX0xDRF9MNEYwMDI0MlQwMyBpcyBub3Qgc2V0CkNPTkZJR19MQ0RfTE1T
+MjgzR0YwNT1tCkNPTkZJR19MQ0RfTFRWMzUwUVY9bQpDT05GSUdfTENEX0lMSTkyMlg9bQpDT05G
+SUdfTENEX0lMSTkzMjA9bQpDT05GSUdfTENEX1RETzI0TT1tCiMgQ09ORklHX0xDRF9WR0cyNDMy
+QTQgaXMgbm90IHNldAojIENPTkZJR19MQ0RfUExBVEZPUk0gaXMgbm90IHNldAojIENPTkZJR19M
+Q0RfTE1TNTAxS0YwMyBpcyBub3Qgc2V0CkNPTkZJR19MQ0RfSFg4MzU3PW0KIyBDT05GSUdfQkFD
+S0xJR0hUX0NMQVNTX0RFVklDRSBpcyBub3Qgc2V0CiMgQ09ORklHX1ZHQVNUQVRFIGlzIG5vdCBz
+ZXQKQ09ORklHX1ZJREVPTU9ERV9IRUxQRVJTPXkKIyBDT05GSUdfTE9HTyBpcyBub3Qgc2V0CkNP
+TkZJR19TT1VORD1tCkNPTkZJR19TT1VORF9PU1NfQ09SRT15CkNPTkZJR19TT1VORF9PU1NfQ09S
+RV9QUkVDTEFJTT15CkNPTkZJR19TTkQ9bQpDT05GSUdfU05EX1RJTUVSPW0KQ09ORklHX1NORF9Q
+Q009bQpDT05GSUdfU05EX0RNQUVOR0lORV9QQ009bQpDT05GSUdfU05EX0hXREVQPW0KQ09ORklH
+X1NORF9SQVdNSURJPW0KQ09ORklHX1NORF9DT01QUkVTU19PRkZMT0FEPW0KQ09ORklHX1NORF9K
+QUNLPXkKIyBDT05GSUdfU05EX1NFUVVFTkNFUiBpcyBub3Qgc2V0CkNPTkZJR19TTkRfT1NTRU1V
+TD15CkNPTkZJR19TTkRfTUlYRVJfT1NTPW0KIyBDT05GSUdfU05EX1BDTV9PU1MgaXMgbm90IHNl
+dApDT05GSUdfU05EX0hSVElNRVI9bQpDT05GSUdfU05EX0RZTkFNSUNfTUlOT1JTPXkKQ09ORklH
+X1NORF9NQVhfQ0FSRFM9MzIKQ09ORklHX1NORF9TVVBQT1JUX09MRF9BUEk9eQpDT05GSUdfU05E
+X1ZFUkJPU0VfUFJJTlRLPXkKIyBDT05GSUdfU05EX0RFQlVHIGlzIG5vdCBzZXQKQ09ORklHX1NO
+RF9WTUFTVEVSPXkKQ09ORklHX1NORF9ETUFfU0dCVUY9eQojIENPTkZJR19TTkRfUkFXTUlESV9T
+RVEgaXMgbm90IHNldAojIENPTkZJR19TTkRfT1BMM19MSUJfU0VRIGlzIG5vdCBzZXQKIyBDT05G
+SUdfU05EX09QTDRfTElCX1NFUSBpcyBub3Qgc2V0CiMgQ09ORklHX1NORF9TQkFXRV9TRVEgaXMg
+bm90IHNldAojIENPTkZJR19TTkRfRU1VMTBLMV9TRVEgaXMgbm90IHNldApDT05GSUdfU05EX0RS
+SVZFUlM9eQpDT05GSUdfU05EX1BDU1A9bQojIENPTkZJR19TTkRfRFVNTVkgaXMgbm90IHNldApD
+T05GSUdfU05EX0FMT09QPW0KIyBDT05GSUdfU05EX01UUEFWIGlzIG5vdCBzZXQKIyBDT05GSUdf
+U05EX1NFUklBTF9VMTY1NTAgaXMgbm90IHNldAojIENPTkZJR19TTkRfTVBVNDAxIGlzIG5vdCBz
+ZXQKCiMKIyBIRC1BdWRpbwojCiMgQ09ORklHX1NORF9TUEkgaXMgbm90IHNldApDT05GSUdfU05E
+X1VTQj15CkNPTkZJR19TTkRfVVNCX0FVRElPPW0KQ09ORklHX1NORF9VU0JfVUExMDE9bQojIENP
+TkZJR19TTkRfVVNCX1VTWDJZIGlzIG5vdCBzZXQKQ09ORklHX1NORF9VU0JfQ0FJQVE9bQojIENP
+TkZJR19TTkRfVVNCX0NBSUFRX0lOUFVUIGlzIG5vdCBzZXQKIyBDT05GSUdfU05EX1VTQl9VUzEy
+MkwgaXMgbm90IHNldApDT05GSUdfU05EX1VTQl82RklSRT1tCiMgQ09ORklHX1NORF9VU0JfSElG
+QUNFIGlzIG5vdCBzZXQKQ09ORklHX1NORF9CQ0QyMDAwPW0KQ09ORklHX1NORF9GSVJFV0lSRT15
+CkNPTkZJR19TTkRfRklSRVdJUkVfTElCPW0KQ09ORklHX1NORF9ESUNFPW0KIyBDT05GSUdfU05E
+X0ZJUkVXSVJFX1NQRUFLRVJTIGlzIG5vdCBzZXQKIyBDT05GSUdfU05EX0lTSUdIVCBpcyBub3Qg
+c2V0CkNPTkZJR19TTkRfU0NTMVg9bQojIENPTkZJR19TTkRfRklSRVdPUktTIGlzIG5vdCBzZXQK
+Q09ORklHX1NORF9CRUJPQj1tCiMgQ09ORklHX1NORF9QQ01DSUEgaXMgbm90IHNldApDT05GSUdf
+U05EX1NPQz1tCkNPTkZJR19TTkRfU09DX0dFTkVSSUNfRE1BRU5HSU5FX1BDTT15CiMgQ09ORklH
+X1NORF9TT0NfQURJIGlzIG5vdCBzZXQKQ09ORklHX1NORF9BVE1FTF9TT0M9bQpDT05GSUdfU05E
+X0JDTTI4MzVfU09DX0kyUz1tCiMgQ09ORklHX1NORF9FUDkzWFhfU09DIGlzIG5vdCBzZXQKCiMK
+IyBTb0MgQXVkaW8gZm9yIEZyZWVzY2FsZSBDUFVzCiMKCiMKIyBDb21tb24gU29DIEF1ZGlvIG9w
+dGlvbnMgZm9yIEZyZWVzY2FsZSBDUFVzOgojCkNPTkZJR19TTkRfU09DX0ZTTF9BU1JDPW0KQ09O
+RklHX1NORF9TT0NfRlNMX1NBST1tCkNPTkZJR19TTkRfU09DX0ZTTF9TU0k9bQpDT05GSUdfU05E
+X1NPQ19GU0xfU1BESUY9bQpDT05GSUdfU05EX1NPQ19GU0xfRVNBST1tCkNPTkZJR19TTkRfU09D
+X0lNWF9BVURNVVg9bQojIENPTkZJR19TTkRfSU1YX1NPQyBpcyBub3Qgc2V0CkNPTkZJR19TTkRf
+Slo0NzQwX1NPQz1tCkNPTkZJR19TTkRfSlo0NzQwX1NPQ19JMlM9bQpDT05GSUdfU05EX0paNDc0
+MF9TT0NfUUlfTEI2MD1tCkNPTkZJR19TTkRfS0lSS1dPT0RfU09DPW0KQ09ORklHX1NORF9TT0Nf
+Uk9DS0NISVA9bQojIENPTkZJR19TTkRfU09DX1NJUkYgaXMgbm90IHNldApDT05GSUdfU05EX1NP
+Q19JMkNfQU5EX1NQST1tCgojCiMgQ09ERUMgZHJpdmVycwojCiMgQ09ORklHX1NORF9TT0NfQUxM
+X0NPREVDUyBpcyBub3Qgc2V0CkNPTkZJR19TTkRfU09DX0FLNDEwND1tCkNPTkZJR19TTkRfU09D
+X0FLNDU1ND1tCkNPTkZJR19TTkRfU09DX0FLNTM4Nj1tCkNPTkZJR19TTkRfU09DX0NTNDJMNTE9
+bQpDT05GSUdfU05EX1NPQ19DUzQyTDUxX0kyQz1tCkNPTkZJR19TTkRfU09DX0NTNDI3MT1tCkNP
+TkZJR19TTkRfU09DX0NTNDI3MV9TUEk9bQpDT05GSUdfU05EX1NPQ19KWjQ3NDBfQ09ERUM9bQoj
+IENPTkZJR19TTkRfU09DX0hETUlfQ09ERUMgaXMgbm90IHNldApDT05GSUdfU05EX1NPQ19FUzgz
+Mjg9bQpDT05GSUdfU05EX1NPQ19QQ00xNzkyQT1tCkNPTkZJR19TTkRfU09DX1BDTTUxMng9bQpD
+T05GSUdfU05EX1NPQ19QQ001MTJ4X1NQST1tCiMgQ09ORklHX1NORF9TT0NfUlQ1Njc3X1NQSSBp
+cyBub3Qgc2V0CkNPTkZJR19TTkRfU09DX1NJUkZfQVVESU9fQ09ERUM9bQpDT05GSUdfU05EX1NP
+Q19TUERJRj1tCiMgQ09ORklHX1NORF9TT0NfU1NNMjYwMl9TUEkgaXMgbm90IHNldApDT05GSUdf
+U05EX1NPQ19XTTg1MTA9bQojIENPTkZJR19TTkRfU09DX1dNODcxMSBpcyBub3Qgc2V0CkNPTkZJ
+R19TTkRfU09DX1dNODcyOD1tCkNPTkZJR19TTkRfU09DX1dNODczMT1tCkNPTkZJR19TTkRfU09D
+X1dNODczNz1tCkNPTkZJR19TTkRfU09DX1dNODc0MT1tCiMgQ09ORklHX1NORF9TT0NfV004NzUw
+IGlzIG5vdCBzZXQKQ09ORklHX1NORF9TT0NfV004NzUzPW0KQ09ORklHX1NORF9TT0NfV004Nzcw
+PW0KQ09ORklHX1NORF9TT0NfV004Nzc2PW0KQ09ORklHX1NORF9TT0NfV004ODA0PW0KQ09ORklH
+X1NORF9TSU1QTEVfQ0FSRD1tCkNPTkZJR19TT1VORF9QUklNRT1tCiMgQ09ORklHX1NPVU5EX09T
+UyBpcyBub3Qgc2V0CgojCiMgSElEIHN1cHBvcnQKIwpDT05GSUdfSElEPW0KIyBDT05GSUdfSElE
+UkFXIGlzIG5vdCBzZXQKQ09ORklHX1VISUQ9bQojIENPTkZJR19ISURfR0VORVJJQyBpcyBub3Qg
+c2V0CgojCiMgU3BlY2lhbCBISUQgZHJpdmVycwojCkNPTkZJR19ISURfQTRURUNIPW0KIyBDT05G
+SUdfSElEX0FDUlVYIGlzIG5vdCBzZXQKQ09ORklHX0hJRF9BUFBMRT1tCkNPTkZJR19ISURfQVVS
+RUFMPW0KIyBDT05GSUdfSElEX0JFTEtJTiBpcyBub3Qgc2V0CkNPTkZJR19ISURfQ0hFUlJZPW0K
+Q09ORklHX0hJRF9DSElDT05ZPW0KIyBDT05GSUdfSElEX1BST0RJS0VZUyBpcyBub3Qgc2V0CkNP
+TkZJR19ISURfQ1lQUkVTUz1tCkNPTkZJR19ISURfRFJBR09OUklTRT1tCkNPTkZJR19EUkFHT05S
+SVNFX0ZGPXkKQ09ORklHX0hJRF9FTVNfRkY9bQpDT05GSUdfSElEX0VMRUNPTT1tCkNPTkZJR19I
+SURfRVpLRVk9bQpDT05GSUdfSElEX0tFWVRPVUNIPW0KQ09ORklHX0hJRF9LWUU9bQojIENPTkZJ
+R19ISURfVUNMT0dJQyBpcyBub3Qgc2V0CkNPTkZJR19ISURfV0FMVE9QPW0KQ09ORklHX0hJRF9H
+WVJBVElPTj1tCkNPTkZJR19ISURfSUNBREU9bQojIENPTkZJR19ISURfVFdJTkhBTiBpcyBub3Qg
+c2V0CiMgQ09ORklHX0hJRF9LRU5TSU5HVE9OIGlzIG5vdCBzZXQKIyBDT05GSUdfSElEX0xDUE9X
+RVIgaXMgbm90IHNldApDT05GSUdfSElEX0xFTk9WTz1tCkNPTkZJR19ISURfTE9HSVRFQ0g9bQpD
+T05GSUdfSElEX0xPR0lURUNIX0hJRFBQPW0KIyBDT05GSUdfTE9HSVRFQ0hfRkYgaXMgbm90IHNl
+dAojIENPTkZJR19MT0dJUlVNQkxFUEFEMl9GRiBpcyBub3Qgc2V0CkNPTkZJR19MT0dJRzk0MF9G
+Rj15CkNPTkZJR19MT0dJV0hFRUxTX0ZGPXkKIyBDT05GSUdfSElEX01BR0lDTU9VU0UgaXMgbm90
+IHNldApDT05GSUdfSElEX01JQ1JPU09GVD1tCiMgQ09ORklHX0hJRF9NT05URVJFWSBpcyBub3Qg
+c2V0CkNPTkZJR19ISURfTVVMVElUT1VDSD1tCiMgQ09ORklHX0hJRF9PUlRFSyBpcyBub3Qgc2V0
+CkNPTkZJR19ISURfUEFOVEhFUkxPUkQ9bQojIENPTkZJR19QQU5USEVSTE9SRF9GRiBpcyBub3Qg
+c2V0CkNPTkZJR19ISURfUEVUQUxZTlg9bQojIENPTkZJR19ISURfUElDT0xDRCBpcyBub3Qgc2V0
+CkNPTkZJR19ISURfUFJJTUFYPW0KQ09ORklHX0hJRF9TQUlURUs9bQpDT05GSUdfSElEX1NBTVNV
+Tkc9bQojIENPTkZJR19ISURfU1BFRURMSU5LIGlzIG5vdCBzZXQKQ09ORklHX0hJRF9TVEVFTFNF
+UklFUz1tCkNPTkZJR19ISURfU1VOUExVUz1tCiMgQ09ORklHX0hJRF9STUkgaXMgbm90IHNldApD
+T05GSUdfSElEX0dSRUVOQVNJQT1tCiMgQ09ORklHX0dSRUVOQVNJQV9GRiBpcyBub3Qgc2V0CkNP
+TkZJR19ISURfU01BUlRKT1lQTFVTPW0KIyBDT05GSUdfU01BUlRKT1lQTFVTX0ZGIGlzIG5vdCBz
+ZXQKIyBDT05GSUdfSElEX1RJVk8gaXMgbm90IHNldApDT05GSUdfSElEX1RPUFNFRUQ9bQpDT05G
+SUdfSElEX1RISU5HTT1tCiMgQ09ORklHX0hJRF9USFJVU1RNQVNURVIgaXMgbm90IHNldApDT05G
+SUdfSElEX1dBQ09NPW0KQ09ORklHX0hJRF9XSUlNT1RFPW0KIyBDT05GSUdfSElEX1hJTk1PIGlz
+IG5vdCBzZXQKIyBDT05GSUdfSElEX1pFUk9QTFVTIGlzIG5vdCBzZXQKQ09ORklHX0hJRF9aWURB
+Q1JPTj1tCiMgQ09ORklHX0hJRF9TRU5TT1JfSFVCIGlzIG5vdCBzZXQKCiMKIyBVU0IgSElEIHN1
+cHBvcnQKIwojIENPTkZJR19VU0JfSElEIGlzIG5vdCBzZXQKIyBDT05GSUdfSElEX1BJRCBpcyBu
+b3Qgc2V0CgojCiMgVVNCIEhJRCBCb290IFByb3RvY29sIGRyaXZlcnMKIwpDT05GSUdfVVNCX0tC
+RD1tCkNPTkZJR19VU0JfTU9VU0U9bQpDT05GSUdfVVNCX09IQ0lfTElUVExFX0VORElBTj15CkNP
+TkZJR19VU0JfU1VQUE9SVD15CkNPTkZJR19VU0JfQ09NTU9OPXkKQ09ORklHX1VTQl9BUkNIX0hB
+U19IQ0Q9eQpDT05GSUdfVVNCPXkKIyBDT05GSUdfVVNCX0FOTk9VTkNFX05FV19ERVZJQ0VTIGlz
+IG5vdCBzZXQKCiMKIyBNaXNjZWxsYW5lb3VzIFVTQiBvcHRpb25zCiMKQ09ORklHX1VTQl9ERUZB
+VUxUX1BFUlNJU1Q9eQpDT05GSUdfVVNCX0RZTkFNSUNfTUlOT1JTPXkKQ09ORklHX1VTQl9PVEc9
+eQpDT05GSUdfVVNCX09UR19XSElURUxJU1Q9eQpDT05GSUdfVVNCX09UR19CTEFDS0xJU1RfSFVC
+PXkKQ09ORklHX1VTQl9PVEdfRlNNPW0KQ09ORklHX1VTQl9NT049bQojIENPTkZJR19VU0JfV1VT
+QiBpcyBub3Qgc2V0CkNPTkZJR19VU0JfV1VTQl9DQkFGPXkKQ09ORklHX1VTQl9XVVNCX0NCQUZf
+REVCVUc9eQoKIwojIFVTQiBIb3N0IENvbnRyb2xsZXIgRHJpdmVycwojCiMgQ09ORklHX1VTQl9D
+NjdYMDBfSENEIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9YSENJX0hDRD15CkNPTkZJR19VU0JfWEhD
+SV9QTEFURk9STT1tCiMgQ09ORklHX1VTQl9YSENJX01WRUJVIGlzIG5vdCBzZXQKQ09ORklHX1VT
+Ql9YSENJX1JDQVI9bQojIENPTkZJR19VU0JfRUhDSV9IQ0QgaXMgbm90IHNldApDT05GSUdfVVNC
+X09YVTIxMEhQX0hDRD15CkNPTkZJR19VU0JfSVNQMTE2WF9IQ0Q9bQojIENPTkZJR19VU0JfSVNQ
+MTc2MF9IQ0QgaXMgbm90IHNldApDT05GSUdfVVNCX0lTUDEzNjJfSENEPW0KQ09ORklHX1VTQl9G
+VVNCSDIwMF9IQ0Q9bQojIENPTkZJR19VU0JfRk9URzIxMF9IQ0QgaXMgbm90IHNldApDT05GSUdf
+VVNCX01BWDM0MjFfSENEPW0KQ09ORklHX1VTQl9PSENJX0hDRD15CkNPTkZJR19VU0JfT0hDSV9I
+Q0RfUExBVEZPUk09bQpDT05GSUdfVVNCX1UxMzJfSENEPW0KQ09ORklHX1VTQl9TTDgxMV9IQ0Q9
+eQpDT05GSUdfVVNCX1NMODExX0hDRF9JU089eQojIENPTkZJR19VU0JfU0w4MTFfQ1MgaXMgbm90
+IHNldApDT05GSUdfVVNCX1I4QTY2NTk3X0hDRD1tCiMgQ09ORklHX1VTQl9IV0FfSENEIGlzIG5v
+dCBzZXQKQ09ORklHX1VTQl9IQ0RfQkNNQT1tCiMgQ09ORklHX1VTQl9IQ0RfVEVTVF9NT0RFIGlz
+IG5vdCBzZXQKIyBDT05GSUdfVVNCX1JFTkVTQVNfVVNCSFMgaXMgbm90IHNldAoKIwojIFVTQiBE
+ZXZpY2UgQ2xhc3MgZHJpdmVycwojCkNPTkZJR19VU0JfUFJJTlRFUj15CkNPTkZJR19VU0JfV0RN
+PW0KIyBDT05GSUdfVVNCX1RNQyBpcyBub3Qgc2V0CgojCiMgTk9URTogVVNCX1NUT1JBR0UgZGVw
+ZW5kcyBvbiBTQ1NJIGJ1dCBCTEtfREVWX1NEIG1heQojCgojCiMgYWxzbyBiZSBuZWVkZWQ7IHNl
+ZSBVU0JfU1RPUkFHRSBIZWxwIGZvciBtb3JlIGluZm8KIwoKIwojIFVTQiBJbWFnaW5nIGRldmlj
+ZXMKIwojIENPTkZJR19VU0JfTURDODAwIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9NVVNCX0hEUkM9
+bQojIENPTkZJR19VU0JfTVVTQl9IT1NUIGlzIG5vdCBzZXQKIyBDT05GSUdfVVNCX01VU0JfR0FE
+R0VUIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9NVVNCX0RVQUxfUk9MRT15CkNPTkZJR19VU0JfTVVT
+Ql9UVVNCNjAxMD1tCkNPTkZJR19VU0JfTVVTQl9EU1BTPW0KIyBDT05GSUdfVVNCX01VU0JfVVg1
+MDAgaXMgbm90IHNldApDT05GSUdfVVNCX01VU0JfQU0zMzVYX0NISUxEPW0KQ09ORklHX01VU0Jf
+UElPX09OTFk9eQojIENPTkZJR19VU0JfRFdDMyBpcyBub3Qgc2V0CkNPTkZJR19VU0JfRFdDMj15
+CkNPTkZJR19VU0JfRFdDMl9IT1NUPXkKQ09ORklHX1VTQl9EV0MyX1BMQVRGT1JNPXkKCiMKIyBH
+YWRnZXQgbW9kZSByZXF1aXJlcyBVU0IgR2FkZ2V0IHN1cHBvcnQgdG8gYmUgZW5hYmxlZAojCiMg
+Q09ORklHX1VTQl9EV0MyX1BFUklQSEVSQUwgaXMgbm90IHNldApDT05GSUdfVVNCX0RXQzJfREVC
+VUc9eQojIENPTkZJR19VU0JfRFdDMl9WRVJCT1NFIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9EV0My
+X1RSQUNLX01JU1NFRF9TT0ZTPXkKQ09ORklHX1VTQl9EV0MyX0RFQlVHX1BFUklPRElDPXkKIyBD
+T05GSUdfVVNCX0NISVBJREVBIGlzIG5vdCBzZXQKCiMKIyBVU0IgcG9ydCBkcml2ZXJzCiMKCiMK
+IyBVU0IgTWlzY2VsbGFuZW91cyBkcml2ZXJzCiMKQ09ORklHX1VTQl9FTUk2Mj15CkNPTkZJR19V
+U0JfRU1JMjY9eQojIENPTkZJR19VU0JfQURVVFVYIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9TRVZT
+RUc9bQojIENPTkZJR19VU0JfUklPNTAwIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9MRUdPVE9XRVI9
+bQojIENPTkZJR19VU0JfTENEIGlzIG5vdCBzZXQKIyBDT05GSUdfVVNCX0xFRCBpcyBub3Qgc2V0
+CiMgQ09ORklHX1VTQl9DWVBSRVNTX0NZN0M2MyBpcyBub3Qgc2V0CkNPTkZJR19VU0JfQ1lUSEVS
+TT15CiMgQ09ORklHX1VTQl9JRE1PVVNFIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9GVERJX0VMQU49
+eQojIENPTkZJR19VU0JfQVBQTEVESVNQTEFZIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9TSVNVU0JW
+R0E9bQojIENPTkZJR19VU0JfTEQgaXMgbm90IHNldApDT05GSUdfVVNCX1RSQU5DRVZJQlJBVE9S
+PW0KQ09ORklHX1VTQl9JT1dBUlJJT1I9eQojIENPTkZJR19VU0JfVEVTVCBpcyBub3Qgc2V0CkNP
+TkZJR19VU0JfRUhTRVRfVEVTVF9GSVhUVVJFPW0KIyBDT05GSUdfVVNCX0lTSUdIVEZXIGlzIG5v
+dCBzZXQKIyBDT05GSUdfVVNCX1lVUkVYIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9FWlVTQl9GWDI9
+eQojIENPTkZJR19VU0JfTElOS19MQVlFUl9URVNUIGlzIG5vdCBzZXQKCiMKIyBVU0IgUGh5c2lj
+YWwgTGF5ZXIgZHJpdmVycwojCkNPTkZJR19VU0JfUEhZPXkKQ09ORklHX0tFWVNUT05FX1VTQl9Q
+SFk9eQpDT05GSUdfTk9QX1VTQl9YQ0VJVj15CiMgQ09ORklHX0FNMzM1WF9QSFlfVVNCIGlzIG5v
+dCBzZXQKQ09ORklHX1VTQl9HUElPX1ZCVVM9bQpDT05GSUdfVVNCX1JDQVJfUEhZPW0KQ09ORklH
+X1VTQl9SQ0FSX0dFTjJfUEhZPXkKQ09ORklHX1VTQl9HQURHRVQ9eQpDT05GSUdfVVNCX0dBREdF
+VF9ERUJVRz15CiMgQ09ORklHX1VTQl9HQURHRVRfVkVSQk9TRSBpcyBub3Qgc2V0CiMgQ09ORklH
+X1VTQl9HQURHRVRfREVCVUdfRlMgaXMgbm90IHNldApDT05GSUdfVVNCX0dBREdFVF9WQlVTX0RS
+QVc9MgpDT05GSUdfVVNCX0dBREdFVF9TVE9SQUdFX05VTV9CVUZGRVJTPTIKCiMKIyBVU0IgUGVy
+aXBoZXJhbCBDb250cm9sbGVyCiMKQ09ORklHX1VTQl9GVVNCMzAwPW0KIyBDT05GSUdfVVNCX0ZP
+VEcyMTBfVURDIGlzIG5vdCBzZXQKQ09ORklHX1VTQl9HUl9VREM9eQpDT05GSUdfVVNCX1I4QTY2
+NTk3PW0KIyBDT05GSUdfVVNCX1BYQTI3WCBpcyBub3Qgc2V0CkNPTkZJR19VU0JfTVZfVURDPXkK
+IyBDT05GSUdfVVNCX01WX1UzRCBpcyBub3Qgc2V0CkNPTkZJR19VU0JfTTY2NTkyPXkKQ09ORklH
+X1VTQl9ORVQyMjcyPW0KIyBDT05GSUdfVVNCX05FVDIyNzJfRE1BIGlzIG5vdCBzZXQKQ09ORklH
+X1VTQl9HQURHRVRfWElMSU5YPW0KQ09ORklHX1VTQl9EVU1NWV9IQ0Q9bQpDT05GSUdfVVNCX0xJ
+QkNPTVBPU0lURT1tCkNPTkZJR19VU0JfRl9TU19MQj1tCkNPTkZJR19VU0JfRl9GUz1tCkNPTkZJ
+R19VU0JfRl9VVkM9bQpDT05GSUdfVVNCX0NPTkZJR0ZTPW0KQ09ORklHX1VTQl9DT05GSUdGU19G
+X0xCX1NTPXkKIyBDT05GSUdfVVNCX0NPTkZJR0ZTX0ZfRlMgaXMgbm90IHNldAojIENPTkZJR19V
+U0JfWkVSTyBpcyBub3Qgc2V0CiMgQ09ORklHX1VTQl9BVURJTyBpcyBub3Qgc2V0CkNPTkZJR19V
+U0JfR0FER0VURlM9bQpDT05GSUdfVVNCX0ZVTkNUSU9ORlM9bQpDT05GSUdfVVNCX0ZVTkNUSU9O
+RlNfR0VORVJJQz15CkNPTkZJR19VU0JfTUlESV9HQURHRVQ9bQpDT05GSUdfVVNCX0dfUFJJTlRF
+Uj1tCkNPTkZJR19VU0JfR19ISUQ9bQpDT05GSUdfVVNCX0dfV0VCQ0FNPW0KIyBDT05GSUdfVVNC
+X0xFRF9UUklHIGlzIG5vdCBzZXQKQ09ORklHX1VXQj1tCkNPTkZJR19VV0JfSFdBPW0KIyBDT05G
+SUdfVVdCX0kxNDgwVSBpcyBub3Qgc2V0CkNPTkZJR19NTUM9bQpDT05GSUdfTU1DX0RFQlVHPXkK
+Q09ORklHX01NQ19DTEtHQVRFPXkKCiMKIyBNTUMvU0QvU0RJTyBDYXJkIERyaXZlcnMKIwojIENP
+TkZJR19NTUNfVEVTVCBpcyBub3Qgc2V0CgojCiMgTU1DL1NEL1NESU8gSG9zdCBDb250cm9sbGVy
+IERyaXZlcnMKIwpDT05GSUdfTU1DX1NESENJPW0KQ09ORklHX01NQ19TREhDSV9QTFRGTT1tCiMg
+Q09ORklHX01NQ19TREhDSV9PRl9BUkFTQU4gaXMgbm90IHNldApDT05GSUdfTU1DX09NQVBfSFM9
+bQpDT05GSUdfTU1DX1dCU0Q9bQojIENPTkZJR19NTUNfRFcgaXMgbm90IHNldApDT05GSUdfTU1D
+X1ZVQjMwMD1tCkNPTkZJR19NTUNfVVNIQz1tCkNPTkZJR19NTUNfVVNESEk2Uk9MMD1tCkNPTkZJ
+R19NTUNfUkVBTFRFS19VU0I9bQpDT05GSUdfTUVNU1RJQ0s9eQpDT05GSUdfTUVNU1RJQ0tfREVC
+VUc9eQoKIwojIE1lbW9yeVN0aWNrIGRyaXZlcnMKIwpDT05GSUdfTUVNU1RJQ0tfVU5TQUZFX1JF
+U1VNRT15CgojCiMgTWVtb3J5U3RpY2sgSG9zdCBDb250cm9sbGVyIERyaXZlcnMKIwojIENPTkZJ
+R19NRU1TVElDS19SRUFMVEVLX1VTQiBpcyBub3Qgc2V0CkNPTkZJR19ORVdfTEVEUz15CkNPTkZJ
+R19MRURTX0NMQVNTPW0KCiMKIyBMRUQgZHJpdmVycwojCkNPTkZJR19MRURTX0dQSU89bQpDT05G
+SUdfTEVEU19DTEVWT19NQUlMPW0KQ09ORklHX0xFRFNfREE5MDUyPW0KQ09ORklHX0xFRFNfREFD
+MTI0UzA4NT1tCiMgQ09ORklHX0xFRFNfUFdNIGlzIG5vdCBzZXQKQ09ORklHX0xFRFNfTFQzNTkz
+PW0KIyBDT05GSUdfTEVEU19NQzEzNzgzIGlzIG5vdCBzZXQKQ09ORklHX0xFRFNfT1QyMDA9bQoK
+IwojIExFRCBkcml2ZXIgZm9yIGJsaW5rKDEpIFVTQiBSR0IgTEVEIGlzIHVuZGVyIFNwZWNpYWwg
+SElEIGRyaXZlcnMgKEhJRF9USElOR00pCiMKCiMKIyBMRUQgVHJpZ2dlcnMKIwpDT05GSUdfTEVE
+U19UUklHR0VSUz15CkNPTkZJR19MRURTX1RSSUdHRVJfVElNRVI9bQojIENPTkZJR19MRURTX1RS
+SUdHRVJfT05FU0hPVCBpcyBub3Qgc2V0CkNPTkZJR19MRURTX1RSSUdHRVJfSEVBUlRCRUFUPW0K
+Q09ORklHX0xFRFNfVFJJR0dFUl9CQUNLTElHSFQ9bQpDT05GSUdfTEVEU19UUklHR0VSX0NQVT15
+CkNPTkZJR19MRURTX1RSSUdHRVJfR1BJTz15CiMgQ09ORklHX0xFRFNfVFJJR0dFUl9ERUZBVUxU
+X09OIGlzIG5vdCBzZXQKCiMKIyBpcHRhYmxlcyB0cmlnZ2VyIGlzIHVuZGVyIE5ldGZpbHRlciBj
+b25maWcgKExFRCB0YXJnZXQpCiMKIyBDT05GSUdfTEVEU19UUklHR0VSX1RSQU5TSUVOVCBpcyBu
+b3Qgc2V0CkNPTkZJR19MRURTX1RSSUdHRVJfQ0FNRVJBPW0KIyBDT05GSUdfQUNDRVNTSUJJTElU
+WSBpcyBub3Qgc2V0CkNPTkZJR19FREFDPXkKQ09ORklHX0VEQUNfTEVHQUNZX1NZU0ZTPXkKQ09O
+RklHX0VEQUNfREVCVUc9eQpDT05GSUdfRURBQ19NTV9FREFDPXkKQ09ORklHX1JUQ19MSUI9eQpD
+T05GSUdfUlRDX0NMQVNTPXkKQ09ORklHX1JUQ19IQ1RPU1lTPXkKQ09ORklHX1JUQ19TWVNUT0hD
+PXkKQ09ORklHX1JUQ19IQ1RPU1lTX0RFVklDRT0icnRjMCIKIyBDT05GSUdfUlRDX0RFQlVHIGlz
+IG5vdCBzZXQKCiMKIyBSVEMgaW50ZXJmYWNlcwojCiMgQ09ORklHX1JUQ19JTlRGX1NZU0ZTIGlz
+IG5vdCBzZXQKQ09ORklHX1JUQ19JTlRGX0RFVj15CiMgQ09ORklHX1JUQ19JTlRGX0RFVl9VSUVf
+RU1VTCBpcyBub3Qgc2V0CiMgQ09ORklHX1JUQ19EUlZfVEVTVCBpcyBub3Qgc2V0CgojCiMgU1BJ
+IFJUQyBkcml2ZXJzCiMKQ09ORklHX1JUQ19EUlZfTTQxVDkzPXkKQ09ORklHX1JUQ19EUlZfTTQx
+VDk0PW0KQ09ORklHX1JUQ19EUlZfRFMxMzA1PW0KIyBDT05GSUdfUlRDX0RSVl9EUzEzNDMgaXMg
+bm90IHNldApDT05GSUdfUlRDX0RSVl9EUzEzNDc9eQojIENPTkZJR19SVENfRFJWX0RTMTM5MCBp
+cyBub3Qgc2V0CkNPTkZJR19SVENfRFJWX01BWDY5MDI9eQpDT05GSUdfUlRDX0RSVl9SOTcwMT15
+CiMgQ09ORklHX1JUQ19EUlZfUlM1QzM0OCBpcyBub3Qgc2V0CkNPTkZJR19SVENfRFJWX0RTMzIz
+ND1tCkNPTkZJR19SVENfRFJWX1BDRjIxMjM9bQojIENPTkZJR19SVENfRFJWX1JYNDU4MSBpcyBu
+b3Qgc2V0CkNPTkZJR19SVENfRFJWX01DUDc5NT15CgojCiMgUGxhdGZvcm0gUlRDIGRyaXZlcnMK
+IwpDT05GSUdfUlRDX0RSVl9DTU9TPXkKQ09ORklHX1JUQ19EUlZfRFMxMjg2PXkKIyBDT05GSUdf
+UlRDX0RSVl9EUzE1MTEgaXMgbm90IHNldApDT05GSUdfUlRDX0RSVl9EUzE1NTM9eQpDT05GSUdf
+UlRDX0RSVl9EUzE3NDI9eQojIENPTkZJR19SVENfRFJWX0RTMjQwNCBpcyBub3Qgc2V0CkNPTkZJ
+R19SVENfRFJWX0RBOTA1Mj1tCiMgQ09ORklHX1JUQ19EUlZfU1RLMTdUQTggaXMgbm90IHNldApD
+T05GSUdfUlRDX0RSVl9NNDhUODY9eQojIENPTkZJR19SVENfRFJWX000OFQzNSBpcyBub3Qgc2V0
+CkNPTkZJR19SVENfRFJWX000OFQ1OT1tCkNPTkZJR19SVENfRFJWX01TTTYyNDI9bQojIENPTkZJ
+R19SVENfRFJWX0JRNDgwMiBpcyBub3Qgc2V0CiMgQ09ORklHX1JUQ19EUlZfUlA1QzAxIGlzIG5v
+dCBzZXQKIyBDT05GSUdfUlRDX0RSVl9WMzAyMCBpcyBub3Qgc2V0CgojCiMgb24tQ1BVIFJUQyBk
+cml2ZXJzCiMKQ09ORklHX1JUQ19EUlZfTUMxM1hYWD1tCiMgQ09ORklHX1JUQ19EUlZfU05WUyBp
+cyBub3Qgc2V0CiMgQ09ORklHX1JUQ19EUlZfTU9YQVJUIGlzIG5vdCBzZXQKIyBDT05GSUdfUlRD
+X0RSVl9YR0VORSBpcyBub3Qgc2V0CgojCiMgSElEIFNlbnNvciBSVEMgZHJpdmVycwojCiMgQ09O
+RklHX0RNQURFVklDRVMgaXMgbm90IHNldApDT05GSUdfQVVYRElTUExBWT15CiMgQ09ORklHX1VJ
+TyBpcyBub3Qgc2V0CiMgQ09ORklHX1ZJUlRfRFJJVkVSUyBpcyBub3Qgc2V0CkNPTkZJR19WSVJU
+SU89eQoKIwojIFZpcnRpbyBkcml2ZXJzCiMKQ09ORklHX1ZJUlRJT19CQUxMT09OPXkKQ09ORklH
+X1ZJUlRJT19NTUlPPW0KQ09ORklHX1ZJUlRJT19NTUlPX0NNRExJTkVfREVWSUNFUz15CgojCiMg
+TWljcm9zb2Z0IEh5cGVyLVYgZ3Vlc3Qgc3VwcG9ydAojCiMgQ09ORklHX1NUQUdJTkcgaXMgbm90
+IHNldApDT05GSUdfWDg2X1BMQVRGT1JNX0RFVklDRVM9eQojIENPTkZJR19TRU5TT1JTX0hEQVBT
+IGlzIG5vdCBzZXQKQ09ORklHX0NIUk9NRV9QTEFURk9STVM9eQpDT05GSUdfQ0hST01FT1NfUFNU
+T1JFPW0KCiMKIyBTT0MgKFN5c3RlbSBPbiBDaGlwKSBzcGVjaWZpYyBEcml2ZXJzCiMKQ09ORklH
+X1NPQ19UST15CgojCiMgSGFyZHdhcmUgU3BpbmxvY2sgZHJpdmVycwojCgojCiMgQ2xvY2sgU291
+cmNlIGRyaXZlcnMKIwpDT05GSUdfQ0xLU1JDX0k4MjUzPXkKQ09ORklHX0NMS0VWVF9JODI1Mz15
+CkNPTkZJR19JODI1M19MT0NLPXkKQ09ORklHX0NMS0JMRF9JODI1Mz15CiMgQ09ORklHX0FUTUVM
+X1BJVCBpcyBub3Qgc2V0CiMgQ09ORklHX1NIX1RJTUVSX0NNVCBpcyBub3Qgc2V0CkNPTkZJR19T
+SF9USU1FUl9NVFUyPXkKIyBDT05GSUdfU0hfVElNRVJfVE1VIGlzIG5vdCBzZXQKIyBDT05GSUdf
+RU1fVElNRVJfU1RJIGlzIG5vdCBzZXQKIyBDT05GSUdfTUFJTEJPWCBpcyBub3Qgc2V0CiMgQ09O
+RklHX0lPTU1VX1NVUFBPUlQgaXMgbm90IHNldAoKIwojIFJlbW90ZXByb2MgZHJpdmVycwojCkNP
+TkZJR19SRU1PVEVQUk9DPXkKQ09ORklHX1NURV9NT0RFTV9SUFJPQz15CgojCiMgUnBtc2cgZHJp
+dmVycwojCgojCiMgU09DIChTeXN0ZW0gT24gQ2hpcCkgc3BlY2lmaWMgRHJpdmVycwojCiMgQ09O
+RklHX1BNX0RFVkZSRVEgaXMgbm90IHNldApDT05GSUdfRVhUQ09OPW0KCiMKIyBFeHRjb24gRGV2
+aWNlIERyaXZlcnMKIwpDT05GSUdfRVhUQ09OX0FEQ19KQUNLPW0KIyBDT05GSUdfRVhUQ09OX0FS
+SVpPTkEgaXMgbm90IHNldAojIENPTkZJR19FWFRDT05fR1BJTyBpcyBub3Qgc2V0CkNPTkZJR19N
+RU1PUlk9eQpDT05GSUdfSUlPPXkKQ09ORklHX0lJT19CVUZGRVI9eQpDT05GSUdfSUlPX0JVRkZF
+Ul9DQj15CkNPTkZJR19JSU9fS0ZJRk9fQlVGPXkKQ09ORklHX0lJT19UUklHR0VSRURfQlVGRkVS
+PXkKQ09ORklHX0lJT19UUklHR0VSPXkKQ09ORklHX0lJT19DT05TVU1FUlNfUEVSX1RSSUdHRVI9
+MgoKIwojIEFjY2VsZXJvbWV0ZXJzCiMKIyBDT05GSUdfSUlPX1NUX0FDQ0VMXzNBWElTIGlzIG5v
+dCBzZXQKQ09ORklHX0tYU0Q5PXkKCiMKIyBBbmFsb2cgdG8gZGlnaXRhbCBjb252ZXJ0ZXJzCiMK
+Q09ORklHX0FEX1NJR01BX0RFTFRBPW0KIyBDT05GSUdfQUQ3MjY2IGlzIG5vdCBzZXQKQ09ORklH
+X0FENzI5OD15CiMgQ09ORklHX0FENzQ3NiBpcyBub3Qgc2V0CkNPTkZJR19BRDc3OTE9bQpDT05G
+SUdfQUQ3NzkzPW0KIyBDT05GSUdfQUQ3ODg3IGlzIG5vdCBzZXQKQ09ORklHX0FENzkyMz1tCiMg
+Q09ORklHX0VYWU5PU19BREMgaXMgbm90IHNldApDT05GSUdfTUFYMTAyNz1tCkNPTkZJR19NQ1Az
+MjBYPW0KQ09ORklHX01FTl9aMTg4X0FEQz1tCkNPTkZJR19USV9BREMxMjhTMDUyPW0KIyBDT05G
+SUdfVElfQU0zMzVYX0FEQyBpcyBub3Qgc2V0CiMgQ09ORklHX1ZGNjEwX0FEQyBpcyBub3Qgc2V0
+CkNPTkZJR19YSUxJTlhfWEFEQz1tCgojCiMgQW1wbGlmaWVycwojCkNPTkZJR19BRDgzNjY9eQoK
+IwojIEhpZCBTZW5zb3IgSUlPIENvbW1vbgojCkNPTkZJR19JSU9fU1RfU0VOU09SU19TUEk9eQpD
+T05GSUdfSUlPX1NUX1NFTlNPUlNfQ09SRT15CgojCiMgRGlnaXRhbCB0byBhbmFsb2cgY29udmVy
+dGVycwojCkNPTkZJR19BRDUwNjQ9eQojIENPTkZJR19BRDUzNjAgaXMgbm90IHNldApDT05GSUdf
+QUQ1MzgwPW0KQ09ORklHX0FENTQyMT15CkNPTkZJR19BRDU0NDY9eQojIENPTkZJR19BRDU0NDkg
+aXMgbm90IHNldApDT05GSUdfQUQ1NTA0PXkKQ09ORklHX0FENTYyNFJfU1BJPXkKIyBDT05GSUdf
+QUQ1Njg2IGlzIG5vdCBzZXQKQ09ORklHX0FENTc1NT1tCiMgQ09ORklHX0FENTc2NCBpcyBub3Qg
+c2V0CiMgQ09ORklHX0FENTc5MSBpcyBub3Qgc2V0CkNPTkZJR19BRDczMDM9bQpDT05GSUdfTUNQ
+NDkyMj15CgojCiMgRnJlcXVlbmN5IFN5bnRoZXNpemVycyBERFMvUExMCiMKCiMKIyBDbG9jayBH
+ZW5lcmF0b3IvRGlzdHJpYnV0aW9uCiMKIyBDT05GSUdfQUQ5NTIzIGlzIG5vdCBzZXQKCiMKIyBQ
+aGFzZS1Mb2NrZWQgTG9vcCAoUExMKSBmcmVxdWVuY3kgc3ludGhlc2l6ZXJzCiMKIyBDT05GSUdf
+QURGNDM1MCBpcyBub3Qgc2V0CgojCiMgRGlnaXRhbCBneXJvc2NvcGUgc2Vuc29ycwojCkNPTkZJ
+R19BRElTMTYwODA9bQpDT05GSUdfQURJUzE2MTMwPXkKQ09ORklHX0FESVMxNjEzNj15CkNPTkZJ
+R19BRElTMTYyNjA9bQojIENPTkZJR19BRFhSUzQ1MCBpcyBub3Qgc2V0CkNPTkZJR19JSU9fU1Rf
+R1lST18zQVhJUz1tCkNPTkZJR19JSU9fU1RfR1lST19TUElfM0FYSVM9bQoKIwojIEh1bWlkaXR5
+IHNlbnNvcnMKIwojIENPTkZJR19ESFQxMSBpcyBub3Qgc2V0CgojCiMgSW5lcnRpYWwgbWVhc3Vy
+ZW1lbnQgdW5pdHMKIwpDT05GSUdfQURJUzE2NDAwPXkKQ09ORklHX0FESVMxNjQ4MD15CkNPTkZJ
+R19JSU9fQURJU19MSUI9eQpDT05GSUdfSUlPX0FESVNfTElCX0JVRkZFUj15CgojCiMgTGlnaHQg
+c2Vuc29ycwojCgojCiMgTWFnbmV0b21ldGVyIHNlbnNvcnMKIwpDT05GSUdfSUlPX1NUX01BR05f
+M0FYSVM9eQpDT05GSUdfSUlPX1NUX01BR05fU1BJXzNBWElTPXkKCiMKIyBJbmNsaW5vbWV0ZXIg
+c2Vuc29ycwojCgojCiMgVHJpZ2dlcnMgLSBzdGFuZGFsb25lCiMKIyBDT05GSUdfSUlPX0lOVEVS
+UlVQVF9UUklHR0VSIGlzIG5vdCBzZXQKQ09ORklHX0lJT19TWVNGU19UUklHR0VSPXkKCiMKIyBQ
+cmVzc3VyZSBzZW5zb3JzCiMKIyBDT05GSUdfSUlPX1NUX1BSRVNTIGlzIG5vdCBzZXQKCiMKIyBM
+aWdodG5pbmcgc2Vuc29ycwojCiMgQ09ORklHX0FTMzkzNSBpcyBub3Qgc2V0CgojCiMgVGVtcGVy
+YXR1cmUgc2Vuc29ycwojCkNPTkZJR19QV009eQpDT05GSUdfUFdNX1NZU0ZTPXkKIyBDT05GSUdf
+UFdNX0NMUFM3MTFYIGlzIG5vdCBzZXQKQ09ORklHX1BXTV9GU0xfRlRNPW0KQ09ORklHX1BXTV9M
+UFNTPW0KIyBDT05GSUdfUFdNX1JFTkVTQVNfVFBVIGlzIG5vdCBzZXQKQ09ORklHX0lSUUNISVA9
+eQpDT05GSUdfSVBBQ0tfQlVTPXkKIyBDT05GSUdfUkVTRVRfQ09OVFJPTExFUiBpcyBub3Qgc2V0
+CkNPTkZJR19GTUM9eQojIENPTkZJR19GTUNfRkFLRURFViBpcyBub3Qgc2V0CiMgQ09ORklHX0ZN
+Q19UUklWSUFMIGlzIG5vdCBzZXQKQ09ORklHX0ZNQ19XUklURV9FRVBST009eQojIENPTkZJR19G
+TUNfQ0hBUkRFViBpcyBub3Qgc2V0CgojCiMgUEhZIFN1YnN5c3RlbQojCkNPTkZJR19HRU5FUklD
+X1BIWT15CkNPTkZJR19QSFlfRVhZTk9TX01JUElfVklERU89eQpDT05GSUdfT01BUF9DT05UUk9M
+X1BIWT1tCiMgQ09ORklHX1BIWV9FWFlOT1NfRFBfVklERU8gaXMgbm90IHNldApDT05GSUdfQkNN
+X0tPTkFfVVNCMl9QSFk9bQojIENPTkZJR19QSFlfU0FNU1VOR19VU0IyIGlzIG5vdCBzZXQKQ09O
+RklHX1BIWV9TVF9TUEVBUjEzMTBfTUlQSFk9bQpDT05GSUdfUEhZX1NUX1NQRUFSMTM0MF9NSVBI
+WT1tCkNPTkZJR19QSFlfWEdFTkU9eQojIENPTkZJR19QT1dFUkNBUCBpcyBub3Qgc2V0CkNPTkZJ
+R19NQ0I9bQpDT05GSUdfUkFTPXkKCiMKIyBBbmRyb2lkCiMKIyBDT05GSUdfQU5EUk9JRCBpcyBu
+b3Qgc2V0CgojCiMgRmlybXdhcmUgRHJpdmVycwojCiMgQ09ORklHX0VERCBpcyBub3Qgc2V0CiMg
+Q09ORklHX0ZJUk1XQVJFX01FTU1BUCBpcyBub3Qgc2V0CkNPTkZJR19ERUxMX1JCVT15CkNPTkZJ
+R19EQ0RCQVM9eQpDT05GSUdfRE1JSUQ9eQpDT05GSUdfRE1JX1NZU0ZTPXkKQ09ORklHX0RNSV9T
+Q0FOX01BQ0hJTkVfTk9OX0VGSV9GQUxMQkFDSz15CkNPTkZJR19HT09HTEVfRklSTVdBUkU9eQoK
+IwojIEdvb2dsZSBGaXJtd2FyZSBEcml2ZXJzCiMKQ09ORklHX0dPT0dMRV9NRU1DT05TT0xFPXkK
+CiMKIyBGaWxlIHN5c3RlbXMKIwpDT05GSUdfRENBQ0hFX1dPUkRfQUNDRVNTPXkKIyBDT05GSUdf
+RlNfUE9TSVhfQUNMIGlzIG5vdCBzZXQKQ09ORklHX0VYUE9SVEZTPXkKQ09ORklHX0ZJTEVfTE9D
+S0lORz15CkNPTkZJR19GU05PVElGWT15CiMgQ09ORklHX0ROT1RJRlkgaXMgbm90IHNldApDT05G
+SUdfSU5PVElGWV9VU0VSPXkKIyBDT05GSUdfRkFOT1RJRlkgaXMgbm90IHNldApDT05GSUdfUVVP
+VEE9eQojIENPTkZJR19QUklOVF9RVU9UQV9XQVJOSU5HIGlzIG5vdCBzZXQKIyBDT05GSUdfUVVP
+VEFfREVCVUcgaXMgbm90IHNldApDT05GSUdfUVVPVEFfVFJFRT15CkNPTkZJR19RRk1UX1YxPW0K
+Q09ORklHX1FGTVRfVjI9eQpDT05GSUdfUVVPVEFDVEw9eQpDT05GSUdfQVVUT0ZTNF9GUz1tCkNP
+TkZJR19GVVNFX0ZTPXkKQ09ORklHX0NVU0U9bQpDT05GSUdfT1ZFUkxBWUZTX0ZTPXkKCiMKIyBD
+YWNoZXMKIwpDT05GSUdfRlNDQUNIRT15CkNPTkZJR19GU0NBQ0hFX0RFQlVHPXkKCiMKIyBQc2V1
+ZG8gZmlsZXN5c3RlbXMKIwojIENPTkZJR19QUk9DX0ZTIGlzIG5vdCBzZXQKQ09ORklHX0tFUk5G
+Uz15CkNPTkZJR19TWVNGUz15CkNPTkZJR19IVUdFVExCRlM9eQpDT05GSUdfSFVHRVRMQl9QQUdF
+PXkKQ09ORklHX0NPTkZJR0ZTX0ZTPW0KIyBDT05GSUdfTUlTQ19GSUxFU1lTVEVNUyBpcyBub3Qg
+c2V0CkNPTkZJR19OTFM9eQpDT05GSUdfTkxTX0RFRkFVTFQ9Imlzbzg4NTktMSIKQ09ORklHX05M
+U19DT0RFUEFHRV80Mzc9eQpDT05GSUdfTkxTX0NPREVQQUdFXzczNz15CkNPTkZJR19OTFNfQ09E
+RVBBR0VfNzc1PW0KIyBDT05GSUdfTkxTX0NPREVQQUdFXzg1MCBpcyBub3Qgc2V0CkNPTkZJR19O
+TFNfQ09ERVBBR0VfODUyPW0KIyBDT05GSUdfTkxTX0NPREVQQUdFXzg1NSBpcyBub3Qgc2V0CiMg
+Q09ORklHX05MU19DT0RFUEFHRV84NTcgaXMgbm90IHNldApDT05GSUdfTkxTX0NPREVQQUdFXzg2
+MD1tCkNPTkZJR19OTFNfQ09ERVBBR0VfODYxPXkKQ09ORklHX05MU19DT0RFUEFHRV84NjI9bQoj
+IENPTkZJR19OTFNfQ09ERVBBR0VfODYzIGlzIG5vdCBzZXQKQ09ORklHX05MU19DT0RFUEFHRV84
+NjQ9bQojIENPTkZJR19OTFNfQ09ERVBBR0VfODY1IGlzIG5vdCBzZXQKIyBDT05GSUdfTkxTX0NP
+REVQQUdFXzg2NiBpcyBub3Qgc2V0CkNPTkZJR19OTFNfQ09ERVBBR0VfODY5PW0KQ09ORklHX05M
+U19DT0RFUEFHRV85MzY9eQpDT05GSUdfTkxTX0NPREVQQUdFXzk1MD15CkNPTkZJR19OTFNfQ09E
+RVBBR0VfOTMyPW0KIyBDT05GSUdfTkxTX0NPREVQQUdFXzk0OSBpcyBub3Qgc2V0CiMgQ09ORklH
+X05MU19DT0RFUEFHRV84NzQgaXMgbm90IHNldApDT05GSUdfTkxTX0lTTzg4NTlfOD1tCkNPTkZJ
+R19OTFNfQ09ERVBBR0VfMTI1MD1tCkNPTkZJR19OTFNfQ09ERVBBR0VfMTI1MT15CkNPTkZJR19O
+TFNfQVNDSUk9bQpDT05GSUdfTkxTX0lTTzg4NTlfMT15CkNPTkZJR19OTFNfSVNPODg1OV8yPXkK
+Q09ORklHX05MU19JU084ODU5XzM9bQojIENPTkZJR19OTFNfSVNPODg1OV80IGlzIG5vdCBzZXQK
+Q09ORklHX05MU19JU084ODU5XzU9bQpDT05GSUdfTkxTX0lTTzg4NTlfNj15CkNPTkZJR19OTFNf
+SVNPODg1OV83PW0KQ09ORklHX05MU19JU084ODU5Xzk9eQpDT05GSUdfTkxTX0lTTzg4NTlfMTM9
+bQojIENPTkZJR19OTFNfSVNPODg1OV8xNCBpcyBub3Qgc2V0CkNPTkZJR19OTFNfSVNPODg1OV8x
+NT15CkNPTkZJR19OTFNfS09JOF9SPXkKIyBDT05GSUdfTkxTX0tPSThfVSBpcyBub3Qgc2V0CiMg
+Q09ORklHX05MU19NQUNfUk9NQU4gaXMgbm90IHNldApDT05GSUdfTkxTX01BQ19DRUxUSUM9bQpD
+T05GSUdfTkxTX01BQ19DRU5URVVSTz15CkNPTkZJR19OTFNfTUFDX0NST0FUSUFOPXkKQ09ORklH
+X05MU19NQUNfQ1lSSUxMSUM9bQpDT05GSUdfTkxTX01BQ19HQUVMSUM9bQpDT05GSUdfTkxTX01B
+Q19HUkVFSz1tCkNPTkZJR19OTFNfTUFDX0lDRUxBTkQ9eQpDT05GSUdfTkxTX01BQ19JTlVJVD15
+CkNPTkZJR19OTFNfTUFDX1JPTUFOSUFOPXkKIyBDT05GSUdfTkxTX01BQ19UVVJLSVNIIGlzIG5v
+dCBzZXQKQ09ORklHX05MU19VVEY4PW0KCiMKIyBLZXJuZWwgaGFja2luZwojCkNPTkZJR19UUkFD
+RV9JUlFGTEFHU19TVVBQT1JUPXkKCiMKIyBwcmludGsgYW5kIGRtZXNnIG9wdGlvbnMKIwpDT05G
+SUdfUFJJTlRLX1RJTUU9eQpDT05GSUdfTUVTU0FHRV9MT0dMRVZFTF9ERUZBVUxUPTQKQ09ORklH
+X0JPT1RfUFJJTlRLX0RFTEFZPXkKQ09ORklHX0RZTkFNSUNfREVCVUc9eQoKIwojIENvbXBpbGUt
+dGltZSBjaGVja3MgYW5kIGNvbXBpbGVyIG9wdGlvbnMKIwojIENPTkZJR19FTkFCTEVfV0FSTl9E
+RVBSRUNBVEVEIGlzIG5vdCBzZXQKIyBDT05GSUdfRU5BQkxFX01VU1RfQ0hFQ0sgaXMgbm90IHNl
+dApDT05GSUdfRlJBTUVfV0FSTj0xMDI0CkNPTkZJR19TVFJJUF9BU01fU1lNUz15CkNPTkZJR19S
+RUFEQUJMRV9BU009eQojIENPTkZJR19VTlVTRURfU1lNQk9MUyBpcyBub3Qgc2V0CkNPTkZJR19E
+RUJVR19GUz15CkNPTkZJR19IRUFERVJTX0NIRUNLPXkKQ09ORklHX0RFQlVHX1NFQ1RJT05fTUlT
+TUFUQ0g9eQpDT05GSUdfQVJDSF9XQU5UX0ZSQU1FX1BPSU5URVJTPXkKQ09ORklHX0ZSQU1FX1BP
+SU5URVI9eQojIENPTkZJR19ERUJVR19GT1JDRV9XRUFLX1BFUl9DUFUgaXMgbm90IHNldAojIENP
+TkZJR19NQUdJQ19TWVNSUSBpcyBub3Qgc2V0CkNPTkZJR19ERUJVR19LRVJORUw9eQoKIwojIE1l
+bW9yeSBEZWJ1Z2dpbmcKIwojIENPTkZJR19ERUJVR19QQUdFQUxMT0MgaXMgbm90IHNldAojIENP
+TkZJR19ERUJVR19PQkpFQ1RTIGlzIG5vdCBzZXQKQ09ORklHX1NMVUJfREVCVUdfT049eQojIENP
+TkZJR19TTFVCX1NUQVRTIGlzIG5vdCBzZXQKQ09ORklHX0hBVkVfREVCVUdfS01FTUxFQUs9eQoj
+IENPTkZJR19ERUJVR19LTUVNTEVBSyBpcyBub3Qgc2V0CkNPTkZJR19ERUJVR19TVEFDS19VU0FH
+RT15CiMgQ09ORklHX0RFQlVHX1ZNIGlzIG5vdCBzZXQKQ09ORklHX0RFQlVHX1ZJUlRVQUw9eQpD
+T05GSUdfREVCVUdfTUVNT1JZX0lOSVQ9eQojIENPTkZJR19ERUJVR19QRVJfQ1BVX01BUFMgaXMg
+bm90IHNldApDT05GSUdfREVCVUdfSElHSE1FTT15CkNPTkZJR19IQVZFX0RFQlVHX1NUQUNLT1ZF
+UkZMT1c9eQpDT05GSUdfREVCVUdfU1RBQ0tPVkVSRkxPVz15CkNPTkZJR19IQVZFX0FSQ0hfS01F
+TUNIRUNLPXkKIyBDT05GSUdfREVCVUdfU0hJUlEgaXMgbm90IHNldAoKIwojIERlYnVnIExvY2t1
+cHMgYW5kIEhhbmdzCiMKIyBDT05GSUdfTE9DS1VQX0RFVEVDVE9SIGlzIG5vdCBzZXQKQ09ORklH
+X0RFVEVDVF9IVU5HX1RBU0s9eQpDT05GSUdfREVGQVVMVF9IVU5HX1RBU0tfVElNRU9VVD0xMjAK
+Q09ORklHX0JPT1RQQVJBTV9IVU5HX1RBU0tfUEFOSUM9eQpDT05GSUdfQk9PVFBBUkFNX0hVTkdf
+VEFTS19QQU5JQ19WQUxVRT0xCiMgQ09ORklHX1BBTklDX09OX09PUFMgaXMgbm90IHNldApDT05G
+SUdfUEFOSUNfT05fT09QU19WQUxVRT0wCkNPTkZJR19QQU5JQ19USU1FT1VUPTAKIyBDT05GSUdf
+U0NIRURfU1RBQ0tfRU5EX0NIRUNLIGlzIG5vdCBzZXQKCiMKIyBMb2NrIERlYnVnZ2luZyAoc3Bp
+bmxvY2tzLCBtdXRleGVzLCBldGMuLi4pCiMKQ09ORklHX0RFQlVHX1NQSU5MT0NLPXkKQ09ORklH
+X0RFQlVHX01VVEVYRVM9eQpDT05GSUdfREVCVUdfV1dfTVVURVhfU0xPV1BBVEg9eQpDT05GSUdf
+REVCVUdfTE9DS19BTExPQz15CiMgQ09ORklHX1BST1ZFX0xPQ0tJTkcgaXMgbm90IHNldApDT05G
+SUdfTE9DS0RFUD15CkNPTkZJR19MT0NLX1NUQVQ9eQpDT05GSUdfREVCVUdfTE9DS0RFUD15CkNP
+TkZJR19ERUJVR19BVE9NSUNfU0xFRVA9eQojIENPTkZJR19ERUJVR19MT0NLSU5HX0FQSV9TRUxG
+VEVTVFMgaXMgbm90IHNldApDT05GSUdfTE9DS19UT1JUVVJFX1RFU1Q9bQpDT05GSUdfU1RBQ0tU
+UkFDRT15CiMgQ09ORklHX0RFQlVHX0tPQkpFQ1QgaXMgbm90IHNldAojIENPTkZJR19ERUJVR19M
+SVNUIGlzIG5vdCBzZXQKQ09ORklHX0RFQlVHX1BJX0xJU1Q9eQpDT05GSUdfREVCVUdfU0c9eQpD
+T05GSUdfREVCVUdfTk9USUZJRVJTPXkKQ09ORklHX0RFQlVHX0NSRURFTlRJQUxTPXkKCiMKIyBS
+Q1UgRGVidWdnaW5nCiMKIyBDT05GSUdfU1BBUlNFX1JDVV9QT0lOVEVSIGlzIG5vdCBzZXQKQ09O
+RklHX1RPUlRVUkVfVEVTVD15CkNPTkZJR19SQ1VfVE9SVFVSRV9URVNUPXkKQ09ORklHX1JDVV9U
+T1JUVVJFX1RFU1RfUlVOTkFCTEU9eQpDT05GSUdfUkNVX0NQVV9TVEFMTF9USU1FT1VUPTIxCkNP
+TkZJR19SQ1VfQ1BVX1NUQUxMX0lORk89eQpDT05GSUdfUkNVX1RSQUNFPXkKQ09ORklHX05PVElG
+SUVSX0VSUk9SX0lOSkVDVElPTj1tCiMgQ09ORklHX0NQVV9OT1RJRklFUl9FUlJPUl9JTkpFQ1Qg
+aXMgbm90IHNldApDT05GSUdfUE1fTk9USUZJRVJfRVJST1JfSU5KRUNUPW0KQ09ORklHX0ZBVUxU
+X0lOSkVDVElPTj15CiMgQ09ORklHX0ZBSUxTTEFCIGlzIG5vdCBzZXQKIyBDT05GSUdfRkFJTF9Q
+QUdFX0FMTE9DIGlzIG5vdCBzZXQKIyBDT05GSUdfRkFJTF9NTUNfUkVRVUVTVCBpcyBub3Qgc2V0
+CkNPTkZJR19GQVVMVF9JTkpFQ1RJT05fREVCVUdfRlM9eQpDT05GSUdfRkFVTFRfSU5KRUNUSU9O
+X1NUQUNLVFJBQ0VfRklMVEVSPXkKQ09ORklHX0FSQ0hfSEFTX0RFQlVHX1NUUklDVF9VU0VSX0NP
+UFlfQ0hFQ0tTPXkKIyBDT05GSUdfREVCVUdfU1RSSUNUX1VTRVJfQ09QWV9DSEVDS1MgaXMgbm90
+IHNldApDT05GSUdfVVNFUl9TVEFDS1RSQUNFX1NVUFBPUlQ9eQpDT05GSUdfSEFWRV9GVU5DVElP
+Tl9UUkFDRVI9eQpDT05GSUdfSEFWRV9GVU5DVElPTl9HUkFQSF9UUkFDRVI9eQpDT05GSUdfSEFW
+RV9GVU5DVElPTl9HUkFQSF9GUF9URVNUPXkKQ09ORklHX0hBVkVfRFlOQU1JQ19GVFJBQ0U9eQpD
+T05GSUdfSEFWRV9EWU5BTUlDX0ZUUkFDRV9XSVRIX1JFR1M9eQpDT05GSUdfSEFWRV9GVFJBQ0Vf
+TUNPVU5UX1JFQ09SRD15CkNPTkZJR19IQVZFX1NZU0NBTExfVFJBQ0VQT0lOVFM9eQpDT05GSUdf
+SEFWRV9DX1JFQ09SRE1DT1VOVD15CkNPTkZJR19UUkFDRV9DTE9DSz15CkNPTkZJR19UUkFDSU5H
+X1NVUFBPUlQ9eQojIENPTkZJR19GVFJBQ0UgaXMgbm90IHNldAoKIwojIFJ1bnRpbWUgVGVzdGlu
+ZwojCkNPTkZJR19URVNUX0xJU1RfU09SVD15CkNPTkZJR19CQUNLVFJBQ0VfU0VMRl9URVNUPW0K
+Q09ORklHX1JCVFJFRV9URVNUPXkKQ09ORklHX0lOVEVSVkFMX1RSRUVfVEVTVD1tCiMgQ09ORklH
+X1BFUkNQVV9URVNUIGlzIG5vdCBzZXQKQ09ORklHX0FUT01JQzY0X1NFTEZURVNUPXkKQ09ORklH
+X1RFU1RfU1RSSU5HX0hFTFBFUlM9eQojIENPTkZJR19URVNUX0tTVFJUT1ggaXMgbm90IHNldAoj
+IENPTkZJR19URVNUX1JIQVNIVEFCTEUgaXMgbm90IHNldAojIENPTkZJR19CVUlMRF9ET0NTUkMg
+aXMgbm90IHNldAojIENPTkZJR19ETUFfQVBJX0RFQlVHIGlzIG5vdCBzZXQKIyBDT05GSUdfVEVT
+VF9MS00gaXMgbm90IHNldAojIENPTkZJR19URVNUX1VTRVJfQ09QWSBpcyBub3Qgc2V0CkNPTkZJ
+R19URVNUX0ZJUk1XQVJFPXkKQ09ORklHX1RFU1RfVURFTEFZPXkKIyBDT05GSUdfU0FNUExFUyBp
+cyBub3Qgc2V0CkNPTkZJR19IQVZFX0FSQ0hfS0dEQj15CiMgQ09ORklHX0tHREIgaXMgbm90IHNl
+dApDT05GSUdfU1RSSUNUX0RFVk1FTT15CkNPTkZJR19YODZfVkVSQk9TRV9CT09UVVA9eQpDT05G
+SUdfRUFSTFlfUFJJTlRLPXkKQ09ORklHX1g4Nl9QVERVTVA9eQpDT05GSUdfREVCVUdfUk9EQVRB
+PXkKQ09ORklHX0RFQlVHX1JPREFUQV9URVNUPXkKIyBDT05GSUdfREVCVUdfU0VUX01PRFVMRV9S
+T05YIGlzIG5vdCBzZXQKQ09ORklHX0RFQlVHX05YX1RFU1Q9bQojIENPTkZJR19ET1VCTEVGQVVM
+VCBpcyBub3Qgc2V0CiMgQ09ORklHX0RFQlVHX1RMQkZMVVNIIGlzIG5vdCBzZXQKIyBDT05GSUdf
+SU9NTVVfU1RSRVNTIGlzIG5vdCBzZXQKQ09ORklHX0hBVkVfTU1JT1RSQUNFX1NVUFBPUlQ9eQpD
+T05GSUdfSU9fREVMQVlfVFlQRV8wWDgwPTAKQ09ORklHX0lPX0RFTEFZX1RZUEVfMFhFRD0xCkNP
+TkZJR19JT19ERUxBWV9UWVBFX1VERUxBWT0yCkNPTkZJR19JT19ERUxBWV9UWVBFX05PTkU9MwpD
+T05GSUdfSU9fREVMQVlfMFg4MD15CiMgQ09ORklHX0lPX0RFTEFZXzBYRUQgaXMgbm90IHNldAoj
+IENPTkZJR19JT19ERUxBWV9VREVMQVkgaXMgbm90IHNldAojIENPTkZJR19JT19ERUxBWV9OT05F
+IGlzIG5vdCBzZXQKQ09ORklHX0RFRkFVTFRfSU9fREVMQVlfVFlQRT0wCiMgQ09ORklHX0RFQlVH
+X0JPT1RfUEFSQU1TIGlzIG5vdCBzZXQKIyBDT05GSUdfQ1BBX0RFQlVHIGlzIG5vdCBzZXQKQ09O
+RklHX09QVElNSVpFX0lOTElOSU5HPXkKIyBDT05GSUdfREVCVUdfTk1JX1NFTEZURVNUIGlzIG5v
+dCBzZXQKQ09ORklHX1g4Nl9ERUJVR19TVEFUSUNfQ1BVX0hBUz15CgojCiMgU2VjdXJpdHkgb3B0
+aW9ucwojCkNPTkZJR19LRVlTPXkKIyBDT05GSUdfUEVSU0lTVEVOVF9LRVlSSU5HUyBpcyBub3Qg
+c2V0CiMgQ09ORklHX0VOQ1JZUFRFRF9LRVlTIGlzIG5vdCBzZXQKQ09ORklHX0tFWVNfREVCVUdf
+UFJPQ19LRVlTPXkKIyBDT05GSUdfU0VDVVJJVFlfRE1FU0dfUkVTVFJJQ1QgaXMgbm90IHNldAoj
+IENPTkZJR19TRUNVUklUWSBpcyBub3Qgc2V0CkNPTkZJR19TRUNVUklUWUZTPXkKQ09ORklHX0RF
+RkFVTFRfU0VDVVJJVFlfREFDPXkKQ09ORklHX0RFRkFVTFRfU0VDVVJJVFk9IiIKQ09ORklHX0NS
+WVBUTz15CgojCiMgQ3J5cHRvIGNvcmUgb3IgaGVscGVyCiMKQ09ORklHX0NSWVBUT19BTEdBUEk9
+eQpDT05GSUdfQ1JZUFRPX0FMR0FQSTI9eQpDT05GSUdfQ1JZUFRPX0FFQUQ9eQpDT05GSUdfQ1JZ
+UFRPX0FFQUQyPXkKQ09ORklHX0NSWVBUT19CTEtDSVBIRVI9eQpDT05GSUdfQ1JZUFRPX0JMS0NJ
+UEhFUjI9eQpDT05GSUdfQ1JZUFRPX0hBU0g9eQpDT05GSUdfQ1JZUFRPX0hBU0gyPXkKQ09ORklH
+X0NSWVBUT19STkc9eQpDT05GSUdfQ1JZUFRPX1JORzI9eQpDT05GSUdfQ1JZUFRPX1BDT01QPW0K
+Q09ORklHX0NSWVBUT19QQ09NUDI9eQpDT05GSUdfQ1JZUFRPX01BTkFHRVI9eQpDT05GSUdfQ1JZ
+UFRPX01BTkFHRVIyPXkKQ09ORklHX0NSWVBUT19NQU5BR0VSX0RJU0FCTEVfVEVTVFM9eQpDT05G
+SUdfQ1JZUFRPX0dGMTI4TVVMPXkKIyBDT05GSUdfQ1JZUFRPX05VTEwgaXMgbm90IHNldApDT05G
+SUdfQ1JZUFRPX1BDUllQVD15CkNPTkZJR19DUllQVE9fV09SS1FVRVVFPXkKQ09ORklHX0NSWVBU
+T19DUllQVEQ9eQojIENPTkZJR19DUllQVE9fTUNSWVBURCBpcyBub3Qgc2V0CiMgQ09ORklHX0NS
+WVBUT19BVVRIRU5DIGlzIG5vdCBzZXQKQ09ORklHX0NSWVBUT19URVNUPW0KQ09ORklHX0NSWVBU
+T19BQkxLX0hFTFBFUj15CkNPTkZJR19DUllQVE9fR0xVRV9IRUxQRVJfWDg2PXkKCiMKIyBBdXRo
+ZW50aWNhdGVkIEVuY3J5cHRpb24gd2l0aCBBc3NvY2lhdGVkIERhdGEKIwpDT05GSUdfQ1JZUFRP
+X0NDTT15CiMgQ09ORklHX0NSWVBUT19HQ00gaXMgbm90IHNldApDT05GSUdfQ1JZUFRPX1NFUUlW
+PXkKCiMKIyBCbG9jayBtb2RlcwojCkNPTkZJR19DUllQVE9fQ0JDPXkKQ09ORklHX0NSWVBUT19D
+VFI9eQojIENPTkZJR19DUllQVE9fQ1RTIGlzIG5vdCBzZXQKQ09ORklHX0NSWVBUT19FQ0I9eQpD
+T05GSUdfQ1JZUFRPX0xSVz15CkNPTkZJR19DUllQVE9fUENCQz15CkNPTkZJR19DUllQVE9fWFRT
+PXkKCiMKIyBIYXNoIG1vZGVzCiMKQ09ORklHX0NSWVBUT19DTUFDPW0KQ09ORklHX0NSWVBUT19I
+TUFDPXkKQ09ORklHX0NSWVBUT19YQ0JDPW0KIyBDT05GSUdfQ1JZUFRPX1ZNQUMgaXMgbm90IHNl
+dAoKIwojIERpZ2VzdAojCkNPTkZJR19DUllQVE9fQ1JDMzJDPXkKQ09ORklHX0NSWVBUT19DUkMz
+MkNfSU5URUw9bQpDT05GSUdfQ1JZUFRPX0NSQzMyPXkKIyBDT05GSUdfQ1JZUFRPX0NSQzMyX1BD
+TE1VTCBpcyBub3Qgc2V0CkNPTkZJR19DUllQVE9fQ1JDVDEwRElGPW0KQ09ORklHX0NSWVBUT19H
+SEFTSD15CiMgQ09ORklHX0NSWVBUT19NRDQgaXMgbm90IHNldApDT05GSUdfQ1JZUFRPX01ENT15
+CkNPTkZJR19DUllQVE9fTUlDSEFFTF9NSUM9eQojIENPTkZJR19DUllQVE9fUk1EMTI4IGlzIG5v
+dCBzZXQKQ09ORklHX0NSWVBUT19STUQxNjA9eQpDT05GSUdfQ1JZUFRPX1JNRDI1Nj1tCkNPTkZJ
+R19DUllQVE9fUk1EMzIwPXkKQ09ORklHX0NSWVBUT19TSEExPXkKIyBDT05GSUdfQ1JZUFRPX1NI
+QTI1NiBpcyBub3Qgc2V0CkNPTkZJR19DUllQVE9fU0hBNTEyPW0KQ09ORklHX0NSWVBUT19UR1Ix
+OTI9eQpDT05GSUdfQ1JZUFRPX1dQNTEyPXkKCiMKIyBDaXBoZXJzCiMKQ09ORklHX0NSWVBUT19B
+RVM9eQojIENPTkZJR19DUllQVE9fQUVTXzU4NiBpcyBub3Qgc2V0CiMgQ09ORklHX0NSWVBUT19B
+RVNfTklfSU5URUwgaXMgbm90IHNldApDT05GSUdfQ1JZUFRPX0FOVUJJUz1tCiMgQ09ORklHX0NS
+WVBUT19BUkM0IGlzIG5vdCBzZXQKQ09ORklHX0NSWVBUT19CTE9XRklTSD15CkNPTkZJR19DUllQ
+VE9fQkxPV0ZJU0hfQ09NTU9OPXkKQ09ORklHX0NSWVBUT19DQU1FTExJQT1tCkNPTkZJR19DUllQ
+VE9fQ0FTVF9DT01NT049bQpDT05GSUdfQ1JZUFRPX0NBU1Q1PW0KQ09ORklHX0NSWVBUT19DQVNU
+Nj1tCkNPTkZJR19DUllQVE9fREVTPXkKIyBDT05GSUdfQ1JZUFRPX0ZDUllQVCBpcyBub3Qgc2V0
+CkNPTkZJR19DUllQVE9fS0hBWkFEPW0KQ09ORklHX0NSWVBUT19TQUxTQTIwPXkKQ09ORklHX0NS
+WVBUT19TQUxTQTIwXzU4Nj15CkNPTkZJR19DUllQVE9fU0VFRD15CkNPTkZJR19DUllQVE9fU0VS
+UEVOVD15CkNPTkZJR19DUllQVE9fU0VSUEVOVF9TU0UyXzU4Nj15CiMgQ09ORklHX0NSWVBUT19U
+RUEgaXMgbm90IHNldAojIENPTkZJR19DUllQVE9fVFdPRklTSCBpcyBub3Qgc2V0CkNPTkZJR19D
+UllQVE9fVFdPRklTSF9DT01NT049eQpDT05GSUdfQ1JZUFRPX1RXT0ZJU0hfNTg2PXkKCiMKIyBD
+b21wcmVzc2lvbgojCiMgQ09ORklHX0NSWVBUT19ERUZMQVRFIGlzIG5vdCBzZXQKQ09ORklHX0NS
+WVBUT19aTElCPW0KQ09ORklHX0NSWVBUT19MWk89eQojIENPTkZJR19DUllQVE9fTFo0IGlzIG5v
+dCBzZXQKQ09ORklHX0NSWVBUT19MWjRIQz1tCgojCiMgUmFuZG9tIE51bWJlciBHZW5lcmF0aW9u
+CiMKIyBDT05GSUdfQ1JZUFRPX0FOU0lfQ1BSTkcgaXMgbm90IHNldApDT05GSUdfQ1JZUFRPX0RS
+QkdfTUVOVT15CkNPTkZJR19DUllQVE9fRFJCR19ITUFDPXkKIyBDT05GSUdfQ1JZUFRPX0RSQkdf
+SEFTSCBpcyBub3Qgc2V0CkNPTkZJR19DUllQVE9fRFJCR19DVFI9eQpDT05GSUdfQ1JZUFRPX0RS
+Qkc9eQpDT05GSUdfQ1JZUFRPX0hBU0hfSU5GTz15CkNPTkZJR19DUllQVE9fSFc9eQpDT05GSUdf
+Q1JZUFRPX0RFVl9QQURMT0NLPXkKQ09ORklHX0NSWVBUT19ERVZfUEFETE9DS19BRVM9bQojIENP
+TkZJR19DUllQVE9fREVWX1BBRExPQ0tfU0hBIGlzIG5vdCBzZXQKQ09ORklHX0NSWVBUT19ERVZf
+UUNFPXkKQ09ORklHX0FTWU1NRVRSSUNfS0VZX1RZUEU9eQpDT05GSUdfQVNZTU1FVFJJQ19QVUJM
+SUNfS0VZX1NVQlRZUEU9eQpDT05GSUdfUFVCTElDX0tFWV9BTEdPX1JTQT15CkNPTkZJR19YNTA5
+X0NFUlRJRklDQVRFX1BBUlNFUj15CkNPTkZJR19QS0NTN19NRVNTQUdFX1BBUlNFUj15CkNPTkZJ
+R19QS0NTN19URVNUX0tFWT1tCkNPTkZJR19TSUdORURfUEVfRklMRV9WRVJJRklDQVRJT049eQpD
+T05GSUdfSEFWRV9LVk09eQpDT05GSUdfVklSVFVBTElaQVRJT049eQojIENPTkZJR19CSU5BUllf
+UFJJTlRGIGlzIG5vdCBzZXQKCiMKIyBMaWJyYXJ5IHJvdXRpbmVzCiMKQ09ORklHX0JJVFJFVkVS
+U0U9eQpDT05GSUdfR0VORVJJQ19TVFJOQ1BZX0ZST01fVVNFUj15CkNPTkZJR19HRU5FUklDX1NU
+Uk5MRU5fVVNFUj15CkNPTkZJR19HRU5FUklDX0ZJTkRfRklSU1RfQklUPXkKQ09ORklHX0dFTkVS
+SUNfUENJX0lPTUFQPXkKQ09ORklHX0dFTkVSSUNfSU9NQVA9eQpDT05GSUdfR0VORVJJQ19JTz15
+CkNPTkZJR19BUkNIX0hBU19GQVNUX01VTFRJUExJRVI9eQpDT05GSUdfQ1JDX0NDSVRUPXkKQ09O
+RklHX0NSQzE2PXkKQ09ORklHX0NSQ19UMTBESUY9bQpDT05GSUdfQ1JDX0lUVV9UPXkKQ09ORklH
+X0NSQzMyPXkKQ09ORklHX0NSQzMyX1NFTEZURVNUPXkKQ09ORklHX0NSQzMyX1NMSUNFQlk4PXkK
+IyBDT05GSUdfQ1JDMzJfU0xJQ0VCWTQgaXMgbm90IHNldAojIENPTkZJR19DUkMzMl9TQVJXQVRF
+IGlzIG5vdCBzZXQKIyBDT05GSUdfQ1JDMzJfQklUIGlzIG5vdCBzZXQKQ09ORklHX0NSQzc9eQpD
+T05GSUdfTElCQ1JDMzJDPXkKQ09ORklHX0NSQzg9eQpDT05GSUdfQ1JDNjRfRUNNQT1tCiMgQ09O
+RklHX0FVRElUX0FSQ0hfQ09NUEFUX0dFTkVSSUMgaXMgbm90IHNldAojIENPTkZJR19SQU5ET00z
+Ml9TRUxGVEVTVCBpcyBub3Qgc2V0CkNPTkZJR19aTElCX0lORkxBVEU9bQpDT05GSUdfWkxJQl9E
+RUZMQVRFPW0KQ09ORklHX0xaT19DT01QUkVTUz15CkNPTkZJR19MWk9fREVDT01QUkVTUz15CkNP
+TkZJR19MWjRIQ19DT01QUkVTUz1tCkNPTkZJR19MWjRfREVDT01QUkVTUz1tCkNPTkZJR19YWl9E
+RUM9eQojIENPTkZJR19YWl9ERUNfWDg2IGlzIG5vdCBzZXQKIyBDT05GSUdfWFpfREVDX1BPV0VS
+UEMgaXMgbm90IHNldApDT05GSUdfWFpfREVDX0lBNjQ9eQojIENPTkZJR19YWl9ERUNfQVJNIGlz
+IG5vdCBzZXQKIyBDT05GSUdfWFpfREVDX0FSTVRIVU1CIGlzIG5vdCBzZXQKIyBDT05GSUdfWFpf
+REVDX1NQQVJDIGlzIG5vdCBzZXQKQ09ORklHX1haX0RFQ19CQ0o9eQojIENPTkZJR19YWl9ERUNf
+VEVTVCBpcyBub3Qgc2V0CkNPTkZJR19ERUNPTVBSRVNTX0JaSVAyPXkKQ09ORklHX0RFQ09NUFJF
+U1NfTFpNQT15CkNPTkZJR19ERUNPTVBSRVNTX1haPXkKQ09ORklHX0RFQ09NUFJFU1NfTFpPPXkK
+Q09ORklHX0lOVEVSVkFMX1RSRUU9eQpDT05GSUdfQVNTT0NJQVRJVkVfQVJSQVk9eQpDT05GSUdf
+SEFTX0lPTUVNPXkKQ09ORklHX0hBU19JT1BPUlRfTUFQPXkKQ09ORklHX0hBU19ETUE9eQpDT05G
+SUdfTkxBVFRSPXkKQ09ORklHX0FSQ0hfSEFTX0FUT01JQzY0X0RFQ19JRl9QT1NJVElWRT15CiMg
+Q09ORklHX0FWRVJBR0UgaXMgbm90IHNldApDT05GSUdfQ0xaX1RBQj15CiMgQ09ORklHX0NPUkRJ
+QyBpcyBub3Qgc2V0CkNPTkZJR19ERFI9eQpDT05GSUdfTVBJTElCPXkKQ09ORklHX09JRF9SRUdJ
+U1RSWT15CkNPTkZJR19BUkNIX0hBU19TR19DSEFJTj15Cg==
+--001a11c353f68f4e670506aa6062--
