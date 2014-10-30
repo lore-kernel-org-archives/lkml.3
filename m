@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274AbaJ3Hyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 03:54:37 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:34886 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385AbaJ3Hyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 03:54:36 -0400
-Date: Thu, 30 Oct 2014 08:51:27 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Jim Paris <jim@jtan.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [PATCH v3] cdc-acm: ensure that termios get set when the port is
- activated
-Message-ID: <20141030075127.GC13062@localhost>
-References: <20141029150716.GG2265@localhost>
- <1414596640-28555-1-git-send-email-johan@kernel.org>
- <20141029155602.GC17399@kroah.com>
- <20141029155840.GJ2265@localhost>
- <20141030005314.GA6049@psychosis.jim.sh>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030005314.GA6049@psychosis.jim.sh>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1758320AbaJ3Hyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 03:54:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55183 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758277AbaJ3Hyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 03:54:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,284,1413270000"; 
+   d="scan'208";a="623313711"
+Message-ID: <1414655671.2918.2.camel@jrissane-mobl.ger.corp.intel.com>
+Subject: Re: [patch] Bluetooth: 6lowpan: use after free in
+ disconnect_devices()
+From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Thu, 30 Oct 2014 09:54:31 +0200
+In-Reply-To: <20141029161057.GF5290@mwanda>
+References: <20141029161057.GF5290@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 08:53:14PM -0400, Jim Paris wrote:
-> The driver wasn't properly configuring the hardware for the current
-> termios settings under all conditions.  Ensure that termios are
-> written to the device when the port is activated.
+Hi Dan,
+
+On ke, 2014-10-29 at 19:10 +0300, Dan Carpenter wrote:
+> This was accidentally changed from list_for_each_entry_safe() to
+> list_for_each_entry() so now it has a use after free bug.  I've changed
+> it back.
+
+Good catch! Thanks for the patch.
+
+Acked-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+
 > 
-> Signed-off-by: Jim Paris <jim@jtan.com>
-> ---
+> Fixes: 90305829635d ('Bluetooth: 6lowpan: Converting rwlocks to use RCU')
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 > 
-> Switched to Johan's suggestion of using a prototype rather than moving
-> acm_tty_set_termios.  This depends on his patch in order to get proper
-> DTR handling.
-> 
-> Thanks,
-> Jim 
-> 
-> ---
->  drivers/usb/class/cdc-acm.c | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-> index e934e19f49f5..d2cd1b6d02a7 100644
-> --- a/drivers/usb/class/cdc-acm.c
-> +++ b/drivers/usb/class/cdc-acm.c
-> @@ -58,6 +58,9 @@ static struct usb_driver acm_driver;
->  static struct tty_driver *acm_tty_driver;
->  static struct acm *acm_table[ACM_TTY_MINORS];
+> diff --git a/net/bluetooth/6lowpan.c b/net/bluetooth/6lowpan.c
+> index 7254bdd..eef298d 100644
+> --- a/net/bluetooth/6lowpan.c
+> +++ b/net/bluetooth/6lowpan.c
+> @@ -1383,7 +1383,7 @@ static const struct file_operations lowpan_control_fops = {
 >  
-> +static void acm_tty_set_termios(struct tty_struct *tty,
-> +				struct ktermios *termios_old);
-> +
+>  static void disconnect_devices(void)
+>  {
+> -	struct lowpan_dev *entry, *new_dev;
+> +	struct lowpan_dev *entry, *tmp, *new_dev;
+>  	struct list_head devices;
+>  
+>  	INIT_LIST_HEAD(&devices);
+> @@ -1408,7 +1408,7 @@ static void disconnect_devices(void)
+>  
+>  	rcu_read_unlock();
+>  
+> -	list_for_each_entry(entry, &devices, list) {
+> +	list_for_each_entry_safe(entry, tmp, &devices, list) {
+>  		ifdown(entry->netdev);
+>  		BT_DBG("Unregistering netdev %s %p",
+>  		       entry->netdev->name, entry->netdev);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Nit: Would you mind placing the prototype after all data declarations
-(i.e. below acm_table_lock)?
 
->  static DEFINE_MUTEX(acm_table_lock);
+Cheers,
+Jukka
 
-Thanks,
-Johan
+
