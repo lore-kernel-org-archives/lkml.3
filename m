@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758870AbaJ3JEA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:04:00 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:51593 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756960AbaJ3JDz (ORCPT
+	id S1758875AbaJ3JEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:04:43 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:58764 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758014AbaJ3JEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:03:55 -0400
+	Thu, 30 Oct 2014 05:04:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Kevin Cernekee <cernekee@gmail.com>, f.fainelli@gmail.com,
+        tglx@linutronix.de, jason@lakedaemon.net, ralf@linux-mips.org,
+        lethal@linux-sh.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH V2 06/15] genirq: Generic chip: Optimize for fixed-endian systems
+Date: Thu, 30 Oct 2014 10:04:24 +0100
+Message-ID: <2089348.fa41ONzNz9@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141030041658.GB29070@brian-ubuntu>
+References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-7-git-send-email-cernekee@gmail.com> <20141030041658.GB29070@brian-ubuntu>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1410281614390.5308@nanos>
-References: <1414139071-3818-1-git-send-email-lftan@altera.com>
-	<alpine.DEB.2.11.1410252258570.5308@nanos>
-	<CAFiDJ5_zsyQ92W4iYG2Ria12TKpkFa8Au5noos1=gtq6_aPyjg@mail.gmail.com>
-	<1806277.3CF96bVORX@wuerfel>
-	<1414492984.2295.8.camel@leyfoon-vm>
-	<alpine.DEB.2.11.1410281614390.5308@nanos>
-Date: Thu, 30 Oct 2014 17:03:52 +0800
-X-Google-Sender-Auth: o20Ehr8IoFOqT4x6mGPt5puck5Y
-Message-ID: <CAFiDJ5-W9HZtzmDza_c8eh6mk-R7jFzYOncgkQF02xDCvgsx4w@mail.gmail.com>
-Subject: Re: [PATCH v5 21/29] nios2: Time keeping
-From: Ley Foon Tan <lftan@altera.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:V9cRYoCTU+oVFZW3xLwNHYpCAX2OqEvA0Zh4+nxWtAZ
+ ervurGLunJufnbQkmHnNE6bq/mr2D2sbK7nirW84Y6RS6vV6GF
+ H48tv+MY/Ga6ljevDUvdTaEfzWGXVqHSwaOtTQSlNh/BRtW13D
+ l7LA9V1hXUNOLjRiPi96Zs8bPLV2t2bJLILjZxMU4e0F2BKSQp
+ 3lrLuuzChcaoEl/Aupo/rhdMBLGw6D1ejXn9iE8KuoirHoPIs4
+ ow0NdeYAqt3/SIZqKtQknZvlREveCpMvLXR8G4zNwuWea68eUu
+ s5ZPKsGmEGTHXZVlF5oAY/LFlS7m6leZus64aotFZwdQAPsjub
+ h0ZxC2GKv8CsxlyvgznE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 11:15 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 28 Oct 2014, Ley Foon Tan wrote:
->> On Sel, 2014-10-28 at 10:23 +0100, Arnd Bergmann wrote:
->> > On Tuesday 28 October 2014 10:46:29 Ley Foon Tan wrote:
->> > > On Sun, Oct 26, 2014 at 5:10 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > > > On Fri, 24 Oct 2014, Ley Foon Tan wrote:
->> > > >> +#ifndef _ASM_NIOS2_TIMEX_H
->> > > >> +#define _ASM_NIOS2_TIMEX_H
->> > > >> +
->> > > >> +typedef unsigned long cycles_t;
->> > > >> +
->> > > >> +extern cycles_t get_cycles(void);
->> > > >> +
->> > > >> +#define ARCH_HAS_READ_CURRENT_TIMER
->> > > >
->> > > > Why does NIOS need that? Does it have a hardware implementation
->> > > > dependent clock frequency which needs to be calibrated at boot time?
->> > > This is suggestion from Arnd to use read_current_timer instead of using
->> > > expensive delay loop calibration during boot.
->> >
->> > My mistake, sorry. I think the right way is to define
->> > calibrate_delay_is_known() rather than read_current_timer(), I was
->> > getting confused by the ARM implementation that does both.
->> Hi Arnd,
->> No problem, I can change that. But, seem that we don't need to have
->> calibrate_delay_is_known() as well. We can just set "lpj_fine" variable,
->> arm64 uses this.
->
-> Please do so and resend the result so I can have another look and add
-> my reviewed tag then.
-Sure, I will send another revision.
+On Wednesday 29 October 2014 21:16:58 Brian Norris wrote:
+> >  static int is_big_endian(struct irq_chip_generic *gc)
+> >  {
+> > -     return !!(gc->domain->gc->gc_flags & IRQ_GC_BE_IO);
+> > +     if (IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP) &&
+> > +         !IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP_BE))
+> > +             return 0;
+> > +     else if (IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP_BE) &&
+> > +              !IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP))
+> > +             return 1;
+> 
+> Would XOR make this any easier to read? e.g.:
+> 
+>         if (IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP) ^
+>             IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP_BE))
+>                 return IS_ENABLED(CONFIG_GENERIC_IRQ_CHIP_BE);
+>         else
+>                 ...
+> 
 
-Thanks for reviewing.
+I think that would only be easier to read for the compiler, not for
+for a human. ;-)
 
-Regards
-Ley Foon
+	Arnd
