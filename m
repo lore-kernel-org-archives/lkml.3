@@ -1,110 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758459AbaJ3IKZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 04:10:25 -0400
-Received: from svenfoo.org ([82.94.215.22]:46016 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758072AbaJ3IJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 04:09:42 -0400
-Message-ID: <5451F242.4070106@zonque.org>
-Date: Thu, 30 Oct 2014 09:09:38 +0100
-From: Daniel Mack <daniel@zonque.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>, simon.mcvittie@collabora.co.uk,
-        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
-        Tom Gundersen <teg@jklm.no>
-Subject: Re: kdbus: add code to gather metadata
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <1414620056-6675-7-git-send-email-gregkh@linuxfoundation.org> <CALCETrWqbpxk83L0k0_78JZCO+ntZhx_hHMcRu=vxs6VE2f5JQ@mail.gmail.com>
-In-Reply-To: <CALCETrWqbpxk83L0k0_78JZCO+ntZhx_hHMcRu=vxs6VE2f5JQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1758216AbaJ3IRT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 04:17:19 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:53563 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbaJ3IRO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 04:17:14 -0400
+Date: Thu, 30 Oct 2014 09:16:32 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: =?UTF-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v2 1/8] pinctrl: Add driver for Zynq
+Message-ID: <20141030091632.1796042d@ipc1.ka-ro>
+In-Reply-To: <041ef3bb17a34994a2c75d137caa235a@BN1AFFO11FD058.protection.gbl>
+References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
+	<1413479495-14206-2-git-send-email-soren.brinkmann@xilinx.com>
+	<20141028161656.6fb55199@ipc1.ka-ro>
+	<ed83381607d7493bafde4b881b37a3ab@BN1BFFO11FD017.protection.gbl>
+	<20141029054929.27a417ce@ipc1.ka-ro>
+	<041ef3bb17a34994a2c75d137caa235a@BN1AFFO11FD058.protection.gbl>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2014 11:33 PM, Andy Lutomirski wrote:
-> On Wed, Oct 29, 2014 at 3:00 PM, Greg Kroah-Hartman
+Hi,
 
->> +/**
->> + * kdbus_meta_new() - create new metadata object
->> + * @meta:              New metadata object
->> + *
->> + * Return: 0 on success, negative errno on failure.
->> + */
->> +int kdbus_meta_new(struct kdbus_meta **meta)
->> +{
->> +       struct kdbus_meta *m;
->> +
->> +       BUG_ON(*meta);
->> +
->> +       m = kzalloc(sizeof(*m), GFP_KERNEL);
->> +       if (!m)
->> +               return -ENOMEM;
->> +
->> +       /*
->> +        * Remember the PID and user namespaces our credentials belong to;
->> +        * we need to prevent leaking authorization and security-relevant
->> +        * data across different namespaces.
->> +        */
->> +       m->pid_namespace = get_pid_ns(task_active_pid_ns(current));
->> +       m->user_namespace = get_user_ns(current_user_ns());
->> +
+Sören Brinkmann wrote:
+> On Wed, 2014-10-29 at 05:49AM +0100, Lothar Waßmann wrote:
+> > Hi,
+> > 
+> > Sören Brinkmann wrote:
+> > > On Tue, 2014-10-28 at 04:16PM +0100, Lothar Waßmann wrote:
+> > > > Hi,
+> > > > 
+> > > > Soren Brinkmann wrote:
+> > > > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > > > > ---
+> > > > > changes since RFC:
+> > > > >  - use syscon/regmap to access registers in SLCR space
+> > > > >  - add pinctrl to zc702 DT
+> > > > >  - rebase to 3.18: rename enable -> set_mux
+> > > > >  - add kernel-doc
+> > > > >  - support pinconf
+> > > > >    - supported attributes
+> > > > >      - pin-bias: pull up, tristate, disable
+> > > > >      - slew-rate: 0 == slow, 1 == fast; generic pinconf does not display
+> > > > >        argument
+> > > > > 
+> > > > [...]
+> > > > > +struct zynq_pctrl_group zynq_pctrl_groups[] = {
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ethernet0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ethernet1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(mdio0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(mdio1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(qspi0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(qspi1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(qspi_fbclk),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(qspi_cs1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_emio_wp),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_emio_cd),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_emio_wp),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_emio_cd),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor_cs1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor_addr25),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nand),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_4),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_5),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_6),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_7),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_8),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_9),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_10),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_4),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_5),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_6),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_7),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_8),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_9),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_10),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_11),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_4),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_5),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_6),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_7),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_8),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_9),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_10),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_4),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_5),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_6),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_7),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_8),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_9),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_10),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_11),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_4),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_5),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_6),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_7),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_8),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_9),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_10),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_4),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_5),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_6),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_7),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_8),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_9),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_10),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_4),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_0),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_1),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_2),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_3),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_4),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_5),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_6),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_7),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_8),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_9),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_10),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_11),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_12),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_13),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_14),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_15),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_16),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_17),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_18),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_19),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_20),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_21),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_22),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_23),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_24),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_25),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_26),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_27),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_28),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_29),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_30),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_31),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_32),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_33),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_34),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_35),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_36),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_37),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_38),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_39),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_40),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_41),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_42),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_43),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_44),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_45),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_46),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_47),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_48),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_49),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_50),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_51),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_52),
+> > > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_53)
+> > > > dto.
+> > > > 
+> > > > [...]
+> > > > > +#define DEFINE_ZYNQ_PINMUX_FUNCTION(fname, mval)	\
+> > > > > +	[ZYNQ_PMUX_##fname] = {				\
+> > > > > +		.name = #fname,				\
+> > > > > +		.groups = fname##_groups,		\
+> > > > > +		.ngroups = ARRAY_SIZE(fname##_groups),	\
+> > > > > +		.mux_val = mval				\
+> > > > > +	}
+> > > > > +
+> > > > dto.
+> > > > 
+> > > > [...]
+> > > > > +#define DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(fname, mval, mux, mask, shift)	\
+> > > > > +	[ZYNQ_PMUX_##fname] = {				\
+> > > > > +		.name = #fname,				\
+> > > > > +		.groups = fname##_groups,		\
+> > > > > +		.ngroups = ARRAY_SIZE(fname##_groups),	\
+> > > > > +		.mux_val = mval,			\
+> > > > > +		.mux_mask = mask,			\
+> > > > > +		.mux_shift = shift			\
+> > > > dto.
+> > > > 
+> > > > [...]
+> > > > > +static const struct zynq_pinmux_function zynq_pmux_functions[] = {
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(ethernet0, 1),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(ethernet1, 1),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(mdio0, 0x40),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(mdio1, 0x50),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi0, 1),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi1, 1),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi_fbclk, 1),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi_cs1, 1),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(spi0, 0x50),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(spi1, 0x50),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio0, 0x40),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio0_pc, 0xc),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio0_wp, 0, 130, ZYNQ_SDIO_WP_MASK,
+> > > > > +					ZYNQ_SDIO_WP_SHIFT),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio0_cd, 0, 130, ZYNQ_SDIO_CD_MASK,
+> > > > > +					ZYNQ_SDIO_CD_SHIFT),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio1, 0x40),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio1_pc, 0xc),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio1_wp, 0, 134, ZYNQ_SDIO_WP_MASK,
+> > > > > +					ZYNQ_SDIO_WP_SHIFT),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio1_cd, 0, 134, ZYNQ_SDIO_CD_MASK,
+> > > > > +					ZYNQ_SDIO_CD_SHIFT),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor, 4),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor_cs1, 8),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor_addr25, 4),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nand, 8),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(can0, 0x10),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(can1, 0x10),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(uart0, 0x70),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(uart1, 0x70),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(i2c0, 0x20),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(i2c1, 0x20),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(ttc0, 0x60),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(ttc1, 0x60),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(swdt0, 0x30),
+> > > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(gpio0, 0)
+> > > > dto.
+> > > > 
+> > > > [...]
+> > > > > +static const struct pinctrl_ops zynq_pctrl_ops = {
+> > > > > +	.get_groups_count = zynq_pctrl_get_groups_count,
+> > > > > +	.get_group_name = zynq_pctrl_get_group_name,
+> > > > > +	.get_group_pins = zynq_pctrl_get_group_pins,
+> > > > > +	.dt_node_to_map = pinconf_generic_dt_node_to_map_group,
+> > > > > +	.dt_free_map = pinctrl_utils_dt_free_map
+> > > > dto.
+> > > 
+> > > Can we please use full sentences? But at least real words? I have no
+> > > idea what you're trying to tell me.
+> > > 
+> > Sorry, I must have accidentally removed my first comment which was:
+> > 'missing comma at end of initializer.'
 > 
-> This is unusual, and it could be very expensive (it will serialize
-> essentially everyone on an exclusive cacheline).  What attack is it
-> protecting against?
-
-As mentioned before, we currently prevent metadata from crossing over
-user and pid namespace boundaries. In order to detect such situations,
-we need to pin the namespaces of the the task creating such a metadata
-object, so we can compare them later, even when the original task is not
-alive anymore. But I'm open for cheaper solutions for this, as I'm
-admittedly not an expert in these APIs.
-
->> +static int kdbus_meta_append_cred(struct kdbus_meta *meta)
->> +{
->> +       struct kdbus_creds creds = {
->> +               .uid = from_kuid_munged(current_user_ns(), current_uid()),
->> +               .gid = from_kgid_munged(current_user_ns(), current_gid()),
->> +               .pid = task_pid_vnr(current),
->> +               .tid = task_tgid_vnr(current),
->> +               .starttime = current->start_time,
->> +       };
->> +
->> +       return kdbus_meta_append_data(meta, KDBUS_ITEM_CREDS,
->> +                                     &creds, sizeof(creds));
->> +}
+> Why should there be one? Neither gcc nor checkpatch seem to "miss" one.
 > 
-> This seems wrong to me.  Shouldn't this store kuid_t, etc. directly?
-
-The metadata item's memory that is appended here is directly copied into
-the final message in the receiver's pool later, so the information has
-to be authoritative and translated at this point. This is currently not
-a problem as in cases where we cross namespaces, the metadata will not
-be added to the final message anyway.
-
-But you're right, if we support translation between namespaces later, we
-need to store the kuid_t here, and patch in the the translated version
-later, when the message is installed by the receiving peer (which is
-when we know which namespace to translate the kuid_t for).
-
-> Also, why pid, tid, and starttime?
-
-Because pid is also part of struct ucred, and starttime seemed to fit in
-here as well. After all, an item has some overhead with its header, so
-we tried to group information that will most probably be needed
-together. Any strong reason not to store it here?
+It helps further patching and avoiding possible conflicts because you
+don't need to modify an existing line when adding a new one at the end.
 
 
-Thanks,
-Daniel
+Lothar Waßmann
+-- 
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
