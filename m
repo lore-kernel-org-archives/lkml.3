@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758976AbaJ3Kns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:43:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36806 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758688AbaJ3Kno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:43:44 -0400
-Message-ID: <1414665830.2343.4.camel@linux-0dmf.site>
-Subject: numerous kernel warnings from XFS with rc2
-From: Oliver Neukum <oneukum@suse.de>
-To: John Johansen <john.johansen@canonical.com>,
-        Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, jack@suse.com
-Date: Thu, 30 Oct 2014 11:43:50 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759024AbaJ3Kom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:44:42 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:48192 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758155AbaJ3Kok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 06:44:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <2095416.INZmt8AD1y@wuerfel>
+References: <1414139071-3818-1-git-send-email-lftan@altera.com>
+	<1414139071-3818-30-git-send-email-lftan@altera.com>
+	<2095416.INZmt8AD1y@wuerfel>
+Date: Thu, 30 Oct 2014 18:44:37 +0800
+X-Google-Sender-Auth: iTlzjQ8buPDzWNS-h5Ibuo2UiqM
+Message-ID: <CAFiDJ59LZSwKBzVuuzfH_5772-BR74EH=d=FeBbWvEXjfpisug@mail.gmail.com>
+Subject: Re: [PATCH v5 29/29] nios2: Build infrastructure
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Oct 28, 2014 at 9:38 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 24 October 2014 16:24:31 Ley Foon Tan wrote:
+>> +DECLARE_EXPORT(__gcc_bcmp);
+>> +DECLARE_EXPORT(__divdi3);
+>> +DECLARE_EXPORT(__divsi3);
+>> +DECLARE_EXPORT(__moddi3);
+>> +DECLARE_EXPORT(__modsi3);
+>> +DECLARE_EXPORT(__udivdi3);
+>> +DECLARE_EXPORT(__udivmoddi4);
+>> +DECLARE_EXPORT(__udivsi3);
+>> +DECLARE_EXPORT(__umoddi3);
+>> +DECLARE_EXPORT(__umodsi3);
+>> +DECLARE_EXPORT(__muldi3);
+>>
+>
+> I don't remember what all of these are, but at least some of them seem
+> to be concerned with 64-bit division. By convention, we don't provide those
+> in the Linux kernel but instead require all code to use the do_div()
+> macro instead.
+Do you mean kernel doesn't support 64 bit division result for a 32-bit
+architecture? Because do_div() only support 32-bit division result for
+32-bit architecture.
+Compiler will auto generate call to __divdi3() for the following
+example code. This means loadable module will have compilation error
+if we don't export symbol for __divdi3, but built-in module is fine.
+Is this an expectation? Or we can keep 64-bit division symbols here
+since they are no harm (they are software emulation when without
+hardware divider).
 
-I am running XFS on top of bcache. Apparmor
-is enabled on my system. I am seeing tons of warnings like this:
+long long a, b, c;
+a = b / c;
 
-2014-10-30T11:39:38.774440+01:00 linux-0dmf kernel: [  650.901837]
-WARNING: CPU: 2 PID: 2378 at mm/truncate.c:758 pagecache_isize_extended
-+0xfd/0x110()
-2014-10-30T11:39:38.774441+01:00 linux-0dmf kernel: [  650.901838]
-Modules linked in: tun ctr ccm fuse bnep bluetooth crc16 af_packet
-ebtable_nat ebtables xt_limit xt_conntrack iptable_raw xt_CT
-iptable_filter nf_conntrack_netbios_ns nf_conntrack_broadcast
-nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables x_tables raid0
-tpm_infineon snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_codec_generic
-intel_rapl snd_hda_intel x86_pkg_temp_thermal snd_hda_controller
-snd_hda_codec kvm_intel kvm sr_mod crct10dif_pclmul snd_hwdep
-crc32c_intel snd_pcm ghash_clmulni_intel aesni_intel ppdev ablk_helper
-arc4 parport_pc parport cryptd tpm_tis snd_seq lrw gf128mul glue_helper
-iwldvm nouveau aes_x86_64 tpm mac80211 iTCO_wdt hp_wmi
-iTCO_vendor_support sparse_keymap mxm_wmi iwlwifi cfg80211 ttm pcspkr
-serio_raw microcode rfkill drm_kms_helper cdrom drm i2c_i801 snd_timer
-snd_seq_device e1000e i2c_algo_bit snd soundcore lpc_ich mfd_core ptp
-shpchp pps_core wmi sg dm_mod autofs4 sd_mod ahci libahci libata
-scsi_dh_rdac scsi_dh_hp_sw scsi_dh_emc scsi_dh scsi_mod
-2014-10-30T11:39:38.774442+01:00 linux-0dmf kernel: [  650.901877] CPU:
-2 PID: 2378 Comm: dconf-service Tainted: P        W
-3.18.0-rc2-12-desktop #3
-2014-10-30T11:39:38.774443+01:00 linux-0dmf kernel: [  650.901878]
-Hardware name: Hewlett-Packard HP EliteBook 8780w/190A, BIOS L70 Ver.
-93.01 05/17/2013
-2014-10-30T11:39:38.774444+01:00 linux-0dmf kernel: [  650.901879]
-0000000000000009 ffff8800498f7d38 ffffffff81674e33 0000000000000000
-2014-10-30T11:39:38.774447+01:00 linux-0dmf kernel: [  650.901881]
-0000000000000000 ffff8800498f7d78 ffffffff8104842c ffffea0014c50c00
-2014-10-30T11:39:38.774448+01:00 linux-0dmf kernel: [  650.901882]
-0000000000001000 ffff8805ff7575a8 0000000000000000 0000000000001cb6
-2014-10-30T11:39:38.774449+01:00 linux-0dmf kernel: [  650.901884] Call
-Trace:
-2014-10-30T11:39:38.774449+01:00 linux-0dmf kernel: [  650.901888]
-[<ffffffff81674e33>] dump_stack+0x4e/0x71
-2014-10-30T11:39:38.774450+01:00 linux-0dmf kernel: [  650.901890]
-[<ffffffff8104842c>] warn_slowpath_common+0x7c/0xa0
-2014-10-30T11:39:38.774450+01:00 linux-0dmf kernel: [  650.901892]
-[<ffffffff810484f5>] warn_slowpath_null+0x15/0x20
-2014-10-30T11:39:38.774450+01:00 linux-0dmf kernel: [  650.901893]
-[<ffffffff8111b98d>] pagecache_isize_extended+0xfd/0x110
-2014-10-30T11:39:38.774451+01:00 linux-0dmf kernel: [  650.901896]
-[<ffffffff81251ee0>] ? __xfs_get_blocks+0x550/0x550
-2014-10-30T11:39:38.774451+01:00 linux-0dmf kernel: [  650.901897]
-[<ffffffff8111c5f2>] truncate_setsize+0x22/0x40
-2014-10-30T11:39:38.774452+01:00 linux-0dmf kernel: [  650.901899]
-[<ffffffff81267c0b>] xfs_setattr_size+0x10b/0x3e0
-2014-10-30T11:39:38.774452+01:00 linux-0dmf kernel: [  650.901901]
-[<ffffffff812756ce>] ? xfs_trans_commit+0x13e/0x220
-2014-10-30T11:39:38.774453+01:00 linux-0dmf kernel: [  650.901904]
-[<ffffffff8125ccd7>] xfs_file_fallocate+0x2e7/0x300
-2014-10-30T11:39:38.774453+01:00 linux-0dmf kernel: [  650.901907]
-[<ffffffff81165aa4>] ? __sb_start_write+0x44/0xd0
-2014-10-30T11:39:38.774454+01:00 linux-0dmf kernel: [  650.901910]
-[<ffffffff81374ac3>] ? apparmor_file_permission+0x13/0x20
-2014-10-30T11:39:38.774454+01:00 linux-0dmf kernel: [  650.901911]
-[<ffffffff811617aa>] do_fallocate+0x12a/0x1d0
-2014-10-30T11:39:38.774455+01:00 linux-0dmf kernel: [  650.901912]
-[<ffffffff81161893>] SyS_fallocate+0x43/0x70
-2014-10-30T11:39:38.774455+01:00 linux-0dmf kernel: [  650.901915]
-[<ffffffff8167b252>] system_call_fastpath+0x12/0x17
-2014-10-30T11:39:38.774456+01:00 linux-0dmf kernel: [  650.901916]
----[ end trace 584b070525fc4efe ]---
-2014-10-30T11:39:39.871450+01:00 linux-0dmf kernel: [  651.997869]
-------------[ cut here ]------------
-
-	Regards
-		Oliver
-
-
+Regards
+Ley Foon
