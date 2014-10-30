@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760578AbaJ3OLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:11:42 -0400
+	id S1760540AbaJ3OLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:11:37 -0400
 Received: from mga14.intel.com ([192.55.52.115]:24875 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760560AbaJ3OLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:11:40 -0400
+	id S1759949AbaJ3OLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:11:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="408518004"
+   d="scan'208";a="408517968"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 7/7] perf tools: Defer export of comms that were not 'set'
-Date: Thu, 30 Oct 2014 16:09:48 +0200
-Message-Id: <1414678188-14946-8-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 5/7] perf tools: Add call information to the database export API
+Date: Thu, 30 Oct 2014 16:09:46 +0200
+Message-Id: <1414678188-14946-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414678188-14946-1-git-send-email-adrian.hunter@intel.com>
 References: <1414678188-14946-1-git-send-email-adrian.hunter@intel.com>
@@ -27,149 +27,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tracing for a workload begins before the comm event
-is seen, which results in the initial comm having a
-string of the form ":<pid>" (e.g. ":12345").  In order
-to export the correct string, defer the export until
-the new script 'flush' callback.
+Make it possible for the database export API to use the
+enhanced thread stack and export detailed information
+about paired calls and returns.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/db-export.c                        | 62 +++++++++++++++++++++-
- tools/perf/util/db-export.h                        |  3 ++
- .../util/scripting-engines/trace-event-python.c    |  4 +-
- 3 files changed, 67 insertions(+), 2 deletions(-)
+ tools/perf/util/db-export.c | 52 ++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/db-export.h | 12 +++++++++++
+ 2 files changed, 63 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
-index 017ecbb..c81dae3 100644
+index bccb831..017ecbb 100644
 --- a/tools/perf/util/db-export.c
 +++ b/tools/perf/util/db-export.c
-@@ -21,17 +21,74 @@
+@@ -21,6 +21,7 @@
  #include "comm.h"
  #include "symbol.h"
  #include "event.h"
-+#include "util.h"
- #include "thread-stack.h"
++#include "thread-stack.h"
  #include "db-export.h"
  
-+struct deferred_export {
-+	struct list_head node;
-+	struct comm *comm;
-+};
+ int db_export__init(struct db_export *dbe)
+@@ -29,8 +30,10 @@ int db_export__init(struct db_export *dbe)
+ 	return 0;
+ }
+ 
+-void db_export__exit(struct db_export *dbe __maybe_unused)
++void db_export__exit(struct db_export *dbe)
+ {
++	call_return_processor__free(dbe->crp);
++	dbe->crp = NULL;
+ }
+ 
+ int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel)
+@@ -270,6 +273,13 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 				     &es.addr_sym_db_id, &es.addr_offset);
+ 		if (err)
+ 			return err;
++		if (dbe->crp) {
++			err = thread_stack__process(thread, comm, sample, al,
++						    &addr_al, es.db_id,
++						    dbe->crp);
++			if (err)
++				return err;
++		}
+ 	}
+ 
+ 	if (dbe->export_sample)
+@@ -316,3 +326,43 @@ int db_export__branch_types(struct db_export *dbe)
+ 	}
+ 	return err;
+ }
 +
-+static int db_export__deferred(struct db_export *dbe)
++int db_export__call_path(struct db_export *dbe, struct call_path *cp)
 +{
-+	struct deferred_export *de;
 +	int err;
 +
-+	while (!list_empty(&dbe->deferred)) {
-+		de = list_entry(dbe->deferred.next, struct deferred_export,
-+				node);
-+		err = dbe->export_comm(dbe, de->comm);
-+		list_del(&de->node);
-+		free(de);
++	if (cp->db_id)
++		return 0;
++
++	if (cp->parent) {
++		err = db_export__call_path(dbe, cp->parent);
 +		if (err)
 +			return err;
 +	}
 +
-+	return 0;
-+}
++	cp->db_id = ++dbe->call_path_last_db_id;
 +
-+static void db_export__free_deferred(struct db_export *dbe)
-+{
-+	struct deferred_export *de;
-+
-+	while (!list_empty(&dbe->deferred)) {
-+		de = list_entry(dbe->deferred.next, struct deferred_export,
-+				node);
-+		list_del(&de->node);
-+		free(de);
-+	}
-+}
-+
-+static int db_export__defer_comm(struct db_export *dbe, struct comm *comm)
-+{
-+	struct deferred_export *de;
-+
-+	de = zalloc(sizeof(struct deferred_export));
-+	if (!de)
-+		return -ENOMEM;
-+
-+	de->comm = comm;
-+	list_add_tail(&de->node, &dbe->deferred);
++	if (dbe->export_call_path)
++		return dbe->export_call_path(dbe, cp);
 +
 +	return 0;
 +}
 +
- int db_export__init(struct db_export *dbe)
- {
- 	memset(dbe, 0, sizeof(struct db_export));
-+	INIT_LIST_HEAD(&dbe->deferred);
- 	return 0;
- }
- 
-+int db_export__flush(struct db_export *dbe)
++int db_export__call_return(struct db_export *dbe, struct call_return *cr)
 +{
-+	return db_export__deferred(dbe);
-+}
++	int err;
 +
- void db_export__exit(struct db_export *dbe)
- {
-+	db_export__free_deferred(dbe);
- 	call_return_processor__free(dbe->crp);
- 	dbe->crp = NULL;
- }
-@@ -115,7 +172,10 @@ int db_export__comm(struct db_export *dbe, struct comm *comm,
- 	comm->db_id = ++dbe->comm_last_db_id;
- 
- 	if (dbe->export_comm) {
--		err = dbe->export_comm(dbe, comm);
-+		if (main_thread->comm_set)
-+			err = dbe->export_comm(dbe, comm);
-+		else
-+			err = db_export__defer_comm(dbe, comm);
- 		if (err)
- 			return err;
- 	}
++	if (cr->db_id)
++		return 0;
++
++	err = db_export__call_path(dbe, cr->cp);
++	if (err)
++		return err;
++
++	cr->db_id = ++dbe->call_return_last_db_id;
++
++	if (dbe->export_call_return)
++		return dbe->export_call_return(dbe, cr);
++
++	return 0;
++}
 diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
-index dd5ac2a..adbd22d 100644
+index e4baa45..dd5ac2a 100644
 --- a/tools/perf/util/db-export.h
 +++ b/tools/perf/util/db-export.h
-@@ -17,6 +17,7 @@
- #define __PERF_DB_EXPORT_H
+@@ -25,6 +25,9 @@ struct comm;
+ struct dso;
+ struct perf_sample;
+ struct addr_location;
++struct call_return_processor;
++struct call_path;
++struct call_return;
  
- #include <linux/types.h>
-+#include <linux/list.h>
- 
- struct perf_evsel;
- struct machine;
-@@ -74,9 +75,11 @@ struct db_export {
+ struct export_sample {
+ 	union perf_event	*event;
+@@ -57,6 +60,10 @@ struct db_export {
+ 	int (*export_branch_type)(struct db_export *dbe, u32 branch_type,
+ 				  const char *name);
+ 	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
++	int (*export_call_path)(struct db_export *dbe, struct call_path *cp);
++	int (*export_call_return)(struct db_export *dbe,
++				  struct call_return *cr);
++	struct call_return_processor *crp;
+ 	u64 evsel_last_db_id;
+ 	u64 machine_last_db_id;
+ 	u64 thread_last_db_id;
+@@ -65,6 +72,8 @@ struct db_export {
+ 	u64 dso_last_db_id;
+ 	u64 symbol_last_db_id;
  	u64 sample_last_db_id;
- 	u64 call_path_last_db_id;
- 	u64 call_return_last_db_id;
-+	struct list_head deferred;
++	u64 call_path_last_db_id;
++	u64 call_return_last_db_id;
  };
  
  int db_export__init(struct db_export *dbe);
-+int db_export__flush(struct db_export *dbe);
- void db_export__exit(struct db_export *dbe);
- int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel);
- int db_export__machine(struct db_export *dbe, struct machine *machine);
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index cb1d960..118bc62 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -1030,7 +1030,9 @@ error:
+@@ -89,4 +98,7 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
  
- static int python_flush_script(void)
- {
--	return 0;
-+	struct tables *tables = &tables_global;
+ int db_export__branch_types(struct db_export *dbe);
+ 
++int db_export__call_path(struct db_export *dbe, struct call_path *cp);
++int db_export__call_return(struct db_export *dbe, struct call_return *cr);
 +
-+	return db_export__flush(&tables->dbe);
- }
- 
- /*
+ #endif
 -- 
 1.9.1
 
