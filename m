@@ -1,102 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422678AbaJ3XCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:02:34 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:60195 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161370AbaJ3XCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:02:33 -0400
+	id S1422672AbaJ3XMR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 19:12:17 -0400
+Received: from mail-bn1bn0103.outbound.protection.outlook.com ([157.56.110.103]:42688
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1161211AbaJ3XMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 19:12:16 -0400
+Message-ID: <1414710720.23458.169.camel@snotra.buserror.net>
+Subject: Re: [PATCHv5] clk: ppc-corenet: rename to qoriq and add
+ CLK_OF_DECLARE support
+From: Scott Wood <scottwood@freescale.com>
+To: Lu Jingchang-B35083 <jingchang.lu@freescale.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 30 Oct 2014 18:12:00 -0500
+In-Reply-To: <ccb7de6dc94e4493bbf8685c4d8b3421@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <1412932497-27995-1-git-send-email-jingchang.lu@freescale.com>
+	 <ccb7de6dc94e4493bbf8685c4d8b3421@BL2PR03MB467.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 MIME-Version: 1.0
-In-Reply-To: <5452B3A6.7060100@gaast.net>
-References: <543F049F.5090605@gaast.net>
-	<CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com>
-	<5442FE58.5020700@gaast.net>
-	<CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com>
-	<5446D2D8.2090203@gaast.net>
-	<CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com>
-	<20141022125354.GA3832@gaast.net>
-	<CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
-	<544E235C.5010908@gaast.net>
-	<CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
-	<544EC59D.9080303@gaast.net>
-	<CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
-	<544EDD40.1040107@gaast.net>
-	<CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com>
-	<545027F9.1040703@gaast.net>
-	<CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com>
-	<5450B55E.6010103@gaast.net>
-	<CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com>
-	<545214C5.6070004@gaast.net>
-	<CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com>
-	<5452B3A6.7060100@gaast.net>
-Date: Thu, 30 Oct 2014 16:02:32 -0700
-X-Google-Sender-Auth: fJl0BO3gUpAlf2IirK07bYUiRI4
-Message-ID: <CAE9FiQUGm-gvqpzPymxqa6vdfV7xhv8-fb433irZE1AT-eNg9A@mail.gmail.com>
-Subject: Re: Machine crashes right *after* ~successful resume
-From: Yinghai Lu <yinghai@kernel.org>
-To: Wilmer van der Gaast <wilmer@gaast.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=089e01184afe1fdf990506abe0f7
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:d581:78f4:8832:846b]
+X-ClientProxiedBy: BY1PR00CA0039.namprd00.prod.outlook.com (25.160.102.49) To
+ BN1PR0301MB0722.namprd03.prod.outlook.com (25.160.78.141)
+X-MS-Exchange-Transport-FromEntityHeader: Hosted
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0722;
+X-Forefront-PRVS: 038002787A
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(51704005)(24454002)(189002)(377424004)(199003)(377454003)(85306004)(93916002)(23676002)(50466002)(40100003)(92726001)(15975445006)(92566001)(122386002)(86362001)(46102003)(19580395003)(77156001)(19580405001)(104166001)(15202345003)(80022003)(120916001)(103116003)(99396003)(50986999)(42186005)(76176999)(76482002)(62966002)(101416001)(31966008)(106356001)(21056001)(105586002)(107046002)(47776003)(64706001)(20776003)(50226001)(4396001)(95666004)(77096002)(85852003)(87286001)(97736003)(88136002)(87976001)(110136001)(89996001)(33646002)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0722;H:[IPv6:2601:2:5800:3f7:d581:78f4:8832:846b];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e01184afe1fdf990506abe0f7
-Content-Type: text/plain; charset=UTF-8
+The CLK_OF_DECLARE part is addressed by:
+http://patchwork.ozlabs.org/patch/400740/
+http://patchwork.ozlabs.org/patch/400741/
+http://patchwork.ozlabs.org/patch/400742/
 
-On Thu, Oct 30, 2014 at 2:54 PM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
+...which does what I was asking earlier, getting rid of the (currently
+broken due to a misguided attempt to remove an __init warning) platform
+driver part rather than maintaining both approaches.
 
-> http://gaast.net/~wilmer/.lkml/good3.17-patched-megadebug.txt
+I suggest sending a rename patch that applies after those patches.
 
-no difference except on 00:1c.3
+-Scott
 
---- before.txt    2014-10-30 15:20:35.782886485 -0700
-+++ after.txt    2014-10-30 15:21:37.034882515 -0700
-@@ -49,10 +49,10 @@
- 02f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
- 0300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
- 0310: 00 00 00 00 1b 36 3a 74 00 00 14 14 31 17 42 00
--0320: 5b 60 09 00 00 20 00 0a ec 19 b8 04 eb 09 b9 06
-+0320: 5b 60 09 00 00 20 00 0a 33 1a b8 04 32 0a 00 07
- 0330: 16 00 00 28 bc b5 bc 4a 00 00 00 00 74 4c 85 00
--0340: 33 03 33 00 64 03 3f 00 30 00 0c 00 45 02 b9 00
--0350: 4b 02 c1 00 01 00 08 00 00 00 00 00 00 00 00 00
-+0340: 33 03 33 00 64 03 3f 00 30 00 0c 00 46 02 00 00
-+0350: 4c 02 08 00 01 00 08 00 00 00 00 00 00 00 00 00
- 0360: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
- 0370: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
- 0380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+On Tue, 2014-10-14 at 05:32 -0500, Lu Jingchang-B35083 wrote:
+> Hi, Scott and Mike,
+>   
+>   Could you please help review this patch. Thanks.
+> 
+> Best Regards,
+> Jingchang
+> 
+> >-----Original Message-----
+> >From: Jingchang Lu [mailto:jingchang.lu@freescale.com]
+> >Sent: Friday, October 10, 2014 5:15 PM
+> >To: mturquette@linaro.org
+> >Cc: Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org; linux-
+> >kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Lu
+> >Jingchang-B35083
+> >Subject: [PATCHv5] clk: ppc-corenet: rename to qoriq and add
+> >CLK_OF_DECLARE support
+> >
+> >The IP is shared by PPC and ARM, this renames it to qoriq for better
+> >represention, and this also adds the CLK_OF_DECLARE support for being
+> >initialized by of_clk_init() on ARM.
+> >
+> >Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+> >---
+> >changes in v5:
+> > update drivers/cpufreq/Kconfig.powerpc to slect the renamed config option.
+> >
+> >changes in v4:
+> > remove "corenet" literals omitted in v3 remove.
+> >
+> >changes in v3:
+> > generate the patch with -M -C option
+> >
+> >changes in v2:
+> > rename the driver name to ppc-qoriq.c for shared on PPC and ARM.
+> >
+> > drivers/clk/Kconfig                            | 10 ++++-----
+> > drivers/clk/Makefile                           |  2 +-
+> > drivers/clk/{clk-ppc-corenet.c => clk-qoriq.c} | 29 +++++++++++++++------
+> >-----
+> > drivers/cpufreq/Kconfig.powerpc                |  2 +-
+> > 4 files changed, 24 insertions(+), 19 deletions(-)  rename
+> >drivers/clk/{clk-ppc-corenet.c => clk-qoriq.c} (89%)
+> >
+> >diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig index
+> >455fd17..4706a9f 100644
+> >--- a/drivers/clk/Kconfig
+> >+++ b/drivers/clk/Kconfig
+> >@@ -101,12 +101,12 @@ config COMMON_CLK_AXI_CLKGEN
+> > 	  Support for the Analog Devices axi-clkgen pcore clock generator
+> >for Xilinx
+> > 	  FPGAs. It is commonly used in Analog Devices' reference designs.
+> >
+> >-config CLK_PPC_CORENET
+> >-	bool "Clock driver for PowerPC corenet platforms"
+> >-	depends on PPC_E500MC && OF
+> >+config CLK_QORIQ
+> >+	bool "Clock driver for Freescale QorIQ platforms"
+> >+	depends on (PPC_E500MC || ARM) && OF
+> > 	---help---
+> >-	  This adds the clock driver support for Freescale PowerPC corenet
+> >-	  platforms using common clock framework.
+> >+	  This adds the clock driver support for Freescale QorIQ platforms
+> >+	  using common clock framework.
+> >
+> > config COMMON_CLK_XGENE
+> > 	bool "Clock driver for APM XGene SoC"
+> >diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile index
+> >d5fba5b..4ff94cd 100644
+> >--- a/drivers/clk/Makefile
+> >+++ b/drivers/clk/Makefile
+> >@@ -30,7 +30,7 @@ obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
+> > obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
+> > obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
+> > obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
+> >-obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
+> >+obj-$(CONFIG_CLK_QORIQ)			+= clk-qoriq.o
+> > obj-$(CONFIG_COMMON_CLK_RK808)		+= clk-rk808.o
+> > obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
+> > obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
+> >diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-qoriq.c
+> >similarity index 89% rename from drivers/clk/clk-ppc-corenet.c rename to
+> >drivers/clk/clk-qoriq.c index 8e58edf..48cb923 100644
+> >--- a/drivers/clk/clk-ppc-corenet.c
+> >+++ b/drivers/clk/clk-qoriq.c
+> >@@ -5,7 +5,7 @@
+> >  * it under the terms of the GNU General Public License version 2 as
+> >  * published by the Free Software Foundation.
+> >  *
+> >- * clock driver for Freescale PowerPC corenet SoCs.
+> >+ * clock driver for Freescale QorIQ SoCs.
+> >  */
+> > #include <linux/clk-provider.h>
+> > #include <linux/io.h>
+> >@@ -155,7 +155,7 @@ static void __init core_pll_init(struct device_node
+> >*np)
+> >
+> > 	base = of_iomap(np, 0);
+> > 	if (!base) {
+> >-		pr_err("clk-ppc: iomap error\n");
+> >+		pr_err("clk-qoriq: iomap error\n");
+> > 		return;
+> > 	}
+> >
+> >@@ -252,7 +252,7 @@ static void __init sysclk_init(struct device_node
+> >*node)
+> > 	u32 rate;
+> >
+> > 	if (!np) {
+> >-		pr_err("ppc-clk: could not get parent node\n");
+> >+		pr_err("qoriq-clk: could not get parent node\n");
+> > 		return;
+> > 	}
+> >
+> >@@ -278,30 +278,35 @@ static const struct of_device_id clk_match[]
+> >__initconst = {
+> > 	{}
+> > };
+> >
+> >-static int __init ppc_corenet_clk_probe(struct platform_device *pdev)
+> >+static int __init qoriq_clk_probe(struct platform_device *pdev)
+> > {
+> > 	of_clk_init(clk_match);
+> >
+> > 	return 0;
+> > }
+> >
+> >-static const struct of_device_id ppc_clk_ids[] __initconst = {
+> >+static const struct of_device_id qoriq_clk_ids[] __initconst = {
+> > 	{ .compatible = "fsl,qoriq-clockgen-1.0", },
+> > 	{ .compatible = "fsl,qoriq-clockgen-2.0", },
+> > 	{}
+> > };
+> >
+> >-static struct platform_driver ppc_corenet_clk_driver __initdata = {
+> >+static struct platform_driver qoriq_clk_driver __initdata = {
+> > 	.driver = {
+> >-		.name = "ppc_corenet_clock",
+> >+		.name = "qoriq_clock",
+> > 		.owner = THIS_MODULE,
+> >-		.of_match_table = ppc_clk_ids,
+> >+		.of_match_table = qoriq_clk_ids,
+> > 	},
+> >-	.probe = ppc_corenet_clk_probe,
+> >+	.probe = qoriq_clk_probe,
+> > };
+> >
+> >-static int __init ppc_corenet_clk_init(void)
+> >+static int __init qoriq_clk_init(void)
+> > {
+> >-	return platform_driver_register(&ppc_corenet_clk_driver);
+> >+	return platform_driver_register(&qoriq_clk_driver);
+> > }
+> >-subsys_initcall(ppc_corenet_clk_init);
+> >+subsys_initcall(qoriq_clk_init);
+> >+
+> >+CLK_OF_DECLARE(qoriq_core_pll_v1, "fsl,qoriq-core-pll-1.0",
+> >+core_pll_init); CLK_OF_DECLARE(qoriq_core_pll_v2,
+> >+"fsl,qoriq-core-pll-2.0", core_pll_init);
+> >+CLK_OF_DECLARE(qoriq_core_mux_v1, "fsl,qoriq-core-mux-1.0",
+> >+core_mux_init); CLK_OF_DECLARE(qoriq_core_mux_v2,
+> >+"fsl,qoriq-core-mux-2.0", core_mux_init);
+> >diff --git a/drivers/cpufreq/Kconfig.powerpc
+> >b/drivers/cpufreq/Kconfig.powerpc index 72564b7..7ea2441 100644
+> >--- a/drivers/cpufreq/Kconfig.powerpc
+> >+++ b/drivers/cpufreq/Kconfig.powerpc
+> >@@ -26,7 +26,7 @@ config CPU_FREQ_MAPLE
+> > config PPC_CORENET_CPUFREQ
+> > 	tristate "CPU frequency scaling driver for Freescale E500MC SoCs"
+> > 	depends on PPC_E500MC && OF && COMMON_CLK
+> >-	select CLK_PPC_CORENET
+> >+	select CLK_QORIQ
+> > 	help
+> > 	  This adds the CPUFreq driver support for Freescale e500mc,
+> > 	  e5500 and e6500 series SoCs which are capable of changing
+> >--
+> >1.8.0
+> 
 
-Please try attached patch on top of 3.17 without other patches.
 
-If it is working, please dump acpi tables include dsdt.
-need to check if there extra work in _PRT.
-
-Thanks
-
-Yinghai
-
---089e01184afe1fdf990506abe0f7
-Content-Type: text/x-patch; charset=US-ASCII; name="debug_suspend_resume_xxx.patch"
-Content-Disposition: attachment; filename="debug_suspend_resume_xxx.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i1wpus7k0
-
-LS0tCiBhcmNoL3g4Ni9wY2kvY29tbW9uLmMgfCAgICA4ICsrKysrKysrCiAxIGZpbGUgY2hhbmdl
-ZCwgOCBpbnNlcnRpb25zKCspCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L3BjaS9jb21tb24u
-Ywo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKKysr
-IGxpbnV4LTIuNi9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKQEAgLTcxOSw2ICs3MTksMTQgQEAgaW50
-IHBjaWJpb3NfZW5hYmxlX2RldmljZShzdHJ1Y3QgcGNpX2RldgogCXJldHVybiAwOwogfQogCitz
-dGF0aWMgdm9pZCBwY2lfZW5hYmxlX2lycV9pdGUoc3RydWN0IHBjaV9kZXYgKmRldikKK3sKKwlp
-ZiAoIXBjaV9kZXZfbXNpX2VuYWJsZWQoZGV2KSkKKwkJcGNpYmlvc19lbmFibGVfaXJxKGRldik7
-Cit9CitERUNMQVJFX1BDSV9GSVhVUF9GSU5BTChQQ0lfVkVORE9SX0lEX0lOVEVMLCAweDI0NGUs
-IHBjaV9lbmFibGVfaXJxX2l0ZSk7CitERUNMQVJFX1BDSV9GSVhVUF9GSU5BTChQQ0lfVkVORE9S
-X0lEX0lURSwgMHg4ODkyLCBwY2lfZW5hYmxlX2lycV9pdGUpOworCiB2b2lkIHBjaWJpb3NfZGlz
-YWJsZV9kZXZpY2UgKHN0cnVjdCBwY2lfZGV2ICpkZXYpCiB7CiAJaWYgKCFwY2lfZGV2X21zaV9l
-bmFibGVkKGRldikgJiYgcGNpYmlvc19kaXNhYmxlX2lycSkK
---089e01184afe1fdf990506abe0f7--
