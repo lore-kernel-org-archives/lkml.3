@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaJaIUC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 04:20:02 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:40236 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297AbaJaIT7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 04:19:59 -0400
+	id S1756600AbaJaIXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 04:23:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57844 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752234AbaJaIX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 04:23:27 -0400
+Date: Thu, 30 Oct 2014 19:20:10 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.orh,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Quota and ext3 fixes for 3.18-rc3
+Message-ID: <20141030182010.GK28444@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <62aa98fc84d14f919e35dd068d24e5a7@BN1BFFO11FD060.protection.gbl>
-References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
-	<1413479495-14206-4-git-send-email-soren.brinkmann@xilinx.com>
-	<CACRpkdZtqNUroNfd_0Kftq+-056YFzjvR+ROrZZ0htZX2v2qzg@mail.gmail.com>
-	<62aa98fc84d14f919e35dd068d24e5a7@BN1BFFO11FD060.protection.gbl>
-Date: Fri, 31 Oct 2014 09:19:59 +0100
-Message-ID: <CACRpkdYuFyRSZKp8u2dC4kCxojSrjYJ51_U+bkWnJuKeq7Hrvg@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 3/8] pinctrl: pinconf-generic: Add parameter 'IO standard'
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 5:07 PM, Sören Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
+  Hello Linus,
 
-> So, this might also map to a certain drive-strength, but is not really
-> mapping well to Zynq pin configuration options.
-> Hence, I thought introducing this new property which allows a more
-> flexible interpretation of the argument would be a better way and might
-> also help other pinctrl cases (though this is speculative).
+  could you please pull from
 
-Maybe a new property is needed, but it doesn't seem generic enough.
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 
-It may be that you need to have a combination of generic and custom
-config options (which is fine).
+  to get the following minor ext3 & quota fixes.
 
-It may need some tweaking of the generic DT config parser to allow
-custom attributes but that's needed one of these days anyway.
+Top of the tree is 3c9cafe05ff0. The full shortlog is:
 
-Yours,
-Linus Walleij
+Jan Kara (2):
+      ext3: Don't check quota format when there are no quota files
+      quota: Properly return errors from dquot_writeback_dquots()
+
+Sasha Levin (1):
+      fs, jbd: use a more generic hash function
+
+The diffstat is
+
+ fs/ext3/super.c  | 7 -------
+ fs/jbd/revoke.c  | 7 ++-----
+ fs/quota/dquot.c | 2 +-
+ 3 files changed, 3 insertions(+), 13 deletions(-)
+
+							Thanks
+								Honza
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
