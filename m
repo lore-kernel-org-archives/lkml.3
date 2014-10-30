@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758320AbaJ3Hyl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 03:54:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:55183 "EHLO mga01.intel.com"
+	id S1758105AbaJ3IB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 04:01:27 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:42774 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758277AbaJ3Hyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 03:54:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,284,1413270000"; 
-   d="scan'208";a="623313711"
-Message-ID: <1414655671.2918.2.camel@jrissane-mobl.ger.corp.intel.com>
-Subject: Re: [patch] Bluetooth: 6lowpan: use after free in
- disconnect_devices()
-From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Thu, 30 Oct 2014 09:54:31 +0200
-In-Reply-To: <20141029161057.GF5290@mwanda>
-References: <20141029161057.GF5290@mwanda>
+	id S1751541AbaJ3IB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 04:01:26 -0400
+Message-ID: <1414656079.1823.1.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] tiny: reverse logic for DISABLE_DEV_COREDUMP
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Josh Triplett <josh@joshtriplett.org>, Aristeu Rozanski <aris@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 30 Oct 2014 09:01:19 +0100
+In-Reply-To: <20141020221800.GB2101@kroah.com>
+References: <20141016133658.GP5930@redhat.com> <20141016134430.GB7664@thin>
+	 <20141016154949.GR5930@redhat.com>
+	 <1413798151.10246.10.camel@jlt4.sipsolutions.net>
+	 <20141020115511.GA28133@thin> <20141020221800.GB2101@kroah.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+X-Mailer: Evolution 3.12.2-1+b1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On Tue, 2014-10-21 at 06:18 +0800, Greg Kroah-Hartman wrote:
 
-On ke, 2014-10-29 at 19:10 +0300, Dan Carpenter wrote:
-> This was accidentally changed from list_for_each_entry_safe() to
-> list_for_each_entry() so now it has a use after free bug.  I've changed
-> it back.
-
-Good catch! Thanks for the patch.
-
-Acked-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-
+> > I've added this to the tiny/reverse-dev-coredump branch of my
+> > tinification tree at
+> > https://git.kernel.org/cgit/linux/kernel/git/josh/linux.git/ , with
+> > Johannes' review, and I'll push it upstream during the 3.19 merge
+> > window.
 > 
-> Fixes: 90305829635d ('Bluetooth: 6lowpan: Converting rwlocks to use RCU')
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> diff --git a/net/bluetooth/6lowpan.c b/net/bluetooth/6lowpan.c
-> index 7254bdd..eef298d 100644
-> --- a/net/bluetooth/6lowpan.c
-> +++ b/net/bluetooth/6lowpan.c
-> @@ -1383,7 +1383,7 @@ static const struct file_operations lowpan_control_fops = {
->  
->  static void disconnect_devices(void)
->  {
-> -	struct lowpan_dev *entry, *new_dev;
-> +	struct lowpan_dev *entry, *tmp, *new_dev;
->  	struct list_head devices;
->  
->  	INIT_LIST_HEAD(&devices);
-> @@ -1408,7 +1408,7 @@ static void disconnect_devices(void)
->  
->  	rcu_read_unlock();
->  
-> -	list_for_each_entry(entry, &devices, list) {
-> +	list_for_each_entry_safe(entry, tmp, &devices, list) {
->  		ifdown(entry->netdev);
->  		BT_DBG("Unregistering netdev %s %p",
->  		       entry->netdev->name, entry->netdev);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I'll take it through the same tree this original came in and will get it
+> into 3.18 so we don't confuse anyone with an odd config option.
 
+I don't know how far this commit made it, but looking at it again now I
+think the new option should probably be called "Allow device coredump"
+rather than "Enable device coredump" since it doesn't actually enable it
+if no drivers want it.
 
-Cheers,
-Jukka
+Should I send another patch on top?
 
+johannes
 
