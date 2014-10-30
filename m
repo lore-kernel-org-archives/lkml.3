@@ -1,49 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896AbaJ3MV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 08:21:59 -0400
-Received: from mta-out1.inet.fi ([62.71.2.194]:47766 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752269AbaJ3MV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 08:21:57 -0400
-Date: Thu, 30 Oct 2014 14:21:13 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michel Lespinasse <walken@google.com>,
-        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Miller <davem@davemloft.net>,
-        Steve Capper <steve.capper@linaro.org>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH 3/5] mm: gup: use get_user_pages_unlocked within
- get_user_pages_fast
-Message-ID: <20141030122113.GC31134@node.dhcp.inet.fi>
-References: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
- <1414600520-7664-4-git-send-email-aarcange@redhat.com>
+	id S933165AbaJ3MWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 08:22:45 -0400
+Received: from mx2.ptsecurity.com ([31.44.93.4]:50868 "EHLO mx1.ptsecurity.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932947AbaJ3MWo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 08:22:44 -0400
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Oct 2014 08:22:44 EDT
+From: Serge Kosyrev <skosyrev@ptsecurity.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: Fun with looping binds over proc
+Date: Thu, 30 Oct 2014 15:07:37 +0300
+Message-ID: <87vbn1222e.fsf@ptsecurity.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414600520-7664-4-git-send-email-aarcange@redhat.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 05:35:18PM +0100, Andrea Arcangeli wrote:
-> This allows the get_user_pages_fast slow path to release the mmap_sem
-> before blocking.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Good day!
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+First, let me show how it looks and feels on my system:
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ uname -a
+Linux andromedae 3.14.22 #1-NixOS SMP Thu Jan 1 00:00:01 UTC 1970 x86_64 GNU/Linux
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ ls
+repro.sh
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ cat repro.sh 
+#!/bin/sh
+
+test -d dir/rec  || mkdir -p dir/rec 
+test -d dir/proc || mkdir -p dir/proc
+ 
+mount --bind . dir/rec
+mount --make-private --make-unbindable dir/rec
+mount none -t proc dir/proc
+umount dir/rec
+umount dir/proc
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.045s
+user    0m0.012s
+sys     0m0.007s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.035s
+user    0m0.009s
+sys     0m0.009s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.042s
+user    0m0.012s
+sys     0m0.010s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.039s
+user    0m0.013s
+sys     0m0.011s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.043s
+user    0m0.009s
+sys     0m0.011s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.048s
+user    0m0.011s
+sys     0m0.013s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.052s
+user    0m0.016s
+sys     0m0.012s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.059s
+user    0m0.008s
+sys     0m0.031s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.067s
+user    0m0.005s
+sys     0m0.042s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.116s
+user    0m0.011s
+sys     0m0.088s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.291s
+user    0m0.009s
+sys     0m0.262s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m0.857s
+user    0m0.011s
+sys     0m0.819s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m1.710s
+user    0m0.012s
+sys     0m1.634s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m3.186s
+user    0m0.010s
+sys     0m3.023s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m6.732s
+user    0m0.013s
+sys     0m6.032s
+
+[deepfire@andromedae:~/repro-kernel-loop-mount]$ time sudo ./repro.sh 
+
+real    0m14.541s
+user    0m0.008s
+sys     0m12.115s
+
+                        *    *    *
+
+Some extra data points:
+
+1. Exchanging the two umounts results in expected behavior
+2. Exchanging the two umounts absolves the need in 'mount --make-private --make-unbindable dir/rec'
+3. I don't see it on 3.12.something Ubuntu kernels
+
 -- 
- Kirill A. Shutemov
+regards,
+Серёга Косырев
