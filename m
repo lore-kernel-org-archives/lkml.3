@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161481AbaJ3XiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:38:09 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52093 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161211AbaJ3XiI (ORCPT
+	id S1422718AbaJ3XjT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 19:39:19 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49486 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161211AbaJ3XjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:38:08 -0400
-Date: Thu, 30 Oct 2014 23:38:01 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org,
-        marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
-        dh.herrmann@gmail.com, tixxdz@opendz.org,
-        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
-        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
-        teg@jklm.no, Linus Torvalds <torvalds@linux-foundation.org>
-Subject: How Not To Use kref (was Re: kdbus: add code for buses, domains and
- endpoints)
-Message-ID: <20141030233801.GF7996@ZenIV.linux.org.uk>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
+	Thu, 30 Oct 2014 19:39:18 -0400
+Date: Thu, 30 Oct 2014 23:39:06 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Bastien Nocera <hadess@hadess.net>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: A desktop environment[1] kernel wishlist
+Message-ID: <20141030233906.6647d005@alan.etchedpixels.co.uk>
+In-Reply-To: <1414680060.2406.51.camel@hadess.net>
+References: <1413881397.30379.7.camel@hadess.net>
+	<CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+	<1413911644.30379.12.camel@hadess.net>
+	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+	<1413914978.30379.14.camel@hadess.net>
+	<CALAqxLX2Q-2RBF1zY6JAWrqNiqBFG3vxUwUSLVS3qXpgSOb9xA@mail.gmail.com>
+	<1414419579.30379.49.camel@hadess.net>
+	<CALAqxLXyaL55JuDuHAcWX0PEdem-jpVxK0rbJaNrBbBJ3rQY5Q@mail.gmail.com>
+	<20141028225740.2cd0ea5f@alan.etchedpixels.co.uk>
+	<1414680060.2406.51.camel@hadess.net>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 03:00:52PM -0700, Greg Kroah-Hartman wrote:
+> > You'd have to solve it in the firmware.
+> 
+> Not if the kernel can tell us that the event occurred and when.
 
-> +static void __kdbus_domain_user_free(struct kref *kref)
-> +{
-> +	struct kdbus_domain_user *user =
-> +		container_of(kref, struct kdbus_domain_user, kref);
-> +
-> +	BUG_ON(atomic_read(&user->buses) > 0);
-> +	BUG_ON(atomic_read(&user->connections) > 0);
-> +
-> +	mutex_lock(&user->domain->lock);
-	^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> +	idr_remove(&user->domain->user_idr, user->idr);
-> +	hash_del(&user->hentry);
-	^^^^^^^^^^^^^^^^^^^^^^^^
-> +	mutex_unlock(&user->domain->lock);
-> +
-> +	kdbus_domain_unref(user->domain);
-> +	kfree(user);
-> +}
+Which it can only do if the firmware told the kernel meaningfully !
 
-> +struct kdbus_domain_user *kdbus_domain_user_unref(struct kdbus_domain_user *u)
-> +{
-> +	if (u)
-> +		kref_put(&u->kref, __kdbus_domain_user_free);
-> +	return NULL;
-> +}
+> And I think I have one of those devices, an Intel Baytrail tablet.
+> 
+> > - Suspend/Resume on such machines are a Linux fake to keep legacy code
+> >   happy
+> 
+> Do you have a link to how this is implemented currently?
 
-If you remove an object from some search structures, taking the lock in
-destructor is Too Fucking Late(tm).  Somebody might have already found
-that puppy and decided to pick it (all under that lock) just as we'd
-got to that point in destructor and blocked there.  Oops...
+You ask for suspend and we put all the devices into lowest power state if
+they are not already there then sit on our backsides issuing mwaits
+asking for C7 state on BYT (C10 I think on HSW).
 
-Normally I'd say "just use kref_put_mutex()", but this case is even worse.
-Look:
+If you box is ever passive enough you can even randomly enter this state
+in the idle loop. You generally won't do this on current devices because
+you won't have suitable panels and most desktop OS's are far too noisy on
+wakeups. There's nothing preventing you having half your processors in
+deep idle.
 
-refcount is 1
-A: kref_put_mutex() 
-	see that it's potential 1->0 crossing, need to take mutex
-	mutex_lock()
-B: kref_get()
-refcount is 2
-A:	got the sodding mutex
-	atomic_dec_and_test
-refcount is 1 now
-	OK, it's not 1->0, after all, just drop the mutex and bugger off
-B: kref_put_mutex()
-	see that it's potential 1->0 crossing, need to take mutex
-	mutex_lock() blocks
-A:	mutex_unlock() lets B go
-B:	... got it
-	atomic_dec_and_test
-refcount is 0
-	call the destructor now, which ends with
-	kdbus_domain_unref(user->domain);
-	... which just happens to be the last reference to ->domain
-	... and frees it, along with ->domain->mutex
+That's where it is all heading though. Suspend will eventually go away.
 
-But what's to guarantee that A will be past the last point where mutex_unlock()
-is looking at the mutex?  Sure, it's hard to hit, but AFAICS it's not
-impossible, especially if the following happens (assuming mutex-dec.h-style
-mutices):
+> [1]: Reason for wake-up for each wake-up-able device, along with a
+> timestamp.
 
-B: mutex_lock()
-	atomic_dec_return -> -1
-	__mutex_lock_slowpath()
-A: mutex_unlock()
-	atomic_inc_return -> 0
-	get preempted
-B: note that A has already incremented it to 0 and bugger off - we'd got it
+We may not know and the answer in many cases will be extremely device
+specific. It's a reasonable ask but answers even if available are likely
+to be things like "because GPE36" and GPE36 will just be some connection
+to something that could be anything from a lid switch to a light sensor
+or even a smart wifi chip deciding it wants the CPU to help out because
+you are out of range of the base station. We may not even know what it
+relates to.
 
-and there we go, with A getting the timeslice back and deciding to call
-__mutex_unlock_slowpath() when B has already freed the damn thing.
+A non suspend system will exit deep idle type status because they got
+an IRQ or perhaps some DMA needed the cache coherency. That doesn't mean
+they've got the foggiest which IRQ kicked them out if idle, just that hey
+I'm awake and there are four pending interrupts. That of course is
+assuming it even noticed it entered a deep idle state - you don't want to
+wake an idle CPU to tell it that its more idle than it was before.
 
-Basically, kref_put_mutex() is only usable when destructor callback cannot end
-up freeing the mutex.
-
-kref_get_unless_zero() might be a usable approach, but IMO the whole thing is
-simply outside of kref applicability.  Using it for something that needs to
-deal with removal from search structures from the destructor callback is
-already stretching the things; this one is far worse.  kref isn't a universal
-tool for expressing lifetime cycles.  It works for really simple cases and
-might eliminate some amount of boilerplate code.  It's been greatly oversold
-and overused, though...
+Alan
