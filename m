@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161582AbaJ3XTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:19:20 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49459 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161351AbaJ3XTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:19:19 -0400
-Date: Thu, 30 Oct 2014 23:19:04 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Bastien Nocera <hadess@hadess.net>, Pavel Machek <pavel@ucw.cz>,
-        Andy Lutomirski <luto@amacapital.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141030231904.40eb7097@alan.etchedpixels.co.uk>
-In-Reply-To: <20141030150501.GD31927@thunk.org>
-References: <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	<1413911644.30379.12.camel@hadess.net>
-	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	<1413914978.30379.14.camel@hadess.net>
-	<20141027092804.GB9807@amd>
-	<1414420292.30379.55.camel@hadess.net>
-	<54513DDC.2020700@amacapital.net>
-	<20141029202616.GC5000@thunk.org>
-	<20141029211608.GA32576@amd>
-	<1414680302.2406.55.camel@hadess.net>
-	<20141030150501.GD31927@thunk.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1422721AbaJ3XTe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 19:19:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1229 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161351AbaJ3XTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 19:19:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="408780342"
+Date: Thu, 30 Oct 2014 16:18:33 -0700 (PDT)
+From: Vikas Shivappa <vikas.shivappa@intel.com>
+X-X-Sender: vikas@vshiva-Udesk
+To: Tejun Heo <tj@kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Vikas Shivappa <vikas.shivappa@intel.com>,
+        "Auld, Will" <will.auld@intel.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>, h.peter.anvin@intel.com
+Subject: Re: Cache Allocation Technology Design
+In-Reply-To: <20141030124333.GA29540@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.10.1410301610000.27874@vshiva-Udesk>
+References: <20141024105306.GI12706@worktop.programming.kicks-ass.net> <20141028232215.GO12020@console-pimps.org> <20141029081640.GT3337@twins.programming.kicks-ass.net> <20141029124834.GQ12020@console-pimps.org> <20141029134526.GC3337@twins.programming.kicks-ass.net>
+ <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com> <20141029172845.GP12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk> <20141029182234.GA13393@mtj.dyndns.org> <20141030070725.GG3337@twins.programming.kicks-ass.net>
+ <20141030124333.GA29540@htj.dyndns.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It matters because for laptops, what's important is whether the lid is
-> closed or not.  Whether and how the laptop was "woken" is really
-> beside the point, as others have argued.  Your counter argument is
-> that tablets don't have lids.  But tablets are going to be using
-> schemes similar to Android, Tizen, and Maemo, and they are *not* going
-> to be using the legacy suspend-to-RAM model, because it's not
-> sufficiently good at power saving.
 
-There's no longer a tablet/laptop divide in the general case. Many
-tablets are convertables and many not convertables are only "non
-convertable" in the sense that they are screwed together not fitted with
-funky connectors.
 
-There are also a host of reasons (tried making a high speed bus go round
-a hinge ?) that this is going to become more common.
+
+
+On Thu, 30 Oct 2014, Tejun Heo wrote:
+
+> Hello, Peter.
+>
+> On Thu, Oct 30, 2014 at 08:07:25AM +0100, Peter Zijlstra wrote:
+>> If this means echo $tid > tasks, then sorry we can't do. There is a
+>> limited number of hardware resources backing this thing. At some point
+>> they're consumed and something must give.
+>
+> And that something shouldn't be disallowing task migration across
+> cgroups.  This simply doesn't work with co-mounting or unified
+> hierarchy.  cpuset automatically takes on the nearest ancestor's
+> configuration which has enough execution resources.  Maybe that can be
+> an option for this too?
+
+
+One way to it is to merge the CAT cgroups into the cpuset . In essense 
+there is no CAT cgroup seperately and we just have a new file 'cbm' in the 
+cpuset. This would be visible only when system has Cache allocation 
+support and the user can manipulate the cache bit mask here.
+The  user can use the already existing cpu_exclusive file in the cpuset 
+to mark the cgroups to use exclusive CPUs.
+That way we simplify and reuse cpuset code/hierarchy .. ?
+
+Thanks,
+Vikas
+
+
+
+>
+> One of the problems is that we generally assume that a task can run
+> some point in time in a lot of places in the kernel and can't just not
+> run a task indefinitely because it's in a cgroup configured certain
+> way.
+>
+>> So either we fail mkdir, but that means allocating CLOS IDs for possibly
+>> empty cgroups, or we allocate on demand which means failing task
+>> assignment.
+>
+> Can't fail mkdir or css enabling either.  Again, co-mounting and
+> unified hierarchy.  Also, the behavior is just horrible to use from
+> userland.
+>
+>> The same -- albeit for a different reason -- is true of the RT sched
+>> groups, we simply cannot instantiate them such that tasks can join,
+>> sysads _have_ to configure them before we can add tasks to them.
+>
+> Yeah, RT is one of the main items which is problematic, more so
+> because it's currently coupled with the normal sched controller and
+> the default config doesn't have any RT slice.  Do we completely block
+> RT task w/o slice?  Is that okay?
+>
+> Thanks.
+>
+> -- 
+> tejun
+>
