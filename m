@@ -1,163 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758525AbaJ3J7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:59:03 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:41713 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaJ3J67 (ORCPT
+	id S1758761AbaJ3J70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:59:26 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:40359 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758586AbaJ3J7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:58:59 -0400
-Date: Thu, 30 Oct 2014 10:58:54 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org, arnd@arndb.de,
-        tj@kernel.org, marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
-        dh.herrmann@gmail.com, simon.mcvittie@collabora.co.uk,
-        daniel@zonque.org, alban.crequy@collabora.co.uk,
-        javier.martinez@collabora.co.uk, teg@jklm.no,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: kdbus: add code for buses, domains and endpoints
-Message-ID: <20141030095854.GA4716@dztty>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
- <8738a6w6kv.fsf@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8738a6w6kv.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 30 Oct 2014 05:59:21 -0400
+From: Johan Hovold <johan@kernel.org>
+To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Felipe Balbi <balbi@ti.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
+Subject: [PATCH v4] rtc: omap: add support for pmic_power_en
+Date: Thu, 30 Oct 2014 10:55:47 +0100
+Message-Id: <1414662947-8184-1-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1413913086-12730-1-git-send-email-johan@kernel.org>
+References: <1413913086-12730-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 08:59:44PM -0700, Eric W. Biederman wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> 
-> The way capabilities are checked in this patch make me very nervous.
-> 
-> We are not checking permissions at open time.  Every other location
-> of calling capable on file like objects has been show to be suceptible
-> to file descriptor pass attacks.
-Yes, I do understand the concern, this is valid for some cases! but we
-can't apply it on the ioctl API ?! please see below:
+Add new property "ti,system-power-controller" to register the RTC as a
+power-off handler.
 
-All (perhaps not all) the current ioctl do not check for fd passing
-attacks! if a privileged do arbitrary ioctl on untrusted fds we are
-already owned... the dumb privileged process is the one to blame, right?
+Some RTC IP revisions can control an external PMIC via the pmic_power_en
+pin, which can be configured to transition to OFF on ALARM2 events and
+back to ON on subsequent ALARM (wakealarm) events.
 
+This is based on earlier work by Colin Foe-Parker and AnilKumar Ch. [1]
 
-Example:
-1) fs/ext4/ioctl.c:ext4_ioctl()
-   they have:
-   inode_owner_or_capable() + capable() checks
+[1] https://www.mail-archive.com/linux-omap@vger.kernel.org/msg82127.html
 
-   for all the restricted ioctl()
+Tested-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+---
 
-2) fs/xfs/xfs_ioctl.c:xfs_file_ioctl()
-   they have:
-   capable() checks
+Here's an updated patch, which adds a comment on why there is a delay
+after activating the alarm.
 
-3) fs/btrfs/ioctl.c:btrfs_ioctl()
-   they have capable() + inode_owner_or_capable()
+Note that I also increased the delay to include a margin for external
+latencies. For example, on Beaglebone Black, the PMIC has a 50ms
+deglitch time on the PWR_EN pin (which is connected to pmic_power_en).
 
-... long list
+Such margins should probably eventually be specified through device
+tree, for instance, as an attribute to accompany the
+system-power-controller attribute and be handled by the power-off call
+chain infrastructure.
 
-These are sensible API and they do not care at all about fd passing,
-so I don't think we should care either ?! or perhaps I'm missing
-something ?
+Johan
 
 
-The capable() is done as it is, and for the inode_owner_or_capable() you
-will notice that we followed the same logic and did use it in our
-kdbus_bus_uid_is_privileged() to stay safe and follow what other API are
-doing.
+Changes since v3:
+ - increase the delay when waiting for power-off to include a 500ms
+   margin for external latencies (e.g. debounce circuits)
+ - add comment on why that delay is there
+ - add a space to one comment
 
-Thank you for the comments!
+Changes since v2:
+ - add two-second delay to allow alarm to trigger before returning
 
 
-> > See Documentation/kdbus.txt for more details.
-> >
-> > Signed-off-by: Daniel Mack <daniel@zonque.org>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > ---
-> 
-> > diff --git a/drivers/misc/kdbus/bus.c b/drivers/misc/kdbus/bus.c
-> > new file mode 100644
-> > index 000000000000..6dcaf22f5d59
-> > --- /dev/null
-> > +++ b/drivers/misc/kdbus/bus.c
-> > @@ -0,0 +1,450 @@
-> 
-> > +/**
-> > + * kdbus_bus_cred_is_privileged() - check whether the given credentials in
-> > + *				    combination with the capabilities of the
-> > + *				    current thead are privileged on the bus
-> > + * @bus:		The bus to check
-> > + * @cred:		The credentials to match
-> > + *
-> > + * Return: true if the credentials are privileged, otherwise false.
-> > + */
-> > +bool kdbus_bus_cred_is_privileged(const struct kdbus_bus *bus,
-> > +				  const struct cred *cred)
-> > +{
-> > +	/* Capabilities are *ALWAYS* tested against the current thread, they're
-> > +	 * never remembered from conn-credentials. */
-> > +	if (ns_capable(&init_user_ns, CAP_IPC_OWNER))
-> > +		return true;
-> > +
-> > +	return uid_eq(bus->uid_owner, cred->fsuid);
-> > +}
-> > +
-> > +/**
-> > + * kdbus_bus_uid_is_privileged() - check whether the current user is a
-> > + *				   priviledged bus user
-> > + * @bus:		The bus to check
-> > + *
-> > + * Return: true if the current user has CAP_IPC_OWNER capabilities, or
-> > + * if it has the same UID as the user that created the bus. Otherwise,
-> > + * false is returned.
-> > + */
-> > +bool kdbus_bus_uid_is_privileged(const struct kdbus_bus *bus)
-> > +{
-> > +	return kdbus_bus_cred_is_privileged(bus, current_cred());
-> > +}
-> 
-> 
-> > +/**
-> > + * kdbus_bus_new() - create a new bus
-> > + * @domain:		The domain to work on
-> > + * @make:		Pointer to a struct kdbus_cmd_make containing the
-> > + *			details for the bus creation
-> > + * @name:		Name of the bus
-> > + * @bloom:		Bloom parameters for this bus
-> > + * @mode:		The access mode for the device node
-> > + * @uid:		The uid of the device node
-> > + * @gid:		The gid of the device node
-> > + * @bus:		Pointer to a reference where the new bus is stored
-> > + *
-> > + * This function will allocate a new kdbus_bus and link it to the given
-> > + * domain.
-> > + *
-> > + * Return: 0 on success, negative errno on failure.
-> > + */
-> > +int kdbus_bus_new(struct kdbus_domain *domain,
-> > +		  const struct kdbus_cmd_make *make,
-> > +		  const char *name,
-> > +		  const struct kdbus_bloom_parameter *bloom,
-> > +		  umode_t mode, kuid_t uid, kgid_t gid,
-> > +		  struct kdbus_bus **bus)
-> > +{
-> [snip]
-> > +
-> > +	if (!capable(CAP_IPC_OWNER) &&
-> > +	    atomic_inc_return(&b->user->buses) > KDBUS_USER_MAX_BUSES) {
-> > +		atomic_dec(&b->user->buses);
-> > +		ret = -EMFILE;
-> > +		goto exit_unref_user_unlock;
-> > +	}
-> > +
+ Documentation/devicetree/bindings/rtc/rtc-omap.txt |   9 +-
+ drivers/rtc/rtc-omap.c                             | 100 +++++++++++++++++++++
+ 2 files changed, 108 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+index 5a0f02d34d95..750efd40c72e 100644
+--- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
++++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+@@ -5,11 +5,17 @@ Required properties:
+ 	- "ti,da830-rtc"  - for RTC IP used similar to that on DA8xx SoC family.
+ 	- "ti,am3352-rtc" - for RTC IP used similar to that on AM335x SoC family.
+ 			    This RTC IP has special WAKE-EN Register to enable
+-			    Wakeup generation for event Alarm.
++			    Wakeup generation for event Alarm. It can also be
++			    used to control an external PMIC via the
++			    pmic_power_en pin.
+ - reg: Address range of rtc register set
+ - interrupts: rtc timer, alarm interrupts in order
+ - interrupt-parent: phandle for the interrupt controller
+ 
++Optional properties:
++- ti,system-power-controller: whether the rtc is controlling the system power
++  through pmic_power_en
++
+ Example:
+ 
+ rtc@1c23000 {
+@@ -18,4 +24,5 @@ rtc@1c23000 {
+ 	interrupts = <19
+ 		      19>;
+ 	interrupt-parent = <&intc>;
++	ti,system-power-controller;
+ };
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index c508e45ca3ce..e83f51ae7f63 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -68,6 +68,15 @@
+ 
+ #define OMAP_RTC_IRQWAKEEN		0x7c
+ 
++#define OMAP_RTC_ALARM2_SECONDS_REG	0x80
++#define OMAP_RTC_ALARM2_MINUTES_REG	0x84
++#define OMAP_RTC_ALARM2_HOURS_REG	0x88
++#define OMAP_RTC_ALARM2_DAYS_REG	0x8c
++#define OMAP_RTC_ALARM2_MONTHS_REG	0x90
++#define OMAP_RTC_ALARM2_YEARS_REG	0x94
++
++#define OMAP_RTC_PMIC_REG		0x98
++
+ /* OMAP_RTC_CTRL_REG bit fields: */
+ #define OMAP_RTC_CTRL_SPLIT		BIT(7)
+ #define OMAP_RTC_CTRL_DISABLE		BIT(6)
+@@ -80,6 +89,7 @@
+ 
+ /* OMAP_RTC_STATUS_REG bit fields: */
+ #define OMAP_RTC_STATUS_POWER_UP	BIT(7)
++#define OMAP_RTC_STATUS_ALARM2		BIT(7)
+ #define OMAP_RTC_STATUS_ALARM		BIT(6)
+ #define OMAP_RTC_STATUS_1D_EVENT	BIT(5)
+ #define OMAP_RTC_STATUS_1H_EVENT	BIT(4)
+@@ -89,6 +99,7 @@
+ #define OMAP_RTC_STATUS_BUSY		BIT(0)
+ 
+ /* OMAP_RTC_INTERRUPTS_REG bit fields: */
++#define OMAP_RTC_INTERRUPTS_IT_ALARM2	BIT(4)
+ #define OMAP_RTC_INTERRUPTS_IT_ALARM	BIT(3)
+ #define OMAP_RTC_INTERRUPTS_IT_TIMER	BIT(2)
+ 
+@@ -98,6 +109,9 @@
+ /* OMAP_RTC_IRQWAKEEN bit fields: */
+ #define OMAP_RTC_IRQWAKEEN_ALARM_WAKEEN	BIT(1)
+ 
++/* OMAP_RTC_PMIC bit fields: */
++#define OMAP_RTC_PMIC_POWER_EN_EN	BIT(16)
++
+ /* OMAP_RTC_KICKER values */
+ #define	KICK0_VALUE			0x83e70b13
+ #define	KICK1_VALUE			0x95a4f1e0
+@@ -106,6 +120,7 @@ struct omap_rtc_device_type {
+ 	bool has_32kclk_en;
+ 	bool has_kicker;
+ 	bool has_irqwakeen;
++	bool has_pmic_mode;
+ 	bool has_power_up_reset;
+ };
+ 
+@@ -115,6 +130,7 @@ struct omap_rtc {
+ 	int irq_alarm;
+ 	int irq_timer;
+ 	u8 interrupts_reg;
++	bool is_pmic_controller;
+ 	const struct omap_rtc_device_type *type;
+ };
+ 
+@@ -345,6 +361,70 @@ static int omap_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
+ 	return 0;
+ }
+ 
++static struct omap_rtc *omap_rtc_power_off_rtc;
++
++/*
++ * omap_rtc_poweroff: RTC-controlled power off
++ *
++ * The RTC can be used to control an external PMIC via the pmic_power_en pin,
++ * which can be configured to transition to OFF on ALARM2 events.
++ *
++ * Notes:
++ * The two-second alarm offset is the shortest offset possible as the alarm
++ * registers must be set before the next timer update and the offset
++ * calculation is too heavy for everything to be done within a single access
++ * period (~15 us).
++ *
++ * Called with local interrupts disabled.
++ */
++static void omap_rtc_power_off(void)
++{
++	struct omap_rtc *rtc = omap_rtc_power_off_rtc;
++	struct rtc_time tm;
++	unsigned long now;
++	u32 val;
++
++	/* enable pmic_power_en control */
++	val = rtc_readl(rtc, OMAP_RTC_PMIC_REG);
++	rtc_writel(rtc, OMAP_RTC_PMIC_REG, val | OMAP_RTC_PMIC_POWER_EN_EN);
++
++	/* set alarm two seconds from now */
++	omap_rtc_read_time_raw(rtc, &tm);
++	bcd2tm(&tm);
++	rtc_tm_to_time(&tm, &now);
++	rtc_time_to_tm(now + 2, &tm);
++
++	if (tm2bcd(&tm) < 0) {
++		dev_err(&rtc->rtc->dev, "power off failed\n");
++		return;
++	}
++
++	rtc_wait_not_busy(rtc);
++
++	rtc_write(rtc, OMAP_RTC_ALARM2_SECONDS_REG, tm.tm_sec);
++	rtc_write(rtc, OMAP_RTC_ALARM2_MINUTES_REG, tm.tm_min);
++	rtc_write(rtc, OMAP_RTC_ALARM2_HOURS_REG, tm.tm_hour);
++	rtc_write(rtc, OMAP_RTC_ALARM2_DAYS_REG, tm.tm_mday);
++	rtc_write(rtc, OMAP_RTC_ALARM2_MONTHS_REG, tm.tm_mon);
++	rtc_write(rtc, OMAP_RTC_ALARM2_YEARS_REG, tm.tm_year);
++
++	/*
++	 * enable ALARM2 interrupt
++	 *
++	 * NOTE: this fails on AM3352 if rtc_write (writeb) is used
++	 */
++	val = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
++	rtc_writel(rtc, OMAP_RTC_INTERRUPTS_REG,
++			val | OMAP_RTC_INTERRUPTS_IT_ALARM2);
++
++	/*
++	 * Wait for alarm to trigger (within two seconds) and external PMIC to
++	 * power off the system. Add a 500 ms margin for external latencies
++	 * (e.g. debounce circuits).
++	 */
++	mdelay(2500);
++}
++
+ static struct rtc_class_ops omap_rtc_ops = {
+ 	.read_time	= omap_rtc_read_time,
+ 	.set_time	= omap_rtc_set_time,
+@@ -361,6 +441,7 @@ static const struct omap_rtc_device_type omap_rtc_am3352_type = {
+ 	.has_32kclk_en	= true,
+ 	.has_kicker	= true,
+ 	.has_irqwakeen	= true,
++	.has_pmic_mode	= true,
+ };
+ 
+ static const struct omap_rtc_device_type omap_rtc_da830_type = {
+@@ -412,6 +493,9 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	of_id = of_match_device(omap_rtc_of_match, &pdev->dev);
+ 	if (of_id) {
+ 		rtc->type = of_id->data;
++		rtc->is_pmic_controller = rtc->type->has_pmic_mode &&
++				of_property_read_bool(pdev->dev.of_node,
++						"ti,system-power-controller");
+ 	} else {
+ 		id_entry = platform_get_device_id(pdev);
+ 		rtc->type = (void *)id_entry->driver_data;
+@@ -460,6 +544,9 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 
+ 	mask = OMAP_RTC_STATUS_ALARM;
+ 
++	if (rtc->type->has_pmic_mode)
++		mask |= OMAP_RTC_STATUS_ALARM2;
++
+ 	if (rtc->type->has_power_up_reset) {
+ 		mask |= OMAP_RTC_STATUS_POWER_UP;
+ 		if (reg & OMAP_RTC_STATUS_POWER_UP)
+@@ -520,6 +607,13 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 			goto err;
+ 	}
+ 
++	if (rtc->is_pmic_controller) {
++		if (!pm_power_off) {
++			omap_rtc_power_off_rtc = rtc;
++			pm_power_off = omap_rtc_power_off;
++		}
++	}
++
+ 	return 0;
+ 
+ err:
+@@ -536,6 +630,12 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
+ {
+ 	struct omap_rtc *rtc = platform_get_drvdata(pdev);
+ 
++	if (pm_power_off == omap_rtc_power_off &&
++			omap_rtc_power_off_rtc == rtc) {
++		pm_power_off = NULL;
++		omap_rtc_power_off_rtc = NULL;
++	}
++
+ 	device_init_wakeup(&pdev->dev, 0);
+ 
+ 	/* leave rtc running, but disable irqs */
 -- 
-Djalal Harouni
-http://opendz.org
+2.0.4
+
