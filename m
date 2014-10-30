@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551AbaJ3IeX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 04:34:23 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:51749 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaJ3IeV (ORCPT
+	id S1758574AbaJ3Ift (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 04:35:49 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:54847 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758258AbaJ3Ifq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 04:34:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org, tj@kernel.org, marcel@holtmann.org,
-        desrt@desrt.ca, hadess@hadess.net, dh.herrmann@gmail.com,
-        tixxdz@opendz.org, simon.mcvittie@collabora.co.uk, daniel@zonque.org,
-        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
-        teg@jklm.no
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-Date: Thu, 30 Oct 2014 09:33:56 +0100
-Message-ID: <4382138.U2ODUIQ55c@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+	Thu, 30 Oct 2014 04:35:46 -0400
+Date: Thu, 30 Oct 2014 09:35:44 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
+Message-ID: <20141030083544.GX12538@two.firstfloor.org>
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+ <87lho0pf4l.fsf@tassilo.jf.intel.com>
+ <20141029215839.GO2979@sgi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Iumi68slk5E70UlzZtda4KR4aToCRBVZV5mGoxXkX8O
- 7x4+42X8K2cq6lHahskE6/Pzu3BU+8RK0Cs1oYULXF0H6qUrdW
- EHD79+jzOAPbVmX/nXTkcb1Ez8EVdpt0fCf57CRDAPos8Jv7U5
- bl2kIfD5FJDb77Q28JVR138pfBI8fQ6Sj1CVh2a8+8qYr3XEVh
- cGlrr0KuRLftyvXsKp5HkdXRB4H1QwwfK1o2qIPBVfFMpo/dSn
- GnX3uuF7M0bu7kbXrPbqj23PQ0wkFOHyb2GH51sMRlhNBXIAi7
- injQg5/WlC/6kxSA8c1LLsTMLpOwng8P5mEu3pESTfqmWkHXtT
- Jaxgw6+cXUjzGxbPBccU=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029215839.GO2979@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 October 2014 15:00:44 Greg Kroah-Hartman wrote:
->  drivers/misc/Kconfig                             |    1 +
->  drivers/misc/Makefile                            |    1 +
->  drivers/misc/kdbus/Kconfig                       |   11 +
->  drivers/misc/kdbus/Makefile                      |   19 +
->  drivers/misc/kdbus/bus.c                         |  450 ++++++
->  drivers/misc/kdbus/bus.h                         |  107 ++
->  drivers/misc/kdbus/connection.c                  | 1751 +++++++++++++++++++++
->  drivers/misc/kdbus/connection.h                  |  177 +++
->  drivers/misc/kdbus/domain.c                      |  477 ++++++
 > 
+> I suppose from the single-threaded point of view, it could be.  Maybe we
 
-One very high-level common:
+It's not only for single threaded. Consider the "has to wait a long time
+for a lock" problem Rik pointed out. With that multiple threads are
+always better.
 
-Since this is going to be a very commonly used IPC mechanism, I don't
-like the idea of stuffing it into drivers/misc.
+> could look at this a bit differently.  What if we allow processes to
+> choose their collapse mechanism on fork?  That way, the system could
+> default to using the standard khugepaged mechanism, but we could request
+> that processes handle collapses themselves if we want.  Overall, I don't
+> think that would add too much overhead to what I've already proposed
+> here, and it gives us more flexibility.
 
-How about putting it into drivers/kdbus or ipc/kdbus instead?
+We already have too many VM tunables. Better would be to switch
+automatically somehow.
 
-	Arnd
+I guess you could use some kind of work stealing scheduler, but these
+are fairly complicated. Maybe some simpler heuristics can be found.
+
+BTW my thinking has been usually to actually use more khugepageds to 
+scan large address spaces faster.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
