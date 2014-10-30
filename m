@@ -1,45 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310AbaJ3I3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 04:29:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52759 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaJ3I3V (ORCPT
+	id S1758482AbaJ3IaD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 04:30:03 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:43052 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbaJ3I37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 04:29:21 -0400
-Date: Thu, 30 Oct 2014 01:29:20 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Don Brace <don.brace@pmcs.com>,
-        Robert Elliott <elliott@hp.com>
-Subject: Re: [PATCH] MAINTAINERS: remove list iss_storagedev@hp.com
-Message-ID: <20141030082920.GA24815@infradead.org>
-References: <1414651659-4485-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Thu, 30 Oct 2014 04:29:59 -0400
+Message-ID: <5451F678.5090900@linaro.org>
+Date: Thu, 30 Oct 2014 16:27:36 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414651659-4485-1-git-send-email-sudipm.mukherjee@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v5 12/18] ACPI / processor: Make it possible to get CPU
+ hardware ID via GICC
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-13-git-send-email-hanjun.guo@linaro.org> <20141024173920.GB8303@red-moon> <544E1732.5090902@linaro.org> <20141029104321.GA8896@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20141029104321.GA8896@e102568-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 12:17:39PM +0530, Sudip Mukherjee wrote:
-> when sending mail to iss_storagedev@hp.com it failed permanently
+On 2014-10-29 18:43, Lorenzo Pieralisi wrote:
+> On Mon, Oct 27, 2014 at 09:58:10AM +0000, Hanjun Guo wrote:
 > 
-> "Google tried to deliver your message, but it was rejected by the
-> server for the recipient domain hp.com by smtp.hp.com.
-> [15.201.208.57].
-> The error that the other server returned was:
-> 550 5.1.1 <iss_storagedev@hp.com>: Recipient address
-> rejected: User unknown in virtual alias table"
+> [...]
+> 
+>>>> +static int map_gicc_mpidr(struct acpi_subtable_header *entry,
+>>>> +		int device_declaration, u32 acpi_id, int *mpidr)
+>>>> +{
+>>>> +	struct acpi_madt_generic_interrupt *gicc =
+>>>> +	    container_of(entry, struct acpi_madt_generic_interrupt, header);
+>>>> +
+>>>> +	if (!(gicc->flags & ACPI_MADT_ENABLED))
+>>>> +		return -ENODEV;
+>>>> +
+>>>> +	/* In the GIC interrupt model, logical processors are
+>>>> +	 * required to have a Processor Device object in the DSDT,
+>>>> +	 * so we should check device_declaration here
+>>>> +	 */
+>>>> +	if (device_declaration && (gicc->uid == acpi_id)) {
+>>>> +		/*
+>>>> +		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
+>>>> +		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
+>>>> +		 * fields into a single 32 bit identifier to accommodate the
+>>>> +		 * acpi processor drivers.
+>>>> +		 */
+>>>> +		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
+>>>> +			 | gicc->arm_mpidr;
+>>>
+>>> The simple fact that you define a function to pack the mpidr value and
+>>> you can't use it here because this is *generic* code is telling, and
+>>> a very bad omen. At the cost of sounding like a broken record, I do not
+>>> like this mpidr->apic->logical_cpu song and dance at all.
+>>> ACPI is peppered with code (eg hotplug is another example, CPUidle driver
+>>> even worse) that is supposed to be generic but contains x86 code to carry
+>>> out this cpuid conversion, I really think that in order to start an ARM64
+>>> ACPI port properly we should at least try to factor out this physical to
+>>> logical cpu id conversion, and it is not the first time that I mention this
+>>> on the lists.
+>>
+>> I know, thanks for pointing this out. As I replied in previous version
+>> of this patch set, apic_id is x86/ia64 specific, but the meaning behind
+>> it is not. It means the CPU hardware id to identify itself in the system,
+>> it just like MPIDR on ARM.
+> 
+> Yes, except that it is called apic_id.
+> 
+>> I will send out a patch for RFC to convert apic_id to physid which
+>> is generic for all platforms.
+> 
+> That seems a good idea to sound out if I am the only one having an issue
+> with the current approach.
+> 
+>>> I will also talk to Rafael about this at the earliest opportunity, I
+>>> guess that x86 code relies on apic-id because some ACPI versions could
+>>> not rely on the acpi-id or some other reasons I have to investigate.
+>>
+>> As ACPI spec (section 8.4, Declaring Processors) said, Each processor
+>> in the system must be declared in the ACPI namespace, so each cpu will
+>> have acpi_id in all ACPI versions, and in theory we can map acpi_id to
+>> logical cpu id if we want to.
+>>
+>> But things are complicated, apic_id is connected to many
+>> tables, MADT for smp init, DSDT for device driver, and SRAT for NUMA (there
+>> is no acpi_id in it, ONLY has apic_id in the table for x86/ia64), so if we
+>> want to factor the code to map acpi_id to logical cpu id, we need to modify:
+>>
+>>  - ACPI drivers;
+>>  - SMP init for x86 and ia64
+>>  - the mappings for NUMA init for x86 and ia64
+>> that will be lots of work I think.
+>>
+>> I'm willing to discuss this further and come out a solution, please
+>> comment on what I said and share your ideas :)
+> 
+> Factoring out apic_id to a common cpu_physical_id is ok to me, because
+> basically that's what you are doing except for the naming. I do not
+> have any particular preference for the acpi_id, I mentioned that only
+> as a means to implement a generic cpu_physical_id, arch agnostic.
+> 
+> Drop the RFC you mentioned above please on the list, we will restart debating
+> from there.
 
-I've got a MAINTAINERS update for these drivers queued up, but it only
-adds a new maintainer, and an additional list, but doesn't remove this
-one.  Don, Robert - should we remove the list as well, or should it come
-back?
+Ok, will send out the patch soon.
+
+Thanks
+Hanjun
 
