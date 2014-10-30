@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389AbaJ3OEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 10:04:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45714 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564AbaJ3OEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 10:04:35 -0400
-Date: Thu, 30 Oct 2014 09:01:43 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: <dinguyen@opensource.altera.com>
-CC: <paulz@synopsys.com>, <balbi@ti.com>, <dinh.linux@gmail.com>,
-        <swarren@wwwdotorg.org>, <b.zolnierkie@samsung.com>,
-        <matthijs@stdin.nl>, <r.baldyga@samsung.com>, <jg1.han@samsung.com>,
-        <sachin.kamat@linaro.org>, <ben-linux@fluff.org>,
-        <dianders@chromium.org>, <kever.yang@rock-chips.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv6 5/8] usb: dwc2: Add call_gadget functions for perpheral
- mode interrupts
-Message-ID: <20141030140143.GE6482@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
- <1414538749-14735-6-git-send-email-dinguyen@opensource.altera.com>
+	id S1760049AbaJ3OHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 10:07:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35416 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758480AbaJ3OHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 10:07:05 -0400
+Date: Thu, 30 Oct 2014 15:07:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        xen-devel@lists.xenproject.org, John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [RFC PATCH v2 04/11] time: Add rtc_time_to_tm64() safe version(using
+ time64_t)
+In-Reply-To: <1414667745-7703-5-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1410301455380.5308@nanos>
+References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org> <1414667745-7703-5-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SWTRyWv/ijrBap1m"
-Content-Disposition: inline
-In-Reply-To: <1414538749-14735-6-git-send-email-dinguyen@opensource.altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SWTRyWv/ijrBap1m
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 30 Oct 2014, pang.xunlei wrote:
 
-On Tue, Oct 28, 2014 at 06:25:46PM -0500, dinguyen@opensource.altera.com wr=
-ote:
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
->=20
-> Update the dwc2 wakeup and suspend interrupt functions to use call_gadget
-> when the IP is in peripheral mode.
+As you can guess already: $subject sucks.
 
-it seems like you're actually fixing a bug here. Those calls weren't
-there before.
+> +
+>  /*
+>   * Convert seconds since 01-01-1970 00:00:00 to Gregorian date.
+> + * Safe version for 2038 safety.
 
---=20
-balbi
+See previous replies.
 
---SWTRyWv/ijrBap1m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>   */
+> -void rtc_time_to_tm(unsigned long time, struct rtc_time *tm)
+> +void rtc_time_to_tm64(time64_t time, struct rtc_time *tm)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+What's tm64? 
 
-iQIcBAEBAgAGBQJUUkTHAAoJEIaOsuA1yqREpIsP/iK3Tsew9mIO6Yk0V4KJfJ4D
-mFo/qUTUBqWnBrsRytKoMoJ5XQDF9UlVmnOdueHYNzvc3eomq4ZDFxJuz1OBnq0q
-wJ9VeMeBkkdM0MstS5q7uQ/dZ/We6jf6NqFHas8AlCK66bentTlaIq3fb1gcF3kl
-M4kv+rtmVz4yfhltcJWTMQSgLpv2izC9QuMcdxo0zPF+Ca/mVuB+PafFtubsY0/P
-7fHwtULPtQMchgK8rb2aiA2enefid420E5JWkzoqas1HLyfERG9QH6uyVetY8ojl
-9ccvVc/iXhIDUlP8l9Bvz0Yeu2+LJD4zRxcsfNDVn71/73t5gANpM1xy5G0SZfsS
-hBJHOg+N/cNZYaglLmOqWz4fV55FH4epm6JtjJKdKFaA0t7H9/atVYNgKtT4fUQo
-7GKmFYB+/FakMBIg5ckT+S9BIIeXLGWjQy/nhVNt9g1KEK9uKKX45wei9WCmYefO
-fObs1qjRhVENxQv+cRJkFBqmkWJvnQHS6+KPOJHPYwwv+dZ25YiZ895rkS3DcFLG
-QaCWZIOyV7GY/QuG/D3vUMG1e+vVmQKEb0VmCcNGym95CH2MSd/04JklOlRquRkk
-J/6eg+pMGvTQ1kAWwaSc1lzBQ5oBD2l73BFah+yG+6Px4RVzcKkazDvMw5neDtLG
-iMkzJN65SqENLKxjB+JL
-=qWBE
------END PGP SIGNATURE-----
+This function is converting time64 to rtc_time. So the proper function
+name is: rtc_time64_to_tm
 
---SWTRyWv/ijrBap1m--
+Can you see the difference?
+
+>  {
+>  	unsigned int month, year;
+>  	int days;
+>  
+> -	days = time / 86400;
+> +	days = div_s64(time, 86400);
+>  	time -= (unsigned int) days * 86400;
+>  
+>  	/* day of the week, 1970-01-01 was a Thursday */
+> @@ -81,13 +83,23 @@ void rtc_time_to_tm(unsigned long time, struct rtc_time *tm)
+>  	tm->tm_mon = month;
+>  	tm->tm_mday = days + 1;
+>  
+> -	tm->tm_hour = time / 3600;
+> +	tm->tm_hour = div_s64(time, 3600);
+
+We already adjusted time to a value which is less than 24 * 3600,
+i.e. it fits nicely into a long on 32bit. So we can avoid the whole
+div_s64 business and simply do:
+
+	unsigned int month, year;
++	unsigned long secs;
+	int days;
+
+-	days = time / 86400;
+- 	time -= (unsigned int) days * 86400;
++	days = div_s64(time, 86400);
++	secs = time - (unsigned int) days * 86400;
+
+And change the rest which uses time to:
+
+-	tm->tm_hour = time / 3600;
++	tm->tm_hour = secs / 3600;
+
+Sigh.
+
+	tglx
