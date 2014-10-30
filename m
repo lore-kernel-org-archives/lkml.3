@@ -1,348 +1,685 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760108AbaJ3MpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 08:45:17 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:45008 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759950AbaJ3Mn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 08:43:28 -0400
-X-AuditID: cbfee690-f79ab6d0000046f7-3b-5452326ade23
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, sre@kernel.org, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, anton@enomsg.org, pavel@ucw.cz,
-        myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH 07/10] power: charger-manager: Make chraging decision focusing
- on battery status.
-Date: Thu, 30 Oct 2014 21:43:13 +0900
-Message-id: <1414672996-28355-8-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1414672996-28355-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1414672996-28355-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsWyRsSkRDfLKCjEoOcAr8XBrZoW1788Z7WY
-	9OQ9s8XElZOZLTrPPmG2uLxrDpvF594jjBa3G1ewWdw9dZTN4vTuEgcujwn9nxg9ds66y+6x
-	eYWWx6ZVnWwefVtWMXqsWP2d3ePzJrkA9igum5TUnMyy1CJ9uwSujN0nOxkL1rhVHDy1hqWB
-	8YtFFyMnh4SAicT0mRsYIWwxiQv31rN1MXJxCAksZZT4daOBBabo57kfjBCJRYwSbR97mSCc
-	NiaJNzsPsYNUsQnoSPzfdxPMFhFQkNjc+4wVpIhZ4AqjxM3F65lAEsICyRL3p/xnBrFZBFQl
-	bhzYA7aCV8BDou3PcaAaDqB1ChJzJtmAhDkFPCU2XZkJViIEVPJgVxc7yEwJgX3sEk9uvGGC
-	mCMg8W3yIRaIXlmJTQeYIa6WlDi44gbLBEbhBYwMqxhFUwuSC4qT0otM9IoTc4tL89L1kvNz
-	NzECo+L0v2cTdjDeO2B9iFGAg1GJh1fzRGCIEGtiWXFl7iFGU6ANE5mlRJPzgbGXVxJvaGxm
-	ZGFqYmpsZG5ppiTO+1rqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRtGvgm4vtyk/Xuy7
-	/Zfk+xIxU704A77tX/dm1itH/Lo/aWHWb+e1c3NnrQjt8PsZFjh5VcRH/vtnhU5pxj0xZZuj
-	X7lkWeubSczy+6zEv516nytuqb1LN0ibJ2vrtF+TO0u3q08qPHugJmV267tNMt/NOWosZQoV
-	LB7+UVNKuTplb8zH/rmCT5RYijMSDbWYi4oTAeUd5geFAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t9jAd0so6AQg/YNzBYHt2paXP/ynNVi
-	0pP3zBYTV05mtug8+4TZ4vKuOWwWn3uPMFrcblzBZnH31FE2i9O7Sxy4PCb0f2L02DnrLrvH
-	5hVaHptWdbJ59G1ZxeixYvV3do/Pm+QC2KMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0M
-	DHUNLS3MlRTyEnNTbZVcfAJ03TJzgK5TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTX
-	Y2SABhLWMGbsPtnJWLDGreLgqTUsDYxfLLoYOTkkBEwkfp77wQhhi0lcuLeerYuRi0NIYBGj
-	RNvHXiYIp41J4s3OQ+wgVWwCOhL/990Es0UEFCQ29z5jBSliFrjCKHFz8XomkISwQLLE/Sn/
-	mUFsFgFViRsH9rCA2LwCHhJtf44D1XAArVOQmDPJBiTMKeApsenKTLASIaCSB7u62Ccw8i5g
-	ZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERxzz6R3MK5qsDjEKMDBqMTDq3EiMESINbGs
-	uDL3EKMEB7OSCO9RnaAQId6UxMqq1KL8+KLSnNTiQ4ymQEdNZJYSTc4HpoO8knhDYxMzI0sj
-	c0MLI2NzJXHeg63WgUIC6YklqdmpqQWpRTB9TBycUg2MrnoPI56rbWjY6Sak8uXAgaDFDA6P
-	XTIi7u+TL/vUx2rHGDz3s7XAmgYhyaa/zlPsDGUNkiMXbrCrLf24IWD/l9PTdPwmFgh3PL3h
-	0v3VNMFnp9iW0Nynm07Vply3WnrVcbrjrHYXu54JEl/FrDa7TNd3tJP0tnJiYeZnOHvxz94e
-	hpJJ+V5KLMUZiYZazEXFiQBhMCtUzwIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1760118AbaJ3Mpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 08:45:41 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50081 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759020AbaJ3Mph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 08:45:37 -0400
+Date: Thu, 30 Oct 2014 13:45:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de, dan.carpenter@oracle.com,
+        dougthompson@xmission.com, m.chehab@samsung.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 4/4] edac, amd64_edac: Add F15h M60h support
+Message-ID: <20141030124528.GB11178@pd.tnic>
+References: <1414617483-4941-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1414617483-4941-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In cm_monitor() where charging management starts, it checks various charging
-condition sequentially to decide next charging operation. However, as it
-follows sequential process, cascaded IF statements, it does some duplicated
-jobs which is already done in previous stage. It results delay in decision
-making. And moreover, starting point of charing is spreaded all around, so
-it makes maintain codes and debugging difficult.
+On Wed, Oct 29, 2014 at 04:18:03PM -0500, Aravind Gopalakrishnan wrote:
+> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+> index bbd6514..1092ddd 100644
+> --- a/drivers/edac/amd64_edac.c
+> +++ b/drivers/edac/amd64_edac.c
+> @@ -692,9 +692,19 @@ static void debug_dump_dramcfg_low(struct amd64_pvt *pvt, u32 dclr, int chan)
+>  {
+>  	edac_dbg(1, "F2x%d90 (DRAM Cfg Low): 0x%08x\n", chan, dclr);
+>  
+> -	edac_dbg(1, "  DIMM type: %sbuffered; all DIMMs support ECC: %s\n",
+> -		 (dclr & BIT(16)) ?  "un" : "",
 
-Both of problems mentioned above becomes clean if it manages battery charging
-focusing on battery status not following sequential condition checking.
-Now, cm_monitor() moves battery state diagram and does optimal operation for
-current state. As a result, it reduces whole monitoring time almost in half.
+Why did we drop bit 16 about the unbuffered-ness of the DIMMs?
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> -		 (dclr & BIT(19)) ? "yes" : "no");
+> +	if (pvt->dram_type == MEM_LRDDR3) {
+> +		u32 dcsm = pvt->csels[chan].csmasks[0];
+> +		/*
+> +		 * It's assumed all LRDIMMs in a DCT are going to be of
+> +		 * same 'type' until proven otherwise. So, use a cs
+> +		 * value of '0' here to get dcsm value.
+> +		 */
+> +		edac_dbg(1, " LRDIMM %dx rank multiply\n", (dcsm & 0x3));
+> +	}
+> +
+> +	edac_dbg(1, "All DIMMs support ECC:%s\n",
+> +		    (dclr & BIT(19)) ? "yes" : "no");
+
+...
+
+> @@ -813,25 +823,57 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
+>  	}
+>  }
+>  
+> -static enum mem_type determine_memory_type(struct amd64_pvt *pvt, int cs)
+> +static void determine_memory_type(struct amd64_pvt *pvt)
+>  {
+> -	enum mem_type type;
+> -
+> -	/* F15h supports only DDR3 */
+> -	if (pvt->fam >= 0x15)
+> -		type = (pvt->dclr0 & BIT(16)) ?	MEM_DDR3 : MEM_RDDR3;
+> -	else if (pvt->fam == 0x10 || pvt->ext_model >= K8_REV_F) {
+> -		if (pvt->dchr0 & DDR3_MODE)
+> -			type = (pvt->dclr0 & BIT(16)) ?	MEM_DDR3 : MEM_RDDR3;
+> -		else
+> -			type = (pvt->dclr0 & BIT(16)) ? MEM_DDR2 : MEM_RDDR2;
+> -	} else {
+> -		type = (pvt->dclr0 & BIT(18)) ? MEM_DDR : MEM_RDDR;
+> +	switch (pvt->fam) {
+> +	case 0xf:
+> +		if (pvt->ext_model < K8_REV_F) {
+> +			pvt->dram_type = (pvt->dclr0 & BIT(18)) ?
+> +					 MEM_DDR : MEM_RDDR;
+> +			break;
+> +		}
+> +		/* ext_model >= k8_rev_f, fall down below */
+> +	case 0x10:
+> +		if (!(pvt->dchr0 & DDR3_MODE)) {
+> +			pvt->dram_type = (pvt->dclr0 & BIT(16)) ?
+> +					 MEM_DDR2 : MEM_RDDR2;
+> +			break;
+> +		}
+> +		/* If f10h supports DDR3, it will be handled by cases below */
+> +	case 0x15:
+> +		/* F15h supports only DDR3 */
+> +		if (pvt->model == 0x60) {
+> +			/*
+> +			 * We use a Chip Select value of '0' to obtain dcsm.
+> +			 * Theoretically, it is possible to populate LRDIMMs
+> +			 * of different 'Rank' value on a DCT. But this is not
+> +			 * a common case. So, it's reasonable to assume all
+> +			 * DIMMs are going to be of same 'type' until proven
+> +			 * otherwise.
+> +			 */
+> +			u32 dram_ctrl;
+> +			u32 dcsm = pvt->csels[0].csmasks[0];
+> +
+> +			amd64_read_dct_pci_cfg(pvt, 0, DRAM_CONTROL,
+> +					       &dram_ctrl);
+> +			if (((dram_ctrl >> 8) & 0x7) == 0x2)
+> +				pvt->dram_type = MEM_DDR4;
+> +			else if (pvt->dclr0 & BIT(16))
+> +				pvt->dram_type = MEM_DDR3;
+> +			else if (dcsm & 0x3)
+> +				pvt->dram_type = MEM_LRDDR3;
+> +			else
+> +				pvt->dram_type = MEM_RDDR3;
+> +			break;
+> +		}
+> +		/* other f15h models fall down below */
+> +	case 0x16:
+> +		pvt->dram_type = (pvt->dclr0 & BIT(16)) ?
+> +				 MEM_DDR3 : MEM_RDDR3;
+> +		break;
+> +	default:
+> +		pvt->dram_type = MEM_EMPTY;
+>  	}
+
+Ok, I went and did cleanup that version here by flipping the logic
+in the tests and thus saving an indentation level. Also, I've added
+explicit "return"s in the respective cases in order to follow through
+the code more easily. Here's how the whole function looks like now - I
+think it is a bit better readable this way. Full patch below:
+
+static void determine_memory_type(struct amd64_pvt *pvt)
+{
+        u32 dram_ctrl, dcsm;
+
+        switch (pvt->fam) {
+        case 0xf:
+                if (pvt->ext_model >= K8_REV_F)
+                        goto ddr3;
+
+                pvt->dram_type = (pvt->dclr0 & BIT(18)) ? MEM_DDR : MEM_RDDR;
+                return;
+
+        case 0x10:
+                if (pvt->dchr0 & DDR3_MODE)
+                        goto ddr3;
+
+                pvt->dram_type = (pvt->dclr0 & BIT(16)) ? MEM_DDR2 : MEM_RDDR2;
+                return;
+
+        case 0x15:
+                if (pvt->model < 0x60)
+                        goto ddr3;
+
+                /*
+                 * Model 0x60h needs special handling:
+                 *
+                 * We use a Chip Select value of '0' to obtain dcsm.
+                 * Theoretically, it is possible to populate LRDIMMs of different
+                 * 'Rank' value on a DCT. But this is not the common case. So,
+                 * it's reasonable to assume all DIMMs are going to be of same
+                 * 'type' until proven otherwise.
+                 */
+                amd64_read_dct_pci_cfg(pvt, 0, DRAM_CONTROL, &dram_ctrl);
+                dcsm = pvt->csels[0].csmasks[0];
+
+                if (((dram_ctrl >> 8) & 0x7) == 0x2)
+                        pvt->dram_type = MEM_DDR4;
+                else if (pvt->dclr0 & BIT(16))
+                        pvt->dram_type = MEM_DDR3;
+                else if (dcsm & 0x3)
+                        pvt->dram_type = MEM_LRDDR3;
+                else
+                        pvt->dram_type = MEM_RDDR3;
+
+                return;
+
+        case 0x16:
+                goto ddr3;
+
+        default:
+                WARN(1, KERN_ERR "%s: Family??? 0x%x\n", __func__, pvt->fam);
+                pvt->dram_type = MEM_EMPTY;
+        }
+        return;
+
+ddr3:
+        pvt->dram_type = (pvt->dclr0 & BIT(16)) ? MEM_DDR3 : MEM_RDDR3;
+}
+
 ---
- drivers/power/charger-manager.c       |  177 +++++++++++----------------------
- include/linux/power/charger-manager.h |    3 +
- 2 files changed, 62 insertions(+), 118 deletions(-)
+From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Subject: [PATCH] amd64_edac: Add F15h M60h support
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 172dfe5..065b92a 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -249,6 +249,19 @@ static bool is_full_charged(struct charger_manager *cm)
- 	if (!fuel_gauge)
- 		return false;
+This patch adds support for ECC error decoding for F15h M60h processor.
+Aside from the usual changes, the patch adds support for some new features
+in the processor:
+ - DDR4(unbuffered, registered); LRDIMM DDR3 support
+   - relevant debug messages have been modified/added to report these
+     memory types
+ - new dbam_to_cs mappers
+   - if (F15h M60h && LRDIMM); we need a 'multiplier' value to find
+     cs_size. This multiplier value is obtained from the per-dimm
+     DCSM register. So, change the interface to accept a 'cs_mask_nr'
+     value to facilitate this calculation
+ - switch-casing determine_memory_type()
+   - done to cleanse the function of too many if-else statements
+     and improve readability
+   - This is now called early in read_mc_regs() to cache dram_type
+
+Misc cleanup:
+ - amd64_pci_table[] is condensed by using PCI_VDEVICE macro.
+
+Testing details:
+Tested the patch by injecting 'ECC' type errors using mce_amd_inj
+and error decoding works fine.
+
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Link: http://lkml.kernel.org/r/1414617483-4941-1-git-send-email-Aravind.Gopalakrishnan@amd.com
+[ Boris: determine_memory_type() cleanups ]
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ drivers/edac/amd64_edac.c | 255 ++++++++++++++++++++++++++++++++--------------
+ drivers/edac/amd64_edac.h |  15 ++-
+ 2 files changed, 188 insertions(+), 82 deletions(-)
+
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index bbd65149cdb2..1a1d7c43a20f 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -692,9 +692,19 @@ static void debug_dump_dramcfg_low(struct amd64_pvt *pvt, u32 dclr, int chan)
+ {
+ 	edac_dbg(1, "F2x%d90 (DRAM Cfg Low): 0x%08x\n", chan, dclr);
  
-+	/* Full, if it's over the fullbatt voltage */
-+	if (desc->fullbatt_uV > 0) {
-+		ret = get_batt_uV(cm, &uV);
-+		if (!ret) {
-+			/* Battery is already full, checks voltage drop. */
-+			if (cm->battery_status == POWER_SUPPLY_STATUS_FULL
-+					&& desc->fullbatt_vchkdrop_uV)
-+				uV += desc->fullbatt_vchkdrop_uV;
-+			if (uV >= desc->fullbatt_uV)
-+				return true;
-+		}
+-	edac_dbg(1, "  DIMM type: %sbuffered; all DIMMs support ECC: %s\n",
+-		 (dclr & BIT(16)) ?  "un" : "",
+-		 (dclr & BIT(19)) ? "yes" : "no");
++	if (pvt->dram_type == MEM_LRDDR3) {
++		u32 dcsm = pvt->csels[chan].csmasks[0];
++		/*
++		 * It's assumed all LRDIMMs in a DCT are going to be of
++		 * same 'type' until proven otherwise. So, use a cs
++		 * value of '0' here to get dcsm value.
++		 */
++		edac_dbg(1, " LRDIMM %dx rank multiply\n", (dcsm & 0x3));
 +	}
 +
- 	if (desc->fullbatt_full_capacity > 0) {
- 		val.intval = 0;
++	edac_dbg(1, "All DIMMs support ECC:%s\n",
++		    (dclr & BIT(19)) ? "yes" : "no");
++
  
-@@ -259,13 +272,6 @@ static bool is_full_charged(struct charger_manager *cm)
- 			return true;
+ 	edac_dbg(1, "  PAR/ERR parity: %s\n",
+ 		 (dclr & BIT(8)) ?  "enabled" : "disabled");
+@@ -756,7 +766,7 @@ static void prep_chip_selects(struct amd64_pvt *pvt)
+ 	if (pvt->fam == 0xf && pvt->ext_model < K8_REV_F) {
+ 		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 8;
+ 		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 8;
+-	} else if (pvt->fam == 0x15 && pvt->model >= 0x30) {
++	} else if (pvt->fam == 0x15 && pvt->model == 0x30) {
+ 		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 4;
+ 		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 2;
+ 	} else {
+@@ -813,25 +823,63 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
  	}
- 
--	/* Full, if it's over the fullbatt voltage */
--	if (desc->fullbatt_uV > 0) {
--		ret = get_batt_uV(cm, &uV);
--		if (!ret && uV >= desc->fullbatt_uV)
--			return true;
--	}
--
- 	/* Full, if the capacity is more than fullbatt_soc */
- 	if (desc->fullbatt_soc > 0) {
- 		val.intval = 0;
-@@ -376,67 +382,13 @@ static int try_charger_enable(struct charger_manager *cm, bool enable)
- 		}
- 	}
- 
--	if (!err) {
-+	if (!err)
- 		cm->charger_enabled = enable;
--		power_supply_changed(&cm->charger_psy);
--	}
- 
- 	return err;
  }
  
- /**
-- * try_charger_restart - Restart charging.
-- * @cm: the Charger Manager representing the battery.
-- *
-- * Restart charging by turning off and on the charger.
-- */
--static int try_charger_restart(struct charger_manager *cm)
--{
--	int err;
--
--	if (cm->emergency_stop)
--		return -EAGAIN;
--
--	err = try_charger_enable(cm, false);
--	if (err)
--		return err;
--
--	return try_charger_enable(cm, true);
--}
--
--/**
-- * fullbatt_vchk - Check voltage drop some times after "FULL" event.
-- *
-- * If a user has designated "fullbatt_vchkdrop_uV" values with
-- * charger_desc, Charger Manager checks voltage drop after the battery
-- * "FULL" event. It checks whether the voltage has dropped more than
-- * fullbatt_vchkdrop_uV by calling this function after fullbatt_vchkrop_ms.
-- */
--static void fullbatt_vchk(struct charger_manager *cm)
--{
--	struct charger_desc *desc = cm->desc;
--	int batt_uV, err, diff;
--
--	if (!desc->fullbatt_vchkdrop_uV)
--		return;
--
--	err = get_batt_uV(cm, &batt_uV);
--	if (err) {
--		dev_err(cm->dev, "%s: get_batt_uV error(%d)\n", __func__, err);
--		return;
+-static enum mem_type determine_memory_type(struct amd64_pvt *pvt, int cs)
++static void determine_memory_type(struct amd64_pvt *pvt)
+ {
+-	enum mem_type type;
++	u32 dram_ctrl, dcsm;
+ 
+-	/* F15h supports only DDR3 */
+-	if (pvt->fam >= 0x15)
+-		type = (pvt->dclr0 & BIT(16)) ?	MEM_DDR3 : MEM_RDDR3;
+-	else if (pvt->fam == 0x10 || pvt->ext_model >= K8_REV_F) {
++	switch (pvt->fam) {
++	case 0xf:
++		if (pvt->ext_model >= K8_REV_F)
++			goto ddr3;
++
++		pvt->dram_type = (pvt->dclr0 & BIT(18)) ? MEM_DDR : MEM_RDDR;
++		return;
++
++	case 0x10:
+ 		if (pvt->dchr0 & DDR3_MODE)
+-			type = (pvt->dclr0 & BIT(16)) ?	MEM_DDR3 : MEM_RDDR3;
++			goto ddr3;
++
++		pvt->dram_type = (pvt->dclr0 & BIT(16)) ? MEM_DDR2 : MEM_RDDR2;
++		return;
++
++	case 0x15:
++		if (pvt->model < 0x60)
++			goto ddr3;
++
++		/*
++		 * Model 0x60h needs special handling:
++		 *
++		 * We use a Chip Select value of '0' to obtain dcsm.
++		 * Theoretically, it is possible to populate LRDIMMs of different
++		 * 'Rank' value on a DCT. But this is not the common case. So,
++		 * it's reasonable to assume all DIMMs are going to be of same
++		 * 'type' until proven otherwise.
++		 */
++		amd64_read_dct_pci_cfg(pvt, 0, DRAM_CONTROL, &dram_ctrl);
++		dcsm = pvt->csels[0].csmasks[0];
++
++		if (((dram_ctrl >> 8) & 0x7) == 0x2)
++			pvt->dram_type = MEM_DDR4;
++		else if (pvt->dclr0 & BIT(16))
++			pvt->dram_type = MEM_DDR3;
++		else if (dcsm & 0x3)
++			pvt->dram_type = MEM_LRDDR3;
+ 		else
+-			type = (pvt->dclr0 & BIT(16)) ? MEM_DDR2 : MEM_RDDR2;
+-	} else {
+-		type = (pvt->dclr0 & BIT(18)) ? MEM_DDR : MEM_RDDR;
 -	}
--
--	diff = desc->fullbatt_uV - batt_uV;
--	if (diff < 0)
--		return;
--
--	dev_info(cm->dev, "VBATT dropped %duV after full-batt\n", diff);
--
--	if (diff > desc->fullbatt_vchkdrop_uV)
--		try_charger_restart(cm);
--}
--
--/**
-  * check_charging_duration - Monitor charging/discharging duration
-  * @cm: the Charger Manager representing the battery.
-  *
-@@ -463,17 +415,14 @@ static int check_charging_duration(struct charger_manager *cm)
- 		if (duration > desc->charging_max_duration_ms) {
- 			dev_info(cm->dev, "Charging duration exceed %ums\n",
- 				 desc->charging_max_duration_ms);
--			try_charger_enable(cm, false);
- 			ret = true;
- 		}
--	} else if (is_ext_pwr_online(cm) && !cm->charger_enabled) {
-+	} else if (cm->battery_status == POWER_SUPPLY_STATUS_NOT_CHARGING) {
- 		duration = curr - cm->charging_end_time;
++			pvt->dram_type = MEM_RDDR3;
  
--		if (duration > desc->charging_max_duration_ms &&
--				is_ext_pwr_online(cm)) {
-+		if (duration > desc->charging_max_duration_ms) {
- 			dev_info(cm->dev, "Discharging duration exceed %ums\n",
- 				 desc->discharging_max_duration_ms);
--			try_charger_enable(cm, true);
- 			ret = true;
- 		}
- 	}
-@@ -527,10 +476,45 @@ static int cm_check_thermal_status(struct charger_manager *cm)
- 	else if (temp < lower_limit)
- 		ret = CM_EVENT_BATT_COLD;
- 
-+	cm->emergency_stop = ret;
+-	amd64_info("CS%d: %s\n", cs, edac_mem_types[type]);
++		return;
 +
- 	return ret;
- }
- 
- /**
-+ * cm_get_target_status - Check current status and get next target status.
-+ * @cm: the Charger Manager representing the battery.
-+ */
-+static int cm_get_target_status(struct charger_manager *cm)
-+{
-+	if (!is_ext_pwr_online(cm))
-+		return POWER_SUPPLY_STATUS_DISCHARGING;
++	case 0x16:
++		goto ddr3;
 +
-+	if (cm_check_thermal_status(cm)) {
-+		/* Check if discharging duration exeeds limit. */
-+		if (check_charging_duration(cm))
-+			goto charging_ok;
-+		return POWER_SUPPLY_STATUS_NOT_CHARGING;
-+	}
-+
-+	switch (cm->battery_status) {
-+	case POWER_SUPPLY_STATUS_CHARGING:
-+		/* Check if charging duration exeeds limit. */
-+		if (check_charging_duration(cm))
-+			return POWER_SUPPLY_STATUS_FULL;
-+	case POWER_SUPPLY_STATUS_FULL:
-+		if (is_full_charged(cm))
-+			return POWER_SUPPLY_STATUS_FULL;
 +	default:
-+		break;
++		WARN(1, KERN_ERR "%s: Family??? 0x%x\n", __func__, pvt->fam);
++		pvt->dram_type = MEM_EMPTY;
 +	}
++	return;
+ 
+-	return type;
++ddr3:
++	pvt->dram_type = (pvt->dclr0 & BIT(16)) ? MEM_DDR3 : MEM_RDDR3;
+ }
+ 
+ /* Get the number of DCT channels the memory controller is using. */
+@@ -958,8 +1006,12 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
+ 	if (WARN_ON(!nb))
+ 		return;
+ 
+-	pci_func = (pvt->model == 0x30) ? PCI_DEVICE_ID_AMD_15H_M30H_NB_F1
+-					: PCI_DEVICE_ID_AMD_15H_NB_F1;
++	if (pvt->model == 0x60)
++		pci_func = PCI_DEVICE_ID_AMD_15H_M60H_NB_F1;
++	else if (pvt->model == 0x30)
++		pci_func = PCI_DEVICE_ID_AMD_15H_M30H_NB_F1;
++	else
++		pci_func = PCI_DEVICE_ID_AMD_15H_NB_F1;
+ 
+ 	f1 = pci_get_related_function(nb->misc->vendor, pci_func, nb->misc);
+ 	if (WARN_ON(!f1))
+@@ -1049,7 +1101,7 @@ static int ddr2_cs_size(unsigned i, bool dct_width)
+ }
+ 
+ static int k8_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
+-				  unsigned cs_mode)
++				  unsigned cs_mode, int cs_mask_nr)
+ {
+ 	u32 dclr = dct ? pvt->dclr1 : pvt->dclr0;
+ 
+@@ -1167,8 +1219,43 @@ static int ddr3_cs_size(unsigned i, bool dct_width)
+ 	return cs_size;
+ }
+ 
++static int ddr3_lrdimm_cs_size(unsigned i, unsigned rank_multiply)
++{
++	unsigned shift = 0;
++	int cs_size = 0;
 +
-+charging_ok:
-+	/* Charging is allowed. */
-+	return POWER_SUPPLY_STATUS_CHARGING;
++	if (i < 4 || i == 6)
++		cs_size = -1;
++	else if (i == 12)
++		shift = 7;
++	else if (!(i & 0x1))
++		shift = i >> 1;
++	else
++		shift = (i + 1) >> 1;
++
++	if (cs_size != -1)
++		cs_size = rank_multiply * (128 << shift);
++
++	return cs_size;
 +}
 +
-+/**
-  * _cm_monitor - Monitor the temperature and return true for exceptions.
-  * @cm: the Charger Manager representing the battery.
-  *
-@@ -539,56 +523,18 @@ static int cm_check_thermal_status(struct charger_manager *cm)
-  */
- static bool _cm_monitor(struct charger_manager *cm)
++static int ddr4_cs_size(unsigned i)
++{
++	int cs_size = 0;
++
++	if (i == 0)
++		cs_size = -1;
++	else if (i == 1)
++		cs_size = 1024;
++	else
++		/* Min cs_size = 1G */
++		cs_size = 1024 * (1 << (i >> 1));
++
++	return cs_size;
++}
++
+ static int f10_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
+-				   unsigned cs_mode)
++				   unsigned cs_mode, int cs_mask_nr)
  {
--	int temp_alrt;
-+	int target;
+ 	u32 dclr = dct ? pvt->dclr1 : pvt->dclr0;
  
--	temp_alrt = cm_check_thermal_status(cm);
-+	target = cm_get_target_status(cm);
+@@ -1184,18 +1271,49 @@ static int f10_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
+  * F15h supports only 64bit DCT interfaces
+  */
+ static int f15_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
+-				   unsigned cs_mode)
++				   unsigned cs_mode, int cs_mask_nr)
+ {
+ 	WARN_ON(cs_mode > 12);
  
--	/* It has been stopped already */
--	if (temp_alrt && cm->emergency_stop)
--		return false;
--
--	/*
--	 * Check temperature whether overheat or cold.
--	 * If temperature is out of range normal state, stop charging.
--	 */
--	if (temp_alrt) {
--		cm->emergency_stop = temp_alrt;
--		try_charger_enable(cm, false);
--
--	/*
--	 * Check whole charging duration and discharing duration
--	 * after full-batt.
--	 */
--	} else if (!cm->emergency_stop && check_charging_duration(cm)) {
--		dev_dbg(cm->dev,
--			"Charging/Discharging duration is out of range\n");
--	/*
--	 * Check dropped voltage of battery. If battery voltage is more
--	 * dropped than fullbatt_vchkdrop_uV after fully charged state,
--	 * charger-manager have to recharge battery.
--	 */
--	} else if (!cm->emergency_stop && is_ext_pwr_online(cm) &&
--			!cm->charger_enabled) {
--		fullbatt_vchk(cm);
-+	try_charger_enable(cm, (target == POWER_SUPPLY_STATUS_CHARGING));
- 
--	/*
--	 * Check whether fully charged state to protect overcharge
--	 * if charger-manager is charging for battery.
--	 */
--	} else if (!cm->emergency_stop && is_full_charged(cm) &&
--			cm->charger_enabled) {
--		dev_info(cm->dev, "EVENT_HANDLE: Battery Fully Charged\n");
--		try_charger_enable(cm, false);
--
--		fullbatt_vchk(cm);
--	} else {
--		cm->emergency_stop = 0;
--		if (is_ext_pwr_online(cm)) {
--			try_charger_enable(cm, true);
--		}
-+	if (cm->battery_status != target) {
-+		cm->battery_status = target;
-+		power_supply_changed(&cm->charger_psy);
- 	}
- 
--	return true;
-+	return (cm->battery_status == POWER_SUPPLY_STATUS_NOT_CHARGING);
+ 	return ddr3_cs_size(cs_mode, false);
  }
  
- /**
-@@ -694,12 +640,7 @@ static int charger_get_property(struct power_supply *psy,
- 
- 	switch (psp) {
- 	case POWER_SUPPLY_PROP_STATUS:
--		if (is_charging(cm))
--			val->intval = POWER_SUPPLY_STATUS_CHARGING;
--		else if (is_ext_pwr_online(cm))
--			val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
--		else
--			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
-+		val->intval = cm->battery_status;
- 		break;
- 	case POWER_SUPPLY_PROP_HEALTH:
- 		if (cm->emergency_stop > 0)
-diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
-index 22a8097..37fb181 100644
---- a/include/linux/power/charger-manager.h
-+++ b/include/linux/power/charger-manager.h
-@@ -220,6 +220,7 @@ struct charger_desc {
-  *	saved status of battery before entering suspend-to-RAM
-  * @charging_start_time: saved start time of enabling charging
-  * @charging_end_time: saved end time of disabling charging
-+ * @battery_status: Current battery status
-  */
- struct charger_manager {
- 	struct list_head entry;
-@@ -237,6 +238,8 @@ struct charger_manager {
- 
- 	u64 charging_start_time;
- 	u64 charging_end_time;
++/* F15h M60h supports DDR4 mapping as well.. */
++static int f15_m60h_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
++					unsigned cs_mode, int cs_mask_nr)
++{
++	int cs_size;
++	u32 dcsm = pvt->csels[dct].csmasks[cs_mask_nr];
 +
-+	int battery_status;
++	WARN_ON(cs_mode > 12);
++
++	if (pvt->dram_type == MEM_DDR4) {
++		if (cs_mode > 9)
++			return -1;
++
++		cs_size = ddr4_cs_size(cs_mode);
++	} else if (pvt->dram_type == MEM_LRDDR3) {
++		unsigned rank_multiply = dcsm & 0xf;
++
++		if (rank_multiply == 3)
++			rank_multiply = 4;
++		cs_size = ddr3_lrdimm_cs_size(cs_mode, rank_multiply);
++	} else {
++		/* Minimum cs size is 512mb for F15hM60h*/
++		if (cs_mode == 0x1)
++			return -1;
++
++		cs_size = ddr3_cs_size(cs_mode, false);
++	}
++
++	return cs_size;
++}
++
+ /*
+  * F16h and F15h model 30h have only limited cs_modes.
+  */
+ static int f16_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
+-				unsigned cs_mode)
++				unsigned cs_mode, int cs_mask_nr)
+ {
+ 	WARN_ON(cs_mode > 12);
+ 
+@@ -1757,13 +1875,20 @@ static void debug_display_dimm_sizes(struct amd64_pvt *pvt, u8 ctrl)
+ 
+ 		size0 = 0;
+ 		if (dcsb[dimm*2] & DCSB_CS_ENABLE)
++			/* For f15m60h, need multiplier for LRDIMM cs_size
++			 * calculation. We pass 'dimm' value to the dbam_to_cs
++			 * mapper so we can find the multiplier from the
++			 * corresponding DCSM.
++			 */
+ 			size0 = pvt->ops->dbam_to_cs(pvt, ctrl,
+-						     DBAM_DIMM(dimm, dbam));
++						     DBAM_DIMM(dimm, dbam),
++						     dimm);
+ 
+ 		size1 = 0;
+ 		if (dcsb[dimm*2 + 1] & DCSB_CS_ENABLE)
+ 			size1 = pvt->ops->dbam_to_cs(pvt, ctrl,
+-						     DBAM_DIMM(dimm, dbam));
++						     DBAM_DIMM(dimm, dbam),
++						     dimm);
+ 
+ 		amd64_info(EDAC_MC ": %d: %5dMB %d: %5dMB\n",
+ 				dimm * 2,     size0,
+@@ -1812,6 +1937,16 @@ static struct amd64_family_type family_types[] = {
+ 			.dbam_to_cs		= f16_dbam_to_chip_select,
+ 		}
+ 	},
++	[F15_M60H_CPUS] = {
++		.ctl_name = "F15h_M60h",
++		.f1_id = PCI_DEVICE_ID_AMD_15H_M60H_NB_F1,
++		.f3_id = PCI_DEVICE_ID_AMD_15H_M60H_NB_F3,
++		.ops = {
++			.early_channel_count	= f1x_early_channel_count,
++			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
++			.dbam_to_cs		= f15_m60h_dbam_to_chip_select,
++		}
++	},
+ 	[F16_CPUS] = {
+ 		.ctl_name = "F16h",
+ 		.f1_id = PCI_DEVICE_ID_AMD_16H_NB_F1,
+@@ -2175,6 +2310,8 @@ static void read_mc_regs(struct amd64_pvt *pvt)
+ 	}
+ 
+ 	pvt->ecc_sym_sz = 4;
++	determine_memory_type(pvt);
++	edac_dbg(1, "  DIMM type: %s\n", edac_mem_types[pvt->dram_type]);
+ 
+ 	if (pvt->fam >= 0x10) {
+ 		amd64_read_pci_cfg(pvt->F3, EXT_NB_MCA_CFG, &tmp);
+@@ -2238,7 +2375,8 @@ static u32 get_csrow_nr_pages(struct amd64_pvt *pvt, u8 dct, int csrow_nr)
+ 	 */
+ 	cs_mode = DBAM_DIMM(csrow_nr / 2, dbam);
+ 
+-	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode) << (20 - PAGE_SHIFT);
++	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode, (csrow_nr / 2))
++							   << (20 - PAGE_SHIFT);
+ 
+ 	edac_dbg(0, "csrow: %d, channel: %d, DBAM idx: %d\n",
+ 		    csrow_nr, dct,  cs_mode);
+@@ -2257,7 +2395,6 @@ static int init_csrows(struct mem_ctl_info *mci)
+ 	struct csrow_info *csrow;
+ 	struct dimm_info *dimm;
+ 	enum edac_type edac_mode;
+-	enum mem_type mtype;
+ 	int i, j, empty = 1;
+ 	int nr_pages = 0;
+ 	u32 val;
+@@ -2302,8 +2439,6 @@ static int init_csrows(struct mem_ctl_info *mci)
+ 			nr_pages += row_dct1_pages;
+ 		}
+ 
+-		mtype = determine_memory_type(pvt, i);
+-
+ 		edac_dbg(1, "Total csrow%d pages: %u\n", i, nr_pages);
+ 
+ 		/*
+@@ -2317,7 +2452,7 @@ static int init_csrows(struct mem_ctl_info *mci)
+ 
+ 		for (j = 0; j < pvt->channel_count; j++) {
+ 			dimm = csrow->channels[j]->dimm;
+-			dimm->mtype = mtype;
++			dimm->mtype = pvt->dram_type;
+ 			dimm->edac_mode = edac_mode;
+ 		}
+ 	}
+@@ -2604,6 +2739,10 @@ static struct amd64_family_type *per_family_init(struct amd64_pvt *pvt)
+ 			fam_type = &family_types[F15_M30H_CPUS];
+ 			pvt->ops = &family_types[F15_M30H_CPUS].ops;
+ 			break;
++		} else if (pvt->model == 0x60) {
++			fam_type = &family_types[F15_M60H_CPUS];
++			pvt->ops = &family_types[F15_M60H_CPUS].ops;
++			break;
+ 		}
+ 
+ 		fam_type	= &family_types[F15_CPUS];
+@@ -2828,55 +2967,13 @@ static void remove_one_instance(struct pci_dev *pdev)
+  * inquiry this table to see if this driver is for a given device found.
+  */
+ static const struct pci_device_id amd64_pci_table[] = {
+-	{
+-		.vendor		= PCI_VENDOR_ID_AMD,
+-		.device		= PCI_DEVICE_ID_AMD_K8_NB_MEMCTL,
+-		.subvendor	= PCI_ANY_ID,
+-		.subdevice	= PCI_ANY_ID,
+-		.class		= 0,
+-		.class_mask	= 0,
+-	},
+-	{
+-		.vendor		= PCI_VENDOR_ID_AMD,
+-		.device		= PCI_DEVICE_ID_AMD_10H_NB_DRAM,
+-		.subvendor	= PCI_ANY_ID,
+-		.subdevice	= PCI_ANY_ID,
+-		.class		= 0,
+-		.class_mask	= 0,
+-	},
+-	{
+-		.vendor		= PCI_VENDOR_ID_AMD,
+-		.device		= PCI_DEVICE_ID_AMD_15H_NB_F2,
+-		.subvendor	= PCI_ANY_ID,
+-		.subdevice	= PCI_ANY_ID,
+-		.class		= 0,
+-		.class_mask	= 0,
+-	},
+-	{
+-		.vendor		= PCI_VENDOR_ID_AMD,
+-		.device		= PCI_DEVICE_ID_AMD_15H_M30H_NB_F2,
+-		.subvendor	= PCI_ANY_ID,
+-		.subdevice	= PCI_ANY_ID,
+-		.class		= 0,
+-		.class_mask	= 0,
+-	},
+-	{
+-		.vendor		= PCI_VENDOR_ID_AMD,
+-		.device		= PCI_DEVICE_ID_AMD_16H_NB_F2,
+-		.subvendor	= PCI_ANY_ID,
+-		.subdevice	= PCI_ANY_ID,
+-		.class		= 0,
+-		.class_mask	= 0,
+-	},
+-	{
+-		.vendor		= PCI_VENDOR_ID_AMD,
+-		.device		= PCI_DEVICE_ID_AMD_16H_M30H_NB_F2,
+-		.subvendor	= PCI_ANY_ID,
+-		.subdevice	= PCI_ANY_ID,
+-		.class		= 0,
+-		.class_mask	= 0,
+-	},
+-
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_K8_NB_MEMCTL) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_10H_NB_DRAM) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F2) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F2) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F2) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F2) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F2) },
+ 	{0, }
+ };
+ MODULE_DEVICE_TABLE(pci, amd64_pci_table);
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index 55fb5941c6d4..d8468c667925 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -162,10 +162,12 @@
+ /*
+  * PCI-defined configuration space registers
+  */
+-#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F1 0x141b
+-#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F2 0x141c
+ #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
+ #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
++#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F1 0x141b
++#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F2 0x141c
++#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F1 0x1571
++#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F2 0x1572
+ #define PCI_DEVICE_ID_AMD_16H_NB_F1	0x1531
+ #define PCI_DEVICE_ID_AMD_16H_NB_F2	0x1532
+ #define PCI_DEVICE_ID_AMD_16H_M30H_NB_F1 0x1581
+@@ -221,6 +223,8 @@
+ 
+ #define csrow_enabled(i, dct, pvt)	((pvt)->csels[(dct)].csbases[(i)] & DCSB_CS_ENABLE)
+ 
++#define DRAM_CONTROL			0x78
++
+ #define DBAM0				0x80
+ #define DBAM1				0x180
+ 
+@@ -301,6 +305,7 @@ enum amd_families {
+ 	F10_CPUS,
+ 	F15_CPUS,
+ 	F15_M30H_CPUS,
++	F15_M60H_CPUS,
+ 	F16_CPUS,
+ 	F16_M30H_CPUS,
+ 	NUM_FAMILIES,
+@@ -379,6 +384,9 @@ struct amd64_pvt {
+ 
+ 	/* place to store error injection parameters prior to issue */
+ 	struct error_injection injection;
++
++	/* cache the dram_type */
++	enum mem_type dram_type;
  };
  
- #endif /* _CHARGER_MANAGER_H */
+ enum err_codes {
+@@ -480,7 +488,8 @@ struct low_ops {
+ 	int (*early_channel_count)	(struct amd64_pvt *pvt);
+ 	void (*map_sysaddr_to_csrow)	(struct mem_ctl_info *mci, u64 sys_addr,
+ 					 struct err_info *);
+-	int (*dbam_to_cs)		(struct amd64_pvt *pvt, u8 dct, unsigned cs_mode);
++	int (*dbam_to_cs)		(struct amd64_pvt *pvt, u8 dct,
++					 unsigned cs_mode, int cs_mask_nr);
+ };
+ 
+ struct amd64_family_type {
 -- 
-1.7.9.5
+2.0.0
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
