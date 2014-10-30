@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161342AbaJ3VX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 17:23:58 -0400
-Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:49371 "EHLO
-	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934857AbaJ3VX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 17:23:57 -0400
-Date: Thu, 30 Oct 2014 16:23:51 -0500
-From: Jeff Epler <jepler@unpythonic.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: fix name of 'enable' sysfs file
-Message-ID: <20141030212351.GA4590@unpythonic.net>
-References: <20141030163028.GA22250@kroah.com>
+	id S934865AbaJ3V3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 17:29:19 -0400
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:44204
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933193AbaJ3V3S convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 17:29:18 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/7] staging: comedi: enforce data transfer direction
+Thread-Topic: [PATCH 0/7] staging: comedi: enforce data transfer direction
+Thread-Index: AQHP9D8FLWXTM0MEU061vA6ls+Qm05xJKCHA
+Date: Thu, 30 Oct 2014 21:29:17 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D882601818C@P3PWEX4MB008.ex4.secureserver.net>
+References: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030163028.GA22250@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 09:30:28AM -0700, Greg Kroah-Hartman wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> Back in commit 5136b2da770d ("PCI: convert bus code to use dev_groups"),
-> I misstyped the 'enable' sysfs file as 'enabled', which broke the
-> userspace api.  This patch fixes that issue by renaming the file back.
-> 
-> Reported-by: Jeff Epler <jepler@unpythonic.net>
-> Cc: stable <stable@vger.kernel.org> # 3.13
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Thursday, October 30, 2014 5:42 AM, Ian Abbott wrote:
+> Most comedi subdevices that support asynchronous data acquisition
+> commands only support data transfer in a single direction, as indicated
+> by the `SDF_CMD_READ` and `SDF_CMD_WRITE` subdevice flags.  A few allow
+> data transfer in either direction, but only a single direction at a
+> time, as indicated by the `CMDF_WRITE` command flag in the `flags`
+> member of the `struct comedi_cmd` from user-space used to set up the
+> asynchronous command.  The `CMDF_WRITE` flag isn't commonly set for
+> "write" commands if that is the only direction the subdevice supports.
+>
+> Since it would be useful for comedi to have a clear indication of which
+> data transfer direction is being used, patch 1 forces the `CMDF_WRITE`
+> command flag to the correct state if only one direction is supported.
+> The flag can then be checked by comedi in the subdevice's local copy of
+> the current command (in `s->async->cmd`) to determine the data transfer
+> direction unambiguously.
+>
+> Patch 2 stops the "me4000" driver clobbering the command flags.
+>
+> Patch 3 removes some now redundant modification of the `CMDF_WRITE` flag
+> in "ni_mio_common.c" (used by the "ni_pcimio", "ni_atmio" and
+> "ni_mio_cs" drivers).
+>
+> Patches 4 and 5 disallow the read() and write() file operations if the
+> subdevice has been set up with a command in the "write" or "read" data
+> transfer direction respectively.
+>
+> Patch 6 changes the readable/writeable checks for the poll() file
+> operation.  It already considers the file readable/writeable if
+> read()/write() would fail with an error, so change it to check for
+> "wrong direction" as one of the possible failures.
+>
+> Patch 7 makes the direction test in the handling of the `COMEDI_BUFINFO`
+> ioctl (used to update buffer positions for mmapped buffers) less
+> ambiguous.  The current test used the `SDF_CMD_READ` and `SDF_CMD_WRITE`
+> subdevice flags to check the direction, which is ambiguous if both flags
+> are set.  Update it to use the `CMDF_WRITE` command flag instead.
 
-Tested-by: Jeff Epler <jepler@unpythonic.net>
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-(with the caveat that, since LinuxCNC uses the -rt kernel, I tested this
-change manually backported to 3.14-rt)
-
-Thanks again for your fast action on this.
-
-Jeff
