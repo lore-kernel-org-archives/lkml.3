@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161261AbaJ3Rnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:43:41 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:52779 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758245AbaJ3Rl0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:41:26 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v8 4/7] usb: allow to supply the PHY in the drivers when using HCD
-Date: Thu, 30 Oct 2014 18:41:16 +0100
-Message-Id: <1414690879-7184-5-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1161284AbaJ3RoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:44:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161264AbaJ3Rn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 13:43:58 -0400
+Date: Thu, 30 Oct 2014 18:43:09 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michel Lespinasse <walken@google.com>,
+        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Miller <davem@davemloft.net>,
+        Steve Capper <steve.capper@linaro.org>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: [PATCH 2/5] mm: gup: add __get_user_pages_unlocked to customize
+ gup_flags
+Message-ID: <20141030174309.GL19606@redhat.com>
+References: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
+ <1414600520-7664-3-git-send-email-aarcange@redhat.com>
+ <20141030121737.GB31134@node.dhcp.inet.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030121737.GB31134@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modify the generic code handling PHYs to allow them to be
-supplied from the drivers. This adds checks to ensure no PHY was already
-there when looking for one in the generic code. This also makes sure we
-do not modify its state in the generic HCD functions, it was provided by
-the driver.
+On Thu, Oct 30, 2014 at 02:17:37PM +0200, Kirill A. Shutemov wrote:
+> On Wed, Oct 29, 2014 at 05:35:17PM +0100, Andrea Arcangeli wrote:
+> > diff --git a/mm/gup.c b/mm/gup.c
+> > index a8521f1..01534ff 100644
+> > --- a/mm/gup.c
+> > +++ b/mm/gup.c
+> > @@ -591,9 +591,9 @@ static __always_inline long __get_user_pages_locked(struct task_struct *tsk,
+> >  						int write, int force,
+> >  						struct page **pages,
+> >  						struct vm_area_struct **vmas,
+> > -						int *locked, bool notify_drop)
+> > +						int *locked, bool notify_drop,
+> > +						unsigned int flags)
+> 
+> Argument list getting too long. Should we consider packing them into a
+> struct?
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/core/hcd.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+It's __always_inline, so it's certainly not a runtime concern. The
+whole point of using __always_inline is to optimize away certain
+branches at build time.
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index b84fb141e122..6a2a2fd990ab 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2648,7 +2648,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
- 		}
- 	}
- 
--	if (IS_ENABLED(CONFIG_GENERIC_PHY)) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && !hcd->phy) {
- 		struct phy *phy = phy_get(hcd->self.controller, "usb");
- 
- 		if (IS_ERR(phy)) {
-@@ -2668,6 +2668,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
- 				goto err_phy;
- 			}
- 			hcd->phy = phy;
-+			hcd->remove_phy = 1;
- 		}
- 	}
- 
-@@ -2814,7 +2815,7 @@ err_allocate_root_hub:
- err_register_bus:
- 	hcd_buffer_destroy(hcd);
- err_create_buf:
--	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
- 		phy_power_off(hcd->phy);
- 		phy_exit(hcd->phy);
- 		phy_put(hcd->phy);
-@@ -2898,7 +2899,7 @@ void usb_remove_hcd(struct usb_hcd *hcd)
- 	usb_deregister_bus(&hcd->self);
- 	hcd_buffer_destroy(hcd);
- 
--	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
- 		phy_power_off(hcd->phy);
- 		phy_exit(hcd->phy);
- 		phy_put(hcd->phy);
--- 
-2.1.0
-
+If this about cleaning it up and not for changing the runtime (which I
+think couldn't get any better because of the __always_inline), we
+should at least make certain gcc can still see through the structure
+offsets to delete the same code blocks at build time if possible,
+before doing the change.
