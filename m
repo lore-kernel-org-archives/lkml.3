@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759071AbaJ3LKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:10:35 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:44342 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758772AbaJ3LKe (ORCPT
+	id S1759146AbaJ3LKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:10:53 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:10847 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759108AbaJ3LKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:10:34 -0400
-Message-ID: <54521CA6.1000802@cogentembedded.com>
-Date: Thu, 30 Oct 2014 14:10:30 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 30 Oct 2014 07:10:52 -0400
+Date: Thu, 30 Oct 2014 07:10:39 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>, Rabin Vincent <rabin@rab.in>,
+        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing/syscalls: ignore numbers outside NR_syscalls'
+ range
+Message-ID: <20141030071039.37633bf5@gandalf.local.home>
+In-Reply-To: <20141030101808.GO27405@n2100.arm.linux.org.uk>
+References: <1414620418-29472-1-git-send-email-rabin@rab.in>
+	<20141030082606.GA7945@infradead.org>
+	<20141030101808.GO27405@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Kevin Cernekee <cernekee@gmail.com>, arnd@arndb.de, f.fainelli@gmail.com,
-        tglx@linutronix.de, jason@lakedaemon.net, ralf@linux-mips.org,
-        lethal@linux-sh.org
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH V2 09/15] irqchip: Remove ARM dependency for bcm7120-l2
- and brcmstb-l2
-References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-10-git-send-email-cernekee@gmail.com>
-In-Reply-To: <1414635488-14137-10-git-send-email-cernekee@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2014 5:18 AM, Kevin Cernekee wrote:
+On Thu, 30 Oct 2014 10:18:08 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-> This can compile for MIPS (or anything else) now.
+> On Thu, Oct 30, 2014 at 01:26:06AM -0700, Christoph Hellwig wrote:
+> > On Wed, Oct 29, 2014 at 11:06:58PM +0100, Rabin Vincent wrote:
+> > > ARM has some private syscalls (for example, set_tls(2)) which lie
+> > > outside the range of NR_syscalls.  If any of these are called while
+> > > syscall tracing is being performed, out-of-bounds array access will
+> > > occur in the ftrace and perf sys_{enter,exit} handlers.
+> > 
+> > While this patch looks like good caution, having syscalls outside of
+> > NR_syscalls seems like a receipe for a disaster.  Can you try to fix
+> > that issue as ell, please?
+> 
+> No.  We've had them since the inception of Linux on ARM.  They predate
+> this tracing crap by more than a decade.  We're not changing them
+> because that would be a massive user API breakage.
+> 
 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
-> ---
->   drivers/irqchip/Kconfig | 1 -
->   1 file changed, 1 deletion(-)
+Since syscall tracing is only broken on ARM, then the fix needs to be
+ARM specific, and not remove the check for all other architectures that
+have a sane NR_syscalls variable.
 
-> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> index b21f12f..09c79d1 100644
-> --- a/drivers/irqchip/Kconfig
-> +++ b/drivers/irqchip/Kconfig
-> @@ -50,7 +50,6 @@ config ATMEL_AIC5_IRQ
->
->   config BRCMSTB_L2_IRQ
->   	bool
-> -	depends on ARM
-
-    How about the following?
-
-	depends on ARM || MIPS || COMPILE_TEST
-
-[...]
-
-WBR, Sergei
-
+-- Steve
