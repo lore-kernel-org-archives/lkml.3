@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760674AbaJ3Rq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:46:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38866 "EHLO mx1.redhat.com"
+	id S1161117AbaJ3RsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:48:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56667 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758245AbaJ3RqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:46:25 -0400
-Date: Thu, 30 Oct 2014 17:54:35 +0000
-From: Alexander Gordeev <agordeev@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: Remove redundant rcu_is_cpu_rrupt_from_idle()
- function
-Message-ID: <20141030175435.GC13273@agordeev.usersys.redhat.com>
-References: <1414580827-19545-1-git-send-email-agordeev@redhat.com>
- <20141029124728.GL5718@linux.vnet.ibm.com>
- <20141029134519.GC30198@agordeev.usersys.redhat.com>
- <20141029143439.GN5718@linux.vnet.ibm.com>
- <20141029151622.GD30198@agordeev.usersys.redhat.com>
- <20141029154615.GR5718@linux.vnet.ibm.com>
- <20141029210916.GB13273@agordeev.usersys.redhat.com>
- <20141030000524.GG5718@linux.vnet.ibm.com>
+	id S1760507AbaJ3RsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 13:48:06 -0400
+Date: Thu, 30 Oct 2014 12:47:34 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <Peter.Chen@freescale.com>, <kishon@ti.com>,
+        <stern@rowland.harvard.edu>, <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 1/7] usb: move the OTG state from the USB PHY to the
+ OTG structure
+Message-ID: <20141030174734.GA6652@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1414514141-31767-2-git-send-email-antoine.tenart@free-electrons.com>
+ <20141030163148.GF10130@saruman>
+ <20141030163513.GI10130@saruman>
+ <20141030174254.GA6764@kwain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
 Content-Disposition: inline
-In-Reply-To: <20141030000524.GG5718@linux.vnet.ibm.com>
+In-Reply-To: <20141030174254.GA6764@kwain>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 05:05:24PM -0700, Paul E. McKenney wrote:
-> > > Although it is true that tiny RCU cannot hang a synchronize_rcu()
-> > > grace period, it most certainly can hang a call_rcu() grace period
-> > > in exactly the same way.
-> > 
-> > Sorry for being a pain in the neck - just want to make sure I am following.
-> 
-> No worries!
-> 
-> > I only see possibility to cause callbacks not being called for "too long"
-> > in case a system has lots of nested interrupts and rcu_idle_enter_common()
-> > is not being called from hardware interrupt context as result. How could
-> > rcu_is_cpu_rrupt_from_idle() help here?
-> 
-> Let's start assuming that something in the idle loop posts a callback,
-> and then let me see if I understand your reasoning...
-> 
-> 1.	The system is idle and stays that way, no runnable tasks.
-> 
-> 2.	An interrupt occurs.  Upon return from interrupt, rcu_irq_exit()
-> 	is invoked, which calls rcu_idle_enter_common(), which in turn
-> 	calls rcu_sched_qs(), which does a raise_softirq(RCU_SOFTIRQ).
-> 
-> 3.	The softirq happens shortly and invokes rcu_process_callbacks(),
-> 	which invokes __rcu_process_callbacks().
-> 
-> 4.	So now callbacks can be invoked.  At least they can be if
-> 	->donetail has been updated.  Which it will have been because
-> 	rcu_sched_qs() invokes rcu_qsctr_help().
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, that is exactly my reasoning.
+On Thu, Oct 30, 2014 at 06:42:54PM +0100, Antoine Tenart wrote:
+> Hi Felipe,
+>=20
+> On Thu, Oct 30, 2014 at 11:35:13AM -0500, Felipe Balbi wrote:
+> > On Thu, Oct 30, 2014 at 11:31:48AM -0500, Felipe Balbi wrote:
+> > > On Tue, Oct 28, 2014 at 05:35:35PM +0100, Antoine Tenart wrote:
+> > > > Before using the PHY framework instead of the USB PHY one, we need =
+to
+> > > > move the OTG state into another place, since it won't be available =
+when
+> > > > USB PHY isn't used. This patch moves the OTG state into the OTG
+> > > > structure, and makes all the needed modifications in the drivers
+> > > > using the OTG state.
+> > > >=20
+> > > > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> > > > Acked-by: Peter Chen <peter.chen@freescale.com>
+> > >=20
+> > > Acked-by: Felipe Balbi <balbi@ti.com>
+> >=20
+> > Please rebase on my testing/next and I'll take the series. When
+> > rebasing, then add Peter's Tested-by/Acked-by where they're missing.
+>=20
+> I just re-sent the series, rebased on your testing/next branch.
 
-> So your point that rcu_is_cpu_rrupt_from_idle() might be redundant could
-> well be valid -- sorry for being so dismissive earlier.
->
-> > > > > Now, if you -can- get the userspace-execution indication into
-> > > > > rcu_irq_exit(), this might be of interest.  However, it might be faster
-> > > > > to simply let the scheduling-clock interrupt do the job as it currently
-> > > > > does, especially for workloads with lots of interrupts.
-> > > > > 
-> > > > > Or did you have something else in mind?
-> > > > 
-> > > > Nope. I would even leave as is tiny RCU's rcu_is_cpu_rrupt_from_idle()
-> > > > for clarity then ;)
-> > > 
-> > > Also to avoid userspace execution from preventing RCU callbacks from
-> > > ever being invoked.  ;-)
-> > 
-> > Hmm.. Am I missing something else? I did not remove the userspace check
-> > from the scheduling-clock interrupt:
-> > 
-> > @@ -250,7 +240,7 @@ void rcu_bh_qs(void)
-> >  void rcu_check_callbacks(int cpu, int user)
-> >  {
-> >  	RCU_TRACE(check_cpu_stalls());
-> > -	if (user || rcu_is_cpu_rrupt_from_idle())
-> > +	if (user)
-> >  		rcu_sched_qs();
-> >  	else if (!in_softirq())
-> >  		rcu_bh_qs();
-> 
-> Probably just me being confused.  Hopefully so, as shrinking TINY_RCU
-> further will probably be welcome.
+Thanks, I put them on my testing/next and I'm running build tests.
 
-Should I resend tiny-only patch?
+--=20
+balbi
 
-> Have you done any testing of this change?
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Just booted to a unicore kernel and dd'ed 1G of /dev/sda to /dev/null.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> 							Thanx, Paul
-> 
+iQIcBAEBAgAGBQJUUnm2AAoJEIaOsuA1yqREv2QP/jFfBv4RUhLAxEF2oGpOsBAU
+jXAbO0L3jkxANVumYiJpupShLxD6tnd0HAar5cEDVKpxyBS7TDtgj8EJsq4TfLGx
+wporp9b7BdWSr7XFwH2AaL4tsrNpmTJ6ddvOdWbbKVuUTmXn2BgBwJU4fKVYrtuc
+Nilrcc8Ecn3ohh2d6u3r6FdL/4ROsHxCUEzG3qa2kElGRuU1Ha/E2SIsyXOJ/kk3
+Pac9H80ssgVWXMHvKOrMZbNk5gW4r1CKaro+hO3zGYtFUNDbI1GaFN2qpY1OxZi7
+bKCqmwSImfMqg+eosx0s80LXToWc+hPDeMa/d+f3jmu3wOfAa+ZydeJ0HhXm13/B
+ItdRYHOIN1LPoZdIJfrjzM1Ra5b7WIDl93PsADStrG4zHS//18Q397dyx2hw+MZ+
+6L+rG2msE7LOm9k5uDQntflN4J29b9YXDrf19yd6GPsXiCu12e7mdJAzxyQwAOk/
+8xO302I6KYMFBq83d1YaWU3soihSEB/RqGVnce5WlREftMRrkhKnFXAzEyrnua3X
+jJrUcIWWXjn9jICqjioM8ITl/N1lKaZdFTrUgWteUCtlFZpOpS1+7tV7BwajMUXy
+tHK/YjdPWTQCZzazcWUKt/c9Jub08iWUjuOQ6yGdI3y+DAJwIgiIkLzeXOUei7f5
+pcNTbtyETVMVoH/HU6PW
+=K0SU
+-----END PGP SIGNATURE-----
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+--vtzGhvizbBRQ85DL--
