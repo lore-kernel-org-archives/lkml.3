@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605AbaJ3InL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 04:43:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:32768 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758531AbaJ3InI (ORCPT
+	id S932249AbaJ3IoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 04:44:12 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58001 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758159AbaJ3IoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 04:43:08 -0400
-Date: Thu, 30 Oct 2014 09:43:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-cc: arnd@arndb.de, f.fainelli@gmail.com, jason@lakedaemon.net,
-        ralf@linux-mips.org, lethal@linux-sh.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH V2 03/15] genirq: Generic chip: Move irq_reg_{readl,writel}
- accessors into generic-chip.c
-In-Reply-To: <1414635488-14137-4-git-send-email-cernekee@gmail.com>
-Message-ID: <alpine.DEB.2.11.1410300941290.5308@nanos>
-References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-4-git-send-email-cernekee@gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 30 Oct 2014 04:44:10 -0400
+Date: Thu, 30 Oct 2014 09:43:59 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 18/20] perf: Allocate ring buffers for inherited
+ per-task kernel events
+Message-ID: <20141030084359.GD23531@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1413207948-28202-19-git-send-email-alexander.shishkin@linux.intel.com>
+ <20141023123855.GC12706@worktop.programming.kicks-ass.net>
+ <87egtx3o95.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87egtx3o95.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014, Kevin Cernekee wrote:
-
-> This allows us to implement per-irqchip behavior when necessary, instead
-> of hardcoding the behavior for all irqchip drivers at compile time.
+On Fri, Oct 24, 2014 at 10:44:54AM +0300, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
 > 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> ---
->  include/linux/irq.h       |  7 -------
->  kernel/irq/generic-chip.c | 10 ++++++++++
->  2 files changed, 10 insertions(+), 7 deletions(-)
+> > On Mon, Oct 13, 2014 at 04:45:46PM +0300, Alexander Shishkin wrote:
+> >> Normally, per-task events can't be inherited parents' ring buffers to
+> >> avoid multiple events contending for the same buffer. And since buffer
+> >> allocation is typically done by the userspace consumer, there is no
+> >> practical interface to allocate new buffers for inherited counters.
+> >> 
+> >> However, for kernel users we can allocate new buffers for inherited
+> >> events as soon as they are created (and also reap them on event
+> >> destruction). This pattern has a number of use cases, such as event
+> >> sample annotation and process core dump annotation.
+> >> 
+> >> When a new event is inherited from a per-task kernel event that has a
+> >> ring buffer, allocate a new buffer for this event so that data from the
+> >> child task is collected and can later be retrieved for sample annotation
+> >> or core dump inclusion. This ring buffer is released when the event is
+> >> freed, for example, when the child task exits.
+> >> 
+> >
+> > This causes a pinned memory explosion, not at all nice that.
+> >
+> > I think I see why and all, but it would be ever so good to not have to
+> > allocate so much memory.
 > 
-> diff --git a/include/linux/irq.h b/include/linux/irq.h
-> index 03f48d9..8049e93 100644
-> --- a/include/linux/irq.h
-> +++ b/include/linux/irq.h
-> @@ -639,13 +639,6 @@ void arch_teardown_hwirq(unsigned int irq);
->  void irq_init_desc(unsigned int irq);
->  #endif
->  
-> -#ifndef irq_reg_writel
-> -# define irq_reg_writel(val, addr)	writel(val, addr)
-> -#endif
-> -#ifndef irq_reg_readl
-> -# define irq_reg_readl(addr)		readl(addr)
-> -#endif
-> -
+> Are there any controls we could use to limit such memory usage?
 
-Brilliant patch that.
+I'd say the same limit we're already accounting the mmap()s against. But
+the question is; what do we do when we run out?
 
-# git grep -l irq_reg_readl drivers/irqchip/
-drivers/irqchip/irq-atmel-aic.c
-drivers/irqchip/irq-atmel-aic5.c
-drivers/irqchip/irq-sunxi-nmi.c
-drivers/irqchip/irq-tb10x.c
+Will we fail clone()? That might 'surprise' quite a few people, that
+their application won't work when profiled.
 
-Thanks,
-
-	tglx
-
+In any case, lets focus on the other parts of this work and delay this
+feature till later.
