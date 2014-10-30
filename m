@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894AbaJ3KtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 06:49:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34054 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756976AbaJ3KtX (ORCPT
+	id S1758936AbaJ3KvK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 06:51:10 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:46744 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758326AbaJ3KvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 06:49:23 -0400
-Date: Thu, 30 Oct 2014 11:49:19 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ley Foon Tan <lftan@altera.com>
-cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH v5 29/29] nios2: Build infrastructure
-In-Reply-To: <CAFiDJ59LZSwKBzVuuzfH_5772-BR74EH=d=FeBbWvEXjfpisug@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1410301148080.5308@nanos>
-References: <1414139071-3818-1-git-send-email-lftan@altera.com> <1414139071-3818-30-git-send-email-lftan@altera.com> <2095416.INZmt8AD1y@wuerfel> <CAFiDJ59LZSwKBzVuuzfH_5772-BR74EH=d=FeBbWvEXjfpisug@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Thu, 30 Oct 2014 06:51:08 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Alex Elder <elder@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-omap@vger.kernel.org, Manuel Lauss <manuel.lauss@gmail.com>,
+        Matt Porter <mporter@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>
+Subject: [PATCH v5 0/7] Per-user clock constraints
+Date: Thu, 30 Oct 2014 11:48:26 +0100
+Message-Id: <1414666135-14313-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct 2014, Ley Foon Tan wrote:
+Hello,
 
-> On Tue, Oct 28, 2014 at 9:38 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Friday 24 October 2014 16:24:31 Ley Foon Tan wrote:
-> >> +DECLARE_EXPORT(__gcc_bcmp);
-> >> +DECLARE_EXPORT(__divdi3);
-> >> +DECLARE_EXPORT(__divsi3);
-> >> +DECLARE_EXPORT(__moddi3);
-> >> +DECLARE_EXPORT(__modsi3);
-> >> +DECLARE_EXPORT(__udivdi3);
-> >> +DECLARE_EXPORT(__udivmoddi4);
-> >> +DECLARE_EXPORT(__udivsi3);
-> >> +DECLARE_EXPORT(__umoddi3);
-> >> +DECLARE_EXPORT(__umodsi3);
-> >> +DECLARE_EXPORT(__muldi3);
-> >>
-> >
-> > I don't remember what all of these are, but at least some of them seem
-> > to be concerned with 64-bit division. By convention, we don't provide those
-> > in the Linux kernel but instead require all code to use the do_div()
-> > macro instead.
-> Do you mean kernel doesn't support 64 bit division result for a 32-bit
-> architecture? Because do_div() only support 32-bit division result for
-> 32-bit architecture.
-> Compiler will auto generate call to __divdi3() for the following
-> example code. This means loadable module will have compilation error
-> if we don't export symbol for __divdi3, but built-in module is fine.
-> Is this an expectation? Or we can keep 64-bit division symbols here
-> since they are no harm (they are software emulation when without
-> hardware divider).
-> 
-> long long a, b, c;
-> a = b / c;
+this fifth version of the series has just one change, suggested by Stephen:
 
-We have proper helper functions for this:
+* Initialize clk.ceiling_constraint to ULONG_MAX and warn about new floor
+constraints being higher than the existing ceiling.
 
-See include/linux/math.h
+The first five patches are just cleanups that should be desirable on their own,
+and that should make easier to review the actual per-user clock patch.
+
+The sixth patch actually moves the per-clock data that was stored in struct
+clk to a new struct clk_core and adds references to it from both struct clk and
+struct clk_hw. struct clk is now ready to contain information that is specific
+to a given clk consumer.
+
+The seventh patch adds API for setting floor and ceiling constraints and stores
+that information on the per-user struct clk, which is iterable from struct
+clk_core.
+
+They are based on top of 3.18-rc1.
+
+http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=per-user-clk-constraints-v5
 
 Thanks,
 
-	tglx
+Tomeu
+
+Tomeu Vizoso (7):
+  clk: Remove unused function __clk_get_prepare_count
+  clk: Don't try to use a struct clk* after it could have been freed
+  clk: Don't expose __clk_get_accuracy
+  clk: change clk_debugfs_add_file to take a struct clk_hw
+  clk: Change clk_ops->determine_rate to return a clk_hw as the best
+    parent
+  clk: Make clk API return per-user struct clk instances
+  clk: Add floor and ceiling constraints to clock rates
+
+ Documentation/clk.txt                   |   2 +-
+ arch/arm/mach-omap2/cclock3xxx_data.c   | 108 +++--
+ arch/arm/mach-omap2/clock.h             |  11 +-
+ arch/arm/mach-omap2/clock_common_data.c |   5 +-
+ arch/mips/alchemy/common/clock.c        |  10 +-
+ drivers/clk/at91/clk-programmable.c     |   4 +-
+ drivers/clk/bcm/clk-kona.c              |   4 +-
+ drivers/clk/clk-composite.c             |   9 +-
+ drivers/clk/clk.c                       | 793 +++++++++++++++++++++-----------
+ drivers/clk/clk.h                       |   5 +
+ drivers/clk/clkdev.c                    |  73 ++-
+ drivers/clk/hisilicon/clk-hi3620.c      |   2 +-
+ drivers/clk/qcom/clk-rcg.c              |  20 +-
+ drivers/clk/qcom/clk-rcg2.c             |  28 +-
+ drivers/clk/sunxi/clk-factors.c         |   4 +-
+ drivers/clk/sunxi/clk-sun6i-ar100.c     |   4 +-
+ include/linux/clk-private.h             |  41 +-
+ include/linux/clk-provider.h            |  17 +-
+ include/linux/clk.h                     |  18 +
+ 19 files changed, 773 insertions(+), 385 deletions(-)
+
+-- 
+1.9.3
+
