@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364AbaJ3I1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 04:27:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60549 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319AbaJ3I1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 04:27:15 -0400
-Date: Thu, 30 Oct 2014 09:27:12 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, riel@redhat.com,
-        hannes@cmpxchg.org, peterz@infradead.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: initialize variable for mem_cgroup_end_page_stat
-Message-ID: <20141030082712.GB4664@dhcp22.suse.cz>
-References: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com>
+	id S1758310AbaJ3I3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 04:29:23 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52759 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaJ3I3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 04:29:21 -0400
+Date: Thu, 30 Oct 2014 01:29:20 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Don Brace <don.brace@pmcs.com>,
+        Robert Elliott <elliott@hp.com>
+Subject: Re: [PATCH] MAINTAINERS: remove list iss_storagedev@hp.com
+Message-ID: <20141030082920.GA24815@infradead.org>
+References: <1414651659-4485-1-git-send-email-sudipm.mukherjee@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414633464-19419-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1414651659-4485-1-git-send-email-sudipm.mukherjee@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 29-10-14 21:44:24, Sasha Levin wrote:
-> Commit "mm: memcontrol: fix missed end-writeback page accounting" has changed
-> the behaviour of mem_cgroup_begin_page_stat() to not always set the "locked"
-> parameter.
+On Thu, Oct 30, 2014 at 12:17:39PM +0530, Sudip Mukherjee wrote:
+> when sending mail to iss_storagedev@hp.com it failed permanently
 > 
-> We should initialize it at the callers to prevent garbage being used in a
-> later call to mem_cgroup_end_page_stat().
+> "Google tried to deliver your message, but it was rejected by the
+> server for the recipient domain hp.com by smtp.hp.com.
+> [15.201.208.57].
+> The error that the other server returned was:
+> 550 5.1.1 <iss_storagedev@hp.com>: Recipient address
+> rejected: User unknown in virtual alias table"
 
-The contract is that if the returned memcg is non-NULL then the locked
-is always initialized. Nobody but mem_cgroup_end_page_stat should touch
-this variable and this function makes sure it uses it properly. Similar
-applies to flags which is initialized only if we really take the slow
-path (has a meaning only if locked == true).
+I've got a MAINTAINERS update for these drivers queued up, but it only
+adds a new maintainer, and an additional list, but doesn't remove this
+one.  Don, Robert - should we remove the list as well, or should it come
+back?
 
-So this is not really needed. Was this triggered by a compiler warning?
-
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  mm/page-writeback.c |    4 ++--
->  mm/rmap.c           |    4 ++--
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 19ceae8..7a02c97 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -2329,7 +2329,7 @@ int test_clear_page_writeback(struct page *page)
->  	struct address_space *mapping = page_mapping(page);
->  	unsigned long memcg_flags;
->  	struct mem_cgroup *memcg;
-> -	bool locked;
-> +	bool locked = false;
->  	int ret;
->  
->  	memcg = mem_cgroup_begin_page_stat(page, &locked, &memcg_flags);
-> @@ -2366,7 +2366,7 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
->  	struct address_space *mapping = page_mapping(page);
->  	unsigned long memcg_flags;
->  	struct mem_cgroup *memcg;
-> -	bool locked;
-> +	bool locked = false;
->  	int ret;
->  
->  	memcg = mem_cgroup_begin_page_stat(page, &locked, &memcg_flags);
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 19886fb..4a4dc84 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1044,7 +1044,7 @@ void page_add_file_rmap(struct page *page)
->  {
->  	struct mem_cgroup *memcg;
->  	unsigned long flags;
-> -	bool locked;
-> +	bool locked = false;
->  
->  	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
->  	if (atomic_inc_and_test(&page->_mapcount)) {
-> @@ -1058,7 +1058,7 @@ static void page_remove_file_rmap(struct page *page)
->  {
->  	struct mem_cgroup *memcg;
->  	unsigned long flags;
-> -	bool locked;
-> +	bool locked = false;
->  
->  	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
->  
-> -- 
-> 1.7.10.4
-> 
-
--- 
-Michal Hocko
-SUSE Labs
