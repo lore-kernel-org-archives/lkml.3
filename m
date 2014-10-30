@@ -1,163 +1,469 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161606AbaJ3Xld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:41:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36133 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161577AbaJ3Xlc (ORCPT
+	id S1422739AbaJ3Xpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 19:45:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37586 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422645AbaJ3Xpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:41:32 -0400
-Message-ID: <5452CCA3.5020000@oracle.com>
-Date: Thu, 30 Oct 2014 19:41:23 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 30 Oct 2014 19:45:41 -0400
+Date: Fri, 31 Oct 2014 00:45:33 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: linux-api@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, marcel@holtmann.org, desrt@desrt.ca,
+        hadess@hadess.net, dh.herrmann@gmail.com, tixxdz@opendz.org,
+        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: kdbus: add driver skeleton, ioctl entry points and utility
+ functions
+In-Reply-To: <1414620056-6675-4-git-send-email-gregkh@linuxfoundation.org>
+Message-ID: <alpine.DEB.2.11.1410302224230.5308@nanos>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <1414620056-6675-4-git-send-email-gregkh@linuxfoundation.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        htejun@gmail.com
-Subject: Re: rcu_preempt detected stalls.
-References: <20141013173504.GA27955@redhat.com> <543DDD5E.9080602@oracle.com> <20141023183917.GX4977@linux.vnet.ibm.com> <54494F2F.6020005@oracle.com> <20141023195808.GB4977@linux.vnet.ibm.com> <544A45F8.2030207@oracle.com> <20141024161337.GQ4977@linux.vnet.ibm.com> <544A80B3.9070800@oracle.com> <20141027211329.GJ5718@linux.vnet.ibm.com>
-In-Reply-To: <20141027211329.GJ5718@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 05:13 PM, Paul E. McKenney wrote:
-> Thank you!  I would complain about the FAULT_INJECTION messages, but
-> they don't appear to be happening all that frequently.
-> 
-> The stack dumps do look different here.  I suspect that this is a real
-> issue in the VM code.
+On Wed, 29 Oct 2014, Greg Kroah-Hartman wrote:
+> +/* kdbus major */
+> +static unsigned int kdbus_major;
+> +
+> +/* map of minors to objects */
+> +static DEFINE_IDR(kdbus_minor_idr);
+> +
+> +/* kdbus minor lock */
+> +static DEFINE_SPINLOCK(kdbus_minor_lock);
+> +
+> +int kdbus_minor_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = __register_chrdev(0, 0, 0xfffff, KBUILD_MODNAME,
 
-The stack dumps are pretty much different with every trace.
+0xfffff? Random number pulled out of thin air or is there some
+sensible explanation for this choice?
 
-I just got a "double trace" for the first time, maybe it'll help:
+> +				&kdbus_handle_ops);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	kdbus_major = ret;
 
-[ 5887.980026] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[ 5887.980028] INFO: rcu_sched detected stalls on CPUs/tasks:
-[ 5887.980029]
-[ 5887.980030]
-[ 5887.980046] 	0: (210 ticks this GP) idle=f11/140000000000002/0 softirq=18456/18456 last_accelerate: 36b9/86cf, nonlazy_posted: 38271, ..
-[ 5887.980054] 	0: (210 ticks this GP) idle=f11/140000000000002/0 softirq=18456/18456 last_accelerate: 36b9/86cf, nonlazy_posted: 38271, ..
-[ 5887.980060] 	
-[ 5887.980073] 	
-[ 5887.980074] (detected by 11, t=20502 jiffies, g=16314, c=16313, q=0)
-[ 5887.980079] (detected by 28, t=20502 jiffies, g=-284, c=-285, q=0)
-[ 5887.980081] Task dump for CPU 0:
-[ 5887.980084] Task dump for CPU 0:
-[ 5887.980090] trinity-c175    R
-[ 5887.980092] trinity-c175    R
-[ 5887.980094]   running task
-[ 5887.980116]   running task    12864 17785   9032 0x0008000c
-[ 5887.980120] 12864 17785   9032 0x0008000c
-[ 5887.980125]  ffffffff940ff458
-[ 5887.980127]  ffffffff940ff458
-[ 5887.980130]  0000000000000286
-[ 5887.980132]  0000000000000286
-[ 5887.980134]  ffffffff9d28b638
-[ 5887.980137]  ffffffff9d28b638
-[ 5887.980139]  ffff88014b88b000
-[ 5887.980141]  ffff88014b88b000
-[ 5887.980141]
-[ 5887.980142]
-[ 5887.980146]  ffff88014b88b000
-[ 5887.980148]  ffff88014b88b000
-[ 5887.980151]  ffffffff9d300b30
-[ 5887.980153]  ffffffff9d300b30
-[ 5887.980155]  0000000000000000
-[ 5887.980157]  0000000000000000
-[ 5887.980160]  ffff88013dc476a8
-[ 5887.980161]  ffff88013dc476a8
-[ 5887.980161]
-[ 5887.980163]
-[ 5887.980167]  ffffffff9423b078
-[ 5887.980169]  ffffffff9423b078
-[ 5887.980171]  0000000000000002
-[ 5887.980173]  0000000000000002
-[ 5887.980175]  0000000000000000
-[ 5887.980177]  0000000000000000
-[ 5887.980180]  ffff88013dc477c0
-[ 5887.980181]  ffff88013dc477c0
-[ 5887.980181]
-[ 5887.980183]
-[ 5887.980185] Call Trace:
-[ 5887.980187] Call Trace:
-[ 5887.980208] ? __change_page_attr_set_clr (arch/x86/mm/pageattr.c:1109 arch/x86/mm/pageattr.c:1279)
-[ 5887.980219] ? __change_page_attr_set_clr (arch/x86/mm/pageattr.c:1109 arch/x86/mm/pageattr.c:1279)
-[ 5887.980232] ? check_flags (kernel/locking/lockdep.c:3532)
-[ 5887.980241] ? check_flags (kernel/locking/lockdep.c:3532)
-[ 5887.980253] ? preempt_count_sub (kernel/sched/core.c:2641)
-[ 5887.980262] ? preempt_count_sub (kernel/sched/core.c:2641)
-[ 5887.980269] ? debug_check_no_locks_freed (kernel/locking/lockdep.c:4076)
-[ 5887.980278] ? debug_check_no_locks_freed (kernel/locking/lockdep.c:4076)
-[ 5887.980294] ? _raw_spin_unlock_irqrestore (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:161 kernel/locking/spinlock.c:191)
-[ 5887.980303] ? _raw_spin_unlock_irqrestore (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:161 kernel/locking/spinlock.c:191)
-[ 5887.980312] ? kernel_map_pages (arch/x86/mm/pageattr.c:1801 arch/x86/mm/pageattr.c:1821)
-[ 5887.980319] ? kernel_map_pages (arch/x86/mm/pageattr.c:1801 arch/x86/mm/pageattr.c:1821)
-[ 5887.980334] ? free_pages_prepare (mm/page_alloc.c:779)
-[ 5887.980344] ? free_pages_prepare (mm/page_alloc.c:779)
-[ 5887.980351] ? __free_pages_ok (mm/page_alloc.c:787)
-[ 5887.980358] ? __free_pages_ok (mm/page_alloc.c:787)
-[ 5887.980365] ? free_compound_page (mm/page_alloc.c:364)
-[ 5887.980373] ? free_compound_page (mm/page_alloc.c:364)
-[ 5887.980380] ? put_compound_page (mm/swap.c:262)
-[ 5887.980389] ? put_compound_page (mm/swap.c:262)
-[ 5887.980395] ? preempt_count_sub (kernel/sched/core.c:2641)
-[ 5887.980404] ? preempt_count_sub (kernel/sched/core.c:2641)
-[ 5887.980411] ? release_pages (mm/swap.c:917)
-[ 5887.980419] ? release_pages (mm/swap.c:917)
-[ 5887.980430] ? free_pages_and_swap_cache (mm/swap_state.c:274)
-[ 5887.980440] ? free_pages_and_swap_cache (mm/swap_state.c:274)
-[ 5887.980449] ? tlb_flush_mmu_free (mm/memory.c:254 (discriminator 3))
-[ 5887.980458] ? tlb_flush_mmu_free (mm/memory.c:254 (discriminator 3))
-[ 5887.980465] ? unmap_page_range (mm/memory.c:1220 mm/memory.c:1263 mm/memory.c:1284 mm/memory.c:1308)
-[ 5887.980473] ? unmap_page_range (mm/memory.c:1220 mm/memory.c:1263 mm/memory.c:1284 mm/memory.c:1308)
-[ 5887.980481] ? unmap_single_vma (mm/memory.c:1355)
-[ 5887.980489] ? unmap_single_vma (mm/memory.c:1355)
-[ 5887.980496] ? unmap_vmas (mm/memory.c:1382 (discriminator 3))
-[ 5887.980503] ? unmap_vmas (mm/memory.c:1382 (discriminator 3))
-[ 5887.980512] ? exit_mmap (mm/mmap.c:2855)
-[ 5887.980521] ? exit_mmap (mm/mmap.c:2855)
-[ 5887.980530] ? kmem_cache_free (include/trace/events/kmem.h:143 mm/slub.c:2715)
-[ 5887.980538] ? kmem_cache_free (include/trace/events/kmem.h:143 mm/slub.c:2715)
-[ 5887.980546] ? mmput (kernel/fork.c:674)
-[ 5887.980554] ? mmput (kernel/fork.c:674)
-[ 5887.980561] ? do_exit (./arch/x86/include/asm/thread_info.h:168 kernel/exit.c:462 kernel/exit.c:747)
-[ 5887.980569] ? do_exit (./arch/x86/include/asm/thread_info.h:168 kernel/exit.c:462 kernel/exit.c:747)
-[ 5887.980578] ? rcu_start_future_gp (kernel/rcu/tree.c:1364)
-[ 5887.980589] ? rcu_start_future_gp (kernel/rcu/tree.c:1364)
-[ 5887.980596] ? recalc_sigpending_tsk (include/linux/thread_info.h:71 include/linux/sched.h:2733 kernel/signal.c:137)
-[ 5887.980605] ? recalc_sigpending_tsk (include/linux/thread_info.h:71 include/linux/sched.h:2733 kernel/signal.c:137)
-[ 5887.980613] ? debug_lockdep_rcu_enabled (kernel/rcu/update.c:136 (discriminator 1))
-[ 5887.980621] ? debug_lockdep_rcu_enabled (kernel/rcu/update.c:136 (discriminator 1))
-[ 5887.980630] ? do_group_exit (./arch/x86/include/asm/current.h:14 kernel/exit.c:875)
-[ 5887.980637] ? do_group_exit (./arch/x86/include/asm/current.h:14 kernel/exit.c:875)
-[ 5887.980645] ? preempt_count_sub (kernel/sched/core.c:2641)
-[ 5887.980651] ? preempt_count_sub (kernel/sched/core.c:2641)
-[ 5887.980660] ? get_signal (kernel/signal.c:2358)
-[ 5887.980667] ? get_signal (kernel/signal.c:2358)
-[ 5887.980676] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2621)
-[ 5887.980683] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2621)
-[ 5887.980692] ? do_signal (arch/x86/kernel/signal.c:703)
-[ 5887.980701] ? do_signal (arch/x86/kernel/signal.c:703)
-[ 5887.980707] ? get_parent_ip (kernel/sched/core.c:2585)
-[ 5887.980714] ? get_parent_ip (kernel/sched/core.c:2585)
-[ 5887.980723] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
-[ 5887.980731] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
-[ 5887.980740] ? context_tracking_user_exit (include/linux/vtime.h:89 include/linux/jump_label.h:114 include/trace/events/context_tracking.h:47 kernel/context_tracking.c:140)
-[ 5887.980748] ? context_tracking_user_exit (include/linux/vtime.h:89 include/linux/jump_label.h:114 include/trace/events/context_tracking.h:47 kernel/context_tracking.c:140)
-[ 5887.980757] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2566)
-[ 5887.980764] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2566)
-[ 5887.980772] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
-[ 5887.980778] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
-[ 5887.980787] ? do_notify_resume (arch/x86/kernel/signal.c:756)
-[ 5887.980793] ? do_notify_resume (arch/x86/kernel/signal.c:756)
-[ 5887.980802] ? int_signal (arch/x86/kernel/entry_64.S:587)
-[ 5887.980809] ? int_signal (arch/x86/kernel/entry_64.S:587)
+So minor_init actually assigns the major number ...
 
+> +	return 0;
+> +}
+> +
+> +void kdbus_minor_exit(void)
+> +{
+> +	__unregister_chrdev(kdbus_major, 0, 0xfffff, KBUILD_MODNAME);
+
+So we have the magic 0xfffff constant at two places to make sure that
+it is updated in sync.
+
+> +	idr_destroy(&kdbus_minor_idr);
+> +}
+> +
+> +static void *kdbus_minor_pack(enum kdbus_minor_type type, void *ptr)
+> +{
+> +	unsigned long p = (unsigned long)ptr;
+> +
+> +	BUILD_BUG_ON(KDBUS_MINOR_CNT > 4);
+
+We certainly want a build bug in some random function with another
+magic number for a completely undocumented enum, which does neither
+explain what its enum constants mean nor does have a comment that it
+is limited to 0-3 for a very good reason.
+
+And of course any not overloaded pointer defaults to
+KDBUS_MINOR_CONTROL which is always valid...
+
+> +
+> +	if (WARN_ON(p & 0x3UL || type >= KDBUS_MINOR_CNT))
+
+0x03UL is a very descriptive constant ....
+
+> +		return NULL;
+> +
+> +	return (void *)(p | (unsigned long)type);
+> +}
+> +
+> +static enum kdbus_minor_type kdbus_minor_unpack(void **ptr)
+> +{
+> +	unsigned long p = (unsigned long)*ptr;
+> +
+> +	*ptr = (void *)(p & ~0x3UL);
+> +	return p & 0x3UL;
+
+I'm really excited about the intuitive naming conventions
+here. minor_init() initializes kdbus_major and this pack/unpack stuff
+converts a pointer to carry a type and vice versa. Of course that
+stuff lacks any comment in order to accelerate reviews, right?
+
+I really had to look more than twice to figure out that this function
+serves two purposes;
+
+ - Remove the type overload from the pointer
+
+ - Return the type retrieved from the pointer.
+
+Aside of that: What on earth has minor to do with this?
+
+For heavens sake. Minor is referring to a minor number in the context
+of character devices, right?
+
+And a number does not map at all to a randomly overloaded pointer
+AFAICT.
+
+> +/**
+> + * kdbus_minor_set() - set an existing minor type of a kdbus device node
+
+Groan. The name choices are just ass backwards to be honest. And the
+explanation of the function is even worse:
+
+   "set an existing minor type of a kdbus device node"
+
+What the heck is an 'existing minor type' ?
+
+Ah, you mean if the type does not exist, i.e. it is >= KDBUS_MINOR_CNT)
+then the idr entry will be replaced by a NULL pointer silently.
+
+Aside of that if ptr has one of the lower two bits set, and the call
+tries to change its type then we get a WARN_ON in dmesg and happily
+assign a NULL pointer to the idr entry for that minor number.
+
+Makes a lot of sense. We'll see the fallout later...
+
+> + * @devt:	The device node to remove
+
+So @devt is removed? The documentation of idr_replace() tells a
+different story.
+
+> + * @type:	New type to set
+> + * @ptr:	Associated pointer when node was initially registered
+
+Why is this a void pointer? Are we dealing with arbitrary node types
+here?
+
+> + */
+> +void kdbus_minor_set(dev_t devt, enum kdbus_minor_type type, void *ptr)
+> +{
+> +	unsigned int minor = MINOR(devt);
+> +
+> +	ptr = kdbus_minor_pack(type, ptr);
+> +
+> +	spin_lock(&kdbus_minor_lock);
+
+Why is this a spinlock and not a mutex?
+
+> +	ptr = idr_replace(&kdbus_minor_idr, ptr, minor);
+
+What's the value of this pointless assignment? Pacify gcc?
+
+> +static int kdbus_handle_release(struct inode *inode, struct file *file)
+> +{
+> +	struct kdbus_handle *handle = file->private_data;
+> +
+> +	switch (handle->type) {
+> +	case KDBUS_HANDLE_CONTROL_DOMAIN_OWNER:
+> +		kdbus_domain_disconnect(handle->domain_owner);
+> +		kdbus_domain_unref(handle->domain_owner);
+> +		break;
+> +
+> +	case KDBUS_HANDLE_CONTROL_BUS_OWNER:
+> +		kdbus_bus_disconnect(handle->bus_owner);
+> +		kdbus_bus_unref(handle->bus_owner);
+> +		break;
+> +
+> +	case KDBUS_HANDLE_ENDPOINT_OWNER:
+> +		kdbus_ep_disconnect(handle->ep_owner);
+> +		kdbus_ep_unref(handle->ep_owner);
+> +		break;
+> +
+> +	case KDBUS_HANDLE_ENDPOINT_CONNECTED:
+> +		kdbus_conn_disconnect(handle->conn, false);
+> +		kdbus_conn_unref(handle->conn);
+> +		break;
+> +
+> +	default:
+> +		break;
+
+Silent acceptance of type being unknown?
+
+> +static int kdbus_copy_from_user(void *dest,
+> +				void __user *user_ptr,
+> +				size_t size)
+> +{
+> +	if (!KDBUS_IS_ALIGNED8((uintptr_t)user_ptr))
+> +		return -EFAULT;
+
+Completely undocumented requirement and there is no reason WHY we need
+KDBUS_IS_ALIGNED8 to figure that out ....
+
+> +static int kdbus_handle_transform(struct kdbus_handle *handle,
+> +				  enum kdbus_handle_type old_type,
+> +				  enum kdbus_handle_type new_type,
+> +				  void *ctx_ptr)
+> +{
+> +	int ret = -EBADFD;
+> +
+> +	/*
+> +	 * This transforms a handle from one state into another. Only a single
+> +	 * transformation is allowed per handle, and it must be one of:
+> +	 *   CONTROL -> CONTROL_DOMAIN_OWNER
+> +	 *           -> CONTROL_BUS_OWNER
+> +	 *        EP -> EP_CONNECTED
+> +	 *           -> EP_OWNER
+
+And that's magically enforced by what? new_type is not sanity checked
+here at all and there is no requirement for the call site to do so.
+
+> +/* kdbus control device commands */
+> +static long kdbus_handle_ioctl_control(struct file *file, unsigned int cmd,
+> +				       void __user *buf)
+> +{
+> +	struct kdbus_handle *handle = file->private_data;
+> +	struct kdbus_bus *bus = NULL;
+> +	struct kdbus_cmd_make *make;
+> +	struct kdbus_domain *domain = NULL;
+> +	umode_t mode = 0600;
+> +	void *p = NULL;
+> +	int ret;
+> +
+> +	switch (cmd) {
+> +	case KDBUS_CMD_BUS_MAKE: {
+> +		kgid_t gid = KGIDT_INIT(0);
+> +		struct kdbus_bloom_parameter bloom;
+> +		char *name;
+> +
+> +		ret = kdbus_memdup_user(buf, &p, sizeof(*make),
+> +					KDBUS_MAKE_MAX_SIZE);
+> +		if (ret < 0)
+> +			break;
+> +
+> +		make = p;
+
+Another great coding convention stolen from some ramdonly misdesigned
+user space app?
+
+     ret = kdbus_memdup_user(buf, &p, sizeof(*make)....
+
+What's wrong with 
+
+       struct kdbus_cmd_make *make = NULL;
+       
+       ret = kdbus_memdup_user(buf, &make, sizeof(*make) ... ????
+
+Surely void pointers are a great guarantee to make things better,
+right?
+
+> +	case KDBUS_CMD_DOMAIN_MAKE: {
+> +		const char *name;
+> +
+> +		if (!capable(CAP_IPC_OWNER)) {
+
+Why is this not in the open() call? Because you have an opaque device
+at the time of open()?
+
+Offloading security relevant decisions to an ioctl is an interesting
+design choice in theory. In fact it is just wrong.
+
+> +			ret = -EPERM;
+> +			break;
+> +		}
+> +
+> +		ret = kdbus_memdup_user(buf, &p, sizeof(*make),
+> +					KDBUS_MAKE_MAX_SIZE);
+> +		if (ret < 0)
+> +			break;
+> +
+> +		make = p;
+
+See above.
+
+> +/* kdbus endpoint make commands */
+> +static long kdbus_handle_ioctl_ep(struct file *file, unsigned int cmd,
+> +				  void __user *buf)
+> +{
+> +	struct kdbus_handle *handle = file->private_data;
+> +	void *p = NULL;
+> +	long ret = 0;
+> +
+> +	switch (cmd) {
+> +	case KDBUS_CMD_ENDPOINT_MAKE: {
+> +		struct kdbus_cmd_make *make;
+> +		umode_t mode = 0;
+> +		kgid_t gid = KGIDT_INIT(0);
+> +		const char *name;
+> +		struct kdbus_ep *ep;
+> +
+> +		/* creating custom endpoints is a privileged operation */
+> +		if (!kdbus_bus_uid_is_privileged(handle->ep->bus)) {
+
+See above.
+
+> +			ret = -EPERM;
+> +			break;
+> +		}
+> +
+> +		ret = kdbus_memdup_user(buf, &p, sizeof(*make),
+> +					KDBUS_MAKE_MAX_SIZE);
+> +		if (ret < 0)
+> +			break;
+> +
+> +		make = p;
+
+See above.
+
+> +	case KDBUS_CMD_HELLO: {
+> +		struct kdbus_cmd_hello *hello;
+> +		struct kdbus_conn *conn = NULL;
+> +
+> +		ret = kdbus_memdup_user(buf, &p, sizeof(*hello),
+> +					KDBUS_HELLO_MAX_SIZE);
+> +		if (ret < 0)
+> +			break;
+> +
+> +		hello = p;
+
+Ditto.
+
+> +/* kdbus endpoint commands for connected peers */
+> +static long kdbus_handle_ioctl_ep_connected(struct file *file, unsigned int cmd,
+> +					    void __user *buf)
+> +{
+> +	struct kdbus_handle *handle = file->private_data;
+> +	struct kdbus_conn *conn = handle->conn;
+> +	void *p = NULL;
+> +	long ret = 0;
+> +
+> +	/*
+> +	 * BYEBYE is special; we must not acquire a connection when
+> +	 * calling into kdbus_conn_disconnect() or we will deadlock,
+> +	 * because kdbus_conn_disconnect() will wait for all acquired
+> +	 * references to be dropped.
+> +	 */
+> +	if (cmd == KDBUS_CMD_BYEBYE) {
+> +		if (!kdbus_conn_is_connected(conn))
+> +			return -EOPNOTSUPP;
+
+If the connection is down already then a BEYBEY is just moot. I don't
+see a good reason WHY the return code is -EOPNOTSUPP.
+
+Is this just to provide bug compability with the existing user space
+code? If so, pick some proper return code which reflects the state and
+deal with it in user space. If not, then you should think hard why you
+did not find anything which is more appropriate in the wide choice of
+error codes.
+
+> +		return kdbus_conn_disconnect(conn, true);
+> +	}
+> +
+> +	ret = kdbus_conn_acquire(conn);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	switch (cmd) {
+> +	case KDBUS_CMD_NAME_ACQUIRE: {
+> +		/* acquire a well-known name */
+> +		struct kdbus_cmd_name *cmd_name;
+> +
+> +		if (!kdbus_conn_is_connected(conn)) {
+> +			ret = -EOPNOTSUPP;
+
+See above.
+
+> +			break;
+> +		}
+
+Aside of that what makes sure that the connection is not going away
+after you checked it above?
+
+Magic serialization or what? I can't see any of it.
+
+If it's just an optimization then it wants to have a proper comment
+and not just a random chosen return code which matches the expectation
+of some equally undocumented user space app.
+
+> +static long kdbus_handle_ioctl(struct file *file, unsigned int cmd,
+> +			       unsigned long arg)
+> +{
+> +	struct kdbus_handle *handle = file->private_data;
+> +	void __user *argp = (void __user *)arg;
+> +	enum kdbus_handle_type type = handle->type;
+> +
+> +	/* make sure all handle fields are set if handle->type is */
+> +	smp_rmb();
+
+Sure. You really need this kind of serialization because your design
+choice of allowing opaque handles in the first place.
+
+I'm really interested why you need this rmb() at all. Just because you
+have several threads in user space which might race with the type
+assignment when they call the ioctl?
+
+We have a strict requirement to document memory barriers. The
+following comment definitely does not fulfil this requirement as it
+just documents that someone observed a race of unknown provenance and
+got it 'fixed' with a 'smp_rmb()'
+
+> +     /* make sure all handle fields are set if handle->type is */
+
+That's really hillarious, The user space side knows excatly upfront
+which type of 'handle' it wants to open. Making it an opaque handle in
+the first place and let the kernel deal with the actual type
+assignment is beyond silly. Especially if that involves undocumented
+memory barriers.
+
+> +	switch (type) {
+> +	case KDBUS_HANDLE_CONTROL:
+> +		return kdbus_handle_ioctl_control(file, cmd, argp);
+> +
+> +	case KDBUS_HANDLE_EP:
+> +		return kdbus_handle_ioctl_ep(file, cmd, argp);
+> +
+> +	case KDBUS_HANDLE_ENDPOINT_CONNECTED:
+> +		return kdbus_handle_ioctl_ep_connected(file, cmd, argp);
+> +
+> +	case KDBUS_HANDLE_ENDPOINT_OWNER:
+> +		return kdbus_handle_ioctl_ep_owner(file, cmd, argp);
+> +
+> +	default:
+> +		return -EBADFD;
+> +	}
+> +}
+> +
+> +static unsigned int kdbus_handle_poll(struct file *file,
+> +				      struct poll_table_struct *wait)
+> +{
+> +	struct kdbus_handle *handle = file->private_data;
+> +	struct kdbus_conn *conn;
+> +	unsigned int mask = POLLOUT | POLLWRNORM;
+> +
+> +	/* Only a connected endpoint can read/write data */
+> +	if (handle->type != KDBUS_HANDLE_ENDPOINT_CONNECTED)
+> +		return POLLERR | POLLHUP;
+> +
+> +	/* make sure handle->conn is set if handle->type is */
+> +	smp_rmb();
+
+Surely we need to plaster that all over the place just because we
+avoid to open dedicated devices in the first place. And do not tell me
+that the open call does not know what type it is going to be.
+
+Copying badly designed userspace code to the kernel without rethinking
+the design and 'fixing' the short comings by copying the same 'fixup'
+over and over is definitely a guarantee for interesting CVEs in the
+future.
 
 Thanks,
-Sasha
+
+	tglx
