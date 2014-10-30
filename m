@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660AbaJ3JyL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 05:54:11 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:39891 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758591AbaJ3JyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 05:54:07 -0400
-Message-ID: <54520ABC.3040305@imgtec.com>
-Date: Thu, 30 Oct 2014 09:54:04 +0000
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        <linux-mips@linux-mips.org>, <nbd@openwrt.org>, <yanh@lemote.com>,
-        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
-        <alex.smith@imgtec.com>, <taohl@lemote.com>, <chenhc@lemote.com>,
-        <blogic@openwrt.org>
-Subject: Re: [PATCH] MIPS: DMA: fix coherent alloc in non-coherent systems
-References: <20141030014753.13189.48344.stgit@linux-yegoshin> <54520969.8030900@imgtec.com> <54520A2D.5080304@imgtec.com>
-In-Reply-To: <54520A2D.5080304@imgtec.com>
-Content-Type: text/plain; charset="utf-8"
+	id S1758720AbaJ3JzH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 05:55:07 -0400
+Received: from plane.gmane.org ([80.91.229.3]:33481 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758001AbaJ3JzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 05:55:06 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+Date: Thu, 30 Oct 2014 10:51:29 +0100
+Message-ID: <54520A21.20404@samsung.com>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <alpine.LRH.2.00.1410292354480.11562@twin.jikos.cz> <20141029231106.GB16548@kroah.com> <alpine.LRH.2.00.1410300019570.11562@twin.jikos.cz> <20141029234001.GB16520@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.149]
+X-Complaints-To: usenet@ger.gmane.org
+Cc: linux-api@vger.kernel.org
+X-Gmane-NNTP-Posting-Host: 217-67-201-162.itsa.net.pl
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
+In-Reply-To: <20141029234001.GB16520@kroah.com>
+Cc: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2014 09:51 AM, James Hogan wrote:
-> Hi Markos,
-> 
-> On 30/10/14 09:48, Markos Chandras wrote:
->>> diff --git a/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h b/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
->>> index f9f4486..fe0b465 100644
->>> --- a/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
->>> +++ b/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
->>> @@ -52,7 +52,7 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
->>>  	return 0;
->>>  }
->>>  
->>> -static inline int plat_device_is_coherent(struct device *dev)
->>> +static inline int plat_device_is_coherent(const struct device *dev)
->>
->> Why adding const here?
->>
-> 
-> <snip>
-> 
->> Is it just a matter of consistence with the rest of the interfaces? Do
->> you need to move these into a separate patch since they don't quite fit
->> here.
-> 
-> See the new new call to plat_device_is_coherent(), which passes dev,
-> which is const.
-> 
-> Cheers
-> James
-> 
-Ah yes you are right. Thanks!
+On 2014-10-30 00:40, Greg Kroah-Hartman wrote:
 
+> There is a 1815 line documentation file in this series, so we aren't
+> trying to not provide this type of information here at all.  But yes,
+> more background, about why this can't be done in userspace (zero copy,
+> less context switches, proper credential passing, timestamping, availble
+> at early-boot, LSM hooks for security models to tie into
+
+While you're at it... I have worked on proof-of-concept LSM patches for
+kdbus some time ago, see [1][2].  Currently, these are completely of date.
+
+ [1] https://github.com/lmctl/linux/commits/kdbus-lsm-v4.for-systemd-v212
+ [2] https://github.com/lmctl/kdbus/commit/aa0885489d19be92fa41c6f0a71df28763228a40
+
+May I ask if you guys have your own plan for LSM or maybe it would be
+worth to resurrect [1]?
+
+Cheers,
 -- 
-markos
+Karol Lewandowski, Samsung R&D Institute Poland
+
+
