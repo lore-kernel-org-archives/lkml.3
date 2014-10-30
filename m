@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759831AbaJ3NMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 09:12:36 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:50669 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759755AbaJ3NMe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 09:12:34 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: Re: I2C OF IRQ parsing issue due to probe ordering
-Date: Thu, 30 Oct 2014 15:12:43 +0200
-Message-ID: <2475312.fxdzhGkprr@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20141030130207.GB19386@ulmo>
-References: <2287003.09eTeKUr1V@avalon> <1718941.Qj8UzhsRTh@avalon> <20141030130207.GB19386@ulmo>
+	id S1759902AbaJ3NN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 09:13:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33714 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759391AbaJ3NNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 09:13:25 -0400
+Message-ID: <5452395C.6030500@redhat.com>
+Date: Thu, 30 Oct 2014 09:13:00 -0400
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Weijie Yang <weijie.yang@samsung.com>,
+        "'Minchan Kim'" <minchan@kernel.org>
+CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Dan Streetman'" <ddstreet@ieee.org>,
+        "'Nitin Gupta'" <ngupta@vflare.org>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        "'Linux-MM'" <linux-mm@kvack.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] zram: avoid kunmap_atomic a NULL pointer
+References: <000001cff409$bf7bfa50$3e73eef0$%yang@samsung.com>
+In-Reply-To: <000001cff409$bf7bfa50$3e73eef0$%yang@samsung.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="aNCk04KK8cB7B5LaiQrSCXbd3MMSeB3rj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--aNCk04KK8cB7B5LaiQrSCXbd3MMSeB3rj
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-On Thursday 30 October 2014 14:02:09 Thierry Reding wrote:
-> On Thu, Oct 30, 2014 at 02:53:42PM +0200, Laurent Pinchart wrote:
-> > On Monday 27 October 2014 13:58:19 Wolfram Sang wrote:
-> > > > The i2c@e6520000 node is probed before the gpio@e6051000 node. The
-> > > > of_i2c_register_devices() function tries to register all children,
-> > > > including hdmi@39. It tries to parse and map the I2C client IRQ by
-> > > > calling irq_of_parse_and_map(), which returns 0 as the interrupt
-> > > > controller isn't probed yet. The adv7511 driver later probes the
-> > > > hdmi@39
-> > > > device and gets client->irq set to 0.
-> > > 
-> > > I've got this strange feeling of deja vu... Ah, here: Thierry Reding
-> > 
-> > > tackled this problem a year ago. His series:
-> > Thanks for the pointer.
-> > 
-> > > https://lkml.org/lkml/2013/9/16/111 (of/irq: Defer interrupt reference
-> > > resolution)
-> > > 
-> > > He did a V2 (which never made it to the i2c list). Seems like the first
-> > > two patches made it and the rest got stalled without discussion?
-> > > 
-> > > https://lkml.org/lkml/2013/9/18/216
-> > > 
-> > > Adding Thierry to the queue. Maybe he can bring some light to what
-> > > happened to his series.
-> > 
-> > That's exactly what I need :-) Thierry, do you plan to respin the series ?
-> 
-> Not really. Like I said in my reply to Wolfram, a different set of
-> patches was merged subsequently to solve this issue for platform
-> devices, which makes my patchset mostly obsolete. But I think the
-> solution that you proposed would work well if you do:
-> 
-> -		int irq = irq_of_parse_and_map(dev->of_node, 0);
-> +		int irq = of_irq_get(dev->of_node, 0);
-> 
-> And then changing irq_create_of_mapping() should no longer be necessary.
+On 10/30/2014 02:20 AM, Weijie Yang wrote:
+> zram could kunmap_atomic a NULL pointer in a rare situation:
+> a zram page become a full-zeroed page after a partial write io.
+> The current code doesn't handle this case and kunmap_atomic a
+> NULL porinter, which panic the kernel.
+>=20
+> This patch fixes this issue.
+>=20
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 
-It looks like it would work, yes. I'll test it and will resubmit my patch.
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
 
-> I still think it's kind of lame to handle -EPROBE_DEFER specially as was
-> done in of_irq_get(), but given how worried people were about the more
-> invasive changes needed to propagate the correct error code all the way
-> up it seems like that's as good as it's going to get.
+> ---
+>  drivers/block/zram/zram_drv.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_dr=
+v.c
+> index 2ad0b5b..3920ee4 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -560,7 +560,8 @@ static int zram_bvec_write(struct zram *zram, struc=
+t bio_vec *bvec, u32 index,
+>  	}
+> =20
+>  	if (page_zero_filled(uncmem)) {
+> -		kunmap_atomic(user_mem);
+> +		if (user_mem)
+> +			kunmap_atomic(user_mem);
+>  		/* Free memory associated with this sector now. */
+>  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  		zram_free_page(zram, index);
+>=20
 
--- 
-Regards,
 
-Laurent Pinchart
 
+--aNCk04KK8cB7B5LaiQrSCXbd3MMSeB3rj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUUjlcAAoJEHTzHJCtsuoC0aQIAKvyIPhInikRYcPf6TpYxmxk
+N5+v4eP306EGErJ7vwMgPEGZLc/wuWrVxayv9vQZpH9y1T+nPn03NvUT6yvS8Wld
+6PrgcdxUlUGqzb3l8KJqOAmTtwElLdmLEnYSnzTGp+QJ7opAKZGZ/l0n+N5dlwtZ
+fWY7iVMuSX0xFu5l7+aNiiyTyT2ojqoj9IIjV3qMQnf2tLNKj0GDbSbA9ZSy+Uet
+n/EQixaer0+voHyNSUZeyNawgI/EP81AGrd9bOHn5U8+JBI1EuT5YaHSkVR0h9S7
+tH9Zsj19wAwdvPMvhQyCD/ez3P/FVvMdrcVejFylDvM7/7aEucvOE/MfysyZDS8=
+=bB3h
+-----END PGP SIGNATURE-----
+
+--aNCk04KK8cB7B5LaiQrSCXbd3MMSeB3rj--
