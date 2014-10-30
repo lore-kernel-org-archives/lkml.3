@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060AbaJ3HMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 03:12:07 -0400
-Received: from svenfoo.org ([82.94.215.22]:45764 "EHLO mail.zonque.de"
+	id S1758230AbaJ3HMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 03:12:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60996 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbaJ3HMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 03:12:06 -0400
-Message-ID: <5451E4C1.3000704@zonque.org>
-Date: Thu, 30 Oct 2014 08:12:01 +0100
-From: Daniel Mack <daniel@zonque.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org,
-        marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
-        dh.herrmann@gmail.com, tixxdz@opendz.org,
-        simon.mcvittie@collabora.co.uk, alban.crequy@collabora.co.uk,
-        javier.martinez@collabora.co.uk, teg@jklm.no,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>	<20141029221505.GA7812@kroah.com> <87egtqurrp.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87egtqurrp.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1758122AbaJ3HMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 03:12:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,284,1413270000"; 
+   d="scan'208";a="623291564"
+Message-ID: <1414653134.2396.67.camel@linux.intel.com>
+Subject: Re: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters'
+ accessing
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>
+Date: Thu, 30 Oct 2014 09:12:14 +0200
+In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E9A92B3@SHSMSX101.ccr.corp.intel.com>
+References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
+	 <1412783423-9408-2-git-send-email-alvin.chen@intel.com>
+	 <4656BEB6164FC34F8171C6538F1A595B2E9A90E6@SHSMSX101.ccr.corp.intel.com>
+	 <5450CF36.7060105@nexus-software.ie>
+	 <4656BEB6164FC34F8171C6538F1A595B2E9A92B3@SHSMSX101.ccr.corp.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2014 05:04 AM, Eric W. Biederman wrote:
-> For what it is worth these patches are also poorly split up.  Every
-> patch I looked at in detail had functions that were being introduced
-> that did not have callers.
+On Thu, 2014-10-30 at 01:02 +0000, Chen, Alvin wrote:
+> > >
+> > 
+> > Hi Alvin, Weike.
+> > 
+> > I'm not clear if these patches apply to the current tip-of-tree.
+> > 
+> > I thought the action required here, was for a resend of patches to ensure they
+> > applied to tip-of-tree ?
+> > 
+> As I said before, it is based on the slave-dma tree (git.infraded.org) for-linus branch, which will be reapplied on top of v3.19-rc1. 
+> 
+> That is to say these patches will be applied to slave-dma tree for-linus branch, and then the slave-dma tree for-linus branch will be applied to v3.19.
+> Andy, am I right?
 
-Yes, we wanted to keep the reply threading cleaner and the individual
-patches short. With a patch set that avoids introducing functions
-without callers, each patch would have grown substantially. But I know
-that's unusual to do it that way.
-
-> That poor split up of the patches makes it difficult to see how
-> the functionality that is being introduced is being used.
-
-Ok, I see. For now, I think it's probably easiest to pull the patches
-from here, and then look at the resulting files directly:
-
-
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-misc.git/log/?h=kdbus
-
-Other than that, please give us some time to respond to your longer
-reply. Thanks for taking the time to write this up!
+All of those patches are in v3.18-rc1, so you may rebase on top of
+3.18-rcX safely I guess.
 
 
-Daniel
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
