@@ -1,122 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046AbaJ3BrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 21:47:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35292 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756754AbaJ3BrF (ORCPT
+	id S1758091AbaJ3Bs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 21:48:59 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:31190 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924AbaJ3Bs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 21:47:05 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: [PATCH] tty: serial: msm: Reset uartdm after baud rate change
-Date: Wed, 29 Oct 2014 18:47:01 -0700
-Message-Id: <1414633621-8225-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.61.ge50deb1
+	Wed, 29 Oct 2014 21:48:58 -0400
+Subject: [PATCH] MIPS: DMA: fix coherent alloc in non-coherent systems
+To: <linux-mips@linux-mips.org>, <nbd@openwrt.org>, <yanh@lemote.com>,
+        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
+        <alex.smith@imgtec.com>, <taohl@lemote.com>, <chenhc@lemote.com>,
+        <blogic@openwrt.org>
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Date: Wed, 29 Oct 2014 18:48:52 -0700
+Message-ID: <20141030014753.13189.48344.stgit@linux-yegoshin>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to issue a reset if we ever change the value of the IPR
-register on DM hardware. If we don't reset the hardware the RX
-stale interrupt never triggers and the only way to trigger an RX
-handling event is by filling up the fifo. This causes things like
-getty to not work so well considering it might change the baud
-rate a few times. Fix this by moving the reset on startup and any
-reprogramming required after the reset to be after we change the
-baud rate.
+A default dma_alloc_coherent() fails to alloc a coherent memory on non-coherent
+systems in case of device->coherent_dma_mask covering the whole memory space.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+In case of non-coherent systems the coherent memory on MIPS is restricted by
+size of un-cachable segment and should be located in ZONE_DMA.
+
+Added __GFP_DMA flag in case of non-coherent systems to enforce an allocation
+of coherent memory in ZONE_DMA.
+
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
 ---
+ .../include/asm/mach-cavium-octeon/dma-coherence.h |    2 +-
+ arch/mips/include/asm/mach-generic/dma-coherence.h |    2 +-
+ arch/mips/include/asm/mach-ip27/dma-coherence.h    |    2 +-
+ arch/mips/include/asm/mach-ip32/dma-coherence.h    |    2 +-
+ arch/mips/include/asm/mach-jazz/dma-coherence.h    |    2 +-
+ .../mips/include/asm/mach-loongson/dma-coherence.h |    2 +-
+ arch/mips/mm/dma-default.c                         |   11 ++++++++---
+ 7 files changed, 14 insertions(+), 9 deletions(-)
 
-This is based on my latest two patches to fix the break handling in this
-driver[1]. The only conflict is the break start interrupt bit so it could
-be moved off that patch if desired. This doesn't seem to affect non-DM
-hardware one way or the other, but I also can't get a getty to work on
-non-DM hardware right now. I need to debug that more some time.
-
-[1] http://lkml.kernel.org/r/1414606478-13709-1-git-send-email-sboyd@codeaurora.org
-
- drivers/tty/serial/msm_serial.c | 49 ++++++++++-------------------------------
- 1 file changed, 12 insertions(+), 37 deletions(-)
-
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index d44c04976f7a..b507f5a16c1c 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -427,9 +427,6 @@ static int msm_set_baud_rate(struct uart_port *port, unsigned int baud)
- 
- 	entry = msm_find_best_baud(port, baud);
- 
--	if (msm_port->is_uartdm)
--		msm_write(port, UART_CR_CMD_RESET_RX, UART_CR);
--
- 	msm_write(port, entry->code, UART_CSR);
- 
- 	/* RX stale watermark */
-@@ -446,6 +443,18 @@ static int msm_set_baud_rate(struct uart_port *port, unsigned int baud)
- 	/* set TX watermark */
- 	msm_write(port, 10, UART_TFWR);
- 
-+	msm_write(port, UART_CR_CMD_PROTECTION_EN, UART_CR);
-+	msm_reset(port);
-+
-+	/* Enable RX and TX */
-+	msm_write(port, UART_CR_TX_ENABLE | UART_CR_RX_ENABLE, UART_CR);
-+
-+	/* turn on RX and CTS interrupts */
-+	msm_port->imr = UART_IMR_RXLEV | UART_IMR_RXSTALE |
-+			UART_IMR_CURRENT_CTS | UART_IMR_RXBREAK_START;
-+
-+	msm_write(port, msm_port->imr, UART_IMR);
-+
- 	if (msm_port->is_uartdm) {
- 		msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
- 		msm_write(port, 0xFFFFFF, UARTDM_DMRX);
-@@ -492,40 +501,6 @@ static int msm_startup(struct uart_port *port)
- 	data |= UART_MR1_AUTO_RFR_LEVEL1 & (rfr_level << 2);
- 	data |= UART_MR1_AUTO_RFR_LEVEL0 & rfr_level;
- 	msm_write(port, data, UART_MR1);
--
--	/* make sure that RXSTALE count is non-zero */
--	data = msm_read(port, UART_IPR);
--	if (unlikely(!data)) {
--		data |= UART_IPR_RXSTALE_LAST;
--		data |= UART_IPR_STALE_LSB;
--		msm_write(port, data, UART_IPR);
--	}
--
--	data = 0;
--	if (!port->cons || (port->cons && !(port->cons->flags & CON_ENABLED))) {
--		msm_write(port, UART_CR_CMD_PROTECTION_EN, UART_CR);
--		msm_reset(port);
--		data = UART_CR_TX_ENABLE;
--	}
--
--	data |= UART_CR_RX_ENABLE;
--	msm_write(port, data, UART_CR);	/* enable TX & RX */
--
--	/* Make sure IPR is not 0 to start with*/
--	if (msm_port->is_uartdm)
--		msm_write(port, UART_IPR_STALE_LSB, UART_IPR);
--
--	/* turn on RX and CTS interrupts */
--	msm_port->imr = UART_IMR_RXLEV | UART_IMR_RXSTALE |
--			UART_IMR_CURRENT_CTS | UART_IMR_RXBREAK_START;
--
--	if (msm_port->is_uartdm) {
--		msm_write(port, 0xFFFFFF, UARTDM_DMRX);
--		msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
--		msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE, UART_CR);
--	}
--
--	msm_write(port, msm_port->imr, UART_IMR);
+diff --git a/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h b/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
+index f9f4486..fe0b465 100644
+--- a/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
++++ b/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
+@@ -52,7 +52,7 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
  	return 0;
  }
  
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+-static inline int plat_device_is_coherent(struct device *dev)
++static inline int plat_device_is_coherent(const struct device *dev)
+ {
+ 	return 1;
+ }
+diff --git a/arch/mips/include/asm/mach-generic/dma-coherence.h b/arch/mips/include/asm/mach-generic/dma-coherence.h
+index b4563df..2283996 100644
+--- a/arch/mips/include/asm/mach-generic/dma-coherence.h
++++ b/arch/mips/include/asm/mach-generic/dma-coherence.h
+@@ -47,7 +47,7 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
+ 	return 1;
+ }
+ 
+-static inline int plat_device_is_coherent(struct device *dev)
++static inline int plat_device_is_coherent(const struct device *dev)
+ {
+ #ifdef CONFIG_DMA_COHERENT
+ 	return 1;
+diff --git a/arch/mips/include/asm/mach-ip27/dma-coherence.h b/arch/mips/include/asm/mach-ip27/dma-coherence.h
+index 4ffddfd..c7767e3 100644
+--- a/arch/mips/include/asm/mach-ip27/dma-coherence.h
++++ b/arch/mips/include/asm/mach-ip27/dma-coherence.h
+@@ -58,7 +58,7 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
+ 	return 1;
+ }
+ 
+-static inline int plat_device_is_coherent(struct device *dev)
++static inline int plat_device_is_coherent(const struct device *dev)
+ {
+ 	return 1;		/* IP27 non-cohernet mode is unsupported */
+ }
+diff --git a/arch/mips/include/asm/mach-ip32/dma-coherence.h b/arch/mips/include/asm/mach-ip32/dma-coherence.h
+index 104cfbc..a6b6a55 100644
+--- a/arch/mips/include/asm/mach-ip32/dma-coherence.h
++++ b/arch/mips/include/asm/mach-ip32/dma-coherence.h
+@@ -80,7 +80,7 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
+ 	return 1;
+ }
+ 
+-static inline int plat_device_is_coherent(struct device *dev)
++static inline int plat_device_is_coherent(const struct device *dev)
+ {
+ 	return 0;		/* IP32 is non-cohernet */
+ }
+diff --git a/arch/mips/include/asm/mach-jazz/dma-coherence.h b/arch/mips/include/asm/mach-jazz/dma-coherence.h
+index 949003e..57c1a6c 100644
+--- a/arch/mips/include/asm/mach-jazz/dma-coherence.h
++++ b/arch/mips/include/asm/mach-jazz/dma-coherence.h
+@@ -48,7 +48,7 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
+ 	return 1;
+ }
+ 
+-static inline int plat_device_is_coherent(struct device *dev)
++static inline int plat_device_is_coherent(const struct device *dev)
+ {
+ 	return 0;
+ }
+diff --git a/arch/mips/include/asm/mach-loongson/dma-coherence.h b/arch/mips/include/asm/mach-loongson/dma-coherence.h
+index 6a90275..555d21b 100644
+--- a/arch/mips/include/asm/mach-loongson/dma-coherence.h
++++ b/arch/mips/include/asm/mach-loongson/dma-coherence.h
+@@ -69,7 +69,7 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
+ 	return 1;
+ }
+ 
+-static inline int plat_device_is_coherent(struct device *dev)
++static inline int plat_device_is_coherent(const struct device *dev)
+ {
+ #ifdef CONFIG_DMA_NONCOHERENT
+ 	return 0;
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index 42c819a..36e2237 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -69,7 +69,7 @@ static inline int cpu_needs_post_dma_flush(struct device *dev)
+ 		boot_cpu_type() == CPU_BMIPS5000);
+ }
+ 
+-static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
++static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp, int coherent)
+ {
+ 	gfp_t dma_flag;
+ 
+@@ -81,6 +81,11 @@ static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+ 		dma_flag = __GFP_DMA;
+ 	else
+ #endif
++#ifdef CONFIG_ZONE_DMA
++	     if (coherent && !plat_device_is_coherent(dev))
++			dma_flag = __GFP_DMA;
++	else
++#endif
+ #if defined(CONFIG_ZONE_DMA32) && defined(CONFIG_ZONE_DMA)
+ 	     if (dev->coherent_dma_mask < DMA_BIT_MASK(32))
+ 			dma_flag = __GFP_DMA;
+@@ -111,7 +116,7 @@ void *dma_alloc_noncoherent(struct device *dev, size_t size,
+ {
+ 	void *ret;
+ 
+-	gfp = massage_gfp_flags(dev, gfp);
++	gfp = massage_gfp_flags(dev, gfp, 0);
+ 
+ 	ret = (void *) __get_free_pages(gfp, get_order(size));
+ 
+@@ -132,7 +137,7 @@ static void *mips_dma_alloc_coherent(struct device *dev, size_t size,
+ 	if (dma_alloc_from_coherent(dev, size, dma_handle, &ret))
+ 		return ret;
+ 
+-	gfp = massage_gfp_flags(dev, gfp);
++	gfp = massage_gfp_flags(dev, gfp, 1);
+ 
+ 	ret = (void *) __get_free_pages(gfp, get_order(size));
+ 
 
