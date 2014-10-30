@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161151AbaJ3Upz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 16:45:55 -0400
-Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:37003
-	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933386AbaJ3Upy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 16:45:54 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 4/7] staging: comedi: don't allow read() on async
- command set up for "write"
-Thread-Topic: [PATCH 4/7] staging: comedi: don't allow read() on async
- command set up for "write"
-Thread-Index: AQHP9D8MkQ4h3yYEcUmBaoU/Io570pxI7omAgACeMID//4rPcA==
-Date: Thu, 30 Oct 2014 20:45:53 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8826017050@P3PWEX4MB008.ex4.secureserver.net>
-References: <1414672952-1587-1-git-send-email-abbotti@mev.co.uk>
- <1414672952-1587-5-git-send-email-abbotti@mev.co.uk>
- <DC148C5AA1CEBA4E87973D432B1C2D882600D340@P3PWEX4MB008.ex4.secureserver.net>
- <54529F35.1060108@mev.co.uk>
-In-Reply-To: <54529F35.1060108@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934796AbaJ3Uto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 16:49:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37264 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933193AbaJ3Utn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 16:49:43 -0400
+Date: Thu, 30 Oct 2014 21:49:38 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+cc: lkml <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        xen-devel@lists.xenproject.org, John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [RFC PATCH v2 03/11] time: Add rtc_tm_to_time64() safe version(using
+ time64_t)
+In-Reply-To: <CADcy93WzP-y8HXNrfx-vOCkruEdXVOhP2Up=KqW=vLuxHM7_YQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1410302118170.5308@nanos>
+References: <1414667745-7703-1-git-send-email-pang.xunlei@linaro.org> <1414667745-7703-4-git-send-email-pang.xunlei@linaro.org> <alpine.DEB.2.11.1410301444100.5308@nanos> <CADcy93WzP-y8HXNrfx-vOCkruEdXVOhP2Up=KqW=vLuxHM7_YQ@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 30, 2014 1:28 PM, Ian Abbott wrote:
-> On 30/10/14 18:05, Hartley Sweeten wrote:
->> On Thursday, October 30, 2014 5:42 AM, Ian Abbott wrote:
->  [snip]
->>>   	add_wait_queue(&async->wait_head, &wait);
->>>   	while (nbytes > 0 && !retval) {
->>> @@ -2249,6 +2253,10 @@ static ssize_t comedi_read(struct file *file, char __user *buf, size_t nbytes,
->>>   				retval = -EACCES;
->>>   				break;
->>>   			}
->>> +			if (async->cmd.flags & CMDF_WRITE) {
->>> +				retval = -EINVAL;
->>> +				break;
->>> +			}
->>
->> Is this second test really needed in the while() loop?
->>
->> For that matter, are the s->busy tests needed in the while() loop?
->
-> To answer your second question, some other thread using the same file 
-> object might have cancelled the asynchronous command, causing the 
-> current thread to see that the command is no longer active when it wakes up.
->
-> To answer your first question, that other thread might have managed to 
-> set up another asynchronous command in before we wake up, and it might 
-> have been set up as a "write" command (if the subdevice supports 
-> commands in both directions).  This doesn't detect the case when the 
-> other thread has managed to set up another "read" command, but since the 
-> current read() call hasn't read any data yet, we can just pretend we 
-> didn't know about the original command and read data from the new 
-> command instead.  (After all, the calling thread can't prove the read() 
-> started before the first command was cancelled, so we can just pretend 
-> it didn't.)
+On Fri, 31 Oct 2014, pang.xunlei wrote:
+> On 30 October 2014 21:55, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > What's wrong with changing it to:
+> >
+> > time64_t rtc_tm_to_time64(struct rtc_time *tm)
+> > {
+> >         return mktime64(......);
+> > }
+> 
+> Thank you for reminding me of this, and also a valuable principle when
+> doing things.
+> 
+> I wanna change it to:
+> void rtc_tm_to_time64(struct rtc_time *tm, time64_t *time)
+> {
+>     time = mktime64(......);
+> }
+> 
+> Just keep it the similar format as rtc_time64_to_tm(), is this acceptable?
 
-But when the command is first started by do_cmd_ioctl() we have this sequence:
+Why on earth want you do that? Just because it looks the same or what?
 
-	if (s->busy)
-		return -EBUSY;
-	...
-	s->busy = file;
-	ret = s->do_cmd(dev, s);
+Come on, it's not that hard and this is not the CS 'Java for dummies'
+course where you get an A for implementing 'looks the same' nonsense.
 
->From then on the s->busy pointer can only be cleared in do_become_nonbusy()
-(by way of a (*cancel)). So another command cannot be started until the current
-command is completed.
+For rtc_time64_to_tm() you really want to hand in the pointer for the
+result because returning the full structure is overkill as it involves
+heavy stack operations.
 
-The user could do a (*do_cmdtest) while a command is running but that does not
-effect the read/write of the async buffer.
+But for rtc_tm_to_time64() this is a different story. All relevant
+32bit architectures can deal with a u64 return value very well and in
+most cases it creates better code.
 
-Hartley
+Just do the simple experiment of implementing both, converting a dozen
+drivers and comparing the resulting assembler code on the call sites
+and the function itself. That should give you an objective decision
+criteria instead of "wanna change just because I feel it looks better".
+
+Another valuable principle of doing things to remember, right?
+
+Thanks,
+
+	tglx
+
+
+
+
 
 
