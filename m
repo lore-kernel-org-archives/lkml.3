@@ -1,37 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019AbaJ3BQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 21:16:19 -0400
-Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:27893 "EHLO
-	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756618AbaJ3BQS (ORCPT
+	id S1757346AbaJ3Bci (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 21:32:38 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:45548 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636AbaJ3Bch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 21:16:18 -0400
-Date: Wed, 29 Oct 2014 20:16:15 -0500
-From: Jeff Epler <jepler@unpythonic.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: incompatible pci sysfs change since 3.12 (5136b2da770d)
-Message-ID: <20141030011615.GB59253@unpythonic.net>
-References: <20141030002258.GA59253@unpythonic.net>
- <20141030003657.GA5487@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030003657.GA5487@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Oct 2014 21:32:37 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com
+Cc: peter@hurleysoftware.com, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] Bluetooth: Revert "Bluetooth: rfcomm: Remove unnecessary krfcommd event"
+Date: Wed, 29 Oct 2014 21:32:16 -0400
+Message-Id: <1414632736-18782-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.9.1
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 05:36:57PM -0700, Greg Kroah-Hartman wrote:
-> Ugh, that's my fault, I made a typo and should not have renamed the
-> sysfs file, very sorry about that.
-> 
-> I'll work on making up a patch to fix this and get it into the stable
-> kernels so that you don't have to have a work-around for very long.
+This reverts commit e5842cdb0f4f2c68f6acd39e286e5d10d8c073e8.
 
-Thank you!  I appreciate your quick response.
+We can't call rfcomm_process_sessions() while our task state is not
+TASK_RUNNING since rfcomm_process_sessions() tries to lock mutexes
+and sleep. The scheduler even complains about it:
 
-Jeff
+[   21.683959] WARNING: CPU: 13 PID: 8165 at kernel/sched/core.c:7305 __might_sleep+0xe5/0x1b0()
+[   21.683962] do not call blocking ops when !TASK_RUNNING; state=1 set at rfcomm_run (net/bluetooth/rfcomm/core.c:2096)
+[   21.683963] Modules linked in:
+[   21.683966] CPU: 13 PID: 8165 Comm: krfcommd Tainted: G        W      3.18.0-rc2-next-20141029-sasha-00035-gd14bbcb-dirty #1425
+[   21.683969]  ffffffffae2b4d0e 0000000000000000 ffff8805c0b23c00 ffff8805c0b23b98
+[   21.683972]  ffffffffad010b76 0000000000000000 ffff8805c0b23bf8 ffff8805c0b23be8
+[   21.683975]  ffffffffa3298dd8 ffffffffad0a0910 ffffffffa3309f95 ffff8805c0b23bc8
+[   21.683976] Call Trace:
+[   21.683979] dump_stack (lib/dump_stack.c:52)
+[   21.683982] warn_slowpath_common (kernel/panic.c:432)
+[   21.683985] ? __schedule (kernel/sched/core.c:2840)
+[   21.683987] ? __might_sleep (kernel/sched/core.c:7311)
+[   21.683990] warn_slowpath_fmt (kernel/panic.c:446)
+[   21.683993] ? rfcomm_run (net/bluetooth/rfcomm/core.c:2096)
+[   21.683996] ? rfcomm_run (net/bluetooth/rfcomm/core.c:2096)
+[   21.683999] __might_sleep (kernel/sched/core.c:7311)
+[   21.684002] mutex_lock_nested (kernel/locking/mutex.c:508 kernel/locking/mutex.c:622)
+[   21.684004] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2937 kernel/sched/core.c:2845)
+[   21.684008] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[   21.684011] rfcomm_run (net/bluetooth/rfcomm/core.c:1990 net/bluetooth/rfcomm/core.c:2102)
+[   21.684014] ? preempt_count_sub (kernel/sched/core.c:2641)
+[   21.684017] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2937 kernel/sched/core.c:2845)
+[   21.684020] ? rfcomm_process_rx (net/bluetooth/rfcomm/core.c:2088)
+[   21.684023] ? rfcomm_process_rx (net/bluetooth/rfcomm/core.c:2088)
+[   21.684025] kthread (kernel/kthread.c:207)
+[   21.684029] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
+[   21.684032] ? flush_kthread_work (kernel/kthread.c:176)
+[   21.684035] ret_from_fork (arch/x86/kernel/entry_64.S:348)
+[   21.684038] ? flush_kthread_work (kernel/kthread.c:176)
+
+Instead, just go to the old way oftracking wakeups.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ net/bluetooth/rfcomm/core.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+index bce9c3d..942de7765 100644
+--- a/net/bluetooth/rfcomm/core.c
++++ b/net/bluetooth/rfcomm/core.c
+@@ -48,6 +48,7 @@ static DEFINE_MUTEX(rfcomm_mutex);
+ #define rfcomm_lock()	mutex_lock(&rfcomm_mutex)
+ #define rfcomm_unlock()	mutex_unlock(&rfcomm_mutex)
+ 
++static unsigned long rfcomm_event;
+ 
+ static LIST_HEAD(session_list);
+ 
+@@ -105,6 +106,7 @@ static void rfcomm_schedule(void)
+ {
+ 	if (!rfcomm_thread)
+ 		return;
++	set_bit(RFCOMM_SCHED_WAKEUP, &rfcomm_event);
+ 	wake_up_process(rfcomm_thread);
+ }
+ 
+@@ -2092,18 +2094,19 @@ static int rfcomm_run(void *unused)
+ 
+ 	rfcomm_add_listener(BDADDR_ANY);
+ 
+-	while (1) {
++	while (!kthread_should_stop()) {
+ 		set_current_state(TASK_INTERRUPTIBLE);
+-
+-		if (kthread_should_stop())
+-			break;
++		if (!test_bit(RFCOMM_SCHED_WAKEUP, &rfcomm_event)) {
++			/* No pending events. Let's sleep.
++			 * Incoming connections and data will wake us up. */
++			schedule();
++		}
++		set_current_state(TASK_RUNNING);
+ 
+ 		/* Process stuff */
++		clear_bit(RFCOMM_SCHED_WAKEUP, &rfcomm_event);
+ 		rfcomm_process_sessions();
+-
+-		schedule();
+ 	}
+-	__set_current_state(TASK_RUNNING);
+ 
+ 	rfcomm_kill_listener();
+ 
+-- 
+1.7.10.4
+
