@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243AbaJ3C3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 22:29:03 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:40893 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385AbaJ3C3A (ORCPT
+	id S1757007AbaJ3Cft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 22:35:49 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:30895 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752117AbaJ3Cfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 22:29:00 -0400
-Message-ID: <5451A249.3040909@gmail.com>
-Date: Thu, 30 Oct 2014 10:28:25 +0800
-From: Zhou Wang <wangzhou.bry@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 29 Oct 2014 22:35:46 -0400
+Message-ID: <5451A3F5.9020903@fb.com>
+Date: Wed, 29 Oct 2014 20:35:33 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Frans Klaver <fransklaver@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        haojian.zhuang@gmail.com, wangzhou1@hisilicon.com,
-        Rob Herring <robh+dt@kernel.org>, xuwei5@hisilicon.com,
-        Kumar Gala <galak@codeaurora.org>, caizhiyong@huawei.com
-Subject: Re: [PATCH v3 1/2] mtd: hisilicon: add a new NAND controller driver
- for hisilicon hip04 Soc
-References: <1414493629-12570-1-git-send-email-wangzhou.bry@gmail.com> <1414493629-12570-2-git-send-email-wangzhou.bry@gmail.com> <CAH6sp9MuL+AAvMi1VrmOhq5Y-ri2DKO3g0h1hw040h5=CRu6UQ@mail.gmail.com>
-In-Reply-To: <CAH6sp9MuL+AAvMi1VrmOhq5Y-ri2DKO3g0h1hw040h5=CRu6UQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "Jason B. Akers" <jason.b.akers@intel.com>
+CC: <linux-ide@vger.kernel.org>, <dan.j.williams@intel.com>,
+        <kapil.karkra@intel.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
+References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox> <yq1k33il3b3.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1k33il3b3.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-30_01:2014-10-29,2014-10-29,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410300026
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年10月28日 22:22, Frans Klaver wrote:
-> On Tue, Oct 28, 2014 at 11:53 AM, Zhou Wang <wangzhou.bry@gmail.com> wrote:
->> +
->> +static int hisi_nfc_probe(struct platform_device *pdev)
->> +{
->> +       int ret = 0, irq, buswidth, flag, max_chips = HINFC504_MAX_CHIP;
->> +       struct device *dev = &pdev->dev;
->> +       struct hinfc_host *host;
->> +       struct nand_chip  *chip;
->> +       struct mtd_info   *mtd;
->> +       struct resource   *res;
->> +       struct device_node *np = dev->of_node;
->> +       struct mtd_part_parser_data ppdata;
->> +
->> +       host = devm_kzalloc(dev, sizeof(*host), GFP_KERNEL);
->> +       if (!host)
->> +               return -ENOMEM;
->> +       host->dev = dev;
->> +
->> +       platform_set_drvdata(pdev, host);
->> +       chip = &host->chip;
->> +       mtd  = &host->mtd;
->> +
->> +       irq = platform_get_irq(pdev, 0);
->> +       if (irq < 0) {
->> +               dev_err(dev, "no IRQ resource defined\n");
->> +               ret = -ENXIO;
->> +               goto err_res;
->> +       }
->> +
->> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +       host->iobase = devm_ioremap_resource(dev, res);
->> +       if (IS_ERR(host->iobase)) {
->> +               ret = PTR_ERR(host->iobase);
->> +               dev_err(dev, "devm_ioremap_resource[0] fail\n");
->> +               goto err_res;
->> +       }
->> +
->> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
->> +       chip->IO_ADDR_R = chip->IO_ADDR_W = devm_ioremap_resource(dev, res);
->> +       if (IS_ERR(chip->IO_ADDR_R)) {
->> +               ret = PTR_ERR(chip->IO_ADDR_R);
->> +               dev_err(dev, "devm_ioremap_resource[1] fail\n");
->> +               goto err_res;
->> +       }
->> +
->> +       mtd->priv               = chip;
->> +       mtd->owner              = THIS_MODULE;
->> +       mtd->name               = "hisi_nand";
+On 2014-10-29 20:05, Martin K. Petersen wrote:
+>>>>>> "Jason" == Jason B Akers <jason.b.akers@intel.com> writes:
 >
-> + mtd->dev.parent = &pdev->dev;
+> Jason> The following series enables the use of Solid State hybrid drives
+> Jason> ATA standard 3.2 defines the hybrid information feature, which
+> Jason> provides a means for the host driver to provide hints to the
+> Jason> SSHDs to guide what to place on the SSD/NAND portion and what to
+> Jason> place on the magnetic media.
 >
-> This is a bug that lives in a bunch of other nand drivers as well.
-> add_mtd_device (called by mtd_device_parse_register()) expects
-> dev.parent to be set for properly adding a device reference to the
-> sysfs node.
+> I have been ripping my hair out in this department for a while.
 >
-> Frans
+> A colleague and I presented our findings at SNIA SDC a few weeks
+> ago. I'm trying to find out if there's an embargo on the slides or if I
+> can post them.
 >
-My mistake, I will add this line. Thanks a lot for your reminding.
+> First of all I completely agree with Dave's comments about hooking into
+> fadvise()/madvise().
 
-Kind regards,
-Zhou Wang
+The problem with xadvise() is that it handles only one part of this - it 
+handles the case of tying some sort of IO related priority information 
+to an inode. It does not handle the case of different parts of the file, 
+at least not without adding specific extra tracking for this on the 
+kernel side.
+
+I think we've needed a proper API for passing in appropriate hints on a 
+per-io basis for a LONG time.
+
+> My challenge with hints has been trying to bridge all the various
+> existing approaches with the new stuff that's coming down the pipe in
+> T10/T13 (LBMD hints) and NFS v4.2 ditto. That turned into a huge mapping
+> table as well as a few amendments to what's currently being worked on in
+> the standards bodies.
+
+That is the big challenge. We've tried (and failed) in the past to 
+define a set of hints that make sense. It'd be a shame to add something 
+that's specific to a given transport/technology. That said, this set of 
+hints do seem pretty basic and would not necessarily be a bad place to 
+start. But they are still very specific to this use case. And who knows 
+what will happen on the device side. I might assume that WILLNEED is the 
+same as HOT, and that DONTNEED is the same as cold. And then 
+applications get upset when vendor X and Y treat them somewhat 
+differently, because that's how it fit into their architecture.
+
+This is the primary reason that hints never happened previously.
+
+-- 
+Jens Axboe
 
