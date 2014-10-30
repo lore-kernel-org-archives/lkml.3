@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901AbaJ3LIU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 07:08:20 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:63965 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758162AbaJ3LIT (ORCPT
+	id S1758999AbaJ3LJa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 07:09:30 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:42990 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758611AbaJ3LJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 07:08:19 -0400
+	Thu, 30 Oct 2014 07:09:28 -0400
+Message-ID: <54521C65.8060603@cogentembedded.com>
+Date: Thu, 30 Oct 2014 14:09:25 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1414655193-16952-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1414655193-16952-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Thu, 30 Oct 2014 12:08:18 +0100
-Message-ID: <CAPDyKFqFOb9L6WyFhLbSY-dQy_75YVUhTzVsBku1BKcEMmgpBg@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: davinci: Fix and simplify probe failure path
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kevin Cernekee <cernekee@gmail.com>, arnd@arndb.de, f.fainelli@gmail.com,
+        tglx@linutronix.de, jason@lakedaemon.net, ralf@linux-mips.org,
+        lethal@linux-sh.org
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH V2 08/15] irqchip: bcm7120-l2: Eliminate bad IRQ check
+References: <1414635488-14137-1-git-send-email-cernekee@gmail.com> <1414635488-14137-9-git-send-email-cernekee@gmail.com>
+In-Reply-To: <1414635488-14137-9-git-send-email-cernekee@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 October 2014 08:46, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
-> The sequence of resource release in probe failure path in this
-> driver was wrong and needed fixes to cleanly unload the driver.
-> This changes does the same by switching to managed resources and
-> fixes return path to release resource in proper sequence.
->
-> Cc: Chris Ball <chris@printf.net>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: linux-mmc@vger.kernel.org
+Hello.
 
-Please remove these Ccs above from the commit message. It's not needed
-when you anyway need to send the patches directly to these addresses.
+On 10/30/2014 5:18 AM, Kevin Cernekee wrote:
 
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> This check may be prone to race conditions, e.g.
+
+> 1) Some external event (e.g. GPIO level) causes an IRQ to become pending
+> 2) Peripheral asserts the L2 IRQ
+> 3) CPU takes an interrupt
+> 4) The event from #1 goes away
+> 5) bcm7120_l2_intc_irq_handle() reads back a 0 status
+
+> Unlike the hardware supported by brcmstb-l2, the bcm7120-l2 controller
+> does not latch the IRQ status.  Bits can change if the inputs to the
+> controller change.  Also, do_bad_IRQ() is an ARM-specific macro.
+
+> So let's just nuke it.
+
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 > ---
-> Changes since v1:
-> - Dropped IS_ERR check on devm_ioremap() return.
-> - Fixed sequence on mmc_remove_host in fail as well as in remove function
->
->  drivers/mmc/host/davinci_mmc.c |   91 +++++++++++++++-------------------------
->  1 file changed, 33 insertions(+), 58 deletions(-)
->
-> diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
-> index 5d4c5e0..dc49b22 100644
-> --- a/drivers/mmc/host/davinci_mmc.c
-> +++ b/drivers/mmc/host/davinci_mmc.c
-> @@ -1242,22 +1242,20 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
->                 return -ENOENT;
->         }
->
-> -       ret = -ENODEV;
->         r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->         irq = platform_get_irq(pdev, 0);
->         if (!r || irq == NO_IRQ)
-> -               goto out;
-> +               return -ENODEV;
->
-> -       ret = -EBUSY;
->         mem_size = resource_size(r);
-> -       mem = request_mem_region(r->start, mem_size, pdev->name);
-> +       mem = devm_request_mem_region(&pdev->dev, r->start, mem_size,
-> +                                     pdev->name);
->         if (!mem)
-> -               goto out;
-> +               return -EBUSY;
->
-> -       ret = -ENOMEM;
->         mmc = mmc_alloc_host(sizeof(struct mmc_davinci_host), &pdev->dev);
->         if (!mmc)
-> -               goto out;
-> +               return -ENOMEM;
->
->         host = mmc_priv(mmc);
->         host->mmc = mmc;        /* Important */
-> @@ -1275,15 +1273,16 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
->                 host->txdma = r->start;
->
->         host->mem_res = mem;
-> -       host->base = ioremap(mem->start, mem_size);
-> -       if (!host->base)
-> -               goto out;
-> +       host->base = devm_ioremap(&pdev->dev, mem->start, mem_size);
+>   drivers/irqchip/irq-bcm7120-l2.c | 9 ---------
+>   1 file changed, 9 deletions(-)
 
-I realized that you should use devm_ioremap_resource() instead. That
-would simplify the code even more.
-
+> diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
+> index b9f4fb8..49d8f3d 100644
+> --- a/drivers/irqchip/irq-bcm7120-l2.c
+> +++ b/drivers/irqchip/irq-bcm7120-l2.c
 [...]
+> @@ -51,19 +49,12 @@ static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
+>   	chained_irq_enter(chip, desc);
+>
+>   	status = __raw_readl(b->base + IRQSTAT);
+> -
+> -	if (status == 0) {
+> -		do_bad_IRQ(irq, desc);
+> -		goto out;
+> -	}
+> -
+>   	do {
 
-Kind regards
-Uffe
+    I think this needs to now become:
+
+	while (status) {
+
+>   		irq = ffs(status) - 1;
+>   		status &= ~(1 << irq);
+
+    In case 'status' is 0, 'irq' will be equal to -1. How does the shift by 
+negative value work?
+
+>   		generic_handle_irq(irq_find_mapping(b->domain, irq));
+>   	} while (status);
+
+WBR, Sergei
+
