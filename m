@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758814AbaJ3Gsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 02:48:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38206 "EHLO
+	id S1758824AbaJ3Gsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 02:48:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38213 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758277AbaJ3Gsf (ORCPT
+	with ESMTP id S1757506AbaJ3Gsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 02:48:35 -0400
-Date: Wed, 29 Oct 2014 23:47:38 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-5e17b28f1e246b98e08cb463f7d72cff6415fc53@git.kernel.org>
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, namhyung@kernel.org, acme@redhat.com,
-        peterz@infradead.org, mingo@kernel.org, hemant@linux.vnet.ibm.com,
-        tglx@linutronix.de, srikar@linux.vnet.ibm.com
-Reply-To: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, hpa@zytor.com, acme@redhat.com,
-        peterz@infradead.org, mingo@kernel.org, hemant@linux.vnet.ibm.com,
-        tglx@linutronix.de, srikar@linux.vnet.ibm.com
-In-Reply-To: <20141027203131.21219.35170.stgit@localhost.localdomain>
-References: <20141027203131.21219.35170.stgit@localhost.localdomain>
+	Thu, 30 Oct 2014 02:48:47 -0400
+Date: Wed, 29 Oct 2014 23:47:55 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-3c659eedada2fbf909c5818848753a6647a56426@git.kernel.org>
+Cc: jolsa@kernel.org, eranian@google.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, namhyung@gmail.com,
+        acme@redhat.com, peterz@infradead.org, paulus@samba.org,
+        mingo@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com
+Reply-To: jolsa@kernel.org, eranian@google.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, namhyung@gmail.com, hpa@zytor.com,
+        acme@redhat.com, peterz@infradead.org, paulus@samba.org,
+        jolsa@redhat.com, mingo@kernel.org, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com
+In-Reply-To: <1414417770-18602-2-git-send-email-adrian.hunter@intel.com>
+References: <1414417770-18602-2-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe:
-  Add --quiet option to suppress output result message
-Git-Commit-ID: 5e17b28f1e246b98e08cb463f7d72cff6415fc53
+Subject: [tip:perf/core] perf tools: Add id index
+Git-Commit-ID: 3c659eedada2fbf909c5818848753a6647a56426
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,125 +37,378 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5e17b28f1e246b98e08cb463f7d72cff6415fc53
-Gitweb:     http://git.kernel.org/tip/5e17b28f1e246b98e08cb463f7d72cff6415fc53
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Mon, 27 Oct 2014 16:31:31 -0400
+Commit-ID:  3c659eedada2fbf909c5818848753a6647a56426
+Gitweb:     http://git.kernel.org/tip/3c659eedada2fbf909c5818848753a6647a56426
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Mon, 27 Oct 2014 15:49:22 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 Oct 2014 10:32:49 -0200
+CommitDate: Wed, 29 Oct 2014 11:24:47 -0200
 
-perf probe: Add --quiet option to suppress output result message
+perf tools: Add id index
 
-Add --quiet(-q) option to suppress output result message for --add, and
---del options (Note that --lines/funcs/vars are not affected). This
-option is useful if you run the perf probe inside your scripts.
+Add an index of the event identifiers, in preparation for Intel PT.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+The event id (also called the sample id) is a unique number
+allocated by the kernel to the event created by perf_event_open().  Events
+can include the event id by having a sample type including PERF_SAMPLE_ID or
+PERF_SAMPLE_IDENTIFIER.
+
+Currently the main use of the event id is to match an event back to the
+evsel to which it belongs i.e. perf_evlist__id2evsel()
+
+The purpose of this patch is to make it possible to match an event back to
+the mmap from which it was read.  The reason that is useful is because the
+mmap represents a time-ordered context (either for a cpu or for a thread).
+Intel PT decodes trace information on that basis.  In full-trace mode, that
+information can be recorded when the Intel PT trace is read, but in
+sample-mode the Intel PT trace data is embedded in a sample and it is in
+that case that the "id index" is needed.
+
+So the mmaps are numbered (idx) and the cpu and tid recorded against the id
+by perf_evlist__set_sid_idx() which is called by perf_evlist__mmap_per_evsel().
+
+That information is recorded on the perf.data file in the new "id index".
+idx, cpu and tid are added to struct perf_sample_id (which is the node of
+evlist's hash table to match ids to evsels).  The information can be
+retrieved using perf_evlist__id2sid().  Note however this all depends on
+having a sample type including PERF_SAMPLE_ID or PERF_SAMPLE_IDENTIFIER,
+otherwise ids are not recorded.
+
+The "id index" is a synthesized event record which will be created when
+Intel PT sampling is used by calling perf_event__synthesize_id_index().
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20141027203131.21219.35170.stgit@localhost.localdomain
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1414417770-18602-2-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-probe.c    | 11 +++++++++++
- tools/perf/util/probe-event.c | 18 +++++++++---------
- 2 files changed, 20 insertions(+), 9 deletions(-)
+ tools/perf/builtin-inject.c |   1 +
+ tools/perf/util/event.c     |   1 +
+ tools/perf/util/event.h     |  15 ++++++
+ tools/perf/util/evlist.c    |  26 ++++++++--
+ tools/perf/util/evsel.h     |   3 ++
+ tools/perf/util/session.c   | 122 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.h   |  10 ++++
+ tools/perf/util/tool.h      |   3 +-
+ 8 files changed, 177 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 2d3577d..921bb69 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -55,6 +55,7 @@ static struct {
- 	bool show_funcs;
- 	bool mod_events;
- 	bool uprobes;
-+	bool quiet;
- 	int nevents;
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
-@@ -315,6 +316,8 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct option options[] = {
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show parsed arguments, etc)"),
-+	OPT_BOOLEAN('q', "quiet", &params.quiet,
-+		    "be quiet (do not show any mesages)"),
- 	OPT_BOOLEAN('l', "list", &params.list_events,
- 		    "list up current probe events"),
- 	OPT_CALLBACK('d', "del", NULL, "[GROUP:]EVENT", "delete a probe event.",
-@@ -404,6 +407,14 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 06f1758..84df2de 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -409,6 +409,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.tracing_data	= perf_event__repipe_op2_synth,
+ 			.finished_round	= perf_event__repipe_op2_synth,
+ 			.build_id	= perf_event__repipe_op2_synth,
++			.id_index	= perf_event__repipe_op2_synth,
+ 		},
+ 		.input_name  = "-",
+ 		.samples = LIST_HEAD_INIT(inject.samples),
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index e00a29f..6c6d044 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -28,6 +28,7 @@ static const char *perf_event__names[] = {
+ 	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
+ 	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
+ 	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
++	[PERF_RECORD_ID_INDEX]			= "ID_INDEX",
+ };
+ 
+ const char *perf_event__name(unsigned int id)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 5f0e0b8..8c7fe9d 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -187,6 +187,7 @@ enum perf_user_event_type { /* above any possible kernel type */
+ 	PERF_RECORD_HEADER_TRACING_DATA		= 66,
+ 	PERF_RECORD_HEADER_BUILD_ID		= 67,
+ 	PERF_RECORD_FINISHED_ROUND		= 68,
++	PERF_RECORD_ID_INDEX			= 69,
+ 	PERF_RECORD_HEADER_MAX
+ };
+ 
+@@ -239,6 +240,19 @@ struct tracing_data_event {
+ 	u32 size;
+ };
+ 
++struct id_index_entry {
++	u64 id;
++	u64 idx;
++	u64 cpu;
++	u64 tid;
++};
++
++struct id_index_event {
++	struct perf_event_header header;
++	u64 nr;
++	struct id_index_entry entries[0];
++};
++
+ union perf_event {
+ 	struct perf_event_header	header;
+ 	struct mmap_event		mmap;
+@@ -253,6 +267,7 @@ union perf_event {
+ 	struct event_type_event		event_type;
+ 	struct tracing_data_event	tracing_data;
+ 	struct build_id_event		build_id;
++	struct id_index_event		id_index;
+ };
+ 
+ void perf_event__print_totals(void);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 3c9e77d..0babd39 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -527,6 +527,22 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
+ 	return 0;
+ }
+ 
++static void perf_evlist__set_sid_idx(struct perf_evlist *evlist,
++				     struct perf_evsel *evsel, int idx, int cpu,
++				     int thread)
++{
++	struct perf_sample_id *sid = SID(evsel, cpu, thread);
++	sid->idx = idx;
++	if (evlist->cpus && cpu >= 0)
++		sid->cpu = evlist->cpus->map[cpu];
++	else
++		sid->cpu = -1;
++	if (!evsel->system_wide && evlist->threads && thread >= 0)
++		sid->tid = evlist->threads->map[thread];
++	else
++		sid->tid = -1;
++}
++
+ struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id)
+ {
+ 	struct hlist_head *head;
+@@ -805,9 +821,13 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+ 			return -1;
  		}
+ 
+-		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+-		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
+-			return -1;
++		if (evsel->attr.read_format & PERF_FORMAT_ID) {
++			if (perf_evlist__id_add_fd(evlist, evsel, cpu, thread,
++						   fd) < 0)
++				return -1;
++			perf_evlist__set_sid_idx(evlist, evsel, idx, cpu,
++						 thread);
++		}
  	}
  
-+	if (params.quiet) {
-+		if (verbose != 0) {
-+			pr_err("  Error: -v and -q are exclusive.\n");
-+			return -EINVAL;
+ 	return 0;
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index d3854c4..9797909 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -36,6 +36,9 @@ struct perf_sample_id {
+ 	struct hlist_node 	node;
+ 	u64		 	id;
+ 	struct perf_evsel	*evsel;
++	int			idx;
++	int			cpu;
++	pid_t			tid;
+ 
+ 	/* Holds total ID period value for PERF_SAMPLE_READ processing. */
+ 	u64			period;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 7760108..27a0049 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -228,6 +228,15 @@ static int process_finished_round(struct perf_tool *tool,
+ 				  union perf_event *event,
+ 				  struct perf_session *session);
+ 
++static int process_id_index_stub(struct perf_tool *tool __maybe_unused,
++				 union perf_event *event __maybe_unused,
++				 struct perf_session *perf_session
++				 __maybe_unused)
++{
++	dump_printf(": unhandled!\n");
++	return 0;
++}
++
+ void perf_tool__fill_defaults(struct perf_tool *tool)
+ {
+ 	if (tool->sample == NULL)
+@@ -262,6 +271,8 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
+ 		else
+ 			tool->finished_round = process_finished_round_stub;
+ 	}
++	if (tool->id_index == NULL)
++		tool->id_index = process_id_index_stub;
+ }
+  
+ static void swap_sample_id_all(union perf_event *event, void *data)
+@@ -460,6 +471,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
+ 	[PERF_RECORD_HEADER_EVENT_TYPE]	  = perf_event__event_type_swap,
+ 	[PERF_RECORD_HEADER_TRACING_DATA] = perf_event__tracing_data_swap,
+ 	[PERF_RECORD_HEADER_BUILD_ID]	  = NULL,
++	[PERF_RECORD_ID_INDEX]		  = perf_event__all64_swap,
+ 	[PERF_RECORD_HEADER_MAX]	  = NULL,
+ };
+ 
+@@ -888,6 +900,8 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+ 		return tool->build_id(tool, event, session);
+ 	case PERF_RECORD_FINISHED_ROUND:
+ 		return tool->finished_round(tool, event, session);
++	case PERF_RECORD_ID_INDEX:
++		return tool->id_index(tool, event, session);
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -1594,3 +1608,111 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ out:
+ 	return err;
+ }
++
++int perf_event__process_id_index(struct perf_tool *tool __maybe_unused,
++				 union perf_event *event,
++				 struct perf_session *session)
++{
++	struct perf_evlist *evlist = session->evlist;
++	struct id_index_event *ie = &event->id_index;
++	size_t i, nr, max_nr;
++
++	max_nr = (ie->header.size - sizeof(struct id_index_event)) /
++		 sizeof(struct id_index_entry);
++	nr = ie->nr;
++	if (nr > max_nr)
++		return -EINVAL;
++
++	if (dump_trace)
++		fprintf(stdout, " nr: %zu\n", nr);
++
++	for (i = 0; i < nr; i++) {
++		struct id_index_entry *e = &ie->entries[i];
++		struct perf_sample_id *sid;
++
++		if (dump_trace) {
++			fprintf(stdout,	" ... id: %"PRIu64, e->id);
++			fprintf(stdout,	"  idx: %"PRIu64, e->idx);
++			fprintf(stdout,	"  cpu: %"PRId64, e->cpu);
++			fprintf(stdout,	"  tid: %"PRId64"\n", e->tid);
 +		}
-+		verbose = -1;
++
++		sid = perf_evlist__id2sid(evlist, e->id);
++		if (!sid)
++			return -ENOENT;
++		sid->idx = e->idx;
++		sid->cpu = e->cpu;
++		sid->tid = e->tid;
++	}
++	return 0;
++}
++
++int perf_event__synthesize_id_index(struct perf_tool *tool,
++				    perf_event__handler_t process,
++				    struct perf_evlist *evlist,
++				    struct machine *machine)
++{
++	union perf_event *ev;
++	struct perf_evsel *evsel;
++	size_t nr = 0, i = 0, sz, max_nr, n;
++	int err;
++
++	pr_debug2("Synthesizing id index\n");
++
++	max_nr = (UINT16_MAX - sizeof(struct id_index_event)) /
++		 sizeof(struct id_index_entry);
++
++	list_for_each_entry(evsel, &evlist->entries, node)
++		nr += evsel->ids;
++
++	n = nr > max_nr ? max_nr : nr;
++	sz = sizeof(struct id_index_event) + n * sizeof(struct id_index_entry);
++	ev = zalloc(sz);
++	if (!ev)
++		return -ENOMEM;
++
++	ev->id_index.header.type = PERF_RECORD_ID_INDEX;
++	ev->id_index.header.size = sz;
++	ev->id_index.nr = n;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		u32 j;
++
++		for (j = 0; j < evsel->ids; j++) {
++			struct id_index_entry *e;
++			struct perf_sample_id *sid;
++
++			if (i >= n) {
++				err = process(tool, ev, NULL, machine);
++				if (err)
++					goto out_err;
++				nr -= n;
++				i = 0;
++			}
++
++			e = &ev->id_index.entries[i++];
++
++			e->id = evsel->id[j];
++
++			sid = perf_evlist__id2sid(evlist, e->id);
++			if (!sid) {
++				free(ev);
++				return -ENOENT;
++			}
++
++			e->idx = sid->idx;
++			e->cpu = sid->cpu;
++			e->tid = sid->tid;
++		}
 +	}
 +
- 	if (params.max_probe_points == 0)
- 		params.max_probe_points = MAX_PROBES;
++	sz = sizeof(struct id_index_event) + nr * sizeof(struct id_index_entry);
++	ev->id_index.header.size = sz;
++	ev->id_index.nr = nr;
++
++	err = process(tool, ev, NULL, machine);
++out_err:
++	free(ev);
++
++	return err;
++}
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index a4be851..d8521ac 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -126,4 +126,14 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ extern volatile int session_done;
  
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index c150ca4..28eb141 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1910,21 +1910,21 @@ static int show_perf_probe_event(struct perf_probe_event *pev,
- 	if (ret < 0)
- 		return ret;
- 
--	printf("  %-20s (on %s", buf, place);
-+	pr_info("  %-20s (on %s", buf, place);
- 	if (module)
--		printf(" in %s", module);
-+		pr_info(" in %s", module);
- 
- 	if (pev->nargs > 0) {
--		printf(" with");
-+		pr_info(" with");
- 		for (i = 0; i < pev->nargs; i++) {
- 			ret = synthesize_perf_probe_arg(&pev->args[i],
- 							buf, 128);
- 			if (ret < 0)
- 				break;
--			printf(" %s", buf);
-+			pr_info(" %s", buf);
- 		}
- 	}
--	printf(")\n");
-+	pr_info(")\n");
- 	free(place);
- 	return ret;
- }
-@@ -2124,7 +2124,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 	}
- 
- 	ret = 0;
--	printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
-+	pr_info("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
- 	for (i = 0; i < ntevs; i++) {
- 		tev = &tevs[i];
- 		if (pev->event)
-@@ -2179,8 +2179,8 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 
- 	if (ret >= 0) {
- 		/* Show how to use the event. */
--		printf("\nYou can now use it in all perf tools, such as:\n\n");
--		printf("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
-+		pr_info("\nYou can now use it in all perf tools, such as:\n\n");
-+		pr_info("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
- 			 tev->event);
- 	}
- 
-@@ -2444,7 +2444,7 @@ static int __del_trace_probe_event(int fd, struct str_node *ent)
- 		goto error;
- 	}
- 
--	printf("Removed event: %s\n", ent->s);
-+	pr_info("Removed event: %s\n", ent->s);
- 	return 0;
- error:
- 	pr_warning("Failed to delete event: %s\n",
+ #define session_done()	ACCESS_ONCE(session_done)
++
++int perf_event__process_id_index(struct perf_tool *tool,
++				 union perf_event *event,
++				 struct perf_session *session);
++
++int perf_event__synthesize_id_index(struct perf_tool *tool,
++				    perf_event__handler_t process,
++				    struct perf_evlist *evlist,
++				    struct machine *machine);
++
+ #endif /* __PERF_SESSION_H */
+diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
+index f116369..bb2708b 100644
+--- a/tools/perf/util/tool.h
++++ b/tools/perf/util/tool.h
+@@ -39,7 +39,8 @@ struct perf_tool {
+ 	event_attr_op	attr;
+ 	event_op2	tracing_data;
+ 	event_op2	finished_round,
+-			build_id;
++			build_id,
++			id_index;
+ 	bool		ordered_events;
+ 	bool		ordering_requires_timestamps;
+ };
