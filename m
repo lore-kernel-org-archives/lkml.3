@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161232AbaJ3RnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 13:43:06 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:52816 "EHLO
+	id S1161261AbaJ3Rnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 13:43:41 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:52779 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934323AbaJ3RnC (ORCPT
+	with ESMTP id S1758245AbaJ3Rl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 13:43:02 -0400
-Date: Thu, 30 Oct 2014 18:42:54 +0100
+	Thu, 30 Oct 2014 13:41:26 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Felipe Balbi <balbi@ti.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu
 Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu, alexandre.belloni@free-electrons.com,
+        alexandre.belloni@free-electrons.com,
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 1/7] usb: move the OTG state from the USB PHY to the
- OTG structure
-Message-ID: <20141030174254.GA6764@kwain>
-References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
- <1414514141-31767-2-git-send-email-antoine.tenart@free-electrons.com>
- <20141030163148.GF10130@saruman>
- <20141030163513.GI10130@saruman>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141030163513.GI10130@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Subject: [PATCH v8 4/7] usb: allow to supply the PHY in the drivers when using HCD
+Date: Thu, 30 Oct 2014 18:41:16 +0100
+Message-Id: <1414690879-7184-5-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1414690879-7184-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+This patch modify the generic code handling PHYs to allow them to be
+supplied from the drivers. This adds checks to ensure no PHY was already
+there when looking for one in the generic code. This also makes sure we
+do not modify its state in the generic HCD functions, it was provided by
+the driver.
 
-On Thu, Oct 30, 2014 at 11:35:13AM -0500, Felipe Balbi wrote:
-> On Thu, Oct 30, 2014 at 11:31:48AM -0500, Felipe Balbi wrote:
-> > On Tue, Oct 28, 2014 at 05:35:35PM +0100, Antoine Tenart wrote:
-> > > Before using the PHY framework instead of the USB PHY one, we need to
-> > > move the OTG state into another place, since it won't be available when
-> > > USB PHY isn't used. This patch moves the OTG state into the OTG
-> > > structure, and makes all the needed modifications in the drivers
-> > > using the OTG state.
-> > > 
-> > > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> > > Acked-by: Peter Chen <peter.chen@freescale.com>
-> > 
-> > Acked-by: Felipe Balbi <balbi@ti.com>
-> 
-> Please rebase on my testing/next and I'll take the series. When
-> rebasing, then add Peter's Tested-by/Acked-by where they're missing.
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+---
+ drivers/usb/core/hcd.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-I just re-sent the series, rebased on your testing/next branch.
-
-Antoine
-
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index b84fb141e122..6a2a2fd990ab 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2648,7 +2648,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 		}
+ 	}
+ 
+-	if (IS_ENABLED(CONFIG_GENERIC_PHY)) {
++	if (IS_ENABLED(CONFIG_GENERIC_PHY) && !hcd->phy) {
+ 		struct phy *phy = phy_get(hcd->self.controller, "usb");
+ 
+ 		if (IS_ERR(phy)) {
+@@ -2668,6 +2668,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 				goto err_phy;
+ 			}
+ 			hcd->phy = phy;
++			hcd->remove_phy = 1;
+ 		}
+ 	}
+ 
+@@ -2814,7 +2815,7 @@ err_allocate_root_hub:
+ err_register_bus:
+ 	hcd_buffer_destroy(hcd);
+ err_create_buf:
+-	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
++	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
+ 		phy_power_off(hcd->phy);
+ 		phy_exit(hcd->phy);
+ 		phy_put(hcd->phy);
+@@ -2898,7 +2899,7 @@ void usb_remove_hcd(struct usb_hcd *hcd)
+ 	usb_deregister_bus(&hcd->self);
+ 	hcd_buffer_destroy(hcd);
+ 
+-	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
++	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
+ 		phy_power_off(hcd->phy);
+ 		phy_exit(hcd->phy);
+ 		phy_put(hcd->phy);
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+2.1.0
+
