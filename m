@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161263AbaJ3VkE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 17:40:04 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60996 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933386AbaJ3VkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 17:40:01 -0400
-Date: Thu, 30 Oct 2014 22:39:54 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: Chen Yucong <slaoub@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Fwd: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
- machine_check_poll() resets it
-Message-ID: <20141030213954.GG11178@pd.tnic>
-References: <20141009165339.GA11360@arav-dinar>
- <20141009173529.GC17647@pd.tnic>
- <5436DB72.1090507@amd.com>
- <20141021202840.GD4420@pd.tnic>
- <1413942678.17435.11.camel@debian>
- <20141022081618.GA2511@pd.tnic>
- <1413968014.7070.12.camel@debian>
- <20141022093042.GB2511@pd.tnic>
- <54510EFC.2080107@amd.com>
- <54528BB1.7080401@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <54528BB1.7080401@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S934815AbaJ3VmU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 17:42:20 -0400
+Received: from theshire.emacs.cl ([192.155.80.235]:36342 "EHLO
+	theshire.emacs.cl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933193AbaJ3VmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 17:42:19 -0400
+Message-ID: <1414705328.1821.7.camel@linux-t7sj.site>
+Subject: Re: [PATCH] kernel: Refactor task_struct to use numa_faults instead
+ of numa_* pointers
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Iulia Manda <iulia.manda21@gmail.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@redhat.com,
+        peterz@infradead.org, mgorman@suse.de
+Date: Thu, 30 Oct 2014 14:42:08 -0700
+In-Reply-To: <20141030193817.GA17859@winterfell>
+References: <20141030193817.GA17859@winterfell>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 02:04:17PM -0500, Aravind Gopalakrishnan wrote:
-> Hi Boris,
-> I have tested the branch with this bit:
+On Thu, 2014-10-30 at 21:38 +0200, Iulia Manda wrote:
+> This patch simplifies task_struct by removing the four numa_* pointers
+> in the same array and replacing them with the array pointer. By doing this,
+> the size of task_struct is reduced.
+
+This is always welcome, but for completeness you should specify by how
+much on <insert your favorite arch>. afaict you're removing 3 ulong
+pointers.
+
+> A new parameter is added to the task_faults_idx function so that it can return
+> an index to the correct offset, corresponding with the old precalculated
+> pointers.
 > 
->  if (b.interrupt_capable) {
->             ... ...
->             if (mce_threshold_vector != amd_threshold_interrupt)
->                     mce_threshold_vector = amd_threshold_interrupt;
->     }
+> All of the code in sched/ that depended on task_faults_idx and numa_* was
+> changed in order to match the new logic.
 > 
-> and it works fine.
+> Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
 
-Good, I'll adjust Chen's patch tomorrow then and send up.
+Acked-by: Davidlohr Bueso <dave@stgolabs.net>
 
-Thanks a lot for testing!
+With some suggestions below.
 
--- 
-Regards/Gruss,
-    Boris.
+> ---
+>  include/linux/sched.h |   40 ++++++++++--------
+>  kernel/sched/core.c   |    3 +-
+>  kernel/sched/debug.c  |    4 +-
+>  kernel/sched/fair.c   |  110 +++++++++++++++++++++++++------------------------
+>  4 files changed, 82 insertions(+), 75 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 5e344bb..bf8c19f 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -796,6 +796,15 @@ struct sched_info {
+>  };
+>  #endif /* defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT) */
+>  
+> +#ifdef CONFIG_NUMA_BALANCING
+> +enum numa_faults_stats {
+> +	NUMA_MEM = 0,
+> +	NUMA_CPU,
+> +	NUMA_MEMBUF,
+> +	NUMA_CPUBUF
+> +};
+> +#endif
+> +
+>  #ifdef CONFIG_TASK_DELAY_ACCT
+>  struct task_delay_info {
+>  	spinlock_t	lock;
+> @@ -1558,28 +1567,23 @@ struct task_struct {
+>  	struct numa_group *numa_group;
+>  
+>  	/*
+> -	 * Exponential decaying average of faults on a per-node basis.
+> -	 * Scheduling placement decisions are made based on the these counts.
+> -	 * The values remain static for the duration of a PTE scan
+> +	 * numa_faults is an array split into four regions:
+> +	 * faults_memory, faults_cpu, faults_memory_buffer, faults_cpu_buffer
+> +	 * in this precise order.
+> +	 *
+> +	 * faults_memory: Exponential decaying average of faults on a per-node
+> +	 * basis. Scheduling placement decisions are made based on these
+> +	 * counts. The values remain static for the duration of a PTE scan.
+> +	 * faults_cpu: Track the nodes the process was running on when a NUMA
+> +	 * hinting fault was incurred.
+> +	 * faults_memory_buffer and faults_cpu_buffer: Record faults per node
+> +	 * during the current scan window. When the scan completes, the counts
+> +	 * in faults_memory and faults_cpu decay and these values are copied.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+How about moving these comments to where you have the enum
+numa_faults_stats? And just point to that here.
+
+[...]
+> -static inline int task_faults_idx(int nid, int priv)
+> +/*
+> + * The averaged statistics, shared & private, memory & cpu,
+> + * occupy the first half of the array. The second half of the
+> + * array is for current counters, which are averaged into the
+> + * first set by task_numa_placement.
+> + */
+> +static inline int task_faults_idx(enum numa_faults_stats s, int nid, int priv)
+>  {
+> -	return NR_NUMA_HINT_FAULT_TYPES * nid + priv;
+> +	return s * NR_NUMA_HINT_FAULT_TYPES * nr_node_ids +
+> +		NR_NUMA_HINT_FAULT_TYPES * nid + priv;
+
+parenthesis here?
+
+Thanks,
+Davidlohr
+
