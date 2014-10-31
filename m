@@ -1,48 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161500AbaJaAj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 20:39:29 -0400
-Received: from ozlabs.org ([103.22.144.67]:49694 "EHLO ozlabs.org"
+	id S1161542AbaJaAj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 20:39:58 -0400
+Received: from ozlabs.org ([103.22.144.67]:52425 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161292AbaJaAj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 20:39:28 -0400
+	id S1161361AbaJaAj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 20:39:29 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>, Paul Bolle <pebolle@tiscali.nl>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: Fix comment typo 'CONFIG_S_FAILED'
-In-Reply-To: <20141020122858.60091942.cornelia.huck@de.ibm.com>
-References: <1413796676.16435.9.camel@x220> <20141020122858.60091942.cornelia.huck@de.ibm.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH V2] kernel, add bug_on_warn
+In-Reply-To: <54478367.7030505@redhat.com>
+References: <1413910077-9464-1-git-send-email-prarit@redhat.com> <87bnp491b3.fsf@rustcorp.com.au> <54478367.7030505@redhat.com>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 31 Oct 2014 10:29:25 +1030
-Message-ID: <87vbn185ya.fsf@rustcorp.com.au>
+Date: Fri, 31 Oct 2014 10:55:28 +1030
+Message-ID: <87ppd984qv.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cornelia Huck <cornelia.huck@de.ibm.com> writes:
-> On Mon, 20 Oct 2014 11:17:56 +0200
-> Paul Bolle <pebolle@tiscali.nl> wrote:
+Prarit Bhargava <prarit@redhat.com> writes:
+> On 10/22/2014 12:27 AM, Rusty Russell wrote:
+>> Prarit Bhargava <prarit@redhat.com> writes:
+>>> There have been several times where I have had to rebuild a kernel to
+>>> cause a panic when hitting a WARN() in the code in order to get a crash
+>>> dump from a system.  Sometimes this is easy to do, other times (such as
+>>> in the case of a remote admin) it is not trivial to send new images to the
+>>> user.
+>> 
+>> What about during early boot?
 >
->> Without the VIRTIO_ prefix CONFIG_S_FAILED looks like a Kconfig macro.
->> So use that prefix here too.
->> 
->> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->> ---
->> Introduced in commit c6716bae52f9 ("virtio-pci: move freeze/restore to
->> virtio core").
->> 
->> Tested with "git grep" only.
->> 
->>  include/linux/virtio.h | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+> Hi Rusty,
 >
-> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> I really don't have a use case for this in early boot.  The kernel boots, the
+> initramfs, and then we run whatever init (systemd in my case).  A systemd script
+> configures kexec for kdump and that point kdump is "armed".  Doing a bug_on_warn
+> before this will simply result in a panicked system.  I don't get any "new"
+> information FWIW as I get a stack trace, etc., in both the WARN() and BUG() cases.
+>
+>> 
+>> I'd recommend you use core_param().  Less code, and can be set on
+>> commandline.
+>
+> Is that a general request, or is it dependent on the answer above?  Of course I
+> have no problem doing it either way.
 
-Applied.
+Oops, I read your initial patch too lightly: I see you added both
+a sysctl (which I saw) and an early_param (which I didn't).
 
-Thanks!
-Rusty.
+I still think it should be a core_param, like so (untested!):
+
+diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+index 6c0b9f27e465..cf16cbe9f544 100644
+--- a/Documentation/kdump/kdump.txt
++++ b/Documentation/kdump/kdump.txt
+@@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
+ 
+    http://people.redhat.com/~anderson/
+ 
++Trigger Kdump on WARN()
++=======================
++
++The kernel parameter, bug_on_warn, calls BUG() in all WARN() paths.  This
++will cause a kdump to occur at the BUG() call.  In cases where a user
++wants to specify this during runtime, /sys/module/kernel/bug_on_warn can be
++set to 1 to achieve the same behaviour.
+ 
+ Contact
+ =======
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 74339c57b914..aa1d3198e987 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -553,6 +553,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	bttv.pll=	See Documentation/video4linux/bttv/Insmod-options
+ 	bttv.tuner=
+ 
++	bug_on_warn	BUG() instead of WARN().  Useful to cause kdump
++			on a WARN().
++
+ 	bulk_remove=off	[PPC]  This parameter disables the use of the pSeries
+ 			firmware feature for flushing multiple hpte entries
+ 			at a time.
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index 630dd2372238..4d0c763862b0 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -75,10 +75,18 @@ extern void warn_slowpath_null(const char *file, const int line);
+ #define __WARN_printf_taint(taint, arg...)				\
+ 	warn_slowpath_fmt_taint(__FILE__, __LINE__, taint, arg)
+ #else
+-#define __WARN()		__WARN_TAINT(TAINT_WARN)
++#define check_bug_on_warn()						\
++	do {								\
++		if (bug_on_warn)					\
++			BUG();						\
++	} while (0)
++
++#define __WARN()							\
++	do { __WARN_TAINT(TAINT_WARN); check_bug_on_warn(); } while (0)
++
+ #define __WARN_printf(arg...)	do { printk(arg); __WARN(); } while (0)
+ #define __WARN_printf_taint(taint, arg...)				\
+-	do { printk(arg); __WARN_TAINT(taint); } while (0)
++	do { printk(arg); __WARN_TAINT(taint); check_bug_on_warn(); } while (0)
+ #endif
+ 
+ #ifndef WARN_ON
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 3d770f5564b8..d583df09ee82 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -423,6 +423,7 @@ extern int panic_on_oops;
+ extern int panic_on_unrecovered_nmi;
+ extern int panic_on_io_nmi;
+ extern int sysctl_panic_on_stackoverflow;
++extern bool bug_on_warn;
+ /*
+  * Only to be used by arch init code. If the user over-wrote the default
+  * CONFIG_PANIC_TIMEOUT, honor it.
+diff --git a/kernel/panic.c b/kernel/panic.c
+index d09dc5c32c67..3d345357fcc8 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -33,6 +33,7 @@ static int pause_on_oops;
+ static int pause_on_oops_flag;
+ static DEFINE_SPINLOCK(pause_on_oops_lock);
+ static bool crash_kexec_post_notifiers;
++bool bug_on_warn;
+ 
+ int panic_timeout = CONFIG_PANIC_TIMEOUT;
+ EXPORT_SYMBOL_GPL(panic_timeout);
+@@ -420,13 +421,24 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+ {
+ 	disable_trace_on_warning();
+ 
+-	pr_warn("------------[ cut here ]------------\n");
++	if (!bug_on_warn)
++		pr_warn("------------[ cut here ]------------\n");
+ 	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
+ 		raw_smp_processor_id(), current->pid, file, line, caller);
+ 
+ 	if (args)
+ 		vprintk(args->fmt, args->args);
+ 
++	if (bug_on_warn) {
++		pr_warn("bug_on_warn set, calling BUG()...\n");
++		/*
++		 * A flood of WARN()s may occur.  Prevent further WARN()s
++		 * from panicking the system.
++		 */
++		bug_on_warn = false;
++		BUG();
++	}
++
+ 	print_modules();
+ 	dump_stack();
+ 	print_oops_end_marker();
+@@ -484,6 +496,7 @@ EXPORT_SYMBOL(__stack_chk_fail);
+ 
+ core_param(panic, panic_timeout, int, 0644);
+ core_param(pause_on_oops, pause_on_oops, int, 0644);
++core_param(bug_on_warn, bug_on_warn, bool, 0644);
+ 
+ static int __init setup_crash_kexec_post_notifiers(char *s)
+ {
