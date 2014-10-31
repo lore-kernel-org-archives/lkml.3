@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758371AbaJaQXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:23:22 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36776 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752869AbaJaQXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:23:21 -0400
-Date: Fri, 31 Oct 2014 09:22:04 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Junjie Mao <eternal.n08@gmail.com>
-Subject: [PATCH] x86, boot: document intermediates more clearly
-Message-ID: <20141031162204.GA26268@www.outflux.net>
+	id S932305AbaJaQYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:24:47 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:55499 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671AbaJaQYp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 12:24:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <1414767047-8972-1-git-send-email-chenweilong@huawei.com>
+References: <1414767047-8972-1-git-send-email-chenweilong@huawei.com>
+Date: Fri, 31 Oct 2014 09:24:42 -0700
+Message-ID: <CAADnVQLe+Xs22sbdy7=8KW2+LscFOiFWdKxSFFuPTWSPTHbSow@mail.gmail.com>
+Subject: Re: [PATCH] ipv4: avoid divide 0 error in tcp_incr_quickack
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Chen Weilong <chenweilong@huawei.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a comment detailing the various intermediate files used to build
-the bootable decompression image for the x86 kernel.
+cc-ing netdev
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- arch/x86/boot/compressed/Makefile | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+On Fri, Oct 31, 2014 at 7:50 AM, Chen Weilong <chenweilong@huawei.com> wrote:
+> From: Weilong Chen <chenweilong@huawei.com>
+>
+> We got a problem like this:
+>  [ffff8801c1a05570] machine_kexec at ffffffff81025039
+>  [ffff8801c1a055d0] crash_kexec at ffffffff8109b253
+>  [ffff8801c1a056a0] oops_end at ffffffff81442aed
+>  [ffff8801c1a056d0] die at ffffffff81005603
+>  [ffff8801c1a05700] do_trap at ffffffff81442448
+>  [ffff8801c1a05760] do_divide_error at ffffffff81002c10
+>  [ffff8801c1a05888] tcp_send_dupack at ffffffff81385e44
+>  [ffff8801c1a058c8] tcp_validate_incoming at ffffffff813886b5
+>  [ffff8801c1a05908] tcp_rcv_state_process at ffffffff8138d0b7
+>  [ffff8801c1a05958] tcp_child_process at ffffffff81397255
+>  [ffff8801c1a05988] tcp_v4_do_rcv at ffffffff81395a70
+>  [ffff8801c1a059d8] tcp_v4_rcv at ffffffff81396fc8
+>  [ffff8801c1a05a48] ip_local_deliver_finish at ffffffff813746e9
+>  [ffff8801c1a05a78] ip_local_deliver at ffffffff81374a20
+>  [ffff8801c1a05aa8] ip_rcv_finish at ffffffff81374389
+>  [ffff8801c1a05ad8] ip_rcv at ffffffff81374c78
+> There was a wrong ack packet coming during TCP handshake. The socket's state
+> was TCP_SYN_RECV, its rcv_mss was not initialize yet. So
+> tcp_send_dupack -> tcp_enter_quickack_mode got a divide 0 error.
+> This patch add a state check before tcp_enter_quickack_mode.
 
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index be1e07d4b596..44a866b85c6f 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -3,6 +3,18 @@
- #
- # create a compressed vmlinux image from the original vmlinux
- #
-+# vmlinuz is:
-+#	decompression code (*.o)
-+#	asm globals (piggy.S), including:
-+#		vmlinux.bin.(gz|bz2|lzma|...)
-+#
-+# vmlinux.bin is:
-+#	vmlinux stripped of debugging and comments
-+# vmlinux.bin.all is:
-+#	vmlinux.bin + vmlinux.relocs
-+# vmlinux.bin.(gz|bz2|lzma|...) is:
-+#	(see scripts/Makefile.lib size_append)
-+#	compressed vmlinux.bin.all + u32 size of vmlinux.bin.all
- 
- targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
- 	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
--- 
-1.9.1
+ouch. Is it remote exploitable?
 
-
--- 
-Kees Cook
-Chrome OS Security
+> Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+> ---
+>  net/ipv4/tcp_input.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+> index 4e4617e..9eb56dc 100644
+> --- a/net/ipv4/tcp_input.c
+> +++ b/net/ipv4/tcp_input.c
+> @@ -3986,7 +3986,8 @@ static void tcp_send_dupack(struct sock *sk, const struct sk_buff *skb)
+>         if (TCP_SKB_CB(skb)->end_seq != TCP_SKB_CB(skb)->seq &&
+>             before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
+>                 NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
+> -               tcp_enter_quickack_mode(sk);
+> +               if (sk->sk_state != TCP_SYN_RECV)
+> +                       tcp_enter_quickack_mode(sk);
+>
+>                 if (tcp_is_sack(tp) && sysctl_tcp_dsack) {
+>                         u32 end_seq = TCP_SKB_CB(skb)->end_seq;
+> --
+> 1.7.12
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
