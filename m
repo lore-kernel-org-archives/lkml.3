@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605AbaJaJnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:43:21 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:59433 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297AbaJaJnS (ORCPT
+	id S1757892AbaJaJoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:44:44 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:39707 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756544AbaJaJom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:43:18 -0400
-Message-ID: <545359AB.8070503@linaro.org>
-Date: Fri, 31 Oct 2014 09:43:07 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 31 Oct 2014 05:44:42 -0400
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        Frank Rowand <frank.rowand@sonymobile.com>
-Subject: Re: [PATCH 2/2] tty: serial: msm: Support sysrq on uartDM devices
-References: <1414606478-13709-1-git-send-email-sboyd@codeaurora.org> <1414606478-13709-3-git-send-email-sboyd@codeaurora.org> <54522163.8030408@linaro.org> <20141031064130.GG12469@codeaurora.org>
-In-Reply-To: <20141031064130.GG12469@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414535277-15645-4-git-send-email-abrestic@chromium.org>
+References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+	<1414535277-15645-4-git-send-email-abrestic@chromium.org>
+Date: Fri, 31 Oct 2014 10:44:41 +0100
+Message-ID: <CACRpkdbERA6rxrMTJQPGaNhAb=B3+KyQ1YBKNy2AqsLZD2eHDA@mail.gmail.com>
+Subject: Re: [PATCH RESEND V4 3/9] of: Update Tegra XUSB pad controller
+ binding for USB
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/10/14 06:41, Stephen Boyd wrote:
-> On 10/30, Daniel Thompson wrote:
->> On 29/10/14 18:14, Stephen Boyd wrote:
->>> +		r_count = min_t(int, count, sizeof(buf));
->>> +
->>> +		for (i = 0; i < r_count; i++) {
->>> +			char flag = TTY_NORMAL;
->>>  
->>> -		/* TODO: handle sysrq */
->>> -		tty_insert_flip_string(tport, buf, min(count, 4));
->>> -		count -= 4;
->>> +			if (msm_port->break_detected && buf[i] == 0) {
->>> +				port->icount.brk++;
->>> +				flag = TTY_BREAK;
->>> +				msm_port->break_detected = false;
->>> +				if (uart_handle_break(port))
->>> +					continue;
->>> +			}
->>> +
->>> +			if (!(port->read_status_mask & UART_SR_RX_BREAK))
->>> +				flag = TTY_NORMAL;
->>
->> flag is already known to be TTY_NORMAL.
-> 
-> Huh? If we detected a break we would set the flag to TTY_BREAK
-> and if uart_handle_break() returned 0 (perhaps sysrq config is
-> diasbled) then we would get down here, and then we want to reset
-> the flag to TTY_NORMAL if the read_status_mask bits indicate that
-> we want to skip checking for breaks. Otherwise we want to
-> indicate to the tty layer that it's a break character.
+On Tue, Oct 28, 2014 at 11:27 PM, Andrew Bresticker
+<abrestic@chromium.org> wrote:
 
-Agreed. Sorry for noise.
+> Add new bindings used for USB support by the Tegra XUSB pad controller.
+> This includes additional PHY types, USB-specific pinconfig properties, etc.
+>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Changes from v2:
+>  - Added nvidia,otg-hs-curr-level-offset property.
+>  - Dropped "-otg" from VBUS supplies.
+>  - Added mbox-names property.
+>  - Removed extra whitespace.
+> Changes from v1:
+>  - Updated to use common mailbox bindings.
+>  - Made USB3 port-to-lane mappins a top-level binding rather than a pinconfig
+>    binding.
+>  - Add #defines for the padctl lanes.
 
-It now reaches the level of silly quibble (meaning I won't bother to
-raise the issue again if there is a v2 patch) but perhaps updating the
-flag after the continue would be easier to read.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+I guess you will take this patch along with the rest through ARM SoC
+or so?
 
->>> +
->>> +			spin_unlock(&port->lock);
->>
->> Is it safe to unlock at this point? count may no longer be valid when we
->> return.
-> 
-> Can you explain further? If it actually isn't valid something
-> needs to be done. I believe other serial drivers are doing this
-> sort of thing though so it doesn't seem that uncommon (of course
-> those drivers could also be broken I suppose).
-
-Calling spin_unlock() means we are allow code to alter the state of the
-UART. In particular the subsequent call to uart_handle_sysrq_char() can
-make significant changes to the FIFO state (by calling the poll_char
-functions). Given count is shadowing the FIFO state, when we retake the
-lock I think it is possible for count to no longer be valid.
-
-
-> 
->>
->>
->>> +			sysrq = uart_handle_sysrq_char(port, buf[i]);
->>> +			spin_lock(&port->lock);
->>> +			if (!sysrq)
->>> +				tty_insert_flip_char(tport, buf[i], flag);
->>
->> flag has a constant value here.
->>
-> 
-
+Yours.
+Linus Walleij
