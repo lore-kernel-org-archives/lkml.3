@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757992AbaJaQDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:03:42 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:39734 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234AbaJaQDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:03:40 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2a01:e35:2434:4600:7553:d774:575d:8267]
-In-Reply-To: <CAErSpo55o00=YwtWChFaxC1tEAwv_A5nB90mDU9J6kpb9Tqf_Q@mail.gmail.com>
-References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
- <1414433284-31719-15-git-send-email-a.motakis@virtualopensystems.com> <CAErSpo55o00=YwtWChFaxC1tEAwv_A5nB90mDU9J6kpb9Tqf_Q@mail.gmail.com>
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-Date: Fri, 31 Oct 2014 17:03:19 +0100
-Message-ID: <CAG8rG2w35mDkkk-ymw19ezhUQE72aEjhOtwBPuzxqkOzYKa6fA@mail.gmail.com>
-Subject: Re: [PATCH v9 14/19] vfio: move eventfd support code for VFIO_PCI to
- a separate file
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Eric Auger <eric.auger@linaro.org>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:VFIO DRIVER" <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1758540AbaJaQEB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:04:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41806 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758273AbaJaQD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 12:03:59 -0400
+Message-ID: <1414771442.24194.3.camel@linux-0dmf.site>
+Subject: Re: [PATCH v4-real] cdc-acm: ensure that termios get set when the
+ port is activated
+From: Oliver Neukum <oneukum@suse.de>
+To: Johan Hovold <johan@kernel.org>
+Cc: Jim Paris <jim@jtan.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Date: Fri, 31 Oct 2014 17:04:02 +0100
+In-Reply-To: <20141031114542.GK13062@localhost>
+References: <20141029150716.GG2265@localhost>
+	 <1414596640-28555-1-git-send-email-johan@kernel.org>
+	 <20141029155602.GC17399@kroah.com> <20141029155840.GJ2265@localhost>
+	 <20141030005314.GA6049@psychosis.jim.sh> <20141030075127.GC13062@localhost>
+	 <20141030144538.GA23737@psychosis.jim.sh>
+	 <20141030144858.GG13062@localhost>
+	 <20141030150446.GB23737@psychosis.jim.sh>
+	 <20141031114542.GK13062@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 8:16 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Hi Antonios,
->
-> On Mon, Oct 27, 2014 at 12:07 PM, Antonios Motakis
-> <a.motakis@virtualopensystems.com> wrote:
->> The virqfd functionality that is used by VFIO_PCI to implement interrupt
->> masking and unmasking via an eventfd, is generic enough and can be reused
->> by another driver. Move it to a separate file in order to allow the code
->> to be shared.
->>
->> Also properly export virqfd_enable and virqfd_disable in the process.
->
-> Alex will handle this, not me, but my personal preference is to avoid
-> doing things "in the process" because the small changes get lost in
-> the big patch.
->
-> I'd rather see a strict move that changes no code at all (except
-> things like necessary Makefile changes), followed by a smaller patch
-> that does the additional stuff.
->
-> Does "properly export" mean that those functions were previously
-> *improperly* exported and the way they used to be exported caused a
-> problem?  Or does it just mean "export"?
+On Fri, 2014-10-31 at 12:45 +0100, Johan Hovold wrote:
+> On Thu, Oct 30, 2014 at 11:04:47AM -0400, Jim Paris wrote:
+> > The driver wasn't properly configuring the hardware for the current
+> > termios settings under all conditions.  Ensure that termios are
+> > written to the device when the port is activated.
+> > 
+> > Signed-off-by: Jim Paris <jim@jtan.com>
+> 
+> Reviewed-by: Johan Hovold <johan@kernel.org>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 
-It just means "export", but you are right there is no reason why to
-export it in this patch. I will move it to one of the next patches.
-
->
-> Bjorn
->
->> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->> ---
->>  drivers/vfio/Makefile               |   4 +-
->>  drivers/vfio/pci/vfio_pci_intrs.c   | 213 -----------------------------------
->>  drivers/vfio/pci/vfio_pci_private.h |   3 -
->>  drivers/vfio/virqfd.c               | 214 ++++++++++++++++++++++++++++++++++++
->>  include/linux/vfio.h                |  28 +++++
->>  5 files changed, 245 insertions(+), 217 deletions(-)
->>  create mode 100644 drivers/vfio/virqfd.c
