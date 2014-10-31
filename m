@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758916AbaJaMiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 08:38:16 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:59710 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757649AbaJaMiP (ORCPT
+	id S1759226AbaJaMn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 08:43:59 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59090 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758302AbaJaMn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 08:38:15 -0400
-From: Abhilash Kesavan <a.kesavan@samsung.com>
-To: linux-iio@vger.kernel.org, jic23@kernel.org
-Cc: cw00.choi@samsung.com, naveenkrishna.ch@gmail.com,
-        kesavan.abhilash@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] iio: adc: exynos_adc: Add support for ADCv3 on exynos7
-Date: Fri, 31 Oct 2014 18:08:03 +0530
-Message-Id: <1414759083-4555-1-git-send-email-a.kesavan@samsung.com>
-X-Mailer: git-send-email 2.1.0
+	Fri, 31 Oct 2014 08:43:57 -0400
+Date: Fri, 31 Oct 2014 12:43:04 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Message-ID: <20141031124304.GS18557@sirena.org.uk>
+References: <1414581294-1315-1-git-send-email-k.kozlowski@samsung.com>
+ <1414581294-1315-2-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="j7Mt6kSMu9nlWjvx"
+Content-Disposition: inline
+In-Reply-To: <1414581294-1315-2-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: FORCE YOURSELF TO RELAX!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v6 1/3] regulator: max77686: Add suspend disable for some
+ LDOs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ADC on exynos7 is quite similar to ADCv2. The differences are as
-follows:
-	- v3 has 8 input channels (10 in v2).
-	- v3 does not include an ADC PHY control register.
-	- Some ADC_CON2 register bits being used in v2 are listed as
-	  reserved in v3. This results in a different init_hw function
-	  for v3.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
----
-- Based on Naveen's "iio: exynos-adc: use syscon instead of ioremap" patchset
-http://comments.gmane.org/gmane.linux.kernel.iio/13943
+--j7Mt6kSMu9nlWjvx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- .../devicetree/bindings/arm/samsung/exynos-adc.txt |    2 ++
- drivers/iio/adc/exynos_adc.c                       |   32 ++++++++++++++++++++
- 2 files changed, 34 insertions(+)
+On Wed, Oct 29, 2014 at 12:14:52PM +0100, Krzysztof Kozlowski wrote:
+> Some LDOs of Maxim 77686 PMIC support disabling during system suspend
+> (LDO{2,6,7,8,10,11,12,14,15,16}). This was already implemented as part
+> of set_suspend_mode function. In that case the mode was one of:
 
-diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-index c368210..a11e32c 100644
---- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-+++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-@@ -14,6 +14,8 @@ Required properties:
- 				for exynos4412/5250 and s5pv210 controllers.
- 			Must be "samsung,exynos-adc-v2" for
- 				future controllers.
-+			Must be "samsung,exynos-adc-v3" for
-+				the ADC in Exynos7 and compatibles
- 			Must be "samsung,exynos3250-adc" for
- 				controllers compatible with ADC of Exynos3250.
- 			Must be "samsung,s3c2410-adc" for
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index fe03177..74d0a9d 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -390,6 +390,35 @@ static const struct exynos_adc_data exynos3250_adc_data = {
- 	.start_conv	= exynos_adc_v2_start_conv,
- };
- 
-+static void exynos_adc_v3_init_hw(struct exynos_adc *info)
-+{
-+	u32 con1, con2;
-+
-+	if (info->data->needs_adc_phy)
-+		regmap_write(info->pmu_map, info->data->phy_offset, 1);
-+
-+	con1 = ADC_V2_CON1_SOFT_RESET;
-+	writel(con1, ADC_V2_CON1(info->regs));
-+
-+	con2 = readl(ADC_V2_CON2(info->regs));
-+	con2 &= ~ADC_V2_CON2_C_TIME(7);
-+	con2 |= ADC_V2_CON2_C_TIME(0);
-+	writel(con2, ADC_V2_CON2(info->regs));
-+
-+	/* Enable interrupts */
-+	writel(1, ADC_V2_INT_EN(info->regs));
-+}
-+
-+static const struct exynos_adc_data exynos_adc_v3_data = {
-+	.num_channels	= MAX_ADC_V1_CHANNELS,
-+	.mask		= ADC_DATX_MASK, /* 12 bit ADC resolution */
-+
-+	.init_hw	= exynos_adc_v3_init_hw,
-+	.exit_hw	= exynos_adc_v2_exit_hw,
-+	.clear_irq	= exynos_adc_v2_clear_irq,
-+	.start_conv	= exynos_adc_v2_start_conv,
-+};
-+
- static const struct of_device_id exynos_adc_match[] = {
- 	{
- 		.compatible = "samsung,s3c2410-adc",
-@@ -413,6 +442,9 @@ static const struct of_device_id exynos_adc_match[] = {
- 		.compatible = "samsung,exynos-adc-v2",
- 		.data = &exynos_adc_v2_data,
- 	}, {
-+		.compatible = "samsung,exynos-adc-v3",
-+		.data = &exynos_adc_v3_data,
-+	}, {
- 		.compatible = "samsung,exynos3250-adc",
- 		.data = &exynos3250_adc_data,
- 	},
--- 
-1.7.9.5
+Applied, thanks.
 
+--j7Mt6kSMu9nlWjvx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUU4PXAAoJECTWi3JdVIfQR1MH/j8yXXZcoXZgVy1hV+alYtAc
+vkFaBdMDXDhzLtYJ2oycj/PIRagMj57v8iniZmaFbUs5IxJ3adyAo6xWivQEN00h
+/3ktpKo0ZEHD+YVWWtuYpd2Cy9CDTXIgDxCCdBYIaFPYLb00I2iikfYLXY298/IP
+7z5Wqn6HMs5JQ85thtATxaJewASjIqesrRbWMbOyluQg1IUrpnvI9pWGsNgnZ5DA
+pks7ZH9S3Gg9lDRSBbMVxhdKg4gYtHkNjFkLCSDnhZJ/X2rlyLc8VDL0f8+Yagp/
+ADTZ/BFwWTYCttsGQYe99p/1OmSm1nDy2i/CxUlc312Eb1t2Gqvnyk46Ul0SA0E=
+=f4RR
+-----END PGP SIGNATURE-----
+
+--j7Mt6kSMu9nlWjvx--
