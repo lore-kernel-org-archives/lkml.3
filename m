@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941AbaJaXpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 19:45:43 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:37292 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431AbaJaXpm (ORCPT
+	id S1760028AbaJaXsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 19:48:46 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:60294 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756721AbaJaXso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 19:45:42 -0400
-X-Originating-IP: 50.43.41.112
-Date: Fri, 31 Oct 2014 16:45:31 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Junjie Mao <eternal.n08@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v2] x86, boot: add hex output for debugging
-Message-ID: <20141031234531.GA12082@thin>
-References: <20141031205819.GA13262@www.outflux.net>
- <CAE9FiQVYBwTifYXACeJRBOEtrN6o5kBpA6v0xLqUYS379pH-Mw@mail.gmail.com>
+	Fri, 31 Oct 2014 19:48:44 -0400
+Date: Fri, 31 Oct 2014 16:48:39 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [git pull] Input updates for 3.18-rc0
+Message-ID: <20141031234839.GG32331@dtor-ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQVYBwTifYXACeJRBOEtrN6o5kBpA6v0xLqUYS379pH-Mw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 04:31:32PM -0700, Yinghai Lu wrote:
-> On Fri, Oct 31, 2014 at 1:58 PM, Kees Cook <keescook@chromium.org> wrote:
-> > This is useful for reporting various addresses or other values while
-> > debugging early boot. For example, when CONFIG_X86_VERBOSE_BOOTUP is set,
-> > this is now visible at boot time:
-> >
-> >         early console in setup code
-> >         early console in decompress_kernel
-> >         input_data: 0x0000000001e1526e
-> >         input_len: 0x0000000000732236
-> >         output: 0x0000000001000000
-> >         output_len: 0x0000000001535640
-> >         run_size: 0x00000000021fb000
-> >         KASLR using RDTSC...
-> >
-> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> > ---
-> > Since this displays run_size, this patch depends on Junjie Mao's patch
-> > "x86, kaslr: Prevent .bss from overlaping initrd"
-> >
-> > ---
-> >  arch/x86/boot/compressed/misc.c | 24 ++++++++++++++++++++++++
-> >  arch/x86/boot/compressed/misc.h | 11 +++++++++++
-> >  2 files changed, 35 insertions(+)
-> ...
-> 
-> We can reuse printf.c in arch/x86/boot.
-> 
-> I had attached one in local tree for a while. or even sent it before
-> several years ago.
+Hi Linus,
 
-I don't think we need the full generality of printf in the decompression
-stub.  I prefer Kees' patch, though I'd still like to see __puthex made
-conditional.
+Please pull from:
 
-- Josh Triplett
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. You will get a bunch of
+fixes for minor defects reported by Coverity, a few driver fixups and
+revert of i8042.nomux change so that we are once again enable active MUX
+mode if box claims to support it.
+
+Changelog:
+---------
+
+Alexandre Courbot (1):
+      Input: soc_button_array - update calls to gpiod_get*()
+
+Dmitry Eremin-Solenikov (1):
+      Input: wm97xx - adapt parameters to tosa touchscreen.
+
+Dmitry Torokhov (6):
+      Input: opencores-kbd - fix error handling
+      Input: ims-pcu - fix dead code in ims_pcu_ofn_reg_addr_store()
+      Input: vsxxxaa - fix code dropping bytes from queue
+      Input: psmouse - remove unneeded check in psmouse_reconnect()
+      Input: max77693-haptic - fix potential overflow
+      Revert "Input: i8042 - disable active multiplexing by default"
+
+Hans de Goede (1):
+      Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
+
+Linus Walleij (1):
+      Input: stmpe-keypad - fix valid key line bitmask
+
+Tobias Klauser (2):
+      Input: altera_ps2 - write to correct register when disabling interrupts
+      Input: altera_ps2 - use correct type for irq return value
+
+
+Diffstat:
+--------
+
+ Documentation/kernel-parameters.txt     |   2 +-
+ drivers/input/keyboard/opencores-kbd.c  |   2 +-
+ drivers/input/keyboard/stmpe-keypad.c   |   2 +-
+ drivers/input/misc/ims-pcu.c            |   2 +-
+ drivers/input/misc/max77693-haptic.c    |   5 +-
+ drivers/input/misc/soc_button_array.c   |   2 +-
+ drivers/input/mouse/psmouse-base.c      |   7 -
+ drivers/input/mouse/vsxxxaa.c           |   2 +-
+ drivers/input/serio/altera_ps2.c        |   4 +-
+ drivers/input/serio/i8042-x86ia64io.h   | 297 +++++++++++++++++++++++++++++++-
+ drivers/input/serio/i8042.c             |   2 +-
+ drivers/input/touchscreen/wm97xx-core.c |   4 +-
+ 12 files changed, 302 insertions(+), 29 deletions(-)
+
+-- 
+Dmitry
+
