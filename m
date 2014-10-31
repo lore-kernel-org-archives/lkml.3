@@ -1,154 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758515AbaJaSo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 14:44:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:38482 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746AbaJaSoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 14:44:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="614902932"
-Date: Fri, 31 Oct 2014 11:45:09 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com,
-        mika.westerberg@linux.intel.com
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141031184509.GA2224@psi-dev26.jf.intel.com>
-References: <1413224639-21552-1-git-send-email-david.a.cohen@linux.intel.com>
- <20141013191405.GB29810@saruman>
- <20141013192404.GB4034@psi-dev26.jf.intel.com>
- <20141013192632.GC29810@saruman>
- <20141013193618.GD29810@saruman>
- <CACRpkdYDiFvwsPwqACXS2bZU9peUyJEn-fpzVqZKYXseuEFGGA@mail.gmail.com>
- <20141028144249.GD8123@saruman>
- <CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
- <20141031132005.GB1273@saruman>
- <20141031162339.GA7136@psi-dev26.jf.intel.com>
+	id S1758749AbaJaSpK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 14:45:10 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:40589 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758316AbaJaSpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 14:45:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141031162339.GA7136@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141031084220.GA29085@infradead.org>
+References: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
+ <5452B241.5010603@amacapital.net> <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
+ <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+ <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com> <20141031084220.GA29085@infradead.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 31 Oct 2014 11:44:43 -0700
+Message-ID: <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Rannaud <e@nanocritical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 09:23:39AM -0700, David Cohen wrote:
-> On Fri, Oct 31, 2014 at 08:20:05AM -0500, Felipe Balbi wrote:
-> > Hi,
-> > 
-> > On Fri, Oct 31, 2014 at 09:12:16AM +0100, Linus Walleij wrote:
-> > > On Tue, Oct 28, 2014 at 3:42 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > > > On Tue, Oct 28, 2014 at 11:15:20AM +0100, Linus Walleij wrote:
-> > > >> On Mon, Oct 13, 2014 at 9:36 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > > >> > On Mon, Oct 13, 2014 at 02:26:32PM -0500, Felipe Balbi wrote:
-> > > >>
-> > > >> > I also noticed that this is missing:
-> > > >> >
-> > > >> > diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> > > >> > index e12e5b0..7db5ab9 100644
-> > > >> > --- a/drivers/pinctrl/pinctrl-baytrail.c
-> > > >> > +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> > > >> > @@ -614,3 +614,9 @@ static int __init byt_gpio_init(void)
-> > > >> >  }
-> > > >> >
-> > > >> >  subsys_initcall(byt_gpio_init);
-> > > >> > +
-> > > >> > +static void __exit byt_gpio_exit(void)
-> > > >> > +{
-> > > >> > +       platform_driver_unregister(&byt_gpio_driver);
-> > > >> > +}
-> > > >> > +module_exit(byt_gpio_exit);
-> > > >>
-> > > >> But the Baytrail driver is not a loadable module, it is bool:
-> > > >>
-> > > >> config PINCTRL_BAYTRAIL
-> > > >>         bool "Intel Baytrail GPIO pin control"
-> > > >>         depends on GPIOLIB && ACPI && X86
-> > > >>
-> > > >> (...)
-> > > >>
-> > > >> So I guess it won't need handling for removal, as it can only
-> > > >> be compiled-in.
-> > > >
-> > > > you can still unbind it through sysfs, right ? The thing also already
-> > > > provides a ->remove() method anyway.
-> > > 
-> > > Yes you're right of course...
-> > > 
-> > > But another way to get rid of the dilemma is to set
-> > > .suppress_bind_attrs = true on the .driver field of the
-> > > device driver. The one can't unbind it through sysfs anymore.
-> > > 
-> > >         .driver = {
-> > >                 .name   = "foo",
-> > >                 .suppress_bind_attrs = true,
-> > >         },
-> > > 
-> > > So one of them need to be done.
-> > > 
-> > > I suspect this is a kind of common problem...
-> > 
-> > so instead of taking of taking a three-liner which just makes sure this
-> > can be used as "intended" you prefer to:
-> > 
-> > diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> > index e12e5b0..254ba81 100644
-> > --- a/drivers/pinctrl/pinctrl-baytrail.c
-> > +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> > @@ -587,16 +587,6 @@ static const struct acpi_device_id byt_gpio_acpi_match[] = {
-> >  };
-> >  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
-> >  
-> > -static int byt_gpio_remove(struct platform_device *pdev)
-> > -{
-> > -	struct byt_gpio *vg = platform_get_drvdata(pdev);
-> > -
-> > -	pm_runtime_disable(&pdev->dev);
-> > -	gpiochip_remove(&vg->chip);
-> > -
-> > -	return 0;
-> > -}
-> > -
-> >  static struct platform_driver byt_gpio_driver = {
-> >  	.probe          = byt_gpio_probe,
-> >  	.remove         = byt_gpio_remove,
-> > @@ -605,6 +595,7 @@ static struct platform_driver byt_gpio_driver = {
-> >  		.owner  = THIS_MODULE,
-> >  		.pm	= &byt_gpio_pm_ops,
-> >  		.acpi_match_table = ACPI_PTR(byt_gpio_acpi_match),
-> > +		.suppress_bind_attrs = true,
-> >  	},
-> >  };
-> >  
-> > 
-> > I don't quite care since this is not an architecture I work for, but I
-> > prefer drivers which can be unbound one way or another. Not to mention
-> > that there's already a ->remove callback on the platform_driver anyway.
-> 
-> I think adding the module exit + allowing this driver to be a module
-> would be a good approach. Then we don't need to force generic x86 kernel
-> binaries to always have this driver. Unless Mathias or Mika knows a
-> constraint to force this driver to be builtin only.
+On Oct 31, 2014 1:42 AM, "Christoph Hellwig" <hch@infradead.org> wrote:
+>
+> On Thu, Oct 30, 2014 at 05:01:30PM -0700, Andy Lutomirski wrote:
+> > > flink()), the mode really matters. So this idiotic glibc behavior of
+> > > only forwarding the third argument if O_CREAT is set seems to be a
+> > > bug.
+> >
+> > We could bite the bullet and add a tmpfile syscall.   /me ducks
+>
+> I've got another use case for that:  Samba.  It wants to inherit
+> all kinds of attributes (xattrs, modes, etc) during file creation,
+> and right now it's doing it in a racy way.  I've come up with a patch
+> to use O_TEMPFILE + flink, but it turns out that Samba may as well
+> be asked to create read-only files, which we can't create using
+> O_TMPFILE.
 
-It helps if I CC them when asking for feedback :)
-
-Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
-to be bool?
-
-Br, David
-
-> 
-> Br, David
-> 
-> > 
-> > -- 
-> > balbi
-> 
-> 
+Does the patch in this thread not fix that?
