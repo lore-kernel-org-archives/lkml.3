@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609AbaJaOAr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:00:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38773 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759693AbaJaOAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:00:42 -0400
-From: Juergen Gross <jgross@suse.com>
-To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
-        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, bhelgaas@google.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 04/17] x86: Use new cache mode type in drivers/video/fbdev/vermilion
-Date: Fri, 31 Oct 2014 15:00:20 +0100
-Message-Id: <1414764033-30011-5-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414764033-30011-1-git-send-email-jgross@suse.com>
-References: <1414764033-30011-1-git-send-email-jgross@suse.com>
+	id S932847AbaJaOBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:01:06 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:59474 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932761AbaJaOBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:01:03 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1414763990.2406.72.camel@hadess.net>
+Subject: Re: A desktop environment[1] kernel wishlist
+From: Bastien Nocera <hadess@hadess.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 31 Oct 2014 14:59:50 +0100
+In-Reply-To: <20141030174135.GA13814@amd>
+References: <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd>
+	 <1414420292.30379.55.camel@hadess.net> <54513DDC.2020700@amacapital.net>
+	 <20141029202616.GC5000@thunk.org> <20141029211608.GA32576@amd>
+	 <1414680302.2406.55.camel@hadess.net> <20141030150501.GD31927@thunk.org>
+	 <1414682115.2406.59.camel@hadess.net> <20141030174135.GA13814@amd>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of directly using the cache mode bits in the pte switch to
-using the cache mode type.
+On Thu, 2014-10-30 at 18:41 +0100, Pavel Machek wrote:
+> On Thu 2014-10-30 16:15:15, Bastien Nocera wrote:
+> > On Thu, 2014-10-30 at 11:05 -0400, Theodore Ts'o wrote:
+> > > On Thu, Oct 30, 2014 at 03:45:02PM +0100, Bastien Nocera wrote:
+> > > > > Actually Maemo people (on Nokia N900 and friends) got it right: unlike
+> > > > > android devices, it does not suspend to RAM at any point, and still
+> > > > > has reasonable battery life.
+> > > > 
+> > > > Android devices don't suspend to RAM. Neither do Tizen devices AFAIK.
+> > > 
+> > > Actually, Android devices have historically always suspended the CPU
+> > > whenever there wasn't a wakelock keeping the device to suspend.  You
+> > > might not consider this "suspend to RAM" but in fact it uses the
+> > > identical kernel and hardware facilities as the legacy "suspend to
+> > > RAM" mechanism.
+> > 
+> > I wouldn't consider this "suspend to RAM", but that's because I expect
+> > the firmware to implement most of that. Anyway, that's splitting
+> > hair.
+> 
+> Could you rephrase that?
+> 
+> Anyway, this is "echo mem > /sys/power/state" or
+> suspend-to-RAM. Android does the same, with more tricky wakeup logic. 
+> 
+> > > > I don't think anyone was discussing cell phones in particular in this
+> > > > thread, and knowing when user-space got woken up because of the baseband
+> > > > processor having information for us would still be useful.
+> > > 
+> > > It matters because for laptops, what's important is whether the lid is
+> > > closed or not.  Whether and how the laptop was "woken" is really
+> > > beside the point, as others have argued.  Your counter argument is
+> > > that tablets don't have lids.  But tablets are going to be using
+> > > schemes similar to Android, Tizen, and Maemo, and they are *not* going
+> > > to be using the legacy suspend-to-RAM model, because it's not
+> > > sufficiently good at power saving.
+> > 
+> > There are plenty of tablets around that aren't Android devices. There
+> > are plenty of laptops that can be switched to a tablet mode for which
+> > this wouldn't apply either.
+> 
+> Yes, still the right question is "was the power button pressed while
+> userland was suspended" not "was the system woken by power
+> button"...
 
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- drivers/video/fbdev/vermilion/vermilion.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+"Was the power button pressed while userland was suspended" is
+presumably also racy.
 
-diff --git a/drivers/video/fbdev/vermilion/vermilion.c b/drivers/video/fbdev/vermilion/vermilion.c
-index 5f930ae..6b70d7f 100644
---- a/drivers/video/fbdev/vermilion/vermilion.c
-+++ b/drivers/video/fbdev/vermilion/vermilion.c
-@@ -1003,13 +1003,15 @@ static int vmlfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
- 	struct vml_info *vinfo = container_of(info, struct vml_info, info);
- 	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
- 	int ret;
-+	unsigned long prot;
- 
- 	ret = vmlfb_vram_offset(vinfo, offset);
- 	if (ret)
- 		return -EINVAL;
- 
--	pgprot_val(vma->vm_page_prot) |= _PAGE_PCD;
--	pgprot_val(vma->vm_page_prot) &= ~_PAGE_PWT;
-+	prot = pgprot_val(vma->vm_page_prot) & ~_PAGE_CACHE_MASK;
-+	pgprot_val(vma->vm_page_prot) =
-+		prot | cachemode2protval(_PAGE_CACHE_MODE_UC_MINUS);
- 
- 	return vm_iomap_memory(vma, vinfo->vram_start,
- 			vinfo->vram_contig_size);
--- 
-1.8.4.5
+>  and yes, I guess kernel should add the "power button" event
+> to the input queue, even if that press was used to wake up the system.
+
+And how would one know whether to suspend or resume in this case?
 
