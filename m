@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758682AbaJaU3U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:29:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45527 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaJaU3T (ORCPT
+	id S1758890AbaJaUbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:31:04 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:39034 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457AbaJaUbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:29:19 -0400
-Date: Fri, 31 Oct 2014 21:28:59 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Borislav Petkov <bp@alien8.de>
-cc: Juergen Gross <jgross@suse.com>, hpa@zytor.com, x86@kernel.org,
-        mingo@redhat.com, stefan.bader@canonical.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com,
-        david.vrabel@citrix.com, jbeulich@suse.com, toshi.kani@hp.com,
-        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, bhelgaas@google.com
-Subject: Re: [PATCH 01/17] x86: Make page cache mode a real type
-In-Reply-To: <20141031194207.GA15367@pd.tnic>
-Message-ID: <alpine.DEB.2.11.1410312126430.5308@nanos>
-References: <1414764033-30011-1-git-send-email-jgross@suse.com> <1414764033-30011-2-git-send-email-jgross@suse.com> <20141031194207.GA15367@pd.tnic>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 31 Oct 2014 16:31:01 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: Nokia n900 problems in 3.18-rc1 (was Re: USB Ethernet gadget on Nokia n900)
+Date: Fri, 31 Oct 2014 21:30:58 +0100
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Felipe Balbi <balbi@ti.com>, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+References: <20141019090107.GA19132@amd> <20141029140943.GX2542@atomide.com> <20141031200318.GA6949@amd>
+In-Reply-To: <20141031200318.GA6949@amd>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: multipart/signed;
+  boundary="nextPart4480910.6W89ptCjVB";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201410312130.58642@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014, Borislav Petkov wrote:
-> On Fri, Oct 31, 2014 at 03:00:17PM +0100, Juergen Gross wrote:
-> > At the moment there are a lot of places that handle setting or getting
-> > the page cache mode by treating the pgprot bits equal to the cache mode.
-> > This is only true because there are a lot of assumptions about the setup
-> > of the PAT MSR. Otherwise the cache type needs to get translated into
-> > pgprot bits and vice versa.
-> > 
-> > This patch tries to prepare for that by introducing a separate type
-> > for the cache mode and adding functions to translate between those and
-> > pgprot values.
-> > 
-> > To avoid too much performance penalty the translation between cache mode
-> > and pgprot values is done via tables which contain the relevant
-> > information.  Write-back cache mode is hard-wired to be 0, all other
-> > modes are configurable via those tables. For large pages there are
-> > translation functions as the PAT bit is located at different positions
-> > in the ptes of 4k and large pages.
-> > 
-> > Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-> > Signed-off-by: Juergen Gross <jgross@suse.com>
-> 
-> Just a clarification question: how is one to understand this attribution
-> here? Is Stefan the original author, was he a reviewer, or? Because this
-> SOB chain is misleading...
+--nextPart4480910.6W89ptCjVB
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Bah, wanted to ask that as well. Then got lost in the review and
-forgot....
+On Friday 31 October 2014 21:03:18 Pavel Machek wrote:
+> Hi!
+>=20
+> I tried enabling audio. It works ...sometimes... after fixing
+> kconfig. But I'm getting WARN_ON, about 50% of time. Ideas
+> welcome.
+>=20
+> 								Pavel
+>=20
 
-Thanks,
+I see same problem with audio. Sometimes after reboot it working=20
+and sometimes not. It looks like Nokia Bootloader set something=20
+somewhere and then it works... I have no idea how to fix it...
 
-	tglx
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart4480910.6W89ptCjVB
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlRT8YIACgkQi/DJPQPkQ1KfcgCeJvT/fbQOYn9myWgO7PMvHj3x
+JgoAn1vozxfGRUySmULRCi93/t1WH3i0
+=J5ml
+-----END PGP SIGNATURE-----
+
+--nextPart4480910.6W89ptCjVB--
