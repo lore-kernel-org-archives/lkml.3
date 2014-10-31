@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935AbaJaLXF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 07:23:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60066 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758932AbaJaLVo (ORCPT
+	id S1758786AbaJaLVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 07:21:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:32812 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754141AbaJaLVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 07:21:44 -0400
-Message-Id: <20141031111549.798090363@infradead.org>
+	Fri, 31 Oct 2014 07:21:38 -0400
+Message-Id: <20141031111549.727005513@infradead.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 31 Oct 2014 12:10:43 +0100
+Date: Fri, 31 Oct 2014 12:10:42 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: mingo@kernel.org, linux-kernel@vger.kernel.org
 Cc: peter@hurleysoftware.com, oleg@redhat.com, rjw@rjwysocki.net,
@@ -17,90 +17,72 @@ Cc: peter@hurleysoftware.com, oleg@redhat.com, rjw@rjwysocki.net,
         umgwanakikbuti@gmail.com, marcel@holtmann.org, ebiederm@xmission.com,
         davem@davemloft.net, fengguang.wu@intel.com,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 6/7] netdev: Fix sleeping inside wait event
+Subject: [PATCH 5/7] rfcomm: Fix broken wait construct
 References: <20141031111037.936236584@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=peterz-fix-netdev-device_exit_batch.patch
+Content-Disposition: inline; filename=peterz-fix-rfcomm.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtnl_lock_unregistering*() take rtnl_lock() -- a mutex -- inside a
-wait loop. The wait loop relies on current->state to function, but so
-does mutex_lock(), nesting them makes for the inner to destroy the
-outer state.
+rfcomm_run() is a tad broken in that is has a nested wait loop. One
+cannot rely on p->state for the outer wait because the inner wait will
+overwrite it.
 
-Fix this using the new wait_woken() bits.
-
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Eric Biederman <ebiederm@xmission.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20141029173110.GE15602@worktop.programming.kicks-ass.net
 ---
- net/core/dev.c       |   10 +++++-----
- net/core/rtnetlink.c |   10 +++++-----
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ net/bluetooth/rfcomm/core.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -7196,11 +7196,10 @@ static void __net_exit rtnl_lock_unregis
- 	 */
- 	struct net *net;
- 	bool unregistering;
--	DEFINE_WAIT(wait);
-+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+--- a/net/bluetooth/rfcomm/core.c
++++ b/net/bluetooth/rfcomm/core.c
+@@ -101,11 +101,11 @@ static struct rfcomm_session *rfcomm_ses
+ #define __get_rpn_stop_bits(line) (((line) >> 2) & 0x1)
+ #define __get_rpn_parity(line)    (((line) >> 3) & 0x7)
  
-+	add_wait_queue(&netdev_unregistering_wq, &wait);
- 	for (;;) {
--		prepare_to_wait(&netdev_unregistering_wq, &wait,
--				TASK_UNINTERRUPTIBLE);
- 		unregistering = false;
- 		rtnl_lock();
- 		list_for_each_entry(net, net_list, exit_list) {
-@@ -7212,9 +7211,10 @@ static void __net_exit rtnl_lock_unregis
- 		if (!unregistering)
- 			break;
- 		__rtnl_unlock();
--		schedule();
++static DECLARE_WAIT_QUEUE_HEAD(rfcomm_wq);
 +
-+		wait_woken(&wait, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
- 	}
--	finish_wait(&netdev_unregistering_wq, &wait);
-+	remove_wait_queue(&netdev_unregistering_wq, &wait);
- }
- 
- static void __net_exit default_device_exit_batch(struct list_head *net_list)
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -365,11 +365,10 @@ static void rtnl_lock_unregistering_all(
+ static void rfcomm_schedule(void)
  {
- 	struct net *net;
- 	bool unregistering;
--	DEFINE_WAIT(wait);
-+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
- 
-+	add_wait_queue(&netdev_unregistering_wq, &wait);
- 	for (;;) {
--		prepare_to_wait(&netdev_unregistering_wq, &wait,
--				TASK_UNINTERRUPTIBLE);
- 		unregistering = false;
- 		rtnl_lock();
- 		for_each_net(net) {
-@@ -381,9 +380,10 @@ static void rtnl_lock_unregistering_all(
- 		if (!unregistering)
- 			break;
- 		__rtnl_unlock();
--		schedule();
-+
-+		wait_woken(&wait, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
- 	}
--	finish_wait(&netdev_unregistering_wq, &wait);
-+	remove_wait_queue(&netdev_unregistering_wq, &wait);
+-	if (!rfcomm_thread)
+-		return;
+-	wake_up_process(rfcomm_thread);
++	wake_up_all(&rfcomm_wq);
  }
  
- /**
+ /* ---- RFCOMM FCS computation ---- */
+@@ -2086,24 +2086,22 @@ static void rfcomm_kill_listener(void)
+ 
+ static int rfcomm_run(void *unused)
+ {
++	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+ 	BT_DBG("");
+ 
+ 	set_user_nice(current, -10);
+ 
+ 	rfcomm_add_listener(BDADDR_ANY);
+ 
+-	while (1) {
+-		set_current_state(TASK_INTERRUPTIBLE);
+-
+-		if (kthread_should_stop())
+-			break;
++	add_wait_queue(&rfcomm_wq, &wait);
++	while (!kthread_should_stop()) {
+ 
+ 		/* Process stuff */
+ 		rfcomm_process_sessions();
+ 
+-		schedule();
++		wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+ 	}
+-	__set_current_state(TASK_RUNNING);
++	remove_wait_queue(&rfcomm_wq, &wait);
+ 
+ 	rfcomm_kill_listener();
+ 
 
 
