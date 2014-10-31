@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256AbaJaE2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 00:28:30 -0400
-Received: from out4133-66.mail.aliyun.com ([42.120.133.66]:13701 "EHLO
-	out4133-66.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756922AbaJaE22 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 00:28:28 -0400
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R121e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g08152;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=5;RT=5;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'Michal Hocko'" <mhocko@suse.cz>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "Hillf Danton" <hillf.zj@alibaba-inc.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [RFC patch] mm: hugetlb: fix __unmap_hugepage_range
-Date: Fri, 31 Oct 2014 12:22:12 +0800
-Message-ID: <028701cff4c2$3e9e2ca0$bbda85e0$@alibaba-inc.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac/0wN3OLQJTT4qTTyyFwFVRBMzbDg==
-Content-Language: zh-cn
+	id S1753230AbaJaEd4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 00:33:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31305 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750723AbaJaEdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 00:33:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,292,1413270000"; 
+   d="scan'208";a="599517854"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH] KVM: x86: fix access memslots w/o hold srcu read lock
+Date: Fri, 31 Oct 2014 12:33:32 +0800
+Message-Id: <1414730012-7278-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First, after flushing TLB, we have no need to scan pte from start again.
-Second, before bail out loop, the address is forwarded one step.
+The srcu read lock must be held while accessing memslots (e.g. 
+when using gfn_to_* functions), however, commit c24ae0dcd3e8 
+("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call 
+gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it
+which leads to suspicious rcu_dereference_check() usage warning.
+This patch fix it by holding srcu read lock when call gfn_to_page()
+in kvm_vcpu_reload_apic_access_page() function.
 
-Signed-off-by: Hillf Danton <hillf.zj@alibaba-inc.com>
+
+[ INFO: suspicious RCU usage. ]
+3.18.0-rc2-test2+ #70 Not tainted
+-------------------------------
+include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
+
+other info that might help us debug this:
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by qemu-system-x86/2371:
+ #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
+
+stack backtrace:
+CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
+Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
+ 0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
+ ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
+ ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
+Call Trace:
+ [<ffffffff816f514f>] dump_stack+0x4e/0x71
+ [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
+ [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
+ [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
+ [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
+ [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
+ [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
+ [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
+ [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+ [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
+ [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
+ [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
+ [<ffffffff8122ee45>] ? __fget+0x5/0x250
+ [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
+ [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
+ [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
+
+Reported-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 ---
+ arch/x86/kvm/x86.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/mm/hugetlb.c	Fri Oct 31 11:47:25 2014
-+++ b/mm/hugetlb.c	Fri Oct 31 11:52:42 2014
-@@ -2641,8 +2641,9 @@ void __unmap_hugepage_range(struct mmu_g
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 0033df3..2d97329 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6059,6 +6059,7 @@ static void kvm_vcpu_flush_tlb(struct kvm_vcpu *vcpu)
+ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+ {
+ 	struct page *page = NULL;
++	int idx;
  
- 	tlb_start_vma(tlb, vma);
- 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	address = start;
- again:
--	for (address = start; address < end; address += sz) {
-+	for (; address < end; address += sz) {
- 		ptep = huge_pte_offset(mm, address);
- 		if (!ptep)
- 			continue;
-@@ -2689,6 +2690,7 @@ again:
- 		page_remove_rmap(page);
- 		force_flush = !__tlb_remove_page(tlb, page);
- 		if (force_flush) {
-+			address += sz;
- 			spin_unlock(ptl);
- 			break;
- 		}
---
-
+ 	if (!irqchip_in_kernel(vcpu->kvm))
+ 		return;
+@@ -6066,7 +6067,9 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+ 	if (!kvm_x86_ops->set_apic_access_page_addr)
+ 		return;
+ 
++	idx = srcu_read_lock(&vcpu->kvm->srcu);
+ 	page = gfn_to_page(vcpu->kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
++	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+ 	kvm_x86_ops->set_apic_access_page_addr(vcpu, page_to_phys(page));
+ 
+ 	/*
+-- 
+1.9.1
 
