@@ -1,33 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101AbaJaSMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 14:12:41 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59607 "EHLO
+	id S1758273AbaJaSMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 14:12:50 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59617 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaJaSMj (ORCPT
+	with ESMTP id S1751212AbaJaSMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 14:12:39 -0400
-Date: Fri, 31 Oct 2014 18:11:55 +0000
+	Fri, 31 Oct 2014 14:12:48 -0400
+Date: Fri, 31 Oct 2014 18:12:24 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Jianqun <jay.xu@rock-chips.com>
-Cc: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, huangtao@rock-chips.com,
-        cf@rock-chips.com
-Message-ID: <20141031181155.GP18557@sirena.org.uk>
-References: <1413891110-21059-1-git-send-email-jay.xu@rock-chips.com>
- <1413938456-30468-1-git-send-email-jay.xu@rock-chips.com>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+Cc: b02247@freescale.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, alsa-devel@alsa-project.org,
+        timur@tabi.org, Li.Xiubo@freescale.com, lgirdwood@gmail.com
+Message-ID: <20141031181224.GR18557@sirena.org.uk>
+References: <cover.1414193668.git.nicoleotsuka@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pdpX56ILVjuiN9xp"
+	protocol="application/pgp-signature"; boundary="Ty13OR+Qa9+9xBCd"
 Content-Disposition: inline
-In-Reply-To: <1413938456-30468-1-git-send-email-jay.xu@rock-chips.com>
+In-Reply-To: <cover.1414193668.git.nicoleotsuka@gmail.com>
 X-Cookie: FORCE YOURSELF TO RELAX!
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: rockchip-i2s: add rockchip-max98090 driver support
+Subject: Re: [PATCH 0/2] ASoC: fsl: Use dynamic slot width for ESAI.
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,47 +32,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---pdpX56ILVjuiN9xp
+--Ty13OR+Qa9+9xBCd
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Oct 22, 2014 at 08:40:56AM +0800, Jianqun wrote:
+On Fri, Oct 24, 2014 at 04:48:10PM -0700, Nicolin Chen wrote:
 
->  config SND_SOC_ROCKCHIP_I2S
->  	tristate
-> +	depends on CLKDEV_LOOKUP && SND_SOC_ROCKCHIP
-> +	help
-> +	  Say Y or M if you want to add support for I2S driver for Rockchip
-> +	  I2S device.
+> @Shengjiu,
+> Will you be available to test this series on Sabre Auto for both
+> Master and Slave cases? I'd like to wait for your Test-by. Thanks.
 
-You need to make this directlyuser selectable by adding some text after
-the tristate as well as the rest.
+Any ETA on the testing?
 
-> +config SND_SOC_MAX98090
-> +	tristate "ASoC support max98090 device driver"
-> +	depends on I2C && GPIOLIB
-> +	select SND_SOC_ROCKCHIP_I2S
-> +	help
-> +	  Say Y or M here if you want to add support for Rockchio board using
-> +	  a max98090 codec.
-
-This needs to modify the existing MAX98090 entry, not duplicate it
-(probably as a separate patch).
-
---pdpX56ILVjuiN9xp
+--Ty13OR+Qa9+9xBCd
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUU9DqAAoJECTWi3JdVIfQDaMH/i5bLPe7iX4cIXne6JxkkUCB
-ZpT4JH2jh4N2odPUxZo6gK2MxlEr7joctP1MyUgI2Z+Qpsk55hDyHPl8pWpLYMdK
-MIHVRyCJKRvTBEd9z8FWQXB/mWeeo6qFkGRZXCSe8ZjdWKa9P39k73YnK6RhgasI
-28w3+YiSZoQflFk+6fPI4+2qqLqrrFmFyUr6J5eb1jcTekhpuRnKGETQdHL+1Unf
-bkfj8cdWlnlDIj8wJZS2tNTQ+ZBvDxtjXWTHXVvn3hatA5A39m1iD0ZT+sPRxukD
-p8ReBmiBKcHBFZkM8WZdJfR83AwR5Zlb6Ww+LHGzAqdzKdic9ZAWx1FiQyI/wyk=
-=hH8d
+iQEcBAEBAgAGBQJUU9EIAAoJECTWi3JdVIfQrssIAICIjUZKNQWCOY6z18rDzzWX
+LyMRGFXY3niQwMg7iEA7eHvc2RXwdAtLFqz14HkFxSuYccy2dn0WlASQj2WaHamM
+jAZX7upEpJGPE9dVUGlwsLLI4D8jKqhqfj8c1n5KbijF+G4xS5rk8R3c4U0VWLPm
+6Qw+Hqd1V3+lTn/d9gy1guL/jqMvvnNADYR+FLkTWujaazl74VNnX3QN1DwGE4fX
+DDB4XvKab2OLbXsd8Ia3cvbueCzp7PBbQK7WGXgs+VR/SM8enNGm5uyathl0P0rK
+AToRRzscCy4QEkqJaw3sPyPqbmFqVaKWqa8P78S/wvpFL8IzoXwUM2K/Pjeg2fg=
+=M6Gn
 -----END PGP SIGNATURE-----
 
---pdpX56ILVjuiN9xp--
+--Ty13OR+Qa9+9xBCd--
