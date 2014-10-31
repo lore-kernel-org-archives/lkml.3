@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758382AbaJaVRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:17:36 -0400
-Received: from ns.iliad.fr ([212.27.33.1]:36037 "EHLO ns.iliad.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750886AbaJaVRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:17:34 -0400
-X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 17:17:34 EDT
-Message-ID: <1414789630.14835.49.camel@sakura.staff.proxad.net>
-Subject: Re: DMA allocations from CMA and fatal_signal_pending check
-From: Maxime Bizon <mbizon@freebox.fr>
-Reply-To: mbizon@freebox.fr
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>, lauraa@codeaurora.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, mina86@mina86.com, linux-mm@kvack.org,
-        aneesh.kumar@linux.vnet.ibm.com, Gregory Fong <gregory.0xf0@gmail.com>,
-        gioh.kim@lge.com, akpm@linux-foundation.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, m.szyprowski@samsung.com
-Date: Fri, 31 Oct 2014 22:07:10 +0100
-In-Reply-To: <20141031082818.GB14642@js1304-P5Q-DELUXE>
-References: <544FE9BE.6040503@gmail.com>
-	 <20141031082818.GB14642@js1304-P5Q-DELUXE>
-Organization: Freebox
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756548AbaJaVWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:22:13 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:47336 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaJaVWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 17:22:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <5453FB8E.8050506@gaast.net>
+References: <543F049F.5090605@gaast.net>
+	<544E235C.5010908@gaast.net>
+	<CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
+	<544EC59D.9080303@gaast.net>
+	<CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
+	<544EDD40.1040107@gaast.net>
+	<CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com>
+	<545027F9.1040703@gaast.net>
+	<CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com>
+	<5450B55E.6010103@gaast.net>
+	<CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com>
+	<545214C5.6070004@gaast.net>
+	<CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com>
+	<5452B3A6.7060100@gaast.net>
+	<CAE9FiQUGm-gvqpzPymxqa6vdfV7xhv8-fb433irZE1AT-eNg9A@mail.gmail.com>
+	<5452C8BE.3060206@gaast.net>
+	<CAE9FiQWd7wC9ijzgObCcGd9QE+U3_wzjQwafXhV=U61hLxGszg@mail.gmail.com>
+	<CAE9FiQXPZdYndp6rTKxLUkkwX=AQtRVH3JJC=xzQfsehtBgOqA@mail.gmail.com>
+	<545358D5.6070903@gaast.net>
+	<CAE9FiQWeZ4AXwwT=NS96Q+FxPz+3Bj5rf8JoRDmJ-RHBhjj78g@mail.gmail.com>
+	<5453FB8E.8050506@gaast.net>
+Date: Fri, 31 Oct 2014 14:22:10 -0700
+X-Google-Sender-Auth: Ti-kXe5KgtRjmACTrZ6rZQkAQj8
+Message-ID: <CAE9FiQX7nhBKBGUm6SkWdA3EUm1MZ3rgWf04+AUPAPgSCNam=w@mail.gmail.com>
+Subject: Re: Machine crashes right *after* ~successful resume
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wilmer van der Gaast <wilmer@gaast.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 31, 2014 at 2:13 PM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
+> On 31-10-14 16:11, Yinghai Lu wrote:
+>>
+>>
+>> Good. Please check if attached one on top of 3.17 only would work too.
+>>
+> No luck, sadly. :-( Unsuccessful third resume.
+>
+> I forgot to set up the serial console, would that still be useful?
 
-On Fri, 2014-10-31 at 17:28 +0900, Joonsoo Kim wrote:
-
-> I guess that it is okay that bcm_sysport_open() return -EINTR?
-
-actually, since CMA alloc is hidden behind dma_alloc_coherent(), all you
-get back is NULL and then return ENOMEM.
-
--- 
-Maxime
-
-
+never mind, let me go through suspend/resume code path again.
