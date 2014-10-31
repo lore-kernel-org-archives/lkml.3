@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088AbaJaSFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 14:05:11 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43171 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751981AbaJaSFJ (ORCPT
+	id S1757556AbaJaSHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 14:07:42 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59589 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117AbaJaSHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 14:05:09 -0400
-X-Greylist: delayed 1589 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 14:05:09 EDT
-Message-ID: <5453CF52.3030303@hurleysoftware.com>
-Date: Fri, 31 Oct 2014 14:05:06 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 31 Oct 2014 14:07:40 -0400
+Date: Fri, 31 Oct 2014 18:06:32 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Message-ID: <20141031180632.GO18557@sirena.org.uk>
+References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
+ <1414668053-31370-2-git-send-email-k.kozlowski@samsung.com>
+ <20141031122330.GP18557@sirena.org.uk>
+ <1414760874.7318.15.camel@AMDC1943>
 MIME-Version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>, Udo van den Heuvel <udovdh@xs4all.nl>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: 3.17.2. issue?
-References: <5453AE33.8040802@xs4all.nl> <5453C91D.9060702@hurleysoftware.com> <5453CB40.8040303@xs4all.nl>
-In-Reply-To: <5453CB40.8040303@xs4all.nl>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lv1RQUI4Uowj5McI"
+Content-Disposition: inline
+In-Reply-To: <1414760874.7318.15.camel@AMDC1943>
+X-Cookie: FORCE YOURSELF TO RELAX!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 01/14] mfd: max77686/802: Map regulator driver to its
+ own of_node
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 01:47 PM, Hans Verkuil wrote:
-> On 10/31/2014 06:38 PM, Peter Hurley wrote:
->> [ +cc Hans Verkuil, Mauro Carvalho Chehab, linux-media ]
-> 
-> Fixed by this patch: https://patchwork.linuxtv.org/patch/26302/
-> 
-> Which is queued for 3.18. I think this should be backported
-> to 3.17 as well.
 
-Thanks for the quick response, Hans.
+--lv1RQUI4Uowj5McI
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm sure Udo does/will appreciate it.
+On Fri, Oct 31, 2014 at 02:07:54PM +0100, Krzysztof Kozlowski wrote:
+> On pi=C4=85, 2014-10-31 at 12:23 +0000, Mark Brown wrote:
 
-Regards,
-Peter Hurley
+> > I'm getting very frustrated with what's going on with these drivers,
+> > there seem to be a lot of rather large sets of patches spawning lots of
+> > discussion but also frequent review problems and very little actually
+> > getting merged (look at the set of changes in the past few merge windows
+> > for example).  There's something going wrong here.
+
+> If I over-spammed you, then I am deeply sorry.
+
+It's not just about volume, it's also about the fact that so little of
+the mail around these drivers (not just from you) is translating into
+code that gets merged.
+
+--lv1RQUI4Uowj5McI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUU8+nAAoJECTWi3JdVIfQYSkH/0fJk94SBzZ0eQUotAuideUC
+NDZ+HO0+tR+HPMFuxeAAE1ZsSbWmoopM/v2SZb14ep+0kpyUJes5DuRhUqiq30Dh
+KwN3vouzaiBs13U8Tna0LxIbFR0xUVC8HWCyUASkkXrU3vOPRjKxwg0DkejrzayY
+r8/OJ7k5/dhAEiW4gp5yrgUVyzwVH/DbxaFTZnm8yv7FJAQPXEsL8ZdBm4B/h8GT
+iaMY67RV6luiGgEebXoiCdGbH4fft564obIbTkAbBVGwB68d3cshVJe49Lq7WCrO
+bEiyhk8uw21xQrihWUFwJKHSgxE6Xwa3n3e8DyDGi4422cqQf+mWu+MEbGsooc4=
+=SmBY
+-----END PGP SIGNATURE-----
+
+--lv1RQUI4Uowj5McI--
