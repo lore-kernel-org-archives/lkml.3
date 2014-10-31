@@ -1,207 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343AbaJaThD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:37:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758148AbaJaThB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:37:01 -0400
-Message-ID: <1414784196.27420.328.camel@ul30vt.home>
-Subject: Re: [PATCH v9 13/19] vfio/platform: support for level sensitive
- interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Fri, 31 Oct 2014 13:36:36 -0600
-In-Reply-To: <1414433284-31719-14-git-send-email-a.motakis@virtualopensystems.com>
-References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1414433284-31719-14-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932429AbaJaTih (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 15:38:37 -0400
+Received: from skprod2.natinst.com ([130.164.80.23]:52340 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755588AbaJaTig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 15:38:36 -0400
+From: Ben Shelton <ben.shelton@ni.com>
+To: linux-mtd@lists.infradead.org
+Cc: dedekind1@gmail.com, adrian.hunter@intel.com, linux-kernel@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Ben Shelton <ben.shelton@ni.com>
+Subject: [PATCH 1/4] UBIFS: fix a couple bugs in UBIFS xattr length calculation
+Date: Fri, 31 Oct 2014 13:50:28 -0500
+Message-Id: <1414781431-2911-2-git-send-email-ben.shelton@ni.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+References: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 10/31/2014 01:51:09 PM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 10/31/2014 01:51:09 PM,
+	Serialize complete at 10/31/2014 01:51:09 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-31_08:2014-10-31,2014-10-31,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 19:07 +0100, Antonios Motakis wrote:
-> Level sensitive interrupts are exposed as maskable and automasked
-> interrupts and are masked and disabled automatically when they fire.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/vfio_platform_irq.c     | 102 +++++++++++++++++++++++++-
->  drivers/vfio/platform/vfio_platform_private.h |   2 +
->  2 files changed, 100 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
-> index 2ac8ed7..563abf6 100644
-> --- a/drivers/vfio/platform/vfio_platform_irq.c
-> +++ b/drivers/vfio/platform/vfio_platform_irq.c
-> @@ -31,18 +31,108 @@
->  
->  #include "vfio_platform_private.h"
->  
-> +static void vfio_platform_mask(struct vfio_platform_irq *irq_ctx)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&irq_ctx->lock, flags);
-> +
-> +	if (!irq_ctx->masked) {
-> +		disable_irq(irq_ctx->hwirq);
-> +		irq_ctx->masked = true;
-> +	}
-> +
-> +	spin_unlock_irqrestore(&irq_ctx->lock, flags);
-> +}
-> +
->  static int vfio_platform_set_irq_mask(struct vfio_platform_device *vdev,
->  				    unsigned index, unsigned start,
->  				    unsigned count, uint32_t flags, void *data)
->  {
-> -	return -EINVAL;
-> +	if (start != 0 || count != 1)
-> +		return -EINVAL;
-> +
-> +	if (!(vdev->irqs[index].flags & VFIO_IRQ_INFO_MASKABLE))
-> +		return -EINVAL;
-> +
-> +	if (flags & VFIO_IRQ_SET_DATA_EVENTFD)
-> +		return -EINVAL; /* not implemented yet */
-> +
-> +	if (flags & VFIO_IRQ_SET_DATA_NONE) {
-> +		vfio_platform_mask(&vdev->irqs[index]);
-> +
-> +	} else if (flags & VFIO_IRQ_SET_DATA_BOOL) {
-> +		uint8_t mask = *(uint8_t *)data;
-> +
-> +		if (mask)
-> +			vfio_platform_mask(&vdev->irqs[index]);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void vfio_platform_unmask(struct vfio_platform_irq *irq_ctx)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&irq_ctx->lock, flags);
-> +
-> +	if (irq_ctx->masked) {
-> +		enable_irq(irq_ctx->hwirq);
-> +		irq_ctx->masked = false;
-> +	}
-> +
-> +	spin_unlock_irqrestore(&irq_ctx->lock, flags);
->  }
->  
->  static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
->  				    unsigned index, unsigned start,
->  				    unsigned count, uint32_t flags, void *data)
->  {
-> -	return -EINVAL;
-> +	if (start != 0 || count != 1)
-> +		return -EINVAL;
-> +
-> +	if (!(vdev->irqs[index].flags & VFIO_IRQ_INFO_MASKABLE))
-> +		return -EINVAL;
-> +
-> +	if (flags & VFIO_IRQ_SET_DATA_EVENTFD)
-> +		return -EINVAL; /* not implemented yet */
-> +
-> +	if (flags & VFIO_IRQ_SET_DATA_NONE) {
-> +		vfio_platform_unmask(&vdev->irqs[index]);
-> +
-> +	} else if (flags & VFIO_IRQ_SET_DATA_BOOL) {
-> +		uint8_t unmask = *(uint8_t *)data;
-> +
-> +		if (unmask)
-> +			vfio_platform_unmask(&vdev->irqs[index]);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t vfio_maskable_irq_handler(int irq, void *dev_id)
-> +{
-> +	struct vfio_platform_irq *irq_ctx = dev_id;
-> +	unsigned long flags;
-> +	int ret = IRQ_NONE;
-> +
-> +	spin_lock_irqsave(&irq_ctx->lock, flags);
-> +
-> +	if (!irq_ctx->masked) {
-> +		ret = IRQ_HANDLED;
-> +
-> +		/* automask maskable interrupts */
-> +		disable_irq_nosync(irq_ctx->hwirq);
-> +		irq_ctx->masked = true;
-> +	}
-> +
-> +	spin_unlock_irqrestore(&irq_ctx->lock, flags);
-> +
-> +	if (ret == IRQ_HANDLED)
-> +		eventfd_signal(irq_ctx->trigger, 1);
-> +
-> +	return ret;
+From: Subodh Nijsure <snijsure@grid-net.com>
 
-This is not just a maskable irq handler, but specifically a level (aka
-automasked) handler.  So this should only be used for AUTOMASKED irqs.
+Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Ben Shelton <ben.shelton@ni.com>
+Acked-by: Brad Mouring <brad.mouring@ni.com>
+Acked-by: Gratian Crisan <gratian.crisan@ni.com>
+---
+ fs/ubifs/journal.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
->  }
->  
->  static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
-> @@ -103,7 +193,7 @@ static int vfio_platform_set_irq_trigger(struct vfio_platform_device *vdev,
->  	irq_handler_t handler;
->  
->  	if (vdev->irqs[index].flags & VFIO_IRQ_INFO_MASKABLE)
-> -		return -EINVAL; /* not implemented */
-> +		handler = vfio_maskable_irq_handler;
-
-As noted in the previous patch, this should be a test for AUTOMASKED,
-not just MASKABLE.
-
->  	else
->  		handler = vfio_irq_handler;
->  
-> @@ -175,13 +265,17 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
->  		if (hwirq < 0)
->  			goto err;
->  
-> +		spin_lock_init(&vdev->irqs[i].lock);
-> +
->  		vdev->irqs[i].flags = VFIO_IRQ_INFO_EVENTFD;
->  
->  		if (irq_get_trigger_type(hwirq) & IRQ_TYPE_LEVEL_MASK)
-> -			vdev->irqs[i].flags |= VFIO_IRQ_INFO_MASKABLE;
-> +			vdev->irqs[i].flags |= VFIO_IRQ_INFO_MASKABLE
-> +						| VFIO_IRQ_INFO_AUTOMASKED;
->  
->  		vdev->irqs[i].count = 1;
->  		vdev->irqs[i].hwirq = hwirq;
-> +		vdev->irqs[i].masked = false;
->  	}
->  
->  	vdev->num_irqs = cnt;
-> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
-> index a3f2411..d25c4cd 100644
-> --- a/drivers/vfio/platform/vfio_platform_private.h
-> +++ b/drivers/vfio/platform/vfio_platform_private.h
-> @@ -30,6 +30,8 @@ struct vfio_platform_irq {
->  	int			hwirq;
->  	char			*name;
->  	struct eventfd_ctx	*trigger;
-> +	bool			masked;
-> +	spinlock_t		lock;
->  };
->  
->  struct vfio_platform_region {
-
-
+diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
+index fb166e2..7d90f13 100644
+--- a/fs/ubifs/journal.c
++++ b/fs/ubifs/journal.c
+@@ -571,7 +571,13 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
+ 
+ 	aligned_dlen = ALIGN(dlen, 8);
+ 	aligned_ilen = ALIGN(ilen, 8);
+-	len = aligned_dlen + aligned_ilen + UBIFS_INO_NODE_SZ;
++
++	/*
++	 * Make sure to account for dir_ui->data_len in the length calculation
++	 * in case there is an extended attribute.
++	 */
++	len = aligned_dlen + aligned_ilen +
++	      UBIFS_INO_NODE_SZ + dir_ui->data_len;
+ 	dent = kmalloc(len, GFP_NOFS);
+ 	if (!dent)
+ 		return -ENOMEM;
+@@ -648,7 +654,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
+ 
+ 	ino_key_init(c, &ino_key, dir->i_ino);
+ 	ino_offs += aligned_ilen;
+-	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs, UBIFS_INO_NODE_SZ);
++	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs,
++			    UBIFS_INO_NODE_SZ + dir_ui->data_len);
+ 	if (err)
+ 		goto out_ro;
+ 
+-- 
+2.1.1
 
