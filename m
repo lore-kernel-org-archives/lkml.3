@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759712AbaJaVh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:37:28 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:59029 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478AbaJaVh0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:37:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: at91: rm9200 add system timer resources to watchdog
-Date: Fri, 31 Oct 2014 22:36:55 +0100
-Message-ID: <3833756.aJxOhkuG91@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141031205756.GB11327@piout.net>
-References: <1414788359-15759-1-git-send-email-alexandre.belloni@free-electrons.com> <3170633.12AsIiHlY5@wuerfel> <20141031205756.GB11327@piout.net>
+	id S1759797AbaJaVib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:38:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753965AbaJaVia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 17:38:30 -0400
+Date: Fri, 31 Oct 2014 22:38:02 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peter@hurleysoftware.com,
+        rjw@rjwysocki.net, torvalds@linux-foundation.org, tglx@linutronix.de,
+        eparis@redhat.com, umgwanakikbuti@gmail.com, marcel@holtmann.org,
+        ebiederm@xmission.com, davem@davemloft.net, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/7] wait: Reimplement wait_event_freezable()
+Message-ID: <20141031213802.GA25881@redhat.com>
+References: <20141031111037.936236584@infradead.org> <20141031111549.551132563@infradead.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:FoPnmnEn6Og0kDuJSD4mq+ideXJlwR3lsloHk/JoDuo
- Q/UZ3RyP/J0Z00mXi7v5wJ6m7S9eKKByzyy698hxlv6mzwWIUc
- K2ncCTr8Zg7tTXwkE6+2cIlG2XYwLCzxdFnzWVcaCtxGtZcI+T
- BlkzMLLFhaZObVHWGCT0bWp10MkYnOu6G1Cr2D6JVPgG7EODz+
- uALWwCxnzYQmBZsg3+NkJJNoleFwMj6qR2Cbh+nxUh1ZE7kGca
- gru6UxV5mW9VDZUTIg2XfSQGFngjaU3yXXabZZvijEzmKv3KjK
- vTjMZ0p5c3BpgAH9EeJ3hU3rfacBXA8lZDPoP8dv012a/7IE5B
- PAfNLi3etvnxV9blkU9M=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031111549.551132563@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 31 October 2014 21:57:56 Alexandre Belloni wrote:
-> On 31/10/2014 at 21:50:05 +0100, Arnd Bergmann wrote :
-> > On Friday 31 October 2014 21:45:58 Alexandre Belloni wrote:
-> > > To be able to make the watchdog driver independent from the mach/ includes, pass
-> > > the system timer register space as a resource.
-> > > 
-> > > Also, change the name to avoid conflicting with the at91sam9 watchdog driver.
-> > > 
-> > > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > > 
-> > 
-> > Doing this change as a separate patch breaks bisection because now the device
-> > name no longer matches untile the other patch is applied too.
-> > 
-> 
-> Yeah, I was not sure how important that was as there is no user of the
-> watchdog in the kernel. My thinking was that both patch can then go
-> through different trees.
-> 
-> I can definitely squash them.
+On 10/31, Peter Zijlstra wrote:
+>
+> Provide better implementations of wait_event_freezable() APIs.
+>
+> The problem is with freezer_do_not_count(), it hides the thread from
+> the freezer, even though this thread might not actually freeze/sleep
+> at all.
 
-AFAICT, arch/arm/configs/at91rm9200_defconfig enables the device and it
-gets registered through at91_add_standard_devices. You definitely have
-my Ack to merge the mach-at91 patch through the watchdog tree.
+I agree, wait_event_freezable() is awful. But could you clarify "at all" ?
 
-	Arnd
+Sure, the task can be preempted right after it sets, it can do a lot
+of things before it calls schedule(), it can be woken after that and
+it can run again and do something else before freezer_count() calls
+try_to_freeze(), etc.
+
+Is this what you meant?
+
+
+> +#define __wait_event_freezable(wq, condition)				\
+> +	(void)___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,	\
+> +			    schedule(); try_to_freeze())
+
+I don't think this can work. wait_event_freezable() should be used by
+kernel threads and thus we can't rely on TIF_SIGPENDING, freeze_task()
+simply does wake_up_state(TASK_INTERRUPTIBLE) in this case.
+
+Just for example, suppose that try_to_freeze_tasks() calls freeze_task()
+before this kthread sets current->state = TASK_INTERRUPTIBLE. In this
+case __wait_event_freezable()->schedule() will happily sleep and
+try_to_freeze_tasks() will fail.
+
+That is why I tried to suggest cmd == freezable_schedule(). Still not
+good, but at least this narrows the window and (perhaps) we can improve
+this freezable_schedule() later.
+
+But on a second thought... Probably cmd => try_to_freeze(); schedule();
+should work. Or just
+
+	#define __wait_event_freezable(wq, condition)	\
+		__wait_event_interruptible(wq, ({ try_to_freeze(); (condition); }))
+
+which looks simpler.
+
+Oleg.
+
