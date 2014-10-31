@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489AbaJaJgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:36:20 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:43118 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757351AbaJaJgT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:36:19 -0400
-Date: Fri, 31 Oct 2014 17:36:09 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Cc: Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwrng: pseries - port to new read API and fix stack
- corruption
-Message-ID: <20141031093609.GA8454@gondor.apana.org.au>
-References: <20141031063233.1884.86309.stgit@bahia.local>
- <1414738812.21815.5.camel@concordia>
- <20141031103141.7b91c647@bahia.local>
+	id S1757577AbaJaJg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:36:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59781 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757351AbaJaJgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 05:36:22 -0400
+Date: Fri, 31 Oct 2014 10:36:18 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Sergey \"Shnatsel\" Davidoff" <sergey@elementaryos.org>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
+Subject: Re: A desktop environment[1] kernel wishlist
+Message-ID: <20141031093618.GB30321@quack.suse.cz>
+References: <1413881397.30379.7.camel@hadess.net>
+ <loom.20141021T140216-28@post.gmane.org>
+ <20141027092311.GA9807@amd>
+ <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141031103141.7b91c647@bahia.local>
+In-Reply-To: <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 10:31:41AM +0100, Greg Kurz wrote:
->
-> > > Cc'ing stable as I could reproduce back to 3.15.10
-> > 
-> > The right way to CC stable for a patch that isn't yet in upstream is to add:
-> > 
-> > CC: stable@vger.kernel.org
-> > 
-> > Before your Signed-off-by. They will then pick it up once it's merged into
-> > Linus' tree. See Documentation/stable_kernel_rules.txt
-> > 
-> > cheers
-> > 
+On Mon 27-10-14 20:02:51, Sergey "Shnatsel" Davidoff wrote:
+> > If "recursive mtime" was available, would that work for you?
 > 
-> Oops... should I repost then ?
+> It would work for detecting "offline" changes. I suppose recursive
+> mtime not viable for online monitoring, mostly because detecting file
+> renaming would be a massive PITA (and we already have fanotify with
+> exactly this problem).
+  Yes, you'll get only "something has changed in a subtree" information for
+each directory. You'd then have to rescan the directory to find out what
+has changed. But there's no simple solution for this - either you have to
+process tons of events for busy directory tree or you have to somehow
+reduce the amount of information provided to userspace...
 
-Don't worry, I can fix this up.
-
-Cheers,
+								Honza
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
