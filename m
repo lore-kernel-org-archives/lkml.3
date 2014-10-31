@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161664AbaJaDKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 23:10:21 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:43244 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595AbaJaDKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 23:10:20 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@au1.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 01/32] perf tools powerpc: Cache the DWARF debug info
-References: <1414503146-22789-1-git-send-email-acme@kernel.org>
-	<1414503146-22789-2-git-send-email-acme@kernel.org>
-	<87egtr751p.fsf@sejong.aot.lge.com>
-	<20141029212620.GC17916@us.ibm.com>
-Date: Fri, 31 Oct 2014 12:10:17 +0900
-In-Reply-To: <20141029212620.GC17916@us.ibm.com> (Sukadev Bhattiprolu's
-	message of "Wed, 29 Oct 2014 14:26:20 -0700")
-Message-ID: <87a94d6ijq.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757438AbaJaDMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 23:12:42 -0400
+Received: from mail-bn1on0114.outbound.protection.outlook.com ([157.56.110.114]:34313
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751038AbaJaDMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 23:12:40 -0400
+X-WSS-ID: 0NEAGWY-07-7WR-02
+X-M-MSG: 
+From: Huang Rui <ray.huang@amd.com>
+To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        "Bjorn Helgaas" <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
+        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Huang Rui <ray.huang@amd.com>
+Subject: [PATCH v5 0/8] usb: dwc3: add support for AMD Nolan SoC
+Date: Fri, 31 Oct 2014 11:11:11 +0800
+Message-ID: <1414725079-11490-1-git-send-email-ray.huang@amd.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
 Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(164054003)(199003)(189002)(48376002)(85306004)(50466002)(19580395003)(89996001)(44976005)(68736004)(85852003)(50986999)(77096002)(97736003)(53416004)(120916001)(76482002)(99396003)(101416001)(21056001)(102836001)(62966002)(107046002)(229853001)(84676001)(87286001)(87936001)(88136002)(2171001)(106466001)(105586002)(4396001)(50226001)(95666004)(36756003)(20776003)(47776003)(64706001)(77156001)(92566001)(92726001)(33646002)(80022003)(46102003)(93916002)(104166001)(86362001)(31966008);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03818C953D
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Ray.Huang@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sukadev,
+Hi,
 
-On Wed, 29 Oct 2014 14:26:20 -0700, Sukadev Bhattiprolu wrote:
-> Namhyung Kim [namhyung@kernel.org] wrote:
-> | I don't know how dwfl_report_offline() can make it to find out a mod
-> | from pc as it's an (loaded) virtual address.  Maybe I miss something or
-> | is your dso's are prelinked?
->
-> Scratching my head on this and a related issue.
->
-> The code seems to work consistently on Fedora20 and we recently noticed
-> that it does not work on RHEL7. Maybe related to the issue you point out.
->
-> On Fedora20 objdump -D /usr/lib64/libc-2.18.so shows something like this:
->
-> 00000080a7be3bf0 <.__random>:
->   80a7be3bf0:   7c 08 02 a6     mflr    r0
->   80a7be3bf4:   fb e1 ff f8     std     r31,-8(r1)
->   80a7be3bf8:   60 00 00 00     nop
->   80a7be3bfc:   39 00 00 01     li      r8,1
->   80a7be3c00:   3b e2 9a f0     addi    r31,r2,-25872
->   80a7be3c04:   39 40 00 00     li      r10,0
->   80a7be3c08:   f8 01 00 10     std     r0,16(r1)
->   80a7be3c0c:   f8 21 ff 71     stdu    r1,-144(r1)
->   80a7be3c10:   7d 20 f8 29     lwarx   r9,0,r31,1
->   80a7be3c14:   7c 09 50 00     cmpw    r9,r10
->   80a7be3c18:   40 82 00 0c     bne     80a7be3c24 <.__random+0x34>
->
-> and my small test program (and perf) can use the addresses to correctly
-> say if LR is relevant or not.
-
-Looks like it's prelink'ed.
+The series of patches add AMD Nolan (NL) SoC support for DesignWare USB3
+OTG IP with PCI bus glue layer. This controller supported hibernation, LPM
+erratum and used the 2.80a IP version and amd own phy. Current
+implementation support both simulation and SoC platform. And already tested
+with gadget zero and msc tool. It works well on file storage gadget.
 
 
->
-> But on RHEL7, objdump shows addresses differently:
->
-> 0000000000063870 <.__random>:
->    63870:       7c 08 02 a6     mflr    r0
->    63874:       fb e1 ff f8     std     r31,-8(r1)
->    63878:       60 00 00 00     nop
->    6387c:       3b e2 9a e0     addi    r31,r2,-25888
->    63880:       39 00 00 01     li      r8,1
->    63884:       39 40 00 00     li      r10,0
->    63888:       f8 01 00 10     std     r0,16(r1)
->    6388c:       f8 21 ff 71     stdu    r1,-144(r1)
->    63890:       7d 20 f8 29     lwarx   r9,0,r31,1
->
-> and perf and my test program fail. Not sure if this is something related
-> to the way it is built.
+These patches are rebased on balbi/testing/next, and only send the rest
+ones which are not applied.
 
-Then I think struct dso might not be a proper place to cache since a dso
-can be mapped to different locations/addresses and it has no idea about
-the location.
+Changes from v4 -> v5
+- Rebase rest ones which are not applied on testing/next.
+- Fix some typos.
+- Add comments of hibernation patch.
 
-Maybe it's worth move the caching logic to a different place like struct
-thread as libunwind does now, and make it generic so that the arch's
-can also get the benefit when unwinding.  A problem I can expect is that
-it will have thread x dso number of cache entries which can consume a
-lot of memory and fd IMHO.
+Changes from v3 -> v4
+- Add comment on hibernation patch
+- Fix typos of commit log and comments
+- Remove WARN_ON for temporary solution of FPGA board
+- Rename tx deemph to tx de-emphasis
+- Add documentation under Documentation/devicetree/bindings/usb/dwc3.txt
+- Check FPGA flag on usb3 and usb2 suspend phy quirk
+- Refine description of PCI quirk patch
+- Remove amd_nl_plat flag at dwc3 structure
+- Make HIRD threshold configurable
+
+Changes from v2 -> v3
+- Confirmed these quirks will be needed in product level
+- Move AMD configuration patch to the last one with all quirk flags
+- Make all quirks as 1-bit field instead of single-bits on a 32-bit
+  variable
+- Add all quirks DeviceTree counterparts
+- Make LPM erratum configurable
+- Add PCI ID into pci_ids.h because it will be used both on PCI and DWC3
+  device driver.
+
+Changes from v1 -> v2
+- Remove dual role function temporarily
+- Add pci quirk to avoid to bind with xhci driver
+- Distinguish between simulation board and soc
+- Break down all the special quirks
+
 
 Thanks,
-Namhyung
+Rui
+
+Huang Rui (8):
+  usb: dwc3: add Tx de-emphasis quirk
+  usb: dwc3: add disable usb3 suspend phy quirk
+  usb: dwc3: add disable usb2 suspend phy quirk
+  PCI: Add support for AMD Nolan USB3 DRD
+  PCI: Prevent xHCI driver from claiming AMD Nolan USB3 DRD device
+  usb: dwc3: add support for AMD Nolan platform
+  usb: dwc3: make HIRD threshold configurable
+  usb: dwc3: point host-mode hibernation enablement not device-mode
+
+ Documentation/devicetree/bindings/usb/dwc3.txt |  8 ++++
+ drivers/pci/quirks.c                           | 20 ++++++++++
+ drivers/usb/dwc3/core.c                        | 53 +++++++++++++++++++++++++-
+ drivers/usb/dwc3/core.h                        | 21 ++++++++++
+ drivers/usb/dwc3/dwc3-pci.c                    | 26 +++++++++++++
+ drivers/usb/dwc3/gadget.c                      |  8 +---
+ drivers/usb/dwc3/platform_data.h               |  8 ++++
+ include/linux/pci_ids.h                        |  1 +
+ 8 files changed, 138 insertions(+), 7 deletions(-)
+
+-- 
+1.9.1
+
