@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934859AbaJaHJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 03:09:38 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57097 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933200AbaJaHJd (ORCPT
+	id S1761103AbaJaHJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 03:09:44 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:61218 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761003AbaJaHJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 03:09:33 -0400
+	Fri, 31 Oct 2014 03:09:40 -0400
 From: gyungoh@gmail.com
 X-Google-Original-From: jack.yoo@skyworksinc.com
 To: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
@@ -19,9 +19,9 @@ Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
         shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
         trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
         jic23@kernel.org
-Subject: [RESUBMIT PATCH v6 3/8] devicetree: mfd: Add new SKY81452 mfd binding
-Date: Fri, 31 Oct 2014 16:08:37 +0900
-Message-Id: <1414739322-12487-4-git-send-email-jack.yoo@skyworksinc.com>
+Subject: [RESUBMIT PATCH v6 4/8] devicetree: backlight: Add new SKY81452 backlight binding
+Date: Fri, 31 Oct 2014 16:08:38 +0900
+Message-Id: <1414739322-12487-5-git-send-email-jack.yoo@skyworksinc.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
 References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
@@ -38,8 +38,7 @@ Changes v6:
 Nothing
 
 Changes v5:
-Changed DT for regulator : 'lout' node should be defined under 'regulator'
-Removed compatible string from sky81452-regulator driver
+Nothing
 
 Changes v4:
 Nothing
@@ -50,48 +49,39 @@ Nothing
 Changes v2:
 Added reg attribute for I2C slave address
 
- Documentation/devicetree/bindings/mfd/sky81452.txt | 33 ++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+ .../video/backlight/sky81452-backlight.txt         | 24 ++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
 
-diff --git a/Documentation/devicetree/bindings/mfd/sky81452.txt b/Documentation/devicetree/bindings/mfd/sky81452.txt
+diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
 new file mode 100644
-index 0000000..4b82a73
+index 0000000..2c2d947
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/sky81452.txt
-@@ -0,0 +1,33 @@
-+SKY81452 bindings
++++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+@@ -0,0 +1,24 @@
++SKY81452-backlight bindings
 +
 +Required properties:
-+- compatible	: Must be "skyworks,sky81452"
-+- reg		: I2C slave address
++- compatible		: Must be "skyworks,sky81452-backlight"
 +
-+Required child nodes:
-+- backlight	: container node for backlight following the binding
-+		in video/backlight/sky81452-backlight.txt
-+- regulator	: container node for regulators following the binding
-+		in regulator/sky81452-regulator.txt
++Optional properties:
++- name			: Name of backlight device. Default is 'lcd-backlight'.
++- gpio-enable		: GPIO to use to EN pin.
++- enable		: Enable mask for current sink channel 1 to 6.
++- ignore-pwm		: Ignore both PWM input
++- dpwm-mode		: Enable DPWM dimming mode, otherwise Analog dimming mode
++- phase-shift		: Enable phase shift mode
++- ovp-level		: Over-voltage protection level. Should be between 14 or 28V.
++- short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
++- boost-current-limit	: It should be one of 800, 1100 and 1500mA.
 +
 +Example:
 +
-+	sky81452@2c {
-+		compatible = "skyworks,sky81452";
-+		reg = <0x2c>;
-+
-+		backlight {
-+			compatible = "skyworks,sky81452-backlight";
-+			name = "pwm-backlight";
-+			enable = <0x3F>;
-+			ignore-pwm;
-+		};
-+
-+		regulator {
-+			lout {
-+				regulator-name = "sky81452-lout";
-+				regulator-min-microvolt = <4500000>;
-+				regulator-max-microvolt = <8000000>;
-+			};
-+		};
++	backlight {
++		compatible = "skyworks,sky81452-backlight";
++		name = "pwm-backlight";
++		enable = <0x3F>;
++		ignore-pwm;
 +	};
 -- 
 1.9.1
