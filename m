@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758552AbaJaKzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:55:25 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:47804 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793AbaJaKzY (ORCPT
+	id S1758732AbaJaKzd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:55:33 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:45666 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757442AbaJaKza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:55:24 -0400
-Subject: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options for
- cache
+	Fri, 31 Oct 2014 06:55:30 -0400
+Subject: [PATCH perf/core 1/6] [BUGFIX] perf-probe: Fix to handle optimized
+ not-inlined but has no instance
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
@@ -16,8 +16,10 @@ Cc: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
         Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
         namhyung@kernel.org, Hemant Kumar <hemant@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>
-Date: Fri, 31 Oct 2014 14:51:29 -0400
-Message-ID: <20141031185128.27889.32747.stgit@localhost.localdomain>
+Date: Fri, 31 Oct 2014 14:51:36 -0400
+Message-ID: <20141031185136.27889.54332.stgit@localhost.localdomain>
+In-Reply-To: <20141031185128.27889.32747.stgit@localhost.localdomain>
+References: <20141031185128.27889.32747.stgit@localhost.localdomain>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,94 +28,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Fix to handle optimized no-inline functions which have
+only function definition but no actual instance at
+that point. To fix this problem, we need to find actual
+instance of the function.
 
-Here is a sereis of patches for enabling "event cache" feature
-to perf probe. Brendan gives me this cool idea, thanks! :)
+Without this patch:
+  ----
+  # perf probe -a __up
+  Failed to get entry address of __up.
+    Error: Failed to add events.
+  # perf probe -L __up
+  Specified source line is not found.
+    Error: Failed to show lines.
+  ----
 
-In this series, I added following options/features;
- - --output option
-   We can save the probe definition command for given probe-event
-   instead of setting up the local tracing/kprobe_events.
+With this patch:
+  ----
+  # perf probe -a __up
+  Added new event:
+    probe:__up           (on __up)
 
- - --no-inlines option
-   We can avoid searching the inline functions in debuginfo. Usually
-   useful with wildcards since the wildcards will hit a huge amount
-   of probe-points.
+  You can now use it in all perf tools, such as:
 
- - $params special probe argument
-   $params is expanded to function parameters only, no locally defined
-   variables. This is useful for function-call tracing.
+          perf record -e probe:__up -aR sleep 1
 
- - wildcard support for function name
-   Wildcard support is the key feature for this idea. Now we can use
-   '*foo*' for function name to define the probe-point.
+  # perf probe -L __up
+  <__up@/home/fedora/ksrc/linux-3/kernel/locking/semaphore.c:0>
+        0  static noinline void __sched __up(struct semaphore *sem)
+           {
+                  struct semaphore_waiter *waiter = list_first_entry(&sem->wait_
+                                                          struct semaphore_waite
+        4         list_del(&waiter->list);
+        5         waiter->up = true;
+        6         wake_up_process(waiter->task);
+        7  }
+  ----
 
-So by using all of them, we can make an "event cache" file on all
-functions (except for inlined functions) as below.
-
-  # perf probe --max-probes=100000 --no-inlines -a '* $params' -o event.cache
-
-builds "event.cache" file in which event settings for
-all function entries, like below;
-
-  p:probe/reset_early_page_tables _text+12980741
-  p:probe/copy_bootdata _text+12980830 real_mode_data=%di:u64
-  p:probe/exit_amd_microcode _text+14692680
-  p:probe/early_make_pgtable _text+12981274 address=%di:u64
-  p:probe/x86_64_start_reservations _text+12981700 real_mode_data=%di:u64
-  p:probe/x86_64_start_kernel _text+12981744 real_mode_data=%di:u64
-  p:probe/reserve_ebda_region _text+12982117
-
-This event.cache file will be big (but much smaller than native
-debuginfo :) ) if your kernel have many option embedded.
-Anyway, you can compress it too.
-
-  # wc -l event.cache
-  33813 event.cache
-  # ls -sh event.cache
-  2.3M event.cache
-  # ls -sh event.cache.gz
-  464K event.cache.gz
-
-For setting up a probe event, you can grep the function name
-and write it to tracing/kprobe_events, as below;
-
-  # zcat event.cache.gz | \
-    grep probe/vfs_symlink > /sys/kernel/debug/tracing/kprobe_events
-
-This can be applied for the remote machine only if the machine
-runs on completely same kernel binary. Perhaps, we need some
-helper tool to check it.
-
-Thank you,
-
-
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
+ tools/perf/util/dwarf-aux.c    |   15 +++++++++++++++
+ tools/perf/util/dwarf-aux.h    |    3 +++
+ tools/perf/util/probe-finder.c |   12 ++++--------
+ 3 files changed, 22 insertions(+), 8 deletions(-)
 
-Masami Hiramatsu (6):
-      [BUGFIX] perf-probe: Fix to handle optimized not-inlined but has no instance
-      [DOC] perf-probe: Update perf-probe document
-      perf-probe: Add --output option to write commands in a standard file
-      perf-probe: Add --no-inlines option to avoid searching inline functions
-      perf-probe: Support $params special probe argument
-      perf-probe: Support glob wildcards for function name
+diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+index cc66c40..780b2bc 100644
+--- a/tools/perf/util/dwarf-aux.c
++++ b/tools/perf/util/dwarf-aux.c
+@@ -278,6 +278,21 @@ bool die_is_func_def(Dwarf_Die *dw_die)
+ }
+ 
+ /**
++ * die_is_func_instance - Ensure that this DIE is an instance of a subprogram
++ * @dw_die: a DIE
++ *
++ * Ensure that this DIE is an instance (which has an entry address).
++ * This returns true if @dw_die is a function instance. If not, you need to
++ * call die_walk_instances() to find actual instances.
++ **/
++bool die_is_func_instance(Dwarf_Die *dw_die)
++{
++	Dwarf_Addr tmp;
++
++	/* Actually gcc optimizes non-inline as like as inlined */
++	return !dwarf_func_inline(dw_die) && dwarf_entrypc(dw_die, &tmp) == 0;
++}
++/**
+  * die_get_data_member_location - Get the data-member offset
+  * @mb_die: a DIE of a member of a data structure
+  * @offs: The offset of the member in the data structure
+diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
+index b4fe90c..af7dbcd 100644
+--- a/tools/perf/util/dwarf-aux.h
++++ b/tools/perf/util/dwarf-aux.h
+@@ -41,6 +41,9 @@ extern int cu_walk_functions_at(Dwarf_Die *cu_die, Dwarf_Addr addr,
+ /* Ensure that this DIE is a subprogram and definition (not declaration) */
+ extern bool die_is_func_def(Dwarf_Die *dw_die);
+ 
++/* Ensure that this DIE is an instance of a subprogram */
++extern bool die_is_func_instance(Dwarf_Die *dw_die);
++
+ /* Compare diename and tname */
+ extern bool die_compare_name(Dwarf_Die *dw_die, const char *tname);
+ 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index c7918f8..1914dfd 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -915,17 +915,13 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
+ 		dwarf_decl_line(sp_die, &pf->lno);
+ 		pf->lno += pp->line;
+ 		param->retval = find_probe_point_by_line(pf);
+-	} else if (!dwarf_func_inline(sp_die)) {
++	} else if (die_is_func_instance(sp_die)) {
++		/* Instances always have the entry address */
++		dwarf_entrypc(sp_die, &pf->addr);
+ 		/* Real function */
+ 		if (pp->lazy_line)
+ 			param->retval = find_probe_point_lazy(sp_die, pf);
+ 		else {
+-			if (dwarf_entrypc(sp_die, &pf->addr) != 0) {
+-				pr_warning("Failed to get entry address of "
+-					   "%s.\n", dwarf_diename(sp_die));
+-				param->retval = -ENOENT;
+-				return DWARF_CB_ABORT;
+-			}
+ 			pf->addr += pp->offset;
+ 			/* TODO: Check the address in this function */
+ 			param->retval = call_probe_finder(sp_die, pf);
+@@ -1520,7 +1516,7 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
+ 		pr_debug("New line range: %d to %d\n", lf->lno_s, lf->lno_e);
+ 		lr->start = lf->lno_s;
+ 		lr->end = lf->lno_e;
+-		if (dwarf_func_inline(sp_die))
++		if (!die_is_func_instance(sp_die))
+ 			param->retval = die_walk_instances(sp_die,
+ 						line_range_inline_cb, lf);
+ 		else
 
-
- tools/perf/Documentation/perf-probe.txt |   25 ++++++++++
- tools/perf/builtin-probe.c              |   32 +++++++++++++
- tools/perf/util/dwarf-aux.c             |   31 +++++++++++++
- tools/perf/util/dwarf-aux.h             |    6 +++
- tools/perf/util/probe-event.c           |   73 +++++++++++++++++++++++--------
- tools/perf/util/probe-event.h           |    4 +-
- tools/perf/util/probe-finder.c          |   74 +++++++++++++++++++------------
- tools/perf/util/probe-finder.h          |    6 ++-
- tools/perf/util/util.h                  |    4 ++
- 9 files changed, 202 insertions(+), 53 deletions(-)
-
---
-Masami HIRAMATSU
-Software Platform Research Dpt. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
 
