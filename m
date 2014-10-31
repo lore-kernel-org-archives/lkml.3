@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626AbaJaUdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:33:11 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35752 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaJaUdK (ORCPT
+	id S1759190AbaJaUd4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:33:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45563 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757268AbaJaUdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:33:10 -0400
-Date: Fri, 31 Oct 2014 13:33:04 -0700
-From: josh@joshtriplett.org
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, Junjie Mao <eternal.n08@gmail.com>
-Subject: Re: [PATCH] x86, boot: add hex output for debugging
-Message-ID: <20141031203304.GA32697@cloud>
-References: <20141031162037.GA26233@www.outflux.net>
+	Fri, 31 Oct 2014 16:33:55 -0400
+Date: Fri, 31 Oct 2014 21:33:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Hansen <dave.hansen@intel.com>
+cc: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: Re: [PATCH v9 09/12] x86, mpx: decode MPX instruction to get bound
+ violation information
+In-Reply-To: <5453EE0E.8060200@intel.com>
+Message-ID: <alpine.DEB.2.11.1410312133120.5308@nanos>
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-10-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241408360.5308@nanos> <9E0BE1322F2F2246BD820DA9FC397ADE0180ED16@shsmsx102.ccr.corp.intel.com>
+ <alpine.DEB.2.11.1410272135420.5308@nanos> <5453EE0E.8060200@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141031162037.GA26233@www.outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 09:20:37AM -0700, Kees Cook wrote:
-> This is useful for reporting various addresses or other values while
-> debugging early boot.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+On Fri, 31 Oct 2014, Dave Hansen wrote:
 
-You haven't provided any user of this function.  I don't think this
-should get merged without a caller (nor should an artificial caller be
-added).  What's your use case for adding this?
+> On 10/27/2014 01:36 PM, Thomas Gleixner wrote:
+> > You're repeating yourself. Care to read the discussion about this from
+> > the last round of review again?
+> 
+> OK, so here's a rewritten decoder.  I think it's a lot more robust and
+> probably fixes a bug or two.  This ends up saving ~70 lines of code out
+> of ~300 or so for the old patch.
+> 
+> I'll include this in the next series, but I'm posting it early and often
+> to make sure I'm on the right track.
 
-Also, while I realize __putstr already has this problem, ideally all the
-printing functions in this file should go in some separate source file
-that gets omitted when !CONFIG_PRINTK (or possibly
-!CONFIG_EARLY_PRINTK).
+Had a short glance. This looks really very well done!
 
-- Josh Triplett
+Thanks,
 
->  arch/x86/boot/compressed/misc.c | 19 +++++++++++++++++++
->  arch/x86/boot/compressed/misc.h |  5 +++++
->  2 files changed, 24 insertions(+)
-> 
-> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-> index 30dd59a9f0b4..1b105664f720 100644
-> --- a/arch/x86/boot/compressed/misc.c
-> +++ b/arch/x86/boot/compressed/misc.c
-> @@ -220,6 +220,25 @@ void __putstr(const char *s)
->  	outb(0xff & (pos >> 1), vidport+1);
->  }
->  
-> +void __puthex(unsigned long value)
-> +{
-> +	char alpha[2] = "0";
-> +	int bits;
-> +	unsigned char byte;
-> +
-> +	__putstr("0x");
-> +	for (bits = sizeof(value) * 8 - 4; bits >= 0; bits -= 4) {
-> +		unsigned long digit = (value >> bits) & 0xf;
-> +
-> +		if (digit < 0xA)
-> +			alpha[0] = '0' + digit;
-> +		else
-> +			alpha[0] = 'a' + (digit - 0xA);
-> +
-> +		__putstr(alpha);
-> +	}
-> +}
-> +
->  static void error(char *x)
->  {
->  	error_putstr("\n\n");
-> diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
-> index 24e3e569a13c..6056d339fb17 100644
-> --- a/arch/x86/boot/compressed/misc.h
-> +++ b/arch/x86/boot/compressed/misc.h
-> @@ -34,16 +34,21 @@ extern memptr free_mem_ptr;
->  extern memptr free_mem_end_ptr;
->  extern struct boot_params *real_mode;		/* Pointer to real-mode data */
->  void __putstr(const char *s);
-> +void __puthex(unsigned long value);
->  #define error_putstr(__x)  __putstr(__x)
-> +#define error_puthex(__x)  __puthex(__x)
->  
->  #ifdef CONFIG_X86_VERBOSE_BOOTUP
->  
->  #define debug_putstr(__x)  __putstr(__x)
-> +#define debug_puthex(__x)  __puthex(__x)
->  
->  #else
->  
->  static inline void debug_putstr(const char *s)
->  { }
-> +static inline void debug_puthex(const char *s)
-> +{ }
->  
->  #endif
->  
-> -- 
-> 1.9.1
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+	tglx
