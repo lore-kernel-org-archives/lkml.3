@@ -1,146 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759555AbaJaOMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:12:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50800 "EHLO comal.ext.ti.com"
+	id S1760111AbaJaOQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:16:49 -0400
+Received: from smtp07.online.nl ([194.134.42.52]:44908 "EHLO smtp07.online.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757934AbaJaOMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:12:42 -0400
-Date: Fri, 31 Oct 2014 09:11:58 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: Felipe Balbi <balbi@ti.com>, Peter Chen <peter.chen@freescale.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, <gregkh@linuxfoundation.org>,
-        <kishon@ti.com>, <stern@rowland.harvard.edu>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 1/7] usb: move the OTG state from the USB PHY to the
- OTG structure
-Message-ID: <20141031141158.GK1273@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414514141-31767-2-git-send-email-antoine.tenart@free-electrons.com>
- <20141030163148.GF10130@saruman>
- <20141030163513.GI10130@saruman>
- <20141030174254.GA6764@kwain>
- <20141030174734.GA6652@saruman>
- <20141031003812.GA3692@peterchendt>
- <20141031004710.GA17652@saruman>
- <20141031133319.GC1273@saruman>
- <20141031134751.GE1273@saruman>
- <20141031135535.GB11522@kwain>
+	id S1759849AbaJaOQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:16:47 -0400
+X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 10:16:47 EDT
+Message-ID: <545397BD.1070701@topic.nl>
+Date: Fri, 31 Oct 2014 15:07:57 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+Organization: Topic
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lildS9pRFgpM/xzO"
-Content-Disposition: inline
-In-Reply-To: <20141031135535.GB11522@kwain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mark Brown <broonie@kernel.org>
+CC: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Add ltc3562 voltage regulator driver
+References: <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl> <1414668415-597-1-git-send-email-mike.looijmans@topic.nl> <20141030165133.GB18557@sirena.org.uk>
+In-Reply-To: <20141030165133.GB18557@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Online-Scanned: by Cloudmark authority (on smtp07.online.nl)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---lildS9pRFgpM/xzO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 30-10-2014 17:51, Mark Brown wrote:
+> On Thu, Oct 30, 2014 at 12:26:55PM +0100, Mike Looijmans wrote:
+>> The ltc3562 is an I2C controlled regulator supporting 4 independent
+>> outputs.
+>>
+>> v2: Prefix "lltc" to devicetree properties. Use the same property names
+>>      as the ltc3589 driver. Remove default-voltage property. Use
+>>      devm_register_regulator.
+>
+> As covered in SubmittingPatches things like this should be after ---.
+>
+>> +Required properties:
+>> +- compatible: "ltc3562"
+>
+> This needs a vendor in the compatible string.
 
-Hi,
+Will do.
 
-On Fri, Oct 31, 2014 at 02:55:35PM +0100, Antoine Tenart wrote:
-> > > > > > > > > > Before using the PHY framework instead of the USB
-> > > > > > > > > > PHY one, we need to move the OTG state into another
-> > > > > > > > > > place, since it won't be available when USB PHY
-> > > > > > > > > > isn't used. This patch moves the OTG state into the
-> > > > > > > > > > OTG structure, and makes all the needed
-> > > > > > > > > > modifications in the drivers using the OTG state.
-> > > > > > > > > >=20
-> > > > > > > > > > Signed-off-by: Antoine Tenart <antoine.tenart@free-elec=
-trons.com>
-> > > > > > > > > > Acked-by: Peter Chen <peter.chen@freescale.com>
-> > > > > > > > >=20
-> > > > > > > > > Acked-by: Felipe Balbi <balbi@ti.com>
-> > > > > > > >=20
-> > > > > > > > Please rebase on my testing/next and I'll take the
-> > > > > > > > series. When rebasing, then add Peter's
-> > > > > > > > Tested-by/Acked-by where they're missing.
-> > > > > > >=20
-> > > > > > > I just re-sent the series, rebased on your testing/next
-> > > > > > > branch.
-> > > > > >=20
-> > > > > > Thanks, I put them on my testing/next and I'm running build
-> > > > > > tests.
-> > > > > >=20
-> > > > >=20
-> > > > > I see them, I will rebase your testing/next tree for coming
-> > > > > chipidea dev, thanks.
-> > > >=20
-> > > > I fixed a build breakage caused by $subject which I fixed,
-> > > > updated patch below: (Aaro, can I get a tested-by by any chance
-> > > > ?)
-> > >=20
-> > > two more build regressions found (did you build test your patches
-> > > ??)
-> >=20
-> > and yet another one on phy-isp1301-omap.c. Seriously, if I find
-> > another build regression I'll drop your series from my queue and
-> > defer it to 3.20. This is ridiculous already.
->=20
-> Sorry for the inconvenience, the series modify quite a lot of files
-> and testing all of them is quite difficult. If you'd like I can fully
-> test
+>> +Required child node:
+>> +- regulators: Contains four regulator child nodes R400B, R600B, R400A, R600A,
+>> +  specifying the initialization data as documented in
+>> +  Documentation/devicetree/bindings/regulator/regulator.txt.
+>
+> All regulator child nodes should be optional.
+>
+>> +			R600A_reg: R600A {
+>> +				regulator-name = "R600A";
+>
+> Remove these regulator-names, this is for the name of the supplies on
+> the board not the regulator itself.
+>
+>> +static int ltc3562_write(struct i2c_client *i2c, u8 reg_a, u8 reg_b);
+>> +static int ltc3562_dummy_write(struct i2c_client *i2c);
+>
+> This appears to be reimplementing regmap (including a cache).  Please
+> use that instead.  Pretty much the entire driver could then be replaced
+> with the regmap helpers, none of the operations look like they'd be
+> needed, and you'd get the regmap diagnostic infrastructure.
 
-how come ? build testing is difficult ? if you have x86 and ARM
-compilers you can build all of these modules with make allmodconfig.
+The chip doesn't have an I2C register map, it uses "commands".
+It does not support read transactions at all, it will NACK those. The 
+first byte contains a bit mask that tells which outputs are to be 
+configured and in what mode, the next is the enable bit and setpoint 
+value. The first byte already contains data, it's not just an address.
 
-You know, I have a very a simple 20-line script running randconfigs and
-saving the output, after that I just grep for "error" on the logs and
-look at what's broken.
+I would have used regmap if I thought it'd help (if only for the 
+diagnostics), but it simply doesn't fit here.
 
-> it and send a new version early next week.
->=20
-> Deferring it to 3.20 will not solve the issue and will raise the same
-> errors as these build failures. The series has been sent for quite a
-> long time now, without having any comments on the latests revisions
-> and was therefore delayed. Each time it is delayed, it makes it more
-> difficult to ensure everything is working fine because of all the
-> modifications done in this subsystem... I tried to keep it up with all
-> the other patches introduced between my revisions, but this is not as
-> easy as it sounds.
+If you insist, I can probably get it to fit on regmap, but that would 
+still mean implementing some custom write method that translates between 
+some non-existing registry format and what the chip really wants.
 
-all the places I fixed haven't been touched for months, in some cases
-years. This is a broken argument.
 
-> Again, sorry for these failures, I can send to you a new version early
-> next week so that no other patches comes in between, breaking the
-> build...
+>> +	np = of_node_get(i2c->dev.of_node);
+>> +	np_regulators = of_get_child_by_name(np, "regulators");
+>
+>> +		np_child = of_get_child_by_name(np_regulators,
+>> +			ltc3562_regulators[i].name);
+>> +		if (np_child == NULL) {
+>
+> Use the core support for looking up constraints please - set
+> regulators_node and so on.
 
-nevermind, I already fixed so many of these mistakes anyway, it's
-probably all clean now.
+I'll dig into it, seems that there's more infrastructure here to use.
 
---=20
-balbi
+>> +static struct i2c_driver ltc3562_i2c_driver = {
+>> +	.driver = {
+>> +		.name = "LTC3562",
+>> +		.owner = THIS_MODULE,
+>> +	},
+>> +	.probe    = ltc3562_i2c_probe,
+>> +	.id_table = ltc3562_i2c_id,
+>> +};
+>
+> You need to supply an of_match_table too.
 
---lildS9pRFgpM/xzO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Hmm, that would explain why I couldn't get it to work using 
+"lltc,ltc3562" during our first attempts at the driver.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUU5iuAAoJEIaOsuA1yqREQXUP/03C4wf/405FZ5laxzo13F+2
-SNVDi6DjSYzwmnrKQIKa2izZQlYPEQripgTLeeF723T4sihQKxFJy6bP5z/ozbmI
-IBT+sSMkYHTS1I/cLza1kRi5PLC2yCwon1Wxe4+LVPhBHteE2EfKqsUP3+nUQf6J
-uhquwuNB5A5MYxeFeUEzEnOg3IK1RMyrPEaflvyTCAjSEXzKGANyn7JHIozGFhuw
-kiQeB1aVTsuRZTXWJyPysAhxoHveISVT08U1R3AhSM1rWPanIuqvQ3sTDLRBE8LF
-FI0VDXHdqYHI+P3Iaxrhd2w0g0yX+RBrVOUMHA2L5OpDsrQC2n1ytRcuCkxD3fP6
-tZ5s9MPDMGyQgVF3QobKuV9C5hTu6mFJJbdZuKwerxiueIE0N0WauXYMIHBmrqPq
-yzk6tsq8IDRhvtqQL5ZBOn/PWGeAKETbnRxTagwlJxfFnzuAQ6D4Y3xIIHbNtYVQ
-mfdxRJJ3xzts0DVk8V4Fz2JCaQ2C9USMk8QXZtoTJqJtKe19IxiCQM3lepFyz+J5
-mbrFStQUnCQKPrJZpRKdFQMT4OkjCHInPXAFiigsd6zg+MEuYuxsxIxlpFc7KWTS
-2E//mRuE/eaJV87qf7Axs32ragH2sbYC7olergAXN7HCMouoxvbHkqSho4skIfrc
-gZ+0A4xd2UhegaR6r7ol
-=8aB0
------END PGP SIGNATURE-----
-
---lildS9pRFgpM/xzO--
+-- 
+Mike Looijmans
