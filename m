@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579AbaJaRNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:13:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797AbaJaRNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:13:09 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] driver core: Fix unbalanced device reference in drivers_probe
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Date: Fri, 31 Oct 2014 11:13:07 -0600
-Message-ID: <20141031171223.14088.79944.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
+	id S1756687AbaJaROO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:14:14 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:40927 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaJaRON (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 13:14:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141030195458.2958d88a@urahara>
+References: <20141030165434.GW20170@rric.localhost>
+	<20141030195458.2958d88a@urahara>
+Date: Fri, 31 Oct 2014 22:44:11 +0530
+Message-ID: <CA+sq2CfV-90CRvo-FCizkzoxHq-AsfOEDW2Z5pXtnNLNXCfTUg@mail.gmail.com>
+Subject: Re: [PATCH] VNIC: Adding support for Cavium ThunderX network controller
+From: Sunil Kovvuri <sunil.kovvuri@gmail.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Robert Richter <rric@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Sunil Goutham <sgoutham@cavium.com>,
+        Robert Richter <rrichter@cavium.com>,
+        Stefan Assmann <sassmann@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bus_find_device_by_name() acquires a device reference which is never
-released.  This results in an object leak, which on older kernels
-results in failure to release all resources of PCI devices.  libvirt
-uses drivers_probe to re-attach devices to the host after assignment
-and is therefore a common trigger for this leak.
+On Fri, Oct 31, 2014 at 8:24 AM, Stephen Hemminger
+<stephen@networkplumber.org> wrote:
+> On Thu, 30 Oct 2014 17:54:34 +0100
+> Robert Richter <rric@kernel.org> wrote:
+>
+>> +#ifdef       VNIC_RSS_SUPPORT
+>> +static int rss_config = RSS_IP_HASH_ENA | RSS_TCP_HASH_ENA | RSS_UDP_HASH_ENA;
+>> +module_param(rss_config, int, S_IRUGO);
+>> +MODULE_PARM_DESC(rss_config,
+>> +              "RSS hash config [bits 8:0] (Bit0:L2 extended, 1:IP, 2:TCP, 3:TCP SYN, 4:UDP, 5:L4 extended, 6:ROCE 7:L3 bi-directional, 8:L4 bi-directional)");
+>> +#endif
+>
+> This should managed  be via ethtool ETHTOOL_GRXFH rather than a module parameter.
+Thanks, i will add setting hash options via ETHTOOL_SRXFH as well.
+The idea here is to have a choice of hash while module load (through
+module params) and if it needs to be changed runtime then
+via Ethtool.
 
-Example:
-
-# cd /sys/bus/pci/
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_cleanup, parent           (null)
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): calling ktype release
- kobject: '0000:01:10.0': free name
-
-[kobject freed as expected]
-
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0000:01:10.0 > drivers_probe
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
-
-[no free]
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: stable@vger.kernel.org
----
-
- drivers/base/bus.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 83e910a5..876bae5 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -254,13 +254,15 @@ static ssize_t store_drivers_probe(struct bus_type *bus,
- 				   const char *buf, size_t count)
- {
- 	struct device *dev;
-+	int err = -EINVAL;
- 
- 	dev = bus_find_device_by_name(bus, NULL, buf);
- 	if (!dev)
- 		return -ENODEV;
--	if (bus_rescan_devices_helper(dev, NULL) != 0)
--		return -EINVAL;
--	return count;
-+	if (bus_rescan_devices_helper(dev, NULL) == 0)
-+		err = count;
-+	put_device(dev);
-+	return err;
- }
- 
- static struct device *next_device(struct klist_iter *i)
-
+Sunil.
