@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188AbaJaHuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 03:50:37 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35293 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754868AbaJaHuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 03:50:32 -0400
-From: Vignesh R <vigneshr@ti.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Vignesh R <vigneshr@ti.com>
-Subject: [PATCH 1/3] arm: mach-omap2: omap_hwmod_33xx_43xx_ipblock_data: Move am33xx_l4_hs_hwmod to ipblock_data
-Date: Fri, 31 Oct 2014 13:16:41 +0530
-Message-ID: <1414741603-18233-2-git-send-email-vigneshr@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414741603-18233-1-git-send-email-vigneshr@ti.com>
-References: <1414741603-18233-1-git-send-email-vigneshr@ti.com>
+	id S1756824AbaJaHvs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 03:51:48 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:10155 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756681AbaJaHvo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 03:51:44 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Joe Perches'" <joe@perches.com>
+CC: "'Will Deacon'" <will.deacon@arm.com>,
+        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 31 Oct 2014 15:51:41 +0800
+Subject: RE: [RFC] arm:remove clear_thread_flag(TIF_UPROBE)
+Thread-Topic: [RFC] arm:remove clear_thread_flag(TIF_UPROBE)
+Thread-Index: Ac/03rMWWFkGX/cdRK6lX5CjAvaTsAAALaeg
+Message-ID: <35FD53F367049845BC99AC72306C23D103E010D1827C@CNBJMBX05.corpusers.net>
+References: <1414392371.8884.2.camel@perches.com>
+	 <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
+	 <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18260@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
+	 <20141030120127.GC32589@arm.com>
+	 <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
+	 <20141030135749.GE32589@arm.com>
+	 <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D1827B@CNBJMBX05.corpusers.net>
+ <1414741535.8928.2.camel@perches.com>
+In-Reply-To: <1414741535.8928.2.camel@perches.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves am33xx_l4_hs_hwmod from 33xx_data to ipblock_data. This
-is required because it can be reused in 43xx to add hwmod support to
-tscadc as it uses the same l4_hs hwmod in am43xx. This helps in setting
-appropriate clock domain names for tscadc on am33xx and am43xx.
+> From: Joe Perches [mailto:joe@perches.com]
+> > diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
+> []
+> > @@ -591,10 +591,9 @@ do_work_pending(struct pt_regs *regs, unsigned int
+> thread_flags, int syscall)
+> >  					return restart;
+> >  				}
+> >  				syscall = 0;
+> > -			} else if (thread_flags & _TIF_UPROBE) {
+> > -				clear_thread_flag(TIF_UPROBE);
+> > +			} else if (thread_flags & _TIF_UPROBE)
+> >  				uprobe_notify_resume(regs);
+> > -			} else {
+> > +			else {
+> >  				clear_thread_flag(TIF_NOTIFY_RESUME);
+> >  				tracehook_notify_resume(regs);
+> >  			}
+> 
+> Please keep the braces.
 
-Signed-off-by: Vignesh R <vigneshr@ti.com>
----
- arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h  |  1 +
- arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c | 15 +++++++++++++++
- arch/arm/mach-omap2/omap_hwmod_33xx_data.c              | 15 ---------------
- 3 files changed, 16 insertions(+), 15 deletions(-)
+mm..  could I know the reason ?  :)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-index 130332c0534d..6e57b8ad0db5 100644
---- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-+++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-@@ -82,6 +82,7 @@ extern struct omap_hwmod am33xx_l3_main_hwmod;
- extern struct omap_hwmod am33xx_l3_s_hwmod;
- extern struct omap_hwmod am33xx_l3_instr_hwmod;
- extern struct omap_hwmod am33xx_l4_ls_hwmod;
-+extern struct omap_hwmod am33xx_l4_hs_hwmod;
- extern struct omap_hwmod am33xx_l4_wkup_hwmod;
- extern struct omap_hwmod am33xx_mpu_hwmod;
- extern struct omap_hwmod am33xx_pruss_hwmod;
-diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
-index a579b89ce9b7..7f44922ab540 100644
---- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
-@@ -94,6 +94,21 @@ struct omap_hwmod am33xx_l4_ls_hwmod = {
- 	},
- };
- 
-+/* l4_hs */
-+struct omap_hwmod am33xx_l4_hs_hwmod = {
-+	.name		= "l4_hs",
-+	.class		= &am33xx_l4_hwmod_class,
-+	.clkdm_name	= "l4hs_clkdm",
-+	.flags		= HWMOD_INIT_NO_IDLE,
-+	.main_clk	= "l4hs_gclk",
-+	.prcm		= {
-+		.omap4  = {
-+			.clkctrl_offs   = AM33XX_CM_PER_L4HS_CLKCTRL_OFFSET,
-+			.modulemode     = MODULEMODE_SWCTRL,
-+		},
-+	},
-+};
-+
- /* l4_wkup */
- struct omap_hwmod am33xx_l4_wkup_hwmod = {
- 	.name		= "l4_wkup",
-diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-index 6b406ca4bd3b..ce7d260495cb 100644
---- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-@@ -63,21 +63,6 @@ static struct omap_hwmod am33xx_emif_hwmod = {
- 	},
- };
- 
--/* l4_hs */
--static struct omap_hwmod am33xx_l4_hs_hwmod = {
--	.name		= "l4_hs",
--	.class		= &am33xx_l4_hwmod_class,
--	.clkdm_name	= "l4hs_clkdm",
--	.flags		= HWMOD_INIT_NO_IDLE,
--	.main_clk	= "l4hs_gclk",
--	.prcm		= {
--		.omap4	= {
--			.clkctrl_offs	= AM33XX_CM_PER_L4HS_CLKCTRL_OFFSET,
--			.modulemode	= MODULEMODE_SWCTRL,
--		},
--	},
--};
--
- static struct omap_hwmod_rst_info am33xx_wkup_m3_resets[] = {
- 	{ .name = "wkup_m3", .rst_shift = 3, .st_shift = 5 },
- };
--- 
-1.9.1
-
+Thanks
