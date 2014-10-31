@@ -1,93 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759984AbaJaNjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 09:39:36 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57346 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758471AbaJaNje convert rfc822-to-8bit (ORCPT
+	id S1760135AbaJaNlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 09:41:18 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:50827 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758896AbaJaNlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 09:39:34 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v3 2/6] uio: Add new UIO_MEM_PHYS_CACHE type for mem regions
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <CAPTm99W0J-Q6CwCDVaYe4eyEWrruWuY5pzpHoESyVu9N3cFA=g@mail.gmail.com>
-Date: Fri, 31 Oct 2014 08:39:29 -0500
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "patches@apm.com" <patches@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Varka Bhadram <varkabhadram@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4B098F57-E202-412C-B54D-085A46792EDC@codeaurora.org>
-References: <1413871011-4101-1-git-send-email-ankit.jindal@linaro.org> <1413871011-4101-3-git-send-email-ankit.jindal@linaro.org> <6D33D50E-2DD1-482C-B05E-45B237F3B779@codeaurora.org> <CAPTm99W0J-Q6CwCDVaYe4eyEWrruWuY5pzpHoESyVu9N3cFA=g@mail.gmail.com>
-To: Ankit Jindal <ankit.jindal@linaro.org>
-X-Mailer: Apple Mail (2.1878.6)
+	Fri, 31 Oct 2014 09:41:16 -0400
+From: Junjie Mao <eternal.n08@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Junjie Mao <eternal.n08@gmail.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Josh Triplett <josh@joshtriplett.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, stable@vger.kernel.org
+Subject: [PATCH v3] x86, kaslr: Prevent .bss from overlaping initrd
+Date: Fri, 31 Oct 2014 21:40:38 +0800
+Message-Id: <1414762838-13067-1-git-send-email-eternal.n08@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When choosing a random address, the current implementation does not take into
+account the reversed space for .bss and .brk sections. Thus the relocated kernel
+may overlap other components in memory. Here is an example of the overlap from a
+x86_64 kernel in qemu (the ranges of physical addresses are presented):
 
-On Oct 31, 2014, at 4:30 AM, Ankit Jindal <ankit.jindal@linaro.org> wrote:
+ Physical Address
 
-> Hi Kumar,
-> 
-> On 21 October 2014 12:08, Kumar Gala <galak@codeaurora.org> wrote:
->> 
->> On Oct 21, 2014, at 7:56 AM, Ankit Jindal <ankit.jindal@linaro.org> wrote:
->> 
->>> Currently, three types of mem regions are supported: UIO_MEM_PHYS,
->>> UIO_MEM_LOGICAL and UIO_MEM_VIRTUAL. Among these UIO_MEM_PHYS helps
->>> UIO driver export physcial memory to user space as non-cacheable
->>> user memory. Typcially memory-mapped registers of a device are exported
->>> to user space as UIO_MEM_PHYS type mem region. The UIO_MEM_PHYS type
->>> is not efficient if dma-capable devices are capable of maintaining coherency
->>> with CPU caches.
->>> 
->>> This patch adds new type UIO_MEM_PHYS_CACHE for mem regions to enable
->>> cacheable access to physical memory from user space.
->>> 
->>> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
->>> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
->>> ---
->>> drivers/uio/uio.c          |   11 ++++++++---
->>> include/linux/uio_driver.h |    1 +
->>> 2 files changed, 9 insertions(+), 3 deletions(-)
->> 
->> Rather than adding a new type, why not allow the driver to set the pgprot value, this way one has full control and we don’t need to keep adding types for various different cache attributions in the future.
-> 
-> Do you mean to add a new field pgprot_t in the memtype structure and
-> uio_mmap_physical will set vma->vm_page_prot to this value provided by
-> driver ? If this is the case then we will need to change all the
-> current uio based drivers which was the reason I preferred to have a
-> new mem type.
-> 
-> Please let me know if I have misunderstood anything.
+    0x0fe00000                  --+--------------------+  <-- randomized base
+                               /  |  relocated kernel  |
+                   vmlinux.bin    | (from vmlinux.bin) |
+    0x1336d000    (an ELF file)   +--------------------+--
+                               \  |                    |  \
+    0x1376d870                  --+--------------------+   |
+                                  |    relocs table    |   |
+    0x13c1c2a8                    +--------------------+   .bss and .brk
+                                  |                    |   |
+    0x13ce6000                    +--------------------+   |
+                                  |                    |  /
+    0x13f77000                    |       initrd       |--
+                                  |                    |
+    0x13fef374                    +--------------------+
 
-I’m suggeting in uio_mmap_physical to do something like:
+The initrd image will then be overwritten by the memset during early
+initialization:
 
-if (idev->info->set_pgprot)
-	idev->info->set_pgprot(vma->vm_page_prot)
-else
-	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+[    1.655204] Unpacking initramfs...
+[    1.662831] Initramfs unpacking failed: junk in compressed archive
 
-And add a set_prprot callback to 'struct uio_info’.
+This patch prevents the above situation by requiring a larger space when looking
+for a random kernel base, so that existing logic can effectively avoids the
+overlap.
 
-Here’s patch from several years ago:
+Fixes: 82fa9637a2 ("x86, kaslr: Select random position from e820 maps")
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Junjie Mao <eternal.n08@gmail.com>
+[kees: switched to perl to avoid hex translation pain in mawk vs gawk]
+[kees: calculated overlap without relocs table]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+---
+This version updates the commit log only.
 
-http://patchwork.ozlabs.org/patch/119224/
+Kees, please help review the documentation. Thanks!
 
-- k
+Best Regards
+Junjie Mao
+---
+ arch/x86/boot/compressed/Makefile  |  4 +++-
+ arch/x86/boot/compressed/head_32.S |  5 +++--
+ arch/x86/boot/compressed/head_64.S |  5 ++++-
+ arch/x86/boot/compressed/misc.c    | 13 ++++++++++---
+ arch/x86/boot/compressed/mkpiggy.c |  9 +++++++--
+ arch/x86/tools/calc_run_size.pl    | 30 ++++++++++++++++++++++++++++++
+ 6 files changed, 57 insertions(+), 9 deletions(-)
+ create mode 100644 arch/x86/tools/calc_run_size.pl
 
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 0fcd9133790c..14fe7cba21d1 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -75,8 +75,10 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
+ suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
+ suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
 
++RUN_SIZE = $(shell objdump -h vmlinux | \
++	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
+ quiet_cmd_mkpiggy = MKPIGGY $@
+-      cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
++      cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+
+ targets += piggy.S
+ $(obj)/piggy.S: $(obj)/vmlinux.bin.$(suffix-y) $(obj)/mkpiggy FORCE
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index cbed1407a5cd..1d7fbbcc196d 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -207,7 +207,8 @@ relocated:
+  * Do the decompression, and jump to the new kernel..
+  */
+ 				/* push arguments for decompress_kernel: */
+-	pushl	$z_output_len	/* decompressed length */
++	pushl	$z_run_size	/* size of kernel with .bss and .brk */
++	pushl	$z_output_len	/* decompressed length, end of relocs */
+ 	leal	z_extract_offset_negative(%ebx), %ebp
+ 	pushl	%ebp		/* output address */
+ 	pushl	$z_input_len	/* input_len */
+@@ -217,7 +218,7 @@ relocated:
+ 	pushl	%eax		/* heap area */
+ 	pushl	%esi		/* real mode pointer */
+ 	call	decompress_kernel /* returns kernel location in %eax */
+-	addl	$24, %esp
++	addl	$28, %esp
+
+ /*
+  * Jump to the decompressed kernel.
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 2884e0c3e8a5..6b1766c6c082 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -402,13 +402,16 @@ relocated:
+  * Do the decompression, and jump to the new kernel..
+  */
+ 	pushq	%rsi			/* Save the real mode argument */
++	movq	$z_run_size, %r9	/* size of kernel with .bss and .brk */
++	pushq	%r9
+ 	movq	%rsi, %rdi		/* real mode address */
+ 	leaq	boot_heap(%rip), %rsi	/* malloc area for uncompression */
+ 	leaq	input_data(%rip), %rdx  /* input_data */
+ 	movl	$z_input_len, %ecx	/* input_len */
+ 	movq	%rbp, %r8		/* output target address */
+-	movq	$z_output_len, %r9	/* decompressed length */
++	movq	$z_output_len, %r9	/* decompressed length, end of relocs */
+ 	call	decompress_kernel	/* returns kernel location in %rax */
++	popq	%r9
+ 	popq	%rsi
+
+ /*
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 57ab74df7eea..30dd59a9f0b4 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -358,7 +358,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *input_data,
+ 				  unsigned long input_len,
+ 				  unsigned char *output,
+-				  unsigned long output_len)
++				  unsigned long output_len,
++				  unsigned long run_size)
+ {
+ 	real_mode = rmode;
+
+@@ -381,8 +382,14 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 	free_mem_ptr     = heap;	/* Heap */
+ 	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
+
+-	output = choose_kernel_location(input_data, input_len,
+-					output, output_len);
++	/*
++	 * The memory hole needed for the kernel is the larger of either
++	 * the entire decompressed kernel plus relocation table, or the
++	 * entire decompressed kernel plus .bss and .brk sections.
++	 */
++	output = choose_kernel_location(input_data, input_len, output,
++					output_len > run_size ? output_len
++							      : run_size);
+
+ 	/* Validate memory location choices. */
+ 	if ((unsigned long)output & (MIN_KERNEL_ALIGN - 1))
+diff --git a/arch/x86/boot/compressed/mkpiggy.c b/arch/x86/boot/compressed/mkpiggy.c
+index b669ab65bf6c..d8222f213182 100644
+--- a/arch/x86/boot/compressed/mkpiggy.c
++++ b/arch/x86/boot/compressed/mkpiggy.c
+@@ -36,11 +36,13 @@ int main(int argc, char *argv[])
+ 	uint32_t olen;
+ 	long ilen;
+ 	unsigned long offs;
++	unsigned long run_size;
+ 	FILE *f = NULL;
+ 	int retval = 1;
+
+-	if (argc < 2) {
+-		fprintf(stderr, "Usage: %s compressed_file\n", argv[0]);
++	if (argc < 3) {
++		fprintf(stderr, "Usage: %s compressed_file run_size\n",
++				argv[0]);
+ 		goto bail;
+ 	}
+
+@@ -74,6 +76,7 @@ int main(int argc, char *argv[])
+ 	offs += olen >> 12;	/* Add 8 bytes for each 32K block */
+ 	offs += 64*1024 + 128;	/* Add 64K + 128 bytes slack */
+ 	offs = (offs+4095) & ~4095; /* Round to a 4K boundary */
++	run_size = atoi(argv[2]);
+
+ 	printf(".section \".rodata..compressed\",\"a\",@progbits\n");
+ 	printf(".globl z_input_len\n");
+@@ -85,6 +88,8 @@ int main(int argc, char *argv[])
+ 	/* z_extract_offset_negative allows simplification of head_32.S */
+ 	printf(".globl z_extract_offset_negative\n");
+ 	printf("z_extract_offset_negative = -0x%lx\n", offs);
++	printf(".globl z_run_size\n");
++	printf("z_run_size = %lu\n", run_size);
+
+ 	printf(".globl input_data, input_data_end\n");
+ 	printf("input_data:\n");
+diff --git a/arch/x86/tools/calc_run_size.pl b/arch/x86/tools/calc_run_size.pl
+new file mode 100644
+index 000000000000..0b0b124d3ece
+--- /dev/null
++++ b/arch/x86/tools/calc_run_size.pl
+@@ -0,0 +1,30 @@
++#!/usr/bin/perl
++#
++# Calculate the amount of space needed to run the kernel, including room for
++# the .bss and .brk sections.
++#
++# Usage:
++# objdump -h a.out | perl calc_run_size.pl
++use strict;
++
++my $mem_size = 0;
++my $file_offset = 0;
++
++my $sections=" *[0-9]+ \.(?:bss|brk) +";
++while (<>) {
++	if (/^$sections([0-9a-f]+) +(?:[0-9a-f]+ +){2}([0-9a-f]+)/) {
++		my $size = hex($1);
++		my $offset = hex($2);
++		$mem_size += $size;
++		if ($file_offset == 0) {
++			$file_offset = $offset;
++		} elsif ($file_offset != $offset) {
++			die ".bss and .brk lack common file offset\n";
++		}
++	}
++}
++
++if ($file_offset == 0) {
++	die "Never found .bss or .brk file offset\n";
++}
++printf("%d\n", $mem_size + $file_offset);
+--
+1.9.3
