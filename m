@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351AbaJaUWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:22:31 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:54021 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710AbaJaUW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:22:29 -0400
-Message-ID: <1414786943.3014.37.camel@jlt4.sipsolutions.net>
-Subject: Re: [RFC v2 1/4] backports: replace CPTCFG prefix for
- CONFIG_BACKPORT
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de
-Date: Fri, 31 Oct 2014 21:22:23 +0100
-In-Reply-To: <20141031193408.GA12953@wotan.suse.de>
-References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1414570902-5675-2-git-send-email-mcgrof@do-not-panic.com>
-	 <1414741273.3014.3.camel@jlt4.sipsolutions.net>
-	 <20141031193408.GA12953@wotan.suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758649AbaJaUYL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:24:11 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19914 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaJaUYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 16:24:09 -0400
+Date: Fri, 31 Oct 2014 16:23:22 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Juergen Gross <jgross@suse.com>, hpa@zytor.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, stefan.bader@canonical.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Subject: Re: [PATCH 01/17] x86: Make page cache mode a real type
+Message-ID: <20141031202322.GB15935@laptop.dumpdata.com>
+References: <1414764033-30011-1-git-send-email-jgross@suse.com>
+ <1414764033-30011-2-git-send-email-jgross@suse.com>
+ <20141031194207.GA15367@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031194207.GA15367@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-31 at 20:34 +0100, Luis R. Rodriguez wrote:
-
-> > I really think you need to make this optional for the in-tree
-> > generation, otherwise it will complicate things a lot for anyone who's
-> > already using backports in a way that doesn't have it regenerated all
-> > the time.
+On Fri, Oct 31, 2014 at 08:42:07PM +0100, Borislav Petkov wrote:
+> On Fri, Oct 31, 2014 at 03:00:17PM +0100, Juergen Gross wrote:
+> > At the moment there are a lot of places that handle setting or getting
+> > the page cache mode by treating the pgprot bits equal to the cache mode.
+> > This is only true because there are a lot of assumptions about the setup
+> > of the PAT MSR. Otherwise the cache type needs to get translated into
+> > pgprot bits and vice versa.
+> > 
+> > This patch tries to prepare for that by introducing a separate type
+> > for the cache mode and adding functions to translate between those and
+> > pgprot values.
+> > 
+> > To avoid too much performance penalty the translation between cache mode
+> > and pgprot values is done via tables which contain the relevant
+> > information.  Write-back cache mode is hard-wired to be 0, all other
+> > modes are configurable via those tables. For large pages there are
+> > translation functions as the PAT bit is located at different positions
+> > in the ptes of 4k and large pages.
+> > 
+> > Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> > Signed-off-by: Juergen Gross <jgross@suse.com>
 > 
-> Logistically I do agree this will implicate tons of merge conflicts
-> if a git tree was used for development based on backports, however
-> functionally I don't expect this this to create divergence.
+> Just a clarification question: how is one to understand this attribution
+> here? Is Stefan the original author, was he a reviewer, or? Because this
+> SOB chain is misleading...
 
-Agree, but it's going to be a nightmare from the merge point of view,
-and also the CPTCFG_ is nicer to replace back and forth between
-backports-based development and the kernel, due to this:
+He was the first then Juergen took over. Should the SOB order be inversed?
 
-> > Additionally, CPTCFG_ had the advantage of having the same length as
-> > CONFIG_, so code style wise it was nicer to replace.
-
-
-
-> > Please make this a post-process step that runs on everything, including
-> > the backport stuff, rather than running only on the source and assuming
-> > the backport stuff already uses this convention.
 > 
-> I want to but lets consider the amount of work to maintain the two
-> separate approaches, is it worth it?
-
-I don't see why it'd be maintaining two approaches? Right now we have
-scripting to replace CONFIG_ with CPTCFG_, so couldn't we just add more
-scripting to replace CPTCFG_ with CONFIG_BACKPORT_ ?
-
-That also makes me think of something else - we currently use BACKPORT_
-as a prefix for some of the other stuff under compat/Kconfig, and in
-fact rename some things (like CONFIG_BACKPORT_AVERAGE) so maybe also
-using CONFIG_BACKPORT_ here isn't a great idea? Might want to use
-something else, say CONFIG_BPT_ or so.
-
-johannes
-
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
