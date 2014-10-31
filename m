@@ -1,176 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262AbaJaROv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:14:51 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33429 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751284AbaJaROr (ORCPT
+	id S1753989AbaJaRRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:17:07 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40520 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaJaRRF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:14:47 -0400
-X-Sasl-enc: Nmqp+tJYyMeeFJ0PS1F0CyVL69ZwxmtRFe+apVEHlqWI 1414775686
-Date: Fri, 31 Oct 2014 15:14:40 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org,
-        H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 5/8] x86, microcode, intel: don't check extsig entry
- checksum
-Message-ID: <20141031171440.GA27028@khazad-dum.debian.net>
-References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
- <1410197875-19252-6-git-send-email-hmh@hmh.eng.br>
- <20141030202550.GF11178@pd.tnic>
+	Fri, 31 Oct 2014 13:17:05 -0400
+Date: Fri, 31 Oct 2014 17:16:58 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Mark Rutland <Mark.Rutland@arm.com>,
+        device tree <devicetree@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] arm64: Add Juno SoC device tree.
+Message-ID: <20141031171658.GK1069@e106497-lin.cambridge.arm.com>
+References: <1414771460-7340-1-git-send-email-Liviu.Dudau@arm.com>
+ <1414771460-7340-4-git-send-email-Liviu.Dudau@arm.com>
+ <20141031162918.GG32139@lunn.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20141031162918.GG32139@lunn.ch>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 31 Oct 2014 17:16:59.0661 (UTC) FILETIME=[7AEBD3D0:01CFF52E]
+X-MC-Unique: 114103117170100601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20141030202550.GF11178@pd.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct 2014, Borislav Petkov wrote:
-> On Mon, Sep 08, 2014 at 02:37:51PM -0300, Henrique de Moraes Holschuh wrote:
-> > The contents of the extended signature entries are already covered by
-> > the extended table checksum, and the microcode driver should not be
-> > attempting to check their internal checksum field.
-> > 
-> > Unlike the main microcode checksum field and the extended signature
-> > table checksum field, the checksum fields inside the extended signature
-> > entries are not meant to be processed by a microcode update loader.  The
-> > extended signature entry checksum field's description in the Intel SDM,
-> > vol 3A, table 9-6, page 9-30, reads in the first paragraph:
-> > 
-> >    "Used by utility software to decompose a microcode update into
-> >     multiple microcode updates where each of the new updates is
-> >     constructed without the optional Extended Processor Signature
-> >     Table."
-> > 
-> > And the Linux microcode driver is not processing them correctly anyway.
-> > The second paragraph of the signature entry checksum field's description
-> > in the Intel SDM, vol 3A, table 9-6, page 9-30, reads:
-> > 
-> >    "To calculate the Checksum, substitute the Primary Processor
-> >     Signature entry and the Processor Flags entry with the corresponding
-> >     Extended Patch entry. Delete the Extended Processor Signature Table
-> >     entries. The Checksum is correct when the summation of all DWORDs
-> >     that comprise the created Extended Processor Patch results in
-> >     00000000H."
-> > 
-> > Deleting the extended signature table changes the Total Size field, and
-> > the Intel SDM paragraph above makes it very clear that such a change must
-> > be accounted for by the checksum.  The current extended signature entry
-> > checksum code in the Linux microcode driver, which has been in place
-> > since 2003, will be thrown off by this and reject a valid microcode
-> > update.
+On Fri, Oct 31, 2014 at 04:29:18PM +0000, Andrew Lunn wrote:
+> On Fri, Oct 31, 2014 at 04:04:20PM +0000, Liviu Dudau wrote:
+> > This adds support for USB, 100MB Ethernet port, timers, I2C,
+> > and watchdog timer. Missing for now are the SMMU nodes, HDLCD
+> > and PCIe.
 > 
-> I don't know where you come up with this but the code you're removing
-> was added in 2013:
+> Hi Liviu
+
+Hi Andrew,
+
 > 
-> 	e666dfa273db ("x86/microcode_intel_lib.c: Early update ucode on Intel's CPU")
-
-Was it?  As far as I know, it is "heavily based" (i.e. copied and adapted)
-on code from the regular microcode driver, and not rewritten from scrach.
-
-If I am correct, this really is code from 2003, changed by 11 years worth of
-file renaming, file splits, and refactoring.
-
-It took me about 30 minutes to track the origin of this code in the regular
-Intel microcode driver.  As far as I can tell, it was added to version 1.12
-of the original driver, somewhere between v2.6.0-test7 and v2.6.0-test8.
-
-The Intel engineers credited for the original change are: Nitin Kamble
-<nitin.a.kamble@intel.com> and Jun Nakajima <jun.nakajima@intel.com>.
-(information from the changelog at the top of the driver source).
-
-You can see one of the earliest versions of the code here:
-https://git.kernel.org/cgit/linux/kernel/git/history/history.git/tree/arch/i386/kernel/microcode.c?id=v2.6.0-test8
-
-The extended table checksum gets calculated around line 323.  The possibly
-problematic logic is in line 341 and 345, and matches what the modern driver
-does.
-
-> and I'd strongly assume it was tested at the time. Now, the text in the
-> SDM is confusing, as most of the time is so I would think the code is
-> doing the right thing even if the text doesn't really say that clearly.
-
-I am not so sure.  Besides, it is entirely possible that the Intel SDM got
-updated in that area after the september 2003 code drop.  This is very hard
-to verify outside of Intel.   Or, maybe, the issue was detected internally
-at Intel, and it was decided that the issue should be shelved until the day
-extended microcode tables are actually required (which didn't happen yet).
-
-> Fenghua, care to comment please?
-
-I'd really appreciate that.  I have asked about it in the past, but got no
-answers.
-
-I am in fact hoping for a "this feature is dead as currently documented,
-please remove the code until further notice" reply :-)  LoC reduction by
-deleting something that was never used in 11 years, Yay!!
-
-> Leaving in the rest for reference.
+> I know nothing about Juno, but i do help maintain the Marvell SoC
+> device tree files.
 > 
-> > The microcode driver is better off by doing what the Intel SDM suggests,
-> > and staying well clear of that checksum field.  It has already checked
-> > the whole extended signature table's checksum, anyway.
-> > 
-> > Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> > ---
-> >  arch/x86/kernel/cpu/microcode/intel_lib.c |   20 ++------------------
-> >  1 file changed, 2 insertions(+), 18 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/microcode/intel_lib.c b/arch/x86/kernel/cpu/microcode/intel_lib.c
-> > index 1cc6494..9200b83 100644
-> > --- a/arch/x86/kernel/cpu/microcode/intel_lib.c
-> > +++ b/arch/x86/kernel/cpu/microcode/intel_lib.c
-> > @@ -49,8 +49,7 @@ int microcode_sanity_check(void *mc, int print_err)
-> >  	unsigned long total_size, data_size, ext_table_size;
-> >  	struct microcode_header_intel *mc_header = mc;
-> >  	struct extended_sigtable *ext_header = NULL;
-> > -	int sum, orig_sum, ext_sigcount = 0, i;
-> > -	struct extended_signature *ext_sig;
-> > +	int orig_sum, i;
-> >  
-> >  	total_size = get_totalsize(mc_header);
-> >  	data_size = get_datasize(mc_header);
-> > @@ -81,7 +80,6 @@ int microcode_sanity_check(void *mc, int print_err)
-> >  				pr_err("error: bad exttable size in microcode data file\n");
-> >  			return -EFAULT;
-> >  		}
-> > -		ext_sigcount = ext_header->count;
-> >  	}
-> >  
-> >  	/*
-> > @@ -129,21 +127,7 @@ int microcode_sanity_check(void *mc, int print_err)
-> >  			pr_err("error: bad microcode update checksum\n");
-> >  		return -EINVAL;
-> >  	}
-> > -	if (!ext_table_size)
-> > -		return 0;
-> > -	/* check extended signature checksum */
-> > -	for (i = 0; i < ext_sigcount; i++) {
-> > -		ext_sig = (void *)ext_header + EXT_HEADER_SIZE +
-> > -			  EXT_SIGNATURE_SIZE * i;
-> > -		sum = orig_sum
-> > -			- (mc_header->sig + mc_header->pf + mc_header->cksum)
-> > -			+ (ext_sig->sig + ext_sig->pf + ext_sig->cksum);
-> > -		if (sum) {
-> > -			if (print_err)
-> > -				pr_err("error: bad extended signature checksum\n");
-> > -			return -EINVAL;
-> > -		}
-> > -	}
-> > +
-> >  	return 0;
-> >  }
-> >  EXPORT_SYMBOL_GPL(microcode_sanity_check);
+> It seems pretty normal to split device tree descriptions into a
+> generic .dtsi SoC part and a number of .dts board files, one per
+> board, and including the SoC .dtsi file.
+
+Agree.
+
+> 
+> Is it likely another board will be designed using the same SoC?
+
+There is at least one revision of the SoC happening, but hopefully
+it should be compatible with the current DT. ARM usually creates
+CoreTiles for the CPUs and uses the VExpress motherboard as the
+"expansion board" sort of setup.
+
+Juno is new in this area in that is an 'all-in-one' board. I don't
+think we will ever see another board with the Juno chip because
+ARM doesn't sell chips, but there might be future ARM boards that
+will share features with Juno, so refactoring will be necessary.
+Unfortunately, I don't have any insights into the future so I
+cannot properly prepare for such case, hence the one file submission.
+
+Best regards,
+Liviu
+
+> 
+>    Andrew
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
