@@ -1,140 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015AbaJaRze (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:55:34 -0400
-Received: from mout.web.de ([212.227.15.14]:60063 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756620AbaJaRzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:55:32 -0400
-Message-ID: <5453CD0D.9010206@users.sourceforge.net>
-Date: Fri, 31 Oct 2014 18:55:25 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH resent] staging: rtl8188eu: Deletion of unnecessary checks
- before three function calls
-References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com>
-In-Reply-To: <20141029084702.GA18675@kroah.com>
-Content-Type: text/plain; charset=utf-8
+	id S1758132AbaJaR4L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:56:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42050 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757357AbaJaR4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 13:56:09 -0400
+Date: Fri, 31 Oct 2014 13:56:06 -0400 (EDT)
+Message-Id: <20141031.135606.1420214285713635362.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net] r8152: stop submitting intr for -EPROTO
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-74-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-74-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Z3wSqUGbDLRWv7l6Z9gHJ01rLU4E1pcUEPo5lghTWhZRFlOhxNO
- e4X6Yfo1tIvNcd2JfmIRkrAJNKpPOYDbUN5lmiJyyqKfFJrvSRFZZgodtwvf9Q2ZbsFxGZg
- OTSFqytJXW/ZgQSbAT+6z5xKZxl7i+al3jhysCVkuRiJdwnSU6OBhzCGKqSzevYPQkilYoa
- szGSF/uzcSgtMqGECxG8w==
-X-UI-Out-Filterresults: notjunk:1;
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 31 Oct 2014 10:56:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functions kfree(), rtw_free_netdev() and vfree() test whether their
-argument is NULL and then return immediately. Thus the test around the call
-is not needed.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Fri, 31 Oct 2014 13:35:57 +0800
 
-This issue was detected by using the Coccinelle software.
+> For Renesas USB 3.0 host controller, when unplugging the usb hub which
+> has the RTL8153 plugged, the driver would get -EPROTO for interrupt
+> transfer. There is high probability to get the information of "HC died;
+> cleaning up", if the driver continues to submit the interrupt transfer
+> before the disconnect() is called.
+ ...
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/staging/rtl8188eu/core/rtw_efuse.c   | 3 +--
- drivers/staging/rtl8188eu/core/rtw_mlme.c    | 3 +--
- drivers/staging/rtl8188eu/core/rtw_sta_mgt.c | 3 +--
- drivers/staging/rtl8188eu/core/rtw_xmit.c    | 6 ++----
- drivers/staging/rtl8188eu/os_dep/usb_intf.c  | 5 ++---
- 5 files changed, 7 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-index 7006088..77f7552 100644
---- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-@@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16
-_size_byte, u8  *pbuf)
- exit:
- 	kfree(efuseTbl);
-
--	if (eFuseWord)
--		kfree(eFuseWord);
-+	kfree(eFuseWord);
- }
-
- static void efuse_read_phymap_from_txpktbuf(
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-index 149c271..df54350 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-@@ -122,8 +122,7 @@ void rtw_free_mlme_priv(struct mlme_priv *pmlmepriv)
- 	rtw_free_mlme_priv_ie_data(pmlmepriv);
-
- 	if (pmlmepriv) {
--		if (pmlmepriv->free_bss_buf)
--			vfree(pmlmepriv->free_bss_buf);
-+		vfree(pmlmepriv->free_bss_buf);
- 	}
- }
-
-diff --git a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-index e1dc8fa..af1de9c 100644
---- a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-@@ -201,8 +201,7 @@ u32	_rtw_free_sta_priv(struct	sta_priv *pstapriv)
-
- 		rtw_mfree_sta_priv_lock(pstapriv);
-
--		if (pstapriv->pallocated_stainfo_buf)
--			vfree(pstapriv->pallocated_stainfo_buf);
-+		vfree(pstapriv->pallocated_stainfo_buf);
- 	}
-
- 	return _SUCCESS;
-diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-index 639ace0..011c9cf 100644
---- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-@@ -246,11 +246,9 @@ void _rtw_free_xmit_priv (struct xmit_priv *pxmitpriv)
- 		pxmitbuf++;
- 	}
-
--	if (pxmitpriv->pallocated_frame_buf)
--		vfree(pxmitpriv->pallocated_frame_buf);
-+	vfree(pxmitpriv->pallocated_frame_buf);
-
--	if (pxmitpriv->pallocated_xmitbuf)
--		vfree(pxmitpriv->pallocated_xmitbuf);
-+	vfree(pxmitpriv->pallocated_xmitbuf);
-
- 	/*  free xmit extension buff */
- 	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 407a318..cdb70e4 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -456,7 +456,7 @@ free_adapter:
- 	if (status != _SUCCESS) {
- 		if (pnetdev)
- 			rtw_free_netdev(pnetdev);
--		else if (padapter)
-+		else
- 			vfree(padapter);
- 		padapter = NULL;
- 	}
-@@ -487,8 +487,7 @@ static void rtw_usb_if1_deinit(struct adapter *if1)
- 	DBG_88E("+r871xu_dev_remove, hw_init_completed=%d\n",
- 		if1->hw_init_completed);
- 	rtw_free_drv_sw(if1);
--	if (pnetdev)
--		rtw_free_netdev(pnetdev);
-+	rtw_free_netdev(pnetdev);
- }
-
- static int rtw_drv_init(struct usb_interface *pusb_intf, const struct
-usb_device_id *pdid)
--- 
-2.1.2
-
+Applied, thanks.
