@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbaJaQue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:50:34 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:35686 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaJaQud (ORCPT
+	id S1756183AbaJaQvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:51:52 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:7663 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754100AbaJaQvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:50:33 -0400
-Date: Fri, 31 Oct 2014 09:50:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/144] 3.12.32-stable review
-Message-ID: <20141031165016.GA7958@roeck-us.net>
-References: <cover.1414759455.git.jslaby@suse.cz>
+	Fri, 31 Oct 2014 12:51:48 -0400
+Date: Fri, 31 Oct 2014 12:51:46 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: byungchul.park@lge.com
+Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tracing, function_graph: fix micro seconds notation
+ in comment
+Message-ID: <20141031125146.17a3f105@gandalf.local.home>
+In-Reply-To: <20141024010742.GB18008@byungchulpark-X58A-UD3R>
+References: <1414052242-9828-1-git-send-email-byungchul.park@lge.com>
+ <1414052242-9828-2-git-send-email-byungchul.park@lge.com>
+ <87fveee2tg.fsf@sejong.aot.lge.com>
+ <20141024010742.GB18008@byungchulpark-X58A-UD3R>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1414759455.git.jslaby@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020207.5453BDD8.0185,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 02:14:07PM +0100, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.32 release.
-> There are 144 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Tue Nov  4 13:44:15 CET 2014.
-> Anything received after that time might be too late.
-> 
-Build results:
-	total: 135 pass: 135 fail: 0
-Qemu test results:
-	total: 27 pass: 27 fail: 0
+On Fri, 24 Oct 2014 10:07:42 +0900
+Byungchul Park <byungchul.park@lge.com> wrote:
 
-This is with v3.12.31-145-g6eb2b7e.
+ 
+> > >  	/* Signal a overhead of time execution to the output */
+> > >  	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
+> > > -		/* Duration exceeded 100 msecs */
+> > > +		/* Duration exceeded 100 usecs */
+> > >  		if (duration > 100000ULL)
+> > >  			ret = trace_seq_puts(s, "! ");
+> > > -		/* Duration exceeded 10 msecs */
+> > > +		/* Duration exceeded 10 usecs */
+> > >  		else if (duration > 10000ULL)
+> > 
+> > I thought the duration was in usec, but it seems not, it's in nsec, hmm.
+> > Then this exceeding 10/100 usec is not meaningful - what about increaing
+> > numbers in the conditional so that it can match to the comment?  That
+> > will eliminate the need of the patch 2.
 
-Guenter
+No, please keep this to 10/100 usecs. I do analyze functions that take
+that little of time.
+
+> 
+> The approach you suggested also looks good to me. But I just wonder if it
+> would be ok even if it changes meaning of the marks, "!", "+", because the
+> marks have used with the meaning of exceeding 10/100 usec until now.
+> 
+> Isn't there anything wrong with increasing numbers in the conditions? :)
+> 
+> > 
+> > Also I think msecs_str in trace_print_graph_duration() should be renamed
+> > to usecs_str.
+> 
+> I agree. It should be also renamed. Such words made me hard to understand
+> the code correctly. :(
+> 
+
+Yeah, this code has been here forever. It came from the original
+latency-tracer in the -rt patch. I was so use to calling 'msecs' as
+microseconds in this code, that I didn't realize the problem ;-)
+
+Anyway, feel free to resend this patch fixing the msecs_str.
+
+Thanks!
+
+-- Steve
+
+
+> > 
+> > Thanks,
+> > Namhyung
+> > 
+> > 
+> > >  			ret = trace_seq_puts(s, "+ ");
+> > >  	}
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+
