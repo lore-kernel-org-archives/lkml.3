@@ -1,167 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760963AbaJaGcf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 02:32:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56443 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760889AbaJaGce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 02:32:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,293,1413270000"; 
-   d="scan'208";a="614566386"
-Date: Fri, 31 Oct 2014 14:11:42 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: "Chen, Tiejun" <tiejun.chen@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: fix access memslots w/o hold srcu read lock
-Message-ID: <20141031061142.GB509@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1414730012-7278-1-git-send-email-wanpeng.li@linux.intel.com>
- <54531E7B.1040006@intel.com>
+	id S1759893AbaJaGlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 02:41:35 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60354 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383AbaJaGlc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 02:41:32 -0400
+Date: Thu, 30 Oct 2014 23:41:30 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        Frank Rowand <frank.rowand@sonymobile.com>
+Subject: Re: [PATCH 2/2] tty: serial: msm: Support sysrq on uartDM devices
+Message-ID: <20141031064130.GG12469@codeaurora.org>
+References: <1414606478-13709-1-git-send-email-sboyd@codeaurora.org>
+ <1414606478-13709-3-git-send-email-sboyd@codeaurora.org>
+ <54522163.8030408@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54531E7B.1040006@intel.com>
+In-Reply-To: <54522163.8030408@linaro.org>
+ko: Daniel Thompson <daniel.thompson@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tiejun,
-On Fri, Oct 31, 2014 at 01:30:35PM +0800, Chen, Tiejun wrote:
->On 2014/10/31 12:33, Wanpeng Li wrote:
->>The srcu read lock must be held while accessing memslots (e.g.
->>when using gfn_to_* functions), however, commit c24ae0dcd3e8
->>("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call
->>gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it
->>which leads to suspicious rcu_dereference_check() usage warning.
->>This patch fix it by holding srcu read lock when call gfn_to_page()
->>in kvm_vcpu_reload_apic_access_page() function.
->>
->>
->>[ INFO: suspicious RCU usage. ]
->>3.18.0-rc2-test2+ #70 Not tainted
->>-------------------------------
->>include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
->>
->>other info that might help us debug this:
->>
->>rcu_scheduler_active = 1, debug_locks = 0
->>1 lock held by qemu-system-x86/2371:
->>  #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
->>
->>stack backtrace:
->>CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
->>Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
->>  0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
->>  ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
->>  ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
->>Call Trace:
->>  [<ffffffff816f514f>] dump_stack+0x4e/0x71
->>  [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
->>  [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
->>  [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
->>  [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
->>  [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
->>  [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
->>  [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
->>  [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
->>  [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
->>  [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
->>  [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
->>  [<ffffffff8122ee45>] ? __fget+0x5/0x250
->>  [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
->>  [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
->>  [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
->>
->>Reported-by: Takashi Iwai <tiwai@suse.de>
->>Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
->>Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>---
->>  arch/x86/kvm/x86.c | 3 +++
->>  1 file changed, 3 insertions(+)
->>
->>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>index 0033df3..2d97329 100644
->>--- a/arch/x86/kvm/x86.c
->>+++ b/arch/x86/kvm/x86.c
->>@@ -6059,6 +6059,7 @@ static void kvm_vcpu_flush_tlb(struct kvm_vcpu *vcpu)
->>  void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
->>  {
->>  	struct page *page = NULL;
->>+	int idx;
->>
->>  	if (!irqchip_in_kernel(vcpu->kvm))
->>  		return;
->>@@ -6066,7 +6067,9 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
->>  	if (!kvm_x86_ops->set_apic_access_page_addr)
->>  		return;
->>
->>+	idx = srcu_read_lock(&vcpu->kvm->srcu);
->
->There's another scenario that we already hold srcu before call
->kvm_vcpu_reload_apic_access_page(),
->
->__vcpu_run()
->    |
->    + vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
->    + r = vcpu_enter_guest(vcpu);
->        |
->        + kvm_vcpu_reload_apic_access_page(vcpu);
->
+On 10/30, Daniel Thompson wrote:
+> On 29/10/14 18:14, Stephen Boyd wrote:
+> > +		r_count = min_t(int, count, sizeof(buf));
+> > +
+> > +		for (i = 0; i < r_count; i++) {
+> > +			char flag = TTY_NORMAL;
+> >  
+> > -		/* TODO: handle sysrq */
+> > -		tty_insert_flip_string(tport, buf, min(count, 4));
+> > -		count -= 4;
+> > +			if (msm_port->break_detected && buf[i] == 0) {
+> > +				port->icount.brk++;
+> > +				flag = TTY_BREAK;
+> > +				msm_port->break_detected = false;
+> > +				if (uart_handle_break(port))
+> > +					continue;
+> > +			}
+> > +
+> > +			if (!(port->read_status_mask & UART_SR_RX_BREAK))
+> > +				flag = TTY_NORMAL;
+> 
+> flag is already known to be TTY_NORMAL.
 
-You are right. Great thanks for your pointing out. After recheck all the
-callsites of kvm_vcpu_reload_apic_access_page(), just vmx_vcpu_reset()
-path need to be fixed.
+Huh? If we detected a break we would set the flag to TTY_BREAK
+and if uart_handle_break() returned 0 (perhaps sysrq config is
+diasbled) then we would get down here, and then we want to reset
+the flag to TTY_NORMAL if the read_status_mask bits indicate that
+we want to skip checking for breaks. Otherwise we want to
+indicate to the tty layer that it's a break character.
 
-Regards,
-Wanpeng Li
+> 
+> 
+> > +
+> > +			spin_unlock(&port->lock);
+> 
+> Is it safe to unlock at this point? count may no longer be valid when we
+> return.
 
->So according to backtrace I think we should fix as follows:
->
->kvm: x86: vmx: hold kvm->srcu while reload apic access page
->
->kvm_vcpu_reload_apic_access_page() needs to access memslots via
->gfn_to_page(), so its necessary to hold kvm->srcu.
->
->Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
->---
-> arch/x86/kvm/vmx.c | 3 +++
-> 1 file changed, 3 insertions(+)
->
->diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->index b25a588..9fa1f46 100644
->--- a/arch/x86/kvm/vmx.c
->+++ b/arch/x86/kvm/vmx.c
->@@ -4442,6 +4442,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
-> {
->        struct vcpu_vmx *vmx = to_vmx(vcpu);
->        struct msr_data apic_base_msr;
->+       int idx;
->
->        vmx->rmode.vm86_active = 0;
->
->@@ -4509,7 +4510,9 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
->                vmcs_write32(TPR_THRESHOLD, 0);
->        }
->
->+       idx = srcu_read_lock(&vcpu->kvm->srcu);
->        kvm_vcpu_reload_apic_access_page(vcpu);
->+       srcu_read_unlock(&vcpu->kvm->srcu, idx);
->
->        if (vmx_vm_has_apicv(vcpu->kvm))
->                memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
->-- 
->1.9.1
->
->Thanks
->Tiejun
->>  	page = gfn_to_page(vcpu->kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
->>+	srcu_read_unlock(&vcpu->kvm->srcu, idx);
->>  	kvm_x86_ops->set_apic_access_page_addr(vcpu, page_to_phys(page));
->>
->>  	/*
->>
+Can you explain further? If it actually isn't valid something
+needs to be done. I believe other serial drivers are doing this
+sort of thing though so it doesn't seem that uncommon (of course
+those drivers could also be broken I suppose).
+
+> 
+> 
+> > +			sysrq = uart_handle_sysrq_char(port, buf[i]);
+> > +			spin_lock(&port->lock);
+> > +			if (!sysrq)
+> > +				tty_insert_flip_char(tport, buf[i], flag);
+> 
+> flag has a constant value here.
+> 
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
