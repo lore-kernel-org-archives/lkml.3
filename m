@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933405AbaJaODF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:03:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38828 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760416AbaJaOAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:00:45 -0400
-From: Juergen Gross <jgross@suse.com>
-To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
-        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, bhelgaas@google.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 14/17] x86: Support PAT bit in pagetable dump for lower levels
-Date: Fri, 31 Oct 2014 15:00:30 +0100
-Message-Id: <1414764033-30011-15-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414764033-30011-1-git-send-email-jgross@suse.com>
-References: <1414764033-30011-1-git-send-email-jgross@suse.com>
+	id S933688AbaJaOEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:04:25 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:50130 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933571AbaJaOEW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:04:22 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1414764218.2406.76.camel@hadess.net>
+Subject: Re: A desktop environment[1] kernel wishlist
+From: Bastien Nocera <hadess@hadess.net>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 31 Oct 2014 15:03:38 +0100
+In-Reply-To: <20141030233906.6647d005@alan.etchedpixels.co.uk>
+References: <1413881397.30379.7.camel@hadess.net>
+	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+	 <1413911644.30379.12.camel@hadess.net>
+	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
+	 <1413914978.30379.14.camel@hadess.net>
+	 <CALAqxLX2Q-2RBF1zY6JAWrqNiqBFG3vxUwUSLVS3qXpgSOb9xA@mail.gmail.com>
+	 <1414419579.30379.49.camel@hadess.net>
+	 <CALAqxLXyaL55JuDuHAcWX0PEdem-jpVxK0rbJaNrBbBJ3rQY5Q@mail.gmail.com>
+	 <20141028225740.2cd0ea5f@alan.etchedpixels.co.uk>
+	 <1414680060.2406.51.camel@hadess.net>
+	 <20141030233906.6647d005@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dumping page table protection bits is not correct for entries on levels
-2 and 3 regarding the PAT bit, which is at a different position as on
-level 4.
+On Thu, 2014-10-30 at 23:39 +0000, One Thousand Gnomes wrote:
+> > > You'd have to solve it in the firmware.
+> > 
+> > Not if the kernel can tell us that the event occurred and when.
+> 
+> Which it can only do if the firmware told the kernel meaningfully !
+> 
+> > And I think I have one of those devices, an Intel Baytrail tablet.
+> > 
+> > > - Suspend/Resume on such machines are a Linux fake to keep legacy code
+> > >   happy
+> > 
+> > Do you have a link to how this is implemented currently?
+> 
+> You ask for suspend and we put all the devices into lowest power state if
+> they are not already there then sit on our backsides issuing mwaits
+> asking for C7 state on BYT (C10 I think on HSW).
+> 
+> If you box is ever passive enough you can even randomly enter this state
+> in the idle loop. You generally won't do this on current devices because
+> you won't have suitable panels and most desktop OS's are far too noisy on
+> wakeups. There's nothing preventing you having half your processors in
+> deep idle.
+> 
+> That's where it is all heading though. Suspend will eventually go away.
+> 
+> > [1]: Reason for wake-up for each wake-up-able device, along with a
+> > timestamp.
+> 
+> We may not know and the answer in many cases will be extremely device
+> specific.
 
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/mm/dump_pagetables.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+Which is why I'm interested in the device drivers providing that
+information.
 
-diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
-index 95a427e..6c2ca03 100644
---- a/arch/x86/mm/dump_pagetables.c
-+++ b/arch/x86/mm/dump_pagetables.c
-@@ -126,7 +126,7 @@ static void printk_prot(struct seq_file *m, pgprot_t prot, int level, bool dmsg)
- 
- 	if (!pgprot_val(prot)) {
- 		/* Not present */
--		pt_dump_cont_printf(m, dmsg, "                          ");
-+		pt_dump_cont_printf(m, dmsg, "                              ");
- 	} else {
- 		if (pr & _PAGE_USER)
- 			pt_dump_cont_printf(m, dmsg, "USR ");
-@@ -145,18 +145,16 @@ static void printk_prot(struct seq_file *m, pgprot_t prot, int level, bool dmsg)
- 		else
- 			pt_dump_cont_printf(m, dmsg, "    ");
- 
--		/* Bit 9 has a different meaning on level 3 vs 4 */
--		if (level <= 3) {
--			if (pr & _PAGE_PSE)
--				pt_dump_cont_printf(m, dmsg, "PSE ");
--			else
--				pt_dump_cont_printf(m, dmsg, "    ");
--		} else {
--			if (pr & _PAGE_PAT)
--				pt_dump_cont_printf(m, dmsg, "pat ");
--			else
--				pt_dump_cont_printf(m, dmsg, "    ");
--		}
-+		/* Bit 7 has a different meaning on level 3 vs 4 */
-+		if (level <= 3 && pr & _PAGE_PSE)
-+			pt_dump_cont_printf(m, dmsg, "PSE ");
-+		else
-+			pt_dump_cont_printf(m, dmsg, "    ");
-+		if ((level == 4 && pr & _PAGE_PAT) ||
-+		    ((level == 3 || level == 2) && pr & _PAGE_PAT_LARGE))
-+			pt_dump_cont_printf(m, dmsg, "pat ");
-+		else
-+			pt_dump_cont_printf(m, dmsg, "    ");
- 		if (pr & _PAGE_GLOBAL)
- 			pt_dump_cont_printf(m, dmsg, "GLB ");
- 		else
--- 
-1.8.4.5
+> It's a reasonable ask but answers even if available are likely
+> to be things like "because GPE36" and GPE36 will just be some connection
+> to something that could be anything from a lid switch to a light sensor
+> or even a smart wifi chip deciding it wants the CPU to help out because
+> you are out of range of the base station. We may not even know what it
+> relates to.
+
+But the device or platform driver would know that, presumably.
+
+> A non suspend system will exit deep idle type status because they got
+> an IRQ or perhaps some DMA needed the cache coherency. That doesn't mean
+> they've got the foggiest which IRQ kicked them out if idle, just that hey
+> I'm awake and there are four pending interrupts. That of course is
+> assuming it even noticed it entered a deep idle state - you don't want to
+> wake an idle CPU to tell it that its more idle than it was before.
+
+Sure, the CPU might not be the best example of a device for which we
+need to track the wakeup reason. The device drivers however...
 
