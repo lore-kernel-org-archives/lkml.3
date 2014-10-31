@@ -1,170 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506AbaJaRi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:38:57 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:33709 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757329AbaJaRiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:38:54 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Fri, 31 Oct 2014 13:38:52 -0400
-To: linux-kernel@vger.kernel.org
-Cc: Len Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: drivers: net: cpsw: Support ALLMULTI and fix IFF_PROMISC in switch
- mode
-Message-ID: <20141031173852.GK24110@csclub.uwaterloo.ca>
+	id S1756641AbaJaRkj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:40:39 -0400
+Received: from mout.web.de ([212.227.17.11]:50641 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864AbaJaRkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 13:40:37 -0400
+Message-ID: <5453C98C.90105@users.sourceforge.net>
+Date: Fri, 31 Oct 2014 18:40:28 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ursula Braun <ursula.braun@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] s390/net: Deletion of unnecessary checks before two
+ function calls
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:kyH5ceRlmtCqNa/CtIcI8PeVHkFEnYNeCF61m0onE3RRZkGW+C9
+ BPXNfusipIt9yXwBLul4aciJzrucWEg1B/NXPj+OGbxELqOIRqAmX8GiyGR9TBixPtmLMg/
+ pKT8FAOcLVA4TJCUbR5YbmS9X3Kf4pPB4AgmIQj2cz5P4EWG+ayc8y0aqP6WHSEuIz+pVVN
+ nGDXezQw2IpsL1wKMkjYg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpsw driver did not support the IFF_ALLMULTI flag which makes dynamic
-multicast routing not work.  Related to this, when enabling IFF_PROMISC
-in switch mode, all registered multicast addresses are flushed, resulting
-in only broadcast and unicast traffic being received.
+The functions debug_unregister() and kfree_fsm() test whether their argument
+is NULL and then return immediately. Thus the test around the call
+is not needed.
 
-A new cpsw_ale_set_allmulti function now scans through the ALE entry
-table and adds/removes the host port from the unregistered multicast
-port mask of each vlan entry depending on the state of IFF_ALLMULTI.
-In promiscious mode, cpsw_ale_set_allmulti is used to force reception
-of all multicast traffic in addition to the unicast and broadcast traffic.
+This issue was detected by using the Coccinelle software.
 
-With this change dynamic multicast and promiscious mode both work in
-switch mode.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/s390/net/claw.c      |  6 ++----
+ drivers/s390/net/ctcm_main.c |  6 ++----
+ drivers/s390/net/lcs.c       |  6 ++----
+ drivers/s390/net/netiucv.c   | 12 ++++--------
+ 4 files changed, 10 insertions(+), 20 deletions(-)
 
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index 952e1e4..96a61d1 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -638,12 +638,16 @@ static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
- 	if (ndev->flags & IFF_PROMISC) {
- 		/* Enable promiscuous mode */
- 		cpsw_set_promiscious(ndev, true);
-+		cpsw_ale_set_allmulti(priv->ale, IFF_ALLMULTI);
- 		return;
- 	} else {
- 		/* Disable promiscuous mode */
- 		cpsw_set_promiscious(ndev, false);
- 	}
- 
-+	/* Restore allmulti on vlans if necessary */
-+	cpsw_ale_set_allmulti(priv->ale, priv->ndev->flags & IFF_ALLMULTI);
-+
- 	/* Clear all mcast from ALE */
- 	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port);
- 
-@@ -1149,6 +1153,7 @@ static inline void cpsw_add_default_vlan(struct cpsw_priv *priv)
- 	const int port = priv->host_port;
- 	u32 reg;
- 	int i;
-+	int unreg_mcast_mask;
- 
- 	reg = (priv->version == CPSW_VERSION_1) ? CPSW1_PORT_VLAN :
- 	       CPSW2_PORT_VLAN;
-@@ -1158,9 +1163,14 @@ static inline void cpsw_add_default_vlan(struct cpsw_priv *priv)
- 	for (i = 0; i < priv->data.slaves; i++)
- 		slave_write(priv->slaves + i, vlan, reg);
- 
-+	if (priv->ndev->flags & IFF_ALLMULTI)
-+		unreg_mcast_mask = ALE_ALL_PORTS;
-+	else
-+		unreg_mcast_mask = ALE_PORT_1 | ALE_PORT_2;
-+
- 	cpsw_ale_add_vlan(priv->ale, vlan, ALE_ALL_PORTS << port,
- 			  ALE_ALL_PORTS << port, ALE_ALL_PORTS << port,
--			  (ALE_PORT_1 | ALE_PORT_2) << port);
-+			  unreg_mcast_mask << port);
- }
- 
- static void cpsw_init_host_port(struct cpsw_priv *priv)
-@@ -1620,11 +1630,17 @@ static inline int cpsw_add_vlan_ale_entry(struct cpsw_priv *priv,
- 				unsigned short vid)
+diff --git a/drivers/s390/net/claw.c b/drivers/s390/net/claw.c
+index 213e54e..d609ca0 100644
+--- a/drivers/s390/net/claw.c
++++ b/drivers/s390/net/claw.c
+@@ -109,10 +109,8 @@ static debug_info_t *claw_dbf_trace;
+ static void
+ claw_unregister_debug_facility(void)
  {
- 	int ret;
-+	int unreg_mcast_mask;
-+
-+	if (priv->ndev->flags & IFF_ALLMULTI)
-+		unreg_mcast_mask = ALE_ALL_PORTS;
-+	else
-+		unreg_mcast_mask = ALE_PORT_1 | ALE_PORT_2;
- 
- 	ret = cpsw_ale_add_vlan(priv->ale, vid,
- 				ALE_ALL_PORTS << priv->host_port,
- 				0, ALE_ALL_PORTS << priv->host_port,
--				(ALE_PORT_1 | ALE_PORT_2) << priv->host_port);
-+				unreg_mcast_mask << priv->host_port);
- 	if (ret != 0)
- 		return ret;
- 
-diff --git a/drivers/net/ethernet/ti/cpsw_ale.c b/drivers/net/ethernet/ti/cpsw_ale.c
-index 0579b22..3ae8387 100644
---- a/drivers/net/ethernet/ti/cpsw_ale.c
-+++ b/drivers/net/ethernet/ti/cpsw_ale.c
-@@ -443,6 +443,35 @@ int cpsw_ale_del_vlan(struct cpsw_ale *ale, u16 vid, int port_mask)
- 	return 0;
+-	if (claw_dbf_setup)
+-		debug_unregister(claw_dbf_setup);
+-	if (claw_dbf_trace)
+-		debug_unregister(claw_dbf_trace);
++	debug_unregister(claw_dbf_setup);
++	debug_unregister(claw_dbf_trace);
  }
- 
-+void cpsw_ale_set_allmulti(struct cpsw_ale *ale, int allmulti)
-+{
-+	u32 ale_entry[ALE_ENTRY_WORDS];
-+	int type, idx;
-+	int unreg_mcast = 0;
-+
-+	/* Only bother doing the work if the setting is actually changing */
-+	if (ale->allmulti == allmulti)
-+		return;
-+
-+	/* Remember the new setting to check against next time */
-+	ale->allmulti = allmulti;
-+
-+	for (idx = 0; idx < ale->params.ale_entries; idx++) {
-+		cpsw_ale_read(ale, idx, ale_entry);
-+		type = cpsw_ale_get_entry_type(ale_entry);
-+		if (type != ALE_TYPE_VLAN)
-+			continue;
-+
-+		unreg_mcast = cpsw_ale_get_vlan_unreg_mcast(ale_entry);
-+		if (allmulti)
-+			unreg_mcast |= 1;
-+		else
-+			unreg_mcast &= ~1;
-+		cpsw_ale_set_vlan_unreg_mcast(ale_entry, unreg_mcast);
-+		cpsw_ale_write(ale, idx, ale_entry);
-+	}
-+}
-+
- struct ale_control_info {
- 	const char	*name;
- 	int		offset, port_offset;
-diff --git a/drivers/net/ethernet/ti/cpsw_ale.h b/drivers/net/ethernet/ti/cpsw_ale.h
-index 31cf43c..c0d4127 100644
---- a/drivers/net/ethernet/ti/cpsw_ale.h
-+++ b/drivers/net/ethernet/ti/cpsw_ale.h
-@@ -27,6 +27,7 @@ struct cpsw_ale {
- 	struct cpsw_ale_params	params;
- 	struct timer_list	timer;
- 	unsigned long		ageout;
-+	int			allmulti;
- };
- 
- enum cpsw_ale_control {
-@@ -103,6 +104,7 @@ int cpsw_ale_del_mcast(struct cpsw_ale *ale, u8 *addr, int port_mask,
- int cpsw_ale_add_vlan(struct cpsw_ale *ale, u16 vid, int port, int untag,
- 			int reg_mcast, int unreg_mcast);
- int cpsw_ale_del_vlan(struct cpsw_ale *ale, u16 vid, int port);
-+void cpsw_ale_set_allmulti(struct cpsw_ale *ale, int allmulti);
- 
- int cpsw_ale_control_get(struct cpsw_ale *ale, int port, int control);
- int cpsw_ale_control_set(struct cpsw_ale *ale, int port,
 
+ static int
+diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
+index e056dd4..34dc0f3 100644
+--- a/drivers/s390/net/ctcm_main.c
++++ b/drivers/s390/net/ctcm_main.c
+@@ -1074,8 +1074,7 @@ static void ctcm_free_netdevice(struct net_device *dev)
+ 	if (priv) {
+ 		grp = priv->mpcg;
+ 		if (grp) {
+-			if (grp->fsm)
+-				kfree_fsm(grp->fsm);
++			kfree_fsm(grp->fsm);
+ 			if (grp->xid_skb)
+ 				dev_kfree_skb(grp->xid_skb);
+ 			if (grp->rcvd_xid_skb)
+@@ -1672,8 +1671,7 @@ static int ctcm_shutdown_device(struct ccwgroup_device *cgdev)
+ 		ctcm_free_netdevice(dev);
+ 	}
+
+-	if (priv->fsm)
+-		kfree_fsm(priv->fsm);
++	kfree_fsm(priv->fsm);
+
+ 	ccw_device_set_offline(cgdev->cdev[1]);
+ 	ccw_device_set_offline(cgdev->cdev[0]);
+diff --git a/drivers/s390/net/lcs.c b/drivers/s390/net/lcs.c
+index 0a7d87c..5dfa7dd 100644
+--- a/drivers/s390/net/lcs.c
++++ b/drivers/s390/net/lcs.c
+@@ -88,10 +88,8 @@ static debug_info_t *lcs_dbf_trace;
+ static void
+ lcs_unregister_debug_facility(void)
+ {
+-	if (lcs_dbf_setup)
+-		debug_unregister(lcs_dbf_setup);
+-	if (lcs_dbf_trace)
+-		debug_unregister(lcs_dbf_trace);
++	debug_unregister(lcs_dbf_setup);
++	debug_unregister(lcs_dbf_trace);
+ }
+
+ static int
+diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
+index 0a87809..bdcc3fe 100644
+--- a/drivers/s390/net/netiucv.c
++++ b/drivers/s390/net/netiucv.c
+@@ -487,12 +487,9 @@ DEFINE_PER_CPU(char[256], iucv_dbf_txt_buf);
+
+ static void iucv_unregister_dbf_views(void)
+ {
+-	if (iucv_dbf_setup)
+-		debug_unregister(iucv_dbf_setup);
+-	if (iucv_dbf_data)
+-		debug_unregister(iucv_dbf_data);
+-	if (iucv_dbf_trace)
+-		debug_unregister(iucv_dbf_trace);
++	debug_unregister(iucv_dbf_setup);
++	debug_unregister(iucv_dbf_data);
++	debug_unregister(iucv_dbf_trace);
+ }
+ static int iucv_register_dbf_views(void)
+ {
+@@ -1975,8 +1972,7 @@ static void netiucv_free_netdevice(struct net_device *dev)
+ 	if (privptr) {
+ 		if (privptr->conn)
+ 			netiucv_remove_connection(privptr->conn);
+-		if (privptr->fsm)
+-			kfree_fsm(privptr->fsm);
++		kfree_fsm(privptr->fsm);
+ 		privptr->conn = NULL; privptr->fsm = NULL;
+ 		/* privptr gets freed by free_netdev() */
+ 	}
 -- 
-Len Sorensen
+2.1.3
 
