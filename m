@@ -1,90 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739AbaJaRiV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:38:21 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:48304 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaJaRiU (ORCPT
+	id S1757116AbaJaRim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:38:42 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:55154 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756894AbaJaRil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:38:20 -0400
+	Fri, 31 Oct 2014 13:38:41 -0400
+Message-ID: <5453C91D.9060702@hurleysoftware.com>
+Date: Fri, 31 Oct 2014 13:38:37 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1414763680.2406.68.camel@hadess.net>
-References: <1413881397.30379.7.camel@hadess.net>
-	<CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	<1413911644.30379.12.camel@hadess.net>
-	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	<1413914978.30379.14.camel@hadess.net>
-	<20141022170433.GA10186@hungrycats.org>
-	<1414420084.30379.53.camel@hadess.net>
-	<20141027205936.GE17380@hungrycats.org>
-	<1414499805.2406.6.camel@hadess.net>
-	<CALAqxLUdkpwg=+Fcz+BKTAb1uzYbeSU0M6o5FcZGOD8X37Dfzw@mail.gmail.com>
-	<1414763680.2406.68.camel@hadess.net>
-Date: Fri, 31 Oct 2014 10:38:18 -0700
-Message-ID: <CALAqxLV2jnUp0f=xhEOh0JaeghnwFyE7rbVke5iDJgQUeDLFVA@mail.gmail.com>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: John Stultz <john.stultz@linaro.org>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: Zygo Blaxell <zblaxell@furryterror.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: Re: 3.17.2. issue?
+References: <5453AE33.8040802@xs4all.nl>
+In-Reply-To: <5453AE33.8040802@xs4all.nl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 6:54 AM, Bastien Nocera <hadess@hadess.net> wrote:
-> On Tue, 2014-10-28 at 07:36 -0700, John Stultz wrote:
->> On Tue, Oct 28, 2014 at 5:36 AM, Bastien Nocera <hadess@hadess.net> wrote:
->> > Maybe the wake-up reason isn't good enough on its own, but how do I know
->> > which one the possible wake-up reasons was the last one to trigger?
->>
->> So I feel like I'm still missing why its so critical to know what the
->> last-event was?  To me it seems a number of events have occurred, and
->> they should all be processed. Since they're all asynchronous, they
->> could come in any order, so it seems best handle them one by one
->> rather then have any requirement on which one happened last.
->>
->> What does the exact timeline of the events provide for you?
->
-> What's most important is the reason for (device) wake-up.
+[ +cc Hans Verkuil, Mauro Carvalho Chehab, linux-media ]
 
-You keep on insisting this, but I still don't quite understand *why*.
+On 10/31/2014 11:43 AM, Udo van den Heuvel wrote:
+> Hello,
+> 
+> Booting into 3.17.2 on one box I saw:
+> 
+> [   15.070260] microcode: CPU0: patch_level=0x010000b7
+> [   15.279454] Linux video capture interface: v2.00
+> [   15.315043] microcode: CPU0: new patch_level=0x010000c7
+> [   15.319519] microcode: CPU1: patch_level=0x010000b7
+> [   15.323966] microcode: CPU1: new patch_level=0x010000c7
+> [   15.328493] microcode: Microcode Update Driver: v2.00
+> <tigran@aivazian.fsnet.co.uk>, Peter Oruba
+> [   15.750724] saa7146: register extension 'budget_av'
+> [   15.757205] ------------[ cut here ]------------
+> [   15.763300] WARNING: CPU: 0 PID: 468 at fs/proc/generic.c:341
+> __proc_create+0x1a4/0x1c0()
+> [   15.769475] name len 0
+> [   15.774046] Modules linked in: budget_av(+) saa7146_vv
+> videobuf_dma_sg videobuf_core v4l2_common videodev budget_core microcode
+> ttpci_eeprom saa7146 dvb_core snd_hda_codec_realtek snd_hda_codec_hdmi
+> snd_hda_codec_generic cp210x snd_hda_intel usbserial k10temp
+> snd_hda_controller evdev snd_hda_codec snd_seq snd_seq_device snd_pcm
+> i2c_piix4 snd_timer snd acpi_cpufreq processor button nfsd auth_rpcgss
+> oid_registry exportfs nfs_acl lockd sunrpc hid_generic usbhid hid
+> ata_generic ehci_pci ehci_hcd ohci_pci ohci_hcd sr_mod cdrom radeon
+> fbcon bitblit softcursor font cfbfillrect cfbimgblt cfbcopyarea
+> backlight drm_kms_helper ttm autofs4
+> [   15.794125] CPU: 0 PID: 468 Comm: systemd-udevd Not tainted
+> 3.17.2test-dirty #7
+> [   15.799155] Hardware name: To Be Filled By O.E.M. To Be Filled By
+> O.E.M./To be filled by O.E.M., BIOS 080015  05/04/2010
+> [   15.804586]  0000000000000009 ffffffff81461238 ffff8800cf69ba60
+> ffffffff81056271
+> [   15.809771]  ffff8800cf69bb00 ffff8800cf69bab0 0000000000000002
+> 000000000000416d
+> [   15.814957]  0000000000000000 ffffffff810562e7 ffffffff8156510b
+> ffffffff00000020
+> [   15.820188] Call Trace:
+> [   15.825314]  [<ffffffff81461238>] ? dump_stack+0x49/0x6a
+> [   15.830457]  [<ffffffff81056271>] ? warn_slowpath_common+0x81/0xb0
+> [   15.835535]  [<ffffffff810562e7>] ? warn_slowpath_fmt+0x47/0x50
+> [   15.840565]  [<ffffffff81179c74>] ? __proc_create+0x1a4/0x1c0
+> [   15.845613]  [<ffffffff81179f5f>] ? proc_mkdir_data+0x2f/0x70
+> [   15.850605]  [<ffffffff81092b74>] ? register_handler_proc+0x114/0x130
+> [   15.855497]  [<ffffffff8108f87b>] ? __setup_irq+0x3cb/0x500
+> [   15.860273]  [<ffffffffa0362da0>] ? saa7146_remove_one+0x1c0/0x1c0
+> [saa7146]
+> [   15.865007]  [<ffffffff8108fb21>] ? request_threaded_irq+0xd1/0x170
+> [   15.869728]  [<ffffffffa03630f3>] ? saa7146_init_one+0x103/0x740
+> [saa7146]
+> [   15.874377]  [<ffffffff81271158>] ? pci_device_probe+0x98/0xf0
+> [   15.878911]  [<ffffffff81305356>] ? driver_probe_device+0x86/0x270
+> [   15.883317]  [<ffffffff81305633>] ? __driver_attach+0x93/0xa0
+> [   15.887659]  [<ffffffff813055a0>] ? __device_attach+0x60/0x60
+> [   15.891919]  [<ffffffff81303653>] ? bus_for_each_dev+0x53/0x90
+> [   15.896107]  [<ffffffff81304b68>] ? bus_add_driver+0x188/0x240
+> [   15.900246]  [<ffffffffa0400000>] ? 0xffffffffa0400000
+> [   15.904359]  [<ffffffff813059e6>] ? driver_register+0x56/0xd0
+> [   15.908454]  [<ffffffff810002b4>] ? do_one_initcall+0x84/0x1b0
+> [   15.912567]  [<ffffffff810b0774>] ? load_module+0x1c34/0x2190
+> [   15.916648]  [<ffffffff810ad3c0>] ? store_uevent+0x50/0x50
+> [   15.920716]  [<ffffffff810b0e25>] ? SyS_finit_module+0x85/0x90
+> [   15.924768]  [<ffffffff81466092>] ? system_call_fastpath+0x16/0x1b
+> [   15.928925] ---[ end trace b6ff19cfd9b0c411 ]---
+> [   15.932953] saa7146: found saa7146 @ mem ffffc90000020c00 (revision
+> 1, irq 20) (0x153b,0x1157)
+> [   15.937071] saa7146 (0): dma buffer size 192512
+> [   15.937071] saa7146 (0): dma buffer size 192512
+> [   15.941161] DVB: registering new adapter (Terratec Cinergy 1200 DVB-T)
+> [   15.981742] adapter failed MAC signature check
+> [   15.987499] encoded MAC from EEPROM was
+> ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff
+> [   16.256557] budget_av: KNC1-0: MAC addr = 00:0a:ac:01:d6:87
+> [   16.617698] budget_av 0000:03:05.0: DVB: registering adapter 0
+> frontend 0 (Philips TDA10046H DVB-T)...
+> [   16.624394] budget_av: ci interface initialised
+> [   17.053409] EXT4-fs (dm-3): mounted filesystem with ordered data
+> mode. Opts: (null)
+> 
+> What happened?
+> 
+> Kind regards,
+> Udo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-> I could see if
-> the event that woke up the machine was Wake-On-LAN (which would wake up
-> the screen), or the proximity of wireless networks (Wi-Fi card firmwares
-> can do that on their own) (which wouldn't wake the screen up).
->
-> The timestamp makes it possible to avoid races that were mentioned
-> earlier in the thread.
-
-But even as Alan said, we may not actually know the real ordering even
-in the kernel. We come out of resume and there may be three interrupts
-pending, and they'll just be handled in priority order, not in real
-time order.
-
-> Knowing whether an alarm or a button woke the machine would be useful as
-> well (even if we would need to monitor additional resources, such as the
-> input devices, or accelerometers, to know what state the machine
-> currently is in).
->
-> As others mentioned, this is also useful as a power debugging tool. The
-> important part here would be that each device would report its own
-> wake-up reason, which the driver can know better than user-space or
-> other parts of the kernel. User-space would be responsible for
-> coalescing that information.
-
-I agree that it can be useful for power statistics and debugging, and
-there is work being done by Android folks and others to improve this.
-So you might follow along with that work.
-
-But I still am concerned that the model you're seeming to want to use
-- depending on what specifically caused the state transition - is
-flawed, and instead recommend a more event based model.
-
-Even so, I worry we're just talking past each other, so I'll stop
-being a wet blanket here and let you get on with doing development and
-hopefully proving me wrong. :)
-
-thanks
--john
