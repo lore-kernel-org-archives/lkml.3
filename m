@@ -1,347 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620AbaJaSbK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 14:31:10 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:38260
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbaJaSbI convert rfc822-to-8bit (ORCPT
+	id S1757802AbaJaScV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 14:32:21 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:62904 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaJaScS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 14:31:08 -0400
-In-Reply-To: <1413460916-2852-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-References: <1413460916-2852-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-From: serge@hallyn.com
-Subject: Re: [PATCHv5] procfs: show hierarchy of pid namespace
-To: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 31 Oct 2014 18:30:37 +0000
-Message-ID: <g2lzcx.nebnfr.1hgfdih-qmf@mail.hallyn.com>
+	Fri, 31 Oct 2014 14:32:18 -0400
+Date: Fri, 31 Oct 2014 11:32:13 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kever Yang <kever.yang@rock-chips.com>, Chris <zyw@rock-chips.com>
+Subject: Re: [PATCH v7 0/3] ARM: rk3288 : Add PM Domain support
+Message-ID: <20141031183213.GF32331@dtor-ws>
+References: <1414135761-3406-1-git-send-email-jinkun.hong@rock-chips.com>
+ <CAD=FV=UzgS2JtNhUB+0gbMvpW76C=12=y+ij0p6Xpbk_vAs0ww@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAD=FV=UzgS2JtNhUB+0gbMvpW76C=12=y+ij0p6Xpbk_vAs0ww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If pidns_list_add fails, the get_pid taken in the caller leaks.
+On Fri, Oct 31, 2014 at 11:03:46AM -0700, Doug Anderson wrote:
+> Jinkun,
+> 
+> On Fri, Oct 24, 2014 at 12:29 AM, jinkun.hong
+> <jinkun.hong@rock-chips.com> wrote:
+> > From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+> >
+> > Add power domain drivers based on generic power domain for Rockchip platform,
+> > and support RK3288.
+> >
+> > https://chromium-review.googlesource.com/#/c/220253/9
+> > This is the GPU driver, add the following information in DT,
+> > and it can support the PMDOMAIN.
+> >
+> > gpu: gpu@ffa30000 {
+> >         compatible = "arm,malit764",
+> >                      "arm,malit76x",
+> >                      "arm,malit7xx",
+> >                      "arm,mali-midgard";
+> >         reg = <0xffa30000 0x10000>;
+> >         interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
+> >                      <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>,
+> >                      <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
+> >         interrupt-names = "JOB", "MMU", "GPU";
+> >         clocks = <&cru ACLK_GPU>;
+> >         clock-names = "aclk_gpu";
+> >         operating-points = <
+> >                 /* KHz uV */
+> >                 100000 800000
+> >                 200000 850000
+> >                 300000 950000
+> >                 400000 1000000
+> >                 600000 1150000
+> >         >;
+> >         power-domains = <&gpu_power>;
+> >         status = "disabled";
+> > };
+> >
+> > Based on:
+> > - [PATCH v1 1/4] PM / clock_ops: Add pm_clk_add_clk()
+> >   http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg735599.html
+> >
+> > Changes in v7:
+> > - Delete unused variables
+> >
+> > Changes in v6:
+> > - delete pmu_lock
+> > - modify dev_lock using mutex
+> > - pm_clk_resume(pd->dev) change to pm_clk_resume(ed->dev)
+> > - pm_clk_suspend(pd->dev) change to pm_clk_suspend(ed->dev)
+> > - add devm_kfree(pd->dev, de) in rockchip_pm_domain_detach_dev
+> >
+> > Changes in v5:
+> > - delete idle_lock
+> > - add timeout in rockchip_pmu_set_idle_request()
+> >
+> > Changes in v4:
+> > - use list storage dev
+> >
+> > Changes in v3:
+> > - change use pm_clk_resume() and pm_clk_suspend()
+> > - DT structure has changed
+> > - Decomposition power-controller, changed to multiple controller
+> >    (gpu-power-controller, hevc-power-controller)
+> >
+> > Changes in v2:
+> > - remove the "pd->pd.of_node = np"
+> > - move clocks to "optional"
+> > - make pd_vio clocks all one entry per line and alphabetize.
+> > - power: power-controller move back to pinctrl: pinctrl.
+> >
+> > jinkun.hong (3):
+> >   power-domain: add power domain drivers for Rockchip platform
+> >   dt-bindings: add document of Rockchip power domain
+> >   ARM: dts: add rk3288 power-domain node
+> >
+> >  .../bindings/arm/rockchip/power_domain.txt         |   46 +++
+> >  arch/arm/boot/dts/rk3288.dtsi                      |   24 ++
+> >  arch/arm/mach-rockchip/Kconfig                     |    1 +
+> >  arch/arm/mach-rockchip/Makefile                    |    1 +
+> >  arch/arm/mach-rockchip/pm_domains.c                |  355 ++++++++++++++++++++
+> >  5 files changed, 427 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+> >  create mode 100644 arch/arm/mach-rockchip/pm_domains.c
+> 
+> I haven't been following all of the changes here, but I'll say that I
+> just spent a bunch of time figuring out why my system wasn't properly
+> going into suspend using your patchset after I picked up Kever's patch
+> to disable unused clocks
+> (https://patchwork.kernel.org/patch/5202291/).
+> 
+> It turns out that if I go back to patch v2 of your series that suspend
+> works great.  ...but not with v7.
+> 
+> I got to this point because I started bisecting clocks.  I realized
+> that I needed to leave on "aclk_vepu", "aclk_vdpu", "aclk_rga_pre",
+> "sclk_rga", "aclk_hevc", ..., ...  As I kept finding more clocks they
+> kept looking more and more like your list from the v2 dtsi and it
+> became obvious.
+> 
+> 
+> I guess that things are not properly being turned off properly due to
+> the reason you stated in <https://lkml.org/lkml/2014/10/28/1279>.
+> Specifically we need all the relevant clocks on in order to power
+> things on and off.
 
-It's not clear to me that the loop in 'if curns' will always end in a list_add_tail, and if not the get_pid leaks.  It does look like it should, but something to catch the unexpected failure (especially after someone modifies that code) would be niceOn 10/16/14 7:01 Chen Hanxiao wrote:
-We lack of pid hierarchy information, and this will lead to:
-a) we don't know pids' relationship, who is whose child:
-   /proc/PID/ns/pid only tell us whether two pids live in same ns;
-b) bring trouble to nested lxc container check/restore/migration
-c) bring trouble to pid translation between containers;
+I guess since the platform requirement is to have all clocks on during
+power domain power transitions the easiest way is indeed to list all
+relevant clocks in power domain description instead of trying to fetch
+them from devices that compose power domain. I believe it is more
+correct because:
 
-This patch will show the hierarchy of pid namespace
-by pidns_hierarchy like:
+1. Placing a device into power domain is done at probe time so
+inherently not all clocks are enumerated when first device is being
+probed and we trun the power to the domain.
 
-[root@localhost ~]#cat /proc/pidns_hierarchy
-18060 18102 1534
-18060 18102 1600
-1550
-*Note: numbers represent the pid 1 in different ns
+2. We may not have drivers for all devices enabled on a given product
+and so not all device will not be bound to a driver which cause them be
+detached from their power domain.
 
-It shows the pid hierarchy below:
+Thanks.
 
-      init_pid_ns (not showed in /proc/pidns_hierarchy)
-              │
-┌────────────┐
-ns1                      ns2
-│                        │
-1550                    18060
-                          │
-                          │
-                         ns3
-                          │
-                        18102
-                          │
-                 ┌──────────┐
-                 ns4                   ns5
-                 │                    │
-                1534                  1600
-
-Every pid printed in pidns_hierarchy
-is the init pid of that pid ns level.
-
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
----
-v5: collect pid by find_ge_pid;
-    use local list inside nslist_proc_show();
-    use get_pid, remove mutex lock.
-v4: simplify pid collection and some performance optimizamtion
-    fix another race issue.
-v3: fix a race issue and memory leak issue
-v2: use a procfs text file instead of dirs under /proc
-
- fs/proc/Kconfig           |   6 ++
- fs/proc/Makefile          |   1 +
- fs/proc/pidns_hierarchy.c | 226 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 233 insertions(+)
- create mode 100644 fs/proc/pidns_hierarchy.c
-
-diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
-index 2183fcf..4bb111c 100644
---- a/fs/proc/Kconfig
-+++ b/fs/proc/Kconfig
-@@ -71,3 +71,9 @@ config PROC_PAGE_MONITOR
- 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
- 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
-           interfaces will reduce the size of the kernel by approximately 4kb.
-+
-+config PROC_PID_HIERARCHY
-+	bool "Enable /proc/pidns_hierarchy support" if EXPERT
-+	depends on PROC_FS
-+	help
-+	  Show pid namespace hierarchy information
-diff --git a/fs/proc/Makefile b/fs/proc/Makefile
-index 7151ea4..33e384b 100644
---- a/fs/proc/Makefile
-+++ b/fs/proc/Makefile
-@@ -30,3 +30,4 @@ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
- proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
- proc-$(CONFIG_PRINTK)	+= kmsg.o
- proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
-+proc-$(CONFIG_PROC_PID_HIERARCHY)	+= pidns_hierarchy.o
-diff --git a/fs/proc/pidns_hierarchy.c b/fs/proc/pidns_hierarchy.c
-new file mode 100644
-index 0000000..2f5148c
---- /dev/null
-+++ b/fs/proc/pidns_hierarchy.c
-@@ -0,0 +1,226 @@
-+#include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/proc_fs.h>
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include <linux/pid_namespace.h>
-+#include <linux/seq_file.h>
-+
-+/*
-+ *  /proc/pidns_hierarchy
-+ *
-+ *  show the hierarchy of pid namespace
-+ */
-+
-+#define NS_HIERARCHY	"pidns_hierarchy"
-+
-+/* list for host pid collection */
-+struct pidns_list {
-+	struct list_head list;
-+	struct pid *pid;
-+};
-+
-+static void free_pidns_list(struct list_head *head)
-+{
-+	struct pidns_list *tmp, *pos;
-+
-+	list_for_each_entry_safe(pos, tmp, head, list) {
-+		list_del(&pos->list);
-+		put_pid(pos->pid);
-+		kfree(pos);
-+	}
-+}
-+
-+static int
-+pidns_list_add(struct pid *pid, struct list_head *list_head,
-+		struct pid_namespace *curr_ns)
-+{
-+	struct pidns_list *ent;
-+	struct pid_namespace *ns;
-+
-+	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
-+	if (!ent)
-+		return -ENOMEM;
-+
-+	ent->pid = pid;
-+	ns = pid->numbers[pid->level].ns;
-+	if (curr_ns) {
-+		/* add pids who is the child of curr_ns */
-+		for (; ns != NULL; ns = ns->parent)
-+			if (ns == curr_ns) {
-+				list_add_tail(&ent->list, list_head);
-+				break;
-+			}
-+	} else
-+		list_add_tail(&ent->list, list_head);
-+
-+	return 0;
-+}
-+
-+static int
-+pidns_list_filter(struct list_head *pidns_list,
-+		struct list_head *pidns_tree)
-+{
-+	struct pidns_list *pos, *pos_t;
-+	struct pid_namespace *ns0, *ns1;
-+	struct pid *pid0, *pid1;
-+	int rc, flag = 0;
-+
-+	/* screen pid with relationship
-+	 * in pidns_list, we may add pids like
-+	 * ns0   ns1   ns2
-+	 * pid1->pid2->pid3
-+	 * we should screen pid1, pid2 and keep pid3
-+	 */
-+	list_for_each_entry(pos, pidns_list, list) {
-+		list_for_each_entry(pos_t, pidns_list, list) {
-+			flag = 0;
-+			pid0 = pos->pid;
-+			pid1 = pos_t->pid;
-+			ns0 = pid0->numbers[pid0->level].ns;
-+			ns1 = pid1->numbers[pid1->level].ns;
-+			if (pos->pid->level < pos_t->pid->level)
-+				for (; ns1 != NULL; ns1 = ns1->parent)
-+					if (ns0 == ns1) {
-+						flag = 1;
-+						break;
-+					}
-+			if (flag == 1)
-+				break;
-+		}
-+
-+		if (flag == 0) {
-+			rcu_read_lock();
-+			get_pid(pos->pid);
-+			rcu_read_unlock();
-+			rc = pidns_list_add(pos->pid, pidns_tree, NULL);
-+			if (rc)
-+				goto out;
-+		}
-+	}
-+
-+	/* Now all usefull stuffs are in pidns_tree, free pidns_list*/
-+	free_pidns_list(pidns_list);
-+
-+	return 0;
-+
-+out:
-+	free_pidns_list(pidns_tree);
-+	return rc;
-+}
-+
-+/* collect pids in pidns_list,
-+ * then remove duplicated ones,
-+ * add the rest to pidns_tree
-+ */
-+static int proc_pidns_list_refresh(struct pid_namespace *curr_ns,
-+		struct list_head *pidns_list,
-+		struct list_head *pidns_tree)
-+{
-+	struct pid *pid;
-+	int new_nr, nr = 0;
-+	int rc;
-+
-+	/* collect pid in differet ns */
-+	while (nr < PID_MAX_LIMIT) {
-+		rcu_read_lock();
-+		pid = find_ge_pid(nr, curr_ns);
-+		if (pid) {
-+			new_nr = pid_vnr(pid);
-+			if (!is_child_reaper(pid)) {
-+				nr = new_nr + 1;
-+				rcu_read_unlock();
-+				continue;
-+			}
-+			get_pid(pid);
-+			rcu_read_unlock();
-+			rc = pidns_list_add(pid, pidns_list, curr_ns);
-+			if (rc)
-+				goto out;
-+		} else {
-+			rcu_read_unlock();
-+			break;
-+		}
-+		nr = new_nr + 1;
-+	}
-+
-+	/* Only one pid found as child reaper,
-+	 * no sub-namespace of current pid namespace,
-+	 * return 0 directly.
-+	 */
-+	if (list_is_singular(pidns_list)) {
-+		rc = 0;
-+		goto out;
-+	}
-+
-+	/* screen duplicate pids from list pidns_list
-+	* and form a new list pidns_tree
-+	*/
-+	rc = pidns_list_filter(pidns_list, pidns_tree);
-+	if (rc)
-+		goto out;
-+
-+	return 0;
-+
-+out:
-+	free_pidns_list(pidns_list);
-+	return rc;
-+}
-+
-+static int nslist_proc_show(struct seq_file *m, void *v)
-+{
-+	struct pidns_list *pos;
-+	struct pid_namespace *ns, *curr_ns;
-+	struct pid *pid;
-+	char pid_buf[16];
-+	int i, rc;
-+
-+	LIST_HEAD(pidns_list);
-+	LIST_HEAD(pidns_tree);
-+
-+	curr_ns = task_active_pid_ns(current);
-+
-+	rc = proc_pidns_list_refresh(curr_ns, &pidns_list, &pidns_tree);
-+	if (rc)
-+		return rc;
-+
-+	/* print pid namespace hierarchy */
-+	list_for_each_entry(pos, &pidns_tree, list) {
-+		pid = pos->pid;
-+		for (i = curr_ns->level + 1; i <= pid->level; i++) {
-+			ns = pid->numbers[i].ns;
-+			/* show PID '1' in specific pid ns */
-+			snprintf(pid_buf, 16, "%u",
-+				pid_vnr(find_pid_ns(1, ns)));
-+			seq_printf(m, "%s ", pid_buf);
-+		}
-+
-+		seq_putc(m, '\n');
-+	}
-+
-+	free_pidns_list(&pidns_tree);
-+
-+	return 0;
-+}
-+
-+static int nslist_proc_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, nslist_proc_show, NULL);
-+}
-+
-+static const struct file_operations proc_nspid_nslist_fops = {
-+	.open		= nslist_proc_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static int __init pidns_hierarchy_init(void)
-+{
-+	proc_create(NS_HIERARCHY, S_IWUGO,
-+		NULL, &proc_nspid_nslist_fops);
-+
-+	return 0;
-+}
-+fs_initcall(pidns_hierarchy_init);
 -- 
-1.9.3
-
-_______________________________________________
-Containers mailing list
-Containers@lists.linux-foundation.org
-https://lists.linuxfoundation.org/mailman/listinfo/containers
+Dmitry
