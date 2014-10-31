@@ -1,103 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759943AbaJaGQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 02:16:15 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44066 "EHLO mail.kernel.org"
+	id S1760877AbaJaGQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 02:16:17 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44078 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754487AbaJaGQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 02:16:14 -0400
+	id S1759317AbaJaGQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 02:16:15 -0400
 From: Jaegeuk Kim <jaegeuk@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-f2fs-devel@lists.sourceforge.net
 Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 1/4] f2fs: send discard commands in larger extent
-Date: Thu, 30 Oct 2014 23:16:13 -0700
-Message-Id: <1414736176-13201-1-git-send-email-jaegeuk@kernel.org>
+Subject: [PATCH 2/4] f2fs: avoid race condition in handling wait_io
+Date: Thu, 30 Oct 2014 23:16:14 -0700
+Message-Id: <1414736176-13201-2-git-send-email-jaegeuk@kernel.org>
 X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414736176-13201-1-git-send-email-jaegeuk@kernel.org>
+References: <1414736176-13201-1-git-send-email-jaegeuk@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there is a chance to make a huge sized discard command, we don't need
-to split it out, since each blkdev_issue_discard should wait one at a
-time.
+__submit_merged_bio    f2fs_write_end_io        f2fs_write_end_io
+                       wait_io = X              wait_io = x
+                       complete(X)              complete(X)
+                       wait_io = NULL
+wait_for_completion()
+free(X)
+                                                 spin_lock(X)
+                                                 kernel panic
+
+In order to avoid this, this patch removes the wait_io facility.
+Instead, we can use wait_on_all_pages_writeback(sbi) to wait for end_ios.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 ---
- fs/f2fs/segment.c | 44 +++++++++++++++++++++++++++-----------------
- 1 file changed, 27 insertions(+), 17 deletions(-)
+ fs/f2fs/checkpoint.c |  3 +++
+ fs/f2fs/data.c       | 35 +++++++----------------------------
+ fs/f2fs/f2fs.h       |  1 -
+ 3 files changed, 10 insertions(+), 29 deletions(-)
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 06dda73..2fb3d7f 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -469,10 +469,33 @@ void discard_next_dnode(struct f2fs_sb_info *sbi, block_t blkaddr)
- 	}
- }
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index ca514d5..dd6a357 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -978,6 +978,9 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
+ 	/* Here, we only have one bio having CP pack */
+ 	sync_meta_pages(sbi, META_FLUSH, LONG_MAX);
  
--static void add_discard_addrs(struct f2fs_sb_info *sbi, struct cp_control *cpc)
-+static void __add_discard_entry(struct f2fs_sb_info *sbi,
-+		struct cp_control *cpc, unsigned int start, unsigned int end)
- {
- 	struct list_head *head = &SM_I(sbi)->discard_list;
--	struct discard_entry *new;
-+	struct discard_entry *new, *last;
++	/* wait for previous submitted meta pages writeback */
++	wait_on_all_pages_writeback(sbi);
 +
-+	if (!list_empty(head)) {
-+		last = list_last_entry(head, struct discard_entry, list);
-+		if (START_BLOCK(sbi, cpc->trim_start) + start ==
-+						last->blkaddr + last->len) {
-+			last->len += end - start;
-+			goto done;
-+		}
-+	}
-+
-+	new = f2fs_kmem_cache_alloc(discard_entry_slab, GFP_NOFS);
-+	INIT_LIST_HEAD(&new->list);
-+	new->blkaddr = START_BLOCK(sbi, cpc->trim_start) + start;
-+	new->len = end - start;
-+	list_add_tail(&new->list, head);
-+done:
-+	SM_I(sbi)->nr_discards += end - start;
-+	cpc->trimmed += end - start;
-+}
-+
-+static void add_discard_addrs(struct f2fs_sb_info *sbi, struct cp_control *cpc)
-+{
- 	int entries = SIT_VBLOCK_MAP_SIZE / sizeof(unsigned long);
- 	int max_blocks = sbi->blocks_per_seg;
- 	struct seg_entry *se = get_seg_entry(sbi, cpc->trim_start);
-@@ -501,13 +524,7 @@ static void add_discard_addrs(struct f2fs_sb_info *sbi, struct cp_control *cpc)
- 		}
- 		mutex_unlock(&dirty_i->seglist_lock);
+ 	release_dirty_inode(sbi);
  
--		new = f2fs_kmem_cache_alloc(discard_entry_slab, GFP_NOFS);
--		INIT_LIST_HEAD(&new->list);
--		new->blkaddr = START_BLOCK(sbi, cpc->trim_start);
--		new->len = sbi->blocks_per_seg;
--		list_add_tail(&new->list, head);
--		SM_I(sbi)->nr_discards += sbi->blocks_per_seg;
--		cpc->trimmed += sbi->blocks_per_seg;
-+		__add_discard_entry(sbi, cpc, 0, sbi->blocks_per_seg);
- 		return;
+ 	if (unlikely(f2fs_cp_error(sbi)))
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index ceee1a6..8f16443 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -61,11 +61,6 @@ static void f2fs_write_end_io(struct bio *bio, int err)
+ 		dec_page_count(sbi, F2FS_WRITEBACK);
  	}
  
-@@ -529,14 +546,7 @@ static void add_discard_addrs(struct f2fs_sb_info *sbi, struct cp_control *cpc)
- 		if (end - start < cpc->trim_minlen)
- 			continue;
- 
--		new = f2fs_kmem_cache_alloc(discard_entry_slab, GFP_NOFS);
--		INIT_LIST_HEAD(&new->list);
--		new->blkaddr = START_BLOCK(sbi, cpc->trim_start) + start;
--		new->len = end - start;
--		cpc->trimmed += end - start;
+-	if (sbi->wait_io) {
+-		complete(sbi->wait_io);
+-		sbi->wait_io = NULL;
+-	}
 -
--		list_add_tail(&new->list, head);
--		SM_I(sbi)->nr_discards += end - start;
-+		__add_discard_entry(sbi, cpc, start, end);
- 	}
+ 	if (!get_pages(sbi, F2FS_WRITEBACK) &&
+ 			!list_empty(&sbi->cp_wait.task_list))
+ 		wake_up(&sbi->cp_wait);
+@@ -95,34 +90,18 @@ static struct bio *__bio_alloc(struct f2fs_sb_info *sbi, block_t blk_addr,
+ static void __submit_merged_bio(struct f2fs_bio_info *io)
+ {
+ 	struct f2fs_io_info *fio = &io->fio;
+-	int rw;
+ 
+ 	if (!io->bio)
+ 		return;
+ 
+-	rw = fio->rw;
+-
+-	if (is_read_io(rw)) {
+-		trace_f2fs_submit_read_bio(io->sbi->sb, rw,
+-						fio->type, io->bio);
+-		submit_bio(rw, io->bio);
+-	} else {
+-		trace_f2fs_submit_write_bio(io->sbi->sb, rw,
+-						fio->type, io->bio);
+-		/*
+-		 * META_FLUSH is only from the checkpoint procedure, and we
+-		 * should wait this metadata bio for FS consistency.
+-		 */
+-		if (fio->type == META_FLUSH) {
+-			DECLARE_COMPLETION_ONSTACK(wait);
+-			io->sbi->wait_io = &wait;
+-			submit_bio(rw, io->bio);
+-			wait_for_completion(&wait);
+-		} else {
+-			submit_bio(rw, io->bio);
+-		}
+-	}
++	if (is_read_io(fio->rw))
++		trace_f2fs_submit_read_bio(io->sbi->sb, fio->rw,
++							fio->type, io->bio);
++	else
++		trace_f2fs_submit_write_bio(io->sbi->sb, fio->rw,
++							fio->type, io->bio);
+ 
++	submit_bio(fio->rw, io->bio);
+ 	io->bio = NULL;
  }
  
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index afe3022..5a97058 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -516,7 +516,6 @@ struct f2fs_sb_info {
+ 	/* for bio operations */
+ 	struct f2fs_bio_info read_io;			/* for read bios */
+ 	struct f2fs_bio_info write_io[NR_PAGE_TYPE];	/* for write bios */
+-	struct completion *wait_io;		/* for completion bios */
+ 
+ 	/* for checkpoint */
+ 	struct f2fs_checkpoint *ckpt;		/* raw checkpoint pointer */
 -- 
 2.1.1
 
