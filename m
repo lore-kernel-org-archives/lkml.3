@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760136AbaJaU7u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:59:50 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:44999 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760065AbaJaU7p (ORCPT
+	id S1759253AbaJaVDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:03:30 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:40426 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753606AbaJaVD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:59:45 -0400
-Date: Fri, 31 Oct 2014 21:59:43 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 2/2] watchdog: at91rm9200 remove mach/ header dependency
-Message-ID: <20141031205943.GC11327@piout.net>
-References: <1414788359-15759-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1414788359-15759-2-git-send-email-alexandre.belloni@free-electrons.com>
- <1840711.B9Yu766vja@wuerfel>
+	Fri, 31 Oct 2014 17:03:29 -0400
+Date: Fri, 31 Oct 2014 17:03:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Subject: [ANNOUNCE] 3.14.23-rt20
+Message-ID: <20141031170326.1491a63f@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1840711.B9Yu766vja@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/10/2014 at 21:53:03 +0100, Arnd Bergmann wrote :
-> On Friday 31 October 2014 21:45:59 Alexandre Belloni wrote:
-> > Remove the mach/ header dependency by including the necessary macros and taking
-> > the appropriate resources from the system timer.
-> > 
-> > Also allow to compile both the at91rm920 and at91sam9 watchdog drivers at the
-> > same time.
-> > 
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> 
-> Please list me in the changelog as well, either in free-form or as
-> Suggested-by.
 
-Sure, I was thinking about putting your sob there too and forgot...
+Dear RT Folks,
 
-> >  
-> > +static struct of_device_id at91rm9200_st_timer_ids[] = {
-> > +	{ .compatible = "atmel,at91rm9200-st" },
-> > +	{ /* sentinel */ }
-> > +};
-> > +
-> >  static int at91wdt_probe(struct platform_device *pdev)
-> >  {
-> > +	struct resource *regs;
-> > +	struct resource _regs;
-> >  	int res;
-> >  
-> >  	if (at91wdt_miscdev.parent)
-> >  		return -EBUSY;
-> >  	at91wdt_miscdev.parent = &pdev->dev;
-> >  
-> > +	if (pdev->dev.of_node) {
-> > +		struct device_node *np;
-> > +
-> > +		np = of_find_matching_node(NULL, at91rm9200_st_timer_ids);
-> > +		if (!np)
-> > +			return -ENXIO;
-> > +		if (of_address_to_resource(np, 0, &_regs))
-> > +			return -ENXIO;
-> > +		regs = &_regs;
-> > +	} else {
-> > +		regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +	}
-> 
-> What was wrong with my approach of binding the driver to the
-> "atmel,at91rm9200-st" node?
-> 
+I'm pleased to announce the 3.14.23-rt20 stable release.
 
-I would enable and start the watchdog on all the rm9200 based platform,
-something that we probably don't want.
+This is the first 3.14-rt release in the stable-rt series. Normally I
+wait till the next development release is out before I pull in a new
+one. That is, I would pull in 3.14-rt when 3.16-rt or later was
+released. But because development is now moving at a "hobbyist rate" 
+ (read http://lwn.net/Articles/617140/ for details)
+and 3.14-rt is no longer being developed against, I figured it was time
+to put it under the "stable-rt" umbrella.
+
+This release is just an update to the new stable 3.14.23 version
+and no RT specific changes have been made.
 
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.14-rt
+  Head SHA1: 98a86c73c8828ba724eafaef832d71e3c909fb73
+
+
+Or to build 3.14.23-rt20 directly, the following patches should be
+applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.14.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.14.23.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.14/patch-3.14.23-rt20.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
