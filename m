@@ -1,142 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759862AbaJaNip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 09:38:45 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:42613 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758563AbaJaNio (ORCPT
+	id S1759984AbaJaNjg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 09:39:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57346 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758471AbaJaNje convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 09:38:44 -0400
-Message-ID: <1414762715.14369.5.camel@BR9GV9YG.de.ibm.com>
-Subject: Re: [PATCH v2] drivers: s390: net: ctcm: migrate variables to
- handle y2038 problem
-From: Ursula Braun <ubraun@linux.vnet.ibm.com>
-To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-Cc: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, opw-kernel@googlegroups.com
-Date: Fri, 31 Oct 2014 14:38:35 +0100
-In-Reply-To: <20141031091850.GA2582@localhost.localdomain>
-References: <20141031091850.GA2582@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14103113-0013-0000-0000-000001AE0D82
+	Fri, 31 Oct 2014 09:39:34 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v3 2/6] uio: Add new UIO_MEM_PHYS_CACHE type for mem regions
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <CAPTm99W0J-Q6CwCDVaYe4eyEWrruWuY5pzpHoESyVu9N3cFA=g@mail.gmail.com>
+Date: Fri, 31 Oct 2014 08:39:29 -0500
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "patches@apm.com" <patches@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Varka Bhadram <varkabhadram@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4B098F57-E202-412C-B54D-085A46792EDC@codeaurora.org>
+References: <1413871011-4101-1-git-send-email-ankit.jindal@linaro.org> <1413871011-4101-3-git-send-email-ankit.jindal@linaro.org> <6D33D50E-2DD1-482C-B05E-45B237F3B779@codeaurora.org> <CAPTm99W0J-Q6CwCDVaYe4eyEWrruWuY5pzpHoESyVu9N3cFA=g@mail.gmail.com>
+To: Ankit Jindal <ankit.jindal@linaro.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks, Aya. I miss drivers/s390/net/ctcm_main.c in your patch. And
-"time_before()" is not the right function to use here, because it
-returns a Bool value. Purpose of the ctcm timespec stuff is to determine
-the time interval between triggering the send operation and receiving
-the confirmation of the send operation. The maximum value is saved and
-can be displayed in the statistics.
 
-Regards, Ursula Braun
+On Oct 31, 2014, at 4:30 AM, Ankit Jindal <ankit.jindal@linaro.org> wrote:
 
-On Fri, 2014-10-31 at 11:18 +0200, Aya Mahfouz wrote:
-> This patch is concerned with migrating the time variables for the s390
-> network driver. The changes handle the y2038 problem where timespec will
-> overflow in the year 2038. timespec was replaced by unsigned long and
-> all time variables get their values from the jiffies global variable.
-> This was done for the sake of speed and efficiency.
+> Hi Kumar,
 > 
-> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-> ---
-> v1: Arnd has advised me to provide you with options for time
->     calculation. The first option: "accuracy" is used in this
->     patch. The second option: "speed" can be done through
->     jiffies.
+> On 21 October 2014 12:08, Kumar Gala <galak@codeaurora.org> wrote:
+>> 
+>> On Oct 21, 2014, at 7:56 AM, Ankit Jindal <ankit.jindal@linaro.org> wrote:
+>> 
+>>> Currently, three types of mem regions are supported: UIO_MEM_PHYS,
+>>> UIO_MEM_LOGICAL and UIO_MEM_VIRTUAL. Among these UIO_MEM_PHYS helps
+>>> UIO driver export physcial memory to user space as non-cacheable
+>>> user memory. Typcially memory-mapped registers of a device are exported
+>>> to user space as UIO_MEM_PHYS type mem region. The UIO_MEM_PHYS type
+>>> is not efficient if dma-capable devices are capable of maintaining coherency
+>>> with CPU caches.
+>>> 
+>>> This patch adds new type UIO_MEM_PHYS_CACHE for mem regions to enable
+>>> cacheable access to physical memory from user space.
+>>> 
+>>> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
+>>> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
+>>> ---
+>>> drivers/uio/uio.c          |   11 ++++++++---
+>>> include/linux/uio_driver.h |    1 +
+>>> 2 files changed, 9 insertions(+), 3 deletions(-)
+>> 
+>> Rather than adding a new type, why not allow the driver to set the pgprot value, this way one has full control and we don’t need to keep adding types for various different cache attributions in the future.
 > 
-> v2: Moved on to the speed option. Let me know if I explicitly
->     need to include the jiffies header. The module compiles with
->     no problems on my side.
+> Do you mean to add a new field pgprot_t in the memtype structure and
+> uio_mmap_physical will set vma->vm_page_prot to this value provided by
+> driver ? If this is the case then we will need to change all the
+> current uio based drivers which was the reason I preferred to have a
+> new mem type.
 > 
->  drivers/s390/net/ctcm_fsms.c | 18 +++++++-----------
->  drivers/s390/net/ctcm_main.h |  2 +-
->  2 files changed, 8 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
-> index fb92524..34b9820 100644
-> --- a/drivers/s390/net/ctcm_fsms.c
-> +++ b/drivers/s390/net/ctcm_fsms.c
-> @@ -251,13 +251,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
->  	int first = 1;
->  	int i;
->  	unsigned long duration;
-> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
-> +	unsigned long done_stamp = jiffies;
-> 
->  	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
-> 
-> -	duration =
-> -	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
-> -	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-> +	duration = time_before(done_stamp, ch->prof.send_stamp);
->  	if (duration > ch->prof.tx_time)
->  		ch->prof.tx_time = duration;
-> 
-> @@ -307,7 +305,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
->  		spin_unlock(&ch->collect_lock);
->  		ch->ccw[1].count = ch->trans_skb->len;
->  		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
-> -		ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +		ch->prof.send_stamp = jiffies;
->  		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
->  						(unsigned long)ch, 0xff, 0);
->  		ch->prof.doios_multi++;
-> @@ -1229,14 +1227,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
->  	int		rc;
->  	struct th_header *header;
->  	struct pdu	*p_header;
-> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
-> +	unsigned long done_stamp = jiffies;
-> 
->  	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
->  			__func__, dev->name, smp_processor_id());
-> 
-> -	duration =
-> -		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
-> -		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-> +	duration = time_before(done_stamp, ch->prof.send_stamp);
->  	if (duration > ch->prof.tx_time)
->  		ch->prof.tx_time = duration;
-> 
-> @@ -1361,7 +1357,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
-> 
->  	ch->ccw[1].count = ch->trans_skb->len;
->  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
-> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	ch->prof.send_stamp = jiffies;
->  	if (do_debug_ccw)
->  		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
->  	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
-> @@ -1827,7 +1823,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
->  	fsm_newstate(wch->fsm, CTC_STATE_TX);
-> 
->  	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
-> -	wch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	wch->prof.send_stamp = jiffies;
->  	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
->  					(unsigned long) wch, 0xff, 0);
->  	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
-> diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
-> index 477c933..6f4417c 100644
-> --- a/drivers/s390/net/ctcm_main.h
-> +++ b/drivers/s390/net/ctcm_main.h
-> @@ -121,7 +121,7 @@ struct ctcm_profile {
->  	unsigned long doios_multi;
->  	unsigned long txlen;
->  	unsigned long tx_time;
-> -	struct timespec send_stamp;
-> +	unsigned long send_stamp;
->  };
-> 
->  /*
+> Please let me know if I have misunderstood anything.
 
+I’m suggeting in uio_mmap_physical to do something like:
+
+if (idev->info->set_pgprot)
+	idev->info->set_pgprot(vma->vm_page_prot)
+else
+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+
+And add a set_prprot callback to 'struct uio_info’.
+
+Here’s patch from several years ago:
+
+http://patchwork.ozlabs.org/patch/119224/
+
+- k
+
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
