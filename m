@@ -1,47 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760996AbaJaGQp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 02:16:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44089 "EHLO mail.kernel.org"
+	id S1759225AbaJaG1O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 02:27:14 -0400
+Received: from mga03.intel.com ([134.134.136.65]:51711 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759978AbaJaGQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 02:16:16 -0400
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 3/4] f2fs: remove unnecessary macro
-Date: Thu, 30 Oct 2014 23:16:15 -0700
-Message-Id: <1414736176-13201-3-git-send-email-jaegeuk@kernel.org>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414736176-13201-1-git-send-email-jaegeuk@kernel.org>
-References: <1414736176-13201-1-git-send-email-jaegeuk@kernel.org>
+	id S1753002AbaJaG1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 02:27:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,293,1413270000"; 
+   d="scan'208";a="628813472"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Tiejun Chen <tiejun.chen@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v2] KVM: x86: fix access memslots w/o hold srcu read lock
+Date: Fri, 31 Oct 2014 14:26:59 +0800
+Message-Id: <1414736819-9625-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's remove unused macro.
+The srcu read lock must be held while accessing memslots (e.g.
+when using gfn_to_* functions), however, commit c24ae0dcd3e8
+("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call
+gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it in 
+vmx_vcpu_reset() path which leads to suspicious rcu_dereference_check() 
+usage warning. This patch fix it by holding srcu read lock when call 
+gfn_to_page() in vmx_vcpu_reset() path.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+
+[ INFO: suspicious RCU usage. ]
+3.18.0-rc2-test2+ #70 Not tainted
+-------------------------------
+include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
+
+other info that might help us debug this:
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by qemu-system-x86/2371:
+ #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
+
+stack backtrace:
+CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
+Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
+ 0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
+ ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
+ ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
+Call Trace:
+ [<ffffffff816f514f>] dump_stack+0x4e/0x71
+ [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
+ [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
+ [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
+ [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
+ [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
+ [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
+ [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
+ [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+ [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
+ [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
+ [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
+ [<ffffffff8122ee45>] ? __fget+0x5/0x250
+ [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
+ [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
+ [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
+
+Reported-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Suggested-by: Tiejun Chen <tiejun.chen@intel.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 ---
- include/linux/f2fs_fs.h | 4 ----
- 1 file changed, 4 deletions(-)
+ arch/x86/kvm/vmx.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
-index cc1064f..87f14e9 100644
---- a/include/linux/f2fs_fs.h
-+++ b/include/linux/f2fs_fs.h
-@@ -177,10 +177,6 @@ struct f2fs_extent {
- #define MAX_INLINE_DATA		(sizeof(__le32) * (DEF_ADDRS_PER_INODE - \
- 						F2FS_INLINE_XATTR_ADDRS - 1))
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index a0f78db..bd9be01 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4512,6 +4512,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+ 	struct msr_data apic_base_msr;
++	int idx;
  
--#define INLINE_DATA_OFFSET	(PAGE_CACHE_SIZE - sizeof(struct node_footer) -\
--				sizeof(__le32) * (DEF_ADDRS_PER_INODE + \
--				DEF_NIDS_PER_INODE - 1))
--
- struct f2fs_inode {
- 	__le16 i_mode;			/* file mode */
- 	__u8 i_advise;			/* file hints */
+ 	vmx->rmode.vm86_active = 0;
+ 
+@@ -4579,7 +4580,9 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+ 		vmcs_write32(TPR_THRESHOLD, 0);
+ 	}
+ 
++	idx = srcu_read_lock(&vcpu->kvm->srcu);
+ 	kvm_vcpu_reload_apic_access_page(vcpu);
++	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+ 
+ 	if (vmx_vm_has_apicv(vcpu->kvm))
+ 		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
 -- 
-2.1.1
+1.7.1
 
