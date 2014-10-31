@@ -1,175 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161542AbaJaAj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 20:39:58 -0400
-Received: from ozlabs.org ([103.22.144.67]:52425 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161361AbaJaAj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 20:39:29 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH V2] kernel, add bug_on_warn
-In-Reply-To: <54478367.7030505@redhat.com>
-References: <1413910077-9464-1-git-send-email-prarit@redhat.com> <87bnp491b3.fsf@rustcorp.com.au> <54478367.7030505@redhat.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 31 Oct 2014 10:55:28 +1030
-Message-ID: <87ppd984qv.fsf@rustcorp.com.au>
+	id S1161555AbaJaAmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 20:42:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37712 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161353AbaJaAmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 20:42:08 -0400
+Date: Fri, 31 Oct 2014 01:42:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiri Kosina <jkosina@suse.cz>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-api@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, marcel@holtmann.org, desrt@desrt.ca,
+        hadess@hadess.net, dh.herrmann@gmail.com, tixxdz@opendz.org,
+        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: kdbus: add driver skeleton, ioctl entry points and utility
+ functions
+In-Reply-To: <alpine.LRH.2.00.1410310114290.11562@twin.jikos.cz>
+Message-ID: <alpine.DEB.2.11.1410310129530.5308@nanos>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <1414620056-6675-4-git-send-email-gregkh@linuxfoundation.org> <alpine.DEB.2.11.1410302224230.5308@nanos> <alpine.LRH.2.00.1410310114290.11562@twin.jikos.cz>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prarit Bhargava <prarit@redhat.com> writes:
-> On 10/22/2014 12:27 AM, Rusty Russell wrote:
->> Prarit Bhargava <prarit@redhat.com> writes:
->>> There have been several times where I have had to rebuild a kernel to
->>> cause a panic when hitting a WARN() in the code in order to get a crash
->>> dump from a system.  Sometimes this is easy to do, other times (such as
->>> in the case of a remote admin) it is not trivial to send new images to the
->>> user.
->> 
->> What about during early boot?
->
-> Hi Rusty,
->
-> I really don't have a use case for this in early boot.  The kernel boots, the
-> initramfs, and then we run whatever init (systemd in my case).  A systemd script
-> configures kexec for kdump and that point kdump is "armed".  Doing a bug_on_warn
-> before this will simply result in a panicked system.  I don't get any "new"
-> information FWIW as I get a stack trace, etc., in both the WARN() and BUG() cases.
->
->> 
->> I'd recommend you use core_param().  Less code, and can be set on
->> commandline.
->
-> Is that a general request, or is it dependent on the answer above?  Of course I
-> have no problem doing it either way.
+On Fri, 31 Oct 2014, Jiri Kosina wrote:
+> On Fri, 31 Oct 2014, Thomas Gleixner wrote:
+> > > +static long kdbus_handle_ioctl(struct file *file, unsigned int cmd,
+> > > +			       unsigned long arg)
+> > > +{
+> > > +	struct kdbus_handle *handle = file->private_data;
+> > > +	void __user *argp = (void __user *)arg;
+> > > +	enum kdbus_handle_type type = handle->type;
+> > > +
+> > > +	/* make sure all handle fields are set if handle->type is */
+> > > +	smp_rmb();
+> > 
+> > Sure. You really need this kind of serialization because your design
+> > choice of allowing opaque handles in the first place.
+> > 
+> > I'm really interested why you need this rmb() at all. Just because you
+> > have several threads in user space which might race with the type
+> > assignment when they call the ioctl?
+> > 
+> > We have a strict requirement to document memory barriers. The
+> > following comment definitely does not fulfil this requirement as it
+> > just documents that someone observed a race of unknown provenance and
+> > got it 'fixed' with a 'smp_rmb()'
+> > 
+> > > +     /* make sure all handle fields are set if handle->type is */
+> > 
+> > That's really hillarious, The user space side knows excatly upfront
+> > which type of 'handle' it wants to open. Making it an opaque handle in
+> > the first place and let the kernel deal with the actual type
+> > assignment is beyond silly. Especially if that involves undocumented
+> > memory barriers.
+> 
+> I have been staring at exactly this for rather a long time today. 
+> 
+> Apparently this barrier pairs with smp_wmb() in kdbus_handle_transform() 
+> and tries to make sure that whenever handle->type is seen as updated, 
+> handle->ptr is as well.
 
-Oops, I read your initial patch too lightly: I see you added both
-a sysctl (which I saw) and an early_param (which I didn't).
+Right. But it does not make any sense at all. 
 
-I still think it should be a core_param, like so (untested!):
+The underlying problem is the design of the whole character device
+interface as an opaque type. Just look at the absurd workarounds in
+the userspace implementation of this,
 
-diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-index 6c0b9f27e465..cf16cbe9f544 100644
---- a/Documentation/kdump/kdump.txt
-+++ b/Documentation/kdump/kdump.txt
-@@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
- 
-    http://people.redhat.com/~anderson/
- 
-+Trigger Kdump on WARN()
-+=======================
-+
-+The kernel parameter, bug_on_warn, calls BUG() in all WARN() paths.  This
-+will cause a kdump to occur at the BUG() call.  In cases where a user
-+wants to specify this during runtime, /sys/module/kernel/bug_on_warn can be
-+set to 1 to achieve the same behaviour.
- 
- Contact
- =======
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 74339c57b914..aa1d3198e987 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -553,6 +553,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	bttv.pll=	See Documentation/video4linux/bttv/Insmod-options
- 	bttv.tuner=
- 
-+	bug_on_warn	BUG() instead of WARN().  Useful to cause kdump
-+			on a WARN().
-+
- 	bulk_remove=off	[PPC]  This parameter disables the use of the pSeries
- 			firmware feature for flushing multiple hpte entries
- 			at a time.
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index 630dd2372238..4d0c763862b0 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -75,10 +75,18 @@ extern void warn_slowpath_null(const char *file, const int line);
- #define __WARN_printf_taint(taint, arg...)				\
- 	warn_slowpath_fmt_taint(__FILE__, __LINE__, taint, arg)
- #else
--#define __WARN()		__WARN_TAINT(TAINT_WARN)
-+#define check_bug_on_warn()						\
-+	do {								\
-+		if (bug_on_warn)					\
-+			BUG();						\
-+	} while (0)
-+
-+#define __WARN()							\
-+	do { __WARN_TAINT(TAINT_WARN); check_bug_on_warn(); } while (0)
-+
- #define __WARN_printf(arg...)	do { printk(arg); __WARN(); } while (0)
- #define __WARN_printf_taint(taint, arg...)				\
--	do { printk(arg); __WARN_TAINT(taint); } while (0)
-+	do { printk(arg); __WARN_TAINT(taint); check_bug_on_warn(); } while (0)
- #endif
- 
- #ifndef WARN_ON
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 3d770f5564b8..d583df09ee82 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -423,6 +423,7 @@ extern int panic_on_oops;
- extern int panic_on_unrecovered_nmi;
- extern int panic_on_io_nmi;
- extern int sysctl_panic_on_stackoverflow;
-+extern bool bug_on_warn;
- /*
-  * Only to be used by arch init code. If the user over-wrote the default
-  * CONFIG_PANIC_TIMEOUT, honor it.
-diff --git a/kernel/panic.c b/kernel/panic.c
-index d09dc5c32c67..3d345357fcc8 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -33,6 +33,7 @@ static int pause_on_oops;
- static int pause_on_oops_flag;
- static DEFINE_SPINLOCK(pause_on_oops_lock);
- static bool crash_kexec_post_notifiers;
-+bool bug_on_warn;
- 
- int panic_timeout = CONFIG_PANIC_TIMEOUT;
- EXPORT_SYMBOL_GPL(panic_timeout);
-@@ -420,13 +421,24 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
- {
- 	disable_trace_on_warning();
- 
--	pr_warn("------------[ cut here ]------------\n");
-+	if (!bug_on_warn)
-+		pr_warn("------------[ cut here ]------------\n");
- 	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
- 		raw_smp_processor_id(), current->pid, file, line, caller);
- 
- 	if (args)
- 		vprintk(args->fmt, args->args);
- 
-+	if (bug_on_warn) {
-+		pr_warn("bug_on_warn set, calling BUG()...\n");
-+		/*
-+		 * A flood of WARN()s may occur.  Prevent further WARN()s
-+		 * from panicking the system.
-+		 */
-+		bug_on_warn = false;
-+		BUG();
-+	}
-+
- 	print_modules();
- 	dump_stack();
- 	print_oops_end_marker();
-@@ -484,6 +496,7 @@ EXPORT_SYMBOL(__stack_chk_fail);
- 
- core_param(panic, panic_timeout, int, 0644);
- core_param(pause_on_oops, pause_on_oops, int, 0644);
-+core_param(bug_on_warn, bug_on_warn, bool, 0644);
- 
- static int __init setup_crash_kexec_post_notifiers(char *s)
- {
+Now we copy it to kernel space 1:1 and find other absurd workarounds
+for it instead of designing it new.
+
+Welcome to the world of bug compability...
+
+Thanks,
+
+	tglx
