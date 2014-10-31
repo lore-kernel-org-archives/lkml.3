@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506AbaJaQwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:52:33 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:47552 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaJaQwb (ORCPT
+	id S1756716AbaJaQyu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:54:50 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:52717 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaJaQys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:52:31 -0400
-Date: Fri, 31 Oct 2014 09:52:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Hans de Goede <hdegoede@redhat.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
-        Chung-yih Wang <cywang@chromium.org>
-Subject: Re: [PATCH 2/2] Input: synaptics: remove duplicated code
-Message-ID: <20141031165226.GC32331@dtor-ws>
-References: <1414693987-6059-1-git-send-email-benjamin.tissoires@redhat.com>
- <1414693987-6059-2-git-send-email-benjamin.tissoires@redhat.com>
+	Fri, 31 Oct 2014 12:54:48 -0400
+Date: Fri, 31 Oct 2014 10:54:44 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Richard Zhu <r65037@freescale.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [GIT PULL] PCI fixes for v3.18
+Message-ID: <20141031165444.GA6168@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414693987-6059-2-git-send-email-benjamin.tissoires@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Daniel & Chung-yih
+Hi Linus,
 
-On Thu, Oct 30, 2014 at 02:33:07PM -0400, Benjamin Tissoires wrote:
-> synaptics_profile_sensor_process() and synaptics_report_mt_data() now
-> share the exact same code. Remove one implementation and rely on the
-> other where it was used.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/input/mouse/synaptics.c | 38 +-------------------------------------
->  1 file changed, 1 insertion(+), 37 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index fd89249..8ae1841 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -851,42 +851,6 @@ static void synaptics_image_sensor_process(struct psmouse *psmouse,
->  	synaptics_report_mt_data(psmouse, sgm, num_fingers);
->  }
->  
-> -static void synaptics_profile_sensor_process(struct psmouse *psmouse,
-> -					     struct synaptics_hw_state *sgm,
-> -					     int num_fingers)
-> -{
-> -	struct input_dev *dev = psmouse->dev;
-> -	struct synaptics_data *priv = psmouse->private;
-> -	struct synaptics_hw_state *hw[2] = { sgm, &priv->agm };
-> -	struct input_mt_pos pos[2];
-> -	int slot[2], nsemi, i;
-> -
-> -	nsemi = clamp_val(num_fingers, 0, 2);
-> -
-> -	for (i = 0; i < nsemi; i++) {
-> -		pos[i].x = hw[i]->x;
-> -		pos[i].y = synaptics_invert_y(hw[i]->y);
-> -	}
-> -
-> -	input_mt_assign_slots(dev, slot, pos, nsemi);
-> -
-> -	for (i = 0; i < nsemi; i++) {
-> -		input_mt_slot(dev, slot[i]);
-> -		input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
-> -		input_report_abs(dev, ABS_MT_POSITION_X, pos[i].x);
-> -		input_report_abs(dev, ABS_MT_POSITION_Y, pos[i].y);
-> -		input_report_abs(dev, ABS_MT_PRESSURE, hw[i]->z);
-> -	}
-> -
-> -	input_mt_drop_unused(dev);
-> -	input_mt_report_pointer_emulation(dev, false);
-> -	input_mt_report_finger_count(dev, num_fingers);
-> -
-> -	synaptics_report_buttons(psmouse, sgm);
-> -
-> -	input_sync(dev);
-> -}
-> -
->  /*
->   *  called for each full received packet from the touchpad
->   */
-> @@ -951,7 +915,7 @@ static void synaptics_process_packet(struct psmouse *psmouse)
->  	}
->  
->  	if (cr48_profile_sensor) {
-> -		synaptics_profile_sensor_process(psmouse, &hw, num_fingers);
-> +		synaptics_report_mt_data(psmouse, &hw, num_fingers);
->  		return;
->  	}
->  
-> -- 
-> 2.1.0
-> 
+These changes, intended for v3.18, fix:
 
--- 
-Dmitry
+  - An unintentional sysfs filename change.  5136b2da770d, which appeared
+    in v3.13, changed "enable" to "enabled", and this changes it back.  Old
+    users of "enable" are currently broken and will be helped by this
+    change.  Anything that started to use "enabled" after v3.13 will be
+    broken by this change.  If necessary, we can add a symlink to make both
+    work, but this patch doesn't do that.
+
+    See http://lkml.kernel.org/r/20141030163028.GA22250@kroah.com ("[PATCH]
+    PCI: fix name of 'enable' sysfs file").
+
+  - An i.MX6 clock problem that prevents mx6 nitrogen boards from booting.
+
+  - A mistaken duplicate merge that added a check twice.  Nothing's broken;
+    this just removes the unnecessary code.
+
+Bjorn
+
+
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.18-fixes-1
+
+for you to fetch changes up to d8e7d53a2fc14e0830ab728cb84ee19933d3ac8d:
+
+  PCI: Rename sysfs 'enabled' file back to 'enable' (2014-10-30 11:17:10 -0600)
+
+----------------------------------------------------------------
+PCI updates for v3.18:
+
+  Sysfs
+    - Fix "enable" filename change (Greg Kroah-Hartman)
+
+  PCI device hotplug
+    - Revert duplicate merge (Kamal Mostafa)
+
+  Freescale i.MX6
+    - Wait for clocks to stabilize after ref_en (Richard Zhu)
+
+----------------------------------------------------------------
+Greg Kroah-Hartman (1):
+      PCI: Rename sysfs 'enabled' file back to 'enable'
+
+Kamal Mostafa (1):
+      Revert duplicate "PCI: pciehp: Prevent NULL dereference during probe"
+
+Richard Zhu (1):
+      PCI: imx6: Wait for clocks to stabilize after ref_en
+
+ drivers/pci/host/pci-imx6.c       | 13 ++++++++++---
+ drivers/pci/hotplug/pciehp_core.c |  7 -------
+ drivers/pci/pci-sysfs.c           |  8 ++++----
+ 3 files changed, 14 insertions(+), 14 deletions(-)
