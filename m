@@ -1,158 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453AbaJaQOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:14:19 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:52115 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaJaQOR (ORCPT
+	id S1757973AbaJaQOl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:14:41 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:47919 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaJaQOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:14:17 -0400
+	Fri, 31 Oct 2014 12:14:40 -0400
 MIME-Version: 1.0
-Reply-To: cw00.choi@samsung.com
-In-Reply-To: <CAM4voamJhveLN-=wS2vF+x9e3kWMSR_2X1QsHLpB3w4DwgkgyQ@mail.gmail.com>
-References: <1414759083-4555-1-git-send-email-a.kesavan@samsung.com>
-	<545384D3.5050000@samsung.com>
-	<CAM4voamJhveLN-=wS2vF+x9e3kWMSR_2X1QsHLpB3w4DwgkgyQ@mail.gmail.com>
-Date: Sat, 1 Nov 2014 01:14:16 +0900
-Message-ID: <CAGTfZH2fpv3tR3Ah6sHCWAUGS6PhNiQkKEz_ab22ux55-KdRPQ@mail.gmail.com>
-Subject: Re: [PATCH] iio: adc: exynos_adc: Add support for ADCv3 on exynos7
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-Cc: linux-iio@vger.kernel.org, jic23@kernel.org,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <86lhnw66yi.fsf@MJJ-LAPTOP.i-did-not-set--mail-host-address--so-tickle-me>
+References: <1414672901-29118-1-git-send-email-eternal.n08@gmail.com>
+	<CAGXu5jLG_c8vZ5_v7WMaZxKgLdJXhorarCFGcB4fFLUYmLK--Q@mail.gmail.com>
+	<86lhnw66yi.fsf@MJJ-LAPTOP.i-did-not-set--mail-host-address--so-tickle-me>
+Date: Fri, 31 Oct 2014 09:14:39 -0700
+X-Google-Sender-Auth: JYVf6CKdkR2GVb7QffCZlNi_tzg
+Message-ID: <CAGXu5jL94ADSu=PAsbfhpiTc4iK1YCWiQ679BoHHRkhHBtekAQ@mail.gmail.com>
+Subject: Re: [PATCH] x86, kaslr: Prevent .bss from overlaping initrd
+From: Kees Cook <keescook@chromium.org>
+To: Eternal <eternal.n08@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Abhilash,
-
-On Fri, Oct 31, 2014 at 11:01 PM, Abhilash Kesavan
-<kesavan.abhilash@gmail.com> wrote:
-> Hi Chanwoo,
+On Fri, Oct 31, 2014 at 12:20 AM, Eternal <eternal.n08@gmail.com> wrote:
+> Kees Cook <keescook@chromium.org> writes:
+> I use the following function to print an arbitrary number in hexadecimal
+> in aslr.c and misc.c:
 >
-> Thanks for the quick response.
+> void print_hex(unsigned long value) {
+>         char c[2];
+>         int i;
 >
-> On Fri, Oct 31, 2014 at 6:17 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> Hi Abhilash,
->>
->> On 10/31/2014 09:38 PM, Abhilash Kesavan wrote:
->>> The ADC on exynos7 is quite similar to ADCv2. The differences are as
->>> follows:
->>>       - v3 has 8 input channels (10 in v2).
->>>       - v3 does not include an ADC PHY control register.
->>>       - Some ADC_CON2 register bits being used in v2 are listed as
->>>         reserved in v3. This results in a different init_hw function
->>>         for v3.
->>>
->>> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
->>> ---
->>> - Based on Naveen's "iio: exynos-adc: use syscon instead of ioremap" patchset
->>> http://comments.gmane.org/gmane.linux.kernel.iio/13943
->>>
->>>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |    2 ++
->>>  drivers/iio/adc/exynos_adc.c                       |   32 ++++++++++++++++++++
->>>  2 files changed, 34 insertions(+)
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
->>> index c368210..a11e32c 100644
->>> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
->>> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
->>> @@ -14,6 +14,8 @@ Required properties:
->>>                               for exynos4412/5250 and s5pv210 controllers.
->>>                       Must be "samsung,exynos-adc-v2" for
->>>                               future controllers.
->>> +                     Must be "samsung,exynos-adc-v3" for
->>> +                             the ADC in Exynos7 and compatibles
->>
->> I prefer to use 'exynos7-adc' instead of 'exynos-adc-v3'.
->> Exynos7 has little different from existing ADCv2.
+>         c[1] = '\0';
+>         for (i = 60; i >= 0; i -= 4) {
+>                 unsigned long digit = (addr >> i) & 0xf;
+>                 if (digit <= 9) {
+>                         c[0] = '0' + digit;
+>                 } else {
+>                         c[0] = 'a' + (digit - 10);
+>                 }
+>                 debug_putstr(c);
+>         }
+> }
+
+Hah! Yes, this is nearly line-for-line identical to a similar function
+I wrote when debugging kASLR during its development. :) I had asked
+because I was hoping I wasn't missing some existing way to print hex
+values. :)
+
+I will send that, since we clearly keep needing this functionality.
+
+>> Should mkpiggy.c do the work itself instead of taking an argument?
 >
-> Sure, I'll change it. The reason for my choosing v3 was that reading
-> the version register (0x20 offset) showed a value of 0x80000009 in
-> Exynos7 as against 0x80000008 in both 5420 and 3250.
->>
->> Also, If you want to use 'exynos-adc-v3' compatible,
->> Exynos7's TRM have to include the correct version(v3) infromation.
->
-> I could not see any mention of the ADC controller version in the
-> Exynos7 UM other than the version register. Does that mean it is v2 ?
+> Both ways are ok to me. I'm not sure which way is better, though.
 
-So am I. I don't see any version number of ADC in Exynos TRM.
+Yeah, after spending time looking at it, your way seemed the cleanest.
 
-Additionally,
-I have a question about Exynos7. If you possible,
-did you tell me about full name of Exynos7 SoC (e.g., Exynos5433, Exynos52..)?
+-Kees
 
-Best Regards,
-Chanwoo Choi
-
->
-> Regards,
-> Abhilash
->>
->> Thanks,
->> Chanwoo Choi
->>
->>
->>
->>>                       Must be "samsung,exynos3250-adc" for
->>>                               controllers compatible with ADC of Exynos3250.
->>>                       Must be "samsung,s3c2410-adc" for
->>> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
->>> index fe03177..74d0a9d 100644
->>> --- a/drivers/iio/adc/exynos_adc.c
->>> +++ b/drivers/iio/adc/exynos_adc.c
->>> @@ -390,6 +390,35 @@ static const struct exynos_adc_data exynos3250_adc_data = {
->>>       .start_conv     = exynos_adc_v2_start_conv,
->>>  };
->>>
->>> +static void exynos_adc_v3_init_hw(struct exynos_adc *info)
->>> +{
->>> +     u32 con1, con2;
->>> +
->>> +     if (info->data->needs_adc_phy)
->>> +             regmap_write(info->pmu_map, info->data->phy_offset, 1);
->>> +
->>> +     con1 = ADC_V2_CON1_SOFT_RESET;
->>> +     writel(con1, ADC_V2_CON1(info->regs));
->>> +
->>> +     con2 = readl(ADC_V2_CON2(info->regs));
->>> +     con2 &= ~ADC_V2_CON2_C_TIME(7);
->>> +     con2 |= ADC_V2_CON2_C_TIME(0);
->>> +     writel(con2, ADC_V2_CON2(info->regs));
->>> +
->>> +     /* Enable interrupts */
->>> +     writel(1, ADC_V2_INT_EN(info->regs));
->>> +}
->>> +
->>> +static const struct exynos_adc_data exynos_adc_v3_data = {
->>> +     .num_channels   = MAX_ADC_V1_CHANNELS,
->>> +     .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
->>> +
->>> +     .init_hw        = exynos_adc_v3_init_hw,
->>> +     .exit_hw        = exynos_adc_v2_exit_hw,
->>> +     .clear_irq      = exynos_adc_v2_clear_irq,
->>> +     .start_conv     = exynos_adc_v2_start_conv,
->>> +};
->>> +
->>>  static const struct of_device_id exynos_adc_match[] = {
->>>       {
->>>               .compatible = "samsung,s3c2410-adc",
->>> @@ -413,6 +442,9 @@ static const struct of_device_id exynos_adc_match[] = {
->>>               .compatible = "samsung,exynos-adc-v2",
->>>               .data = &exynos_adc_v2_data,
->>>       }, {
->>> +             .compatible = "samsung,exynos-adc-v3",
->>> +             .data = &exynos_adc_v3_data,
->>> +     }, {
->>>               .compatible = "samsung,exynos3250-adc",
->>>               .data = &exynos3250_adc_data,
->>>       },
->>>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Kees Cook
+Chrome OS Security
