@@ -1,72 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403AbaJaKRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:17:01 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:61454 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757995AbaJaKQ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:16:59 -0400
-Message-ID: <54536197.5050109@suse.cz>
-Date: Fri, 31 Oct 2014 11:16:55 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757894AbaJaKSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:18:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756380AbaJaKSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 06:18:36 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20141030163734.GE3021@tucsk.piliscsaba.szeredi.hu>
+References: <20141030163734.GE3021@tucsk.piliscsaba.szeredi.hu> <CAJfpegv5dqfgze-9pxDD-O19tctS-4P12NsO2oCo5SF1bqhhHA@mail.gmail.com> <20141030141004.28203.79687.stgit@warthog.procyon.org.uk> <5760.1414680426@warthog.procyon.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Overlayfs: ovl_fill_merge() should use container_of() rather than direct cast
 MIME-Version: 1.0
-To: "I. Schrey" <sy@schreyben.de>, stable@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/197] 3.12.31-stable review
-References: <cover.1413533329.git.jslaby@suse.cz> <5442512F.6000700@schreyben.de>
-In-Reply-To: <5442512F.6000700@schreyben.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <13507.1414750707.1@warthog.procyon.org.uk>
+Date: Fri, 31 Oct 2014 10:18:27 +0000
+Message-ID: <13508.1414750707@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2014, 01:38 PM, I. Schrey wrote:
-> Jiri Slaby wrote:
->> This is the start of the stable review cycle for the 3.12.31 release.
->> There are 197 patches in this series, all will be posted as a response
->> to this one.  If anyone has any issues with these being applied, please
->> let me know.
-> 
-> Hi Jiri,
-> 
-> the commit mentioned below has already been backported to 3.10 stable,
-> can you please add it to 3.12 stable?
-> 
-> A test build with patch-3.12.31-rc1 and the commit in question
-> builds and runs fine for me.
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-Hi, thanks for the pointer, now applied.
+> Subject: vfs: make first argument of dir_context.actor typed
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 
-> -------- Forwarded message --------
-> Subject:      linux-stable: backport usb related commit to 3.10 and 3.12?
-> Date:      Sat, 23 Aug 2014 13:19:09 +0200
-> To:
->     linux-kernel@vger.kernel.org
-> 
-> 
-> 
-> Greetings.
-> 
-> On an administered server, I noticed that there's a constant load
-> around 0.70 when running kernels 3.10 and 3.12, even if
-> the system is doing nothing, and in single user mode.
-> Culprit seems to be the process 'khubd'.
-> No such effect when running kernels 3.4 or 3.14.
-> 
-> I reverse bisected linux-stable and found that the following commit
-> fixes it for me, for both kernel 3.10 and 3.12:
-> 
-> [08d1dec6f4054e3613f32051d9b149d4203ce0d2] usb:hub set hub->change_bits
-> when over-current happens
-> 
-> 
-> Could that commit be backported to the stable 3.10 and 3.12 series?
-
-
-
--- 
-js
-suse labs
+Acked-by: David Howells <dhowells@redhat.com>
