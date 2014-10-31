@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577AbaJaJg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:36:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59781 "EHLO mx2.suse.de"
+	id S1757497AbaJaJjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:39:41 -0400
+Received: from roy.gaast.net ([80.101.33.21]:39816 "EHLO mail.gaast.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757351AbaJaJgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:36:22 -0400
-Date: Fri, 31 Oct 2014 10:36:18 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Sergey \"Shnatsel\" Davidoff" <sergey@elementaryos.org>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141031093618.GB30321@quack.suse.cz>
-References: <1413881397.30379.7.camel@hadess.net>
- <loom.20141021T140216-28@post.gmane.org>
- <20141027092311.GA9807@amd>
- <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com>
+	id S1756039AbaJaJjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 05:39:39 -0400
+Message-ID: <545358D5.6070903@gaast.net>
+Date: Fri, 31 Oct 2014 09:39:33 +0000
+From: Wilmer van der Gaast <wilmer@gaast.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Machine crashes right *after* ~successful resume
+References: <543F049F.5090605@gaast.net> <20141022125354.GA3832@gaast.net> <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com> <544E235C.5010908@gaast.net> <CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com> <544EC59D.9080303@gaast.net> <CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com> <544EDD40.1040107@gaast.net> <CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com> <545027F9.1040703@gaast.net> <CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com> <5450B55E.6010103@gaast.net> <CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com> <545214C5.6070004@gaast.net> <CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com> <5452B3A6.7060100@gaast.net> <CAE9FiQUGm-gvqpzPymxqa6vdfV7xhv8-fb433irZE1AT-eNg9A@mail.gmail.com> <5452C8BE.3060206@gaast.net> <CAE9FiQWd7wC9ijzgObCcGd9QE+U3_wzjQwafXhV=U61hLxGszg@mail.gmail.com> <CAE9FiQXPZdYndp6rTKxLUkkwX=AQtRVH3JJC=xzQfsehtBgOqA@mail.gmai
+ l.com>
+In-Reply-To: <CAE9FiQXPZdYndp6rTKxLUkkwX=AQtRVH3JJC=xzQfsehtBgOqA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 27-10-14 20:02:51, Sergey "Shnatsel" Davidoff wrote:
-> > If "recursive mtime" was available, would that work for you?
-> 
-> It would work for detecting "offline" changes. I suppose recursive
-> mtime not viable for online monitoring, mostly because detecting file
-> renaming would be a massive PITA (and we already have fanotify with
-> exactly this problem).
-  Yes, you'll get only "something has changed in a subtree" information for
-each directory. You'd then have to rescan the directory to find out what
-has changed. But there's no simple solution for this - either you have to
-process tons of events for busy directory tree or you have to somehow
-reduce the amount of information provided to userspace...
+Hello Yinghai,
 
-								Honza
+On 31-10-14 02:13, Yinghai Lu wrote:
+> Last try:
+>
+> Please check attached patch that will keep state consistent.
+
+Good news: This last patch worked! For good measure, I ran my test twice 
+with a reboot in between. Worked consistently.
+
+And similarly, to ensure that your debugging-at-boottime-only patch 
+wasn't just working by accident yesterday, I tested it twice more with 
+the same effect.
+
+
+Thanks,
+
+Wilmer van der Gaast.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
++-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
+| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
+| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
++--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
