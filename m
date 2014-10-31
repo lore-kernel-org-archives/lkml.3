@@ -1,93 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967AbaJaROl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:14:41 -0400
-Received: from mail-bl2on0125.outbound.protection.outlook.com ([65.55.169.125]:11834
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751485AbaJaROk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:14:40 -0400
-X-Greylist: delayed 959 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 13:14:39 EDT
-From: Cristian Stoica <cristian.stoica@freescale.com>
-To: <herbert@gondor.apana.org.au>, <davem@davemloft.net>,
-        <linux-crypto@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <horia.geanta@freescale.com>,
-        <marex@denx.de>, Cristian Stoica <cristian.stoica@freescale.com>
-Subject: [PATCH] crypto: caam: fix error reporting
-Date: Fri, 31 Oct 2014 18:57:33 +0200
-Message-ID: <1414774653-3583-1-git-send-email-cristian.stoica@freescale.com>
-X-Mailer: git-send-email 1.8.3.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(229853001)(19580395003)(84676001)(69596002)(89996001)(97736003)(88136002)(87936001)(26826002)(36756003)(33646002)(19580405001)(105606002)(92566001)(2201001)(92726001)(68736004)(64706001)(99396003)(6806004)(77156002)(104166001)(106466001)(107046002)(104016003)(44976005)(87286001)(4396001)(120916001)(47776003)(93916002)(20776003)(81156004)(48376002)(46102003)(31966008)(50226001)(95666004)(21056001)(102836001)(50466002)(50986999)(62966003);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB399;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1757262AbaJaROv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:14:51 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33429 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751284AbaJaROr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 13:14:47 -0400
+X-Sasl-enc: Nmqp+tJYyMeeFJ0PS1F0CyVL69ZwxmtRFe+apVEHlqWI 1414775686
+Date: Fri, 31 Oct 2014 15:14:40 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org,
+        H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 5/8] x86, microcode, intel: don't check extsig entry
+ checksum
+Message-ID: <20141031171440.GA27028@khazad-dum.debian.net>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-6-git-send-email-hmh@hmh.eng.br>
+ <20141030202550.GF11178@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB399;
-X-Forefront-PRVS: 03818C953D
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=B18196@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030202550.GF11178@pd.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The error code returned by hardware is four bits wide with an expected
-zero MSB. A hardware error condition where the error code can get between
-0x8 and 0xf will trigger an out of bound array access on the error
-message table.
-This patch fixes the invalid array access following such an error and
-reports the condition.
+On Thu, 30 Oct 2014, Borislav Petkov wrote:
+> On Mon, Sep 08, 2014 at 02:37:51PM -0300, Henrique de Moraes Holschuh wrote:
+> > The contents of the extended signature entries are already covered by
+> > the extended table checksum, and the microcode driver should not be
+> > attempting to check their internal checksum field.
+> > 
+> > Unlike the main microcode checksum field and the extended signature
+> > table checksum field, the checksum fields inside the extended signature
+> > entries are not meant to be processed by a microcode update loader.  The
+> > extended signature entry checksum field's description in the Intel SDM,
+> > vol 3A, table 9-6, page 9-30, reads in the first paragraph:
+> > 
+> >    "Used by utility software to decompose a microcode update into
+> >     multiple microcode updates where each of the new updates is
+> >     constructed without the optional Extended Processor Signature
+> >     Table."
+> > 
+> > And the Linux microcode driver is not processing them correctly anyway.
+> > The second paragraph of the signature entry checksum field's description
+> > in the Intel SDM, vol 3A, table 9-6, page 9-30, reads:
+> > 
+> >    "To calculate the Checksum, substitute the Primary Processor
+> >     Signature entry and the Processor Flags entry with the corresponding
+> >     Extended Patch entry. Delete the Extended Processor Signature Table
+> >     entries. The Checksum is correct when the summation of all DWORDs
+> >     that comprise the created Extended Processor Patch results in
+> >     00000000H."
+> > 
+> > Deleting the extended signature table changes the Total Size field, and
+> > the Intel SDM paragraph above makes it very clear that such a change must
+> > be accounted for by the checksum.  The current extended signature entry
+> > checksum code in the Linux microcode driver, which has been in place
+> > since 2003, will be thrown off by this and reject a valid microcode
+> > update.
+> 
+> I don't know where you come up with this but the code you're removing
+> was added in 2013:
+> 
+> 	e666dfa273db ("x86/microcode_intel_lib.c: Early update ucode on Intel's CPU")
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
----
- drivers/crypto/caam/error.c | 23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
+Was it?  As far as I know, it is "heavily based" (i.e. copied and adapted)
+on code from the regular microcode driver, and not rewritten from scrach.
 
-diff --git a/drivers/crypto/caam/error.c b/drivers/crypto/caam/error.c
-index 6531054..c4483ad 100644
---- a/drivers/crypto/caam/error.c
-+++ b/drivers/crypto/caam/error.c
-@@ -213,7 +213,7 @@ void caam_jr_strstatus(struct device *jrdev, u32 status)
- 		void (*report_ssed)(struct device *jrdev, const u32 status,
- 				    const char *error);
- 		const char *error;
--	} status_src[] = {
-+	} status_src[16] = {
- 		{ NULL, "No error" },
- 		{ NULL, NULL },
- 		{ report_ccb_status, "CCB" },
-@@ -222,18 +222,23 @@ void caam_jr_strstatus(struct device *jrdev, u32 status)
- 		{ NULL, NULL },
- 		{ report_jr_status, "Job Ring" },
- 		{ report_cond_code_status, "Condition Code" },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
- 	};
- 	u32 ssrc = status >> JRSTA_SSRC_SHIFT;
- 	const char *error = status_src[ssrc].error;
- 
--	/*
--	 * If there is no further error handling function, just
--	 * print the error code, error string and exit. Otherwise
--	 * call the handler function.
--	 */
--	if (!status_src[ssrc].report_ssed)
--		dev_err(jrdev, "%08x: %s: \n", status, status_src[ssrc].error);
--	else
-+	if (status_src[ssrc].report_ssed)
- 		status_src[ssrc].report_ssed(jrdev, status, error);
-+	else if (error)
-+		dev_err(jrdev, "%d: %s\n", ssrc, error);
-+	else
-+		dev_err(jrdev, "%d: unknown error code\n", ssrc);
- }
- EXPORT_SYMBOL(caam_jr_strstatus);
+If I am correct, this really is code from 2003, changed by 11 years worth of
+file renaming, file splits, and refactoring.
+
+It took me about 30 minutes to track the origin of this code in the regular
+Intel microcode driver.  As far as I can tell, it was added to version 1.12
+of the original driver, somewhere between v2.6.0-test7 and v2.6.0-test8.
+
+The Intel engineers credited for the original change are: Nitin Kamble
+<nitin.a.kamble@intel.com> and Jun Nakajima <jun.nakajima@intel.com>.
+(information from the changelog at the top of the driver source).
+
+You can see one of the earliest versions of the code here:
+https://git.kernel.org/cgit/linux/kernel/git/history/history.git/tree/arch/i386/kernel/microcode.c?id=v2.6.0-test8
+
+The extended table checksum gets calculated around line 323.  The possibly
+problematic logic is in line 341 and 345, and matches what the modern driver
+does.
+
+> and I'd strongly assume it was tested at the time. Now, the text in the
+> SDM is confusing, as most of the time is so I would think the code is
+> doing the right thing even if the text doesn't really say that clearly.
+
+I am not so sure.  Besides, it is entirely possible that the Intel SDM got
+updated in that area after the september 2003 code drop.  This is very hard
+to verify outside of Intel.   Or, maybe, the issue was detected internally
+at Intel, and it was decided that the issue should be shelved until the day
+extended microcode tables are actually required (which didn't happen yet).
+
+> Fenghua, care to comment please?
+
+I'd really appreciate that.  I have asked about it in the past, but got no
+answers.
+
+I am in fact hoping for a "this feature is dead as currently documented,
+please remove the code until further notice" reply :-)  LoC reduction by
+deleting something that was never used in 11 years, Yay!!
+
+> Leaving in the rest for reference.
+> 
+> > The microcode driver is better off by doing what the Intel SDM suggests,
+> > and staying well clear of that checksum field.  It has already checked
+> > the whole extended signature table's checksum, anyway.
+> > 
+> > Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> > ---
+> >  arch/x86/kernel/cpu/microcode/intel_lib.c |   20 ++------------------
+> >  1 file changed, 2 insertions(+), 18 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/microcode/intel_lib.c b/arch/x86/kernel/cpu/microcode/intel_lib.c
+> > index 1cc6494..9200b83 100644
+> > --- a/arch/x86/kernel/cpu/microcode/intel_lib.c
+> > +++ b/arch/x86/kernel/cpu/microcode/intel_lib.c
+> > @@ -49,8 +49,7 @@ int microcode_sanity_check(void *mc, int print_err)
+> >  	unsigned long total_size, data_size, ext_table_size;
+> >  	struct microcode_header_intel *mc_header = mc;
+> >  	struct extended_sigtable *ext_header = NULL;
+> > -	int sum, orig_sum, ext_sigcount = 0, i;
+> > -	struct extended_signature *ext_sig;
+> > +	int orig_sum, i;
+> >  
+> >  	total_size = get_totalsize(mc_header);
+> >  	data_size = get_datasize(mc_header);
+> > @@ -81,7 +80,6 @@ int microcode_sanity_check(void *mc, int print_err)
+> >  				pr_err("error: bad exttable size in microcode data file\n");
+> >  			return -EFAULT;
+> >  		}
+> > -		ext_sigcount = ext_header->count;
+> >  	}
+> >  
+> >  	/*
+> > @@ -129,21 +127,7 @@ int microcode_sanity_check(void *mc, int print_err)
+> >  			pr_err("error: bad microcode update checksum\n");
+> >  		return -EINVAL;
+> >  	}
+> > -	if (!ext_table_size)
+> > -		return 0;
+> > -	/* check extended signature checksum */
+> > -	for (i = 0; i < ext_sigcount; i++) {
+> > -		ext_sig = (void *)ext_header + EXT_HEADER_SIZE +
+> > -			  EXT_SIGNATURE_SIZE * i;
+> > -		sum = orig_sum
+> > -			- (mc_header->sig + mc_header->pf + mc_header->cksum)
+> > -			+ (ext_sig->sig + ext_sig->pf + ext_sig->cksum);
+> > -		if (sum) {
+> > -			if (print_err)
+> > -				pr_err("error: bad extended signature checksum\n");
+> > -			return -EINVAL;
+> > -		}
+> > -	}
+> > +
+> >  	return 0;
+> >  }
+> >  EXPORT_SYMBOL_GPL(microcode_sanity_check);
+
 -- 
-1.8.3.1
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
