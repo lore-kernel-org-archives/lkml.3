@@ -1,66 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759261AbaJaTnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:43:09 -0400
-Received: from skprod2.natinst.com ([130.164.80.23]:53423 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758026AbaJaTnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:43:08 -0400
-From: Ben Shelton <ben.shelton@ni.com>
-To: linux-mtd@lists.infradead.org
-Cc: dedekind1@gmail.com, adrian.hunter@intel.com, linux-kernel@vger.kernel.org,
-        Ben Shelton <ben.shelton@ni.com>
-Subject: [PATCH 0/4] UBIFS: add xattr support for security / SELinux
-Date: Fri, 31 Oct 2014 13:50:27 -0500
-Message-Id: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
-X-Mailer: git-send-email 2.1.1
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 10/31/2014 01:51:03 PM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 10/31/2014 01:51:03 PM,
-	Serialize complete at 10/31/2014 01:51:03 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-31_08:2014-10-31,2014-10-31,1970-01-01 signatures=0
+	id S1759444AbaJaTnY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 15:43:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759280AbaJaTnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 15:43:21 -0400
+Message-ID: <1414784583.27420.330.camel@ul30vt.home>
+Subject: Re: [PATCH v9 15/19] vfio: add local lock in virqfd instead of
+ depending on VFIO PCI
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        will.deacon@arm.com, tech@virtualopensystems.com,
+        christoffer.dall@linaro.org, eric.auger@linaro.org,
+        kim.phillips@freescale.com, marc.zyngier@arm.com,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Fri, 31 Oct 2014 13:43:03 -0600
+In-Reply-To: <1414433284-31719-16-git-send-email-a.motakis@virtualopensystems.com>
+References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1414433284-31719-16-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm reposting the patch series for security xattr / SELinux support on UBIFS
-from Subodh Nijsure and Marc Kleine-Budde [1] in order to restart the process
-of getting this support upstream.
+On Mon, 2014-10-27 at 19:08 +0100, Antonios Motakis wrote:
+> Virqfd just needs to keep accesses to any struct *virqfd safe, but this
+> comes into play only when creating or destroying eventfds, so sharing
+> the same spinlock with the VFIO bus driver is not necessary.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/pci/vfio_pci_intrs.c | 10 +++++-----
+>  drivers/vfio/virqfd.c             | 24 +++++++++++++-----------
+>  include/linux/vfio.h              |  3 +--
+>  3 files changed, 19 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
+> index 3f909bb..e56c814 100644
+> --- a/drivers/vfio/pci/vfio_pci_intrs.c
+> +++ b/drivers/vfio/pci/vfio_pci_intrs.c
+> @@ -226,8 +226,8 @@ static int vfio_intx_set_signal(struct vfio_pci_device *vdev, int fd)
+>  static void vfio_intx_disable(struct vfio_pci_device *vdev)
+>  {
+>  	vfio_intx_set_signal(vdev, -1);
+> -	virqfd_disable(vdev, &vdev->ctx[0].unmask);
+> -	virqfd_disable(vdev, &vdev->ctx[0].mask);
+> +	virqfd_disable(&vdev->ctx[0].unmask);
+> +	virqfd_disable(&vdev->ctx[0].mask);
+>  	vdev->irq_type = VFIO_PCI_NUM_IRQS;
+>  	vdev->num_ctx = 0;
+>  	kfree(vdev->ctx);
+> @@ -377,8 +377,8 @@ static void vfio_msi_disable(struct vfio_pci_device *vdev, bool msix)
+>  	vfio_msi_set_block(vdev, 0, vdev->num_ctx, NULL, msix);
+>  
+>  	for (i = 0; i < vdev->num_ctx; i++) {
+> -		virqfd_disable(vdev, &vdev->ctx[i].unmask);
+> -		virqfd_disable(vdev, &vdev->ctx[i].mask);
+> +		virqfd_disable(&vdev->ctx[i].unmask);
+> +		virqfd_disable(&vdev->ctx[i].mask);
+>  	}
+>  
+>  	if (msix) {
+> @@ -415,7 +415,7 @@ static int vfio_pci_set_intx_unmask(struct vfio_pci_device *vdev,
+>  					     vfio_send_intx_eventfd, NULL,
+>  					     &vdev->ctx[0].unmask, fd);
+>  
+> -		virqfd_disable(vdev, &vdev->ctx[0].unmask);
+> +		virqfd_disable(&vdev->ctx[0].unmask);
+>  	}
+>  
+>  	return 0;
+> diff --git a/drivers/vfio/virqfd.c b/drivers/vfio/virqfd.c
+> index 243eb61..27fa2f0 100644
+> --- a/drivers/vfio/virqfd.c
+> +++ b/drivers/vfio/virqfd.c
+> @@ -17,6 +17,7 @@
+>  #include "pci/vfio_pci_private.h"
+>  
+>  static struct workqueue_struct *vfio_irqfd_cleanup_wq;
+> +static spinlock_t lock;
 
-Notes:
+Define this as:
 
- - I removed 'UBIFS: xattr: protect ui_size and data_len by ui_mutex' because
-   after looking through the comments before the definition of struct
-   ubifs_inode, I'm not sure what this was intended to fix.  It looks like
-   i_size and data_len are not intended to be protected by ui_mutex, and I'm
-   unclear on why ui->ui_size needs to be protected here by host_ui's ui_mutex.
-   CCing Marc -- could you comment on how this is supposed to work?
+DEFINE_SPINLOCK(lock);
 
- - I made the suggested locking fixes in [2], with the exception of removing the
-   i_mutex lock/unlock around the call to security_inode_init_security(), which 
-   caused an assert.  With these fixes, I turned on lockdep and ran with SELinux
-   enabled on an ARM-based embedded target using UBIFS, and I saw no lockdep
-   warnings during filesystem labeling and normal operation.
+and we can avoid needing the init.
+ 
+>  int __init vfio_pci_virqfd_init(void)
+>  {
+> @@ -25,6 +26,8 @@ int __init vfio_pci_virqfd_init(void)
+>  	if (!vfio_irqfd_cleanup_wq)
+>  		return -ENOMEM;
+>  
+> +	spin_lock_init(&lock);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -53,21 +56,21 @@ static int virqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
+>  
+>  	if (flags & POLLHUP) {
+>  		unsigned long flags;
+> -		spin_lock_irqsave(&virqfd->vdev->irqlock, flags);
+> +		spin_lock_irqsave(&lock, flags);
+>  
+>  		/*
+>  		 * The eventfd is closing, if the virqfd has not yet been
+>  		 * queued for release, as determined by testing whether the
+> -		 * vdev pointer to it is still valid, queue it now.  As
+> +		 * virqfd pointer to it is still valid, queue it now.  As
+>  		 * with kvm irqfds, we know we won't race against the virqfd
+> -		 * going away because we hold wqh->lock to get here.
+> +		 * going away because we hold the lock to get here.
+>  		 */
+>  		if (*(virqfd->pvirqfd) == virqfd) {
+>  			*(virqfd->pvirqfd) = NULL;
+>  			virqfd_deactivate(virqfd);
+>  		}
+>  
+> -		spin_unlock_irqrestore(&virqfd->vdev->irqlock, flags);
+> +		spin_unlock_irqrestore(&lock, flags);
+>  	}
+>  
+>  	return 0;
+> @@ -143,16 +146,16 @@ int virqfd_enable(struct vfio_pci_device *vdev,
+>  	 * we update the pointer to the virqfd under lock to avoid
+>  	 * pushing multiple jobs to release the same virqfd.
+>  	 */
+> -	spin_lock_irq(&vdev->irqlock);
+> +	spin_lock_irq(&lock);
+>  
+>  	if (*pvirqfd) {
+> -		spin_unlock_irq(&vdev->irqlock);
+> +		spin_unlock_irq(&lock);
+>  		ret = -EBUSY;
+>  		goto err_busy;
+>  	}
+>  	*pvirqfd = virqfd;
+>  
+> -	spin_unlock_irq(&vdev->irqlock);
+> +	spin_unlock_irq(&lock);
+>  
+>  	/*
+>  	 * Install our own custom wake-up handling so we are notified via
+> @@ -190,19 +193,18 @@ err_fd:
+>  }
+>  EXPORT_SYMBOL_GPL(virqfd_enable);
+>  
+> -void virqfd_disable(struct vfio_pci_device *vdev,
+> -			   struct virqfd **pvirqfd)
+> +void virqfd_disable(struct virqfd **pvirqfd)
+>  {
+>  	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&vdev->irqlock, flags);
+> +	spin_lock_irqsave(&lock, flags);
+>  
+>  	if (*pvirqfd) {
+>  		virqfd_deactivate(*pvirqfd);
+>  		*pvirqfd = NULL;
+>  	}
+>  
+> -	spin_unlock_irqrestore(&vdev->irqlock, flags);
+> +	spin_unlock_irqrestore(&lock, flags);
+>  
+>  	/*
+>  	 * Block until we know all outstanding shutdown jobs have completed.
+> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+> index a077c48..fb6037b 100644
+> --- a/include/linux/vfio.h
+> +++ b/include/linux/vfio.h
+> @@ -146,7 +146,6 @@ extern int virqfd_enable(struct vfio_pci_device *vdev,
+>  			 int (*handler)(struct vfio_pci_device *, void *),
+>  			 void (*thread)(struct vfio_pci_device *, void *),
+>  			 void *data, struct virqfd **pvirqfd, int fd);
+> -extern void virqfd_disable(struct vfio_pci_device *vdev,
+> -			   struct virqfd **pvirqfd);
+> +extern void virqfd_disable(struct virqfd **pvirqfd);
+>  
+>  #endif /* VFIO_H */
 
-[1] http://lists.infradead.org/pipermail/linux-mtd/2013-February/045794.html
-[2] http://lists.infradead.org/pipermail/linux-mtd/2013-February/045871.html
 
-Subodh Nijsure (4):
-  UBIFS: fix a couple bugs in UBIFS xattr length calculation
-  UBIFS: Add xattr support for symlinks
-  UBIFS: Add security.* XATTR support for the UBIFS
-  UBIFS: add ubifs_err() to print error reason
-
- fs/ubifs/dir.c     |  20 +++++++++
- fs/ubifs/file.c    |   4 ++
- fs/ubifs/journal.c |  11 ++++-
- fs/ubifs/super.c   |   1 +
- fs/ubifs/ubifs.h   |   4 ++
- fs/ubifs/xattr.c   | 116 ++++++++++++++++++++++++++++++++++++++++++++++++-----
- 6 files changed, 145 insertions(+), 11 deletions(-)
-
--- 
-2.1.1
 
