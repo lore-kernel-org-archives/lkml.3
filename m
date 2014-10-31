@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072AbaJaOtT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:49:19 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:52972 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759483AbaJaOtS convert rfc822-to-8bit (ORCPT
+	id S933227AbaJaOvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:51:11 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11614 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932255AbaJaOvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:49:18 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
-From: Weston Andros Adamson <dros@primarydata.com>
-In-Reply-To: <20141020135736.GB20301@arm.com>
-Date: Fri, 31 Oct 2014 10:49:13 -0400
-Cc: Peng Tao <tao.peng@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs list <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FE0552AE-5243-44D3-B661-B622C2D957C0@primarydata.com>
-References: <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com> <20140923135938.GB28608@arm.com> <20140923145356.GD28608@arm.com> <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com> <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com> <F632C770-3E3D-4FC5-BBF3-69BB1CCA8F0D@primarydata.com> <20140923152558.GG28608@arm.com> <20140925171545.GR20043@arm.com> <78B8153D-59B7-4DBE-8472-D83338F04338@primarydata.com> <6111EECC-C8C1-4605-98AD-0AF0E1B6DA59@primarydata.com> <20141020135736.GB20301@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Fri, 31 Oct 2014 10:51:09 -0400
+From: Chen Weilong <chenweilong@huawei.com>
+To: <davem@davemloft.net>, <kuznet@ms2.inr.ac.ru>, <jmorris@namei.org>,
+        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ipv4: avoid divide 0 error in tcp_incr_quickack
+Date: Fri, 31 Oct 2014 22:50:47 +0800
+Message-ID: <1414767047-8972-1-git-send-email-chenweilong@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.177.37.162]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 20, 2014, at 9:57 AM, Will Deacon <will.deacon@arm.com> wrote:
+From: Weilong Chen <chenweilong@huawei.com>
 
-> On Sat, Oct 11, 2014 at 02:32:29PM +0100, Weston Andros Adamson wrote:
->> Hey Will,
-> 
-> Hi again, Andros,
-> 
->> I’ve been very busy, but I haven’t forgotten about your bug report!
-> 
-> No problem, I've been busy too. I just checked with -rc1 and I can reproduce
-> the issue there too.
-> 
->> I think the WARN_ON_ONCE is just wrong, there are cases where the
->> PG_INODE_REF flag is legitimately not set. The flag is set so that sub
->> requests can mimmic the parent request’s reference count.
->> 
->> Could you please run the reproducer again, unmount, then check the contents of
->> /proc/fs/nfsfs/servers?
-> 
-> Sure. I just tried this and that file is empty after unmounting.
+We got a problem like this:
+ [ffff8801c1a05570] machine_kexec at ffffffff81025039
+ [ffff8801c1a055d0] crash_kexec at ffffffff8109b253
+ [ffff8801c1a056a0] oops_end at ffffffff81442aed
+ [ffff8801c1a056d0] die at ffffffff81005603
+ [ffff8801c1a05700] do_trap at ffffffff81442448
+ [ffff8801c1a05760] do_divide_error at ffffffff81002c10
+ [ffff8801c1a05888] tcp_send_dupack at ffffffff81385e44
+ [ffff8801c1a058c8] tcp_validate_incoming at ffffffff813886b5
+ [ffff8801c1a05908] tcp_rcv_state_process at ffffffff8138d0b7
+ [ffff8801c1a05958] tcp_child_process at ffffffff81397255
+ [ffff8801c1a05988] tcp_v4_do_rcv at ffffffff81395a70
+ [ffff8801c1a059d8] tcp_v4_rcv at ffffffff81396fc8
+ [ffff8801c1a05a48] ip_local_deliver_finish at ffffffff813746e9
+ [ffff8801c1a05a78] ip_local_deliver at ffffffff81374a20
+ [ffff8801c1a05aa8] ip_rcv_finish at ffffffff81374389
+ [ffff8801c1a05ad8] ip_rcv at ffffffff81374c78
+There was a wrong ack packet coming during TCP handshake. The socket's state
+was TCP_SYN_RECV, its rcv_mss was not initialize yet. So
+tcp_send_dupack -> tcp_enter_quickack_mode got a divide 0 error.
+This patch add a state check before tcp_enter_quickack_mode.
 
-Sorry for the delay (again) - I just got back from a two week holiday.
+Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+---
+ net/ipv4/tcp_input.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-This is good news! I think we can safely remove this WARN_ON_ONCE and call it a
-day… or maybe calling it a month is more accurate ;)
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 4e4617e..9eb56dc 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -3986,7 +3986,8 @@ static void tcp_send_dupack(struct sock *sk, const struct sk_buff *skb)
+ 	if (TCP_SKB_CB(skb)->end_seq != TCP_SKB_CB(skb)->seq &&
+ 	    before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
+ 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
+-		tcp_enter_quickack_mode(sk);
++		if (sk->sk_state != TCP_SYN_RECV)
++			tcp_enter_quickack_mode(sk);
+ 
+ 		if (tcp_is_sack(tp) && sysctl_tcp_dsack) {
+ 			u32 end_seq = TCP_SKB_CB(skb)->end_seq;
+-- 
+1.7.12
 
--dros
 
