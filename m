@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759318AbaJaURQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:17:16 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43277 "EHLO
+	id S1759749AbaJaURV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:17:21 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43282 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaJaURO (ORCPT
+	with ESMTP id S1759692AbaJaURT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:17:14 -0400
-Date: Fri, 31 Oct 2014 16:17:12 -0400 (EDT)
-Message-Id: <20141031.161712.591711555593004517.davem@davemloft.net>
+	Fri, 31 Oct 2014 16:17:19 -0400
+Date: Fri, 31 Oct 2014 16:17:17 -0400 (EDT)
+Message-Id: <20141031.161717.851599743414417317.davem@davemloft.net>
 To: lsorense@csclub.uwaterloo.ca
-Cc: linux-kernel@vger.kernel.org, hs@denx.de, mugunthanvnm@ti.com,
-        netdev@vger.kernel.org
-Subject: Re: drivers: net: cpsw: Fix broken loop condition in switch mode
+Cc: linux-kernel@vger.kernel.org, mugunthanvnm@ti.com, netdev@vger.kernel.org
+Subject: Re: drivers: net: cpsw: Support ALLMULTI and fix IFF_PROMISC in
+ switch mode
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141031172854.GJ24110@csclub.uwaterloo.ca>
-References: <20141031172854.GJ24110@csclub.uwaterloo.ca>
+In-Reply-To: <20141031173852.GK24110@csclub.uwaterloo.ca>
+References: <20141031173852.GK24110@csclub.uwaterloo.ca>
 X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 31 Oct 2014 13:17:14 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 31 Oct 2014 13:17:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Fri, 31 Oct 2014 13:28:54 -0400
+Date: Fri, 31 Oct 2014 13:38:52 -0400
 
-> 0d961b3b52f566f823070ce2366511a7f64b928c (drivers: net: cpsw: fix buggy
-> loop condition) accidentally fixed a loop comparison in too many places
-> while fixing a real bug.
+> The cpsw driver did not support the IFF_ALLMULTI flag which makes dynamic
+> multicast routing not work.  Related to this, when enabling IFF_PROMISC
+> in switch mode, all registered multicast addresses are flushed, resulting
+> in only broadcast and unicast traffic being received.
 > 
-> It was correct to fix the dual_emac mode section since there 'i' is used
-> as an index into priv->slaves which is a 0 based array.
+> A new cpsw_ale_set_allmulti function now scans through the ALE entry
+> table and adds/removes the host port from the unregistered multicast
+> port mask of each vlan entry depending on the state of IFF_ALLMULTI.
+> In promiscious mode, cpsw_ale_set_allmulti is used to force reception
+> of all multicast traffic in addition to the unicast and broadcast traffic.
 > 
-> However the other two changes (which are only used in switch mode)
-> are wrong since there 'i' is actually the ALE port number, and port 0
-> is the host port, while port 1 and up are the slave ports.
-> 
-> Putting the loop condition back in the switch mode section fixes it.
-> 
-> A comment has been added to point out the intent clearly to avoid future
-> confusion.  Also a comment is fixed that said the opposite of what was
-> actually happening.
+> With this change dynamic multicast and promiscious mode both work in
+> switch mode.
 > 
 > Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-> Acked-by: Heiko Schocher <hs@denx.de>
 
 Applied.
