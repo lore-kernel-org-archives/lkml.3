@@ -1,271 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759825AbaJaVwz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:52:55 -0400
-Received: from mout.web.de ([212.227.17.12]:64900 "EHLO mout.web.de"
+	id S1760340AbaJaVxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:53:01 -0400
+Received: from mout.gmx.net ([212.227.17.20]:59165 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038AbaJaVwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:52:53 -0400
-Message-ID: <545404A6.2090807@users.sourceforge.net>
-Date: Fri, 31 Oct 2014 22:52:38 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751958AbaJaVw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 17:52:58 -0400
+Message-ID: <545404B3.7000304@gmx.de>
+Date: Fri, 31 Oct 2014 22:52:51 +0100
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
 MIME-Version: 1.0
-To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        linux-btrfs@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH 1/1] btrfs: Deletion of unnecessary checks before six function
- calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+To: Daniel Baluta <daniel.baluta@intel.com>, jic23@kernel.org,
+        linux-iio@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, irina.tirdea@intel.com
+Subject: Re: [PATCH v3 2/7] iio: core: Introduce IIO_ACTIVITY channel
+References: <1414491571-11672-1-git-send-email-daniel.baluta@intel.com> <1414491571-11672-3-git-send-email-daniel.baluta@intel.com>
+In-Reply-To: <1414491571-11672-3-git-send-email-daniel.baluta@intel.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:6MYzXZuq6auSGxoD15I7VDO4TCjXfRhLqNYiz8lnxoxxrWTBw5E
- gz7xM5njJZ52L+5OsKRJS6mBFNYtsA7fZu0C6KCSCyuwktfsvCGoIsBcieiwaZii+8kORxP
- eRBZbQmJxI5zeyvJ99EwjwaHuuJA7pJ7t53mpf+v+ISmp6BdOmgV2zhfTBn4v4FkBzhXKer
- DJbXi7lzXNTEU9Iu+hUeg==
+X-Provags-ID: V03:K0:umUnDutFF0dhvFYLIIs5TI3u9npezjH5HYA6wxlMHeSd0dWeXjd
+ a+sYifn79yIH6nuM1DCyD3+5IgXKed8JkfHOktlGrOQSZmMt2WF9LAzAwRb0FeIDIPcdeTi
+ O08UynZcTI+2tWt5Jyb7pbRtlxVFnJQY5UJXHLpjmTTQmh9HVBHREK4egrX+sYoBQYTL7gG
+ ujwhVdev448BUBAHzzcXQ==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following functions test whether their argument is NULL and then
-return immediately.
-* btrfs_free_path()
-* free_extent_buffer()
-* free_extent_map()
-* free_extent_state()
-* iput()
-* kfree()
-
-Thus the test around the call is not needed.
-
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- fs/btrfs/dev-replace.c       |  3 +--
- fs/btrfs/extent_io.c         | 12 ++++--------
- fs/btrfs/file.c              |  6 ++----
- fs/btrfs/free-space-cache.c  |  7 +++----
- fs/btrfs/inode.c             |  6 ++----
- fs/btrfs/reada.c             |  3 +--
- fs/btrfs/relocation.c        |  3 +--
- fs/btrfs/tests/btrfs-tests.c |  3 +--
- fs/btrfs/tree-defrag.c       |  3 +--
- fs/btrfs/tree-log.c          |  6 ++----
- 10 files changed, 18 insertions(+), 34 deletions(-)
-
-diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
-index 6f662b3..3465029 100644
---- a/fs/btrfs/dev-replace.c
-+++ b/fs/btrfs/dev-replace.c
-@@ -183,8 +183,7 @@ no_valid_dev_replace_entry_found:
- 	}
-
- out:
--	if (path)
--		btrfs_free_path(path);
-+	btrfs_free_path(path);
- 	return ret;
- }
-
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index bf3f424..cfbf00a 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -704,8 +704,7 @@ next:
-
- out:
- 	spin_unlock(&tree->lock);
--	if (prealloc)
--		free_extent_state(prealloc);
-+	free_extent_state(prealloc);
-
- 	return 0;
-
-@@ -1006,8 +1005,7 @@ hit_next:
-
- out:
- 	spin_unlock(&tree->lock);
--	if (prealloc)
--		free_extent_state(prealloc);
-+	free_extent_state(prealloc);
-
- 	return err;
-
-@@ -1223,8 +1221,7 @@ hit_next:
-
- out:
- 	spin_unlock(&tree->lock);
--	if (prealloc)
--		free_extent_state(prealloc);
-+	free_extent_state(prealloc);
-
- 	return err;
-
-@@ -4146,8 +4143,7 @@ int extent_readpages(struct extent_io_tree *tree,
- 		__extent_readpages(tree, pagepool, nr, get_extent, &em_cached,
- 				   &bio, 0, &bio_flags, READ);
-
--	if (em_cached)
--		free_extent_map(em_cached);
-+	free_extent_map(em_cached);
-
- 	BUG_ON(!list_empty(pages));
- 	if (bio)
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index a18ceab..add07ce8 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -677,10 +677,8 @@ next:
- 		/* once for the tree*/
- 		free_extent_map(em);
- 	}
--	if (split)
--		free_extent_map(split);
--	if (split2)
--		free_extent_map(split2);
-+	free_extent_map(split);
-+	free_extent_map(split2);
- }
-
- /*
-diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
-index 3384819..11883e2 100644
---- a/fs/btrfs/free-space-cache.c
-+++ b/fs/btrfs/free-space-cache.c
-@@ -1943,8 +1943,7 @@ new_bitmap:
-
- out:
- 	if (info) {
--		if (info->bitmap)
--			kfree(info->bitmap);
-+		kfree(info->bitmap);
- 		kmem_cache_free(btrfs_free_space_cachep, info);
- 	}
-
-@@ -3322,8 +3321,8 @@ again:
-
- 	if (info)
- 		kmem_cache_free(btrfs_free_space_cachep, info);
--	if (map)
--		kfree(map);
-+
-+	kfree(map);
- 	return 0;
- }
-
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index d23362f..7301b99 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -857,8 +857,7 @@ static u64 get_extent_allocation_hint(struct inode *inode,
-u64 start,
- 			em = search_extent_mapping(em_tree, 0, 0);
- 			if (em && em->block_start < EXTENT_MAP_LAST_BYTE)
- 				alloc_hint = em->block_start;
--			if (em)
--				free_extent_map(em);
-+			free_extent_map(em);
- 		} else {
- 			alloc_hint = em->block_start;
- 			free_extent_map(em);
-@@ -6573,8 +6572,7 @@ out:
-
- 	trace_btrfs_get_extent(root, em);
-
--	if (path)
--		btrfs_free_path(path);
-+	btrfs_free_path(path);
- 	if (trans) {
- 		ret = btrfs_end_transaction(trans, root);
- 		if (!err)
-diff --git a/fs/btrfs/reada.c b/fs/btrfs/reada.c
-index b63ae20..ec8eb49 100644
---- a/fs/btrfs/reada.c
-+++ b/fs/btrfs/reada.c
-@@ -731,8 +731,7 @@ static int reada_start_machine_dev(struct btrfs_fs_info
-*fs_info,
- 	else if (eb)
- 		__readahead_hook(fs_info->extent_root, eb, eb->start, ret);
-
--	if (eb)
--		free_extent_buffer(eb);
-+	free_extent_buffer(eb);
-
- 	return 1;
-
-diff --git a/fs/btrfs/relocation.c b/fs/btrfs/relocation.c
-index 74257d6..f87a5ee 100644
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@ -4158,8 +4158,7 @@ out:
- 	btrfs_end_transaction(trans, root);
- 	btrfs_btree_balance_dirty(root);
- 	if (err) {
--		if (inode)
--			iput(inode);
-+		iput(inode);
- 		inode = ERR_PTR(err);
- 	}
- 	return inode;
-diff --git a/fs/btrfs/tests/btrfs-tests.c b/fs/btrfs/tests/btrfs-tests.c
-index 9626252..7fb123f 100644
---- a/fs/btrfs/tests/btrfs-tests.c
-+++ b/fs/btrfs/tests/btrfs-tests.c
-@@ -162,8 +162,7 @@ void btrfs_free_dummy_root(struct btrfs_root *root)
- {
- 	if (!root)
- 		return;
--	if (root->node)
--		free_extent_buffer(root->node);
-+	free_extent_buffer(root->node);
- 	if (root->fs_info)
- 		btrfs_free_dummy_fs_info(root->fs_info);
- 	kfree(root);
-diff --git a/fs/btrfs/tree-defrag.c b/fs/btrfs/tree-defrag.c
-index a63719c..c74f106 100644
---- a/fs/btrfs/tree-defrag.c
-+++ b/fs/btrfs/tree-defrag.c
-@@ -118,8 +118,7 @@ int btrfs_defrag_leaves(struct btrfs_trans_handle *trans,
- 		ret = -EAGAIN;
- 	}
- out:
--	if (path)
--		btrfs_free_path(path);
-+	btrfs_free_path(path);
- 	if (ret == -EAGAIN) {
- 		if (root->defrag_max.objectid > root->defrag_progress.objectid)
- 			goto done;
-diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-index 1475979..70926a9 100644
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -736,8 +736,7 @@ static noinline int replay_one_extent(struct
-btrfs_trans_handle *trans,
- 	inode_add_bytes(inode, nbytes);
- 	ret = btrfs_update_inode(trans, root, inode);
- out:
--	if (inode)
--		iput(inode);
-+	iput(inode);
- 	return ret;
- }
-
-@@ -2210,8 +2209,7 @@ static noinline int walk_down_log_tree(struct
-btrfs_trans_handle *trans,
- 		}
-
- 		WARN_ON(*level <= 0);
--		if (path->nodes[*level-1])
--			free_extent_buffer(path->nodes[*level-1]);
-+		free_extent_buffer(path->nodes[*level-1]);
- 		path->nodes[*level-1] = next;
- 		*level = btrfs_header_level(next);
- 		path->slots[*level] = 0;
--- 
-2.1.3
-
+Just some typos left, maybe Jonathan can take care of them, if there are no issues for having a V4.
+Daniel Baluta schrieb am 28.10.2014 11:19:
+> This channel will be used for exposing information about
+> activity composite sensors. Activities supported so far:
+> 	* running
+> 	* jogging
+> 	* walking
+> 	* still
+> 
+> THRESHOLD event is used to signal a change in the activity
+> state.
+> 
+> We associate a confidence interval for each activity expressed
+> as a percentage from 0 to 100.
+>   * 0, means the sensor IS NOT reporting that activity.
+>   * 100, means the sensor IS reporting that activity.
+> 
+> Users of this interface have two possibile means to gather
+Typo: possible
+> information about the ongoing activities.
+> 
+> 1. Event based, via event file descriptor
+>   * sensor may report an event when ENTERING an activity or LEAVING
+>     an activity based on a threshold value.
+>   * drivers will wake up applications waiting data on the event fd
+> 
+> 2. Polling, by reading the sysfs associated attribute files:
+>   * /sys/bus/iio/devices/iio:device0/in_activity_running_input
+> expressed as percentage confidence value from 0 to 100.
+> 
+> This will offer an interface for Android significant motion
+> composite sensor defined here:
+> http://source.android.com/devices/sensors/composite_sensors.html
+> 
+> Activities listed above are supported by Freescale's MMA9553 sensor:
+> http://freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+> 
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> ---
+>  Documentation/ABI/testing/sysfs-bus-iio | 44 +++++++++++++++++++++++++++++++++
+>  drivers/iio/industrialio-core.c         |  5 ++++
+>  include/linux/iio/types.h               |  7 +++++-
+>  3 files changed, 55 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+> index 5a7fc66..c3a1fd3 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-iio
+> +++ b/Documentation/ABI/testing/sysfs-bus-iio
+> @@ -783,6 +783,40 @@ Description:
+>  		met before an event is generated. If direction is not
+>  		specified then this period applies to both directions.
+>  
+> +What:		/sys/.../events/in_activity_still_thresh_rising_en
+> +What:		/sys/.../events/in_activity_still_thresh_falling_en
+> +What:		/sys/.../events/in_activity_walking_thresh_rising_en
+> +What:		/sys/.../events/in_activity_walking_thresh_falling_en
+> +What:		/sys/.../events/in_activity_jogging_thresh_rising_en
+> +What:		/sys/.../events/in_activity_jogging_thresh_falling_en
+> +What:		/sys/.../events/in_activity_running_thresh_rising_en
+> +What:		/sys/.../events/in_activity_running_thresh_falling_en
+> +KernelVersion:	3.19
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Enables or disables activitity events. Depending on direction
+> +		an event is generated when sensor ENTERS or LEAVES a given state.
+> +
+> +What:		/sys/.../events/in_activity_still_thresh_rising_value
+> +What:		/sys/.../events/in_activity_still_thresh_falling_value
+> +What:		/sys/.../events/in_activity_walking_thresh_rising_value
+> +What:		/sys/.../events/in_activity_walking_thresh_falling_value
+> +What:		/sys/.../events/in_activity_jogging_thresh_rising_value
+> +What:		/sys/.../events/in_activity_jogging_thresh_falling_value
+> +What:		/sys/.../events/in_activity_running_thresh_rising_value
+> +What:		/sys/.../events/in_activity_running_thresh_falling_value
+> +KernelVersion:	3.19
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Confidence value (in units as percentage) to be used
+> +		for deciding when an event should be generated. E.g for
+> +		running: If the confidence value reported by the sensor
+> +		is greater then in_activity_running_thresh_rising_value
+Typo: greater than
+> +		then the sensor ENTERS running state. Conversely, if the
+> +		confidence value reported by the sensor is lower than
+> +		in_activity_running_thresh_falling_value then the sensor
+> +		is LEAVING running state.
+> +
+>  What:		/sys/.../iio:deviceX/events/in_accel_mag_en
+>  What:		/sys/.../iio:deviceX/events/in_accel_mag_rising_en
+>  What:		/sys/.../iio:deviceX/events/in_accel_mag_falling_en
+> @@ -949,6 +983,16 @@ Description:
+>  		and the relevant _type attributes to establish the data storage
+>  		format.
+>  
+> +What:		/sys/.../iio:deviceX/in_activity_still_input
+> +What:		/sys/.../iio:deviceX/in_activity_walking_input
+> +What:		/sys/.../iio:deviceX/in_activity_jogging_input
+> +What:		/sys/.../iio:deviceX/in_activity_running_input
+> +KernelVersion:	3.19
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		This attribute is used to read the confidence for an activity
+> +		expressed in units as percentage.
+> +
+>  What:		/sys/.../iio:deviceX/in_anglvel_z_quadrature_correction_raw
+>  KernelVersion:	2.6.38
+>  Contact:	linux-iio@vger.kernel.org
+> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+> index af3e76d..e453ef9 100644
+> --- a/drivers/iio/industrialio-core.c
+> +++ b/drivers/iio/industrialio-core.c
+> @@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
+>  	[IIO_CCT] = "cct",
+>  	[IIO_PRESSURE] = "pressure",
+>  	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
+> +	[IIO_ACTIVITY] = "activity",
+>  };
+>  
+>  static const char * const iio_modifier_names[] = {
+> @@ -91,6 +92,10 @@ static const char * const iio_modifier_names[] = {
+>  	[IIO_MOD_NORTH_TRUE] = "from_north_true",
+>  	[IIO_MOD_NORTH_MAGN_TILT_COMP] = "from_north_magnetic_tilt_comp",
+>  	[IIO_MOD_NORTH_TRUE_TILT_COMP] = "from_north_true_tilt_comp",
+> +	[IIO_MOD_RUNNING] = "running",
+> +	[IIO_MOD_JOGGING] = "jogging",
+> +	[IIO_MOD_WALKING] = "walking",
+> +	[IIO_MOD_STILL] = "still",
+>  };
+>  
+>  /* relies on pairs of these shared then separate */
+> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+> index 4a2af8a..b3a241d 100644
+> --- a/include/linux/iio/types.h
+> +++ b/include/linux/iio/types.h
+> @@ -30,6 +30,7 @@ enum iio_chan_type {
+>  	IIO_CCT,
+>  	IIO_PRESSURE,
+>  	IIO_HUMIDITYRELATIVE,
+> +	IIO_ACTIVITY,
+>  };
+>  
+>  enum iio_modifier {
+> @@ -59,7 +60,11 @@ enum iio_modifier {
+>  	IIO_MOD_NORTH_MAGN,
+>  	IIO_MOD_NORTH_TRUE,
+>  	IIO_MOD_NORTH_MAGN_TILT_COMP,
+> -	IIO_MOD_NORTH_TRUE_TILT_COMP
+> +	IIO_MOD_NORTH_TRUE_TILT_COMP,
+> +	IIO_MOD_RUNNING,
+> +	IIO_MOD_JOGGING,
+> +	IIO_MOD_WALKING,
+> +	IIO_MOD_STILL,
+>  };
+>  
+>  enum iio_event_type {
+> 
 
