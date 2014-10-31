@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759513AbaJaUPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:15:11 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39556 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaJaUPI (ORCPT
+	id S1759599AbaJaUPZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:15:25 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43264 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758793AbaJaUPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:15:08 -0400
-Date: Fri, 31 Oct 2014 16:06:03 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-10-31
-Message-ID: <20141031200603.GD3768@tuxdriver.com>
-References: <20141031182803.GA5772@t440s.P-661HNU-F1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141031182803.GA5772@t440s.P-661HNU-F1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 31 Oct 2014 16:15:23 -0400
+Date: Fri, 31 Oct 2014 16:15:20 -0400 (EDT)
+Message-Id: <20141031.161520.3547230591227504.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next v2 2/3] r8152: clear the flag of
+ SCHEDULE_TASKLET in tasklet
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-81-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-75-Taiwan-albertk@realtek.com>
+	<1394712342-15778-79-Taiwan-albertk@realtek.com>
+	<1394712342-15778-81-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 31 Oct 2014 13:15:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 08:28:03PM +0200, Johan Hedberg wrote:
-> Hi John,
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Fri, 31 Oct 2014 17:56:41 +0800
+
+> Clear the flag of SCHEDULE_TASKLET in bottom_half() to avoid
+> re-schedule the tasklet again by workqueue.
 > 
-> Here's the first bluetooth-next pull request for 3.19. The vast majority
-> of patches are for ieee802154 from Alexander Aring with various fixes
-> and cleanups. There are also several LE/SMP fixes as well as improved
-> support for handling LE devices that have lost their pairing information
-> (the patches from Alfonso). Jukka provides a couple of stability fixes
-> for 6lowpan and Szymon conformance fixes for RFCOMM. For the HCI drivers
-> we have one new USB ID for an Acer controller as well as a reset
-> handling fix for H5.
-> 
-> Please let me know if there are any issues pulling. Thanks.
-> 
-> Johan
-> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 > ---
-> The following changes since commit 61ed53deb1c6a4386d8710dbbfcee8779c381931:
+>  drivers/net/usb/r8152.c | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
->   Merge tag 'ntb-3.18' of git://github.com/jonmason/ntb (2014-10-19 12:58:22 -0700)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-> 
-> for you to fetch changes up to b509c02d0f31639dda90f9b7269668b86c9b25ef:
-> 
->   Bluetooth: HCI H5 peer reset detection (2014-10-31 19:54:34 +0200)
+> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+> index ff54098..670279a 100644
+> --- a/drivers/net/usb/r8152.c
+> +++ b/drivers/net/usb/r8152.c
+> @@ -1798,6 +1798,9 @@ static void bottom_half(unsigned long data)
+>  	if (!netif_carrier_ok(tp->netdev))
+>  		return;
+>  
+> +	if (test_bit(SCHEDULE_TASKLET, &tp->flags))
+> +		clear_bit(SCHEDULE_TASKLET, &tp->flags);
 
-Pulling now...
+This is racey.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+If another thread of control sets the bit between the test and the
+clear, you will lose an event.
+
+It really never makes sense to work with atomic bitops in a non-atomic
+test-and-whatever manner like this, it's always a red flag and
+indicates you're doing something very wrong.
