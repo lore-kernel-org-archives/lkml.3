@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280AbaJaPem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 11:34:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41981 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932508AbaJaPel (ORCPT
+	id S933540AbaJaPhd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 11:37:33 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45645 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932734AbaJaPhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 11:34:41 -0400
-Date: Fri, 31 Oct 2014 16:34:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Juergen Gross <jgross@suse.com>
-cc: hpa@zytor.com, x86@kernel.org, mingo@redhat.com,
-        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
-        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, bhelgaas@google.com
-Subject: Re: [PATCH 10/17] x86: Use new cache mode type in setting page
- attributes
-In-Reply-To: <1414764033-30011-11-git-send-email-jgross@suse.com>
-Message-ID: <alpine.DEB.2.11.1410311617260.5308@nanos>
-References: <1414764033-30011-1-git-send-email-jgross@suse.com> <1414764033-30011-11-git-send-email-jgross@suse.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 31 Oct 2014 11:37:32 -0400
+Date: Fri, 31 Oct 2014 16:37:27 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: [PATCH 5/6] sched/dl: reschedule if successfully pull earlier
+ deadline task
+Message-ID: <20141031153727.GT23531@worktop.programming.kicks-ass.net>
+References: <1414374067-7209-1-git-send-email-wanpeng.li@linux.intel.com>
+ <1414374067-7209-5-git-send-email-wanpeng.li@linux.intel.com>
+ <5452110C.40108@arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5452110C.40108@arm.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014, Juergen Gross wrote:
-> --- a/arch/x86/mm/pageattr.c
-> +++ b/arch/x86/mm/pageattr.c
-> @@ -1304,12 +1304,6 @@ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
->  	return 0;
->  }
->  
-> -static inline int cache_attr(pgprot_t attr)
-> -{
-> -	return pgprot_val(attr) &
-> -		(_PAGE_PAT | _PAGE_PAT_LARGE | _PAGE_PWT | _PAGE_PCD);
-> -}
-> -
->  static int change_page_attr_set_clr(unsigned long *addr, int numpages,
->  				    pgprot_t mask_set, pgprot_t mask_clr,
->  				    int force_split, int in_flag,
-> @@ -1390,7 +1384,7 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
->  	 * No need to flush, when we did not set any of the caching
->  	 * attributes:
->  	 */
-> -	cache = cache_attr(mask_set);
-> +	cache = !!pgprot2cachemode(mask_set);
+On Thu, Oct 30, 2014 at 10:21:00AM +0000, Juri Lelli wrote:
+> Peter, is the task_on_rq_queued() check for cases in which p is not
+> enqueued but its class changes after a setscheduler/rt_mutex_setprio?
 
-So this loses _PAGE_PAT_LARGE, right ?
+Yes, in particular if the task wasn't on the rq we won't change the rq
+by changing the class and therefore we don't need to attempt to pull.
 
->  int set_memory_uc(unsigned long addr, int numpages)
-> @@ -1456,7 +1451,7 @@ int set_memory_uc(unsigned long addr, int numpages)
->  	 * for now UC MINUS. see comments in ioremap_nocache()
->  	 */
->  	ret = reserve_memtype(__pa(addr), __pa(addr) + numpages * PAGE_SIZE,
-> -			    _PAGE_CACHE_UC_MINUS, NULL);
-> +			      _PAGE_CACHE_UC_MINUS, NULL);
+---
+commit da7a735e51f9622eb3e1672594d4a41da01d7e4f
+Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date:   Mon Jan 17 17:03:27 2011 +0100
 
-That should be in the patch which added the _PAGE_CACHE_UC_MINUS
-
->  int _set_memory_wb(unsigned long addr, int numpages)
->  {
-> +	/* WB cache mode is hard wired to all cache attribute bits being 0 */
-
-I like the comment, but shouldn't we compile time check that
-assumption somewhere?
-
->  	return change_page_attr_clear(&addr, numpages,
->  				      __pgprot(_PAGE_CACHE_MASK), 0);
-
-Thanks,
-
-	tglx
+    sched: Fix switch_from_fair()
+    
+    When a task is taken out of the fair class we must ensure the vruntime
+    is properly normalized because when we put it back in it will assume
+    to be normalized.
+    
+    The case that goes wrong is when changing away from the fair class
+    while sleeping. Sleeping tasks have non-normalized vruntime in order
+    to make sleeper-fairness work. So treat the switch away from fair as a
+    wakeup and preserve the relative vruntime.
+    
+    Also update sysrq-n to call the ->switch_{to,from} methods.
+    
+    Reported-by: Onkalo Samu <samu.p.onkalo@nokia.com>
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    LKML-Reference: <new-submission>
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
