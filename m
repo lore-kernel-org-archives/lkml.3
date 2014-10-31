@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759404AbaJaGEb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 02:04:31 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:60879 "EHLO
+	id S1760165AbaJaGEg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 02:04:36 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:60882 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856AbaJaGE2 (ORCPT
+	with ESMTP id S1759317AbaJaGEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 02:04:28 -0400
+	Fri, 31 Oct 2014 02:04:32 -0400
 Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9V64PtE011002, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9V64Ska011331, This message is accepted by code: ctloc85258
 From: Hayes Wang <hayeswang@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/3] r8152: remove the duplicate init for the list of rx_done
-Date: Fri, 31 Oct 2014 14:03:54 +0800
-Message-ID: <1394712342-15778-76-Taiwan-albertk@realtek.com>
+Subject: [PATCH net-next 3/3] r8152: check RTL8152_UNPLUG and netif_running before autoresume
+Date: Fri, 31 Oct 2014 14:03:56 +0800
+Message-ID: <1394712342-15778-78-Taiwan-albertk@realtek.com>
 X-Mailer: Microsoft Office Outlook 11
 In-Reply-To: <1394712342-15778-75-Taiwan-albertk@realtek.com>
 References: <1394712342-15778-75-Taiwan-albertk@realtek.com>
@@ -26,26 +26,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The INIT_LIST_HEAD(&tp->rx_done) would be done in rtl_start_rx(),
-so remove the unnecessary one in alloc_all_mem().
+If the device is unplugged or !netif_running(), the workqueue
+doesn't neet to wake the device, and could return directly.
 
 Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/usb/r8152.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/usb/r8152.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index f116335..ff54098 100644
+index 670279a..e522abe 100644
 --- a/drivers/net/usb/r8152.c
 +++ b/drivers/net/usb/r8152.c
-@@ -1256,7 +1256,6 @@ static int alloc_all_mem(struct r8152 *tp)
+@@ -2859,15 +2859,18 @@ static void rtl_work_func_t(struct work_struct *work)
+ {
+ 	struct r8152 *tp = container_of(work, struct r8152, schedule.work);
  
- 	spin_lock_init(&tp->rx_lock);
- 	spin_lock_init(&tp->tx_lock);
--	INIT_LIST_HEAD(&tp->rx_done);
- 	INIT_LIST_HEAD(&tp->tx_free);
- 	skb_queue_head_init(&tp->tx_queue);
++	/* If the device is unplugged or !netif_running(), the workqueue
++	 * doesn't neet to wake the device, and could return directly.
++	 */
++	if (test_bit(RTL8152_UNPLUG, &tp->flags) || !netif_running(tp->netdev))
++		return;
++
+ 	if (usb_autopm_get_interface(tp->intf) < 0)
+ 		return;
  
+ 	if (!test_bit(WORK_ENABLE, &tp->flags))
+ 		goto out1;
+ 
+-	if (test_bit(RTL8152_UNPLUG, &tp->flags))
+-		goto out1;
+-
+ 	if (!mutex_trylock(&tp->control)) {
+ 		schedule_delayed_work(&tp->schedule, 0);
+ 		goto out1;
 -- 
 1.9.3
 
