@@ -1,153 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169AbaJaSBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 14:01:12 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:8469 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750808AbaJaSBK (ORCPT
+	id S1758190AbaJaSDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 14:03:50 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:54681 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755603AbaJaSDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 14:01:10 -0400
-X-IronPort-AV: E=Sophos;i="5.07,295,1413237600"; 
-   d="scan'208";a="104017760"
-Date: Fri, 31 Oct 2014 19:01:06 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH resent] staging: rtl8188eu: Deletion of unnecessary checks
- before three function calls
-In-Reply-To: <5453CD0D.9010206@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1410311900201.2481@hadrien>
-References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 31 Oct 2014 14:03:47 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1414135761-3406-1-git-send-email-jinkun.hong@rock-chips.com>
+References: <1414135761-3406-1-git-send-email-jinkun.hong@rock-chips.com>
+Date: Fri, 31 Oct 2014 11:03:46 -0700
+X-Google-Sender-Auth: x6wgHELQLvgF5YQfawgdMjhrOyI
+Message-ID: <CAD=FV=UzgS2JtNhUB+0gbMvpW76C=12=y+ij0p6Xpbk_vAs0ww@mail.gmail.com>
+Subject: Re: [PATCH v7 0/3] ARM: rk3288 : Add PM Domain support
+From: Doug Anderson <dianders@chromium.org>
+To: "jinkun.hong" <jinkun.hong@rock-chips.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kever Yang <kever.yang@rock-chips.com>, Chris <zyw@rock-chips.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014, SF Markus Elfring wrote:
+Jinkun,
 
-> The functions kfree(), rtw_free_netdev() and vfree() test whether their
-> argument is NULL and then return immediately. Thus the test around the call
-> is not needed.
+On Fri, Oct 24, 2014 at 12:29 AM, jinkun.hong
+<jinkun.hong@rock-chips.com> wrote:
+> From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 >
-> This issue was detected by using the Coccinelle software.
+> Add power domain drivers based on generic power domain for Rockchip platform,
+> and support RK3288.
 >
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  drivers/staging/rtl8188eu/core/rtw_efuse.c   | 3 +--
->  drivers/staging/rtl8188eu/core/rtw_mlme.c    | 3 +--
->  drivers/staging/rtl8188eu/core/rtw_sta_mgt.c | 3 +--
->  drivers/staging/rtl8188eu/core/rtw_xmit.c    | 6 ++----
->  drivers/staging/rtl8188eu/os_dep/usb_intf.c  | 5 ++---
->  5 files changed, 7 insertions(+), 13 deletions(-)
+> https://chromium-review.googlesource.com/#/c/220253/9
+> This is the GPU driver, add the following information in DT,
+> and it can support the PMDOMAIN.
 >
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-> b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-> index 7006088..77f7552 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-> @@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16
-> _size_byte, u8  *pbuf)
->  exit:
->  	kfree(efuseTbl);
+> gpu: gpu@ffa30000 {
+>         compatible = "arm,malit764",
+>                      "arm,malit76x",
+>                      "arm,malit7xx",
+>                      "arm,mali-midgard";
+>         reg = <0xffa30000 0x10000>;
+>         interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
+>                      <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>,
+>                      <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
+>         interrupt-names = "JOB", "MMU", "GPU";
+>         clocks = <&cru ACLK_GPU>;
+>         clock-names = "aclk_gpu";
+>         operating-points = <
+>                 /* KHz uV */
+>                 100000 800000
+>                 200000 850000
+>                 300000 950000
+>                 400000 1000000
+>                 600000 1150000
+>         >;
+>         power-domains = <&gpu_power>;
+>         status = "disabled";
+> };
 >
-> -	if (eFuseWord)
-> -		kfree(eFuseWord);
-> +	kfree(eFuseWord);
+> Based on:
+> - [PATCH v1 1/4] PM / clock_ops: Add pm_clk_add_clk()
+>   http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg735599.html
+>
+> Changes in v7:
+> - Delete unused variables
+>
+> Changes in v6:
+> - delete pmu_lock
+> - modify dev_lock using mutex
+> - pm_clk_resume(pd->dev) change to pm_clk_resume(ed->dev)
+> - pm_clk_suspend(pd->dev) change to pm_clk_suspend(ed->dev)
+> - add devm_kfree(pd->dev, de) in rockchip_pm_domain_detach_dev
+>
+> Changes in v5:
+> - delete idle_lock
+> - add timeout in rockchip_pmu_set_idle_request()
+>
+> Changes in v4:
+> - use list storage dev
+>
+> Changes in v3:
+> - change use pm_clk_resume() and pm_clk_suspend()
+> - DT structure has changed
+> - Decomposition power-controller, changed to multiple controller
+>    (gpu-power-controller, hevc-power-controller)
+>
+> Changes in v2:
+> - remove the "pd->pd.of_node = np"
+> - move clocks to "optional"
+> - make pd_vio clocks all one entry per line and alphabetize.
+> - power: power-controller move back to pinctrl: pinctrl.
+>
+> jinkun.hong (3):
+>   power-domain: add power domain drivers for Rockchip platform
+>   dt-bindings: add document of Rockchip power domain
+>   ARM: dts: add rk3288 power-domain node
+>
+>  .../bindings/arm/rockchip/power_domain.txt         |   46 +++
+>  arch/arm/boot/dts/rk3288.dtsi                      |   24 ++
+>  arch/arm/mach-rockchip/Kconfig                     |    1 +
+>  arch/arm/mach-rockchip/Makefile                    |    1 +
+>  arch/arm/mach-rockchip/pm_domains.c                |  355 ++++++++++++++++++++
+>  5 files changed, 427 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+>  create mode 100644 arch/arm/mach-rockchip/pm_domains.c
 
-I think that this code has been updated already.  It would be better to
-add labels so that kfree is only executed when needed.
+I haven't been following all of the changes here, but I'll say that I
+just spent a bunch of time figuring out why my system wasn't properly
+going into suspend using your patchset after I picked up Kever's patch
+to disable unused clocks
+(https://patchwork.kernel.org/patch/5202291/).
 
-julia
+It turns out that if I go back to patch v2 of your series that suspend
+works great.  ...but not with v7.
 
->  }
->
->  static void efuse_read_phymap_from_txpktbuf(
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-> b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-> index 149c271..df54350 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-> @@ -122,8 +122,7 @@ void rtw_free_mlme_priv(struct mlme_priv *pmlmepriv)
->  	rtw_free_mlme_priv_ie_data(pmlmepriv);
->
->  	if (pmlmepriv) {
-> -		if (pmlmepriv->free_bss_buf)
-> -			vfree(pmlmepriv->free_bss_buf);
-> +		vfree(pmlmepriv->free_bss_buf);
->  	}
->  }
->
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-> b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-> index e1dc8fa..af1de9c 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-> @@ -201,8 +201,7 @@ u32	_rtw_free_sta_priv(struct	sta_priv *pstapriv)
->
->  		rtw_mfree_sta_priv_lock(pstapriv);
->
-> -		if (pstapriv->pallocated_stainfo_buf)
-> -			vfree(pstapriv->pallocated_stainfo_buf);
-> +		vfree(pstapriv->pallocated_stainfo_buf);
->  	}
->
->  	return _SUCCESS;
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-> b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-> index 639ace0..011c9cf 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-> @@ -246,11 +246,9 @@ void _rtw_free_xmit_priv (struct xmit_priv *pxmitpriv)
->  		pxmitbuf++;
->  	}
->
-> -	if (pxmitpriv->pallocated_frame_buf)
-> -		vfree(pxmitpriv->pallocated_frame_buf);
-> +	vfree(pxmitpriv->pallocated_frame_buf);
->
-> -	if (pxmitpriv->pallocated_xmitbuf)
-> -		vfree(pxmitpriv->pallocated_xmitbuf);
-> +	vfree(pxmitpriv->pallocated_xmitbuf);
->
->  	/*  free xmit extension buff */
->  	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
-> diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> index 407a318..cdb70e4 100644
-> --- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> +++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> @@ -456,7 +456,7 @@ free_adapter:
->  	if (status != _SUCCESS) {
->  		if (pnetdev)
->  			rtw_free_netdev(pnetdev);
-> -		else if (padapter)
-> +		else
->  			vfree(padapter);
->  		padapter = NULL;
->  	}
-> @@ -487,8 +487,7 @@ static void rtw_usb_if1_deinit(struct adapter *if1)
->  	DBG_88E("+r871xu_dev_remove, hw_init_completed=%d\n",
->  		if1->hw_init_completed);
->  	rtw_free_drv_sw(if1);
-> -	if (pnetdev)
-> -		rtw_free_netdev(pnetdev);
-> +	rtw_free_netdev(pnetdev);
->  }
->
->  static int rtw_drv_init(struct usb_interface *pusb_intf, const struct
-> usb_device_id *pdid)
-> --
-> 2.1.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+I got to this point because I started bisecting clocks.  I realized
+that I needed to leave on "aclk_vepu", "aclk_vdpu", "aclk_rga_pre",
+"sclk_rga", "aclk_hevc", ..., ...  As I kept finding more clocks they
+kept looking more and more like your list from the v2 dtsi and it
+became obvious.
+
+
+I guess that things are not properly being turned off properly due to
+the reason you stated in <https://lkml.org/lkml/2014/10/28/1279>.
+Specifically we need all the relevant clocks on in order to power
+things on and off.
+
+
+I'll let you guys hash out how you want to make this work, but I
+figured I'd at least point out what I was seeing.  ;)
+
+
+NOTE: I'll upload something before EOD California today into our
+chromeos-3.14 tree that shows how I am testing on rk3288-pinky.  I
+know that's not terribly useful to everyone upstream, but not all
+patches for S2R have landed upstream so that's the best I can do.  I'm
+currently testing "deep" suspend (with SDRAM in self refresh mode)
+which we have no way to resume from ATM.  I'm measuring "success" by
+looking at total system power as reported by the battery.  With v2 I
+get down to very low power.  With v7 I don't.
+
+
+
+-Doug
