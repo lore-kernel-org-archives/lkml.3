@@ -1,252 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918AbaJaRyK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:54:10 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:46799 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797AbaJaRyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:54:08 -0400
-Message-ID: <5453CCB8.4020301@redhat.com>
-Date: Fri, 31 Oct 2014 18:54:00 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S1758015AbaJaRze (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:55:34 -0400
+Received: from mout.web.de ([212.227.15.14]:60063 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756620AbaJaRzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 13:55:32 -0400
+Message-ID: <5453CD0D.9010206@users.sourceforge.net>
+Date: Fri, 31 Oct 2014 18:55:25 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Andy Lutomirski <luto@amacapital.net>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>
-Subject: Re: [PATCH v2 7/8] x86, perf: Only allow rdpmc if a perf_event is
- mapped
-References: <cover.1414190806.git.luto@amacapital.net> <a2bdb3cf3a1d70c26980d7c6dddfbaa69f3182bf.1414190806.git.luto@amacapital.net>
-In-Reply-To: <a2bdb3cf3a1d70c26980d7c6dddfbaa69f3182bf.1414190806.git.luto@amacapital.net>
-Content-Type: text/plain; charset=windows-1252
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH resent] staging: rtl8188eu: Deletion of unnecessary checks
+ before three function calls
+References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com>
+In-Reply-To: <20141029084702.GA18675@kroah.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:Z3wSqUGbDLRWv7l6Z9gHJ01rLU4E1pcUEPo5lghTWhZRFlOhxNO
+ e4X6Yfo1tIvNcd2JfmIRkrAJNKpPOYDbUN5lmiJyyqKfFJrvSRFZZgodtwvf9Q2ZbsFxGZg
+ OTSFqytJXW/ZgQSbAT+6z5xKZxl7i+al3jhysCVkuRiJdwnSU6OBhzCGKqSzevYPQkilYoa
+ szGSF/uzcSgtMqGECxG8w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/10/2014 00:58, Andy Lutomirski wrote:
-> We currently allow any process to use rdpmc.  This significantly
-> weakens the protection offered by PR_TSC_DISABLED, and it could be
-> helpful to users attempting to exploit timing attacks.
-> 
-> Since we can't enable access to individual counters, use a very
-> coarse heuristic to limit access to rdpmc: allow access only when
-> a perf_event is mmapped.  This protects seccomp sandboxes.
-> 
-> There is plenty of room to further tighen these restrictions.  For
-> example, this allows rdpmc for any x86_pmu event, but it's only
-> useful for self-monitoring tasks.
-> 
-> As a side effect, cap_user_rdpmc will now be false for AMD uncore
-> events.  This isn't a real regression, since .event_idx is disabled
-> for these events anyway for the time being.  Whenever that gets
-> re-added, the cap_user_rdpmc code can be adjusted or refactored
-> accordingly.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+The functions kfree(), rtw_free_netdev() and vfree() test whether their
+argument is NULL and then return immediately. Thus the test around the call
+is not needed.
 
-What's the impact of this if the host doesn't have "x86,kvm,vmx:
-Preserve CR4 across VM entry"?
+This issue was detected by using the Coccinelle software.
 
-Paolo
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/staging/rtl8188eu/core/rtw_efuse.c   | 3 +--
+ drivers/staging/rtl8188eu/core/rtw_mlme.c    | 3 +--
+ drivers/staging/rtl8188eu/core/rtw_sta_mgt.c | 3 +--
+ drivers/staging/rtl8188eu/core/rtw_xmit.c    | 6 ++----
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c  | 5 ++---
+ 5 files changed, 7 insertions(+), 13 deletions(-)
 
-> ---
->  arch/x86/include/asm/mmu.h         |  2 ++
->  arch/x86/include/asm/mmu_context.h | 16 +++++++++++
->  arch/x86/kernel/cpu/perf_event.c   | 57 +++++++++++++++++++++++++-------------
->  arch/x86/kernel/cpu/perf_event.h   |  2 ++
->  4 files changed, 58 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/mmu.h b/arch/x86/include/asm/mmu.h
-> index 876e74e8eec7..09b9620a73b4 100644
-> --- a/arch/x86/include/asm/mmu.h
-> +++ b/arch/x86/include/asm/mmu.h
-> @@ -19,6 +19,8 @@ typedef struct {
->  
->  	struct mutex lock;
->  	void __user *vdso;
-> +
-> +	atomic_t perf_rdpmc_allowed;	/* nonzero if rdpmc is allowed */
->  } mm_context_t;
->  
->  #ifdef CONFIG_SMP
-> diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
-> index 23697f74b372..ccad8d616038 100644
-> --- a/arch/x86/include/asm/mmu_context.h
-> +++ b/arch/x86/include/asm/mmu_context.h
-> @@ -19,6 +19,18 @@ static inline void paravirt_activate_mm(struct mm_struct *prev,
->  }
->  #endif	/* !CONFIG_PARAVIRT */
->  
-> +#ifdef CONFIG_PERF_EVENTS
-> +static inline void load_mm_cr4(struct mm_struct *mm)
-> +{
-> +	if (atomic_read(&mm->context.perf_rdpmc_allowed))
-> +		cr4_set_bits(X86_CR4_PCE);
-> +	else
-> +		cr4_clear_bits(X86_CR4_PCE);
-> +}
-> +#else
-> +static inline void load_mm_cr4(struct mm_struct *mm) {}
-> +#endif
-> +
->  /*
->   * Used for LDT copy/destruction.
->   */
-> @@ -53,6 +65,9 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
->  		/* Stop flush ipis for the previous mm */
->  		cpumask_clear_cpu(cpu, mm_cpumask(prev));
->  
-> +		/* Load per-mm CR4 state */
-> +		load_mm_cr4(next);
-> +
->  		/*
->  		 * Load the LDT, if the LDT is different.
->  		 *
-> @@ -88,6 +103,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
->  			 */
->  			load_cr3(next->pgd);
->  			trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
-> +			load_mm_cr4(next);
->  			load_LDT_nolock(&next->context);
->  		}
->  	}
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 00fbab7aa587..3e875b3b30f2 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -31,6 +31,7 @@
->  #include <asm/nmi.h>
->  #include <asm/smp.h>
->  #include <asm/alternative.h>
-> +#include <asm/mmu_context.h>
->  #include <asm/tlbflush.h>
->  #include <asm/timer.h>
->  #include <asm/desc.h>
-> @@ -1336,8 +1337,6 @@ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
->  		break;
->  
->  	case CPU_STARTING:
-> -		if (x86_pmu.attr_rdpmc)
-> -			cr4_set_bits(X86_CR4_PCE);
->  		if (x86_pmu.cpu_starting)
->  			x86_pmu.cpu_starting(cpu);
->  		break;
-> @@ -1813,14 +1812,44 @@ static int x86_pmu_event_init(struct perf_event *event)
->  			event->destroy(event);
->  	}
->  
-> +	if (ACCESS_ONCE(x86_pmu.attr_rdpmc))
-> +		event->hw.flags |= PERF_X86_EVENT_RDPMC_ALLOWED;
-> +
->  	return err;
->  }
->  
-> +static void refresh_pce(void *ignored)
-> +{
-> +	if (current->mm)
-> +		load_mm_cr4(current->mm);
-> +}
-> +
-> +static void x86_pmu_event_mapped(struct perf_event *event)
-> +{
-> +	if (!(event->hw.flags & PERF_X86_EVENT_RDPMC_ALLOWED))
-> +		return;
-> +
-> +	if (atomic_inc_return(&current->mm->context.perf_rdpmc_allowed) == 1)
-> +		on_each_cpu_mask(mm_cpumask(current->mm), refresh_pce, NULL, 1);
-> +}
-> +
-> +static void x86_pmu_event_unmapped(struct perf_event *event)
-> +{
-> +	if (!current->mm)
-> +		return;
-> +
-> +	if (!(event->hw.flags & PERF_X86_EVENT_RDPMC_ALLOWED))
-> +		return;
-> +
-> +	if (atomic_dec_and_test(&current->mm->context.perf_rdpmc_allowed))
-> +		on_each_cpu_mask(mm_cpumask(current->mm), refresh_pce, NULL, 1);
-> +}
-> +
->  static int x86_pmu_event_idx(struct perf_event *event)
->  {
->  	int idx = event->hw.idx;
->  
-> -	if (!x86_pmu.attr_rdpmc)
-> +	if (!(event->hw.flags & PERF_X86_EVENT_RDPMC_ALLOWED))
->  		return 0;
->  
->  	if (x86_pmu.num_counters_fixed && idx >= INTEL_PMC_IDX_FIXED) {
-> @@ -1838,16 +1867,6 @@ static ssize_t get_attr_rdpmc(struct device *cdev,
->  	return snprintf(buf, 40, "%d\n", x86_pmu.attr_rdpmc);
->  }
->  
-> -static void change_rdpmc(void *info)
-> -{
-> -	bool enable = !!(unsigned long)info;
-> -
-> -	if (enable)
-> -		cr4_set_bits(X86_CR4_PCE);
-> -	else
-> -		cr4_clear_bits(X86_CR4_PCE);
-> -}
-> -
->  static ssize_t set_attr_rdpmc(struct device *cdev,
->  			      struct device_attribute *attr,
->  			      const char *buf, size_t count)
-> @@ -1862,11 +1881,7 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
->  	if (x86_pmu.attr_rdpmc_broken)
->  		return -ENOTSUPP;
->  
-> -	if (!!val != !!x86_pmu.attr_rdpmc) {
-> -		x86_pmu.attr_rdpmc = !!val;
-> -		on_each_cpu(change_rdpmc, (void *)val, 1);
-> -	}
-> -
-> +	x86_pmu.attr_rdpmc = !!val;
->  	return count;
->  }
->  
-> @@ -1909,6 +1924,9 @@ static struct pmu pmu = {
->  
->  	.event_init		= x86_pmu_event_init,
->  
-> +	.event_mapped		= x86_pmu_event_mapped,
-> +	.event_unmapped		= x86_pmu_event_unmapped,
-> +
->  	.add			= x86_pmu_add,
->  	.del			= x86_pmu_del,
->  	.start			= x86_pmu_start,
-> @@ -1930,7 +1948,8 @@ void arch_perf_update_userpage(struct perf_event *event,
->  
->  	userpg->cap_user_time = 0;
->  	userpg->cap_user_time_zero = 0;
-> -	userpg->cap_user_rdpmc = x86_pmu.attr_rdpmc;
-> +	userpg->cap_user_rdpmc =
-> +		!!(event->hw.flags & PERF_X86_EVENT_RDPMC_ALLOWED);
->  	userpg->pmc_width = x86_pmu.cntval_bits;
->  
->  	if (!sched_clock_stable())
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index d98a34d435d7..f6868186e67b 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -71,6 +71,8 @@ struct event_constraint {
->  #define PERF_X86_EVENT_COMMITTED	0x8 /* event passed commit_txn */
->  #define PERF_X86_EVENT_PEBS_LD_HSW	0x10 /* haswell style datala, load */
->  #define PERF_X86_EVENT_PEBS_NA_HSW	0x20 /* haswell style datala, unknown */
-> +#define PERF_X86_EVENT_RDPMC_ALLOWED	0x40 /* grant rdpmc permission */
-> +
->  
->  struct amd_nb {
->  	int nb_id;  /* NorthBridge id */
-> 
+diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c
+b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+index 7006088..77f7552 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
++++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+@@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16
+_size_byte, u8  *pbuf)
+ exit:
+ 	kfree(efuseTbl);
+
+-	if (eFuseWord)
+-		kfree(eFuseWord);
++	kfree(eFuseWord);
+ }
+
+ static void efuse_read_phymap_from_txpktbuf(
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c
+b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+index 149c271..df54350 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+@@ -122,8 +122,7 @@ void rtw_free_mlme_priv(struct mlme_priv *pmlmepriv)
+ 	rtw_free_mlme_priv_ie_data(pmlmepriv);
+
+ 	if (pmlmepriv) {
+-		if (pmlmepriv->free_bss_buf)
+-			vfree(pmlmepriv->free_bss_buf);
++		vfree(pmlmepriv->free_bss_buf);
+ 	}
+ }
+
+diff --git a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
+b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
+index e1dc8fa..af1de9c 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
++++ b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
+@@ -201,8 +201,7 @@ u32	_rtw_free_sta_priv(struct	sta_priv *pstapriv)
+
+ 		rtw_mfree_sta_priv_lock(pstapriv);
+
+-		if (pstapriv->pallocated_stainfo_buf)
+-			vfree(pstapriv->pallocated_stainfo_buf);
++		vfree(pstapriv->pallocated_stainfo_buf);
+ 	}
+
+ 	return _SUCCESS;
+diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c
+b/drivers/staging/rtl8188eu/core/rtw_xmit.c
+index 639ace0..011c9cf 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
++++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
+@@ -246,11 +246,9 @@ void _rtw_free_xmit_priv (struct xmit_priv *pxmitpriv)
+ 		pxmitbuf++;
+ 	}
+
+-	if (pxmitpriv->pallocated_frame_buf)
+-		vfree(pxmitpriv->pallocated_frame_buf);
++	vfree(pxmitpriv->pallocated_frame_buf);
+
+-	if (pxmitpriv->pallocated_xmitbuf)
+-		vfree(pxmitpriv->pallocated_xmitbuf);
++	vfree(pxmitpriv->pallocated_xmitbuf);
+
+ 	/*  free xmit extension buff */
+ 	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
+diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+index 407a318..cdb70e4 100644
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -456,7 +456,7 @@ free_adapter:
+ 	if (status != _SUCCESS) {
+ 		if (pnetdev)
+ 			rtw_free_netdev(pnetdev);
+-		else if (padapter)
++		else
+ 			vfree(padapter);
+ 		padapter = NULL;
+ 	}
+@@ -487,8 +487,7 @@ static void rtw_usb_if1_deinit(struct adapter *if1)
+ 	DBG_88E("+r871xu_dev_remove, hw_init_completed=%d\n",
+ 		if1->hw_init_completed);
+ 	rtw_free_drv_sw(if1);
+-	if (pnetdev)
+-		rtw_free_netdev(pnetdev);
++	rtw_free_netdev(pnetdev);
+ }
+
+ static int rtw_drv_init(struct usb_interface *pusb_intf, const struct
+usb_device_id *pdid)
+-- 
+2.1.2
+
