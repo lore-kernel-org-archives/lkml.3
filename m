@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760222AbaJaNqN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 09:46:13 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:34996 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759923AbaJaNqL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 09:46:11 -0400
-Date: Fri, 31 Oct 2014 22:46:32 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: "'Minchan Kim'" <minchan@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Dan Streetman'" <ddstreet@ieee.org>,
-        "'Nitin Gupta'" <ngupta@vflare.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] zram: avoid kunmap_atomic a NULL pointer
-Message-ID: <20141031134632.GA942@swordfish>
-References: <000001cff409$bf7bfa50$3e73eef0$%yang@samsung.com>
+	id S1760249AbaJaNqu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 09:46:50 -0400
+Received: from mail.eperm.de ([89.247.134.16]:54159 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758408AbaJaNqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 09:46:48 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Marek Vasut <marex@denx.de>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel crypto API interface specification
+Date: Fri, 31 Oct 2014 14:46:41 +0100
+Message-ID: <12522104.5yU5SNjzIg@tachyon.chronox.de>
+User-Agent: KMail/4.14.1 (Linux/3.17.1-302.fc21.x86_64; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <201410311009.52713.marex@denx.de>
+References: <7502136.9BkWHTZ0th@myon.chronox.de> <20141031072353.GC7563@gondor.apana.org.au> <201410311009.52713.marex@denx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001cff409$bf7bfa50$3e73eef0$%yang@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/30/14 14:20), Weijie Yang wrote:
-> zram could kunmap_atomic a NULL pointer in a rare situation:
-> a zram page become a full-zeroed page after a partial write io.
-> The current code doesn't handle this case and kunmap_atomic a
-> NULL porinter, which panic the kernel.
-> 
-> This patch fixes this issue.
-> 
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Am Freitag, 31. Oktober 2014, 10:09:52 schrieb Marek Vasut:
 
-thank you, Weijie.
+Hi Marek,
 
-Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> On Friday, October 31, 2014 at 08:23:53 AM, Herbert Xu wrote:
+> > On Fri, Oct 31, 2014 at 04:01:04AM +0100, Marek Vasut wrote:
+> > > I can share the last state of the document I wrote. Currently,
+> > > it is not possible for me to keep up with my workload and do
+> > > anything else, so that's all I can do.
+> > 
+> > Posting your latest revision would be great.
+> 
+> Please see below, mine is much less complete than Stephan's though
+> and likely contains some bugs.
 
-	-ss
+Thank you for sharing.
 
-> ---
->  drivers/block/zram/zram_drv.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 2ad0b5b..3920ee4 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -560,7 +560,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	}
->  
->  	if (page_zero_filled(uncmem)) {
-> -		kunmap_atomic(user_mem);
-> +		if (user_mem)
-> +			kunmap_atomic(user_mem);
->  		/* Free memory associated with this sector now. */
->  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
->  		zram_free_page(zram, index);
-> -- 
-> 1.7.0.4
-> 
-> 
+I am in the last innings to complete a new patch set. I will see to merge your 
+documentation with mine.
+
+The upcoming patchset will cover the following changes:
+
+- split out the user space interface documentation (and fix a bug -- I forgot 
+a memset(0) in there)
+
+- keep the "high-level" description in a document in Documentation/crypto/
+
+- put the API function documentation into the header files (I hope that is ok 
+that I touch these files to add comments)
+
+-- 
+Ciao
+Stephan
