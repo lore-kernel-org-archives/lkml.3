@@ -1,70 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290AbaJaKp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:45:29 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:24217 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393AbaJaKp1 (ORCPT
+	id S932447AbaJaKsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:48:13 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:59212 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932177AbaJaKsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:45:27 -0400
-Message-ID: <54536834.1020005@huawei.com>
-Date: Fri, 31 Oct 2014 18:45:08 +0800
-From: hujianyang <hujianyang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 31 Oct 2014 06:48:10 -0400
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: <dedekind1@gmail.com>, <dwmw2@infradead.org>,
-        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] UBI: vtbl: Use ubi_eba_atomic_leb_change()
-References: <1414259021-5691-1-git-send-email-richard@nod.at> <1414659349.23185.27.camel@sauron.fi.intel.com> <54530A29.9070208@huawei.com> <545343CA.7080507@nod.at>
-In-Reply-To: <545343CA.7080507@nod.at>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.144]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1414737101.32208.18.camel@mhfsdcap03>
+References: <1414561058-23803-1-git-send-email-xudong.chen@mediatek.com>
+	<1414561058-23803-4-git-send-email-xudong.chen@mediatek.com>
+	<CABuKBe+RXboBEZD7Bu_kSbVwiapJJcAuuw_wo=xw67osJWJ20w@mail.gmail.com>
+	<1414737101.32208.18.camel@mhfsdcap03>
+Date: Fri, 31 Oct 2014 11:48:08 +0100
+Message-ID: <CABuKBeK1O2q37RMVE0Yjp2=QgkzXZfh=vxXiZrw-JMiYMxb-QQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] I2C: mediatek: Add driver for MediaTek I2C controller
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: xudong chen <xudong.chen@mediatek.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, arm@kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-i2c@vger.kernel.org, Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        YH Chen <yh.chen@mediatek.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/31 16:09, Richard Weinberger wrote:
-> Hujianyang,
-> 
-> Am 31.10.2014 um 05:03 schrieb hujianyang:
->> Hi Artem and Richard,
+2014-10-31 7:31 GMT+01:00 xudong chen <xudong.chen@mediatek.com>:
+> On Thu, 2014-10-30 at 14:16 +0100, Matthias Brugger wrote:
+>> 2014-10-29 6:37 GMT+01:00 Xudong Chen <xudong.chen@mediatek.com>:
+>> > The mediatek SoCs have I2C controller that handle I2C transfer.
+>> > This patch include common I2C bus driver.
+>> > This driver is compatible with I2C controller on mt65xx/mt81xx.
+>> >
+>> > Signed-off-by: Xudong Chen <xudong.chen@mediatek.com>
+>> > Change-Id: Icc17e326b9df46a226d536956e103f17b0382b6e
+>> > ---
+>> >  drivers/i2c/busses/Kconfig      |   9 +
+>> >  drivers/i2c/busses/Makefile     |   1 +
+>> >  drivers/i2c/busses/i2c-mt65xx.c | 728 ++++++++++++++++++++++++++++++++++++++++
+>> >  3 files changed, 738 insertions(+)
+>> >  create mode 100644 drivers/i2c/busses/i2c-mt65xx.c
+>> >
+>> > diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+>> > index 917c358..0d7d0a4 100644
+>> > --- a/drivers/i2c/busses/Kconfig
+>> > +++ b/drivers/i2c/busses/Kconfig
+>> > @@ -564,6 +564,15 @@ config I2C_MPC
+>> >           This driver can also be built as a module.  If so, the module
+>> >           will be called i2c-mpc.
+>> >
+>> > +config I2C_MT65XX
+>> > +       tristate "MediaTek I2C adapter"
+>> > +       depends on ARCH_MEDIATEK
+>> > +       help
+>> > +         This selects the MediaTek(R) Integrated Inter Circuit bus driver
+>> > +         for MT65xx and MT81xx.
+>> > +         If you want to use MediaTek(R) I2C interface, say Y or M here.
+>> > +         If unsure, say N.
+>> > +
+>> >  config I2C_MV64XXX
+>> >         tristate "Marvell mv64xxx I2C Controller"
+>> >         depends on MV64X60 || PLAT_ORION || ARCH_SUNXI
+>> > diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+>> > index 78d56c5..7a9f0f3 100644
+>> > --- a/drivers/i2c/busses/Makefile
+>> > +++ b/drivers/i2c/busses/Makefile
+>> > @@ -54,6 +54,7 @@ obj-$(CONFIG_I2C_IMX)         += i2c-imx.o
+>> >  obj-$(CONFIG_I2C_IOP3XX)       += i2c-iop3xx.o
+>> >  obj-$(CONFIG_I2C_KEMPLD)       += i2c-kempld.o
+>> >  obj-$(CONFIG_I2C_MPC)          += i2c-mpc.o
+>> > +obj-$(CONFIG_I2C_MT65XX)       += i2c-mt65xx.o
+>> > +
+>> > +static int mt_i2c_do_transfer(struct mt_i2c *i2c)
+>> > +{
+>> > +       u16 addr_reg;
+>> > +       u16 control_reg;
+>> > +       int tmo = i2c->adap.timeout;
+>> > +
+>> > +       i2c->trans_stop = false;
+>> > +       i2c->irq_stat = 0;
+>> > +
+>> > +       /* If use i2c pin from PMIC mt6397 side, need set PATH_DIR first */
+>> > +       if (i2c->have_pmic)
+>> > +               i2c_writew(I2C_CONTROL_WRAPPER, i2c, OFFSET_PATH_DIR);
 >>
->> We are using atomic operation, leb_change(), for master_node
->> in ubifs-level. We use two lebs for master_node even if they
->> are changed with atomic operation.
+>> So this is some sort of multiplexer bit, right?
+>> I think in this case we need to build a multi function device (mfd)
+>> where the pmic driver will set this bit.
 >>
->> I think volume_table and master_node play similar roles. Do
->> you think changing VTBL record into one peb is OK? I just
->> what to know if I missed something. Could you please take
->> some time to explain that?
-> 
-> I'm not sure if I correctly understand your question.
-> 
-> If we use only one PEB for the VTBL existing UBI implementations
-> would break as they assume we have two.
-> 
-> Thanks,
-> //richard
-> 
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
-> 
-> 
+> Hi,
+>
+> This feature means the chip can use I2C pins from PMIC(mt6397).
+> In this case,
+> 1. We actually control the register on mt8135 and the DMA/Control Logic
+> is on mt8135, only use pins from mt6397. If set register OFFSET_PATH_DIR
+> bit0 to 1, the I2C data will go/from PMIC pins.
 
-This question is basing on your comment for this patch:
+Sorry but I'm a bit puzzled. mt6397 is the PMIC, right?
+So from the mt6589 datasheet it says:
+"PATH_DIR Decides transmission direction
+If set, the I2C data will go/from PMIC; otherwise, the I2C data will
+go/from main die."
 
-"""
-we can guarantee that the first VTBL record is always
-correct and we don't really need the second one anymore.
-"""
+>From my understanding the I2C bus will be multiplexed depending on
+this bit. The bit decides if it the data will be send to the PMIC or
+to some other I2C peripheral.
 
-I think that means one PEB is enough in your considering.
-So I want to know if you are sure about this. Because
-we use two leb for master_node in ubifs-level. So maybe
-VTBL is like super_node, not master_node, right?
+So we need a mfd and the PMIC device driver sets/unsets the PATH_DIR register.
 
+> 2. We also need mt6397 pinctrl and clk manager driver to make it
+> actually work.
+>
+> After looking up datasheets, the mt6589 and mt8135 support PMIC I2C, the
+> other chips mt6577/mt6582/mt6582/mt8127 do not.
+
+Great, so please fix the dts bindings for the next patch version.
+
+Cheers,
+Matthias
+
+>
+> Thanks!
+>     Xudong.chen
+>
+>
+
+
+
+-- 
+motzblog.wordpress.com
