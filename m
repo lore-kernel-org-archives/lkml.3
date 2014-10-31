@@ -1,111 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161478AbaJaAOn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 20:14:43 -0400
-Received: from mail-qg0-f74.google.com ([209.85.192.74]:44604 "EHLO
-	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161019AbaJaAOl (ORCPT
+	id S1161447AbaJaAXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 20:23:03 -0400
+Received: from any239.rev.netart.pl ([85.128.233.239]:59251 "EHLO
+	any239.rev.netart.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161331AbaJaAXA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 20:14:41 -0400
-From: Ben Zhang <benzh@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Ben Zhang <benzh@chromium.org>
-Subject: [PATCH] pstore/ram: strip ramoops header for correct decompression
-Date: Thu, 30 Oct 2014 17:14:21 -0700
-Message-Id: <1414714461-4999-1-git-send-email-benzh@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Thu, 30 Oct 2014 20:23:00 -0400
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Oct 2014 20:23:00 EDT
+Reply-To: "Doradca Kredytowy" <biuro@centrumpomocykredytowej.pl>
+From: "Doradca Kredytowy" <kredyt@okazyjneoprocentowanie.pl>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-2?Q?Zgoda_na_przes=B3anie_Oferty?=
+Message-ID: <731ADC7DC90EB53EB623BCD5D2AA0A3E@giada>
+Date: Fri, 31 Oct 2014 01:15:02 +0100
+Organization: AnoMail - oprogramowanie do emailingow
+X-Mailer: Microsoft Office Outlook, Build 11.0.5510
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028
+MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-2";
+	reply-type=original
+Content-Transfer-Encoding: 8BIT
+X-Antivirus: avast! (VPS 141030-1, 2014-10-30), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pstore compression/decompression was added during 3.12.
-The ramoops driver prepends a "====timestamp.timestamp-C|D\n"
-header to the compressed record before handing it over to pstore
-driver which doesn't know about the header. In pstore_decompress(),
-the pstore driver reads the first "==" as a zlib header, so the
-decompression always fails. For example, this causes the driver
-to write /dev/pstore/dmesg-ramoops-0.enc.z instead of
-/dev/pstore/dmesg-ramoops-0.
+Witam,
 
-This patch makes the ramoops driver remove the header before
-pstore decompression.
+Mamy propozycje dla osób poszukuj±cych  finansowania w postaci kredytu :
 
-Signed-off-by: Ben Zhang <benzh@chromium.org>
+- Kredyt bez za¶wiadczeñ z ZUS i US,
+- 3 letnie limity w rachunku bie¿±cym,
+- Kredyt na o¶wiadczenie do 500 tys PLN,
+- Kredyt pod zabezpieczenie ( Bez weryfikacji Bik )
+
+W przypadku chêci otrzymania oferty proszê  o odpowied¼ zwrotn± o tre¶ci " TAK "
+
+Powy¿sze zapytanie nie stanowi oferty handlowej. Jest ono jedynie pro¶b± o zgodê na przes³anie do Pañstwa stosownej oferty. Jesli nie ustosunkuj± siê Pañstwo do tej wiadomo¶ci pozytywnie nie otrzymaj± Pañstwo ponownie zapytania.
+
+Krzysztof  Baranowski
+tel. 572-422-182
+
 ---
- fs/pstore/ram.c | 22 +++++++++++++++-------
- 1 file changed, 15 insertions(+), 7 deletions(-)
-
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 3b57443..ec881b3 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -135,25 +135,27 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
- 	return prz;
- }
- 
--static void ramoops_read_kmsg_hdr(char *buffer, struct timespec *time,
-+static int ramoops_read_kmsg_hdr(char *buffer, struct timespec *time,
- 				  bool *compressed)
- {
- 	char data_type;
-+	int header_length = 0;
- 
--	if (sscanf(buffer, RAMOOPS_KERNMSG_HDR "%lu.%lu-%c\n",
--			&time->tv_sec, &time->tv_nsec, &data_type) == 3) {
-+	if (sscanf(buffer, RAMOOPS_KERNMSG_HDR "%lu.%lu-%c\n%n", &time->tv_sec,
-+			&time->tv_nsec, &data_type, &header_length) == 3) {
- 		if (data_type == 'C')
- 			*compressed = true;
- 		else
- 			*compressed = false;
--	} else if (sscanf(buffer, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
--			&time->tv_sec, &time->tv_nsec) == 2) {
-+	} else if (sscanf(buffer, RAMOOPS_KERNMSG_HDR "%lu.%lu\n%n",
-+			&time->tv_sec, &time->tv_nsec, &header_length) == 2) {
- 			*compressed = false;
- 	} else {
- 		time->tv_sec = 0;
- 		time->tv_nsec = 0;
- 		*compressed = false;
- 	}
-+	return header_length;
- }
- 
- static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
-@@ -165,6 +167,7 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 	ssize_t ecc_notice_size;
- 	struct ramoops_context *cxt = psi->data;
- 	struct persistent_ram_zone *prz;
-+	int header_length;
- 
- 	prz = ramoops_get_next_prz(cxt->przs, &cxt->dump_read_cnt,
- 				   cxt->max_dump_cnt, id, type,
-@@ -178,7 +181,13 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 	if (!prz)
- 		return 0;
- 
-+	if (!persistent_ram_old(prz))
-+		return 0;
-+
- 	size = persistent_ram_old_size(prz);
-+	header_length = ramoops_read_kmsg_hdr(persistent_ram_old(prz), time,
-+			compressed);
-+	size -= header_length;
- 
- 	/* ECC correction notice */
- 	ecc_notice_size = persistent_ram_ecc_string(prz, NULL, 0);
-@@ -187,8 +196,7 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 	if (*buf == NULL)
- 		return -ENOMEM;
- 
--	memcpy(*buf, persistent_ram_old(prz), size);
--	ramoops_read_kmsg_hdr(*buf, time, compressed);
-+	memcpy(*buf, (char *)persistent_ram_old(prz) + header_length, size);
- 	persistent_ram_ecc_string(prz, *buf + size, ecc_notice_size + 1);
- 
- 	return size + ecc_notice_size;
--- 
-2.1.0.rc2.206.gedb03e5
+Ta wiadomo¶æ e-mail jest wolna od wirusów i z³o¶liwego oprogramowania, poniewa¿ ochrona avast! Antivirus jest aktywna.
+http://www.avast.com
 
