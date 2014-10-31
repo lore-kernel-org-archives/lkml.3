@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716AbaJaQyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:54:50 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:52717 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226AbaJaQys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:54:48 -0400
-Date: Fri, 31 Oct 2014 10:54:44 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Richard Zhu <r65037@freescale.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [GIT PULL] PCI fixes for v3.18
-Message-ID: <20141031165444.GA6168@google.com>
+	id S1756785AbaJaQzU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:55:20 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:53096
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752337AbaJaQzT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 12:55:19 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] staging: comedi: icp_multi: correct insn_bits returned
+ data for DO
+Thread-Topic: [PATCH] staging: comedi: icp_multi: correct insn_bits returned
+ data for DO
+Thread-Index: AQHP9ReL/9p66cljdUa8MyiBRG9D+pxKbD8A
+Date: Fri, 31 Oct 2014 16:55:17 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D882601A797@P3PWEX4MB008.ex4.secureserver.net>
+References: <1414765947-15464-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1414765947-15464-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Friday, October 31, 2014 7:32 AM, Ian Abbott wrote:
+> For some unfathomable reason, the Comedi `insn_bits` handler for the
+> digital output subdevice (`icp_multi_insn_bits_do()`) writes the digital
+> output register and reads back the unrelated digital input register.
+> Read back the current state of the outputs (held in `s->state`) instead.
+>
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+>  drivers/staging/comedi/drivers/icp_multi.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/icp_multi.c b/drivers/staging/comedi/drivers/icp_multi.c
+> index f4e1c1c..db744c8 100644
+> --- a/drivers/staging/comedi/drivers/icp_multi.c
+> +++ b/drivers/staging/comedi/drivers/icp_multi.c
+> @@ -53,7 +53,7 @@ Configuration options: not applicable, uses PCI auto config
+>  #define ICP_MULTI_AI		2	/* R:   Analogue input data */
+>  #define ICP_MULTI_DAC_CSR	4	/* R/W: DAC command/status register */
+>  #define ICP_MULTI_AO		6	/* R/W: Analogue output data */
+> -#define ICP_MULTI_DI		8	/* R/W: Digital inouts */
+> +#define ICP_MULTI_DI		8	/* R/W: Digital inputs */
+>  #define ICP_MULTI_DO		0x0A	/* R/W: Digital outputs */
+>  #define ICP_MULTI_INT_EN	0x0C	/* R/W: Interrupt enable register */
+>  #define ICP_MULTI_INT_STAT	0x0E	/* R/W: Interrupt status register */
+> @@ -319,7 +319,7 @@ static int icp_multi_insn_bits_do(struct comedi_device *dev,
+>  	if (comedi_dio_update_state(s, data))
+>  		writew(s->state, dev->mmio + ICP_MULTI_DO);
+>  
+> -	data[1] = readw(dev->mmio + ICP_MULTI_DI);
+> +	data[1] = s->state;
+>  
+>  	return insn->n;
+>  }
 
-These changes, intended for v3.18, fix:
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-  - An unintentional sysfs filename change.  5136b2da770d, which appeared
-    in v3.13, changed "enable" to "enabled", and this changes it back.  Old
-    users of "enable" are currently broken and will be helped by this
-    change.  Anything that started to use "enabled" after v3.13 will be
-    broken by this change.  If necessary, we can add a symlink to make both
-    work, but this patch doesn't do that.
-
-    See http://lkml.kernel.org/r/20141030163028.GA22250@kroah.com ("[PATCH]
-    PCI: fix name of 'enable' sysfs file").
-
-  - An i.MX6 clock problem that prevents mx6 nitrogen boards from booting.
-
-  - A mistaken duplicate merge that added a check twice.  Nothing's broken;
-    this just removes the unnecessary code.
-
-Bjorn
-
-
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.18-fixes-1
-
-for you to fetch changes up to d8e7d53a2fc14e0830ab728cb84ee19933d3ac8d:
-
-  PCI: Rename sysfs 'enabled' file back to 'enable' (2014-10-30 11:17:10 -0600)
-
-----------------------------------------------------------------
-PCI updates for v3.18:
-
-  Sysfs
-    - Fix "enable" filename change (Greg Kroah-Hartman)
-
-  PCI device hotplug
-    - Revert duplicate merge (Kamal Mostafa)
-
-  Freescale i.MX6
-    - Wait for clocks to stabilize after ref_en (Richard Zhu)
-
-----------------------------------------------------------------
-Greg Kroah-Hartman (1):
-      PCI: Rename sysfs 'enabled' file back to 'enable'
-
-Kamal Mostafa (1):
-      Revert duplicate "PCI: pciehp: Prevent NULL dereference during probe"
-
-Richard Zhu (1):
-      PCI: imx6: Wait for clocks to stabilize after ref_en
-
- drivers/pci/host/pci-imx6.c       | 13 ++++++++++---
- drivers/pci/hotplug/pciehp_core.c |  7 -------
- drivers/pci/pci-sysfs.c           |  8 ++++----
- 3 files changed, 14 insertions(+), 14 deletions(-)
