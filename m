@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548AbaJaVWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:22:13 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:47336 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaJaVWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:22:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <5453FB8E.8050506@gaast.net>
-References: <543F049F.5090605@gaast.net>
-	<544E235C.5010908@gaast.net>
-	<CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
-	<544EC59D.9080303@gaast.net>
-	<CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
-	<544EDD40.1040107@gaast.net>
-	<CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com>
-	<545027F9.1040703@gaast.net>
-	<CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com>
-	<5450B55E.6010103@gaast.net>
-	<CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com>
-	<545214C5.6070004@gaast.net>
-	<CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com>
-	<5452B3A6.7060100@gaast.net>
-	<CAE9FiQUGm-gvqpzPymxqa6vdfV7xhv8-fb433irZE1AT-eNg9A@mail.gmail.com>
-	<5452C8BE.3060206@gaast.net>
-	<CAE9FiQWd7wC9ijzgObCcGd9QE+U3_wzjQwafXhV=U61hLxGszg@mail.gmail.com>
-	<CAE9FiQXPZdYndp6rTKxLUkkwX=AQtRVH3JJC=xzQfsehtBgOqA@mail.gmail.com>
-	<545358D5.6070903@gaast.net>
-	<CAE9FiQWeZ4AXwwT=NS96Q+FxPz+3Bj5rf8JoRDmJ-RHBhjj78g@mail.gmail.com>
-	<5453FB8E.8050506@gaast.net>
-Date: Fri, 31 Oct 2014 14:22:10 -0700
-X-Google-Sender-Auth: Ti-kXe5KgtRjmACTrZ6rZQkAQj8
-Message-ID: <CAE9FiQX7nhBKBGUm6SkWdA3EUm1MZ3rgWf04+AUPAPgSCNam=w@mail.gmail.com>
-Subject: Re: Machine crashes right *after* ~successful resume
-From: Yinghai Lu <yinghai@kernel.org>
-To: Wilmer van der Gaast <wilmer@gaast.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1759533AbaJaVWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:22:41 -0400
+Received: from mga14.intel.com ([192.55.52.115]:42756 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759247AbaJaVWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 17:22:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
+   d="scan'208";a="614973530"
+Subject: [RFC][PATCH] x86 mpx: give bndX registers actual names
+To: linux-kernel@vger.kernel.org
+Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com, x86@kernel.org,
+        hpa@linux.intel.com, qiaowei.ren@intel.com, fenghua.yu@intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Fri, 31 Oct 2014 14:22:37 -0700
+Message-Id: <20141031212237.30B94E08@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 2:13 PM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
-> On 31-10-14 16:11, Yinghai Lu wrote:
->>
->>
->> Good. Please check if attached one on top of 3.17 only would work too.
->>
-> No luck, sadly. :-( Unsuccessful third resume.
->
-> I forgot to set up the serial console, would that still be useful?
 
-never mind, let me go through suspend/resume code path again.
+From: Dave Hansen <dave.hansen@linux.intel.com>
+
+Consider the bndX MPX registers.  There 4 registers each
+containing a 64-bit lower and a 64-bit upper bound.  That's 8*64
+bits and we declare it thusly:
+
+	struct bndregs_struct {
+		u64 bndregs[8];
+	}
+
+Let's say you want to read the upper bound from the MPX register
+bnd2 out of the xsave buf.  You do:
+
+	bndregno = 2;
+	upper_bound = xsave_buf->bndregs.bndregs[2*bndregno+1];
+
+That kinda sucks.  Every time you access it, you need to know:
+1. Each bndX register is two entries wide in "bndregs"
+2. The lower comes first followed by upper.  We do the +1 to get
+   upper vs. lower.
+
+This replaces the old definition.  You can now access them
+indexed by the register number directly, and with a meaningful
+name for the lower and upper bound:
+
+	bndregno = 2;
+	xsave_buf->bnd[bndregno].ub;
+
+It's now *VERY* clear that there are 4 registers.  The programmer
+now doesn't have to care what order the lower and upper bounds
+are in, and it's harder to get it wrong.
+
+The naming "lb" and "ub" reflects the names found in the Intel
+SDM Extensions documentation of these registers.  I'm not married
+to it.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: x86@kernel.org
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>
+
+---
+
+ b/arch/x86/include/asm/processor.h |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff -puN arch/x86/include/asm/processor.h~mpx-give-regsters-real-names arch/x86/include/asm/processor.h
+--- a/arch/x86/include/asm/processor.h~mpx-give-regsters-real-names	2014-10-31 14:07:40.642004337 -0700
++++ b/arch/x86/include/asm/processor.h	2014-10-31 14:13:53.890456587 -0700
+@@ -374,8 +374,9 @@ struct lwp_struct {
+ 	u8 reserved[128];
+ };
+ 
+-struct bndregs_struct {
+-	u64 bndregs[8];
++struct bndreg_struct {
++	u64 lb; /* lower bound */
++	u64 ub; /* upper bound */
+ } __packed;
+ 
+ struct bndcsr_struct {
+@@ -394,7 +395,7 @@ struct xsave_struct {
+ 	struct xsave_hdr_struct xsave_hdr;
+ 	struct ymmh_struct ymmh;
+ 	struct lwp_struct lwp;
+-	struct bndregs_struct bndregs;
++	struct bndreg_struct bnd[4];
+ 	struct bndcsr_struct bndcsr;
+ 	/* new processor state extensions will go here */
+ } __attribute__ ((packed, aligned (64)));
+_
