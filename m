@@ -1,86 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847AbaJaOBG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:01:06 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:59474 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932761AbaJaOBD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:01:03 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1414763990.2406.72.camel@hadess.net>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: Bastien Nocera <hadess@hadess.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 31 Oct 2014 14:59:50 +0100
-In-Reply-To: <20141030174135.GA13814@amd>
-References: <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd>
-	 <1414420292.30379.55.camel@hadess.net> <54513DDC.2020700@amacapital.net>
-	 <20141029202616.GC5000@thunk.org> <20141029211608.GA32576@amd>
-	 <1414680302.2406.55.camel@hadess.net> <20141030150501.GD31927@thunk.org>
-	 <1414682115.2406.59.camel@hadess.net> <20141030174135.GA13814@amd>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933037AbaJaOBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:01:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38844 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760538AbaJaOAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:00:46 -0400
+From: Juergen Gross <jgross@suse.com>
+To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH 15/17] x86: Respect PAT bit when copying pte values between large and normal pages
+Date: Fri, 31 Oct 2014 15:00:31 +0100
+Message-Id: <1414764033-30011-16-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1414764033-30011-1-git-send-email-jgross@suse.com>
+References: <1414764033-30011-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-30 at 18:41 +0100, Pavel Machek wrote:
-> On Thu 2014-10-30 16:15:15, Bastien Nocera wrote:
-> > On Thu, 2014-10-30 at 11:05 -0400, Theodore Ts'o wrote:
-> > > On Thu, Oct 30, 2014 at 03:45:02PM +0100, Bastien Nocera wrote:
-> > > > > Actually Maemo people (on Nokia N900 and friends) got it right: unlike
-> > > > > android devices, it does not suspend to RAM at any point, and still
-> > > > > has reasonable battery life.
-> > > > 
-> > > > Android devices don't suspend to RAM. Neither do Tizen devices AFAIK.
-> > > 
-> > > Actually, Android devices have historically always suspended the CPU
-> > > whenever there wasn't a wakelock keeping the device to suspend.  You
-> > > might not consider this "suspend to RAM" but in fact it uses the
-> > > identical kernel and hardware facilities as the legacy "suspend to
-> > > RAM" mechanism.
-> > 
-> > I wouldn't consider this "suspend to RAM", but that's because I expect
-> > the firmware to implement most of that. Anyway, that's splitting
-> > hair.
-> 
-> Could you rephrase that?
-> 
-> Anyway, this is "echo mem > /sys/power/state" or
-> suspend-to-RAM. Android does the same, with more tricky wakeup logic. 
-> 
-> > > > I don't think anyone was discussing cell phones in particular in this
-> > > > thread, and knowing when user-space got woken up because of the baseband
-> > > > processor having information for us would still be useful.
-> > > 
-> > > It matters because for laptops, what's important is whether the lid is
-> > > closed or not.  Whether and how the laptop was "woken" is really
-> > > beside the point, as others have argued.  Your counter argument is
-> > > that tablets don't have lids.  But tablets are going to be using
-> > > schemes similar to Android, Tizen, and Maemo, and they are *not* going
-> > > to be using the legacy suspend-to-RAM model, because it's not
-> > > sufficiently good at power saving.
-> > 
-> > There are plenty of tablets around that aren't Android devices. There
-> > are plenty of laptops that can be switched to a tablet mode for which
-> > this wouldn't apply either.
-> 
-> Yes, still the right question is "was the power button pressed while
-> userland was suspended" not "was the system woken by power
-> button"...
+The PAT bit in the ptes is not moved to the correct position when
+copying page protection attributes between entries of different sized
+pages. Translate the ptes according to their page size.
 
-"Was the power button pressed while userland was suspended" is
-presumably also racy.
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Juergen Gross <jgross@suse.com>
+---
+ arch/x86/mm/pageattr.c | 33 +++++++++++++++++++++++----------
+ 1 file changed, 23 insertions(+), 10 deletions(-)
 
->  and yes, I guess kernel should add the "power button" event
-> to the input queue, even if that press was used to wake up the system.
-
-And how would one know whether to suspend or resume in this case?
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index de807c9..6c8e3fd 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -485,14 +485,23 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 
+ 	/*
+ 	 * We are safe now. Check whether the new pgprot is the same:
++	 * Convert protection attributes to 4k-format, as cpa->mask* are set
++	 * up accordingly.
+ 	 */
+ 	old_pte = *kpte;
+-	old_prot = req_prot = pte_pgprot(old_pte);
++	old_prot = req_prot = pgprot_large_2_4k(pte_pgprot(old_pte));
+ 
+ 	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
+ 	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
+ 
+ 	/*
++	 * req_prot is in format of 4k pages. It must be converted to large
++	 * page format: the caching mode includes the PAT bit located at
++	 * different bit positions in the two formats.
++	 */
++	req_prot = pgprot_4k_2_large(req_prot);
++
++	/*
+ 	 * Set the PSE and GLOBAL flags only if the PRESENT flag is
+ 	 * set otherwise pmd_present/pmd_huge will return true even on
+ 	 * a non present pmd. The canon_pgprot will clear _PAGE_GLOBAL
+@@ -585,13 +594,10 @@ __split_large_page(struct cpa_data *cpa, pte_t *kpte, unsigned long address,
+ 
+ 	paravirt_alloc_pte(&init_mm, page_to_pfn(base));
+ 	ref_prot = pte_pgprot(pte_clrhuge(*kpte));
+-	/*
+-	 * If we ever want to utilize the PAT bit, we need to
+-	 * update this function to make sure it's converted from
+-	 * bit 12 to bit 7 when we cross from the 2MB level to
+-	 * the 4K level:
+-	 */
+-	WARN_ON_ONCE(pgprot_val(ref_prot) & _PAGE_PAT_LARGE);
++
++	/* promote PAT bit to correct position */
++	if (level == PG_LEVEL_2M)
++		ref_prot = pgprot_large_2_4k(ref_prot);
+ 
+ #ifdef CONFIG_X86_64
+ 	if (level == PG_LEVEL_1G) {
+@@ -879,6 +885,7 @@ static int populate_pmd(struct cpa_data *cpa,
+ {
+ 	unsigned int cur_pages = 0;
+ 	pmd_t *pmd;
++	pgprot_t pmd_pgprot;
+ 
+ 	/*
+ 	 * Not on a 2M boundary?
+@@ -910,6 +917,8 @@ static int populate_pmd(struct cpa_data *cpa,
+ 	if (num_pages == cur_pages)
+ 		return cur_pages;
+ 
++	pmd_pgprot = pgprot_4k_2_large(pgprot);
++
+ 	while (end - start >= PMD_SIZE) {
+ 
+ 		/*
+@@ -921,7 +930,8 @@ static int populate_pmd(struct cpa_data *cpa,
+ 
+ 		pmd = pmd_offset(pud, start);
+ 
+-		set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE | massage_pgprot(pgprot)));
++		set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE |
++				   massage_pgprot(pmd_pgprot)));
+ 
+ 		start	  += PMD_SIZE;
+ 		cpa->pfn  += PMD_SIZE;
+@@ -949,6 +959,7 @@ static int populate_pud(struct cpa_data *cpa, unsigned long start, pgd_t *pgd,
+ 	pud_t *pud;
+ 	unsigned long end;
+ 	int cur_pages = 0;
++	pgprot_t pud_pgprot;
+ 
+ 	end = start + (cpa->numpages << PAGE_SHIFT);
+ 
+@@ -986,12 +997,14 @@ static int populate_pud(struct cpa_data *cpa, unsigned long start, pgd_t *pgd,
+ 		return cur_pages;
+ 
+ 	pud = pud_offset(pgd, start);
++	pud_pgprot = pgprot_4k_2_large(pgprot);
+ 
+ 	/*
+ 	 * Map everything starting from the Gb boundary, possibly with 1G pages
+ 	 */
+ 	while (end - start >= PUD_SIZE) {
+-		set_pud(pud, __pud(cpa->pfn | _PAGE_PSE | massage_pgprot(pgprot)));
++		set_pud(pud, __pud(cpa->pfn | _PAGE_PSE |
++				   massage_pgprot(pud_pgprot)));
+ 
+ 		start	  += PUD_SIZE;
+ 		cpa->pfn  += PUD_SIZE;
+-- 
+1.8.4.5
 
