@@ -1,232 +1,502 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758868AbaJaT6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:58:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33131 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323AbaJaT6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:58:08 -0400
-Message-ID: <1414782674.27420.320.camel@ul30vt.home>
-Subject: Re: [PATCH v9 10/19] vfio/platform: return IRQ info
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:VFIO DRIVER" <kvm@vger.kernel.org>
-Date: Fri, 31 Oct 2014 13:11:14 -0600
-In-Reply-To: <1414433284-31719-11-git-send-email-a.motakis@virtualopensystems.com>
-References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1414433284-31719-11-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758989AbaJaUAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:00:31 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39275 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710AbaJaUA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 16:00:29 -0400
+Date: Fri, 31 Oct 2014 15:58:17 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2014-10-31
+Message-ID: <20141031195817.GC3768@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 19:07 +0100, Antonios Motakis wrote:
-> Return information for the interrupts exposed by the device.
-> This patch extends VFIO_DEVICE_GET_INFO with the number of IRQs
-> and enables VFIO_DEVICE_GET_IRQ_INFO.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/Makefile                |  2 +-
->  drivers/vfio/platform/vfio_platform_common.c  | 31 ++++++++++++--
->  drivers/vfio/platform/vfio_platform_irq.c     | 59 +++++++++++++++++++++++++++
->  drivers/vfio/platform/vfio_platform_private.h | 10 +++++
->  4 files changed, 97 insertions(+), 5 deletions(-)
->  create mode 100644 drivers/vfio/platform/vfio_platform_irq.c
-> 
-> diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
-> index 1957170..81de144 100644
-> --- a/drivers/vfio/platform/Makefile
-> +++ b/drivers/vfio/platform/Makefile
-> @@ -1,5 +1,5 @@
->  
-> -vfio-platform-y := vfio_platform.o vfio_platform_common.o
-> +vfio-platform-y := vfio_platform.o vfio_platform_common.o vfio_platform_irq.o
->  
->  obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
->  
-> diff --git a/drivers/vfio/platform/vfio_platform_common.c b/drivers/vfio/platform/vfio_platform_common.c
-> index aeaaec9..5f2c205 100644
-> --- a/drivers/vfio/platform/vfio_platform_common.c
-> +++ b/drivers/vfio/platform/vfio_platform_common.c
-> @@ -105,6 +105,7 @@ static void vfio_platform_release(void *device_data)
->  
->  	if (!(--vdev->refcnt)) {
->  		vfio_platform_regions_cleanup(vdev);
-> +		vfio_platform_irq_cleanup(vdev);
->  	}
->  
->  	mutex_unlock(&driver_lock);
-> @@ -126,6 +127,10 @@ static int vfio_platform_open(void *device_data)
->  		ret = vfio_platform_regions_init(vdev);
->  		if (ret)
->  			goto err_reg;
-> +
-> +		ret = vfio_platform_irq_init(vdev);
-> +		if (ret)
-> +			goto err_irq;
->  	}
->  
->  	vdev->refcnt++;
-> @@ -133,6 +138,8 @@ static int vfio_platform_open(void *device_data)
->  	mutex_unlock(&driver_lock);
->  	return 0;
->  
-> +err_irq:
-> +	vfio_platform_regions_cleanup(vdev);
->  err_reg:
->  	mutex_unlock(&driver_lock);
->  	module_put(THIS_MODULE);
-> @@ -158,7 +165,7 @@ static long vfio_platform_ioctl(void *device_data,
->  
->  		info.flags = vdev->flags;
->  		info.num_regions = vdev->num_regions;
-> -		info.num_irqs = 0;
-> +		info.num_irqs = vdev->num_irqs;
->  
->  		return copy_to_user((void __user *)arg, &info, minsz);
->  
-> @@ -183,10 +190,26 @@ static long vfio_platform_ioctl(void *device_data,
->  
->  		return copy_to_user((void __user *)arg, &info, minsz);
->  
-> -	} else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
-> -		return -EINVAL;
-> +	} else if (cmd == VFIO_DEVICE_GET_IRQ_INFO) {
-> +		struct vfio_irq_info info;
-> +
-> +		minsz = offsetofend(struct vfio_irq_info, count);
-> +
-> +		if (copy_from_user(&info, (void __user *)arg, minsz))
-> +			return -EFAULT;
-> +
-> +		if (info.argsz < minsz)
-> +			return -EINVAL;
-> +
-> +		if (info.index >= vdev->num_irqs)
-> +			return -EINVAL;
-> +
-> +		info.flags = vdev->irqs[info.index].flags;
-> +		info.count = vdev->irqs[info.index].count;
-> +
-> +		return copy_to_user((void __user *)arg, &info, minsz);
->  
-> -	else if (cmd == VFIO_DEVICE_SET_IRQS)
-> +	} else if (cmd == VFIO_DEVICE_SET_IRQS)
->  		return -EINVAL;
->  
->  	else if (cmd == VFIO_DEVICE_RESET)
-> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
-> new file mode 100644
-> index 0000000..d99c71c
-> --- /dev/null
-> +++ b/drivers/vfio/platform/vfio_platform_irq.c
-> @@ -0,0 +1,59 @@
-> +/*
-> + * VFIO platform devices interrupt handling
-> + *
-> + * Copyright (C) 2013 - Virtual Open Systems
-> + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/eventfd.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/iommu.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/notifier.h>
-> +#include <linux/pm_runtime.h>
-> +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/vfio.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/irq.h>
-> +
-> +#include "vfio_platform_private.h"
-> +
-> +int vfio_platform_irq_init(struct vfio_platform_device *vdev)
-> +{
-> +	int cnt = 0, i;
-> +
-> +	while (vdev->get_irq(vdev, cnt) > 0)
 
-For platform devices this is just a wrapper around platform_get_irq(),
-which sort of seems like it can return 0 as a valid irq.  Am I wrong
-about that?  If 0 can be valid, AMBA would need to update it's error
-return value too.
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +		cnt++;
-> +
-> +	vdev->irqs = kcalloc(cnt, sizeof(struct vfio_platform_irq), GFP_KERNEL);
-> +	if (!vdev->irqs)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < cnt; i++) {
-> +		vdev->irqs[i].flags = 0;
-> +		vdev->irqs[i].count = 1;
-> +	}
-> +
-> +	vdev->num_irqs = cnt;
-> +
-> +	return 0;
-> +}
-> +
-> +void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
-> +{
-> +	vdev->num_irqs = 0;
-> +	kfree(vdev->irqs);
-> +}
-> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
-> index 1f251b2..3a29a72 100644
-> --- a/drivers/vfio/platform/vfio_platform_private.h
-> +++ b/drivers/vfio/platform/vfio_platform_private.h
-> @@ -24,6 +24,11 @@
->  #define VFIO_PLATFORM_INDEX_TO_OFFSET(index)	\
->  	((u64)(index) << VFIO_PLATFORM_OFFSET_SHIFT)
->  
-> +struct vfio_platform_irq {
-> +	u32			flags;
-> +	u32			count;
-> +};
-> +
->  struct vfio_platform_region {
->  	u64			addr;
->  	resource_size_t		size;
-> @@ -37,6 +42,8 @@ struct vfio_platform_region {
->  struct vfio_platform_device {
->  	struct vfio_platform_region	*regions;
->  	u32				num_regions;
-> +	struct vfio_platform_irq	*irqs;
-> +	u32				num_irqs;
->  	int				refcnt;
->  
->  	/*
-> @@ -56,4 +63,7 @@ extern int vfio_platform_probe_common(struct vfio_platform_device *vdev,
->  extern struct vfio_platform_device *vfio_platform_remove_common
->  				     (struct device *dev);
->  
-> +extern int vfio_platform_irq_init(struct vfio_platform_device *vdev);
-> +extern void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev);
-> +
->  #endif /* VFIO_PLATFORM_PRIVATE_H */
+Dave,
+
+Please pull this small batch of spooky fixes intended for the 3.18
+stream...boo!
+
+Cyril Brulebois adds an rt2x00 device ID.
+
+Dan Carpenter provides a one-line masking fix for an ath9k debugfs
+entry.
+
+Larry Finger gives us a package of small rtlwifi fixes which add some
+bits that were left out of some feature updates that were included
+in the merge window.  Hopefully this isn't a sign that the rtlwifi
+base is getting too big...
+
+Marc Yang brings a fix for a temporary mwifiex stall when doing 11n
+RX reordering.
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
+---
+
+The following changes since commit 99c814066e75d09e6a38574c6c395f022a04b730:
+
+  Merge tag 'mac80211-for-john-2014-10-23' of git://git.kernel.org/pub/scm/=
+linux/kernel/git/jberg/mac80211 (2014-10-27 13:38:15 -0400)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git tags/=
+master-2014-10-30
 
+for you to fetch changes up to 75a916e1944fea8347d2245c62567187e4eff9dd:
+
+  rtlwifi: rtl8192se: Fix firmware loading (2014-10-30 15:00:23 -0400)
+
+----------------------------------------------------------------
+Cyril Brulebois (1):
+      wireless: rt2x00: add new rt2800usb device
+
+Dan Carpenter (1):
+      ath9k: fix some debugfs output
+
+Larry Finger (5):
+      rtlwifi: rtl8192ce: rtl8192de: rtl8192se: Fix handling for missing ge=
+t_btc_status
+      rtlwifi: rtl8192se: Fix duplicate calls to ieee80211_register_hw()
+      rtlwifi: rtl8192se: Add missing section to read descriptor setting
+      rtlwifi: rtl8192ce: Add missing section to read descriptor setting
+      rtlwifi: rtl8192se: Fix firmware loading
+
+Marc Yang (1):
+      mwifiex: restart rxreorder timer correctly
+
+ drivers/net/wireless/ath/ath9k/debug.c       |  2 +-
+ drivers/net/wireless/mwifiex/11n_rxreorder.c | 52 +++++++++++++++++++++---=
+----
+ drivers/net/wireless/mwifiex/11n_rxreorder.h |  2 ++
+ drivers/net/wireless/mwifiex/main.h          |  1 +
+ drivers/net/wireless/rt2x00/rt2800usb.c      |  1 +
+ drivers/net/wireless/rtlwifi/core.c          |  6 ++++
+ drivers/net/wireless/rtlwifi/core.h          |  1 +
+ drivers/net/wireless/rtlwifi/rtl8192ce/def.h |  2 ++
+ drivers/net/wireless/rtlwifi/rtl8192ce/sw.c  |  1 +
+ drivers/net/wireless/rtlwifi/rtl8192ce/trx.c |  3 ++
+ drivers/net/wireless/rtlwifi/rtl8192de/sw.c  |  1 +
+ drivers/net/wireless/rtlwifi/rtl8192se/def.h |  2 ++
+ drivers/net/wireless/rtlwifi/rtl8192se/sw.c  | 22 ++----------
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c |  3 ++
+ 14 files changed, 67 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/debug.c b/drivers/net/wireless/=
+ath/ath9k/debug.c
+index 46f20a309b5f..5c45e787814e 100644
+--- a/drivers/net/wireless/ath/ath9k/debug.c
++++ b/drivers/net/wireless/ath/ath9k/debug.c
+@@ -455,7 +455,7 @@ static ssize_t read_file_dma(struct file *file, char __=
+user *user_buf,
+ 			 "%2d          %2x      %1x     %2x           %2x\n",
+ 			 i, (*qcuBase & (0x7 << qcuOffset)) >> qcuOffset,
+ 			 (*qcuBase & (0x8 << qcuOffset)) >> (qcuOffset + 3),
+-			 val[2] & (0x7 << (i * 3)) >> (i * 3),
++			 (val[2] & (0x7 << (i * 3))) >> (i * 3),
+ 			 (*dcuBase & (0x1f << dcuOffset)) >> dcuOffset);
+ 	}
+=20
+diff --git a/drivers/net/wireless/mwifiex/11n_rxreorder.c b/drivers/net/wir=
+eless/mwifiex/11n_rxreorder.c
+index 40057079ffb9..5ef5a0eeba50 100644
+--- a/drivers/net/wireless/mwifiex/11n_rxreorder.c
++++ b/drivers/net/wireless/mwifiex/11n_rxreorder.c
+@@ -196,6 +196,7 @@ mwifiex_del_rx_reorder_entry(struct mwifiex_private *pr=
+iv,
+ 	mwifiex_11n_dispatch_pkt_until_start_win(priv, tbl, start_win);
+=20
+ 	del_timer_sync(&tbl->timer_context.timer);
++	tbl->timer_context.timer_is_set =3D false;
+=20
+ 	spin_lock_irqsave(&priv->rx_reorder_tbl_lock, flags);
+ 	list_del(&tbl->list);
+@@ -297,6 +298,7 @@ mwifiex_flush_data(unsigned long context)
+ 		(struct reorder_tmr_cnxt *) context;
+ 	int start_win, seq_num;
+=20
++	ctx->timer_is_set =3D false;
+ 	seq_num =3D mwifiex_11n_find_last_seq_num(ctx);
+=20
+ 	if (seq_num < 0)
+@@ -385,6 +387,7 @@ mwifiex_11n_create_rx_reorder_tbl(struct mwifiex_privat=
+e *priv, u8 *ta,
+=20
+ 	new_node->timer_context.ptr =3D new_node;
+ 	new_node->timer_context.priv =3D priv;
++	new_node->timer_context.timer_is_set =3D false;
+=20
+ 	init_timer(&new_node->timer_context.timer);
+ 	new_node->timer_context.timer.function =3D mwifiex_flush_data;
+@@ -399,6 +402,22 @@ mwifiex_11n_create_rx_reorder_tbl(struct mwifiex_priva=
+te *priv, u8 *ta,
+ 	spin_unlock_irqrestore(&priv->rx_reorder_tbl_lock, flags);
+ }
+=20
++static void
++mwifiex_11n_rxreorder_timer_restart(struct mwifiex_rx_reorder_tbl *tbl)
++{
++	u32 min_flush_time;
++
++	if (tbl->win_size >=3D MWIFIEX_BA_WIN_SIZE_32)
++		min_flush_time =3D MIN_FLUSH_TIMER_15_MS;
++	else
++		min_flush_time =3D MIN_FLUSH_TIMER_MS;
++
++	mod_timer(&tbl->timer_context.timer,
++		  jiffies + msecs_to_jiffies(min_flush_time * tbl->win_size));
++
++	tbl->timer_context.timer_is_set =3D true;
++}
++
+ /*
+  * This function prepares command for adding a BA request.
+  *
+@@ -523,31 +542,31 @@ int mwifiex_11n_rx_reorder_pkt(struct mwifiex_private=
+ *priv,
+ 				u8 *ta, u8 pkt_type, void *payload)
+ {
+ 	struct mwifiex_rx_reorder_tbl *tbl;
+-	int start_win, end_win, win_size;
++	int prev_start_win, start_win, end_win, win_size;
+ 	u16 pkt_index;
+ 	bool init_window_shift =3D false;
++	int ret =3D 0;
+=20
+ 	tbl =3D mwifiex_11n_get_rx_reorder_tbl(priv, tid, ta);
+ 	if (!tbl) {
+ 		if (pkt_type !=3D PKT_TYPE_BAR)
+ 			mwifiex_11n_dispatch_pkt(priv, payload);
+-		return 0;
++		return ret;
+ 	}
+=20
+ 	if ((pkt_type =3D=3D PKT_TYPE_AMSDU) && !tbl->amsdu) {
+ 		mwifiex_11n_dispatch_pkt(priv, payload);
+-		return 0;
++		return ret;
+ 	}
+=20
+ 	start_win =3D tbl->start_win;
++	prev_start_win =3D start_win;
+ 	win_size =3D tbl->win_size;
+ 	end_win =3D ((start_win + win_size) - 1) & (MAX_TID_VALUE - 1);
+ 	if (tbl->flags & RXREOR_INIT_WINDOW_SHIFT) {
+ 		init_window_shift =3D true;
+ 		tbl->flags &=3D ~RXREOR_INIT_WINDOW_SHIFT;
+ 	}
+-	mod_timer(&tbl->timer_context.timer,
+-		  jiffies + msecs_to_jiffies(MIN_FLUSH_TIMER_MS * win_size));
+=20
+ 	if (tbl->flags & RXREOR_FORCE_NO_DROP) {
+ 		dev_dbg(priv->adapter->dev,
+@@ -568,11 +587,14 @@ int mwifiex_11n_rx_reorder_pkt(struct mwifiex_private=
+ *priv,
+ 		if ((start_win + TWOPOW11) > (MAX_TID_VALUE - 1)) {
+ 			if (seq_num >=3D ((start_win + TWOPOW11) &
+ 					(MAX_TID_VALUE - 1)) &&
+-			    seq_num < start_win)
+-				return -1;
++			    seq_num < start_win) {
++				ret =3D -1;
++				goto done;
++			}
+ 		} else if ((seq_num < start_win) ||
+-			   (seq_num > (start_win + TWOPOW11))) {
+-			return -1;
++			   (seq_num >=3D (start_win + TWOPOW11))) {
++			ret =3D -1;
++			goto done;
+ 		}
+ 	}
+=20
+@@ -601,8 +623,10 @@ int mwifiex_11n_rx_reorder_pkt(struct mwifiex_private =
+*priv,
+ 		else
+ 			pkt_index =3D (seq_num+MAX_TID_VALUE) - start_win;
+=20
+-		if (tbl->rx_reorder_ptr[pkt_index])
+-			return -1;
++		if (tbl->rx_reorder_ptr[pkt_index]) {
++			ret =3D -1;
++			goto done;
++		}
+=20
+ 		tbl->rx_reorder_ptr[pkt_index] =3D payload;
+ 	}
+@@ -613,7 +637,11 @@ int mwifiex_11n_rx_reorder_pkt(struct mwifiex_private =
+*priv,
+ 	 */
+ 	mwifiex_11n_scan_and_dispatch(priv, tbl);
+=20
+-	return 0;
++done:
++	if (!tbl->timer_context.timer_is_set ||
++	    prev_start_win !=3D tbl->start_win)
++		mwifiex_11n_rxreorder_timer_restart(tbl);
++	return ret;
+ }
+=20
+ /*
+diff --git a/drivers/net/wireless/mwifiex/11n_rxreorder.h b/drivers/net/wir=
+eless/mwifiex/11n_rxreorder.h
+index 3a87bb0e3a62..63ecea89b4ab 100644
+--- a/drivers/net/wireless/mwifiex/11n_rxreorder.h
++++ b/drivers/net/wireless/mwifiex/11n_rxreorder.h
+@@ -21,6 +21,8 @@
+ #define _MWIFIEX_11N_RXREORDER_H_
+=20
+ #define MIN_FLUSH_TIMER_MS		50
++#define MIN_FLUSH_TIMER_15_MS		15
++#define MWIFIEX_BA_WIN_SIZE_32		32
+=20
+ #define PKT_TYPE_BAR 0xE7
+ #define MAX_TID_VALUE			(2 << 11)
+diff --git a/drivers/net/wireless/mwifiex/main.h b/drivers/net/wireless/mwi=
+fiex/main.h
+index e2635747d966..f55658d15c60 100644
+--- a/drivers/net/wireless/mwifiex/main.h
++++ b/drivers/net/wireless/mwifiex/main.h
+@@ -592,6 +592,7 @@ struct reorder_tmr_cnxt {
+ 	struct timer_list timer;
+ 	struct mwifiex_rx_reorder_tbl *ptr;
+ 	struct mwifiex_private *priv;
++	u8 timer_is_set;
+ };
+=20
+ struct mwifiex_rx_reorder_tbl {
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless=
+/rt2x00/rt2800usb.c
+index 573897b8e878..8444313eabe2 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -1111,6 +1111,7 @@ static struct usb_device_id rt2800usb_device_table[] =
+=3D {
+ 	/* Ovislink */
+ 	{ USB_DEVICE(0x1b75, 0x3071) },
+ 	{ USB_DEVICE(0x1b75, 0x3072) },
++	{ USB_DEVICE(0x1b75, 0xa200) },
+ 	/* Para */
+ 	{ USB_DEVICE(0x20b8, 0x8888) },
+ 	/* Pegatron */
+diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtl=
+wifi/core.c
+index f6179bc06086..07dae0d44abc 100644
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -1828,3 +1828,9 @@ const struct ieee80211_ops rtl_ops =3D {
+ 	.flush =3D rtl_op_flush,
+ };
+ EXPORT_SYMBOL_GPL(rtl_ops);
++
++bool rtl_btc_status_false(void)
++{
++	return false;
++}
++EXPORT_SYMBOL_GPL(rtl_btc_status_false);
+diff --git a/drivers/net/wireless/rtlwifi/core.h b/drivers/net/wireless/rtl=
+wifi/core.h
+index 59cd3b9dca25..624e1dc16d31 100644
+--- a/drivers/net/wireless/rtlwifi/core.h
++++ b/drivers/net/wireless/rtlwifi/core.h
+@@ -42,5 +42,6 @@ void rtl_rfreg_delay(struct ieee80211_hw *hw, enum radio_=
+path rfpath, u32 addr,
+ 		     u32 mask, u32 data);
+ void rtl_bb_delay(struct ieee80211_hw *hw, u32 addr, u32 data);
+ bool rtl_cmd_send_packet(struct ieee80211_hw *hw, struct sk_buff *skb);
++bool rtl_btc_status_false(void);
+=20
+ #endif
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/def.h b/drivers/net/wir=
+eless/rtlwifi/rtl8192ce/def.h
+index 831df101d7b7..9b660df6fd71 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/def.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/def.h
+@@ -114,6 +114,8 @@
+ 	LE_BITS_TO_4BYTE(((__pcmdfbhdr) + 4), 16, 4)
+ #define	GET_C2H_CMD_FEEDBACK_CCX_SEQ(__pcmdfbhdr)	\
+ 	LE_BITS_TO_4BYTE(((__pcmdfbhdr) + 4), 20, 12)
++#define GET_RX_STATUS_DESC_BUFF_ADDR(__pdesc)			\
++	SHIFT_AND_MASK_LE(__pdesc + 24, 0, 32)
+=20
+ #define CHIP_VER_B			BIT(4)
+ #define CHIP_BONDING_IDENTIFIER(_value) (((_value) >> 22) & 0x3)
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c b/drivers/net/wire=
+less/rtlwifi/rtl8192ce/sw.c
+index d86b5b566444..46ea07605eb4 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+@@ -244,6 +244,7 @@ static struct rtl_hal_ops rtl8192ce_hal_ops =3D {
+ 	.phy_lc_calibrate =3D _rtl92ce_phy_lc_calibrate,
+ 	.phy_set_bw_mode_callback =3D rtl92ce_phy_set_bw_mode_callback,
+ 	.dm_dynamic_txpower =3D rtl92ce_dm_dynamic_txpower,
++	.get_btc_status =3D rtl_btc_status_false,
+ };
+=20
+ static struct rtl_mod_params rtl92ce_mod_params =3D {
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c b/drivers/net/wir=
+eless/rtlwifi/rtl8192ce/trx.c
+index 2fb9c7acb76a..dc3d20b17a26 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
+@@ -728,6 +728,9 @@ u32 rtl92ce_get_desc(u8 *p_desc, bool istx, u8 desc_nam=
+e)
+ 		case HW_DESC_RXPKT_LEN:
+ 			ret =3D GET_RX_DESC_PKT_LEN(pdesc);
+ 			break;
++		case HW_DESC_RXBUFF_ADDR:
++			ret =3D GET_RX_STATUS_DESC_BUFF_ADDR(pdesc);
++			break;
+ 		default:
+ 			RT_ASSERT(false, "ERR rxdesc :%d not process\n",
+ 				  desc_name);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/sw.c b/drivers/net/wire=
+less/rtlwifi/rtl8192de/sw.c
+index edab5a5351b5..a0aba088259a 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/sw.c
+@@ -251,6 +251,7 @@ static struct rtl_hal_ops rtl8192de_hal_ops =3D {
+ 	.get_rfreg =3D rtl92d_phy_query_rf_reg,
+ 	.set_rfreg =3D rtl92d_phy_set_rf_reg,
+ 	.linked_set_reg =3D rtl92d_linked_set_reg,
++	.get_btc_status =3D rtl_btc_status_false,
+ };
+=20
+ static struct rtl_mod_params rtl92de_mod_params =3D {
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/def.h b/drivers/net/wir=
+eless/rtlwifi/rtl8192se/def.h
+index 83c98674bfd3..6e7a70b43949 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/def.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/def.h
+@@ -446,6 +446,8 @@
+ /* DWORD 6 */
+ #define SET_RX_STATUS__DESC_BUFF_ADDR(__pdesc, __val)	\
+ 	SET_BITS_OFFSET_LE(__pdesc + 24, 0, 32, __val)
++#define GET_RX_STATUS_DESC_BUFF_ADDR(__pdesc)			\
++	SHIFT_AND_MASK_LE(__pdesc + 24, 0, 32)
+=20
+ #define SE_RX_HAL_IS_CCK_RATE(_pdesc)\
+ 	(GET_RX_STATUS_DESC_RX_MCS(_pdesc) =3D=3D DESC92_RATE1M ||	\
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wire=
+less/rtlwifi/rtl8192se/sw.c
+index 1bff2a0f7600..aadba29c167a 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+@@ -87,11 +87,8 @@ static void rtl92s_init_aspm_vars(struct ieee80211_hw *h=
+w)
+ static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
+ {
+ 	struct ieee80211_hw *hw =3D context;
+-	struct rtl_pci_priv *pcipriv =3D rtl_pcipriv(hw);
+ 	struct rtl_priv *rtlpriv =3D rtl_priv(hw);
+-	struct rtl_pci *rtlpci =3D rtl_pcidev(pcipriv);
+ 	struct rt_firmware *pfirmware =3D NULL;
+-	int err;
+=20
+ 	RT_TRACE(rtlpriv, COMP_ERR, DBG_LOUD,
+ 			 "Firmware callback routine entered!\n");
+@@ -112,20 +109,6 @@ static void rtl92se_fw_cb(const struct firmware *firmw=
+are, void *context)
+ 	memcpy(pfirmware->sz_fw_tmpbuffer, firmware->data, firmware->size);
+ 	pfirmware->sz_fw_tmpbufferlen =3D firmware->size;
+ 	release_firmware(firmware);
+-
+-	err =3D ieee80211_register_hw(hw);
+-	if (err) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 "Can't register mac80211 hw\n");
+-		return;
+-	} else {
+-		rtlpriv->mac80211.mac80211_registered =3D 1;
+-	}
+-	rtlpci->irq_alloc =3D 1;
+-	set_bit(RTL_STATUS_INTERFACE_START, &rtlpriv->status);
+-
+-	/*init rfkill */
+-	rtl_init_rfkill(hw);
+ }
+=20
+ static int rtl92s_init_sw_vars(struct ieee80211_hw *hw)
+@@ -226,8 +209,8 @@ static int rtl92s_init_sw_vars(struct ieee80211_hw *hw)
+ 	if (!rtlpriv->rtlhal.pfirmware)
+ 		return 1;
+=20
+-	rtlpriv->max_fw_size =3D RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE;
+-
++	rtlpriv->max_fw_size =3D RTL8190_MAX_FIRMWARE_CODE_SIZE*2 +
++			       sizeof(struct fw_hdr);
+ 	pr_info("Driver for Realtek RTL8192SE/RTL8191SE\n"
+ 		"Loading firmware %s\n", rtlpriv->cfg->fw_name);
+ 	/* request fw */
+@@ -294,6 +277,7 @@ static struct rtl_hal_ops rtl8192se_hal_ops =3D {
+ 	.set_bbreg =3D rtl92s_phy_set_bb_reg,
+ 	.get_rfreg =3D rtl92s_phy_query_rf_reg,
+ 	.set_rfreg =3D rtl92s_phy_set_rf_reg,
++	.get_btc_status =3D rtl_btc_status_false,
+ };
+=20
+ static struct rtl_mod_params rtl92se_mod_params =3D {
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c b/drivers/net/wir=
+eless/rtlwifi/rtl8192se/trx.c
+index b358ebce8942..672fd3b02835 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
+@@ -640,6 +640,9 @@ u32 rtl92se_get_desc(u8 *desc, bool istx, u8 desc_name)
+ 		case HW_DESC_RXPKT_LEN:
+ 			ret =3D GET_RX_STATUS_DESC_PKT_LEN(desc);
+ 			break;
++		case HW_DESC_RXBUFF_ADDR:
++			ret =3D GET_RX_STATUS_DESC_BUFF_ADDR(desc);
++			break;
+ 		default:
+ 			RT_ASSERT(false, "ERR rxdesc :%d not process\n",
+ 				  desc_name);
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
+
+--6c2NcOVqGQ03X4Wi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUU+nYAAoJEJctW/TcYTgGl+8P/jNP+7lld84jnK9nMy5U1WOI
+TbvOr1/QnE2cbKoeSqxl9GVvPd3F9+zwoqZdaSLnwyxp9BnTeGnFHyaYNj1TEeEp
+UaAEMbMWXAU+uyDwePQxSB2q8Cosws2B7EcrBVokCgQQCS09W1K7NdQhRakbYsGv
+u0vUJqHQ5wK8k7hf030LgMg568xCV0xHKuJ3U5bWCLR/eGzImW2VNjKtMj9hXLH4
+16aRHQ1RK0yD1nNhmBEcCRiRJxhJq3Y/16acYEEYKjbEkhyhi5gFICvwvZMEjuRU
+69PZbro4/SYnau4H25I0LLZQHvj5TeunSqun2VZm71KOrtouDfW1W5iGSRqFCMgC
+6MXHKE8zYjS5Chrw0hVIfsXKS42GJRVzEo333SNSb+Tmo4+YVJijIEeUooKdsjHn
+7P2La7Ka3jGvkz7oTYkpN1akG2F1T4fcdmPUcKVQL9ft8GbBxqW6fRtx4YZb6eWk
++HR4Pplw+VSw7/VMbwW0hKUo5DsqqEAPgq0R4YMDYjq8tQag04DYu+rj+RaLg+Xz
+VDgvwwq/l5vEsh0hfWuArp4hbRfVpdI9Jka0Kk5sQR3Lxm5NTp8thDR9s8Wg9zZa
+1mFhOAf0dX+ui7opVy8DPSL4leM4IQdOsz4BLcem+NWg6O58XxgsWLoD6DD5zACh
+qqqECONsOaBReHAUoJ4w
+=u8CC
+-----END PGP SIGNATURE-----
+
+--6c2NcOVqGQ03X4Wi--
