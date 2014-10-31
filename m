@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759533AbaJaVWl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:22:41 -0400
-Received: from mga14.intel.com ([192.55.52.115]:42756 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759247AbaJaVWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:22:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="614973530"
-Subject: [RFC][PATCH] x86 mpx: give bndX registers actual names
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com, x86@kernel.org,
-        hpa@linux.intel.com, qiaowei.ren@intel.com, fenghua.yu@intel.com
-From: Dave Hansen <dave@sr71.net>
-Date: Fri, 31 Oct 2014 14:22:37 -0700
-Message-Id: <20141031212237.30B94E08@viggo.jf.intel.com>
+	id S1758408AbaJaVWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:22:23 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:49508 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757131AbaJaVWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 17:22:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141031122824.GZ12020@console-pimps.org>
+References: <20141030222814.GF15602@worktop.programming.kicks-ass.net>
+	<alpine.DEB.2.10.1410302111150.2766@pianoman.cluster.toy>
+	<20141031072109.GD12706@worktop.programming.kicks-ass.net>
+	<20141031092713.GA23124@gmail.com>
+	<20141031122824.GZ12020@console-pimps.org>
+Date: Fri, 31 Oct 2014 22:22:19 +0100
+Message-ID: <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
+Subject: Re: [RFD] perf syscall error handling
+From: Stephane Eranian <eranian@google.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Vince Weaver <vince@deater.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+On Fri, Oct 31, 2014 at 1:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> On Fri, 31 Oct, at 10:27:13AM, Ingo Molnar wrote:
+>>
+>>  - user-space gets back the regular errno (-EOPNOTSUPP or -ENOSYS
+>>    or -EINVAL, etc.) and a string. Strings are really the most
+>>    helpful information, because tools can just print that. They
+>>    can also match on specific strings and programmatically react
+>>    to them if they want to: we can promise to not arbitrarily
+>>    change error strings once they are introduced. (but even if
+>>    they change, user-space can still print them out.)
+>
+> I guess we'd run into a problem if userspace doesn't want to just print
+> the kernel string but instead wants to parse it in some fashion.
+>
+> That may or may not be a problem in practice, Vince can probably comment
+> on that. I'm just thinking along the lines of making the perf syscall
+> interface as useful as possible for tools other than tools/perf.
+>
+Maybe I missed something in the earlier thread, but I am trying to understand
+why perf_event_open() would need such extended error retrieval system when
+no other syscall does.
 
-Consider the bndX MPX registers.  There 4 registers each
-containing a 64-bit lower and a 64-bit upper bound.  That's 8*64
-bits and we declare it thusly:
-
-	struct bndregs_struct {
-		u64 bndregs[8];
-	}
-
-Let's say you want to read the upper bound from the MPX register
-bnd2 out of the xsave buf.  You do:
-
-	bndregno = 2;
-	upper_bound = xsave_buf->bndregs.bndregs[2*bndregno+1];
-
-That kinda sucks.  Every time you access it, you need to know:
-1. Each bndX register is two entries wide in "bndregs"
-2. The lower comes first followed by upper.  We do the +1 to get
-   upper vs. lower.
-
-This replaces the old definition.  You can now access them
-indexed by the register number directly, and with a meaningful
-name for the lower and upper bound:
-
-	bndregno = 2;
-	xsave_buf->bnd[bndregno].ub;
-
-It's now *VERY* clear that there are 4 registers.  The programmer
-now doesn't have to care what order the lower and upper bounds
-are in, and it's harder to get it wrong.
-
-The naming "lb" and "ub" reflects the names found in the Intel
-SDM Extensions documentation of these registers.  I'm not married
-to it.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: x86@kernel.org
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>
-
----
-
- b/arch/x86/include/asm/processor.h |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff -puN arch/x86/include/asm/processor.h~mpx-give-regsters-real-names arch/x86/include/asm/processor.h
---- a/arch/x86/include/asm/processor.h~mpx-give-regsters-real-names	2014-10-31 14:07:40.642004337 -0700
-+++ b/arch/x86/include/asm/processor.h	2014-10-31 14:13:53.890456587 -0700
-@@ -374,8 +374,9 @@ struct lwp_struct {
- 	u8 reserved[128];
- };
- 
--struct bndregs_struct {
--	u64 bndregs[8];
-+struct bndreg_struct {
-+	u64 lb; /* lower bound */
-+	u64 ub; /* upper bound */
- } __packed;
- 
- struct bndcsr_struct {
-@@ -394,7 +395,7 @@ struct xsave_struct {
- 	struct xsave_hdr_struct xsave_hdr;
- 	struct ymmh_struct ymmh;
- 	struct lwp_struct lwp;
--	struct bndregs_struct bndregs;
-+	struct bndreg_struct bnd[4];
- 	struct bndcsr_struct bndcsr;
- 	/* new processor state extensions will go here */
- } __attribute__ ((packed, aligned (64)));
-_
+In any case, I would go with Ingo's proposal.
