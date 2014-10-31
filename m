@@ -1,151 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192AbaJaOe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:34:59 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47001 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932508AbaJaOe6 (ORCPT
+	id S1759887AbaJaOiT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:38:19 -0400
+Received: from mailgw02.mediatek.com ([210.61.82.184]:53951 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758444AbaJaOiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:34:58 -0400
-Date: Fri, 31 Oct 2014 16:34:51 +0200
-From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-To: Ursula Braun <ubraun@linux.vnet.ibm.com>
-Cc: blaschka@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, opw-kernel@googlegroups.com
-Subject: Re: [PATCH v2] drivers: s390: net: ctcm: migrate variables to handle
- y2038 problem
-Message-ID: <20141031143451.GB4166@localhost.localdomain>
-References: <20141031091850.GA2582@localhost.localdomain>
- <1414762715.14369.5.camel@BR9GV9YG.de.ibm.com>
+	Fri, 31 Oct 2014 10:38:17 -0400
+X-Listener-Flag: 11101
+Subject: Re: [PATCH 3/3] I2C: mediatek: Add driver for MediaTek I2C
+ controller
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+CC: xudong chen <xudong.chen@mediatek.com>,
+        Mark Rutland <mark.rutland@arm.com>, <arm@kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <linux-i2c@vger.kernel.org>, Eddie Huang <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        YH Chen <yh.chen@mediatek.com>
+In-Reply-To: <CABuKBeK1O2q37RMVE0Yjp2=QgkzXZfh=vxXiZrw-JMiYMxb-QQ@mail.gmail.com>
+References: <1414561058-23803-1-git-send-email-xudong.chen@mediatek.com>
+	 <1414561058-23803-4-git-send-email-xudong.chen@mediatek.com>
+	 <CABuKBe+RXboBEZD7Bu_kSbVwiapJJcAuuw_wo=xw67osJWJ20w@mail.gmail.com>
+	 <1414737101.32208.18.camel@mhfsdcap03>
+	 <CABuKBeK1O2q37RMVE0Yjp2=QgkzXZfh=vxXiZrw-JMiYMxb-QQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 31 Oct 2014 22:38:08 +0800
+Message-ID: <1414766288.5833.46.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414762715.14369.5.camel@BR9GV9YG.de.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 02:38:35PM +0100, Ursula Braun wrote:
-> thanks, Aya. I miss drivers/s390/net/ctcm_main.c in your patch. And
-
-Hello Ursula,
- ok. I will see what needs to do in it. I did not change it.
-
-> "time_before()" is not the right function to use here, because it
-> returns a Bool value. Purpose of the ctcm timespec stuff is to determine
-> the time interval between triggering the send operation and receiving
-> the confirmation of the send operation. The maximum value is saved and
-> can be displayed in the statistics.
-
-Yes, you're right. I will fix that. Sorry!
+On Fri, 2014-10-31 at 11:48 +0100, Matthias Brugger wrote:
+> 2014-10-31 7:31 GMT+01:00 xudong chen <xudong.chen@mediatek.com>:
+> > On Thu, 2014-10-30 at 14:16 +0100, Matthias Brugger wrote:
+> >> 2014-10-29 6:37 GMT+01:00 Xudong Chen <xudong.chen@mediatek.com>:
+> >> > The mediatek SoCs have I2C controller that handle I2C transfer.
+> >> > This patch include common I2C bus driver.
+> >> > This driver is compatible with I2C controller on mt65xx/mt81xx.
+> >> >
+> >> > Signed-off-by: Xudong Chen <xudong.chen@mediatek.com>
+> >> > Change-Id: Icc17e326b9df46a226d536956e103f17b0382b6e
+> >> > ---
+> >> >  drivers/i2c/busses/Kconfig      |   9 +
+> >> >  drivers/i2c/busses/Makefile     |   1 +
+> >> >  drivers/i2c/busses/i2c-mt65xx.c | 728 ++++++++++++++++++++++++++++++++++++++++
+> >> >  3 files changed, 738 insertions(+)
+> >> >  create mode 100644 drivers/i2c/busses/i2c-mt65xx.c
+> >> >
+> >> > diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> >> > index 917c358..0d7d0a4 100644
+> >> > --- a/drivers/i2c/busses/Kconfig
+> >> > +++ b/drivers/i2c/busses/Kconfig
+> >> > @@ -564,6 +564,15 @@ config I2C_MPC
+> >> >           This driver can also be built as a module.  If so, the module
+> >> >           will be called i2c-mpc.
+> >> >
+> >> > +config I2C_MT65XX
+> >> > +       tristate "MediaTek I2C adapter"
+> >> > +       depends on ARCH_MEDIATEK
+> >> > +       help
+> >> > +         This selects the MediaTek(R) Integrated Inter Circuit bus driver
+> >> > +         for MT65xx and MT81xx.
+> >> > +         If you want to use MediaTek(R) I2C interface, say Y or M here.
+> >> > +         If unsure, say N.
+> >> > +
+> >> >  config I2C_MV64XXX
+> >> >         tristate "Marvell mv64xxx I2C Controller"
+> >> >         depends on MV64X60 || PLAT_ORION || ARCH_SUNXI
+> >> > diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+> >> > index 78d56c5..7a9f0f3 100644
+> >> > --- a/drivers/i2c/busses/Makefile
+> >> > +++ b/drivers/i2c/busses/Makefile
+> >> > @@ -54,6 +54,7 @@ obj-$(CONFIG_I2C_IMX)         += i2c-imx.o
+> >> >  obj-$(CONFIG_I2C_IOP3XX)       += i2c-iop3xx.o
+> >> >  obj-$(CONFIG_I2C_KEMPLD)       += i2c-kempld.o
+> >> >  obj-$(CONFIG_I2C_MPC)          += i2c-mpc.o
+> >> > +obj-$(CONFIG_I2C_MT65XX)       += i2c-mt65xx.o
+> >> > +
+> >> > +static int mt_i2c_do_transfer(struct mt_i2c *i2c)
+> >> > +{
+> >> > +       u16 addr_reg;
+> >> > +       u16 control_reg;
+> >> > +       int tmo = i2c->adap.timeout;
+> >> > +
+> >> > +       i2c->trans_stop = false;
+> >> > +       i2c->irq_stat = 0;
+> >> > +
+> >> > +       /* If use i2c pin from PMIC mt6397 side, need set PATH_DIR first */
+> >> > +       if (i2c->have_pmic)
+> >> > +               i2c_writew(I2C_CONTROL_WRAPPER, i2c, OFFSET_PATH_DIR);
+> >>
+> >> So this is some sort of multiplexer bit, right?
+> >> I think in this case we need to build a multi function device (mfd)
+> >> where the pmic driver will set this bit.
+> >>
+> > Hi,
+> >
+> > This feature means the chip can use I2C pins from PMIC(mt6397).
+> > In this case,
+> > 1. We actually control the register on mt8135 and the DMA/Control Logic
+> > is on mt8135, only use pins from mt6397. If set register OFFSET_PATH_DIR
+> > bit0 to 1, the I2C data will go/from PMIC pins.
 > 
-> Regards, Ursula Braun
+> Sorry but I'm a bit puzzled. mt6397 is the PMIC, right?
+> So from the mt6589 datasheet it says:
+> "PATH_DIR Decides transmission direction
+> If set, the I2C data will go/from PMIC; otherwise, the I2C data will
+> go/from main die."
+>
+> From my understanding the I2C bus will be multiplexed depending on
+> this bit. The bit decides if it the data will be send to the PMIC or
+> to some other I2C peripheral.
 > 
+> So we need a mfd and the PMIC device driver sets/unsets the PATH_DIR register.
 
-Kind Regards,
-Aya Saif El-yazal Mahfouz
+Yes, mt6397 is the PMIC work with mt8135 or mt8127.
 
-> On Fri, 2014-10-31 at 11:18 +0200, Aya Mahfouz wrote:
-> > This patch is concerned with migrating the time variables for the s390
-> > network driver. The changes handle the y2038 problem where timespec will
-> > overflow in the year 2038. timespec was replaced by unsigned long and
-> > all time variables get their values from the jiffies global variable.
-> > This was done for the sake of speed and efficiency.
-> > 
-> > Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-> > ---
-> > v1: Arnd has advised me to provide you with options for time
-> >     calculation. The first option: "accuracy" is used in this
-> >     patch. The second option: "speed" can be done through
-> >     jiffies.
-> > 
-> > v2: Moved on to the speed option. Let me know if I explicitly
-> >     need to include the jiffies header. The module compiles with
-> >     no problems on my side.
-> > 
-> >  drivers/s390/net/ctcm_fsms.c | 18 +++++++-----------
-> >  drivers/s390/net/ctcm_main.h |  2 +-
-> >  2 files changed, 8 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
-> > index fb92524..34b9820 100644
-> > --- a/drivers/s390/net/ctcm_fsms.c
-> > +++ b/drivers/s390/net/ctcm_fsms.c
-> > @@ -251,13 +251,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
-> >  	int first = 1;
-> >  	int i;
-> >  	unsigned long duration;
-> > -	struct timespec done_stamp = current_kernel_time(); /* xtime */
-> > +	unsigned long done_stamp = jiffies;
-> > 
-> >  	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
-> > 
-> > -	duration =
-> > -	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
-> > -	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-> > +	duration = time_before(done_stamp, ch->prof.send_stamp);
-> >  	if (duration > ch->prof.tx_time)
-> >  		ch->prof.tx_time = duration;
-> > 
-> > @@ -307,7 +305,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
-> >  		spin_unlock(&ch->collect_lock);
-> >  		ch->ccw[1].count = ch->trans_skb->len;
-> >  		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
-> > -		ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> > +		ch->prof.send_stamp = jiffies;
-> >  		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
-> >  						(unsigned long)ch, 0xff, 0);
-> >  		ch->prof.doios_multi++;
-> > @@ -1229,14 +1227,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
-> >  	int		rc;
-> >  	struct th_header *header;
-> >  	struct pdu	*p_header;
-> > -	struct timespec done_stamp = current_kernel_time(); /* xtime */
-> > +	unsigned long done_stamp = jiffies;
-> > 
-> >  	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
-> >  			__func__, dev->name, smp_processor_id());
-> > 
-> > -	duration =
-> > -		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
-> > -		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-> > +	duration = time_before(done_stamp, ch->prof.send_stamp);
-> >  	if (duration > ch->prof.tx_time)
-> >  		ch->prof.tx_time = duration;
-> > 
-> > @@ -1361,7 +1357,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
-> > 
-> >  	ch->ccw[1].count = ch->trans_skb->len;
-> >  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
-> > -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> > +	ch->prof.send_stamp = jiffies;
-> >  	if (do_debug_ccw)
-> >  		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
-> >  	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
-> > @@ -1827,7 +1823,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
-> >  	fsm_newstate(wch->fsm, CTC_STATE_TX);
-> > 
-> >  	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
-> > -	wch->prof.send_stamp = current_kernel_time(); /* xtime */
-> > +	wch->prof.send_stamp = jiffies;
-> >  	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
-> >  					(unsigned long) wch, 0xff, 0);
-> >  	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
-> > diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
-> > index 477c933..6f4417c 100644
-> > --- a/drivers/s390/net/ctcm_main.h
-> > +++ b/drivers/s390/net/ctcm_main.h
-> > @@ -121,7 +121,7 @@ struct ctcm_profile {
-> >  	unsigned long doios_multi;
-> >  	unsigned long txlen;
-> >  	unsigned long tx_time;
-> > -	struct timespec send_stamp;
-> > +	unsigned long send_stamp;
-> >  };
-> > 
-> >  /*
-> 
-> 
+I think the datasheet is a little misleading here. AFAIK, on 8135 even
+if your clear the bit for I2C4, there are no corresponding pins for this
+i2c port on 8135. So it is not really multiplexed. Base on my
+understanding this is more like "Set this bit if this a PMIC I2C port".
+
+In order to use i2c4, we do need a PMIC pinmux driver to set pinmux
+function for this i2c port. Since all the i2c control logic and
+registers are on mt8135, it is strange to have PMIC device driver set
+this bit on mt8135. Also, since mt8127 doesn't support this, it will be
+even stranger when using this pmic and driver with mt8127.
+
+Joe.C
+
+
