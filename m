@@ -1,90 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656AbaJaQMO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:12:14 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:38952 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716AbaJaQMM (ORCPT
+	id S1757453AbaJaQOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:14:19 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:52115 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457AbaJaQOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:12:12 -0400
-Message-ID: <5453B4DA.70802@kernel.dk>
-Date: Fri, 31 Oct 2014 10:12:10 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 31 Oct 2014 12:14:17 -0400
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: IO request merging
-References: <20141016122740.GI6085@quack.suse.cz> <543FEDFF.2000105@kernel.dk> <20141030195614.GL28444@quack.suse.cz> <20141031083022.GA24172@quack.suse.cz>
-In-Reply-To: <20141031083022.GA24172@quack.suse.cz>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Reply-To: cw00.choi@samsung.com
+In-Reply-To: <CAM4voamJhveLN-=wS2vF+x9e3kWMSR_2X1QsHLpB3w4DwgkgyQ@mail.gmail.com>
+References: <1414759083-4555-1-git-send-email-a.kesavan@samsung.com>
+	<545384D3.5050000@samsung.com>
+	<CAM4voamJhveLN-=wS2vF+x9e3kWMSR_2X1QsHLpB3w4DwgkgyQ@mail.gmail.com>
+Date: Sat, 1 Nov 2014 01:14:16 +0900
+Message-ID: <CAGTfZH2fpv3tR3Ah6sHCWAUGS6PhNiQkKEz_ab22ux55-KdRPQ@mail.gmail.com>
+Subject: Re: [PATCH] iio: adc: exynos_adc: Add support for ADCv3 on exynos7
+From: Chanwoo Choi <cwchoi00@gmail.com>
+To: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+Cc: linux-iio@vger.kernel.org, jic23@kernel.org,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 02:30 AM, Jan Kara wrote:
-> On Thu 30-10-14 20:56:14, Jan Kara wrote:
->> On Thu 16-10-14 10:10:39, Jens Axboe wrote:
->>> On 10/16/2014 06:27 AM, Jan Kara wrote:
->>>>   Hello,
->>>>
->>>>   one of our customers was complaining that elv_attempt_insert_merge()
->>>> merges two requests (via blk_attempt_req_merge()) without asking IO
->>>> scheduler for permission (->elevator_allow_merge_fn() callback). Now for
->>>> them this is a problem because of their custom IO scheduler but looking
->>>> into the code this can result in somewhat suboptimal behavior for CFQ as
->>>> well (merging two requests from different IO contexts, possibly merging
->>>> sync & async request). What do others think about this?
->>>>
->>>> Regarding possible fix, we cannot really call ->elevator_allow_merge_fn()
->>>> because that assumes it is called from a context of a process submitting the
->>>> passed bio. So we would need to create a separate allow merge callback for
->>>> this.
->>   Sorry for a delayed reply, I was asking the customer for some more
->> details and it took them a while to get back to me...
+Hi Abhilash,
+
+On Fri, Oct 31, 2014 at 11:01 PM, Abhilash Kesavan
+<kesavan.abhilash@gmail.com> wrote:
+> Hi Chanwoo,
+>
+> Thanks for the quick response.
+>
+> On Fri, Oct 31, 2014 at 6:17 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> Hi Abhilash,
 >>
->>> It would need a new (rq to rq) merge hook, if they have a custom IO
->>> scheduler, they should submit a change to allow that kind of behaviour.
->>   OK, but since they would be the only ones using the hook, I don't think
->> upstream kernel would be that much interested in carrying it... That's why
->> I was asking whether CFQ wouldn't use the hook as well. But from what you
->> write below, I tend to agree that it would be an overkill for CFQ.
+>> On 10/31/2014 09:38 PM, Abhilash Kesavan wrote:
+>>> The ADC on exynos7 is quite similar to ADCv2. The differences are as
+>>> follows:
+>>>       - v3 has 8 input channels (10 in v2).
+>>>       - v3 does not include an ADC PHY control register.
+>>>       - Some ADC_CON2 register bits being used in v2 are listed as
+>>>         reserved in v3. This results in a different init_hw function
+>>>         for v3.
+>>>
+>>> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+>>> ---
+>>> - Based on Naveen's "iio: exynos-adc: use syscon instead of ioremap" patchset
+>>> http://comments.gmane.org/gmane.linux.kernel.iio/13943
+>>>
+>>>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |    2 ++
+>>>  drivers/iio/adc/exynos_adc.c                       |   32 ++++++++++++++++++++
+>>>  2 files changed, 34 insertions(+)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>>> index c368210..a11e32c 100644
+>>> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>>> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>>> @@ -14,6 +14,8 @@ Required properties:
+>>>                               for exynos4412/5250 and s5pv210 controllers.
+>>>                       Must be "samsung,exynos-adc-v2" for
+>>>                               future controllers.
+>>> +                     Must be "samsung,exynos-adc-v3" for
+>>> +                             the ADC in Exynos7 and compatibles
 >>
->>> Outside of potentially mixing sync and async IO (which seems like
->>> something that should rarely/never happen), not sure I see a lot of
->>> downsides. And that case could be explicitly checked in attempt_merge()
->>> or blk_attempt_req_merge() without having to define a new hook to catch
->>> that specific case. For the hook, cfq would lookup the io contexts and
->>> compare, and basically disallow any merge that crosses a cfq io context
->>> boundary. But given that I would only expect these types of merges to
->>> happen very rarely, the sync vs async check would be good enough for me.
->>   Yeah. So what is a real problem for their custom scheduler is when two
->> requests with different IO priorities get merged (BTW, ioprio_best() has
->> a bug which they found and I just submitted a patch to fix it). For some
->> reason they don't want requests with different priorities merged (even if
->> resulting priority is computed properly). And we don't want checks like
->> this in generic code.
->   Thinking about it a bit more - is it really that beneficial to merge
-> requests with different priorities? I wouldn't expect that to happen often
-> enough to bring significant improvement in request sizes. Or do you have
-> some usecase for that?
+>> I prefer to use 'exynos7-adc' instead of 'exynos-adc-v3'.
+>> Exynos7 has little different from existing ADCv2.
+>
+> Sure, I'll change it. The reason for my choosing v3 was that reading
+> the version register (0x20 offset) showed a value of 0x80000009 in
+> Exynos7 as against 0x80000008 in both 5420 and 3250.
+>>
+>> Also, If you want to use 'exynos-adc-v3' compatible,
+>> Exynos7's TRM have to include the correct version(v3) infromation.
+>
+> I could not see any mention of the ADC controller version in the
+> Exynos7 UM other than the version register. Does that mean it is v2 ?
 
-No it isn't, I would not expect it to happen often. Merges across
-processes are fairly rare, and for the typical use cases, we don't do
-different priority IO inside a single process. So it would not be a
-complete loss to just eliminate merges of different priority IO.
+So am I. I don't see any version number of ADC in Exynos TRM.
 
-That said, there's no really good reason to do it. An IO scheduler can
-already forbid bio to request merging of different priorities, which
-should be (by far) the most common merge type. If we want to catch the
-last case of request to request merges, I would still prefer adding
-something to catch that. That could either be an IO scheduler hook for
-checking that, or it could be as simple as introducing that check in
-attempt_merge(), if the queue is flagged as not wanting requests with
-different io priorities merged. This is pretty much identical to how we
-currently check merge flags in requests.
+Additionally,
+I have a question about Exynos7. If you possible,
+did you tell me about full name of Exynos7 SoC (e.g., Exynos5433, Exynos52..)?
 
--- 
-Jens Axboe
+Best Regards,
+Chanwoo Choi
 
+>
+> Regards,
+> Abhilash
+>>
+>> Thanks,
+>> Chanwoo Choi
+>>
+>>
+>>
+>>>                       Must be "samsung,exynos3250-adc" for
+>>>                               controllers compatible with ADC of Exynos3250.
+>>>                       Must be "samsung,s3c2410-adc" for
+>>> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+>>> index fe03177..74d0a9d 100644
+>>> --- a/drivers/iio/adc/exynos_adc.c
+>>> +++ b/drivers/iio/adc/exynos_adc.c
+>>> @@ -390,6 +390,35 @@ static const struct exynos_adc_data exynos3250_adc_data = {
+>>>       .start_conv     = exynos_adc_v2_start_conv,
+>>>  };
+>>>
+>>> +static void exynos_adc_v3_init_hw(struct exynos_adc *info)
+>>> +{
+>>> +     u32 con1, con2;
+>>> +
+>>> +     if (info->data->needs_adc_phy)
+>>> +             regmap_write(info->pmu_map, info->data->phy_offset, 1);
+>>> +
+>>> +     con1 = ADC_V2_CON1_SOFT_RESET;
+>>> +     writel(con1, ADC_V2_CON1(info->regs));
+>>> +
+>>> +     con2 = readl(ADC_V2_CON2(info->regs));
+>>> +     con2 &= ~ADC_V2_CON2_C_TIME(7);
+>>> +     con2 |= ADC_V2_CON2_C_TIME(0);
+>>> +     writel(con2, ADC_V2_CON2(info->regs));
+>>> +
+>>> +     /* Enable interrupts */
+>>> +     writel(1, ADC_V2_INT_EN(info->regs));
+>>> +}
+>>> +
+>>> +static const struct exynos_adc_data exynos_adc_v3_data = {
+>>> +     .num_channels   = MAX_ADC_V1_CHANNELS,
+>>> +     .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
+>>> +
+>>> +     .init_hw        = exynos_adc_v3_init_hw,
+>>> +     .exit_hw        = exynos_adc_v2_exit_hw,
+>>> +     .clear_irq      = exynos_adc_v2_clear_irq,
+>>> +     .start_conv     = exynos_adc_v2_start_conv,
+>>> +};
+>>> +
+>>>  static const struct of_device_id exynos_adc_match[] = {
+>>>       {
+>>>               .compatible = "samsung,s3c2410-adc",
+>>> @@ -413,6 +442,9 @@ static const struct of_device_id exynos_adc_match[] = {
+>>>               .compatible = "samsung,exynos-adc-v2",
+>>>               .data = &exynos_adc_v2_data,
+>>>       }, {
+>>> +             .compatible = "samsung,exynos-adc-v3",
+>>> +             .data = &exynos_adc_v3_data,
+>>> +     }, {
+>>>               .compatible = "samsung,exynos3250-adc",
+>>>               .data = &exynos3250_adc_data,
+>>>       },
+>>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
