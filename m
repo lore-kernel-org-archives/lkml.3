@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422680AbaJaAXp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 20:23:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161331AbaJaAXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 20:23:43 -0400
-Date: Fri, 31 Oct 2014 01:23:39 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-api@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, marcel@holtmann.org, desrt@desrt.ca,
-        hadess@hadess.net, dh.herrmann@gmail.com, tixxdz@opendz.org,
-        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
-        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
-        teg@jklm.no, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: kdbus: add driver skeleton, ioctl entry points and utility
- functions
-In-Reply-To: <alpine.DEB.2.11.1410302224230.5308@nanos>
-Message-ID: <alpine.LRH.2.00.1410310114290.11562@twin.jikos.cz>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <1414620056-6675-4-git-send-email-gregkh@linuxfoundation.org> <alpine.DEB.2.11.1410302224230.5308@nanos>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1161456AbaJaAi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 20:38:28 -0400
+Received: from mail-by2on0132.outbound.protection.outlook.com ([207.46.100.132]:60668
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1161361AbaJaAi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 20:38:26 -0400
+Date: Fri, 31 Oct 2014 08:38:14 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <stern@rowland.harvard.edu>, <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 1/7] usb: move the OTG state from the USB PHY to the
+ OTG structure
+Message-ID: <20141031003812.GA3692@peterchendt>
+References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1414514141-31767-2-git-send-email-antoine.tenart@free-electrons.com>
+ <20141030163148.GF10130@saruman> <20141030163513.GI10130@saruman>
+ <20141030174254.GA6764@kwain> <20141030174734.GA6652@saruman>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141030174734.GA6652@saruman>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(164054003)(189002)(24454002)(199003)(51704005)(46102003)(80022003)(93886004)(85306004)(97736003)(31966008)(120916001)(57986006)(110136001)(104016003)(21056001)(99396003)(76482002)(54356999)(86362001)(76176999)(92566001)(92726001)(50986999)(33656002)(26826002)(95666004)(81156004)(107046002)(102836001)(106466001)(46406003)(47776003)(64706001)(20776003)(97756001)(85852003)(33716001)(4396001)(50466002)(84676001)(83506001)(19580395003)(6806004)(44976005)(68736004)(87936001)(19580405001)(23726002)(69596002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0626;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0626;
+X-Forefront-PRVS: 03818C953D
+Authentication-Results: spf=temperror (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014, Thomas Gleixner wrote:
-
-> > +static long kdbus_handle_ioctl(struct file *file, unsigned int cmd,
-> > +			       unsigned long arg)
-> > +{
-> > +	struct kdbus_handle *handle = file->private_data;
-> > +	void __user *argp = (void __user *)arg;
-> > +	enum kdbus_handle_type type = handle->type;
-> > +
-> > +	/* make sure all handle fields are set if handle->type is */
-> > +	smp_rmb();
+On Thu, Oct 30, 2014 at 12:47:34PM -0500, Felipe Balbi wrote:
+> On Thu, Oct 30, 2014 at 06:42:54PM +0100, Antoine Tenart wrote:
+> > Hi Felipe,
+> > 
+> > On Thu, Oct 30, 2014 at 11:35:13AM -0500, Felipe Balbi wrote:
+> > > On Thu, Oct 30, 2014 at 11:31:48AM -0500, Felipe Balbi wrote:
+> > > > On Tue, Oct 28, 2014 at 05:35:35PM +0100, Antoine Tenart wrote:
+> > > > > Before using the PHY framework instead of the USB PHY one, we need to
+> > > > > move the OTG state into another place, since it won't be available when
+> > > > > USB PHY isn't used. This patch moves the OTG state into the OTG
+> > > > > structure, and makes all the needed modifications in the drivers
+> > > > > using the OTG state.
+> > > > > 
+> > > > > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> > > > > Acked-by: Peter Chen <peter.chen@freescale.com>
+> > > > 
+> > > > Acked-by: Felipe Balbi <balbi@ti.com>
+> > > 
+> > > Please rebase on my testing/next and I'll take the series. When
+> > > rebasing, then add Peter's Tested-by/Acked-by where they're missing.
+> > 
+> > I just re-sent the series, rebased on your testing/next branch.
 > 
-> Sure. You really need this kind of serialization because your design
-> choice of allowing opaque handles in the first place.
+> Thanks, I put them on my testing/next and I'm running build tests.
 > 
-> I'm really interested why you need this rmb() at all. Just because you
-> have several threads in user space which might race with the type
-> assignment when they call the ioctl?
-> 
-> We have a strict requirement to document memory barriers. The
-> following comment definitely does not fulfil this requirement as it
-> just documents that someone observed a race of unknown provenance and
-> got it 'fixed' with a 'smp_rmb()'
-> 
-> > +     /* make sure all handle fields are set if handle->type is */
-> 
-> That's really hillarious, The user space side knows excatly upfront
-> which type of 'handle' it wants to open. Making it an opaque handle in
-> the first place and let the kernel deal with the actual type
-> assignment is beyond silly. Especially if that involves undocumented
-> memory barriers.
 
-I have been staring at exactly this for rather a long time today. 
-
-Apparently this barrier pairs with smp_wmb() in kdbus_handle_transform() 
-and tries to make sure that whenever handle->type is seen as updated, 
-handle->ptr is as well.
-
-But it's still difficult for me to understand all the memory ordering 
-rules and consequences of this strict ordering (my current understanding 
-is that the barrier is not needed, but I will have to think about it a 
-little bit more), so a nice and explanatory comment precisely describing 
-the race this is protecting against would be very welcome.
-
-Thanks,
+I see them, I will rebase your testing/next tree for coming chipidea dev, thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs
-
+Best Regards,
+Peter Chen
