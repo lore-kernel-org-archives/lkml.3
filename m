@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759768AbaJaWfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 18:35:08 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56749 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757816AbaJaWfG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 18:35:06 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 3/3] ACPI / processor: Rename acpi_(un)map_lsapic() to acpi_(un)map_cpu()
-Date: Fri, 31 Oct 2014 23:55:46 +0100
-Message-ID: <10283319.F5QMI6fbWn@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5452CE9D.6000403@linaro.org>
-References: <1414662780-2147-1-git-send-email-hanjun.guo@linaro.org> <2516177.7dftOY8x88@vostro.rjw.lan> <5452CE9D.6000403@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	id S1755548AbaJaWlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 18:41:09 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:39713 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918AbaJaWlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 18:41:07 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] m501fb: don't return zero on failure path in sm501fb_probe()
+Date: Sat,  1 Nov 2014 01:40:47 +0300
+Message-Id: <1414795247-14686-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 31, 2014 07:49:49 AM Hanjun Guo wrote:
-> On 2014年10月31日 04:12, Rafael J. Wysocki wrote:
-> > On Thursday, October 30, 2014 05:53:00 PM Hanjun Guo wrote:
-> >> acpi_map_lsapic() will allocate a logical CPU number and map it to
-> >> physical CPU id (such as APIC id) for the hot-added CPU, it will also
-> >> do some mapping for NUMA node id and etc, acpi_unmap_lsapic() will
-> >> do the reverse.
-> >>
-> >> We can see that the name of the function is a little bit confusing and
-> >> arch dependent so rename them as acpi_(un)map_map() to make arch
-> >
-> > That's acpi_(un)map_cpu() I guess?
-> 
-> ah, yes, typos, it should be acpi_(un)map_cpu(), my fault.
-> should I send another version?
+If no framebuffers found, sm501fb_probe() breaks off initialization,
+deallocates sm501fb_info, but returns zero. As a result, use after free
+can happen in sm501fb_remove().
 
-No, I can fix this up.
+The patch adds -ENODEV as a return value in this case.
 
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/video/fbdev/sm501fb.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/video/fbdev/sm501fb.c b/drivers/video/fbdev/sm501fb.c
+index 9e74e8fbe074..8b98b011fc04 100644
+--- a/drivers/video/fbdev/sm501fb.c
++++ b/drivers/video/fbdev/sm501fb.c
+@@ -1988,6 +1988,7 @@ static int sm501fb_probe(struct platform_device *pdev)
+ 	if (info->fb[HEAD_PANEL] == NULL &&
+ 	    info->fb[HEAD_CRT] == NULL) {
+ 		dev_err(dev, "no framebuffers found\n");
++		ret = -ENODEV;
+ 		goto err_alloc;
+ 	}
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.9.1
+
