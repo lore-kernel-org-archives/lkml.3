@@ -1,88 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758717AbaJaDub (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 23:50:31 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:42312 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757039AbaJaDu3 (ORCPT
+	id S933726AbaJaDuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 23:50:40 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:49806 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaJaDug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 23:50:29 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] net: ethtool: Return -EOPNOTSUPP if user space tries to read EEPROM with lengh 0
-Date: Thu, 30 Oct 2014 20:50:15 -0700
-Message-Id: <1414727415-5470-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54530705.00D5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 30 Oct 2014 23:50:36 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <21f7a07ffa3a6c6dd5c47fdf97f6a6bc>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Addy Ke <addy.ke@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        heiko@sntech.de, olof@lixom.net, dianders@chromium.org,
+        sonnyrao@chromium.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
+        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
+        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
+        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
+        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
+        Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH v2] mmc: dw_mmc: add support for the other bit of sdio interrupt
+Date: Fri, 31 Oct 2014 11:50:09 +0800
+Message-Id: <1414727409-6765-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1414666240-16782-1-git-send-email-addy.ke@rock-chips.com>
+References: <1414666240-16782-1-git-send-email-addy.ke@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a driver supports reading EEPROM but no EEPROM is installed in the system,
-the driver's get_eeprom_len function returns 0. ethtool will subsequently
-try to read that zero-length EEPROM anyway. If the driver does not support
-EEPROM access at all, this operation will return -EOPNOTSUPP. If the driver
-does support EEPROM access but no EEPROM is installed, the operation will
-return -EINVAL. Return -EOPNOTSUPP in both cases for consistency.
+The bit of sdio interrupt is 16 in designware implementation,
+but it is 24 in RK3288. This patch add sdio_id0 for the number
+of slot0 in the SDIO interrupt registers, which can be set in
+platform DT table, such as:
+- rockchip,sdio-interrupt-slot0 = <8>;
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
 ---
- net/core/ethtool.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Changes in v2:
+- rebase on http://git.linaro.org/git/people/ulf.hansson/mmc.git, next branch
 
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index 1600aa2..06dfb29 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -1036,7 +1036,8 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
- {
- 	const struct ethtool_ops *ops = dev->ethtool_ops;
+ drivers/mmc/host/dw_mmc-rockchip.c | 13 +++++++++++++
+ drivers/mmc/host/dw_mmc.c          | 12 +++++++-----
+ drivers/mmc/host/dw_mmc.h          |  2 ++
+ include/linux/mmc/dw_mmc.h         |  3 +++
+ 4 files changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
+index bbb4ec3..1cb3bc6 100644
+--- a/drivers/mmc/host/dw_mmc-rockchip.c
++++ b/drivers/mmc/host/dw_mmc-rockchip.c
+@@ -68,6 +68,18 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
+ 	}
+ }
  
--	if (!ops->get_eeprom || !ops->get_eeprom_len)
-+	if (!ops->get_eeprom || !ops->get_eeprom_len ||
-+	    !ops->get_eeprom_len(dev))
- 		return -EOPNOTSUPP;
++static int dw_mci_rk3288_parse_dt(struct dw_mci *host)
++{
++	struct device_node *np = host->dev->of_node;
++	int sdio_id0;
++
++	if (!of_property_read_u32(np, "rockchip,sdio-interrupt-slot0",
++				  &sdio_id0))
++		host->sdio_id0 = sdio_id0;
++
++	return 0;
++}
++
+ static const struct dw_mci_drv_data rk2928_drv_data = {
+ 	.prepare_command        = dw_mci_rockchip_prepare_command,
+ };
+@@ -76,6 +88,7 @@ static const struct dw_mci_drv_data rk3288_drv_data = {
+ 	.prepare_command        = dw_mci_rockchip_prepare_command,
+ 	.set_ios		= dw_mci_rk3288_set_ios,
+ 	.setup_clock    = dw_mci_rk3288_setup_clock,
++	.parse_dt	= dw_mci_rk3288_parse_dt,
+ };
  
- 	return ethtool_get_any_eeprom(dev, useraddr, ops->get_eeprom,
-@@ -1052,7 +1053,8 @@ static int ethtool_set_eeprom(struct net_device *dev, void __user *useraddr)
- 	u8 *data;
- 	int ret = 0;
+ static const struct of_device_id dw_mci_rockchip_match[] = {
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index bb46b1b..a633b58 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -823,7 +823,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
  
--	if (!ops->set_eeprom || !ops->get_eeprom_len)
-+	if (!ops->set_eeprom || !ops->get_eeprom_len ||
-+	    !ops->get_eeprom_len(dev))
- 		return -EOPNOTSUPP;
+ 		/* enable clock; only low power if no SDIO */
+ 		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
+-		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
++		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->sdio_id)))
+ 			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
+ 		mci_writel(host, CLKENA, clk_en_a);
  
- 	if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
+@@ -1184,10 +1184,10 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+ 		dw_mci_disable_low_power(slot);
+ 
+ 		mci_writel(host, INTMASK,
+-			   (int_mask | SDMMC_INT_SDIO(slot->id)));
++			   (int_mask | SDMMC_INT_SDIO(slot->sdio_id)));
+ 	} else {
+ 		mci_writel(host, INTMASK,
+-			   (int_mask & ~SDMMC_INT_SDIO(slot->id)));
++			   (int_mask & ~SDMMC_INT_SDIO(slot->sdio_id)));
+ 	}
+ }
+ 
+@@ -2056,8 +2056,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+ 		/* Handle SDIO Interrupts */
+ 		for (i = 0; i < host->num_slots; i++) {
+ 			struct dw_mci_slot *slot = host->slot[i];
+-			if (pending & SDMMC_INT_SDIO(i)) {
+-				mci_writel(host, RINTSTS, SDMMC_INT_SDIO(i));
++			if (pending & SDMMC_INT_SDIO(slot->sdio_id)) {
++				mci_writel(host, RINTSTS,
++					   SDMMC_INT_SDIO(slot->sdio_id));
+ 				mmc_signal_sdio_irq(slot->mmc);
+ 			}
+ 		}
+@@ -2145,6 +2146,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 
+ 	slot = mmc_priv(mmc);
+ 	slot->id = id;
++	slot->sdio_id = host->sdio_id0 + id;
+ 	slot->mmc = mmc;
+ 	slot->host = host;
+ 	host->slot[id] = slot;
+diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+index 71d4995..0562f10 100644
+--- a/drivers/mmc/host/dw_mmc.h
++++ b/drivers/mmc/host/dw_mmc.h
+@@ -214,6 +214,7 @@ extern int dw_mci_resume(struct dw_mci *host);
+  *	with CONFIG_MMC_CLKGATE.
+  * @flags: Random state bits associated with the slot.
+  * @id: Number of this slot.
++ * @sdio_id: Number of this slot in the SDIO interrupt registers.
+  */
+ struct dw_mci_slot {
+ 	struct mmc_host		*mmc;
+@@ -233,6 +234,7 @@ struct dw_mci_slot {
+ #define DW_MMC_CARD_PRESENT	0
+ #define DW_MMC_CARD_NEED_INIT	1
+ 	int			id;
++	int			sdio_id;
+ };
+ 
+ struct dw_mci_tuning_data {
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index 69d0814..72c319f 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -96,6 +96,7 @@ struct mmc_data;
+  * @quirks: Set of quirks that apply to specific versions of the IP.
+  * @irq_flags: The flags to be passed to request_irq.
+  * @irq: The irq value to be passed to request_irq.
++ * @sdio_id0: Number of slot0 in the SDIO interrupt registers.
+  *
+  * Locking
+  * =======
+@@ -191,6 +192,8 @@ struct dw_mci {
+ 	bool			vqmmc_enabled;
+ 	unsigned long		irq_flags; /* IRQ flags */
+ 	int			irq;
++
++	int			sdio_id0;
+ };
+ 
+ /* DMA ops for Internal/External DMAC interface */
 -- 
-1.9.1
+1.8.3.2
+
 
