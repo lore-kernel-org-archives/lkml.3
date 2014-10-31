@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454AbaJaTNQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:13:16 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:41031 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032AbaJaTNP (ORCPT
+	id S1758335AbaJaTNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 15:13:23 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59699 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757544AbaJaTNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:13:15 -0400
-Date: Fri, 31 Oct 2014 12:13:12 -0700
-From: Peter Feiner <pfeiner@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Miller <davem@davemloft.net>,
-        Steve Capper <steve.capper@linaro.org>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH 3/5] mm: gup: use get_user_pages_unlocked within
- get_user_pages_fast
-Message-ID: <20141031191312.GB38315@google.com>
-References: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
- <1414600520-7664-4-git-send-email-aarcange@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414600520-7664-4-git-send-email-aarcange@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 31 Oct 2014 15:13:19 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>
+Date: Fri, 31 Oct 2014 19:12:41 +0000
+Message-Id: <1414782761-15372-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.1.1
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: Lower priorit of constraint logging
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 05:35:18PM +0100, Andrea Arcangeli wrote:
-> This allows the get_user_pages_fast slow path to release the mmap_sem
-> before blocking.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Peter Feiner <pfeiner@google.com>
+Some systems have very large numbers of regulators so the constraint
+logging done at startup can end up being a very big part of the boot
+output which is both verobse and slows things down if the console is
+a serial console. Lower to dev_dbg() instead, we may want to provide
+a boot parameter to raise this in future but for now people can edit
+the source.
+
+Signed-off-by: Mark Brown <broonie@kernel.org>
+---
+ drivers/regulator/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 55a87a2722d8..bbf93c9caca3 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -828,7 +828,7 @@ static void print_constraints(struct regulator_dev *rdev)
+ 	if (!count)
+ 		sprintf(buf, "no parameters");
+ 
+-	rdev_info(rdev, "%s\n", buf);
++	rdev_dbg(rdev, "%s\n", buf);
+ 
+ 	if ((constraints->min_uV != constraints->max_uV) &&
+ 	    !(constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE))
+-- 
+2.1.1
+
