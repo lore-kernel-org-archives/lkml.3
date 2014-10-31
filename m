@@ -1,174 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922AbaJaKjw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:39:52 -0400
-Received: from mail.eclipso.de ([217.69.254.102]:59263 "EHLO mail.eclipso.de"
+	id S1758372AbaJaKk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:40:58 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:39812 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756393AbaJaKju convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:39:50 -0400
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 06:39:50 EDT
-Date: Fri, 31 Oct 2014 11:34:45 +0100
+	id S1757700AbaJaKk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 06:40:56 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        olof@lixom.net, dianders@chromium.org, sonnyrao@chromium.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
+        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
+        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
+        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
+        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com
+Subject: Re: [PATCH v2] mmc: dw_mmc: add support for the other bit of sdio interrupt
+Date: Fri, 31 Oct 2014 11:43:40 +0100
+Message-ID: <13873303.38xWyoP4kJ@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1414727409-6765-1-git-send-email-addy.ke@rock-chips.com>
+References: <1414666240-16782-1-git-send-email-addy.ke@rock-chips.com> <1414727409-6765-1-git-send-email-addy.ke@rock-chips.com>
 MIME-Version: 1.0
-Message-ID: <0c9233023d2d4873f91fd2731bac603e@mail.eclipso.de>
-X-Mailer: eclipso.eu/7.3.0
-X-Sender-IP: 82.217.116.135
-From: "Roy Spliet" <rspliet@eclipso.eu>
-Subject: Re: [bisected] nouveau dual monitor setup broken
-Reply-To: "Roy Spliet" <rspliet@eclipso.eu>
-To: "Frans Klaver" <frans.klaver@xsens.com>
-Cc: <bskeggs@redhat.com>, <dri-devel@lists.freedesktop.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <20141031075449.GA6170@ci00147.xsens-tech.local>
-References: <20141031075449.GA6170@ci00147.xsens-tech.local>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Freitag, 31. Oktober 2014, 11:50:09 schrieb Addy Ke:
+> The bit of sdio interrupt is 16 in designware implementation,
+> but it is 24 in RK3288. This patch add sdio_id0 for the number
+> of slot0 in the SDIO interrupt registers, which can be set in
+> platform DT table, such as:
+> - rockchip,sdio-interrupt-slot0 = <8>;
 
-It does ring a tiny bell: please check out https://bugs.freedesktop.org/show_bug.cgi?id=85160 and try the fix proposed in comment #7.
+I just checked the manuals of rk3066 and rk3188 - and it seems the sdio 
+interrupt is in bit 24 on all of them.
 
---- Ursprüngliche Nachricht ---
-Von: Frans Klaver <frans.klaver@xsens.com>
-Datum: 08:54:49 31-10-2014
-An: Roy Spliet <rspliet@eclipso.eu>
-Betreff: [bisected] nouveau dual monitor setup broken
+Addy, could you check this and maybe enable this for all two variants we 
+currently support?
 
-> Hi there,
-> 
-> My dual monitor setup on the Dell Precision M4500 is broken by commit
-> 1dce6264045cd23e9c07574ed0bb31c7dce9354f ("drm/nv50/kms: Set VBLANK
-> time
-> in modeset script"). I am no longer able to have more than one monitor
-> 
-> active.
-> 
-> Full dmesg can be found at http://pastebin.com/7e68yMRy, but I've
-> included an excerpt as well.
-> 
-> [    0.000000] Linux version 3.18.0-rc2-00106-ga7ca10f (frans@bwaark) (gcc
-> version 4.8.2 (Gentoo 4.8.2 p1.3r1, pie-0.5.8r1) ) #27 SMP Fri Oct 31 08:30:15
-> CET 2014
-> ...
-> [    1.920869] fb: switching to nouveaufb from VESA VGA
-> [    1.953160] Console: switching to colour dummy device 80x25
-> [    1.965235] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x0a5e00a2
-> [    1.965247] nouveau  [  DEVICE][0000:01:00.0] Chipset: GT216 (NVA5)
-> [    1.965255] nouveau  [  DEVICE][0000:01:00.0] Family : NV50
-> [    1.965303] nouveau  [   VBIOS][0000:01:00.0] checking PRAMIN for image...
-> 
-> [    2.017175] tsc: Refined TSC clocksource calibration: 1595.999 MHz
-> [    2.060360] nouveau  [   VBIOS][0000:01:00.0] ... appears to be valid
-> 
-> [    2.060369] nouveau  [   VBIOS][0000:01:00.0] using image from PRAMIN
-> 
-> [    2.060704] nouveau  [   VBIOS][0000:01:00.0] BIT signature found
-> [    2.060713] nouveau  [   VBIOS][0000:01:00.0] version 70.16.5c.01.06
-> [    2.075227] ACPI: Battery Slot [BAT1] (battery absent)
-> [    2.075329] nouveau 0000:01:00.0: irq 29 for MSI/MSI-X
-> [    2.075342] nouveau  [     PMC][0000:01:00.0] MSI interrupts enabled
-> 
-> [    2.075376] nouveau  [     PFB][0000:01:00.0] RAM type: DDR3
-> [    2.075380] nouveau  [     PFB][0000:01:00.0] RAM size: 1024 MiB
-> [    2.075384] nouveau  [     PFB][0000:01:00.0]    ZCOMP: 1920 tags
-> [    2.079057] nouveau  [    VOLT][0000:01:00.0] GPU voltage: 930000uv
-> [    2.108300] nouveau  [  PTHERM][0000:01:00.0] FAN control: none / external
-> 
-> [    2.108328] nouveau  [  PTHERM][0000:01:00.0] fan management: automatic
-> 
-> [    2.108338] nouveau  [  PTHERM][0000:01:00.0] internal sensor: yes
-> [    2.128401] nouveau  [     CLK][0000:01:00.0] 03: core 135 MHz shader
-> 270 MHz memory 135 MHz
-> [    2.128414] nouveau  [     CLK][0000:01:00.0] 07: core 405 MHz shader
-> 810 MHz memory 324 MHz
-> [    2.128426] nouveau  [     CLK][0000:01:00.0] 0f: core 550 MHz shader
-> 1210 MHz memory 790 MHz
-> [    2.128469] nouveau  [     CLK][0000:01:00.0] --: core 405 MHz shader
-> 810 MHz memory 324 MHz
-> [    2.129501] [TTM] Zone  kernel: Available graphics memory: 4080170 kiB
-> 
-> [    2.129514] [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
-> 
-> [    2.129522] [TTM] Initializing pool allocator
-> [    2.129540] [TTM] Initializing DMA pool allocator
-> [    2.129575] nouveau  [     DRM] VRAM: 1024 MiB
-> [    2.129584] nouveau  [     DRM] GART: 1048576 MiB
-> [    2.129596] nouveau  [     DRM] TMDS table version 2.0
-> [    2.129605] nouveau  [     DRM] DCB version 4.0
-> [    2.129615] nouveau  [     DRM] DCB outp 00: 048003b6 0f220014
-> [    2.129626] nouveau  [     DRM] DCB outp 01: 02033300 00000000
-> [    2.129637] nouveau  [     DRM] DCB outp 02: 028113a6 0f220010
-> [    2.129647] nouveau  [     DRM] DCB outp 03: 02011362 00020010
-> [    2.129657] nouveau  [     DRM] DCB outp 04: 088223c6 0f220010
-> [    2.129667] nouveau  [     DRM] DCB outp 05: 08022382 00020010
-> [    2.129676] nouveau  [     DRM] DCB conn 00: 00002047
-> [    2.129687] nouveau  [     DRM] DCB conn 01: 00101146
-> [    2.129696] nouveau  [     DRM] DCB conn 02: 00410246
-> [    2.129705] nouveau  [     DRM] DCB conn 03: 00000300
-> [    2.183136] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-> 
-> [    2.183142] [drm] Driver supports precise vblank timestamp query.
-> [    2.229885] nouveau  [     DRM] MM: using COPY for buffer copies
-> [    2.545100] nouveau  [     DRM] allocated 1920x1080 fb: 0x70000, bo ffff880225962c00
-> 
-> [    2.545330] fbcon: nouveaufb (fb0) is primary device
-> [    2.596432] nouveau E[   PDISP][0000:01:00.0] INVALID_STATE [UNK05] chid
-> 0 mthd 0x0080 data 0x00000000
-> [    2.596435] nouveau E[   PDISP][0000:01:00.0] Core:
-> [    2.596441] nouveau E[   PDISP][0000:01:00.0] 	0x0084: 0x01e00280 ->
-> 0x00000000
-> [    2.596447] nouveau E[   PDISP][0000:01:00.0] 	0x0088: 0xf0000000
->          
-> [    2.596450] nouveau E[   PDISP][0000:01:00.0] Core - DAC 0:
-> [    2.596455] nouveau E[   PDISP][0000:01:00.0] 	0x0400: 0x00000000
->          
-> [    2.596460] nouveau E[   PDISP][0000:01:00.0] 	0x0404: 0x00000000
->          
-> [    2.596465] nouveau E[   PDISP][0000:01:00.0] 	0x0420: 0x00010000
->          
-> [    2.596468] nouveau E[   PDISP][0000:01:00.0] Core - DAC 1:
-> [    2.596473] nouveau E[   PDISP][0000:01:00.0] 	0x0480: 0x00000000
->          
-> [    2.596477] nouveau E[   PDISP][0000:01:00.0] 	0x0484: 0x00000000
->          
-> [    2.596482] nouveau E[   PDISP][0000:01:00.0] 	0x04a0: 0x00010000
->          
-> [    2.596484] nouveau E[   PDISP][0000:01:00.0] Core - DAC 2:
-> [    2.596489] nouveau E[   PDISP][0000:01:00.0] 	0x0500: 0x00000000
->          
-> [    2.596494] nouveau E[   PDISP][0000:01:00.0] 	0x0504: 0x00000000
->          
-> [    2.596498] nouveau E[   PDISP][0000:01:00.0] 	0x0520: 0x00010000
->          
-> [    2.596501] nouveau E[   PDISP][0000:01:00.0] Core - SOR 0:
-> [    2.596506] nouveau E[   PDISP][0000:01:00.0] 	0x0600: 0x00000000
->          
-> [    2.596508] nouveau E[   PDISP][0000:01:00.0] Core - SOR 1:
-> [    2.596513] nouveau E[   PDISP][0000:01:00.0] 	0x0640: 0x00000101
->          
-> [    2.596516] nouveau E[   PDISP][0000:01:00.0] Core - SOR 2:
-> [    2.596521] nouveau E[   PDISP][0000:01:00.0] 	0x0680: 0x00000000
->          
-> [    2.596523] nouveau E[   PDISP][0000:01:00.0] Core - SOR 3:
-> [    2.596528] nouveau E[   PDISP][0000:01:00.0] 	0x06c0: 0x00000000 ->
-> 0x00000102
-> [    2.596531] nouveau E[   PDISP][0000:01:00.0] Core - PIOR 0:
-> [    2.596536] nouveau E[   PDISP][0000:01:00.0] 	0x0700: 0x00000000
->          
-> [    2.596538] nouveau E[   PDISP][0000:01:00.0] Core - PIOR 1:
-> [    2.596543] nouveau E[   PDISP][0000:01:00.0] 	0x0740: 0x00000000
->          
-> [    2.596545] nouveau E[   PDISP][0000:01:00.0] Core - PIOR 2:
-> [    2.596550] nouveau E[   PDISP][0000:01:00.0] 	0x0780: 0x00000000
->          
-> [    2.596553] nouveau E[   PDISP][0000:01:00.0] Core - HEAD 0:
-> ...
-> 
-> Hope this rings a bell,
-> Frans
-> 
 
+Thanks
+Heiko
+
+
+> 
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> ---
+> Changes in v2:
+> - rebase on http://git.linaro.org/git/people/ulf.hansson/mmc.git, next
+> branch
+> 
+>  drivers/mmc/host/dw_mmc-rockchip.c | 13 +++++++++++++
+>  drivers/mmc/host/dw_mmc.c          | 12 +++++++-----
+>  drivers/mmc/host/dw_mmc.h          |  2 ++
+>  include/linux/mmc/dw_mmc.h         |  3 +++
+>  4 files changed, 25 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc-rockchip.c
+> b/drivers/mmc/host/dw_mmc-rockchip.c index bbb4ec3..1cb3bc6 100644
+> --- a/drivers/mmc/host/dw_mmc-rockchip.c
+> +++ b/drivers/mmc/host/dw_mmc-rockchip.c
+> @@ -68,6 +68,18 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host,
+> struct mmc_ios *ios) }
+>  }
+> 
+> +static int dw_mci_rk3288_parse_dt(struct dw_mci *host)
+> +{
+> +	struct device_node *np = host->dev->of_node;
+> +	int sdio_id0;
+> +
+> +	if (!of_property_read_u32(np, "rockchip,sdio-interrupt-slot0",
+> +				  &sdio_id0))
+> +		host->sdio_id0 = sdio_id0;
+> +
+> +	return 0;
+> +}
+> +
+>  static const struct dw_mci_drv_data rk2928_drv_data = {
+>  	.prepare_command        = dw_mci_rockchip_prepare_command,
+>  };
+> @@ -76,6 +88,7 @@ static const struct dw_mci_drv_data rk3288_drv_data = {
+>  	.prepare_command        = dw_mci_rockchip_prepare_command,
+>  	.set_ios		= dw_mci_rk3288_set_ios,
+>  	.setup_clock    = dw_mci_rk3288_setup_clock,
+> +	.parse_dt	= dw_mci_rk3288_parse_dt,
+>  };
+> 
+>  static const struct of_device_id dw_mci_rockchip_match[] = {
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index bb46b1b..a633b58 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -823,7 +823,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot,
+> bool force_clkinit)
+> 
+>  		/* enable clock; only low power if no SDIO */
+>  		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
+> -		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
+> +		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->sdio_id)))
+>  			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
+>  		mci_writel(host, CLKENA, clk_en_a);
+> 
+> @@ -1184,10 +1184,10 @@ static void dw_mci_enable_sdio_irq(struct mmc_host
+> *mmc, int enb) dw_mci_disable_low_power(slot);
+> 
+>  		mci_writel(host, INTMASK,
+> -			   (int_mask | SDMMC_INT_SDIO(slot->id)));
+> +			   (int_mask | SDMMC_INT_SDIO(slot->sdio_id)));
+>  	} else {
+>  		mci_writel(host, INTMASK,
+> -			   (int_mask & ~SDMMC_INT_SDIO(slot->id)));
+> +			   (int_mask & ~SDMMC_INT_SDIO(slot->sdio_id)));
+>  	}
+>  }
+> 
+> @@ -2056,8 +2056,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void
+> *dev_id) /* Handle SDIO Interrupts */
+>  		for (i = 0; i < host->num_slots; i++) {
+>  			struct dw_mci_slot *slot = host->slot[i];
+> -			if (pending & SDMMC_INT_SDIO(i)) {
+> -				mci_writel(host, RINTSTS, SDMMC_INT_SDIO(i));
+> +			if (pending & SDMMC_INT_SDIO(slot->sdio_id)) {
+> +				mci_writel(host, RINTSTS,
+> +					   SDMMC_INT_SDIO(slot->sdio_id));
+>  				mmc_signal_sdio_irq(slot->mmc);
+>  			}
+>  		}
+> @@ -2145,6 +2146,7 @@ static int dw_mci_init_slot(struct dw_mci *host,
+> unsigned int id)
+> 
+>  	slot = mmc_priv(mmc);
+>  	slot->id = id;
+> +	slot->sdio_id = host->sdio_id0 + id;
+>  	slot->mmc = mmc;
+>  	slot->host = host;
+>  	host->slot[id] = slot;
+> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+> index 71d4995..0562f10 100644
+> --- a/drivers/mmc/host/dw_mmc.h
+> +++ b/drivers/mmc/host/dw_mmc.h
+> @@ -214,6 +214,7 @@ extern int dw_mci_resume(struct dw_mci *host);
+>   *	with CONFIG_MMC_CLKGATE.
+>   * @flags: Random state bits associated with the slot.
+>   * @id: Number of this slot.
+> + * @sdio_id: Number of this slot in the SDIO interrupt registers.
+>   */
+>  struct dw_mci_slot {
+>  	struct mmc_host		*mmc;
+> @@ -233,6 +234,7 @@ struct dw_mci_slot {
+>  #define DW_MMC_CARD_PRESENT	0
+>  #define DW_MMC_CARD_NEED_INIT	1
+>  	int			id;
+> +	int			sdio_id;
+>  };
+> 
+>  struct dw_mci_tuning_data {
+> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+> index 69d0814..72c319f 100644
+> --- a/include/linux/mmc/dw_mmc.h
+> +++ b/include/linux/mmc/dw_mmc.h
+> @@ -96,6 +96,7 @@ struct mmc_data;
+>   * @quirks: Set of quirks that apply to specific versions of the IP.
+>   * @irq_flags: The flags to be passed to request_irq.
+>   * @irq: The irq value to be passed to request_irq.
+> + * @sdio_id0: Number of slot0 in the SDIO interrupt registers.
+>   *
+>   * Locking
+>   * =======
+> @@ -191,6 +192,8 @@ struct dw_mci {
+>  	bool			vqmmc_enabled;
+>  	unsigned long		irq_flags; /* IRQ flags */
+>  	int			irq;
+> +
+> +	int			sdio_id0;
+>  };
+> 
+>  /* DMA ops for Internal/External DMAC interface */
 
