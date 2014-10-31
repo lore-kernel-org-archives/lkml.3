@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757704AbaJaVpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:45:16 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:39213 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311AbaJaVpO (ORCPT
+	id S1759463AbaJaVsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:48:30 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:56196 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752060AbaJaVs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:45:14 -0400
-Date: Fri, 31 Oct 2014 22:45:07 +0100
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: Mariusz Gorski <marius.gorski@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <willy@meta-x.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: panel: Remove outdated TODO tasks
-Message-ID: <20141031214507.GB15010@t400>
-References: <1414790859-7480-1-git-send-email-marius.gorski@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414790859-7480-1-git-send-email-marius.gorski@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 31 Oct 2014 17:48:29 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArsNAKkCVFRXQwLV/2dsb2JhbABcgw67FwUBdJoagRoXAQEBAQF9hF8jgRqIfAG8PI8UhjeKWR2ENQWGMZdHlkiBRwGCMTyCegEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, Fabian Frederick <fabf@skynet.be>
+Subject: [PATCH 0/8] cdrom: sysctl export + clean-up
+Date: Fri, 31 Oct 2014 22:47:56 +0100
+Message-Id: <1414792084-7739-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31, Mariusz Gorski wrote:
-> Remove Lindent and checkpatch.pl tasks from TODO file as the first one
-> is obsolete and the other one is already done.
-> 
-> v2: Fixed commit summary
+This patchset moves sysctl functions to a new file cdrom_sysctl.c
+and tries to solve small code / coding style issues.
 
-This is something that should not be a part of the commit message. This
-kind of extra information shall be placed after the '---' line (which is
-just below the signed-off line).
+Fabian Frederick (8):
+  cdrom: include linux/uaccess.h instead of asm/uaccess.h
+  cdrom: use static const char * const where possible
+  cdrom: fix spaces required errors
+  cdrom: move EXPORT_SYMBOL after functions
+  cdrom: remove bool comparison/assignment to 0/1
+  cdrom: use bool for true/false initialized variable
+  cdrom: cdrom: export sysctl code
+  cdrom: fix init_cdrom_command in dvd_do_auth
 
-thanks,
-konrad
- 
-> Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
-> ---
->  drivers/staging/panel/TODO | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/drivers/staging/panel/TODO b/drivers/staging/panel/TODO
-> index a4be749..c8040c1 100644
-> --- a/drivers/staging/panel/TODO
-> +++ b/drivers/staging/panel/TODO
-> @@ -1,6 +1,4 @@
->  TODO:
-> -	- checkpatch.pl cleanups
-> -	- Lindent
->  	- review major/minor usages
->  	- review userspace api
->  	- see if all of this could be easier done in userspace instead.
-> -- 
-> 2.1.3
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+ drivers/cdrom/Makefile       |   1 +
+ drivers/cdrom/cdrom.c        | 425 ++++++-------------------------------------
+ drivers/cdrom/cdrom_sysctl.c | 297 ++++++++++++++++++++++++++++++
+ include/linux/cdrom.h        |  33 ++++
+ 4 files changed, 382 insertions(+), 374 deletions(-)
+ create mode 100644 drivers/cdrom/cdrom_sysctl.c
+
+-- 
+1.9.3
+
