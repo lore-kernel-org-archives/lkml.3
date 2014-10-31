@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161603AbaJaBKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:10:41 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:62348 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161410AbaJaBKk (ORCPT
+	id S1422692AbaJaBKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:10:13 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:3352 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161391AbaJaBKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:10:40 -0400
+	Thu, 30 Oct 2014 21:10:11 -0400
+Message-Id: <20141031011009.702592774@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 30 Oct 2014 21:09:46 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH RT 1/2] lockdep: Fix backport of "Correctly annotate hardirq context in
+ irq_exit()"
+References: <20141031010945.211059309@goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <20141030203317.GA8137@kroah.com>
-References: <20141030031400.GA3312@devel>
-	<20141030203317.GA8137@kroah.com>
-Date: Fri, 31 Oct 2014 10:10:39 +0900
-Message-ID: <CAHb8M2CiK0uLDn2BiWCg44z0=R-KwDFRKZNaUSc0Gxo_qNJnEw@mail.gmail.com>
-Subject: Re: [PATCH V2] staging: dgap: re-arrange functions for removing
- forward declarations
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
-        devel <devel@driverdev.osuosl.org>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0001-lockdep-Fix-backport-of-Correctly-annotate-hardirq-c.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.2.63-rt93-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-2014-10-31 5:33 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
-> On Thu, Oct 30, 2014 at 12:14:00PM +0900, Daeseok Youn wrote:
->> Re-arrange the functions for removing forward declarations.
->>
->> Tested-by: Mark Hounschell <markh@compro.net>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> Tested-by: Mark Hounschell <markh@compro.net>
->> ---
->> V2: this patch is rebased on staging-next branch.
->
-> Still doesn't apply :(
+------------------
 
-You maybe merge this patch to staging-testing branch, right?
-I tried to rebase this patch on staging-next but staging-testing had
-two patches more from Tapasweni.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-I will rebase on staging-testing and send this again.
+The backport of f1a83e652bed "lockdep: Correctly annotate hardirq context
+in irq_exit()" to v3.2.53-rt76 wasn't correct because v3.2-rt had two
+calls to invoke_softirq(). One when __ARCH_IRQ_EXIT_IRQS_DISABLED is defined
+and another when it is not defined. v3.14 which introduced this change
+only had one version.
 
-Thanks.
+When I backported this change, I didn't see the two places and only one
+was added. Unfortunately, it was the one that x86 does not use, and this
+caused a lockdep splat on one of my tests. It only affected the -rt patch
+when PREEMPT_RT_FULL was not set, so I did not spend much time looking to
+see what broke.
 
-regards,
-Daeseok Youn.
+Well, I finally spent a little time and found the cause, and this was
+a simple fix. Now my all my tests pass on the v3.2-rt kernel, even the
+one where I test CONFIG_PREEMPT_RT_FULL not set.
+
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/softirq.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 7d882ccfa22b..56d30853345d 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -637,9 +637,10 @@ static inline void invoke_softirq(void)
+ static inline void invoke_softirq(void)
+ {
+ #ifndef CONFIG_PREEMPT_RT_FULL
+-	if (!force_irqthreads)
++	if (!force_irqthreads) {
++		lockdep_softirq_from_hardirq();
+ 		do_softirq();
+-	else {
++	} else {
+ 		__local_bh_disable((unsigned long)__builtin_return_address(0),
+ 				SOFTIRQ_OFFSET);
+ 		wakeup_softirqd();
+-- 
+2.1.1
+
+
