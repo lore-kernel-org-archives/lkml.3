@@ -1,180 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758981AbaJaTfn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:35:43 -0400
-Received: from mail-bl2on0083.outbound.protection.outlook.com ([65.55.169.83]:24512
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1759139AbaJaTfx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 15:35:53 -0400
+Received: from skprod3.natinst.com ([130.164.80.24]:60809 "EHLO ni.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752634AbaJaTfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:35:41 -0400
-Message-ID: <5453E393.3090505@opensource.altera.com>
-Date: Fri, 31 Oct 2014 14:31:31 -0500
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <paulz@synopsys.com>, <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
-        <b.zolnierkie@samsung.com>, <matthijs@stdin.nl>,
-        <r.baldyga@samsung.com>, <jg1.han@samsung.com>,
-        <sachin.kamat@linaro.org>, <ben-linux@fluff.org>,
-        <dianders@chromium.org>, <kever.yang@rock-chips.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv6 6/8] usb: dwc2: gadget: Do not fail probe if there isn't
- a clock node
-References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com> <1414538749-14735-7-git-send-email-dinguyen@opensource.altera.com> <20141030140416.GF6482@saruman> <5453A8A6.6020800@opensource.altera.com> <20141031174257.GA15756@saruman>
-In-Reply-To: <20141031174257.GA15756@saruman>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: AMSPR02CA0046.eurprd02.prod.outlook.com (10.242.225.174) To
- BY1PR0301MB1192.namprd03.prod.outlook.com (25.160.195.150)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
-X-Forefront-PRVS: 03818C953D
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(979002)(6049001)(6009001)(51704005)(51914003)(199003)(189002)(479174003)(24454002)(377454003)(95666004)(93886004)(54356999)(23746002)(42186005)(86362001)(92726001)(87266999)(50986999)(122386002)(76176999)(92566001)(83506001)(120916001)(102836001)(77096003)(50466002)(77156002)(65816999)(64126003)(97736003)(105586002)(40100003)(47776003)(21056001)(59896002)(107046002)(64706001)(31966008)(2351001)(101416001)(110136001)(46102003)(87976001)(65806001)(65956001)(106356001)(20776003)(66066001)(4396001)(80316001)(33656002)(62966003)(99396003)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1192;H:[137.57.160.210];FPR:;MLV:ovrnspm;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+	id S1759004AbaJaTfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 15:35:50 -0400
+From: Ben Shelton <ben.shelton@ni.com>
+To: linux-mtd@lists.infradead.org
+Cc: dedekind1@gmail.com, adrian.hunter@intel.com, linux-kernel@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Ben Shelton <ben.shelton@ni.com>
+Subject: [PATCH 3/4] UBIFS: Add security.* XATTR support for the UBIFS
+Date: Fri, 31 Oct 2014 13:50:30 -0500
+Message-Id: <1414781431-2911-4-git-send-email-ben.shelton@ni.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+References: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 10/31/2014 01:51:12 PM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 10/31/2014 01:51:12 PM,
+	Serialize complete at 10/31/2014 01:51:12 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-31_08:2014-10-31,2014-10-31,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 12:42 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Fri, Oct 31, 2014 at 10:20:06AM -0500, Dinh Nguyen wrote:
->>>> @@ -339,7 +339,8 @@ static void dwc2_handle_wakeup_detected_intr(struct dwc2_hsotg *hsotg)
->>>>  		}
->>>>  		/* Change to L0 state */
->>>>  		hsotg->lx_state = DWC2_L0;
->>>> -		call_gadget(hsotg, resume);
->>>> +		if (!IS_ERR(hsotg->clk))
->>>> +			call_gadget(hsotg, resume);
->>>
->>> instead of exposing the clock detail to the entire driver, add IS_ERR()
->>> checks to resume and suspend instead. In fact, NULL is a valid clock, so
->>> you might as well:
->>>
->>> 	clk = clk_get(foo, bar);
->>> 	if (IS_ERR(clk))
->>> 		dwc->clk = NULL;
->>> 	else
->>> 		dwc->clk = clk;
->>>
->>> Then you don't need any IS_ERR() checks sprinkled around the driver.
->>
->> But we would still need to check for the clock before accessing gadget
->> functionality right?
->>
->> 	if (dwc2->clk)
->> 		call_gadget();
-> 
-> Read my comment again. "NULL is a valid clock".  Look at what
-> clk_enable() does when a NULL pointer is passed:
-> 
-> static int __clk_enable(struct clk *clk)
-> {
-> 	int ret = 0;
-> 
-> 	if (!clk)
-> 		return 0;
-> 
-> 	if (WARN_ON(clk->prepare_count == 0))
-> 		return -ESHUTDOWN;
-> 
-> 	if (clk->enable_count == 0) {
-> 		ret = __clk_enable(clk->parent);
-> 
-> 		if (ret)
-> 			return ret;
-> 
-> 		if (clk->ops->enable) {
-> 			ret = clk->ops->enable(clk->hw);
-> 			if (ret) {
-> 				__clk_disable(clk->parent);
-> 				return ret;
-> 			}
-> 		}
-> 	}
-> 
-> 	clk->enable_count++;
-> 	return 0;
-> }
-> 
-> int clk_enable(struct clk *clk)
-> {
-> 	unsigned long flags;
-> 	int ret;
-> 
-> 	flags = clk_enable_lock();
-> 	ret = __clk_enable(clk);
-> 	clk_enable_unlock(flags);
-> 
-> 	return ret;
-> }
-> EXPORT_SYMBOL_GPL(clk_enable);
+From: Subodh Nijsure <snijsure@grid-net.com>
 
-Ah yes, thanks for the explanation. So if clk=NULL, it just return 0.
-But what I'm saying is that if the driver is configured for dual-role
-mode, and no clock is specified, then the driver should not be accessing
-any gadget functionality.
+Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Ben Shelton <ben.shelton@ni.com>
+Acked-by: Brad Mouring <brad.mouring@ni.com>
+Acked-by: Terry Wilcox <terry.wilcox@ni.com>
+Acked-by: Gratian Crisan <gratian.crisan@ni.com>
+---
+ fs/ubifs/dir.c   | 20 ++++++++++++++
+ fs/ubifs/super.c |  1 +
+ fs/ubifs/ubifs.h |  4 +++
+ fs/ubifs/xattr.c | 79 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 104 insertions(+)
 
-So as the patch series stands right now, if I swap out an A connector to
-a B-connector, then I get a connect_id_status change interrupt. The
-status would show a device and I would initialize the gadget portion of
-the driver.
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index ea41649..31de1c4 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -272,6 +272,10 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 		goto out_budg;
+ 	}
+ 
++	err = ubifs_init_security(dir, inode, &dentry->d_name);
++	if (err)
++		goto out_cancel;
++
+ 	mutex_lock(&dir_ui->ui_mutex);
+ 	dir->i_size += sz_change;
+ 	dir_ui->ui_size = dir->i_size;
+@@ -279,6 +283,7 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 	err = ubifs_jnl_update(c, dir, &dentry->d_name, inode, 0, 0);
+ 	if (err)
+ 		goto out_cancel;
++
+ 	mutex_unlock(&dir_ui->ui_mutex);
+ 
+ 	ubifs_release_budget(c, &req);
+@@ -728,6 +733,10 @@ static int ubifs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 		goto out_budg;
+ 	}
+ 
++	err = ubifs_init_security(dir, inode, &dentry->d_name);
++	if (err)
++		goto out_cancel;
++
+ 	mutex_lock(&dir_ui->ui_mutex);
+ 	insert_inode_hash(inode);
+ 	inc_nlink(inode);
+@@ -740,6 +749,7 @@ static int ubifs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 		ubifs_err("cannot create directory, error %d", err);
+ 		goto out_cancel;
+ 	}
++
+ 	mutex_unlock(&dir_ui->ui_mutex);
+ 
+ 	ubifs_release_budget(c, &req);
+@@ -808,6 +818,10 @@ static int ubifs_mknod(struct inode *dir, struct dentry *dentry,
+ 	ui->data = dev;
+ 	ui->data_len = devlen;
+ 
++	err = ubifs_init_security(dir, inode, &dentry->d_name);
++	if (err)
++		goto out_cancel;
++
+ 	mutex_lock(&dir_ui->ui_mutex);
+ 	dir->i_size += sz_change;
+ 	dir_ui->ui_size = dir->i_size;
+@@ -815,6 +829,7 @@ static int ubifs_mknod(struct inode *dir, struct dentry *dentry,
+ 	err = ubifs_jnl_update(c, dir, &dentry->d_name, inode, 0, 0);
+ 	if (err)
+ 		goto out_cancel;
++
+ 	mutex_unlock(&dir_ui->ui_mutex);
+ 
+ 	ubifs_release_budget(c, &req);
+@@ -884,6 +899,10 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
+ 	ui->data_len = len;
+ 	inode->i_size = ubifs_inode(inode)->ui_size = len;
+ 
++	err = ubifs_init_security(dir, inode, &dentry->d_name);
++	if (err)
++		goto out_cancel;
++
+ 	mutex_lock(&dir_ui->ui_mutex);
+ 	dir->i_size += sz_change;
+ 	dir_ui->ui_size = dir->i_size;
+@@ -891,6 +910,7 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
+ 	err = ubifs_jnl_update(c, dir, &dentry->d_name, inode, 0, 0);
+ 	if (err)
+ 		goto out_cancel;
++
+ 	mutex_unlock(&dir_ui->ui_mutex);
+ 
+ 	ubifs_release_budget(c, &req);
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index 106bf20..e642067 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -2039,6 +2039,7 @@ static int ubifs_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (c->max_inode_sz > MAX_LFS_FILESIZE)
+ 		sb->s_maxbytes = c->max_inode_sz = MAX_LFS_FILESIZE;
+ 	sb->s_op = &ubifs_super_operations;
++	sb->s_xattr = ubifs_xattr_handlers;
+ 
+ 	mutex_lock(&c->umount_mutex);
+ 	err = mount_ubifs(c);
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index c4fe900..bc04b9c 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -36,6 +36,7 @@
+ #include <linux/mtd/ubi.h>
+ #include <linux/pagemap.h>
+ #include <linux/backing-dev.h>
++#include <linux/security.h>
+ #include "ubifs-media.h"
+ 
+ /* Version of this UBIFS implementation */
+@@ -1465,6 +1466,7 @@ extern spinlock_t ubifs_infos_lock;
+ extern atomic_long_t ubifs_clean_zn_cnt;
+ extern struct kmem_cache *ubifs_inode_slab;
+ extern const struct super_operations ubifs_super_operations;
++extern const struct xattr_handler *ubifs_xattr_handlers[];
+ extern const struct address_space_operations ubifs_file_address_operations;
+ extern const struct file_operations ubifs_file_operations;
+ extern const struct inode_operations ubifs_file_inode_operations;
+@@ -1754,6 +1756,8 @@ ssize_t ubifs_getxattr(struct dentry *dentry, const char *name, void *buf,
+ 		       size_t size);
+ ssize_t ubifs_listxattr(struct dentry *dentry, char *buffer, size_t size);
+ int ubifs_removexattr(struct dentry *dentry, const char *name);
++int ubifs_init_security(struct inode *dentry, struct inode *inode,
++			const struct qstr *qstr);
+ 
+ /* super.c */
+ struct inode *ubifs_iget(struct super_block *sb, unsigned long inum);
+diff --git a/fs/ubifs/xattr.c b/fs/ubifs/xattr.c
+index d0f69c2..f844841 100644
+--- a/fs/ubifs/xattr.c
++++ b/fs/ubifs/xattr.c
+@@ -575,3 +575,82 @@ out_free:
+ 	kfree(xent);
+ 	return err;
+ }
++
++size_t ubifs_security_listxattr(struct dentry *d, char *list, size_t list_size,
++				const char *name, size_t name_len, int flags)
++{
++	const int prefix_len = XATTR_SECURITY_PREFIX_LEN;
++	const size_t total_len = prefix_len + name_len + 1;
++
++	if (list && total_len <= list_size) {
++		memcpy(list, XATTR_SECURITY_PREFIX, prefix_len);
++		memcpy(list + prefix_len, name, name_len);
++		list[prefix_len + name_len] = '\0';
++	}
++
++	return total_len;
++}
++
++int ubifs_security_getxattr(struct dentry *d, const char *name,
++			    void *buffer, size_t size, int flags)
++{
++	return ubifs_getxattr(d, name, buffer, size);
++}
++
++int ubifs_security_setxattr(struct dentry *d, const char *name,
++			    const void *value, size_t size,
++			    int flags, int handler_flags)
++{
++	return ubifs_setxattr(d, name, value, size, flags);
++}
++
++struct xattr_handler ubifs_xattr_security_handler = {
++	.prefix = XATTR_SECURITY_PREFIX,
++	.list   = ubifs_security_listxattr,
++	.get    = ubifs_security_getxattr,
++	.set    = ubifs_security_setxattr,
++};
++
++const struct xattr_handler *ubifs_xattr_handlers[] = {
++	&ubifs_xattr_security_handler,
++	NULL
++};
++
++static int ubifs_initxattrs(struct inode *inode,
++			    const struct xattr *xattr_array, void *fs_info)
++{
++	const struct xattr *xattr;
++	char *name;
++	int err = 0;
++
++	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
++		name = kmalloc(XATTR_SECURITY_PREFIX_LEN +
++			       strlen(xattr->name) + 1, GFP_NOFS);
++		if (!name) {
++			err = -ENOMEM;
++			break;
++		}
++		strcpy(name, XATTR_SECURITY_PREFIX);
++		strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
++		err = __ubifs_setxattr(inode, name, xattr->value,
++				       xattr->value_len, 0);
++		kfree(name);
++		if (err < 0)
++			break;
++	}
++
++	return err;
++}
++
++int ubifs_init_security(struct inode *dentry, struct inode *inode,
++			const struct qstr *qstr)
++{
++	int err;
++
++	mutex_lock(&inode->i_mutex);
++	err = security_inode_init_security(inode, dentry, qstr,
++					   &ubifs_initxattrs, 0);
++	mutex_unlock(&inode->i_mutex);
++
++	return err;
++}
+-- 
+2.1.1
 
-diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
-index 44c609f..96810f7 100644
---- a/drivers/usb/dwc2/hcd.c
-+++ b/drivers/usb/dwc2/hcd.c
-@@ -1371,7 +1371,8 @@ static void dwc2_conn_id_status_change(struct
-work_struct *work)
-                hsotg->op_state = OTG_STATE_B_PERIPHERAL;
-                dwc2_core_init(hsotg, false, -1);
-                dwc2_enable_global_interrupts(hsotg);
--               s3c_hsotg_core_init(hsotg);
-+               if (hsotg->clk)
-+                       s3c_hsotg_core_init(hsotg);
-
-So if I don't have a valid clock, I'll be accessing the peripheral
-portion of the IP.
-
-But I guess not having the check for the valid clock here should be fine
-as I don't see a case where there can be 2 different clocks for host and
-peripheral?
-
-
-> 
->>>> @@ -400,7 +401,8 @@ static void dwc2_handle_usb_suspend_intr(struct dwc2_hsotg *hsotg)
->>>>  			"DSTS.Suspend Status=%d HWCFG4.Power Optimize=%d\n",
->>>>  			!!(dsts & DSTS_SUSPSTS),
->>>>  			hsotg->hw_params.power_optimized);
->>>> -		call_gadget(hsotg, suspend);
->>>> +		if (!IS_ERR(hsotg->clk))
->>>> +			call_gadget(hsotg, suspend);
->>>>  	} else {
->>>>  		if (hsotg->op_state == OTG_STATE_A_PERIPHERAL) {
->>>>  			dev_dbg(hsotg->dev, "a_peripheral->a_host\n");
->>>> @@ -477,7 +479,8 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
->>>>  	spin_lock(&hsotg->lock);
->>>>  
->>>>  	if (dwc2_is_device_mode(hsotg))
->>>> -		retval = s3c_hsotg_irq(irq, dev);
->>>> +		if (!IS_ERR(hsotg->clk))
->>>> +			retval = s3c_hsotg_irq(irq, dev);
->>>
->>> wait a minute, if there is no clock we don't call the gadget interrupt
->>> handler ? Why ? Who will disable the IRQ line ?
->>
->> This portion is no static int __clk_enable(struct clk *clk)
-> 
-> huh ? What I mean is that this has the potential of leaving that IRQ
-> line enabled. Imagine you don't have a clock and s3c_hsotg_irq() isn't
-> called, then a peripheral IRQ fires, since the handler isn't called, who
-> will clear the interrupt ?
-> 
-
-Yes, right. This portion of the code is no longer needed when I switched
-to use a shared IRQ.
-
-Dinh
