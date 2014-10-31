@@ -1,122 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116AbaJaRim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:38:42 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:55154 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756894AbaJaRil (ORCPT
+	id S1757506AbaJaRi5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:38:57 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:33709 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757329AbaJaRiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:38:41 -0400
-Message-ID: <5453C91D.9060702@hurleysoftware.com>
-Date: Fri, 31 Oct 2014 13:38:37 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 31 Oct 2014 13:38:54 -0400
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Fri, 31 Oct 2014 13:38:52 -0400
+To: linux-kernel@vger.kernel.org
+Cc: Len Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: drivers: net: cpsw: Support ALLMULTI and fix IFF_PROMISC in switch
+ mode
+Message-ID: <20141031173852.GK24110@csclub.uwaterloo.ca>
 MIME-Version: 1.0
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: 3.17.2. issue?
-References: <5453AE33.8040802@xs4all.nl>
-In-Reply-To: <5453AE33.8040802@xs4all.nl>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc Hans Verkuil, Mauro Carvalho Chehab, linux-media ]
+The cpsw driver did not support the IFF_ALLMULTI flag which makes dynamic
+multicast routing not work.  Related to this, when enabling IFF_PROMISC
+in switch mode, all registered multicast addresses are flushed, resulting
+in only broadcast and unicast traffic being received.
 
-On 10/31/2014 11:43 AM, Udo van den Heuvel wrote:
-> Hello,
-> 
-> Booting into 3.17.2 on one box I saw:
-> 
-> [   15.070260] microcode: CPU0: patch_level=0x010000b7
-> [   15.279454] Linux video capture interface: v2.00
-> [   15.315043] microcode: CPU0: new patch_level=0x010000c7
-> [   15.319519] microcode: CPU1: patch_level=0x010000b7
-> [   15.323966] microcode: CPU1: new patch_level=0x010000c7
-> [   15.328493] microcode: Microcode Update Driver: v2.00
-> <tigran@aivazian.fsnet.co.uk>, Peter Oruba
-> [   15.750724] saa7146: register extension 'budget_av'
-> [   15.757205] ------------[ cut here ]------------
-> [   15.763300] WARNING: CPU: 0 PID: 468 at fs/proc/generic.c:341
-> __proc_create+0x1a4/0x1c0()
-> [   15.769475] name len 0
-> [   15.774046] Modules linked in: budget_av(+) saa7146_vv
-> videobuf_dma_sg videobuf_core v4l2_common videodev budget_core microcode
-> ttpci_eeprom saa7146 dvb_core snd_hda_codec_realtek snd_hda_codec_hdmi
-> snd_hda_codec_generic cp210x snd_hda_intel usbserial k10temp
-> snd_hda_controller evdev snd_hda_codec snd_seq snd_seq_device snd_pcm
-> i2c_piix4 snd_timer snd acpi_cpufreq processor button nfsd auth_rpcgss
-> oid_registry exportfs nfs_acl lockd sunrpc hid_generic usbhid hid
-> ata_generic ehci_pci ehci_hcd ohci_pci ohci_hcd sr_mod cdrom radeon
-> fbcon bitblit softcursor font cfbfillrect cfbimgblt cfbcopyarea
-> backlight drm_kms_helper ttm autofs4
-> [   15.794125] CPU: 0 PID: 468 Comm: systemd-udevd Not tainted
-> 3.17.2test-dirty #7
-> [   15.799155] Hardware name: To Be Filled By O.E.M. To Be Filled By
-> O.E.M./To be filled by O.E.M., BIOS 080015  05/04/2010
-> [   15.804586]  0000000000000009 ffffffff81461238 ffff8800cf69ba60
-> ffffffff81056271
-> [   15.809771]  ffff8800cf69bb00 ffff8800cf69bab0 0000000000000002
-> 000000000000416d
-> [   15.814957]  0000000000000000 ffffffff810562e7 ffffffff8156510b
-> ffffffff00000020
-> [   15.820188] Call Trace:
-> [   15.825314]  [<ffffffff81461238>] ? dump_stack+0x49/0x6a
-> [   15.830457]  [<ffffffff81056271>] ? warn_slowpath_common+0x81/0xb0
-> [   15.835535]  [<ffffffff810562e7>] ? warn_slowpath_fmt+0x47/0x50
-> [   15.840565]  [<ffffffff81179c74>] ? __proc_create+0x1a4/0x1c0
-> [   15.845613]  [<ffffffff81179f5f>] ? proc_mkdir_data+0x2f/0x70
-> [   15.850605]  [<ffffffff81092b74>] ? register_handler_proc+0x114/0x130
-> [   15.855497]  [<ffffffff8108f87b>] ? __setup_irq+0x3cb/0x500
-> [   15.860273]  [<ffffffffa0362da0>] ? saa7146_remove_one+0x1c0/0x1c0
-> [saa7146]
-> [   15.865007]  [<ffffffff8108fb21>] ? request_threaded_irq+0xd1/0x170
-> [   15.869728]  [<ffffffffa03630f3>] ? saa7146_init_one+0x103/0x740
-> [saa7146]
-> [   15.874377]  [<ffffffff81271158>] ? pci_device_probe+0x98/0xf0
-> [   15.878911]  [<ffffffff81305356>] ? driver_probe_device+0x86/0x270
-> [   15.883317]  [<ffffffff81305633>] ? __driver_attach+0x93/0xa0
-> [   15.887659]  [<ffffffff813055a0>] ? __device_attach+0x60/0x60
-> [   15.891919]  [<ffffffff81303653>] ? bus_for_each_dev+0x53/0x90
-> [   15.896107]  [<ffffffff81304b68>] ? bus_add_driver+0x188/0x240
-> [   15.900246]  [<ffffffffa0400000>] ? 0xffffffffa0400000
-> [   15.904359]  [<ffffffff813059e6>] ? driver_register+0x56/0xd0
-> [   15.908454]  [<ffffffff810002b4>] ? do_one_initcall+0x84/0x1b0
-> [   15.912567]  [<ffffffff810b0774>] ? load_module+0x1c34/0x2190
-> [   15.916648]  [<ffffffff810ad3c0>] ? store_uevent+0x50/0x50
-> [   15.920716]  [<ffffffff810b0e25>] ? SyS_finit_module+0x85/0x90
-> [   15.924768]  [<ffffffff81466092>] ? system_call_fastpath+0x16/0x1b
-> [   15.928925] ---[ end trace b6ff19cfd9b0c411 ]---
-> [   15.932953] saa7146: found saa7146 @ mem ffffc90000020c00 (revision
-> 1, irq 20) (0x153b,0x1157)
-> [   15.937071] saa7146 (0): dma buffer size 192512
-> [   15.937071] saa7146 (0): dma buffer size 192512
-> [   15.941161] DVB: registering new adapter (Terratec Cinergy 1200 DVB-T)
-> [   15.981742] adapter failed MAC signature check
-> [   15.987499] encoded MAC from EEPROM was
-> ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff
-> [   16.256557] budget_av: KNC1-0: MAC addr = 00:0a:ac:01:d6:87
-> [   16.617698] budget_av 0000:03:05.0: DVB: registering adapter 0
-> frontend 0 (Philips TDA10046H DVB-T)...
-> [   16.624394] budget_av: ci interface initialised
-> [   17.053409] EXT4-fs (dm-3): mounted filesystem with ordered data
-> mode. Opts: (null)
-> 
-> What happened?
-> 
-> Kind regards,
-> Udo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+A new cpsw_ale_set_allmulti function now scans through the ALE entry
+table and adds/removes the host port from the unregistered multicast
+port mask of each vlan entry depending on the state of IFF_ALLMULTI.
+In promiscious mode, cpsw_ale_set_allmulti is used to force reception
+of all multicast traffic in addition to the unicast and broadcast traffic.
+
+With this change dynamic multicast and promiscious mode both work in
+switch mode.
+
+Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index 952e1e4..96a61d1 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -638,12 +638,16 @@ static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
+ 	if (ndev->flags & IFF_PROMISC) {
+ 		/* Enable promiscuous mode */
+ 		cpsw_set_promiscious(ndev, true);
++		cpsw_ale_set_allmulti(priv->ale, IFF_ALLMULTI);
+ 		return;
+ 	} else {
+ 		/* Disable promiscuous mode */
+ 		cpsw_set_promiscious(ndev, false);
+ 	}
+ 
++	/* Restore allmulti on vlans if necessary */
++	cpsw_ale_set_allmulti(priv->ale, priv->ndev->flags & IFF_ALLMULTI);
++
+ 	/* Clear all mcast from ALE */
+ 	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port);
+ 
+@@ -1149,6 +1153,7 @@ static inline void cpsw_add_default_vlan(struct cpsw_priv *priv)
+ 	const int port = priv->host_port;
+ 	u32 reg;
+ 	int i;
++	int unreg_mcast_mask;
+ 
+ 	reg = (priv->version == CPSW_VERSION_1) ? CPSW1_PORT_VLAN :
+ 	       CPSW2_PORT_VLAN;
+@@ -1158,9 +1163,14 @@ static inline void cpsw_add_default_vlan(struct cpsw_priv *priv)
+ 	for (i = 0; i < priv->data.slaves; i++)
+ 		slave_write(priv->slaves + i, vlan, reg);
+ 
++	if (priv->ndev->flags & IFF_ALLMULTI)
++		unreg_mcast_mask = ALE_ALL_PORTS;
++	else
++		unreg_mcast_mask = ALE_PORT_1 | ALE_PORT_2;
++
+ 	cpsw_ale_add_vlan(priv->ale, vlan, ALE_ALL_PORTS << port,
+ 			  ALE_ALL_PORTS << port, ALE_ALL_PORTS << port,
+-			  (ALE_PORT_1 | ALE_PORT_2) << port);
++			  unreg_mcast_mask << port);
+ }
+ 
+ static void cpsw_init_host_port(struct cpsw_priv *priv)
+@@ -1620,11 +1630,17 @@ static inline int cpsw_add_vlan_ale_entry(struct cpsw_priv *priv,
+ 				unsigned short vid)
+ {
+ 	int ret;
++	int unreg_mcast_mask;
++
++	if (priv->ndev->flags & IFF_ALLMULTI)
++		unreg_mcast_mask = ALE_ALL_PORTS;
++	else
++		unreg_mcast_mask = ALE_PORT_1 | ALE_PORT_2;
+ 
+ 	ret = cpsw_ale_add_vlan(priv->ale, vid,
+ 				ALE_ALL_PORTS << priv->host_port,
+ 				0, ALE_ALL_PORTS << priv->host_port,
+-				(ALE_PORT_1 | ALE_PORT_2) << priv->host_port);
++				unreg_mcast_mask << priv->host_port);
+ 	if (ret != 0)
+ 		return ret;
+ 
+diff --git a/drivers/net/ethernet/ti/cpsw_ale.c b/drivers/net/ethernet/ti/cpsw_ale.c
+index 0579b22..3ae8387 100644
+--- a/drivers/net/ethernet/ti/cpsw_ale.c
++++ b/drivers/net/ethernet/ti/cpsw_ale.c
+@@ -443,6 +443,35 @@ int cpsw_ale_del_vlan(struct cpsw_ale *ale, u16 vid, int port_mask)
+ 	return 0;
+ }
+ 
++void cpsw_ale_set_allmulti(struct cpsw_ale *ale, int allmulti)
++{
++	u32 ale_entry[ALE_ENTRY_WORDS];
++	int type, idx;
++	int unreg_mcast = 0;
++
++	/* Only bother doing the work if the setting is actually changing */
++	if (ale->allmulti == allmulti)
++		return;
++
++	/* Remember the new setting to check against next time */
++	ale->allmulti = allmulti;
++
++	for (idx = 0; idx < ale->params.ale_entries; idx++) {
++		cpsw_ale_read(ale, idx, ale_entry);
++		type = cpsw_ale_get_entry_type(ale_entry);
++		if (type != ALE_TYPE_VLAN)
++			continue;
++
++		unreg_mcast = cpsw_ale_get_vlan_unreg_mcast(ale_entry);
++		if (allmulti)
++			unreg_mcast |= 1;
++		else
++			unreg_mcast &= ~1;
++		cpsw_ale_set_vlan_unreg_mcast(ale_entry, unreg_mcast);
++		cpsw_ale_write(ale, idx, ale_entry);
++	}
++}
++
+ struct ale_control_info {
+ 	const char	*name;
+ 	int		offset, port_offset;
+diff --git a/drivers/net/ethernet/ti/cpsw_ale.h b/drivers/net/ethernet/ti/cpsw_ale.h
+index 31cf43c..c0d4127 100644
+--- a/drivers/net/ethernet/ti/cpsw_ale.h
++++ b/drivers/net/ethernet/ti/cpsw_ale.h
+@@ -27,6 +27,7 @@ struct cpsw_ale {
+ 	struct cpsw_ale_params	params;
+ 	struct timer_list	timer;
+ 	unsigned long		ageout;
++	int			allmulti;
+ };
+ 
+ enum cpsw_ale_control {
+@@ -103,6 +104,7 @@ int cpsw_ale_del_mcast(struct cpsw_ale *ale, u8 *addr, int port_mask,
+ int cpsw_ale_add_vlan(struct cpsw_ale *ale, u16 vid, int port, int untag,
+ 			int reg_mcast, int unreg_mcast);
+ int cpsw_ale_del_vlan(struct cpsw_ale *ale, u16 vid, int port);
++void cpsw_ale_set_allmulti(struct cpsw_ale *ale, int allmulti);
+ 
+ int cpsw_ale_control_get(struct cpsw_ale *ale, int port, int control);
+ int cpsw_ale_control_set(struct cpsw_ale *ale, int port,
+
+-- 
+Len Sorensen
 
