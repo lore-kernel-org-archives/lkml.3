@@ -1,251 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758478AbaJaTTN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:19:13 -0400
-Received: from mail-yh0-f73.google.com ([209.85.213.73]:64994 "EHLO
-	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaJaTTK convert rfc822-to-8bit (ORCPT
+	id S1758911AbaJaTTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 15:19:21 -0400
+Received: from mail-ie0-f202.google.com ([209.85.223.202]:39813 "EHLO
+	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758498AbaJaTTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:19:10 -0400
+	Fri, 31 Oct 2014 15:19:16 -0400
 From: Aditya Kali <adityakali@google.com>
 To: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
         luto@amacapital.net, ebiederm@xmission.com, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         mingo@redhat.com
-Cc: containers@lists.linux-foundation.org, jnagal@google.com
-Subject: [PATCHv2 0/7] CGroup Namespaces
-Date: Fri, 31 Oct 2014 12:18:54 -0700
-Message-Id: <1414783141-6947-1-git-send-email-adityakali@google.com>
+Cc: containers@lists.linux-foundation.org, jnagal@google.com,
+        Aditya Kali <adityakali@google.com>
+Subject: [PATCHv2 1/7] kernfs: Add API to generate relative kernfs path
+Date: Fri, 31 Oct 2014 12:18:55 -0700
+Message-Id: <1414783141-6947-2-git-send-email-adityakali@google.com>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <adityakali-cgroupns>
+In-Reply-To: <1414783141-6947-1-git-send-email-adityakali@google.com>
 References: <adityakali-cgroupns>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+ <1414783141-6947-1-git-send-email-adityakali@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another attempt at Cgroup Namespace patch-set. This incorporates
-suggestions on previous patch-set.
+The new function kernfs_path_from_node() generates and returns
+kernfs path of a given kernfs_node relative to a given parent
+kernfs_node.
 
-Changes from V1:
-1. No pinning of processes within cgroupns. Tasks can be freely moved
-   across cgroups even outside of their cgroupns-root. Usual DAC/MAC policies
-   apply as before.
-2. Path in /proc/<pid>/cgroup is now always shown and is relative to
-   cgroupns-root. So path can contain '/..' strings depending on cgroupns-root
-   of the reader and cgroup of <pid>.
-3. setns() does not require the process to first move under target
-   cgroupns-root.
-
-Changes form RFC (V0):
-1. setns support for cgroupns
-2. 'mount -t cgroup cgroup <mntpt>' from inside a cgroupns now
-   mounts the cgroup hierarcy with cgroupns-root as the filesystem root.
-3. writes to cgroup files outside of cgroupns-root are not allowed
-4. visibility of /proc/<pid>/cgroup is further restricted by not showing
-   anything if the <pid> is in a sibling cgroupns and its cgroup falls outside
-   your cgroupns-root.
-
-More details in the writeup below.
-
-Background
-  Cgroups and Namespaces are used together to create “virtual”
-  containers that isolates the host environment from the processes
-  running in container. But since cgroups themselves are not
-  “virtualized”, the task is always able to see global cgroups view
-  through cgroupfs mount and via /proc/self/cgroup file.
-
-  $ cat /proc/self/cgroup
-  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
-
-  This exposure of cgroup names to the processes running inside a
-  container results in some problems:
-  (1) The container names are typically host-container-management-agent
-      (systemd, docker/libcontainer, etc.) data and leaking its name (or
-      leaking the hierarchy) reveals too much information about the host
-      system.
-  (2) It makes the container migration across machines (CRIU) more
-      difficult as the container names need to be unique across the
-      machines in the migration domain.
-  (3) It makes it difficult to run container management tools (like
-      docker/libcontainer, lmctfy, etc.) within virtual containers
-      without adding dependency on some state/agent present outside the
-      container.
-
-  Note that the feature proposed here is completely different than the
-  “ns cgroup” feature which existed in the linux kernel until recently.
-  The ns cgroup also attempted to connect cgroups and namespaces by
-  creating a new cgroup every time a new namespace was created. It did
-  not solve any of the above mentioned problems and was later dropped
-  from the kernel. Incidentally though, it used the same config option
-  name CONFIG_CGROUP_NS as used in my prototype!
-
-Introducing CGroup Namespaces
-  With unified cgroup hierarchy
-  (Documentation/cgroups/unified-hierarchy.txt), the containers can now
-  have a much more coherent cgroup view and its easy to associate a
-  container with a single cgroup. This also allows us to virtualize the
-  cgroup view for tasks inside the container.
-
-  The new CGroup Namespace allows a process to “unshare” its cgroup
-  hierarchy starting from the cgroup its currently in.
-  For Ex:
-  $ cat /proc/self/cgroup
-  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
-  $ ls -l /proc/self/ns/cgroup
-  lrwxrwxrwx 1 root root 0 2014-07-15 10:37 /proc/self/ns/cgroup -> cgroup:[4026531835]
-  $ ~/unshare -c  # calls unshare(CLONE_NEWCGROUP) and exec’s /bin/bash
-  [ns]$ ls -l /proc/self/ns/cgroup
-  lrwxrwxrwx 1 root root 0 2014-07-15 10:35 /proc/self/ns/cgroup ->
-  cgroup:[4026532183]
-  # From within new cgroupns, process sees that its in the root cgroup
-  [ns]$ cat /proc/self/cgroup
-  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
-
-  # From global cgroupns:
-  $ cat /proc/<pid>/cgroup
-  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
-
-  # Unshare cgroupns along with userns and mountns
-  # Following calls unshare(CLONE_NEWCGROUP|CLONE_NEWUSER|CLONE_NEWNS), then
-  # sets up uid/gid map and exec’s /bin/bash
-  $ ~/unshare -c -u -m
-
-  # Originally, we were in /batchjobs/c_job_id1 cgroup. Mount our own cgroup
-  # hierarchy.
-  [ns]$ mount -t cgroup cgroup /tmp/cgroup
-  [ns]$ ls -l /tmp/cgroup
-  total 0
-  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.controllers
-  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.populated
-  -rw-r--r-- 1 root root 0 2014-10-13 09:25 cgroup.procs
-  -rw-r--r-- 1 root root 0 2014-10-13 09:32 cgroup.subtree_control
-
-  The cgroupns-root (/batchjobs/c_job_id1 in above example) becomes the
-  filesystem root for the namespace specific cgroupfs mount.
-
-  The virtualization of /proc/self/cgroup file combined with restricting
-  the view of cgroup hierarchy by namespace-private cgroupfs mount
-  should provide a completely isolated cgroup view inside the container.
-
-  In its current form, the cgroup namespaces patcheset provides following
-  behavior:
-
-  (1) The “root” cgroup for a cgroup namespace is the cgroup in which
-      the process calling unshare is running.
-      For ex. if a process in /batchjobs/c_job_id1 cgroup calls unshare,
-      cgroup /batchjobs/c_job_id1 becomes the cgroupns-root.
-      For the init_cgroup_ns, this is the real root (“/”) cgroup
-      (identified in code as cgrp_dfl_root.cgrp).
-
-  (2) The cgroupns-root cgroup does not change even if the namespace
-      creator process later moves to a different cgroup.
-      $ ~/unshare -c # unshare cgroupns in some cgroup
-      [ns]$ cat /proc/self/cgroup
-      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
-      [ns]$ mkdir sub_cgrp_1
-      [ns]$ echo 0 > sub_cgrp_1/cgroup.procs
-      [ns]$ cat /proc/self/cgroup
-      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
-
-  (3) Each process gets its CGROUPNS specific view of /proc/<pid>/cgroup
-  (a) Processes running inside the cgroup namespace will be able to see
-      cgroup paths (in /proc/self/cgroup) only inside their root cgroup
-      [ns]$ sleep 100000 &  # From within unshared cgroupns
-      [1] 7353
-      [ns]$ echo 7353 > sub_cgrp_1/cgroup.procs
-      [ns]$ cat /proc/7353/cgroup
-      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
-
-  (b) From global cgroupns, the real cgroup path will be visible:
-      $ cat /proc/7353/cgroup
-      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1/sub_cgrp_1
-
-  (c) From a sibling cgroupns (cgroupns root-ed at a different cgroup), cgroup
-      path relative to its own cgroupns-root will be shown:
-      # ns2's cgroupns-root is at '/batchjobs/c_job_id2'
-      [ns2]$ cat /proc/7353/cgroup
-      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/../c_job_id2/sub_cgrp_1
-      [ns2]$
-      Note that the relative path always starts with '/' to indicate that its
-      relative to the cgroupns-root of the caller.
-
-  (4) Processes inside a cgroupns can move in-and-out of the cgroupns-root
-      (if they have proper access to external cgroups).
-      # From inside cgroupns (with cgroupns-root at /batchjobs/c_job_id1), and
-      # assuming that the global hierarchy is still accessible inside cgroupns:
-      $ cat /proc/7353/cgroup
-      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
-      $ echo 7353 > batchjobs/c_job_id2/cgroup.procs
-      $ cat /proc/7353/cgroup
-      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/../c_job_id2
-
-      Note that this kind of setup is not encouraged. A task inside cgroupns
-      should only be exposed to its own cgroupns hierarchy. Otherwise it makes
-      the virtualization of /proc/<pid>/cgroup less useful.
-
-  (5) Setns to another cgroup namespace is allowed when:
-      (a) the process has CAP_SYS_ADMIN in its current userns
-      (b) the process has CAP_SYS_ADMIN in the target cgroupns' userns
-      No implicit cgroup changes happen with attaching to another cgroupns. It
-      is expected that the somone moves the attaching process under the target
-      cgroupns-root.
-
-  (6) When some thread from a multi-threaded process unshares its
-      cgroup-namespace, the new cgroupns gets applied to the entire
-      process (all the threads). This should be OK since
-      unified-hierarchy only allows process-level containerization. So
-      all the threads in the process will have the same cgroup. And both
-      - changing cgroups and unsharing namespaces - are protected under
-      threadgroup_lock(task).
-
-  (7) The cgroup namespace is alive as long as there is atleast 1
-      process inside it. When the last process exits, the cgroup
-      namespace is destroyed. The cgroupns-root and the actual cgroups
-      remain though.
-
-  (8) 'mount -t cgroup cgroup <mntpt>' when called from within cgroupns mounts
-      the unified cgroup hierarchy with cgroupns-root as the filesystem root.
-      The process needs CAP_SYS_ADMIN in its userns and mntns.
-
-Implementation
-  The current patch-set is based on top of Tejun Heo's cgroup tree (for-next
-  branch). Its fairly non-intrusive and provides above mentioned
-  features.
-
-Possible extensions of CGROUPNS:
-  (1) The Documentation/cgroups/unified-hierarchy.txt mentions use of
-      capabilities to restrict cgroups to administrative users. CGroup
-      namespaces could be of help here. With cgroup namespaces, it might
-      be possible to delegate administration of sub-cgroups under a
-      cgroupns-root to the cgroupns owner.
-
+Signed-off-by: Aditya Kali <adityakali@google.com>
 ---
+ fs/kernfs/dir.c        | 194 +++++++++++++++++++++++++++++++++++++++++++------
+ include/linux/kernfs.h |   3 +
+ 2 files changed, 176 insertions(+), 21 deletions(-)
 
- fs/kernfs/dir.c                  | 194 ++++++++++++++++++++++++++++++++++-----
- fs/kernfs/mount.c                |  48 ++++++++++
- fs/proc/namespaces.c             |   1 +
- include/linux/cgroup.h           |  41 ++++++++-
- include/linux/cgroup_namespace.h |  36 ++++++++
- include/linux/kernfs.h           |   5 +
- include/linux/nsproxy.h          |   2 +
- include/linux/proc_ns.h          |   4 +
- include/uapi/linux/sched.h       |   3 +-
- kernel/Makefile                  |   2 +-
- kernel/cgroup.c                  | 108 +++++++++++++++++-----
- kernel/cgroup_namespace.c        | 148 +++++++++++++++++++++++++++++
- kernel/fork.c                    |   2 +-
- kernel/nsproxy.c                 |  19 +++-
- 14 files changed, 561 insertions(+), 52 deletions(-)
- create mode 100644 include/linux/cgroup_namespace.h
- create mode 100644 kernel/cgroup_namespace.c
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 1c77193..e49c365 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -44,28 +44,158 @@ static int kernfs_name_locked(struct kernfs_node *kn, char *buf, size_t buflen)
+ 	return strlcpy(buf, kn->parent ? kn->name : "/", buflen);
+ }
+ 
+-static char * __must_check kernfs_path_locked(struct kernfs_node *kn, char *buf,
+-					      size_t buflen)
++/**
++ * kernfs_node_depth - compute depth of the kernfs node from root.
++ * The root node itself is considered to be at depth 0.
++ */
++static size_t kernfs_node_depth(struct kernfs_node *kn)
+ {
+-	char *p = buf + buflen;
++	size_t depth = 0;
++
++	BUG_ON(!kn);
++	while (kn->parent) {
++		depth++;
++		kn = kn->parent;
++	}
++	return depth;
++}
++
++/**
++ * kernfs_path_from_node_locked - find a relative path from @kn_from to @kn_to
++ * @kn_from: reference node of the path
++ * @kn_to: kernfs node to which path is needed
++ * @buf: buffer to copy the path into
++ * @buflen: size of @buf
++ *
++ * We need to handle couple of scenarios here:
++ * [1] when @kn_from is an ancestor of @kn_to at some level
++ * kn_from: /n1/n2/n3
++ * kn_to:   /n1/n2/n3/n4/n5
++ * result:  /n4/n5
++ *
++ * [2] when @kn_from is on a different hierarchy and we need to find common
++ * ancestor between @kn_from and @kn_to.
++ * kn_from: /n1/n2/n3/n4
++ * kn_to:   /n1/n2/n5
++ * result:  /../../n5
++ * OR
++ * kn_from: /n1/n2/n3/n4/n5   [depth=5]
++ * kn_to:   /n1/n2/n3         [depth=3]
++ * result:  /../..
++ */
++static char * __must_check kernfs_path_from_node_locked(
++	struct kernfs_node *kn_from,
++	struct kernfs_node *kn_to,
++	char *buf,
++	size_t buflen)
++{
++	char *p = buf;
++	struct kernfs_node *kn;
++	size_t depth_from = 0, depth_to, d;
+ 	int len;
+ 
+-	*--p = '\0';
++	/* We atleast need 2 bytes to write "/\0". */
++	BUG_ON(buflen < 2);
+ 
+-	do {
+-		len = strlen(kn->name);
+-		if (p - buf < len + 1) {
+-			buf[0] = '\0';
+-			p = NULL;
+-			break;
++	if (kn_from == kn_to) {
++		*p = '/';
++		*(p + 1) = '\0';
++		return p;
++	}
++
++	/* We can find the relative path only if both the nodes belong to the
++	 * same kernfs root.
++	 */
++	if (kn_from) {
++		BUG_ON(kernfs_root(kn_from) != kernfs_root(kn_to));
++		depth_from = kernfs_node_depth(kn_from);
++	}
++
++	depth_to = kernfs_node_depth(kn_to);
++
++	/* We compose path from left to right. So first write out all possible
++	 * "/.." strings needed to reach from 'kn_from' to the common ancestor.
++	 */
++	if (kn_from) {
++		while (depth_from > depth_to) {
++			len = strlen("/..");
++			if ((buflen - (p - buf)) < len + 1) {
++				/* buffer not big enough. */
++				buf[0] = '\0';
++				return NULL;
++			}
++			memcpy(p, "/..", len);
++			p += len;
++			*p = '\0';
++			--depth_from;
++			kn_from = kn_from->parent;
+ 		}
++
++		d = depth_to;
++		kn = kn_to;
++		while (depth_from < d) {
++			kn = kn->parent;
++			d--;
++		}
++
++		/* Now we have 'depth_from == depth_to' at this point. Add more
++		 * "/.."s until we reach common ancestor. In the worst case,
++		 * root node will be the common ancestor.
++		 */
++		while (depth_from > 0) {
++			/* If we reached common ancestor, stop. */
++			if (kn_from == kn)
++				break;
++			len = strlen("/..");
++			if ((buflen - (p - buf)) < len + 1) {
++				/* buffer not big enough. */
++				buf[0] = '\0';
++				return NULL;
++			}
++			memcpy(p, "/..", len);
++			p += len;
++			*p = '\0';
++			--depth_from;
++			kn_from = kn_from->parent;
++			kn = kn->parent;
++		}
++	}
++
++	/* Figure out how many bytes we need to write the path.
++	 */
++	d = depth_to;
++	kn = kn_to;
++	len = 0;
++	while (depth_from < d) {
++		/* Account for "/<name>". */
++		len += strlen(kn->name) + 1;
++		kn = kn->parent;
++		--d;
++	}
++
++	if ((buflen - (p - buf)) < len + 1) {
++		/* buffer not big enough. */
++		buf[0] = '\0';
++		return NULL;
++	}
++
++	/* We have enough space. Move 'p' ahead by computed length and start
++	 * writing node names into buffer.
++	 */
++	p += len;
++	*p = '\0';
++	d = depth_to;
++	kn = kn_to;
++	while (d > depth_from) {
++		len = strlen(kn->name);
+ 		p -= len;
+ 		memcpy(p, kn->name, len);
+ 		*--p = '/';
+ 		kn = kn->parent;
+-	} while (kn && kn->parent);
++		--d;
++	}
+ 
+-	return p;
++	return buf;
+ }
+ 
+ /**
+@@ -92,26 +222,48 @@ int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen)
+ }
+ 
+ /**
+- * kernfs_path - build full path of a given node
++ * kernfs_path_from_node - build path of node @kn relative to @kn_root.
++ * @kn_root: parent kernfs_node relative to which we need to build the path
+  * @kn: kernfs_node of interest
+- * @buf: buffer to copy @kn's name into
++ * @buf: buffer to copy @kn's path into
+  * @buflen: size of @buf
+  *
+- * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
+- * path is built from the end of @buf so the returned pointer usually
+- * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
++ * Builds and returns @kn's path relative to @kn_root. @kn_root and @kn must
++ * be on the same kernfs-root. If @kn_root is not parent of @kn, then a relative
++ * path (which includes '..'s) as needed to reach from @kn_root to @kn is
++ * returned.
++ * The path may be built from the end of @buf so the returned pointer may not
++ * match @buf.  If @buf isn't long enough, @buf is nul terminated
+  * and %NULL is returned.
+  */
+-char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
++char *kernfs_path_from_node(struct kernfs_node *kn_root, struct kernfs_node *kn,
++			    char *buf, size_t buflen)
+ {
+ 	unsigned long flags;
+ 	char *p;
+ 
+ 	spin_lock_irqsave(&kernfs_rename_lock, flags);
+-	p = kernfs_path_locked(kn, buf, buflen);
++	p = kernfs_path_from_node_locked(kn_root, kn, buf, buflen);
+ 	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
+ 	return p;
+ }
++EXPORT_SYMBOL_GPL(kernfs_path_from_node);
++
++/**
++ * kernfs_path - build full path of a given node
++ * @kn: kernfs_node of interest
++ * @buf: buffer to copy @kn's name into
++ * @buflen: size of @buf
++ *
++ * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
++ * path is built from the end of @buf so the returned pointer usually
++ * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
++ * and %NULL is returned.
++ */
++char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
++{
++	return kernfs_path_from_node(NULL, kn, buf, buflen);
++}
+ EXPORT_SYMBOL_GPL(kernfs_path);
+ 
+ /**
+@@ -145,8 +297,8 @@ void pr_cont_kernfs_path(struct kernfs_node *kn)
+ 
+ 	spin_lock_irqsave(&kernfs_rename_lock, flags);
+ 
+-	p = kernfs_path_locked(kn, kernfs_pr_cont_buf,
+-			       sizeof(kernfs_pr_cont_buf));
++	p = kernfs_path_from_node_locked(NULL, kn, kernfs_pr_cont_buf,
++					 sizeof(kernfs_pr_cont_buf));
+ 	if (p)
+ 		pr_cont("%s", p);
+ 	else
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 30faf79..3c2be75 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -258,6 +258,9 @@ static inline bool kernfs_ns_enabled(struct kernfs_node *kn)
+ }
+ 
+ int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen);
++char * __must_check kernfs_path_from_node(struct kernfs_node *root_kn,
++					  struct kernfs_node *kn, char *buf,
++					  size_t buflen);
+ char * __must_check kernfs_path(struct kernfs_node *kn, char *buf,
+ 				size_t buflen);
+ void pr_cont_kernfs_name(struct kernfs_node *kn);
+-- 
+2.1.0.rc2.206.gedb03e5
 
- [PATCHv2 1/7] kernfs: Add API to generate relative kernfs path
- [PATCHv2 2/7] sched: new clone flag CLONE_NEWCGROUP for cgroup
- [PATCHv2 3/7] cgroup: add function to get task's cgroup on default
- [PATCHv2 4/7] cgroup: export cgroup_get() and cgroup_put()
- [PATCHv2 5/7] cgroup: introduce cgroup namespaces
- [PATCHv2 6/7] cgroup: cgroup namespace setns support
- [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init cgroupns
