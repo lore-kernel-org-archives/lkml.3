@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745AbaJaRsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:48:52 -0400
-Received: from smtp113.iad3a.emailsrvr.com ([173.203.187.113]:54393 "EHLO
+	id S1757608AbaJaRtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:49:13 -0400
+Received: from smtp113.iad3a.emailsrvr.com ([173.203.187.113]:48744 "EHLO
 	smtp113.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757537AbaJaRsD (ORCPT
+	by vger.kernel.org with ESMTP id S1757386AbaJaRsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:48:03 -0400
+	Fri, 31 Oct 2014 13:48:01 -0400
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] staging: comedi: split out PCMCIA support into new module
-Date: Fri, 31 Oct 2014 17:47:37 +0000
-Message-Id: <1414777659-25578-4-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 1/5] staging: comedi: comedidev.h: remove dummy PCI support functions
+Date: Fri, 31 Oct 2014 17:47:35 +0000
+Message-Id: <1414777659-25578-2-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414777659-25578-1-git-send-email-abbotti@mev.co.uk>
 References: <1414777659-25578-1-git-send-email-abbotti@mev.co.uk>
@@ -24,89 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting the `CONFIG_COMEDI_PCMCIA_DRIVERS` kernel configuration option
-makes the main "comedi" module depend on the "pcmcia" module, but many
-machines don't have PCMCIA slots and only a few low-level Comedi drivers
-need PCMCIA support.  The Comedi PCMCIA support functions are all in
-"comedi_pcmcia.c".  Turn it into a separate module so we don't have to
-pull in the other PCMCIA support modules unnecessarily.
+Some low-level Comedi driver modules used to handle PCI devices and ISA
+devices in the same module with some conditional compilation.  To reduce
+the amount of conditional compilation, some dummy inline versions of
+`comedi_to_pci_dev()`, `comedi_pci_enable()`, `comedi_pci_disable()`,
+and `comedi_pci_detach()` are defined in "comedidev.h" if
+`CONFIG_COMEDI_PCI_DRIVERS` is undefined.  Since those Comedi low-level
+driver modules have since had PCI support split out into separate
+modules, there is no need to keep the dummy inline functions around any
+more, so remove them.
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/Kconfig         |  5 ++++-
- drivers/staging/comedi/Makefile        |  3 ++-
- drivers/staging/comedi/comedi_pcmcia.c | 16 ++++++++++++++++
- 3 files changed, 22 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/comedidev.h | 26 --------------------------
+ 1 file changed, 26 deletions(-)
 
-diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-index d4214c0..2fa5a90 100644
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -1076,11 +1076,14 @@ config COMEDI_NI_TIOCMD
- endif # COMEDI_PCI_DRIVERS
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index d18f702..5788b38 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -607,32 +607,6 @@ void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
+ 	module_driver(__comedi_driver, comedi_pci_driver_register, \
+ 			comedi_pci_driver_unregister, &(__pci_driver))
  
- menuconfig COMEDI_PCMCIA_DRIVERS
--	bool "Comedi PCMCIA drivers"
-+	tristate "Comedi PCMCIA drivers"
- 	depends on PCMCIA
- 	---help---
- 	  Enable support for comedi PCMCIA drivers.
+-#else
+-
+-/*
+- * Some of the comedi mixed ISA/PCI drivers call the PCI specific
+- * functions. Provide some dummy functions if CONFIG_COMEDI_PCI_DRIVERS
+- * is not enabled.
+- */
+-
+-static inline struct pci_dev *comedi_to_pci_dev(struct comedi_device *dev)
+-{
+-	return NULL;
+-}
+-
+-static inline int comedi_pci_enable(struct comedi_device *dev)
+-{
+-	return -ENOSYS;
+-}
+-
+-static inline void comedi_pci_disable(struct comedi_device *dev)
+-{
+-}
+-
+-static inline void comedi_pci_detach(struct comedi_device *dev)
+-{
+-}
+-
+ #endif /* CONFIG_COMEDI_PCI_DRIVERS */
  
-+	  To compile this support as a module, choose M here: the module will
-+	  be called comedi_pcmcia.
-+
- if COMEDI_PCMCIA_DRIVERS
- 
- config COMEDI_CB_DAS16_CS
-diff --git a/drivers/staging/comedi/Makefile b/drivers/staging/comedi/Makefile
-index fae2d90..cfb121a 100644
---- a/drivers/staging/comedi/Makefile
-+++ b/drivers/staging/comedi/Makefile
-@@ -3,11 +3,12 @@ ccflags-$(CONFIG_COMEDI_DEBUG)		:= -DDEBUG
- comedi-y				:= comedi_fops.o range.o drivers.o \
- 					   comedi_buf.o
- comedi-$(CONFIG_COMEDI_PCI_DRIVERS)	+= comedi_pci.o
--comedi-$(CONFIG_COMEDI_PCMCIA_DRIVERS)	+= comedi_pcmcia.o
- comedi-$(CONFIG_COMEDI_USB_DRIVERS)	+= comedi_usb.o
- comedi-$(CONFIG_PROC_FS)		+= proc.o
- comedi-$(CONFIG_COMPAT)			+= comedi_compat32.o
- 
-+obj-$(CONFIG_COMEDI_PCMCIA_DRIVERS)	+= comedi_pcmcia.o
-+
- obj-$(CONFIG_COMEDI)			+= comedi.o
- 
- obj-$(CONFIG_COMEDI)			+= kcomedilib/
-diff --git a/drivers/staging/comedi/comedi_pcmcia.c b/drivers/staging/comedi/comedi_pcmcia.c
-index 9d49d5d..0529bae 100644
---- a/drivers/staging/comedi/comedi_pcmcia.c
-+++ b/drivers/staging/comedi/comedi_pcmcia.c
-@@ -16,6 +16,7 @@
-  * GNU General Public License for more details.
-  */
- 
-+#include <linux/module.h>
- #include <linux/kernel.h>
- 
- #include <pcmcia/cistpl.h>
-@@ -154,3 +155,18 @@ void comedi_pcmcia_driver_unregister(struct comedi_driver *comedi_driver,
- 	comedi_driver_unregister(comedi_driver);
- }
- EXPORT_SYMBOL_GPL(comedi_pcmcia_driver_unregister);
-+
-+static int __init comedi_pcmcia_init(void)
-+{
-+	return 0;
-+}
-+module_init(comedi_pcmcia_init);
-+
-+static void __exit comedi_pcmcia_exit(void)
-+{
-+}
-+module_exit(comedi_pcmcia_exit);
-+
-+MODULE_AUTHOR("http://www.comedi.org");
-+MODULE_DESCRIPTION("Comedi PCMCIA interface module");
-+MODULE_LICENSE("GPL");
+ #ifdef CONFIG_COMEDI_PCMCIA_DRIVERS
 -- 
 2.1.1
 
