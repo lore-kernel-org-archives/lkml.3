@@ -1,55 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933707AbaJaPG7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 11:06:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39034 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932570AbaJaPG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 11:06:57 -0400
-Message-ID: <5453A589.6040308@redhat.com>
-Date: Fri, 31 Oct 2014 16:06:49 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S933724AbaJaPJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 11:09:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34446 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932508AbaJaPJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 11:09:17 -0400
+Date: Fri, 31 Oct 2014 16:09:11 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
+        x86@kernel.org
+Subject: Re: [PATCH v2 0/8] CR4 handling improvements
+Message-ID: <20141031150911.GO23531@worktop.programming.kicks-ass.net>
+References: <cover.1414190806.git.luto@amacapital.net>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH 0/3] kvm: APICv register write workaround
-References: <1414678007-9377-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1414678007-9377-1-git-send-email-rkrcmar@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1414190806.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 30/10/2014 15:06, Radim Krčmář wrote:
-> APICv traps register writes, so we can't retrieve previous value, but
-> our code depends on detecting changes.
-
-Applied, thanks.
-
-Paolo
-
-> Apart from disabling APIC register virtualization, we can detect the
-> change by using extra memory.  One value history is enough, but we still
-> don't want to keep it for every APIC register, for performance reasons.
-> This leaves us with either a new framework, or exceptions ...
-> The latter options fits KVM's path better [1,2].
-> 
-> And when we already mirror a part of registers, optimizing access is
-> acceptable [3].  (Squashed to keep bisecters happy.)
-> 
-> ---
-> Radim Krčmář (3):
->   KVM: x86: detect SPIV changes under APICv
->   KVM: x86: detect LVTT changes under APICv
->   KVM: x86: optimize some accesses to LVTT and SPIV
-> 
->  arch/x86/kvm/lapic.c | 32 +++++++++++++++++---------------
->  arch/x86/kvm/lapic.h |  8 +++++---
->  2 files changed, 22 insertions(+), 18 deletions(-)
-> 
+This looks ok I suppose, although the x86 people should pass verdict on
+the first few patches.
