@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641AbaJaRkj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:40:39 -0400
-Received: from mout.web.de ([212.227.17.11]:50641 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864AbaJaRkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:40:37 -0400
-Message-ID: <5453C98C.90105@users.sourceforge.net>
-Date: Fri, 31 Oct 2014 18:40:28 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Ursula Braun <ursula.braun@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] s390/net: Deletion of unnecessary checks before two
- function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+	id S1757637AbaJaRks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:40:48 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:48313 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaJaRkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 13:40:45 -0400
+Message-ID: <1414777242.27538.22.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] ipv4: avoid divide 0 error in tcp_incr_quickack
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: Chen Weilong <chenweilong@huawei.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 31 Oct 2014 10:40:42 -0700
+In-Reply-To: <CAADnVQLe+Xs22sbdy7=8KW2+LscFOiFWdKxSFFuPTWSPTHbSow@mail.gmail.com>
+References: <1414767047-8972-1-git-send-email-chenweilong@huawei.com>
+	 <CAADnVQLe+Xs22sbdy7=8KW2+LscFOiFWdKxSFFuPTWSPTHbSow@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:kyH5ceRlmtCqNa/CtIcI8PeVHkFEnYNeCF61m0onE3RRZkGW+C9
- BPXNfusipIt9yXwBLul4aciJzrucWEg1B/NXPj+OGbxELqOIRqAmX8GiyGR9TBixPtmLMg/
- pKT8FAOcLVA4TJCUbR5YbmS9X3Kf4pPB4AgmIQj2cz5P4EWG+ayc8y0aqP6WHSEuIz+pVVN
- nGDXezQw2IpsL1wKMkjYg==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functions debug_unregister() and kfree_fsm() test whether their argument
-is NULL and then return immediately. Thus the test around the call
-is not needed.
+On Fri, 2014-10-31 at 09:24 -0700, Alexei Starovoitov wrote:
+> cc-ing netdev
+> 
+> On Fri, Oct 31, 2014 at 7:50 AM, Chen Weilong <chenweilong@huawei.com> wrote:
+> > From: Weilong Chen <chenweilong@huawei.com>
+> >
+> > We got a problem like this:
+> >  [ffff8801c1a05570] machine_kexec at ffffffff81025039
+> >  [ffff8801c1a055d0] crash_kexec at ffffffff8109b253
+> >  [ffff8801c1a056a0] oops_end at ffffffff81442aed
+> >  [ffff8801c1a056d0] die at ffffffff81005603
+> >  [ffff8801c1a05700] do_trap at ffffffff81442448
+> >  [ffff8801c1a05760] do_divide_error at ffffffff81002c10
+> >  [ffff8801c1a05888] tcp_send_dupack at ffffffff81385e44
+> >  [ffff8801c1a058c8] tcp_validate_incoming at ffffffff813886b5
+> >  [ffff8801c1a05908] tcp_rcv_state_process at ffffffff8138d0b7
+> >  [ffff8801c1a05958] tcp_child_process at ffffffff81397255
+> >  [ffff8801c1a05988] tcp_v4_do_rcv at ffffffff81395a70
+> >  [ffff8801c1a059d8] tcp_v4_rcv at ffffffff81396fc8
+> >  [ffff8801c1a05a48] ip_local_deliver_finish at ffffffff813746e9
+> >  [ffff8801c1a05a78] ip_local_deliver at ffffffff81374a20
+> >  [ffff8801c1a05aa8] ip_rcv_finish at ffffffff81374389
+> >  [ffff8801c1a05ad8] ip_rcv at ffffffff81374c78
+> > There was a wrong ack packet coming during TCP handshake. The socket's state
+> > was TCP_SYN_RECV, its rcv_mss was not initialize yet. So
+> > tcp_send_dupack -> tcp_enter_quickack_mode got a divide 0 error.
+> > This patch add a state check before tcp_enter_quickack_mode.
+> 
+> ouch. Is it remote exploitable?
 
-This issue was detected by using the Coccinelle software.
+Seems to be SYN crossing. Quite hard, but possible.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/s390/net/claw.c      |  6 ++----
- drivers/s390/net/ctcm_main.c |  6 ++----
- drivers/s390/net/lcs.c       |  6 ++----
- drivers/s390/net/netiucv.c   | 12 ++++--------
- 4 files changed, 10 insertions(+), 20 deletions(-)
-
-diff --git a/drivers/s390/net/claw.c b/drivers/s390/net/claw.c
-index 213e54e..d609ca0 100644
---- a/drivers/s390/net/claw.c
-+++ b/drivers/s390/net/claw.c
-@@ -109,10 +109,8 @@ static debug_info_t *claw_dbf_trace;
- static void
- claw_unregister_debug_facility(void)
- {
--	if (claw_dbf_setup)
--		debug_unregister(claw_dbf_setup);
--	if (claw_dbf_trace)
--		debug_unregister(claw_dbf_trace);
-+	debug_unregister(claw_dbf_setup);
-+	debug_unregister(claw_dbf_trace);
- }
-
- static int
-diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
-index e056dd4..34dc0f3 100644
---- a/drivers/s390/net/ctcm_main.c
-+++ b/drivers/s390/net/ctcm_main.c
-@@ -1074,8 +1074,7 @@ static void ctcm_free_netdevice(struct net_device *dev)
- 	if (priv) {
- 		grp = priv->mpcg;
- 		if (grp) {
--			if (grp->fsm)
--				kfree_fsm(grp->fsm);
-+			kfree_fsm(grp->fsm);
- 			if (grp->xid_skb)
- 				dev_kfree_skb(grp->xid_skb);
- 			if (grp->rcvd_xid_skb)
-@@ -1672,8 +1671,7 @@ static int ctcm_shutdown_device(struct ccwgroup_device *cgdev)
- 		ctcm_free_netdevice(dev);
- 	}
-
--	if (priv->fsm)
--		kfree_fsm(priv->fsm);
-+	kfree_fsm(priv->fsm);
-
- 	ccw_device_set_offline(cgdev->cdev[1]);
- 	ccw_device_set_offline(cgdev->cdev[0]);
-diff --git a/drivers/s390/net/lcs.c b/drivers/s390/net/lcs.c
-index 0a7d87c..5dfa7dd 100644
---- a/drivers/s390/net/lcs.c
-+++ b/drivers/s390/net/lcs.c
-@@ -88,10 +88,8 @@ static debug_info_t *lcs_dbf_trace;
- static void
- lcs_unregister_debug_facility(void)
- {
--	if (lcs_dbf_setup)
--		debug_unregister(lcs_dbf_setup);
--	if (lcs_dbf_trace)
--		debug_unregister(lcs_dbf_trace);
-+	debug_unregister(lcs_dbf_setup);
-+	debug_unregister(lcs_dbf_trace);
- }
-
- static int
-diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
-index 0a87809..bdcc3fe 100644
---- a/drivers/s390/net/netiucv.c
-+++ b/drivers/s390/net/netiucv.c
-@@ -487,12 +487,9 @@ DEFINE_PER_CPU(char[256], iucv_dbf_txt_buf);
-
- static void iucv_unregister_dbf_views(void)
- {
--	if (iucv_dbf_setup)
--		debug_unregister(iucv_dbf_setup);
--	if (iucv_dbf_data)
--		debug_unregister(iucv_dbf_data);
--	if (iucv_dbf_trace)
--		debug_unregister(iucv_dbf_trace);
-+	debug_unregister(iucv_dbf_setup);
-+	debug_unregister(iucv_dbf_data);
-+	debug_unregister(iucv_dbf_trace);
- }
- static int iucv_register_dbf_views(void)
- {
-@@ -1975,8 +1972,7 @@ static void netiucv_free_netdevice(struct net_device *dev)
- 	if (privptr) {
- 		if (privptr->conn)
- 			netiucv_remove_connection(privptr->conn);
--		if (privptr->fsm)
--			kfree_fsm(privptr->fsm);
-+		kfree_fsm(privptr->fsm);
- 		privptr->conn = NULL; privptr->fsm = NULL;
- 		/* privptr gets freed by free_netdev() */
- 	}
--- 
-2.1.3
 
