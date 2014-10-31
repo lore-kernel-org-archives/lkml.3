@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761006AbaJaGpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 02:45:50 -0400
-Received: from ozlabs.org ([103.22.144.67]:47417 "EHLO ozlabs.org"
+	id S1761066AbaJaGrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 02:47:33 -0400
+Received: from mga03.intel.com ([134.134.136.65]:62132 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759332AbaJaGph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 02:45:37 -0400
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: jdelvare@suse.de, linux@roeck-us.net
-Cc: lm-sensors@lm-sensors.org, <linux-kernel@vger.kernel.org>,
-        neelegup@linux.vnet.ibm.com
-Subject: [PATCH 2/2] hwmon: (ibmpowernv) Make the driver name more recognisable
-Date: Fri, 31 Oct 2014 17:45:23 +1100
-Message-Id: <1414737923-8227-2-git-send-email-mpe@ellerman.id.au>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414737923-8227-1-git-send-email-mpe@ellerman.id.au>
-References: <1414737923-8227-1-git-send-email-mpe@ellerman.id.au>
+	id S1759064AbaJaGrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 02:47:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,293,1413270000"; 
+   d="scan'208";a="628820225"
+Message-ID: <54533080.4070202@intel.com>
+Date: Fri, 31 Oct 2014 14:47:28 +0800
+From: "Chen, Tiejun" <tiejun.chen@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] KVM: x86: fix access memslots w/o hold srcu read lock
+References: <1414736819-9625-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1414736819-9625-1-git-send-email-wanpeng.li@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seeing "ibmpowernv" in dmesg is not very useful, that is just the name
-of the platform and doesn't identify the message as coming from the
-hwmon driver.
+On 2014/10/31 14:26, Wanpeng Li wrote:
+> The srcu read lock must be held while accessing memslots (e.g.
+> when using gfn_to_* functions), however, commit c24ae0dcd3e8
+> ("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call
+> gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it in
+> vmx_vcpu_reset() path which leads to suspicious rcu_dereference_check()
+> usage warning. This patch fix it by holding srcu read lock when call
+> gfn_to_page() in vmx_vcpu_reset() path.
+>
+>
+> [ INFO: suspicious RCU usage. ]
+> 3.18.0-rc2-test2+ #70 Not tainted
+> -------------------------------
+> include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
+>
+> other info that might help us debug this:
+>
+> rcu_scheduler_active = 1, debug_locks = 0
+> 1 lock held by qemu-system-x86/2371:
+>   #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
+>
+> stack backtrace:
+> CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
+> Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
+>   0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
+>   ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
+>   ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
+> Call Trace:
+>   [<ffffffff816f514f>] dump_stack+0x4e/0x71
+>   [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
+>   [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
+>   [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
+>   [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
+>   [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
+>   [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
+>   [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
+>   [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+>   [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
+>   [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
+>   [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
+>   [<ffffffff8122ee45>] ? __fget+0x5/0x250
+>   [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
+>   [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
+>   [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
+>
+> Reported-by: Takashi Iwai <tiwai@suse.de>
+> Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+> Suggested-by: Tiejun Chen <tiejun.chen@intel.com>
 
-Change DRVNAME to "powernv-hwmon" to make it clearer.
+Reviewed-by: Tiejun Chen <tiejun.chen@intel.com>
 
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
----
- drivers/hwmon/ibmpowernv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/hwmon/ibmpowernv.c b/drivers/hwmon/ibmpowernv.c
-index 6a30eeea94be..3ee00928cda9 100644
---- a/drivers/hwmon/ibmpowernv.c
-+++ b/drivers/hwmon/ibmpowernv.c
-@@ -16,7 +16,7 @@
-  * along with this program.
-  */
- 
--#define DRVNAME		"ibmpowernv"
-+#define DRVNAME		"powernv-hwmon"
- #define pr_fmt(fmt)	DRVNAME ": " fmt
- 
- #include <linux/init.h>
--- 
-1.9.1
-
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+>   arch/x86/kvm/vmx.c |    3 +++
+>   1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index a0f78db..bd9be01 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -4512,6 +4512,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+>   {
+>   	struct vcpu_vmx *vmx = to_vmx(vcpu);
+>   	struct msr_data apic_base_msr;
+> +	int idx;
+>
+>   	vmx->rmode.vm86_active = 0;
+>
+> @@ -4579,7 +4580,9 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+>   		vmcs_write32(TPR_THRESHOLD, 0);
+>   	}
+>
+> +	idx = srcu_read_lock(&vcpu->kvm->srcu);
+>   	kvm_vcpu_reload_apic_access_page(vcpu);
+> +	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+>
+>   	if (vmx_vm_has_apicv(vcpu->kvm))
+>   		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
+>
