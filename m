@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703AbaJaLZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 07:25:30 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:46735 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017AbaJaLZ2 (ORCPT
+	id S1759037AbaJaL0t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 07:26:49 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:48344 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757442AbaJaL0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 07:25:28 -0400
-X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 07:25:27 EDT
-Date: Fri, 31 Oct 2014 12:17:51 +0100
+	Fri, 31 Oct 2014 07:26:47 -0400
+Date: Fri, 31 Oct 2014 12:26:41 +0100
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20141031111751.GA28586@gmail.com>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20141031112641.GA28813@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,333 +26,320 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest sched-urgent-for-linus git tree from:
+Please pull the latest x86-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-   # HEAD: f3a7e1a9c464a32ee186ab91388313c82e7ce018 sched/dl: Fix preemption checks
+   # HEAD: d1cd1210834649ce1ca6bafe5ac25d2f40331343 x86, pageattr: Prevent overflow in slow_virt_to_phys() for X86_PAE
 
-Various scheduler fixes all over the place: three SCHED_DL fixes, 
-three sched/numa fixes, two generic race fixes and a comment fix.
+Fixes from all around the place:
+
+ - hyper-V 32-bit PAE guest kernel fix
+ - two IRQ allocation fixes on certain x86 boards
+ - intel-mid boot crash fix
+ - intel-quark quirk
+ - intel-quark 
+ - /proc/interrupts duplicate irq chip name fix
+ - cma boot crash fix
+ - syscall audit fix
+ - boot crash fix with certain TSC configurations (seen on Qemu)
+ - smpboot.c build warning fix
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Chen Hanxiao (1):
-      sched: Update comments for CLONE_NEWNS
+Andy Lutomirski (1):
+      x86, apic: Handle a bad TSC more gracefully
 
-Juri Lelli (2):
-      sched/deadline: Don't replenish from a !SCHED_DEADLINE entity
-      sched/deadline: Fix races between rt_mutex_setprio() and dl_task_timer()
+Dave Jones (1):
+      x86: Don't enable F00F workaround on Intel Quark processors
 
-Kirill Tkhai (4):
-      sched: Fix race between task_group and sched_task_group
-      sched/numa: Fix unsafe get_task_struct() in task_numa_assign()
-      sched/fair: Fix division by zero sysctl_numa_balancing_scan_size
-      sched/dl: Fix preemption checks
+Dexuan Cui (1):
+      x86, pageattr: Prevent overflow in slow_virt_to_phys() for X86_PAE
 
-Oleg Nesterov (1):
-      sched: stop the unbound recursion in preempt_schedule_context()
+Eric Paris (1):
+      i386/audit: stop scribbling on the stack frame
 
-Yasuaki Ishimatsu (1):
-      sched/fair: Care divide error in update_task_scan_period()
+Ingo Molnar (1):
+      x86/smpboot: Move data structure to its primary usage scope
+
+Jiang Liu (3):
+      x86: ACPI: Do not translate GSI number if IOAPIC is disabled
+      x86, intel-mid: Create IRQs for APB timers and RTC timers
+      ACPI, irq, x86: Return IRQ instead of GSI in mp_register_gsi()
+
+Maciej W. Rozycki (1):
+      x86/irq: Fix XT-PIC-XT-PIC in /proc/interrupts
+
+Weijie Yang (1):
+      x86, cma: Reserve DMA contiguous area after initmem_init()
 
 
- arch/x86/include/asm/preempt.h |  1 +
- include/uapi/linux/sched.h     |  2 +-
- kernel/context_tracking.c      | 40 -----------------------------------
- kernel/sched/core.c            | 47 ++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/deadline.c        | 41 ++++++++++++++++++++++++++++--------
- kernel/sched/fair.c            | 21 ++++++++++++++-----
- kernel/sysctl.c                |  3 ++-
- 7 files changed, 99 insertions(+), 56 deletions(-)
+ arch/x86/kernel/acpi/boot.c       | 16 ++++++++++------
+ arch/x86/kernel/apb_timer.c       |  2 --
+ arch/x86/kernel/apic/apic.c       |  4 ++--
+ arch/x86/kernel/cpu/intel.c       |  5 +++--
+ arch/x86/kernel/entry_32.S        | 15 +++++++--------
+ arch/x86/kernel/i8259.c           |  3 +--
+ arch/x86/kernel/irqinit.c         |  3 +--
+ arch/x86/kernel/setup.c           |  2 +-
+ arch/x86/kernel/smpboot.c         |  4 ++--
+ arch/x86/kernel/tsc.c             |  5 ++++-
+ arch/x86/mm/pageattr.c            |  2 +-
+ arch/x86/platform/intel-mid/sfi.c |  2 ++
+ 12 files changed, 34 insertions(+), 29 deletions(-)
 
-diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
-index 7024c12f7bfe..400873450e33 100644
---- a/arch/x86/include/asm/preempt.h
-+++ b/arch/x86/include/asm/preempt.h
-@@ -105,6 +105,7 @@ static __always_inline bool should_resched(void)
- # ifdef CONFIG_CONTEXT_TRACKING
-     extern asmlinkage void ___preempt_schedule_context(void);
- #   define __preempt_schedule_context() asm ("call ___preempt_schedule_context")
-+    extern asmlinkage void preempt_schedule_context(void);
- # endif
- #endif
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index b436fc735aa4..a142e77693e1 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -397,7 +397,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
  
-diff --git a/include/uapi/linux/sched.h b/include/uapi/linux/sched.h
-index 34f9d7387d13..b932be9f5c5b 100644
---- a/include/uapi/linux/sched.h
-+++ b/include/uapi/linux/sched.h
-@@ -13,7 +13,7 @@
- #define CLONE_VFORK	0x00004000	/* set if the parent wants the child to wake it up on mm_release */
- #define CLONE_PARENT	0x00008000	/* set if we want to have the same parent as the cloner */
- #define CLONE_THREAD	0x00010000	/* Same thread group? */
--#define CLONE_NEWNS	0x00020000	/* New namespace group? */
-+#define CLONE_NEWNS	0x00020000	/* New mount namespace group */
- #define CLONE_SYSVSEM	0x00040000	/* share system V SEM_UNDO semantics */
- #define CLONE_SETTLS	0x00080000	/* create a new TLS for the child */
- #define CLONE_PARENT_SETTID	0x00100000	/* set the TID in the parent */
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 5664985c46a0..937ecdfdf258 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -107,46 +107,6 @@ void context_tracking_user_enter(void)
- }
- NOKPROBE_SYMBOL(context_tracking_user_enter);
+ 	/* Don't set up the ACPI SCI because it's already set up */
+ 	if (acpi_gbl_FADT.sci_interrupt == gsi)
+-		return gsi;
++		return mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC);
  
--#ifdef CONFIG_PREEMPT
--/**
-- * preempt_schedule_context - preempt_schedule called by tracing
-- *
-- * The tracing infrastructure uses preempt_enable_notrace to prevent
-- * recursion and tracing preempt enabling caused by the tracing
-- * infrastructure itself. But as tracing can happen in areas coming
-- * from userspace or just about to enter userspace, a preempt enable
-- * can occur before user_exit() is called. This will cause the scheduler
-- * to be called when the system is still in usermode.
-- *
-- * To prevent this, the preempt_enable_notrace will use this function
-- * instead of preempt_schedule() to exit user context if needed before
-- * calling the scheduler.
-- */
--asmlinkage __visible void __sched notrace preempt_schedule_context(void)
--{
--	enum ctx_state prev_ctx;
+ 	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
+ 	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
+@@ -604,14 +604,18 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
+ 
+ int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
+ {
+-	int irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
++	int irq;
+ 
+-	if (irq >= 0) {
++	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
++		*irqp = gsi;
++	} else {
++		irq = mp_map_gsi_to_irq(gsi,
++					IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
++		if (irq < 0)
++			return -1;
+ 		*irqp = irq;
+-		return 0;
+ 	}
 -
--	if (likely(!preemptible()))
--		return;
--
--	/*
--	 * Need to disable preemption in case user_exit() is traced
--	 * and the tracer calls preempt_enable_notrace() causing
--	 * an infinite recursion.
--	 */
--	preempt_disable_notrace();
--	prev_ctx = exception_enter();
--	preempt_enable_no_resched_notrace();
--
--	preempt_schedule();
--
--	preempt_disable_notrace();
--	exception_exit(prev_ctx);
--	preempt_enable_notrace();
--}
--EXPORT_SYMBOL_GPL(preempt_schedule_context);
--#endif /* CONFIG_PREEMPT */
--
- /**
-  * context_tracking_user_exit - Inform the context tracking that the CPU is
-  *                              exiting userspace mode and entering the kernel.
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 44999505e1bf..240157c13ddc 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2951,6 +2951,47 @@ asmlinkage __visible void __sched notrace preempt_schedule(void)
+-	return -1;
++	return 0;
  }
- NOKPROBE_SYMBOL(preempt_schedule);
- EXPORT_SYMBOL(preempt_schedule);
-+
-+#ifdef CONFIG_CONTEXT_TRACKING
-+/**
-+ * preempt_schedule_context - preempt_schedule called by tracing
-+ *
-+ * The tracing infrastructure uses preempt_enable_notrace to prevent
-+ * recursion and tracing preempt enabling caused by the tracing
-+ * infrastructure itself. But as tracing can happen in areas coming
-+ * from userspace or just about to enter userspace, a preempt enable
-+ * can occur before user_exit() is called. This will cause the scheduler
-+ * to be called when the system is still in usermode.
-+ *
-+ * To prevent this, the preempt_enable_notrace will use this function
-+ * instead of preempt_schedule() to exit user context if needed before
-+ * calling the scheduler.
-+ */
-+asmlinkage __visible void __sched notrace preempt_schedule_context(void)
-+{
-+	enum ctx_state prev_ctx;
-+
-+	if (likely(!preemptible()))
-+		return;
-+
-+	do {
-+		__preempt_count_add(PREEMPT_ACTIVE);
-+		/*
-+		 * Needs preempt disabled in case user_exit() is traced
-+		 * and the tracer calls preempt_enable_notrace() causing
-+		 * an infinite recursion.
-+		 */
-+		prev_ctx = exception_enter();
-+		__schedule();
-+		exception_exit(prev_ctx);
-+
-+		__preempt_count_sub(PREEMPT_ACTIVE);
-+		barrier();
-+	} while (need_resched());
-+}
-+EXPORT_SYMBOL_GPL(preempt_schedule_context);
-+#endif /* CONFIG_CONTEXT_TRACKING */
-+
- #endif /* CONFIG_PREEMPT */
+ EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
+ 
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 5972b108f15a..b708738d016e 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -185,8 +185,6 @@ static void apbt_setup_irq(struct apbt_dev *adev)
+ 
+ 	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+ 	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+-	/* APB timer irqs are set up as mp_irqs, timer is edge type */
+-	__irq_set_handler(adev->irq, handle_edge_irq, 0, "edge");
+ }
+ 
+ /* Should be called with per cpu */
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 00853b254ab0..ba6cc041edb1 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1297,7 +1297,7 @@ void setup_local_APIC(void)
+ 	unsigned int value, queued;
+ 	int i, j, acked = 0;
+ 	unsigned long long tsc = 0, ntsc;
+-	long long max_loops = cpu_khz;
++	long long max_loops = cpu_khz ? cpu_khz : 1000000;
+ 
+ 	if (cpu_has_tsc)
+ 		rdtscll(tsc);
+@@ -1383,7 +1383,7 @@ void setup_local_APIC(void)
+ 			break;
+ 		}
+ 		if (queued) {
+-			if (cpu_has_tsc) {
++			if (cpu_has_tsc && cpu_khz) {
+ 				rdtscll(ntsc);
+ 				max_loops = (cpu_khz << 10) - (ntsc - tsc);
+ 			} else
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1ef456273172..9cc6b6f25f42 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -213,12 +213,13 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_X86_F00F_BUG
+ 	/*
+-	 * All current models of Pentium and Pentium with MMX technology CPUs
++	 * All models of Pentium and Pentium with MMX technology CPUs
+ 	 * have the F0 0F bug, which lets nonprivileged users lock up the
+ 	 * system. Announce that the fault handler will be checking for it.
++	 * The Quark is also family 5, but does not have the same bug.
+ 	 */
+ 	clear_cpu_bug(c, X86_BUG_F00F);
+-	if (!paravirt_enabled() && c->x86 == 5) {
++	if (!paravirt_enabled() && c->x86 == 5 && c->x86_model < 9) {
+ 		static int f00f_workaround_enabled;
+ 
+ 		set_cpu_bug(c, X86_BUG_F00F);
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index b553ed89e5f5..344b63f18d14 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -447,15 +447,14 @@ ENTRY(ia32_sysenter_target)
+ sysenter_audit:
+ 	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+ 	jnz syscall_trace_entry
+-	addl $4,%esp
+-	CFI_ADJUST_CFA_OFFSET -4
+-	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
+-	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
+-	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
+-	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
+-	/* %eax already in %eax		   1st arg: syscall number */
++	/* movl PT_EAX(%esp), %eax	already set, syscall number: 1st arg to audit */
++	movl PT_EBX(%esp), %edx		/* ebx/a0: 2nd arg to audit */
++	/* movl PT_ECX(%esp), %ecx	already set, a1: 3nd arg to audit */
++	pushl_cfi PT_ESI(%esp)		/* a3: 5th arg */
++	pushl_cfi PT_EDX+4(%esp)	/* a2: 4th arg */
+ 	call __audit_syscall_entry
+-	pushl_cfi %ebx
++	popl_cfi %ecx /* get that remapped edx off the stack */
++	popl_cfi %ecx /* get that remapped esi off the stack */
+ 	movl PT_EAX(%esp),%eax		/* reload syscall number */
+ 	jmp sysenter_do_call
+ 
+diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
+index 8af817105e29..e7cc5370cd2f 100644
+--- a/arch/x86/kernel/i8259.c
++++ b/arch/x86/kernel/i8259.c
+@@ -111,8 +111,7 @@ static void make_8259A_irq(unsigned int irq)
+ {
+ 	disable_irq_nosync(irq);
+ 	io_apic_irqs &= ~(1<<irq);
+-	irq_set_chip_and_handler_name(irq, &i8259A_chip, handle_level_irq,
+-				      i8259A_chip.name);
++	irq_set_chip_and_handler(irq, &i8259A_chip, handle_level_irq);
+ 	enable_irq(irq);
+ }
+ 
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index 44f1ed42fdf2..4de73ee78361 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -70,7 +70,6 @@ int vector_used_by_percpu_irq(unsigned int vector)
+ void __init init_ISA_irqs(void)
+ {
+ 	struct irq_chip *chip = legacy_pic->chip;
+-	const char *name = chip->name;
+ 	int i;
+ 
+ #if defined(CONFIG_X86_64) || defined(CONFIG_X86_LOCAL_APIC)
+@@ -79,7 +78,7 @@ void __init init_ISA_irqs(void)
+ 	legacy_pic->init(0);
+ 
+ 	for (i = 0; i < nr_legacy_irqs(); i++)
+-		irq_set_chip_and_handler_name(i, chip, handle_level_irq, name);
++		irq_set_chip_and_handler(i, chip, handle_level_irq);
+ }
+ 
+ void __init init_IRQ(void)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 235cfd39e0d7..ab08aa2276fb 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1128,7 +1128,6 @@ void __init setup_arch(char **cmdline_p)
+ 	setup_real_mode();
+ 
+ 	memblock_set_current_limit(get_max_mapped());
+-	dma_contiguous_reserve(max_pfn_mapped << PAGE_SHIFT);
+ 
+ 	/*
+ 	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
+@@ -1159,6 +1158,7 @@ void __init setup_arch(char **cmdline_p)
+ 	early_acpi_boot_init();
+ 
+ 	initmem_init();
++	dma_contiguous_reserve(max_pfn_mapped << PAGE_SHIFT);
+ 
+ 	/*
+ 	 * Reserve memory for crash kernel after SRAT is parsed so that it
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 2d5200e56357..4d2128ac70bd 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -102,8 +102,6 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+ EXPORT_PER_CPU_SYMBOL(cpu_info);
+ 
+-static DEFINE_PER_CPU(struct completion, die_complete);
+-
+ atomic_t init_deasserted;
  
  /*
-@@ -7833,6 +7874,11 @@ static void cpu_cgroup_css_offline(struct cgroup_subsys_state *css)
- 	sched_offline_group(tg);
+@@ -1318,6 +1316,8 @@ void cpu_disable_common(void)
+ 	fixup_irqs();
  }
  
-+static void cpu_cgroup_fork(struct task_struct *task)
-+{
-+	sched_move_task(task);
-+}
++static DEFINE_PER_CPU(struct completion, die_complete);
 +
- static int cpu_cgroup_can_attach(struct cgroup_subsys_state *css,
- 				 struct cgroup_taskset *tset)
+ int native_cpu_disable(void)
  {
-@@ -8205,6 +8251,7 @@ struct cgroup_subsys cpu_cgrp_subsys = {
- 	.css_free	= cpu_cgroup_css_free,
- 	.css_online	= cpu_cgroup_css_online,
- 	.css_offline	= cpu_cgroup_css_offline,
-+	.fork		= cpu_cgroup_fork,
- 	.can_attach	= cpu_cgroup_can_attach,
- 	.attach		= cpu_cgroup_attach,
- 	.exit		= cpu_cgroup_exit,
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 256e577faf1b..5285332392d5 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -518,12 +518,20 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
- 	}
+ 	int ret;
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index b6025f9e36c6..b7e50bba3bbb 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -1166,14 +1166,17 @@ void __init tsc_init(void)
  
- 	/*
--	 * We need to take care of a possible races here. In fact, the
--	 * task might have changed its scheduling policy to something
--	 * different from SCHED_DEADLINE or changed its reservation
--	 * parameters (through sched_setattr()).
-+	 * We need to take care of several possible races here:
-+	 *
-+	 *   - the task might have changed its scheduling policy
-+	 *     to something different than SCHED_DEADLINE
-+	 *   - the task might have changed its reservation parameters
-+	 *     (through sched_setattr())
-+	 *   - the task might have been boosted by someone else and
-+	 *     might be in the boosting/deboosting path
-+	 *
-+	 * In all this cases we bail out, as the task is already
-+	 * in the runqueue or is going to be enqueued back anyway.
- 	 */
--	if (!dl_task(p) || dl_se->dl_new)
-+	if (!dl_task(p) || dl_se->dl_new ||
-+	    dl_se->dl_boosted || !dl_se->dl_throttled)
- 		goto unlock;
+ 	x86_init.timers.tsc_pre_init();
  
- 	sched_clock_tick();
-@@ -532,7 +540,7 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
- 	dl_se->dl_yielded = 0;
- 	if (task_on_rq_queued(p)) {
- 		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
--		if (task_has_dl_policy(rq->curr))
-+		if (dl_task(rq->curr))
- 			check_preempt_curr_dl(rq, p, 0);
- 		else
- 			resched_curr(rq);
-@@ -847,8 +855,19 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- 	 * smaller than our one... OTW we keep our runtime and
- 	 * deadline.
- 	 */
--	if (pi_task && p->dl.dl_boosted && dl_prio(pi_task->normal_prio))
-+	if (pi_task && p->dl.dl_boosted && dl_prio(pi_task->normal_prio)) {
- 		pi_se = &pi_task->dl;
-+	} else if (!dl_prio(p->normal_prio)) {
-+		/*
-+		 * Special case in which we have a !SCHED_DEADLINE task
-+		 * that is going to be deboosted, but exceedes its
-+		 * runtime while doing so. No point in replenishing
-+		 * it, as it's going to return back to its original
-+		 * scheduling class after this.
-+		 */
-+		BUG_ON(!p->dl.dl_boosted || flags != ENQUEUE_REPLENISH);
-+		return;
+-	if (!cpu_has_tsc)
++	if (!cpu_has_tsc) {
++		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
+ 		return;
 +	}
  
- 	/*
- 	 * If p is throttled, we do nothing. In fact, if it exhausted
-@@ -1607,8 +1626,12 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
- 			/* Only reschedule if pushing failed */
- 			check_resched = 0;
- #endif /* CONFIG_SMP */
--		if (check_resched && task_has_dl_policy(rq->curr))
--			check_preempt_curr_dl(rq, p, 0);
-+		if (check_resched) {
-+			if (dl_task(rq->curr))
-+				check_preempt_curr_dl(rq, p, 0);
-+			else
-+				resched_curr(rq);
-+		}
+ 	tsc_khz = x86_platform.calibrate_tsc();
+ 	cpu_khz = tsc_khz;
+ 
+ 	if (!tsc_khz) {
+ 		mark_tsc_unstable("could not calculate TSC khz");
++		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
+ 		return;
  	}
+ 
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index ae242a7c11c7..36de293caf25 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -409,7 +409,7 @@ phys_addr_t slow_virt_to_phys(void *__virt_addr)
+ 	psize = page_level_size(level);
+ 	pmask = page_level_mask(level);
+ 	offset = virt_addr & ~pmask;
+-	phys_addr = pte_pfn(*pte) << PAGE_SHIFT;
++	phys_addr = (phys_addr_t)pte_pfn(*pte) << PAGE_SHIFT;
+ 	return (phys_addr | offset);
  }
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0b069bf3e708..34baa60f8a7b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -828,11 +828,12 @@ static unsigned int task_nr_scan_windows(struct task_struct *p)
- 
- static unsigned int task_scan_min(struct task_struct *p)
- {
-+	unsigned int scan_size = ACCESS_ONCE(sysctl_numa_balancing_scan_size);
- 	unsigned int scan, floor;
- 	unsigned int windows = 1;
- 
--	if (sysctl_numa_balancing_scan_size < MAX_SCAN_WINDOW)
--		windows = MAX_SCAN_WINDOW / sysctl_numa_balancing_scan_size;
-+	if (scan_size < MAX_SCAN_WINDOW)
-+		windows = MAX_SCAN_WINDOW / scan_size;
- 	floor = 1000 / windows;
- 
- 	scan = sysctl_numa_balancing_scan_period_min / task_nr_scan_windows(p);
-@@ -1164,9 +1165,19 @@ static void task_numa_compare(struct task_numa_env *env,
- 	long moveimp = imp;
- 
- 	rcu_read_lock();
--	cur = ACCESS_ONCE(dst_rq->curr);
--	if (cur->pid == 0) /* idle */
-+
-+	raw_spin_lock_irq(&dst_rq->lock);
-+	cur = dst_rq->curr;
-+	/*
-+	 * No need to move the exiting task, and this ensures that ->curr
-+	 * wasn't reaped and thus get_task_struct() in task_numa_assign()
-+	 * is safe under RCU read lock.
-+	 * Note that rcu_read_lock() itself can't protect from the final
-+	 * put_task_struct() after the last schedule().
-+	 */
-+	if ((cur->flags & PF_EXITING) || is_idle_task(cur))
- 		cur = NULL;
-+	raw_spin_unlock_irq(&dst_rq->lock);
- 
- 	/*
- 	 * "imp" is the fault differential for the source task between the
-@@ -1520,7 +1531,7 @@ static void update_task_scan_period(struct task_struct *p,
- 		 * scanning faster if shared accesses dominate as it may
- 		 * simply bounce migrations uselessly
- 		 */
--		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
-+		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
- 		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
+ EXPORT_SYMBOL_GPL(slow_virt_to_phys);
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 3c53a90fdb18..c14ad34776c4 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -106,6 +106,7 @@ int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 			mp_irq.dstapic = MP_APIC_ALL;
+ 			mp_irq.dstirq = pentry->irq;
+ 			mp_save_irq(&mp_irq);
++			mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
  	}
  
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4aada6d9fe74..15f2511a1b7c 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -387,7 +387,8 @@ static struct ctl_table kern_table[] = {
- 		.data		= &sysctl_numa_balancing_scan_size,
- 		.maxlen		= sizeof(unsigned int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &one,
- 	},
- 	{
- 		.procname	= "numa_balancing",
+ 	return 0;
+@@ -176,6 +177,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
+ 		mp_irq.dstapic = MP_APIC_ALL;
+ 		mp_irq.dstirq = pentry->irq;
+ 		mp_save_irq(&mp_irq);
++		mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
+ 	}
+ 	return 0;
+ }
