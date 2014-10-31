@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785AbaJaQzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:55:20 -0400
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:53096
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752337AbaJaQzT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:55:19 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] staging: comedi: icp_multi: correct insn_bits returned
- data for DO
-Thread-Topic: [PATCH] staging: comedi: icp_multi: correct insn_bits returned
- data for DO
-Thread-Index: AQHP9ReL/9p66cljdUa8MyiBRG9D+pxKbD8A
-Date: Fri, 31 Oct 2014 16:55:17 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D882601A797@P3PWEX4MB008.ex4.secureserver.net>
-References: <1414765947-15464-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1414765947-15464-1-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752603AbaJaQ5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:57:24 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:53936 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaJaQ5X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 12:57:23 -0400
+Date: Fri, 31 Oct 2014 09:57:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com,
+        Clark Williams <clark.williams@gmail.com>
+Subject: Re: [PATCH tip/core/rcu 4/7] rcu: Unify boost and kthread priorities
+Message-ID: <20141031165716.GB5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141028222224.GA28263@linux.vnet.ibm.com>
+ <1414534982-29203-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1414534982-29203-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20141029110146.GA3337@twins.programming.kicks-ass.net>
+ <20141029161602.GT5718@linux.vnet.ibm.com>
+ <20141031162210.GV23531@worktop.programming.kicks-ass.net>
+ <20141031164229.GY5718@linux.vnet.ibm.com>
+ <20141031165143.GN10501@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031165143.GN10501@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14103116-0025-0000-0000-000005C2C4A9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 31, 2014 7:32 AM, Ian Abbott wrote:
-> For some unfathomable reason, the Comedi `insn_bits` handler for the
-> digital output subdevice (`icp_multi_insn_bits_do()`) writes the digital
-> output register and reads back the unrelated digital input register.
-> Read back the current state of the outputs (held in `s->state`) instead.
->
-> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-> ---
->  drivers/staging/comedi/drivers/icp_multi.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/icp_multi.c b/drivers/staging/comedi/drivers/icp_multi.c
-> index f4e1c1c..db744c8 100644
-> --- a/drivers/staging/comedi/drivers/icp_multi.c
-> +++ b/drivers/staging/comedi/drivers/icp_multi.c
-> @@ -53,7 +53,7 @@ Configuration options: not applicable, uses PCI auto config
->  #define ICP_MULTI_AI		2	/* R:   Analogue input data */
->  #define ICP_MULTI_DAC_CSR	4	/* R/W: DAC command/status register */
->  #define ICP_MULTI_AO		6	/* R/W: Analogue output data */
-> -#define ICP_MULTI_DI		8	/* R/W: Digital inouts */
-> +#define ICP_MULTI_DI		8	/* R/W: Digital inputs */
->  #define ICP_MULTI_DO		0x0A	/* R/W: Digital outputs */
->  #define ICP_MULTI_INT_EN	0x0C	/* R/W: Interrupt enable register */
->  #define ICP_MULTI_INT_STAT	0x0E	/* R/W: Interrupt status register */
-> @@ -319,7 +319,7 @@ static int icp_multi_insn_bits_do(struct comedi_device *dev,
->  	if (comedi_dio_update_state(s, data))
->  		writew(s->state, dev->mmio + ICP_MULTI_DO);
->  
-> -	data[1] = readw(dev->mmio + ICP_MULTI_DI);
-> +	data[1] = s->state;
->  
->  	return insn->n;
->  }
+On Fri, Oct 31, 2014 at 05:51:43PM +0100, Peter Zijlstra wrote:
+> On Fri, Oct 31, 2014 at 09:42:30AM -0700, Paul E. McKenney wrote:
+> 
+> > Well, you are supposed to determine the highest RT priority at which
+> > your workload might run CPU-bound tasks, and set the boost priority
+> > at some level above that.  My model of RCU priority boosting is that
+> > it should be used to make inadvertent high-priority infinite loops
+> > easier to debug, but others might have different approaches.
+> 
+> Ah, so DL will never be CPU-bound -- and RR/FIFO _should_ never be, but
+> I digress ;-)
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+;-) ;-) ;-)
+
+> > > We should be able to detect the case where more and work piles on and
+> > > the actual running does not appear to catch up, but I'm not sure what to
+> > > do about it, seeing how system stability is at risk.
+> > 
+> > I could imagine having a backup SCHED_FIFO task that handled the
+> > case where callbacks were piling up, but synchronizing it with the
+> > SCHED_DEADLINE task while avoiding callback misordering could be a bit
+> > "interesting".  (Recall that callback misordering messes up rcu_barrier().)
+> 
+> Ah, so there is talk of 'soft' CBS modes, which instead of hard throttle
+> either reclaim 'unused' DL bandwidth, or continue running in lower scheduling
+> classes.
+
+OK, something like that might work in this case, at least making the
+dubious assumption that I actually understand what you are getting at.  ;-)
+
+You might be amused to hear that one of the solutions in my back pocket
+for the potential problem of callbacks piling up in the current RCU
+priority boosting scheme is to temporarily increase the priority.  This is
+similar to how blimit gets increased if too many callbacks pile up.
+
+Thus far, no need for this back-pocket solution, but I wanted to put it
+out there in case it sparks something in the SCHED_DEADLINE approach.
+
+							Thanx, Paul
 
