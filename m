@@ -1,79 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758971AbaJaMKO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 08:10:14 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51875 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757934AbaJaMKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 08:10:12 -0400
-Date: Fri, 31 Oct 2014 13:10:08 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [rfcomm_run] WARNING: CPU: 0 PID: 95 at kernel/sched/core.c:7312
- __might_sleep()
-Message-ID: <20141031121008.GK10501@worktop.programming.kicks-ass.net>
-References: <20141027130621.GA6336@wfg-t540p.sh.intel.com>
- <20141027133627.GH3337@twins.programming.kicks-ass.net>
- <20141027140325.GA15725@wfg-t540p.sh.intel.com>
+	id S1759327AbaJaMNP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 08:13:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59426 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758257AbaJaMNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 08:13:14 -0400
+Date: Fri, 31 Oct 2014 10:13:01 -0200
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
+        namhyung@kernel.org, Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options for
+ cache
+Message-ID: <20141031121301.GI1313@kernel.org>
+References: <20141031185128.27889.32747.stgit@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141027140325.GA15725@wfg-t540p.sh.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20141031185128.27889.32747.stgit@localhost.localdomain>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 10:03:25PM +0800, Fengguang Wu wrote:
-> On Mon, Oct 27, 2014 at 02:36:27PM +0100, Peter Zijlstra wrote:
-> > On Mon, Oct 27, 2014 at 09:06:21PM +0800, Fengguang Wu wrote:
-> > > Hi Peter,
-> > > 
-> > > FYI, this bug seems still there on v3.18-rc2.
-> > 
-> > Oh, right, I commented out that patch and the audit one because I was
-> > waiting for some feedback. Lemme go prod people.
+Em Fri, Oct 31, 2014 at 02:51:29PM -0400, Masami Hiramatsu escreveu:
+> Hi,
 > 
-> One more warning, looks like triggered by thermal_apic_exit. Authors CCed.
+> Here is a sereis of patches for enabling "event cache" feature
+> to perf probe. Brendan gives me this cool idea, thanks! :)
 > 
-> [   29.107798] Running tests on trace events:
-> [   29.108302] Testing event thermal_apic_exit: 
-> [   29.143786] ------------[ cut here ]------------
-> [   29.144489] WARNING: CPU: 1 PID: 101 at kernel/sched/core.c:7187 __might_sleep+0xb9/0x100()
-> [   29.145781] do not call blocking ops when !TASK_RUNNING; state=1 set at [<c1e62e65>] event_test_thread+0x58/0x92
-> [   29.147139] Modules linked in:
-> [   29.147604] CPU: 1 PID: 101 Comm: test-events Not tainted 3.17.0-rc6-01872-ga0d2c46 #17
-> [   29.148646] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_083030-gandalf 04/01/2014
-> [   29.149969]  00000001 00000000 ffffffff cbc4fe5c c17ef50f cbc4fea4 00000001 00000065
-> [   29.151143]  cbc4fe78 c10689d7 00001c13 c10a5f59 00000001 00000000 00000029 cbc4fe90
-> [   29.152343]  c1068a1b 00000009 cbc4fe88 c1b5cc24 cbc4fea4 cbc4fec4 c10a5f59 c1b5c9b0
-> [   29.153511] Call Trace:
-> [   29.153859]  [<c17ef50f>] dump_stack+0x78/0xa8
-> [   29.154448]  [<c10689d7>] warn_slowpath_common+0x87/0xa0
-> [   29.155119]  [<c10a5f59>] ? __might_sleep+0xb9/0x100
-> [   29.155706]  [<c1068a1b>] warn_slowpath_fmt+0x2b/0x30
-> [   29.164357]  [<c10a5f59>] __might_sleep+0xb9/0x100
-> [   29.164935]  [<c1e62e65>] ? event_test_thread+0x58/0x92
-> [   29.165541]  [<c1e62e65>] ? event_test_thread+0x58/0x92
-> [   29.166154]  [<c17f8d4c>] down_read+0x1c/0x50
-> [   29.166660]  [<c1083a6f>] exit_signals+0x1f/0x1d0
-> [   29.167215]  [<c106bc1f>] do_exit+0x1bf/0x13a0
-> [   29.167748]  [<c1e62e0d>] ? event_test_stuff+0x6c/0x6c
-> [   29.168434]  [<c109bea8>] ? kthread_should_stop+0x8/0x20
-> [   29.169145]  [<c1e62e0d>] ? event_test_stuff+0x6c/0x6c
-> [   29.169829]  [<c109c3d4>] kthread+0xe4/0x110
-> [   29.170397]  [<c1e62e0d>] ? event_test_stuff+0x6c/0x6c
-> [   29.171082]  [<c10d0000>] ? push_dl_task+0x50/0x5a0
-> [   29.171759]  [<c17fbf21>] ret_from_kernel_thread+0x21/0x30
-> [   29.172496]  [<c109c2f0>] ? insert_kthread_work+0x110/0x110
-> [   29.173234] ---[ end trace 12bb28a4b269a09b ]---
-> [   29.173913] test-events (101) used greatest stack depth: 6712 bytes left
+> In this series, I added following options/features;
+>  - --output option
+>    We can save the probe definition command for given probe-event
+>    instead of setting up the local tracing/kprobe_events.
+> 
+>  - --no-inlines option
+>    We can avoid searching the inline functions in debuginfo. Usually
+>    useful with wildcards since the wildcards will hit a huge amount
+>    of probe-points.
+> 
+>  - $params special probe argument
+>    $params is expanded to function parameters only, no locally defined
+>    variables. This is useful for function-call tracing.
+> 
+>  - wildcard support for function name
+>    Wildcard support is the key feature for this idea. Now we can use
+>    '*foo*' for function name to define the probe-point.
+> 
+> So by using all of them, we can make an "event cache" file on all
+> functions (except for inlined functions) as below.
+> 
+>   # perf probe --max-probes=100000 --no-inlines -a '* $params' -o event.cache
+> 
+> builds "event.cache" file in which event settings for
+> all function entries, like below;
+> 
+>   p:probe/reset_early_page_tables _text+12980741
+>   p:probe/copy_bootdata _text+12980830 real_mode_data=%di:u64
+>   p:probe/exit_amd_microcode _text+14692680
+>   p:probe/early_make_pgtable _text+12981274 address=%di:u64
+>   p:probe/x86_64_start_reservations _text+12981700 real_mode_data=%di:u64
+>   p:probe/x86_64_start_kernel _text+12981744 real_mode_data=%di:u64
+>   p:probe/reserve_ebda_region _text+12982117
+> 
+> This event.cache file will be big (but much smaller than native
+> debuginfo :) ) if your kernel have many option embedded.
+> Anyway, you can compress it too.
 
-Hmm, confusing that, did that tree include:
-  fe0e01c77dd9 ("tracing: Robustify wait loop")
+How do you validate that the cache can be used against some kernel? I.e.
+is this that the user has to do? Isn't this prone to errors?
 
-?
+Perhaps you could pick the build-id and store it into the event cache
+file, in the first lines, somethings like:
+
+[acme@zoo ~]$ printf "buildid: %s\n" $(perf buildid-list --kernel) 
+buildid: a4cacca49391fc4f42ac8f58990f4e97042efae8
+
+[acme@zoo ~]$ printf "buildid: %s\n" $(perf buildid-list --kernel) 
+buildid: a4cacca49391fc4f42ac8f58990f4e97042efae8
+
+Maybe this would be nice to have integrated with 'perf archive' somehow
+and then store this into ~/.debug/[probe]/<BUILDID>/dso-name
+
+where dso-name would be [kernel] for the kernel and the full path for
+userspace stuff, and then when adding a new probe we would look there
+for a pre-built/cached event definition, only looking for the debuginfo
+(which is done using the build-id already, right) and would insert the
+probe definitions there, etc.
+
+Then, later, one would use 'perf archive' passing some keys (or a
+perf.data file, like done nowadays to pick the files in ~/.debug for
+dsos that had hits on the specified perf.data file) to get the cached
+values to use on some other machine, to avoid having to use the
+debuginfo files there.
+
+I.e. in summary I think that the format is ok, but we need to have this
+inside the ~/.debug hierarchy so that we can make sure that we use the
+right probe definition, one that matches the DSOs being used (the kernel
+or some other userspace binary).
+
+Great stuff, keep it up!
+
+- Arnaldo
+ 
+>   # wc -l event.cache
+>   33813 event.cache
+>   # ls -sh event.cache
+>   2.3M event.cache
+>   # ls -sh event.cache.gz
+>   464K event.cache.gz
+> 
+> For setting up a probe event, you can grep the function name
+> and write it to tracing/kprobe_events, as below;
+> 
+>   # zcat event.cache.gz | \
+>     grep probe/vfs_symlink > /sys/kernel/debug/tracing/kprobe_events
+> 
+> This can be applied for the remote machine only if the machine
+> runs on completely same kernel binary. Perhaps, we need some
+> helper tool to check it.
+> 
+> Thank you,
+> 
+> 
+> ---
+> 
+> Masami Hiramatsu (6):
+>       [BUGFIX] perf-probe: Fix to handle optimized not-inlined but has no instance
+>       [DOC] perf-probe: Update perf-probe document
+>       perf-probe: Add --output option to write commands in a standard file
+>       perf-probe: Add --no-inlines option to avoid searching inline functions
+>       perf-probe: Support $params special probe argument
+>       perf-probe: Support glob wildcards for function name
+> 
+> 
+>  tools/perf/Documentation/perf-probe.txt |   25 ++++++++++
+>  tools/perf/builtin-probe.c              |   32 +++++++++++++
+>  tools/perf/util/dwarf-aux.c             |   31 +++++++++++++
+>  tools/perf/util/dwarf-aux.h             |    6 +++
+>  tools/perf/util/probe-event.c           |   73 +++++++++++++++++++++++--------
+>  tools/perf/util/probe-event.h           |    4 +-
+>  tools/perf/util/probe-finder.c          |   74 +++++++++++++++++++------------
+>  tools/perf/util/probe-finder.h          |    6 ++-
+>  tools/perf/util/util.h                  |    4 ++
+>  9 files changed, 202 insertions(+), 53 deletions(-)
+> 
+> --
+> Masami HIRAMATSU
+> Software Platform Research Dpt. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
