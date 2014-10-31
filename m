@@ -1,60 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339AbaJaSAF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 14:00:05 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:63752 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaJaSAD (ORCPT
+	id S932169AbaJaSBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 14:01:12 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:8469 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750808AbaJaSBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 14:00:03 -0400
+	Fri, 31 Oct 2014 14:01:10 -0400
+X-IronPort-AV: E=Sophos;i="5.07,295,1413237600"; 
+   d="scan'208";a="104017760"
+Date: Fri, 31 Oct 2014 19:01:06 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH resent] staging: rtl8188eu: Deletion of unnecessary checks
+ before three function calls
+In-Reply-To: <5453CD0D.9010206@users.sourceforge.net>
+Message-ID: <alpine.DEB.2.10.1410311900201.2481@hadrien>
+References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <544954FD.8040607@users.sourceforge.net> <20141029084702.GA18675@kroah.com> <5453CD0D.9010206@users.sourceforge.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20141030233801.GF7996@ZenIV.linux.org.uk>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
-	<1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
-	<20141030233801.GF7996@ZenIV.linux.org.uk>
-Date: Fri, 31 Oct 2014 11:00:01 -0700
-X-Google-Sender-Auth: Iu6awU-3oaolLYBM-LuTdvhX8mU
-Message-ID: <CA+55aFxB=jWGvPH3TMhB=ungOg9TBai5Ak-ma5vChBB-H2AgnQ@mail.gmail.com>
-Subject: Re: How Not To Use kref (was Re: kdbus: add code for buses, domains
- and endpoints)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, hadess@hadess.net,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>,
-        Daniel Mack <daniel@zonque.org>,
-        Alban Crequy <alban.crequy@collabora.co.uk>,
-        javier.martinez@collabora.co.uk, teg@jklm.no
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 4:38 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On Fri, 31 Oct 2014, SF Markus Elfring wrote:
+
+> The functions kfree(), rtw_free_netdev() and vfree() test whether their
+> argument is NULL and then return immediately. Thus the test around the call
+> is not needed.
 >
-> If you remove an object from some search structures, taking the lock in
-> destructor is Too Fucking Late(tm).  Somebody might have already found
-> that puppy and decided to pick it (all under that lock) just as we'd
-> got to that point in destructor and blocked there.  Oops...
+> This issue was detected by using the Coccinelle software.
+>
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  drivers/staging/rtl8188eu/core/rtw_efuse.c   | 3 +--
+>  drivers/staging/rtl8188eu/core/rtw_mlme.c    | 3 +--
+>  drivers/staging/rtl8188eu/core/rtw_sta_mgt.c | 3 +--
+>  drivers/staging/rtl8188eu/core/rtw_xmit.c    | 6 ++----
+>  drivers/staging/rtl8188eu/os_dep/usb_intf.c  | 5 ++---
+>  5 files changed, 7 insertions(+), 13 deletions(-)
+>
+> diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c
+> b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+> index 7006088..77f7552 100644
+> --- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
+> +++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+> @@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16
+> _size_byte, u8  *pbuf)
+>  exit:
+>  	kfree(efuseTbl);
+>
+> -	if (eFuseWord)
+> -		kfree(eFuseWord);
+> +	kfree(eFuseWord);
 
-Ugh, yes. This is a much too common anti-pattern.
+I think that this code has been updated already.  It would be better to
+add labels so that kfree is only executed when needed.
 
-> Normally I'd say "just use kref_put_mutex()", but this case is even worse.
-> Look:
+julia
 
-Yeah the whole "release the structure the lock is in" is another one.
-
-Both of these patterns have happened so many times that I'd love to
-have some kind of automated tool to see them, but I suspect it is
-*much* too complex to be easily checked for. The lock object debugging
-we have only triggers for the case where the freeing actually happens
-with the lock still held, which is too late and too hard-to-hit to be
-a very useful check.
-
-                     Linus
+>  }
+>
+>  static void efuse_read_phymap_from_txpktbuf(
+> diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c
+> b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+> index 149c271..df54350 100644
+> --- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
+> +++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+> @@ -122,8 +122,7 @@ void rtw_free_mlme_priv(struct mlme_priv *pmlmepriv)
+>  	rtw_free_mlme_priv_ie_data(pmlmepriv);
+>
+>  	if (pmlmepriv) {
+> -		if (pmlmepriv->free_bss_buf)
+> -			vfree(pmlmepriv->free_bss_buf);
+> +		vfree(pmlmepriv->free_bss_buf);
+>  	}
+>  }
+>
+> diff --git a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
+> b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
+> index e1dc8fa..af1de9c 100644
+> --- a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
+> +++ b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
+> @@ -201,8 +201,7 @@ u32	_rtw_free_sta_priv(struct	sta_priv *pstapriv)
+>
+>  		rtw_mfree_sta_priv_lock(pstapriv);
+>
+> -		if (pstapriv->pallocated_stainfo_buf)
+> -			vfree(pstapriv->pallocated_stainfo_buf);
+> +		vfree(pstapriv->pallocated_stainfo_buf);
+>  	}
+>
+>  	return _SUCCESS;
+> diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c
+> b/drivers/staging/rtl8188eu/core/rtw_xmit.c
+> index 639ace0..011c9cf 100644
+> --- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
+> +++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
+> @@ -246,11 +246,9 @@ void _rtw_free_xmit_priv (struct xmit_priv *pxmitpriv)
+>  		pxmitbuf++;
+>  	}
+>
+> -	if (pxmitpriv->pallocated_frame_buf)
+> -		vfree(pxmitpriv->pallocated_frame_buf);
+> +	vfree(pxmitpriv->pallocated_frame_buf);
+>
+> -	if (pxmitpriv->pallocated_xmitbuf)
+> -		vfree(pxmitpriv->pallocated_xmitbuf);
+> +	vfree(pxmitpriv->pallocated_xmitbuf);
+>
+>  	/*  free xmit extension buff */
+>  	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
+> diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+> b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+> index 407a318..cdb70e4 100644
+> --- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+> +++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+> @@ -456,7 +456,7 @@ free_adapter:
+>  	if (status != _SUCCESS) {
+>  		if (pnetdev)
+>  			rtw_free_netdev(pnetdev);
+> -		else if (padapter)
+> +		else
+>  			vfree(padapter);
+>  		padapter = NULL;
+>  	}
+> @@ -487,8 +487,7 @@ static void rtw_usb_if1_deinit(struct adapter *if1)
+>  	DBG_88E("+r871xu_dev_remove, hw_init_completed=%d\n",
+>  		if1->hw_init_completed);
+>  	rtw_free_drv_sw(if1);
+> -	if (pnetdev)
+> -		rtw_free_netdev(pnetdev);
+> +	rtw_free_netdev(pnetdev);
+>  }
+>
+>  static int rtw_drv_init(struct usb_interface *pusb_intf, const struct
+> usb_device_id *pdid)
+> --
+> 2.1.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
