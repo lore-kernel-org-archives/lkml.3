@@ -1,132 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285AbaJaFTN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 01:19:13 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36325 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406AbaJaFTM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 01:19:12 -0400
-Message-ID: <54531BC7.4030307@hitachi.com>
-Date: Fri, 31 Oct 2014 14:19:03 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753799AbaJaFak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 01:30:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10215 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750961AbaJaFaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 01:30:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,292,1413270000"; 
+   d="scan'208";a="599533882"
+Message-ID: <54531E7B.1040006@intel.com>
+Date: Fri, 31 Oct 2014 13:30:35 +0800
+From: "Chen, Tiejun" <tiejun.chen@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [for-next][PATCH 1/4] ftrace/x86: Add dynamic allocated trampoline
- for ftrace_ops
-References: <20141027182702.778680710@goodmis.org> <20141027182948.284867581@goodmis.org>
-In-Reply-To: <20141027182948.284867581@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: fix access memslots w/o hold srcu read lock
+References: <1414730012-7278-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1414730012-7278-1-git-send-email-wanpeng.li@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On 2014/10/31 12:33, Wanpeng Li wrote:
+> The srcu read lock must be held while accessing memslots (e.g.
+> when using gfn_to_* functions), however, commit c24ae0dcd3e8
+> ("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call
+> gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it
+> which leads to suspicious rcu_dereference_check() usage warning.
+> This patch fix it by holding srcu read lock when call gfn_to_page()
+> in kvm_vcpu_reload_apic_access_page() function.
+>
+>
+> [ INFO: suspicious RCU usage. ]
+> 3.18.0-rc2-test2+ #70 Not tainted
+> -------------------------------
+> include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
+>
+> other info that might help us debug this:
+>
+> rcu_scheduler_active = 1, debug_locks = 0
+> 1 lock held by qemu-system-x86/2371:
+>   #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
+>
+> stack backtrace:
+> CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
+> Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
+>   0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
+>   ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
+>   ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
+> Call Trace:
+>   [<ffffffff816f514f>] dump_stack+0x4e/0x71
+>   [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
+>   [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
+>   [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
+>   [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
+>   [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
+>   [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
+>   [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
+>   [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+>   [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
+>   [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
+>   [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
+>   [<ffffffff8122ee45>] ? __fget+0x5/0x250
+>   [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
+>   [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
+>   [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
+>
+> Reported-by: Takashi Iwai <tiwai@suse.de>
+> Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+>   arch/x86/kvm/x86.c | 3 +++
+>   1 file changed, 3 insertions(+)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 0033df3..2d97329 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6059,6 +6059,7 @@ static void kvm_vcpu_flush_tlb(struct kvm_vcpu *vcpu)
+>   void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+>   {
+>   	struct page *page = NULL;
+> +	int idx;
+>
+>   	if (!irqchip_in_kernel(vcpu->kvm))
+>   		return;
+> @@ -6066,7 +6067,9 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+>   	if (!kvm_x86_ops->set_apic_access_page_addr)
+>   		return;
+>
+> +	idx = srcu_read_lock(&vcpu->kvm->srcu);
 
-(2014/10/28 3:27), Steven Rostedt wrote:
-> +static unsigned long create_trampoline(struct ftrace_ops *ops)
-> +{
-> +	unsigned const char *jmp;
-> +	unsigned long start_offset;
-> +	unsigned long end_offset;
-> +	unsigned long op_offset;
-> +	unsigned long offset;
-> +	unsigned long size;
-> +	unsigned long ip;
-> +	unsigned long *ptr;
-> +	void *trampoline;
-> +	/* 48 8b 15 <offset> is movq <offset>(%rip), %rdx */
-> +	unsigned const char op_ref[] = { 0x48, 0x8b, 0x15 };
-> +	union ftrace_op_code_union op_ptr;
-> +	int ret;
-> +
-> +	if (ops->flags & FTRACE_OPS_FL_SAVE_REGS) {
-> +		start_offset = (unsigned long)ftrace_regs_caller;
-> +		end_offset = (unsigned long)ftrace_regs_caller_end;
-> +		op_offset = (unsigned long)ftrace_regs_caller_op_ptr;
-> +	} else {
-> +		start_offset = (unsigned long)ftrace_caller;
-> +		end_offset = (unsigned long)ftrace_caller_end;
-> +		op_offset = (unsigned long)ftrace_caller_op_ptr;
-> +	}
-> +
-> +	size = end_offset - start_offset;
-> +
-> +	/*
-> +	 * Allocate enough size to store the ftrace_caller code,
-> +	 * the jmp to ftrace_return, as well as the address of
-> +	 * the ftrace_ops this trampoline is used for.
-> +	 */
-> +	trampoline = alloc_tramp(size + MCOUNT_INSN_SIZE + sizeof(void *));
-> +	if (!trampoline)
-> +		return 0;
-> +
-> +	/* Copy ftrace_caller onto the trampoline memory */
-> +	ret = probe_kernel_read(trampoline, (void *)start_offset, size);
-> +	if (WARN_ON(ret < 0)) {
-> +		tramp_free(trampoline);
-> +		return 0;
-> +	}
-> +
-> +	ip = (unsigned long)trampoline + size;
-> +
-> +	/* The trampoline ends with a jmp to ftrace_return */
-> +	jmp = ftrace_jmp_replace(ip, (unsigned long)ftrace_return);
-> +	memcpy(trampoline + size, jmp, MCOUNT_INSN_SIZE);
-> +
-> +	/*
-> +	 * The address of the ftrace_ops that is used for this trampoline
-> +	 * is stored at the end of the trampoline. This will be used to
-> +	 * load the third parameter for the callback. Basically, that
-> +	 * location at the end of the trampoline takes the place of
-> +	 * the global function_trace_op variable.
-> +	 */
-> +
-> +	ptr = (unsigned long *)(trampoline + size + MCOUNT_INSN_SIZE);
-> +	*ptr = (unsigned long)ops;
-> +
-> +	op_offset -= start_offset;
-> +	memcpy(&op_ptr, trampoline + op_offset, OP_REF_SIZE);
-> +
-> +	/* Are we pointing to the reference? */
-> +	if (WARN_ON(memcmp(op_ptr.op, op_ref, 3) != 0)) {
-> +		tramp_free(trampoline);
-> +		return 0;
-> +	}
-> +
-> +	/* Load the contents of ptr into the callback parameter */
-> +	offset = (unsigned long)ptr;
-> +	offset -= (unsigned long)trampoline + op_offset + OP_REF_SIZE;
-> +
-> +	op_ptr.offset = offset;
-> +
-> +	/* put in the new offset to the ftrace_ops */
-> +	memcpy(trampoline + op_offset, &op_ptr, OP_REF_SIZE);
+There's another scenario that we already hold srcu before call 
+kvm_vcpu_reload_apic_access_page(),
 
-Would we better call flush_icache_range here?
+__vcpu_run()
+     |
+     + vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+     + r = vcpu_enter_guest(vcpu);
+         |
+         + kvm_vcpu_reload_apic_access_page(vcpu);
 
-Thank you,
+So according to backtrace I think we should fix as follows:
 
-> +
-> +	/* ALLOC_TRAMP flags lets us know we created it */
-> +	ops->flags |= FTRACE_OPS_FL_ALLOC_TRAMP;
-> +
-> +	return (unsigned long)trampoline;
-> +}
+kvm: x86: vmx: hold kvm->srcu while reload apic access page
 
+kvm_vcpu_reload_apic_access_page() needs to access memslots via
+gfn_to_page(), so its necessary to hold kvm->srcu.
 
+Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
+---
+  arch/x86/kvm/vmx.c | 3 +++
+  1 file changed, 3 insertions(+)
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index b25a588..9fa1f46 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4442,6 +4442,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+  {
+         struct vcpu_vmx *vmx = to_vmx(vcpu);
+         struct msr_data apic_base_msr;
++       int idx;
+
+         vmx->rmode.vm86_active = 0;
+
+@@ -4509,7 +4510,9 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+                 vmcs_write32(TPR_THRESHOLD, 0);
+         }
+
++       idx = srcu_read_lock(&vcpu->kvm->srcu);
+         kvm_vcpu_reload_apic_access_page(vcpu);
++       srcu_read_unlock(&vcpu->kvm->srcu, idx);
+
+         if (vmx_vm_has_apicv(vcpu->kvm))
+                 memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.9.1
 
-
+Thanks
+Tiejun
+>   	page = gfn_to_page(vcpu->kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
+> +	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+>   	kvm_x86_ops->set_apic_access_page_addr(vcpu, page_to_phys(page));
+>
+>   	/*
+>
