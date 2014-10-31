@@ -1,90 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759015AbaJaLzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 07:55:19 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59013 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757863AbaJaLzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 07:55:16 -0400
-Date: Fri, 31 Oct 2014 11:54:11 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Message-ID: <20141031115411.GO18557@sirena.org.uk>
-References: <1414486356.24949.19.camel@AMDC1943>
- <1414498308.24949.32.camel@AMDC1943>
- <1414579362.18868.11.camel@AMDC1943>
- <5450C63B.3000602@collabora.co.uk>
- <CAAVeFuLncbkNLGxEAj90yMmugRDNjtjeGoV_QYTMDZ7NVMJCmg@mail.gmail.com>
- <1414681386.26703.6.camel@AMDC1943>
- <CAAVeFuJo1wTyxOo4FEZM3=GTejuSHi+mnr=QV6HUeV5mAOCmqg@mail.gmail.com>
- <1414741898.20071.8.camel@AMDC1943>
- <20141031103217.GJ18557@sirena.org.uk>
- <1414755947.7318.3.camel@AMDC1943>
+	id S932526AbaJaMEn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 08:04:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15360 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757934AbaJaMEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 08:04:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,294,1413270000"; 
+   d="scan'208";a="599708999"
+Message-ID: <54537AC7.90409@linux.intel.com>
+Date: Fri, 31 Oct 2014 20:04:23 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rRB5tibFU002dRFk"
-Content-Disposition: inline
-In-Reply-To: <1414755947.7318.3.camel@AMDC1943>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 6/8] regulator: max77686: Add external GPIO control
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        iommu@lists.linux-foundation.org
+Subject: Re: [Patch Part2 v3 15/24] x86, MSI: Use hierarchy irqdomain to manage
+ MSI interrupts
+References: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com> <1414484803-10311-16-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.11.1410282046120.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410282046120.5308@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rRB5tibFU002dRFk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Fri, Oct 31, 2014 at 12:45:47PM +0100, Krzysztof Kozlowski wrote:
+On 2014/10/29 5:37, Thomas Gleixner wrote:
+> On Tue, 28 Oct 2014, Jiang Liu wrote:
+>> @@ -166,25 +264,59 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+>>  
+>>  int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+>>  {
+>> -	struct msi_desc *msidesc;
+>> -	int irq, ret;
+>> +	int irq, cnt, nvec_pow2;
+>> +	struct irq_domain *domain;
+>> +	struct msi_desc *msidesc, *iter;
+>> +	struct irq_alloc_info info;
+>> +	int node = dev_to_node(&dev->dev);
+>>  
+>> -	/* Multiple MSI vectors only supported with interrupt remapping */
+>> -	if (type == PCI_CAP_ID_MSI && nvec > 1)
+>> -		return 1;
+>> +	if (disable_apic)
+>> +		return -ENOSYS;
+>>  
+>> -	list_for_each_entry(msidesc, &dev->msi_list, list) {
+>> -		irq = irq_domain_alloc_irqs(NULL, 1, NUMA_NO_NODE, NULL);
+>> +	init_irq_alloc_info(&info, NULL);
+>> +	info.msi_dev = dev;
+>> +	if (type == PCI_CAP_ID_MSI) {
+>> +		msidesc = list_first_entry(&dev->msi_list,
+>> +					   struct msi_desc, list);
+>> +		WARN_ON(!list_is_singular(&dev->msi_list));
+>> +		WARN_ON(msidesc->irq);
+>> +		WARN_ON(msidesc->msi_attrib.multiple);
+>> +		WARN_ON(msidesc->nvec_used);
+>> +		info.type = X86_IRQ_ALLOC_TYPE_MSI;
+>> +		cnt = nvec;
+>> +	} else {
+>> +		info.type = X86_IRQ_ALLOC_TYPE_MSIX;
+>> +		cnt = 1;
+>> +	}
+> 
+> We have a similar issue here.
+> 
+>> +	domain = irq_remapping_get_irq_domain(&info);
+> 
+> We add domain specific knowledge to the MSI implementation. Not
+> necessary at all.
+> 
+> Again MSI is not an x86 problem and we really can move most of that to
+> the core code. The above sanity checks and the distinction between MSI
+> and MSIX can be handled in the core code. And every domain involved in
+> the MSI chain would need a alloc_msi() callback.
+Add alloc_msi() callback to irq_domain_ops seems a little overaction.
+I think the main idea is to make MSI code public as much as possible,
+so I have found another solution to move MSI irqdomain code into
+drivers/pci/msi.c and only following code are platform dependent now.
+How about this solution?
+------------------------------------------------------------------------
+int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+{
+        struct irq_domain *domain;
+        struct irq_alloc_info info;
 
-> Then I'll add it.
+        init_irq_alloc_info(&info, NULL);
+        info.msi_dev = dev;
+        if (type == PCI_CAP_ID_MSI) {
+                info.type = X86_IRQ_ALLOC_TYPE_MSI;
+                info.flags |= X86_IRQ_ALLOC_CONTIGOUS_VECTORS;
+        } else {
+                info.type = X86_IRQ_ALLOC_TYPE_MSIX;
+        }
 
-> Mark, what device should be assigned to "config.dev" during registration
-> of regulators? The regulator driver's device or its parent (MFD main
-> driver)?
+        domain = irq_remapping_get_irq_domain(&info);
+        if (domain == NULL)
+                domain = msi_default_domain;
+        if (domain == NULL)
+                return -ENOSYS;
 
-> Various drivers do this differently.
+        return msi_irq_domain_alloc_irqs(domain, type, dev, &info);
+}
 
-Normally the parent device.
+void native_teardown_msi_irq(unsigned int irq)
+{
+        irq_domain_free_irqs(irq, 1);
+}
 
---rRB5tibFU002dRFk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+irq_hw_number_t arch_msi_irq_domain_get_hwirq(void *arg)
+{
+        struct irq_alloc_info *info = arg;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+        return info->msi_hwirq;
+}
 
-iQEcBAEBAgAGBQJUU3hiAAoJECTWi3JdVIfQKAQH/A0korUvhWLnb2phvpqNph0F
-d6U4Y1pdFRoevFYHIzkraoEStE5tjb8T+OHdw1Poq2Tgfvg5sDHknb87kNz6SvGU
-b7f42UbKEnPHsKvEFri3hanS61b1s9XFywZr24iKNtH15n0ixJpqMSvRmQR1HyTy
-C0dOLi27WTHZ183uligg5/7sOjmywqyxrQZUiyImqKE3J5G4Rz4hckXi4kG5149V
-xQE4WleTJbACJmnCyv39ZGgc3zfhzJHEuQJwuUwhnplxS17PUjpI7+7HdnyXDH2D
-i+qJx1iGdkOHBJwBgOnimj8obI3cpBNH+aCPoeIh25YnHr03/98FhpBMDSYp5Q4=
-=CYF1
------END PGP SIGNATURE-----
+void arch_msi_irq_domain_set_hwirq(void *arg, irq_hw_number_t hwirq)
+{
+        struct irq_alloc_info *info = arg;
 
---rRB5tibFU002dRFk--
+        info->msi_hwirq = hwirq;
+}
+
+void arch_init_msi_domain(struct irq_domain *parent)
+{
+        if (disable_apic)
+                return;
+
+        msi_default_domain = msi_create_irq_domain(parent);
+        if (!msi_default_domain)
+                pr_warn("failed to initialize irqdomain for MSI/MSI-x.\n");
+}
+
+#ifdef CONFIG_IRQ_REMAP
+struct irq_domain *arch_create_msi_irq_domain(struct irq_domain *parent)
+{
+        return msi_create_irq_domain(parent);
+}
+#endif
+-----------------------------------------------------------------
+
+> 
+> So native_setup_msi_irqs() would boil down to:
+> + {
+> +	if (disable_apic)
+> +		return -ENOSYS;
+> + 
+> +	return irq_domain_alloc_msi(msi_domain, dev, nvec, type);   
+> + }
+> 
+> Now that core function performs the sanity checks for the MSI case. In
+> fact it should not proceed when a warning condition is detected. Not a
+> x86 issue at all, its true for every MSI implementation.
+> 
+> Then it calls down the domain allocation chain. x86_msi_domain would
+> simply hand down to the parent domain. That would either be the remap
+> domain or the vector domain.
+The issue here is that, the hierarchy irqdomain maintains a tree
+topology and every irqdomain only supports one parent.
+
+In case of irq remapping, we need to build one irqdomain for each IOMMU
+unit to support hotplug and simplify the implementation. So we need to
+build one MSI irqdomain for each IOMMU unit too instead of using a
+common MSI irqdomain.
+
+Current design is that, a common MSI irqdomain to support all MSI when
+irq remapping is disabled, and one MSI irqdomain for each IOMMU unit
+when irq remapping is enabled.
+
+So we have the code below to choose the correct irqdomain for MSI.
+        domain = irq_remapping_get_irq_domain(&info);
+        if (domain == NULL)
+                domain = msi_default_domain;
+        if (domain == NULL)
+                return -ENOSYS;
+
+> 
+> The reject for the multi MSI would only be implemented in the vector
+> domain callback, while the remap domain can handle it. Once we gain
+> support for allocating consecutive vectors for multi-MSI in the vector
+> domain we would not have to change any of the MSI code at all. 
+I have worked out a working patch to make decision in vector domain,
+as you have suggested.
+
+> 
+> Thoughts?
+> 
+> Thanks,
+> 
+> 	tglx
+> 
