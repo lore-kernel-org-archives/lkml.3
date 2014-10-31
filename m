@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758890AbaJaUbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:31:04 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:39034 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaJaUbB (ORCPT
+	id S1758626AbaJaUdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:33:11 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35752 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaJaUdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:31:01 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: Nokia n900 problems in 3.18-rc1 (was Re: USB Ethernet gadget on Nokia n900)
-Date: Fri, 31 Oct 2014 21:30:58 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Felipe Balbi <balbi@ti.com>, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-References: <20141019090107.GA19132@amd> <20141029140943.GX2542@atomide.com> <20141031200318.GA6949@amd>
-In-Reply-To: <20141031200318.GA6949@amd>
+	Fri, 31 Oct 2014 16:33:10 -0400
+Date: Fri, 31 Oct 2014 13:33:04 -0700
+From: josh@joshtriplett.org
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, Junjie Mao <eternal.n08@gmail.com>
+Subject: Re: [PATCH] x86, boot: add hex output for debugging
+Message-ID: <20141031203304.GA32697@cloud>
+References: <20141031162037.GA26233@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4480910.6W89ptCjVB";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201410312130.58642@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031162037.GA26233@www.outflux.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4480910.6W89ptCjVB
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 31, 2014 at 09:20:37AM -0700, Kees Cook wrote:
+> This is useful for reporting various addresses or other values while
+> debugging early boot.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-On Friday 31 October 2014 21:03:18 Pavel Machek wrote:
-> Hi!
->=20
-> I tried enabling audio. It works ...sometimes... after fixing
-> kconfig. But I'm getting WARN_ON, about 50% of time. Ideas
-> welcome.
->=20
-> 								Pavel
->=20
+You haven't provided any user of this function.  I don't think this
+should get merged without a caller (nor should an artificial caller be
+added).  What's your use case for adding this?
 
-I see same problem with audio. Sometimes after reboot it working=20
-and sometimes not. It looks like Nokia Bootloader set something=20
-somewhere and then it works... I have no idea how to fix it...
+Also, while I realize __putstr already has this problem, ideally all the
+printing functions in this file should go in some separate source file
+that gets omitted when !CONFIG_PRINTK (or possibly
+!CONFIG_EARLY_PRINTK).
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+- Josh Triplett
 
---nextPart4480910.6W89ptCjVB
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlRT8YIACgkQi/DJPQPkQ1KfcgCeJvT/fbQOYn9myWgO7PMvHj3x
-JgoAn1vozxfGRUySmULRCi93/t1WH3i0
-=J5ml
------END PGP SIGNATURE-----
-
---nextPart4480910.6W89ptCjVB--
+>  arch/x86/boot/compressed/misc.c | 19 +++++++++++++++++++
+>  arch/x86/boot/compressed/misc.h |  5 +++++
+>  2 files changed, 24 insertions(+)
+> 
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index 30dd59a9f0b4..1b105664f720 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -220,6 +220,25 @@ void __putstr(const char *s)
+>  	outb(0xff & (pos >> 1), vidport+1);
+>  }
+>  
+> +void __puthex(unsigned long value)
+> +{
+> +	char alpha[2] = "0";
+> +	int bits;
+> +	unsigned char byte;
+> +
+> +	__putstr("0x");
+> +	for (bits = sizeof(value) * 8 - 4; bits >= 0; bits -= 4) {
+> +		unsigned long digit = (value >> bits) & 0xf;
+> +
+> +		if (digit < 0xA)
+> +			alpha[0] = '0' + digit;
+> +		else
+> +			alpha[0] = 'a' + (digit - 0xA);
+> +
+> +		__putstr(alpha);
+> +	}
+> +}
+> +
+>  static void error(char *x)
+>  {
+>  	error_putstr("\n\n");
+> diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+> index 24e3e569a13c..6056d339fb17 100644
+> --- a/arch/x86/boot/compressed/misc.h
+> +++ b/arch/x86/boot/compressed/misc.h
+> @@ -34,16 +34,21 @@ extern memptr free_mem_ptr;
+>  extern memptr free_mem_end_ptr;
+>  extern struct boot_params *real_mode;		/* Pointer to real-mode data */
+>  void __putstr(const char *s);
+> +void __puthex(unsigned long value);
+>  #define error_putstr(__x)  __putstr(__x)
+> +#define error_puthex(__x)  __puthex(__x)
+>  
+>  #ifdef CONFIG_X86_VERBOSE_BOOTUP
+>  
+>  #define debug_putstr(__x)  __putstr(__x)
+> +#define debug_puthex(__x)  __puthex(__x)
+>  
+>  #else
+>  
+>  static inline void debug_putstr(const char *s)
+>  { }
+> +static inline void debug_puthex(const char *s)
+> +{ }
+>  
+>  #endif
+>  
+> -- 
+> 1.9.1
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
