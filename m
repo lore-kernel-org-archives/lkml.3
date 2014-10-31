@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaJaRJM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:09:12 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:37896 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485AbaJaRJK (ORCPT
+	id S1754310AbaJaRKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:10:00 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:53773 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaJaRJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:09:10 -0400
-Date: Fri, 31 Oct 2014 22:38:57 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] isofs: remove unused functions
-Message-ID: <20141031170857.GA27154@sudip-PC>
-References: <1414757628-16326-1-git-send-email-sudipm.mukherjee@gmail.com>
- <20141031170156.GK7996@ZenIV.linux.org.uk>
+	Fri, 31 Oct 2014 13:09:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141031170156.GK7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141031150911.GO23531@worktop.programming.kicks-ass.net>
+References: <cover.1414190806.git.luto@amacapital.net> <20141031150911.GO23531@worktop.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 31 Oct 2014 10:09:35 -0700
+Message-ID: <CALCETrWR1UeBcPeqpPPOLgveeR_vbBBajuG+odFPMTn94ZTE8Q@mail.gmail.com>
+Subject: Re: [PATCH v2 0/8] CR4 handling improvements
+To: Peter Zijlstra <peterz@infradead.org>, kvm list <kvm@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 05:01:56PM +0000, Al Viro wrote:
-> On Fri, Oct 31, 2014 at 05:43:48PM +0530, Sudip Mukherjee wrote:
-> > commit "5b71ecfa78271d5c576f17156ed8a53981c1ecbb" removed the use
-> > two functions isofs_hash() and isofs_dentry_cmp() , but their
-> > definition was not removed.
-> > So, as these functions are not used anywhere so it is safe to
-> > remove them. It has been build tested after removing.
-> 
-> Umm...  Already in b0afd8e5db7b11aa9078e82e7f9abc30dc35a3c1 (and AFAICS
-> the incremental is the same as yours).
-so , since it is alredy commited then i am not sending the modified patch.
+On Fri, Oct 31, 2014 at 8:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>
+> This looks ok I suppose, although the x86 people should pass verdict on
+> the first few patches.
 
-thanks
-sudip
+Adding some KVM people, too.  Patches 2 and 3 affect KVM, and that
+code has been buggy in the recent past.  They should mostly fix the
+performance regression that the fix for CVE-2014-3690 caused.
+
+For reference, the series is here:
+
+http://thread.gmane.org/gmane.linux.kernel/1813271/focus=1818661
+
+Patch 1 has already been applied.
+
+--Andy
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
