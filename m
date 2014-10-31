@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025AbaJaKB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:01:59 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:39130 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757287AbaJaKB5 (ORCPT
+	id S1758069AbaJaKDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:03:19 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:47493 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756003AbaJaKDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:01:57 -0400
-Date: Fri, 31 Oct 2014 11:01:53 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>, Rabin Vincent <rabin@rab.in>,
-        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] tracing/syscalls: ignore numbers outside NR_syscalls'
- range
-Message-ID: <20141031100153.GA23722@gmail.com>
-References: <1414620418-29472-1-git-send-email-rabin@rab.in>
- <20141030082606.GA7945@infradead.org>
- <20141030101808.GO27405@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030101808.GO27405@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 31 Oct 2014 06:03:17 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-4c-54535e625bf5
+Message-id: <54535E60.4080802@samsung.com>
+Date: Fri, 31 Oct 2014 11:03:12 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Kukjin Kim <kgene@kernel.org>
+Cc: "'Chanwoo Choi'" <cw00.choi@samsung.com>, tomasz.figa@gmail.com,
+        sw0312.kim@samsung.com, kyungmin.park@samsung.com,
+        inki.dae@samsung.com, geunsik.lim@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCHv3 0/2] clk: samsung: Add clock controller driver for
+ Exynos4415 SoC
+References: <1414372318-594-1-git-send-email-cw00.choi@samsung.com>
+ <544E20E3.5030609@samsung.com> <02dd01cff265$0a846060$1f8d2120$@kernel.org>
+In-reply-to: <02dd01cff265$0a846060$1f8d2120$@kernel.org>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xK7pJccEhBi9Wmltc//Kc1eLPhFY2
+	i0n3J7BY9D9+zWxxtukNu8XlXXPYLGac38dk8XTCRSBr8ks2i1W7/jA6cHnsnHWX3WPTqk42
+	jzvX9rB59G1ZxejxeZNcAGsUl01Kak5mWWqRvl0CV8aKKecYC+ZxVhz4f4K9gfEEexcjJ4eE
+	gIlEz9MZULaYxIV769m6GLk4hASWMkqcXfaaFcL5xCgx8eh0ZpAqXgEtiWtfl4PZLAKqEmuu
+	bQGz2QQMJXqP9jGC2KICERIn7+5hh6gXlPgx+R5LFyMHh4iAosTmBQogM5kFJjFJnDjZzwZS
+	IywQKXFgXjsTxLKJjBJ7l3SDDeUUsJR4Ou0gK0gzs4CexP2LWiBhZgF5ic1r3jJPYBSYhWTF
+	LISqWUiqFjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P3cQIiYEvOxgXH7M6xCjAwajEw7tC
+	MjhEiDWxrLgy9xCjBAezkgiviDtQiDclsbIqtSg/vqg0J7X4ECMTB6dUA6NM5NxTGyUnPZx5
+	ruZb4IHvZ+es/mvKlfJj10H3/XkB3f8XrDq7d/6GexdWlIrvzq2zaL/ubWCWceWA16SFJeeu
+	pNwXa9A/9LaradtP9SU+bjnvldXVTxeU3GNeHcJVpeAlbxt2uG6GrEHy75wlXXkuJ2bHWU3r
+	M9FcsaZTPWG17KNz8t9rg+cosRRnJBpqMRcVJwIAna6EUF8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-
-> On Thu, Oct 30, 2014 at 01:26:06AM -0700, Christoph Hellwig wrote:
-> > On Wed, Oct 29, 2014 at 11:06:58PM +0100, Rabin Vincent wrote:
-> > > ARM has some private syscalls (for example, set_tls(2)) which lie
-> > > outside the range of NR_syscalls.  If any of these are called while
-> > > syscall tracing is being performed, out-of-bounds array access will
-> > > occur in the ftrace and perf sys_{enter,exit} handlers.
-> > 
-> > While this patch looks like good caution, having syscalls 
-> > outside of NR_syscalls seems like a receipe for a disaster.  
-> > Can you try to fix that issue as ell, please?
+On 28/10/14 05:09, Kukjin Kim wrote:
+> Sylwester Nawrocki wrote:
+>>
+>> On 27/10/14 02:11, Chanwoo Choi wrote:
+>>> Chanwoo Choi (2):
+>>>   clk: samsung: exynos4415: Add clocks using common clock framework
+>>>   clk: samsung: Document binding for Exynos4415 clock controller
+[...]
 > 
-> No.  We've had them since the inception of Linux on ARM.  They 
-> predate this tracing crap by more than a decade.  We're not 
-> changing them because that would be a massive user API 
-> breakage.
+> Can you please provide a topic branch for clk-exynos4415? Because exynos4415 dt
+> file needs inclusion of following header files.
+> 
+> +#include <dt-bindings/clock/exynos4415.h>
+> +#include <dt-bindings/clock/exynos-audss-clk.h>
 
-So if you go around calling other people's code 'crap' so easily: 
-if we should call something 'crap' in this area it's the decision 
-of ARM to deviate from all other architectures arbitrarily and to 
-introduce 'private' syscalls outside NR_syscalls...
+Hi Kukjin,
 
-There's a reason why we have NR_syscalls with relatively tighly 
-packed syscall numbers and there's a reason why we don't do 
-'private' syscalls on other architectures.
+AFAICS there is more clk patches that will be a dependency for the dts
+changes, for instance recent exynos7 clock controller driver addition.
+Unfortunately the patchset is written so almost every patch touches
+header file at include/dt-bindings/clock/.
 
-I'd probably have NAK-ed ARM's 'private syscalls' had I known 
-about it when this was introduced for ARM. IMO you should be 
-ashamed for it instead of blaming others for the complication ...
+I'm inclined to send the collected exynos4415 and exynos7 patches to
+Mike in a pull request and then he could make a topic branch which could
+then be pulled as a dependency for dts.
 
-But yes, it's probably an ABI, albeit a crappy one, which is now 
-hurting the introduction of a generic kernel facility in the ARM 
-space.
+Alternatively you could use my branch which can be found at:
+git://linuxtv.org/snawrocki/samsung.git for-v3.19-exynos-clk
 
-Thanks,
+What would be your preference, Mike ?
 
-	Ingo
+-- 
+Regards,
+Sylwester
