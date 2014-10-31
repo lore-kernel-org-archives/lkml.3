@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761066AbaJaGrd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 02:47:33 -0400
-Received: from mga03.intel.com ([134.134.136.65]:62132 "EHLO mga03.intel.com"
+	id S1761098AbaJaGt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 02:49:26 -0400
+Received: from submit1.sa.ew.hu ([212.108.200.71]:41623 "EHLO submit1.sa.ew.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759064AbaJaGrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 02:47:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,293,1413270000"; 
-   d="scan'208";a="628820225"
-Message-ID: <54533080.4070202@intel.com>
-Date: Fri, 31 Oct 2014 14:47:28 +0800
-From: "Chen, Tiejun" <tiejun.chen@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753689AbaJaGtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 02:49:25 -0400
+Message-ID: <545330EA.60303@denx.de>
+Date: Fri, 31 Oct 2014 07:49:14 +0100
+From: Heiko Schocher <hs@denx.de>
+Reply-To: hs@denx.de
+Organization: DENX Software Engineering
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-CC: Gleb Natapov <gleb@kernel.org>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] KVM: x86: fix access memslots w/o hold srcu read lock
-References: <1414736819-9625-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1414736819-9625-1-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: David Miller <davem@davemloft.net>
+CC: lsorense@csclub.uwaterloo.ca, linux-kernel@vger.kernel.org,
+        mugunthanvnm@ti.com, netdev@vger.kernel.org
+Subject: Re: Mistake in commit 0d961b3b52f566f823070ce2366511a7f64b928c breaks
+ cpsw non dual_emac mode.
+References: <20141028170242.GA24112@csclub.uwaterloo.ca> <20141030.154323.1702996635200338108.davem@davemloft.net>
+In-Reply-To: <20141030.154323.1702996635200338108.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-PMX-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1600_1699 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, RDNS_GENERIC_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FORWARDED_MSG 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __IN_REP_TO 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __MOZILLA_USER_AGENT 0, __MULTIPLE_RCPTS_CC_X2 0, __REPLYTO_SAMEAS_FROM_ACC 0, __REPLYTO_SAMEAS_FROM_ADDY 0, __REPLYTO_SAMEAS_FROM_DOMAIN 0, __SANE_MSGID 0, __SUBJ_ALPHA_NEGATE 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/31 14:26, Wanpeng Li wrote:
-> The srcu read lock must be held while accessing memslots (e.g.
-> when using gfn_to_* functions), however, commit c24ae0dcd3e8
-> ("kvm: x86: Unpin and remove kvm_arch->apic_access_page") call
-> gfn_to_page() in kvm_vcpu_reload_apic_access_page() w/o hold it in
-> vmx_vcpu_reset() path which leads to suspicious rcu_dereference_check()
-> usage warning. This patch fix it by holding srcu read lock when call
-> gfn_to_page() in vmx_vcpu_reset() path.
->
->
-> [ INFO: suspicious RCU usage. ]
-> 3.18.0-rc2-test2+ #70 Not tainted
-> -------------------------------
-> include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
->
-> other info that might help us debug this:
->
-> rcu_scheduler_active = 1, debug_locks = 0
-> 1 lock held by qemu-system-x86/2371:
->   #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
->
-> stack backtrace:
-> CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
-> Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
->   0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
->   ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
->   ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
-> Call Trace:
->   [<ffffffff816f514f>] dump_stack+0x4e/0x71
->   [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
->   [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
->   [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
->   [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
->   [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
->   [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
->   [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
->   [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
->   [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
->   [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
->   [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
->   [<ffffffff8122ee45>] ? __fget+0x5/0x250
->   [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
->   [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
->   [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
->
-> Reported-by: Takashi Iwai <tiwai@suse.de>
-> Reported-by: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-> Suggested-by: Tiejun Chen <tiejun.chen@intel.com>
+Hello David, Lennart,
 
-Reviewed-by: Tiejun Chen <tiejun.chen@intel.com>
+Am 30.10.2014 20:43, schrieb David Miller:
+> From: "Lennart Sorensen"<lsorense@csclub.uwaterloo.ca>
+> Date: Tue, 28 Oct 2014 13:02:42 -0400
+>
+>> I believe commit 0d961b3b52f566f823070ce2366511a7f64b928c made a mistake
+>> while correcting a bug.
 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->   arch/x86/kvm/vmx.c |    3 +++
->   1 files changed, 3 insertions(+), 0 deletions(-)
+Seems I missed your original patch ... looked in it here:
+
+https://lkml.org/lkml/2014/10/28/837
+
+and I think you are correct, thanks for this fix. You can add my
+Acked-by: Heiko Schocher <hs@denx.de>
+if you post a corrected v2, as David suggested.
+
+bye,
+Heiko
+
+> This patch submission is not properly formed.
 >
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index a0f78db..bd9be01 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -4512,6 +4512,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
->   {
->   	struct vcpu_vmx *vmx = to_vmx(vcpu);
->   	struct msr_data apic_base_msr;
-> +	int idx;
+> You subject line should be of the form:
 >
->   	vmx->rmode.vm86_active = 0;
+> subsystem: Description.
 >
-> @@ -4579,7 +4580,9 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
->   		vmcs_write32(TPR_THRESHOLD, 0);
->   	}
+> "subsystem" here would be "cpsw: " or something like that.
 >
-> +	idx = srcu_read_lock(&vcpu->kvm->srcu);
->   	kvm_vcpu_reload_apic_access_page(vcpu);
-> +	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+> Secondly, you should not refer to a commit ID in the patch
+> Subject line, instead just describe exactly what is being
+> fixed in the most succinct yet complete manner that is
+> possible.
 >
->   	if (vmx_vm_has_apicv(vcpu->kvm))
->   		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
+> Thirdly, when you do refer to commit ID's in your commit
+> message body you must do so in the following format:
 >
+> ${SHA1_ID} ("Commit message header line text.")
+>
+> The commit message body is also not a place to have a general
+> discussion.  Please avoid saying things like "I think", for example.
+> State facts, and be exact about what the problem is and exactly
+> how you are fixing it.
+>
+> Because this commit message will be read by others looking at your
+> change days, weeks, years from now.
+>
+> Thanks.
+>
+
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
