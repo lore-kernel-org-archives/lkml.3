@@ -1,138 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105AbaJaOBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:01:50 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:37765 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933060AbaJaOBs (ORCPT
+	id S933252AbaJaOCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:02:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41334 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933060AbaJaOCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:01:48 -0400
+	Fri, 31 Oct 2014 10:02:10 -0400
+Date: Fri, 31 Oct 2014 15:00:50 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        iommu@lists.linux-foundation.org
+Subject: Re: [Patch Part2 v3 15/24] x86, MSI: Use hierarchy irqdomain to
+ manage MSI interrupts
+In-Reply-To: <54537AC7.90409@linux.intel.com>
+Message-ID: <alpine.DEB.2.11.1410311340000.5308@nanos>
+References: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com> <1414484803-10311-16-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.11.1410282046120.5308@nanos> <54537AC7.90409@linux.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <545384D3.5050000@samsung.com>
-References: <1414759083-4555-1-git-send-email-a.kesavan@samsung.com>
-	<545384D3.5050000@samsung.com>
-Date: Fri, 31 Oct 2014 19:31:46 +0530
-Message-ID: <CAM4voamJhveLN-=wS2vF+x9e3kWMSR_2X1QsHLpB3w4DwgkgyQ@mail.gmail.com>
-Subject: Re: [PATCH] iio: adc: exynos_adc: Add support for ADCv3 on exynos7
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-iio@vger.kernel.org, jic23@kernel.org,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+On Fri, 31 Oct 2014, Jiang Liu wrote:
+> On 2014/10/29 5:37, Thomas Gleixner wrote:
+> > Then it calls down the domain allocation chain. x86_msi_domain would
+> > simply hand down to the parent domain. That would either be the remap
+> > domain or the vector domain.
+> The issue here is that, the hierarchy irqdomain maintains a tree
+> topology and every irqdomain only supports one parent.
+> 
+> In case of irq remapping, we need to build one irqdomain for each IOMMU
+> unit to support hotplug and simplify the implementation. So we need to
+> build one MSI irqdomain for each IOMMU unit too instead of using a
+> common MSI irqdomain.
 
-Thanks for the quick response.
+That makes indeed a difference.
+ 
+> Current design is that, a common MSI irqdomain to support all MSI when
+> irq remapping is disabled, and one MSI irqdomain for each IOMMU unit
+> when irq remapping is enabled.
 
-On Fri, Oct 31, 2014 at 6:17 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> Hi Abhilash,
->
-> On 10/31/2014 09:38 PM, Abhilash Kesavan wrote:
->> The ADC on exynos7 is quite similar to ADCv2. The differences are as
->> follows:
->>       - v3 has 8 input channels (10 in v2).
->>       - v3 does not include an ADC PHY control register.
->>       - Some ADC_CON2 register bits being used in v2 are listed as
->>         reserved in v3. This results in a different init_hw function
->>         for v3.
->>
->> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
->> ---
->> - Based on Naveen's "iio: exynos-adc: use syscon instead of ioremap" patchset
->> http://comments.gmane.org/gmane.linux.kernel.iio/13943
->>
->>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |    2 ++
->>  drivers/iio/adc/exynos_adc.c                       |   32 ++++++++++++++++++++
->>  2 files changed, 34 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
->> index c368210..a11e32c 100644
->> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
->> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
->> @@ -14,6 +14,8 @@ Required properties:
->>                               for exynos4412/5250 and s5pv210 controllers.
->>                       Must be "samsung,exynos-adc-v2" for
->>                               future controllers.
->> +                     Must be "samsung,exynos-adc-v3" for
->> +                             the ADC in Exynos7 and compatibles
->
-> I prefer to use 'exynos7-adc' instead of 'exynos-adc-v3'.
-> Exynos7 has little different from existing ADCv2.
+> So we have the code below to choose the correct irqdomain for MSI.
+>         domain = irq_remapping_get_irq_domain(&info);
+>         if (domain == NULL)
+>                 domain = msi_default_domain;
+>         if (domain == NULL)
+>                 return -ENOSYS;
 
-Sure, I'll change it. The reason for my choosing v3 was that reading
-the version register (0x20 offset) showed a value of 0x80000009 in
-Exynos7 as against 0x80000008 in both 5420 and 3250.
->
-> Also, If you want to use 'exynos-adc-v3' compatible,
-> Exynos7's TRM have to include the correct version(v3) infromation.
+Right. I guess we need to keep it that way for now.
 
-I could not see any mention of the ADC controller version in the
-Exynos7 UM other than the version register. Does that mean it is v2 ?
+But looking at the code makes me wonder why we actually need to call
+into the remap code and do a list walk to figure the domain out. The
+association of device and iommu should be known at startup/hotplug
+time already. That's out of the scope of this work, but should be
+fixed eventually.
 
-Regards,
-Abhilash
->
-> Thanks,
-> Chanwoo Choi
->
->
->
->>                       Must be "samsung,exynos3250-adc" for
->>                               controllers compatible with ADC of Exynos3250.
->>                       Must be "samsung,s3c2410-adc" for
->> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
->> index fe03177..74d0a9d 100644
->> --- a/drivers/iio/adc/exynos_adc.c
->> +++ b/drivers/iio/adc/exynos_adc.c
->> @@ -390,6 +390,35 @@ static const struct exynos_adc_data exynos3250_adc_data = {
->>       .start_conv     = exynos_adc_v2_start_conv,
->>  };
->>
->> +static void exynos_adc_v3_init_hw(struct exynos_adc *info)
->> +{
->> +     u32 con1, con2;
->> +
->> +     if (info->data->needs_adc_phy)
->> +             regmap_write(info->pmu_map, info->data->phy_offset, 1);
->> +
->> +     con1 = ADC_V2_CON1_SOFT_RESET;
->> +     writel(con1, ADC_V2_CON1(info->regs));
->> +
->> +     con2 = readl(ADC_V2_CON2(info->regs));
->> +     con2 &= ~ADC_V2_CON2_C_TIME(7);
->> +     con2 |= ADC_V2_CON2_C_TIME(0);
->> +     writel(con2, ADC_V2_CON2(info->regs));
->> +
->> +     /* Enable interrupts */
->> +     writel(1, ADC_V2_INT_EN(info->regs));
->> +}
->> +
->> +static const struct exynos_adc_data exynos_adc_v3_data = {
->> +     .num_channels   = MAX_ADC_V1_CHANNELS,
->> +     .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
->> +
->> +     .init_hw        = exynos_adc_v3_init_hw,
->> +     .exit_hw        = exynos_adc_v2_exit_hw,
->> +     .clear_irq      = exynos_adc_v2_clear_irq,
->> +     .start_conv     = exynos_adc_v2_start_conv,
->> +};
->> +
->>  static const struct of_device_id exynos_adc_match[] = {
->>       {
->>               .compatible = "samsung,s3c2410-adc",
->> @@ -413,6 +442,9 @@ static const struct of_device_id exynos_adc_match[] = {
->>               .compatible = "samsung,exynos-adc-v2",
->>               .data = &exynos_adc_v2_data,
->>       }, {
->> +             .compatible = "samsung,exynos-adc-v3",
->> +             .data = &exynos_adc_v3_data,
->> +     }, {
->>               .compatible = "samsung,exynos3250-adc",
->>               .data = &exynos3250_adc_data,
->>       },
->>
->
+Thanks,
+
+	tglx
+
+
+
+
