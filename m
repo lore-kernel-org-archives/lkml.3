@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422710AbaJaBKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:10:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:45913 "EHLO
+	id S1422735AbaJaBKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:10:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64566 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161392AbaJaBKL (ORCPT
+	by vger.kernel.org with ESMTP id S1161410AbaJaBKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:10:11 -0400
-Message-Id: <20141031010945.211059309@goodmis.org>
+	Thu, 30 Oct 2014 21:10:12 -0400
+Message-Id: <20141031011009.847522722@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 30 Oct 2014 21:09:45 -0400
+Date: Thu, 30 Oct 2014 21:09:47 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,57 +17,36 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH RT 0/2] Linux 3.2.63-rt93-rc1
-X-RR-Connecting-IP: 107.14.168.142:25
+Subject: [PATCH RT 2/2] Linux 3.2.63-rt93-rc1
+References: <20141031010945.211059309@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-Linux-3.2.63-rt93-rc1.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2.63-rt93-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-Dear RT Folks,
+------------------
 
-This is the RT stable review cycle of patch 3.2.63-rt93-rc1.
-
-Please scream at me if I messed something up. Please test the patches too.
-
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 11/3/2014.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.2.63-rt93-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.63.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.63-rt93-rc1.patch.xz
-
-You can also build from 3.2.63-rt92 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.63-rt92-rt93-rc1.patch.xz
-
-
-Changes from 3.2.63-rt92:
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
 ---
+ localversion-rt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/localversion-rt b/localversion-rt
+index 4905d52a4828..4821d0e04d28 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt92
++-rt93-rc1
+-- 
+2.1.1
 
 
-Steven Rostedt (Red Hat) (2):
-      lockdep: Fix backport of "Correctly annotate hardirq context in irq_exit()"
-      Linux 3.2.63-rt93-rc1
-
-----
- kernel/softirq.c | 5 +++--
- localversion-rt  | 2 +-
- 2 files changed, 4 insertions(+), 3 deletions(-)
