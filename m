@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161617AbaJaBG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:06:57 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:63524 "EHLO
+	id S1422710AbaJaBKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:10:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:45913 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161410AbaJaBG4 (ORCPT
+	by vger.kernel.org with ESMTP id S1161392AbaJaBKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:06:56 -0400
-Date: Thu, 30 Oct 2014 21:06:53 -0400
+	Thu, 30 Oct 2014 21:10:11 -0400
+Message-Id: <20141031010945.211059309@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 30 Oct 2014 21:09:45 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rabin Vincent <rabin@rab.in>,
-        stable@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL] tracing/syscalls: Ignore numbers outside NR_syscalls'
- range
-Message-ID: <20141030210653.3fa8be01@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 0/2] Linux 3.2.63-rt93-rc1
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,116 +25,49 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Linus,
+Dear RT Folks,
 
-ARM has system calls outside the NR_syscalls range, and the generic
-tracing system does not support that and without checks, it can cause
-an oops to be reported.
+This is the RT stable review cycle of patch 3.2.63-rt93-rc1.
 
-Rabin Vincent added checks in the return code on syscall events to make
-sure that the system call number is within the range that tracing
-knows about, and if not, simply ignores the system call.
+Please scream at me if I messed something up. Please test the patches too.
 
-The system call tracing infrastructure needs to be rewritten to handle these
-cases better, but for now, to keep from oopsing, this patch will do.
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
 
-Please pull the latest trace-fixes-v3.18-rc1-2 tree, which can be found at:
+The pre-releases will not be pushed to the git repository, only the
+final release is.
 
+If all goes well, this patch will be converted to the next main release
+on 11/3/2014.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.18-rc1-2
+Enjoy,
 
-Tag SHA1: da1591784ffa371c3fe86b55c76430914750dba2
-Head SHA1: 086ba77a6db00ed858ff07451bedee197df868c9
+-- Steve
 
 
-Rabin Vincent (1):
-      tracing/syscalls: Ignore numbers outside NR_syscalls' range
+To build 3.2.63-rt93-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.63.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.63-rt93-rc1.patch.xz
+
+You can also build from 3.2.63-rt92 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.63-rt92-rt93-rc1.patch.xz
+
+
+Changes from 3.2.63-rt92:
+
+---
+
+
+Steven Rostedt (Red Hat) (2):
+      lockdep: Fix backport of "Correctly annotate hardirq context in irq_exit()"
+      Linux 3.2.63-rt93-rc1
 
 ----
- kernel/trace/trace_syscalls.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
----------------------------
-commit 086ba77a6db00ed858ff07451bedee197df868c9
-Author: Rabin Vincent <rabin@rab.in>
-Date:   Wed Oct 29 23:06:58 2014 +0100
-
-    tracing/syscalls: Ignore numbers outside NR_syscalls' range
-    
-    ARM has some private syscalls (for example, set_tls(2)) which lie
-    outside the range of NR_syscalls.  If any of these are called while
-    syscall tracing is being performed, out-of-bounds array access will
-    occur in the ftrace and perf sys_{enter,exit} handlers.
-    
-     # trace-cmd record -e raw_syscalls:* true && trace-cmd report
-     ...
-     true-653   [000]   384.675777: sys_enter:            NR 192 (0, 1000, 3, 4000022, ffffffff, 0)
-     true-653   [000]   384.675812: sys_exit:             NR 192 = 1995915264
-     true-653   [000]   384.675971: sys_enter:            NR 983045 (76f74480, 76f74000, 76f74b28, 76f74480, 76f76f74, 1)
-     true-653   [000]   384.675988: sys_exit:             NR 983045 = 0
-     ...
-    
-     # trace-cmd record -e syscalls:* true
-     [   17.289329] Unable to handle kernel paging request at virtual address aaaaaace
-     [   17.289590] pgd = 9e71c000
-     [   17.289696] [aaaaaace] *pgd=00000000
-     [   17.289985] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-     [   17.290169] Modules linked in:
-     [   17.290391] CPU: 0 PID: 704 Comm: true Not tainted 3.18.0-rc2+ #21
-     [   17.290585] task: 9f4dab00 ti: 9e710000 task.ti: 9e710000
-     [   17.290747] PC is at ftrace_syscall_enter+0x48/0x1f8
-     [   17.290866] LR is at syscall_trace_enter+0x124/0x184
-    
-    Fix this by ignoring out-of-NR_syscalls-bounds syscall numbers.
-    
-    Commit cd0980fc8add "tracing: Check invalid syscall nr while tracing syscalls"
-    added the check for less than zero, but it should have also checked
-    for greater than NR_syscalls.
-    
-    Link: http://lkml.kernel.org/p/1414620418-29472-1-git-send-email-rabin@rab.in
-    
-    Fixes: cd0980fc8add "tracing: Check invalid syscall nr while tracing syscalls"
-    Cc: stable@vger.kernel.org # 2.6.33+
-    Signed-off-by: Rabin Vincent <rabin@rab.in>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 4dc8b79c5f75..29228c4d5696 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -313,7 +313,7 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- 	int size;
- 
- 	syscall_nr = trace_get_syscall_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 
- 	/* Here we're inside tp handler's rcu_read_lock_sched (__DO_TRACE) */
-@@ -360,7 +360,7 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- 	int syscall_nr;
- 
- 	syscall_nr = trace_get_syscall_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 
- 	/* Here we're inside tp handler's rcu_read_lock_sched (__DO_TRACE()) */
-@@ -567,7 +567,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	int size;
- 
- 	syscall_nr = trace_get_syscall_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
- 		return;
-@@ -641,7 +641,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	int size;
- 
- 	syscall_nr = trace_get_syscall_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
- 		return;
+ kernel/softirq.c | 5 +++--
+ localversion-rt  | 2 +-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
