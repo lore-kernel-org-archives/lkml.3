@@ -1,71 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759226AbaJaMn7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 08:43:59 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59090 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758302AbaJaMn5 (ORCPT
+	id S1759365AbaJaMrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 08:47:20 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:38101 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757992AbaJaMrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 08:43:57 -0400
-Date: Fri, 31 Oct 2014 12:43:04 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Message-ID: <20141031124304.GS18557@sirena.org.uk>
-References: <1414581294-1315-1-git-send-email-k.kozlowski@samsung.com>
- <1414581294-1315-2-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="j7Mt6kSMu9nlWjvx"
-Content-Disposition: inline
-In-Reply-To: <1414581294-1315-2-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6 1/3] regulator: max77686: Add suspend disable for some
- LDOs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 31 Oct 2014 08:47:18 -0400
+X-AuditID: cbfee691-f79b86d000004a5a-f6-545384d4afad
+Message-id: <545384D3.5050000@samsung.com>
+Date: Fri, 31 Oct 2014 21:47:15 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Abhilash Kesavan <a.kesavan@samsung.com>
+Cc: linux-iio@vger.kernel.org, jic23@kernel.org, naveenkrishna.ch@gmail.com,
+        kesavan.abhilash@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: adc: exynos_adc: Add support for ADCv3 on exynos7
+References: <1414759083-4555-1-git-send-email-a.kesavan@samsung.com>
+In-reply-to: <1414759083-4555-1-git-send-email-a.kesavan@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsWyRsSkSPdKS3CIwYWn7BaP1yxmsnjQtIrJ
+	Ys1fJYt5R96xWFzeNYfNYtG2/8wObB47Z91l99i0qpPNo2/LKkaPz5vkAliiuGxSUnMyy1KL
+	9O0SuDIevxEreC1V8aB1GWMD4zPRLkZODgkBE4k3i04yQ9hiEhfurWfrYuTiEBJYyijxc/kv
+	Npii0zO/MkMkFjFKtP7/AOW8ZpSYduoAWBWvgJbEqxevWUFsFgFVicNdMxhBbDag+P4XN8Bq
+	RAXCJFZOv8ICUS8o8WPyPTBbREBH4vGcHrB6ZoF2Roll2wJBbGEBb4lf61aA9QoJuEismvIH
+	aDEHB6eAq8T6k3wQ5ToS+1unsUHY8hKb17wFu01CYBe7xKSdt6HuEZD4NvkQC0ivhICsxKYD
+	UB9LShxccYNlAqPYLCQXzUIydhaSsQsYmVcxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525iBMbX
+	6X/PJu5gvH/A+hCjAAejEg/vguNBIUKsiWXFlbmHGE2BrpjILCWanA+M4rySeENjMyMLUxNT
+	YyNzSzMlcV4d6Z/BQgLpiSWp2ampBalF8UWlOanFhxiZODilGhh3OEZ+cvZp39J6p9v79s4j
+	hUGXNjYc/ah99Z9uQCqniVz+72DdHTyLP9wqXeJyace+xpUHss4oz599ofzuq81pmW8rr/OL
+	l778dXeLlsXynV3HWT6tnWls8D34XtamBIUzdS9urGxt5OTR5/zGvM/h9RH+gA8PwhRa2IKn
+	Pz2z0PjBt8Ur87+uVmIpzkg01GIuKk4EAK8uEy2qAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t9jAd3LLcEhBu8X21g8XrOYyeJB0yom
+	izV/lSzmHXnHYnF51xw2i0Xb/jM7sHnsnHWX3WPTqk42j74tqxg9Pm+SC2CJamC0yUhNTEkt
+	UkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFarqRQlphTChQKSCwu
+	VtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMePxGrOC1VMWD1mWMDYzPRLsYOTkkBEwkTs/8
+	ygxhi0lcuLeerYuRi0NIYBGjROv/D8wQzmtGiWmnDrCBVPEKaEm8evGaFcRmEVCVONw1gxHE
+	ZgOK739xA6xGVCBMYuX0KywQ9YISPybfA7NFBHQkHs/pAatnFmhnlFi2LRDEFhbwlvi1bgVY
+	r5CAi8SqKX+AFnNwcAq4Sqw/yQdRriOxv3UaG4QtL7F5zVvmCYwCs5BsmIWkbBaSsgWMzKsY
+	RVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgqP3mfQOxlUNFocYBTgYlXh4FxwPChFiTSwrrsw9
+	xCjBwawkwitRFhwixJuSWFmVWpQfX1Sak1p8iNEUGAATmaVEk/OBiSWvJN7Q2MTMyNLI3NDC
+	yNhcSZz3YKt1oJBAemJJanZqakFqEUwfEwenVAOj3Zfvf1pdU5gP6l24IB1bLFKk+sMrR+Xv
+	0gIbST3POyU8/TLMtTHiLlt0D/LZcDwr1ZwpUF4xLe7KoZlGlikT+htmza0/e0zONT7rud6f
+	i93bOI2vbfwUYTb5z+E79VqxXE8dJnEmPJv3Ly5Xda1zUvmRu/ti57zl2dWWJOmxhHf2vzSh
+	1ZOVWIozEg21mIuKEwHfcK2k9AIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Abhilash,
 
---j7Mt6kSMu9nlWjvx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 10/31/2014 09:38 PM, Abhilash Kesavan wrote:
+> The ADC on exynos7 is quite similar to ADCv2. The differences are as
+> follows:
+> 	- v3 has 8 input channels (10 in v2).
+> 	- v3 does not include an ADC PHY control register.
+> 	- Some ADC_CON2 register bits being used in v2 are listed as
+> 	  reserved in v3. This results in a different init_hw function
+> 	  for v3.
+> 
+> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+> ---
+> - Based on Naveen's "iio: exynos-adc: use syscon instead of ioremap" patchset
+> http://comments.gmane.org/gmane.linux.kernel.iio/13943
+> 
+>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |    2 ++
+>  drivers/iio/adc/exynos_adc.c                       |   32 ++++++++++++++++++++
+>  2 files changed, 34 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> index c368210..a11e32c 100644
+> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> @@ -14,6 +14,8 @@ Required properties:
+>  				for exynos4412/5250 and s5pv210 controllers.
+>  			Must be "samsung,exynos-adc-v2" for
+>  				future controllers.
+> +			Must be "samsung,exynos-adc-v3" for
+> +				the ADC in Exynos7 and compatibles
 
-On Wed, Oct 29, 2014 at 12:14:52PM +0100, Krzysztof Kozlowski wrote:
-> Some LDOs of Maxim 77686 PMIC support disabling during system suspend
-> (LDO{2,6,7,8,10,11,12,14,15,16}). This was already implemented as part
-> of set_suspend_mode function. In that case the mode was one of:
+I prefer to use 'exynos7-adc' instead of 'exynos-adc-v3'.
+Exynos7 has little different from existing ADCv2.
 
-Applied, thanks.
+Also, If you want to use 'exynos-adc-v3' compatible,
+Exynos7's TRM have to include the correct version(v3) infromation.
 
---j7Mt6kSMu9nlWjvx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
+Chanwoo Choi
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUU4PXAAoJECTWi3JdVIfQR1MH/j8yXXZcoXZgVy1hV+alYtAc
-vkFaBdMDXDhzLtYJ2oycj/PIRagMj57v8iniZmaFbUs5IxJ3adyAo6xWivQEN00h
-/3ktpKo0ZEHD+YVWWtuYpd2Cy9CDTXIgDxCCdBYIaFPYLb00I2iikfYLXY298/IP
-7z5Wqn6HMs5JQ85thtATxaJewASjIqesrRbWMbOyluQg1IUrpnvI9pWGsNgnZ5DA
-pks7ZH9S3Gg9lDRSBbMVxhdKg4gYtHkNjFkLCSDnhZJ/X2rlyLc8VDL0f8+Yagp/
-ADTZ/BFwWTYCttsGQYe99p/1OmSm1nDy2i/CxUlc312Eb1t2Gqvnyk46Ul0SA0E=
-=f4RR
------END PGP SIGNATURE-----
 
---j7Mt6kSMu9nlWjvx--
+>  			Must be "samsung,exynos3250-adc" for
+>  				controllers compatible with ADC of Exynos3250.
+>  			Must be "samsung,s3c2410-adc" for
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index fe03177..74d0a9d 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -390,6 +390,35 @@ static const struct exynos_adc_data exynos3250_adc_data = {
+>  	.start_conv	= exynos_adc_v2_start_conv,
+>  };
+>  
+> +static void exynos_adc_v3_init_hw(struct exynos_adc *info)
+> +{
+> +	u32 con1, con2;
+> +
+> +	if (info->data->needs_adc_phy)
+> +		regmap_write(info->pmu_map, info->data->phy_offset, 1);
+> +
+> +	con1 = ADC_V2_CON1_SOFT_RESET;
+> +	writel(con1, ADC_V2_CON1(info->regs));
+> +
+> +	con2 = readl(ADC_V2_CON2(info->regs));
+> +	con2 &= ~ADC_V2_CON2_C_TIME(7);
+> +	con2 |= ADC_V2_CON2_C_TIME(0);
+> +	writel(con2, ADC_V2_CON2(info->regs));
+> +
+> +	/* Enable interrupts */
+> +	writel(1, ADC_V2_INT_EN(info->regs));
+> +}
+> +
+> +static const struct exynos_adc_data exynos_adc_v3_data = {
+> +	.num_channels	= MAX_ADC_V1_CHANNELS,
+> +	.mask		= ADC_DATX_MASK, /* 12 bit ADC resolution */
+> +
+> +	.init_hw	= exynos_adc_v3_init_hw,
+> +	.exit_hw	= exynos_adc_v2_exit_hw,
+> +	.clear_irq	= exynos_adc_v2_clear_irq,
+> +	.start_conv	= exynos_adc_v2_start_conv,
+> +};
+> +
+>  static const struct of_device_id exynos_adc_match[] = {
+>  	{
+>  		.compatible = "samsung,s3c2410-adc",
+> @@ -413,6 +442,9 @@ static const struct of_device_id exynos_adc_match[] = {
+>  		.compatible = "samsung,exynos-adc-v2",
+>  		.data = &exynos_adc_v2_data,
+>  	}, {
+> +		.compatible = "samsung,exynos-adc-v3",
+> +		.data = &exynos_adc_v3_data,
+> +	}, {
+>  		.compatible = "samsung,exynos3250-adc",
+>  		.data = &exynos3250_adc_data,
+>  	},
+> 
+
