@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526AbaJaQLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:11:51 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:47133 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbaJaQLt (ORCPT
+	id S1757656AbaJaQMO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:12:14 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38952 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716AbaJaQMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:11:49 -0400
+	Fri, 31 Oct 2014 12:12:12 -0400
+Message-ID: <5453B4DA.70802@kernel.dk>
+Date: Fri, 31 Oct 2014 10:12:10 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <545358D5.6070903@gaast.net>
-References: <543F049F.5090605@gaast.net>
-	<20141022125354.GA3832@gaast.net>
-	<CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
-	<544E235C.5010908@gaast.net>
-	<CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
-	<544EC59D.9080303@gaast.net>
-	<CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
-	<544EDD40.1040107@gaast.net>
-	<CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com>
-	<545027F9.1040703@gaast.net>
-	<CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com>
-	<5450B55E.6010103@gaast.net>
-	<CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com>
-	<545214C5.6070004@gaast.net>
-	<CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com>
-	<5452B3A6.7060100@gaast.net>
-	<CAE9FiQUGm-gvqpzPymxqa6vdfV7xhv8-fb433irZE1AT-eNg9A@mail.gmail.com>
-	<5452C8BE.3060206@gaast.net>
-	<CAE9FiQWd7wC9ijzgObCcGd9QE+U3_wzjQwafXhV=U61hLxGszg@mail.gmail.com>
-	<CAE9FiQXPZdYndp6rTKxLUkkwX=AQtRVH3JJC=xzQfsehtBgOqA@mail.gmail.com>
-	<545358D5.6070903@gaast.net>
-Date: Fri, 31 Oct 2014 09:11:48 -0700
-X-Google-Sender-Auth: Cfe1nObRPtepWM9fIM48EkMjhqI
-Message-ID: <CAE9FiQWeZ4AXwwT=NS96Q+FxPz+3Bj5rf8JoRDmJ-RHBhjj78g@mail.gmail.com>
-Subject: Re: Machine crashes right *after* ~successful resume
-From: Yinghai Lu <yinghai@kernel.org>
-To: Wilmer van der Gaast <wilmer@gaast.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=089e0149d116144b8b0506ba41eb
+To: Jan Kara <jack@suse.cz>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: IO request merging
+References: <20141016122740.GI6085@quack.suse.cz> <543FEDFF.2000105@kernel.dk> <20141030195614.GL28444@quack.suse.cz> <20141031083022.GA24172@quack.suse.cz>
+In-Reply-To: <20141031083022.GA24172@quack.suse.cz>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0149d116144b8b0506ba41eb
-Content-Type: text/plain; charset=UTF-8
-
-On Fri, Oct 31, 2014 at 2:39 AM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
-> Hello Yinghai,
->
-> On 31-10-14 02:13, Yinghai Lu wrote:
+On 10/31/2014 02:30 AM, Jan Kara wrote:
+> On Thu 30-10-14 20:56:14, Jan Kara wrote:
+>> On Thu 16-10-14 10:10:39, Jens Axboe wrote:
+>>> On 10/16/2014 06:27 AM, Jan Kara wrote:
+>>>>   Hello,
+>>>>
+>>>>   one of our customers was complaining that elv_attempt_insert_merge()
+>>>> merges two requests (via blk_attempt_req_merge()) without asking IO
+>>>> scheduler for permission (->elevator_allow_merge_fn() callback). Now for
+>>>> them this is a problem because of their custom IO scheduler but looking
+>>>> into the code this can result in somewhat suboptimal behavior for CFQ as
+>>>> well (merging two requests from different IO contexts, possibly merging
+>>>> sync & async request). What do others think about this?
+>>>>
+>>>> Regarding possible fix, we cannot really call ->elevator_allow_merge_fn()
+>>>> because that assumes it is called from a context of a process submitting the
+>>>> passed bio. So we would need to create a separate allow merge callback for
+>>>> this.
+>>   Sorry for a delayed reply, I was asking the customer for some more
+>> details and it took them a while to get back to me...
 >>
->> Last try:
+>>> It would need a new (rq to rq) merge hook, if they have a custom IO
+>>> scheduler, they should submit a change to allow that kind of behaviour.
+>>   OK, but since they would be the only ones using the hook, I don't think
+>> upstream kernel would be that much interested in carrying it... That's why
+>> I was asking whether CFQ wouldn't use the hook as well. But from what you
+>> write below, I tend to agree that it would be an overkill for CFQ.
 >>
->> Please check attached patch that will keep state consistent.
->
->
-> Good news: This last patch worked! For good measure, I ran my test twice
-> with a reboot in between. Worked consistently.
->
-> And similarly, to ensure that your debugging-at-boottime-only patch wasn't
-> just working by accident yesterday, I tested it twice more with the same
-> effect.
+>>> Outside of potentially mixing sync and async IO (which seems like
+>>> something that should rarely/never happen), not sure I see a lot of
+>>> downsides. And that case could be explicitly checked in attempt_merge()
+>>> or blk_attempt_req_merge() without having to define a new hook to catch
+>>> that specific case. For the hook, cfq would lookup the io contexts and
+>>> compare, and basically disallow any merge that crosses a cfq io context
+>>> boundary. But given that I would only expect these types of merges to
+>>> happen very rarely, the sync vs async check would be good enough for me.
+>>   Yeah. So what is a real problem for their custom scheduler is when two
+>> requests with different IO priorities get merged (BTW, ioprio_best() has
+>> a bug which they found and I just submitted a patch to fix it). For some
+>> reason they don't want requests with different priorities merged (even if
+>> resulting priority is computed properly). And we don't want checks like
+>> this in generic code.
+>   Thinking about it a bit more - is it really that beneficial to merge
+> requests with different priorities? I wouldn't expect that to happen often
+> enough to bring significant improvement in request sizes. Or do you have
+> some usecase for that?
 
-Good. Please check if attached one on top of 3.17 only would work too.
+No it isn't, I would not expect it to happen often. Merges across
+processes are fairly rare, and for the typical use cases, we don't do
+different priority IO inside a single process. So it would not be a
+complete loss to just eliminate merges of different priority IO.
 
-Thanks
+That said, there's no really good reason to do it. An IO scheduler can
+already forbid bio to request merging of different priorities, which
+should be (by far) the most common merge type. If we want to catch the
+last case of request to request merges, I would still prefer adding
+something to catch that. That could either be an IO scheduler hook for
+checking that, or it could be as simple as introducing that check in
+attempt_merge(), if the queue is flagged as not wanting requests with
+different io priorities merged. This is pretty much identical to how we
+currently check merge flags in requests.
 
-Yinghai
+-- 
+Jens Axboe
 
---089e0149d116144b8b0506ba41eb
-Content-Type: text/x-patch; charset=US-ASCII; name="debug_suspend_resume_xxx1.patch"
-Content-Disposition: attachment; filename="debug_suspend_resume_xxx1.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i1xq1p6l0
-
-LS0tCiBkcml2ZXJzL3BjaS9wY2kuYyB8ICAgIDQgKysrLQogMSBmaWxlIGNoYW5nZWQsIDMgaW5z
-ZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQoKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9w
-Y2kuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9wY2kuYworKysg
-bGludXgtMi42L2RyaXZlcnMvcGNpL3BjaS5jCkBAIC0xMDYzLDcgKzEwNjMsOSBAQCBzdGF0aWMg
-dm9pZCBwY2lfcmVzdG9yZV9jb25maWdfc3BhY2Uoc3RyCiAJCXBjaV9yZXN0b3JlX2NvbmZpZ19z
-cGFjZV9yYW5nZShwZGV2LCA0LCA5LCAxMCk7CiAJCXBjaV9yZXN0b3JlX2NvbmZpZ19zcGFjZV9y
-YW5nZShwZGV2LCAwLCAzLCAwKTsKIAl9IGVsc2UgewotCQlwY2lfcmVzdG9yZV9jb25maWdfc3Bh
-Y2VfcmFuZ2UocGRldiwgMCwgMTUsIDApOworCQkvKiBSZXN0b3JlIEJBUnMgYmVmb3JlIHRoZSBj
-b21tYW5kIHJlZ2lzdGVyLiAqLworCQlwY2lfcmVzdG9yZV9jb25maWdfc3BhY2VfcmFuZ2UocGRl
-diwgNCwgMTUsIDApOworCQlwY2lfcmVzdG9yZV9jb25maWdfc3BhY2VfcmFuZ2UocGRldiwgMCwg
-MywgMCk7CiAJfQogfQogCg==
---089e0149d116144b8b0506ba41eb--
