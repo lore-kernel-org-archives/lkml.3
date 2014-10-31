@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759998AbaJaOEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:04:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38843 "EHLO mx2.suse.de"
+	id S933764AbaJaOE1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:04:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38862 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759946AbaJaOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760274AbaJaOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Oct 2014 10:00:44 -0400
 From: Juergen Gross <jgross@suse.com>
 To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
@@ -14,9 +14,9 @@ To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
         jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
         tomi.valkeinen@ti.com, bhelgaas@google.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 07/17] x86: Use new cache mode type in asm/pgtable.h
-Date: Fri, 31 Oct 2014 15:00:23 +0100
-Message-Id: <1414764033-30011-8-git-send-email-jgross@suse.com>
+Subject: [PATCH 11/17] x86: Use new cache mode type in mm/ioremap.c
+Date: Fri, 31 Oct 2014 15:00:27 +0100
+Message-Id: <1414764033-30011-12-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1414764033-30011-1-git-send-email-jgross@suse.com>
 References: <1414764033-30011-1-git-send-email-jgross@suse.com>
@@ -25,101 +25,251 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Instead of directly using the cache mode bits in the pte switch to
-using the cache mode type. This requires changing some callers of
-is_new_memtype_allowed() to be changed as well.
+using the cache mode type.
 
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Juergen Gross <jgross@suse.com>
 ---
- arch/x86/include/asm/pgtable.h | 19 ++++++++++---------
- arch/x86/mm/ioremap.c          |  3 ++-
- arch/x86/mm/pat.c              |  8 ++++++--
- 3 files changed, 18 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/io.h  |  2 +-
+ arch/x86/include/asm/pat.h |  2 +-
+ arch/x86/mm/ioremap.c      | 65 +++++++++++++++++++++++++---------------------
+ arch/x86/mm/pat.c          | 12 +++++----
+ 4 files changed, 44 insertions(+), 37 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index aa97a07..c112ea6 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -9,9 +9,10 @@
- /*
-  * Macro to mark a page protection value as UC-
-  */
--#define pgprot_noncached(prot)					\
--	((boot_cpu_data.x86 > 3)				\
--	 ? (__pgprot(pgprot_val(prot) | _PAGE_CACHE_UC_MINUS))	\
-+#define pgprot_noncached(prot)						\
-+	((boot_cpu_data.x86 > 3)					\
-+	 ? (__pgprot(pgprot_val(prot) |					\
-+		     cachemode2protval(_PAGE_CACHE_MODE_UC_MINUS)))	\
- 	 : (prot))
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index b8237d8..71b9e65 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -314,7 +314,7 @@ extern void *xlate_dev_mem_ptr(unsigned long phys);
+ extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
  
- #ifndef __ASSEMBLY__
-@@ -404,8 +405,8 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
- #define canon_pgprot(p) __pgprot(massage_pgprot(p))
+ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+-				unsigned long prot_val);
++				enum page_cache_mode pcm);
+ extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
  
- static inline int is_new_memtype_allowed(u64 paddr, unsigned long size,
--					 unsigned long flags,
--					 unsigned long new_flags)
-+					 enum page_cache_mode pcm,
-+					 enum page_cache_mode new_pcm)
- {
- 	/*
- 	 * PAT type is always WB for untracked ranges, so no need to check.
-@@ -419,10 +420,10 @@ static inline int is_new_memtype_allowed(u64 paddr, unsigned long size,
- 	 * - request is uncached, return cannot be write-back
- 	 * - request is write-combine, return cannot be write-back
- 	 */
--	if ((flags == _PAGE_CACHE_UC_MINUS &&
--	     new_flags == _PAGE_CACHE_WB) ||
--	    (flags == _PAGE_CACHE_WC &&
--	     new_flags == _PAGE_CACHE_WB)) {
-+	if ((pcm == _PAGE_CACHE_MODE_UC_MINUS &&
-+	     new_pcm == _PAGE_CACHE_MODE_WB) ||
-+	    (pcm == _PAGE_CACHE_MODE_WC &&
-+	     new_pcm == _PAGE_CACHE_MODE_WB)) {
- 		return 0;
- 	}
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+diff --git a/arch/x86/include/asm/pat.h b/arch/x86/include/asm/pat.h
+index a8438bc..d35ee2d 100644
+--- a/arch/x86/include/asm/pat.h
++++ b/arch/x86/include/asm/pat.h
+@@ -17,7 +17,7 @@ extern int reserve_memtype(u64 start, u64 end,
+ extern int free_memtype(u64 start, u64 end);
  
+ extern int kernel_map_sync_memtype(u64 base, unsigned long size,
+-		unsigned long flag);
++		enum page_cache_mode pcm);
+ 
+ int io_reserve_memtype(resource_size_t start, resource_size_t end,
+ 			enum page_cache_mode *pcm);
 diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index af78e50..3a81eb9 100644
+index 3a81eb9..f31507f 100644
 --- a/arch/x86/mm/ioremap.c
 +++ b/arch/x86/mm/ioremap.c
-@@ -142,7 +142,8 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+@@ -29,20 +29,20 @@
+  * conflicts.
+  */
+ int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+-			       unsigned long prot_val)
++			enum page_cache_mode pcm)
+ {
+ 	unsigned long nrpages = size >> PAGE_SHIFT;
+ 	int err;
  
- 	if (prot_val != new_prot_val) {
- 		if (!is_new_memtype_allowed(phys_addr, size,
--					    prot_val, new_prot_val)) {
-+				pgprot2cachemode(__pgprot(prot_val)),
-+				pgprot2cachemode(__pgprot(new_prot_val)))) {
+-	switch (prot_val) {
+-	case _PAGE_CACHE_UC:
++	switch (pcm) {
++	case _PAGE_CACHE_MODE_UC:
+ 	default:
+ 		err = _set_memory_uc(vaddr, nrpages);
+ 		break;
+-	case _PAGE_CACHE_WC:
++	case _PAGE_CACHE_MODE_WC:
+ 		err = _set_memory_wc(vaddr, nrpages);
+ 		break;
+-	case _PAGE_CACHE_WB:
++	case _PAGE_CACHE_MODE_WB:
+ 		err = _set_memory_wb(vaddr, nrpages);
+ 		break;
+ 	}
+@@ -75,13 +75,14 @@ static int __ioremap_check_ram(unsigned long start_pfn, unsigned long nr_pages,
+  * caller shouldn't need to know that small detail.
+  */
+ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+-		unsigned long size, unsigned long prot_val, void *caller)
++		unsigned long size, enum page_cache_mode pcm, void *caller)
+ {
+ 	unsigned long offset, vaddr;
+ 	resource_size_t pfn, last_pfn, last_addr;
+ 	const resource_size_t unaligned_phys_addr = phys_addr;
+ 	const unsigned long unaligned_size = size;
+ 	struct vm_struct *area;
++	enum page_cache_mode new_pcm;
+ 	unsigned long new_prot_val;
+ 	pgprot_t prot;
+ 	int retval;
+@@ -134,39 +135,42 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 	size = PAGE_ALIGN(last_addr+1) - phys_addr;
+ 
+ 	retval = reserve_memtype(phys_addr, (u64)phys_addr + size,
+-						prot_val, &new_prot_val);
++				 cachemode2protval(pcm), &new_prot_val);
+ 	if (retval) {
+ 		printk(KERN_ERR "ioremap reserve_memtype failed %d\n", retval);
+ 		return NULL;
+ 	}
+ 
+-	if (prot_val != new_prot_val) {
+-		if (!is_new_memtype_allowed(phys_addr, size,
+-				pgprot2cachemode(__pgprot(prot_val)),
+-				pgprot2cachemode(__pgprot(new_prot_val)))) {
++	new_pcm = pgprot2cachemode(__pgprot(new_prot_val));
++
++	if (pcm != new_pcm) {
++		if (!is_new_memtype_allowed(phys_addr, size, pcm, new_pcm)) {
  			printk(KERN_ERR
- 		"ioremap error for 0x%llx-0x%llx, requested 0x%lx, got 0x%lx\n",
+-		"ioremap error for 0x%llx-0x%llx, requested 0x%lx, got 0x%lx\n",
++		"ioremap error for 0x%llx-0x%llx, requested 0x%x, got 0x%x\n",
  				(unsigned long long)phys_addr,
+ 				(unsigned long long)(phys_addr + size),
+-				prot_val, new_prot_val);
++				pcm, new_pcm);
+ 			goto err_free_memtype;
+ 		}
+-		prot_val = new_prot_val;
++		pcm = new_pcm;
+ 	}
+ 
+-	switch (prot_val) {
+-	case _PAGE_CACHE_UC:
++	prot = PAGE_KERNEL_IO;
++	switch (pcm) {
++	case _PAGE_CACHE_MODE_UC:
+ 	default:
+-		prot = PAGE_KERNEL_IO_NOCACHE;
++		prot = __pgprot(pgprot_val(prot) |
++				cachemode2protval(_PAGE_CACHE_MODE_UC));
+ 		break;
+-	case _PAGE_CACHE_UC_MINUS:
+-		prot = PAGE_KERNEL_IO_UC_MINUS;
++	case _PAGE_CACHE_MODE_UC_MINUS:
++		prot = __pgprot(pgprot_val(prot) |
++				cachemode2protval(_PAGE_CACHE_MODE_UC_MINUS));
+ 		break;
+-	case _PAGE_CACHE_WC:
+-		prot = PAGE_KERNEL_IO_WC;
++	case _PAGE_CACHE_MODE_WC:
++		prot = __pgprot(pgprot_val(prot) |
++				cachemode2protval(_PAGE_CACHE_MODE_WC));
+ 		break;
+-	case _PAGE_CACHE_WB:
+-		prot = PAGE_KERNEL_IO;
++	case _PAGE_CACHE_MODE_WB:
+ 		break;
+ 	}
+ 
+@@ -179,7 +183,7 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 	area->phys_addr = phys_addr;
+ 	vaddr = (unsigned long) area->addr;
+ 
+-	if (kernel_map_sync_memtype(phys_addr, size, prot_val))
++	if (kernel_map_sync_memtype(phys_addr, size, pcm))
+ 		goto err_free_area;
+ 
+ 	if (ioremap_page_range(vaddr, vaddr + size, phys_addr, prot))
+@@ -228,14 +232,14 @@ void __iomem *ioremap_nocache(resource_size_t phys_addr, unsigned long size)
+ {
+ 	/*
+ 	 * Ideally, this should be:
+-	 *	pat_enabled ? _PAGE_CACHE_UC : _PAGE_CACHE_UC_MINUS;
++	 *	pat_enabled ? _PAGE_CACHE_MODE_UC : _PAGE_CACHE_MODE_UC_MINUS;
+ 	 *
+ 	 * Till we fix all X drivers to use ioremap_wc(), we will use
+ 	 * UC MINUS.
+ 	 */
+-	unsigned long val = _PAGE_CACHE_UC_MINUS;
++	enum page_cache_mode pcm = _PAGE_CACHE_MODE_UC_MINUS;
+ 
+-	return __ioremap_caller(phys_addr, size, val,
++	return __ioremap_caller(phys_addr, size, pcm,
+ 				__builtin_return_address(0));
+ }
+ EXPORT_SYMBOL(ioremap_nocache);
+@@ -253,7 +257,7 @@ EXPORT_SYMBOL(ioremap_nocache);
+ void __iomem *ioremap_wc(resource_size_t phys_addr, unsigned long size)
+ {
+ 	if (pat_enabled)
+-		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_WC,
++		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WC,
+ 					__builtin_return_address(0));
+ 	else
+ 		return ioremap_nocache(phys_addr, size);
+@@ -262,7 +266,7 @@ EXPORT_SYMBOL(ioremap_wc);
+ 
+ void __iomem *ioremap_cache(resource_size_t phys_addr, unsigned long size)
+ {
+-	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_WB,
++	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WB,
+ 				__builtin_return_address(0));
+ }
+ EXPORT_SYMBOL(ioremap_cache);
+@@ -270,7 +274,8 @@ EXPORT_SYMBOL(ioremap_cache);
+ void __iomem *ioremap_prot(resource_size_t phys_addr, unsigned long size,
+ 				unsigned long prot_val)
+ {
+-	return __ioremap_caller(phys_addr, size, (prot_val & _PAGE_CACHE_MASK),
++	return __ioremap_caller(phys_addr, size,
++				pgprot2cachemode(__pgprot(prot_val)),
+ 				__builtin_return_address(0));
+ }
+ EXPORT_SYMBOL(ioremap_prot);
 diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 6574388..47282c2 100644
+index 2f3744f..8f68a83 100644
 --- a/arch/x86/mm/pat.c
 +++ b/arch/x86/mm/pat.c
-@@ -455,7 +455,9 @@ int io_reserve_memtype(resource_size_t start, resource_size_t end,
- 	if (ret)
- 		goto out_err;
- 
--	if (!is_new_memtype_allowed(start, size, req_type, new_type))
-+	if (!is_new_memtype_allowed(start, size,
-+				    pgprot2cachemode(__pgprot(req_type)),
-+				    pgprot2cachemode(__pgprot(new_type))))
+@@ -462,7 +462,7 @@ int io_reserve_memtype(resource_size_t start, resource_size_t end,
+ 	if (!is_new_memtype_allowed(start, size, req_type, new_type))
  		goto out_free;
  
- 	if (kernel_map_sync_memtype(start, size, new_type) < 0)
-@@ -630,7 +632,9 @@ static int reserve_pfn_range(u64 paddr, unsigned long size, pgprot_t *vma_prot,
+-	if (kernel_map_sync_memtype(start, size, new_prot) < 0)
++	if (kernel_map_sync_memtype(start, size, new_type) < 0)
+ 		goto out_free;
  
- 	if (flags != want_flags) {
- 		if (strict_prot ||
--		    !is_new_memtype_allowed(paddr, size, want_flags, flags)) {
-+		    !is_new_memtype_allowed(paddr, size,
-+				pgprot2cachemode(__pgprot(want_flags)),
-+				pgprot2cachemode(__pgprot(flags)))) {
- 			free_memtype(paddr, paddr + size);
- 			printk(KERN_ERR "%s:%d map pfn expected mapping type %s"
- 				" for [mem %#010Lx-%#010Lx], got %s\n",
+ 	*type = new_type;
+@@ -560,7 +560,8 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
+  * Change the memory type for the physial address range in kernel identity
+  * mapping space if that range is a part of identity map.
+  */
+-int kernel_map_sync_memtype(u64 base, unsigned long size, unsigned long flags)
++int kernel_map_sync_memtype(u64 base, unsigned long size,
++			    enum page_cache_mode pcm)
+ {
+ 	unsigned long id_sz;
+ 
+@@ -578,11 +579,11 @@ int kernel_map_sync_memtype(u64 base, unsigned long size, unsigned long flags)
+ 				__pa(high_memory) - base :
+ 				size;
+ 
+-	if (ioremap_change_attr((unsigned long)__va(base), id_sz, flags) < 0) {
++	if (ioremap_change_attr((unsigned long)__va(base), id_sz, pcm) < 0) {
+ 		printk(KERN_INFO "%s:%d ioremap_change_attr failed %s "
+ 			"for [mem %#010Lx-%#010Lx]\n",
+ 			current->comm, current->pid,
+-			cattr_name(flags),
++			cattr_name(cachemode2protval(pcm)),
+ 			base, (unsigned long long)(base + size-1));
+ 		return -EINVAL;
+ 	}
+@@ -656,7 +657,8 @@ static int reserve_pfn_range(u64 paddr, unsigned long size, pgprot_t *vma_prot,
+ 				     flags);
+ 	}
+ 
+-	if (kernel_map_sync_memtype(paddr, size, flags) < 0) {
++	if (kernel_map_sync_memtype(paddr, size,
++				    pgprot2cachemode(__pgprot(flags))) < 0) {
+ 		free_memtype(paddr, paddr + size);
+ 		return -EINVAL;
+ 	}
 -- 
 1.8.4.5
 
