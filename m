@@ -1,120 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933600AbaJaDcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 23:32:46 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:7983 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756777AbaJaDco (ORCPT
+	id S933778AbaJaDgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 23:36:06 -0400
+Received: from mailgw02.mediatek.com ([210.61.82.184]:57460 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751050AbaJaDgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 23:32:44 -0400
-Message-ID: <5453022D.4040801@huawei.com>
-Date: Fri, 31 Oct 2014 11:29:49 +0800
-From: zhanghailiang <zhang.zhanghailiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Thu, 30 Oct 2014 23:36:04 -0400
+X-Listener-Flag: 11101
+Subject: Re: [PATCH 3/3] ARM: dts: mt8135: Add Reset Controller for
+ MediaTek SoC
+From: Flora Fu <flora.fu@mediatek.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>
+CC: Matthias Brugger <matthias.bgg@gmail.com>, <arm@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <flora.fu@mediatek.com>
+In-Reply-To: <1414659745.3069.2.camel@pengutronix.de>
+References: <1414638733-10080-1-git-send-email-flora.fu@mediatek.com>
+	 <1414638733-10080-4-git-send-email-flora.fu@mediatek.com>
+	 <1414659745.3069.2.camel@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 31 Oct 2014 11:35:55 +0800
+Message-ID: <1414726555.25409.38.camel@mtksdaap41>
 MIME-Version: 1.0
-To: Peter Feiner <pfeiner@google.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>, <qemu-devel@nongnu.org>,
-        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Hugh Dickins" <hughd@google.com>,
-        "Dr. David Alan Gilbert" <dgilbert@redhat.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        "Robert Love" <rlove@google.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        "Neil Brown" <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "Minchan Kim" <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        "Stefan Hajnoczi" <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>,
-        "Andrew Jones" <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Subject: Re: [PATCH 00/17] RFC: userfault v2
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com> <544E1143.1080905@huawei.com> <20141029174607.GK19606@redhat.com> <545221A4.9030606@huawei.com> <20141031022327.GA13275@google.com>
-In-Reply-To: <20141031022327.GA13275@google.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.69]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.54530240.00B7,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7c291665cc8459ec8f29e79875df6f44
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/31 10:23, Peter Feiner wrote:
-> On Thu, Oct 30, 2014 at 07:31:48PM +0800, zhanghailiang wrote:
->> On 2014/10/30 1:46, Andrea Arcangeli wrote:
->>> On Mon, Oct 27, 2014 at 05:32:51PM +0800, zhanghailiang wrote:
->>>> I want to confirm a question:
->>>> Can we support distinguishing between writing and reading memory for userfault?
->>>> That is, we can decide whether writing a page, reading a page or both trigger userfault.
->>> Mail is going to be long enough already so I'll just assume tracking
->>> dirty memory in userland (instead of doing it in kernel) is worthy
->>> feature to have here.
->
-> I'll open that can of worms :-)
->
->> [...]
->> Er, maybe i didn't describe clearly. What i really need for live memory snapshot
->> is only wrprotect fault, like kvm's dirty tracing mechanism, *only tracing write action*.
->>
->> So, what i need for userfault is supporting only wrprotect fault. i don't
->> want to get notification for non present reading faults, it will influence
->> VM's performance and the efficiency of doing snapshot.
->
-> Given that you do care about performance Zhanghailiang, I don't think that a
-> userfault handler is a good place to track dirty memory. Every dirtying write
-> will block on the userfault handler, which is an expensively slow proposition
-> compared to an in-kernel approach.
->
+Hi, Philipp,
 
-Agreed, but for doing live memory snapshot (VM is running when do snapsphot),
-we have to do this (block the write action), because we have to save the page before it
-is dirtied by writing action. This is the difference, compared to pre-copy migration.
+On Thu, 2014-10-30 at 10:02 +0100, Philipp Zabel wrote:
+> Since the reset controller driver accesses registers solely through the
+> syscon regmap, I'd prefer to keep with the device tree control graph
+> concept and make the reset-controller nodes children of the syscon
+> nodes. I've brought this up before: https://lkml.org/lkml/2014/5/27/422,
+> and I think this is another case where child node support for syscon
+> makes sense:
+> 
+>         infracfg: syscon@10001000 {
+>                 compatible = "mediatek,mt8135-infracfg", "syscon";
+>                 reg = <0 0x10001000 0 0x1000>;
+>                 
+>                 infrarst: reset-controller@30 {
+>                         #reset-cells = <1>;
+>                         compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
+>                         reg = <0x30 0x8>;
+>                 };
+>         };
+> 
+>         pericfg: syscon@10003000 {
+>                 compatible = "mediatek,mt8135-pericfg", "syscon";
+>                 reg = <0 0x10003000 0 0x1000>;
+> 
+>                 perirst: reset-controller@00 {                                                                                               
+>                         #reset-cells = <1>;
+>                         compatible = "mediatek,mt8135-pericfg-reset", "mediatek,reset";
+>                         reg = <0x00 0x8>;
+>                 };
+>         };
+> 
+> regards
+> Philipp
+> 
 
->> Also, i think this feature will benefit for migration of ivshmem and vhost-scsi
->> which have no dirty-page-tracing now.
->
-> I do agree wholeheartedly with you here. Manually tracking non-guest writes
-> adds to the complexity of device emulation code. A central fault-driven means
-> for dirty tracking writes from the guest and host would be a welcome
-> simplification to implementing pre-copy migration. Indeed, that's exactly what
-> I'm working on! I'm using the softdirty bit, which was introduced recently for
-> CRIU migration, to replace the use of KVM's dirty logging and manual dirty
-> tracking by the VMM during pre-copy migration. See
+Yes, such dts arrangement looks better to me. Implementation in this
+version is trying to doing the same thing as your proposal. The new
+property "mediatek,syscon-reset = <&infracfg 0x30 0x8>;" specifies base
+address of reset and byte width for controlling resets.
 
-Great! Do you plan to issue your patches to community? I mean is your work based on
-qemu? or an independent tool (CRIU migration?) for live-migration?
-Maybe i could fix the migration problem for ivshmem in qemu now,
-based on softdirty mechanism.
+If https://lkml.org/lkml/2014/5/27/422 is adopt into kernel release, it
+will be well organized to configure reset controller as child of regmap
+which is compatible to syscon.
 
-> Documentation/vm/soft-dirty.txt and pagemap.txt in case you aren't familiar. To
+In reset driver, it is able to get syscon regmap from parent node and
+retrieve the address offset and byte with for controlling resets.
+--- 
+syscon_np = of_get_parent(np);
+data->regmap = syscon_node_to_regmap(syscon_np);
+if (IS_ERR(data->regmap)) {
+	dev_err(&pdev->dev, "couldn't get syscon-reset regmap\n");
+	return PTR_ERR(data->regmap);
+}
+ret = of_property_read_u32_array(np, "reg", reg, 2);
+if (ret) {
+	dev_err(&pdev->dev, "couldn't read reset base from syscon!\n");
+	return -EINVAL;
+}
 
-I have read them cursorily, it is useful for pre-copy indeed. But it seems that
-it can not meet my need for snapshot.
-
-> make softdirty usable for live migration, I've added an API to atomically
-> test-and-clear the bit and write protect the page.
-
-How can i find the API? Is it been merged in kernel's master branch already?
+---
 
 
 Thanks,
-zhanghailiang
+Flora
+
+
 
