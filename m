@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760274AbaJaOEc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:04:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38857 "EHLO mx2.suse.de"
+	id S1759998AbaJaOEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:04:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38843 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760045AbaJaOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759946AbaJaOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Oct 2014 10:00:44 -0400
 From: Juergen Gross <jgross@suse.com>
 To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
@@ -14,9 +14,9 @@ To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
         jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
         tomi.valkeinen@ti.com, bhelgaas@google.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 10/17] x86: Use new cache mode type in setting page attributes
-Date: Fri, 31 Oct 2014 15:00:26 +0100
-Message-Id: <1414764033-30011-11-git-send-email-jgross@suse.com>
+Subject: [PATCH 07/17] x86: Use new cache mode type in asm/pgtable.h
+Date: Fri, 31 Oct 2014 15:00:23 +0100
+Message-Id: <1414764033-30011-8-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1414764033-30011-1-git-send-email-jgross@suse.com>
 References: <1414764033-30011-1-git-send-email-jgross@suse.com>
@@ -25,195 +25,101 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Instead of directly using the cache mode bits in the pte switch to
-using the cache mode type in the functiuons for modifying page
-attributes.
+using the cache mode type. This requires changing some callers of
+is_new_memtype_allowed() to be changed as well.
 
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Juergen Gross <jgross@suse.com>
 ---
- arch/x86/mm/pageattr.c | 54 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 29 insertions(+), 25 deletions(-)
+ arch/x86/include/asm/pgtable.h | 19 ++++++++++---------
+ arch/x86/mm/ioremap.c          |  3 ++-
+ arch/x86/mm/pat.c              |  8 ++++++--
+ 3 files changed, 18 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index ae242a7..73866f7 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1304,12 +1304,6 @@ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
- 	return 0;
- }
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index aa97a07..c112ea6 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -9,9 +9,10 @@
+ /*
+  * Macro to mark a page protection value as UC-
+  */
+-#define pgprot_noncached(prot)					\
+-	((boot_cpu_data.x86 > 3)				\
+-	 ? (__pgprot(pgprot_val(prot) | _PAGE_CACHE_UC_MINUS))	\
++#define pgprot_noncached(prot)						\
++	((boot_cpu_data.x86 > 3)					\
++	 ? (__pgprot(pgprot_val(prot) |					\
++		     cachemode2protval(_PAGE_CACHE_MODE_UC_MINUS)))	\
+ 	 : (prot))
  
--static inline int cache_attr(pgprot_t attr)
--{
--	return pgprot_val(attr) &
--		(_PAGE_PAT | _PAGE_PAT_LARGE | _PAGE_PWT | _PAGE_PCD);
--}
--
- static int change_page_attr_set_clr(unsigned long *addr, int numpages,
- 				    pgprot_t mask_set, pgprot_t mask_clr,
- 				    int force_split, int in_flag,
-@@ -1390,7 +1384,7 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
- 	 * No need to flush, when we did not set any of the caching
- 	 * attributes:
- 	 */
--	cache = cache_attr(mask_set);
-+	cache = !!pgprot2cachemode(mask_set);
+ #ifndef __ASSEMBLY__
+@@ -404,8 +405,8 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+ #define canon_pgprot(p) __pgprot(massage_pgprot(p))
  
+ static inline int is_new_memtype_allowed(u64 paddr, unsigned long size,
+-					 unsigned long flags,
+-					 unsigned long new_flags)
++					 enum page_cache_mode pcm,
++					 enum page_cache_mode new_pcm)
+ {
  	/*
- 	 * On success we use CLFLUSH, when the CPU supports it to
-@@ -1445,7 +1439,8 @@ int _set_memory_uc(unsigned long addr, int numpages)
- 	 * for now UC MINUS. see comments in ioremap_nocache()
+ 	 * PAT type is always WB for untracked ranges, so no need to check.
+@@ -419,10 +420,10 @@ static inline int is_new_memtype_allowed(u64 paddr, unsigned long size,
+ 	 * - request is uncached, return cannot be write-back
+ 	 * - request is write-combine, return cannot be write-back
  	 */
- 	return change_page_attr_set(&addr, numpages,
--				    __pgprot(_PAGE_CACHE_UC_MINUS), 0);
-+				    cachemode2pgprot(_PAGE_CACHE_MODE_UC_MINUS),
-+				    0);
- }
+-	if ((flags == _PAGE_CACHE_UC_MINUS &&
+-	     new_flags == _PAGE_CACHE_WB) ||
+-	    (flags == _PAGE_CACHE_WC &&
+-	     new_flags == _PAGE_CACHE_WB)) {
++	if ((pcm == _PAGE_CACHE_MODE_UC_MINUS &&
++	     new_pcm == _PAGE_CACHE_MODE_WB) ||
++	    (pcm == _PAGE_CACHE_MODE_WC &&
++	     new_pcm == _PAGE_CACHE_MODE_WB)) {
+ 		return 0;
+ 	}
  
- int set_memory_uc(unsigned long addr, int numpages)
-@@ -1456,7 +1451,7 @@ int set_memory_uc(unsigned long addr, int numpages)
- 	 * for now UC MINUS. see comments in ioremap_nocache()
- 	 */
- 	ret = reserve_memtype(__pa(addr), __pa(addr) + numpages * PAGE_SIZE,
--			    _PAGE_CACHE_UC_MINUS, NULL);
-+			      _PAGE_CACHE_UC_MINUS, NULL);
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index af78e50..3a81eb9 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -142,7 +142,8 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 
+ 	if (prot_val != new_prot_val) {
+ 		if (!is_new_memtype_allowed(phys_addr, size,
+-					    prot_val, new_prot_val)) {
++				pgprot2cachemode(__pgprot(prot_val)),
++				pgprot2cachemode(__pgprot(new_prot_val)))) {
+ 			printk(KERN_ERR
+ 		"ioremap error for 0x%llx-0x%llx, requested 0x%lx, got 0x%lx\n",
+ 				(unsigned long long)phys_addr,
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index 6574388..47282c2 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -455,7 +455,9 @@ int io_reserve_memtype(resource_size_t start, resource_size_t end,
  	if (ret)
  		goto out_err;
  
-@@ -1474,7 +1469,7 @@ out_err:
- EXPORT_SYMBOL(set_memory_uc);
+-	if (!is_new_memtype_allowed(start, size, req_type, new_type))
++	if (!is_new_memtype_allowed(start, size,
++				    pgprot2cachemode(__pgprot(req_type)),
++				    pgprot2cachemode(__pgprot(new_type))))
+ 		goto out_free;
  
- static int _set_memory_array(unsigned long *addr, int addrinarray,
--		unsigned long new_type)
-+		enum page_cache_mode new_type)
- {
- 	int i, j;
- 	int ret;
-@@ -1484,17 +1479,19 @@ static int _set_memory_array(unsigned long *addr, int addrinarray,
- 	 */
- 	for (i = 0; i < addrinarray; i++) {
- 		ret = reserve_memtype(__pa(addr[i]), __pa(addr[i]) + PAGE_SIZE,
--					new_type, NULL);
-+					cachemode2protval(new_type), NULL);
- 		if (ret)
- 			goto out_free;
- 	}
+ 	if (kernel_map_sync_memtype(start, size, new_type) < 0)
+@@ -630,7 +632,9 @@ static int reserve_pfn_range(u64 paddr, unsigned long size, pgprot_t *vma_prot,
  
- 	ret = change_page_attr_set(addr, addrinarray,
--				    __pgprot(_PAGE_CACHE_UC_MINUS), 1);
-+				   cachemode2pgprot(_PAGE_CACHE_MODE_UC_MINUS),
-+				   1);
- 
--	if (!ret && new_type == _PAGE_CACHE_WC)
-+	if (!ret && new_type == _PAGE_CACHE_MODE_WC)
- 		ret = change_page_attr_set_clr(addr, addrinarray,
--					       __pgprot(_PAGE_CACHE_WC),
-+					       cachemode2pgprot(
-+						_PAGE_CACHE_MODE_WC),
- 					       __pgprot(_PAGE_CACHE_MASK),
- 					       0, CPA_ARRAY, NULL);
- 	if (ret)
-@@ -1511,13 +1508,13 @@ out_free:
- 
- int set_memory_array_uc(unsigned long *addr, int addrinarray)
- {
--	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_UC_MINUS);
-+	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_MODE_UC_MINUS);
- }
- EXPORT_SYMBOL(set_memory_array_uc);
- 
- int set_memory_array_wc(unsigned long *addr, int addrinarray)
- {
--	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_WC);
-+	return _set_memory_array(addr, addrinarray, _PAGE_CACHE_MODE_WC);
- }
- EXPORT_SYMBOL(set_memory_array_wc);
- 
-@@ -1527,10 +1524,12 @@ int _set_memory_wc(unsigned long addr, int numpages)
- 	unsigned long addr_copy = addr;
- 
- 	ret = change_page_attr_set(&addr, numpages,
--				    __pgprot(_PAGE_CACHE_UC_MINUS), 0);
-+				   cachemode2pgprot(_PAGE_CACHE_MODE_UC_MINUS),
-+				   0);
- 	if (!ret) {
- 		ret = change_page_attr_set_clr(&addr_copy, numpages,
--					       __pgprot(_PAGE_CACHE_WC),
-+					       cachemode2pgprot(
-+						_PAGE_CACHE_MODE_WC),
- 					       __pgprot(_PAGE_CACHE_MASK),
- 					       0, 0, NULL);
- 	}
-@@ -1564,6 +1563,7 @@ EXPORT_SYMBOL(set_memory_wc);
- 
- int _set_memory_wb(unsigned long addr, int numpages)
- {
-+	/* WB cache mode is hard wired to all cache attribute bits being 0 */
- 	return change_page_attr_clear(&addr, numpages,
- 				      __pgprot(_PAGE_CACHE_MASK), 0);
- }
-@@ -1586,6 +1586,7 @@ int set_memory_array_wb(unsigned long *addr, int addrinarray)
- 	int i;
- 	int ret;
- 
-+	/* WB cache mode is hard wired to all cache attribute bits being 0 */
- 	ret = change_page_attr_clear(addr, addrinarray,
- 				      __pgprot(_PAGE_CACHE_MASK), 1);
- 	if (ret)
-@@ -1648,7 +1649,7 @@ int set_pages_uc(struct page *page, int numpages)
- EXPORT_SYMBOL(set_pages_uc);
- 
- static int _set_pages_array(struct page **pages, int addrinarray,
--		unsigned long new_type)
-+		enum page_cache_mode new_type)
- {
- 	unsigned long start;
- 	unsigned long end;
-@@ -1661,15 +1662,17 @@ static int _set_pages_array(struct page **pages, int addrinarray,
- 			continue;
- 		start = page_to_pfn(pages[i]) << PAGE_SHIFT;
- 		end = start + PAGE_SIZE;
--		if (reserve_memtype(start, end, new_type, NULL))
-+		if (reserve_memtype(start, end, cachemode2protval(new_type),
-+				    NULL))
- 			goto err_out;
- 	}
- 
- 	ret = cpa_set_pages_array(pages, addrinarray,
--			__pgprot(_PAGE_CACHE_UC_MINUS));
--	if (!ret && new_type == _PAGE_CACHE_WC)
-+			cachemode2pgprot(_PAGE_CACHE_MODE_UC_MINUS));
-+	if (!ret && new_type == _PAGE_CACHE_MODE_WC)
- 		ret = change_page_attr_set_clr(NULL, addrinarray,
--					       __pgprot(_PAGE_CACHE_WC),
-+					       cachemode2pgprot(
-+						_PAGE_CACHE_MODE_WC),
- 					       __pgprot(_PAGE_CACHE_MASK),
- 					       0, CPA_PAGES_ARRAY, pages);
- 	if (ret)
-@@ -1689,13 +1692,13 @@ err_out:
- 
- int set_pages_array_uc(struct page **pages, int addrinarray)
- {
--	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_UC_MINUS);
-+	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_MODE_UC_MINUS);
- }
- EXPORT_SYMBOL(set_pages_array_uc);
- 
- int set_pages_array_wc(struct page **pages, int addrinarray)
- {
--	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_WC);
-+	return _set_pages_array(pages, addrinarray, _PAGE_CACHE_MODE_WC);
- }
- EXPORT_SYMBOL(set_pages_array_wc);
- 
-@@ -1714,6 +1717,7 @@ int set_pages_array_wb(struct page **pages, int addrinarray)
- 	unsigned long end;
- 	int i;
- 
-+	/* WB cache mode is hard wired to all cache attribute bits being 0 */
- 	retval = cpa_clear_pages_array(pages, addrinarray,
- 			__pgprot(_PAGE_CACHE_MASK));
- 	if (retval)
+ 	if (flags != want_flags) {
+ 		if (strict_prot ||
+-		    !is_new_memtype_allowed(paddr, size, want_flags, flags)) {
++		    !is_new_memtype_allowed(paddr, size,
++				pgprot2cachemode(__pgprot(want_flags)),
++				pgprot2cachemode(__pgprot(flags)))) {
+ 			free_memtype(paddr, paddr + size);
+ 			printk(KERN_ERR "%s:%d map pfn expected mapping type %s"
+ 				" for [mem %#010Lx-%#010Lx], got %s\n",
 -- 
 1.8.4.5
 
