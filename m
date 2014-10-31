@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939AbaJaTly (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:41:54 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63770 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758145AbaJaTlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:41:52 -0400
-From: Dan Streetman <ddstreet@ieee.org>
-To: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
-Cc: Dan Streetman <ddstreet@ieee.org>, Paul Mackerras <paulus@samba.org>,
-        Thomas Falcon <tlfalcon@linux.vnet.ibm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walter <dwalter@google.com>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Neil Zhang <zhangwm@marvell.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc: use device_online/offline() instead of cpu_up/down()
-Date: Fri, 31 Oct 2014 15:41:34 -0400
-Message-Id: <1414784494-12573-1-git-send-email-ddstreet@ieee.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
-References: <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
+	id S1759108AbaJaTmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 15:42:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33277 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758145AbaJaTmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 15:42:11 -0400
+Date: Fri, 31 Oct 2014 20:42:07 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Juergen Gross <jgross@suse.com>
+Cc: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Subject: Re: [PATCH 01/17] x86: Make page cache mode a real type
+Message-ID: <20141031194207.GA15367@pd.tnic>
+References: <1414764033-30011-1-git-send-email-jgross@suse.com>
+ <1414764033-30011-2-git-send-email-jgross@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1414764033-30011-2-git-send-email-jgross@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In powerpc pseries platform dlpar operations, Use device_online() and
-device_offline() instead of cpu_up() and cpu_down().
+On Fri, Oct 31, 2014 at 03:00:17PM +0100, Juergen Gross wrote:
+> At the moment there are a lot of places that handle setting or getting
+> the page cache mode by treating the pgprot bits equal to the cache mode.
+> This is only true because there are a lot of assumptions about the setup
+> of the PAT MSR. Otherwise the cache type needs to get translated into
+> pgprot bits and vice versa.
+> 
+> This patch tries to prepare for that by introducing a separate type
+> for the cache mode and adding functions to translate between those and
+> pgprot values.
+> 
+> To avoid too much performance penalty the translation between cache mode
+> and pgprot values is done via tables which contain the relevant
+> information.  Write-back cache mode is hard-wired to be 0, all other
+> modes are configurable via those tables. For large pages there are
+> translation functions as the PAT bit is located at different positions
+> in the ptes of 4k and large pages.
+> 
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> Signed-off-by: Juergen Gross <jgross@suse.com>
 
-Calling cpu_up/down directly does not update the cpu device offline
-field, which is used to online/offline a cpu from sysfs.  Calling
-device_online/offline instead keeps the sysfs cpu online value correct.
-The hotplug lock, which is required to be held when calling
-device_online/offline, is already held when dlpar_online/offline_cpu
-are called, since they are called only from cpu_probe|release_store.
+Just a clarification question: how is one to understand this attribution
+here? Is Stefan the original author, was he a reviewer, or? Because this
+SOB chain is misleading...
 
-This patch fixes errors on PowerVM systems that have cpu(s) added/removed
-using dlpar operations; without this patch, the
-/sys/devices/system/cpu/cpuN/online nodes do not correctly show the
-online state of added/removed cpus.
-
-Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
----
-
-Previous discussion for this:
-https://lkml.org/lkml/2014/10/29/839
-
- arch/powerpc/platforms/pseries/dlpar.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/platforms/pseries/dlpar.c b/arch/powerpc/platforms/pseries/dlpar.c
-index 6ad83bd..c22bb1b 100644
---- a/arch/powerpc/platforms/pseries/dlpar.c
-+++ b/arch/powerpc/platforms/pseries/dlpar.c
-@@ -382,7 +382,7 @@ static int dlpar_online_cpu(struct device_node *dn)
- 			BUG_ON(get_cpu_current_state(cpu)
- 					!= CPU_STATE_OFFLINE);
- 			cpu_maps_update_done();
--			rc = cpu_up(cpu);
-+			rc = device_online(get_cpu_device(cpu));
- 			if (rc)
- 				goto out;
- 			cpu_maps_update_begin();
-@@ -467,7 +467,7 @@ static int dlpar_offline_cpu(struct device_node *dn)
- 			if (get_cpu_current_state(cpu) == CPU_STATE_ONLINE) {
- 				set_preferred_offline_state(cpu, CPU_STATE_OFFLINE);
- 				cpu_maps_update_done();
--				rc = cpu_down(cpu);
-+				rc = device_offline(get_cpu_device(cpu));
- 				if (rc)
- 					goto out;
- 				cpu_maps_update_begin();
 -- 
-1.8.3.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
