@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947AbaJaIgO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 04:36:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbaJaIgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 04:36:11 -0400
-Date: Fri, 31 Oct 2014 09:34:27 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Alexis Berlemont <alexis.berlemont@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
-        namhyung@kernel.org, mmarek@suse.cz,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v4 04/14] perf tools: Add kbuild support into
- Makefile.kbuild
-Message-ID: <20141031083427.GB27472@krava.brq.redhat.com>
-References: <20141024124601.GX14687@kernel.org>
- <1414275639-1053-5-git-send-email-alexis.berlemont@gmail.com>
- <20141029081603.GC3538@krava.brq.redhat.com>
- <20141029230507.GA15701@marx-slim.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141029230507.GA15701@marx-slim.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756551AbaJaIkk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 04:40:40 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:51113 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750912AbaJaIki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 04:40:38 -0400
+Message-ID: <1414744834.1964.7.camel@x220>
+Subject: iwlwifi: mvm:  BACKPORT_WANT_DEV_COREDUMP?
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Johannes Berg <johannes.berg@intel.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 31 Oct 2014 09:40:34 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 31 Oct 2014 08:40:35.0564 (UTC) FILETIME=[56F5D2C0:01CFF4E6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 12:05:07AM +0100, Alexis Berlemont wrote:
+Your commit aadede6e9f4c ("iwlwifi: mvm: port to devcoredump framework")
+landed in today's linux-next (next-20141031). It adds a select statement
+for BACKPORT_WANT_DEV_COREDUMP. There's no Kconfig symbol 
+BACKPORT_WANT_DEV_COREDUMP so this select is currently a nop. (In
+https://lkml.org/lkml/2014/9/30/578 I proposed a patch that emits a
+warning in cases like this.)
 
-SNIP
+Did you perhaps meant to select WANT_DEV_COREDUMP? Or is the Kconfig
+symbol BACKPORT_WANT_DEV_COREDUMP queued somewhere?
 
-> > >  tools/perf/util/Kbuild                             | 126 ++++++
-> > >  tools/perf/util/PERF-VERSION-GEN                   |   4 +
-> > >  tools/perf/util/generate-cmdlist.sh                |   8 +-
-> > >  tools/perf/util/scripting-engines/Kbuild           |  11 +
-> > >  tools/perf/util/setup.py                           |   8 +-
-> > 
-> > so this patch took the perf Makefile (at that time) and changed it to
-> > use the kbuild.. but since that time the Makefile.perf came and many
-> > other changes, which need to be reflected in Makefile.kbuild
-> > 
-> > I need to revisit the logic and split the change into more incremental
-> > patches (the patchset is too big)
-> > 
-> > I can redo patches 2,3,4 and get back to you, sounds ok?
-> 
-> Of course. 
-> 
-> Which changes in Makefile.perf do you have in mind ? I thought that
-> Makefile.kbuild was just supposed to build the few extra dependencies
-> (libtraceevent, etc.). I thought that I updated your original patch
-> accordingly with the changes before and after the add of
-> Makefile.perf.
 
-hm, I just stumbled on QUIET_* stuff definitions in Makefile.kbuild,
-(which got moved into scripts some time ago) and assumed this was
-the case for the rest of the file ;-)
+Paul Bolle
 
-jirka
