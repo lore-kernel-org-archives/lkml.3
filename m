@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161699AbaJaCir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 22:38:47 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:45033 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161558AbaJaCip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 22:38:45 -0400
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <20a0d85f87868b5841e8df4626b83581>
-X-DNS-TYPE: 1
-Message-ID: <5452F624.709@rock-chips.com>
-Date: Fri, 31 Oct 2014 10:38:28 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1161737AbaJaClu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 22:41:50 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:46642 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161558AbaJaClt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 22:41:49 -0400
+Date: Fri, 31 Oct 2014 03:40:44 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 09/15] net: dsa: Add support for switch EEPROM access
+Message-ID: <20141031024044.GA4082@lunn.ch>
+References: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
+ <1414604707-22407-10-git-send-email-linux@roeck-us.net>
+ <20141030211131.GB32139@lunn.ch>
+ <20141030223951.GA19489@roeck-us.net>
+ <20141031010039.GA29492@roeck-us.net>
 MIME-Version: 1.0
-To: dinguyen@opensource.altera.com, paulz@synopsys.com, balbi@ti.com
-CC: dinh.linux@gmail.com, swarren@wwwdotorg.org, b.zolnierkie@samsung.com,
-        matthijs@stdin.nl, r.baldyga@samsung.com, jg1.han@samsung.com,
-        sachin.kamat@linaro.org, ben-linux@fluff.org, dianders@chromium.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 6/8] usb: dwc2: gadget: Do not fail probe if there isn't
- a clock node
-References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com> <1414538749-14735-7-git-send-email-dinguyen@opensource.altera.com>
-In-Reply-To: <1414538749-14735-7-git-send-email-dinguyen@opensource.altera.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031010039.GA29492@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dinh,
+> As suspected, ethtool will attempt to read a zero-length eeprom.
+> 
+> The following patch should solve the problem. Not sure if it is worth it,
+> though, since this will change behavior for existing drivers.
 
-On 10/29/2014 07:25 AM, dinguyen@opensource.altera.com wrote:
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
->
-> Since the dwc2 hcd driver is currently not looking for a clock node during
-> init, we should not completely fail if there isn't a clock provided.
-> For dual-role mode, we will only fail init for a non-clock node error. We
-> then update the HCD to only call gadget funtions if there is a proper clock
-> node.
-We have to add clock management for hcd, and I think it is better to
-do it before more Socs use this driver, isn't it?
-I have do something in my RFC patches, but I think I still do it in a 
-wrong way.
-Can we just handle all the clock thing in platform?
+Yes, it changes behaviour, but it does make it more consistent.
 
-Balbi suggested in my patch that we can "hide" clk_enable()/disable() under
-->runtime_resume()/->runtime_suspend() and linux driver model.
-Can this be in platform driver?
+Probably it should be up to core network people to decide if this is
+the write fix or leave it as is.
 
-- Kever
+    Andrew
