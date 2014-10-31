@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759590AbaJaFmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 01:42:53 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:5810 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753058AbaJaFmw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 01:42:52 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>,
-        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>
-CC: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 31 Oct 2014 13:42:44 +0800
-Subject: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Thread-Topic: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Thread-Index: Ac/0SYsLYyTdMNPAS1SmHcF7f8oZ+gAcg3/QAARlW3AAAA1OUA==
-Message-ID: <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
-References: <1414392371.8884.2.camel@perches.com>
- <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18260@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
- <20141030120127.GC32589@arm.com>
- <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
- <20141030135749.GE32589@arm.com>
- <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
+	id S1759122AbaJaFpp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 01:45:45 -0400
+Received: from mga14.intel.com ([192.55.52.115]:32697 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753267AbaJaFpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 01:45:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,292,1413270000"; 
+   d="scan'208";a="614551385"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>
+Subject: RE: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters'
+ accessing
+Thread-Topic: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters'
+ accessing
+Thread-Index: AQHP4s22TpHaDKncQEG+hgnoBCOPqpxGWjFggAAw1QCAAWjMwP//4h8AgAGwnUCAAE6T0A==
+Date: Fri, 31 Oct 2014 05:43:08 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9A9CB6@SHSMSX101.ccr.corp.intel.com>
+References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
+	 <1412783423-9408-2-git-send-email-alvin.chen@intel.com>
+	 <4656BEB6164FC34F8171C6538F1A595B2E9A90E6@SHSMSX101.ccr.corp.intel.com>
+	 <5450CF36.7060105@nexus-software.ie>
+	 <4656BEB6164FC34F8171C6538F1A595B2E9A92B3@SHSMSX101.ccr.corp.intel.com>
+ <1414653134.2396.67.camel@linux.intel.com> 
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9V5jof7018634
 
-This patch add bitrev.h file to support rbit instruction,
-so that we can do bitrev operation by hardware.
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- arch/arm/Kconfig              |  1 +
- arch/arm/include/asm/bitrev.h | 21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+)
- create mode 100644 arch/arm/include/asm/bitrev.h
+> >
+> > All of those patches are in v3.18-rc1, so you may rebase on top of
+> > 3.18-rcX safely I guess.
+> >
+> Andy, I remember you ask me to rebase on the slave-dma tree (git.infraded.org)
+> for-linus branch, and the slave-dma for-linus branch will be reapplied on top of
+> v3.19-rc1.
+> 
+Just to confirm, these patches can be applied well on top of 3.18-rc2.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 89c4b5c..be92b3b 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -28,6 +28,7 @@ config ARM
- 	select HANDLE_DOMAIN_IRQ
- 	select HARDIRQS_SW_RESEND
- 	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
-+	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
- 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_SECCOMP_FILTER if (AEABI && !OABI_COMPAT)
-diff --git a/arch/arm/include/asm/bitrev.h b/arch/arm/include/asm/bitrev.h
-new file mode 100644
-index 0000000..e9b2571
---- /dev/null
-+++ b/arch/arm/include/asm/bitrev.h
-@@ -0,0 +1,21 @@
-+#ifndef __ASM_ARM_BITREV_H
-+#define __ASM_ARM_BITREV_H
-+
-+static __always_inline __attribute_const__ u32 __arch_bitrev32(u32 x)
-+{
-+	__asm__ ("rbit %0, %1" : "=r" (x) : "r" (x));
-+	return x;
-+}
-+
-+static __always_inline __attribute_const__ u16 __arch_bitrev16(u16 x)
-+{
-+	return __arch_bitrev32((u32)x) >> 16;
-+}
-+
-+static __always_inline __attribute_const__ u8 __arch_bitrev8(u8 x)
-+{
-+	return __arch_bitrev32((u32)x) >> 24;
-+}
-+
-+#endif
-+
--- 
-2.1.1
+> So now I need rebase on top of 3.18-rcX, isn't it? Just to confirm.
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
