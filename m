@@ -1,81 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759573AbaJaU6b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:58:31 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:44866 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891AbaJaU63 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:58:29 -0400
+	id S1759898AbaJaU6m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:58:42 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:50249 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755891AbaJaU6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 16:58:40 -0400
+Date: Fri, 31 Oct 2014 13:58:19 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, Josh Triplett <josh@joshtriplett.org>,
+        Junjie Mao <eternal.n08@gmail.com>, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH v2] x86, boot: add hex output for debugging
+Message-ID: <20141031205819.GA13262@www.outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <20141031182037.GA2680@katana>
-References: <1414677578-27412-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <1414677578-27412-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <20141030141644.GE23852@katana> <2139081.L8ZrMAojpq@avalon> <20141031182037.GA2680@katana>
-From: Rob Herring <robherring2@gmail.com>
-Date: Sat, 1 Nov 2014 04:58:07 +0800
-Message-ID: <CAL_JsqJ_kD-QPoRySPTU+7CG=s66QQAytnXMyiJ3AUz8yRE4tw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] of/irq: Export of_irq_get()
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 1, 2014 at 2:20 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> On Thu, Oct 30, 2014 at 04:17:19PM +0200, Laurent Pinchart wrote:
->> On Thursday 30 October 2014 15:16:44 Wolfram Sang wrote:
->> > On Thu, Oct 30, 2014 at 03:59:36PM +0200, Laurent Pinchart wrote:
->> > > The function will be used by the I2C core which can be compiled as a
->> > > module.
->> > >
->> > > Signed-off-by: Laurent Pinchart
->> > > <laurent.pinchart+renesas@ideasonboard.com>
->> >
->> > I think it makes sense if I take this via I2C to get the dependencies
->> > for the later patches right?
->>
->> It would be easier, yes.
->
-> Oh, DT maintainers are not on CC. Then I can wait pretty long for an
-> ack ;) Fixing that.
+This is useful for reporting various addresses or other values while
+debugging early boot. For example, when CONFIG_X86_VERBOSE_BOOTUP is set,
+this is now visible at boot time:
 
-Acked-by: Rob Herring <robh@kernel.org>
+	early console in setup code
+	early console in decompress_kernel
+	input_data: 0x0000000001e1526e
+	input_len: 0x0000000000732236
+	output: 0x0000000001000000
+	output_len: 0x0000000001535640
+	run_size: 0x00000000021fb000
+	KASLR using RDTSC...
 
->
->>
->> > > ---
->> > >
->> > >  drivers/of/irq.c | 1 +
->> > >  1 file changed, 1 insertion(+)
->> > >
->> > > diff --git a/drivers/of/irq.c b/drivers/of/irq.c
->> > > index 1471e0a223a5..0d7765807f49 100644
->> > > --- a/drivers/of/irq.c
->> > > +++ b/drivers/of/irq.c
->> > > @@ -405,6 +405,7 @@ int of_irq_get(struct device_node *dev, int index)
->> > >
->> > >   return irq_create_of_mapping(&oirq);
->> > >
->> > >  }
->> > >
->> > > +EXPORT_SYMBOL_GPL(of_irq_get);
->> > >
->> > >  /**
->> > >
->> > >   * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq
->> > >   number
->>
->> --
->> Regards,
->>
->> Laurent Pinchart
->>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+Since this displays run_size, this patch depends on Junjie Mao's patch
+"x86, kaslr: Prevent .bss from overlaping initrd"
+
+---
+ arch/x86/boot/compressed/misc.c | 24 ++++++++++++++++++++++++
+ arch/x86/boot/compressed/misc.h | 11 +++++++++++
+ 2 files changed, 35 insertions(+)
+
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 30dd59a9f0b4..2aefc8a63655 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -220,6 +220,23 @@ void __putstr(const char *s)
+ 	outb(0xff & (pos >> 1), vidport+1);
+ }
+ 
++void __puthex(unsigned long value)
++{
++	char alpha[2] = "0";
++	int bits;
++
++	for (bits = sizeof(value) * 8 - 4; bits >= 0; bits -= 4) {
++		unsigned long digit = (value >> bits) & 0xf;
++
++		if (digit < 0xA)
++			alpha[0] = '0' + digit;
++		else
++			alpha[0] = 'a' + (digit - 0xA);
++
++		__putstr(alpha);
++	}
++}
++
+ static void error(char *x)
+ {
+ 	error_putstr("\n\n");
+@@ -382,6 +399,13 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 	free_mem_ptr     = heap;	/* Heap */
+ 	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
+ 
++	/* Report initial kernel position details. */
++	debug_putaddr(input_data);
++	debug_putaddr(input_len);
++	debug_putaddr(output);
++	debug_putaddr(output_len);
++	debug_putaddr(run_size);
++
+ 	/*
+ 	 * The memory hole needed for the kernel is the larger of either
+ 	 * the entire decompressed kernel plus relocation table, or the
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index 24e3e569a13c..70472ae98a73 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -34,16 +34,27 @@ extern memptr free_mem_ptr;
+ extern memptr free_mem_end_ptr;
+ extern struct boot_params *real_mode;		/* Pointer to real-mode data */
+ void __putstr(const char *s);
++void __puthex(unsigned long value);
+ #define error_putstr(__x)  __putstr(__x)
++#define error_puthex(__x)  __puthex(__x)
+ 
+ #ifdef CONFIG_X86_VERBOSE_BOOTUP
+ 
+ #define debug_putstr(__x)  __putstr(__x)
++#define debug_puthex(__x)  __puthex(__x)
++#define debug_putaddr(__x) { \
++		debug_putstr(#__x ": 0x"); \
++		debug_puthex((unsigned long)(__x)); \
++		debug_putstr("\n"); \
++	}
+ 
+ #else
+ 
+ static inline void debug_putstr(const char *s)
+ { }
++static inline void debug_puthex(const char *s)
++{ }
++#define debug_putaddr(x) /* */
+ 
+ #endif
+ 
+-- 
+1.9.1
+
+
+-- 
+Kees Cook
+Chrome OS Security
