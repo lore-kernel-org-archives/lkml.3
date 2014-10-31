@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422735AbaJaBKQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:10:16 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64566 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161410AbaJaBKM (ORCPT
+	id S1161603AbaJaBKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:10:41 -0400
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:62348 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161410AbaJaBKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:10:12 -0400
-Message-Id: <20141031011009.847522722@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Thu, 30 Oct 2014 21:09:47 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH RT 2/2] Linux 3.2.63-rt93-rc1
-References: <20141031010945.211059309@goodmis.org>
+	Thu, 30 Oct 2014 21:10:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-Linux-3.2.63-rt93-rc1.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20141030203317.GA8137@kroah.com>
+References: <20141030031400.GA3312@devel>
+	<20141030203317.GA8137@kroah.com>
+Date: Fri, 31 Oct 2014 10:10:39 +0900
+Message-ID: <CAHb8M2CiK0uLDn2BiWCg44z0=R-KwDFRKZNaUSc0Gxo_qNJnEw@mail.gmail.com>
+Subject: Re: [PATCH V2] staging: dgap: re-arrange functions for removing
+ forward declarations
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
+        devel <devel@driverdev.osuosl.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.63-rt93-rc1 stable review patch.
-If anyone has any objections, please let me know.
+Hi,
 
-------------------
+2014-10-31 5:33 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+> On Thu, Oct 30, 2014 at 12:14:00PM +0900, Daeseok Youn wrote:
+>> Re-arrange the functions for removing forward declarations.
+>>
+>> Tested-by: Mark Hounschell <markh@compro.net>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> Tested-by: Mark Hounschell <markh@compro.net>
+>> ---
+>> V2: this patch is rebased on staging-next branch.
+>
+> Still doesn't apply :(
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+You maybe merge this patch to staging-testing branch, right?
+I tried to rebase this patch on staging-next but staging-testing had
+two patches more from Tapasweni.
 
----
- localversion-rt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I will rebase on staging-testing and send this again.
 
-diff --git a/localversion-rt b/localversion-rt
-index 4905d52a4828..4821d0e04d28 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt92
-+-rt93-rc1
--- 
-2.1.1
+Thanks.
 
-
+regards,
+Daeseok Youn.
