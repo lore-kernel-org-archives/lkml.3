@@ -1,131 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072AbaJaDMz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 23:12:55 -0400
-Received: from mail-bn1bbn0106.outbound.protection.outlook.com ([157.56.111.106]:39989
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1422772AbaJaDMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 23:12:50 -0400
-X-WSS-ID: 0NEAGX7-07-7X0-02
-X-M-MSG: 
-From: Huang Rui <ray.huang@amd.com>
-To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
-        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Huang Rui <ray.huang@amd.com>
-Subject: [PATCH v5 2/8] usb: dwc3: add disable usb3 suspend phy quirk
-Date: Fri, 31 Oct 2014 11:11:13 +0800
-Message-ID: <1414725079-11490-3-git-send-email-ray.huang@amd.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414725079-11490-1-git-send-email-ray.huang@amd.com>
-References: <1414725079-11490-1-git-send-email-ray.huang@amd.com>
+	id S1754600AbaJaDcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 23:32:20 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:57212 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaJaDcS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 23:32:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(50466002)(19580395003)(104166001)(87936001)(62966002)(44976005)(88136002)(19580405001)(92566001)(84676001)(85852003)(89996001)(53416004)(101416001)(99396003)(68736004)(92726001)(2171001)(77096002)(105586002)(87286001)(31966008)(107046002)(106466001)(95666004)(48376002)(76482002)(120916001)(102836001)(97736003)(50986999)(33646002)(4396001)(50226001)(20776003)(76176999)(47776003)(64706001)(21056001)(36756003)(85306004)(229853001)(93916002)(86362001)(46102003)(80022003)(77156001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
-X-Forefront-PRVS: 03818C953D
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Ray.Huang@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <1414681386.26703.6.camel@AMDC1943>
+References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
+ <1414422226-10948-7-git-send-email-k.kozlowski@samsung.com>
+ <544EA4FA.6040704@collabora.co.uk> <1414486356.24949.19.camel@AMDC1943>
+ <1414498308.24949.32.camel@AMDC1943> <1414579362.18868.11.camel@AMDC1943>
+ <5450C63B.3000602@collabora.co.uk> <CAAVeFuLncbkNLGxEAj90yMmugRDNjtjeGoV_QYTMDZ7NVMJCmg@mail.gmail.com>
+ <1414681386.26703.6.camel@AMDC1943>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 31 Oct 2014 12:31:57 +0900
+Message-ID: <CAAVeFuJo1wTyxOo4FEZM3=GTejuSHi+mnr=QV6HUeV5mAOCmqg@mail.gmail.com>
+Subject: Re: [PATCH 6/8] regulator: max77686: Add external GPIO control
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds disable usb3 suspend phy quirk, and some special platforms
-can configure that if it is needed.
+On Fri, Oct 31, 2014 at 12:03 AM, Krzysztof Kozlowski
+<k.kozlowski@samsung.com> wrote:
+> On czw, 2014-10-30 at 22:56 +0900, Alexandre Courbot wrote:
+>> Hi, and thanks for bringing this issue to us!
+>>
+>> On Wed, Oct 29, 2014 at 7:49 PM, Javier Martinez Canillas
+>> <javier.martinez@collabora.co.uk> wrote:
+>> > [adding Linus and Alexandre to the cc list]
+>> >
+>> > Hello Krzysztof,
+>> >
+>> > On 10/29/2014 11:42 AM, Krzysztof Kozlowski wrote:
+>> >> On wto, 2014-10-28 at 13:11 +0100, Krzysztof Kozlowski wrote:
+>> >>> On wto, 2014-10-28 at 09:52 +0100, Krzysztof Kozlowski wrote:
+>> >>> > On pon, 2014-10-27 at 21:03 +0100, Javier Martinez Canillas wrote:
+>> >>> > > Hello Krzysztof,
+>> >>> > >
+>> >>> > > On 10/27/2014 04:03 PM, Krzysztof Kozlowski wrote:
+>> >>> > > > @@ -85,6 +91,9 @@ struct max77686_data {
+>> >>> > > >        struct max77686_regulator_data *regulators;
+>> >>> > > >        int num_regulators;
+>> >>> > > >
+>> >>> > > > +      /* Array of size num_regulators with GPIOs for external control. */
+>> >>> > > > +      int *ext_control_gpio;
+>> >>> > > > +
+>> >>> > >
+>> >>> > > The integer-based GPIO API is deprecated in favor of the descriptor-based GPIO
+>> >>> > > interface (Documentation/gpio/consumer.txt). Could you please use the later?
+>> >>> >
+>> >>> > Sure, I can. Please have in mind that regulator core still accepts old
+>> >>> > GPIO so I will have to use desc_to_gpio(). That should work... and
+>> >>> > should be future-ready.
+>> >>>
+>> >>> It seems I was too hasty... I think usage of the new gpiod API implies
+>> >>> completely different bindings.
+>> >>>
+>> >>> The gpiod_get() gets GPIO from a device level, not from given sub-node
+>> >>> pointer. This means that you cannot have DTS like this:
+>> >>> ldo21_reg: ldo21 {
+>> >>>      regulator-compatible = "LDO21";
+>> >>>      regulator-name = "VTF_2.8V";
+>> >>>      regulator-min-microvolt = <2800000>;
+>> >>>      regulator-max-microvolt = <2800000>;
+>> >>>      ec-gpio = <&gpy2 0 0>;
+>> >>> };
+>> >>>
+>> >>> ldo22_reg: ldo22 {
+>> >>>      regulator-compatible = "LDO22";
+>> >>>      regulator-name = "VMEM_VDD_2.8V";
+>> >>>      regulator-min-microvolt = <2800000>;
+>> >>>      regulator-max-microvolt = <2800000>;
+>> >>>      ec-gpio = <&gpk0 2 0>;
+>> >>> };
+>> >>>
+>> >>>
+>> >>> I could put GPIOs in device node:
+>> >>>
+>> >>> max77686_pmic@09 {
+>> >>>      compatible = "maxim,max77686";
+>> >>>      interrupt-parent = <&gpx0>;
+>> >>>      interrupts = <7 0>;
+>> >>>      reg = <0x09>;
+>> >>>      #clock-cells = <1>;
+>> >>>      ldo21-gpio = <&gpy2 0 0>;
+>> >>>      ldo22-gpio = <&gpk0 2 0>;
+>> >>>
+>> >>>      ldo21_reg: ldo21 {
+>> >>>              regulator-compatible = "LDO21";
+>> >>>              regulator-name = "VTF_2.8V";
+>> >>>              regulator-min-microvolt = <2800000>;
+>> >>>              regulator-max-microvolt = <2800000>;
+>> >>>      };
+>> >>>
+>> >>>      ldo22_reg: ldo22 {
+>> >>>              regulator-compatible = "LDO22";
+>> >>>              regulator-name = "VMEM_VDD_2.8V";
+>> >>>              regulator-min-microvolt = <2800000>;
+>> >>>              regulator-max-microvolt = <2800000>;
+>> >>>      };
+>> >>>
+>> >>> This would work but I don't like it. The properties of a regulator are
+>> >>> above the node configuring that regulator.
+>> >>>
+>> >>> Any ideas?
+>> >>>
+>> >>
+>> >> Continuing talking to myself... I found another problem - GPIO cannot be
+>> >> requested more than once (-EBUSY). In case of this driver (and board:
+>> >> Trats2) one GPIO is connected to regulators. The legacy GPIO API and
+>> >> regulator core handle this.
+>> >>
+>> >> With new GPIO API I would have to implement some additional steps in
+>> >> such case...
+>> >>
+>> >> So there are 2 issues:
+>> >> 1. Cannot put GPIO property in regulator node.
+>>
+>> For this problem you will probably want to use the
+>> dev(m)_get_named_gpiod_from_child() function from the following patch:
+>>
+>> https://lkml.org/lkml/2014/10/6/529
+>>
+>> It should reach -next soon now.
+>
+> Thanks! Probably I would switch to "top" level gpios property anyway
+> (other reasons) but it would be valuable in some cases to specify them
+> per child node.
 
-Signed-off-by: Huang Rui <ray.huang@amd.com>
----
- Documentation/devicetree/bindings/usb/dwc3.txt | 1 +
- drivers/usb/dwc3/core.c                        | 6 ++++++
- drivers/usb/dwc3/core.h                        | 2 ++
- drivers/usb/dwc3/platform_data.h               | 1 +
- 4 files changed, 10 insertions(+)
+Mmm, but doesn't it make more sense to have them in the child nodes?
+Besides if the bindings of this driver have already been published,
+I'm afraid you will have to maintain backward compability.
 
-diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
-index b724b2e..08b394e 100644
---- a/Documentation/devicetree/bindings/usb/dwc3.txt
-+++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-@@ -32,6 +32,7 @@ Optional properties:
-  - snps,tx_de_emphasis_quirk: when set core will set Tx de-emphasis value.
-  - snps,tx_de_emphasis: the value driven to the PHY is controlled by the
- 			LTSSM during USB3 Compliance mode.
-+ - snps,dis_u3_susphy_quirk: when set core will disable USB3 suspend phy.
- 
- This is usually a subnode to DWC3 glue to which it is connected.
- 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index e7e877a..6ec4176 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -404,6 +404,9 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
- 	if (dwc->tx_de_emphasis_quirk)
- 		reg |= DWC3_GUSB3PIPECTL_TX_DEEPH(dwc->tx_de_emphasis);
- 
-+	if (dwc->dis_u3_susphy_quirk && dwc->is_fpga)
-+		reg &= ~DWC3_GUSB3PIPECTL_SUSPHY;
-+
- 	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
- 
- 	mdelay(100);
-@@ -807,6 +810,8 @@ static int dwc3_probe(struct platform_device *pdev)
- 				"snps,lfps_filter_quirk");
- 		dwc->rx_detect_poll_quirk = of_property_read_bool(node,
- 				"snps,rx_detect_poll_quirk");
-+		dwc->dis_u3_susphy_quirk = of_property_read_bool(node,
-+				"snps,dis_u3_susphy_quirk");
- 
- 		dwc->tx_de_emphasis_quirk = of_property_read_bool(node,
- 				"snps,tx_de_emphasis_quirk");
-@@ -829,6 +834,7 @@ static int dwc3_probe(struct platform_device *pdev)
- 		dwc->del_phy_power_chg_quirk = pdata->del_phy_power_chg_quirk;
- 		dwc->lfps_filter_quirk = pdata->lfps_filter_quirk;
- 		dwc->rx_detect_poll_quirk = pdata->rx_detect_poll_quirk;
-+		dwc->dis_u3_susphy_quirk = pdata->dis_u3_susphy_quirk;
- 
- 		dwc->tx_de_emphasis_quirk = pdata->tx_de_emphasis_quirk;
- 		if (pdata->tx_de_emphasis)
-diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index cf9aaca..fa778b0 100644
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -697,6 +697,7 @@ struct dwc3_scratchpad_array {
-  * @del_phy_power_chg_quirk: set if we enable delay phy power change quirk
-  * @lfps_filter_quirk: set if we enable LFPS filter quirk
-  * @rx_detect_poll_quirk: set if we enable rx_detect to polling lfps quirk
-+ * @dis_u3_susphy_quirk: set if we disable usb3 suspend phy
-  * @tx_de_emphasis_quirk: set if we enable Tx de-emphasis quirk
-  * @tx_de_emphasis: Tx de-emphasis value
-  * 	0	- -6dB de-emphasis
-@@ -818,6 +819,7 @@ struct dwc3 {
- 	unsigned		del_phy_power_chg_quirk:1;
- 	unsigned		lfps_filter_quirk:1;
- 	unsigned		rx_detect_poll_quirk:1;
-+	unsigned		dis_u3_susphy_quirk:1;
- 
- 	unsigned		tx_de_emphasis_quirk:1;
- 	unsigned		tx_de_emphasis:2;
-diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
-index e1ab900..0f1d5ad 100644
---- a/drivers/usb/dwc3/platform_data.h
-+++ b/drivers/usb/dwc3/platform_data.h
-@@ -36,6 +36,7 @@ struct dwc3_platform_data {
- 	unsigned del_phy_power_chg_quirk:1;
- 	unsigned lfps_filter_quirk:1;
- 	unsigned rx_detect_poll_quirk:1;
-+	unsigned dis_u3_susphy_quirk:1;
- 
- 	unsigned tx_de_emphasis_quirk:1;
- 	unsigned tx_de_emphasis:2;
--- 
-1.9.1
+>
+>>
+>> >> 2. Cannot request some GPIO more than once.
+>>
+>> We have been confronted to this problem with the regulator core as well:
+>>
+>> http://marc.info/?l=linux-arm-kernel&m=140417649119733&w=1
+>>
+>> I have a draft patch that allows GPIOs to be requested by several
+>> clients. What prevented me from submitting it was that I wanted to
+>> make sure the different requested configurations were compatible, but
+>> maybe I am overthinking this. There are also a couple of other patches
+>> that this depends on (like removal of the big descs array), so I don't
+>> think it will be available too soon, sadly.
+>
+> Shouldn't be the nature of get()/put() interface to allow multiple
+> requests?
 
+Only if it makes sense for the resource to be requested multiple
+times. GPIOs are kind of a difficult case here. Consumers could ask
+for e.g. conflicting directions. But for cases where it should work I
+agree that multiple consumers would be welcome.
+
+> To me it was a kind of intuitive that I could do another
+> devm_gpiod_get() for the same gpio. But then it hit me with EBUSY :).
+>
+>>
+>> So maybe your best shot for now is to keep using the integer API, as
+>> much as I hate it. Once we become able to request the same GPIO
+>> several times, you should be good to switch to descriptors. Sorry this
+>> has not been done faster.
+>
+> I'll do it legacy way but I'll try to use bindings gpiolib-safe. This
+> way future transition in the driver should not affect bindings.
+
+For DT bindings, please refer to these brand-new instructions:
+
+https://lkml.org/lkml/2014/10/29/98
+
+Personally I think having the GPIO phandle in the child node would
+be the most intuitive. You will also have to use the "-gpios" suffix, no
+"-gpio", if you can still change the bindings.
