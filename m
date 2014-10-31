@@ -1,191 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759444AbaJaTnY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:43:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53509 "EHLO mx1.redhat.com"
+	id S1758026AbaJaTwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 15:52:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50963 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759280AbaJaTnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:43:21 -0400
-Message-ID: <1414784583.27420.330.camel@ul30vt.home>
-Subject: Re: [PATCH v9 15/19] vfio: add local lock in virqfd instead of
- depending on VFIO PCI
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Fri, 31 Oct 2014 13:43:03 -0600
-In-Reply-To: <1414433284-31719-16-git-send-email-a.motakis@virtualopensystems.com>
-References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1414433284-31719-16-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755548AbaJaTwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 15:52:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
+   d="scan'208";a="629198812"
+From: kan.liang@intel.com
+To: acme@kernel.org, jolsa@kernel.org
+Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH 1/1] perf tools: perf diff for different binaries
+Date: Fri, 31 Oct 2014 05:06:12 -0700
+Message-Id: <1414757172-20064-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 19:08 +0100, Antonios Motakis wrote:
-> Virqfd just needs to keep accesses to any struct *virqfd safe, but this
-> comes into play only when creating or destroying eventfds, so sharing
-> the same spinlock with the VFIO bus driver is not necessary.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/pci/vfio_pci_intrs.c | 10 +++++-----
->  drivers/vfio/virqfd.c             | 24 +++++++++++++-----------
->  include/linux/vfio.h              |  3 +--
->  3 files changed, 19 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-> index 3f909bb..e56c814 100644
-> --- a/drivers/vfio/pci/vfio_pci_intrs.c
-> +++ b/drivers/vfio/pci/vfio_pci_intrs.c
-> @@ -226,8 +226,8 @@ static int vfio_intx_set_signal(struct vfio_pci_device *vdev, int fd)
->  static void vfio_intx_disable(struct vfio_pci_device *vdev)
->  {
->  	vfio_intx_set_signal(vdev, -1);
-> -	virqfd_disable(vdev, &vdev->ctx[0].unmask);
-> -	virqfd_disable(vdev, &vdev->ctx[0].mask);
-> +	virqfd_disable(&vdev->ctx[0].unmask);
-> +	virqfd_disable(&vdev->ctx[0].mask);
->  	vdev->irq_type = VFIO_PCI_NUM_IRQS;
->  	vdev->num_ctx = 0;
->  	kfree(vdev->ctx);
-> @@ -377,8 +377,8 @@ static void vfio_msi_disable(struct vfio_pci_device *vdev, bool msix)
->  	vfio_msi_set_block(vdev, 0, vdev->num_ctx, NULL, msix);
->  
->  	for (i = 0; i < vdev->num_ctx; i++) {
-> -		virqfd_disable(vdev, &vdev->ctx[i].unmask);
-> -		virqfd_disable(vdev, &vdev->ctx[i].mask);
-> +		virqfd_disable(&vdev->ctx[i].unmask);
-> +		virqfd_disable(&vdev->ctx[i].mask);
->  	}
->  
->  	if (msix) {
-> @@ -415,7 +415,7 @@ static int vfio_pci_set_intx_unmask(struct vfio_pci_device *vdev,
->  					     vfio_send_intx_eventfd, NULL,
->  					     &vdev->ctx[0].unmask, fd);
->  
-> -		virqfd_disable(vdev, &vdev->ctx[0].unmask);
-> +		virqfd_disable(&vdev->ctx[0].unmask);
->  	}
->  
->  	return 0;
-> diff --git a/drivers/vfio/virqfd.c b/drivers/vfio/virqfd.c
-> index 243eb61..27fa2f0 100644
-> --- a/drivers/vfio/virqfd.c
-> +++ b/drivers/vfio/virqfd.c
-> @@ -17,6 +17,7 @@
->  #include "pci/vfio_pci_private.h"
->  
->  static struct workqueue_struct *vfio_irqfd_cleanup_wq;
-> +static spinlock_t lock;
+From: Kan Liang <kan.liang@intel.com>
 
-Define this as:
+perf diff can display the differential profile between two perf.data
+files. However, the perf.data files have to come from same binaries.
 
-DEFINE_SPINLOCK(lock);
+The patch introduced a key "symbol_name" for --sort option, so the user
+can compare the perf.data files from different binaries, even different
+kernel version. If symbol_name is set, perf diff display the
+differential profile of functions.
+It could help the user quickly locate the scaling regression caused by
+new binaries/kernels.
 
-and we can avoid needing the init.
+Here is an example. I have two version of binaries. One is running on
+kernel 3.16. The other is running on kernel 3.17.
+
+Using perf record, I got two perf.data files, v1_1_6perf.data (version
+one in 3.16) and v2_1_7perf.data (version two in 3.17).
+
+If I run old perf diff with --sort dso,symbol, we cannot get any useful
+information for the user space binary. Furthermore, it failed to compare
+the kernel function. E.g. native_write_msr_safe.
+
+perf diff -s dso,symbol --compute ratio v1_1_6perf.data v2_1_7perf.data
+
+ Event 'cycles'
+
+ Baseline           Ratio  Shared Object      Symbol
+ ........  ..............  .................
+....................................
+
+                            [kernel.kallsyms]  [k]
+__update_entity_load_avg_contrib
+                            [kernel.kallsyms]  [k] _raw_spin_lock
+                            [kernel.kallsyms]  [k] apic_timer_interrupt
+                            [kernel.kallsyms]  [k] hrtimer_interrupt
+     0.01%                  [kernel.kallsyms]  [k] native_write_msr_safe
+                            [kernel.kallsyms]  [k] native_write_msr_safe
+     0.01%                  [kernel.kallsyms]  [k] notifier_call_chain
+     0.01%                  [kernel.kallsyms]  [k] perf_event_task_tick
+     0.01%                  [kernel.kallsyms]  [k] run_posix_cpu_timers
+     0.01%                  [kernel.kallsyms]  [k] run_timer_softirq
+     0.01%                  [kernel.kallsyms]  [k] trigger_load_balance
+     0.01%                  [kernel.kallsyms]  [k] update_vsyscall
+     0.05%                  [unknown]          [.] 0x0000000000400540
+     0.04%                  [unknown]          [.] 0x0000000000400541
+     0.03%                  [unknown]          [.] 0x000000000040054b
+     0.04%                  [unknown]          [.] 0x0000000000400552
+    33.55%                  [unknown]          [.] 0x0000000000400554
+     1.22%                  [unknown]          [.] 0x000000000040055a
+     8.00%                  [unknown]          [.] 0x000000000040055e
+     0.02%                  [unknown]          [.] 0x0000000000400562
+     8.41%                  [unknown]          [.] 0x0000000000400564
+    48.13%                  [unknown]          [.] 0x000000000040056b
+     0.16%                  [unknown]          [.] 0x0000000000400570
+     0.17%                  [unknown]          [.] 0x0000000000400571
+                            [unknown]          [.] 0x0000000000400580
+                            [unknown]          [.] 0x0000000000400581
+     0.01%                  [unknown]          [.] 0x0000000000400583
+     0.01%                  [unknown]          [.] 0x0000000000400588
+                            [unknown]          [.] 0x000000000040058b
+     0.01%     1240.990221  [unknown]          [.] 0x000000000040058d
+                            [unknown]          [.] 0x0000000000400590
+     0.06%                  [unknown]          [.] 0x0000000000400591
+                            [unknown]          [.] 0x0000000000400593
+     0.04%                  [unknown]          [.] 0x0000000000400595
+     0.01%     1240.603148  [unknown]          [.] 0x0000000000400597
+                            [unknown]          [.] 0x000000000040059b
+                            [unknown]          [.] 0x000000000040059d
+                            [unknown]          [.] 0x00000000004005a1
+                            [unknown]          [.] 0x00000000004005a5
+                            [unknown]          [.] 0x00000000004005a7
+                            [unknown]          [.] 0x00000000004005a8
+                            [unknown]          [.] 0x00000000004005aa
+                            [unknown]          [.] 0x00000000004005ba
+                            [unknown]          [.] 0x00000000004005bf
+                            [unknown]          [.] 0x00000000004005c4
+                            [unknown]          [.] 0x00000000004005c9
+                            [unknown]          [.] 0x00000000004005ce
+                            [unknown]          [.] 0x00000000004005d2
+                            [unknown]          [.] 0x00000000004005d6
+                            [unknown]          [.] 0x00000000004005d8
+                            [unknown]          [.] 0x00000000004005f5
+
+With the key "symbol_name", we can easily get the differential profile
+from different binary versions and different kernel versions.
+
+./perf diff -s dso,symbol_name --compute ratio v1_1_6perf.data v2_1_7perf.data
+
+ Event 'cycles'
+
+ Baseline           Ratio  Shared Object      Symbol Name
+ ........  ..............  .................
+....................................
+
+                            [kernel.kallsyms]  [k]
+__update_entity_load_avg_contrib
+                            [kernel.kallsyms]  [k] _raw_spin_lock
+                            [kernel.kallsyms]  [k] apic_timer_interrupt
+                            [kernel.kallsyms]  [k] hrtimer_interrupt
+     0.01%        1.998522  [kernel.kallsyms]  [k] native_write_msr_safe
+     0.01%                  [kernel.kallsyms]  [k] notifier_call_chain
+     0.01%                  [kernel.kallsyms]  [k] perf_event_task_tick
+     0.01%                  [kernel.kallsyms]  [k] run_posix_cpu_timers
+     0.01%                  [kernel.kallsyms]  [k] run_timer_softirq
+     0.01%                  [kernel.kallsyms]  [k] trigger_load_balance
+     0.01%                  [kernel.kallsyms]  [k] update_vsyscall
+                            tchain_edit        [.] f1
+     0.14%        3.913444  tchain_edit        [.] f2
+    99.82%        1.005478  tchain_edit        [.] f3
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+ tools/perf/builtin-diff.c |  5 ++++-
+ tools/perf/util/sort.c    | 26 ++++++++++++++++++++++++++
+ tools/perf/util/sort.h    |  3 +++
+ 3 files changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 25114c9..71183c1 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -743,7 +743,7 @@ static const struct option options[] = {
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+ 		   "only consider these symbols"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   "sort by key(s): pid, comm, dso, symbol, symbol_name, parent, cpu, srcline, ..."
+ 		   " Please refer the man page for the complete list."),
+ 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+ 		   "separator for columns, no spaces will be added between "
+@@ -1164,6 +1164,9 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (setup_sorting() < 0)
+ 		usage_with_options(diff_usage, options);
  
->  int __init vfio_pci_virqfd_init(void)
->  {
-> @@ -25,6 +26,8 @@ int __init vfio_pci_virqfd_init(void)
->  	if (!vfio_irqfd_cleanup_wq)
->  		return -ENOMEM;
->  
-> +	spin_lock_init(&lock);
-> +
->  	return 0;
->  }
->  
-> @@ -53,21 +56,21 @@ static int virqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
->  
->  	if (flags & POLLHUP) {
->  		unsigned long flags;
-> -		spin_lock_irqsave(&virqfd->vdev->irqlock, flags);
-> +		spin_lock_irqsave(&lock, flags);
->  
->  		/*
->  		 * The eventfd is closing, if the virqfd has not yet been
->  		 * queued for release, as determined by testing whether the
-> -		 * vdev pointer to it is still valid, queue it now.  As
-> +		 * virqfd pointer to it is still valid, queue it now.  As
->  		 * with kvm irqfds, we know we won't race against the virqfd
-> -		 * going away because we hold wqh->lock to get here.
-> +		 * going away because we hold the lock to get here.
->  		 */
->  		if (*(virqfd->pvirqfd) == virqfd) {
->  			*(virqfd->pvirqfd) = NULL;
->  			virqfd_deactivate(virqfd);
->  		}
->  
-> -		spin_unlock_irqrestore(&virqfd->vdev->irqlock, flags);
-> +		spin_unlock_irqrestore(&lock, flags);
->  	}
->  
->  	return 0;
-> @@ -143,16 +146,16 @@ int virqfd_enable(struct vfio_pci_device *vdev,
->  	 * we update the pointer to the virqfd under lock to avoid
->  	 * pushing multiple jobs to release the same virqfd.
->  	 */
-> -	spin_lock_irq(&vdev->irqlock);
-> +	spin_lock_irq(&lock);
->  
->  	if (*pvirqfd) {
-> -		spin_unlock_irq(&vdev->irqlock);
-> +		spin_unlock_irq(&lock);
->  		ret = -EBUSY;
->  		goto err_busy;
->  	}
->  	*pvirqfd = virqfd;
->  
-> -	spin_unlock_irq(&vdev->irqlock);
-> +	spin_unlock_irq(&lock);
->  
->  	/*
->  	 * Install our own custom wake-up handling so we are notified via
-> @@ -190,19 +193,18 @@ err_fd:
->  }
->  EXPORT_SYMBOL_GPL(virqfd_enable);
->  
-> -void virqfd_disable(struct vfio_pci_device *vdev,
-> -			   struct virqfd **pvirqfd)
-> +void virqfd_disable(struct virqfd **pvirqfd)
->  {
->  	unsigned long flags;
->  
-> -	spin_lock_irqsave(&vdev->irqlock, flags);
-> +	spin_lock_irqsave(&lock, flags);
->  
->  	if (*pvirqfd) {
->  		virqfd_deactivate(*pvirqfd);
->  		*pvirqfd = NULL;
->  	}
->  
-> -	spin_unlock_irqrestore(&vdev->irqlock, flags);
-> +	spin_unlock_irqrestore(&lock, flags);
->  
->  	/*
->  	 * Block until we know all outstanding shutdown jobs have completed.
-> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-> index a077c48..fb6037b 100644
-> --- a/include/linux/vfio.h
-> +++ b/include/linux/vfio.h
-> @@ -146,7 +146,6 @@ extern int virqfd_enable(struct vfio_pci_device *vdev,
->  			 int (*handler)(struct vfio_pci_device *, void *),
->  			 void (*thread)(struct vfio_pci_device *, void *),
->  			 void *data, struct virqfd **pvirqfd, int fd);
-> -extern void virqfd_disable(struct vfio_pci_device *vdev,
-> -			   struct virqfd **pvirqfd);
-> +extern void virqfd_disable(struct virqfd **pvirqfd);
->  
->  #endif /* VFIO_H */
-
-
++	if (sort__has_sym_name)
++		tool.mmap2 = perf_event__process_mmap2;
++
+ 	setup_pager();
+ 
+ 	sort__setup_elide(NULL);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 9402885..1226e37 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -20,6 +20,7 @@ int		have_ignore_callees = 0;
+ int		sort__need_collapse = 0;
+ int		sort__has_parent = 0;
+ int		sort__has_sym = 0;
++int		sort__has_sym_name = 0;
+ int		sort__has_dso = 0;
+ enum sort_mode	sort__mode = SORT_MODE__NORMAL;
+ 
+@@ -280,6 +281,27 @@ struct sort_entry sort_sym = {
+ 	.se_width_idx	= HISTC_SYMBOL,
+ };
+ 
++static int64_t
++sort__sym_name_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	const char *sym_name_l, *sym_name_r;
++
++	if (!left->ms.sym || !right->ms.sym)
++		return cmp_null(right->ms.sym, left->ms.sym);
++
++	sym_name_l = left->ms.sym->name;
++	sym_name_r = right->ms.sym->name;
++
++	return strcmp(sym_name_l, sym_name_r);
++}
++
++struct sort_entry sort_sym_name = {
++	.se_header	= "Symbol Name",
++	.se_cmp		= sort__sym_name_cmp,
++	.se_sort	= sort__sym_sort,
++	.se_snprintf	= hist_entry__sym_snprintf,
++	.se_width_idx	= HISTC_SYMBOL,
++};
+ /* --sort srcline */
+ 
+ static int64_t
+@@ -1170,6 +1192,7 @@ static struct sort_dimension common_sort_dimensions[] = {
+ 	DIM(SORT_COMM, "comm", sort_comm),
+ 	DIM(SORT_DSO, "dso", sort_dso),
+ 	DIM(SORT_SYM, "symbol", sort_sym),
++	DIM(SORT_SYM_NAME, "symbol_name", sort_sym_name),
+ 	DIM(SORT_PARENT, "parent", sort_parent),
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+ 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
+@@ -1430,6 +1453,8 @@ int sort_dimension__add(const char *tok)
+ 			sort__has_parent = 1;
+ 		} else if (sd->entry == &sort_sym) {
+ 			sort__has_sym = 1;
++		} else if (sd->entry == &sort_sym_name) {
++			sort__has_sym_name = 1;
+ 		} else if (sd->entry == &sort_dso) {
+ 			sort__has_dso = 1;
+ 		}
+@@ -1809,6 +1834,7 @@ void reset_output_field(void)
+ 	sort__need_collapse = 0;
+ 	sort__has_parent = 0;
+ 	sort__has_sym = 0;
++	sort__has_sym_name = 0;
+ 	sort__has_dso = 0;
+ 
+ 	field_order = NULL;
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index c03e4ff..9b43c6c 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -34,10 +34,12 @@ extern int have_ignore_callees;
+ extern int sort__need_collapse;
+ extern int sort__has_parent;
+ extern int sort__has_sym;
++extern int sort__has_sym_name;
+ extern enum sort_mode sort__mode;
+ extern struct sort_entry sort_comm;
+ extern struct sort_entry sort_dso;
+ extern struct sort_entry sort_sym;
++extern struct sort_entry sort_sym_name;
+ extern struct sort_entry sort_parent;
+ extern struct sort_entry sort_dso_from;
+ extern struct sort_entry sort_dso_to;
+@@ -161,6 +163,7 @@ enum sort_type {
+ 	SORT_COMM,
+ 	SORT_DSO,
+ 	SORT_SYM,
++	SORT_SYM_NAME,
+ 	SORT_PARENT,
+ 	SORT_CPU,
+ 	SORT_SRCLINE,
+-- 
+1.8.3.1
 
