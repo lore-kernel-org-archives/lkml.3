@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759190AbaJaUd4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:33:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45563 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757268AbaJaUdz (ORCPT
+	id S1759319AbaJaUeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:34:05 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:61127 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759227AbaJaUeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:33:55 -0400
-Date: Fri, 31 Oct 2014 21:33:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave.hansen@intel.com>
-cc: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Subject: Re: [PATCH v9 09/12] x86, mpx: decode MPX instruction to get bound
- violation information
-In-Reply-To: <5453EE0E.8060200@intel.com>
-Message-ID: <alpine.DEB.2.11.1410312133120.5308@nanos>
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-10-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241408360.5308@nanos> <9E0BE1322F2F2246BD820DA9FC397ADE0180ED16@shsmsx102.ccr.corp.intel.com>
- <alpine.DEB.2.11.1410272135420.5308@nanos> <5453EE0E.8060200@intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 31 Oct 2014 16:34:03 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1414786943.3014.37.camel@jlt4.sipsolutions.net>
+References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
+ <1414570902-5675-2-git-send-email-mcgrof@do-not-panic.com>
+ <1414741273.3014.3.camel@jlt4.sipsolutions.net> <20141031193408.GA12953@wotan.suse.de>
+ <1414786943.3014.37.camel@jlt4.sipsolutions.net>
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Fri, 31 Oct 2014 13:33:40 -0700
+X-Google-Sender-Auth: lZ5SvgKLlcqFNGewLCsm8EBHKBE
+Message-ID: <CAB=NE6UVca47FyZv54pED3C_1go+-Ra_AbSwW1+=Gj5YWP0GHw@mail.gmail.com>
+Subject: Re: [RFC v2 1/4] backports: replace CPTCFG prefix for CONFIG_BACKPORT
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Michal Marek <mmarek@suse.cz>, Stefan Assmann <sassmann@kpanic.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014, Dave Hansen wrote:
+On Fri, Oct 31, 2014 at 1:22 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Fri, 2014-10-31 at 20:34 +0100, Luis R. Rodriguez wrote:
+>
+>> > Please make this a post-process step that runs on everything, including
+>> > the backport stuff, rather than running only on the source and assuming
+>> > the backport stuff already uses this convention.
+>>
+>> I want to but lets consider the amount of work to maintain the two
+>> separate approaches, is it worth it?
+>
+> I don't see why it'd be maintaining two approaches? Right now we have
+> scripting to replace CONFIG_ with CPTCFG_, so couldn't we just add more
+> scripting to replace CPTCFG_ with CONFIG_BACKPORT_ ?
 
-> On 10/27/2014 01:36 PM, Thomas Gleixner wrote:
-> > You're repeating yourself. Care to read the discussion about this from
-> > the last round of review again?
-> 
-> OK, so here's a rewritten decoder.  I think it's a lot more robust and
-> probably fixes a bug or two.  This ends up saving ~70 lines of code out
-> of ~300 or so for the old patch.
-> 
-> I'll include this in the next series, but I'm posting it early and often
-> to make sure I'm on the right track.
+Hm, OK well let me give it a shot, at compilation time which approach
+are we going to use? I don't like the idea of having two different
+sets of naming approaching for packaging and integration, however I
+can see how that might be useful for determining where some code might
+come from or how backports was used, but other than that we would need
+to pick if we're going to support the integration naming scheme also
+for packaging as an option or just use CPTCFG for it. If the same
+naming scheme is an option then that means we either have to test both
+or leave one untested. This is why I ultimately would prefer we just
+stick to one approach for both.
 
-Had a short glance. This looks really very well done!
+The fact that CPTCFG has same length as CONFIG really has no empirical
+value, its just cosmetic, meanwhile I am however more concerned with
+the above and I think its worth some serious consideration.
 
-Thanks,
+> That also makes me think of something else - we currently use BACKPORT_
+> as a prefix for some of the other stuff under compat/Kconfig, and in
+> fact rename some things (like CONFIG_BACKPORT_AVERAGE) so maybe also
+> using CONFIG_BACKPORT_ here isn't a great idea? Might want to use
+> something else, say CONFIG_BPT_ or so.
 
-	tglx
+That's a good point, I take it that it does not matter which one we
+pick for each, so long as its different? If so I think CONFIG_BACKPORT
+is pretty clear for things we carry over like device drivers, but this
+is just subjective and so long as we pick something I think it'll be
+fine.
+
+I do believe the harder thing to decide is the above possible
+divergence thing and if we can agree on that I think the rest of the
+series is not as controversial.
+
+  Luis
