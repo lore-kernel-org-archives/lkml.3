@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161549AbaJaA6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 20:58:52 -0400
-Received: from ozlabs.org ([103.22.144.67]:53387 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161391AbaJaA6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 20:58:51 -0400
-Date: Fri, 31 Oct 2014 11:58:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jikos@jikos.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>, Olivier Gay <ogay@logitech.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: linux-next: manual merge of the hid tree with Linus' tree
-Message-ID: <20141031115843.155b65e0@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1161587AbaJaA70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 20:59:26 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:50262 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161370AbaJaA7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 20:59:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/uniAoZLte/5lQ=AKeEaZKKB"; protocol="application/pgp-signature"
+In-Reply-To: <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
+References: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
+	<5452B241.5010603@amacapital.net>
+	<CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
+	<CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+	<CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
+Date: Thu, 30 Oct 2014 17:59:23 -0700
+X-Google-Sender-Auth: 7imyNrZnuq5VKpcPCoigKS9Zyy4
+Message-ID: <CA+55aFyxoAtJMGhLtz9qND-k4ADexTrE9buG---=vOXTEoovyA@mail.gmail.com>
+Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Eric Rannaud <e@nanocritical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/uniAoZLte/5lQ=AKeEaZKKB
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 30, 2014 at 5:01 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> Uh, because it's glibc?
 
-Hi Jiri,
+Yeah. Bloated, over-engineered, and stupid.
 
-Today's linux-next merge of the hid tree got a conflict in drivers/hid/hid-=
-input.c between commit f974008f07a6 ("HID: add keyboard input assist hid us=
-ages") from Linus' tree and commit afdb5cce979b ("HID: input: Map unknown c=
-onsumer page codes to KEY_UNKNOWN") from the hid tree.
+> Or because it's trying not to screw up and on
+> some system where overrunning va_arg is terrible?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+No. On 99% of architectures the third argument is in a register
+anyway, and traditionally it's not even va_arg, although glibc has
+made it so (traditionally it's just pre-ANSI C with three arguments
+and one of them might be missing - gcc has had hacks for avoiding
+warnings for traditional C things like that: look at the whole
+transparent union thing for another traditional "C without prototypes"
+calling convention case).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+But even if you make it va_arg, I can't think of a single architecture
+where that makes sense. Outside of assembly trampolines, you *always*
+have enough stack space that you can just access a word under the
+stack anyway.
 
-diff --cc drivers/hid/hid-input.c
-index 725f22ca47fc,7ea582be9c9a..000000000000
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@@ -865,14 -862,7 +865,14 @@@ static void hidinput_configure_usage(st
-  		case 0x28b: map_key_clear(KEY_FORWARDMAIL);	break;
-  		case 0x28c: map_key_clear(KEY_SEND);		break;
- =20
- +		case 0x2c7: map_key_clear(KEY_KBDINPUTASSIST_PREV);		break;
- +		case 0x2c8: map_key_clear(KEY_KBDINPUTASSIST_NEXT);		break;
- +		case 0x2c9: map_key_clear(KEY_KBDINPUTASSIST_PREVGROUP);		break;
- +		case 0x2ca: map_key_clear(KEY_KBDINPUTASSIST_NEXTGROUP);		break;
- +		case 0x2cb: map_key_clear(KEY_KBDINPUTASSIST_ACCEPT);	break;
- +		case 0x2cc: map_key_clear(KEY_KBDINPUTASSIST_CANCEL);	break;
- +
-- 		default:    goto ignore;
-+ 		default: map_key_clear(KEY_UNKNOWN);
-  		}
-  		break;
- =20
+But yes, I could imagine some well-meaning - but not overly smart -
+glibc developer deciding that doing the va_arg thing conditionally
+would be a "feature". Despite making the code slower, bigger, and
+buggier.
 
---Sig_/uniAoZLte/5lQ=AKeEaZKKB
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+I guess I'll fetch the git tree and see if they document this braindamage..
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+[ time passes ]
 
-iQIcBAEBCAAGBQJUUt7HAAoJEMDTa8Ir7ZwVBAQP+gM1nEWl/2/KQTyAtDv+H/LX
-SRuUrVYS7ii1zbC9Ptasu3ooZdeMj9oQU08L4hnJUJ9NJYIlpU58q24IfUIFAKMY
-zBs6E9UWXWWsusHX51J0oeAxmmQOjfNS/n6HiB24kdCDa4ttC3uLoZJ7xpaJfdqX
-96f8Fa3/puFfufFKeGzdpSJ1orsjwTNgSX0NWdirW7vF2G4PkW5GoY0uK09nt5cP
-xlXIc/wVL2WwVPDCcwjXvxjgtzQFO58cxyFFQulmw6fRJ6Zb0C7+4zaBnKBynZGp
-b3WMoy8u+mvhRHZlQa+5op4rFuZwI7JT6Rn6YKcGS8iNBSsc68qsetLDsywnOzlh
-aS6GQ/A984Q5gBZpkS9PO5QMOSJvGspzds8842OavmB5Nu51VTvydPNzUV+4V8C5
-xSKtxlnRHnn+rl+rM6eBfSy17emC7NxZb0lER+VyDnMXYUnPMDPrBKJ05NV8MWLV
-D1auiwsPP+k4uWKhoomFlYYHMX2HjlVTrmQDjR6ekDL9ghLad92xukaRcYrjF/7c
-AUig4GKqF1o5yvWhRf43o8aw0hhYCZ8Xzs8ZOc5/Z79p0FwpTpVmRg912S/e9aRS
-xj0G1xBF7igvvm+YWm02tb/1yd0BPexgAj3/DJLDb4KfRcfA9KhniSEg37SSBnxh
-KZ1MAIQ/SeL+mYSTEGWt
-=FFmM
------END PGP SIGNATURE-----
+Ugh. It seems to predate even the imported history (going back all the
+way to 1995 - I don't know if that was SVN or CVS and whether there is
+some even older historical archives that were never imported).
 
---Sig_/uniAoZLte/5lQ=AKeEaZKKB--
+Anyway, since the beginning of time, the "stub/open.c" file is a True
+Work of Art (TM)(also sarcasm), and has an old-style C declaration
+(not ANSI) for __libc_open(), and uses a conditional va_arg() to get
+the third parameter *despite* not even being a variadic function (not
+varargs, not stdarg). So it's not even portable or correct *anyway*,
+and it unnecessarily generates bad code and seems to have been
+mindlessly copied into all the actual real non-stub implementations.
+Most of them seem to have made their definitions match the declaration
+in the process, so they then really do have the variadic part. Goodie,
+I guess, except for this all being unnecessary crap and stupid.
+
+Oh well. What a cock-up.
+
+The code is insane in other ways too. The actual real Linux version of
+__libc_open() ends up (for no good reason except to compete with
+cat-ladies in the "crazy person of the year" award) using
+"openat(AT_FDCWD)", just so you can make sure that the result doesn't
+possibly work on old versions of the kernel even by mistake. I
+certainly cannot possibly see any actual *advantage* to using
+"openat()", but them I'm not a homeless cat-lady.  It also has some
+magic "LIBC_CANCEL_ASYNC()/LIBC_CANCEL_RESET()" stuff around it, which
+I'm sure is entirely sane.
+
+I can't take it any more. That code is crazy.
+
+                        Linus
