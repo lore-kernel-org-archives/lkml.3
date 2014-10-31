@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760541AbaJaVuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:50:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35509 "EHLO mga01.intel.com"
+	id S1760615AbaJaVuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:50:20 -0400
+Received: from relay1.sgi.com ([192.48.180.66]:49245 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759881AbaJaVuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:50:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="614983994"
-Message-ID: <54540412.4000405@linux.intel.com>
-Date: Fri, 31 Oct 2014 14:50:10 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
-CC: dave.hansen@linux.intel.com, x86@kernel.org, qiaowei.ren@intel.com,
-        fenghua.yu@intel.com
-Subject: Re: [RFC][PATCH] x86 mpx: give bndX registers actual names
-References: <20141031212237.30B94E08@viggo.jf.intel.com>
-In-Reply-To: <20141031212237.30B94E08@viggo.jf.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1760555AbaJaVuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 17:50:16 -0400
+From: James Custer <jcuster@sgi.com>
+To: x86@kernel.org
+Cc: James Custer <jcuster@sgi.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H . Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>
+Subject: [PATCH] x86: UV BAU Increase maximum CPUs per socket/hub
+Date: Fri, 31 Oct 2014 16:49:40 -0500
+Message-Id: <1414792180-102802-1-git-send-email-jcuster@sgi.com>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 02:22 PM, Dave Hansen wrote:
->  
-> -struct bndregs_struct {
-> -	u64 bndregs[8];
-> +struct bndreg_struct {
-> +	u64 lb; /* lower bound */
-> +	u64 ub; /* upper bound */
->  } __packed;
->  
->  struct bndcsr_struct {
-> @@ -394,7 +395,7 @@ struct xsave_struct {
->  	struct xsave_hdr_struct xsave_hdr;
->  	struct ymmh_struct ymmh;
->  	struct lwp_struct lwp;
-> -	struct bndregs_struct bndregs;
-> +	struct bndreg_struct bnd[4];
->  	struct bndcsr_struct bndcsr;
->  	/* new processor state extensions will go here */
->  } __attribute__ ((packed, aligned (64)));
-> _
-> 
+We have encountered hardware with 18 cores/socket that gives 36 CPUs/socket
+with hyperthreading enabled. This exceeds the current MAX_CPUS_PER_SOCKET
+causing a failure in get_cpu_topology. Increase MAX_CPUS_PER_SOCKET to 64
+and MAX_CPUS_PER_UVHUB to 128.
 
-How about "struct bndreg"?
+Additionally, this exposed another bug. When get_cpu_topology fails, we
+need to make sure that we do not use bau_control->statp (e.g. when a
+user reads /proc/sgi_uv/ptc_statistics causing ptc_seq_show to be
+invoked). In uv_bau_init we call set_bau_off() when
+init_per_cpu()->get_cpu_topology() fails -- therefore, to avoid
+referencing a NULL pointer we add code that detects when the bau is off
+and print out the bau is disabled.
 
-	-hpa
+Signed-off-by: James Custer <jcuster@sgi.com>
+---
+ arch/x86/include/asm/uv/uv_bau.h | 4 ++--
+ arch/x86/platform/uv/tlb_uv.c    | 4 ++++
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index 2d60a78..fc808b8 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -33,8 +33,8 @@
+  * Each of the descriptors is 64 bytes in size (8*64 = 512 bytes in a set).
+  */
+ 
+-#define MAX_CPUS_PER_UVHUB		64
+-#define MAX_CPUS_PER_SOCKET		32
++#define MAX_CPUS_PER_UVHUB		128
++#define MAX_CPUS_PER_SOCKET		64
+ #define ADP_SZ				64 /* hardware-provided max. */
+ #define UV_CPUS_PER_AS			32 /* hardware-provided max. */
+ #define ITEMS_PER_DESC			8
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index 3968d67..570b1b1 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1384,6 +1384,10 @@ static int ptc_seq_show(struct seq_file *file, void *data)
+ 	}
+ 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
+ 		bcp = &per_cpu(bau_control, cpu);
++		if (bcp->nobau) {
++			seq_printf(file, "cpu %d bau disabled\n", cpu);
++			return 0;
++		}
+ 		stat = bcp->statp;
+ 		/* source side statistics */
+ 		seq_printf(file,
+-- 
+1.8.2.1
 
