@@ -1,165 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161598AbaJaBB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:01:26 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:51846 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaJaBBZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:01:25 -0400
-Date: Thu, 30 Oct 2014 18:00:39 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 09/15] net: dsa: Add support for switch EEPROM access
-Message-ID: <20141031010039.GA29492@roeck-us.net>
-References: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
- <1414604707-22407-10-git-send-email-linux@roeck-us.net>
- <20141030211131.GB32139@lunn.ch>
- <20141030223951.GA19489@roeck-us.net>
+	id S1161545AbaJaBEW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:04:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42581 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161426AbaJaBEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 21:04:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,290,1413270000"; 
+   d="scan'208";a="599440768"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Haojian Zhuang" <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>
+Subject: RE: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters'
+ accessing
+Thread-Topic: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters'
+ accessing
+Thread-Index: AQHP4s22TpHaDKncQEG+hgnoBCOPqpxGWjFggAAw1QCAAWjMwP//4h8AgAGwnUA=
+Date: Fri, 31 Oct 2014 01:03:38 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9A9417@SHSMSX101.ccr.corp.intel.com>
+References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
+	 <1412783423-9408-2-git-send-email-alvin.chen@intel.com>
+	 <4656BEB6164FC34F8171C6538F1A595B2E9A90E6@SHSMSX101.ccr.corp.intel.com>
+	 <5450CF36.7060105@nexus-software.ie>
+	 <4656BEB6164FC34F8171C6538F1A595B2E9A92B3@SHSMSX101.ccr.corp.intel.com>
+ <1414653134.2396.67.camel@linux.intel.com>
+In-Reply-To: <1414653134.2396.67.camel@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030223951.GA19489@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.5452DF64.0127,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9V14RuA017320
 
-On Thu, Oct 30, 2014 at 03:39:51PM -0700, Guenter Roeck wrote:
-> On Thu, Oct 30, 2014 at 10:11:31PM +0100, Andrew Lunn wrote:
-> > > +static int dsa_slave_get_eeprom_len(struct net_device *dev)
-> > > +{
-> > > +	struct dsa_slave_priv *p = netdev_priv(dev);
-> > > +	struct dsa_switch *ds = p->parent;
-> > > +
-> > > +	if (ds->pd->eeprom_len)
-> > > +		return ds->pd->eeprom_len;
-> > > +
-> > > +	if (ds->drv->get_eeprom_len)
-> > > +		return ds->drv->get_eeprom_len(ds);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > 
-> > Hi Guenter
-> > 
-> > I just started doing some testing with this patchset. A bit late since
-> > David just accepted it, but...
-> > 
-> > root@dir665:~# ethtool -e lan4
-> > Cannot get EEPROM data: Invalid argument
-> > root@dir665:~# ethtool -e eth0
-> > Cannot get EEPROM data: Operation not supported
-> > 
-> > There is no eeprom for the hardware i'm testing. Operation not
-> > supported seems like a better error code and Invalid argument, and is
-> > what other network drivers i tried returned.
-> > 
-> Hi Andrew,
+
 > 
-> I think the problem is that the infrastructure code (net/core/ethtool.c)
-> does not accept an error from the get_eeprom_len function, but instead
-> assumes that reporting eeprom data is supported if a driver provides
-> the access functions. The get_eeprom_len function returns 0 in your case,
-> which in ethtool_get_any_eeprom() translates to -EINVAL because user space
-> either requests no data or more data than available. I wonder why user
-> space requests anything in the first place; I would have assumed that it
-> reads the driver information first and is told that the eeprom length is 0,
-> but I guess that is a different question.
+> On Thu, 2014-10-30 at 01:02 +0000, Chen, Alvin wrote:
+> > > >
+> > >
+> > > Hi Alvin, Weike.
+> > >
+> > > I'm not clear if these patches apply to the current tip-of-tree.
+> > >
+> > > I thought the action required here, was for a resend of patches to
+> > > ensure they applied to tip-of-tree ?
+> > >
+> > As I said before, it is based on the slave-dma tree (git.infraded.org) for-linus
+> branch, which will be reapplied on top of v3.19-rc1.
+> >
+> > That is to say these patches will be applied to slave-dma tree for-linus branch,
+> and then the slave-dma tree for-linus branch will be applied to v3.19.
+> > Andy, am I right?
 > 
-> I quickly browsed through a couple of other drivers supporting get_eprom_len,
-> and they all return 0 if there is no eeprom. Doesn't that mean that they all
-> end up reporting -EINVAL if an attempt is made to read the eeprom ?
+> All of those patches are in v3.18-rc1, so you may rebase on top of 3.18-rcX
+> safely I guess.
 > 
-> The only solution that comes to my mind would be to have the infrastructure
-> code check the return value from get_eeprom_len and return -EOPNOTSUPP
-> if the reported eeprom length is 0. That would be an infrastructure change,
-> though. Does that sound reasonable, or do you have a better idea ?
-> 
-> In parallel, I'll have a look into the ethtool command to see why it
-> requests eeprom data even though the reported eeprom length is 0.
-> 
-As suspected, ethtool will attempt to read a zero-length eeprom.
+Andy, I remember you ask me to rebase on the slave-dma tree (git.infraded.org) for-linus branch, and the slave-dma for-linus branch will be reapplied on top of v3.19-rc1.
 
-The following patch should solve the problem. Not sure if it is worth it,
-though, since this will change behavior for existing drivers.
+So now I need rebase on top of 3.18-rcX, isn't it? Just to confirm.
 
-Thanks,
-Guenter
-
----
-From: Guenter Roeck <linux@roeck-us.net>
-Date: Thu, 30 Oct 2014 17:51:34 -0700
-Subject: [RFC PATCH] net: ethtool: Return -EOPNOTSUPP if user space tries to read
- EEPROM with lengh 0
-
-If a driver supports reading EEPROM but no EEPROM is installed in the system,
-the driver's get_eeprom_len function will return 0. ethtool will subsequently
-try to read that zero-length EEPROM anyway. If the driver does not support
-EEPROM access at all, this operation will return -EOPNOTSUPP. If the driver
-does support EEPROM access but no EEPROM is installed, the operation will
-return -EINVAL. Return -EOPNOTSUPP in both cases for consistency.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- net/core/ethtool.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index 1600aa2..06dfb29 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -1036,7 +1036,8 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
- {
- 	const struct ethtool_ops *ops = dev->ethtool_ops;
- 
--	if (!ops->get_eeprom || !ops->get_eeprom_len)
-+	if (!ops->get_eeprom || !ops->get_eeprom_len ||
-+	    !ops->get_eeprom_len(dev))
- 		return -EOPNOTSUPP;
- 
- 	return ethtool_get_any_eeprom(dev, useraddr, ops->get_eeprom,
-@@ -1052,7 +1053,8 @@ static int ethtool_set_eeprom(struct net_device *dev, void __user *useraddr)
- 	u8 *data;
- 	int ret = 0;
- 
--	if (!ops->set_eeprom || !ops->get_eeprom_len)
-+	if (!ops->set_eeprom || !ops->get_eeprom_len ||
-+	    !ops->get_eeprom_len(dev))
- 		return -EOPNOTSUPP;
- 
- 	if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
--- 
-1.9.1
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
