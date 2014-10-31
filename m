@@ -1,151 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675AbaJaUKH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:10:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46976 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889AbaJaUKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:10:04 -0400
-Date: Fri, 31 Oct 2014 21:10:02 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Stefan Assmann <sassmann@kpanic.de>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        backports@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yann.morin.1998@free.fr, mmarek@suse.cz
-Subject: Re: [RFC v2 4/4] backports: add kernl integration support to
-	gentree.py
-Message-ID: <20141031201002.GD12953@wotan.suse.de>
-References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com> <1414570902-5675-5-git-send-email-mcgrof@do-not-panic.com> <5451099B.7090102@kpanic.de> <20141029160003.GW28966@wotan.suse.de> <1414741851.3014.13.camel@jlt4.sipsolutions.net>
+	id S1758831AbaJaUKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:10:51 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:56358 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756003AbaJaUKu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 16:10:50 -0400
+X-Sasl-enc: KLWr7ZQToKRCVylze3Xo9/e1CEOnF1VNY8mCqzZxBX7j 1414786249
+Date: Fri, 31 Oct 2014 18:10:36 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 4/8] x86, microcode, intel: add error logging to early
+ update driver
+Message-ID: <20141031201036.GD27028@khazad-dum.debian.net>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-5-git-send-email-hmh@hmh.eng.br>
+ <20141020150801.GE3524@pd.tnic>
+ <20141021141015.GD22528@khazad-dum.debian.net>
+ <20141030174134.GE11178@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414741851.3014.13.camel@jlt4.sipsolutions.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20141030174134.GE11178@pd.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 08:50:51AM +0100, Johannes Berg wrote:
-> On Wed, 2014-10-29 at 17:00 +0100, Luis R. Rodriguez wrote:
+On Thu, 30 Oct 2014, Borislav Petkov wrote:
+> On Tue, Oct 21, 2014 at 12:10:15PM -0200, Henrique de Moraes Holschuh wrote:
+> > In fact, I have a patch somewhere that needs to add a new failure message:
+> > we have several failure cases which we want to differentiate, at the very
+> > least "processor didn't like it" and "it looks corrupt, so we didn't even
+> > try to install it".
 > 
-> >  backport/Kconfig                              |  54 --------
-> >  backport/Kconfig.package                      |  31 +++++
-> >  backport/Kconfig.sources                      |  23 ++++
+> Actually, I don't want to be too chatty with the loader: if the
+> microcode blob passes checks but it is not for the current processor
+> we're running, not saying anything is what I want to do.
 > 
-> I think you should do this split as a separate patch.
-
-Indeed, will do.
-
-> > +# these will be generated
-> > +source "$BACKPORT_DIR/Kconfig.kernel"
-> > +source "$BACKPORT_DIR/Kconfig.versions"
-> > +source "$BACKPORT_DIR/Kconfig.sources"
+> Why? Because I don't want to disturb people unnecessarily - if the
+> microcode doesn't apply and everything else checks out, you simply don't
+> need it.
 > 
-> Not true - Kconfig.sources exists below?
-
-Will fix comment.
-
-> > +ifneq ($(BACKPORT_PACKAGE),)
+> If one really wants to know, one can always check /proc/cpuinfo and read
+> out the microcode revision from the blob. But that is for the 1% of the
+> curious ones - everyone else should simply install microcode blob and
+> boot machine. Fire and forget.
 > 
-> I think it'd be easier to understand if you called this
-> 
-> BACKPORT_INTEGRATED
+> Only the abnormal error cases should be vocal in saying what's wrong so
+> that we can actually address those.
 
-Sure.
+I've answered these points in one of the replies I just sent.
 
-> and inverted the logic.
-
-OK.
-
-> > +        # Only the kconfig 'mainmenu' entries grok variables, we want to keep
-> > +        # this the main Kconfig as part of our program to be able to give it
-> > +        # enough dynamic information
-> > +        k = open(os.path.join(args.outdir, 'Kconfig'), 'w')
-> > +        k.write('config BACKPORT_DIR\n')
-> > +        k.write('\tstring\n')
-> > +        k.write('\tdefault "backports/"\n')
-> > +        k.write('config BACKPORTS_VERSION\n')
-> > +        k.write('\tstring\n')
-> > +        k.write('\tdefault "%s"\n' % backports_version)
-> > +        k.write('config BACKPORTED_KERNEL_VERSION\n')
-> > +        k.write('\tstring\n')
-> > +        k.write('\tdefault "%s"\n' % kernel_version)
-> > +        k.write('config BACKPORTED_KERNEL_NAME\n')
-> > +        k.write('\tstring\n')
-> > +        k.write('\tdefault "%s"\n' % args.base_name)
-> > +        k.write('\n')
-> > +        k.write('menuconfig BACKPORT_LINUX\n')
-> > +        k.write('\tbool "Backport %s %s (backports %s)"\n' % (args.base_name, kernel_version, backports_version))
-> > +        k.write('\tdefault n\n')
-> > +        k.write('\t---help--- \n')
-> > +        k.write('\t  Enabling this will let give you the opportunity to use\n')
-> > +        k.write('\t  features and drivers backported from %s %s\n' % (args.base_name, kernel_version))
-> > +        k.write('\t  on the kernel your are using. This is experimental and you should\n')
-> > +        k.write('\t  say no unless you\'d like to help test things.\n')
-> > +        k.write('\n')
-> > +        k.write('if BACKPORT_LINUX\n')
-> > +        k.write('\n')
-> > +        k.write('source "$BACKPORT_DIR/Kconfig.versions"\n')
-> > +        k.write('source "$BACKPORT_DIR/Kconfig.sources"\n')
-> > +        k.write('\n')
-> > +        k.write('endif # BACKPORT_LINUX\n')
-> 
-> This is really really ugly - please just have a file template, and maybe
-> replace some things in it or provide them as env variables through the
-> Makefile or so.
-
-That's the thing, we can pass variables on the Makefile but based on my tests
-Kconfig will only interpret them on "mainmenu", but not others. This is why
-I kept it embedded completely as part of the program. A template and easy
-search / replace should make it nicer to edit for sure, will give that a shot.
-
-> > +    if args.integrate:
-> > +        f = open(os.path.join(args.outdir, '../arch/x86/Kconfig'), 'a')
-> > +        f.write('source "backports/Kconfig"\n')
-> 
-> That seems like a bad idea - maybe better integrate it under some
-> arch-independent file?
-
-I like that idea, the only one that would make sense would be top level then.
-Will modify that then.
-
-> > +        f.close()
-> > +        git_debug_snapshot(args, "hooked backport Kconfig to supported architectures")
-> > +
-> > +        f = open(os.path.join(args.outdir, '../MAINTAINERS'), 'a')
-> > +        f.write('M:\tHauke Mehrtens <hauke@hauke-m.de>\n')
-> > +        f.write('M:\tLuis R. Rodriguez <mcgrof@do-not-panic.com>\n')
-> > +        f.write('L:\tbackports@vger.kernel.org\n')
-> > +        f.write('T:\tgit://git.kernel.org/pub/scm/linux/kernel/git/backports/backports.git\n')
-> > +        f.write('F:\tbackports/\n')
-> > +        f.close()
-> 
-> That's ... odd? doesn't even fit the MAINTAINERS file style? Anyway I
-> think it's probably not necessary.
-
-OK.
-
-> > +        git_debug_snapshot(args, "add backport maintainers entry")
-> > +
-> > +        f = open(os.path.join(args.outdir, '../Makefile'), 'a')
-> > +        f.write('ifeq ($(KBUILD_EXTMOD),)\n')
-> > +        f.write('backports-y := backports/\n')
-> > +        f.write('vmlinux-dirs += $(patsubst %/,%,$(filter %/, $(backports-y) $(backports-m)))\n')
-> > +        f.write('vmlinux-alldirs += $(patsubst %/,%,$(filter %/, $(backports-n) $(backports-)))\n')
-> > +        f.write('backports-y       := $(patsubst %/, %/built-in.o, $(backports-y))\n')
-> > +        f.write('KBUILD_VMLINUX_MAIN += $(backports-y)\n')
-> > +        f.write('endif\n')
-> > +        f.close()
-> 
-> That could be a template file again that you just copy.
-
-In the end wend with a patch since the above doesn't work well as there
-is tons of places where the variables are re-used. I will allow for
-integration patches then, that will be part of my next respin.
-
-> [... I need more time to review, don't have much this morning ...]
-
-OK.
-
-  Luis
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
