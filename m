@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758888AbaJaLVl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 07:21:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:32816 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017AbaJaLVi (ORCPT
+	id S932787AbaJaLVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 07:21:50 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60049 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758909AbaJaLVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 07:21:38 -0400
-Message-Id: <20141031111549.492532161@infradead.org>
+	Fri, 31 Oct 2014 07:21:44 -0400
+Message-Id: <20141031111549.551132563@infradead.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 31 Oct 2014 12:10:38 +0100
+Date: Fri, 31 Oct 2014 12:10:39 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: mingo@kernel.org, linux-kernel@vger.kernel.org
 Cc: peter@hurleysoftware.com, oleg@redhat.com, rjw@rjwysocki.net,
@@ -17,72 +17,161 @@ Cc: peter@hurleysoftware.com, oleg@redhat.com, rjw@rjwysocki.net,
         umgwanakikbuti@gmail.com, marcel@holtmann.org, ebiederm@xmission.com,
         davem@davemloft.net, fengguang.wu@intel.com,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 1/7] sched,wait: Fix a kthread race with wait_woken()
+Subject: [PATCH 2/7] wait: Reimplement wait_event_freezable()
 References: <20141031111037.936236584@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=peterz-wait_woken-kthread.patch
+Content-Disposition: inline; filename=peterz-wait-freezable.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race between kthread_stop() and the new wait_woken() that
-can result in a lack of progress.
+Provide better implementations of wait_event_freezable() APIs.
 
-CPU 0                                    | CPU 1
-                                         |
-rfcomm_run()                             | kthread_stop()
-  ...                                    |
-  if (!test_bit(KTHREAD_SHOULD_STOP))    |
-                                         |   set_bit(KTHREAD_SHOULD_STOP)
-                                         |   wake_up_process()
-    wait_woken()                         |   wait_for_completion()
-      set_current_state(INTERRUPTIBLE)   |
-      if (!WQ_FLAG_WOKEN)                |
-        schedule_timeout()               |
-                                         |
+The problem is with freezer_do_not_count(), it hides the thread from
+the freezer, even though this thread might not actually freeze/sleep
+at all.
 
-After which both tasks will wait.. forever.
-
-Fix this by having wait_woken() check for kthread_should_stop() but
-only for kthreads (obviously).
-
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: oleg@redhat.com
+Cc: Rafael Wysocki <rjw@rjwysocki.net>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
 ---
- kernel/sched/wait.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ include/linux/freezer.h |   38 --------------------------------
+ include/linux/wait.h    |   56 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+), 38 deletions(-)
 
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -9,6 +9,7 @@
- #include <linux/mm.h>
- #include <linux/wait.h>
- #include <linux/hash.h>
-+#include <linux/kthread.h>
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -265,35 +265,6 @@ static inline int freezable_schedule_hrt
+ 	__retval;							\
+ })
  
- void __init_waitqueue_head(wait_queue_head_t *q, const char *name, struct lock_class_key *key)
- {
-@@ -297,6 +298,10 @@ int autoremove_wake_function(wait_queue_
- }
- EXPORT_SYMBOL(autoremove_wake_function);
+-#define wait_event_freezable(wq, condition)				\
+-({									\
+-	int __retval;							\
+-	freezer_do_not_count();						\
+-	__retval = wait_event_interruptible(wq, (condition));		\
+-	freezer_count();						\
+-	__retval;							\
+-})
+-
+-#define wait_event_freezable_timeout(wq, condition, timeout)		\
+-({									\
+-	long __retval = timeout;					\
+-	freezer_do_not_count();						\
+-	__retval = wait_event_interruptible_timeout(wq,	(condition),	\
+-				__retval);				\
+-	freezer_count();						\
+-	__retval;							\
+-})
+-
+-#define wait_event_freezable_exclusive(wq, condition)			\
+-({									\
+-	int __retval;							\
+-	freezer_do_not_count();						\
+-	__retval = wait_event_interruptible_exclusive(wq, condition);	\
+-	freezer_count();						\
+-	__retval;							\
+-})
+-
+-
+ #else /* !CONFIG_FREEZER */
+ static inline bool frozen(struct task_struct *p) { return false; }
+ static inline bool freezing(struct task_struct *p) { return false; }
+@@ -331,15 +302,6 @@ static inline void set_freezable(void) {
+ #define freezable_schedule_hrtimeout_range(expires, delta, mode)	\
+ 	schedule_hrtimeout_range(expires, delta, mode)
  
-+static inline bool is_kthread_should_stop(void)
-+{
-+	return (current->flags & PF_KTHREAD) && kthread_should_stop();
-+}
+-#define wait_event_freezable(wq, condition)				\
+-		wait_event_interruptible(wq, condition)
+-
+-#define wait_event_freezable_timeout(wq, condition, timeout)		\
+-		wait_event_interruptible_timeout(wq, condition, timeout)
+-
+-#define wait_event_freezable_exclusive(wq, condition)			\
+-		wait_event_interruptible_exclusive(wq, condition)
+-
+ #define wait_event_freezekillable(wq, condition)		\
+ 		wait_event_killable(wq, condition)
  
- /*
-  * DEFINE_WAIT_FUNC(wait, woken_wake_func);
-@@ -326,7 +331,7 @@ long wait_woken(wait_queue_t *wait, unsi
- 	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
- 	 * also observe all state before the wakeup.
- 	 */
--	if (!(wait->flags & WQ_FLAG_WOKEN))
-+	if (!(wait->flags & WQ_FLAG_WOKEN) && !is_kthread_should_stop())
- 		timeout = schedule_timeout(timeout);
- 	__set_current_state(TASK_RUNNING);
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -267,6 +267,30 @@ do {									\
+ 	__wait_event(wq, condition);					\
+ } while (0)
  
++#define __wait_event_freezable(wq, condition)				\
++	(void)___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,	\
++			    schedule(); try_to_freeze())
++
++/**
++ * wait_event - sleep (or freeze) until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE -- so as not to contribute
++ * to system load) until the @condition evaluates to true. The
++ * @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ */
++#define wait_event_freezable(wq, condition)				\
++do {									\
++	might_sleep();							\
++	if (condition)							\
++		break;							\
++	__wait_event_freezable(wq, condition);				\
++} while (0)
++
+ #define __wait_event_timeout(wq, condition, timeout)			\
+ 	___wait_event(wq, ___wait_cond_timeout(condition),		\
+ 		      TASK_UNINTERRUPTIBLE, 0, timeout,			\
+@@ -300,6 +324,24 @@ do {									\
+ 	__ret;								\
+ })
+ 
++#define __wait_event_freezable_timeout(wq, condition, timeout)		\
++	___wait_event(wq, ___wait_cond_timeout(condition),		\
++		      TASK_INTERRUPTIBLE, 0, timeout,			\
++		      __ret = schedule_timeout(__ret); try_to_freeze())
++
++/*
++ * like wait_event_timeout() -- except it uses TASK_INTERRUPTIBLE to avoid
++ * increasing load and is freezable.
++ */
++#define wait_event_freezable_timeout(wq, condition, timeout)		\
++({									\
++	long __ret = timeout;						\
++	might_sleep();							\
++	if (!___wait_cond_timeout(condition))				\
++		__ret = __wait_event_freezable_timeout(wq, condition, timeout);	\
++	__ret;								\
++})
++
+ #define __wait_event_cmd(wq, condition, cmd1, cmd2)			\
+ 	(void)___wait_event(wq, condition, TASK_UNINTERRUPTIBLE, 0, 0,	\
+ 			    cmd1; schedule(); cmd2)
+@@ -479,6 +521,20 @@ do {									\
+ 	__ret;								\
+ })
+ 
++
++#define __wait_event_freezable_exclusive(wq, condition)			\
++	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 1, 0,		\
++			schedule(); try_to_freeze())
++
++#define wait_event_freezable_exclusive(wq, condition)			\
++({									\
++	int __ret = 0;							\
++	might_sleep();							\
++	if (!(condition))						\
++		__ret = __wait_event_freezable_exclusive(wq, condition);\
++	__ret;								\
++})
++
+ 
+ #define __wait_event_interruptible_locked(wq, condition, exclusive, irq) \
+ ({									\
 
 
