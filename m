@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044AbaJaOG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:06:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38829 "EHLO mx2.suse.de"
+	id S933801AbaJaOH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:07:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38795 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759852AbaJaOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:00:44 -0400
+	id S1759729AbaJaOAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:00:43 -0400
 From: Juergen Gross <jgross@suse.com>
 To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
         stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
@@ -14,61 +14,115 @@ To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
         jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
         tomi.valkeinen@ti.com, bhelgaas@google.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 06/17] x86: Use new cache mode type in arch/x86/mm/init_64.c
-Date: Fri, 31 Oct 2014 15:00:22 +0100
-Message-Id: <1414764033-30011-7-git-send-email-jgross@suse.com>
+Subject: [PATCH 00/17] x86: Full support of PAT
+Date: Fri, 31 Oct 2014 15:00:16 +0100
+Message-Id: <1414764033-30011-1-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414764033-30011-1-git-send-email-jgross@suse.com>
-References: <1414764033-30011-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of directly using the cache mode bits in the pte switch to
-using the cache mode type.
+The x86 architecture offers via the PAT (Page Attribute Table) a way to
+specify different caching modes in page table entries. The PAT MSR contains
+8 entries each specifying one of 6 possible cache modes. A pte references one
+of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
 
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/mm/init_64.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+top 4 entries in the PAT MSR are the same as the 4 lower entries.
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 4cb8763..5390a5f 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -338,12 +338,15 @@ pte_t * __init populate_extra_pte(unsigned long vaddr)
-  * Create large page table mappings for a range of physical addresses.
-  */
- static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
--						pgprot_t prot)
-+					enum page_cache_mode cache)
- {
- 	pgd_t *pgd;
- 	pud_t *pud;
- 	pmd_t *pmd;
-+	pgprot_t prot;
- 
-+	pgprot_val(prot) = pgprot_val(PAGE_KERNEL_LARGE) |
-+		pgprot_val(pgprot_4k_2_large(cachemode2pgprot(cache)));
- 	BUG_ON((phys & ~PMD_MASK) || (size & ~PMD_MASK));
- 	for (; size; phys += PMD_SIZE, size -= PMD_SIZE) {
- 		pgd = pgd_offset_k((unsigned long)__va(phys));
-@@ -366,12 +369,12 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
- 
- void __init init_extra_mapping_wb(unsigned long phys, unsigned long size)
- {
--	__init_extra_mapping(phys, size, PAGE_KERNEL_LARGE);
-+	__init_extra_mapping(phys, size, _PAGE_CACHE_MODE_WB);
- }
- 
- void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
- {
--	__init_extra_mapping(phys, size, PAGE_KERNEL_LARGE_NOCACHE);
-+	__init_extra_mapping(phys, size, _PAGE_CACHE_MODE_UC);
- }
- 
- /*
+This results in the kernel not supporting e.g. write-through mode. Especially
+this cache mode would speed up drivers of video cards which now have to use
+uncached accesses.
+
+OTOH some old processors (Pentium) don't support PAT correctly and the Xen
+hypervisor has been using a different PAT MSR configuration for some time now
+and can't change that as this setting is part of the ABI.
+
+This patch set abstracts the cache mode from the pte and introduces tables to
+translate between cache mode and pte bits (the default cache mode "write back"
+is hard-wired to PAT entry 0). The tables are statically initialized with
+values being compatible to old processors and current usage. As soon as the
+PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
+changed accordingly. Requests of mappings with special cache modes are always
+possible now, in case they are not supported there will be a fallback to a
+compatible but slower mode.
+
+Summing it up, this patch set adds the following features:
+- capability to support WT and WP cache modes on processors with full PAT
+  support
+- processors with no or uncorrect PAT support are still working as today, even
+  if WT or WP cache mode are selected by drivers for some pages
+- reduction of Xen special handling regarding cache mode
+
+Changes in V5:
+- split up first patch as requested by Ingo Molnar and Thomas Gleixner
+- add a helper function in pat_init_cache_modes() as requested by Ingo Molnar
+
+Changes in V4:
+- rebased to 3.18-rc2
+
+Changes in V3:
+- corrected two minor nits (UC_MINUS, again) detected by Toshi Kani
+
+Changes in V2:
+- simplified handling of PAT MSR write under Xen as suggested by David Vrabel
+- removed resetting of pat_enabled under Xen
+- two small corrections requested by Toshi Kani (UC_MINUS cache mode in
+  vermilion driver, fix 32 bit kernel build failure)
+- correct build error on non-x86 arch by moving definition of
+  update_cache_mode_entry() to x86 specific header
+
+Changes since RFC:
+- renamed functions and variables as suggested by Toshi Kani
+- corrected cache mode bits for WT and WP
+- modified handling of PAT MSR write under Xen as suggested by Jan Beulich
+
+Juergen Gross (17):
+  x86: Make page cache mode a real type
+  x86: Use new cache mode type in include/asm/fb.h
+  x86: Use new cache mode type in drivers/video/fbdev/gbefb.c
+  x86: Use new cache mode type in drivers/video/fbdev/vermilion
+  x86: Use new cache mode type in arch/x86/pci
+  x86: Use new cache mode type in arch/x86/mm/init_64.c
+  x86: Use new cache mode type in asm/pgtable.h
+  x86: Use new cache mode type in mm/iomap_32.c
+  x86: Use new cache mode type in track_pfn_remap() and
+    track_pfn_insert()
+  x86: Use new cache mode type in setting page attributes
+  x86: Use new cache mode type in mm/ioremap.c
+  x86: Use new cache mode type in memtype related functions
+  x86: Clean up pgtable_types.h
+  x86: Support PAT bit in pagetable dump for lower levels
+  x86: Respect PAT bit when copying pte values between large and normal
+    pages
+  x86: Enable PAT to use cache mode translation tables
+  xen: Support Xen pv-domains using PAT
+
+ arch/x86/include/asm/cacheflush.h         |  38 ++++---
+ arch/x86/include/asm/fb.h                 |   6 +-
+ arch/x86/include/asm/io.h                 |   2 +-
+ arch/x86/include/asm/pat.h                |   7 +-
+ arch/x86/include/asm/pgtable.h            |  19 ++--
+ arch/x86/include/asm/pgtable_types.h      |  96 ++++++++++++----
+ arch/x86/mm/dump_pagetables.c             |  24 ++--
+ arch/x86/mm/init.c                        |  37 +++++++
+ arch/x86/mm/init_64.c                     |   9 +-
+ arch/x86/mm/iomap_32.c                    |  12 +-
+ arch/x86/mm/ioremap.c                     |  63 ++++++-----
+ arch/x86/mm/mm_internal.h                 |   2 +
+ arch/x86/mm/pageattr.c                    |  84 ++++++++------
+ arch/x86/mm/pat.c                         | 176 +++++++++++++++++++-----------
+ arch/x86/mm/pat_internal.h                |  22 ++--
+ arch/x86/mm/pat_rbtree.c                  |   8 +-
+ arch/x86/pci/i386.c                       |   4 +-
+ arch/x86/xen/enlighten.c                  |  25 ++---
+ arch/x86/xen/mmu.c                        |  47 +-------
+ arch/x86/xen/xen-ops.h                    |   1 -
+ drivers/video/fbdev/gbefb.c               |   3 +-
+ drivers/video/fbdev/vermilion/vermilion.c |   6 +-
+ 22 files changed, 412 insertions(+), 279 deletions(-)
+
 -- 
 1.8.4.5
 
