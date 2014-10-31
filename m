@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161447AbaJaAXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 20:23:03 -0400
-Received: from any239.rev.netart.pl ([85.128.233.239]:59251 "EHLO
-	any239.rev.netart.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161331AbaJaAXA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 20:23:00 -0400
-X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Oct 2014 20:23:00 EDT
-Reply-To: "Doradca Kredytowy" <biuro@centrumpomocykredytowej.pl>
-From: "Doradca Kredytowy" <kredyt@okazyjneoprocentowanie.pl>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-2?Q?Zgoda_na_przes=B3anie_Oferty?=
-Message-ID: <731ADC7DC90EB53EB623BCD5D2AA0A3E@giada>
-Date: Fri, 31 Oct 2014 01:15:02 +0100
-Organization: AnoMail - oprogramowanie do emailingow
-X-Mailer: Microsoft Office Outlook, Build 11.0.5510
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028
+	id S1422680AbaJaAXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 20:23:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161331AbaJaAXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 20:23:43 -0400
+Date: Fri, 31 Oct 2014 01:23:39 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-api@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, marcel@holtmann.org, desrt@desrt.ca,
+        hadess@hadess.net, dh.herrmann@gmail.com, tixxdz@opendz.org,
+        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: kdbus: add driver skeleton, ioctl entry points and utility
+ functions
+In-Reply-To: <alpine.DEB.2.11.1410302224230.5308@nanos>
+Message-ID: <alpine.LRH.2.00.1410310114290.11562@twin.jikos.cz>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <1414620056-6675-4-git-send-email-gregkh@linuxfoundation.org> <alpine.DEB.2.11.1410302224230.5308@nanos>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-2";
-	reply-type=original
-Content-Transfer-Encoding: 8BIT
-X-Antivirus: avast! (VPS 141030-1, 2014-10-30), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Witam,
+On Fri, 31 Oct 2014, Thomas Gleixner wrote:
 
-Mamy propozycje dla osób poszukuj±cych  finansowania w postaci kredytu :
+> > +static long kdbus_handle_ioctl(struct file *file, unsigned int cmd,
+> > +			       unsigned long arg)
+> > +{
+> > +	struct kdbus_handle *handle = file->private_data;
+> > +	void __user *argp = (void __user *)arg;
+> > +	enum kdbus_handle_type type = handle->type;
+> > +
+> > +	/* make sure all handle fields are set if handle->type is */
+> > +	smp_rmb();
+> 
+> Sure. You really need this kind of serialization because your design
+> choice of allowing opaque handles in the first place.
+> 
+> I'm really interested why you need this rmb() at all. Just because you
+> have several threads in user space which might race with the type
+> assignment when they call the ioctl?
+> 
+> We have a strict requirement to document memory barriers. The
+> following comment definitely does not fulfil this requirement as it
+> just documents that someone observed a race of unknown provenance and
+> got it 'fixed' with a 'smp_rmb()'
+> 
+> > +     /* make sure all handle fields are set if handle->type is */
+> 
+> That's really hillarious, The user space side knows excatly upfront
+> which type of 'handle' it wants to open. Making it an opaque handle in
+> the first place and let the kernel deal with the actual type
+> assignment is beyond silly. Especially if that involves undocumented
+> memory barriers.
 
-- Kredyt bez za¶wiadczeñ z ZUS i US,
-- 3 letnie limity w rachunku bie¿±cym,
-- Kredyt na o¶wiadczenie do 500 tys PLN,
-- Kredyt pod zabezpieczenie ( Bez weryfikacji Bik )
+I have been staring at exactly this for rather a long time today. 
 
-W przypadku chêci otrzymania oferty proszê  o odpowied¼ zwrotn± o tre¶ci " TAK "
+Apparently this barrier pairs with smp_wmb() in kdbus_handle_transform() 
+and tries to make sure that whenever handle->type is seen as updated, 
+handle->ptr is as well.
 
-Powy¿sze zapytanie nie stanowi oferty handlowej. Jest ono jedynie pro¶b± o zgodê na przes³anie do Pañstwa stosownej oferty. Jesli nie ustosunkuj± siê Pañstwo do tej wiadomo¶ci pozytywnie nie otrzymaj± Pañstwo ponownie zapytania.
+But it's still difficult for me to understand all the memory ordering 
+rules and consequences of this strict ordering (my current understanding 
+is that the barrier is not needed, but I will have to think about it a 
+little bit more), so a nice and explanatory comment precisely describing 
+the race this is protecting against would be very welcome.
 
-Krzysztof  Baranowski
-tel. 572-422-182
+Thanks,
 
----
-Ta wiadomo¶æ e-mail jest wolna od wirusów i z³o¶liwego oprogramowania, poniewa¿ ochrona avast! Antivirus jest aktywna.
-http://www.avast.com
+-- 
+Jiri Kosina
+SUSE Labs
 
