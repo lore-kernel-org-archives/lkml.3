@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758568AbaJaKnN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:43:13 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51398 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756380AbaJaKnM (ORCPT
+	id S932290AbaJaKp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:45:29 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:24217 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756393AbaJaKp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:43:12 -0400
-Date: Fri, 31 Oct 2014 10:43:06 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC V6 3/3] arm64:add bitrev.h file to support rbit instruction
-Message-ID: <20141031104305.GC6731@arm.com>
-References: <35FD53F367049845BC99AC72306C23D103E010D18260@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
- <20141030120127.GC32589@arm.com>
- <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
- <20141030135749.GE32589@arm.com>
- <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18274@CNBJMBX05.corpusers.net>
+	Fri, 31 Oct 2014 06:45:27 -0400
+Message-ID: <54536834.1020005@huawei.com>
+Date: Fri, 31 Oct 2014 18:45:08 +0800
+From: hujianyang <hujianyang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18274@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Richard Weinberger <richard@nod.at>
+CC: <dedekind1@gmail.com>, <dwmw2@infradead.org>,
+        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] UBI: vtbl: Use ubi_eba_atomic_leb_change()
+References: <1414259021-5691-1-git-send-email-richard@nod.at> <1414659349.23185.27.camel@sauron.fi.intel.com> <54530A29.9070208@huawei.com> <545343CA.7080507@nod.at>
+In-Reply-To: <545343CA.7080507@nod.at>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.68.144]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 05:41:48AM +0000, Wang, Yalin wrote:
-> This patch add bitrev.h file to support rbit instruction,
-> so that we can do bitrev operation by hardware.
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> ---
->  arch/arm64/Kconfig              |  1 +
->  arch/arm64/include/asm/bitrev.h | 21 +++++++++++++++++++++
->  2 files changed, 22 insertions(+)
->  create mode 100644 arch/arm64/include/asm/bitrev.h
+On 2014/10/31 16:09, Richard Weinberger wrote:
+> Hujianyang,
 > 
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index 9532f8d..b1ec1dd 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -35,6 +35,7 @@ config ARM64
->  	select HANDLE_DOMAIN_IRQ
->  	select HARDIRQS_SW_RESEND
->  	select HAVE_ARCH_AUDITSYSCALL
-> +	select HAVE_ARCH_BITREVERSE
->  	select HAVE_ARCH_JUMP_LABEL
->  	select HAVE_ARCH_KGDB
->  	select HAVE_ARCH_TRACEHOOK
-> diff --git a/arch/arm64/include/asm/bitrev.h b/arch/arm64/include/asm/bitrev.h
-> new file mode 100644
-> index 0000000..706a209
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/bitrev.h
-> @@ -0,0 +1,21 @@
-> +#ifndef __ASM_ARM64_BITREV_H
-> +#define __ASM_ARM64_BITREV_H
+> Am 31.10.2014 um 05:03 schrieb hujianyang:
+>> Hi Artem and Richard,
+>>
+>> We are using atomic operation, leb_change(), for master_node
+>> in ubifs-level. We use two lebs for master_node even if they
+>> are changed with atomic operation.
+>>
+>> I think volume_table and master_node play similar roles. Do
+>> you think changing VTBL record into one peb is OK? I just
+>> what to know if I missed something. Could you please take
+>> some time to explain that?
+> 
+> I'm not sure if I correctly understand your question.
+> 
+> If we use only one PEB for the VTBL existing UBI implementations
+> would break as they assume we have two.
+> 
+> Thanks,
+> //richard
+> 
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+> 
+> 
 
-Really minor nit, but we don't tend to include 'ARM64' in our header guards,
-so this should just be __ASM_BITREV_H.
+This question is basing on your comment for this patch:
 
-With that change,
+"""
+we can guarantee that the first VTBL record is always
+correct and we don't really need the second one anymore.
+"""
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+I think that means one PEB is enough in your considering.
+So I want to know if you are sure about this. Because
+we use two leb for master_node in ubifs-level. So maybe
+VTBL is like super_node, not master_node, right?
 
-Will
