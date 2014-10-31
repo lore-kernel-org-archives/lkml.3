@@ -1,34 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760420AbaJaOjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:39:15 -0400
-Received: from mail.eco.unrc.edu.ar ([170.210.134.1]:47575 "EHLO
-	mail.eco.unrc.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758738AbaJaOjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:39:14 -0400
-X-Greylist: delayed 1846 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 10:39:13 EDT
-Message-ID: <019bddb9-41943-b7b98103281481@user-pc>
-Reply-To: "Toshiba energy Ltd" <info@dhlcourier.co.uk.pn>
-From: "Toshiba energy Ltd" <info@centrotim.it>
-To: linux-kernel@vger.kernel.org
-Subject: Toshiba energy India
-Date: Fri, 31 Oct 2014 19:25:52 +0530
+	id S1760626AbaJaOjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:39:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39892 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760436AbaJaOjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:39:19 -0400
+Message-ID: <54539F11.7080501@suse.cz>
+Date: Fri, 31 Oct 2014 15:39:13 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v5 4/4] mm/page_alloc: restrict max order of merging on
+ isolated pageblock
+References: <1414740330-4086-1-git-send-email-iamjoonsoo.kim@lge.com> <1414740330-4086-5-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1414740330-4086-5-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Atten: Contractor,
- 
-We have received a notification from DHL stating that your ATM MasterCard valued $1.5 Million (being part payment of your contract (inheritance) was undelivered due to wrong information given to us earlier.
- 
-We therefore request you to reconfirm your full mailing address to DHL: Director- Mr. Mail Gipson, on Tel Phone +918285020781, email - info@dhlcourier.co.uk.pn
- 
-Thanks regards
-Mrs. Kavita Ram Prabu
-Toshiba energy India Ltd
+On 10/31/2014 08:25 AM, Joonsoo Kim wrote:
+> @@ -571,6 +548,7 @@ static inline void __free_one_page(struct page *page,
+>   	unsigned long combined_idx;
+>   	unsigned long uninitialized_var(buddy_idx);
+>   	struct page *buddy;
+> +	int max_order = MAX_ORDER;
+>
+>   	VM_BUG_ON(!zone_is_initialized(zone));
+>
+> @@ -579,15 +557,23 @@ static inline void __free_one_page(struct page *page,
+>   			return;
+>
+>   	VM_BUG_ON(migratetype == -1);
+> -	if (!is_migrate_isolate(migratetype))
+> +	if (is_migrate_isolate(migratetype)) {
+> +		/*
+> +		 * We restrict max order of merging to prevent merge
+> +		 * between freepages on isolate pageblock and normal
+> +		 * pageblock. Without this, pageblock isolation
+> +		 * could cause incorrect freepage accounting.
+> +		 */
+> +		max_order = min(MAX_ORDER, pageblock_order + 1);
+> +	} else
+>   		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+
+Please add { } to the else branch, this looks ugly :)
+
+> -	page_idx = pfn & ((1 << MAX_ORDER) - 1);
+> +	page_idx = pfn & ((1 << max_order) - 1);
+>
+>   	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
+>   	VM_BUG_ON_PAGE(bad_range(zone, page), page);
+>
+> -	while (order < MAX_ORDER-1) {
+> +	while (order < max_order - 1) {
+>   		buddy_idx = __find_buddy_index(page_idx, order);
+>   		buddy = page + (buddy_idx - page_idx);
+>   		if (!page_is_buddy(page, buddy, order))
+> @@ -1590,7 +1576,7 @@ void split_page(struct page *page, unsigned int order)
+>   }
+>   EXPORT_SYMBOL_GPL(split_page);
+>
+> -static int __isolate_free_page(struct page *page, unsigned int order)
+> +int __isolate_free_page(struct page *page, unsigned int order)
+>   {
+>   	unsigned long watermark;
+>   	struct zone *zone;
+> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> index 1fa4a4d..df61c93 100644
+> --- a/mm/page_isolation.c
+> +++ b/mm/page_isolation.c
+> @@ -76,17 +76,48 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
+>   {
+>   	struct zone *zone;
+>   	unsigned long flags, nr_pages;
+> +	struct page *isolated_page = NULL;
+> +	unsigned int order;
+> +	unsigned long page_idx, buddy_idx;
+> +	struct page *buddy;
+> +	int mt;
+>
+>   	zone = page_zone(page);
+>   	spin_lock_irqsave(&zone->lock, flags);
+>   	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+>   		goto out;
+> +
+> +	/*
+> +	 * Because freepage with more than pageblock_order on isolated
+> +	 * pageblock is restricted to merge due to freepage counting problem,
+> +	 * it is possible that there is free buddy page.
+> +	 * move_freepages_block() doesn't care of merge so we need other
+> +	 * approach in order to merge them. Isolation and free will make
+> +	 * these pages to be merged.
+> +	 */
+> +	if (PageBuddy(page)) {
+> +		order = page_order(page);
+> +		if (order >= pageblock_order) {
+> +			page_idx = page_to_pfn(page) & ((1 << MAX_ORDER) - 1);
+> +			buddy_idx = __find_buddy_index(page_idx, order);
+> +			buddy = page + (buddy_idx - page_idx);
+> +			mt = get_pageblock_migratetype(buddy);
+> +
+> +			if (!is_migrate_isolate(mt)) {
+
+You could use is_migrate_isolate_page(buddy) and save a variable.
+
+> +				__isolate_free_page(page, order);
+> +				set_page_refcounted(page);
+> +				isolated_page = page;
+> +			}
+> +		}
+> +	}
+>   	nr_pages = move_freepages_block(zone, page, migratetype);
+
+- this is a costly no-op when the whole pageblock is an isolated page, 
+right?
+
+>   	__mod_zone_freepage_state(zone, nr_pages, migratetype);
+
+- with isolated_page set, this means you increase freepage_state here, 
+and then the second time in __free_pages() below? __isolate_free_page() 
+won't decrease it as the pageblock is still MIGRATE_ISOLATE, so the net 
+result is overcounting?
+
+>   	set_pageblock_migratetype(page, migratetype);
+>   	zone->nr_isolate_pageblock--;
+>   out:
+>   	spin_unlock_irqrestore(&zone->lock, flags);
+> +	if (isolated_page)
+> +		__free_pages(isolated_page, order);
+>   }
+>
+>   static inline struct page *
+>
 
