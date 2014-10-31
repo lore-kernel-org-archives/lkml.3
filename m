@@ -1,109 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760111AbaJaOQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:16:49 -0400
-Received: from smtp07.online.nl ([194.134.42.52]:44908 "EHLO smtp07.online.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759849AbaJaOQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:16:47 -0400
-X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 10:16:47 EDT
-Message-ID: <545397BD.1070701@topic.nl>
-Date: Fri, 31 Oct 2014 15:07:57 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-Organization: Topic
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Add ltc3562 voltage regulator driver
-References: <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl> <1414668415-597-1-git-send-email-mike.looijmans@topic.nl> <20141030165133.GB18557@sirena.org.uk>
-In-Reply-To: <20141030165133.GB18557@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Online-Scanned: by Cloudmark authority (on smtp07.online.nl)
+	id S1759394AbaJaOWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:22:38 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:58384 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563AbaJaOWg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:22:36 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-39-54539b28f2a7
+Message-id: <54539AF3.6060302@samsung.com>
+Date: Fri, 31 Oct 2014 15:21:39 +0100
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Organization: Samsung Poland R&D Center
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Icedove/31.1.2
+MIME-version: 1.0
+To: Paul Moore <pmoore@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Linux API <linux-api@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tejun Heo <tj@kernel.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        Simon McVittie <simon.mcvittie@collabora.co.uk>, daniel@zonque.org,
+        David Herrmann <dh.herrmann@gmail.com>,
+        "casey.schaufler@intel.com" <casey.schaufler@intel.com>,
+        marcel@holtmann.org, tixxdz@opendz.org,
+        javier.martinez@collabora.co.uk, alban.crequy@collabora.co.uk,
+        linux-security-module@vger.kernel.org,
+        Karol Lewandowski <lmctlx@gmail.com>
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+References: <54520A21.20404@samsung.com> <20141030144709.GA19721@kroah.com>
+ <545297CC.6020306@samsung.com> <5113482.YUK8i6Rueb@sifl>
+In-reply-to: <5113482.YUK8i6Rueb@sifl>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t/xq7oas4NDDLac1bO4svUIk8XfScfY
+	LW6sWMBk0fT3FYtF9zUWi3mtR1ksmhevZ7M4+rvAYvecxSwWZ37rWmz+3sFmcXnXHDaLDz2P
+	2CwWHnjEbvHt0y9Gi8/XfrFbtK+4zWix8vd2Notfy48yOgh7/P41idHj7/PrLB43ZnWweuyc
+	dZfdY/3u5ewei/e8ZPLYtKqTzePOtT1sHvvnrmH3WPHrCLvH+31X2TzOLACyPm+S89i+ezlL
+	AF8Ul01Kak5mWWqRvl0CV8afzxuYCg4JVrQvfsjewPibt4uRg0NCwERi277ULkZOIFNM4sK9
+	9WxdjFwcQgJLGSWa7y1gh3A+MUps/nuYBaSKV0BLYu+CJcwgNouAqsTFdw1gcTYBI4lvhzaA
+	xfkF1CXebXvKBGKLCoRItF5pYYPoFZT4MfkeWL2IQKjEsx3bWEEWMAucZZF4tQ/E4eQQFjCW
+	mHTiDSPE5jZGiZPHd4AlOAXUJG4232UGOZsZaMOUKbkgYWYBeYnNa94yT2AUnIVkxyyEqllI
+	qhYwMq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECInkLzsYFx+zOsQowMGoxMO7QjI4RIg1
+	say4MvcQowQHs5II748OoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGkvrUlWfO2HlmibufXKgq
+	a6uxOo//aFNChhhDzpGtZ6WcjJzyfkTEvq4yZwpw/76oqb1MaXHbQibn+V9Zn5zK9D1mel3h
+	285X3efEngffbLK8nTV34rbn4l0ivyvctHwuTtTYeXX2bZXC5f68ms6XI244n9hz3PqzyeYd
+	BnF7DC5tuNSj+ueFEktxRqKhFnNRcSIAyEVJyMICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30-10-2014 17:51, Mark Brown wrote:
-> On Thu, Oct 30, 2014 at 12:26:55PM +0100, Mike Looijmans wrote:
->> The ltc3562 is an I2C controlled regulator supporting 4 independent
->> outputs.
+On 2014-10-31 00:39, Paul Moore wrote:
+> On Thursday, October 30, 2014 08:55:56 PM Karol Lewandowski wrote:
+>> On 2014-10-30 15:47, Greg Kroah-Hartman wrote:
+>>> Other than that, I don't know exactly what your patches do, or why they
+>>> are needed, care to go into details?
 >>
->> v2: Prefix "lltc" to devicetree properties. Use the same property names
->>      as the ltc3589 driver. Remove default-voltage property. Use
->>      devm_register_regulator.
->
-> As covered in SubmittingPatches things like this should be after ---.
->
->> +Required properties:
->> +- compatible: "ltc3562"
->
-> This needs a vendor in the compatible string.
+>> Patches in question were supposed to add few hooks for kdbus-specific
+>> operations that doesn't seem to have compatible semantics with hooks
+>> currently available in LSM.
+>>
+>> kdbus' bus introduces quite a few new concepts that we wanted to be able
+>> to limit based on MAC label/context, eg.
+>>
+>>  - check flags at HELO stage (say disallow fd passing),
+>>
+>>  - restrict ability to acquire name to certain subjects (for system bus),
+>>
+>>  - disallow creation of new buses,
+>>
+>>  - limit scope of broadcasts,
+>>
+>>  - etc.
+>>
+>> Please take a look at hook list - I think most of names are
+>> self-explanatory:
+>>
+>>  
+>> https://github.com/lmctl/linux/blob/a9fe4c33b6e5ab25a243e0590df406aabb6add1
+>> 2/include/linux/security.h#L1874
+>>
+>> kdbus modifications were pretty light - with most visible change being
+>> addition of opaque security pointer to kdbus_bus and similar structs.
+> 
+> [NOTE: we really should add the LSM list to this discussion and future 
+> patchset postings.]
+> 
+> Also, to be completely honest, I don't think we ever really arrived at any 
+> final conclusion about those LSM/kdbus hooks either.  At least I don't think I 
+> ever really satisfied myself that what we had was the "right" solution.
 
-Will do.
+Agreed, "hooks" are far from being complete.  I think that patches
+were and still are - a starting point for discussion, not "a solution"
+itself.
 
->> +Required child node:
->> +- regulators: Contains four regulator child nodes R400B, R600B, R400A, R600A,
->> +  specifying the initialization data as documented in
->> +  Documentation/devicetree/bindings/regulator/regulator.txt.
->
-> All regulator child nodes should be optional.
->
->> +			R600A_reg: R600A {
->> +				regulator-name = "R600A";
->
-> Remove these regulator-names, this is for the name of the supplies on
-> the board not the regulator itself.
->
->> +static int ltc3562_write(struct i2c_client *i2c, u8 reg_a, u8 reg_b);
->> +static int ltc3562_dummy_write(struct i2c_client *i2c);
->
-> This appears to be reimplementing regmap (including a cache).  Please
-> use that instead.  Pretty much the entire driver could then be replaced
-> with the regmap helpers, none of the operations look like they'd be
-> needed, and you'd get the regmap diagnostic infrastructure.
+Timing wasn't good either - since our last discussion (Apr/May 2014)
+kdbus policy engine has been completely rewritten and few core concepts
+changed too.
 
-The chip doesn't have an I2C register map, it uses "commands".
-It does not support read transactions at all, it will NACK those. The 
-first byte contains a bit mask that tells which outputs are to be 
-configured and in what mode, the next is the enable bit and setpoint 
-value. The first byte already contains data, it's not just an address.
+> We both got busy and kinda drifted away from this effort.  Karol, did you do 
+> any further work on the hooks?
 
-I would have used regmap if I thought it'd help (if only for the 
-diagnostics), but it simply doesn't fit here.
+I didn't.  I was waiting for the peace of change in kdbus to slow
+down a bit and, honestly, wasn't expecting submission in few next
+months...
 
-If you insist, I can probably get it to fit on regmap, but that would 
-still mean implementing some custom write method that translates between 
-some non-existing registry format and what the chip really wants.
+I'll do my best to post RFC patchset today or tomorrow.
 
-
->> +	np = of_node_get(i2c->dev.of_node);
->> +	np_regulators = of_get_child_by_name(np, "regulators");
->
->> +		np_child = of_get_child_by_name(np_regulators,
->> +			ltc3562_regulators[i].name);
->> +		if (np_child == NULL) {
->
-> Use the core support for looking up constraints please - set
-> regulators_node and so on.
-
-I'll dig into it, seems that there's more infrastructure here to use.
-
->> +static struct i2c_driver ltc3562_i2c_driver = {
->> +	.driver = {
->> +		.name = "LTC3562",
->> +		.owner = THIS_MODULE,
->> +	},
->> +	.probe    = ltc3562_i2c_probe,
->> +	.id_table = ltc3562_i2c_id,
->> +};
->
-> You need to supply an of_match_table too.
-
-Hmm, that would explain why I couldn't get it to work using 
-"lltc,ltc3562" during our first attempts at the driver.
-
-
+Thanks
 -- 
-Mike Looijmans
+Karol Lewandowski, Samsung R&D Institute Poland
