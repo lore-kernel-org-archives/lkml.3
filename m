@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360AbaJaWcv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 18:32:51 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61934 "HELO
+	id S1759768AbaJaWfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 18:35:08 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56749 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751541AbaJaWcu convert rfc822-to-8bit (ORCPT
+	with SMTP id S1757816AbaJaWfG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 18:32:50 -0400
+	Fri, 31 Oct 2014 18:35:06 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Gilad Avidov <gavidov@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 0/1] Compact interface for Device-Tree
-Date: Fri, 31 Oct 2014 23:53:28 +0100
-Message-ID: <7637604.7PK9W8ePf3@vostro.rjw.lan>
+        Sudeep Holla <Sudeep.Holla@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 3/3] ACPI / processor: Rename acpi_(un)map_lsapic() to acpi_(un)map_cpu()
+Date: Fri, 31 Oct 2014 23:55:46 +0100
+Message-ID: <10283319.F5QMI6fbWn@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL_JsqLtkiiyisxSG_qBknmz6n2qDKUdpwM-ZY3tH3wgYSrO1w@mail.gmail.com>
-References: <1414709964-27284-1-git-send-email-gavidov@codeaurora.org> <CAL_JsqLtkiiyisxSG_qBknmz6n2qDKUdpwM-ZY3tH3wgYSrO1w@mail.gmail.com>
+In-Reply-To: <5452CE9D.6000403@linaro.org>
+References: <1414662780-2147-1-git-send-email-hanjun.guo@linaro.org> <2516177.7dftOY8x88@vostro.rjw.lan> <5452CE9D.6000403@linaro.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
 Content-Type: text/plain; charset="utf-8"
@@ -32,41 +30,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 01, 2014 05:13:45 AM Rob Herring wrote:
-> On Fri, Oct 31, 2014 at 6:59 AM, Gilad Avidov <gavidov@codeaurora.org> wrote:
+On Friday, October 31, 2014 07:49:49 AM Hanjun Guo wrote:
+> On 2014年10月31日 04:12, Rafael J. Wysocki wrote:
+> > On Thursday, October 30, 2014 05:53:00 PM Hanjun Guo wrote:
+> >> acpi_map_lsapic() will allocate a logical CPU number and map it to
+> >> physical CPU id (such as APIC id) for the hot-added CPU, it will also
+> >> do some mapping for NUMA node id and etc, acpi_unmap_lsapic() will
+> >> do the reverse.
+> >>
+> >> We can see that the name of the function is a little bit confusing and
+> >> arch dependent so rename them as acpi_(un)map_map() to make arch
 > >
-> > Device-Tree compact API
-> > ------------------------
-> >
-> > Common code seen in driver’s probe reads device tree values and handling
-> > erroneous return codes from all those of_property_read_xxx()  APIs. This
-> > common code is factored out by the of_property_map module which allows
-> > driver’s probe to replace that (often lengthy) code with a concise table:
-> >
-> > struct of_prop_map map[] = {
-> >     {"i2c",            &dev->id,        OF_REQ,  OF_ID,  -1},
-> >     {"qcom,clk-freq-out",    &dev->clk_freq_out,    OF_REQ,  OF_U32,  0},
-> >     {"qcom,clk-freq-in",    &dev->clk_freq_in,    OF_REQ,  OF_U32,  0},
-> >     {"qcom,disable-dma",    &dev->disable_dma,    OF_OPT,  OF_BOOL, 0},
-> >     {"qcom,master-id",    &dev->mstr_id,        OF_SGST, OF_U32,  0},
-> >     {NULL,            NULL,            0,       0,       0},
-> > };
-> >
-> > Then call populate to read the values into the device’s variables:
-> >
-> > ret = of_prop_populate(dev, dev->of_node, map);
+> > That's acpi_(un)map_cpu() I guess?
 > 
-> Interesting idea. The main concern I have with this is there has been
-> on-going discussions about how to generalize property handling across
-> DT and ACPI to make drivers more agnostic, so I'm copying a few folks
-> involved in that. That may be a bit orthogonal to what this is doing,
-> but we may want some coordination here.
+> ah, yes, typos, it should be acpi_(un)map_cpu(), my fault.
+> should I send another version?
 
-Agreed.
+No, I can fix this up.
 
-We actually have a patchset adding a unified device property API in linux-next (http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/log/?h=device-properties)
-and I'd prefer to see the "compactization" to happen at that level, if possible,
-rather that for of_ only.
-
-Rafael
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
