@@ -1,246 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498AbaJaHuo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 03:50:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58788 "EHLO bear.ext.ti.com"
+	id S1756668AbaJaHvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 03:51:04 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:50362 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756368AbaJaHul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 03:50:41 -0400
-From: Vignesh R <vigneshr@ti.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Vignesh R <vigneshr@ti.com>
-Subject: [PATCH 2/3] arm: mach-omap2: omap_hwmod_43xx_data: add hwmod support for tscadc on am43x-evm
-Date: Fri, 31 Oct 2014 13:16:42 +0530
-Message-ID: <1414741603-18233-3-git-send-email-vigneshr@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414741603-18233-1-git-send-email-vigneshr@ti.com>
-References: <1414741603-18233-1-git-send-email-vigneshr@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756578AbaJaHvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 03:51:00 -0400
+Message-ID: <1414741851.3014.13.camel@jlt4.sipsolutions.net>
+Subject: Re: [RFC v2 4/4] backports: add kernl integration support to
+ gentree.py
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: Stefan Assmann <sassmann@kpanic.de>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yann.morin.1998@free.fr, mmarek@suse.cz
+Date: Fri, 31 Oct 2014 08:50:51 +0100
+In-Reply-To: <20141029160003.GW28966@wotan.suse.de> (sfid-20141029_170034_600454_10CE6011)
+References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1414570902-5675-5-git-send-email-mcgrof@do-not-panic.com>
+	 <5451099B.7090102@kpanic.de> <20141029160003.GW28966@wotan.suse.de>
+	 (sfid-20141029_170034_600454_10CE6011)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds hwmod support for tscadc to work on am43xx-evm. The am33xx
-hwmod structures of tscadc has been moved to ipblock_data so that it can
-be reused in am43xx. The clock domain names are separately set for am33xx
-and am43xx. Thus tscadc dt entries can now be added to am43xx board
-dt files.
+On Wed, 2014-10-29 at 17:00 +0100, Luis R. Rodriguez wrote:
 
-Signed-off-by: Vignesh R <vigneshr@ti.com>
----
- .../mach-omap2/omap_hwmod_33xx_43xx_common_data.h  |  1 +
- .../mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c | 64 ++++++++++++++++++++++
- arch/arm/mach-omap2/omap_hwmod_33xx_data.c         | 49 -----------------
- arch/arm/mach-omap2/omap_hwmod_43xx_data.c         |  1 +
- 4 files changed, 66 insertions(+), 49 deletions(-)
+>  backport/Kconfig                              |  54 --------
+>  backport/Kconfig.package                      |  31 +++++
+>  backport/Kconfig.sources                      |  23 ++++
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-index 6e57b8ad0db5..b92a7c7825fa 100644
---- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-+++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
-@@ -65,6 +65,7 @@ extern struct omap_hwmod_ocp_if am33xx_l4_ls__timer4;
- extern struct omap_hwmod_ocp_if am33xx_l4_ls__timer5;
- extern struct omap_hwmod_ocp_if am33xx_l4_ls__timer6;
- extern struct omap_hwmod_ocp_if am33xx_l4_ls__timer7;
-+extern struct omap_hwmod_ocp_if am33xx_l4_wkup__adc_tsc;
- extern struct omap_hwmod_ocp_if am33xx_l3_main__tpcc;
- extern struct omap_hwmod_ocp_if am33xx_l3_main__tptc0;
- extern struct omap_hwmod_ocp_if am33xx_l3_main__tptc1;
-diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
-index 7f44922ab540..ef14e56a3968 100644
---- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
-@@ -151,6 +151,54 @@ struct omap_hwmod_class am33xx_wkup_m3_hwmod_class = {
- };
- 
- /*
-+ * 'adc/tsc' class
-+ * TouchScreen Controller (Anolog-To-Digital Converter)
-+ */
-+static struct omap_hwmod_class_sysconfig am33xx_adc_tsc_sysc = {
-+	.rev_offs	= 0x00,
-+	.sysc_offs	= 0x10,
-+	.sysc_flags	= SYSC_HAS_SIDLEMODE,
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-+			SIDLE_SMART_WKUP),
-+	.sysc_fields	= &omap_hwmod_sysc_type2,
-+};
-+
-+static struct omap_hwmod_class am33xx_adc_tsc_hwmod_class = {
-+	.name		= "adc_tsc",
-+	.sysc		= &am33xx_adc_tsc_sysc,
-+};
-+
-+struct omap_hwmod am33xx_adc_tsc_hwmod = {
-+	.name		= "adc_tsc",
-+	.class		= &am33xx_adc_tsc_hwmod_class,
-+	.clkdm_name	= "l4_wkup_clkdm",
-+	.main_clk	= "adc_tsc_fck",
-+	.prcm		= {
-+		.omap4  = {
-+			.modulemode     = MODULEMODE_SWCTRL,
-+		},
-+	},
-+};
-+
-+/* L4 WKUP -> ADC_TSC */
-+static struct omap_hwmod_addr_space am33xx_adc_tsc_addrs[] = {
-+	{
-+		.pa_start	= 0x44E0D000,
-+		.pa_end		= 0x44E0D000 + SZ_8K - 1,
-+		.flags		= ADDR_TYPE_RT
-+	},
-+	{ }
-+};
-+
-+struct omap_hwmod_ocp_if am33xx_l4_wkup__adc_tsc = {
-+	.master		= &am33xx_l4_wkup_hwmod,
-+	.slave		= &am33xx_adc_tsc_hwmod,
-+	.clk		= "dpll_core_m4_div2_ck",
-+	.addr		= am33xx_adc_tsc_addrs,
-+	.user		= OCP_USER_MPU,
-+};
-+
-+/*
-  * 'pru-icss' class
-  * Programmable Real-Time Unit and Industrial Communication Subsystem
-  */
-@@ -1370,6 +1418,7 @@ static void omap_hwmod_am33xx_clkctrl(void)
- 	CLKCTRL(am33xx_timer5_hwmod, AM33XX_CM_PER_TIMER5_CLKCTRL_OFFSET);
- 	CLKCTRL(am33xx_timer6_hwmod, AM33XX_CM_PER_TIMER6_CLKCTRL_OFFSET);
- 	CLKCTRL(am33xx_timer7_hwmod, AM33XX_CM_PER_TIMER7_CLKCTRL_OFFSET);
-+	CLKCTRL(am33xx_adc_tsc_hwmod, AM33XX_CM_WKUP_ADC_TSC_CLKCTRL_OFFSET);
- 	CLKCTRL(am33xx_smartreflex0_hwmod,
- 		AM33XX_CM_WKUP_SMARTREFLEX0_CLKCTRL_OFFSET);
- 	CLKCTRL(am33xx_smartreflex1_hwmod,
-@@ -1398,6 +1447,18 @@ static void omap_hwmod_am33xx_clkctrl(void)
- 	CLKCTRL(am33xx_aes0_hwmod , AM33XX_CM_PER_AES0_CLKCTRL_OFFSET);
- }
- 
-+static void am33xx_hwmod_clockdomain(void)
-+{
-+	am33xx_l4_hs_hwmod.clkdm_name = "l4hs_clkdm";
-+	am33xx_adc_tsc_hwmod.clkdm_name = "l4_wkup_clkdm";
-+}
-+
-+static void am43xx_hwmod_clockdomain(void)
-+{
-+	am33xx_l4_hs_hwmod.clkdm_name = "l3_clkdm";
-+	am33xx_adc_tsc_hwmod.clkdm_name = "l3s_tsc_clkdm";
-+}
-+
- static void omap_hwmod_am33xx_rst(void)
- {
- 	RSTCTRL(am33xx_pruss_hwmod, AM33XX_RM_PER_RSTCTRL_OFFSET);
-@@ -1409,6 +1470,7 @@ void omap_hwmod_am33xx_reg(void)
- {
- 	omap_hwmod_am33xx_clkctrl();
- 	omap_hwmod_am33xx_rst();
-+	am33xx_hwmod_clockdomain();
- }
- 
- static void omap_hwmod_am43xx_clkctrl(void)
-@@ -1443,6 +1505,7 @@ static void omap_hwmod_am43xx_clkctrl(void)
- 	CLKCTRL(am33xx_timer5_hwmod, AM43XX_CM_PER_TIMER5_CLKCTRL_OFFSET);
- 	CLKCTRL(am33xx_timer6_hwmod, AM43XX_CM_PER_TIMER6_CLKCTRL_OFFSET);
- 	CLKCTRL(am33xx_timer7_hwmod, AM43XX_CM_PER_TIMER7_CLKCTRL_OFFSET);
-+	CLKCTRL(am33xx_adc_tsc_hwmod, AM43XX_CM_WKUP_ADC_TSC_CLKCTRL_OFFSET);
- 	CLKCTRL(am33xx_smartreflex0_hwmod,
- 		AM43XX_CM_WKUP_SMARTREFLEX0_CLKCTRL_OFFSET);
- 	CLKCTRL(am33xx_smartreflex1_hwmod,
-@@ -1482,4 +1545,5 @@ void omap_hwmod_am43xx_reg(void)
- {
- 	omap_hwmod_am43xx_clkctrl();
- 	omap_hwmod_am43xx_rst();
-+	am43xx_hwmod_clockdomain();
- }
-diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-index ce7d260495cb..c3ff14828850 100644
---- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-@@ -88,37 +88,6 @@ static struct omap_hwmod am33xx_wkup_m3_hwmod = {
- };
- 
- /*
-- * 'adc/tsc' class
-- * TouchScreen Controller (Anolog-To-Digital Converter)
-- */
--static struct omap_hwmod_class_sysconfig am33xx_adc_tsc_sysc = {
--	.rev_offs	= 0x00,
--	.sysc_offs	= 0x10,
--	.sysc_flags	= SYSC_HAS_SIDLEMODE,
--	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
--			SIDLE_SMART_WKUP),
--	.sysc_fields	= &omap_hwmod_sysc_type2,
--};
--
--static struct omap_hwmod_class am33xx_adc_tsc_hwmod_class = {
--	.name		= "adc_tsc",
--	.sysc		= &am33xx_adc_tsc_sysc,
--};
--
--static struct omap_hwmod am33xx_adc_tsc_hwmod = {
--	.name		= "adc_tsc",
--	.class		= &am33xx_adc_tsc_hwmod_class,
--	.clkdm_name	= "l4_wkup_clkdm",
--	.main_clk	= "adc_tsc_fck",
--	.prcm		= {
--		.omap4	= {
--			.clkctrl_offs	= AM33XX_CM_WKUP_ADC_TSC_CLKCTRL_OFFSET,
--			.modulemode	= MODULEMODE_SWCTRL,
--		},
--	},
--};
--
--/*
-  * Modules omap_hwmod structures
-  *
-  * The following IPs are excluded for the moment because:
-@@ -426,24 +395,6 @@ static struct omap_hwmod_ocp_if am33xx_l4_wkup__gpio0 = {
- 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
- };
- 
--/* L4 WKUP -> ADC_TSC */
--static struct omap_hwmod_addr_space am33xx_adc_tsc_addrs[] = {
--	{
--		.pa_start	= 0x44E0D000,
--		.pa_end		= 0x44E0D000 + SZ_8K - 1,
--		.flags		= ADDR_TYPE_RT
--	},
--	{ }
--};
--
--static struct omap_hwmod_ocp_if am33xx_l4_wkup__adc_tsc = {
--	.master		= &am33xx_l4_wkup_hwmod,
--	.slave		= &am33xx_adc_tsc_hwmod,
--	.clk		= "dpll_core_m4_div2_ck",
--	.addr		= am33xx_adc_tsc_addrs,
--	.user		= OCP_USER_MPU,
--};
--
- static struct omap_hwmod_ocp_if am33xx_l4_hs__cpgmac0 = {
- 	.master		= &am33xx_l4_hs_hwmod,
- 	.slave		= &am33xx_cpgmac0_hwmod,
-diff --git a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
-index fea01aa3ef42..3ce8d28c0f9a 100644
---- a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
-@@ -809,6 +809,7 @@ static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata = {
- 	&am33xx_l4_ls__timer5,
- 	&am33xx_l4_ls__timer6,
- 	&am33xx_l4_ls__timer7,
-+	&am33xx_l4_wkup__adc_tsc,
- 	&am33xx_l3_main__tpcc,
- 	&am33xx_l4_ls__uart2,
- 	&am33xx_l4_ls__uart3,
--- 
-1.9.1
+I think you should do this split as a separate patch.
+
+> +# these will be generated
+> +source "$BACKPORT_DIR/Kconfig.kernel"
+> +source "$BACKPORT_DIR/Kconfig.versions"
+> +source "$BACKPORT_DIR/Kconfig.sources"
+
+Not true - Kconfig.sources exists below?
+
+> +ifneq ($(BACKPORT_PACKAGE),)
+
+I think it'd be easier to understand if you called this
+
+BACKPORT_INTEGRATED
+
+and inverted the logic.
+
+> +        # Only the kconfig 'mainmenu' entries grok variables, we want to keep
+> +        # this the main Kconfig as part of our program to be able to give it
+> +        # enough dynamic information
+> +        k = open(os.path.join(args.outdir, 'Kconfig'), 'w')
+> +        k.write('config BACKPORT_DIR\n')
+> +        k.write('\tstring\n')
+> +        k.write('\tdefault "backports/"\n')
+> +        k.write('config BACKPORTS_VERSION\n')
+> +        k.write('\tstring\n')
+> +        k.write('\tdefault "%s"\n' % backports_version)
+> +        k.write('config BACKPORTED_KERNEL_VERSION\n')
+> +        k.write('\tstring\n')
+> +        k.write('\tdefault "%s"\n' % kernel_version)
+> +        k.write('config BACKPORTED_KERNEL_NAME\n')
+> +        k.write('\tstring\n')
+> +        k.write('\tdefault "%s"\n' % args.base_name)
+> +        k.write('\n')
+> +        k.write('menuconfig BACKPORT_LINUX\n')
+> +        k.write('\tbool "Backport %s %s (backports %s)"\n' % (args.base_name, kernel_version, backports_version))
+> +        k.write('\tdefault n\n')
+> +        k.write('\t---help--- \n')
+> +        k.write('\t  Enabling this will let give you the opportunity to use\n')
+> +        k.write('\t  features and drivers backported from %s %s\n' % (args.base_name, kernel_version))
+> +        k.write('\t  on the kernel your are using. This is experimental and you should\n')
+> +        k.write('\t  say no unless you\'d like to help test things.\n')
+> +        k.write('\n')
+> +        k.write('if BACKPORT_LINUX\n')
+> +        k.write('\n')
+> +        k.write('source "$BACKPORT_DIR/Kconfig.versions"\n')
+> +        k.write('source "$BACKPORT_DIR/Kconfig.sources"\n')
+> +        k.write('\n')
+> +        k.write('endif # BACKPORT_LINUX\n')
+
+This is really really ugly - please just have a file template, and maybe
+replace some things in it or provide them as env variables through the
+Makefile or so.
+
+> +    if args.integrate:
+> +        f = open(os.path.join(args.outdir, '../arch/x86/Kconfig'), 'a')
+> +        f.write('source "backports/Kconfig"\n')
+
+That seems like a bad idea - maybe better integrate it under some
+arch-independent file?
+
+> +        f.close()
+> +        git_debug_snapshot(args, "hooked backport Kconfig to supported architectures")
+> +
+> +        f = open(os.path.join(args.outdir, '../MAINTAINERS'), 'a')
+> +        f.write('M:\tHauke Mehrtens <hauke@hauke-m.de>\n')
+> +        f.write('M:\tLuis R. Rodriguez <mcgrof@do-not-panic.com>\n')
+> +        f.write('L:\tbackports@vger.kernel.org\n')
+> +        f.write('T:\tgit://git.kernel.org/pub/scm/linux/kernel/git/backports/backports.git\n')
+> +        f.write('F:\tbackports/\n')
+> +        f.close()
+
+That's ... odd? doesn't even fit the MAINTAINERS file style? Anyway I
+think it's probably not necessary.
+
+> +        git_debug_snapshot(args, "add backport maintainers entry")
+> +
+> +        f = open(os.path.join(args.outdir, '../Makefile'), 'a')
+> +        f.write('ifeq ($(KBUILD_EXTMOD),)\n')
+> +        f.write('backports-y := backports/\n')
+> +        f.write('vmlinux-dirs += $(patsubst %/,%,$(filter %/, $(backports-y) $(backports-m)))\n')
+> +        f.write('vmlinux-alldirs += $(patsubst %/,%,$(filter %/, $(backports-n) $(backports-)))\n')
+> +        f.write('backports-y       := $(patsubst %/, %/built-in.o, $(backports-y))\n')
+> +        f.write('KBUILD_VMLINUX_MAIN += $(backports-y)\n')
+> +        f.write('endif\n')
+> +        f.close()
+
+That could be a template file again that you just copy.
+
+[... I need more time to review, don't have much this morning ...]
+
+johannes
 
