@@ -1,100 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247AbaJaV6h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:58:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5027 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038AbaJaV6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:58:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="614986778"
-Subject: [PATCH] [v2] x86 mpx: give bndX registers actual names
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com, x86@kernel.org,
-        hpa@linux.intel.com, qiaowei.ren@intel.com, fenghua.yu@intel.com
-From: Dave Hansen <dave@sr71.net>
-Date: Fri, 31 Oct 2014 14:58:20 -0700
-Message-Id: <20141031215820.5EA5E0EC@viggo.jf.intel.com>
+	id S1759871AbaJaV7X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:59:23 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4757 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750889AbaJaV7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 17:59:22 -0400
+X-IronPort-AV: E=Sophos;i="5.07,295,1413237600"; 
+   d="scan'208";a="85640887"
+Date: Fri, 31 Oct 2014 22:59:07 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [Cocci] [PATCH 1/1] btrfs: Deletion of unnecessary checks before
+ six function calls
+In-Reply-To: <545404A6.2090807@users.sourceforge.net>
+Message-ID: <alpine.DEB.2.02.1410312256590.2324@localhost6.localdomain6>
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
+ <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net> <545404A6.2090807@users.sourceforge.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Changes from V1:
- * name it 'bndreg' instead plain 'bnd'
 
---
+On Fri, 31 Oct 2014, SF Markus Elfring wrote:
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+> The following functions test whether their argument is NULL and then
+> return immediately.
+> * btrfs_free_path()
+> * free_extent_buffer()
+> * free_extent_map()
+> * free_extent_state()
+> * iput()
+> * kfree()
+> 
+> Thus the test around the call is not needed.
+> 
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  fs/btrfs/dev-replace.c       |  3 +--
+>  fs/btrfs/extent_io.c         | 12 ++++--------
+>  fs/btrfs/file.c              |  6 ++----
+>  fs/btrfs/free-space-cache.c  |  7 +++----
+>  fs/btrfs/inode.c             |  6 ++----
+>  fs/btrfs/reada.c             |  3 +--
+>  fs/btrfs/relocation.c        |  3 +--
+>  fs/btrfs/tests/btrfs-tests.c |  3 +--
+>  fs/btrfs/tree-defrag.c       |  3 +--
+>  fs/btrfs/tree-log.c          |  6 ++----
+>  10 files changed, 18 insertions(+), 34 deletions(-)
+> 
+> diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
+> index 6f662b3..3465029 100644
+> --- a/fs/btrfs/dev-replace.c
+> +++ b/fs/btrfs/dev-replace.c
+> @@ -183,8 +183,7 @@ no_valid_dev_replace_entry_found:
+>  	}
+> 
+>  out:
+> -	if (path)
+> -		btrfs_free_path(path);
+> +	btrfs_free_path(path);
 
-Consider the bndX MPX registers.  There 4 registers each
-containing a 64-bit lower and a 64-bit upper bound.  That's 8*64
-bits and we declare it thusly:
+It appears to be statically apparent whether btrfs_free_path is needed or 
+not.  The code could be changed both not to have the test and not to have 
+the jump and call to btrfs_free_path.
 
-	struct bndregs_struct {
-		u64 bndregs[8];
-	}
+This is probably the case for the other occurrences next to labels.
 
-Let's say you want to read the upper bound from the MPX register
-bnd2 out of the xsave buf.  You do:
+julia
 
-	bndregno = 2;
-	upper_bound = xsave_buf->bndregs.bndregs[2*bndregno+1];
-
-That kinda sucks.  Every time you access it, you need to know:
-1. Each bndX register is two entries wide in "bndregs"
-2. The lower comes first followed by upper.  We do the +1 to get
-   upper vs. lower.
-
-This replaces the old definition.  You can now access them
-indexed by the register number directly, and with a meaningful
-name for the lower and upper bound:
-
-	bndregno = 2;
-	xsave_buf->bndreg[bndregno].ub;
-
-It's now *VERY* clear that there are 4 registers.  The programmer
-now doesn't have to care what order the lower and upper bounds
-are in, and it's harder to get it wrong.
-
-The naming "lb" and "ub" reflects the names found in the Intel
-SDM Extensions documentation of these registers.  I'm not married
-to it.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: x86@kernel.org
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>
-
----
-
- b/arch/x86/include/asm/processor.h |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff -puN arch/x86/include/asm/processor.h~mpx-give-regsters-real-names arch/x86/include/asm/processor.h
---- a/arch/x86/include/asm/processor.h~mpx-give-regsters-real-names	2014-10-31 14:53:40.237438291 -0700
-+++ b/arch/x86/include/asm/processor.h	2014-10-31 14:53:40.243438554 -0700
-@@ -374,8 +374,9 @@ struct lwp_struct {
- 	u8 reserved[128];
- };
- 
--struct bndregs_struct {
--	u64 bndregs[8];
-+struct bndreg_struct {
-+	u64 lb; /* lower bound */
-+	u64 ub; /* upper bound */
- } __packed;
- 
- struct bndcsr_struct {
-@@ -394,7 +395,7 @@ struct xsave_struct {
- 	struct xsave_hdr_struct xsave_hdr;
- 	struct ymmh_struct ymmh;
- 	struct lwp_struct lwp;
--	struct bndregs_struct bndregs;
-+	struct bndreg_struct bndreg[4];
- 	struct bndcsr_struct bndcsr;
- 	/* new processor state extensions will go here */
- } __attribute__ ((packed, aligned (64)));
-_
+>  	return ret;
+>  }
+> 
+> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+> index bf3f424..cfbf00a 100644
+> --- a/fs/btrfs/extent_io.c
+> +++ b/fs/btrfs/extent_io.c
+> @@ -704,8 +704,7 @@ next:
+> 
+>  out:
+>  	spin_unlock(&tree->lock);
+> -	if (prealloc)
+> -		free_extent_state(prealloc);
+> +	free_extent_state(prealloc);
+> 
+>  	return 0;
+> 
+> @@ -1006,8 +1005,7 @@ hit_next:
+> 
+>  out:
+>  	spin_unlock(&tree->lock);
+> -	if (prealloc)
+> -		free_extent_state(prealloc);
+> +	free_extent_state(prealloc);
+> 
+>  	return err;
+> 
+> @@ -1223,8 +1221,7 @@ hit_next:
+> 
+>  out:
+>  	spin_unlock(&tree->lock);
+> -	if (prealloc)
+> -		free_extent_state(prealloc);
+> +	free_extent_state(prealloc);
+> 
+>  	return err;
+> 
+> @@ -4146,8 +4143,7 @@ int extent_readpages(struct extent_io_tree *tree,
+>  		__extent_readpages(tree, pagepool, nr, get_extent, &em_cached,
+>  				   &bio, 0, &bio_flags, READ);
+> 
+> -	if (em_cached)
+> -		free_extent_map(em_cached);
+> +	free_extent_map(em_cached);
+> 
+>  	BUG_ON(!list_empty(pages));
+>  	if (bio)
+> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+> index a18ceab..add07ce8 100644
+> --- a/fs/btrfs/file.c
+> +++ b/fs/btrfs/file.c
+> @@ -677,10 +677,8 @@ next:
+>  		/* once for the tree*/
+>  		free_extent_map(em);
+>  	}
+> -	if (split)
+> -		free_extent_map(split);
+> -	if (split2)
+> -		free_extent_map(split2);
+> +	free_extent_map(split);
+> +	free_extent_map(split2);
+>  }
+> 
+>  /*
+> diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+> index 3384819..11883e2 100644
+> --- a/fs/btrfs/free-space-cache.c
+> +++ b/fs/btrfs/free-space-cache.c
+> @@ -1943,8 +1943,7 @@ new_bitmap:
+> 
+>  out:
+>  	if (info) {
+> -		if (info->bitmap)
+> -			kfree(info->bitmap);
+> +		kfree(info->bitmap);
+>  		kmem_cache_free(btrfs_free_space_cachep, info);
+>  	}
+> 
+> @@ -3322,8 +3321,8 @@ again:
+> 
+>  	if (info)
+>  		kmem_cache_free(btrfs_free_space_cachep, info);
+> -	if (map)
+> -		kfree(map);
+> +
+> +	kfree(map);
+>  	return 0;
+>  }
+> 
+> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+> index d23362f..7301b99 100644
+> --- a/fs/btrfs/inode.c
+> +++ b/fs/btrfs/inode.c
+> @@ -857,8 +857,7 @@ static u64 get_extent_allocation_hint(struct inode *inode,
+> u64 start,
+>  			em = search_extent_mapping(em_tree, 0, 0);
+>  			if (em && em->block_start < EXTENT_MAP_LAST_BYTE)
+>  				alloc_hint = em->block_start;
+> -			if (em)
+> -				free_extent_map(em);
+> +			free_extent_map(em);
+>  		} else {
+>  			alloc_hint = em->block_start;
+>  			free_extent_map(em);
+> @@ -6573,8 +6572,7 @@ out:
+> 
+>  	trace_btrfs_get_extent(root, em);
+> 
+> -	if (path)
+> -		btrfs_free_path(path);
+> +	btrfs_free_path(path);
+>  	if (trans) {
+>  		ret = btrfs_end_transaction(trans, root);
+>  		if (!err)
+> diff --git a/fs/btrfs/reada.c b/fs/btrfs/reada.c
+> index b63ae20..ec8eb49 100644
+> --- a/fs/btrfs/reada.c
+> +++ b/fs/btrfs/reada.c
+> @@ -731,8 +731,7 @@ static int reada_start_machine_dev(struct btrfs_fs_info
+> *fs_info,
+>  	else if (eb)
+>  		__readahead_hook(fs_info->extent_root, eb, eb->start, ret);
+> 
+> -	if (eb)
+> -		free_extent_buffer(eb);
+> +	free_extent_buffer(eb);
+> 
+>  	return 1;
+> 
+> diff --git a/fs/btrfs/relocation.c b/fs/btrfs/relocation.c
+> index 74257d6..f87a5ee 100644
+> --- a/fs/btrfs/relocation.c
+> +++ b/fs/btrfs/relocation.c
+> @@ -4158,8 +4158,7 @@ out:
+>  	btrfs_end_transaction(trans, root);
+>  	btrfs_btree_balance_dirty(root);
+>  	if (err) {
+> -		if (inode)
+> -			iput(inode);
+> +		iput(inode);
+>  		inode = ERR_PTR(err);
+>  	}
+>  	return inode;
+> diff --git a/fs/btrfs/tests/btrfs-tests.c b/fs/btrfs/tests/btrfs-tests.c
+> index 9626252..7fb123f 100644
+> --- a/fs/btrfs/tests/btrfs-tests.c
+> +++ b/fs/btrfs/tests/btrfs-tests.c
+> @@ -162,8 +162,7 @@ void btrfs_free_dummy_root(struct btrfs_root *root)
+>  {
+>  	if (!root)
+>  		return;
+> -	if (root->node)
+> -		free_extent_buffer(root->node);
+> +	free_extent_buffer(root->node);
+>  	if (root->fs_info)
+>  		btrfs_free_dummy_fs_info(root->fs_info);
+>  	kfree(root);
+> diff --git a/fs/btrfs/tree-defrag.c b/fs/btrfs/tree-defrag.c
+> index a63719c..c74f106 100644
+> --- a/fs/btrfs/tree-defrag.c
+> +++ b/fs/btrfs/tree-defrag.c
+> @@ -118,8 +118,7 @@ int btrfs_defrag_leaves(struct btrfs_trans_handle *trans,
+>  		ret = -EAGAIN;
+>  	}
+>  out:
+> -	if (path)
+> -		btrfs_free_path(path);
+> +	btrfs_free_path(path);
+>  	if (ret == -EAGAIN) {
+>  		if (root->defrag_max.objectid > root->defrag_progress.objectid)
+>  			goto done;
+> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+> index 1475979..70926a9 100644
+> --- a/fs/btrfs/tree-log.c
+> +++ b/fs/btrfs/tree-log.c
+> @@ -736,8 +736,7 @@ static noinline int replay_one_extent(struct
+> btrfs_trans_handle *trans,
+>  	inode_add_bytes(inode, nbytes);
+>  	ret = btrfs_update_inode(trans, root, inode);
+>  out:
+> -	if (inode)
+> -		iput(inode);
+> +	iput(inode);
+>  	return ret;
+>  }
+> 
+> @@ -2210,8 +2209,7 @@ static noinline int walk_down_log_tree(struct
+> btrfs_trans_handle *trans,
+>  		}
+> 
+>  		WARN_ON(*level <= 0);
+> -		if (path->nodes[*level-1])
+> -			free_extent_buffer(path->nodes[*level-1]);
+> +		free_extent_buffer(path->nodes[*level-1]);
+>  		path->nodes[*level-1] = next;
+>  		*level = btrfs_header_level(next);
+>  		path->slots[*level] = 0;
+> -- 
+> 2.1.3
+> 
+> 
+> _______________________________________________
+> Cocci mailing list
+> Cocci@systeme.lip6.fr
+> https://systeme.lip6.fr/mailman/listinfo/cocci
+> 
