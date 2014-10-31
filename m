@@ -1,128 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758471AbaJaT4N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 15:56:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54236 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583AbaJaT4L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 15:56:11 -0400
-Date: Fri, 31 Oct 2014 19:56:07 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, hadess@hadess.net,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>,
-        Daniel Mack <daniel@zonque.org>,
-        Alban Crequy <alban.crequy@collabora.co.uk>,
-        javier.martinez@collabora.co.uk, teg@jklm.no
-Subject: Re: How Not To Use kref (was Re: kdbus: add code for buses, domains
- and endpoints)
-Message-ID: <20141031195607.GM7996@ZenIV.linux.org.uk>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
- <20141030233801.GF7996@ZenIV.linux.org.uk>
- <CA+55aFxB=jWGvPH3TMhB=ungOg9TBai5Ak-ma5vChBB-H2AgnQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxB=jWGvPH3TMhB=ungOg9TBai5Ak-ma5vChBB-H2AgnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758728AbaJaT5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 15:57:40 -0400
+Received: from skprod2.natinst.com ([130.164.80.23]:56814 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756538AbaJaT5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 15:57:38 -0400
+From: Ben Shelton <ben.shelton@ni.com>
+To: linux-mtd@lists.infradead.org
+Cc: dedekind1@gmail.com, adrian.hunter@intel.com, linux-kernel@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Ben Shelton <ben.shelton@ni.com>
+Subject: [PATCH 4/4] UBIFS: add ubifs_err() to print error reason
+Date: Fri, 31 Oct 2014 13:50:31 -0500
+Message-Id: <1414781431-2911-5-git-send-email-ben.shelton@ni.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+References: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 10/31/2014 01:51:14 PM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 10/31/2014 01:51:14 PM,
+	Serialize complete at 10/31/2014 01:51:14 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-31_08:2014-10-31,2014-10-31,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 11:00:01AM -0700, Linus Torvalds wrote:
-> On Thu, Oct 30, 2014 at 4:38 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > If you remove an object from some search structures, taking the lock in
-> > destructor is Too Fucking Late(tm).  Somebody might have already found
-> > that puppy and decided to pick it (all under that lock) just as we'd
-> > got to that point in destructor and blocked there.  Oops...
-> 
-> Ugh, yes. This is a much too common anti-pattern.
+From: Subodh Nijsure <snijsure@grid-net.com>
 
-*nod*
+This patch adds ubifs_err() output to some error paths to tell the user
+what's going on.
 
-kref is badly oversold; it's fine for the case when there's no non-counting
-references to the object, but in this kind of situations the things get
-subtle.  And the main attraction of kref is the promise that it's easy to
-use and avoids all the subtle issues.  It's not specific to kref, of course -
-the same breakage can and does occur when refcounting is open-coded; for
-example, we used to have that kind of bug in dput().  What makes it really
-unpleasant is that easy-to-use-don't-worry-it-takes-care-of-everything
-assumption...
+Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Ben Shelton <ben.shelton@ni.com>
+Acked-by: Brad Mouring <brad.mouring@ni.com>
+Acked-by: Terry Wilcox <terry.wilcox@ni.com>
+Acked-by: Gratian Crisan <gratian.crisan@ni.com>
+---
+ fs/ubifs/xattr.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-FWIW, here's another lovely instance (drivers/infiniband/hw/ipath/ipath_mmap.c):
-static void ipath_vma_close(struct vm_area_struct *vma)
-{
-        struct ipath_mmap_info *ip = vma->vm_private_data;
+diff --git a/fs/ubifs/xattr.c b/fs/ubifs/xattr.c
+index f844841..2b99e49 100644
+--- a/fs/ubifs/xattr.c
++++ b/fs/ubifs/xattr.c
+@@ -100,24 +100,32 @@ static const struct file_operations empty_fops;
+ static int create_xattr(struct ubifs_info *c, struct inode *host,
+ 			const struct qstr *nm, const void *value, int size)
+ {
+-	int err;
++	int err, xattr_name_list_size;
+ 	struct inode *inode;
+ 	struct ubifs_inode *ui, *host_ui = ubifs_inode(host);
+ 	struct ubifs_budget_req req = { .new_ino = 1, .new_dent = 1,
+ 				.new_ino_d = ALIGN(size, 8), .dirtied_ino = 1,
+ 				.dirtied_ino_d = ALIGN(host_ui->data_len, 8) };
+ 
+-	if (host_ui->xattr_cnt >= MAX_XATTRS_PER_INODE)
++	if (host_ui->xattr_cnt >= MAX_XATTRS_PER_INODE) {
++		ubifs_err("ubifs xattr_cnt %d exceeds MAX_XATTR_PER_NODE (%d)",
++			  host_ui->xattr_cnt, MAX_XATTRS_PER_INODE);
+ 		return -ENOSPC;
++	}
+ 	/*
+ 	 * Linux limits the maximum size of the extended attribute names list
+ 	 * to %XATTR_LIST_MAX. This means we should not allow creating more
+ 	 * extended attributes if the name list becomes larger. This limitation
+ 	 * is artificial for UBIFS, though.
+ 	 */
+-	if (host_ui->xattr_names + host_ui->xattr_cnt +
+-					nm->len + 1 > XATTR_LIST_MAX)
++	xattr_name_list_size = host_ui->xattr_names + host_ui->xattr_cnt +
++					nm->len + 1;
++
++	if (xattr_name_list_size > XATTR_LIST_MAX) {
++		ubifs_err("xattr name list too large %d > %d",
++			  xattr_name_list_size, XATTR_LIST_MAX);
+ 		return -ENOSPC;
++	}
+ 
+ 	err = ubifs_budget_space(c, &req);
+ 	if (err)
+@@ -652,5 +660,9 @@ int ubifs_init_security(struct inode *dentry, struct inode *inode,
+ 					   &ubifs_initxattrs, 0);
+ 	mutex_unlock(&inode->i_mutex);
+ 
++	if (err)
++		ubifs_err("cannot initialize extended attribute, error %d",
++			  err);
++
+ 	return err;
+ }
+-- 
+2.1.1
 
-        kref_put(&ip->ref, ipath_release_mmap_info);
-}
-void ipath_release_mmap_info(struct kref *ref)
-{
-        struct ipath_mmap_info *ip =
-                container_of(ref, struct ipath_mmap_info, ref);
-        struct ipath_ibdev *dev = to_idev(ip->context->device);
-
-        spin_lock_irq(&dev->pending_lock);
-        list_del(&ip->pending_mmaps);
-        spin_unlock_irq(&dev->pending_lock);
-
-        vfree(ip->obj);
-        kfree(ip);
-}
-static void ipath_vma_open(struct vm_area_struct *vma)
-{
-        struct ipath_mmap_info *ip = vma->vm_private_data;
-
-        kref_get(&ip->ref);
-}
-int ipath_mmap(struct ib_ucontext *context, struct vm_area_struct *vma)
-{
-...
-        spin_lock_irq(&dev->pending_lock);
-        list_for_each_entry_safe(ip, pp, &dev->pending_mmaps,
-                /* Only the creator is allowed to mmap the object */
-                if (context != ip->context || (__u64) offset != ip->offset)
-                        continue;
-                /* Don't allow a mmap larger than the object. */
-                if (size > ip->size)
-                        break;
-
-                list_del_init(&ip->pending_mmaps);
-                spin_unlock_irq(&dev->pending_lock);
-
-                ret = remap_vmalloc_range(vma, ip->obj, 0);
-                if (ret)
-                        goto done;
-                vma->vm_ops = &ipath_vm_ops;
-                vma->vm_private_data = ip;
-                ipath_vma_open(vma);
-                goto done;
-
-
-> > Normally I'd say "just use kref_put_mutex()", but this case is even worse.
-> > Look:
-> 
-> Yeah the whole "release the structure the lock is in" is another one.
-> 
-> Both of these patterns have happened so many times that I'd love to
-> have some kind of automated tool to see them, but I suspect it is
-> *much* too complex to be easily checked for.
-
-Especially since here the lock is *not* in the object being fed to
-destructor - it's in the object ours holds a reference to, with destructor
-dropping that reference and _sometimes_ it ends up being the last one.
-
-As for the first pattern...  Frankly, git grep -n -w kref_put, followed
-by quick look through the destructors for something like list_del catches
-a _lot_ of that ;-/  Not every match is a bug of that sort, but the
-fraction of false positives is not too high...
