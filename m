@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760978AbaJaHD7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 03:03:59 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:65449 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758785AbaJaHD5 (ORCPT
+	id S1760985AbaJaHJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 03:09:06 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:34711 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756366AbaJaHJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 03:03:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1414434602-14263-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1414434602-14263-1-git-send-email-soren.brinkmann@xilinx.com>
-Date: Fri, 31 Oct 2014 08:03:56 +0100
-Message-ID: <CACRpkdaduj3MaEN=hmL54ANJiP0B5MdH9qSqWRukX4H7pFt_Hw@mail.gmail.com>
-Subject: Re: [PATCH v3] gpio: lib-sysfs: Add 'wakeup' attribute
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>, linux-api@vger.kernel.org
-Cc: Alexandre Courbot <gnurou@gmail.com>, Jonathan Corbet <corbet@lwn.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 31 Oct 2014 03:09:04 -0400
+From: gyungoh@gmail.com
+X-Google-Original-From: jack.yoo@skyworksinc.com
+To: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
+        cooloney@gmail.com, broonie@kernel.org, lgirdwood@gmail.com
+Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: [RESUBMIT PATCH v6 0/8] Add Skyworks SKY81452 device drivers
+Date: Fri, 31 Oct 2014 16:08:34 +0900
+Message-Id: <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
+References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 7:30 PM, Soren Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
+From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 
-> Add an attribute 'wakeup' to the GPIO sysfs interface which allows
-> marking/unmarking a GPIO as wake IRQ.
-> The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
-> is associated with that GPIO and the irqchip implements set_wake().
-> Writing 'enabled' to that file will enable wake for that GPIO, while
-> writing 'disabled' will disable wake.
-> Reading that file will return either 'disabled' or 'enabled' depening on
-> the currently set flag for the GPIO's IRQ.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> v3:
->  - add documentation
-> v2:
->  - fix error path to unlock mutex before return
-(...)
+This patch set includes regulator and backlight driver for SKY81452.
+Also it includes documents for device tree and module.
+The initial version of sky81452-regulator was applied. Fo this, incremental
+patches are included.
 
-Looking better!
+v6:
+Added new line character at the end of line of dev_err()
 
-> +       "wakeup" ... reads as either "enabled" or "disabled". Write these
-> +               strings to set/clear the 'wakeup' flag of the IRQ associated
-> +               with this GPIO. If the IRQ has the 'wakeup' flag set, it can
-> +               wake the system from sleep states.
-> +
-> +               This file exists only if the pin can generate interrupts and
-> +               the driver implements the required infrastructure.
+v5:
+Changed DT for regulator : 'lout' node should be defined under 'regulator'
+Removed compatible string from sky81452-regulator driver
+Modified sky81452-regulator to return EINVAL when of_node is NULL
+Move sky81452-backlight.h to include/linux/platform_data
 
-Should this not be 0/1 rather than the string "enabled"/"disabled"?
+v4:
+Removed MODULE_VERSION()
+Modified license to GPLv2
+Removed calling to backlight_device_unregister() in sky81452-backlight
 
-I think that is the common pattern in sysfs?
+v3:
+Cleaned-up DBG messages
+Cleaned-up DT
+Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+Assigned mfd_cell.of_compatible for binding device node
+Modified error messages
+Modified sky81452-regulator to return ENODATA when of_node is NULL
 
-Not sure, but want an indication from the ABI people.
+v2:
+Split the patches for each sub-system
+Added 'reg' attribute for I2C address in device tree documents
+Added 'compatible' attribute in child drivers
+Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+Added message for exception or errors.
+Added vendor prefix for Skyworks Solutions, Inc.
+Add SKY81452 to the Trivial Devices list
 
-Yours,
-Linus Walleij
+Gyungoh Yoo (8):
+  mfd: Add support for Skyworks SKY81452 driver
+  backlight: Add support Skyworks SKY81452 backlight driver
+  devicetree: mfd: Add new SKY81452 mfd binding
+  devicetree: backlight: Add new SKY81452 backlight binding
+  devicetree: Add vendor prefix for Skyworks Solutions, Inc.
+  devicetree: i2c: Add SKY81452 to the Trivial Devices list
+  regulator: sky81452: Add compatible string for device binding
+  devicetree: regulator: sky81452: Add compatible string for device
+    binding
+
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+ Documentation/devicetree/bindings/mfd/sky81452.txt |  33 ++
+ .../bindings/regulator/sky81452-regulator.txt      |  10 +-
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ .../video/backlight/sky81452-backlight.txt         |  24 ++
+ drivers/mfd/Kconfig                                |  12 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/sky81452.c                             | 109 +++++++
+ drivers/regulator/Kconfig                          |   2 +-
+ drivers/regulator/sky81452-regulator.c             |  29 +-
+ drivers/video/backlight/Kconfig                    |  10 +
+ drivers/video/backlight/Makefile                   |   1 +
+ drivers/video/backlight/sky81452-backlight.c       | 345 +++++++++++++++++++++
+ include/linux/mfd/sky81452.h                       |  32 ++
+ include/linux/platform_data/sky81452-backlight.h   |  47 +++
+ 15 files changed, 642 insertions(+), 15 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+ create mode 100644 drivers/mfd/sky81452.c
+ create mode 100644 drivers/video/backlight/sky81452-backlight.c
+ create mode 100644 include/linux/mfd/sky81452.h
+ create mode 100644 include/linux/platform_data/sky81452-backlight.h
+
+-- 
+1.9.1
+
