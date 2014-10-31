@@ -1,187 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaJaFRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 01:17:50 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:59861 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaJaFRs (ORCPT
+	id S1758285AbaJaFTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 01:19:13 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36325 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406AbaJaFTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 01:17:48 -0400
+	Fri, 31 Oct 2014 01:19:12 -0400
+Message-ID: <54531BC7.4030307@hitachi.com>
+Date: Fri, 31 Oct 2014 14:19:03 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <54531258.1060908@huawei.com>
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
-	<544E1143.1080905@huawei.com>
-	<20141029174607.GK19606@redhat.com>
-	<545221A4.9030606@huawei.com>
-	<20141031022327.GA13275@google.com>
-	<5453022D.4040801@huawei.com>
-	<54531258.1060908@huawei.com>
-Date: Thu, 30 Oct 2014 22:17:47 -0700
-Message-ID: <CAJu=L59XOFkNgrOA3MPoL2q4y_b7SRP84PdX_Wn63x4xRwCS_w@mail.gmail.com>
-Subject: Re: [PATCH 00/17] RFC: userfault v2
-From: Andres Lagar-Cavilla <andreslc@google.com>
-To: zhanghailiang <zhang.zhanghailiang@huawei.com>
-Cc: Peter Feiner <pfeiner@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        qemu-devel@nongnu.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        "Dr. David Alan Gilbert" <dgilbert@redhat.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [for-next][PATCH 1/4] ftrace/x86: Add dynamic allocated trampoline
+ for ftrace_ops
+References: <20141027182702.778680710@goodmis.org> <20141027182948.284867581@goodmis.org>
+In-Reply-To: <20141027182948.284867581@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 9:38 PM, zhanghailiang
-<zhang.zhanghailiang@huawei.com> wrote:
-> On 2014/10/31 11:29, zhanghailiang wrote:
->>
->> On 2014/10/31 10:23, Peter Feiner wrote:
->>>
->>> On Thu, Oct 30, 2014 at 07:31:48PM +0800, zhanghailiang wrote:
->>>>
->>>> On 2014/10/30 1:46, Andrea Arcangeli wrote:
->>>>>
->>>>> On Mon, Oct 27, 2014 at 05:32:51PM +0800, zhanghailiang wrote:
->>>>>>
->>>>>> I want to confirm a question:
->>>>>> Can we support distinguishing between writing and reading memory for
->>>>>> userfault?
->>>>>> That is, we can decide whether writing a page, reading a page or both
->>>>>> trigger userfault.
->>>>>
->>>>> Mail is going to be long enough already so I'll just assume tracking
->>>>> dirty memory in userland (instead of doing it in kernel) is worthy
->>>>> feature to have here.
->>>
->>>
->>> I'll open that can of worms :-)
->>>
->>>> [...]
->>>> Er, maybe i didn't describe clearly. What i really need for live memory
->>>> snapshot
->>>> is only wrprotect fault, like kvm's dirty tracing mechanism, *only
->>>> tracing write action*.
->>>>
->>>> So, what i need for userfault is supporting only wrprotect fault. i
->>>> don't
->>>> want to get notification for non present reading faults, it will
->>>> influence
->>>> VM's performance and the efficiency of doing snapshot.
->>>
->>>
->>> Given that you do care about performance Zhanghailiang, I don't think
->>> that a
->>> userfault handler is a good place to track dirty memory. Every dirtying
->>> write
->>> will block on the userfault handler, which is an expensively slow
->>> proposition
->>> compared to an in-kernel approach.
->>>
->>
->> Agreed, but for doing live memory snapshot (VM is running when do
->> snapsphot),
->> we have to do this (block the write action), because we have to save the
->> page before it
->> is dirtied by writing action. This is the difference, compared to pre-copy
->> migration.
->>
->
-> Again;) For snapshot, i don't use its dirty tracing ability, i just use it
-> to block write action,
-> and save page, and then i will remove its write protect.
+Hi Steven,
 
-You could do a CoW in the kernel, post a notification, keep going, and
-expose an interface for user-space to mmap the preserved copy. Getting
-the life-cycle of the preserved page(s) right is tricky, but doable.
-Anyway, it's easy to hand-wave without knowing your specific
-requirements.
+(2014/10/28 3:27), Steven Rostedt wrote:
+> +static unsigned long create_trampoline(struct ftrace_ops *ops)
+> +{
+> +	unsigned const char *jmp;
+> +	unsigned long start_offset;
+> +	unsigned long end_offset;
+> +	unsigned long op_offset;
+> +	unsigned long offset;
+> +	unsigned long size;
+> +	unsigned long ip;
+> +	unsigned long *ptr;
+> +	void *trampoline;
+> +	/* 48 8b 15 <offset> is movq <offset>(%rip), %rdx */
+> +	unsigned const char op_ref[] = { 0x48, 0x8b, 0x15 };
+> +	union ftrace_op_code_union op_ptr;
+> +	int ret;
+> +
+> +	if (ops->flags & FTRACE_OPS_FL_SAVE_REGS) {
+> +		start_offset = (unsigned long)ftrace_regs_caller;
+> +		end_offset = (unsigned long)ftrace_regs_caller_end;
+> +		op_offset = (unsigned long)ftrace_regs_caller_op_ptr;
+> +	} else {
+> +		start_offset = (unsigned long)ftrace_caller;
+> +		end_offset = (unsigned long)ftrace_caller_end;
+> +		op_offset = (unsigned long)ftrace_caller_op_ptr;
+> +	}
+> +
+> +	size = end_offset - start_offset;
+> +
+> +	/*
+> +	 * Allocate enough size to store the ftrace_caller code,
+> +	 * the jmp to ftrace_return, as well as the address of
+> +	 * the ftrace_ops this trampoline is used for.
+> +	 */
+> +	trampoline = alloc_tramp(size + MCOUNT_INSN_SIZE + sizeof(void *));
+> +	if (!trampoline)
+> +		return 0;
+> +
+> +	/* Copy ftrace_caller onto the trampoline memory */
+> +	ret = probe_kernel_read(trampoline, (void *)start_offset, size);
+> +	if (WARN_ON(ret < 0)) {
+> +		tramp_free(trampoline);
+> +		return 0;
+> +	}
+> +
+> +	ip = (unsigned long)trampoline + size;
+> +
+> +	/* The trampoline ends with a jmp to ftrace_return */
+> +	jmp = ftrace_jmp_replace(ip, (unsigned long)ftrace_return);
+> +	memcpy(trampoline + size, jmp, MCOUNT_INSN_SIZE);
+> +
+> +	/*
+> +	 * The address of the ftrace_ops that is used for this trampoline
+> +	 * is stored at the end of the trampoline. This will be used to
+> +	 * load the third parameter for the callback. Basically, that
+> +	 * location at the end of the trampoline takes the place of
+> +	 * the global function_trace_op variable.
+> +	 */
+> +
+> +	ptr = (unsigned long *)(trampoline + size + MCOUNT_INSN_SIZE);
+> +	*ptr = (unsigned long)ops;
+> +
+> +	op_offset -= start_offset;
+> +	memcpy(&op_ptr, trampoline + op_offset, OP_REF_SIZE);
+> +
+> +	/* Are we pointing to the reference? */
+> +	if (WARN_ON(memcmp(op_ptr.op, op_ref, 3) != 0)) {
+> +		tramp_free(trampoline);
+> +		return 0;
+> +	}
+> +
+> +	/* Load the contents of ptr into the callback parameter */
+> +	offset = (unsigned long)ptr;
+> +	offset -= (unsigned long)trampoline + op_offset + OP_REF_SIZE;
+> +
+> +	op_ptr.offset = offset;
+> +
+> +	/* put in the new offset to the ftrace_ops */
+> +	memcpy(trampoline + op_offset, &op_ptr, OP_REF_SIZE);
 
-Opening the discussion a bit, this does look similar to the xen-access
-interface, in which a xen domain vcpu could be stopped in its tracks
-while user-space was notified (and acknowledged) a variety of
-scenarios: page was written to, page was read from, vcpu is attempting
-to execute from page, etc. Very applicable to anti-viruses right away,
-for example you can enforce W^X properties on pages.
+Would we better call flush_icache_range here?
 
-I don't know that Andrea wants to open the game so broadly for
-userfault, and the code right now is very specific to triggering on
-pte_none(), but that's a nice reward down this road.
+Thank you,
 
-Andres
-
->
->>>> Also, i think this feature will benefit for migration of ivshmem and
->>>> vhost-scsi
->>>> which have no dirty-page-tracing now.
->>>
->>>
->>> I do agree wholeheartedly with you here. Manually tracking non-guest
->>> writes
->>> adds to the complexity of device emulation code. A central fault-driven
->>> means
->>> for dirty tracking writes from the guest and host would be a welcome
->>> simplification to implementing pre-copy migration. Indeed, that's exactly
->>> what
->>> I'm working on! I'm using the softdirty bit, which was introduced
->>> recently for
->>> CRIU migration, to replace the use of KVM's dirty logging and manual
->>> dirty
->>> tracking by the VMM during pre-copy migration. See
->>
->>
->> Great! Do you plan to issue your patches to community? I mean is your work
->> based on
->> qemu? or an independent tool (CRIU migration?) for live-migration?
->> Maybe i could fix the migration problem for ivshmem in qemu now,
->> based on softdirty mechanism.
->>
->>> Documentation/vm/soft-dirty.txt and pagemap.txt in case you aren't
->>> familiar. To
->>
->>
->> I have read them cursorily, it is useful for pre-copy indeed. But it seems
->> that
->> it can not meet my need for snapshot.
->>
->>> make softdirty usable for live migration, I've added an API to atomically
->>> test-and-clear the bit and write protect the page.
->>
->>
->> How can i find the API? Is it been merged in kernel's master branch
->> already?
->>
->>
->> Thanks,
->> zhanghailiang
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe kvm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> .
->>
->
-
+> +
+> +	/* ALLOC_TRAMP flags lets us know we created it */
+> +	ops->flags |= FTRACE_OPS_FL_ALLOC_TRAMP;
+> +
+> +	return (unsigned long)trampoline;
+> +}
 
 
 -- 
-Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
