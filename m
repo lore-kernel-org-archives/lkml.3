@@ -1,265 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161679AbaJaB2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:28:48 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:31735 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161661AbaJaB2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:28:46 -0400
-Message-ID: <5452E531.4070205@huawei.com>
-Date: Fri, 31 Oct 2014 09:26:09 +0800
-From: zhanghailiang <zhang.zhanghailiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1760395AbaJaBg0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:36:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46361 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384AbaJaBgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 21:36:24 -0400
+Date: Thu, 30 Oct 2014 21:36:18 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Paul Moore <pmoore@redhat.com>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-security-module@vger.kernel.org, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, eparis@redhat.com, sgrubb@redhat.com
+Subject: Re: [PATCH] lsm: get comm using lock to avoid race in string printing
+Message-ID: <20141031013618.GD20866@madcap2.tricolour.ca>
+References: <735f28048636878e638add7d6129a8c2fd79a09e.1411141022.git.rgb@redhat.com>
+ <1478341.K6oVWdhYQd@sifl>
 MIME-Version: 1.0
-To: "Dr. David Alan Gilbert" <dgilbert@redhat.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>, <qemu-devel@nongnu.org>,
-        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Hugh Dickins" <hughd@google.com>, Peter Feiner <pfeiner@google.com>,
-        "Christopher Covington" <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Android Kernel Team" <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        "Dmitry Adamushko" <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, "Mike Hommey" <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Michel Lespinasse" <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, "Keith Packard" <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Subject: Re: [PATCH 00/17] RFC: userfault v2
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com> <544E1143.1080905@huawei.com> <20141029174607.GK19606@redhat.com> <545221A4.9030606@huawei.com> <20141030124950.GJ2376@work-vm>
-In-Reply-To: <20141030124950.GJ2376@work-vm>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1478341.K6oVWdhYQd@sifl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/30 20:49, Dr. David Alan Gilbert wrote:
-> * zhanghailiang (zhang.zhanghailiang@huawei.com) wrote:
->> On 2014/10/30 1:46, Andrea Arcangeli wrote:
->>> Hi Zhanghailiang,
->>>
->>> On Mon, Oct 27, 2014 at 05:32:51PM +0800, zhanghailiang wrote:
->>>> Hi Andrea,
->>>>
->>>> Thanks for your hard work on userfault;)
->>>>
->>>> This is really a useful API.
->>>>
->>>> I want to confirm a question:
->>>> Can we support distinguishing between writing and reading memory for userfault?
->>>> That is, we can decide whether writing a page, reading a page or both trigger userfault.
->>>>
->>>> I think this will help supporting vhost-scsi,ivshmem for migration,
->>>> we can trace dirty page in userspace.
->>>>
->>>> Actually, i'm trying to relize live memory snapshot based on pre-copy and userfault,
->>>> but reading memory from migration thread will also trigger userfault.
->>>> It will be easy to implement live memory snapshot, if we support configuring
->>>> userfault for writing memory only.
->>>
->>> Mail is going to be long enough already so I'll just assume tracking
->>> dirty memory in userland (instead of doing it in kernel) is worthy
->>> feature to have here.
->>>
->>> After some chat during the KVMForum I've been already thinking it
->>> could be beneficial for some usage to give userland the information
->>> about the fault being read or write, combined with the ability of
->>> mapping pages wrprotected to mcopy_atomic (that would work without
->>> false positives only with MADV_DONTFORK also set, but it's already set
->>> in qemu). That will require "vma->vm_flags & VM_USERFAULT" to be
->>> checked also in the wrprotect faults, not just in the not present
->>> faults, but it's not a massive change. Returning the read/write
->>> information is also a not massive change. This will then payoff mostly
->>> if there's also a way to remove the memory atomically (kind of
->>> remap_anon_pages).
->>>
->>> Would that be enough? I mean are you still ok if non present read
->>> fault traps too (you'd be notified it's a read) and you get
->>> notification for both wrprotect and non present faults?
->>>
->> Hi Andrea,
->>
->> Thanks for your reply, and your patience;)
->>
->> Er, maybe i didn't describe clearly. What i really need for live memory snapshot
->> is only wrprotect fault, like kvm's dirty tracing mechanism, *only tracing write action*.
->>
->> My initial solution scheme for live memory snapshot is:
->> (1) pause VM
->> (2) using userfaultfd to mark all memory of VM is wrprotect (readonly)
->> (3) save deivce state to snapshot file
->> (4) resume VM
->> (5) snapshot thread begin to save page of memory to snapshot file
->> (6) VM is going to run, and it is OK for VM or other thread to read ram (no fault trap),
->>      but if VM try to write page (dirty the page), there will be
->>      a userfault trap notification.
->> (7) a fault-handle-thread reads the page request from userfaultfd,
->>      it will copy content of the page to some buffers, and then remove the page's
->>      wrprotect limit(still using the userfaultfd to tell kernel).
->> (8) after step (7), VM can continue to write the page which is now can be write.
->> (9) snapshot thread save the page cached in step (7)
->> (10) repeat step (5)~(9) until all VM's memory is saved to snapshot file.
->
-> Hmm, I can see the same process being useful for the fault-tolerance schemes
-> like COLO, it needs a memory state snapshot.
->
->> So, what i need for userfault is supporting only wrprotect fault. i don't
->> want to get notification for non present reading faults, it will influence
->> VM's performance and the efficiency of doing snapshot.
->
-> What pages would be non-present at this point - just balloon?
->
+On 14/10/30, Paul Moore wrote:
+> On Friday, September 19, 2014 11:41:15 AM Richard Guy Briggs wrote:
+> > When task->comm is passed directly to audit_log_untrustedstring() without
+> > getting a copy or using the task_lock, there is a race that could happen
+> > that would output a NULL (\0) in the output string that would effectively
+> > truncate the rest of the report text after the comm= field in the audit,
+> > losing fields.
+> > 
+> > Use get_task_comm() to get a copy while acquiring the task_lock to prevent
+> > this and to prevent the result from being a mixture of old and new values of
+> > comm.
+> > 
+> > Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> 
+> The above is a bit odd ... is that a "Signed-off-by:" from Tetsuo Handa or a 
+> "From:"?
 
-Er, sorry, it should be 'no-present page faults';)
+That was a "Signed-off-by:" that's likely my fault when manually
+importing Tetsuo's oddly-formed patch email.
 
-> Dave
->
->> Also, i think this feature will benefit for migration of ivshmem and vhost-scsi
->> which have no dirty-page-tracing now.
->>
->>> The question then is how you mark the memory readonly to let the
->>> wrprotect faults trap if the memory already existed and you didn't map
->>> it yourself in the guest with mcopy_atomic with a readonly flag.
->>>
->>> My current plan would be:
->>>
->>> - keep MADV_USERFAULT|NOUSERFAULT just to set VM_USERFAULT for the
->>>    fast path check in the not-present and wrprotect page fault
->>>
->>> - if VM_USERFAULT is set, find if there's a userfaultfd registered
->>>    into that vma too
->>>
->>>      if yes engage userfaultfd protocol
->>>
->>>      otherwise raise SIGBUS (single threaded apps should be fine with
->>>      SIGBUS and it'll avoid them to spawn a thread in order to talk the
->>>      userfaultfd protocol)
->>>
->>> - if userfaultfd protocol is engaged, return read|write fault + fault
->>>    address to read(ufd) syscalls
->>>
->>> - leave the "userfault" resolution mechanism independent of the
->>>    userfaultfd protocol so we keep the two problems separated and we
->>>    don't mix them in the same API which makes it even harder to
->>>    finalize it.
->>>
->>>      add mcopy_atomic (with a flag to map the page readonly too)
->>>
->>>      The alternative would be to hide mcopy_atomic (and even
->>>      remap_anon_pages in order to "remove" the memory atomically for
->>>      the externalization into the cloud) as userfaultfd commands to
->>>      write into the fd. But then there would be no much point to keep
->>>      MADV_USERFAULT around if I do so and I could just remove it
->>>      too or it doesn't look clean having to open the userfaultfd just
->>>      to issue an hidden mcopy_atomic.
->>>
->>>      So it becomes a decision if the basic SIGBUS mode for single
->>>      threaded apps should be supported or not. As long as we support
->>>      SIGBUS too and we don't force to use userfaultfd as the only
->>>      mechanism to be notified about userfaults, having a separate
->>>      mcopy_atomic syscall sounds cleaner.
->>>
->>>      Perhaps mcopy_atomic could be used in other cases that may arise
->>>      later that may not be connected with the userfault.
->>>
->>> Questions to double check the above plan is ok:
->>>
->>> 1) should I drop the SIGBUS behavior and MADV_USERFAULT?
->>>
->>> 2) should I hide mcopy_atomic as a write into the userfaultfd?
->>>
->>>     NOTE: even if I hide mcopy_atomic as a userfaultfd command to write
->>>     into the fd, the buffer pointer passed to write() syscall would
->>>     still _not_ be pointing to the data like a regular write, but it
->>>     would be a pointer to a command structure that points to the source
->>>     and destination data of the "hidden" mcopy_atomic, the only
->>>     advantage is that perhaps I could wakeup the blocked page faults
->>>     without requiring an additional syscall.
->>>
->>>     The standalone mcopy_atomic would still require a write into the
->>>     userfaultfd as it happens now after remap_anon_pages returns, in
->>>     order to wakeup the stopped page faults.
->>>
->>> 3) should I add a registration command to trap only write faults?
->>>
->>
->> Sure, that is what i really need;)
->>
->>
->> Best Regards???
->> zhanghailiang
->>
->>>     The protocol can always be extended later anyway in a backwards
->>>     compatible way but it's better if we get it fully featured from the
->>>     start.
->>>
->>> For completeness, some answers for other questions I've seen floating
->>> around but that weren't posted on the list yet (you can skip reading
->>> the below part if not interested):
->>>
->>> - open("/dev/userfault") instead of sys_userfaultfd(), I don't see the
->>>    benefit: userfaultfd is just like eventfd in terms of kernel API and
->>>    registering a /dev/ device actually sounds trickier. userfault is a
->>>    core VM feature and generally we prefer syscalls for core VM
->>>    features instead of running ioctl on some chardev that may or may
->>>    not exist. (like we did with /dev/ksm -> MADV_MERGEABLE)
->>>
->>> - there was a suggestion during KVMForum about allowing an external
->>>    program to attach to any MM. Like ptrace. So you could have a single
->>>    process managing all userfaults for different processes. However
->>>    because I cannot allow multiple userfaultfd to register into the
->>>    same range, this doesn't look very reliable (ptrace is kind of an
->>>    optional/debug feature while if userfault goes wrong and returns
->>>    -EBUSY things go bad) and there may be other complications. If I'd
->>>    allow multiple userfaultfd to register into the same range, I
->>>    wouldn't even know who to deliver the userfault to. It is an erratic
->>>    behavior. Currently it'd return -EBUSY if the app has a bug and does
->>>    that, but maybe later this can be relaxed to allow higher
->>>    scalability with a flag (userfaultfd gets flags as parameters), but
->>>    it still would need to be the same logic that manages userfaults and
->>>    the only point of allowing multiple ufd to map the same range would
->>>    be SMP scalability. So I tend to see the userfaultfd as a MM local
->>>    thing. The thread managing the userfaults can still talk with
->>>    another process in the local machine using pipes or sockets if it
->>>    needs to.
->>>
->>> - the userfaultfd protocol version handshake was done this way because
->>>    it looked more reliable.
->>>
->>>    Of course we could pass the version of the protocol as parameter to
->>>    userfaultfd too, but running the syscall multiple times until
->>>    -EPROTO didn't return anymore doesn't seem any better than writing
->>>    into the fd the wanted protocol until you read it back instead of
->>>    -1ULL. It just looked more reliable not having to run the syscall
->>>    again and again while depending on -EPROTO or some other
->>>    -Esomething.
->>>
->>> Thanks,
->>> Andrea
->>>
->>> .
->>>
->>
->>
-> --
-> Dr. David Alan Gilbert / dgilbert@redhat.com / Manchester, UK
->
-> .
->
+> > ---
+> > I've manually checked for locking issues and found none.  I've also enabled
+> > all the kernel lock debugging options and it came up clean.
+> > 
+> >  security/lsm_audit.c |    5 +++--
+> >  1 files changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/security/lsm_audit.c b/security/lsm_audit.c
+> > index 69fdf3b..4773b91 100644
+> > --- a/security/lsm_audit.c
+> > +++ b/security/lsm_audit.c
+> > @@ -212,6 +212,7 @@ static void dump_common_audit_data(struct audit_buffer
+> > *ab, struct common_audit_data *a)
+> >  {
+> >  	struct task_struct *tsk = current;
+> > +	char comm[sizeof(tsk->comm)];
+> 
+> This makes me a bit nervous for a potential race condition between allocation 
+> and use below.  How about using TASK_COMM_LEN instead?
 
+I don't have a strong opinion.  Both should work since tsk->comm is
+defined as "char comm[TASK_COMM_LEN];" in struct task_struct.
+
+> >  	/*
+> >  	 * To keep stack sizes in check force programers to notice if they
+> > @@ -221,7 +222,7 @@ static void dump_common_audit_data(struct audit_buffer
+> > *ab, BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
+> > 
+> >  	audit_log_format(ab, " pid=%d comm=", task_pid_nr(tsk));
+> > -	audit_log_untrustedstring(ab, tsk->comm);
+> > +	audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
+> > 
+> >  	switch (a->type) {
+> >  	case LSM_AUDIT_DATA_NONE:
+> > @@ -282,7 +283,7 @@ static void dump_common_audit_data(struct audit_buffer
+> > *ab, pid_t pid = task_pid_nr(tsk);
+> >  			if (pid) {
+> >  				audit_log_format(ab, " pid=%d comm=", pid);
+> > -				audit_log_untrustedstring(ab, tsk->comm);
+> > +				audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
+> >  			}
+> >  		}
+> >  		break;
+> 
+> paul moore
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
