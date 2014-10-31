@@ -1,43 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251AbaJaRKj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 13:10:39 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:52991 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634AbaJaRKi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 13:10:38 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Fri, 31 Oct 2014 13:10:36 -0400
-To: Heiko Schocher <hs@denx.de>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        mugunthanvnm@ti.com, netdev@vger.kernel.org
-Subject: Re: Mistake in commit 0d961b3b52f566f823070ce2366511a7f64b928c
- breaks cpsw non dual_emac mode.
-Message-ID: <20141031171035.GI24110@csclub.uwaterloo.ca>
-References: <20141028170242.GA24112@csclub.uwaterloo.ca>
- <20141030.154323.1702996635200338108.davem@davemloft.net>
- <545330EA.60303@denx.de>
+	id S1754579AbaJaRNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 13:13:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750797AbaJaRNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 13:13:09 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH] driver core: Fix unbalanced device reference in drivers_probe
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Date: Fri, 31 Oct 2014 11:13:07 -0600
+Message-ID: <20141031171223.14088.79944.stgit@gimli.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545330EA.60303@denx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 07:49:14AM +0100, Heiko Schocher wrote:
-> Seems I missed your original patch ... looked in it here:
-> 
-> https://lkml.org/lkml/2014/10/28/837
-> 
-> and I think you are correct, thanks for this fix. You can add my
-> Acked-by: Heiko Schocher <hs@denx.de>
-> if you post a corrected v2, as David suggested.
+bus_find_device_by_name() acquires a device reference which is never
+released.  This results in an object leak, which on older kernels
+results in failure to release all resources of PCI devices.  libvirt
+uses drivers_probe to re-attach devices to the host after assignment
+and is therefore a common trigger for this leak.
 
-Will do.  I noticed a wrong word in one of the messages too so good
-thing it gets fixed before getting commited.
+Example:
 
--- 
-Len Sorensen
+# cd /sys/bus/pci/
+# dmesg -C
+# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
+# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
+# dmesg | grep 01:10
+ pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_cleanup, parent           (null)
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): calling ktype release
+ kobject: '0000:01:10.0': free name
+
+[kobject freed as expected]
+
+# dmesg -C
+# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
+# echo 0000:01:10.0 > drivers_probe
+# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
+# dmesg | grep 01:10
+ pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+
+[no free]
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: stable@vger.kernel.org
+---
+
+ drivers/base/bus.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 83e910a5..876bae5 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -254,13 +254,15 @@ static ssize_t store_drivers_probe(struct bus_type *bus,
+ 				   const char *buf, size_t count)
+ {
+ 	struct device *dev;
++	int err = -EINVAL;
+ 
+ 	dev = bus_find_device_by_name(bus, NULL, buf);
+ 	if (!dev)
+ 		return -ENODEV;
+-	if (bus_rescan_devices_helper(dev, NULL) != 0)
+-		return -EINVAL;
+-	return count;
++	if (bus_rescan_devices_helper(dev, NULL) == 0)
++		err = count;
++	put_device(dev);
++	return err;
+ }
+ 
+ static struct device *next_device(struct klist_iter *i)
+
