@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759835AbaJaGEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 02:04:34 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:60880 "EHLO
+	id S1758670AbaJaGEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 02:04:30 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:60878 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002AbaJaGEb (ORCPT
+	with ESMTP id S1753002AbaJaGE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 02:04:31 -0400
+	Fri, 31 Oct 2014 02:04:28 -0400
 Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9V64Rs5011182, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9V64Npf010671, This message is accepted by code: ctloc85258
 From: Hayes Wang <hayeswang@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 2/3] r8152: clear the flag of SCHEDULE_TASKLET in tasklet
-Date: Fri, 31 Oct 2014 14:03:55 +0800
-Message-ID: <1394712342-15778-77-Taiwan-albertk@realtek.com>
+Subject: [PATCH net-next 0/3] Code adjustment
+Date: Fri, 31 Oct 2014 14:03:53 +0800
+Message-ID: <1394712342-15778-75-Taiwan-albertk@realtek.com>
 X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-75-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-75-Taiwan-albertk@realtek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.21.71.44]
@@ -26,28 +24,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clear the flag of SCHEDULE_TASKLET in bottom_half() to avoid
-re-schedule the tasklet again by workqueue.
+Adjust some codes to make them more reasonable.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 3 +++
- 1 file changed, 3 insertions(+)
+Hayes Wang (3):
+  r8152: remove the duplicate the init for the list of rx_done
+  r8152: clear the flag of SCHEDULE_TASKLET in tasklet
+  r8152: check RTL8152_UNPLUG and netif_running before autoresume
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index ff54098..670279a 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1798,6 +1798,9 @@ static void bottom_half(unsigned long data)
- 	if (!netif_carrier_ok(tp->netdev))
- 		return;
- 
-+	if (test_bit(SCHEDULE_TASKLET, &tp->flags))
-+		clear_bit(SCHEDULE_TASKLET, &tp->flags);
-+
- 	rx_bottom(tp);
- 	tx_bottom(tp);
- }
+ drivers/net/usb/r8152.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
 -- 
 1.9.3
 
