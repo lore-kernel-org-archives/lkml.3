@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422887AbaJaCOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 22:14:37 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:28609 "EHLO
+	id S1422870AbaJaCOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 22:14:36 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:17919 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161690AbaJaCMP (ORCPT
+	by vger.kernel.org with ESMTP id S1161694AbaJaCMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Oct 2014 22:12:15 -0400
 From: Chao Xie <chao.xie@marvell.com>
@@ -12,9 +12,9 @@ To: <haojian.zhuang@gmail.com>, <haojian.zhuang@linaro.org>,
         <mturquette@linaro.org>, <chao.xie@marvell.com>,
         <xiechao_mail@163.com>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2 08/13] clk: mmp: add reset support
-Date: Fri, 31 Oct 2014 10:13:48 +0800
-Message-ID: <1414721633-29508-9-git-send-email-chao.xie@marvell.com>
+Subject: [PATCH V2 06/13] clk: mmp: add mmp private gate clock
+Date: Fri, 31 Oct 2014 10:13:46 +0800
+Message-ID: <1414721633-29508-7-git-send-email-chao.xie@marvell.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1414721633-29508-1-git-send-email-chao.xie@marvell.com>
 References: <1414721633-29508-1-git-send-email-chao.xie@marvell.com>
@@ -31,175 +31,206 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chao Xie <chao.xie@marvell.com>
 
-Some clock control regsiter has bit to reset the cotroller.
-So before enable the clock, we need deassert the reset pin.
-Make use of reset controller framework to export reset interface
-for device drivers, then device driver can control the reset action.
+Some SOCes have this kind of the gate clock
+1. There are some bits to control the gate not only one bit.
+2. It is not always that "1" is to enable while "0" is to disable
+   when write register.
+
+So we have to define the "mask", "enable_val", "disable_val" for
+this kind of gate clock.
 
 Signed-off-by: Chao Xie <chao.xie@marvell.com>
 ---
- drivers/clk/mmp/Makefile |  2 +
- drivers/clk/mmp/reset.c  | 99 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/mmp/reset.h  | 31 +++++++++++++++
- 3 files changed, 132 insertions(+)
- create mode 100644 drivers/clk/mmp/reset.c
- create mode 100644 drivers/clk/mmp/reset.h
+ drivers/clk/mmp/Makefile   |   2 +-
+ drivers/clk/mmp/clk-gate.c | 133 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/mmp/clk.h      |  21 +++++++
+ 3 files changed, 155 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/mmp/clk-gate.c
 
 diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
-index 32b5b90..2573d7c 100644
+index 8bfee860..2855f7b 100644
 --- a/drivers/clk/mmp/Makefile
 +++ b/drivers/clk/mmp/Makefile
-@@ -4,6 +4,8 @@
+@@ -2,7 +2,7 @@
+ # Makefile for mmp specific clk
+ #
  
- obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o clk-gate.o clk.o
+-obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o
++obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o clk-gate.o
  
-+obj-$(CONFIG_RESET_CONTROLLER) += reset.o
-+
  obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
  obj-$(CONFIG_CPU_PXA910) += clk-pxa910.o
- obj-$(CONFIG_CPU_MMP2) += clk-mmp2.o
-diff --git a/drivers/clk/mmp/reset.c b/drivers/clk/mmp/reset.c
+diff --git a/drivers/clk/mmp/clk-gate.c b/drivers/clk/mmp/clk-gate.c
 new file mode 100644
-index 0000000..b54da1f
+index 0000000..adbd9d6
 --- /dev/null
-+++ b/drivers/clk/mmp/reset.c
-@@ -0,0 +1,99 @@
++++ b/drivers/clk/mmp/clk-gate.c
+@@ -0,0 +1,133 @@
++/*
++ * mmp gate clock operation source file
++ *
++ * Copyright (C) 2014 Marvell
++ * Chao Xie <chao.xie@marvell.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk-provider.h>
 +#include <linux/slab.h>
 +#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/reset-controller.h>
++#include <linux/err.h>
++#include <linux/delay.h>
 +
-+#include "reset.h"
++#include "clk.h"
 +
-+#define rcdev_to_unit(rcdev) container_of(rcdev, struct mmp_clk_reset_unit, rcdev)
++/*
++ * Some clocks will have mutiple bits to enable the clocks, and
++ * the bits to disable the clock is not same as enabling bits.
++ */
 +
-+static int mmp_of_reset_xlate(struct reset_controller_dev *rcdev,
-+			  const struct of_phandle_args *reset_spec)
++#define to_clk_mmp_gate(hw)	container_of(hw, struct mmp_clk_gate, hw)
++
++static int mmp_clk_gate_enable(struct clk_hw *hw)
 +{
-+	struct mmp_clk_reset_unit *unit = rcdev_to_unit(rcdev);
-+	struct mmp_clk_reset_cell *cell;
-+	int i;
++	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
++	struct clk *clk = hw->clk;
++	unsigned long flags = 0;
++	unsigned long rate;
++	u32 tmp;
 +
-+	if (WARN_ON(reset_spec->args_count != rcdev->of_reset_n_cells))
-+		return -EINVAL;
++	if (gate->lock)
++		spin_lock_irqsave(gate->lock, flags);
 +
-+	for (i = 0; i < rcdev->nr_resets; i++) {
-+		cell = &unit->cells[i];
-+		if (cell->clk_id == reset_spec->args[0])
-+			break;
++	tmp = readl(gate->reg);
++	tmp &= ~gate->mask;
++	tmp |= gate->val_enable;
++	writel(tmp, gate->reg);
++
++	if (gate->lock)
++		spin_unlock_irqrestore(gate->lock, flags);
++
++	if (gate->flags & MMP_CLK_GATE_NEED_DELAY) {
++		rate = __clk_get_rate(clk);
++		/* Need delay 2 cycles. */
++		udelay(2000000/rate);
 +	}
 +
-+	if (i == rcdev->nr_resets)
-+		return -EINVAL;
-+
-+	return i;
-+}
-+
-+static int mmp_clk_reset_assert(struct reset_controller_dev *rcdev,
-+				unsigned long id)
-+{
-+	struct mmp_clk_reset_unit *unit = rcdev_to_unit(rcdev);
-+	struct mmp_clk_reset_cell *cell;
-+	unsigned long flags = 0;
-+	u32 val;
-+
-+	cell = &unit->cells[id];
-+	if (cell->lock)
-+		spin_lock_irqsave(cell->lock, flags);
-+
-+	val = readl(cell->reg);
-+	val |= cell->bits;
-+	writel(val, cell->reg);
-+
-+	if (cell->lock)
-+		spin_unlock_irqrestore(cell->lock, flags);
-+
 +	return 0;
 +}
 +
-+static int mmp_clk_reset_deassert(struct reset_controller_dev *rcdev,
-+				unsigned long id)
++static void mmp_clk_gate_disable(struct clk_hw *hw)
 +{
-+	struct mmp_clk_reset_unit *unit = rcdev_to_unit(rcdev);
-+	struct mmp_clk_reset_cell *cell;
++	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
 +	unsigned long flags = 0;
-+	u32 val;
++	u32 tmp;
 +
-+	cell = &unit->cells[id];
-+	if (cell->lock)
-+		spin_lock_irqsave(cell->lock, flags);
++	if (gate->lock)
++		spin_lock_irqsave(gate->lock, flags);
 +
-+	val = readl(cell->reg);
-+	val &= ~cell->bits;
-+	writel(val, cell->reg);
++	tmp = readl(gate->reg);
++	tmp &= ~gate->mask;
++	tmp |= gate->val_disable;
++	writel(tmp, gate->reg);
 +
-+	if (cell->lock)
-+		spin_unlock_irqrestore(cell->lock, flags);
-+
-+	return 0;
++	if (gate->lock)
++		spin_unlock_irqrestore(gate->lock, flags);
 +}
 +
-+static struct reset_control_ops mmp_clk_reset_ops = {
-+	.assert		= mmp_clk_reset_assert,
-+	.deassert	= mmp_clk_reset_deassert,
++static int mmp_clk_gate_is_enabled(struct clk_hw *hw)
++{
++	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
++	unsigned long flags = 0;
++	u32 tmp;
++
++	if (gate->lock)
++		spin_lock_irqsave(gate->lock, flags);
++
++	tmp = readl(gate->reg);
++
++	if (gate->lock)
++		spin_unlock_irqrestore(gate->lock, flags);
++
++	return (tmp & gate->mask) == gate->val_enable;
++}
++
++const struct clk_ops mmp_clk_gate_ops = {
++	.enable = mmp_clk_gate_enable,
++	.disable = mmp_clk_gate_disable,
++	.is_enabled = mmp_clk_gate_is_enabled,
 +};
 +
-+void mmp_clk_reset_register(struct device_node *np,
-+			struct mmp_clk_reset_cell *cells, int nr_resets)
++struct clk *mmp_clk_register_gate(struct device *dev, const char *name,
++		const char *parent_name, unsigned long flags,
++		void __iomem *reg, u32 mask, u32 val_enable, u32 val_disable,
++		unsigned int gate_flags, spinlock_t *lock)
 +{
-+	struct mmp_clk_reset_unit *unit;
++	struct mmp_clk_gate *gate;
++	struct clk *clk;
++	struct clk_init_data init;
 +
-+	unit = kzalloc(sizeof(*unit), GFP_KERNEL);
-+	if (!unit)
-+		return;
++	/* allocate the gate */
++	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
++	if (!gate) {
++		pr_err("%s:%s could not allocate gate clk\n", __func__, name);
++		return ERR_PTR(-ENOMEM);
++	}
 +
-+	unit->cells = cells;
-+	unit->rcdev.of_reset_n_cells = 1;
-+	unit->rcdev.nr_resets = nr_resets;
-+	unit->rcdev.ops = &mmp_clk_reset_ops;
-+	unit->rcdev.of_node = np;
-+	unit->rcdev.of_xlate = mmp_of_reset_xlate;
++	init.name = name;
++	init.ops = &mmp_clk_gate_ops;
++	init.flags = flags | CLK_IS_BASIC;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
 +
-+	reset_controller_register(&unit->rcdev);
++	/* struct clk_gate assignments */
++	gate->reg = reg;
++	gate->mask = mask;
++	gate->val_enable = val_enable;
++	gate->val_disable = val_disable;
++	gate->flags = gate_flags;
++	gate->lock = lock;
++	gate->hw.init = &init;
++
++	clk = clk_register(dev, &gate->hw);
++
++	if (IS_ERR(clk))
++		kfree(gate);
++
++	return clk;
 +}
-diff --git a/drivers/clk/mmp/reset.h b/drivers/clk/mmp/reset.h
-new file mode 100644
-index 0000000..be8b1a7
---- /dev/null
-+++ b/drivers/clk/mmp/reset.h
-@@ -0,0 +1,31 @@
-+#ifndef __MACH_MMP_CLK_RESET_H
-+#define __MACH_MMP_CLK_RESET_H
+diff --git a/drivers/clk/mmp/clk.h b/drivers/clk/mmp/clk.h
+index 26b2469..2337106 100644
+--- a/drivers/clk/mmp/clk.h
++++ b/drivers/clk/mmp/clk.h
+@@ -103,6 +103,27 @@ extern struct clk *mmp_clk_register_mix(struct device *dev,
+ 					spinlock_t *lock);
+ 
+ 
++/* Clock type "gate". MMP private gate */
++#define MMP_CLK_GATE_NEED_DELAY		BIT(0)
 +
-+#include <linux/reset-controller.h>
-+
-+#define MMP_RESET_INVERT	1
-+
-+struct mmp_clk_reset_cell {
-+	unsigned int clk_id;
++struct mmp_clk_gate {
++	struct clk_hw hw;
 +	void __iomem *reg;
-+	u32 bits;
++	u32 mask;
++	u32 val_enable;
++	u32 val_disable;
 +	unsigned int flags;
 +	spinlock_t *lock;
 +};
 +
-+struct mmp_clk_reset_unit {
-+	struct reset_controller_dev rcdev;
-+	struct mmp_clk_reset_cell *cells;
-+};
++extern const struct clk_ops mmp_clk_gate_ops;
++extern struct clk *mmp_clk_register_gate(struct device *dev, const char *name,
++			const char *parent_name, unsigned long flags,
++			void __iomem *reg, u32 mask, u32 val_enable,
++			u32 val_disable, unsigned int gate_flags,
++			spinlock_t *lock);
 +
-+#ifdef CONFIG_RESET_CONTROLLER
-+void mmp_clk_reset_register(struct device_node *np,
-+			struct mmp_clk_reset_cell *cells, int nr_resets);
-+#else
-+static inline void mmp_clk_reset_register(struct device_node *np,
-+			struct mmp_clk_reset_cell *cells, int nr_resets)
-+{
-+}
-+#endif
 +
-+#endif
+ extern struct clk *mmp_clk_register_pll2(const char *name,
+ 		const char *parent_name, unsigned long flags);
+ extern struct clk *mmp_clk_register_apbc(const char *name,
 -- 
 1.8.3.2
 
