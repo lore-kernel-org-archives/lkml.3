@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333AbaJaQUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 12:20:55 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:60757 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703AbaJaQUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 12:20:54 -0400
-Date: Fri, 31 Oct 2014 09:20:37 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Vivek Goyal <vgoyal@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Junjie Mao <eternal.n08@gmail.com>
-Subject: [PATCH] x86, boot: add hex output for debugging
-Message-ID: <20141031162037.GA26233@www.outflux.net>
+	id S1757125AbaJaQV3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 12:21:29 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:59322 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753606AbaJaQV2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 12:21:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <1413908845-11526-1-git-send-email-matthias.bgg@gmail.com>
+References: <1413908845-11526-1-git-send-email-matthias.bgg@gmail.com>
+Date: Fri, 31 Oct 2014 17:21:26 +0100
+Message-ID: <CABuKBeJNqTvf=t7tN4CWN4RLKvqQihxC9Ysk3OD6Ow6+2A+Q1w@mail.gmail.com>
+Subject: Re: [PATCH] of: Request and map make argument name constant
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is useful for reporting various addresses or other values while
-debugging early boot.
+Hi all,
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- arch/x86/boot/compressed/misc.c | 19 +++++++++++++++++++
- arch/x86/boot/compressed/misc.h |  5 +++++
- 2 files changed, 24 insertions(+)
+2014-10-21 18:27 GMT+02:00 Matthias Brugger <matthias.bgg@gmail.com>:
+> This patch makes the name argument from of_io_request_and_map constant.
 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 30dd59a9f0b4..1b105664f720 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -220,6 +220,25 @@ void __putstr(const char *s)
- 	outb(0xff & (pos >> 1), vidport+1);
- }
- 
-+void __puthex(unsigned long value)
-+{
-+	char alpha[2] = "0";
-+	int bits;
-+	unsigned char byte;
-+
-+	__putstr("0x");
-+	for (bits = sizeof(value) * 8 - 4; bits >= 0; bits -= 4) {
-+		unsigned long digit = (value >> bits) & 0xf;
-+
-+		if (digit < 0xA)
-+			alpha[0] = '0' + digit;
-+		else
-+			alpha[0] = 'a' + (digit - 0xA);
-+
-+		__putstr(alpha);
-+	}
-+}
-+
- static void error(char *x)
- {
- 	error_putstr("\n\n");
-diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
-index 24e3e569a13c..6056d339fb17 100644
---- a/arch/x86/boot/compressed/misc.h
-+++ b/arch/x86/boot/compressed/misc.h
-@@ -34,16 +34,21 @@ extern memptr free_mem_ptr;
- extern memptr free_mem_end_ptr;
- extern struct boot_params *real_mode;		/* Pointer to real-mode data */
- void __putstr(const char *s);
-+void __puthex(unsigned long value);
- #define error_putstr(__x)  __putstr(__x)
-+#define error_puthex(__x)  __puthex(__x)
- 
- #ifdef CONFIG_X86_VERBOSE_BOOTUP
- 
- #define debug_putstr(__x)  __putstr(__x)
-+#define debug_puthex(__x)  __puthex(__x)
- 
- #else
- 
- static inline void debug_putstr(const char *s)
- { }
-+static inline void debug_puthex(const char *s)
-+{ }
- 
- #endif
- 
--- 
-1.9.1
+Any comments on this patch?
+
+Thanks,
+Matthias
+
+>
+> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+> ---
+>  drivers/of/address.c       | 2 +-
+>  include/linux/of_address.h | 4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index afdb782..e02828f 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -871,7 +871,7 @@ EXPORT_SYMBOL(of_iomap);
+>   *             return PTR_ERR(base);
+>   */
+>  void __iomem *of_io_request_and_map(struct device_node *np, int index,
+> -                                       char *name)
+> +                                       const char *name)
+>  {
+>         struct resource res;
+>         void __iomem *mem;
+> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+> index 8cb14eb..d88e81b 100644
+> --- a/include/linux/of_address.h
+> +++ b/include/linux/of_address.h
+> @@ -106,7 +106,7 @@ extern int of_address_to_resource(struct device_node *dev, int index,
+>                                   struct resource *r);
+>  void __iomem *of_iomap(struct device_node *node, int index);
+>  void __iomem *of_io_request_and_map(struct device_node *device,
+> -                                       int index, char *name);
+> +                                       int index, const char *name);
+>  #else
+>
+>  #include <linux/io.h>
+> @@ -123,7 +123,7 @@ static inline void __iomem *of_iomap(struct device_node *device, int index)
+>  }
+>
+>  static inline void __iomem *of_io_request_and_map(struct device_node *device,
+> -                                       int index, char *name)
+> +                                       int index, const char *name)
+>  {
+>         return IOMEM_ERR_PTR(-EINVAL);
+>  }
+> --
+> 1.9.1
+>
+
 
 
 -- 
-Kees Cook
-Chrome OS Security
+motzblog.wordpress.com
