@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932831AbaJaUQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:16:41 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36289 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757338AbaJaUQj (ORCPT
+	id S1759318AbaJaURQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:17:16 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43277 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457AbaJaURO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:16:39 -0400
-Date: Fri, 31 Oct 2014 13:16:34 -0700
-From: josh@joshtriplett.org
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Junjie Mao <eternal.n08@gmail.com>
-Subject: Re: [PATCH] x86, boot: document intermediates more clearly
-Message-ID: <20141031201634.GA32605@cloud>
-References: <20141031162204.GA26268@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141031162204.GA26268@www.outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 31 Oct 2014 16:17:14 -0400
+Date: Fri, 31 Oct 2014 16:17:12 -0400 (EDT)
+Message-Id: <20141031.161712.591711555593004517.davem@davemloft.net>
+To: lsorense@csclub.uwaterloo.ca
+Cc: linux-kernel@vger.kernel.org, hs@denx.de, mugunthanvnm@ti.com,
+        netdev@vger.kernel.org
+Subject: Re: drivers: net: cpsw: Fix broken loop condition in switch mode
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141031172854.GJ24110@csclub.uwaterloo.ca>
+References: <20141031172854.GJ24110@csclub.uwaterloo.ca>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 31 Oct 2014 13:17:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 09:22:04AM -0700, Kees Cook wrote:
-> This adds a comment detailing the various intermediate files used to build
-> the bootable decompression image for the x86 kernel.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Fri, 31 Oct 2014 13:28:54 -0400
 
-Definitely the documentation I wish I had long ago when trying to figure
-out the twisty maze of binaries.
+> 0d961b3b52f566f823070ce2366511a7f64b928c (drivers: net: cpsw: fix buggy
+> loop condition) accidentally fixed a loop comparison in too many places
+> while fixing a real bug.
+> 
+> It was correct to fix the dual_emac mode section since there 'i' is used
+> as an index into priv->slaves which is a 0 based array.
+> 
+> However the other two changes (which are only used in switch mode)
+> are wrong since there 'i' is actually the ALE port number, and port 0
+> is the host port, while port 1 and up are the slave ports.
+> 
+> Putting the loop condition back in the switch mode section fixes it.
+> 
+> A comment has been added to point out the intent clearly to avoid future
+> confusion.  Also a comment is fixed that said the opposite of what was
+> actually happening.
+> 
+> Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+> Acked-by: Heiko Schocher <hs@denx.de>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  arch/x86/boot/compressed/Makefile | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-> index be1e07d4b596..44a866b85c6f 100644
-> --- a/arch/x86/boot/compressed/Makefile
-> +++ b/arch/x86/boot/compressed/Makefile
-> @@ -3,6 +3,18 @@
->  #
->  # create a compressed vmlinux image from the original vmlinux
->  #
-> +# vmlinuz is:
-> +#	decompression code (*.o)
-> +#	asm globals (piggy.S), including:
-> +#		vmlinux.bin.(gz|bz2|lzma|...)
-> +#
-> +# vmlinux.bin is:
-> +#	vmlinux stripped of debugging and comments
-> +# vmlinux.bin.all is:
-> +#	vmlinux.bin + vmlinux.relocs
-> +# vmlinux.bin.(gz|bz2|lzma|...) is:
-> +#	(see scripts/Makefile.lib size_append)
-> +#	compressed vmlinux.bin.all + u32 size of vmlinux.bin.all
->  
->  targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
->  	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
-> -- 
-> 1.9.1
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
+Applied.
