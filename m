@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759319AbaJaUeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:34:05 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:61127 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759227AbaJaUeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:34:03 -0400
+	id S1758778AbaJaUgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:36:00 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56428 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751981AbaJaUf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 16:35:58 -0400
+Date: Fri, 31 Oct 2014 21:35:54 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Juergen Gross <jgross@suse.com>, hpa@zytor.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, stefan.bader@canonical.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Subject: Re: [PATCH 01/17] x86: Make page cache mode a real type
+Message-ID: <20141031203554.GA15363@pd.tnic>
+References: <1414764033-30011-1-git-send-email-jgross@suse.com>
+ <1414764033-30011-2-git-send-email-jgross@suse.com>
+ <20141031194207.GA15367@pd.tnic>
+ <20141031202322.GB15935@laptop.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <1414786943.3014.37.camel@jlt4.sipsolutions.net>
-References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
- <1414570902-5675-2-git-send-email-mcgrof@do-not-panic.com>
- <1414741273.3014.3.camel@jlt4.sipsolutions.net> <20141031193408.GA12953@wotan.suse.de>
- <1414786943.3014.37.camel@jlt4.sipsolutions.net>
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Fri, 31 Oct 2014 13:33:40 -0700
-X-Google-Sender-Auth: lZ5SvgKLlcqFNGewLCsm8EBHKBE
-Message-ID: <CAB=NE6UVca47FyZv54pED3C_1go+-Ra_AbSwW1+=Gj5YWP0GHw@mail.gmail.com>
-Subject: Re: [RFC v2 1/4] backports: replace CPTCFG prefix for CONFIG_BACKPORT
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Michal Marek <mmarek@suse.cz>, Stefan Assmann <sassmann@kpanic.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141031202322.GB15935@laptop.dumpdata.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 1:22 PM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> On Fri, 2014-10-31 at 20:34 +0100, Luis R. Rodriguez wrote:
->
->> > Please make this a post-process step that runs on everything, including
->> > the backport stuff, rather than running only on the source and assuming
->> > the backport stuff already uses this convention.
->>
->> I want to but lets consider the amount of work to maintain the two
->> separate approaches, is it worth it?
->
-> I don't see why it'd be maintaining two approaches? Right now we have
-> scripting to replace CONFIG_ with CPTCFG_, so couldn't we just add more
-> scripting to replace CPTCFG_ with CONFIG_BACKPORT_ ?
+On Fri, Oct 31, 2014 at 04:23:22PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> > > Signed-off-by: Juergen Gross <jgross@suse.com>
+> > 
+> > Just a clarification question: how is one to understand this attribution
+> > here? Is Stefan the original author, was he a reviewer, or? Because this
+> > SOB chain is misleading...
+> 
+> He was the first then Juergen took over. Should the SOB order be inversed?
 
-Hm, OK well let me give it a shot, at compilation time which approach
-are we going to use? I don't like the idea of having two different
-sets of naming approaching for packaging and integration, however I
-can see how that might be useful for determining where some code might
-come from or how backports was used, but other than that we would need
-to pick if we're going to support the integration naming scheme also
-for packaging as an option or just use CPTCFG for it. If the same
-naming scheme is an option then that means we either have to test both
-or leave one untested. This is why I ultimately would prefer we just
-stick to one approach for both.
+Well, I'd say:
 
-The fact that CPTCFG has same length as CONFIG really has no empirical
-value, its just cosmetic, meanwhile I am however more concerned with
-the above and I think its worth some serious consideration.
+Originally-by: Stefan...
 
-> That also makes me think of something else - we currently use BACKPORT_
-> as a prefix for some of the other stuff under compat/Kconfig, and in
-> fact rename some things (like CONFIG_BACKPORT_AVERAGE) so maybe also
-> using CONFIG_BACKPORT_ here isn't a great idea? Might want to use
-> something else, say CONFIG_BPT_ or so.
+or
 
-That's a good point, I take it that it does not matter which one we
-pick for each, so long as its different? If so I think CONFIG_BACKPORT
-is pretty clear for things we carry over like device drivers, but this
-is just subjective and so long as we pick something I think it'll be
-fine.
+Based-on-patch-by: Stefan...
 
-I do believe the harder thing to decide is the above possible
-divergence thing and if we can agree on that I think the rest of the
-series is not as controversial.
+or something like that. For more inspiration, one could do something
+like that:
 
-  Luis
+$ git log | grep -Eio "original.*by:" | sort | uniq
+original bug can be reproduced and the bug fix can be verified by:
+Original-by:
+original by or fixed by:
+Original-code-by:
+Original-coded-by:
+original driver was written by:
+Original i2c code by:
+Original-Idea-and-Signed-off-by:
+Original idea by:
+Original-idea-by:
+originally by:
+Originally by:
+Originally-by:
+originally made by:
+Originally reported by:
+Originally-Reported-by:
+originally submitted by:
+originally written by:
+Original partial fix Signed-off-by:
+original patch authored by:
+original patch by:
+original-patch-by:
+Original patch by:
+Original-patch-by:
+Original-Patch-By:
+Original patches by:
+original-screenplay-by:
+Original-Signed-off-by:
+Original-version-by:
+original work completed by:
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
