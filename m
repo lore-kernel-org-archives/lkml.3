@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759175AbaJaUuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 16:50:39 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:51825 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaJaUui (ORCPT
+	id S1759525AbaJaUvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 16:51:39 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33930 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757338AbaJaUvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 16:50:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: at91: rm9200 add system timer resources to watchdog
-Date: Fri, 31 Oct 2014 21:50:05 +0100
-Message-ID: <3170633.12AsIiHlY5@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414788359-15759-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1414788359-15759-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Fri, 31 Oct 2014 16:51:38 -0400
+X-Sasl-enc: xB+VfBP/D7OcaDtcGRUDNwY6SDUve4gE2T++2pAR0Bn4 1414788697
+Date: Fri, 31 Oct 2014 13:50:24 -0700
+From: Greg KH <greg@kroah.com>
+To: Balavasu <kp.balavasu@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        andreas.dilger@intel.com, oleg.drokin@intel.com
+Subject: Re: [PATCH 1/2] staging: lustre: lnet: lnet: do not initialise
+ statics to 0 or NULL
+Message-ID: <20141031205024.GB20417@kroah.com>
+References: <20141031181808.GA7830@vasu-Inspiron-3542>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:DNcs1BQS59N82dxl4zmamL0fRTHvO+87oVwIzSbNfxa
- TLgJyzVTqXnbEYVLL6jkf0euNo/IpWVOiEcrUfk7SH423NoVzl
- rNKzYe/enAtRJQ5S/4ymOgp+vLOVbGmjnDqgKfG5zCE7GtFU4r
- 6TZQNT8SSSgoFOfybGVKLac4ODICy5ug7PL75dFPTLgTb0vGsL
- b4wH8+ZekFtxT3aArTTIZB3U91WLmayNq18GecoEOzE1t7g/F1
- uO/wii8yBJx/OH1HpC+NcVi5ZvvBdzTQEH0QPp4VhIbdWN9zl6
- sOdGwRupPQpRIYnxOAAO9nKmd/noF5vVOGEZTDwTzKi8k6ScbA
- dI83C4aP2cnjMlgIqeMc=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031181808.GA7830@vasu-Inspiron-3542>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 31 October 2014 21:45:58 Alexandre Belloni wrote:
-> To be able to make the watchdog driver independent from the mach/ includes, pass
-> the system timer register space as a resource.
+On Fri, Oct 31, 2014 at 11:48:08PM +0530, Balavasu wrote:
+> This patch fixes the checkpatch.pl issue
+> Error: do not initialise statics to 0 or NULL for time
 > 
-> Also, change the name to avoid conflicting with the at91sam9 watchdog driver.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> 
+> Signed-off-by: Balavasu <kp.balavasu@gmail.com>
+> ---
+>  drivers/staging/lustre/lnet/lnet/do not instalise 0 | 10 +++++-----
 
-Doing this change as a separate patch breaks bisection because now the device
-name no longer matches untile the other patch is applied too.
+That line doesn't look right, does it?
 
-	Arnd
+And why netdev and not the mailing list for the drivers/staging/ tree?
+
+And again, I need a full name.
+
+greg k-h
