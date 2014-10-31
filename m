@@ -1,104 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933301AbaJaPnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 11:43:51 -0400
-Received: from pindarots.xs4all.nl ([82.161.210.87]:36868 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932570AbaJaPnu (ORCPT
+	id S1753953AbaJaPqO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 11:46:14 -0400
+Received: from smtp107.biz.mail.bf1.yahoo.com ([98.139.244.55]:48376 "EHLO
+	smtp107.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752312AbaJaPqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 11:43:50 -0400
-Message-ID: <5453AE33.8040802@xs4all.nl>
-Date: Fri, 31 Oct 2014 16:43:47 +0100
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 31 Oct 2014 11:46:11 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Oct 2014 11:46:10 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ieryVbEVM1kfYcx2_rpj.DKXGgRP7t3rRMkxa7yjnED1nY2
+ iZiVkFVLF_02pGlxXRTsDysefJ0CfxgEyfJq6jrSdqA6ua1I1cOfEW1JHn6r
+ Nw86WWXP.PcGS_2f3hZkQZNtB_ZM404vu1niWReljKQ_pxS8EISRfVGYA4yX
+ lI.71PzBQpUg7JM0FjzY6MkiM0YUTL6dqX9TdcY3oOxN14Bq5SrI60DD3F8c
+ kv1PblLGLp5QxeKmWn76_z._Hc9PxJ4KlDovlLHn5.qX2ZcyQ2h7oRkjXmbm
+ DDPtC.cgcbfloLtarEcumQqszPaLxvXYkS.PUW_DJSk2oWWhTaX1Sves1cNv
+ aTK.OkkEGTu7law6sWX0wTPxrM2M0fxVWE8oZB5sftjORYNaF4FiCTL1NXbP
+ Pgy7D9YPdvATBc2Qy6t3KMl8Okxi1TUX9x4L4DnxcSVP64bDPR50hWwFeL4Z
+ 7tJLJbEdovI0H.ammQqjQ0fdlzluTQpjbp2MBFlF9u0lgzoo6WxCbVwXIHuj
+ Pn7NffJCpVKOKjv6k7NCGy1QsBxB1jiLntrGnwFRhkfNyYky9z.jv3gukheR
+ kj_iA.onKO7Wec.IK_SzH6HM1i9Ii_vSuydL2Ullpn6qzjooyaQ8RTKY7miF
+ TtwXHNhrmF32MlmJy
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <5453AD4A.10209@schaufler-ca.com>
+Date: Fri, 31 Oct 2014 08:39:54 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: 3.17.2. issue?
-Content-Type: text/plain; charset=utf-8
+To: Rohit <rohit.kr@samsung.com>
+CC: PINTU KUMAR <pintu_agarwal@yahoo.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "james.l.morris@oracle.com" <james.l.morris@oracle.com>,
+        "serge@hallyn.com" <serge@hallyn.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpgs@samsung.com" <cpgs@samsung.com>,
+        "pintu.k@samsung.com" <pintu.k@samsung.com>,
+        "vishnu.ps@samsung.com" <vishnu.ps@samsung.com>,
+        "iqbal.ams@samsung.com" <iqbal.ams@samsung.com>,
+        "ed.savinay@samsung.com" <ed.savinay@samsung.com>,
+        "me.rohit@live.com" <me.rohit@live.com>
+Subject: Re: [PATCH v2] Security: smack: replace kzalloc with kmem_cache for
+ inode_smack
+References: <1413375041-29741-1-git-send-email-rohit.kr@samsung.com> <543FF121.7000502@schaufler-ca.com> <20141017171229.7c1a113e@rohitk-ubuntu.sisodomain.com> <544129FD.8060902@schaufler-ca.com> <1413563667.96709.YahooMailNeo@web160104.mail.bf1.yahoo.com> <544153D1.50304@schaufler-ca.com> <544D94C1.8010402@schaufler-ca.com> <20141027122413.7edd8ee1@rohitk-ubuntu.sisodomain.com> <544E71F8.60301@schaufler-ca.com> <20141029144134.46e16fb1@rohitk-ubuntu.sisodomain.com> <545103C5.3050509@schaufler-ca.com> <20141031093325.64808c2d@rohitk-ubuntu.sisodomain.com>
+In-Reply-To: <20141031093325.64808c2d@rohitk-ubuntu.sisodomain.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 10/30/2014 9:03 PM, Rohit wrote:
+> On Wed, 29 Oct 2014 08:12:05 -0700
+> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>
+>> On 10/29/2014 2:11 AM, Rohit wrote:
+>>> On Mon, 27 Oct 2014 09:25:28 -0700
+>>> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>
+>>>> On 10/26/2014 11:54 PM, Rohit wrote:
+>>>>> On Sun, 26 Oct 2014 17:41:37 -0700
+>>>>> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>>>
+>>>>>> On 10/17/2014 10:37 AM, Casey Schaufler wrote:
+>>>>>>> On 10/17/2014 9:34 AM, PINTU KUMAR wrote:
+>>>>>>>> Hi,
+>>>>>>>>
+>>>>>>>>
+>>>>>>>>> ________________________________
+>>>>>>>>> From: Casey Schaufler <casey@schaufler-ca.com>
+>>>>>>>>> To: Rohit <rohit.kr@samsung.com> 
+>>>>>>>>> Cc: akpm@linux-foundation.org; james.l.morris@oracle.com;
+>>>>>>>>> serge@hallyn.com; linux-security-module@vger.kernel.org;
+>>>>>>>>> linux-kernel@vger.kernel.org; cpgs@samsung.com;
+>>>>>>>>> pintu.k@samsung.com; vishnu.ps@samsung.com;
+>>>>>>>>> iqbal.ams@samsung.com; ed.savinay@samsung.com;
+>>>>>>>>> me.rohit@live.com; pintu_agarwal@yahoo.com; Casey Schaufler
+>>>>>>>>> <casey@schaufler-ca.com> Sent: Friday, 17 October 2014 8:08 PM
+>>>>>>>>> Subject: Re: [PATCH v2] Security: smack: replace kzalloc with
+>>>>>>>>> kmem_cache for inode_smack
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> On 10/17/2014 4:42 AM, Rohit wrote:
+>>>>>>>>>> On Thu, 16 Oct 2014 09:24:01 -0700
+>>>>>>>>>> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>>>>>>>>
+>>>>>>>>>>> On 10/15/2014 5:10 AM, Rohit wrote:
+>>>>>>>>>>>> The patch use kmem_cache to allocate/free inode_smack since
+>>>>>>>>>>>> they are alloced in high volumes making it a perfect case
+>>>>>>>>>>>> for kmem_cache.
+>>>>>>>>>>>>
+>>>>>>>>>>>> As per analysis, 24 bytes of memory is wasted per
+>>>>>>>>>>>> allocation due to internal fragmentation. With kmem_cache,
+>>>>>>>>>>>> this can be avoided.
+>>>>>>>>>>> What impact does this have on performance? I am much more
+>>>>>>>>>>> concerned with speed than with small amount of memory.
+>>>>>>>>>>>
+>>>>>>>>>> I think there should not be any performance problem as such.
+>>>>>>>>>> However, please let me know how to check the performance in
+>>>>>>>>>> this case.
+>>>>>>>>> Any inode intensive benchmark would suffice. Even the classic
+>>>>>>>>> kernel build would do.
+>>>>>>>>>
+>>>>>>>>>> As far as i know, kzalloc first finds the kmalloc_index
+>>>>>>>>>> corresponding to the size to get the kmem_cache_object and
+>>>>>>>>>> then calls kmem_cache_alloc with the kmalloc_index(kmem_cache
+>>>>>>>>>> object). Here, we create kmem_cache object specific for
+>>>>>>>>>> inode_smack and directly calls kmem_cache_alloc() which
+>>>>>>>>>> should give better performance as compared to kzalloc.
+>>>>>>>>> That would be my guess as well, but performance is tricky.
+>>>>>>>>> Sometimes things that "obviously" make performance better make
+>>>>>>>>> it worse. There can be unanticipated side effects.
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>>> Please let me know your comments.
+>>>>>>>>> If you can run any sort of test that demonstrates this change
+>>>>>>>>> does not have performance impact, I'm fine with it. Smack is
+>>>>>>>>> being used in small devices, and both memory use and
+>>>>>>>>> performance are critical to the success of these devices. Of
+>>>>>>>>> the two, performance is currently more of an issue.
+>>>>>>>>>
+>>>>>>>> SMACK is used heavily in Tizen. We verified these changes for
+>>>>>>>> one of Tizen project. During boot time we observed that this
+>>>>>>>> object is used heavily, as identified by kmalloc-accounting.
+>>>>>>>> After replacing this we did not observe any difference in boot
+>>>>>>>> time. Also there was no side-effects seen so far. If you know
+>>>>>>>> of any other tests, please let us know. We will also try to
+>>>>>>>> gather some performance stats and present here.
+>>>>>>> We need to be somewhat more precise than "did not observe any
+>>>>>>> difference in boot time". The ideal benchmark would perform lots
+>>>>>>> of changes to the filesystem without doing lots of IO. One
+>>>>>>> process that matches that profile fairly well is a kernel make.
+>>>>>>> I would be satisfied with something as crude as using time(1)
+>>>>>>> on a small (5?) number of clean kernel makes each with and
+>>>>>>> without the patch on the running kernel. At the level of
+>>>>>>> accuracy you usually get from time(1) you won't find trivial
+>>>>>>> differences, but if the change is a big problem (or a big win)
+>>>>>>> we'll know.
+>>>>>> I have not seen anything indicating that the requested
+>>>>>> performance measurements have been done. I have no intention of
+>>>>>> accepting this without assurance that performance has not been
+>>>>>> damaged. I request that no one else carry this forward, either.
+>>>>>> The performance impact of security facilities comes under too
+>>>>>> much scrutiny to ignore it.
+>>>>>>
+>>>>>>> ... 
+>>>>> Sorry for the delay as I was on holiday for last week.
+>>>>> Will verify the performance impact as per your suggestion.
+>>>>> We verified it only on Tizen based ARM board, so building kernel
+>>>>> on it is not possible.
+>>>>> I found http://elinux.org/images/0/06/Buzov-SMACK.pdf (slides -
+>>>>> 35-37) for performance verification of smack. It checks
+>>>>> performance of file creation and copy in tmpfs. 
+>>>>> Please let me know whether the procedure mentioned in the above
+>>>>> mentioned slide is fine, else please suggest some other way to
+>>>>> check performance on the target board.
+>>>> The technique outlined by Buzov should provide adequate evidence.
+>>> We carried out file creation of 0, 1k and 4k size for 1024 files
+>>> and measured the time taken. It was done for 5 iterations for each
+>>> case with kzalloc and kmem_cache on a board with 512MB RAM and 1.2
+>>> GHz dual core arm processor. The average latency is as follows :
+>>> File size   with kzalloc(in ms)   with kmem_cache(in ms)
+>>> %change 0           10925.6               10528.8
+>>> -3.63 1k           11909.8               11617.6
+>>> -2.45 4k           11632.2               11873.2
+>>> +2.07
+>>>
+>>> From the data, it seems that is no significant difference in
+>>> performance. Please let me know your opinion.
+>> The data is kind of scary, don't you think? The performance
+>> starts out as an improvement, but gets worse as file size gets
+>> bigger. This could be anomalous with your choice of file size.
+>> We see that kzalloc performance improves going from 1k to 4k.
+>>
+>> Can you run the same test with 10 (20 would be better) iterations
+>> for 0, 1k, 3k, 4k, 5k, 20k, 100k and 1m?
+>>
+>> I am curious now. I will run my own tests as well.
+>>
+> Yes, i too found it odd for 4k file taking less time than 1k size.
+> Actually, issue was probably because I was using different block size
+> for file creation in two cases.
+>
+> The latency for creating 1024 files with average of  10 iterations for
+> below file size is as follows:
+> File size   With Kzalloc(in ms)  With kmem_cache(in ms)     %change
+> 0               10610.6              10595.4                 -0.14 
+> 1k              11832.3              11667.4                 -1.39 
+> 4k              11861.2              11802.1                 -0.49 
+> 20k             11991.7              11977.7                 -0.11 
+> 50k             12242.9              12224.7                 -0.14 
+> 100k            12638.9              12581                   -0.45
+>
+> It seems kmem_cache has little better performance compared to kzalloc.
+> Please share your comments and your test results,if any.
 
-Booting into 3.17.2 on one box I saw:
+I got similar results with the kernel make tests. I will accept the patch.
+Look for a message to that affect later today.
 
-[   15.070260] microcode: CPU0: patch_level=0x010000b7
-[   15.279454] Linux video capture interface: v2.00
-[   15.315043] microcode: CPU0: new patch_level=0x010000c7
-[   15.319519] microcode: CPU1: patch_level=0x010000b7
-[   15.323966] microcode: CPU1: new patch_level=0x010000c7
-[   15.328493] microcode: Microcode Update Driver: v2.00
-<tigran@aivazian.fsnet.co.uk>, Peter Oruba
-[   15.750724] saa7146: register extension 'budget_av'
-[   15.757205] ------------[ cut here ]------------
-[   15.763300] WARNING: CPU: 0 PID: 468 at fs/proc/generic.c:341
-__proc_create+0x1a4/0x1c0()
-[   15.769475] name len 0
-[   15.774046] Modules linked in: budget_av(+) saa7146_vv
-videobuf_dma_sg videobuf_core v4l2_common videodev budget_core microcode
-ttpci_eeprom saa7146 dvb_core snd_hda_codec_realtek snd_hda_codec_hdmi
-snd_hda_codec_generic cp210x snd_hda_intel usbserial k10temp
-snd_hda_controller evdev snd_hda_codec snd_seq snd_seq_device snd_pcm
-i2c_piix4 snd_timer snd acpi_cpufreq processor button nfsd auth_rpcgss
-oid_registry exportfs nfs_acl lockd sunrpc hid_generic usbhid hid
-ata_generic ehci_pci ehci_hcd ohci_pci ohci_hcd sr_mod cdrom radeon
-fbcon bitblit softcursor font cfbfillrect cfbimgblt cfbcopyarea
-backlight drm_kms_helper ttm autofs4
-[   15.794125] CPU: 0 PID: 468 Comm: systemd-udevd Not tainted
-3.17.2test-dirty #7
-[   15.799155] Hardware name: To Be Filled By O.E.M. To Be Filled By
-O.E.M./To be filled by O.E.M., BIOS 080015  05/04/2010
-[   15.804586]  0000000000000009 ffffffff81461238 ffff8800cf69ba60
-ffffffff81056271
-[   15.809771]  ffff8800cf69bb00 ffff8800cf69bab0 0000000000000002
-000000000000416d
-[   15.814957]  0000000000000000 ffffffff810562e7 ffffffff8156510b
-ffffffff00000020
-[   15.820188] Call Trace:
-[   15.825314]  [<ffffffff81461238>] ? dump_stack+0x49/0x6a
-[   15.830457]  [<ffffffff81056271>] ? warn_slowpath_common+0x81/0xb0
-[   15.835535]  [<ffffffff810562e7>] ? warn_slowpath_fmt+0x47/0x50
-[   15.840565]  [<ffffffff81179c74>] ? __proc_create+0x1a4/0x1c0
-[   15.845613]  [<ffffffff81179f5f>] ? proc_mkdir_data+0x2f/0x70
-[   15.850605]  [<ffffffff81092b74>] ? register_handler_proc+0x114/0x130
-[   15.855497]  [<ffffffff8108f87b>] ? __setup_irq+0x3cb/0x500
-[   15.860273]  [<ffffffffa0362da0>] ? saa7146_remove_one+0x1c0/0x1c0
-[saa7146]
-[   15.865007]  [<ffffffff8108fb21>] ? request_threaded_irq+0xd1/0x170
-[   15.869728]  [<ffffffffa03630f3>] ? saa7146_init_one+0x103/0x740
-[saa7146]
-[   15.874377]  [<ffffffff81271158>] ? pci_device_probe+0x98/0xf0
-[   15.878911]  [<ffffffff81305356>] ? driver_probe_device+0x86/0x270
-[   15.883317]  [<ffffffff81305633>] ? __driver_attach+0x93/0xa0
-[   15.887659]  [<ffffffff813055a0>] ? __device_attach+0x60/0x60
-[   15.891919]  [<ffffffff81303653>] ? bus_for_each_dev+0x53/0x90
-[   15.896107]  [<ffffffff81304b68>] ? bus_add_driver+0x188/0x240
-[   15.900246]  [<ffffffffa0400000>] ? 0xffffffffa0400000
-[   15.904359]  [<ffffffff813059e6>] ? driver_register+0x56/0xd0
-[   15.908454]  [<ffffffff810002b4>] ? do_one_initcall+0x84/0x1b0
-[   15.912567]  [<ffffffff810b0774>] ? load_module+0x1c34/0x2190
-[   15.916648]  [<ffffffff810ad3c0>] ? store_uevent+0x50/0x50
-[   15.920716]  [<ffffffff810b0e25>] ? SyS_finit_module+0x85/0x90
-[   15.924768]  [<ffffffff81466092>] ? system_call_fastpath+0x16/0x1b
-[   15.928925] ---[ end trace b6ff19cfd9b0c411 ]---
-[   15.932953] saa7146: found saa7146 @ mem ffffc90000020c00 (revision
-1, irq 20) (0x153b,0x1157)
-[   15.937071] saa7146 (0): dma buffer size 192512
-[   15.937071] saa7146 (0): dma buffer size 192512
-[   15.941161] DVB: registering new adapter (Terratec Cinergy 1200 DVB-T)
-[   15.981742] adapter failed MAC signature check
-[   15.987499] encoded MAC from EEPROM was
-ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff:ff
-[   16.256557] budget_av: KNC1-0: MAC addr = 00:0a:ac:01:d6:87
-[   16.617698] budget_av 0000:03:05.0: DVB: registering adapter 0
-frontend 0 (Philips TDA10046H DVB-T)...
-[   16.624394] budget_av: ci interface initialised
-[   17.053409] EXT4-fs (dm-3): mounted filesystem with ordered data
-mode. Opts: (null)
-
-What happened?
-
-Kind regards,
-Udo
