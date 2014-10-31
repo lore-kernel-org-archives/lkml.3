@@ -1,128 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422816AbaJaBik (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:38:40 -0400
-Received: from mailgw02.mediatek.com ([218.249.47.111]:59736 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1161633AbaJaBii (ORCPT
+	id S1422836AbaJaBj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:39:27 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52223 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422753AbaJaBj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:38:38 -0400
-X-Listener-Flag: 11101
-Message-ID: <1414719509.32208.9.camel@mhfsdcap03>
-Subject: Re: [PATCH 1/3] dt-bindings: Add I2C bindings for mt65xx/mt81xx.
-From: xudong chen <xudong.chen@mediatek.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: Mark Rutland <mark.rutland@arm.com>, <arm@kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        "Sascha Hauer" <kernel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, "Arnd Bergmann" <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>,
-        "Yingjoe Chen" <yingjoe.chen@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        YH Chen <yh.chen@mediatek.com>
-Date: Fri, 31 Oct 2014 09:38:29 +0800
-In-Reply-To: <CABuKBeKp211c87TRdFb2kB+Qs8WoSAsg+5h-CF7sy7k2gj8O2g@mail.gmail.com>
-References: <1414561058-23803-1-git-send-email-xudong.chen@mediatek.com>
-	 <1414561058-23803-2-git-send-email-xudong.chen@mediatek.com>
-	 <CABuKBeKp211c87TRdFb2kB+Qs8WoSAsg+5h-CF7sy7k2gj8O2g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Oct 2014 21:39:26 -0400
+Date: Fri, 31 Oct 2014 01:39:22 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org,
+        marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
+        dh.herrmann@gmail.com, tixxdz@opendz.org,
+        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no
+Subject: Re: kdbus: add code for buses, domains and endpoints
+Message-ID: <20141031013922.GG7996@ZenIV.linux.org.uk>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+ <1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-X-MTK: N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414620056-6675-9-git-send-email-gregkh@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-30 at 13:38 +0100, Matthias Brugger wrote:
-> 2014-10-29 6:37 GMT+01:00 Xudong Chen <xudong.chen@mediatek.com>:
-> > Add devicetree bindings for Mediatek Soc I2C driver.
-> >
-> > Signed-off-by: Xudong Chen <xudong.chen@mediatek.com>
-> > ---
-> >  .../devicetree/bindings/i2c/i2c-mt6577.txt         | 37 ++++++++++++++++++++++
-> >  1 file changed, 37 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-mt6577.txt
-> >
-> > diff --git a/Documentation/devicetree/bindings/i2c/i2c-mt6577.txt b/Documentation/devicetree/bindings/i2c/i2c-mt6577.txt
-> > new file mode 100644
-> > index 0000000..b4012c8
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/i2c/i2c-mt6577.txt
-> > @@ -0,0 +1,37 @@
-> > +* Mediatek's I2C controller
-> > +
-> > +The Mediatek's I2C controller is used to interface with I2C devices.
-> > +
-> > +Required properties:
-> > +  - compatible: value should be either of the following.
-> > +      (a) "mtk,mt6577-i2c", for i2c compatible with mt6577 i2c.
-> 
-> Looking on the datasheet of mt6577 it does not seem that this driver
-> is really compatible.
-> I was not able to find the PATH_DIR register neither in the datasheet
-> nor in the source code.
-> 
-Hi, 
+On Wed, Oct 29, 2014 at 03:00:52PM -0700, Greg Kroah-Hartman wrote:
+> See Documentation/kdbus.txt for more details.
 
-The PATH_DIR register named OFFSET_PATH_DIR(0x60) in the source code.
-Only MT8135 supports this feature, so it does not contained in mt6577
-datasheet.
-I will modify the comment.
+... which has nothing whatsoever on object lifetime rules.  Could you
+folks please document that somewhere?  What pins what, what state
+transitions are possible, etc.
 
-> > +      (b) "mtk,mt8127-i2c", for i2c compatible with mt8127 i2c.
-> > +      (c) "mtk,mt8135-i2c", for i2c compatible with mt8135 i2c.
-> > +  - reg: physical base address of the controller and dma base, length of memory mapped
-> > +    region.
-> > +  - interrupts: interrupt number to the cpu.
-> > +  - clock-div: the fixed value for frequency divider of clock source in i2c module.
-> > +    Each IC may be different.
-> > +  - clocks: clock name from clock manager
-> > +  - clock-names: clock name used in i2c driver probe
-> > +
-> > +Optional properties:
-> > +  - clock-frequency: Frequency in Hz of the bus when transfer, the default value is 100000.
-> > +  - mediatek,have-pmic: platform can control i2c form special pmic side.
-
-I will change this to: 
- - mediatek,have-pmic: platform can control i2c form special pmic side,
-only MT8135 supports this.
-
-Is this OK?
- 
-> > +  - mediatek,have-dcm: platform has DCM(hardware digital clock manager) property.
-> > +  - mediatek,use-push-pull: IO use push-pull mode.
-> > +
-> > +Example:
-> > +
-> > +       i2c0: i2c@1100d000 {
-> > +                       compatible = "mediatek,mt6577-i2c";
-> > +                       reg = <0x1100d000 0x70>,
-> > +                             <0x11000300 0x80>;
-> > +                       interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_LOW>;
-> > +                       clock-frequency = <100000>;
-> > +                       mediatek,have-pmic;
-> > +                       clock-div = <16>;
-> > +                       clocks = <&i2c0_ck>, <&ap_dma_ck>;
-> > +                       clock-names = "main", "dma";
-> > +       };
-> > +
-> > --
-> > 1.8.1.1.dirty
-> >
-> 
-> 
-> 
-
-
+BTW, the calling conventions for your foo_new() are annoying - instead of
+"return -E... or 0, storing the reference to new object in var parameter
+passed as the last argument", could you please just return ERR_PTR(-E...)
+on error, a pointer to new object on success and to hell with those
+struct foo **foo in the argument lists?
