@@ -1,88 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315AbaJaJaD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:30:03 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:43290 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196AbaJaJaA (ORCPT
+	id S932402AbaJaJbF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:31:05 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:43930 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932326AbaJaJbC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:30:00 -0400
-From: Kever Yang <kever.yang@rock-chips.com>
-To: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>
-Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
-        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
-        dkl@rock-chips.com, huangtao@rock-chips.com,
-        linux-rockchip@lists.infradead.org,
-        Kever Yang <kever.yang@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk: rockchip: change hierarchy for some clocks
-Date: Fri, 31 Oct 2014 17:29:37 +0800
-Message-Id: <1414747777-12625-1-git-send-email-kever.yang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 31 Oct 2014 05:31:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <6D33D50E-2DD1-482C-B05E-45B237F3B779@codeaurora.org>
+References: <1413871011-4101-1-git-send-email-ankit.jindal@linaro.org>
+ <1413871011-4101-3-git-send-email-ankit.jindal@linaro.org> <6D33D50E-2DD1-482C-B05E-45B237F3B779@codeaurora.org>
+From: Ankit Jindal <ankit.jindal@linaro.org>
+Date: Fri, 31 Oct 2014 15:00:41 +0530
+Message-ID: <CAPTm99W0J-Q6CwCDVaYe4eyEWrruWuY5pzpHoESyVu9N3cFA=g@mail.gmail.com>
+Subject: Re: [PATCH v3 2/6] uio: Add new UIO_MEM_PHYS_CACHE type for mem regions
+To: Kumar Gala <galak@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "patches@apm.com" <patches@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Varka Bhadram <varkabhadram@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch change the hierarchy for some clocks, to met the following
-bus hierarchy:
-hclk_usb_peri is bus clock for
-|- hclk_otg0,
-|- hclk_host0,
-|- hclk_host1,
-|- hclk_hsic
+Hi Kumar,
 
-hclk_emem is bus clock for
-|- hclk_nandc0
-|- hclk_nandc1
+On 21 October 2014 12:08, Kumar Gala <galak@codeaurora.org> wrote:
+>
+> On Oct 21, 2014, at 7:56 AM, Ankit Jindal <ankit.jindal@linaro.org> wrote:
+>
+>> Currently, three types of mem regions are supported: UIO_MEM_PHYS,
+>> UIO_MEM_LOGICAL and UIO_MEM_VIRTUAL. Among these UIO_MEM_PHYS helps
+>> UIO driver export physcial memory to user space as non-cacheable
+>> user memory. Typcially memory-mapped registers of a device are exported
+>> to user space as UIO_MEM_PHYS type mem region. The UIO_MEM_PHYS type
+>> is not efficient if dma-capable devices are capable of maintaining coherency
+>> with CPU caches.
+>>
+>> This patch adds new type UIO_MEM_PHYS_CACHE for mem regions to enable
+>> cacheable access to physical memory from user space.
+>>
+>> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
+>> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
+>> ---
+>> drivers/uio/uio.c          |   11 ++++++++---
+>> include/linux/uio_driver.h |    1 +
+>> 2 files changed, 9 insertions(+), 3 deletions(-)
+>
+> Rather than adding a new type, why not allow the driver to set the pgprot value, this way one has full control and we don’t need to keep adding types for various different cache attributions in the future.
 
-hclk_mem is bus clock for
-|- hclk_sdmmc
-|- hclk_sdio0
-|- hclk_sdio1
-|- hclk_emmc
+Do you mean to add a new field pgprot_t in the memtype structure and
+uio_mmap_physical will set vma->vm_page_prot to this value provided by
+driver ? If this is the case then we will need to change all the
+current uio based drivers which was the reason I preferred to have a
+new mem type.
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
----
+Please let me know if I have misunderstood anything.
 
- drivers/clk/rockchip/clk-rk3288.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+Thanks,
+Ankit
 
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index 7a0741d..e1106ad 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -652,21 +652,21 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
- 
- 	/* hclk_peri gates */
- 	GATE(0, "hclk_peri_matrix", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(6), 0, GFLAGS),
--	GATE(HCLK_OTG0, "hclk_otg0", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 4, GFLAGS),
--	GATE(HCLK_USBHOST0, "hclk_host0", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 6, GFLAGS),
--	GATE(HCLK_USBHOST1, "hclk_host1", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 7, GFLAGS),
--	GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 8, GFLAGS),
-+	GATE(HCLK_OTG0, "hclk_otg0", "hclk_usb_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 4, GFLAGS),
-+	GATE(HCLK_USBHOST0, "hclk_host0", "hclk_usb_peri", 0, RK3288_CLKGATE_CON(7), 6, GFLAGS),
-+	GATE(HCLK_USBHOST1, "hclk_host1", "hclk_usb_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 7, GFLAGS),
-+	GATE(HCLK_HSIC, "hclk_hsic", "hclk_usb_peri", 0, RK3288_CLKGATE_CON(7), 8, GFLAGS),
- 	GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 9, GFLAGS),
- 	GATE(0, "hclk_peri_ahb_arbi", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 10, GFLAGS),
- 	GATE(0, "hclk_emem", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 12, GFLAGS),
- 	GATE(0, "hclk_mem", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 13, GFLAGS),
--	GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 14, GFLAGS),
--	GATE(HCLK_NANDC1, "hclk_nandc1", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 15, GFLAGS),
-+	GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_emem", 0, RK3288_CLKGATE_CON(7), 14, GFLAGS),
-+	GATE(HCLK_NANDC1, "hclk_nandc1", "hclk_emem", 0, RK3288_CLKGATE_CON(7), 15, GFLAGS),
- 	GATE(HCLK_TSP, "hclk_tsp", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 8, GFLAGS),
--	GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 3, GFLAGS),
--	GATE(HCLK_SDIO0, "hclk_sdio0", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 4, GFLAGS),
--	GATE(HCLK_SDIO1, "hclk_sdio1", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 5, GFLAGS),
--	GATE(HCLK_EMMC, "hclk_emmc", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 6, GFLAGS),
-+	GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_mem", 0, RK3288_CLKGATE_CON(8), 3, GFLAGS),
-+	GATE(HCLK_SDIO0, "hclk_sdio0", "hclk_mem", 0, RK3288_CLKGATE_CON(8), 4, GFLAGS),
-+	GATE(HCLK_SDIO1, "hclk_sdio1", "hclk_mem", 0, RK3288_CLKGATE_CON(8), 5, GFLAGS),
-+	GATE(HCLK_EMMC, "hclk_emmc", "hclk_mem", 0, RK3288_CLKGATE_CON(8), 6, GFLAGS),
- 	GATE(HCLK_HSADC, "hclk_hsadc", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 7, GFLAGS),
- 	GATE(0, "pmu_hclk_otg0", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 5, GFLAGS),
- 
--- 
-1.9.1
-
+>
+> - k
+>
+>>
+>> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+>> index 97e6444..120a84b 100644
+>> --- a/drivers/uio/uio.c
+>> +++ b/drivers/uio/uio.c
+>> @@ -644,7 +644,7 @@ static const struct vm_operations_struct uio_physical_vm_ops = {
+>> #endif
+>> };
+>>
+>> -static int uio_mmap_physical(struct vm_area_struct *vma)
+>> +static int uio_mmap_physical(struct vm_area_struct *vma, bool cacheable)
+>> {
+>>       struct uio_device *idev = vma->vm_private_data;
+>>       int mi = uio_find_mem_index(vma);
+>> @@ -659,7 +659,9 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
+>>               return -EINVAL;
+>>
+>>       vma->vm_ops = &uio_physical_vm_ops;
+>> -     vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+>> +
+>> +     if (!cacheable)
+>> +             vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+>>
+>>       /*
+>>        * We cannot use the vm_iomap_memory() helper here,
+>> @@ -707,10 +709,13 @@ static int uio_mmap(struct file *filep, struct vm_area_struct *vma)
+>>
+>>       switch (idev->info->mem[mi].memtype) {
+>>       case UIO_MEM_PHYS:
+>> -             return uio_mmap_physical(vma);
+>> +             return uio_mmap_physical(vma, false);
+>>       case UIO_MEM_LOGICAL:
+>>       case UIO_MEM_VIRTUAL:
+>>               return uio_mmap_logical(vma);
+>> +     case UIO_MEM_PHYS_CACHE:
+>> +             return uio_mmap_physical(vma, true);
+>> +
+>>       default:
+>>               return -EINVAL;
+>>       }
+>> diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+>> index 1ad4724..40ca3f3 100644
+>> --- a/include/linux/uio_driver.h
+>> +++ b/include/linux/uio_driver.h
+>> @@ -118,6 +118,7 @@ extern void uio_event_notify(struct uio_info *info);
+>> #define UIO_MEM_PHYS  1
+>> #define UIO_MEM_LOGICAL       2
+>> #define UIO_MEM_VIRTUAL 3
+>> +#define UIO_MEM_PHYS_CACHE   4
+>>
+>> /* defines for uio_port->porttype */
+>> #define UIO_PORT_NONE 0
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> --
+> Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> a Linux Foundation Collaborative Project
+>
