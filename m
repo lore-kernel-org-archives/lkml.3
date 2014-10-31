@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759865AbaJaWxp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 18:53:45 -0400
-Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:59844 "EHLO
-	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753133AbaJaWxo (ORCPT
+	id S1756544AbaJaXAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 19:00:00 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:53966 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaJaW77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 18:53:44 -0400
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <545412F3.60502@mev.co.uk>
-Date: Fri, 31 Oct 2014 22:53:39 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
+	Fri, 31 Oct 2014 18:59:59 -0400
 MIME-Version: 1.0
-To: Hartley Sweeten <HartleyS@visionengravers.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+In-Reply-To: <1414732244-27126-1-git-send-email-kever.yang@rock-chips.com>
+References: <1414732244-27126-1-git-send-email-kever.yang@rock-chips.com>
+Date: Fri, 31 Oct 2014 15:59:58 -0700
+X-Google-Sender-Auth: cDECdyfspLA4d7GBMAn2UwDJBMw
+Message-ID: <CAD=FV=VAqvmwGNwN6RNTg2rYk1UJ6k-4KKaD7ERJDXmqzCFKNQ@mail.gmail.com>
+Subject: Re: [PATCH v3] clk: rockchip: disable unused clocks
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] staging: comedi: split bus support into separate
- modules
-References: <1414777659-25578-1-git-send-email-abbotti@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D882601ABA4@P3PWEX4MB008.ex4.secureserver.net> <5454086D.6000401@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D882601B051@P3PWEX4MB008.ex4.secureserver.net>
-In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D882601B051@P3PWEX4MB008.ex4.secureserver.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/10/14 22:18, Hartley Sweeten wrote:
-> On Friday, October 31, 2014 3:09 PM, Ian Abbott wrote:
->> On 31/10/14 18:19, Hartley Sweeten wrote:
->>> On Friday, October 31, 2014 10:48 AM, Ian Abbott wrote:
->>>> The Comedi core module doesn't need support for PCI, USB or PCMCIA.
->>>> Only the low-level Comedi drivers need it.  Split the support for these
->>>> bus types out of the core "comedi" module and into new modules,
->>>> "comedi_pci", "comedi_usb", and "comedi_pcmcia".
->>>>
->>>> 1) staging: comedi: comedidev.h: remove dummy PCI support functions
->>>> 2) staging: comedi: comedidev.h: remove some #ifdefs
->>>> 3) staging: comedi: split out PCMCIA support into new module
->>>> 4) staging: comedi: split out USB support into new module
->>>> 5) staging: comedi: split out PCI support into new module
->>>
->>> Ian,
->>>
->>> Is this really necessary?
->>>
->>> The pci, usb, and pcmcia support is already conditionally compiled in.
->>> The support does get added to the main comedi module instead of
->>> as separate modules but that shouldn't be a problem.
->>
->> Well a lot of potentially unused module space could get pulled in if
->> using a stock distro kernel. For example, the USB dependencies amount to
->> over 200k. Not so bad for the others, especially PCI where the code is
->> built in anyway.
+Kever,
+
+On Thu, Oct 30, 2014 at 10:10 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> The rockchip clock driver use CLK_IGNORE_UNUSED flag to make sure
+> all the clocks are available like default power on state.
+> We have implement the clock manage in most of rockchip drivers,
+> it is time to remove it for power save.
+> Instead we add CLK_IGNORE_UNUSED for some clock nodes which should
+> be on during boot or no module driver in kernel will initialize it.
 >
-> But its only pulled in if the user selected the usb, pci, and/or pcmcia
-> comedi drivers. And if they selected any of those options they will
-> need the that code anyway.
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+> Changes in v3:
+> - get CLK_DIVIDER_READ_ONLY tag back fro armcores
+> - add CLK_IGNORE_UNUSED tag for cs_dbg, pclk_dgb_pre and pclk_rkpwm
+>
+> Changes in v2:
+> - get some clock ID back
+> - add CLK_IGNORE_UNUSED tag for aclk_strc and aclk_core in clk-rk3188.c
+> - add CLK_IGNORE_UNUSED tag for rk3288 dwc2
+>
+>  drivers/clk/rockchip/clk-rk3188.c |  36 +++++-----
+>  drivers/clk/rockchip/clk-rk3288.c | 140 +++++++++++++++++++-------------------
+>  drivers/clk/rockchip/clk.c        |   9 ---
+>  3 files changed, 88 insertions(+), 97 deletions(-)
 
-Yes, if the user configured and compiled the kernel his or herself.  I 
-was more concerned with using distro kernel binaries.
+I found that I needed this in order to keep graphics from failing:
 
-> Splitting the bus specific code out of the comdi core module doesn't
-> lower the total module space used it just spreads it from one to possibly
-> four modules. And it increases the module dependancies for all the
-> usb, pci, and pcmcia comedi drivers.
+-       GATE(ACLK_VIO1_NIU, "aclk_vio1_niu", "aclk_vio1", 0,
+RK3288_CLKGATE_CON(15), 12, GFLAGS),
++       GATE(ACLK_VIO1_NIU, "aclk_vio1_niu", "aclk_vio1",
+CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(15), 12, GFLAGS),
 
-Yes, you might have to load one more module to load the modules for a 
-particular card, but modprobe can take care of that. It's only a pain if 
-you're loading the modules individually.  On the other hand, to load the 
-"comedi_test.ko" module using insmod on a desktop PC on Debian for 
-example (assuming the USB modules are already loaded), you'd first have 
-to load the "pcmcia_core" and "pcmcia" modules before the "comedi" and 
-"comedi_test" modules. But with the PCMCIA support separated out, you'd 
-just have to load the "comedi" and "comedi_test" modules.
+Off-list Heiko suggested that maybe VIO0_NIU would be similar.
 
-> To be clear, I'm not against this series I just want to make sure it's worth
-> applying.
+Should maybe add that as IGNORE for now until we have something
+claiming that clock?
 
-I like the idea of the core comedi module being separated from all the 
-various buses. And other buses can be added easily without pulling extra 
-dependencies into the core (e.g. for platform or spi devices).
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+-Doug
