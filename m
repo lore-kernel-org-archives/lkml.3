@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582AbaJaKEs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:04:48 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51752 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757431AbaJaKEq (ORCPT
+	id S1758095AbaJaKGQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:06:16 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:36819 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756297AbaJaKGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:04:46 -0400
-Message-ID: <54535EB7.7090704@hitachi.com>
-Date: Fri, 31 Oct 2014 19:04:39 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 31 Oct 2014 06:06:13 -0400
+Date: Fri, 31 Oct 2014 18:05:22 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org, joe@perches.com,
+        mchehab@osg.samsung.com, crope@iki.fi, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto
+ accelerator
+Message-ID: <20141031100522.GA8655@gondor.apana.org.au>
+References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com>
+ <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>
+ <20141021191149.GQ21108@lukather>
+ <544A9FEA.6020304@gmail.com>
+ <20141030171933.GR21251@lukather>
+ <20141031072030.GA7563@gondor.apana.org.au>
+ <20141031081323.GS21251@lukather>
+ <20141031081803.GA8012@gondor.apana.org.au>
+ <20141031095706.GA8054@lukather>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [for-next][PATCH 0/4] ftrace: Add dynamic trampoline support
-References: <20141027182702.778680710@goodmis.org>
-In-Reply-To: <20141027182702.778680710@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031095706.GA8054@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/28 3:27), Steven Rostedt wrote:
-> This adds the allocation of dynamic trampolines. It still does not
-> allow for dynamic ftrace_ops to use them on CONFIG_PREEMPT systems.
-> That will come in 3.20, as I want to test out call_rcu_tasks() for
-> a bit first on my own boxes.
+On Fri, Oct 31, 2014 at 10:57:06AM +0100, Maxime Ripard wrote:
+>
+> On a 3.18-rc2 kernel:
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> for-next
+> $ git grep kmap -- crypto/
+> crypto/ahash.c:                         walk->data = kmap(walk->pg);
+> crypto/ahash.c:                         walk->data = kmap_atomic(walk->pg);
+> crypto/async_tx/async_memcpy.c:         dest_buf = kmap_atomic(dest) + dest_offset;
+> crypto/async_tx/async_memcpy.c:         src_buf = kmap_atomic(src) + src_offset;
+> crypto/scatterwalk.c:                   return kmap_atomic(scatterwalk_page(walk)) +
+> crypto/shash.c:                         data = kmap_atomic(sg_page(sg));
+> crypto/shash.c:                         data = kmap_atomic(sg_page(sg));
 > 
-> Head SHA1: 9fd7caf67913fbf35d834beaa8f9764d733a9236
+> None of the drivers are.
 
-Anyway, usually flush_icache_range() is not so critical. I've tested
-this with ftracetest and following 2 testcases :)
+What do you mean? It's precisely because the page can be in highmem
+that we are mapping it.  If it's not in highmem it'll be a noop.
 
-http://marc.info/?l=linux-kernel&m=141150834012382
-http://marc.info/?l=linux-kernel&m=141353397907456
+Admittedly I haven't tested highmem since moving over to x86-64
+some years ago, but it definitely used to work on x86-32.
 
-Tested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-for this series.
-
-Thank you,
-
-
+Cheers,
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
