@@ -1,93 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161587AbaJaA70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 20:59:26 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:50262 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161370AbaJaA7Y (ORCPT
+	id S1161598AbaJaBB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:01:26 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51846 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409AbaJaBBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 20:59:24 -0400
+	Thu, 30 Oct 2014 21:01:25 -0400
+Date: Thu, 30 Oct 2014 18:00:39 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 09/15] net: dsa: Add support for switch EEPROM access
+Message-ID: <20141031010039.GA29492@roeck-us.net>
+References: <1414604707-22407-1-git-send-email-linux@roeck-us.net>
+ <1414604707-22407-10-git-send-email-linux@roeck-us.net>
+ <20141030211131.GB32139@lunn.ch>
+ <20141030223951.GA19489@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
-References: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
-	<5452B241.5010603@amacapital.net>
-	<CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
-	<CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
-	<CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
-Date: Thu, 30 Oct 2014 17:59:23 -0700
-X-Google-Sender-Auth: 7imyNrZnuq5VKpcPCoigKS9Zyy4
-Message-ID: <CA+55aFyxoAtJMGhLtz9qND-k4ADexTrE9buG---=vOXTEoovyA@mail.gmail.com>
-Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Eric Rannaud <e@nanocritical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141030223951.GA19489@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.5452DF64.0127,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 5
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 5:01 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> Uh, because it's glibc?
+On Thu, Oct 30, 2014 at 03:39:51PM -0700, Guenter Roeck wrote:
+> On Thu, Oct 30, 2014 at 10:11:31PM +0100, Andrew Lunn wrote:
+> > > +static int dsa_slave_get_eeprom_len(struct net_device *dev)
+> > > +{
+> > > +	struct dsa_slave_priv *p = netdev_priv(dev);
+> > > +	struct dsa_switch *ds = p->parent;
+> > > +
+> > > +	if (ds->pd->eeprom_len)
+> > > +		return ds->pd->eeprom_len;
+> > > +
+> > > +	if (ds->drv->get_eeprom_len)
+> > > +		return ds->drv->get_eeprom_len(ds);
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > 
+> > Hi Guenter
+> > 
+> > I just started doing some testing with this patchset. A bit late since
+> > David just accepted it, but...
+> > 
+> > root@dir665:~# ethtool -e lan4
+> > Cannot get EEPROM data: Invalid argument
+> > root@dir665:~# ethtool -e eth0
+> > Cannot get EEPROM data: Operation not supported
+> > 
+> > There is no eeprom for the hardware i'm testing. Operation not
+> > supported seems like a better error code and Invalid argument, and is
+> > what other network drivers i tried returned.
+> > 
+> Hi Andrew,
+> 
+> I think the problem is that the infrastructure code (net/core/ethtool.c)
+> does not accept an error from the get_eeprom_len function, but instead
+> assumes that reporting eeprom data is supported if a driver provides
+> the access functions. The get_eeprom_len function returns 0 in your case,
+> which in ethtool_get_any_eeprom() translates to -EINVAL because user space
+> either requests no data or more data than available. I wonder why user
+> space requests anything in the first place; I would have assumed that it
+> reads the driver information first and is told that the eeprom length is 0,
+> but I guess that is a different question.
+> 
+> I quickly browsed through a couple of other drivers supporting get_eprom_len,
+> and they all return 0 if there is no eeprom. Doesn't that mean that they all
+> end up reporting -EINVAL if an attempt is made to read the eeprom ?
+> 
+> The only solution that comes to my mind would be to have the infrastructure
+> code check the return value from get_eeprom_len and return -EOPNOTSUPP
+> if the reported eeprom length is 0. That would be an infrastructure change,
+> though. Does that sound reasonable, or do you have a better idea ?
+> 
+> In parallel, I'll have a look into the ethtool command to see why it
+> requests eeprom data even though the reported eeprom length is 0.
+> 
+As suspected, ethtool will attempt to read a zero-length eeprom.
 
-Yeah. Bloated, over-engineered, and stupid.
+The following patch should solve the problem. Not sure if it is worth it,
+though, since this will change behavior for existing drivers.
 
-> Or because it's trying not to screw up and on
-> some system where overrunning va_arg is terrible?
+Thanks,
+Guenter
 
-No. On 99% of architectures the third argument is in a register
-anyway, and traditionally it's not even va_arg, although glibc has
-made it so (traditionally it's just pre-ANSI C with three arguments
-and one of them might be missing - gcc has had hacks for avoiding
-warnings for traditional C things like that: look at the whole
-transparent union thing for another traditional "C without prototypes"
-calling convention case).
+---
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Thu, 30 Oct 2014 17:51:34 -0700
+Subject: [RFC PATCH] net: ethtool: Return -EOPNOTSUPP if user space tries to read
+ EEPROM with lengh 0
 
-But even if you make it va_arg, I can't think of a single architecture
-where that makes sense. Outside of assembly trampolines, you *always*
-have enough stack space that you can just access a word under the
-stack anyway.
+If a driver supports reading EEPROM but no EEPROM is installed in the system,
+the driver's get_eeprom_len function will return 0. ethtool will subsequently
+try to read that zero-length EEPROM anyway. If the driver does not support
+EEPROM access at all, this operation will return -EOPNOTSUPP. If the driver
+does support EEPROM access but no EEPROM is installed, the operation will
+return -EINVAL. Return -EOPNOTSUPP in both cases for consistency.
 
-But yes, I could imagine some well-meaning - but not overly smart -
-glibc developer deciding that doing the va_arg thing conditionally
-would be a "feature". Despite making the code slower, bigger, and
-buggier.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ net/core/ethtool.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-I guess I'll fetch the git tree and see if they document this braindamage..
+diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+index 1600aa2..06dfb29 100644
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -1036,7 +1036,8 @@ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
+ {
+ 	const struct ethtool_ops *ops = dev->ethtool_ops;
+ 
+-	if (!ops->get_eeprom || !ops->get_eeprom_len)
++	if (!ops->get_eeprom || !ops->get_eeprom_len ||
++	    !ops->get_eeprom_len(dev))
+ 		return -EOPNOTSUPP;
+ 
+ 	return ethtool_get_any_eeprom(dev, useraddr, ops->get_eeprom,
+@@ -1052,7 +1053,8 @@ static int ethtool_set_eeprom(struct net_device *dev, void __user *useraddr)
+ 	u8 *data;
+ 	int ret = 0;
+ 
+-	if (!ops->set_eeprom || !ops->get_eeprom_len)
++	if (!ops->set_eeprom || !ops->get_eeprom_len ||
++	    !ops->get_eeprom_len(dev))
+ 		return -EOPNOTSUPP;
+ 
+ 	if (copy_from_user(&eeprom, useraddr, sizeof(eeprom)))
+-- 
+1.9.1
 
-[ time passes ]
-
-Ugh. It seems to predate even the imported history (going back all the
-way to 1995 - I don't know if that was SVN or CVS and whether there is
-some even older historical archives that were never imported).
-
-Anyway, since the beginning of time, the "stub/open.c" file is a True
-Work of Art (TM)(also sarcasm), and has an old-style C declaration
-(not ANSI) for __libc_open(), and uses a conditional va_arg() to get
-the third parameter *despite* not even being a variadic function (not
-varargs, not stdarg). So it's not even portable or correct *anyway*,
-and it unnecessarily generates bad code and seems to have been
-mindlessly copied into all the actual real non-stub implementations.
-Most of them seem to have made their definitions match the declaration
-in the process, so they then really do have the variadic part. Goodie,
-I guess, except for this all being unnecessary crap and stupid.
-
-Oh well. What a cock-up.
-
-The code is insane in other ways too. The actual real Linux version of
-__libc_open() ends up (for no good reason except to compete with
-cat-ladies in the "crazy person of the year" award) using
-"openat(AT_FDCWD)", just so you can make sure that the result doesn't
-possibly work on old versions of the kernel even by mistake. I
-certainly cannot possibly see any actual *advantage* to using
-"openat()", but them I'm not a homeless cat-lady.  It also has some
-magic "LIBC_CANCEL_ASYNC()/LIBC_CANCEL_RESET()" stuff around it, which
-I'm sure is entirely sane.
-
-I can't take it any more. That code is crazy.
-
-                        Linus
