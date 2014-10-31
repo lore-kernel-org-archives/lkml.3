@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221AbaJaSSD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 14:18:03 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59638 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758724AbaJaSSB (ORCPT
+	id S932508AbaJaSSP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 14:18:15 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:60794 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262AbaJaSSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 14:18:01 -0400
-Date: Fri, 31 Oct 2014 18:17:35 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Message-ID: <20141031181735.GT18557@sirena.org.uk>
-References: <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl>
- <1414668415-597-1-git-send-email-mike.looijmans@topic.nl>
- <20141030165133.GB18557@sirena.org.uk>
- <545397BD.1070701@topic.nl>
+	Fri, 31 Oct 2014 14:18:13 -0400
+Date: Fri, 31 Oct 2014 23:48:08 +0530
+From: Balavasu <kp.balavasu@gmail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: greg@kroah.com, andreas.dilger@intel.com, oleg.drokin@intel.com
+Subject: [PATCH 1/2] staging: lustre: lnet: lnet: do not initialise statics
+ to 0 or NULL
+Message-ID: <20141031181808.GA7830@vasu-Inspiron-3542>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5nUKqBW0XvnsonJi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <545397BD.1070701@topic.nl>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] Add ltc3562 voltage regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes the checkpatch.pl issue
+Error: do not initialise statics to 0 or NULL for time
 
---5nUKqBW0XvnsonJi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Balavasu <kp.balavasu@gmail.com>
+---
+ drivers/staging/lustre/lnet/lnet/do not instalise 0 | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-On Fri, Oct 31, 2014 at 03:07:57PM +0100, Mike Looijmans wrote:
-> On 30-10-2014 17:51, Mark Brown wrote:
+diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
+index b5b8fb5..cdeb246 100644
+--- a/drivers/staging/lustre/lnet/lnet/router.c
++++ b/drivers/staging/lustre/lnet/lnet/router.c
+@@ -46,7 +46,7 @@ MODULE_PARM_DESC(small_router_buffers, "# of small (1 page) messages to buffer i
+ static int large_router_buffers;
+ module_param(large_router_buffers, int, 0444);
+ MODULE_PARM_DESC(large_router_buffers, "# of large messages to buffer in the router");
+-static int peer_buffer_credits = 0;
++static int peer_buffer_credits;
+ module_param(peer_buffer_credits, int, 0444);
+ MODULE_PARM_DESC(peer_buffer_credits, "# router buffer credits per peer");
+ 
+@@ -80,7 +80,7 @@ lnet_peer_buffer_credits(lnet_ni_t *ni)
+ 
+ #endif
+ 
+-static int check_routers_before_use = 0;
++static int check_routers_before_use;
+ module_param(check_routers_before_use, int, 0444);
+ MODULE_PARM_DESC(check_routers_before_use, "Assume routers are down and ping them before use");
+ 
+@@ -245,7 +245,7 @@ lnet_find_net_locked (__u32 net)
+ 
+ static void lnet_shuffle_seed(void)
+ {
+-	static int seeded = 0;
++	static int seeded;
+ 	int lnd_type, seed[2];
+ 	struct timeval tv;
+ 	lnet_ni_t *ni;
+@@ -1584,8 +1584,8 @@ lnet_notify (lnet_ni_t *ni, lnet_nid_t nid, int alive, unsigned long when)
+ void
+ lnet_router_checker (void)
+ {
+-	static time_t last = 0;
+-	static int    running = 0;
++	static time_t last;
++	static int    running;
+ 
+ 	time_t	    now = get_seconds();
+ 	int	       interval = now - last;
+-- 
+1.9.1
 
-> >This appears to be reimplementing regmap (including a cache).  Please
-> >use that instead.  Pretty much the entire driver could then be replaced
-> >with the regmap helpers, none of the operations look like they'd be
-> >needed, and you'd get the regmap diagnostic infrastructure.
-
-> The chip doesn't have an I2C register map, it uses "commands".
-> It does not support read transactions at all, it will NACK those. The first
-> byte contains a bit mask that tells which outputs are to be configured and
-> in what mode, the next is the enable bit and setpoint value. The first byte
-> already contains data, it's not just an address.
-
-If that's the case the code is really rather unclear about what it's
-doing - the use of "reg" for what's being written doesn't help, nor does
-the fact that what looks like a cache is being kept.  The code should
-either use regmap or make it clear why that doesn't fit well.
-
---5nUKqBW0XvnsonJi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUU9I/AAoJECTWi3JdVIfQgUAH/1IMqRLAX6En68sbSbSOpQE7
-McFUIiCp0wkIZhT3hHCZojKfZv1wtmO9qxZuprWYHjn1SG2W7LhUPcTEBwD7u2d+
-5QH5Rjy27AtLLOIrxCv/OJkZXbFlBNMkVtajoi0igiYybaSoUUG9l/dEfzqX38p+
-tPseYCgRA7Lq4VBnEojmjkLPc7xF+toQgnvKMuZ9JQwso3hLGEHnMhuuxi/BqfvQ
-+QbOhnOscq3/0+JMrjrWwuvr7X6PvmXZlx/9Ng89KR9sKzcJJSJY5+n9P5X1bae5
-p+jsVk6bMogipStVrOGwBMZxvRIga6BOLtPq7POAxNafPF6ZLCGiox+qOecofnw=
-=UxhV
------END PGP SIGNATURE-----
-
---5nUKqBW0XvnsonJi--
