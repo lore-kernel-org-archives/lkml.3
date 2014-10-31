@@ -1,96 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760294AbaJaN6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 09:58:16 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:58547 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758471AbaJaN6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 09:58:15 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1414763851.2406.70.camel@hadess.net>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: Bastien Nocera <hadess@hadess.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 31 Oct 2014 14:57:31 +0100
-In-Reply-To: <20141030182333.GC14412@amd>
-References: <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd>
-	 <1414420292.30379.55.camel@hadess.net> <54513DDC.2020700@amacapital.net>
-	 <20141029202616.GC5000@thunk.org> <20141029211608.GA32576@amd>
-	 <1414680302.2406.55.camel@hadess.net>
-	 <CALCETrXWha=rYB5hzg7xuB-ztw6MGRi=Q9nrJu1mZp6d=US8+A@mail.gmail.com>
-	 <1414681655.2406.57.camel@hadess.net> <20141030182333.GC14412@amd>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932742AbaJaOAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:00:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38857 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760362AbaJaOAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:00:47 -0400
+From: Juergen Gross <jgross@suse.com>
+To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH 17/17] xen: Support Xen pv-domains using PAT
+Date: Fri, 31 Oct 2014 15:00:33 +0100
+Message-Id: <1414764033-30011-18-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1414764033-30011-1-git-send-email-jgross@suse.com>
+References: <1414764033-30011-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-30 at 19:23 +0100, Pavel Machek wrote:
-> On Thu 2014-10-30 16:07:35, Bastien Nocera wrote:
-> > On Thu, 2014-10-30 at 07:53 -0700, Andy Lutomirski wrote:
-> > > On Thu, Oct 30, 2014 at 7:45 AM, Bastien Nocera <hadess@hadess.net> wrote:
-> > > > On Wed, 2014-10-29 at 22:16 +0100, Pavel Machek wrote:
-> > > >> On Wed 2014-10-29 16:26:16, Theodore Ts'o wrote:
-> > > >> > On Wed, Oct 29, 2014 at 12:19:56PM -0700, Andy Lutomirski wrote:
-> > > >> > > For a tablet, isn't the relevant piece of information whether the power
-> > > >> > > button was recently pressed, not whether the power button caused the wakeup?
-> > > >> >
-> > > >> > For Android L devices, it has been reported that the device might
-> > > >> > power up its screen fully (note I didn't say 'wake up') automatically
-> > > >> > when it detects that you are picking it up, or when you double-tap the
-> > > >> > screen.  It also reportedly has a low power black and white "ambient
-> > > >> > display" (ala the Android Wear devics) which allows you to see
-> > > >> > notifications without waking up the phone all the way[1].  (All of
-> > > >> > this assuming appropriate hardware support, of course.)
-> > > >> >
-> > > >> > [1] http://www.androidauthority.com/ambient-display-lollipop-541198/
-> > > >> >
-> > > >> > Which goes back to the concept of having a "suspend" mode is legacy
-> > > >> > thinking.  Modern devices will soon have not just a "awake" and a
-> > > >> > "asleep" modes; there will be (well, is now) a much wider spectrum of
-> > > >> > modes, with the goal of using the minimum amount of power while still
-> > > >> > providing use functionality to the user.
-> > > >>
-> > > >> Actually Maemo people (on Nokia N900 and friends) got it right: unlike
-> > > >> android devices, it does not suspend to RAM at any point, and still
-> > > >> has reasonable battery life.
-> > > >
-> > > > Android devices don't suspend to RAM. Neither do Tizen devices AFAIK.
-> > > >
-> > > >> So I agree -- using suspend to RAM on "active" cell phone is just a
-> > > >> bad design.
-> > > >
-> > > > I don't think anyone was discussing cell phones in particular in this
-> > > > thread, and knowing when user-space got woken up because of the baseband
-> > > > processor having information for us would still be useful.
-> > > >
-> > > 
-> > > You still haven't addressed what problem this solves that isn't solved
-> > > by merely knowing whether the baseband processor has useful
-> > > information.
-> > 
-> > We don't know that the baseband processor has useful information if
-> > we're not in the "path" for the interrupt that it would send. This event
-> > might end up dying somewhere inside the kernel for all we know.
-> 
-> See, that would be something to fix. If baseband has incoming data,
-> and kernel fails to notify userspace about that data after resume,
-> that is a kernel bug.
+With the dynamical mapping between cache modes and pgprot values it is
+now possible to use all cache modes via the Xen hypervisor PAT settings
+in a pv domain.
 
-It might notify through a specific socket, through a specific service,
-but the outside observer, one that's not directly in the path to that
-event, will be unaware. Coalescing all the information taking different
-routes from the harwdare to user-space can be very difficult, and it's
-already difficult to observe the reason for wakeup without being part of
-that event's path.
+All to be done is to read the PAT configuration MSR and set up the
+translation tables accordingly.
 
-Having drivers export that information would allow us to know why
-something was woken up.
+Signed-off-by: Juergen Gross <jgross@suse.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c | 25 +++++++------------------
+ arch/x86/xen/mmu.c       | 47 +----------------------------------------------
+ arch/x86/xen/xen-ops.h   |  1 -
+ 3 files changed, 8 insertions(+), 65 deletions(-)
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index fac5e4f..6bf3a13 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1100,12 +1100,6 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+ 		/* Fast syscall setup is all done in hypercalls, so
+ 		   these are all ignored.  Stub them out here to stop
+ 		   Xen console noise. */
+-		break;
+-
+-	case MSR_IA32_CR_PAT:
+-		if (smp_processor_id() == 0)
+-			xen_set_pat(((u64)high << 32) | low);
+-		break;
+ 
+ 	default:
+ 		ret = native_write_msr_safe(msr, low, high);
+@@ -1561,10 +1555,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 
+ 	/* Prevent unwanted bits from being set in PTEs. */
+ 	__supported_pte_mask &= ~_PAGE_GLOBAL;
+-#if 0
+-	if (!xen_initial_domain())
+-#endif
+-		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
+ 
+ 	/*
+ 	 * Prevent page tables from being allocated in highmem, even
+@@ -1618,14 +1608,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 	 */
+ 	acpi_numa = -1;
+ #endif
+-#ifdef CONFIG_X86_PAT
+-	/*
+-	 * For right now disable the PAT. We should remove this once
+-	 * git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
+-	 * (xen/pat: Disable PAT support for now) is reverted.
+-	 */
+-	pat_enabled = 0;
+-#endif
+ 	/* Don't do the full vcpu_info placement stuff until we have a
+ 	   possible map and a non-dummy shared_info. */
+ 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+@@ -1636,6 +1618,13 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 	xen_raw_console_write("mapping kernel into physical memory\n");
+ 	xen_setup_kernel_pagetable((pgd_t *)xen_start_info->pt_base, xen_start_info->nr_pages);
+ 
++	/*
++	 * Modify the cache mode translation tables to match Xen's PAT
++	 * configuration.
++	 */
++
++	pat_init_cache_modes();
++
+ 	/* keep using Xen gdt for now; no urgent need to change it */
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index a8a1a3d..9855eb8 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -410,13 +410,7 @@ static pteval_t pte_pfn_to_mfn(pteval_t val)
+ __visible pteval_t xen_pte_val(pte_t pte)
+ {
+ 	pteval_t pteval = pte.pte;
+-#if 0
+-	/* If this is a WC pte, convert back from Xen WC to Linux WC */
+-	if ((pteval & (_PAGE_PAT | _PAGE_PCD | _PAGE_PWT)) == _PAGE_PAT) {
+-		WARN_ON(!pat_enabled);
+-		pteval = (pteval & ~_PAGE_PAT) | _PAGE_PWT;
+-	}
+-#endif
++
+ 	return pte_mfn_to_pfn(pteval);
+ }
+ PV_CALLEE_SAVE_REGS_THUNK(xen_pte_val);
+@@ -427,47 +421,8 @@ __visible pgdval_t xen_pgd_val(pgd_t pgd)
+ }
+ PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
+ 
+-/*
+- * Xen's PAT setup is part of its ABI, though I assume entries 6 & 7
+- * are reserved for now, to correspond to the Intel-reserved PAT
+- * types.
+- *
+- * We expect Linux's PAT set as follows:
+- *
+- * Idx  PTE flags        Linux    Xen    Default
+- * 0                     WB       WB     WB
+- * 1            PWT      WC       WT     WT
+- * 2        PCD          UC-      UC-    UC-
+- * 3        PCD PWT      UC       UC     UC
+- * 4    PAT              WB       WC     WB
+- * 5    PAT     PWT      WC       WP     WT
+- * 6    PAT PCD          UC-      rsv    UC-
+- * 7    PAT PCD PWT      UC       rsv    UC
+- */
+-
+-void xen_set_pat(u64 pat)
+-{
+-	/* We expect Linux to use a PAT setting of
+-	 * UC UC- WC WB (ignoring the PAT flag) */
+-	WARN_ON(pat != 0x0007010600070106ull);
+-}
+-
+ __visible pte_t xen_make_pte(pteval_t pte)
+ {
+-#if 0
+-	/* If Linux is trying to set a WC pte, then map to the Xen WC.
+-	 * If _PAGE_PAT is set, then it probably means it is really
+-	 * _PAGE_PSE, so avoid fiddling with the PAT mapping and hope
+-	 * things work out OK...
+-	 *
+-	 * (We should never see kernel mappings with _PAGE_PSE set,
+-	 * but we could see hugetlbfs mappings, I think.).
+-	 */
+-	if (pat_enabled && !WARN_ON(pte & _PAGE_PAT)) {
+-		if ((pte & (_PAGE_PCD | _PAGE_PWT)) == _PAGE_PWT)
+-			pte = (pte & ~(_PAGE_PCD | _PAGE_PWT)) | _PAGE_PAT;
+-	}
+-#endif
+ 	pte = pte_pfn_to_mfn(pte);
+ 
+ 	return native_make_pte(pte);
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 28c7e0b..4ab9298 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -33,7 +33,6 @@ extern unsigned long xen_max_p2m_pfn;
+ 
+ void xen_mm_pin_all(void);
+ void xen_mm_unpin_all(void);
+-void xen_set_pat(u64);
+ 
+ char * __init xen_memory_setup(void);
+ char * xen_auto_xlated_memory_setup(void);
+-- 
+1.8.4.5
 
