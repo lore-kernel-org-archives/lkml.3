@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759893AbaJaGlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 02:41:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60354 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383AbaJaGlc (ORCPT
+	id S1760890AbaJaGog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 02:44:36 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:41804 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689AbaJaGoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 02:41:32 -0400
-Date: Thu, 30 Oct 2014 23:41:30 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        Frank Rowand <frank.rowand@sonymobile.com>
-Subject: Re: [PATCH 2/2] tty: serial: msm: Support sysrq on uartDM devices
-Message-ID: <20141031064130.GG12469@codeaurora.org>
-References: <1414606478-13709-1-git-send-email-sboyd@codeaurora.org>
- <1414606478-13709-3-git-send-email-sboyd@codeaurora.org>
- <54522163.8030408@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54522163.8030408@linaro.org>
-ko: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 31 Oct 2014 02:44:34 -0400
+From: Tristan Lelong <tristan@lelong.xyz>
+To: gregkh@linuxfoundation.org, john.stultz@linaro.org, rebecca@android.com,
+        ccross@android.com, mitchelh@codeaurora.org,
+        benjamin.gaignard@linaro.org, romlem@google.com,
+        daeseok.youn@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Tristan Lelong <tristan@lelong.xyz>
+Subject: [PATCH] Staging: android: ion: fix typos in comments
+Date: Thu, 30 Oct 2014 23:43:36 -0700
+Message-Id: <1414737816-20118-1-git-send-email-tristan@lelong.xyz>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30, Daniel Thompson wrote:
-> On 29/10/14 18:14, Stephen Boyd wrote:
-> > +		r_count = min_t(int, count, sizeof(buf));
-> > +
-> > +		for (i = 0; i < r_count; i++) {
-> > +			char flag = TTY_NORMAL;
-> >  
-> > -		/* TODO: handle sysrq */
-> > -		tty_insert_flip_string(tport, buf, min(count, 4));
-> > -		count -= 4;
-> > +			if (msm_port->break_detected && buf[i] == 0) {
-> > +				port->icount.brk++;
-> > +				flag = TTY_BREAK;
-> > +				msm_port->break_detected = false;
-> > +				if (uart_handle_break(port))
-> > +					continue;
-> > +			}
-> > +
-> > +			if (!(port->read_status_mask & UART_SR_RX_BREAK))
-> > +				flag = TTY_NORMAL;
-> 
-> flag is already known to be TTY_NORMAL.
+Fix some coding style warnings detected by checkpatch.pl in ion.
 
-Huh? If we detected a break we would set the flag to TTY_BREAK
-and if uart_handle_break() returned 0 (perhaps sysrq config is
-diasbled) then we would get down here, and then we want to reset
-the flag to TTY_NORMAL if the read_status_mask bits indicate that
-we want to skip checking for breaks. Otherwise we want to
-indicate to the tty layer that it's a break character.
+Signed-off-by: Tristan Lelong <tristan@lelong.xyz>
+---
+ drivers/staging/android/ion/ion.c      | 2 +-
+ drivers/staging/android/ion/ion.h      | 2 +-
+ drivers/staging/android/ion/ion_priv.h | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-> 
-> 
-> > +
-> > +			spin_unlock(&port->lock);
-> 
-> Is it safe to unlock at this point? count may no longer be valid when we
-> return.
-
-Can you explain further? If it actually isn't valid something
-needs to be done. I believe other serial drivers are doing this
-sort of thing though so it doesn't seem that uncommon (of course
-those drivers could also be broken I suppose).
-
-> 
-> 
-> > +			sysrq = uart_handle_sysrq_char(port, buf[i]);
-> > +			spin_lock(&port->lock);
-> > +			if (!sysrq)
-> > +				tty_insert_flip_char(tport, buf[i], flag);
-> 
-> flag has a constant value here.
-> 
-
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 290d4d2..8724ef8 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -250,7 +250,7 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
+ 	   our systems the only dma_address space is physical addresses.
+ 	   Additionally, we can't afford the overhead of invalidating every
+ 	   allocation via dma_map_sg. The implicit contract here is that
+-	   memory comming from the heaps is ready for dma, ie if it has a
++	   memory coming from the heaps is ready for dma, ie if it has a
+ 	   cached mapping that mapping has been invalidated */
+ 	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i)
+ 		sg_dma_address(sg) = sg_phys(sg);
+diff --git a/drivers/staging/android/ion/ion.h b/drivers/staging/android/ion/ion.h
+index d305bb7..443db84 100644
+--- a/drivers/staging/android/ion/ion.h
++++ b/drivers/staging/android/ion/ion.h
+@@ -76,7 +76,7 @@ struct ion_platform_data {
+  *		size
+  *
+  * Calls memblock reserve to set aside memory for heaps that are
+- * located at specific memory addresses or of specfic sizes not
++ * located at specific memory addresses or of specific sizes not
+  * managed by the kernel
+  */
+ void ion_reserve(struct ion_platform_data *data);
+diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
+index c8f0175..18a5f93 100644
+--- a/drivers/staging/android/ion/ion_priv.h
++++ b/drivers/staging/android/ion/ion_priv.h
+@@ -345,7 +345,7 @@ void ion_carveout_free(struct ion_heap *heap, ion_phys_addr_t addr,
+  * functions for creating and destroying a heap pool -- allows you
+  * to keep a pool of pre allocated memory to use from your heap.  Keeping
+  * a pool of memory that is ready for dma, ie any cached mapping have been
+- * invalidated from the cache, provides a significant peformance benefit on
++ * invalidated from the cache, provides a significant performance benefit on
+  * many systems */
+ 
+ /**
+@@ -362,7 +362,7 @@ void ion_carveout_free(struct ion_heap *heap, ion_phys_addr_t addr,
+  *
+  * Allows you to keep a pool of pre allocated pages to use from your heap.
+  * Keeping a pool of pages that is ready for dma, ie any cached mapping have
+- * been invalidated from the cache, provides a significant peformance benefit
++ * been invalidated from the cache, provides a significant performance benefit
+  * on many systems
+  */
+ struct ion_page_pool {
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+2.1.1
+
