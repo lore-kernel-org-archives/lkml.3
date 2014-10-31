@@ -1,177 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944AbaJaOBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:01:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38858 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760564AbaJaOAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:00:46 -0400
-From: Juergen Gross <jgross@suse.com>
-To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
-        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, bhelgaas@google.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 16/17] x86: Enable PAT to use cache mode translation tables
-Date: Fri, 31 Oct 2014 15:00:32 +0100
-Message-Id: <1414764033-30011-17-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414764033-30011-1-git-send-email-jgross@suse.com>
-References: <1414764033-30011-1-git-send-email-jgross@suse.com>
+	id S933105AbaJaOBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:01:50 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:37765 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933060AbaJaOBs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:01:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <545384D3.5050000@samsung.com>
+References: <1414759083-4555-1-git-send-email-a.kesavan@samsung.com>
+	<545384D3.5050000@samsung.com>
+Date: Fri, 31 Oct 2014 19:31:46 +0530
+Message-ID: <CAM4voamJhveLN-=wS2vF+x9e3kWMSR_2X1QsHLpB3w4DwgkgyQ@mail.gmail.com>
+Subject: Re: [PATCH] iio: adc: exynos_adc: Add support for ADCv3 on exynos7
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-iio@vger.kernel.org, jic23@kernel.org,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the translation tables from cache mode to pgprot values
-according to the PAT settings. This enables changing the cache
-attributes of a PAT index in just one place without having to change
-at the users side.
+Hi Chanwoo,
 
-With this change it is possible to use the same kernel with different
-PAT configurations, e.g. supporting Xen.
+Thanks for the quick response.
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/include/asm/pat.h           |  1 +
- arch/x86/include/asm/pgtable_types.h |  4 +++
- arch/x86/mm/init.c                   |  8 ++++++
- arch/x86/mm/mm_internal.h            |  2 ++
- arch/x86/mm/pat.c                    | 50 ++++++++++++++++++++++++++++++++++--
- 5 files changed, 63 insertions(+), 2 deletions(-)
+On Fri, Oct 31, 2014 at 6:17 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> Hi Abhilash,
+>
+> On 10/31/2014 09:38 PM, Abhilash Kesavan wrote:
+>> The ADC on exynos7 is quite similar to ADCv2. The differences are as
+>> follows:
+>>       - v3 has 8 input channels (10 in v2).
+>>       - v3 does not include an ADC PHY control register.
+>>       - Some ADC_CON2 register bits being used in v2 are listed as
+>>         reserved in v3. This results in a different init_hw function
+>>         for v3.
+>>
+>> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+>> ---
+>> - Based on Naveen's "iio: exynos-adc: use syscon instead of ioremap" patchset
+>> http://comments.gmane.org/gmane.linux.kernel.iio/13943
+>>
+>>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |    2 ++
+>>  drivers/iio/adc/exynos_adc.c                       |   32 ++++++++++++++++++++
+>>  2 files changed, 34 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>> index c368210..a11e32c 100644
+>> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+>> @@ -14,6 +14,8 @@ Required properties:
+>>                               for exynos4412/5250 and s5pv210 controllers.
+>>                       Must be "samsung,exynos-adc-v2" for
+>>                               future controllers.
+>> +                     Must be "samsung,exynos-adc-v3" for
+>> +                             the ADC in Exynos7 and compatibles
+>
+> I prefer to use 'exynos7-adc' instead of 'exynos-adc-v3'.
+> Exynos7 has little different from existing ADCv2.
 
-diff --git a/arch/x86/include/asm/pat.h b/arch/x86/include/asm/pat.h
-index 150407a..91bc4ba 100644
---- a/arch/x86/include/asm/pat.h
-+++ b/arch/x86/include/asm/pat.h
-@@ -11,6 +11,7 @@ static const int pat_enabled;
- #endif
- 
- extern void pat_init(void);
-+void pat_init_cache_modes(void);
- 
- extern int reserve_memtype(u64 start, u64 end,
- 		enum page_cache_mode req_pcm, enum page_cache_mode *ret_pcm);
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 6d5f6d1..af447f9 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -351,6 +351,10 @@ extern uint8_t __pte2cachemode_tbl[8];
- 	((((cb) >> (_PAGE_BIT_PAT - 2)) & 4) |		\
- 	 (((cb) >> (_PAGE_BIT_PCD - 1)) & 2) |		\
- 	 (((cb) >> _PAGE_BIT_PWT) & 1))
-+#define __cm_idx2pte(i)					\
-+	((((i) & 4) << (_PAGE_BIT_PAT - 2)) |		\
-+	 (((i) & 2) << (_PAGE_BIT_PCD - 1)) |		\
-+	 (((i) & 1) << _PAGE_BIT_PWT))
- 
- static inline unsigned long cachemode2protval(enum page_cache_mode pcm)
- {
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index a9776ba..82b41d5 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -716,3 +716,11 @@ void __init zone_sizes_init(void)
- 	free_area_init_nodes(max_zone_pfns);
- }
- 
-+void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache)
-+{
-+	/* entry 0 MUST be WB (hardwired to speed up translations) */
-+	BUG_ON(!entry && cache != _PAGE_CACHE_MODE_WB);
-+
-+	__cachemode2pte_tbl[cache] = __cm_idx2pte(entry);
-+	__pte2cachemode_tbl[entry] = cache;
-+}
-diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-index 6b563a1..62474ba 100644
---- a/arch/x86/mm/mm_internal.h
-+++ b/arch/x86/mm/mm_internal.h
-@@ -16,4 +16,6 @@ void zone_sizes_init(void);
- 
- extern int after_bootmem;
- 
-+void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache);
-+
- #endif	/* __X86_MM_INTERNAL_H */
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index ef75f3f..4c60127 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -31,6 +31,7 @@
- #include <asm/io.h>
- 
- #include "pat_internal.h"
-+#include "mm_internal.h"
- 
- #ifdef CONFIG_X86_PAT
- int __read_mostly pat_enabled = 1;
-@@ -75,6 +76,52 @@ enum {
- 	PAT_UC_MINUS = 7,	/* UC, but can be overriden by MTRR */
- };
- 
-+#define CM(c) (_PAGE_CACHE_MODE_ ## c)
-+
-+static enum page_cache_mode pat_get_cache_mode(unsigned pat_val, char *msg)
-+{
-+	enum page_cache_mode cache;
-+	char *cache_mode;
-+
-+	switch (pat_val) {
-+	case PAT_UC:       cache = CM(UC);       cache_mode = "UC  "; break;
-+	case PAT_WC:       cache = CM(WC);       cache_mode = "WC  "; break;
-+	case PAT_WT:       cache = CM(WT);       cache_mode = "WT  "; break;
-+	case PAT_WP:       cache = CM(WP);       cache_mode = "WP  "; break;
-+	case PAT_WB:       cache = CM(WB);       cache_mode = "WB  "; break;
-+	case PAT_UC_MINUS: cache = CM(UC_MINUS); cache_mode = "UC- "; break;
-+	default:           cache = CM(WB);       cache_mode = "WB  "; break;
-+	}
-+
-+	memcpy(msg, cache_mode, 4);
-+
-+	return cache;
-+}
-+
-+#undef CM
-+
-+/*
-+ * Update the cache mode to pgprot translation tables according to PAT
-+ * configuration.
-+ * Using lower indices is preferred, so we start with highest index.
-+ */
-+void pat_init_cache_modes(void)
-+{
-+	int i;
-+	enum page_cache_mode cache;
-+	char pat_msg[33];
-+	u64 pat;
-+
-+	rdmsrl(MSR_IA32_CR_PAT, pat);
-+	pat_msg[32] = 0;
-+	for (i = 7; i >= 0; i--) {
-+		cache = pat_get_cache_mode((pat >> (i * 8)) & 7,
-+					   pat_msg + 4 * i);
-+		update_cache_mode_entry(i, cache);
-+	}
-+	pr_info("PAT configuration [0-7]: %s\n", pat_msg);
-+}
-+
- #define PAT(x, y)	((u64)PAT_ ## y << ((x)*8))
- 
- void pat_init(void)
-@@ -124,8 +171,7 @@ void pat_init(void)
- 	wrmsrl(MSR_IA32_CR_PAT, pat);
- 
- 	if (boot_cpu)
--		printk(KERN_INFO "x86 PAT enabled: cpu %d, old 0x%Lx, new 0x%Lx\n",
--		       smp_processor_id(), boot_pat_state, pat);
-+		pat_init_cache_modes();
- }
- 
- #undef PAT
--- 
-1.8.4.5
+Sure, I'll change it. The reason for my choosing v3 was that reading
+the version register (0x20 offset) showed a value of 0x80000009 in
+Exynos7 as against 0x80000008 in both 5420 and 3250.
+>
+> Also, If you want to use 'exynos-adc-v3' compatible,
+> Exynos7's TRM have to include the correct version(v3) infromation.
 
+I could not see any mention of the ADC controller version in the
+Exynos7 UM other than the version register. Does that mean it is v2 ?
+
+Regards,
+Abhilash
+>
+> Thanks,
+> Chanwoo Choi
+>
+>
+>
+>>                       Must be "samsung,exynos3250-adc" for
+>>                               controllers compatible with ADC of Exynos3250.
+>>                       Must be "samsung,s3c2410-adc" for
+>> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+>> index fe03177..74d0a9d 100644
+>> --- a/drivers/iio/adc/exynos_adc.c
+>> +++ b/drivers/iio/adc/exynos_adc.c
+>> @@ -390,6 +390,35 @@ static const struct exynos_adc_data exynos3250_adc_data = {
+>>       .start_conv     = exynos_adc_v2_start_conv,
+>>  };
+>>
+>> +static void exynos_adc_v3_init_hw(struct exynos_adc *info)
+>> +{
+>> +     u32 con1, con2;
+>> +
+>> +     if (info->data->needs_adc_phy)
+>> +             regmap_write(info->pmu_map, info->data->phy_offset, 1);
+>> +
+>> +     con1 = ADC_V2_CON1_SOFT_RESET;
+>> +     writel(con1, ADC_V2_CON1(info->regs));
+>> +
+>> +     con2 = readl(ADC_V2_CON2(info->regs));
+>> +     con2 &= ~ADC_V2_CON2_C_TIME(7);
+>> +     con2 |= ADC_V2_CON2_C_TIME(0);
+>> +     writel(con2, ADC_V2_CON2(info->regs));
+>> +
+>> +     /* Enable interrupts */
+>> +     writel(1, ADC_V2_INT_EN(info->regs));
+>> +}
+>> +
+>> +static const struct exynos_adc_data exynos_adc_v3_data = {
+>> +     .num_channels   = MAX_ADC_V1_CHANNELS,
+>> +     .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
+>> +
+>> +     .init_hw        = exynos_adc_v3_init_hw,
+>> +     .exit_hw        = exynos_adc_v2_exit_hw,
+>> +     .clear_irq      = exynos_adc_v2_clear_irq,
+>> +     .start_conv     = exynos_adc_v2_start_conv,
+>> +};
+>> +
+>>  static const struct of_device_id exynos_adc_match[] = {
+>>       {
+>>               .compatible = "samsung,s3c2410-adc",
+>> @@ -413,6 +442,9 @@ static const struct of_device_id exynos_adc_match[] = {
+>>               .compatible = "samsung,exynos-adc-v2",
+>>               .data = &exynos_adc_v2_data,
+>>       }, {
+>> +             .compatible = "samsung,exynos-adc-v3",
+>> +             .data = &exynos_adc_v3_data,
+>> +     }, {
+>>               .compatible = "samsung,exynos3250-adc",
+>>               .data = &exynos3250_adc_data,
+>>       },
+>>
+>
