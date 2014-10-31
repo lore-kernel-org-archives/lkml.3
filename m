@@ -1,187 +1,392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161441AbaJaAHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 20:07:45 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:35740 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161331AbaJaAHn (ORCPT
+	id S1161428AbaJaANx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 20:13:53 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:58861 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161019AbaJaANw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 20:07:43 -0400
+	Thu, 30 Oct 2014 20:13:52 -0400
+Date: Fri, 31 Oct 2014 02:13:31 +0200
+From: Iulia Manda <iulia.manda21@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: riel@redhat.com, mingo@redhat.com, peterz@infradead.org, mgorman@suse.de,
+        dave@stgolabs.net
+Subject: [PATCH v2] kernel: Refactor task_struct to use numa_faults instead
+ of numa_* pointers
+Message-ID: <20141031001331.GA30662@winterfell>
 MIME-Version: 1.0
-In-Reply-To: <1414676335-20203-1-git-send-email-kever.yang@rock-chips.com>
-References: <1414676335-20203-1-git-send-email-kever.yang@rock-chips.com>
-Date: Thu, 30 Oct 2014 17:07:42 -0700
-X-Google-Sender-Auth: 34Tn8kSxS7AkEsWl-B6wafZnMZw
-Message-ID: <CAD=FV=W50mhdGqyqFrGrcD3gRSyQ42fww6NC+E6BhRb6dk5toQ@mail.gmail.com>
-Subject: Re: [PATCH v2] clk: rockchip: disable unused clocks
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, han jiang <hj@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris <zyw@rock-chips.com>, Dmitry Torokhov <dtor@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+This patch simplifies task_struct by removing the four numa_* pointers
+in the same array and replacing them with the array pointer. By doing this,
+on x86_64, the size of task_struct is reduced by 3 ulong pointers (24 bytes on
+x86_64).
 
-On Thu, Oct 30, 2014 at 6:38 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> The rockchip clock driver use CLK_IGNORE_UNUSED flag to make sure
-> all the clocks are available like default power on state.
-> We have implement the clock manage in most of rockchip drivers,
-> it is time to remove it for power save.
-> Instead we add CLK_IGNORE_UNUSED for some clock nodes which should
-> be on during boot or no module driver in kernel will initialize it.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
-> Changes in v2:
-> - get some clock ID back
-> - add CLK_IGNORE_UNUSED tag for aclk_strc and aclk_core in clk-rk3188.c
-> - add CLK_IGNORE_UNUSED tag for rk3288 dwc2
->
->  drivers/clk/rockchip/clk-rk3188.c |  36 +++++-----
->  drivers/clk/rockchip/clk-rk3288.c | 148 +++++++++++++++++++-------------------
->  drivers/clk/rockchip/clk.c        |   9 ---
->  3 files changed, 92 insertions(+), 101 deletions(-)
+A new parameter is added to the task_faults_idx function so that it can return
+an index to the correct offset, corresponding with the old precalculated
+pointers.
 
-A few more regressions introduced by your patch:
+All of the code in sched/ that depended on task_faults_idx and numa_* was
+changed in order to match the new logic.
 
-* When testing suspend/resume _without_ going into "DEEP" mode, I get
-a crash on resume.  The crash is "fixed" with:
+Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
+---
+Changes since v1:
+	- improve style
+	- move the enum from linux/sched.h to sched/sched.h
+	- factor expression
 
--       COMPOSITE_NOMUX(0, "pclk_dbg_pre", "armclk", CLK_IGNORE_UNUSED,
-+       COMPOSITE_NOMUX(0, "pclk_dbg_pre", "armclk", 0,
+ include/linux/sched.h |   31 ++++++--------
+ kernel/sched/core.c   |    3 +-
+ kernel/sched/debug.c  |    4 +-
+ kernel/sched/fair.c   |  110 +++++++++++++++++++++++++------------------------
+ kernel/sched/sched.h  |    7 ++++
+ 5 files changed, 80 insertions(+), 75 deletions(-)
 
--       GATE(0, "cs_dbg", "pclk_dbg_pre", CLK_IGNORE_UNUSED,
-+       GATE(0, "cs_dbg", "pclk_dbg_pre", 0,
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5e344bb..dc1a9e8 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1558,28 +1558,23 @@ struct task_struct {
+ 	struct numa_group *numa_group;
+ 
+ 	/*
+-	 * Exponential decaying average of faults on a per-node basis.
+-	 * Scheduling placement decisions are made based on the these counts.
+-	 * The values remain static for the duration of a PTE scan
++	 * numa_faults is an array split into four regions:
++	 * faults_memory, faults_cpu, faults_memory_buffer, faults_cpu_buffer
++	 * in this precise order.
++	 *
++	 * faults_memory: Exponential decaying average of faults on a per-node
++	 * basis. Scheduling placement decisions are made based on these
++	 * counts. The values remain static for the duration of a PTE scan.
++	 * faults_cpu: Track the nodes the process was running on when a NUMA
++	 * hinting fault was incurred.
++	 * faults_memory_buffer and faults_cpu_buffer: Record faults per node
++	 * during the current scan window. When the scan completes, the counts
++	 * in faults_memory and faults_cpu decay and these values are copied.
+ 	 */
+-	unsigned long *numa_faults_memory;
++	unsigned long *numa_faults;
+ 	unsigned long total_numa_faults;
+ 
+ 	/*
+-	 * numa_faults_buffer records faults per node during the current
+-	 * scan window. When the scan completes, the counts in
+-	 * numa_faults_memory decay and these values are copied.
+-	 */
+-	unsigned long *numa_faults_buffer_memory;
+-
+-	/*
+-	 * Track the nodes the process was running on when a NUMA hinting
+-	 * fault was incurred.
+-	 */
+-	unsigned long *numa_faults_cpu;
+-	unsigned long *numa_faults_buffer_cpu;
+-
+-	/*
+ 	 * numa_faults_locality tracks if faults recorded during the last
+ 	 * scan window were remote/local. The task scan period is adapted
+ 	 * based on the locality of the faults with different weights
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4499950..b28bd0b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1853,8 +1853,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+ 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+ 	p->numa_work.next = &p->numa_work;
+-	p->numa_faults_memory = NULL;
+-	p->numa_faults_buffer_memory = NULL;
++	p->numa_faults = NULL;
+ 	p->last_task_numa_placement = 0;
+ 	p->last_sum_exec_runtime = 0;
+ 
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index ce33780..567fc0f 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -528,8 +528,8 @@ static void sched_show_numa(struct task_struct *p, struct seq_file *m)
+ 			unsigned long nr_faults = -1;
+ 			int cpu_current, home_node;
+ 
+-			if (p->numa_faults_memory)
+-				nr_faults = p->numa_faults_memory[2*node + i];
++			if (p->numa_faults)
++				nr_faults = p->numa_faults[2*node + i];
+ 
+ 			cpu_current = !i ? (task_node(p) == node) :
+ 				(pol && node_isset(node, pol->v.nodes));
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0b069bf..ac3b6c2 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -895,18 +895,24 @@ pid_t task_numa_group_id(struct task_struct *p)
+ 	return p->numa_group ? p->numa_group->gid : 0;
+ }
+ 
+-static inline int task_faults_idx(int nid, int priv)
++/*
++ * The averaged statistics, shared & private, memory & cpu,
++ * occupy the first half of the array. The second half of the
++ * array is for current counters, which are averaged into the
++ * first set by task_numa_placement.
++ */
++static inline int task_faults_idx(enum numa_faults_stats s, int nid, int priv)
+ {
+-	return NR_NUMA_HINT_FAULT_TYPES * nid + priv;
++	return NR_NUMA_HINT_FAULT_TYPES * (s * nr_node_ids + nid) + priv;
+ }
+ 
+ static inline unsigned long task_faults(struct task_struct *p, int nid)
+ {
+-	if (!p->numa_faults_memory)
++	if (!p->numa_faults)
+ 		return 0;
+ 
+-	return p->numa_faults_memory[task_faults_idx(nid, 0)] +
+-		p->numa_faults_memory[task_faults_idx(nid, 1)];
++	return p->numa_faults[task_faults_idx(NUMA_MEM, nid, 0)] +
++		p->numa_faults[task_faults_idx(NUMA_MEM, nid, 1)];
+ }
+ 
+ static inline unsigned long group_faults(struct task_struct *p, int nid)
+@@ -914,14 +920,14 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
+ 	if (!p->numa_group)
+ 		return 0;
+ 
+-	return p->numa_group->faults[task_faults_idx(nid, 0)] +
+-		p->numa_group->faults[task_faults_idx(nid, 1)];
++	return p->numa_group->faults[task_faults_idx(NUMA_MEM, nid, 0)] +
++		p->numa_group->faults[task_faults_idx(NUMA_MEM, nid, 1)];
+ }
+ 
+ static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
+ {
+-	return group->faults_cpu[task_faults_idx(nid, 0)] +
+-		group->faults_cpu[task_faults_idx(nid, 1)];
++	return group->faults_cpu[task_faults_idx(NUMA_MEM, nid, 0)] +
++		group->faults_cpu[task_faults_idx(NUMA_MEM, nid, 1)];
+ }
+ 
+ /*
+@@ -934,7 +940,7 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
+ {
+ 	unsigned long total_faults;
+ 
+-	if (!p->numa_faults_memory)
++	if (!p->numa_faults)
+ 		return 0;
+ 
+ 	total_faults = p->total_numa_faults;
+@@ -1408,7 +1414,7 @@ static void numa_migrate_preferred(struct task_struct *p)
+ 	unsigned long interval = HZ;
+ 
+ 	/* This task has no NUMA fault statistics yet */
+-	if (unlikely(p->numa_preferred_nid == -1 || !p->numa_faults_memory))
++	if (unlikely(p->numa_preferred_nid == -1 || !p->numa_faults))
+ 		return;
+ 
+ 	/* Periodically retry migrating the task to the preferred node */
+@@ -1584,18 +1590,23 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 	/* Find the node with the highest number of faults */
+ 	for_each_online_node(nid) {
++		/* Keep track of the offsets in numa_faults array */
++		int mem_idx, membuf_idx, cpu_idx, cpubuf_idx;
+ 		unsigned long faults = 0, group_faults = 0;
+-		int priv, i;
++		int priv;
+ 
+ 		for (priv = 0; priv < NR_NUMA_HINT_FAULT_TYPES; priv++) {
+ 			long diff, f_diff, f_weight;
+ 
+-			i = task_faults_idx(nid, priv);
++			mem_idx = task_faults_idx(NUMA_MEM, nid, priv);
++			membuf_idx = task_faults_idx(NUMA_MEMBUF, nid, priv);
++			cpu_idx = task_faults_idx(NUMA_CPU, nid, priv);
++			cpubuf_idx = task_faults_idx(NUMA_CPUBUF, nid, priv);
+ 
+ 			/* Decay existing window, copy faults since last scan */
+-			diff = p->numa_faults_buffer_memory[i] - p->numa_faults_memory[i] / 2;
+-			fault_types[priv] += p->numa_faults_buffer_memory[i];
+-			p->numa_faults_buffer_memory[i] = 0;
++			diff = p->numa_faults[membuf_idx] - p->numa_faults[mem_idx] / 2;
++			fault_types[priv] += p->numa_faults[membuf_idx];
++			p->numa_faults[membuf_idx] = 0;
+ 
+ 			/*
+ 			 * Normalize the faults_from, so all tasks in a group
+@@ -1605,21 +1616,27 @@ static void task_numa_placement(struct task_struct *p)
+ 			 * faults are less important.
+ 			 */
+ 			f_weight = div64_u64(runtime << 16, period + 1);
+-			f_weight = (f_weight * p->numa_faults_buffer_cpu[i]) /
++			f_weight = (f_weight * p->numa_faults[cpubuf_idx]) /
+ 				   (total_faults + 1);
+-			f_diff = f_weight - p->numa_faults_cpu[i] / 2;
+-			p->numa_faults_buffer_cpu[i] = 0;
++			f_diff = f_weight - p->numa_faults[cpu_idx] / 2;
++			p->numa_faults[cpubuf_idx] = 0;
+ 
+-			p->numa_faults_memory[i] += diff;
+-			p->numa_faults_cpu[i] += f_diff;
+-			faults += p->numa_faults_memory[i];
++			p->numa_faults[mem_idx] += diff;
++			p->numa_faults[cpu_idx] += f_diff;
++			faults += p->numa_faults[mem_idx];
+ 			p->total_numa_faults += diff;
+ 			if (p->numa_group) {
+-				/* safe because we can only change our own group */
+-				p->numa_group->faults[i] += diff;
+-				p->numa_group->faults_cpu[i] += f_diff;
++				/*
++				 * safe because we can only change our own group
++				 *
++				 * mem_idx represents the offset for a given
++				 * nid and priv in a specific region because it
++				 * is at the beginning of the numa_faults array.
++				 */
++				p->numa_group->faults[mem_idx] += diff;
++				p->numa_group->faults_cpu[mem_idx] += f_diff;
+ 				p->numa_group->total_faults += diff;
+-				group_faults += p->numa_group->faults[i];
++				group_faults += p->numa_group->faults[mem_idx];
+ 			}
+ 		}
+ 
+@@ -1691,7 +1708,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 		node_set(task_node(current), grp->active_nodes);
+ 
+ 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
+-			grp->faults[i] = p->numa_faults_memory[i];
++			grp->faults[i] = p->numa_faults[i];
+ 
+ 		grp->total_faults = p->total_numa_faults;
+ 
+@@ -1750,8 +1767,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 	double_lock_irq(&my_grp->lock, &grp->lock);
+ 
+ 	for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++) {
+-		my_grp->faults[i] -= p->numa_faults_memory[i];
+-		grp->faults[i] += p->numa_faults_memory[i];
++		my_grp->faults[i] -= p->numa_faults[i];
++		grp->faults[i] += p->numa_faults[i];
+ 	}
+ 	my_grp->total_faults -= p->total_numa_faults;
+ 	grp->total_faults += p->total_numa_faults;
+@@ -1776,14 +1793,14 @@ no_join:
+ void task_numa_free(struct task_struct *p)
+ {
+ 	struct numa_group *grp = p->numa_group;
+-	void *numa_faults = p->numa_faults_memory;
++	void *numa_faults = p->numa_faults;
+ 	unsigned long flags;
+ 	int i;
+ 
+ 	if (grp) {
+ 		spin_lock_irqsave(&grp->lock, flags);
+ 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
+-			grp->faults[i] -= p->numa_faults_memory[i];
++			grp->faults[i] -= p->numa_faults[i];
+ 		grp->total_faults -= p->total_numa_faults;
+ 
+ 		list_del(&p->numa_entry);
+@@ -1793,10 +1810,7 @@ void task_numa_free(struct task_struct *p)
+ 		put_numa_group(grp);
+ 	}
+ 
+-	p->numa_faults_memory = NULL;
+-	p->numa_faults_buffer_memory = NULL;
+-	p->numa_faults_cpu= NULL;
+-	p->numa_faults_buffer_cpu = NULL;
++	p->numa_faults = NULL;
+ 	kfree(numa_faults);
+ }
+ 
+@@ -1819,24 +1833,14 @@ void task_numa_fault(int last_cpupid, int mem_node, int pages, int flags)
+ 		return;
+ 
+ 	/* Allocate buffer to track faults on a per-node basis */
+-	if (unlikely(!p->numa_faults_memory)) {
+-		int size = sizeof(*p->numa_faults_memory) *
++	if (unlikely(!p->numa_faults)) {
++		int size = sizeof(*p->numa_faults) *
+ 			   NR_NUMA_HINT_FAULT_BUCKETS * nr_node_ids;
+ 
+-		p->numa_faults_memory = kzalloc(size, GFP_KERNEL|__GFP_NOWARN);
+-		if (!p->numa_faults_memory)
++		p->numa_faults = kzalloc(size, GFP_KERNEL|__GFP_NOWARN);
++		if (!p->numa_faults)
+ 			return;
+ 
+-		BUG_ON(p->numa_faults_buffer_memory);
+-		/*
+-		 * The averaged statistics, shared & private, memory & cpu,
+-		 * occupy the first half of the array. The second half of the
+-		 * array is for current counters, which are averaged into the
+-		 * first set by task_numa_placement.
+-		 */
+-		p->numa_faults_cpu = p->numa_faults_memory + (2 * nr_node_ids);
+-		p->numa_faults_buffer_memory = p->numa_faults_memory + (4 * nr_node_ids);
+-		p->numa_faults_buffer_cpu = p->numa_faults_memory + (6 * nr_node_ids);
+ 		p->total_numa_faults = 0;
+ 		memset(p->numa_faults_locality, 0, sizeof(p->numa_faults_locality));
+ 	}
+@@ -1876,8 +1880,8 @@ void task_numa_fault(int last_cpupid, int mem_node, int pages, int flags)
+ 	if (migrated)
+ 		p->numa_pages_migrated += pages;
+ 
+-	p->numa_faults_buffer_memory[task_faults_idx(mem_node, priv)] += pages;
+-	p->numa_faults_buffer_cpu[task_faults_idx(cpu_node, priv)] += pages;
++	p->numa_faults[task_faults_idx(NUMA_MEMBUF, mem_node, priv)] += pages;
++	p->numa_faults[task_faults_idx(NUMA_CPUBUF, cpu_node, priv)] += pages;
+ 	p->numa_faults_locality[local] += pages;
+ }
+ 
+@@ -5166,7 +5170,7 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ 	struct numa_group *numa_group = rcu_dereference(p->numa_group);
+ 	int src_nid, dst_nid;
+ 
+-	if (!sched_feat(NUMA_FAVOUR_HIGHER) || !p->numa_faults_memory ||
++	if (!sched_feat(NUMA_FAVOUR_HIGHER) || !p->numa_faults ||
+ 	    !(env->sd->flags & SD_NUMA)) {
+ 		return false;
+ 	}
+@@ -5205,7 +5209,7 @@ static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
+ 	if (!sched_feat(NUMA) || !sched_feat(NUMA_RESIST_LOWER))
+ 		return false;
+ 
+-	if (!p->numa_faults_memory || !(env->sd->flags & SD_NUMA))
++	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
+ 		return false;
+ 
+ 	src_nid = cpu_to_node(env->src_cpu);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 24156c84..b3250d9 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -679,6 +679,13 @@ static inline u64 rq_clock_task(struct rq *rq)
+ }
+ 
+ #ifdef CONFIG_NUMA_BALANCING
++/* The regions in numa_faults array from task_struct */
++enum numa_faults_stats {
++	NUMA_MEM = 0,
++	NUMA_CPU,
++	NUMA_MEMBUF,
++	NUMA_CPUBUF
++};
+ extern void sched_setnuma(struct task_struct *p, int node);
+ extern int migrate_task_to(struct task_struct *p, int cpu);
+ extern int migrate_swap(struct task_struct *, struct task_struct *);
+-- 
+1.7.10.4
 
-I haven't dug into what the heck is going on yet (and I'm not sure you
-should include the above in your patch), but the crash looks like:
-
-    [   18.640025] CPU1: shutdown
-    [   18.643304] CPU2: shutdown
-    [   18.646490] CPU3: shutdown
-    [   18.649537] Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
-
-    Entering kdb (current=0xed7a9e00, pid 2549) on processor 0 Oops: (null)
-    due to oops @ 0xc010f074
-
-    dCPU: 0 PID: 2549 Comm: cat Not tainted 3.14.0 #455
-    dtask: ed7a9e00 ti: ecd38000 task.ti: ecd38000
-    PC is at reset_ctrl_regs+0xb0/0x27c
-    LR is at dbg_cpu_pm_notify+0x24/0x2c
-    pc : [<c010f074>]    lr : [<c010f264>]    psr: 60000193
-    sp : ecd39d70  ip : ecd39d98  fp : ecd39d94
-    r10: c0b08fb8  r9 : ecd39e54  r8 : 00000000
-    r7 : ecd38030  r6 : 00000002  r5 : c0b4a37c  r4 : 00000000
-    r3 : 00000000  r2 : 00000000  r1 : 00000002  r0 : 00000000
-    Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-    Control: 10c5387d  Table: 2db6806a  DAC: 00000015
-    dCPU: 0 PID: 2549 Comm: cat Not tainted 3.14.0 #455
-    [<c010e26c>] (unwind_backtrace) from [<c010a3cc>] (show_stack+0x20/0x24)
-    [<c010a3cc>] (show_stack) from [<c0610fcc>] (dump_stack+0x78/0x94)
-    [<c0610fcc>] (dump_stack) from [<c0107438>] (show_regs+0x2c/0x34)
-    [<c0107438>] (show_regs) from [<c0195270>] (kdb_dumpregs+0x38/0x60)
-    [<c0195270>] (kdb_dumpregs) from [<c0198534>] (kdb_main_loop+0x210/0x668)
-    [<c0198534>] (kdb_main_loop) from [<c019b30c>] (kdb_stub+0x298/0x3cc)
-    [<c019b30c>] (kdb_stub) from [<c0191ae0>] (kgdb_cpu_enter+0x1c4/0x60c)
-    [<c0191ae0>] (kgdb_cpu_enter) from [<c01921fc>]
-(kgdb_handle_exception+0x194/0x1c8)
-    [<c01921fc>] (kgdb_handle_exception) from [<c010d930>]
-(kgdb_notify+0x38/0x50)
-    [<c010d930>] (kgdb_notify) from [<c0142688>] (notifier_call_chain+0x50/0x78)
-    [<c0142688>] (notifier_call_chain) from [<c014270c>]
-(atomic_notifier_call_chain+0x2c/0x34)
-    [<c014270c>] (atomic_notifier_call_chain) from [<c0142c64>]
-(notify_die+0x4c/0x70)
-    [<c0142c64>] (notify_die) from [<c010a4f8>] (die+0x128/0x3e0)
-    [<c010a4f8>] (die) from [<c010a80c>] (arm_notify_die+0x5c/0x60)
-    [<c010a80c>] (arm_notify_die) from [<c01000a0>] (do_undefinstr+0xa0/0x1a4)
-    [<c01000a0>] (do_undefinstr) from [<c010b02c>] (__und_svc_finish+0x0/0x14)
-    Exception stack(0xecd39d28 to 0xecd39d70)
-    9d20:                   00000000 00000002 00000000 00000000
-00000000 c0b4a37c
-    9d40: 00000002 ecd38030 00000000 ecd39e54 c0b08fb8 ecd39d94
-ecd39d98 ecd39d70
-    9d60: c010f264 c010f074 60000193 ffffffff
-    [<c010b02c>] (__und_svc_finish) from [<c010f074>]
-(reset_ctrl_regs+0xb0/0x27c)
-    [<c010f074>] (reset_ctrl_regs) from [<c010f264>]
-(dbg_cpu_pm_notify+0x24/0x2c)
-    [<c010f264>] (dbg_cpu_pm_notify) from [<c0142688>]
-(notifier_call_chain+0x50/0x78)
-    [<c0142688>] (notifier_call_chain) from [<c0142770>]
-(__raw_notifier_call_chain+0x24/0x2c)
-    [<c0142770>] (__raw_notifier_call_chain) from [<c01c2e2c>]
-(cpu_pm_notify+0x34/0x50)
-    [<c01c2e2c>] (cpu_pm_notify) from [<c01c2f00>] (cpu_pm_exit+0x30/0x48)
-    [<c01c2f00>] (cpu_pm_exit) from [<c01c302c>] (cpu_pm_resume+0x1c/0x20)
-    [<c01c302c>] (cpu_pm_resume) from [<c03d9234>] (syscore_resume+0x84/0xe4)
-    [<c03d9234>] (syscore_resume) from [<c01628a0>]
-(suspend_devices_and_enter+0x2e0/0x438)
-    [<c01628a0>] (suspend_devices_and_enter) from [<c0162b08>]
-(pm_suspend+0x110/0x214)
-    [<c0162b08>] (pm_suspend) from [<c0161790>] (state_store+0xbc/0xd0)
-    [<c0161790>] (state_store) from [<c0325ccc>] (kobj_attr_store+0x1c/0x28)
-    [<c0325ccc>] (kobj_attr_store) from [<c026daac>] (sysfs_kf_write+0x4c/0x58)
-    [<c026daac>] (sysfs_kf_write) from [<c0270e38>]
-(kernfs_fop_write+0xfc/0x14c)
-    [<c0270e38>] (kernfs_fop_write) from [<c02104d4>] (vfs_write+0xdc/0x18c)
-    [<c02104d4>] (vfs_write) from [<c0210a98>] (SyS_write+0x58/0xb0)
-    [<c0210a98>] (SyS_write) from [<c0106380>] (ret_fast_syscall+0x0/0x30)
-
-
-I'm also having trouble going into "deep" suspend (which doesn't work
-fully yet anyway) even after I fix the above.  Specifically _without_
-this patch deep suspend takes up much less power than with this patch.
-That one looks like it might involve more clocks.  Right now I usually
-get low power if I leave all gate clocks on and disable these
-composite clocks (ran out of time to confirm, to check the gates, to
-double check, etc, but I can try to continue next week):
-
--       COMPOSITE(0, "aclk_vepu", mux_pll_src_cpll_gpll_usb480m_p, 0,
-+       COMPOSITE(0, "aclk_vepu", mux_pll_src_cpll_gpll_usb480m_p,
-CLK_IGNORE_UNUSED,
-
--       COMPOSITE(0, "aclk_vdpu", mux_pll_src_cpll_gpll_usb480m_p, 0,
-+       COMPOSITE(0, "aclk_vdpu", mux_pll_src_cpll_gpll_usb480m_p,
-CLK_IGNORE_UNUSED,
-
--       COMPOSITE(0, "aclk_rga_pre", mux_pll_src_cpll_gpll_usb480m_p, 0,
-+       COMPOSITE(0, "aclk_rga_pre", mux_pll_src_cpll_gpll_usb480m_p,
-CLK_IGNORE_UNUSED,
-
--       COMPOSITE(SCLK_RGA, "sclk_rga", mux_pll_src_cpll_gpll_usb480m_p, 0,
-+       COMPOSITE(SCLK_RGA, "sclk_rga",
-mux_pll_src_cpll_gpll_usb480m_p, CLK_IGNORE_UNUSED,
-
--       COMPOSITE(ACLK_HEVC, "aclk_hevc", mux_pll_src_cpll_gpll_npll_p, 0,
-+       COMPOSITE(ACLK_HEVC, "aclk_hevc",
-mux_pll_src_cpll_gpll_npll_p, CLK_IGNORE_UNUSED,
-
--       COMPOSITE(SCLK_HEVC_CABAC, "sclk_hevc_cabac",
-mux_pll_src_cpll_gpll_npll_p, 0,
-+       COMPOSITE(SCLK_HEVC_CABAC, "sclk_hevc_cabac",
-mux_pll_src_cpll_gpll_npll_p, CLK_IGNORE_UNUSED,
-
--       COMPOSITE(SCLK_HEVC_CORE, "sclk_hevc_core",
-mux_pll_src_cpll_gpll_npll_p, 0,
-+       COMPOSITE(SCLK_HEVC_CORE, "sclk_hevc_core",
-mux_pll_src_cpll_gpll_npll_p, CLK_IGNORE_UNUSED,
-
-
-I could believe that some of these problems have to do with the power
-domain patches, but I have in no way confirmed that.
-
--Doug
