@@ -1,133 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471AbaJaJb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:31:56 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:37442 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407AbaJaJbz (ORCPT
+	id S932552AbaJaJde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:33:34 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:24876 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaJaJdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:31:55 -0400
-Date: Fri, 31 Oct 2014 10:31:41 +0100
-From: Greg Kurz <gkurz@linux.vnet.ibm.com>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: Re: [PATCH] hwrng: pseries - port to new read API and fix stack
- corruption
-Message-ID: <20141031103141.7b91c647@bahia.local>
-In-Reply-To: <1414738812.21815.5.camel@concordia>
-References: <20141031063233.1884.86309.stgit@bahia.local>
-	<1414738812.21815.5.camel@concordia>
-Organization: IBM
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14103109-0029-0000-0000-0000017189C3
+	Fri, 31 Oct 2014 05:33:32 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f6c6d00000120b-84-54535768d675
+Content-transfer-encoding: 8BIT
+Message-id: <1414748006.7705.2.camel@AMDC1943>
+Subject: Re: [PATCH v8 1/5] PM / Runtime: Add getter for querying the IRQ safe
+ option
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Fri, 31 Oct 2014 10:33:26 +0100
+In-reply-to: <CAPDyKFpz2Finv0BUmp1pQtihUzUULCfj7hmOJW3CJ_cWErLySQ@mail.gmail.com>
+References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
+ <1413795888-18559-2-git-send-email-k.kozlowski@samsung.com>
+ <1414746895.6797.3.camel@AMDC1943>
+ <CAPDyKFpz2Finv0BUmp1pQtihUzUULCfj7hmOJW3CJ_cWErLySQ@mail.gmail.com>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42I5/e/4Nd2M8OAQg6vvJCw2zljPavHkQDuj
+	xfSpFxgtVk/9y2pxtukNu8WSyfNZLWZN2ctksbBtCYvF5V1z2Cw+9x5htLh9mddi7ZG77Bbv
+	XkZY3D11lM3izOlLrBYTfl9gszi+NtziZd9+Fgchj5bmHjaPxXteMnncubYHyOqbzOqx5M0h
+	Vo8tV9tZPGbf/cHo0bdlFaPHitXf2T0+b5Lz2Pv5N0sAdxSXTUpqTmZZapG+XQJXxtpLz5kK
+	2rgqjq+8wdTA+Iu9i5GTQ0LAROLFjsesELaYxIV769m6GLk4hASWMkrMP7qDCSTBKyAo8WPy
+	PZYuRg4OZgF5iSOXskHCzALqEpPmLWKGqP/MKLFi6hpGiHo9iYNbroANFRYIl7i/bAuYzSZg
+	LLF5+RI2EFtEQENiz8PzrCDNzAJPWCVu3JkJtoxFQFViyf5FYEWcAsES71p+skNs+MgocXHN
+	T7ArJASUJRr73SYwCsxCct8shPtmIblvASPzKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQ
+	SPyyg3HxMatDjAIcjEo8vCskg0OEWBPLiitzDzFKcDArifCKuAOFeFMSK6tSi/Lji0pzUosP
+	MTJxcEo1MDp+OPk/8rvQ3F+/1T/O+xUWsjj+pfv1/vM1LlkLJkrtzw/p77aXaP2l8jkydMak
+	/YvWfj6Vrjpj14vdHZNLrzY4FPoxXXGYatgTvUjn5ywzrur7sxxaL4QH71Tur/YsOL/22bqp
+	TOcUsjS9ORxZC7/US81UO/0omfVM71PtM9f/S85dc0mA20mJpTgj0VCLuag4EQBDp5CBogIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014 18:00:12 +1100
-Michael Ellerman <mpe@ellerman.id.au> wrote:
-
-> On Fri, 2014-10-31 at 07:50 +0100, Greg Kurz wrote:
-> > The add_early_randomness() function in drivers/char/hw_random/core.c passes
-> > a 16-byte buffer to pseries_rng_data_read(). Unfortunately, plpar_hcall()
-> > returns four 64-bit values and trashes 16 bytes on the stack.
+On pią, 2014-10-31 at 10:29 +0100, Ulf Hansson wrote:
+> On 31 October 2014 10:14, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> > On pon, 2014-10-20 at 11:04 +0200, Krzysztof Kozlowski wrote:
+> >> Add a simple getter pm_runtime_is_irq_safe() for querying whether runtime
+> >> PM IRQ safe was set or not.
+> >>
+> >> Various bus drivers implementing runtime PM may use choose to suspend
+> >> differently based on IRQ safeness status of child driver (e.g. do not
+> >> unprepare the clock if IRQ safe is not set).
+> >>
+> >> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> >> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+> >
+> > Rafael, Len, Pavel,
+> >
+> > Is proposed API ok? Do you have any comments?
+> >
+> > I'll upload whole patchset to Russell's patch tracking system. However
+> > an ack from PM maintainer is probably needed.
 > 
-> Hmm, thanks. I thought I'd fixed that, but I guess I never sent the patch :}
+> I would actually prefer the opposite. It's better if we can take these
+> patches through Rafaels tree.
 > 
+> 1) I have posted patches for the amba bus, these may have merge
+> conflicts with your changes.
+> 2) We may start using the new runtime PM API within genpd as of now.
 
-Heh so many patches ! :)
+I don't mind and it makes sense to me.
+This way I need an ack from Russell or Vinod...
 
-> > This bug has been lying around for a long time. It got unveiled by:
-> > 
-> > commit d3cc7996473a7bdd33256029988ea690754e4e2a
-> > Author: Amit Shah <amit.shah@redhat.com>
-> > Date:   Thu Jul 10 15:42:34 2014 +0530
-> > 
-> >     hwrng: fetch randomness only after device init
-> > 
-> > It may trig a oops while loading or unloading the pseries-rng module for both
-> > PowerVM and PowerKVM guests.
-> > 
-> > This patch does two things:
-> > - pass an intermediate well sized buffer to plpar_hcall(). This is acceptalbe
-> >   since we're not on a hot path.
-> 
-> Well probably, can you do a before and after test of dd if=/dev/hwrng ?
-> 
 
-I had to do this to be able to run the before test:
+Best regards,
+Krzysztof
 
-@@ -78,7 +78,7 @@ static size_t rng_buffer_size(void)
- 
- static void add_early_randomness(struct hwrng *rng)
- {
--       unsigned char bytes[16];
-+       unsigned char bytes[32];
-
-I ran tests for 128 MB and 1G several times in a PowerKVM guest on a POWER8 box.
-
-Before:
-
-[root@fedora20-ppc64 ~]# time dd if=/dev/hwrng of=/dev/null bs=1024 count=131072
-131072+0 records in
-131072+0 records out
-134217728 bytes (134 MB) copied, 17.0503 s, 7.9 MB/s
-
-real    0m17.051s
-user    0m0.024s
-sys     0m16.797s
-[root@fedora20-ppc64 ~]# time dd if=/dev/hwrng of=/dev/null bs=1024 count=1048576
-1048576+0 records in
-1048576+0 records out
-1073741824 bytes (1.1 GB) copied, 136.374 s, 7.9 MB/s
-
-real    2m16.376s
-user    0m0.189s
-sys     2m14.367s
-
-After:
-
-[root@fedora20-ppc64 ~]# time dd if=/dev/hwrng of=/dev/null bs=1024 count=131072
-131072+0 records in
-131072+0 records out
-134217728 bytes (134 MB) copied, 17.0502 s, 7.9 MB/s
-
-real    0m17.051s
-user    0m0.024s
-sys     0m16.797s
-[root@fedora20-ppc64 ~]# time dd if=/dev/hwrng of=/dev/null bs=1024 count=1048576
-1048576+0 records in
-1048576+0 records out
-1073741824 bytes (1.1 GB) copied, 136.432 s, 7.9 MB/s
-
-real    2m16.433s
-user    0m0.188s
-sys     2m14.370s
-
-It shows no degradation of performance.
-
-> > Cc'ing stable as I could reproduce back to 3.15.10
-> 
-> The right way to CC stable for a patch that isn't yet in upstream is to add:
-> 
-> CC: stable@vger.kernel.org
-> 
-> Before your Signed-off-by. They will then pick it up once it's merged into
-> Linus' tree. See Documentation/stable_kernel_rules.txt
-> 
-> cheers
-> 
-
-Oops... should I repost then ?
-
-Thanks.
-
---
-Greg
 
