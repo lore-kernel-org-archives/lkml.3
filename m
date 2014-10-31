@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161748AbaJaCp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 22:45:29 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:35797 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161609AbaJaCp1 (ORCPT
+	id S1422770AbaJaCrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 22:47:33 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:57866 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422689AbaJaCrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 22:45:27 -0400
-Date: Thu, 30 Oct 2014 19:45:13 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Robert Richter <rric@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Sunil Goutham <sgoutham@cavium.com>,
-        Robert Richter <rrichter@cavium.com>,
-        Stefan Assmann <sassmann@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] VNIC: Adding support for Cavium ThunderX network
- controller
-Message-ID: <20141030194513.089d27ec@urahara>
-In-Reply-To: <20141030165434.GW20170@rric.localhost>
-References: <20141030165434.GW20170@rric.localhost>
+	Thu, 30 Oct 2014 22:47:32 -0400
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: linux-kernel@vger.kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <12a11952cf1f7ee1c629af9da851bcba>
+X-DNS-TYPE: 1
+Message-ID: <5452F834.90303@rock-chips.com>
+Date: Fri, 31 Oct 2014 10:47:16 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: dinguyen@opensource.altera.com, paulz@synopsys.com, balbi@ti.com
+CC: dinh.linux@gmail.com, swarren@wwwdotorg.org, b.zolnierkie@samsung.com,
+        matthijs@stdin.nl, r.baldyga@samsung.com, jg1.han@samsung.com,
+        sachin.kamat@linaro.org, ben-linux@fluff.org, dianders@chromium.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 1/8] usb: dwc2: Update the gadget driver to use common
+ dwc2_hsotg structure
+References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com> <1414538749-14735-2-git-send-email-dinguyen@opensource.altera.com>
+In-Reply-To: <1414538749-14735-2-git-send-email-dinguyen@opensource.altera.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct 2014 17:54:34 +0100
-Robert Richter <rric@kernel.org> wrote:
+Hi Dinh
+On 10/29/2014 07:25 AM, dinguyen@opensource.altera.com wrote:
+> From: Dinh Nguyen <dinguyen@opensource.altera.com>
+>
+> Adds the gadget data structure and appropriate data structure pointers
+> to the common dwc2_hsotg data structure. To keep the driver data
+> dereference code looking clean, the gadget variable declares are only available
+> for peripheral and dual-role mode. This is needed so that the dwc2_hsotg data
+> structure can be used by the hcd and gadget drivers.
+>
+> Updates gadget.c to use the dwc2_hsotg data structure and gadget pointers
+> that have been moved into the common dwc2_hsotg structure.
+Are we still need so much s3c prefix? Can we replace all the s3c into dwc2?
 
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index 1fa99a301817..80bd3336691e 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -2324,6 +2324,8 @@
->  #define PCI_DEVICE_ID_ALTIMA_AC9100	0x03ea
->  #define PCI_DEVICE_ID_ALTIMA_AC1003	0x03eb
->  
-> +#define PCI_VENDOR_ID_CAVIUM		0x177d
-
-I don't think PCI folks want this updated with every id anymore.
+- Kever
