@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761048AbaJaHVs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 03:21:48 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:43845 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699AbaJaHVr (ORCPT
+	id S1761147AbaJaHWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 03:22:30 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56643 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761088AbaJaHW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 03:21:47 -0400
-Date: Fri, 31 Oct 2014 15:20:30 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org, joe@perches.com,
-        mchehab@osg.samsung.com, crope@iki.fi, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto
- accelerator
-Message-ID: <20141031072030.GA7563@gondor.apana.org.au>
-References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com>
- <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>
- <20141021191149.GQ21108@lukather>
- <544A9FEA.6020304@gmail.com>
- <20141030171933.GR21251@lukather>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141030171933.GR21251@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 31 Oct 2014 03:22:28 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH for v3.18] mm/compaction: skip the range until proper target pageblock is met
+Date: Fri, 31 Oct 2014 16:23:55 +0900
+Message-Id: <1414740235-3975-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 06:19:33PM +0100, Maxime Ripard wrote:
->
-> > With AF_ALG and cryptodev, the SG is in highmem. Verified with some
-> > PageHighMem().
-> 
-> Then fix AF_ALG and cryptodev, because all of the other drivers might
-> be affected.
+commit 7d49d8868336 ("mm, compaction: reduce zone checking frequency in
+the migration scanner") makes side-effect that change iteration
+range calculation. Before change, block_end_pfn is calculated using
+start_pfn, but, now, blindly add pageblock_nr_pages to previous value.
 
-No it's the driver that needs to be fixed.  Of course if there
-are enough drivers it may be worthwhile adding either copying or
-a software fallback for highmem requests.
+This cause the problem that isolation_start_pfn is larger than
+block_end_pfn when we isolation the page with more than pageblock order.
+In this case, isolation would be failed due to invalid range parameter.
 
-Cheers,
+To prevent this, this patch implement skipping the range until proper
+target pageblock is met. Without this patch, CMA with more than pageblock
+order always fail, but, with this patch, it will succeed.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/compaction.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index ec74cf0..212682a 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -472,18 +472,20 @@ isolate_freepages_range(struct compact_control *cc,
+ 	pfn = start_pfn;
+ 	block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+ 
+-	for (; pfn < end_pfn; pfn += isolated,
+-				block_end_pfn += pageblock_nr_pages) {
++	for (; pfn < end_pfn; block_end_pfn += pageblock_nr_pages) {
+ 		/* Protect pfn from changing by isolate_freepages_block */
+ 		unsigned long isolate_start_pfn = pfn;
+ 
+ 		block_end_pfn = min(block_end_pfn, end_pfn);
++		if (pfn >= block_end_pfn)
++			continue;
+ 
+ 		if (!pageblock_pfn_to_page(pfn, block_end_pfn, cc->zone))
+ 			break;
+ 
+ 		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
+ 						block_end_pfn, &freelist, true);
++		pfn += isolated;
+ 
+ 		/*
+ 		 * In strict mode, isolate_freepages_block() returns 0 if
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.9.5
+
