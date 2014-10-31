@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095AbaJaKGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:06:16 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:36819 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297AbaJaKGN (ORCPT
+	id S1757518AbaJaKKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:10:35 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34288 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751211AbaJaKKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:06:13 -0400
-Date: Fri, 31 Oct 2014 18:05:22 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org, joe@perches.com,
-        mchehab@osg.samsung.com, crope@iki.fi, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto
- accelerator
-Message-ID: <20141031100522.GA8655@gondor.apana.org.au>
-References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com>
- <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>
- <20141021191149.GQ21108@lukather>
- <544A9FEA.6020304@gmail.com>
- <20141030171933.GR21251@lukather>
- <20141031072030.GA7563@gondor.apana.org.au>
- <20141031081323.GS21251@lukather>
- <20141031081803.GA8012@gondor.apana.org.au>
- <20141031095706.GA8054@lukather>
+	Fri, 31 Oct 2014 06:10:33 -0400
+Date: Fri, 31 Oct 2014 10:09:25 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Ankit Jindal <ankit.jindal@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "patches@apm.com" <patches@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Varka Bhadram <varkabhadram@gmail.com>
+Subject: Re: [PATCH v3 5/6] Documentation: dt-bindings: Add binding info for
+ X-Gene QMTM UIO driver
+Message-ID: <20141031100925.GA798@leverpostej>
+References: <1413871011-4101-1-git-send-email-ankit.jindal@linaro.org>
+ <1413871011-4101-6-git-send-email-ankit.jindal@linaro.org>
+ <20141021091412.GB15293@leverpostej>
+ <CAPTm99X9k+cfELMLL8_PmYN6RNn7CL7KugnV5JKcW6Jqhs8idg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141031095706.GA8054@lukather>
+In-Reply-To: <CAPTm99X9k+cfELMLL8_PmYN6RNn7CL7KugnV5JKcW6Jqhs8idg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 10:57:06AM +0100, Maxime Ripard wrote:
->
-> On a 3.18-rc2 kernel:
+> >> +Required properties:
+> >> +- compatible: Should be "apm,xgene-qmtm"
+> >> +- reg: Address and length of the register set for the device. It contains the
+> >> +  information of registers in the same order as described by reg-names.
+> >> +- reg-names: Should contain the register set names
+> >> +  - "csr": QMTM control and status register address space.
+> >> +  - "fabric": QMTM memory mapped access to queue states.
+> >> +- qpool: Points to the phandle of the node defining memory location for
+> >> +      creating QMTM queues. This could point either to the reserved-memory
+> >> +      node (as-per reserved memory bindings) or to the node of on-chip
+> >> +      SRAM etc. It is expected that size and location of qpool memory will
+> >> +      be configurable via bootloader.
+> >
+> > Is that on-chip SRAM part of the QMTM, or is that a shared part of the
+> > SoC?
+> Its not part of QMTM.
 > 
-> $ git grep kmap -- crypto/
-> crypto/ahash.c:                         walk->data = kmap(walk->pg);
-> crypto/ahash.c:                         walk->data = kmap_atomic(walk->pg);
-> crypto/async_tx/async_memcpy.c:         dest_buf = kmap_atomic(dest) + dest_offset;
-> crypto/async_tx/async_memcpy.c:         src_buf = kmap_atomic(src) + src_offset;
-> crypto/scatterwalk.c:                   return kmap_atomic(scatterwalk_page(walk)) +
-> crypto/shash.c:                         data = kmap_atomic(sg_page(sg));
-> crypto/shash.c:                         data = kmap_atomic(sg_page(sg));
+> >
+> > It feels odd to have a phandle that can go to completely different
+> > classes of node, especially as you will need to use a different API to
+> > acquire the memory region within Linux.
+> It is expected that phandle will point to a node whose first reg
+> property will be only for qpool memory.
+
+Even if that's true you will need to use completely different APIs for
+accessing that memory (so that the kernel can account the use of
+reserved-memory correctly), so this might not be the best design. It
+might be better to have qpool-sram and qpool-memory properties that
+point at an sram node or a reserved-memory node respectively.
+
+> >
+> >> +- clocks: Reference to the clock entry.
+> >
+> > Just the one clock? Does the clock input to the QMTM have a name?
+> Just one input clock. There is no specific name of it.
+
+Ok.
+
 > 
-> None of the drivers are.
+> >
+> >> +- num-queues: Number of queues under this QMTM device.
+> >> +- devid: QMTM identification number for the system having multiple QMTM devices.
+> >> +      This is used to form a unique id (a tuple of queue number and
+> >> +      device id) for the queues belonging to this device.
+> >
+> > Is this just an arbitrary unique ID, or is this a non-probeable property
+> > of the HW? If the former, isn't the base address sufficient as a unique
+> > identifier?
+> Its a non-probeable property of the HW.
 
-What do you mean? It's precisely because the page can be in highmem
-that we are mapping it.  If it's not in highmem it'll be a noop.
+Ok. That sounds fine then.
 
-Admittedly I haven't tested highmem since moving over to x86-64
-some years ago, but it definitely used to work on x86-32.
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Thanks,
+Mark.
