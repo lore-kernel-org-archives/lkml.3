@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481AbaJaItm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 04:49:42 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:34555 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102AbaJaItg (ORCPT
+	id S1757562AbaJaIua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 04:50:30 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:41211 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765AbaJaIsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 04:49:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1414529835-16207-1-git-send-email-dianders@chromium.org>
-References: <1414529835-16207-1-git-send-email-dianders@chromium.org>
-Date: Fri, 31 Oct 2014 09:49:35 +0100
-Message-ID: <CACRpkdagHFAaPmQptsm7pz_JqYUCbU-0FoH45vrXo8pG6mTAxA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] pinctrl: Add output-disable
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-rockchip@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>, Sherman Yin <syin@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 31 Oct 2014 04:48:13 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
+        kamalesh@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org
+Cc: riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v8 06/10] sched: get CPU's usage statistic
+Date: Fri, 31 Oct 2014 09:47:28 +0100
+Message-Id: <1414745252-4895-7-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org>
+References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 9:57 PM, Doug Anderson <dianders@chromium.org> wrote:
-> The pinctrl bindings / API allow you to specify that:
-> - a pin should be an output
-> - a pin should have its input path enabled / disabled
->
-> ...but they don't allow you to tell a pin to stop outputting.  Lets
-> add a new setting for that just in case the bootloader (or the default
-> state) left a pin as an output and we don't want it that way anymore.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-(...)
-> + * @PIN_CONFIG_OUTPUT_DISABLE: this will configure the pin _not_ to output.
-> + *     Parameter should be 1.
+Monitor the usage level of each group of each sched_domain level. The usage is
+the portion of cpu_capacity_orig that is currently used on a CPU or group of
+CPUs. We use the utilization_load_avg to evaluate the usage level of each
+group.
 
-This doesn't make sense. The pin is either low, high, some analog mode
-or tristate/high impedance.
+The utilization_load_avg only takes into account the running time of the CFS
+tasks on a CPU with a maximum value of SCHED_LOAD_SCALE when the CPU is fully
+utilized. Nevertheless, we must cap utilization_load_avg which can be temporaly
+greater than SCHED_LOAD_SCALE after the migration of a task on this CPU and
+until the metrics are stabilized.
 
-It does *not* stop existing.
+The utilization_load_avg is in the range [0..SCHED_LOAD_SCALE] to reflect the
+running load on the CPU whereas the available capacity for the CFS task is in
+the range [0..cpu_capacity_orig]. In order to test if a CPU is fully utilized
+by CFS tasks, we have to scale the utilization in the cpu_capacity_orig range
+of the CPU to get the usage of the latter. The usage can then be compared with
+the available capacity (ie cpu_capacity) to deduct the usage level of a CPU.
 
-Figure out the exact electronic meaning of what happens when you do
-"output disable" in your hardware, I think it is very likely that
-PIN_CONFIG_BIAS_HIGH_IMPEDANCE is what you are really
-after here.
+The frequency scaling invariance of the usage is not taken into account in this
+patch, it will be solved in another patch which will deal with frequency
+scaling invariance on the running_load_avg.
 
-Yours,
-Linus Walleij
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/fair.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9ab5233..7ca5656 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4552,6 +4552,33 @@ static int select_idle_sibling(struct task_struct *p, int target)
+ done:
+ 	return target;
+ }
++/*
++ * get_cpu_usage returns the amount of capacity of a CPU that is used by CFS
++ * tasks. The unit of the return value must capacity so we can compare the
++ * usage with the capacity of the CPU that is available for CFS task (ie
++ * cpu_capacity).
++ * cfs.utilization_load_avg is the sum of running time of runnable tasks on a
++ * CPU. It represents the amount of utilization of a CPU in the range
++ * [0..SCHED_LOAD_SCALE].  The usage of a CPU can't be higher than the full
++ * capacity of the CPU because it's about the running time on this CPU.
++ * Nevertheless, cfs.utilization_load_avg can be higher than SCHED_LOAD_SCALE
++ * because of unfortunate rounding in avg_period and running_load_avg or just
++ * after migrating tasks until the average stabilizes with the new running
++ * time. So we need to check that the usage stays into the range
++ * [0..cpu_capacity_orig] and cap if necessary.
++ * Without capping the usage, a group could be seen as overloaded (CPU0 usage
++ * at 121% + CPU1 usage at 80%) whereas CPU1 has 20% of available capacity/
++ */
++static int get_cpu_usage(int cpu)
++{
++	unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
++	unsigned long capacity = capacity_orig_of(cpu);
++
++	if (usage >= SCHED_LOAD_SCALE)
++		return capacity;
++
++	return (usage * capacity) >> SCHED_LOAD_SHIFT;
++}
+ 
+ /*
+  * select_task_rq_fair: Select target runqueue for the waking task in domains
+@@ -5681,6 +5708,7 @@ struct sg_lb_stats {
+ 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+ 	unsigned long load_per_task;
+ 	unsigned long group_capacity;
++	unsigned long group_usage; /* Total usage of the group */
+ 	unsigned int sum_nr_running; /* Nr tasks running in the group */
+ 	unsigned int group_capacity_factor;
+ 	unsigned int idle_cpus;
+@@ -6048,6 +6076,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			load = source_load(i, load_idx);
+ 
+ 		sgs->group_load += load;
++		sgs->group_usage += get_cpu_usage(i);
+ 		sgs->sum_nr_running += rq->cfs.h_nr_running;
+ 
+ 		if (rq->nr_running > 1)
+-- 
+1.9.1
+
