@@ -1,52 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497AbaJaJjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:39:41 -0400
-Received: from roy.gaast.net ([80.101.33.21]:39816 "EHLO mail.gaast.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756039AbaJaJjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:39:39 -0400
-Message-ID: <545358D5.6070903@gaast.net>
-Date: Fri, 31 Oct 2014 09:39:33 +0000
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
+	id S1757706AbaJaJkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:40:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39281 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756917AbaJaJke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 05:40:34 -0400
+Date: Fri, 31 Oct 2014 10:40:27 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+cc: Marc Zyngier <marc.zyngier@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        jason@lakedaemon.net, Catalin.Marinas@arm.com, Will.Deacon@arm.com,
+        liviu.dudau@arm.com, Harish.Kasiviswanathan@amd.com,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [V9 PATCH 2/2] irqchip: gicv2m: Add supports for ARM GICv2m
+ MSI(-X)
+In-Reply-To: <1414743990-28421-3-git-send-email-suravee.suthikulpanit@amd.com>
+Message-ID: <alpine.DEB.2.11.1410311014050.5308@nanos>
+References: <1414743990-28421-1-git-send-email-suravee.suthikulpanit@amd.com> <1414743990-28421-3-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Machine crashes right *after* ~successful resume
-References: <543F049F.5090605@gaast.net> <20141022125354.GA3832@gaast.net> <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com> <544E235C.5010908@gaast.net> <CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com> <544EC59D.9080303@gaast.net> <CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com> <544EDD40.1040107@gaast.net> <CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com> <545027F9.1040703@gaast.net> <CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com> <5450B55E.6010103@gaast.net> <CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com> <545214C5.6070004@gaast.net> <CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com> <5452B3A6.7060100@gaast.net> <CAE9FiQUGm-gvqpzPymxqa6vdfV7xhv8-fb433irZE1AT-eNg9A@mail.gmail.com> <5452C8BE.3060206@gaast.net> <CAE9FiQWd7wC9ijzgObCcGd9QE+U3_wzjQwafXhV=U61hLxGszg@mail.gmail.com> <CAE9FiQXPZdYndp6rTKxLUkkwX=AQtRVH3JJC=xzQfsehtBgOqA@mail.gmai
- l.com>
-In-Reply-To: <CAE9FiQXPZdYndp6rTKxLUkkwX=AQtRVH3JJC=xzQfsehtBgOqA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Yinghai,
+On Fri, 31 Oct 2014, suravee.suthikulpanit@amd.com wrote:
+> +/*
+> + * alloc_msi_irq - Allocate MSIs from available MSI bitmap.
+> + * @data: Pointer to v2m_data
+> + * @nvec: Number of interrupts to allocate
+> + * @irq: Pointer to the allocated irq
+> + *
+> + * Allocates interrupts only if the contiguous range of MSIs
+> + * with specified nvec are available. Otherwise return the number
+> + * of available interrupts. If none are available, then returns -ENOENT.
 
-On 31-10-14 02:13, Yinghai Lu wrote:
-> Last try:
->
-> Please check attached patch that will keep state consistent.
+And the exact purpose of returning the number of available interrupts
+is?
 
-Good news: This last patch worked! For good measure, I ran my test twice 
-with a reboot in between. Worked consistently.
+> + */
+> +static int alloc_msi_irq(struct v2m_data *data, int nvec, int *irq)
+> +{
+> +	int size = data->nr_spis;
+> +	int next = size, i = nvec, ret;
+> +
+> +	/* We should never allocate more than available nr_spis */
+> +	if (i >= size)
+> +		i = size;
+> +
+> +	spin_lock(&data->msi_cnt_lock);
+> +
+> +	for (; i > 0; i--) {
+> +		next = bitmap_find_next_zero_area(data->bm,
+> +					size, 0, i, 0);
+> +		if (next < size)
+> +			break;
+> +	}
 
-And similarly, to ensure that your debugging-at-boottime-only patch 
-wasn't just working by accident yesterday, I tested it twice more with 
-the same effect.
+That we need a pointless loop here.
 
+> +static int gicv2m_setup_msi_irq(struct msi_chip *chip, struct pci_dev *pdev,
+> +				struct msi_desc *desc)
+> +{
+> +	int hwirq = 0, virq, avail;
+> +	struct v2m_data *v2m = container_of(chip, struct v2m_data, msi_chip);
+> +
+> +	if (!desc) {
+> +		dev_err(&pdev->dev,
+> +			"MSI setup failed. Invalid msi descriptor\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	avail = alloc_msi_irq(v2m, 1, &hwirq);
+> +	if (avail != 0) {
 
-Thanks,
+So that the caller can turn any non zero return value into -ENOSPC.
 
-Wilmer van der Gaast.
+> +		dev_err(&pdev->dev,
+> +			"MSI setup failed. Cannnot allocate IRQ\n");
+> +		return -ENOSPC;
+> +	}
 
--- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
+Brilliant design.
+
+> +	virq = __irq_domain_alloc_irqs(v2m->domain, hwirq,
+> +				       1, NUMA_NO_NODE, v2m, true);
+
+And surely the ability of alloc_msi_irq() to allocate a contiguous
+vector space is required to satisfy an hardcoded allocation of ONE
+interrupt.
+
+What is guaranteeing that the caller only requests a single interrupt?
+
+> +err_out:
+
+Single error exit which undoes the stuff in the same order it got
+initialized is just plain wrong. Ever looked at proper error exits in
+other kernel files?
+
+> +	of_pci_msi_chip_remove(&v2m->msi_chip);
+> +	if (v2m->base)
+> +		iounmap(v2m->base);
+> +	if (v2m->bm)
+> +		kzfree(v2m->bm);
+
+Of course you need to zero out the kzalloced bitmap before freeing it
+in order not to leak the secrets of a zeroed buffer to the sneaky
+black hats, right?
+
+Oh well...
+
+      tglx
