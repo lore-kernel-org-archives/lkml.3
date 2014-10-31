@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760395AbaJaBg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:36:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46361 "EHLO mx1.redhat.com"
+	id S1161628AbaJaBg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:36:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57236 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384AbaJaBgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:36:24 -0400
-Date: Thu, 30 Oct 2014 21:36:18 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-security-module@vger.kernel.org, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, eparis@redhat.com, sgrubb@redhat.com
-Subject: Re: [PATCH] lsm: get comm using lock to avoid race in string printing
-Message-ID: <20141031013618.GD20866@madcap2.tricolour.ca>
-References: <735f28048636878e638add7d6129a8c2fd79a09e.1411141022.git.rgb@redhat.com>
- <1478341.K6oVWdhYQd@sifl>
+	id S1161392AbaJaBg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 21:36:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,290,1413270000"; 
+   d="scan'208";a="599454331"
+Date: Fri, 31 Oct 2014 09:16:03 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: suspicious rcu_dereference_check() usage warning with 3.18-rc2
+Message-ID: <20141031011603.GA32544@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <s5h38a54idb.wl-tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1478341.K6oVWdhYQd@sifl>
+In-Reply-To: <s5h38a54idb.wl-tiwai@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/30, Paul Moore wrote:
-> On Friday, September 19, 2014 11:41:15 AM Richard Guy Briggs wrote:
-> > When task->comm is passed directly to audit_log_untrustedstring() without
-> > getting a copy or using the task_lock, there is a race that could happen
-> > that would output a NULL (\0) in the output string that would effectively
-> > truncate the rest of the report text after the comm= field in the audit,
-> > losing fields.
-> > 
-> > Use get_task_comm() to get a copy while acquiring the task_lock to prevent
-> > this and to prevent the result from being a mixture of old and new values of
-> > comm.
-> > 
-> > Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> 
-> The above is a bit odd ... is that a "Signed-off-by:" from Tetsuo Handa or a 
-> "From:"?
+On Thu, Oct 30, 2014 at 05:44:48PM +0100, Takashi Iwai wrote:
+>Hi,
+>
+>I've got a warning with the latest Linus tree like below:
+>
+>[ INFO: suspicious RCU usage. ]
+>3.18.0-rc2-test2+ #70 Not tainted
+>-------------------------------
+>include/linux/kvm_host.h:474 suspicious rcu_dereference_check() usage!
+>
+>other info that might help us debug this:
+>
+>rcu_scheduler_active = 1, debug_locks = 0
+>1 lock held by qemu-system-x86/2371:
+> #0:  (&vcpu->mutex){+.+...}, at: [<ffffffffa037d800>] vcpu_load+0x20/0xd0 [kvm]
+>
+>stack backtrace:
+>CPU: 4 PID: 2371 Comm: qemu-system-x86 Not tainted 3.18.0-rc2-test2+ #70
+>Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A12 01/10/2013
+> 0000000000000001 ffff880209983ca8 ffffffff816f514f 0000000000000000
+> ffff8802099b8990 ffff880209983cd8 ffffffff810bd687 00000000000fee00
+> ffff880208a2c000 ffff880208a10000 ffff88020ef50040 ffff880209983d08
+>Call Trace:
+> [<ffffffff816f514f>] dump_stack+0x4e/0x71
+> [<ffffffff810bd687>] lockdep_rcu_suspicious+0xe7/0x120
+> [<ffffffffa037d055>] gfn_to_memslot+0xd5/0xe0 [kvm]
+> [<ffffffffa03807d3>] __gfn_to_pfn+0x33/0x60 [kvm]
+> [<ffffffffa0380885>] gfn_to_page+0x25/0x90 [kvm]
+> [<ffffffffa038aeec>] kvm_vcpu_reload_apic_access_page+0x3c/0x80 [kvm]
 
-That was a "Signed-off-by:" that's likely my fault when manually
-importing Tetsuo's oddly-formed patch email.
+The srcu read lock must be held while accessing memslots (e.g. when
+using gfn_to_* functions, however, kvm_vcpu_reload_apic_access_page() 
+doesn't do this. I will send a patch to fix it after reproducibe.
 
-> > ---
-> > I've manually checked for locking issues and found none.  I've also enabled
-> > all the kernel lock debugging options and it came up clean.
-> > 
-> >  security/lsm_audit.c |    5 +++--
-> >  1 files changed, 3 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/security/lsm_audit.c b/security/lsm_audit.c
-> > index 69fdf3b..4773b91 100644
-> > --- a/security/lsm_audit.c
-> > +++ b/security/lsm_audit.c
-> > @@ -212,6 +212,7 @@ static void dump_common_audit_data(struct audit_buffer
-> > *ab, struct common_audit_data *a)
-> >  {
-> >  	struct task_struct *tsk = current;
-> > +	char comm[sizeof(tsk->comm)];
-> 
-> This makes me a bit nervous for a potential race condition between allocation 
-> and use below.  How about using TASK_COMM_LEN instead?
+Regards,
+Wanpeng Li 
 
-I don't have a strong opinion.  Both should work since tsk->comm is
-defined as "char comm[TASK_COMM_LEN];" in struct task_struct.
-
-> >  	/*
-> >  	 * To keep stack sizes in check force programers to notice if they
-> > @@ -221,7 +222,7 @@ static void dump_common_audit_data(struct audit_buffer
-> > *ab, BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
-> > 
-> >  	audit_log_format(ab, " pid=%d comm=", task_pid_nr(tsk));
-> > -	audit_log_untrustedstring(ab, tsk->comm);
-> > +	audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
-> > 
-> >  	switch (a->type) {
-> >  	case LSM_AUDIT_DATA_NONE:
-> > @@ -282,7 +283,7 @@ static void dump_common_audit_data(struct audit_buffer
-> > *ab, pid_t pid = task_pid_nr(tsk);
-> >  			if (pid) {
-> >  				audit_log_format(ab, " pid=%d comm=", pid);
-> > -				audit_log_untrustedstring(ab, tsk->comm);
-> > +				audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
-> >  			}
-> >  		}
-> >  		break;
-> 
-> paul moore
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> [<ffffffffa08f0a9c>] vmx_vcpu_reset+0x20c/0x460 [kvm_intel]
+> [<ffffffffa039ab8e>] kvm_vcpu_reset+0x15e/0x1b0 [kvm]
+> [<ffffffffa039ac0c>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+> [<ffffffffa037f7e0>] kvm_vm_ioctl+0x1d0/0x780 [kvm]
+> [<ffffffff810bc664>] ? __lock_is_held+0x54/0x80
+> [<ffffffff812231f0>] do_vfs_ioctl+0x300/0x520
+> [<ffffffff8122ee45>] ? __fget+0x5/0x250
+> [<ffffffff8122f0fa>] ? __fget_light+0x2a/0xe0
+> [<ffffffff81223491>] SyS_ioctl+0x81/0xa0
+> [<ffffffff816fed6d>] system_call_fastpath+0x16/0x1b
+>kvm: zapping shadow pages for mmio generation wraparound
+>kvm [2369]: vcpu0 disabled perfctr wrmsr: 0xc1 data 0xffff
+>
+>
+>The machine itself and KVM work fine even after this warning.  I'm not
+>sure whether this is new, maybe it's triggered now since I changed my
+>Kconfig to cover more RCU testing recently.  The warning is
+>reproducible, I can see it at the first invocation of kvm after each
+>fresh boot.
+>
+>Does this ring a bell to anyone?
+>
+>
+>thanks,
+>
+>Takashi
+>--
+>To unsubscribe from this list: send the line "unsubscribe kvm" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
