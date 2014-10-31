@@ -1,120 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757706AbaJaJkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:40:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39281 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756917AbaJaJke (ORCPT
+	id S1757839AbaJaJld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:41:33 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:62406 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757014AbaJaJla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:40:34 -0400
-Date: Fri, 31 Oct 2014 10:40:27 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-cc: Marc Zyngier <marc.zyngier@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        jason@lakedaemon.net, Catalin.Marinas@arm.com, Will.Deacon@arm.com,
-        liviu.dudau@arm.com, Harish.Kasiviswanathan@amd.com,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [V9 PATCH 2/2] irqchip: gicv2m: Add supports for ARM GICv2m
- MSI(-X)
-In-Reply-To: <1414743990-28421-3-git-send-email-suravee.suthikulpanit@amd.com>
-Message-ID: <alpine.DEB.2.11.1410311014050.5308@nanos>
-References: <1414743990-28421-1-git-send-email-suravee.suthikulpanit@amd.com> <1414743990-28421-3-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 31 Oct 2014 05:41:30 -0400
+Message-ID: <54535944.6050405@6wind.com>
+Date: Fri, 31 Oct 2014 10:41:24 +0100
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        davem@davemloft.net, stephen@networkplumber.org,
+        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com
+Subject: Re: [PATCH net-next v4 1/4] netns: add genl cmd to add and get peer
+ netns ids
+References: <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>	<1414682728-4532-1-git-send-email-nicolas.dichtel@6wind.com>	<1414682728-4532-2-git-send-email-nicolas.dichtel@6wind.com> <874mulh0cs.fsf@x220.int.ebiederm.org>
+In-Reply-To: <874mulh0cs.fsf@x220.int.ebiederm.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014, suravee.suthikulpanit@amd.com wrote:
-> +/*
-> + * alloc_msi_irq - Allocate MSIs from available MSI bitmap.
-> + * @data: Pointer to v2m_data
-> + * @nvec: Number of interrupts to allocate
-> + * @irq: Pointer to the allocated irq
-> + *
-> + * Allocates interrupts only if the contiguous range of MSIs
-> + * with specified nvec are available. Otherwise return the number
-> + * of available interrupts. If none are available, then returns -ENOENT.
+Le 30/10/2014 19:35, Eric W. Biederman a écrit :
+> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+>
+>> With this patch, a user can define an id for a peer netns by providing a FD or a
+>> PID. These ids are local to netns (ie valid only into one netns).
+>
+> Scratches head.  Do you actually find value in using the pid instead of
+> a file descriptor?
+I copied the mechanism from rtnl_link_get_net():
+First check if the user provides a PID, if not, check for a FD.
 
-And the exact purpose of returning the number of available interrupts
-is?
+>
+> Doing things by pid was an early attempt to make things work, and has
+> been a bit clutsy.  If you don't find value in it I would recommend just
+> supporting getting/setting the network namespace by file descriptor.
+Hmm, if I understand well, it's what is done in the patch:
 
-> + */
-> +static int alloc_msi_irq(struct v2m_data *data, int nvec, int *irq)
-> +{
-> +	int size = data->nr_spis;
-> +	int next = size, i = nvec, ret;
-> +
-> +	/* We should never allocate more than available nr_spis */
-> +	if (i >= size)
-> +		i = size;
-> +
-> +	spin_lock(&data->msi_cnt_lock);
-> +
-> +	for (; i > 0; i--) {
-> +		next = bitmap_find_next_zero_area(data->bm,
-> +					size, 0, i, 0);
-> +		if (next < size)
-> +			break;
-> +	}
+[snip]
+>> +static int netns_nl_cmd_newid(struct sk_buff *skb, struct genl_info *info)
+>> +{
+[snip]
+>> +	if (info->attrs[NETNSA_PID])
+>> +		peer = get_net_ns_by_pid(nla_get_u32(info->attrs[NETNSA_PID]));
+>> +	else if (info->attrs[NETNSA_FD])
+>> +		peer = get_net_ns_by_fd(nla_get_u32(info->attrs[NETNSA_FD]));
+>> +	else
+>> +		return -EINVAL;
+>> +	if (IS_ERR(peer))
+>> +		return PTR_ERR(peer);
 
-That we need a pointless loop here.
+Am I right?
 
-> +static int gicv2m_setup_msi_irq(struct msi_chip *chip, struct pci_dev *pdev,
-> +				struct msi_desc *desc)
-> +{
-> +	int hwirq = 0, virq, avail;
-> +	struct v2m_data *v2m = container_of(chip, struct v2m_data, msi_chip);
-> +
-> +	if (!desc) {
-> +		dev_err(&pdev->dev,
-> +			"MSI setup failed. Invalid msi descriptor\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	avail = alloc_msi_irq(v2m, 1, &hwirq);
-> +	if (avail != 0) {
 
-So that the caller can turn any non zero return value into -ENOSPC.
-
-> +		dev_err(&pdev->dev,
-> +			"MSI setup failed. Cannnot allocate IRQ\n");
-> +		return -ENOSPC;
-> +	}
-
-Brilliant design.
-
-> +	virq = __irq_domain_alloc_irqs(v2m->domain, hwirq,
-> +				       1, NUMA_NO_NODE, v2m, true);
-
-And surely the ability of alloc_msi_irq() to allocate a contiguous
-vector space is required to satisfy an hardcoded allocation of ONE
-interrupt.
-
-What is guaranteeing that the caller only requests a single interrupt?
-
-> +err_out:
-
-Single error exit which undoes the stuff in the same order it got
-initialized is just plain wrong. Ever looked at proper error exits in
-other kernel files?
-
-> +	of_pci_msi_chip_remove(&v2m->msi_chip);
-> +	if (v2m->base)
-> +		iounmap(v2m->base);
-> +	if (v2m->bm)
-> +		kzfree(v2m->bm);
-
-Of course you need to zero out the kzalloced bitmap before freeing it
-in order not to leak the secrets of a zeroed buffer to the sneaky
-black hats, right?
-
-Oh well...
-
-      tglx
+Regards,
+Nicolas
