@@ -1,158 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760626AbaJaOjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:39:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39892 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760436AbaJaOjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:39:19 -0400
-Message-ID: <54539F11.7080501@suse.cz>
-Date: Fri, 31 Oct 2014 15:39:13 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
+	id S1760763AbaJaOkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:40:23 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:59331 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759301AbaJaOkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:40:20 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f6c6d00000120b-c9-54539f514db6
+Content-transfer-encoding: 8BIT
+Message-id: <1414766416.6537.6.camel@AMDC1943>
+Subject: Re: [PATCH v8 1/5] PM / Runtime: Add getter for querying the IRQ safe
+ option
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v5 4/4] mm/page_alloc: restrict max order of merging on
- isolated pageblock
-References: <1414740330-4086-1-git-send-email-iamjoonsoo.kim@lge.com> <1414740330-4086-5-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1414740330-4086-5-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Fri, 31 Oct 2014 15:40:16 +0100
+In-reply-to: <20141031142241.GA17547@amd>
+References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
+ <1413795888-18559-2-git-send-email-k.kozlowski@samsung.com>
+ <1414746895.6797.3.camel@AMDC1943> <20141031142241.GA17547@amd>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4Vd3A+cEhBuu7TC02zljPavHkQDuj
+	xfSpFxgtVk/9y2pxtukNu8WSyfNZLWZN2ctksbBtCYvF5V1z2Cw+9x5htLh9mddi7ZG77Bbv
+	XkZY3D11lM3izOlLrBYTfl9gszi+NtziZd9+Fgchj5bmHjaPxXteMnncubYHyOqbzOqx5M0h
+	Vo8tV9tZPGbf/cHo0bdlFaPHitXf2T0+b5Lz2Pv5N0sAdxSXTUpqTmZZapG+XQJXxoRZ01kK
+	dghUzN6xkbmB8QdPFyMHh4SAicSvX9ZdjJxAppjEhXvr2boYuTiEBJYySpxfs4sNJMErICjx
+	Y/I9FpB6ZgF5iSOXskHCzALqEpPmLWKGqP/MKPFiywVWiHo9idUrprCD2MIC4RL3l20Bi7MJ
+	GEtsXr4EbKYI0JytfSvAmpkFulklOmbPBkuwCKhK7LvSygRicwpoSvxp3cMIseE4o8S21sVM
+	EFcrSzT2u01gFJiF5L5ZCPfNQnLfAkbmVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghcfhl
+	B+PiY1aHGAU4GJV4eFdIBocIsSaWFVfmHmKU4GBWEuH90QEU4k1JrKxKLcqPLyrNSS0+xMjE
+	wSnVwChbFTR1/70C1VCfyBOP5HyN2oqyNjHOUgmtkSxtmhkeXGLtMX/ip4htrXKOm2f28rJf
+	mDRl9dlJChxvtKxPVcQxTny/6Vw8j8O0mC8xKsFX9gsUHdow6y9nEu+vuYopT+auSHa/xpq6
+	uP5N4t30fR0XMu6d4H31wcuG7dnfDMZ/q89sWuofFafEUpyRaKjFXFScCABIFBvdoQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 08:25 AM, Joonsoo Kim wrote:
-> @@ -571,6 +548,7 @@ static inline void __free_one_page(struct page *page,
->   	unsigned long combined_idx;
->   	unsigned long uninitialized_var(buddy_idx);
->   	struct page *buddy;
-> +	int max_order = MAX_ORDER;
->
->   	VM_BUG_ON(!zone_is_initialized(zone));
->
-> @@ -579,15 +557,23 @@ static inline void __free_one_page(struct page *page,
->   			return;
->
->   	VM_BUG_ON(migratetype == -1);
-> -	if (!is_migrate_isolate(migratetype))
-> +	if (is_migrate_isolate(migratetype)) {
-> +		/*
-> +		 * We restrict max order of merging to prevent merge
-> +		 * between freepages on isolate pageblock and normal
-> +		 * pageblock. Without this, pageblock isolation
-> +		 * could cause incorrect freepage accounting.
-> +		 */
-> +		max_order = min(MAX_ORDER, pageblock_order + 1);
-> +	} else
->   		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+On pią, 2014-10-31 at 15:22 +0100, Pavel Machek wrote:
+> On Fri 2014-10-31 10:14:55, Krzysztof Kozlowski wrote:
+> > On pon, 2014-10-20 at 11:04 +0200, Krzysztof Kozlowski wrote:
+> > > Add a simple getter pm_runtime_is_irq_safe() for querying whether runtime
+> > > PM IRQ safe was set or not.
+> > > 
+> > > Various bus drivers implementing runtime PM may use choose to suspend
+> > > differently based on IRQ safeness status of child driver (e.g. do not
+> > > unprepare the clock if IRQ safe is not set).
+> > > 
+> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+> > 
+> > Rafael, Len, Pavel,
+> > 
+> > Is proposed API ok? Do you have any comments?
+> > 
+> > I'll upload whole patchset to Russell's patch tracking system. However
+> > an ack from PM maintainer is probably needed.
+> 
+> I don't like the API. Having callbacks work in different context (irq
+> / noirq) based on what another function reports is ugly.
+> 
+> What is the penalty if we always decide callbacks are not IRQ safe?
 
-Please add { } to the else branch, this looks ugly :)
+Then pm_runtime_get_sync() could not be called in atomic context. The
+pl330 runtime PM would have to be completely reworked because one
+pm_runtime_get_sync() is called in device_issue_pending which cannot
+sleep (at least in non preemptible kernels). Probably this can be solved
+some way... 
 
-> -	page_idx = pfn & ((1 << MAX_ORDER) - 1);
-> +	page_idx = pfn & ((1 << max_order) - 1);
->
->   	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
->   	VM_BUG_ON_PAGE(bad_range(zone, page), page);
->
-> -	while (order < MAX_ORDER-1) {
-> +	while (order < max_order - 1) {
->   		buddy_idx = __find_buddy_index(page_idx, order);
->   		buddy = page + (buddy_idx - page_idx);
->   		if (!page_is_buddy(page, buddy, order))
-> @@ -1590,7 +1576,7 @@ void split_page(struct page *page, unsigned int order)
->   }
->   EXPORT_SYMBOL_GPL(split_page);
->
-> -static int __isolate_free_page(struct page *page, unsigned int order)
-> +int __isolate_free_page(struct page *page, unsigned int order)
->   {
->   	unsigned long watermark;
->   	struct zone *zone;
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index 1fa4a4d..df61c93 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -76,17 +76,48 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
->   {
->   	struct zone *zone;
->   	unsigned long flags, nr_pages;
-> +	struct page *isolated_page = NULL;
-> +	unsigned int order;
-> +	unsigned long page_idx, buddy_idx;
-> +	struct page *buddy;
-> +	int mt;
->
->   	zone = page_zone(page);
->   	spin_lock_irqsave(&zone->lock, flags);
->   	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
->   		goto out;
-> +
-> +	/*
-> +	 * Because freepage with more than pageblock_order on isolated
-> +	 * pageblock is restricted to merge due to freepage counting problem,
-> +	 * it is possible that there is free buddy page.
-> +	 * move_freepages_block() doesn't care of merge so we need other
-> +	 * approach in order to merge them. Isolation and free will make
-> +	 * these pages to be merged.
-> +	 */
-> +	if (PageBuddy(page)) {
-> +		order = page_order(page);
-> +		if (order >= pageblock_order) {
-> +			page_idx = page_to_pfn(page) & ((1 << MAX_ORDER) - 1);
-> +			buddy_idx = __find_buddy_index(page_idx, order);
-> +			buddy = page + (buddy_idx - page_idx);
-> +			mt = get_pageblock_migratetype(buddy);
-> +
-> +			if (!is_migrate_isolate(mt)) {
+Best regards,
+Krzysztof
 
-You could use is_migrate_isolate_page(buddy) and save a variable.
 
-> +				__isolate_free_page(page, order);
-> +				set_page_refcounted(page);
-> +				isolated_page = page;
-> +			}
-> +		}
-> +	}
->   	nr_pages = move_freepages_block(zone, page, migratetype);
-
-- this is a costly no-op when the whole pageblock is an isolated page, 
-right?
-
->   	__mod_zone_freepage_state(zone, nr_pages, migratetype);
-
-- with isolated_page set, this means you increase freepage_state here, 
-and then the second time in __free_pages() below? __isolate_free_page() 
-won't decrease it as the pageblock is still MIGRATE_ISOLATE, so the net 
-result is overcounting?
-
->   	set_pageblock_migratetype(page, migratetype);
->   	zone->nr_isolate_pageblock--;
->   out:
->   	spin_unlock_irqrestore(&zone->lock, flags);
-> +	if (isolated_page)
-> +		__free_pages(isolated_page, order);
->   }
->
->   static inline struct page *
->
+> 
+> > > --- a/Documentation/power/runtime_pm.txt
+> > > +++ b/Documentation/power/runtime_pm.txt
+> > > @@ -468,6 +468,10 @@ drivers/base/power/runtime.c and include/linux/pm_runtime.h:
+> > >      - set the power.irq_safe flag for the device, causing the runtime-PM
+> > >        callbacks to be invoked with interrupts off
+> > >  
+> > > +  bool pm_runtime_is_irq_safe(struct device *dev);
+> > > +    - return true if power.irq_safe flag was set for the device, causing
+> > > +      the runtime-PM callbacks to be invoked with interrupts off
+> > > +
+> > >    void pm_runtime_mark_last_busy(struct device *dev);
+> > >      - set the power.last_busy field to the current time
+> > >  
 
