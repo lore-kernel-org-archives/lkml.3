@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758863AbaJaLeW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 07:34:22 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:13487 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757781AbaJaLeU (ORCPT
+	id S1758680AbaJaLlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 07:41:17 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:42298 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017AbaJaLlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 07:34:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 31 Oct 2014 04:33:36 -0700
-Date: Fri, 31 Oct 2014 13:33:58 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, "Alex Elder" <elder@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>,
-        <linux-omap@vger.kernel.org>, Manuel Lauss <manuel.lauss@gmail.com>,
-        "Matt Porter" <mporter@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>
-Subject: Re: [PATCH v5 0/7] Per-user clock constraints
-Message-ID: <20141031113358.GY32045@tbergstrom-lnx.Nvidia.com>
-References: <1414666135-14313-1-git-send-email-tomeu.vizoso@collabora.com>
+	Fri, 31 Oct 2014 07:41:15 -0400
+Date: Fri, 31 Oct 2014 12:41:09 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mailbox: Don't unnecessarily re-arm the polling timer
+Message-ID: <20141031114107.GE10778@ulmo.nvidia.com>
+References: <1414699267-17970-1-git-send-email-abrestic@chromium.org>
+ <1414699267-17970-2-git-send-email-abrestic@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="maH1Gajj2nflutpK"
 Content-Disposition: inline
-In-Reply-To: <1414666135-14313-1-git-send-email-tomeu.vizoso@collabora.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1414699267-17970-2-git-send-email-abrestic@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 11:48:26AM +0100, Tomeu Vizoso wrote:
-> Hello,
-> 
-> this fifth version of the series has just one change, suggested by Stephen:
-> 
-> * Initialize clk.ceiling_constraint to ULONG_MAX and warn about new floor
-> constraints being higher than the existing ceiling.
-> 
-> The first five patches are just cleanups that should be desirable on their own,
-> and that should make easier to review the actual per-user clock patch.
-> 
-> The sixth patch actually moves the per-clock data that was stored in struct
-> clk to a new struct clk_core and adds references to it from both struct clk and
-> struct clk_hw. struct clk is now ready to contain information that is specific
-> to a given clk consumer.
-> 
-> The seventh patch adds API for setting floor and ceiling constraints and stores
-> that information on the per-user struct clk, which is iterable from struct
-> clk_core.
-> 
-> They are based on top of 3.18-rc1.
-> 
-> http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=per-user-clk-constraints-v5
-> 
 
-Acked-By: Peter De Schrijver <pdeschrijver@nvidia.com>
+--maH1Gajj2nflutpK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Mike,
+On Thu, Oct 30, 2014 at 01:01:07PM -0700, Andrew Bresticker wrote:
+> poll_txdone() will unconditionally re-arm the polling timer if there was
+> an active request, even if the active request completed and no other
+> requests were submitted.  This is fixed by:
+>  - only re-arming the timer if the controller reported that the current
+>    transmission has not completed, and,
+>  - moving the call to poll_txdone() into msg_submit() so that the
+>    controller gets polled (and the timer re-armed, if necessary) whenever
+>    a new message is submitted.
+>=20
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+>  drivers/mailbox/mailbox.c | 13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+> index 5008028..26f74ad 100644
+> --- a/drivers/mailbox/mailbox.c
+> +++ b/drivers/mailbox/mailbox.c
+> @@ -28,6 +28,8 @@
+>  static LIST_HEAD(mbox_cons);
+>  static DEFINE_MUTEX(con_mutex);
+> =20
+> +static void poll_txdone(unsigned long data);
 
-Do you think this will be merged for 3.19?
+I think I'd rather move poll_txdone() here to avoid the forward
+declaration, but either way:
 
-Thanks,
+Reviewed-by: Thierry Reding <treding@nvidia.com>
 
-Peter.
+--maH1Gajj2nflutpK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUU3VTAAoJEN0jrNd/PrOhLVAP/jca6u+pEhVsfcpoMxEuLdjB
+9xTgaDtM2eqOmfa+StIEp7gs5YEQQcgvDniwDoT3PIbpGqJu7l+x/2j6cqknujla
+x3n98oJuxKXS/7CWxHtfJtvNbq++8MZzqpGMTbE/WXhEWNG3WKh6+FWI0XIM0P9M
+Qkg5eKIh2wUzwV1FHPKIwaB0arE8YHbUfnbt1xNtN3UbX6v/sLDLif2cTdLWYhX4
+VxK5DN0G0u+cLn11bdNup07YD7wbwUrTBSRX8DsiLTuFaVVT3dfddQ7bgxErsqs5
+Ui/i1lNUtkNp3rAWMUiJriK+/vA0cfawbhrVGRanl6USevt8olqc6mnRA0i1Njsv
+pWEqIFhdHDZxS5BZrZeciGro5kE3CsvshfF3S2nkMqH7oFpuxClYZCHWG07LUC7N
+WC4ZsSDOf+71uLxz2ZCXzvwXz68/+BT7viI7QHMJ7NMPmweDS0/q+p1WjC/B1On5
+BgNpfNxngtpljUY9DLhBgvMEXvOzzpxeMJy5yn9gst5kozxH1GDE20qsNMaKSquv
+2+YrC3DMbbbinZCqNI0fEMBDDn8S1BKicf4SY4oaU33CIVJ+mtjm3sEis01Uzmiq
+Z3PZSfDRFUI9mZfRFn42pHAs3olx9ZU6I0sYaUw7kd4i/c4+z9Gdtn9omWq/5cqo
+32F7WBNKhZ+oD98yGZfw
+=ZqFk
+-----END PGP SIGNATURE-----
+
+--maH1Gajj2nflutpK--
