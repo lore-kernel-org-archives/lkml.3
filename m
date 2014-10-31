@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544AbaJaXAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 19:00:00 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:53966 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798AbaJaW77 (ORCPT
+	id S1759734AbaJaXBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 19:01:00 -0400
+Received: from smtp65.iad3a.emailsrvr.com ([173.203.187.65]:39425 "EHLO
+	smtp65.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757131AbaJaXA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 18:59:59 -0400
+	Fri, 31 Oct 2014 19:00:59 -0400
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <545414A6.9090101@mev.co.uk>
+Date: Fri, 31 Oct 2014 23:00:54 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <1414732244-27126-1-git-send-email-kever.yang@rock-chips.com>
-References: <1414732244-27126-1-git-send-email-kever.yang@rock-chips.com>
-Date: Fri, 31 Oct 2014 15:59:58 -0700
-X-Google-Sender-Auth: cDECdyfspLA4d7GBMAn2UwDJBMw
-Message-ID: <CAD=FV=VAqvmwGNwN6RNTg2rYk1UJ6k-4KKaD7ERJDXmqzCFKNQ@mail.gmail.com>
-Subject: Re: [PATCH v3] clk: rockchip: disable unused clocks
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: Hartley Sweeten <HartleyS@visionengravers.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH 0/5] staging: comedi: split bus support into separate
+ modules
+References: <1414777659-25578-1-git-send-email-abbotti@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D882601ABA4@P3PWEX4MB008.ex4.secureserver.net> <5454086D.6000401@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D882601B051@P3PWEX4MB008.ex4.secureserver.net> <545412F3.60502@mev.co.uk>
+In-Reply-To: <545412F3.60502@mev.co.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+On 31/10/14 22:53, Ian Abbott wrote:
+> I like the idea of the core comedi module being separated from all the
+> various buses. And other buses can be added easily without pulling extra
+> dependencies into the core (e.g. for platform or spi devices).
 
-On Thu, Oct 30, 2014 at 10:10 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> The rockchip clock driver use CLK_IGNORE_UNUSED flag to make sure
-> all the clocks are available like default power on state.
-> We have implement the clock manage in most of rockchip drivers,
-> it is time to remove it for power save.
-> Instead we add CLK_IGNORE_UNUSED for some clock nodes which should
-> be on during boot or no module driver in kernel will initialize it.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
-> Changes in v3:
-> - get CLK_DIVIDER_READ_ONLY tag back fro armcores
-> - add CLK_IGNORE_UNUSED tag for cs_dbg, pclk_dgb_pre and pclk_rkpwm
->
-> Changes in v2:
-> - get some clock ID back
-> - add CLK_IGNORE_UNUSED tag for aclk_strc and aclk_core in clk-rk3188.c
-> - add CLK_IGNORE_UNUSED tag for rk3288 dwc2
->
->  drivers/clk/rockchip/clk-rk3188.c |  36 +++++-----
->  drivers/clk/rockchip/clk-rk3288.c | 140 +++++++++++++++++++-------------------
->  drivers/clk/rockchip/clk.c        |   9 ---
->  3 files changed, 88 insertions(+), 97 deletions(-)
+And if this get's accepted, I'd like to complete the separation by 
+moving the PCI, USB and PCMCIA stuf out of the "comedidev.h" header into 
+their own headers, which obviously means small edits to most of the 
+low-level drivers to #include different headers. (But then, 
+"comedi_pci.h" could #include <linux/pci.h> for example.)
 
-I found that I needed this in order to keep graphics from failing:
-
--       GATE(ACLK_VIO1_NIU, "aclk_vio1_niu", "aclk_vio1", 0,
-RK3288_CLKGATE_CON(15), 12, GFLAGS),
-+       GATE(ACLK_VIO1_NIU, "aclk_vio1_niu", "aclk_vio1",
-CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(15), 12, GFLAGS),
-
-Off-list Heiko suggested that maybe VIO0_NIU would be similar.
-
-Should maybe add that as IGNORE for now until we have something
-claiming that clock?
-
--Doug
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
