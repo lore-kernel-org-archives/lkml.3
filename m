@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760140AbaJaOq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 10:46:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756578AbaJaOq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 10:46:57 -0400
-Date: Fri, 31 Oct 2014 14:55:05 +0000
-From: Alexander Gordeev <agordeev@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2] rcu: Remove redundant rcu_is_cpu_rrupt_from_idle() from
- tiny RCU
-Message-ID: <20141031145504.GC18126@agordeev.usersys.redhat.com>
-References: <20141029143439.GN5718@linux.vnet.ibm.com>
- <20141029151622.GD30198@agordeev.usersys.redhat.com>
- <20141029154615.GR5718@linux.vnet.ibm.com>
- <20141029210916.GB13273@agordeev.usersys.redhat.com>
- <20141030000524.GG5718@linux.vnet.ibm.com>
- <20141030175435.GC13273@agordeev.usersys.redhat.com>
- <20141030204318.GR5718@linux.vnet.ibm.com>
- <20141030215433.GA18126@agordeev.usersys.redhat.com>
- <20141031034559.GT5718@linux.vnet.ibm.com>
- <20141031145326.GB18126@agordeev.usersys.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141031145326.GB18126@agordeev.usersys.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S933072AbaJaOtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 10:49:19 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:52972 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759483AbaJaOtS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 10:49:18 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+From: Weston Andros Adamson <dros@primarydata.com>
+In-Reply-To: <20141020135736.GB20301@arm.com>
+Date: Fri, 31 Oct 2014 10:49:13 -0400
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs list <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FE0552AE-5243-44D3-B661-B622C2D957C0@primarydata.com>
+References: <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com> <20140923135938.GB28608@arm.com> <20140923145356.GD28608@arm.com> <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com> <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com> <F632C770-3E3D-4FC5-BBF3-69BB1CCA8F0D@primarydata.com> <20140923152558.GG28608@arm.com> <20140925171545.GR20043@arm.com> <78B8153D-59B7-4DBE-8472-D83338F04338@primarydata.com> <6111EECC-C8C1-4605-98AD-0AF0E1B6DA59@primarydata.com> <20141020135736.GB20301@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's start assuming that something in the idle loop posts a callback,
-and scheduling-clock interrupt occurs:
+On Oct 20, 2014, at 9:57 AM, Will Deacon <will.deacon@arm.com> wrote:
 
-1. The system is idle and stays that way, no runnable tasks.
+> On Sat, Oct 11, 2014 at 02:32:29PM +0100, Weston Andros Adamson wrote:
+>> Hey Will,
+> 
+> Hi again, Andros,
+> 
+>> I’ve been very busy, but I haven’t forgotten about your bug report!
+> 
+> No problem, I've been busy too. I just checked with -rc1 and I can reproduce
+> the issue there too.
+> 
+>> I think the WARN_ON_ONCE is just wrong, there are cases where the
+>> PG_INODE_REF flag is legitimately not set. The flag is set so that sub
+>> requests can mimmic the parent request’s reference count.
+>> 
+>> Could you please run the reproducer again, unmount, then check the contents of
+>> /proc/fs/nfsfs/servers?
+> 
+> Sure. I just tried this and that file is empty after unmounting.
 
-2. Scheduling-clock interrupt occurs, rcu_check_callbacks() is called
-   as result, which in turn calls rcu_is_cpu_rrupt_from_idle().
+Sorry for the delay (again) - I just got back from a two week holiday.
 
-3. rcu_is_cpu_rrupt_from_idle() reports the CPU was interrupted from
-   idle, which results in rcu_sched_qs() call, which does a
-   raise_softirq(RCU_SOFTIRQ).
+This is good news! I think we can safely remove this WARN_ON_ONCE and call it a
+day… or maybe calling it a month is more accurate ;)
 
-4. Upon return from interrupt, rcu_irq_exit() is invoked, which calls
-   rcu_idle_enter_common(), which in turn calls rcu_sched_qs() again,
-   which does another raise_softirq(RCU_SOFTIRQ).
+-dros
 
-5. The softirq happens shortly and invokes rcu_process_callbacks(),
-   which invokes __rcu_process_callbacks().
-
-6. So now callbacks can be invoked. At least they can be if
-   ->donetail has been updated. Which it will have been because
-   rcu_sched_qs() invokes rcu_qsctr_help().
-
-In the described scenario rcu_sched_qs() and raise_softirq(RCU_SOFTIRQ)
-get called twice in steps 3 and 4. This redundancy could be eliminated
-by removing rcu_is_cpu_rrupt_from_idle() function.
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcu/tiny.c | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
-
-diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-index c0623fc..0bfb3b9 100644
---- a/kernel/rcu/tiny.c
-+++ b/kernel/rcu/tiny.c
-@@ -186,16 +186,6 @@ EXPORT_SYMBOL(__rcu_is_watching);
- #endif /* defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) */
- 
- /*
-- * Test whether the current CPU was interrupted from idle.  Nested
-- * interrupts don't count, we must be running at the first interrupt
-- * level.
-- */
--static int rcu_is_cpu_rrupt_from_idle(void)
--{
--	return rcu_dynticks_nesting <= 1;
--}
--
--/*
-  * Helper function for rcu_sched_qs() and rcu_bh_qs().
-  * Also irqs are disabled to avoid confusion due to interrupt handlers
-  * invoking call_rcu().
-@@ -250,7 +240,7 @@ void rcu_bh_qs(void)
- void rcu_check_callbacks(int cpu, int user)
- {
- 	RCU_TRACE(check_cpu_stalls());
--	if (user || rcu_is_cpu_rrupt_from_idle())
-+	if (user)
- 		rcu_sched_qs();
- 	else if (!in_softirq())
- 		rcu_bh_qs();
--- 
-1.8.3.1
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
