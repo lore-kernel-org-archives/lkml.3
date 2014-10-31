@@ -1,417 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758387AbaJaSiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 14:38:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:4453 "EHLO mga11.intel.com"
+	id S1758841AbaJaSki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 14:40:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33476 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757288AbaJaSiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 14:38:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="614900256"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v4 5/6] tpm: TPM 2.0 CRB Interface
-Date: Fri, 31 Oct 2014 20:37:37 +0200
-Message-Id: <1414780658-3507-6-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414780658-3507-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-References: <1414780658-3507-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1757046AbaJaSkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 14:40:37 -0400
+Message-ID: <1414780819.27420.314.camel@ul30vt.home>
+Subject: Re: [PATCH v9 04/19] vfio: amba: VFIO support for AMBA devices
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        will.deacon@arm.com, tech@virtualopensystems.com,
+        christoffer.dall@linaro.org, eric.auger@linaro.org,
+        kim.phillips@freescale.com, marc.zyngier@arm.com,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>
+Date: Fri, 31 Oct 2014 12:40:19 -0600
+In-Reply-To: <1414433284-31719-5-git-send-email-a.motakis@virtualopensystems.com>
+References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1414433284-31719-5-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tpm_crb is a driver for TPM 2.0 Command Response Buffer (CRB) Interface
-as defined in PC Client Platform TPM Profile (PTP) Specification.
+On Mon, 2014-10-27 at 19:07 +0100, Antonios Motakis wrote:
+> Add support for discovering AMBA devices with VFIO and handle them
+> similarly to Linux platform devices.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/platform/vfio_amba.c | 116 ++++++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/vfio.h         |   1 +
+>  2 files changed, 117 insertions(+)
+>  create mode 100644 drivers/vfio/platform/vfio_amba.c
+> 
+> diff --git a/drivers/vfio/platform/vfio_amba.c b/drivers/vfio/platform/vfio_amba.c
+> new file mode 100644
+> index 0000000..cf61324
+> --- /dev/null
+> +++ b/drivers/vfio/platform/vfio_amba.c
+> @@ -0,0 +1,116 @@
+> +/*
+> + * Copyright (C) 2013 - Virtual Open Systems
+> + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/iommu.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/notifier.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/vfio.h>
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/amba/bus.h>
+> +
+> +#include "vfio_platform_private.h"
+> +
+> +#define DRIVER_VERSION  "0.9"
+> +#define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
+> +#define DRIVER_DESC     "VFIO for AMBA devices - User Level meta-driver"
+> +
+> +/* probing devices from the AMBA bus */
+> +
+> +static struct resource *get_amba_resource(struct vfio_platform_device *vdev,
+> +						int i)
+> +{
+> +	struct amba_device *adev = (struct amba_device *) vdev->opaque;
+> +
+> +	if (i == 0)
+> +		return &adev->res;
+> +
+> +	return NULL;
+> +}
+> +
+> +static int get_amba_irq(struct vfio_platform_device *vdev, int i)
+> +{
+> +	struct amba_device *adev = (struct amba_device *) vdev->opaque;
+> +
+> +	if (i < AMBA_NR_IRQS)
+> +		return adev->irq[i];
+> +
+> +	return 0;
+> +}
+> +
+> +static int vfio_amba_probe(struct amba_device *adev, const struct amba_id *id)
+> +{
+> +
+> +	struct vfio_platform_device *vdev;
+> +	int ret;
+> +
+> +	vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
+> +	if (!vdev)
+> +		return -ENOMEM;
+> +
+> +	vdev->opaque = (void *) adev;
+> +	vdev->name = "vfio-amba-dev";
 
-Only polling and single locality is supported as these are the limitations
-of the available hardware, Platform Trust Techonlogy (PTT) in Haswell
-CPUs.
+You need to actually allocate some memory here with something like
+kasprintf.  Don't forget to free it on the error and remove path.
 
-The driver always applies CRB with ACPI start because PTT reports using
-only ACPI start as start method but as a result of my testing it requires
-also CRB start.
+> +	vdev->flags = VFIO_DEVICE_FLAGS_AMBA;
+> +	vdev->get_resource = get_amba_resource;
+> +	vdev->get_irq = get_amba_irq;
+> +
+> +	ret = vfio_platform_probe_common(vdev, &adev->dev);
+> +	if (ret)
+> +		kfree(vdev);
+> +
+> +	return ret;
+> +}
+> +
+> +static int vfio_amba_remove(struct amba_device *adev)
+> +{
+> +	struct vfio_platform_device *vdev;
+> +
+> +	vdev = vfio_platform_remove_common(&adev->dev);
+> +	if(vdev) {
+> +		kfree(vdev);
+> +		return 0;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +
+> +static struct amba_id pl330_ids[] = {
+> +	{ 0, 0 },
+> +};
+> +
+> +MODULE_DEVICE_TABLE(amba, pl330_ids);
+> +
+> +static struct amba_driver vfio_amba_driver = {
+> +	.probe = vfio_amba_probe,
+> +	.remove = vfio_amba_remove,
+> +	.id_table = pl330_ids,
+> +	.drv = {
+> +		.name = "vfio-amba",
+> +		.owner = THIS_MODULE,
+> +	},
+> +};
+> +
+> +module_amba_driver(vfio_amba_driver);
+> +
+> +MODULE_VERSION(DRIVER_VERSION);
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_AUTHOR(DRIVER_AUTHOR);
+> +MODULE_DESCRIPTION(DRIVER_DESC);
+> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+> index 9db1056..92469e0 100644
+> --- a/include/uapi/linux/vfio.h
+> +++ b/include/uapi/linux/vfio.h
+> @@ -158,6 +158,7 @@ struct vfio_device_info {
+>  #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
+>  #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
+>  #define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)	/* vfio-platform device */
+> +#define VFIO_DEVICE_FLAGS_AMBA  (1 << 3)	/* vfio-amba device */
+>  	__u32	num_regions;	/* Max region index + 1 */
+>  	__u32	num_irqs;	/* Max IRQ index + 1 */
+>  };
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- drivers/char/tpm/Kconfig   |   9 ++
- drivers/char/tpm/Makefile  |   1 +
- drivers/char/tpm/tpm_crb.c | 334 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 344 insertions(+)
- create mode 100644 drivers/char/tpm/tpm_crb.c
 
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index c54cac3..10c9419 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -122,4 +122,13 @@ config TCG_XEN
- 	  To compile this driver as a module, choose M here; the module
- 	  will be called xen-tpmfront.
- 
-+config TCG_CRB
-+	tristate "TPM 2.0 CRB Interface"
-+	depends on X86 && ACPI
-+	---help---
-+	  If you have a TPM security chip that is compliant with the
-+	  TCG CRB 2.0 TPM specification say Yes and it will be accessible
-+	  from within Linux.  To compile this driver as a module, choose
-+	  M here; the module will be called tpm_crb.
-+
- endif # TCG_TPM
-diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index ae56af9..e6d26dd 100644
---- a/drivers/char/tpm/Makefile
-+++ b/drivers/char/tpm/Makefile
-@@ -22,3 +22,4 @@ obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
- obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
- obj-$(CONFIG_TCG_ST33_I2C) += tpm_i2c_stm_st33.o
- obj-$(CONFIG_TCG_XEN) += xen-tpmfront.o
-+obj-$(CONFIG_TCG_CRB) += tpm_crb.o
-diff --git a/drivers/char/tpm/tpm_crb.c b/drivers/char/tpm/tpm_crb.c
-new file mode 100644
-index 0000000..3b7202c
---- /dev/null
-+++ b/drivers/char/tpm/tpm_crb.c
-@@ -0,0 +1,334 @@
-+/*
-+ * Copyright (C) 2014 Intel Corporation
-+ *
-+ * Authors:
-+ * Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-+ *
-+ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-+ *
-+ * This device driver implements the TPM interface as defined in
-+ * the TCG CRB 2.0 TPM specification.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/acpi.h>
-+#include <linux/highmem.h>
-+#include <linux/rculist.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include "tpm.h"
-+
-+#define ACPI_SIG_TPM2 "TPM2"
-+
-+static const u8 CRB_ACPI_START_UUID[] = {
-+	/* 0000 */ 0xAB, 0x6C, 0xBF, 0x6B, 0x63, 0x54, 0x14, 0x47,
-+	/* 0008 */ 0xB7, 0xCD, 0xF0, 0x20, 0x3C, 0x03, 0x68, 0xD4
-+};
-+
-+enum crb_defaults {
-+	CRB_ACPI_START_REVISION_ID = 1,
-+	CRB_ACPI_START_INDEX = 1,
-+};
-+
-+enum crb_start_method {
-+	CRB_SM_ACPI_START = 2,
-+	CRB_SM_CRB = 7,
-+	CRB_SM_CRB_WITH_ACPI_START = 8,
-+};
-+
-+struct acpi_tpm2 {
-+	struct acpi_table_header hdr;
-+	u16 platform_class;
-+	u16 reserved;
-+	u64 control_area_pa;
-+	u32 start_method;
-+};
-+
-+enum crb_ca_request {
-+	CRB_CA_REQ_GO_IDLE	= BIT(0),
-+	CRB_CA_REQ_CMD_READY	= BIT(1),
-+};
-+
-+enum crb_ca_status {
-+	CRB_CA_STS_ERROR	= BIT(0),
-+	CRB_CA_STS_TPM_IDLE	= BIT(1),
-+};
-+
-+struct crb_control_area {
-+	u32 req;
-+	u32 sts;
-+	u32 cancel;
-+	u32 start;
-+	u32 int_enable;
-+	u32 int_sts;
-+	u32 cmd_size;
-+	u64 cmd_pa;
-+	u32 rsp_size;
-+	u64 rsp_pa;
-+} __packed;
-+
-+enum crb_status {
-+	CRB_STS_COMPLETE	= BIT(0),
-+};
-+
-+enum crb_flags {
-+	CRB_FL_ACPI_START	= BIT(0),
-+	CRB_FL_CRB_START	= BIT(1),
-+};
-+
-+struct crb_priv {
-+	unsigned int flags;
-+	struct crb_control_area *cca;
-+	unsigned long cca_pa;
-+	acpi_handle dev_handle;
-+};
-+
-+#ifdef CONFIG_PM_SLEEP
-+int crb_suspend(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static int crb_resume(struct device *dev)
-+{
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
-+
-+	(void) tpm2_do_selftest(chip);
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(crb_pm, crb_suspend, crb_resume);
-+
-+static u8 crb_status(struct tpm_chip *chip)
-+{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	u8 sts = 0;
-+
-+	if ((le32_to_cpu(priv->cca->start) & 1) != 1)
-+		sts |= CRB_STS_COMPLETE;
-+
-+	return sts;
-+}
-+
-+static int crb_recv(struct tpm_chip *chip, u8 *buf, size_t count)
-+{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	struct crb_control_area *cca;
-+	unsigned int expected;
-+	unsigned long offset;
-+	u8 *resp;
-+
-+	cca = priv->cca;
-+	if (le32_to_cpu(cca->sts) & CRB_CA_STS_ERROR)
-+		return -EIO;
-+
-+	offset = le64_to_cpu(cca->rsp_pa) - priv->cca_pa;
-+	resp = (u8 *) ((unsigned long) cca + offset);
-+	memcpy(buf, resp, 6);
-+	expected = be32_to_cpup((__be32 *) &buf[2]);
-+
-+	if (expected > count)
-+		return -EIO;
-+
-+	memcpy(&buf[6], &resp[6], expected - 6);
-+
-+	return expected;
-+}
-+
-+static int crb_do_acpi_start(struct tpm_chip *chip)
-+{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	union acpi_object *obj;
-+	int rc;
-+
-+	obj = acpi_evaluate_dsm(priv->dev_handle,
-+				CRB_ACPI_START_UUID,
-+				CRB_ACPI_START_REVISION_ID,
-+				CRB_ACPI_START_INDEX,
-+				NULL);
-+	if (!obj)
-+		return -ENXIO;
-+	rc = obj->integer.value == 0 ? 0 : -ENXIO;
-+	ACPI_FREE(obj);
-+	return rc;
-+}
-+
-+static int crb_send(struct tpm_chip *chip, u8 *buf, size_t len)
-+{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	struct crb_control_area *cca;
-+	u8 *cmd;
-+	int rc = 0;
-+
-+	cca = priv->cca;
-+
-+	if (len > le32_to_cpu(cca->cmd_size)) {
-+		dev_err(chip->dev,
-+			"invalid command count value %x %zx\n",
-+			(unsigned int) len,
-+			(size_t) le32_to_cpu(cca->cmd_size));
-+		return -E2BIG;
-+	}
-+
-+	cmd = (u8 *) ((unsigned long) cca + le64_to_cpu(cca->cmd_pa) -
-+		      priv->cca_pa);
-+	memcpy(cmd, buf, len);
-+
-+	/* Make sure that cmd is populated before issuing start. */
-+	wmb();
-+
-+	cca->start = cpu_to_le32(1);
-+	rc = crb_do_acpi_start(chip);
-+	return rc;
-+}
-+
-+static void crb_cancel(struct tpm_chip *chip)
-+{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	struct crb_control_area *cca;
-+
-+	cca = priv->cca;
-+	cca->cancel = cpu_to_le32(1);
-+
-+	/* Make sure that cmd is populated before issuing start. */
-+	wmb();
-+
-+	if (crb_do_acpi_start(chip))
-+		dev_err(chip->dev, "ACPI Start failed\n");
-+
-+	cca->cancel = 0;
-+}
-+
-+static bool crb_req_canceled(struct tpm_chip *chip, u8 status)
-+{
-+	struct crb_priv *priv = chip->vendor.priv;
-+
-+	return (le32_to_cpu(priv->cca->cancel) & 1) == 1;
-+}
-+
-+static const struct tpm_class_ops tpm_crb = {
-+	.status = crb_status,
-+	.recv = crb_recv,
-+	.send = crb_send,
-+	.cancel = crb_cancel,
-+	.req_canceled = crb_req_canceled,
-+	.req_complete_mask = CRB_STS_COMPLETE,
-+	.req_complete_val = CRB_STS_COMPLETE,
-+};
-+
-+static int crb_acpi_add(struct acpi_device *device)
-+{
-+	struct tpm_chip *chip;
-+	struct acpi_tpm2 *buf;
-+	struct crb_priv *priv;
-+	struct device *dev = &device->dev;
-+	acpi_status status;
-+	u32 sm;
-+	int rc;
-+
-+	chip = tpmm_chip_alloc(dev, &tpm_crb);
-+	if (IS_ERR(chip)) {
-+		dev_err(dev, "allocating chip failed\n");
-+		return PTR_ERR(chip);
-+	}
-+
-+	chip->flags = TPM_CHIP_FLAG_TPM2;
-+
-+	status = acpi_get_table(ACPI_SIG_TPM2, 1,
-+				(struct acpi_table_header **) &buf);
-+	if (ACPI_FAILURE(status)) {
-+		dev_err(dev, "could not get TPM2 ACPI table\n");
-+		return -ENODEV;
-+	}
-+
-+	priv = (struct crb_priv *) devm_kzalloc(dev, sizeof(struct crb_priv),
-+						GFP_KERNEL);
-+	if (!priv) {
-+		dev_err(dev, "allocating memory failed\n");
-+		return -ENOMEM;
-+	}
-+
-+	sm = le32_to_cpu(buf->start_method);
-+
-+	if (sm == CRB_SM_CRB || sm == CRB_SM_CRB_WITH_ACPI_START)
-+		priv->flags |= CRB_FL_CRB_START;
-+
-+	if (sm == CRB_SM_ACPI_START || sm == CRB_SM_CRB_WITH_ACPI_START)
-+		priv->flags |= CRB_FL_ACPI_START;
-+
-+	priv->dev_handle = device->handle;
-+	priv->cca_pa = le32_to_cpu(buf->control_area_pa);
-+	priv->cca = (struct crb_control_area *)
-+		devm_ioremap_nocache(dev, buf->control_area_pa, 0x1000);
-+	if (!priv->cca) {
-+		dev_err(dev, "allocating memory failed\n");
-+		return -ENOMEM;
-+	}
-+
-+	chip->vendor.priv = priv;
-+
-+	/* Default timeouts and durations */
-+	chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
-+	chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
-+	chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
-+	chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
-+	chip->vendor.duration[TPM_SHORT] =
-+		usecs_to_jiffies(TPM2_DURATION_SHORT);
-+	chip->vendor.duration[TPM_MEDIUM] =
-+		usecs_to_jiffies(TPM2_DURATION_MEDIUM);
-+	chip->vendor.duration[TPM_LONG] =
-+		usecs_to_jiffies(TPM2_DURATION_LONG);
-+
-+	rc = tpm2_do_selftest(chip);
-+	if (rc) {
-+		dev_err(dev, "self-test failed\n");
-+		return rc;
-+	}
-+
-+	rc = tpm_chip_register(chip);
-+	if (rc) {
-+		dev_err(dev, "registering the chip failed\n");
-+		return rc;
-+	}
-+
-+	return 0;
-+}
-+
-+int crb_acpi_remove(struct acpi_device *device)
-+{
-+	struct device *dev = &device->dev;
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
-+
-+	tpm_chip_unregister(chip);
-+	return 0;
-+}
-+
-+static struct acpi_device_id crb_device_ids[] = {
-+	{"MSFT0101", 0},
-+	{"", 0},
-+};
-+MODULE_DEVICE_TABLE(acpi, crb_device_ids);
-+
-+static struct acpi_driver crb_acpi_driver = {
-+	.name = "tpm_crb",
-+	.ids = crb_device_ids,
-+	.ops = {
-+		.add = crb_acpi_add,
-+		.remove = crb_acpi_remove,
-+	},
-+	.drv = {
-+		.pm = &crb_pm,
-+	},
-+};
-+
-+module_acpi_driver(crb_acpi_driver);
-+MODULE_AUTHOR("Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>");
-+MODULE_DESCRIPTION("TPM2 Driver");
-+MODULE_VERSION("0.1");
-+MODULE_LICENSE("GPL");
--- 
-2.1.0
 
