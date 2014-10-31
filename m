@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757829AbaJaJqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:46:11 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:52423 "EHLO
+	id S932227AbaJaJqZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:46:25 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:21095 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757029AbaJaJqJ (ORCPT
+	with ESMTP id S1757922AbaJaJqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:46:09 -0400
+	Fri, 31 Oct 2014 05:46:24 -0400
 X-IronPort-AV: E=Sophos;i="5.04,826,1406563200"; 
-   d="scan'208";a="42651890"
+   d="scan'208";a="42651910"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
         <grygorii.strashko@ti.com>, <yinghai@kernel.org>,
@@ -19,10 +19,11 @@ To: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
         <luto@amacapital.net>, <hpa@linux.intel.com>, <aarcange@redhat.com>,
         <qiuxishi@huawei.com>, <mgorman@suse.de>, <rientjes@google.com>,
         <hannes@cmpxchg.org>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>
 Subject: [PATCH 0/2] Fix node meminfo corruption.
-Date: Fri, 31 Oct 2014 17:46:29 +0800
-Message-ID: <1414748791-22557-1-git-send-email-tangchen@cn.fujitsu.com>
+Date: Fri, 31 Oct 2014 17:46:50 +0800
+Message-ID: <1414748812-22610-1-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
 Content-Type: text/plain
