@@ -1,197 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600AbaJaDcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 23:32:20 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:57212 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaJaDcS (ORCPT
+	id S933600AbaJaDcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 23:32:46 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:7983 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756777AbaJaDco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 23:32:18 -0400
+	Thu, 30 Oct 2014 23:32:44 -0400
+Message-ID: <5453022D.4040801@huawei.com>
+Date: Fri, 31 Oct 2014 11:29:49 +0800
+From: zhanghailiang <zhang.zhanghailiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <1414681386.26703.6.camel@AMDC1943>
-References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
- <1414422226-10948-7-git-send-email-k.kozlowski@samsung.com>
- <544EA4FA.6040704@collabora.co.uk> <1414486356.24949.19.camel@AMDC1943>
- <1414498308.24949.32.camel@AMDC1943> <1414579362.18868.11.camel@AMDC1943>
- <5450C63B.3000602@collabora.co.uk> <CAAVeFuLncbkNLGxEAj90yMmugRDNjtjeGoV_QYTMDZ7NVMJCmg@mail.gmail.com>
- <1414681386.26703.6.camel@AMDC1943>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Fri, 31 Oct 2014 12:31:57 +0900
-Message-ID: <CAAVeFuJo1wTyxOo4FEZM3=GTejuSHi+mnr=QV6HUeV5mAOCmqg@mail.gmail.com>
-Subject: Re: [PATCH 6/8] regulator: max77686: Add external GPIO control
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Feiner <pfeiner@google.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>, <qemu-devel@nongnu.org>,
+        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Hugh Dickins" <hughd@google.com>,
+        "Dr. David Alan Gilbert" <dgilbert@redhat.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        "Robert Love" <rlove@google.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        "Neil Brown" <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "Minchan Kim" <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        "Stefan Hajnoczi" <stefanha@gmail.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>,
+        "Andrew Jones" <drjones@redhat.com>,
+        Juan Quintela <quintela@redhat.com>
+Subject: Re: [PATCH 00/17] RFC: userfault v2
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com> <544E1143.1080905@huawei.com> <20141029174607.GK19606@redhat.com> <545221A4.9030606@huawei.com> <20141031022327.GA13275@google.com>
+In-Reply-To: <20141031022327.GA13275@google.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.69]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020208.54530240.00B7,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 7c291665cc8459ec8f29e79875df6f44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 12:03 AM, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> On czw, 2014-10-30 at 22:56 +0900, Alexandre Courbot wrote:
->> Hi, and thanks for bringing this issue to us!
->>
->> On Wed, Oct 29, 2014 at 7:49 PM, Javier Martinez Canillas
->> <javier.martinez@collabora.co.uk> wrote:
->> > [adding Linus and Alexandre to the cc list]
->> >
->> > Hello Krzysztof,
->> >
->> > On 10/29/2014 11:42 AM, Krzysztof Kozlowski wrote:
->> >> On wto, 2014-10-28 at 13:11 +0100, Krzysztof Kozlowski wrote:
->> >>> On wto, 2014-10-28 at 09:52 +0100, Krzysztof Kozlowski wrote:
->> >>> > On pon, 2014-10-27 at 21:03 +0100, Javier Martinez Canillas wrote:
->> >>> > > Hello Krzysztof,
->> >>> > >
->> >>> > > On 10/27/2014 04:03 PM, Krzysztof Kozlowski wrote:
->> >>> > > > @@ -85,6 +91,9 @@ struct max77686_data {
->> >>> > > >        struct max77686_regulator_data *regulators;
->> >>> > > >        int num_regulators;
->> >>> > > >
->> >>> > > > +      /* Array of size num_regulators with GPIOs for external control. */
->> >>> > > > +      int *ext_control_gpio;
->> >>> > > > +
->> >>> > >
->> >>> > > The integer-based GPIO API is deprecated in favor of the descriptor-based GPIO
->> >>> > > interface (Documentation/gpio/consumer.txt). Could you please use the later?
->> >>> >
->> >>> > Sure, I can. Please have in mind that regulator core still accepts old
->> >>> > GPIO so I will have to use desc_to_gpio(). That should work... and
->> >>> > should be future-ready.
->> >>>
->> >>> It seems I was too hasty... I think usage of the new gpiod API implies
->> >>> completely different bindings.
->> >>>
->> >>> The gpiod_get() gets GPIO from a device level, not from given sub-node
->> >>> pointer. This means that you cannot have DTS like this:
->> >>> ldo21_reg: ldo21 {
->> >>>      regulator-compatible = "LDO21";
->> >>>      regulator-name = "VTF_2.8V";
->> >>>      regulator-min-microvolt = <2800000>;
->> >>>      regulator-max-microvolt = <2800000>;
->> >>>      ec-gpio = <&gpy2 0 0>;
->> >>> };
->> >>>
->> >>> ldo22_reg: ldo22 {
->> >>>      regulator-compatible = "LDO22";
->> >>>      regulator-name = "VMEM_VDD_2.8V";
->> >>>      regulator-min-microvolt = <2800000>;
->> >>>      regulator-max-microvolt = <2800000>;
->> >>>      ec-gpio = <&gpk0 2 0>;
->> >>> };
->> >>>
->> >>>
->> >>> I could put GPIOs in device node:
->> >>>
->> >>> max77686_pmic@09 {
->> >>>      compatible = "maxim,max77686";
->> >>>      interrupt-parent = <&gpx0>;
->> >>>      interrupts = <7 0>;
->> >>>      reg = <0x09>;
->> >>>      #clock-cells = <1>;
->> >>>      ldo21-gpio = <&gpy2 0 0>;
->> >>>      ldo22-gpio = <&gpk0 2 0>;
->> >>>
->> >>>      ldo21_reg: ldo21 {
->> >>>              regulator-compatible = "LDO21";
->> >>>              regulator-name = "VTF_2.8V";
->> >>>              regulator-min-microvolt = <2800000>;
->> >>>              regulator-max-microvolt = <2800000>;
->> >>>      };
->> >>>
->> >>>      ldo22_reg: ldo22 {
->> >>>              regulator-compatible = "LDO22";
->> >>>              regulator-name = "VMEM_VDD_2.8V";
->> >>>              regulator-min-microvolt = <2800000>;
->> >>>              regulator-max-microvolt = <2800000>;
->> >>>      };
->> >>>
->> >>> This would work but I don't like it. The properties of a regulator are
->> >>> above the node configuring that regulator.
->> >>>
->> >>> Any ideas?
->> >>>
->> >>
->> >> Continuing talking to myself... I found another problem - GPIO cannot be
->> >> requested more than once (-EBUSY). In case of this driver (and board:
->> >> Trats2) one GPIO is connected to regulators. The legacy GPIO API and
->> >> regulator core handle this.
->> >>
->> >> With new GPIO API I would have to implement some additional steps in
->> >> such case...
->> >>
->> >> So there are 2 issues:
->> >> 1. Cannot put GPIO property in regulator node.
->>
->> For this problem you will probably want to use the
->> dev(m)_get_named_gpiod_from_child() function from the following patch:
->>
->> https://lkml.org/lkml/2014/10/6/529
->>
->> It should reach -next soon now.
+On 2014/10/31 10:23, Peter Feiner wrote:
+> On Thu, Oct 30, 2014 at 07:31:48PM +0800, zhanghailiang wrote:
+>> On 2014/10/30 1:46, Andrea Arcangeli wrote:
+>>> On Mon, Oct 27, 2014 at 05:32:51PM +0800, zhanghailiang wrote:
+>>>> I want to confirm a question:
+>>>> Can we support distinguishing between writing and reading memory for userfault?
+>>>> That is, we can decide whether writing a page, reading a page or both trigger userfault.
+>>> Mail is going to be long enough already so I'll just assume tracking
+>>> dirty memory in userland (instead of doing it in kernel) is worthy
+>>> feature to have here.
 >
-> Thanks! Probably I would switch to "top" level gpios property anyway
-> (other reasons) but it would be valuable in some cases to specify them
-> per child node.
-
-Mmm, but doesn't it make more sense to have them in the child nodes?
-Besides if the bindings of this driver have already been published,
-I'm afraid you will have to maintain backward compability.
-
+> I'll open that can of worms :-)
 >
+>> [...]
+>> Er, maybe i didn't describe clearly. What i really need for live memory snapshot
+>> is only wrprotect fault, like kvm's dirty tracing mechanism, *only tracing write action*.
 >>
->> >> 2. Cannot request some GPIO more than once.
->>
->> We have been confronted to this problem with the regulator core as well:
->>
->> http://marc.info/?l=linux-arm-kernel&m=140417649119733&w=1
->>
->> I have a draft patch that allows GPIOs to be requested by several
->> clients. What prevented me from submitting it was that I wanted to
->> make sure the different requested configurations were compatible, but
->> maybe I am overthinking this. There are also a couple of other patches
->> that this depends on (like removal of the big descs array), so I don't
->> think it will be available too soon, sadly.
+>> So, what i need for userfault is supporting only wrprotect fault. i don't
+>> want to get notification for non present reading faults, it will influence
+>> VM's performance and the efficiency of doing snapshot.
 >
-> Shouldn't be the nature of get()/put() interface to allow multiple
-> requests?
-
-Only if it makes sense for the resource to be requested multiple
-times. GPIOs are kind of a difficult case here. Consumers could ask
-for e.g. conflicting directions. But for cases where it should work I
-agree that multiple consumers would be welcome.
-
-> To me it was a kind of intuitive that I could do another
-> devm_gpiod_get() for the same gpio. But then it hit me with EBUSY :).
+> Given that you do care about performance Zhanghailiang, I don't think that a
+> userfault handler is a good place to track dirty memory. Every dirtying write
+> will block on the userfault handler, which is an expensively slow proposition
+> compared to an in-kernel approach.
 >
->>
->> So maybe your best shot for now is to keep using the integer API, as
->> much as I hate it. Once we become able to request the same GPIO
->> several times, you should be good to switch to descriptors. Sorry this
->> has not been done faster.
+
+Agreed, but for doing live memory snapshot (VM is running when do snapsphot),
+we have to do this (block the write action), because we have to save the page before it
+is dirtied by writing action. This is the difference, compared to pre-copy migration.
+
+>> Also, i think this feature will benefit for migration of ivshmem and vhost-scsi
+>> which have no dirty-page-tracing now.
 >
-> I'll do it legacy way but I'll try to use bindings gpiolib-safe. This
-> way future transition in the driver should not affect bindings.
+> I do agree wholeheartedly with you here. Manually tracking non-guest writes
+> adds to the complexity of device emulation code. A central fault-driven means
+> for dirty tracking writes from the guest and host would be a welcome
+> simplification to implementing pre-copy migration. Indeed, that's exactly what
+> I'm working on! I'm using the softdirty bit, which was introduced recently for
+> CRIU migration, to replace the use of KVM's dirty logging and manual dirty
+> tracking by the VMM during pre-copy migration. See
 
-For DT bindings, please refer to these brand-new instructions:
+Great! Do you plan to issue your patches to community? I mean is your work based on
+qemu? or an independent tool (CRIU migration?) for live-migration?
+Maybe i could fix the migration problem for ivshmem in qemu now,
+based on softdirty mechanism.
 
-https://lkml.org/lkml/2014/10/29/98
+> Documentation/vm/soft-dirty.txt and pagemap.txt in case you aren't familiar. To
 
-Personally I think having the GPIO phandle in the child node would
-be the most intuitive. You will also have to use the "-gpios" suffix, no
-"-gpio", if you can still change the bindings.
+I have read them cursorily, it is useful for pre-copy indeed. But it seems that
+it can not meet my need for snapshot.
+
+> make softdirty usable for live migration, I've added an API to atomically
+> test-and-clear the bit and write protect the page.
+
+How can i find the API? Is it been merged in kernel's master branch already?
+
+
+Thanks,
+zhanghailiang
+
