@@ -1,146 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760681AbaJaVvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 17:51:10 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:24150 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756538AbaJaVs6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 17:48:58 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvkNAKkCVFRXQwLV/2dsb2JhbABcgw6BLLlrBQF0mhoCgRgXAQEBAQF9hAMBBScvIxBROR4ZiEUBvDyOaAEBAQEGIoY3ilkHhEsFhjGXR4xziVWDeTwvgksBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Fabian Frederick <fabf@skynet.be>
-Subject: [PATCH 4/8] cdrom: move EXPORT_SYMBOL after functions
-Date: Fri, 31 Oct 2014 22:48:00 +0100
-Message-Id: <1414792084-7739-5-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1414792084-7739-1-git-send-email-fabf@skynet.be>
-References: <1414792084-7739-1-git-send-email-fabf@skynet.be>
+	id S1759825AbaJaVwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 17:52:55 -0400
+Received: from mout.web.de ([212.227.17.12]:64900 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038AbaJaVwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 17:52:53 -0400
+Message-ID: <545404A6.2090807@users.sourceforge.net>
+Date: Fri, 31 Oct 2014 22:52:38 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH 1/1] btrfs: Deletion of unnecessary checks before six function
+ calls
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:6MYzXZuq6auSGxoD15I7VDO4TCjXfRhLqNYiz8lnxoxxrWTBw5E
+ gz7xM5njJZ52L+5OsKRJS6mBFNYtsA7fZu0C6KCSCyuwktfsvCGoIsBcieiwaZii+8kORxP
+ eRBZbQmJxI5zeyvJ99EwjwaHuuJA7pJ7t53mpf+v+ISmp6BdOmgV2zhfTBn4v4FkBzhXKer
+ DJbXi7lzXNTEU9Iu+hUeg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/cdrom/cdrom.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+The following functions test whether their argument is NULL and then
+return immediately.
+* btrfs_free_path()
+* free_extent_buffer()
+* free_extent_map()
+* free_extent_state()
+* iput()
+* kfree()
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index deda0f1..ca47919 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -638,6 +638,8 @@ int register_cdrom(struct cdrom_device_info *cdi)
- 	mutex_unlock(&cdrom_mutex);
- 	return 0;
- }
-+EXPORT_SYMBOL(register_cdrom);
-+
- #undef ENSURE
- 
- void unregister_cdrom(struct cdrom_device_info *cdi)
-@@ -654,6 +656,7 @@ void unregister_cdrom(struct cdrom_device_info *cdi)
- 	cdi->ops->n_minors--;
- 	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" unregistered\n", cdi->name);
- }
-+EXPORT_SYMBOL(unregister_cdrom);
- 
- int cdrom_get_media_event(struct cdrom_device_info *cdi,
- 			  struct media_event_desc *med)
-@@ -681,6 +684,7 @@ int cdrom_get_media_event(struct cdrom_device_info *cdi,
- 	memcpy(med, &buffer[sizeof(*eh)], sizeof(*med));
- 	return 0;
- }
-+EXPORT_SYMBOL(cdrom_get_media_event);
- 
- static int cdrom_get_random_writable(struct cdrom_device_info *cdi,
- 			      struct rwrt_feature_desc *rfd)
-@@ -1192,6 +1196,7 @@ err:
- 	cdi->use_count--;
+Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ fs/btrfs/dev-replace.c       |  3 +--
+ fs/btrfs/extent_io.c         | 12 ++++--------
+ fs/btrfs/file.c              |  6 ++----
+ fs/btrfs/free-space-cache.c  |  7 +++----
+ fs/btrfs/inode.c             |  6 ++----
+ fs/btrfs/reada.c             |  3 +--
+ fs/btrfs/relocation.c        |  3 +--
+ fs/btrfs/tests/btrfs-tests.c |  3 +--
+ fs/btrfs/tree-defrag.c       |  3 +--
+ fs/btrfs/tree-log.c          |  6 ++----
+ 10 files changed, 18 insertions(+), 34 deletions(-)
+
+diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
+index 6f662b3..3465029 100644
+--- a/fs/btrfs/dev-replace.c
++++ b/fs/btrfs/dev-replace.c
+@@ -183,8 +183,7 @@ no_valid_dev_replace_entry_found:
+ 	}
+
+ out:
+-	if (path)
+-		btrfs_free_path(path);
++	btrfs_free_path(path);
  	return ret;
  }
-+EXPORT_SYMBOL(cdrom_open);
- 
- /* This code is similar to that in open_for_data. The routine is called
-    whenever an audio play operation is requested.
-@@ -1287,6 +1292,7 @@ void cdrom_release(struct cdrom_device_info *cdi, fmode_t mode)
- 			cdo->tray_move(cdi, 1);
+
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index bf3f424..cfbf00a 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -704,8 +704,7 @@ next:
+
+ out:
+ 	spin_unlock(&tree->lock);
+-	if (prealloc)
+-		free_extent_state(prealloc);
++	free_extent_state(prealloc);
+
+ 	return 0;
+
+@@ -1006,8 +1005,7 @@ hit_next:
+
+ out:
+ 	spin_unlock(&tree->lock);
+-	if (prealloc)
+-		free_extent_state(prealloc);
++	free_extent_state(prealloc);
+
+ 	return err;
+
+@@ -1223,8 +1221,7 @@ hit_next:
+
+ out:
+ 	spin_unlock(&tree->lock);
+-	if (prealloc)
+-		free_extent_state(prealloc);
++	free_extent_state(prealloc);
+
+ 	return err;
+
+@@ -4146,8 +4143,7 @@ int extent_readpages(struct extent_io_tree *tree,
+ 		__extent_readpages(tree, pagepool, nr, get_extent, &em_cached,
+ 				   &bio, 0, &bio_flags, READ);
+
+-	if (em_cached)
+-		free_extent_map(em_cached);
++	free_extent_map(em_cached);
+
+ 	BUG_ON(!list_empty(pages));
+ 	if (bio)
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index a18ceab..add07ce8 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -677,10 +677,8 @@ next:
+ 		/* once for the tree*/
+ 		free_extent_map(em);
  	}
+-	if (split)
+-		free_extent_map(split);
+-	if (split2)
+-		free_extent_map(split2);
++	free_extent_map(split);
++	free_extent_map(split2);
  }
-+EXPORT_SYMBOL(cdrom_release);
- 
- static int cdrom_read_mech_status(struct cdrom_device_info *cdi, 
- 				  struct cdrom_changer_info *buf)
-@@ -1369,6 +1375,7 @@ int cdrom_number_of_slots(struct cdrom_device_info *cdi)
- 	kfree(info);
- 	return nslots;
- }
-+EXPORT_SYMBOL(cdrom_number_of_slots);
- 
- 
- /* If SLOT < 0, unload the current slot.  Otherwise, try to load SLOT. */
-@@ -1538,6 +1545,7 @@ int cdrom_media_changed(struct cdrom_device_info *cdi)
- 		return 0;
- 	return media_changed(cdi, 0);
- }
-+EXPORT_SYMBOL(cdrom_media_changed);
- 
- /* Requests to the low-level drivers will /always/ be done in the
-    following format convention:
-@@ -1586,6 +1594,7 @@ void init_cdrom_command(struct packet_command *cgc, void *buf, int len,
- 	cgc->data_direction = type;
- 	cgc->timeout = CDROM_DEF_TIMEOUT;
- }
-+EXPORT_SYMBOL(init_cdrom_command);
- 
- /* DVD handling */
- 
-@@ -2004,6 +2013,7 @@ int cdrom_mode_sense(struct cdrom_device_info *cdi,
- 	cgc->data_direction = CGC_DATA_READ;
- 	return cdo->generic_packet(cdi, cgc);
- }
-+EXPORT_SYMBOL(cdrom_mode_sense);
- 
- int cdrom_mode_select(struct cdrom_device_info *cdi,
- 		      struct packet_command *cgc)
-@@ -2019,6 +2029,7 @@ int cdrom_mode_select(struct cdrom_device_info *cdi,
- 	cgc->data_direction = CGC_DATA_WRITE;
- 	return cdo->generic_packet(cdi, cgc);
- }
-+EXPORT_SYMBOL(cdrom_mode_select);
- 
- static int cdrom_read_subchannel(struct cdrom_device_info *cdi,
- 				 struct cdrom_subchnl *subchnl, int mcn)
-@@ -2871,6 +2882,7 @@ use_toc:
- 	*last_written = toc.cdte_addr.lba;
+
+ /*
+diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+index 3384819..11883e2 100644
+--- a/fs/btrfs/free-space-cache.c
++++ b/fs/btrfs/free-space-cache.c
+@@ -1943,8 +1943,7 @@ new_bitmap:
+
+ out:
+ 	if (info) {
+-		if (info->bitmap)
+-			kfree(info->bitmap);
++		kfree(info->bitmap);
+ 		kmem_cache_free(btrfs_free_space_cachep, info);
+ 	}
+
+@@ -3322,8 +3321,8 @@ again:
+
+ 	if (info)
+ 		kmem_cache_free(btrfs_free_space_cachep, info);
+-	if (map)
+-		kfree(map);
++
++	kfree(map);
  	return 0;
  }
-+EXPORT_SYMBOL(cdrom_get_last_written);
- 
- /* return the next writable block. also for udf file system. */
- static int cdrom_get_next_writable(struct cdrom_device_info *cdi,
-@@ -3392,19 +3404,7 @@ int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
- 
- 	return -ENOSYS;
+
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index d23362f..7301b99 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -857,8 +857,7 @@ static u64 get_extent_allocation_hint(struct inode *inode,
+u64 start,
+ 			em = search_extent_mapping(em_tree, 0, 0);
+ 			if (em && em->block_start < EXTENT_MAP_LAST_BYTE)
+ 				alloc_hint = em->block_start;
+-			if (em)
+-				free_extent_map(em);
++			free_extent_map(em);
+ 		} else {
+ 			alloc_hint = em->block_start;
+ 			free_extent_map(em);
+@@ -6573,8 +6572,7 @@ out:
+
+ 	trace_btrfs_get_extent(root, em);
+
+-	if (path)
+-		btrfs_free_path(path);
++	btrfs_free_path(path);
+ 	if (trans) {
+ 		ret = btrfs_end_transaction(trans, root);
+ 		if (!err)
+diff --git a/fs/btrfs/reada.c b/fs/btrfs/reada.c
+index b63ae20..ec8eb49 100644
+--- a/fs/btrfs/reada.c
++++ b/fs/btrfs/reada.c
+@@ -731,8 +731,7 @@ static int reada_start_machine_dev(struct btrfs_fs_info
+*fs_info,
+ 	else if (eb)
+ 		__readahead_hook(fs_info->extent_root, eb, eb->start, ret);
+
+-	if (eb)
+-		free_extent_buffer(eb);
++	free_extent_buffer(eb);
+
+ 	return 1;
+
+diff --git a/fs/btrfs/relocation.c b/fs/btrfs/relocation.c
+index 74257d6..f87a5ee 100644
+--- a/fs/btrfs/relocation.c
++++ b/fs/btrfs/relocation.c
+@@ -4158,8 +4158,7 @@ out:
+ 	btrfs_end_transaction(trans, root);
+ 	btrfs_btree_balance_dirty(root);
+ 	if (err) {
+-		if (inode)
+-			iput(inode);
++		iput(inode);
+ 		inode = ERR_PTR(err);
+ 	}
+ 	return inode;
+diff --git a/fs/btrfs/tests/btrfs-tests.c b/fs/btrfs/tests/btrfs-tests.c
+index 9626252..7fb123f 100644
+--- a/fs/btrfs/tests/btrfs-tests.c
++++ b/fs/btrfs/tests/btrfs-tests.c
+@@ -162,8 +162,7 @@ void btrfs_free_dummy_root(struct btrfs_root *root)
+ {
+ 	if (!root)
+ 		return;
+-	if (root->node)
+-		free_extent_buffer(root->node);
++	free_extent_buffer(root->node);
+ 	if (root->fs_info)
+ 		btrfs_free_dummy_fs_info(root->fs_info);
+ 	kfree(root);
+diff --git a/fs/btrfs/tree-defrag.c b/fs/btrfs/tree-defrag.c
+index a63719c..c74f106 100644
+--- a/fs/btrfs/tree-defrag.c
++++ b/fs/btrfs/tree-defrag.c
+@@ -118,8 +118,7 @@ int btrfs_defrag_leaves(struct btrfs_trans_handle *trans,
+ 		ret = -EAGAIN;
+ 	}
+ out:
+-	if (path)
+-		btrfs_free_path(path);
++	btrfs_free_path(path);
+ 	if (ret == -EAGAIN) {
+ 		if (root->defrag_max.objectid > root->defrag_progress.objectid)
+ 			goto done;
+diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+index 1475979..70926a9 100644
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -736,8 +736,7 @@ static noinline int replay_one_extent(struct
+btrfs_trans_handle *trans,
+ 	inode_add_bytes(inode, nbytes);
+ 	ret = btrfs_update_inode(trans, root, inode);
+ out:
+-	if (inode)
+-		iput(inode);
++	iput(inode);
+ 	return ret;
  }
--
--EXPORT_SYMBOL(cdrom_get_last_written);
--EXPORT_SYMBOL(register_cdrom);
--EXPORT_SYMBOL(unregister_cdrom);
--EXPORT_SYMBOL(cdrom_open);
--EXPORT_SYMBOL(cdrom_release);
- EXPORT_SYMBOL(cdrom_ioctl);
--EXPORT_SYMBOL(cdrom_media_changed);
--EXPORT_SYMBOL(cdrom_number_of_slots);
--EXPORT_SYMBOL(cdrom_mode_select);
--EXPORT_SYMBOL(cdrom_mode_sense);
--EXPORT_SYMBOL(init_cdrom_command);
--EXPORT_SYMBOL(cdrom_get_media_event);
- 
- #ifdef CONFIG_SYSCTL
- 
+
+@@ -2210,8 +2209,7 @@ static noinline int walk_down_log_tree(struct
+btrfs_trans_handle *trans,
+ 		}
+
+ 		WARN_ON(*level <= 0);
+-		if (path->nodes[*level-1])
+-			free_extent_buffer(path->nodes[*level-1]);
++		free_extent_buffer(path->nodes[*level-1]);
+ 		path->nodes[*level-1] = next;
+ 		*level = btrfs_header_level(next);
+ 		path->slots[*level] = 0;
 -- 
-1.9.3
+2.1.3
+
 
