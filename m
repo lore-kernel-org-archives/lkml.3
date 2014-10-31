@@ -1,195 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161476AbaJ3XyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 19:54:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42364 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161410AbaJ3XyK (ORCPT
+	id S1161401AbaJaAB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 20:01:56 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:47501 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161189AbaJaABz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 19:54:10 -0400
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: Matt Wagantall <mattw@codeaurora.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>
-Subject: [PATCH v8] iopoll: Introduce memory-mapped IO polling macros
-Date: Thu, 30 Oct 2014 16:53:44 -0700
-Message-Id: <1414713224-16840-1-git-send-email-mitchelh@codeaurora.org>
-X-Mailer: git-send-email 2.1.3
+	Thu, 30 Oct 2014 20:01:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+References: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
+ <5452B241.5010603@amacapital.net> <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
+ <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 30 Oct 2014 17:01:30 -0700
+Message-ID: <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
+Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Rannaud <e@nanocritical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Wagantall <mattw@codeaurora.org>
+On Thu, Oct 30, 2014 at 3:58 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Oct 30, 2014 at 3:48 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Agreed. Will apply and add the stable cc.
+>
+> Ho humm. Thinking about this some more, I'm starting to wonder. Not
+> about this patch per se (open on a newly created file should indeed
+> succeed regardless), but about the horrible glibc behavior of screwing
+> up the third argument.
+>
+> If you want to do O_TMPFILE + linkat() (or some eventual future
+> flink()), the mode really matters. So this idiotic glibc behavior of
+> only forwarding the third argument if O_CREAT is set seems to be a
+> bug.
 
-It is sometimes necessary to poll a memory-mapped register until its value
-satisfies some condition. Introduce a family of convenience macros that do
-this. Tight-looping, sleeping, and timing out can all be accomplished using
-these macros.
+We could bite the bullet and add a tmpfile syscall.   /me ducks
 
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Matt Wagantall <mattw@codeaurora.org>
-Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
----
-Changes since v7:
-  - sorted helper macros by size (b, w, l, q)
-  - removed some of the more esoteric (or flat-out bogus) helper macros
----
- include/linux/iopoll.h | 140 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 140 insertions(+)
- create mode 100644 include/linux/iopoll.h
+>
+> Why the hell does glibc think it's a good idea to intersect system
+> call semantics? It's not a good idea - it's just stupid in the
+> extreme. And in this case it seems to actively breaks things.
 
-diff --git a/include/linux/iopoll.h b/include/linux/iopoll.h
-new file mode 100644
-index 0000000000..bd161dae2d
---- /dev/null
-+++ b/include/linux/iopoll.h
-@@ -0,0 +1,140 @@
-+/*
-+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef _LINUX_IOPOLL_H
-+#define _LINUX_IOPOLL_H
-+
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/hrtimer.h>
-+#include <linux/delay.h>
-+#include <linux/errno.h>
-+#include <linux/io.h>
-+
-+/**
-+ * readx_poll_timeout - Periodically poll an address until a condition is met or a timeout occurs
-+ * @op: accessor function (takes @addr as its only argument)
-+ * @addr: Address to poll
-+ * @val: Variable to read the value into
-+ * @cond: Break condition (usually involving @val)
-+ * @sleep_us: Maximum time to sleep between reads in us (0 tight-loops)
-+ * @timeout_us: Timeout in us, 0 means never timeout
-+ *
-+ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
-+ * case, the last read value at @addr is stored in @val. Must not
-+ * be called from atomic context if sleep_us or timeout_us are used.
-+ *
-+ * When available, you'll probably want to use one of the specialized
-+ * macros defined below rather than this macro directly.
-+ */
-+#define readx_poll_timeout(op, addr, val, cond, sleep_us, timeout_us)	\
-+({ \
-+	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-+	might_sleep_if(sleep_us); \
-+	for (;;) { \
-+		(val) = op(addr); \
-+		if (cond) \
-+			break; \
-+		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
-+			(val) = op(addr); \
-+			break; \
-+		} \
-+		if (sleep_us) \
-+			usleep_range((sleep_us >> 2) + 1, sleep_us); \
-+	} \
-+	(cond) ? 0 : -ETIMEDOUT; \
-+})
-+
-+/**
-+ * readx_poll_timeout_atomic - Periodically poll an address until a condition is met or a timeout occurs
-+ * @op: accessor function (takes @addr as its only argument)
-+ * @addr: Address to poll
-+ * @val: Variable to read the value into
-+ * @cond: Break condition (usually involving @val)
-+ * @delay_us: Time to udelay between reads in us (0 tight-loops)
-+ * @timeout_us: Timeout in us, 0 means never timeout
-+ *
-+ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
-+ * case, the last read value at @addr is stored in @val.
-+ *
-+ * When available, you'll probably want to use one of the specialized
-+ * macros defined below rather than this macro directly.
-+ */
-+#define readx_poll_timeout_atomic(op, addr, val, cond, delay_us, timeout_us) \
-+({ \
-+	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-+	for (;;) { \
-+		(val) = op(addr); \
-+		if (cond) \
-+			break; \
-+		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
-+			(val) = op(addr); \
-+			break; \
-+		} \
-+		if (delay_us) \
-+			udelay(delay_us);	\
-+	} \
-+	(cond) ? 0 : -ETIMEDOUT; \
-+})
-+
-+
-+#define readb_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readb, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readb, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readw, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readw, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readl, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readl, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readq, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readq, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readb_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readb_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readw_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readw_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readl_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readl_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readq_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readq_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#endif /* _LINUX_IOPOLL_H */
+Uh, because it's glibc?  Or because it's trying not to screw up and on
+some system where overrunning va_arg is terrible?
+
+>
+>                      Linus
+
+
+
 -- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+Andy Lutomirski
+AMA Capital Management, LLC
