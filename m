@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342AbaJaKf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 06:35:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:32622 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758240AbaJaKf6 (ORCPT
+	id S1758629AbaJaKgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 06:36:50 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:51791 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758540AbaJaKgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 06:35:58 -0400
-From: w00218164 <weiyuan.wei@huawei.com>
-To: <akpm@linux-foundation.org>, <mgorman@suse.de>, <rientjes@google.com>,
-        <hannes@cmpxchg.org>, <riel@redhat.com>, <vbabka@suse.cz>,
-        <sasha.levin@oracle.com>
-CC: <lizefan@huawei.com>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: Fix a spelling mistake
-Date: Fri, 31 Oct 2014 18:37:53 +0800
-Message-ID: <1414751873-19981-1-git-send-email-weiyuan.wei@huawei.com>
-X-Mailer: git-send-email 2.1.0
+	Fri, 31 Oct 2014 06:36:48 -0400
+Message-ID: <5453663B.90500@redhat.com>
+Date: Fri, 31 Oct 2014 11:36:43 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.243]
-X-CFilter-Loop: Reflected
+To: "Chen, Tiejun" <tiejun.chen@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Gleb Natapov <gleb@kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: fix access memslots w/o hold srcu read lock
+References: <1414730012-7278-1-git-send-email-wanpeng.li@linux.intel.com> <54531E7B.1040006@intel.com>
+In-Reply-To: <54531E7B.1040006@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yuan <weiyuan.wei@huawei.com>
 
-This patch fixes a spelling mistake in func
-__zone_watermark_ok, which may was wrongly spelled my.
 
-Signed-off-by Wei Yuan <weiyuan.wei@huawei.com>
----
- mm/page_alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 31/10/2014 06:30, Chen, Tiejun wrote:
+> 
+> @@ -4442,6 +4442,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+>  {
+>         struct vcpu_vmx *vmx = to_vmx(vcpu);
+>         struct msr_data apic_base_msr;
+> +       int idx;
+> 
+>         vmx->rmode.vm86_active = 0;
+> 
+> @@ -4509,7 +4510,9 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+>                 vmcs_write32(TPR_THRESHOLD, 0);
+>         }
+> 
+> +       idx = srcu_read_lock(&vcpu->kvm->srcu);
+>         kvm_vcpu_reload_apic_access_page(vcpu);
+> +       srcu_read_unlock(&vcpu->kvm->srcu, idx);
+> 
+>         if (vmx_vm_has_apicv(vcpu->kvm))
+>                 memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9cd36b8..f3ce2e1 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1714,7 +1714,7 @@ static bool __zone_watermark_ok(struct zone *z, unsigned int order,
- 			unsigned long mark, int classzone_idx, int alloc_flags,
- 			long free_pages)
- {
--	/* free_pages my go negative - that's OK */
-+	/* free_pages may go negative - that's OK */
- 	long min = mark;
- 	int o;
- 	long free_cma = 0;
--- 
-2.1.0
+Not enough; you can call vcpu_enter_guest -> kvm_apic_accept_events ->
+kvm_vcpu_reset -> vmx_vcpu_reset while under the SRCU lock.  The right
+place to add the lock is kvm_arch_vcpu_setup.
 
+Thanks,
+
+Paolo
