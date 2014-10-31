@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161642AbaJaBme (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Oct 2014 21:42:34 -0400
-Received: from mail-bn1on0135.outbound.protection.outlook.com ([157.56.110.135]:45635
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1161672AbaJaBnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Oct 2014 21:43:25 -0400
+Received: from mail-by2on0105.outbound.protection.outlook.com ([207.46.100.105]:30976
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1161426AbaJaBmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Oct 2014 21:42:31 -0400
-X-WSS-ID: 0NEACQO-07-4BN-02
+	id S1161552AbaJaBnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Oct 2014 21:43:22 -0400
+X-WSS-ID: 0NEACS6-07-4C6-02
 X-M-MSG: 
-Date: Fri, 31 Oct 2014 09:34:59 +0800
+Date: Fri, 31 Oct 2014 09:35:51 +0800
 From: Huang Rui <ray.huang@amd.com>
 To: Felipe Balbi <balbi@ti.com>
 CC: Alan Stern <stern@rowland.harvard.edu>,
@@ -22,21 +22,20 @@ CC: Alan Stern <stern@rowland.harvard.edu>,
         Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 16/20] usb: dwc3: add disable usb2 suspend phy quirk
-Message-ID: <20141031013459.GB20367@hr-slim.amd.com>
+Subject: Re: [PATCH v4 19/20] usb: dwc3: add support for AMD Nolan platform
+Message-ID: <20141031013550.GC20367@hr-slim.amd.com>
 References: <1414663725-2195-1-git-send-email-ray.huang@amd.com>
- <1414663725-2195-17-git-send-email-ray.huang@amd.com>
- <20141030163943.GL10130@saruman>
+ <1414663725-2195-20-git-send-email-ray.huang@amd.com>
+ <20141030163840.GK10130@saruman>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20141030163943.GL10130@saruman>
+In-Reply-To: <20141030163840.GK10130@saruman>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(51704005)(164054003)(24454002)(50986999)(76176999)(54356999)(87936001)(77096002)(46406003)(19580395003)(4396001)(64706001)(86362001)(85852003)(97756001)(92726001)(92566001)(68736004)(47776003)(120916001)(50466002)(84676001)(83506001)(107046002)(76482002)(23726002)(21056001)(80022003)(31966008)(102836001)(19580405001)(106466001)(97736003)(33656002)(20776003)(99396003)(46102003)(110136001)(53416004)(44976005)(105586002)(85306004)(95666004)(101416001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(164054003)(199003)(51704005)(189002)(23726002)(46102003)(80022003)(97736003)(64706001)(47776003)(110136001)(20776003)(76482002)(50466002)(53416004)(21056001)(77096002)(106466001)(102836001)(44976005)(19580395003)(19580405001)(33656002)(107046002)(83506001)(76176999)(54356999)(31966008)(46406003)(101416001)(97756001)(50986999)(4396001)(92566001)(87936001)(120916001)(86362001)(99396003)(84676001)(68736004)(95666004)(105586002)(92726001)(85306004)(85852003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
-X-Exchange-Antispam-Report-Test: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
 X-Forefront-PRVS: 03818C953D
 Authentication-Results: spf=none (sender IP is 165.204.84.221)
  smtp.mailfrom=Ray.Huang@amd.com; 
@@ -45,46 +44,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 11:39:43AM -0500, Felipe Balbi wrote:
-> On Thu, Oct 30, 2014 at 06:08:41PM +0800, Huang Rui wrote:
-> > This patch adds disable usb2 suspend phy quirk, and some special platforms
-> > can configure that if it is needed.
+On Thu, Oct 30, 2014 at 11:38:40AM -0500, Felipe Balbi wrote:
+> On Thu, Oct 30, 2014 at 06:08:44PM +0800, Huang Rui wrote:
+> > This patch adds support for AMD Nolan (NL) FPGA and SoC platform.
 > > 
+> > Cc: Jason Chang <jason.chang@amd.com>
 > > Signed-off-by: Huang Rui <ray.huang@amd.com>
 > > ---
-> >  Documentation/devicetree/bindings/usb/dwc3.txt | 1 +
-> >  drivers/usb/dwc3/core.c                        | 7 +++++++
-> >  drivers/usb/dwc3/core.h                        | 2 ++
-> >  drivers/usb/dwc3/platform_data.h               | 1 +
-> >  4 files changed, 11 insertions(+)
+> >  drivers/usb/dwc3/dwc3-pci.c | 23 +++++++++++++++++++++++
+> >  1 file changed, 23 insertions(+)
 > > 
-> > diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
-> > index 3720fca..feaf2c8 100644
-> > --- a/Documentation/devicetree/bindings/usb/dwc3.txt
-> > +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-> > @@ -33,6 +33,7 @@ Optional properties:
-> >   - snps,tx_de_emphasis: the value driven to the PHY is controlled by the
-> >  			LTSSM during USB3 Compliance mode.
-> >   - snps,dis_u3_susphy_quirk: when set core will disable USB3 suspend phy.
-> > + - snps,dis_u2_susphy_quirk: when set core will disable USB2 suspend phy.
+> > diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
+> > index ada975f..257fb3f9e 100644
+> > --- a/drivers/usb/dwc3/dwc3-pci.c
+> > +++ b/drivers/usb/dwc3/dwc3-pci.c
+> > @@ -145,6 +145,28 @@ static int dwc3_pci_probe(struct pci_dev *pci,
+> >  	res[1].name	= "dwc_usb3";
+> >  	res[1].flags	= IORESOURCE_IRQ;
 > >  
-> >  This is usually a subnode to DWC3 glue to which it is connected.
-> >  
-> > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> > index fdc715a..a28ed1c 100644
-> > --- a/drivers/usb/dwc3/core.c
-> > +++ b/drivers/usb/dwc3/core.c
-> > @@ -423,6 +423,10 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
-> >  	if (dwc->revision > DWC3_REVISION_194A)
-> >  		reg |= DWC3_GUSB2PHYCFG_SUSPHY;
-> >  
-> > +	/* FIXME will move FPGA flag when AMD NL taps out */
+> > +	if (pci->vendor == PCI_VENDOR_ID_AMD &&
+> > +			pci->device == PCI_DEVICE_ID_AMD_NL_USB) {
+> > +		dwc3_pdata.has_lpm_erratum = true;
+> > +		dwc3_pdata.lpm_nyet_threshold = 0xf;
+> > +
+> > +		dwc3_pdata.u2exit_lfps_quirk = true;
+> > +		dwc3_pdata.u2ss_inp3_quirk = true;
+> > +		dwc3_pdata.req_p1p2p3_quirk = true;
+> > +		dwc3_pdata.del_p1p2p3_quirk = true;
+> > +		dwc3_pdata.del_phy_power_chg_quirk = true;
+> > +		dwc3_pdata.lfps_filter_quirk = true;
+> > +		dwc3_pdata.rx_detect_poll_quirk = true;
+> > +
+> > +		dwc3_pdata.tx_de_emphasis_quirk = true;
+> > +		dwc3_pdata.tx_de_emphasis = 1;
+> > +
+> > +		/* FIXME these quirks should move when AMD NL taps out */
 > 
-> no need to mention AMD NL here. We still want to have is_fpga flag, just
-> dwc3-pci will be patches once AMD NL tapes out.
+> do you mean ?
+> 
+> 		/*
+> 		 * FIXME these quirks should be removed when AMD NL
+> 		 * tapes out
+> 		 */
 > 
 
-OK, will move it.
+That's right, will update.
 
 Thanks,
 Rui
