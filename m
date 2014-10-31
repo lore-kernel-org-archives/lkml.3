@@ -1,141 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402AbaJaJbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:31:05 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:43930 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326AbaJaJbC convert rfc822-to-8bit (ORCPT
+	id S932471AbaJaJb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:31:56 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:37442 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932407AbaJaJbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:31:02 -0400
+	Fri, 31 Oct 2014 05:31:55 -0400
+Date: Fri, 31 Oct 2014 10:31:41 +0100
+From: Greg Kurz <gkurz@linux.vnet.ibm.com>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [PATCH] hwrng: pseries - port to new read API and fix stack
+ corruption
+Message-ID: <20141031103141.7b91c647@bahia.local>
+In-Reply-To: <1414738812.21815.5.camel@concordia>
+References: <20141031063233.1884.86309.stgit@bahia.local>
+	<1414738812.21815.5.camel@concordia>
+Organization: IBM
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <6D33D50E-2DD1-482C-B05E-45B237F3B779@codeaurora.org>
-References: <1413871011-4101-1-git-send-email-ankit.jindal@linaro.org>
- <1413871011-4101-3-git-send-email-ankit.jindal@linaro.org> <6D33D50E-2DD1-482C-B05E-45B237F3B779@codeaurora.org>
-From: Ankit Jindal <ankit.jindal@linaro.org>
-Date: Fri, 31 Oct 2014 15:00:41 +0530
-Message-ID: <CAPTm99W0J-Q6CwCDVaYe4eyEWrruWuY5pzpHoESyVu9N3cFA=g@mail.gmail.com>
-Subject: Re: [PATCH v3 2/6] uio: Add new UIO_MEM_PHYS_CACHE type for mem regions
-To: Kumar Gala <galak@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "patches@apm.com" <patches@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Varka Bhadram <varkabhadram@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14103109-0029-0000-0000-0000017189C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kumar,
+On Fri, 31 Oct 2014 18:00:12 +1100
+Michael Ellerman <mpe@ellerman.id.au> wrote:
 
-On 21 October 2014 12:08, Kumar Gala <galak@codeaurora.org> wrote:
->
-> On Oct 21, 2014, at 7:56 AM, Ankit Jindal <ankit.jindal@linaro.org> wrote:
->
->> Currently, three types of mem regions are supported: UIO_MEM_PHYS,
->> UIO_MEM_LOGICAL and UIO_MEM_VIRTUAL. Among these UIO_MEM_PHYS helps
->> UIO driver export physcial memory to user space as non-cacheable
->> user memory. Typcially memory-mapped registers of a device are exported
->> to user space as UIO_MEM_PHYS type mem region. The UIO_MEM_PHYS type
->> is not efficient if dma-capable devices are capable of maintaining coherency
->> with CPU caches.
->>
->> This patch adds new type UIO_MEM_PHYS_CACHE for mem regions to enable
->> cacheable access to physical memory from user space.
->>
->> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
->> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
->> ---
->> drivers/uio/uio.c          |   11 ++++++++---
->> include/linux/uio_driver.h |    1 +
->> 2 files changed, 9 insertions(+), 3 deletions(-)
->
-> Rather than adding a new type, why not allow the driver to set the pgprot value, this way one has full control and we don’t need to keep adding types for various different cache attributions in the future.
+> On Fri, 2014-10-31 at 07:50 +0100, Greg Kurz wrote:
+> > The add_early_randomness() function in drivers/char/hw_random/core.c passes
+> > a 16-byte buffer to pseries_rng_data_read(). Unfortunately, plpar_hcall()
+> > returns four 64-bit values and trashes 16 bytes on the stack.
+> 
+> Hmm, thanks. I thought I'd fixed that, but I guess I never sent the patch :}
+> 
 
-Do you mean to add a new field pgprot_t in the memtype structure and
-uio_mmap_physical will set vma->vm_page_prot to this value provided by
-driver ? If this is the case then we will need to change all the
-current uio based drivers which was the reason I preferred to have a
-new mem type.
+Heh so many patches ! :)
 
-Please let me know if I have misunderstood anything.
+> > This bug has been lying around for a long time. It got unveiled by:
+> > 
+> > commit d3cc7996473a7bdd33256029988ea690754e4e2a
+> > Author: Amit Shah <amit.shah@redhat.com>
+> > Date:   Thu Jul 10 15:42:34 2014 +0530
+> > 
+> >     hwrng: fetch randomness only after device init
+> > 
+> > It may trig a oops while loading or unloading the pseries-rng module for both
+> > PowerVM and PowerKVM guests.
+> > 
+> > This patch does two things:
+> > - pass an intermediate well sized buffer to plpar_hcall(). This is acceptalbe
+> >   since we're not on a hot path.
+> 
+> Well probably, can you do a before and after test of dd if=/dev/hwrng ?
+> 
 
-Thanks,
-Ankit
+I had to do this to be able to run the before test:
 
->
-> - k
->
->>
->> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
->> index 97e6444..120a84b 100644
->> --- a/drivers/uio/uio.c
->> +++ b/drivers/uio/uio.c
->> @@ -644,7 +644,7 @@ static const struct vm_operations_struct uio_physical_vm_ops = {
->> #endif
->> };
->>
->> -static int uio_mmap_physical(struct vm_area_struct *vma)
->> +static int uio_mmap_physical(struct vm_area_struct *vma, bool cacheable)
->> {
->>       struct uio_device *idev = vma->vm_private_data;
->>       int mi = uio_find_mem_index(vma);
->> @@ -659,7 +659,9 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
->>               return -EINVAL;
->>
->>       vma->vm_ops = &uio_physical_vm_ops;
->> -     vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
->> +
->> +     if (!cacheable)
->> +             vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
->>
->>       /*
->>        * We cannot use the vm_iomap_memory() helper here,
->> @@ -707,10 +709,13 @@ static int uio_mmap(struct file *filep, struct vm_area_struct *vma)
->>
->>       switch (idev->info->mem[mi].memtype) {
->>       case UIO_MEM_PHYS:
->> -             return uio_mmap_physical(vma);
->> +             return uio_mmap_physical(vma, false);
->>       case UIO_MEM_LOGICAL:
->>       case UIO_MEM_VIRTUAL:
->>               return uio_mmap_logical(vma);
->> +     case UIO_MEM_PHYS_CACHE:
->> +             return uio_mmap_physical(vma, true);
->> +
->>       default:
->>               return -EINVAL;
->>       }
->> diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
->> index 1ad4724..40ca3f3 100644
->> --- a/include/linux/uio_driver.h
->> +++ b/include/linux/uio_driver.h
->> @@ -118,6 +118,7 @@ extern void uio_event_notify(struct uio_info *info);
->> #define UIO_MEM_PHYS  1
->> #define UIO_MEM_LOGICAL       2
->> #define UIO_MEM_VIRTUAL 3
->> +#define UIO_MEM_PHYS_CACHE   4
->>
->> /* defines for uio_port->porttype */
->> #define UIO_PORT_NONE 0
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe devicetree" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> a Linux Foundation Collaborative Project
->
+@@ -78,7 +78,7 @@ static size_t rng_buffer_size(void)
+ 
+ static void add_early_randomness(struct hwrng *rng)
+ {
+-       unsigned char bytes[16];
++       unsigned char bytes[32];
+
+I ran tests for 128 MB and 1G several times in a PowerKVM guest on a POWER8 box.
+
+Before:
+
+[root@fedora20-ppc64 ~]# time dd if=/dev/hwrng of=/dev/null bs=1024 count=131072
+131072+0 records in
+131072+0 records out
+134217728 bytes (134 MB) copied, 17.0503 s, 7.9 MB/s
+
+real    0m17.051s
+user    0m0.024s
+sys     0m16.797s
+[root@fedora20-ppc64 ~]# time dd if=/dev/hwrng of=/dev/null bs=1024 count=1048576
+1048576+0 records in
+1048576+0 records out
+1073741824 bytes (1.1 GB) copied, 136.374 s, 7.9 MB/s
+
+real    2m16.376s
+user    0m0.189s
+sys     2m14.367s
+
+After:
+
+[root@fedora20-ppc64 ~]# time dd if=/dev/hwrng of=/dev/null bs=1024 count=131072
+131072+0 records in
+131072+0 records out
+134217728 bytes (134 MB) copied, 17.0502 s, 7.9 MB/s
+
+real    0m17.051s
+user    0m0.024s
+sys     0m16.797s
+[root@fedora20-ppc64 ~]# time dd if=/dev/hwrng of=/dev/null bs=1024 count=1048576
+1048576+0 records in
+1048576+0 records out
+1073741824 bytes (1.1 GB) copied, 136.432 s, 7.9 MB/s
+
+real    2m16.433s
+user    0m0.188s
+sys     2m14.370s
+
+It shows no degradation of performance.
+
+> > Cc'ing stable as I could reproduce back to 3.15.10
+> 
+> The right way to CC stable for a patch that isn't yet in upstream is to add:
+> 
+> CC: stable@vger.kernel.org
+> 
+> Before your Signed-off-by. They will then pick it up once it's merged into
+> Linus' tree. See Documentation/stable_kernel_rules.txt
+> 
+> cheers
+> 
+
+Oops... should I repost then ?
+
+Thanks.
+
+--
+Greg
+
