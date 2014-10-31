@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747AbaJaPx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 11:53:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41283 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494AbaJaPxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 11:53:55 -0400
-Message-ID: <5453B088.6080605@suse.cz>
-Date: Fri, 31 Oct 2014 16:53:44 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1756851AbaJaPzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 11:55:17 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:56838 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaJaPzN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 11:55:13 -0400
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 4/5] mm, compaction: always update cached scanner positions
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-5-git-send-email-vbabka@suse.cz> <20141027073522.GB23379@js1304-P5Q-DELUXE> <544E12B5.5070008@suse.cz> <20141028070818.GA27813@js1304-P5Q-DELUXE>
-In-Reply-To: <20141028070818.GA27813@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54534C17.7050703@samsung.com>
+References: <1414666240-16782-1-git-send-email-addy.ke@rock-chips.com>
+	<1414727409-6765-1-git-send-email-addy.ke@rock-chips.com>
+	<54534C17.7050703@samsung.com>
+Date: Fri, 31 Oct 2014 08:55:12 -0700
+X-Google-Sender-Auth: WmZHoz5It_ipOkPLlLBDzL1CJdU
+Message-ID: <CAD=FV=Wmb0ZhB1WmK9SPg28LWB3zv9oNj0peTx3Ybt_KMSv7bw@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc: dw_mmc: add support for the other bit of sdio interrupt
+From: Doug Anderson <dianders@chromium.org>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 08:08 AM, Joonsoo Kim wrote:
->>
->>> And, I guess that pageblock skip feature effectively disable pageblock
->>> rescanning if there is no freepage during rescan.
->>
->> If there's no freepage during rescan, then the cached free_pfn also
->> won't be pointed to the pageblock anymore. Regardless of pageblock skip
->> being set, there will not be second rescan. But there will still be the
->> first rescan to determine there are no freepages.
+Jaehoon,
+
+On Fri, Oct 31, 2014 at 1:45 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> Hi, Addy.
 >
-> Yes, What I'd like to say is that these would work well. Just decreasing
-> few percent of scanning page doesn't look good to me to validate this
-> patch, because there is some facilities to reduce rescan overhead and
-
-The mechanisms have a tradeoff, while this patch didn't seem to have 
-negative consequences.
-
-> compaction is fundamentally time-consuming process. Moreover, failure of
-> compaction could cause serious system crash in some cases.
-
-Relying on successful high-order allocation for not crashing is 
-dangerous, success is never guaranteed. Such critical allocation should 
-try harder than fail due to a single compaction attempt. With this 
-argument you could aim to remove all the overhead reducing heuristics.
-
->>> This patch would
->>> eliminate effect of pageblock skip feature.
->>
->> I don't think so (as explained above). Also if free pages were isolated
->> (and then returned and skipped over), the pageblock should remain
->> without skip bit, so after scanners meet and positions reset (which
->> doesn't go hand in hand with skip bit reset), the next round will skip
->> over the blocks without freepages and find quickly the blocks where free
->> pages were skipped in the previous round.
->>
->>> IIUC, compaction logic assume that there are many temporary failure
->>> conditions. Retrying from others would reduce effect of this temporary
->>> failure so implementation looks as is.
->>
->> The implementation of pfn caching was written at time when we did not
->> keep isolated free pages between migration attempts in a single
->> compaction run. And the idea of async compaction is to try with minimal
->> effort (thus latency), and if there's a failure, try somewhere else.
->> Making sure we don't skip anything doesn't seem productive.
+> On 10/31/2014 12:50 PM, Addy Ke wrote:
+>> The bit of sdio interrupt is 16 in designware implementation,
+>> but it is 24 in RK3288. This patch add sdio_id0 for the number
+>> of slot0 in the SDIO interrupt registers, which can be set in
+>> platform DT table, such as:
+>> - rockchip,sdio-interrupt-slot0 = <8>;
 >
-> free_pfn is shared by async/sync compaction and unconditional updating
-> causes sync compaction to stop prematurely, too.
->
-> And, if this patch makes migrate/freepage scanner meet more frequently,
-> there is one problematic scenario.
+> I have a question. (It's not important question)
+> You mentioned the sdio-irq bit used from 24 to 31, right?
+> Then what interrupts are used from 16 to 23 at RK3288? Just reserved?
 
-OK, so you don't find a problem with how this patch changes migration 
-scanner caching, just the free scanner, right?
-So how about making release_freepages() return the highest freepage pfn 
-it encountered (could perhaps do without comparing individual pfn's, the 
-list should be ordered so it could be just the pfn of first or last page 
-in the list, but need to check that) and updating cached free pfn with 
-that? That should ensure rescanning only when needed.
+In my TRM 16 shows as "data_nobusy".  A quick search doesn't show any
+documentation for what this means.  17-23 and 25-31 are reserved.
 
-> compact_finished() doesn't check how many work we did. It just check
-> if both scanners meet. Even if we failed to allocate high order page
-> due to little work, compaction would be deffered for later user.
-> This scenario wouldn't happen frequently if updating cached pfn is
-> limited. But, this patch may enlarge the possibility of this problem.
-
-I doubt it changes the possibility substantially, but nevermind.
-
-> This is another problem of current logic, and, should be fixed, but,
-> there is now.
-
-If something needs the high-order allocation succeed that badly, then 
-the proper GFP flags should result in further reclaim and compaction 
-attempts (hopefully) and not give up after first sync compaction failure.
-
-> Thanks.
->
-
+Note that (of course) there's no actual support for more than one slot
+on rk3288, so claiming that "24-31" is SDIO INT is a little silly, but
+I agree that it's probably is the best way to fit into the existing
+code until someone gets around to removing the whole multi-slot cruft.
