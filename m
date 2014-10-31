@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534AbaJaXmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 19:42:15 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:48563 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563AbaJaXmN (ORCPT
+	id S1759941AbaJaXpn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 19:45:43 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:37292 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431AbaJaXpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 19:42:13 -0400
+	Fri, 31 Oct 2014 19:45:42 -0400
+X-Originating-IP: 50.43.41.112
+Date: Fri, 31 Oct 2014 16:45:31 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Junjie Mao <eternal.n08@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v2] x86, boot: add hex output for debugging
+Message-ID: <20141031234531.GA12082@thin>
+References: <20141031205819.GA13262@www.outflux.net>
+ <CAE9FiQVYBwTifYXACeJRBOEtrN6o5kBpA6v0xLqUYS379pH-Mw@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [95.23.101.112]
-In-Reply-To: <1408956336-17376-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1408956336-17376-1-git-send-email-javier.martinez@collabora.co.uk>
-Date: Sat, 1 Nov 2014 00:42:11 +0100
-Message-ID: <CABxcv=m-aNVcUU2C8LosCECxq1yZo2C3zfA2xe6z7jF8tFPsnw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] ARM: exynos_defconfig: Enable options for display
- panel support
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>,
-        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
-        Ajay Kumar <ajaykumar.rs@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQVYBwTifYXACeJRBOEtrN6o5kBpA6v0xLqUYS379pH-Mw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+On Fri, Oct 31, 2014 at 04:31:32PM -0700, Yinghai Lu wrote:
+> On Fri, Oct 31, 2014 at 1:58 PM, Kees Cook <keescook@chromium.org> wrote:
+> > This is useful for reporting various addresses or other values while
+> > debugging early boot. For example, when CONFIG_X86_VERBOSE_BOOTUP is set,
+> > this is now visible at boot time:
+> >
+> >         early console in setup code
+> >         early console in decompress_kernel
+> >         input_data: 0x0000000001e1526e
+> >         input_len: 0x0000000000732236
+> >         output: 0x0000000001000000
+> >         output_len: 0x0000000001535640
+> >         run_size: 0x00000000021fb000
+> >         KASLR using RDTSC...
+> >
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> > ---
+> > Since this displays run_size, this patch depends on Junjie Mao's patch
+> > "x86, kaslr: Prevent .bss from overlaping initrd"
+> >
+> > ---
+> >  arch/x86/boot/compressed/misc.c | 24 ++++++++++++++++++++++++
+> >  arch/x86/boot/compressed/misc.h | 11 +++++++++++
+> >  2 files changed, 35 insertions(+)
+> ...
+> 
+> We can reuse printf.c in arch/x86/boot.
+> 
+> I had attached one in local tree for a while. or even sent it before
+> several years ago.
 
-On Mon, Aug 25, 2014 at 10:45 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> Many Exynos devices have a display panel. Most of them just have
-> a simple panel while others have more complex configurations that
-> requires an embedded DisplayPort (eDP) to LVDS bridges.
->
-> This patch enables the following features to be built in the kernel
-> image to suport both setups:
->
-> - Direct Rendering Manager (DRM)
-> - DRM bridge registration and lookup framework
-> - Parade ps8622/ps8625 eDP/LVDS bridge
-> - NXP ptn3460 eDP/LVDS bridge
-> - Exynos Fully Interactive Mobile Display controller (FIMD)
-> - Panel registration and lookup framework
-> - Simple panels
-> - Backlight & LCD device support
->
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Tested-by: Kevin Hilman <khilman@linaro.org>
-> ---
+I don't think we need the full generality of printf in the decompression
+stub.  I prefer Kees' patch, though I'd still like to see __puthex made
+conditional.
 
-This patch is needed to have display working on many Exynos boards.
-
-$subject enables the config option for the ps8622/ps8625 eDP/LVDS
-bridge driver but this has not landed in mainline yet. Ajay will
-re-spin a new revision of his series that adds this driver though,
-after addressing some issues pointed out on a previous version.
-
-The Kconfig symbol name (DRM_PS8622) won't change though so maybe is
-not crazy to pick the patch as is since CONFIG_DRM_PS8622 will have to
-be enabled later when the bridge driver lands. Or do you want me to
-re-spin $subject removing that option?
-
-Best regards,
-Javier
+- Josh Triplett
