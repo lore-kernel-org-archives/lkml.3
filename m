@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845AbaJaIfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 04:35:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58199 "EHLO mx2.suse.de"
+	id S1756947AbaJaIgO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 04:36:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38068 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbaJaIff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 04:35:35 -0400
-Date: Fri, 31 Oct 2014 09:35:30 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linux@roeck-us.net, lm-sensors@lm-sensors.org,
-        <linux-kernel@vger.kernel.org>, neelegup@linux.vnet.ibm.com
-Subject: Re: [PATCH 2/2] hwmon: (ibmpowernv) Make the driver name more
- recognisable
-Message-ID: <20141031093530.2deb46e5@endymion.delvare>
-In-Reply-To: <1414737923-8227-2-git-send-email-mpe@ellerman.id.au>
-References: <1414737923-8227-1-git-send-email-mpe@ellerman.id.au>
-	<1414737923-8227-2-git-send-email-mpe@ellerman.id.au>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
+	id S1750912AbaJaIgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 04:36:11 -0400
+Date: Fri, 31 Oct 2014 09:34:27 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Alexis Berlemont <alexis.berlemont@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
+        namhyung@kernel.org, mmarek@suse.cz,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v4 04/14] perf tools: Add kbuild support into
+ Makefile.kbuild
+Message-ID: <20141031083427.GB27472@krava.brq.redhat.com>
+References: <20141024124601.GX14687@kernel.org>
+ <1414275639-1053-5-git-send-email-alexis.berlemont@gmail.com>
+ <20141029081603.GC3538@krava.brq.redhat.com>
+ <20141029230507.GA15701@marx-slim.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029230507.GA15701@marx-slim.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+On Thu, Oct 30, 2014 at 12:05:07AM +0100, Alexis Berlemont wrote:
 
-On Fri, 31 Oct 2014 17:45:23 +1100, Michael Ellerman wrote:
-> Seeing "ibmpowernv" in dmesg is not very useful, that is just the name
-> of the platform and doesn't identify the message as coming from the
-> hwmon driver.
+SNIP
+
+> > >  tools/perf/util/Kbuild                             | 126 ++++++
+> > >  tools/perf/util/PERF-VERSION-GEN                   |   4 +
+> > >  tools/perf/util/generate-cmdlist.sh                |   8 +-
+> > >  tools/perf/util/scripting-engines/Kbuild           |  11 +
+> > >  tools/perf/util/setup.py                           |   8 +-
+> > 
+> > so this patch took the perf Makefile (at that time) and changed it to
+> > use the kbuild.. but since that time the Makefile.perf came and many
+> > other changes, which need to be reflected in Makefile.kbuild
+> > 
+> > I need to revisit the logic and split the change into more incremental
+> > patches (the patchset is too big)
+> > 
+> > I can redo patches 2,3,4 and get back to you, sounds ok?
 > 
-> Change DRVNAME to "powernv-hwmon" to make it clearer.
+> Of course. 
 > 
-> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-> ---
->  drivers/hwmon/ibmpowernv.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/hwmon/ibmpowernv.c b/drivers/hwmon/ibmpowernv.c
-> index 6a30eeea94be..3ee00928cda9 100644
-> --- a/drivers/hwmon/ibmpowernv.c
-> +++ b/drivers/hwmon/ibmpowernv.c
-> @@ -16,7 +16,7 @@
->   * along with this program.
->   */
->  
-> -#define DRVNAME		"ibmpowernv"
-> +#define DRVNAME		"powernv-hwmon"
->  #define pr_fmt(fmt)	DRVNAME ": " fmt
->  
->  #include <linux/init.h>
+> Which changes in Makefile.perf do you have in mind ? I thought that
+> Makefile.kbuild was just supposed to build the few extra dependencies
+> (libtraceevent, etc.). I thought that I updated your original patch
+> accordingly with the changes before and after the add of
+> Makefile.perf.
 
-Nack. For one thing, DRVNAME is used for
-devm_hwmon_device_register_with_groups and dashes are not allowed in
-the name attribute. For another, making the driver name different from
-the module name makes things more confusing, not clearer.
+hm, I just stumbled on QUIET_* stuff definitions in Makefile.kbuild,
+(which got moved into scripts some time ago) and assumed this was
+the case for the rest of the file ;-)
 
-Like it or not, almost no hwmon driver has hwmon in its name anyway.
-
--- 
-Jean Delvare
-SUSE L3 Support
+jirka
