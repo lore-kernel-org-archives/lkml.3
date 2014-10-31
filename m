@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289AbaJaWSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 18:18:31 -0400
-Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:58855
-	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751248AbaJaWS3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 18:18:29 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/5] staging: comedi: split bus support into separate
- modules
-Thread-Topic: [PATCH 0/5] staging: comedi: split bus support into separate
- modules
-Thread-Index: AQHP9TLPK/O0QzpWPkODe23bN/ro9pxKgzsQgAC2MYD//4wE0A==
-Date: Fri, 31 Oct 2014 22:18:28 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D882601B051@P3PWEX4MB008.ex4.secureserver.net>
-References: <1414777659-25578-1-git-send-email-abbotti@mev.co.uk>
- <DC148C5AA1CEBA4E87973D432B1C2D882601ABA4@P3PWEX4MB008.ex4.secureserver.net>
- <5454086D.6000401@mev.co.uk>
-In-Reply-To: <5454086D.6000401@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756360AbaJaWcv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 18:32:51 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61934 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751541AbaJaWcu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Oct 2014 18:32:50 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Gilad Avidov <gavidov@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 0/1] Compact interface for Device-Tree
+Date: Fri, 31 Oct 2014 23:53:28 +0100
+Message-ID: <7637604.7PK9W8ePf3@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAL_JsqLtkiiyisxSG_qBknmz6n2qDKUdpwM-ZY3tH3wgYSrO1w@mail.gmail.com>
+References: <1414709964-27284-1-git-send-email-gavidov@codeaurora.org> <CAL_JsqLtkiiyisxSG_qBknmz6n2qDKUdpwM-ZY3tH3wgYSrO1w@mail.gmail.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 31, 2014 3:09 PM, Ian Abbott wrote:
-> On 31/10/14 18:19, Hartley Sweeten wrote:
->> On Friday, October 31, 2014 10:48 AM, Ian Abbott wrote:
->>> The Comedi core module doesn't need support for PCI, USB or PCMCIA.
->>> Only the low-level Comedi drivers need it.  Split the support for these
->>> bus types out of the core "comedi" module and into new modules,
->>> "comedi_pci", "comedi_usb", and "comedi_pcmcia".
->>>
->>> 1) staging: comedi: comedidev.h: remove dummy PCI support functions
->>> 2) staging: comedi: comedidev.h: remove some #ifdefs
->>> 3) staging: comedi: split out PCMCIA support into new module
->>> 4) staging: comedi: split out USB support into new module
->>> 5) staging: comedi: split out PCI support into new module
->>
->> Ian,
->>
->> Is this really necessary?
->>
->> The pci, usb, and pcmcia support is already conditionally compiled in.
->> The support does get added to the main comedi module instead of
->> as separate modules but that shouldn't be a problem.
->
-> Well a lot of potentially unused module space could get pulled in if 
-> using a stock distro kernel. For example, the USB dependencies amount to 
-> over 200k. Not so bad for the others, especially PCI where the code is 
-> built in anyway.
+On Saturday, November 01, 2014 05:13:45 AM Rob Herring wrote:
+> On Fri, Oct 31, 2014 at 6:59 AM, Gilad Avidov <gavidov@codeaurora.org> wrote:
+> >
+> > Device-Tree compact API
+> > ------------------------
+> >
+> > Common code seen in driver’s probe reads device tree values and handling
+> > erroneous return codes from all those of_property_read_xxx()  APIs. This
+> > common code is factored out by the of_property_map module which allows
+> > driver’s probe to replace that (often lengthy) code with a concise table:
+> >
+> > struct of_prop_map map[] = {
+> >     {"i2c",            &dev->id,        OF_REQ,  OF_ID,  -1},
+> >     {"qcom,clk-freq-out",    &dev->clk_freq_out,    OF_REQ,  OF_U32,  0},
+> >     {"qcom,clk-freq-in",    &dev->clk_freq_in,    OF_REQ,  OF_U32,  0},
+> >     {"qcom,disable-dma",    &dev->disable_dma,    OF_OPT,  OF_BOOL, 0},
+> >     {"qcom,master-id",    &dev->mstr_id,        OF_SGST, OF_U32,  0},
+> >     {NULL,            NULL,            0,       0,       0},
+> > };
+> >
+> > Then call populate to read the values into the device’s variables:
+> >
+> > ret = of_prop_populate(dev, dev->of_node, map);
+> 
+> Interesting idea. The main concern I have with this is there has been
+> on-going discussions about how to generalize property handling across
+> DT and ACPI to make drivers more agnostic, so I'm copying a few folks
+> involved in that. That may be a bit orthogonal to what this is doing,
+> but we may want some coordination here.
 
-But its only pulled in if the user selected the usb, pci, and/or pcmcia
-comedi drivers. And if they selected any of those options they will
-need the that code anyway.
+Agreed.
 
-Splitting the bus specific code out of the comdi core module doesn't
-lower the total module space used it just spreads it from one to possibly
-four modules. And it increases the module dependancies for all the
-usb, pci, and pcmcia comedi drivers.
+We actually have a patchset adding a unified device property API in linux-next (http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/log/?h=device-properties)
+and I'd prefer to see the "compactization" to happen at that level, if possible,
+rather that for of_ only.
 
-To be clear, I'm not against this series I just want to make sure it's worth
-applying.
-
-Regards,
-Hartley
-
+Rafael
 
