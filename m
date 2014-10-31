@@ -1,125 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaJaPrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 11:47:36 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:49062 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797AbaJaPre (ORCPT
+	id S1756759AbaJaPvI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 11:51:08 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:56492 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaJaPvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 11:47:34 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: mingo@kernel.org
-Cc: hpa@zytor.com, tglx@linutronix.de, tianyu.lan@intel.com,
-        linux-kernel@vger.kernel.org, david.vrabel@citrix.com,
-        konrad.wilk@oracle.com, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com
-Subject: [PATCH for -tip v4] xen/smp: Use die_complete completion when taking CPU down
-Date: Fri, 31 Oct 2014 11:49:32 -0400
-Message-Id: <1414770572-7950-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 31 Oct 2014 11:51:06 -0400
+From: Alan Wu <alan.c.wu@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alanwu <alan.c.wu@gmail.com>
+Subject: [PATCH 1/1] x86: Surface Pro 3 Type Cover 3
+Date: Fri, 31 Oct 2014 08:48:40 -0700
+Message-Id: <1414770520-4125-1-git-send-email-alan.c.wu@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2ed53c0d6cc9 ("x86/smpboot: Speed up suspend/resume by avoiding
-100ms sleep for CPU offline during S3") introduced completions to CPU
-offlining process. These completions are not initialized on Xen kernels
-causing a panic in play_dead_common().
+From: alanwu <alan.c.wu@gmail.com>
 
-Move handling of die_complete into common routines to make them
-available to Xen guests.
+Surface Pro 3 Type Cover that works with Ubuntu (and possibly Arch) from this thread. Both trackpad and keyboard work after compiling my own kernel.
+http://ubuntuforums.org/showthread.php?t=2231207&page=2&s=44910e0c56047e4f93dfd9fea58121ef
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: alanwu <alan.c.wu@gmail.com>
 ---
-v4: Rebased for -tip
-v3: Don't #ifdef function prototypes in smp.h
-v2: Keep die_complete private to smpboot.c
+ drivers/hid/hid-ids.h       | 1 +
+ drivers/hid/hid-microsoft.c | 2 ++
+ 2 files changed, 3 insertions(+)
 
- arch/x86/include/asm/smp.h |  1 +
- arch/x86/kernel/smpboot.c  | 15 +++++++++++----
- arch/x86/xen/smp.c         |  3 +++
- 3 files changed, 15 insertions(+), 4 deletions(-)
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index e23ab8b..15f32c2 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -648,6 +648,7 @@
+ #define USB_DEVICE_ID_MS_SURFACE_PRO_2   0x0799
+ #define USB_DEVICE_ID_MS_TOUCH_COVER_2   0x07a7
+ #define USB_DEVICE_ID_MS_TYPE_COVER_2    0x07a9
++#define USB_DEVICE_ID_MS_TYPE_COVER_3    0x07dc
 
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 8cd27e0..8cd1cc3 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -150,6 +150,7 @@ static inline void arch_send_call_function_ipi_mask(const struct cpumask *mask)
- }
- 
- void cpu_disable_common(void);
-+void cpu_die_common(unsigned int cpu);
- void native_smp_prepare_boot_cpu(void);
- void native_smp_prepare_cpus(unsigned int max_cpus);
- void native_smp_cpus_done(unsigned int max_cpus);
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 4d2128a..668d8f2 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1303,10 +1303,14 @@ static void __ref remove_cpu_from_maps(int cpu)
- 	numa_remove_cpu(cpu);
- }
- 
-+static DEFINE_PER_CPU(struct completion, die_complete);
-+
- void cpu_disable_common(void)
- {
- 	int cpu = smp_processor_id();
- 
-+	init_completion(&per_cpu(die_complete, smp_processor_id()));
-+
- 	remove_siblinginfo(cpu);
- 
- 	/* It's now safe to remove this processor from the online map */
-@@ -1316,8 +1320,6 @@ void cpu_disable_common(void)
- 	fixup_irqs();
- }
- 
--static DEFINE_PER_CPU(struct completion, die_complete);
--
- int native_cpu_disable(void)
- {
- 	int ret;
-@@ -1327,16 +1329,21 @@ int native_cpu_disable(void)
- 		return ret;
- 
- 	clear_local_APIC();
--	init_completion(&per_cpu(die_complete, smp_processor_id()));
- 	cpu_disable_common();
- 
- 	return 0;
- }
- 
-+void cpu_die_common(unsigned int cpu)
-+{
-+	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
-+}
-+
- void native_cpu_die(unsigned int cpu)
- {
- 	/* We don't do anything here: idle task is faking death itself. */
--	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
-+
-+	cpu_die_common(cpu);
- 
- 	/* They ack this in play_dead() by setting CPU_DEAD */
- 	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 8650cdb..4c071ae 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -510,6 +510,9 @@ static void xen_cpu_die(unsigned int cpu)
- 		current->state = TASK_UNINTERRUPTIBLE;
- 		schedule_timeout(HZ/10);
- 	}
-+
-+	cpu_die_common(cpu);
-+
- 	xen_smp_intr_free(cpu);
- 	xen_uninit_lock_cpu(cpu);
- 	xen_teardown_timer(cpu);
--- 
-1.8.3.1
+ #define USB_VENDOR_ID_MOJO		0x8282
+ #define USB_DEVICE_ID_RETRO_ADAPTER	0x3201
+diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
+index 8ba17a9..cacda43 100644
+--- a/drivers/hid/hid-microsoft.c
++++ b/drivers/hid/hid-microsoft.c
+@@ -274,6 +274,8 @@ static const struct hid_device_id ms_devices[] = {
+		.driver_data = MS_NOGET },
+	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500),
+		.driver_data = MS_DUPLICATE_USAGES },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_3),
++		.driver_data = MS_HIDINPUT },
 
+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT),
+		.driver_data = MS_PRESENTER },
+--
+2.1.0
