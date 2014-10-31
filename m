@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711AbaJaJsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 05:48:53 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:41972 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932707AbaJaJsv (ORCPT
+	id S932856AbaJaJtb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 05:49:31 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:58867 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932707AbaJaJt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 05:48:51 -0400
-Message-ID: <54535B00.5090708@6wind.com>
-Date: Fri, 31 Oct 2014 10:48:48 +0100
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 31 Oct 2014 05:49:29 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        davem@davemloft.net, stephen@networkplumber.org,
-        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com
-Subject: Re: [PATCH net-next v4 0/4] netns: allow to identify peer netns
-References: <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>	<1414682728-4532-1-git-send-email-nicolas.dichtel@6wind.com> <871tpph03k.fsf@x220.int.ebiederm.org>
-In-Reply-To: <871tpph03k.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <544ECFB4.7040704@linux.com>
+References: <1414447799-1284-1-git-send-email-matthias.klein@linux.com>
+	<544ECAB2.3060706@wwwdotorg.org>
+	<544ECFB4.7040704@linux.com>
+Date: Fri, 31 Oct 2014 10:49:28 +0100
+Message-ID: <CACRpkdbhEBQfEpkK6-4GNyTQvvJ2qJ+RfXUULJNxvrbrpv1NAg@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: bcm2835: Start GPIO numeration at zero
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Matthias Klein <matthias.klein@linux.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        linux-rpi-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 30/10/2014 19:41, Eric W. Biederman a écrit :
-> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+On Tue, Oct 28, 2014 at 12:05 AM, Matthias Klein
+<matthias.klein@linux.com> wrote:
+> Am 27.10.2014 um 23:44 schrieb Stephen Warren:
+
+>> What's the motivation for this? The GPIO IDs should all come from DT,
+>> which encodes everything as an ID relative to a particular controllers, and
+>> hence the actual value of the base address should be irrelevant.
 >
->> The goal of this serie is to be able to multicast netlink messages with an
->> attribute that identify a peer netns.
->> This is needed by the userland to interpret some informations contained in
->> netlink messages (like IFLA_LINK value, but also some other attributes in case
->> of x-netns netdevice (see also
->> http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
->> http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
->>
->> Ids of peer netns are set by userland via a new genl messages. These ids are
->> stored per netns and are local (ie only valid in the netns where they are set).
->> To avoid allocating an int for each peer netns, I use idr_for_each() to retrieve
->> the id of a peer netns. Note that it will be possible to add a table (struct net
->> -> id) later to optimize this lookup if needed.
->>
->> Patch 1/4 introduces the netlink API mechanism to set and get these ids.
->> Patch 2/4 and 3/4 implements an example of how to use these ids in rtnetlink
->> messages. And patch 4/4 shows that the netlink messages can be symetric between
->> a GET and a SET.
->>
->> iproute2 patches are available, I can send them on demand.
->
-> A quick reply.  I think this patchset is in the right general direction.
-> There are some oddball details that seem odd/awkward to me such as using
-> genetlink instead of rtnetlink to get and set the ids, and not having
-> ids if they are not set (that feels like a maintenance/usability challenge).
-No problem to use rtnetlink, in fact, I hesitated.
+> - To be in sync with the GPIO numbers in the datasheet / documentation
 
-For the second point, I'm not sure to follow you: how to have an id, which will
-not break migration, without asking the user to set it?
-Note that if the user does not provide an id, you still have a magic value to
-say "it's a peer netns but we don't know which one".
+We are moving away from global GPIO numbers because they are
+an eternal pain. We would replace them with a local offset number
+just as the second column in /proc/interrupts
 
->
-> I would like to give your patches a deep review, but I won't be able to
-> do that for a couple of weeks.  I am deep in the process of moving,
-> and will be mostly offline until about the Nov 11th.
+Hm we should patch <debugfs/gpio> to show local offsets...
 
-No problem, I will wait.
-I would be great to get a final version for the 3.19 ;-)
+> - For userland applications which rely on these GPIO numbers
 
+ARGH!!!
 
-Thank you,
-Nicolas
+A much better idea is to add labels to your GPIOs so you can
+identify them by name. Augment the driver with labeling capability
+if need be, see e.g. commit 781f6d710d4482eab05cfaad50060a0ea8c0e4e0
+"gpio: generic: Add label to platform data"
+
+You just need to figure out how to do the same naming from the
+device tree. Maybe some new binding is needed, others are
+discussing how to do exporting of GPIOs from devicetree
+anyway, see the mailing list.
+
+Yours,
+Linus Walleij
