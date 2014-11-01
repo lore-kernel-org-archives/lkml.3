@@ -1,166 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287AbaKALF0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 07:05:26 -0400
-Received: from svenfoo.org ([82.94.215.22]:56410 "EHLO mail.zonque.de"
+	id S1756516AbaKALGc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 07:06:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53145 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906AbaKALFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 07:05:24 -0400
-Message-ID: <5454BE6E.5040507@zonque.org>
-Date: Sat, 01 Nov 2014 12:05:18 +0100
-From: Daniel Mack <daniel@zonque.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751688AbaKALGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Nov 2014 07:06:30 -0400
+Date: Sat, 1 Nov 2014 12:06:27 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 2/8] x86, microcode, intel: don't update each HT core
+ twice
+Message-ID: <20141101110626.GB4462@pd.tnic>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-3-git-send-email-hmh@hmh.eng.br>
+ <20141020133252.GC3524@pd.tnic>
+ <20141020182427.GB19306@khazad-dum.debian.net>
+ <20141028173109.GB10873@pd.tnic>
+ <20141031184344.GB27028@khazad-dum.debian.net>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>,
-        "alban.crequy" <alban.crequy@collabora.co.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tom Gundersen <teg@jklm.no>
-Subject: Re: kdbus: add code to gather metadata
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <1414620056-6675-7-git-send-email-gregkh@linuxfoundation.org> <CALCETrWqbpxk83L0k0_78JZCO+ntZhx_hHMcRu=vxs6VE2f5JQ@mail.gmail.com> <CALCETrVkuKxMMEw3HBEOZoFUuw8PndXtB13+bLWmcp_E34SaFw@mail.gmail.com> <5451FA9B.8070501@zonque.org> <CALCETrWjOS0AHF33zN0Vy1NC1441To7AgNPge3sKCz8bn2d8gg@mail.gmail.com> <54525F32.3040502@zonque.org> <CALCETrV6MLYUQN6mqZbH=FrLyrETVoemtdC05po8+X=6SKQ70A@mail.gmail.com>
-In-Reply-To: <CALCETrV6MLYUQN6mqZbH=FrLyrETVoemtdC05po8+X=6SKQ70A@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
+In-Reply-To: <20141031184344.GB27028@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On Fri, Oct 31, 2014 at 04:43:45PM -0200, Henrique de Moraes Holschuh wrote:
+> Every time I issued a warning to users that they need to upgrade their
+> microcode due to either security errata or other nasty issue, the fact that
+> you can just grep for microcode in the logs to know whether it worked or not
+> *and* the reasons why it did/did not work has been helpful.
 
-On 10/30/2014 10:01 PM, Andy Lutomirski wrote:
-> On Thu, Oct 30, 2014 at 8:54 AM, Daniel Mack <daniel@zonque.org> wrote:
+Ok, I see what you mean.
 
->> We merely allow user that are connected to a bus to query the
->> credentials of the creator of the bus they're connected to.
+A couple of thoughs/suggestions for that:
+
+/proc/cpuinfo is the place which gives you, well, CPU info. So all
+the information pertinent to the CPU should be there. And since on bug
+reports we do ask for /proc/cpuinfo along with dmesg, I think that
+should be fine.
+
+Now, we're not about reducing the log info in general but rather only
+saying something when we really have to. Microcode updates should work
+in the background and the user should not be bothered at all about it in
+the normal, success case. Only when there are issues with it, only then
+we want to say something.
+
+> The logging also tells me whether the early or regular microcode driver was
+> the one that did the update.  This matters to me, as it helps me detect when
+> the regular microcode update driver is doing work that should have been done
+> by the early driver.
+
+This is wrong: if! the early loader is enabled and initrd is supplied,
+it should apply the microcode. That's why it is an early loader in the
+first place.
+
+The late loader is for the cases where you don't want to reboot the
+system when applying microcode.
+
+But all systems out there should enable the early loader - microcode
+should be applied as early as possible.
+
+> It was also really useful when I was searching the net for reports about a
+> specific processor signature, /proc/cpuinfo is really unhelpful for that.
+
+Why is that so? Can we improve it?
+
+> It also gives me one interesting information that just looking at
+> /proc/cpuinfo doesn't: the version of the microcode installed by the user's
+> BIOS/UEFI.  This kind of information is relevant to some of the Linux
+> distros (at least to Debian) due to the non-free nature of the microcode
+> updates [note: this assumes the regular microcode driver was loaded].  It is
+> the only metric I have that tells me whether the effort is worth it.
+
+Well, if you really need it, we could add it there:
+
+cat /proc/cpuinfo:
+
+...
+vendor_id       : AuthenticAMD
+cpu family      : 21
+model           : 2
+model name      : AMD FX(tm)-8350 Eight-Core Processor
+stepping        : 0
+microcode       : 0x6000832
+BIOS microcode	: 0x6000822
+
+but I don't see why you need it. Regardless of the effort, you want to have
+microcode loader running on all systems, that's it.
+
+> > > I really miss the full microcode ID information in /proc/cpuinfo, in fact.
+> > 
+> > Full ID, you mean all fields of struct cpu_signature on Intel?
 > 
-> Why do you allow this?  What purpose does it serve?  Is that idea that
-> each application will own one bus?  If so, what goes wrong if you only
-> capture the specific credentials that the creator of a given bus asks
-> to have captured?
-
-There are different kinds of buses. There is the system bus and a number
-of user buses. It's really useful to be able to identify the user who
-owns one of these user buses, for the sake of access control. More
-specifically, we have a compatibility service called "bus-proxy" that
-speaks the old D-Bus socket protocol on one side and translates all
-messages to kdbus messages onto the other. For that, it needs to enforce
-the old D-Bus access control semantics, which is described in XML, and
-has quite elaborate checks. In order to enforce it, it's relevant to be
-able to compare peer credentials with bus owner credentials, because
-there's usually a rule that the bus owner UID is allowed more than other
-peers.
-
-Sure, there are other ways to figure out the identity of the bus, but
-it's really nice to have similar semantics for identifying the bus
-owner. kdbus internally has that piece of information anyway, so we
-decided to export it, optionally. However, that's really a minor detail
-after all.
-
->> For example, if a privileged service can reboot the system, it checks
->> whether the asking peer has CAP_SYS_BOOT set. If it checks for uid==0
->> instead, and it works in your tests because you happen to test as root,
->> that just a bug in the service, right? But I might have missed your point.
+> cpu signature, pf mask and revision.  Since we already log the date, might
+> as well keep it too.
 > 
-> The issue is the following: if have the privilege needed to talk to
-> journald, I may want to enhance security by opening a connection to
-> journald (and capture that privilege) and then drop privilege.  I
-> should still be able to talk to journald.
+> >    ->sig - CPUID_EAX(1) which is in /proc/cpuinfo
+> 
+> Not in a format amicable to finding it through a search engine.  Besides, we
+> lose the processor type bits.  Given that we have a brand new i586 chip, who
 
-Hmm, this is not how D-Bus works, and kdbus stays close the design
-principles of D-Bus. There's no concept of 'opening connections to
-services'. You just connect to a bus, and then on that bus, you send
-individual messages and method calls to other services.
+processor type bits? What is that?
 
-The design of Binder and D-Bus are fundamentally different in that
-regard. On D-Bus, the focus is really about method call transaction (a
-method call message and a corresponding reply message), and there's no
-way to continuously reference a peer via the concept of a 'connection'.
+> is to say we won't see once again processors that have one of those bits set
+> in their signature?
+> 
+> >    ->pf - processor flags in MSR_0x17[52:50] - I guess you can read that
+> >    out with rdmsr 0x17. Why do we need to know that one except maybe to
+> >    verify why a patch doesn't get accepted by the loader?
+> 
+> This one has very limited use right now, yes.  But without it, I cannot even
+> tell whether the user has an up-to-date microcode or not when Intel releases
+> microcode updates that do not apply to all processors with the same
+> CPUID_EAX(1).  They haven't done this in the last couple years, but it is
+> needed for processors that are not that old, such as cpuid 0x30661 (Intel
+> Atom D25xx/N26xx,N28xx, from 2011).  It is likely it will be needed again.
 
-This is why we have this functionality of passing over the caller creds
-every time a method call is made. The focus is really on the individual
-method call transaction, each one is individually routed, dispatched and
-checked for permission. Hence, it should carry individual credential
-information from the time the call is issued.
+Well, you have all that info:
 
-So, back to your example: you cannot 'open a connection to journald'.
-You can only connect to a bus and send messages to journald.
+grep . /sys/devices/system/cpu/cpu?/microcode/*
+/sys/devices/system/cpu/cpu0/microcode/processor_flags:0x10
+/sys/devices/system/cpu/cpu0/microcode/version:0x1b
+/sys/devices/system/cpu/cpu1/microcode/processor_flags:0x10
+/sys/devices/system/cpu/cpu1/microcode/version:0x1b
+/sys/devices/system/cpu/cpu2/microcode/processor_flags:0x10
+/sys/devices/system/cpu/cpu2/microcode/version:0x1b
+/sys/devices/system/cpu/cpu3/microcode/processor_flags:0x10
+/sys/devices/system/cpu/cpu3/microcode/version:0x1b
 
-> Alternatively, if the privilege needed to reboot is CAP_SYS_BOOT, then
-> clients should send that capability bit.  Capturing extra information
-> to try to give daemons the flexibility to change their authorization
-> conditions later on just moves the problem if you need to change
-> policy down the line.
+We can easily extend sysfs with more info required instead of spewing it
+into dmesg.
 
-This would be similar to changing the Linux kernel so that each system
-call gets a set of capabilities passed in explicitly. RPC calls are very
-much comparable to syscalls, though they don't transition into kernel
-space, but simply into another process.
+You can access sysfs then in your scripts and query everything you need.
+And use cpuid.ko and msr.ko too. I think with that you get all the info
+needed.
 
-We've been augmenting what syscalls check on for access control ever
-since. Initially, it check was UID based, then became capability based,
-and nowadays we have a concept of MACs, that are actually different on
-every system, because some systems use SElinux, some SMACK or some other
-MAC. This is why this metadata should be implicit and controlled by the
-receiver, not by the sender, because the implementation of the policy
-might change eventually, be extended with more sophisticated access
-control etc.
+> It is for debugging, indeed.  But too much stuff never logs at the pr_debug
+> level, so you need to take special action.  If you accept my proposal for
+> log size reduction while still logging the stuff I find useful, this could
+> be pr_info() as it would *not* be per-core anymore.
 
-But it's not only about access control, there's also auditing. In order
-to generate useful audit logs, a system service that is offering
-privileged operation to certain clients needs to know the audit
-credentials (sessionid and loginuid). Hence, this information needs to
-be implicitly appended, controlled by that service. Because if it is not
-implicitly appended, than it will more often be missing than expected
-(simply because in real-life very few people actually use auditing), and
-the system service would not be able to log about it.
+See above.
 
-So, this is not a metadata leak by accident but metadata that system
-services need to know about in order to work properly. Individual
-services will require slightly different components of these
-credentials, but if you combine things, they need to know pretty much
-all of the details we currently offer as implied metadata.
+Bottom line is: dmesg should contain only error information when
+microcode fails applying. All the remaining info should be in sysfs and
+/proc/cpuinfo.
 
-The system bus is about unprivileged apps asking system services for
-system operations, in which case the system services must have a way to
-know who wants them to do what. The purpose of a system bus is _not_ to
-allow unprivileged peers to talk to each other, that's actually even
-forbidden in the default policy. That's what user buses are for, and on
-those, pretty much every client will have the same privileges anyway,
-hence there's no information leak there either.
+This is much cleaner IMO and will save us a lot of useless bug reports.
 
-> What's the actual problem for logging?  I very much understand why a
-> logging service never wants to log an incorrect credential (and legacy
-> syslog has serious problems here because it doesn't even try to
-> capture credential), but what's wrong with having a log that shows the
-> uid for legit log messages and that reliably says "declined to state"
-> for messages that decline to state.
+Thanks.
 
-A system's administrator should be able to gather all sorts of
-information about things that happened on a system. Trying to hide
-associated metadata is not how things are done anyway - we show it in
-numerous places, in /proc, in SCM_CREDENTIALS, by listing /tmp or /home etc.
+-- 
+Regards/Gruss,
+    Boris.
 
-The separation to limit what is passed around is, in our concept, rather
-on the level of connecting to separate buses, PID namespaces, kdbus
-domains etc, than to suppress information.
-
-> (Also, I presume that cmdline is for logging.  Keep in mind that the
-> cmdline is yanked from user memory and can be freely spoofed.)
-
-Sure. But If a task did that, we want to know about it, and log it
-accordingly. Journald provides such features already today, and it's a
-great deal in detecting runtime inconsistencies between a task's real
-nature and what is displayed in 'ps'.
-
-
-
-Thanks,
-Daniel
+Sent from a fat crate under my desk. Formatting is fine.
+--
