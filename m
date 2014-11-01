@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590AbaKAXGK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:06:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59993 "EHLO
+	id S1754617AbaKAXGP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:06:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60017 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750925AbaKAWj0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751036AbaKAWj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:26 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
-        "Lars-Peter Clausen" <lars@metafoo.de>
+CC: akpm@linux-foundation.org, "Thomas Hellstrom" <thellstrom@vmware.com>,
+        "Jakob Bornecrantz" <jakob@vmware.com>,
+        "Mark Sheldon" <markshel@vmware.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.525724853@decadent.org.uk>
+Message-ID: <lsq.1414880883.534547697@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 010/102] regmap: Fix handling of volatile registers
- for format_write() chips
+Subject: [PATCH 3.2 018/102] drm/vmwgfx: Fix a potential infinite spin
+ waiting for fifo idle
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,37 +33,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 5844a8b9d98ec11ce1d77610daacf3f0a0e14715 upstream.
+commit f01ea0c3d9db536c64d47922716d8b3b8f21d850 upstream.
 
-A previous over-zealous factorisation of code means that we only treat
-registers as volatile if they are readable. For most devices this is fine
-since normally most registers can be read and volatility implies
-readability but for format_write() devices where there is no readback from
-the hardware and we use volatility to mean simply uncacheability this means
-that we end up treating all registers as cacheble.
+The code waiting for fifo idle was incorrect and could possibly spin
+forever under certain circumstances.
 
-A bigger refactoring of the code to clarify this is in order but as a fix
-make a minimal change and only check readability when checking volatility
-if there is no format_write() operation defined for the device.
-
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Tested-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reported-by: Mark Sheldon <markshel@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Reivewed-by: Mark Sheldon <markshel@vmware.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/base/regmap/regmap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -47,7 +47,7 @@ bool regmap_readable(struct regmap *map,
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
+@@ -163,8 +163,9 @@ void vmw_fifo_release(struct vmw_private
  
- bool regmap_volatile(struct regmap *map, unsigned int reg)
- {
--	if (!regmap_readable(map, reg))
-+	if (!map->format.format_write && !regmap_readable(map, reg))
- 		return false;
+ 	mutex_lock(&dev_priv->hw_mutex);
  
- 	if (map->volatile_reg)
++	vmw_write(dev_priv, SVGA_REG_SYNC, SVGA_SYNC_GENERIC);
+ 	while (vmw_read(dev_priv, SVGA_REG_BUSY) != 0)
+-		vmw_write(dev_priv, SVGA_REG_SYNC, SVGA_SYNC_GENERIC);
++		;
+ 
+ 	dev_priv->last_read_seqno = ioread32(fifo_mem + SVGA_FIFO_FENCE);
+ 
 
