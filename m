@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758547AbaKALnj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 07:43:39 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:44733 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756970AbaKALni (ORCPT
+	id S1756341AbaKAL7J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 07:59:09 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:24044 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402AbaKAL7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 07:43:38 -0400
-X-Auth-Info: wd3VRUAazVUh8J54A27arbUPJyBqAWjcxdRoGOxCLjc=
-From: Marek Vasut <marex@denx.de>
-To: Kim Phillips <kim.phillips@freescale.com>
-Subject: Re: [PATCH] crypto: caam: fix error reporting
-Date: Sat, 1 Nov 2014 12:43:31 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: Cristian Stoica <cristian.stoica@freescale.com>,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        horia.geanta@freescale.com
-References: <1414774653-3583-1-git-send-email-cristian.stoica@freescale.com> <20141031132209.5abced3ca9f55649d0bd6007@freescale.com>
-In-Reply-To: <20141031132209.5abced3ca9f55649d0bd6007@freescale.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411011243.31501.marex@denx.de>
+	Sat, 1 Nov 2014 07:59:08 -0400
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Using list_for_each_entry() in place of list_for_each_entry_rcu() ?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201411012059.JHB90633.HtJOSOVLFFQFMO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 1 Nov 2014 20:59:03 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 31, 2014 at 07:22:09 PM, Kim Phillips wrote:
-> On Fri, 31 Oct 2014 18:57:33 +0200
-> 
-> Cristian Stoica <cristian.stoica@freescale.com> wrote:
-> > The error code returned by hardware is four bits wide with an expected
-> > zero MSB. A hardware error condition where the error code can get between
-> > 0x8 and 0xf will trigger an out of bound array access on the error
-> > message table.
-> 
-> If this issue was brought up by h/w, the appropriate new error codes
-> should be being introduced.
-> 
-> Otherwise, I'm assuming it was brought up by a static code analyser,
-> which technically could be ignored, but...
-> 
-> > -	/*
-> > -	 * If there is no further error handling function, just
-> > -	 * print the error code, error string and exit. Otherwise
-> > -	 * call the handler function.
-> > -	 */
-> 
-> why remove the comment?  It's still valid.
-> 
-> > -	if (!status_src[ssrc].report_ssed)
-> > -		dev_err(jrdev, "%08x: %s: \n", status, status_src[ssrc].error);
-> > -	else
-> > +	if (status_src[ssrc].report_ssed)
-> > 
-> >  		status_src[ssrc].report_ssed(jrdev, status, error);
-> > 
-> > +	else if (error)
-> > +		dev_err(jrdev, "%d: %s\n", ssrc, error);
-> > +	else
-> > +		dev_err(jrdev, "%d: unknown error code\n", ssrc);
-> 
-> This is simpler:
-> 
-> diff --git a/drivers/crypto/caam/error.c b/drivers/crypto/caam/error.c
-> index 6531054..6f4a148 100644
-> --- a/drivers/crypto/caam/error.c
-> +++ b/drivers/crypto/caam/error.c
-> @@ -224,7 +224,12 @@ void caam_jr_strstatus(struct device *jrdev, u32
-> status) { report_cond_code_status, "Condition Code" },
->         };
->         u32 ssrc = status >> JRSTA_SSRC_SHIFT;
-> -       const char *error = status_src[ssrc].error;
-> +       const char *error;
-> +
-> +       if (ssrc >= ARRAY_SIZE(status_src)) {
-> +               dev_err(jrdev, "unknown error status source %d\n", ssrc);
-> +               return;
-> +       }
-> 
->         /*
->          * If there is no further error handling function, just
+Excuse me for FAQ, Paul.
+I want to confirm one thing for code optimization in LSM stacking.
+( https://marc.info/?l=linux-security-module&m=141481716931982&w=2 )
 
-This indeed makes sense.
+In the following code, is there race window for seeing invalid
+"struct list_head"->next value if we used list_for_each_entry()
+in place of list_for_each_entry_rcu() ?
 
-Best regards,
-Marek Vasut
+----------
+/* Definition and declaration */
+DEFINE_SPINLOCK(my_lock);
+LIST_HEAD(my_list);
+struct my_struct {
+    struct list_head list;
+    const unsigned long value;
+} v1 = { .value = 1 }, v2 = { .value = 2 }, v3 = { .value = 3 };
+
+/* Writer side */
+void add_entry(struct my_struct *p) {
+    spin_lock(&my_lock);
+    list_add_tail_rcu(&p->list, &my_list);
+    spin_unlock(&my_lock);
+}
+
+void del_entry(struct my_struct *p) {
+    spin_lock(&my_lock);
+    list_del_rcu(&p->list);
+    spin_unlock(&my_lock);
+}
+
+/* Reader side */
+unsigned long reader(void) {
+    struct my_struct *p;
+    unsigned long sum = 0;
+    list_for_each_entry_rcu(p, &my_list, list)
+        sum += p->value;
+    return sum;
+}
+----------
+
+Assumptions are:
+
+  (1) v1, v2, v3 are statically allocated variables inside module,
+      while my_lock, my_list, add_entry(), del_entry(), reader()
+      are built-in.
+
+  (2) v1, v2, v3 are added to my_list only once upon module load
+
+  (3) v1, v2, v3 might be removed from my_list some time later after
+      module was loaded
+
+Regards.
