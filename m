@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246AbaKAWss (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:48:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60214 "EHLO
+	id S1753224AbaKAWso (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:48:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60215 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751703AbaKAWjb (ORCPT
+	by vger.kernel.org with ESMTP id S1751696AbaKAWjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:31 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Prarit Bhargava" <prarit@redhat.com>,
-        "Richard Cochran" <richardcochran@gmail.com>,
-        "John Stultz" <john.stultz@linaro.org>,
-        "Aaron Jacobs" <jacobsa@google.com>, "Paul Turner" <pjt@google.com>,
-        "Ingo Molnar" <mingo@redhat.com>, "Andrew Hunter" <ahh@google.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>
+CC: akpm@linux-foundation.org, "Andreas Rohner" <andreas.rohner@gmx.net>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Ryusuke Konishi" <konishi.ryusuke@lab.ntt.co.jp>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.593350755@decadent.org.uk>
+Message-ID: <lsq.1414880883.824523054@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 046/102] jiffies: Fix timeval conversion to jiffies
+Subject: [PATCH 3.2 072/102] nilfs2: fix data loss with mmap()
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,205 +32,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Hunter <ahh@google.com>
+From: Andreas Rohner <andreas.rohner@gmx.net>
 
-commit d78c9300c51d6ceed9f6d078d4e9366f259de28c upstream.
+commit 56d7acc792c0d98f38f22058671ee715ff197023 upstream.
 
-timeval_to_jiffies tried to round a timeval up to an integral number
-of jiffies, but the logic for doing so was incorrect: intervals
-corresponding to exactly N jiffies would become N+1. This manifested
-itself particularly repeatedly stopping/starting an itimer:
+This bug leads to reproducible silent data loss, despite the use of
+msync(), sync() and a clean unmount of the file system.  It is easily
+reproducible with the following script:
 
-setitimer(ITIMER_PROF, &val, NULL);
-setitimer(ITIMER_PROF, NULL, &val);
+  ----------------[BEGIN SCRIPT]--------------------
+  mkfs.nilfs2 -f /dev/sdb
+  mount /dev/sdb /mnt
 
-would add a full tick to val, _even if it was exactly representable in
-terms of jiffies_ (say, the result of a previous rounding.)  Doing
-this repeatedly would cause unbounded growth in val.  So fix the math.
+  dd if=/dev/zero bs=1M count=30 of=/mnt/testfile
 
-Here's what was wrong with the conversion: we essentially computed
-(eliding seconds)
+  umount /mnt
+  mount /dev/sdb /mnt
+  CHECKSUM_BEFORE="$(md5sum /mnt/testfile)"
 
-jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
+  /root/mmaptest/mmaptest /mnt/testfile 30 10 5
 
-by using scaling arithmetic, which took the best approximation of
-NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
-x/(2^USEC_JIFFIE_SC), and computed:
+  sync
+  CHECKSUM_AFTER="$(md5sum /mnt/testfile)"
+  umount /mnt
+  mount /dev/sdb /mnt
+  CHECKSUM_AFTER_REMOUNT="$(md5sum /mnt/testfile)"
+  umount /mnt
 
-jiffies = (usec * x) >> USEC_JIFFIE_SC
+  echo "BEFORE MMAP:\t$CHECKSUM_BEFORE"
+  echo "AFTER MMAP:\t$CHECKSUM_AFTER"
+  echo "AFTER REMOUNT:\t$CHECKSUM_AFTER_REMOUNT"
+  ----------------[END SCRIPT]--------------------
 
-and rounded this calculation up in the intermediate form (since we
-can't necessarily exactly represent TICK_NSEC in usec.) But the
-scaling arithmetic is a (very slight) *over*approximation of the true
-value; that is, instead of dividing by (1 usec/ 1 jiffie), we
-effectively divided by (1 usec/1 jiffie)-epsilon (rounding
-down). This would normally be fine, but we want to round timeouts up,
-and we did so by adding 2^USEC_JIFFIE_SC - 1 before the shift; this
-would be fine if our division was exact, but dividing this by the
-slightly smaller factor was equivalent to adding just _over_ 1 to the
-final result (instead of just _under_ 1, as desired.)
+The mmaptest tool looks something like this (very simplified, with
+error checking removed):
 
-In particular, with HZ=1000, we consistently computed that 10000 usec
-was 11 jiffies; the same was true for any exact multiple of
-TICK_NSEC.
+  ----------------[BEGIN mmaptest]--------------------
+  data = mmap(NULL, file_size - file_offset, PROT_READ | PROT_WRITE,
+              MAP_SHARED, fd, file_offset);
 
-We could possibly still round in the intermediate form, adding
-something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
-convert usec->nsec, round in nanoseconds, and then convert using
-time*spec*_to_jiffies.  This adds one constant multiplication, and is
-not observably slower in microbenchmarks on recent x86 hardware.
-
-Tested: the following program:
-
-int main() {
-  struct itimerval zero = {{0, 0}, {0, 0}};
-  /* Initially set to 10 ms. */
-  struct itimerval initial = zero;
-  initial.it_interval.tv_usec = 10000;
-  setitimer(ITIMER_PROF, &initial, NULL);
-  /* Save and restore several times. */
-  for (size_t i = 0; i < 10; ++i) {
-    struct itimerval prev;
-    setitimer(ITIMER_PROF, &zero, &prev);
-    /* on old kernels, this goes up by TICK_USEC every iteration */
-    printf("previous value: %ld %ld %ld %ld\n",
-           prev.it_interval.tv_sec, prev.it_interval.tv_usec,
-           prev.it_value.tv_sec, prev.it_value.tv_usec);
-    setitimer(ITIMER_PROF, &prev, NULL);
+  for (i = 0; i < write_count; ++i) {
+        memcpy(data + i * 4096, buf, sizeof(buf));
+        msync(data, file_size - file_offset, MS_SYNC))
   }
-    return 0;
-}
+  ----------------[END mmaptest]--------------------
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Reported-by: Aaron Jacobs <jacobsa@google.com>
-Signed-off-by: Andrew Hunter <ahh@google.com>
-[jstultz: Tweaked to apply to 3.17-rc]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-[bwh: Backported to 3.2: adjust filename]
+The output of the script looks something like this:
+
+  BEFORE MMAP:    281ed1d5ae50e8419f9b978aab16de83  /mnt/testfile
+  AFTER MMAP:     6604a1c31f10780331a6850371b3a313  /mnt/testfile
+  AFTER REMOUNT:  281ed1d5ae50e8419f9b978aab16de83  /mnt/testfile
+
+So it is clear, that the changes done using mmap() do not survive a
+remount.  This can be reproduced a 100% of the time.  The problem was
+introduced in commit 136e8770cd5d ("nilfs2: fix issue of
+nilfs_set_page_dirty() for page at EOF boundary").
+
+If the page was read with mpage_readpage() or mpage_readpages() for
+example, then it has no buffers attached to it.  In that case
+page_has_buffers(page) in nilfs_set_page_dirty() will be false.
+Therefore nilfs_set_file_dirty() is never called and the pages are never
+collected and never written to disk.
+
+This patch fixes the problem by also calling nilfs_set_file_dirty() if the
+page has no buffers attached to it.
+
+[akpm@linux-foundation.org: s/PAGE_SHIFT/PAGE_CACHE_SHIFT/]
+Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
+Tested-by: Andreas Rohner <andreas.rohner@gmx.net>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/jiffies.h | 12 -----------
- kernel/time.c           | 56 +++++++++++++++++++++++++++----------------------
- 2 files changed, 31 insertions(+), 37 deletions(-)
+ fs/nilfs2/inode.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -259,23 +259,11 @@ extern unsigned long preset_lpj;
- #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
- #endif
- #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
--#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
- #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
-                                 TICK_NSEC -1) / (u64)TICK_NSEC))
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -24,6 +24,7 @@
+ #include <linux/buffer_head.h>
+ #include <linux/gfp.h>
+ #include <linux/mpage.h>
++#include <linux/pagemap.h>
+ #include <linux/writeback.h>
+ #include <linux/uio.h>
+ #include "nilfs.h"
+@@ -195,10 +196,10 @@ static int nilfs_writepage(struct page *
  
- #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
-                                         TICK_NSEC -1) / (u64)TICK_NSEC))
--#define USEC_CONVERSION  \
--                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
--                                        TICK_NSEC -1) / (u64)TICK_NSEC))
--/*
-- * USEC_ROUND is used in the timeval to jiffie conversion.  See there
-- * for more details.  It is the scaled resolution rounding value.  Note
-- * that it is a 64-bit value.  Since, when it is applied, we are already
-- * in jiffies (albit scaled), it is nothing but the bits we will shift
-- * off.
-- */
--#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
- /*
-  * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
-  * into seconds.  The 64-bit case will overflow if we are not careful,
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -493,17 +493,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
-  * that a remainder subtract here would not do the right thing as the
-  * resolution values don't fall on second boundries.  I.e. the line:
-  * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
-+ * Note that due to the small error in the multiplier here, this
-+ * rounding is incorrect for sufficiently large values of tv_nsec, but
-+ * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
-+ * OK.
-  *
-  * Rather, we just shift the bits off the right.
-  *
-  * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
-  * value to a scaled second value.
-  */
--unsigned long
--timespec_to_jiffies(const struct timespec *value)
-+static unsigned long
-+__timespec_to_jiffies(unsigned long sec, long nsec)
+ static int nilfs_set_page_dirty(struct page *page)
  {
--	unsigned long sec = value->tv_sec;
--	long nsec = value->tv_nsec + TICK_NSEC - 1;
-+	nsec = nsec + TICK_NSEC - 1;
++	struct inode *inode = page->mapping->host;
+ 	int ret = __set_page_dirty_nobuffers(page);
  
- 	if (sec >= MAX_SEC_IN_JIFFIES){
- 		sec = MAX_SEC_IN_JIFFIES;
-@@ -514,6 +517,13 @@ timespec_to_jiffies(const struct timespe
- 		 (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
+ 	if (page_has_buffers(page)) {
+-		struct inode *inode = page->mapping->host;
+ 		unsigned nr_dirty = 0;
+ 		struct buffer_head *bh, *head;
  
- }
+@@ -221,6 +222,10 @@ static int nilfs_set_page_dirty(struct p
+ 
+ 		if (nr_dirty)
+ 			nilfs_set_file_dirty(inode, nr_dirty);
++	} else if (ret) {
++		unsigned nr_dirty = 1 << (PAGE_CACHE_SHIFT - inode->i_blkbits);
 +
-+unsigned long
-+timespec_to_jiffies(const struct timespec *value)
-+{
-+	return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
-+}
-+
- EXPORT_SYMBOL(timespec_to_jiffies);
- 
- void
-@@ -530,31 +540,27 @@ jiffies_to_timespec(const unsigned long
++		nilfs_set_file_dirty(inode, nr_dirty);
+ 	}
+ 	return ret;
  }
- EXPORT_SYMBOL(jiffies_to_timespec);
- 
--/* Same for "timeval"
-+/*
-+ * We could use a similar algorithm to timespec_to_jiffies (with a
-+ * different multiplier for usec instead of nsec). But this has a
-+ * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
-+ * usec value, since it's not necessarily integral.
-+ *
-+ * We could instead round in the intermediate scaled representation
-+ * (i.e. in units of 1/2^(large scale) jiffies) but that's also
-+ * perilous: the scaling introduces a small positive error, which
-+ * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
-+ * units to the intermediate before shifting) leads to accidental
-+ * overflow and overestimates.
-  *
-- * Well, almost.  The problem here is that the real system resolution is
-- * in nanoseconds and the value being converted is in micro seconds.
-- * Also for some machines (those that use HZ = 1024, in-particular),
-- * there is a LARGE error in the tick size in microseconds.
--
-- * The solution we use is to do the rounding AFTER we convert the
-- * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
-- * Instruction wise, this should cost only an additional add with carry
-- * instruction above the way it was done above.
-+ * At the cost of one additional multiplication by a constant, just
-+ * use the timespec implementation.
-  */
- unsigned long
- timeval_to_jiffies(const struct timeval *value)
- {
--	unsigned long sec = value->tv_sec;
--	long usec = value->tv_usec;
--
--	if (sec >= MAX_SEC_IN_JIFFIES){
--		sec = MAX_SEC_IN_JIFFIES;
--		usec = 0;
--	}
--	return (((u64)sec * SEC_CONVERSION) +
--		(((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
--		 (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
-+	return __timespec_to_jiffies(value->tv_sec,
-+				     value->tv_usec * NSEC_PER_USEC);
- }
- EXPORT_SYMBOL(timeval_to_jiffies);
- 
 
