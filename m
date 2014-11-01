@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921AbaKADCF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 23:02:05 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:33901 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaKADCD (ORCPT
+	id S1753084AbaKADWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 23:22:43 -0400
+Received: from regular1.263xmail.com ([211.150.99.133]:43636 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212AbaKADWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 23:02:03 -0400
-Message-ID: <54544E98.4060007@gmail.com>
-Date: Sat, 01 Nov 2014 11:08:08 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: michal.simek@xilinx.com, soren.brinkmann@xilinx.com
-CC: davem@davemloft.net, sthokal@xilinx.com, manuel.schoelling@gmx.de,
-        paul.gortmaker@windriver.com, f.fainelli@gmail.com,
-        ebiederm@xmission.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers: net: ethernet: xilinx: xilinx_emaclite: Compatible
- with 'xlnx,xps-ethernetlite-2.00.b' for QEMU using
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Oct 2014 23:22:42 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: jay.xu@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: jay.xu@rock-chips.com
+X-UNIQUE-TAG: <368cef260923caf00c5014aaf765f5b5>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Jianqun <jay.xu@rock-chips.com>
+To: heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
+        tiwai@suse.de, Li.Xiubo@freescale.com, moinejf@free.fr,
+        kuninori.morimoto.gx@renesas.com, jsarha@ti.com,
+        Guangyu.Chen@freescale.com, dgreid@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Cc: huangtao@rock-chips.com, cf@rock-chips.com,
+        Jianqun <jay.xu@rock-chips.com>
+Subject: [PATCH] ASoC: simple-card: add "invert" property for detect GPIOs
+Date: Sat,  1 Nov 2014 11:22:18 +0800
+Message-Id: <1414812138-6178-1-git-send-email-jay.xu@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When use current latest upstream qemu (current version: 2.1.2), need let
-driver compatible with 'xlnx,xps-ethernetlite-2.00.b', or can not find
-net device in microblaze qemu. Related QEMU commands under fedora 20:
+Since hardware may invert detect GPIO of headphone or mic, add one
+property to support software invert.
 
-  yum install libvirt
-  yum install tunctl
-  tunctl -b
-  ip link set tap0 up
-  brctl addif virbr0 tap0
-  ./microblaze-softmmu/qemu-system-microblaze -M petalogix-s3adsp1800 \
-    -kernel ../linux-stable.microblaze/arch/microblaze/boot/linux.bin \
-    -no-reboot -append "console=ttyUL0,115200 doreboot" -nographic \
-    -net nic,vlan=0,model=xlnx.xps-ethernetlite,macaddr=00:16:35:AF:94:00 \
-    -net tap,vlan=0,ifname=tap0,script=no,downscript=no
-
-  in microblaze qemu bash (guest machine):
-
-    ifconfig eth0 add 192.168.122.1 netmask 255.255.255.0
-    ifconfig eth0 up
-
-After add this patch, can find the device, and can be used by 'telnetd'
-(need cross-build busybox with glibc for it), then outside can telnet to
-it without password.
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Signed-off-by: Jianqun <jay.xu@rock-chips.com>
 ---
- drivers/net/ethernet/xilinx/xilinx_emaclite.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/generic/simple-card.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index 28dbbdc..298fad3 100644
---- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -1236,6 +1236,7 @@ static struct of_device_id xemaclite_of_match[] = {
- 	{ .compatible = "xlnx,opb-ethernetlite-1.01.b", },
- 	{ .compatible = "xlnx,xps-ethernetlite-1.00.a", },
- 	{ .compatible = "xlnx,xps-ethernetlite-2.00.a", },
-+	{ .compatible = "xlnx,xps-ethernetlite-2.00.b", },
- 	{ .compatible = "xlnx,xps-ethernetlite-2.01.a", },
- 	{ .compatible = "xlnx,xps-ethernetlite-3.00.a", },
- 	{ /* end of list */ },
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index d1b7293..f1bb537 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -29,7 +29,9 @@ struct simple_card_data {
+ 	} *dai_props;
+ 	unsigned int mclk_fs;
+ 	int gpio_hp_det;
++	int gpio_hp_det_invert;
+ 	int gpio_mic_det;
++	int gpio_mic_det_invert;
+ 	struct snd_soc_dai_link dai_link[];	/* dynamically allocated */
+ };
+ 
+@@ -148,6 +150,7 @@ static int asoc_simple_card_dai_init(struct snd_soc_pcm_runtime *rtd)
+ 				      simple_card_hp_jack_pins);
+ 
+ 		simple_card_hp_jack_gpio.gpio = priv->gpio_hp_det;
++		simple_card_hp_jack_gpio.invert = priv->gpio_hp_det_invert;
+ 		snd_soc_jack_add_gpios(&simple_card_hp_jack, 1,
+ 				       &simple_card_hp_jack_gpio);
+ 	}
+@@ -159,6 +162,7 @@ static int asoc_simple_card_dai_init(struct snd_soc_pcm_runtime *rtd)
+ 				      ARRAY_SIZE(simple_card_mic_jack_pins),
+ 				      simple_card_mic_jack_pins);
+ 		simple_card_mic_jack_gpio.gpio = priv->gpio_mic_det;
++		simple_card_mic_jack_gpio.invert = priv->gpio_mic_det_invert;
+ 		snd_soc_jack_add_gpios(&simple_card_mic_jack, 1,
+ 				       &simple_card_mic_jack_gpio);
+ 	}
+@@ -381,6 +385,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ 				     struct simple_card_data *priv)
+ {
+ 	struct device *dev = simple_priv_to_dev(priv);
++	enum of_gpio_flags flags;
+ 	u32 val;
+ 	int ret;
+ 
+@@ -436,13 +441,15 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ 			return ret;
+ 	}
+ 
+-	priv->gpio_hp_det = of_get_named_gpio(node,
+-				"simple-audio-card,hp-det-gpio", 0);
++	priv->gpio_hp_det = of_get_named_gpio_flags(node,
++				"simple-audio-card,hp-det-gpio", 0, &flags);
++	priv->gpio_hp_det_invert = !!(flags & OF_GPIO_ACTIVE_LOW);
+ 	if (priv->gpio_hp_det == -EPROBE_DEFER)
+ 		return -EPROBE_DEFER;
+ 
+-	priv->gpio_mic_det = of_get_named_gpio(node,
+-				"simple-audio-card,mic-det-gpio", 0);
++	priv->gpio_mic_det = of_get_named_gpio_flags(node,
++				"simple-audio-card,mic-det-gpio", 0, &flags);
++	priv->gpio_mic_det_invert = !!(flags & OF_GPIO_ACTIVE_LOW);
+ 	if (priv->gpio_mic_det == -EPROBE_DEFER)
+ 		return -EPROBE_DEFER;
+ 
 -- 
-1.9.3
+1.9.1
+
+
