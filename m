@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbaKAWpo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:45:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60266 "EHLO
+	id S1752994AbaKAWpr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:45:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60258 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751761AbaKAWjb (ORCPT
+	by vger.kernel.org with ESMTP id S1751735AbaKAWjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:31 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ilya Dryomov" <ilya.dryomov@inktank.com>,
-        "Sage Weil" <sage@redhat.com>
+CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
+        "Alban Crequy" <alban.crequy@collabora.co.uk>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.669723771@decadent.org.uk>
+Message-ID: <lsq.1414880883.915423757@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 036/102] libceph: gracefully handle large reply
- messages from the mon
+Subject: [PATCH 3.2 005/102] cgroup: reject cgroup names with '\n'
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,37 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@redhat.com>
+From: Alban Crequy <alban.crequy@collabora.co.uk>
 
-commit 73c3d4812b4c755efeca0140f606f83772a39ce4 upstream.
+commit 71b1fb5c4473a5b1e601d41b109bdfe001ec82e0 upstream.
 
-We preallocate a few of the message types we get back from the mon.  If we
-get a larger message than we are expecting, fall back to trying to allocate
-a new one instead of blindly using the one we have.
+/proc/<pid>/cgroup contains one cgroup path on each line. If cgroup names are
+allowed to contain "\n", applications cannot parse /proc/<pid>/cgroup safely.
 
-Signed-off-by: Sage Weil <sage@redhat.com>
-Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - We have to get the name from the dentry pointer]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ceph/mon_client.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/cgroup.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -987,7 +987,15 @@ static struct ceph_msg *mon_alloc_msg(st
- 	if (!m) {
- 		pr_info("alloc_msg unknown type %d\n", type);
- 		*skip = 1;
-+	} else if (front_len > m->front_alloc_len) {
-+		pr_warning("mon_alloc_msg front %d > prealloc %d (%u#%llu)\n",
-+			   front_len, m->front_alloc_len,
-+			   (unsigned int)con->peer_name.type,
-+			   le64_to_cpu(con->peer_name.num));
-+		ceph_msg_put(m);
-+		m = ceph_msg_new(type, front_len, GFP_NOFS, false);
- 	}
-+
- 	return m;
- }
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3871,6 +3871,11 @@ static int cgroup_mkdir(struct inode *di
+ {
+ 	struct cgroup *c_parent = dentry->d_parent->d_fsdata;
  
++	/* Do not accept '\n' to prevent making /proc/<pid>/cgroup unparsable.
++	 */
++	if (strchr(dentry->d_name.name, '\n'))
++		return -EINVAL;
++
+ 	/* the vfs holds inode->i_mutex already */
+ 	return cgroup_create(c_parent, dentry, mode | S_IFDIR);
+ }
 
