@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760AbaKAXGG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:06:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59995 "EHLO
+	id S1754590AbaKAXGK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:06:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59993 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751111AbaKAWj0 (ORCPT
+	by vger.kernel.org with ESMTP id S1750925AbaKAWj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:26 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Petr Matousek" <pmatouse@redhat.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>
+CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
+        "Lars-Peter Clausen" <lars@metafoo.de>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.301430909@decadent.org.uk>
+Message-ID: <lsq.1414880883.525724853@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 088/102] kvm: vmx: handle invvpid vm exit gracefully
+Subject: [PATCH 3.2 010/102] regmap: Fix handling of volatile registers
+ for format_write() chips
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,70 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Petr Matousek <pmatouse@redhat.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit a642fc305053cc1c6e47e4f4df327895747ab485 upstream.
+commit 5844a8b9d98ec11ce1d77610daacf3f0a0e14715 upstream.
 
-On systems with invvpid instruction support (corresponding bit in
-IA32_VMX_EPT_VPID_CAP MSR is set) guest invocation of invvpid
-causes vm exit, which is currently not handled and results in
-propagation of unknown exit to userspace.
+A previous over-zealous factorisation of code means that we only treat
+registers as volatile if they are readable. For most devices this is fine
+since normally most registers can be read and volatility implies
+readability but for format_write() devices where there is no readback from
+the hardware and we use volatility to mean simply uncacheability this means
+that we end up treating all registers as cacheble.
 
-Fix this by installing an invvpid vm exit handler.
+A bigger refactoring of the code to clarify this is in order but as a fix
+make a minimal change and only check readability when checking volatility
+if there is no format_write() operation defined for the device.
 
-This is CVE-2014-3646.
-
-Signed-off-by: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust filename
- - Drop inapplicable change to exit reason string array]
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Tested-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/vmx.h      | 2 ++
- arch/x86/kvm/vmx.c              | 9 ++++++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ drivers/base/regmap/regmap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/vmx.h
-+++ b/arch/x86/include/asm/vmx.h
-@@ -280,6 +280,7 @@ enum vmcs_field {
- #define EXIT_REASON_EPT_VIOLATION       48
- #define EXIT_REASON_EPT_MISCONFIG       49
- #define EXIT_REASON_INVEPT              50
-+#define EXIT_REASON_INVVPID             53
- #define EXIT_REASON_WBINVD		54
- #define EXIT_REASON_XSETBV		55
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -47,7 +47,7 @@ bool regmap_readable(struct regmap *map,
  
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5620,6 +5620,12 @@ static int handle_invept(struct kvm_vcpu
- 	return 1;
- }
+ bool regmap_volatile(struct regmap *map, unsigned int reg)
+ {
+-	if (!regmap_readable(map, reg))
++	if (!map->format.format_write && !regmap_readable(map, reg))
+ 		return false;
  
-+static int handle_invvpid(struct kvm_vcpu *vcpu)
-+{
-+	kvm_queue_exception(vcpu, UD_VECTOR);
-+	return 1;
-+}
-+
- /*
-  * The exit handlers return 1 if the exit was handled fully and guest execution
-  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
-@@ -5662,6 +5668,7 @@ static int (*kvm_vmx_exit_handlers[])(st
- 	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
- 	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
- 	[EXIT_REASON_INVEPT]                  = handle_invept,
-+	[EXIT_REASON_INVVPID]                 = handle_invvpid,
- };
- 
- static const int kvm_vmx_max_exit_handlers =
-@@ -5846,7 +5853,7 @@ static bool nested_vmx_exit_handled(stru
- 	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
- 	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
- 	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
--	case EXIT_REASON_INVEPT:
-+	case EXIT_REASON_INVEPT: case EXIT_REASON_INVVPID:
- 		/*
- 		 * VMX instructions trap unconditionally. This allows L1 to
- 		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
+ 	if (map->volatile_reg)
 
