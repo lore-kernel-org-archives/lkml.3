@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239AbaKAJCH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 05:02:07 -0400
-Received: from mga03.intel.com ([134.134.136.65]:52278 "EHLO mga03.intel.com"
+	id S1759347AbaKAJCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 05:02:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44853 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759014AbaKAJCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 05:02:01 -0400
+	id S1755102AbaKAJCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Nov 2014 05:02:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="629421517"
+   d="scan'208";a="629421596"
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
         Marcel Selhorst <tpmdd@selhorst.net>
@@ -16,9 +16,9 @@ Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         josh.triplett@intel.com, christophe.ricard@gmail.com,
         jason.gunthorpe@obsidianresearch.com,
         Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v5 3/7] tpm: fix multiple race conditions in tpm_ppi.c
-Date: Sat,  1 Nov 2014 11:01:31 +0200
-Message-Id: <1414832495-23609-4-git-send-email-jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH v5 5/7] tpm: TPM 2.0 CRB Interface
+Date: Sat,  1 Nov 2014 11:01:33 +0200
+Message-Id: <1414832495-23609-6-git-send-email-jarkko.sakkinen@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
 References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
@@ -26,115 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Traversal of the ACPI device tree was not done right. It should lookup
-PPI only under the ACPI device that it is associated. Otherwise, it could
-match to a wrong PPI interface if there are two TPM devices in the device
-tree.
+tpm_crb is a driver for TPM 2.0 Command Response Buffer (CRB) Interface
+as defined in PC Client Platform TPM Profile (PTP) Specification.
 
-Removed global ACPI handle and version string from tpm_ppi.c as this
-is racy. Instead they should be associated with the chip.
+Only polling and single locality is supported as these are the limitations
+of the available hardware, Platform Trust Techonlogy (PTT) in Haswell
+CPUs.
 
-Additionally, added the missing copyright platter to tpm_ppi.c.
+The driver always applies CRB with ACPI start because PTT reports using
+only ACPI start as start method but as a result of my testing it requires
+also CRB start.
 
 Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
- drivers/char/tpm/tpm-chip.c |   4 +-
- drivers/char/tpm/tpm.h      |  16 ++++--
- drivers/char/tpm/tpm_ppi.c  | 136 +++++++++++++++++++++++++++-----------------
- drivers/char/tpm/tpm_tis.c  |  15 +++--
- 4 files changed, 108 insertions(+), 63 deletions(-)
+ drivers/char/tpm/Kconfig   |   9 ++
+ drivers/char/tpm/Makefile  |   1 +
+ drivers/char/tpm/tpm_crb.c | 334 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 344 insertions(+)
+ create mode 100644 drivers/char/tpm/tpm_crb.c
 
-diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
-index bf85114..fdff9e7 100644
---- a/drivers/char/tpm/tpm-chip.c
-+++ b/drivers/char/tpm/tpm-chip.c
-@@ -148,7 +148,7 @@ int tpm_chip_register(struct tpm_chip *chip)
- 	if (rc)
- 		goto del_misc;
+diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+index c54cac3..10c9419 100644
+--- a/drivers/char/tpm/Kconfig
++++ b/drivers/char/tpm/Kconfig
+@@ -122,4 +122,13 @@ config TCG_XEN
+ 	  To compile this driver as a module, choose M here; the module
+ 	  will be called xen-tpmfront.
  
--	rc = tpm_add_ppi(&chip->dev->kobj);
-+	rc = tpm_add_ppi(chip);
- 	if (rc)
- 		goto del_sysfs;
- 
-@@ -186,7 +186,7 @@ void tpm_chip_unregister(struct tpm_chip *chip)
- 	synchronize_rcu();
- 
- 	tpm_sysfs_del_device(chip);
--	tpm_remove_ppi(&chip->dev->kobj);
-+	tpm_remove_ppi(chip);
- 
- 	if (chip->bios_dir)
- 		tpm_bios_log_teardown(chip->bios_dir);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 9880681..69f4003 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -27,6 +27,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/tpm.h>
-+#include <linux/acpi.h>
- 
- enum tpm_const {
- 	TPM_MINOR = 224,	/* officially assigned */
-@@ -94,6 +95,8 @@ struct tpm_vendor_specific {
- #define TPM_VID_WINBOND  0x1050
- #define TPM_VID_STM      0x104A
- 
-+#define TPM_PPI_VERSION_LEN		3
++config TCG_CRB
++	tristate "TPM 2.0 CRB Interface"
++	depends on X86 && ACPI
++	---help---
++	  If you have a TPM security chip that is compliant with the
++	  TCG CRB 2.0 TPM specification say Yes and it will be accessible
++	  from within Linux.  To compile this driver as a module, choose
++	  M here; the module will be called tpm_crb.
 +
- struct tpm_chip {
- 	struct device *dev;	/* Device stuff */
- 	const struct tpm_class_ops *ops;
-@@ -109,6 +112,11 @@ struct tpm_chip {
- 
- 	struct dentry **bios_dir;
- 
-+#ifdef CONFIG_ACPI
-+	acpi_handle acpi_dev_handle;
-+	char ppi_version[TPM_PPI_VERSION_LEN + 1];
-+#endif /* CONFIG_ACPI */
-+
- 	struct list_head list;
- };
- 
-@@ -340,15 +348,15 @@ void tpm_sysfs_del_device(struct tpm_chip *chip);
- int tpm_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf);
- 
- #ifdef CONFIG_ACPI
--extern int tpm_add_ppi(struct kobject *);
--extern void tpm_remove_ppi(struct kobject *);
-+extern int tpm_add_ppi(struct tpm_chip *chip);
-+extern void tpm_remove_ppi(struct tpm_chip *chip);
- #else
--static inline int tpm_add_ppi(struct kobject *parent)
-+static inline int tpm_add_ppi(struct tpm_chip *chip)
- {
- 	return 0;
- }
- 
--static inline void tpm_remove_ppi(struct kobject *parent)
-+static inline void tpm_remove_ppi(struct tpm_chip *chip)
- {
- }
- #endif
-diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
-index 61dcc80..6acdb17 100644
---- a/drivers/char/tpm/tpm_ppi.c
-+++ b/drivers/char/tpm/tpm_ppi.c
-@@ -1,3 +1,22 @@
+ endif # TCG_TPM
+diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+index ae56af9..e6d26dd 100644
+--- a/drivers/char/tpm/Makefile
++++ b/drivers/char/tpm/Makefile
+@@ -22,3 +22,4 @@ obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
+ obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
+ obj-$(CONFIG_TCG_ST33_I2C) += tpm_i2c_stm_st33.o
+ obj-$(CONFIG_TCG_XEN) += xen-tpmfront.o
++obj-$(CONFIG_TCG_CRB) += tpm_crb.o
+diff --git a/drivers/char/tpm/tpm_crb.c b/drivers/char/tpm/tpm_crb.c
+new file mode 100644
+index 0000000..3b7202c
+--- /dev/null
++++ b/drivers/char/tpm/tpm_crb.c
+@@ -0,0 +1,334 @@
 +/*
-+ * Copyright (C) 2012-2014 Intel Corporation
++ * Copyright (C) 2014 Intel Corporation
 + *
 + * Authors:
-+ * Xiaoyan Zhang <xiaoyan.zhang@intel.com>
-+ * Jiang Liu <jiang.liu@linux.intel.com>
 + * Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 + *
 + * Maintained by: <tpmdd-devel@lists.sourceforge.net>
 + *
-+ * This file contains implementation of the sysfs interface for PPI.
++ * This device driver implements the TPM interface as defined in
++ * the TCG CRB 2.0 TPM specification.
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License
@@ -142,295 +95,323 @@ index 61dcc80..6acdb17 100644
 + * of the License.
 + */
 +
++#include <linux/acpi.h>
++#include <linux/highmem.h>
++#include <linux/rculist.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include "tpm.h"
 +
- #include <linux/acpi.h>
- #include "tpm.h"
- 
-@@ -22,45 +41,22 @@ static const u8 tpm_ppi_uuid[] = {
- 	0x8D, 0x10, 0x08, 0x9D, 0x16, 0x53
- };
- 
--static char tpm_ppi_version[PPI_VERSION_LEN + 1];
--static acpi_handle tpm_ppi_handle;
--
--static acpi_status ppi_callback(acpi_handle handle, u32 level, void *context,
--				void **return_value)
--{
--	union acpi_object *obj;
--
--	if (!acpi_check_dsm(handle, tpm_ppi_uuid, TPM_PPI_REVISION_ID,
--			    1 << TPM_PPI_FN_VERSION))
--		return AE_OK;
--
--	/* Cache version string */
--	obj = acpi_evaluate_dsm_typed(handle, tpm_ppi_uuid,
--				      TPM_PPI_REVISION_ID, TPM_PPI_FN_VERSION,
--				      NULL, ACPI_TYPE_STRING);
--	if (obj) {
--		strlcpy(tpm_ppi_version, obj->string.pointer,
--			PPI_VERSION_LEN + 1);
--		ACPI_FREE(obj);
--	}
--
--	*return_value = handle;
--
--	return AE_CTRL_TERMINATE;
--}
--
- static inline union acpi_object *
--tpm_eval_dsm(int func, acpi_object_type type, union acpi_object *argv4)
-+tpm_eval_dsm(acpi_handle dev_handle, int func, acpi_object_type type,
-+	     union acpi_object *argv4)
- {
--	BUG_ON(!tpm_ppi_handle);
--	return acpi_evaluate_dsm_typed(tpm_ppi_handle, tpm_ppi_uuid,
--				       TPM_PPI_REVISION_ID, func, argv4, type);
-+	BUG_ON(!dev_handle);
-+	return acpi_evaluate_dsm_typed(dev_handle, tpm_ppi_uuid,
-+				       TPM_PPI_REVISION_ID,
-+				       func, argv4, type);
- }
- 
- static ssize_t tpm_show_ppi_version(struct device *dev,
- 				    struct device_attribute *attr, char *buf)
- {
--	return scnprintf(buf, PAGE_SIZE, "%s\n", tpm_ppi_version);
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
++#define ACPI_SIG_TPM2 "TPM2"
 +
-+	return scnprintf(buf, PAGE_SIZE, "%s\n", chip->ppi_version);
- }
- 
- static ssize_t tpm_show_ppi_request(struct device *dev,
-@@ -68,8 +64,10 @@ static ssize_t tpm_show_ppi_request(struct device *dev,
- {
- 	ssize_t size = -EINVAL;
- 	union acpi_object *obj;
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
--	obj = tpm_eval_dsm(TPM_PPI_FN_GETREQ, ACPI_TYPE_PACKAGE, NULL);
-+	obj = tpm_eval_dsm(chip->acpi_dev_handle, TPM_PPI_FN_GETREQ,
-+			   ACPI_TYPE_PACKAGE, NULL);
- 	if (!obj)
- 		return -ENXIO;
- 
-@@ -103,14 +101,15 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
- 	int func = TPM_PPI_FN_SUBREQ;
- 	union acpi_object *obj, tmp;
- 	union acpi_object argv4 = ACPI_INIT_DSM_ARGV4(1, &tmp);
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
- 	/*
- 	 * the function to submit TPM operation request to pre-os environment
- 	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
- 	 * version 1.1
- 	 */
--	if (acpi_check_dsm(tpm_ppi_handle, tpm_ppi_uuid, TPM_PPI_REVISION_ID,
--			   1 << TPM_PPI_FN_SUBREQ2))
-+	if (acpi_check_dsm(chip->acpi_dev_handle, tpm_ppi_uuid,
-+			   TPM_PPI_REVISION_ID, 1 << TPM_PPI_FN_SUBREQ2))
- 		func = TPM_PPI_FN_SUBREQ2;
- 
- 	/*
-@@ -119,7 +118,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
- 	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
- 	 * for compatibility, and use package type since 1.2 according to spec.
- 	 */
--	if (strcmp(tpm_ppi_version, "1.2") < 0) {
-+	if (strcmp(chip->ppi_version, "1.2") < 0) {
- 		if (sscanf(buf, "%d", &req) != 1)
- 			return -EINVAL;
- 		argv4.type = ACPI_TYPE_BUFFER;
-@@ -131,7 +130,8 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
- 			return -EINVAL;
- 	}
- 
--	obj = tpm_eval_dsm(func, ACPI_TYPE_INTEGER, &argv4);
-+	obj = tpm_eval_dsm(chip->acpi_dev_handle, func, ACPI_TYPE_INTEGER,
-+			   &argv4);
- 	if (!obj) {
- 		return -ENXIO;
- 	} else {
-@@ -157,6 +157,7 @@ static ssize_t tpm_show_ppi_transition_action(struct device *dev,
- 		.buffer.length = 0,
- 		.buffer.pointer = NULL
- 	};
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
- 	static char *info[] = {
- 		"None",
-@@ -171,9 +172,10 @@ static ssize_t tpm_show_ppi_transition_action(struct device *dev,
- 	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
- 	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
- 	 */
--	if (strcmp(tpm_ppi_version, "1.2") < 0)
-+	if (strcmp(chip->ppi_version, "1.2") < 0)
- 		obj = &tmp;
--	obj = tpm_eval_dsm(TPM_PPI_FN_GETACT, ACPI_TYPE_INTEGER, obj);
-+	obj = tpm_eval_dsm(chip->acpi_dev_handle, TPM_PPI_FN_GETACT,
-+			   ACPI_TYPE_INTEGER, obj);
- 	if (!obj) {
- 		return -ENXIO;
- 	} else {
-@@ -196,8 +198,10 @@ static ssize_t tpm_show_ppi_response(struct device *dev,
- 	acpi_status status = -EINVAL;
- 	union acpi_object *obj, *ret_obj;
- 	u64 req, res;
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
--	obj = tpm_eval_dsm(TPM_PPI_FN_GETRSP, ACPI_TYPE_PACKAGE, NULL);
-+	obj = tpm_eval_dsm(chip->acpi_dev_handle, TPM_PPI_FN_GETRSP,
-+			   ACPI_TYPE_PACKAGE, NULL);
- 	if (!obj)
- 		return -ENXIO;
- 
-@@ -248,7 +252,8 @@ cleanup:
- 	return status;
- }
- 
--static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
-+static ssize_t show_ppi_operations(acpi_handle dev_handle, char *buf, u32 start,
-+				   u32 end)
- {
- 	int i;
- 	u32 ret;
-@@ -264,14 +269,15 @@ static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
- 		"User not required",
- 	};
- 
--	if (!acpi_check_dsm(tpm_ppi_handle, tpm_ppi_uuid, TPM_PPI_REVISION_ID,
-+	if (!acpi_check_dsm(dev_handle, tpm_ppi_uuid, TPM_PPI_REVISION_ID,
- 			    1 << TPM_PPI_FN_GETOPR))
- 		return -EPERM;
- 
- 	tmp.integer.type = ACPI_TYPE_INTEGER;
- 	for (i = start; i <= end; i++) {
- 		tmp.integer.value = i;
--		obj = tpm_eval_dsm(TPM_PPI_FN_GETOPR, ACPI_TYPE_INTEGER, &argv);
-+		obj = tpm_eval_dsm(dev_handle, TPM_PPI_FN_GETOPR,
-+				   ACPI_TYPE_INTEGER, &argv);
- 		if (!obj) {
- 			return -ENOMEM;
- 		} else {
-@@ -291,14 +297,20 @@ static ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
- 					   struct device_attribute *attr,
- 					   char *buf)
- {
--	return show_ppi_operations(buf, 0, PPI_TPM_REQ_MAX);
++static const u8 CRB_ACPI_START_UUID[] = {
++	/* 0000 */ 0xAB, 0x6C, 0xBF, 0x6B, 0x63, 0x54, 0x14, 0x47,
++	/* 0008 */ 0xB7, 0xCD, 0xF0, 0x20, 0x3C, 0x03, 0x68, 0xD4
++};
++
++enum crb_defaults {
++	CRB_ACPI_START_REVISION_ID = 1,
++	CRB_ACPI_START_INDEX = 1,
++};
++
++enum crb_start_method {
++	CRB_SM_ACPI_START = 2,
++	CRB_SM_CRB = 7,
++	CRB_SM_CRB_WITH_ACPI_START = 8,
++};
++
++struct acpi_tpm2 {
++	struct acpi_table_header hdr;
++	u16 platform_class;
++	u16 reserved;
++	u64 control_area_pa;
++	u32 start_method;
++};
++
++enum crb_ca_request {
++	CRB_CA_REQ_GO_IDLE	= BIT(0),
++	CRB_CA_REQ_CMD_READY	= BIT(1),
++};
++
++enum crb_ca_status {
++	CRB_CA_STS_ERROR	= BIT(0),
++	CRB_CA_STS_TPM_IDLE	= BIT(1),
++};
++
++struct crb_control_area {
++	u32 req;
++	u32 sts;
++	u32 cancel;
++	u32 start;
++	u32 int_enable;
++	u32 int_sts;
++	u32 cmd_size;
++	u64 cmd_pa;
++	u32 rsp_size;
++	u64 rsp_pa;
++} __packed;
++
++enum crb_status {
++	CRB_STS_COMPLETE	= BIT(0),
++};
++
++enum crb_flags {
++	CRB_FL_ACPI_START	= BIT(0),
++	CRB_FL_CRB_START	= BIT(1),
++};
++
++struct crb_priv {
++	unsigned int flags;
++	struct crb_control_area *cca;
++	unsigned long cca_pa;
++	acpi_handle dev_handle;
++};
++
++#ifdef CONFIG_PM_SLEEP
++int crb_suspend(struct device *dev)
++{
++	return 0;
++}
++
++static int crb_resume(struct device *dev)
++{
 +	struct tpm_chip *chip = dev_get_drvdata(dev);
 +
-+	return show_ppi_operations(chip->acpi_dev_handle, buf, 0,
-+				   PPI_TPM_REQ_MAX);
- }
- 
- static ssize_t tpm_show_ppi_vs_operations(struct device *dev,
- 					  struct device_attribute *attr,
- 					  char *buf)
- {
--	return show_ppi_operations(buf, PPI_VS_REQ_START, PPI_VS_REQ_END);
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
++	(void) tpm2_do_selftest(chip);
 +
-+	return show_ppi_operations(chip->acpi_dev_handle, buf, PPI_VS_REQ_START,
-+				   PPI_VS_REQ_END);
- }
- 
- static DEVICE_ATTR(version, S_IRUGO, tpm_show_ppi_version, NULL);
-@@ -323,16 +335,34 @@ static struct attribute_group ppi_attr_grp = {
- 	.attrs = ppi_attrs
- };
- 
--int tpm_add_ppi(struct kobject *parent)
-+int tpm_add_ppi(struct tpm_chip *chip)
- {
--	/* Cache TPM ACPI handle and version string */
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
--			    ppi_callback, NULL, NULL, &tpm_ppi_handle);
--	return tpm_ppi_handle ? sysfs_create_group(parent, &ppi_attr_grp) : 0;
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(crb_pm, crb_suspend, crb_resume);
++
++static u8 crb_status(struct tpm_chip *chip)
++{
++	struct crb_priv *priv = chip->vendor.priv;
++	u8 sts = 0;
++
++	if ((le32_to_cpu(priv->cca->start) & 1) != 1)
++		sts |= CRB_STS_COMPLETE;
++
++	return sts;
++}
++
++static int crb_recv(struct tpm_chip *chip, u8 *buf, size_t count)
++{
++	struct crb_priv *priv = chip->vendor.priv;
++	struct crb_control_area *cca;
++	unsigned int expected;
++	unsigned long offset;
++	u8 *resp;
++
++	cca = priv->cca;
++	if (le32_to_cpu(cca->sts) & CRB_CA_STS_ERROR)
++		return -EIO;
++
++	offset = le64_to_cpu(cca->rsp_pa) - priv->cca_pa;
++	resp = (u8 *) ((unsigned long) cca + offset);
++	memcpy(buf, resp, 6);
++	expected = be32_to_cpup((__be32 *) &buf[2]);
++
++	if (expected > count)
++		return -EIO;
++
++	memcpy(&buf[6], &resp[6], expected - 6);
++
++	return expected;
++}
++
++static int crb_do_acpi_start(struct tpm_chip *chip)
++{
++	struct crb_priv *priv = chip->vendor.priv;
 +	union acpi_object *obj;
++	int rc;
 +
-+	if (!chip->acpi_dev_handle)
-+		return 0;
-+
-+	if (!acpi_check_dsm(chip->acpi_dev_handle, tpm_ppi_uuid,
-+			    TPM_PPI_REVISION_ID, 1 << TPM_PPI_FN_VERSION))
-+		return 0;
-+
-+	/* Cache PPI version string. */
-+	obj = acpi_evaluate_dsm_typed(chip->acpi_dev_handle, tpm_ppi_uuid,
-+				      TPM_PPI_REVISION_ID, TPM_PPI_FN_VERSION,
-+				      NULL, ACPI_TYPE_STRING);
++	obj = acpi_evaluate_dsm(priv->dev_handle,
++				CRB_ACPI_START_UUID,
++				CRB_ACPI_START_REVISION_ID,
++				CRB_ACPI_START_INDEX,
++				NULL);
 +	if (!obj)
-+		return -ENOMEM;
-+
-+	strlcpy(chip->ppi_version, obj->string.pointer,
-+		PPI_VERSION_LEN + 1);
-+
++		return -ENXIO;
++	rc = obj->integer.value == 0 ? 0 : -ENXIO;
 +	ACPI_FREE(obj);
++	return rc;
++}
 +
-+	return sysfs_create_group(&chip->dev->kobj, &ppi_attr_grp);
- }
- 
--void tpm_remove_ppi(struct kobject *parent)
-+void tpm_remove_ppi(struct tpm_chip *chip)
- {
--	if (tpm_ppi_handle)
--		sysfs_remove_group(parent, &ppi_attr_grp);
-+	if (chip->ppi_version[0] != '\0')
-+		sysfs_remove_group(&chip->dev->kobj, &ppi_attr_grp);
- }
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index e2cb04d..1b51aeb 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -536,8 +536,9 @@ static void tpm_tis_remove(struct tpm_chip *chip)
- 	release_locality(chip, chip->vendor.locality, 1);
- }
- 
--static int tpm_tis_init(struct device *dev, resource_size_t start,
--			resource_size_t len, unsigned int irq)
-+static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
-+			resource_size_t start, resource_size_t len,
-+			unsigned int irq)
- {
- 	u32 vendor, intfcaps, intmask;
- 	int rc, i, irq_s, irq_e, probe;
-@@ -547,6 +548,8 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	if (IS_ERR(chip))
- 		return PTR_ERR(chip);
- 
-+	chip->acpi_dev_handle = acpi_dev_handle;
++static int crb_send(struct tpm_chip *chip, u8 *buf, size_t len)
++{
++	struct crb_priv *priv = chip->vendor.priv;
++	struct crb_control_area *cca;
++	u8 *cmd;
++	int rc = 0;
 +
- 	chip->vendor.iobase = devm_ioremap(dev, start, len);
- 	if (!chip->vendor.iobase)
- 		return -EIO;
-@@ -777,6 +780,7 @@ static int tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
- {
- 	resource_size_t start, len;
- 	unsigned int irq = 0;
-+	acpi_handle acpi_dev_handle = NULL;
- 
- 	start = pnp_mem_start(pnp_dev, 0);
- 	len = pnp_mem_len(pnp_dev, 0);
-@@ -789,7 +793,10 @@ static int tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
- 	if (is_itpm(pnp_dev))
- 		itpm = true;
- 
--	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
-+	if (pnp_acpi_device(pnp_dev))
-+		acpi_dev_handle = pnp_acpi_device(pnp_dev)->handle;
++	cca = priv->cca;
 +
-+	return tpm_tis_init(&pnp_dev->dev, acpi_dev_handle, start, len, irq);
- }
- 
- static struct pnp_device_id tpm_pnp_tbl[] = {
-@@ -858,7 +865,7 @@ static int __init init_tis(void)
- 		rc = PTR_ERR(pdev);
- 		goto err_dev;
- 	}
--	rc = tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0);
-+	rc = tpm_tis_init(&pdev->dev, NULL, TIS_MEM_BASE, TIS_MEM_LEN, 0);
- 	if (rc)
- 		goto err_init;
- 	return 0;
++	if (len > le32_to_cpu(cca->cmd_size)) {
++		dev_err(chip->dev,
++			"invalid command count value %x %zx\n",
++			(unsigned int) len,
++			(size_t) le32_to_cpu(cca->cmd_size));
++		return -E2BIG;
++	}
++
++	cmd = (u8 *) ((unsigned long) cca + le64_to_cpu(cca->cmd_pa) -
++		      priv->cca_pa);
++	memcpy(cmd, buf, len);
++
++	/* Make sure that cmd is populated before issuing start. */
++	wmb();
++
++	cca->start = cpu_to_le32(1);
++	rc = crb_do_acpi_start(chip);
++	return rc;
++}
++
++static void crb_cancel(struct tpm_chip *chip)
++{
++	struct crb_priv *priv = chip->vendor.priv;
++	struct crb_control_area *cca;
++
++	cca = priv->cca;
++	cca->cancel = cpu_to_le32(1);
++
++	/* Make sure that cmd is populated before issuing start. */
++	wmb();
++
++	if (crb_do_acpi_start(chip))
++		dev_err(chip->dev, "ACPI Start failed\n");
++
++	cca->cancel = 0;
++}
++
++static bool crb_req_canceled(struct tpm_chip *chip, u8 status)
++{
++	struct crb_priv *priv = chip->vendor.priv;
++
++	return (le32_to_cpu(priv->cca->cancel) & 1) == 1;
++}
++
++static const struct tpm_class_ops tpm_crb = {
++	.status = crb_status,
++	.recv = crb_recv,
++	.send = crb_send,
++	.cancel = crb_cancel,
++	.req_canceled = crb_req_canceled,
++	.req_complete_mask = CRB_STS_COMPLETE,
++	.req_complete_val = CRB_STS_COMPLETE,
++};
++
++static int crb_acpi_add(struct acpi_device *device)
++{
++	struct tpm_chip *chip;
++	struct acpi_tpm2 *buf;
++	struct crb_priv *priv;
++	struct device *dev = &device->dev;
++	acpi_status status;
++	u32 sm;
++	int rc;
++
++	chip = tpmm_chip_alloc(dev, &tpm_crb);
++	if (IS_ERR(chip)) {
++		dev_err(dev, "allocating chip failed\n");
++		return PTR_ERR(chip);
++	}
++
++	chip->flags = TPM_CHIP_FLAG_TPM2;
++
++	status = acpi_get_table(ACPI_SIG_TPM2, 1,
++				(struct acpi_table_header **) &buf);
++	if (ACPI_FAILURE(status)) {
++		dev_err(dev, "could not get TPM2 ACPI table\n");
++		return -ENODEV;
++	}
++
++	priv = (struct crb_priv *) devm_kzalloc(dev, sizeof(struct crb_priv),
++						GFP_KERNEL);
++	if (!priv) {
++		dev_err(dev, "allocating memory failed\n");
++		return -ENOMEM;
++	}
++
++	sm = le32_to_cpu(buf->start_method);
++
++	if (sm == CRB_SM_CRB || sm == CRB_SM_CRB_WITH_ACPI_START)
++		priv->flags |= CRB_FL_CRB_START;
++
++	if (sm == CRB_SM_ACPI_START || sm == CRB_SM_CRB_WITH_ACPI_START)
++		priv->flags |= CRB_FL_ACPI_START;
++
++	priv->dev_handle = device->handle;
++	priv->cca_pa = le32_to_cpu(buf->control_area_pa);
++	priv->cca = (struct crb_control_area *)
++		devm_ioremap_nocache(dev, buf->control_area_pa, 0x1000);
++	if (!priv->cca) {
++		dev_err(dev, "allocating memory failed\n");
++		return -ENOMEM;
++	}
++
++	chip->vendor.priv = priv;
++
++	/* Default timeouts and durations */
++	chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
++	chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
++	chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
++	chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
++	chip->vendor.duration[TPM_SHORT] =
++		usecs_to_jiffies(TPM2_DURATION_SHORT);
++	chip->vendor.duration[TPM_MEDIUM] =
++		usecs_to_jiffies(TPM2_DURATION_MEDIUM);
++	chip->vendor.duration[TPM_LONG] =
++		usecs_to_jiffies(TPM2_DURATION_LONG);
++
++	rc = tpm2_do_selftest(chip);
++	if (rc) {
++		dev_err(dev, "self-test failed\n");
++		return rc;
++	}
++
++	rc = tpm_chip_register(chip);
++	if (rc) {
++		dev_err(dev, "registering the chip failed\n");
++		return rc;
++	}
++
++	return 0;
++}
++
++int crb_acpi_remove(struct acpi_device *device)
++{
++	struct device *dev = &device->dev;
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++
++	tpm_chip_unregister(chip);
++	return 0;
++}
++
++static struct acpi_device_id crb_device_ids[] = {
++	{"MSFT0101", 0},
++	{"", 0},
++};
++MODULE_DEVICE_TABLE(acpi, crb_device_ids);
++
++static struct acpi_driver crb_acpi_driver = {
++	.name = "tpm_crb",
++	.ids = crb_device_ids,
++	.ops = {
++		.add = crb_acpi_add,
++		.remove = crb_acpi_remove,
++	},
++	.drv = {
++		.pm = &crb_pm,
++	},
++};
++
++module_acpi_driver(crb_acpi_driver);
++MODULE_AUTHOR("Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>");
++MODULE_DESCRIPTION("TPM2 Driver");
++MODULE_VERSION("0.1");
++MODULE_LICENSE("GPL");
 -- 
 2.1.0
 
