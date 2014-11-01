@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759397AbaKANlR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 09:41:17 -0400
-Received: from fep12.mx.upcmail.net ([62.179.121.32]:40809 "EHLO
-	fep12.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758036AbaKANlQ (ORCPT
+	id S1758919AbaKAOJq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 10:09:46 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:48571 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756729AbaKAOJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 09:41:16 -0400
-X-SourceIP: 2001:470:25:65c::2
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <5454E2F3.2060404@odi.ch>
-Date: Sat, 01 Nov 2014 14:41:07 +0100
-From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 1 Nov 2014 10:09:44 -0400
+From: Chen Weixiang <weixiangchen@gmail.com>
+X-Google-Original-From: Chen Weixiang <weixiang.chen@gmail.com>
+Date: Sat, 1 Nov 2014 22:09:39 +0800
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: Chen Weixiang <weixiangchen@gmail.com>,
+        Marek Belisko <marek.belisko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Aybuke Ozdemir <aybuke.147@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Nicolas Thery <nthery@gmail.com>, Greg Donald <gdonald@gmail.com>,
+        Daniel Dodge <danieldodgese@gmail.com>,
+        Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/6] staging: ft1000: spaces required around that '=',
+ '<' and '=='
+Message-ID: <20141101140939.GA8194@chenwx>
+Mail-Followup-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+	Chen Weixiang <weixiangchen@gmail.com>,
+	Marek Belisko <marek.belisko@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Aybuke Ozdemir <aybuke.147@gmail.com>, Felipe Balbi <balbi@ti.com>,
+	Nicolas Thery <nthery@gmail.com>, Greg Donald <gdonald@gmail.com>,
+	Daniel Dodge <danieldodgese@gmail.com>,
+	Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1414810047-6975-1-git-send-email-weixiang.chen@gmail.com>
+ <1414810047-6975-2-git-send-email-weixiang.chen@gmail.com>
+ <20141101050535.GC3642@sudip-PC>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [drm] 3.18 regression: backlight dark after resume
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141101050535.GC3642@sudip-PC>
+User-Agent: Mutt/1.5.23 (b8a63730c848) (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Nov 01, 2014 at 10:35:35AM +0530, Sudip Mukherjee wrote:
+> many whitespace errors in the patch.
+> checkpatch gives total: 8 errors, 23 warnings, 125 lines checked
+> 
+> thanks
+> sudip
+> 
 
-Since 3.18-rc1 backlight is dark after resume from suspend. This is on a Samsung 
-laptop with i5 IvyBridge
+Hi sudip,
 
-00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core processor 
-Graphics Controller (rev 09)
+Yes, I also run checkpatch.pl on this patch, and got several
+errors/warnings. But those errors/warnings are not related to
+spaces around '=', '<' and '==' anymore.
 
+I thought it's better to fix one code style error/warning in
+one patch, and put the code style error/warning to Subject line.
+It's much clear, isn't it?
 
-I have bisected this problem to the following commit:
-73580fb764c4213d305c0d36bd8f856ae631eb42 is the first bad commit
-commit 73580fb764c4213d305c0d36bd8f856ae631eb42
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Tue Aug 12 17:11:41 2014 +0300
+Thanks.
 
-     drm/i915/dp: make backlight bl_power control power sequencer backlight
+-- 
+Best regards,
+Chen Weixiang (Alex)
 
-     This lets the userspace switch off the backlight using the backlight
-     class sysfs bl_power file. The switch is done using the power sequencer;
-     the backlight PWM, and everything else, remains enabled. The display
-     backlight won't draw power, but for maximum power savings the encoder
-     needs to be switched off.
-
-     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-     Reviewed_by: Clinton Taylor <Clinton.A.Taylor@intel.com>
-     Tested_by: Clinton Taylor <Clinton.A.Taylor@intel.com>
-     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-
-Thanks,
-
-Ortwin
