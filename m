@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760004AbaKAREn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 13:04:43 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:37102 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499AbaKAREl (ORCPT
+	id S1759263AbaKARR6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 13:17:58 -0400
+Received: from smtprelay0146.hostedemail.com ([216.40.44.146]:33932 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751981AbaKARR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 13:04:41 -0400
-Message-ID: <54551242.2020604@roeck-us.net>
-Date: Sat, 01 Nov 2014 10:02:58 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-CC: linux-kernel@vger.kernel.org, adi-buildroot-devel@lists.sourceforge.net,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-am33-list@redhat.com,
-        linux-cris-kernel@axis.com, linux-efi@vger.kernel.org,
-        linux-hexagon@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        openipmi-developer@lists.sourceforge.net,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
-        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH 33/44] avr32: atngw100: Register with kernel poweroff
- handler
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net> <1412659726-29957-34-git-send-email-linux@roeck-us.net> <20141101101637.GA5765@samfundet.no>
-In-Reply-To: <20141101101637.GA5765@samfundet.no>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Sat, 1 Nov 2014 13:17:56 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3351:3622:3865:3867:3868:3870:3873:4321:5007:6119:6261:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: twig84_27f3637ceb92d
+X-Filterd-Recvd-Size: 1851
+Message-ID: <1414862273.31550.4.camel@perches.com>
+Subject: Re: [PATCH] x86, cpu: trivial printk formatting fixes
+From: Joe Perches <joe@perches.com>
+To: Steven Honeyman <stevenhoneyman@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiri Kosina <trivial@kernel.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 01 Nov 2014 10:17:53 -0700
+In-Reply-To: <1414856696-8094-1-git-send-email-stevenhoneyman@gmail.com>
+References: <1414856696-8094-1-git-send-email-stevenhoneyman@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=0.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545512A9.0015,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 42
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2014 03:16 AM, Hans-Christian Egtvedt wrote:
-> Around Mon 06 Oct 2014 22:28:35 -0700 or thereabout, Guenter Roeck wrote:
->> Register with kernel poweroff handler instead of setting pm_power_off
->> directly.
->>
->> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
->> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->
-> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
->
+On Sat, 2014-11-01 at 15:44 +0000, Steven Honeyman wrote:
+> A 2 line printk makes dmesg output messy, because the second line does not get a timestamp.
+> For example:
+[]
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+[]
+> @@ -487,10 +487,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+>  
+>  		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+>  		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
+> -			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
+> -				" Set to 'normal', was 'performance'\n"
+> -				"ENERGY_PERF_BIAS: View and update with"
+> -				" x86_energy_perf_policy(8)\n");
+> +			pr_info_once("ENERGY_PERF_BIAS: Set to 'normal', was 'performance'\n");
+> +			pr_info_once("ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)\n");
 
-Thanks!
+This changes the logging level.
 
-Guenter
+You should either mention why in the changelog
+or use pr_warn_once
+
 
