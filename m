@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760672AbaKACwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 22:52:50 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:51949 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760600AbaKACwr (ORCPT
+	id S1757299AbaKAC5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 22:57:44 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:55776 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaKAC5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 22:52:47 -0400
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <8a0c20e724cd9e7a509c34dcce829c4a>
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
-        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
-        fzf@rock-chips.com, Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v17 5/5] ARM: dts: enable Thermal on rk3288-evb board
-Date: Sat,  1 Nov 2014 10:44:33 +0800
-Message-Id: <1414809873-32227-6-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414809873-32227-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1414809873-32227-1-git-send-email-caesar.wang@rock-chips.com>
+	Fri, 31 Oct 2014 22:57:42 -0400
+Date: Fri, 31 Oct 2014 19:57:37 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: i8042 - add mux quirk for HP EliteBook
+Message-ID: <20141101025737.GA20884@dtor-ws>
+References: <1414535232-4780-1-git-send-email-luis.henriques@canonical.com>
+ <20141028230841.GB19675@dtor-ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028230841.GB19675@dtor-ws>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when a thermal temperature over TSHUT.Default to via
-CRU reset the entire chip on rk3288-evb Board,
-TSHUT is low active on rk3288-evb board.
+On Tue, Oct 28, 2014 at 04:08:41PM -0700, Dmitry Torokhov wrote:
+> On Tue, Oct 28, 2014 at 10:27:12PM +0000, Luis Henriques wrote:
+> > This laptop requires active multiplexing to be enabled in order to be able
+> > to separate the PS/2 mouse and the touchpad.
+> > 
+> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> 
+> Applied, thank you.
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- arch/arm/boot/dts/rk3288-evb.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+Actually I am reverting the nomux patch, so unapplied ;)
 
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index cb83cea..3e067dd 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -148,6 +148,12 @@
- 	status = "okay";
- };
- 
-+&tsadc {
-+	rockchip,hw-tshut-mode = <0>; /* tshut mode 0:CRU 1:GPIO */
-+	rockchip,hw-tshut-polarity = <0>; /* tshut polarity 0:LOW 1:HIGH */
-+	status = "okay";
-+};
-+
- &pinctrl {
- 	backlight {
- 		bl_en: bl-en {
 -- 
-1.9.1
-
+Dmitry
