@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaKAWvr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:51:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60176 "EHLO
+	id S1752758AbaKAWvh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:51:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60185 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751622AbaKAWj3 (ORCPT
+	by vger.kernel.org with ESMTP id S1751647AbaKAWj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:29 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Mark" <markk@clara.co.uk>
+CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Sharvil Nanavati" <sharvil@google.com>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        "Prarit Bhargava" <prarit@redhat.com>,
+        "Richard Larocque" <rlarocque@google.com>,
+        "Richard Cochran" <richardcochran@gmail.com>,
+        "John Stultz" <john.stultz@linaro.org>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.789277560@decadent.org.uk>
+Message-ID: <lsq.1414880883.535325118@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 059/102] USB: storage: Add quirks for Entrega/Xircom
- USB to SCSI converters
+Subject: [PATCH 3.2 048/102] alarmtimer: Do not signal SIGEV_NONE timers
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,78 +36,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark <markk@clara.co.uk>
+From: Richard Larocque <rlarocque@google.com>
 
-commit c80b4495c61636edc58fe1ce300f09f24db28e10 upstream.
+commit 265b81d23a46c39df0a735a3af4238954b41a4c2 upstream.
 
-This patch adds quirks for Entrega Technologies (later Xircom PortGear) USB-
-SCSI converters. They use Shuttle Technology EUSB-01/EUSB-S1 chips. The
-US_FL_SCM_MULT_TARG quirk is needed to allow multiple devices on the SCSI
-chain to be accessed. Without it only the (single) device with SCSI ID 0
-can be used.
+Avoids sending a signal to alarm timers created with sigev_notify set to
+SIGEV_NONE by checking for that special case in the timeout callback.
 
-The standalone converter sold by Entrega had model number U1-SC25. Xircom
-acquired Entrega and re-branded the product line PortGear. The PortGear USB
-to SCSI Converter (model PGSCSI) is internally identical to the Entrega
-product, but later models may use a different USB ID. The Entrega-branded
-units have USB ID 1645:0007, as does my Xircom PGSCSI, but the Windows and
-Macintosh drivers also support 085A:0028.
+The regular posix timers avoid sending signals to SIGEV_NONE timers by
+not scheduling any callbacks for them in the first place.  Although it
+would be possible to do something similar for alarm timers, it's simpler
+to handle this as a special case in the timeout.
 
-Entrega also sold the "Mac USB Dock", which provides two USB ports, a Mac
-(8-pin mini-DIN) serial port and a SCSI port. It appears to the computer as
-a four-port hub, USB-serial, and USB-SCSI converters. The USB-SCSI part may
-have initially used the same ID as the standalone U1-SC25 (1645:0007), but
-later production used 085A:0026.
+Prior to this patch, the alarm timer would ignore the sigev_notify value
+and try to deliver signals to the process anyway.  Even worse, the
+sanity check for the value of sigev_signo is skipped when SIGEV_NONE was
+specified, so the signal number could be bogus.  If sigev_signo was an
+unitialized value (as it often would be if SIGEV_NONE is used), then
+it's hard to predict which signal will be sent.
 
-My Xircom PortGear PGSCSI has bcdDevice=0x0100. Units with bcdDevice=0x0133
-probably also exist.
-
-This patch adds quirks for 1645:0007, 085A:0026 and 085A:0028. The Windows
-driver INF file also mentions 085A:0032 "PortStation SCSI Module", but I
-couldn't find any mention of that actually existing in the wild; perhaps it
-was cancelled before release?
-
-Signed-off-by: Mark Knibbs <markk@clara.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_devs.h | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ kernel/time/alarmtimer.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1117,6 +1117,18 @@ UNUSUAL_DEV(  0x0851, 0x1543, 0x0200, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NOT_LOCKABLE),
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -450,8 +450,10 @@ static enum alarmtimer_restart alarm_han
+ {
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
+-	if (posix_timer_event(ptr, 0) != 0)
+-		ptr->it_overrun++;
++	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
++		if (posix_timer_event(ptr, 0) != 0)
++			ptr->it_overrun++;
++	}
  
-+UNUSUAL_DEV(  0x085a, 0x0026, 0x0100, 0x0133,
-+		"Xircom",
-+		"PortGear USB-SCSI (Mac USB Dock)",
-+		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
-+		US_FL_SCM_MULT_TARG ),
-+
-+UNUSUAL_DEV(  0x085a, 0x0028, 0x0100, 0x0133,
-+		"Xircom",
-+		"PortGear USB to SCSI Converter",
-+		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
-+		US_FL_SCM_MULT_TARG ),
-+
- /* Submitted by Jan De Luyck <lkml@kcore.org> */
- UNUSUAL_DEV(  0x08bd, 0x1100, 0x0000, 0x0000,
- 		"CITIZEN",
-@@ -1944,6 +1956,14 @@ UNUSUAL_DEV(  0x152d, 0x2329, 0x0100, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
- 
-+/* Entrega Technologies U1-SC25 (later Xircom PortGear PGSCSI)
-+ * and Mac USB Dock USB-SCSI */
-+UNUSUAL_DEV(  0x1645, 0x0007, 0x0100, 0x0133,
-+		"Entrega Technologies",
-+		"USB to SCSI Converter",
-+		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
-+		US_FL_SCM_MULT_TARG ),
-+
- /* Reported by Robert Schedel <r.schedel@yahoo.de>
-  * Note: this is a 'super top' device like the above 14cd/6600 device */
- UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x0201,
+ 	/* Re-add periodic timers */
+ 	if (ptr->it.alarm.interval.tv64) {
 
