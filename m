@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaKAWpv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:45:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60261 "EHLO
+	id S1752968AbaKAWpq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:45:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60269 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751736AbaKAWjb (ORCPT
+	by vger.kernel.org with ESMTP id S1751759AbaKAWjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:31 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Oleg Nesterov" <oleg@redhat.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>,
-        "Peter Zijlstra" <peterz@infradead.org>
+CC: akpm@linux-foundation.org, "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Hans de Goede" <hdegoede@redhat.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.899026882@decadent.org.uk>
+Message-ID: <lsq.1414880883.724735935@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 076/102] perf: fix perf bug in fork()
+Subject: [PATCH 3.2 030/102] Input: elantech - fix detection of touchpad
+ on ASUS s301l
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,63 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 6c72e3501d0d62fc064d3680e5234f3463ec5a86 upstream.
+commit 271329b3c798b2102120f5df829071c211ef00ed upstream.
 
-Oleg noticed that a cleanup by Sylvain actually uncovered a bug; by
-calling perf_event_free_task() when failing sched_fork() we will not yet
-have done the memset() on ->perf_event_ctxp[] and will therefore try and
-'free' the inherited contexts, which are still in use by the parent
-process.  This is bad..
+Adjust Elantech signature validation to account fo rnewer models of
+touchpads.
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-tested-by: Màrius Monton <marius.monton@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/events/core.c | 4 +++-
- kernel/fork.c        | 5 +++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/input/mouse/elantech.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7081,8 +7081,10 @@ int perf_event_init_task(struct task_str
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -1130,6 +1130,13 @@ static bool elantech_is_signature_valid(
+ 	if (param[1] == 0)
+ 		return true;
  
- 	for_each_task_context_nr(ctxn) {
- 		ret = perf_event_init_context(child, ctxn);
--		if (ret)
-+		if (ret) {
-+			perf_event_free_task(child);
- 			return ret;
-+		}
- 	}
- 
- 	return 0;
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1221,7 +1221,7 @@ static struct task_struct *copy_process(
- 		goto bad_fork_cleanup_policy;
- 	retval = audit_alloc(p);
- 	if (retval)
--		goto bad_fork_cleanup_policy;
-+		goto bad_fork_cleanup_perf;
- 	/* copy all the process information */
- 	retval = copy_semundo(clone_flags, p);
- 	if (retval)
-@@ -1406,8 +1406,9 @@ bad_fork_cleanup_semundo:
- 	exit_sem(p);
- bad_fork_cleanup_audit:
- 	audit_free(p);
--bad_fork_cleanup_policy:
-+bad_fork_cleanup_perf:
- 	perf_event_free_task(p);
-+bad_fork_cleanup_policy:
- #ifdef CONFIG_NUMA
- 	mpol_put(p->mempolicy);
- bad_fork_cleanup_cgroup:
++	/*
++	 * Some models have a revision higher then 20. Meaning param[2] may
++	 * be 10 or 20, skip the rates check for these.
++	 */
++	if (param[0] == 0x46 && (param[1] & 0xef) == 0x0f && param[2] < 40)
++		return true;
++
+ 	for (i = 0; i < ARRAY_SIZE(rates); i++)
+ 		if (param[2] == rates[i])
+ 			return false;
 
