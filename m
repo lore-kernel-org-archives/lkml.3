@@ -1,65 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760160AbaKAAD1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 20:03:27 -0400
-Received: from smtprelay0229.hostedemail.com ([216.40.44.229]:59968 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753431AbaKAAD0 (ORCPT
+	id S1760223AbaKAAIQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 20:08:16 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:40321 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430AbaKAAIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 20:03:26 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:4321:5007:6261:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bed98_1d97088434e11
-X-Filterd-Recvd-Size: 2000
-Message-ID: <1414800201.13647.9.camel@perches.com>
-Subject: Re: [PATCH v2] x86, boot: add hex output for debugging
-From: Joe Perches <joe@perches.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Junjie Mao <eternal.n08@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Fri, 31 Oct 2014 17:03:21 -0700
-In-Reply-To: <20141031234531.GA12082@thin>
-References: <20141031205819.GA13262@www.outflux.net>
-	 <CAE9FiQVYBwTifYXACeJRBOEtrN6o5kBpA6v0xLqUYS379pH-Mw@mail.gmail.com>
-	 <20141031234531.GA12082@thin>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Oct 2014 20:08:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1414783141-6947-8-git-send-email-adityakali@google.com>
+References: <1414783141-6947-1-git-send-email-adityakali@google.com> <1414783141-6947-8-git-send-email-adityakali@google.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 31 Oct 2014 17:07:51 -0700
+Message-ID: <CALCETrXTaZ3SJ_t-gnbc93BVZXg-912NqO78kFd0Tpi-5-dZoQ@mail.gmail.com>
+Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init cgroupns
+To: Aditya Kali <adityakali@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Rohit Jnagal <jnagal@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-31 at 16:45 -0700, Josh Triplett wrote:
-> I don't think we need the full generality of printf in the decompression
-> stub.  I prefer Kees' patch, though I'd still like to see __puthex made
-> conditional.
+On Fri, Oct 31, 2014 at 12:19 PM, Aditya Kali <adityakali@google.com> wrote:
+> This patch enables cgroup mounting inside userns when a process
+> as appropriate privileges. The cgroup filesystem mounted is
+> rooted at the cgroupns-root. Thus, in a container-setup, only
+> the hierarchy under the cgroupns-root is exposed inside the container.
+> This allows container management tools to run inside the containers
+> without depending on any global state.
+> In order to support this, a new kernfs api is added to lookup the
+> dentry for the cgroupns-root.
+>
+> Signed-off-by: Aditya Kali <adityakali@google.com>
+> ---
+>  fs/kernfs/mount.c      | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/kernfs.h |  2 ++
+>  kernel/cgroup.c        | 47 +++++++++++++++++++++++++++++++++++++++++++++--
+>  3 files changed, 95 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+> index f973ae9..e334f45 100644
+> --- a/fs/kernfs/mount.c
+> +++ b/fs/kernfs/mount.c
+> @@ -62,6 +62,54 @@ struct kernfs_root *kernfs_root_from_sb(struct super_block *sb)
+>         return NULL;
+>  }
+>
+> +/**
+> + * kernfs_make_root - create new root dentry for the given kernfs_node.
+> + * @sb: the kernfs super_block
+> + * @kn: kernfs_node for which a dentry is needed
+> + *
+> + * This can used used by callers which want to mount only a part of the kernfs
+> + * as root of the filesystem.
+> + */
+> +struct dentry *kernfs_obtain_root(struct super_block *sb,
+> +                                 struct kernfs_node *kn)
+> +{
 
-Maybe use a statement expression macro instead?
-Something like this could emit the right number of bits for any type
+I can't usefully review this, but kernfs_make_root and
+kernfs_obtain_root aren't the same string...
 
-#define __puthex(val)							\
-({									\
-	typeof(val) value = val;					\
-	char alpha[2] = {};						\
-	int bits;							\
-									\
-	__putstr("0x");							\
-	for (bits = sizeof(value) * 8 - 4; bits >= 0; bits -= 4) {	\
-		int digit = (value >> bits) & 0xf;			\
-									\
-		if (digit < 10)						\
-			alpha[0] = '0' + digit;				\
-		else							\
-			alpha[0] = 'a' + (digit - 10);			\
-									\
-		__putstr(alpha);					\
-	}								\
-})
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 7e5d597..250aaec 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1302,6 +1302,13 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+>
+>         memset(opts, 0, sizeof(*opts));
+>
+> +       /* Implicitly add CGRP_ROOT_SANE_BEHAVIOR if inside a non-init cgroup
+> +        * namespace.
+> +        */
+> +       if (current->nsproxy->cgroup_ns != &init_cgroup_ns) {
+> +               opts->flags |= CGRP_ROOT_SANE_BEHAVIOR;
+> +       }
+> +
 
+I don't like this implicit stuff.  Can you just return -EINVAL if sane
+behavior isn't requested?
 
+>         while ((token = strsep(&o, ",")) != NULL) {
+>                 nr_opts++;
+>
+> @@ -1391,7 +1398,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+>
+>         if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
+>                 pr_warn("sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
+> -               if (nr_opts != 1) {
+> +               if (nr_opts > 1) {
+>                         pr_err("sane_behavior: no other mount options allowed\n");
+>                         return -EINVAL;
+
+This looks wrong.  But, if you make the change above, then it'll be right.
+
+> @@ -1685,6 +1701,14 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+>         int ret;
+>         int i;
+>         bool new_sb;
+> +       struct cgroup_namespace *ns =
+> +               get_cgroup_ns(current->nsproxy->cgroup_ns);
+> +
+> +       /* Check if the caller has permission to mount. */
+> +       if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN)) {
+> +               put_cgroup_ns(ns);
+> +               return ERR_PTR(-EPERM);
+> +       }
+
+Why is this necessary?
+
+> @@ -1862,6 +1904,7 @@ static struct file_system_type cgroup_fs_type = {
+>         .name = "cgroup",
+>         .mount = cgroup_mount,
+>         .kill_sb = cgroup_kill_sb,
+> +       .fs_flags = FS_USERNS_MOUNT,
+
+Aargh, another one!  Eric, can you either ack or nack my patch?
+Because if my patch goes in, then this line may need to change.  Or
+not, but if a stable release with cgroupfs and without my patch
+happens, then we'll have an ABI break.
+
+--Andy
