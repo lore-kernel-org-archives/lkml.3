@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176AbaKAXBI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:01:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60074 "EHLO
+	id S1754147AbaKAXBD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:01:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60010 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751487AbaKAWj0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751043AbaKAWj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 18:39:26 -0400
+	Sat, 1 Nov 2014 18:39:27 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mel Gorman" <mgorman@suse.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Rik van Riel" <riel@redhat.com>
+CC: akpm@linux-foundation.org, "Paolo Bonzini" <pbonzini@redhat.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.129046125@decadent.org.uk>
+Message-ID: <lsq.1414880883.140975061@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 075/102] mm: migrate: Close race between migration
- completion and mprotect
+Subject: [PATCH 3.2 092/102] KVM: x86: use new CS.RPL as CPL during task
+ switch
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,43 +31,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit d3cb8bf6081b8b7a2dabb1264fe968fd870fa595 upstream.
+commit 2356aaeb2f58f491679dc0c38bc3f6dbe54e7ded upstream.
 
-A migration entry is marked as write if pte_write was true at the time the
-entry was created. The VMA protections are not double checked when migration
-entries are being removed as mprotect marks write-migration-entries as
-read. It means that potentially we take a spurious fault to mark PTEs write
-again but it's straight-forward. However, there is a race between write
-migrations being marked read and migrations finishing. This potentially
-allows a PTE to be write that should have been read. Close this race by
-double checking the VMA permissions using maybe_mkwrite when migration
-completes.
+During task switch, all of CS.DPL, CS.RPL, SS.DPL must match (in addition
+to all the other requirements) and will be the new CPL.  So far this
+worked by carefully setting the CS selector and flag before doing the
+task switch; setting CS.selector will already change the CPL.
 
-[torvalds@linux-foundation.org: use maybe_mkwrite]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+However, this will not work once we get the CPL from SS.DPL, because
+then you will have to set the full segment descriptor cache to change
+the CPL.  ctxt->ops->cpl(ctxt) will then return the old CPL during the
+task switch, and the check that SS.DPL == CPL will fail.
+
+Temporarily assume that the CPL comes from CS.RPL during task switch
+to a protected-mode task.  This is the same approach used in QEMU's
+emulation code, which (until version 2.0) manually tracks the CPL.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - load_state_from_tss32() does not support VM86 mode]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/migrate.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/kvm/emulate.c | 60 +++++++++++++++++++++++++++-----------------------
+ 1 file changed, 33 insertions(+), 27 deletions(-)
 
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -141,8 +141,11 @@ static int remove_migration_pte(struct p
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1233,11 +1233,11 @@ static int write_segment_descriptor(stru
+ }
  
- 	get_page(new);
- 	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
+ /* Does not support long mode */
+-static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+-				   u16 selector, int seg)
++static int __load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
++				     u16 selector, int seg, u8 cpl)
+ {
+ 	struct desc_struct seg_desc;
+-	u8 dpl, rpl, cpl;
++	u8 dpl, rpl;
+ 	unsigned err_vec = GP_VECTOR;
+ 	u32 err_code = 0;
+ 	bool null_selector = !(selector & ~0x3); /* 0000-0003 are null */
+@@ -1286,7 +1286,6 @@ static int load_segment_descriptor(struc
+ 
+ 	rpl = selector & 3;
+ 	dpl = seg_desc.dpl;
+-	cpl = ctxt->ops->cpl(ctxt);
+ 
+ 	switch (seg) {
+ 	case VCPU_SREG_SS:
+@@ -1349,6 +1348,13 @@ exception:
+ 	return X86EMUL_PROPAGATE_FAULT;
+ }
+ 
++static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
++				   u16 selector, int seg)
++{
++	u8 cpl = ctxt->ops->cpl(ctxt);
++	return __load_segment_descriptor(ctxt, selector, seg, cpl);
++}
 +
-+	/* Recheck VMA as permissions can change since migration started  */
- 	if (is_write_migration_entry(entry))
--		pte = pte_mkwrite(pte);
-+		pte = maybe_mkwrite(pte, vma);
+ static void write_register_operand(struct operand *op)
+ {
+ 	/* The 4-byte case *is* correct: in 64-bit mode we zero-extend. */
+@@ -2213,6 +2219,7 @@ static int load_state_from_tss16(struct
+ 				 struct tss_segment_16 *tss)
+ {
+ 	int ret;
++	u8 cpl;
+ 
+ 	ctxt->_eip = tss->ip;
+ 	ctxt->eflags = tss->flag | 2;
+@@ -2235,23 +2242,25 @@ static int load_state_from_tss16(struct
+ 	set_segment_selector(ctxt, tss->ss, VCPU_SREG_SS);
+ 	set_segment_selector(ctxt, tss->ds, VCPU_SREG_DS);
+ 
++	cpl = tss->cs & 3;
 +
- #ifdef CONFIG_HUGETLB_PAGE
- 	if (PageHuge(new))
- 		pte = pte_mkhuge(pte);
+ 	/*
+ 	 * Now load segment descriptors. If fault happenes at this stage
+ 	 * it is handled in a context of new task
+ 	 */
+-	ret = load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR);
++	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES);
++	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS);
++	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS);
++	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS);
++	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+ 
+@@ -2330,6 +2339,7 @@ static int load_state_from_tss32(struct
+ 				 struct tss_segment_32 *tss)
+ {
+ 	int ret;
++	u8 cpl;
+ 
+ 	if (ctxt->ops->set_cr(ctxt, 3, tss->cr3))
+ 		return emulate_gp(ctxt, 0);
+@@ -2346,7 +2356,8 @@ static int load_state_from_tss32(struct
+ 
+ 	/*
+ 	 * SDM says that segment selectors are loaded before segment
+-	 * descriptors
++	 * descriptors.  This is important because CPL checks will
++	 * use CS.RPL.
+ 	 */
+ 	set_segment_selector(ctxt, tss->ldt_selector, VCPU_SREG_LDTR);
+ 	set_segment_selector(ctxt, tss->es, VCPU_SREG_ES);
+@@ -2356,29 +2367,31 @@ static int load_state_from_tss32(struct
+ 	set_segment_selector(ctxt, tss->fs, VCPU_SREG_FS);
+ 	set_segment_selector(ctxt, tss->gs, VCPU_SREG_GS);
+ 
++	cpl = tss->cs & 3;
++
+ 	/*
+ 	 * Now load segment descriptors. If fault happenes at this stage
+ 	 * it is handled in a context of new task
+ 	 */
+-	ret = load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR);
++	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES);
++	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS);
++	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS);
++	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS);
++	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS);
++	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS);
++	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+ 
 
