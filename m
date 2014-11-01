@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaKAXDy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:03:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60027 "EHLO
+	id S1754416AbaKAXDu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:03:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60037 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751391AbaKAWj0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751427AbaKAWj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:26 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Hildenbrand" <dahi@linux.vnet.ibm.com>,
-        "Cornelia Huck" <cornelia.huck@de.ibm.com>,
-        "Christian Borntraeger" <borntraeger@de.ibm.com>
+CC: akpm@linux-foundation.org, "Dave Chinner" <david@fromorbit.com>,
+        "Brian Foster" <bfoster@redhat.com>,
+        "Dave Chinner" <dchinner@redhat.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.728071678@decadent.org.uk>
+Message-ID: <lsq.1414880883.633041348@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 006/102] KVM: s390: Fix user triggerable bug in dead code
+Subject: [PATCH 3.2 019/102] xfs: don't dirty buffers beyond EOF
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,45 +32,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 614a80e474b227cace52fd6e3c790554db8a396e upstream.
+commit 22e757a49cf010703fcb9c9b4ef793248c39b0c2 upstream.
 
-In the early days, we had some special handling for the
-KVM_EXIT_S390_SIEIC exit, but this was gone in 2009 with commit
-d7b0b5eb3000 (KVM: s390: Make psw available on all exits, not
-just a subset).
+generic/263 is failing fsx at this point with a page spanning
+EOF that cannot be invalidated. The operations are:
 
-Now this switch statement is just a sanity check for userspace
-not messing with the kvm_run structure. Unfortunately, this
-allows userspace to trigger a kernel BUG. Let's just remove
-this switch statement.
+1190 mapwrite   0x52c00 thru    0x5e569 (0xb96a bytes)
+1191 mapread    0x5c000 thru    0x5d636 (0x1637 bytes)
+1192 write      0x5b600 thru    0x771ff (0x1bc00 bytes)
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+where 1190 extents EOF from 0x54000 to 0x5e569. When the direct IO
+write attempts to invalidate the cached page over this range, it
+fails with -EBUSY and so any attempt to do page invalidation fails.
+
+The real question is this: Why can't that page be invalidated after
+it has been written to disk and cleaned?
+
+Well, there's data on the first two buffers in the page (1k block
+size, 4k page), but the third buffer on the page (i.e. beyond EOF)
+is failing drop_buffers because it's bh->b_state == 0x3, which is
+BH_Uptodate | BH_Dirty.  IOWs, there's dirty buffers beyond EOF. Say
+what?
+
+OK, set_buffer_dirty() is called on all buffers from
+__set_page_buffers_dirty(), regardless of whether the buffer is
+beyond EOF or not, which means that when we get to ->writepage,
+we have buffers marked dirty beyond EOF that we need to clean.
+So, we need to implement our own .set_page_dirty method that
+doesn't dirty buffers beyond EOF.
+
+This is messy because the buffer code is not meant to be shared
+and it has interesting locking issues on the buffer dirty bits.
+So just copy and paste it and then modify it to suit what we need.
+
+Note: the solutions the other filesystems and generic block code use
+of marking the buffers clean in ->writepage does not work for XFS.
+It still leaves dirty buffers beyond EOF and invalidations still
+fail. Hence rather than play whack-a-mole, this patch simply
+prevents those buffers from being dirtied in the first place.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/kvm/kvm-s390.c | 13 -------------
- 1 file changed, 13 deletions(-)
+ fs/xfs/xfs_aops.c | 61 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
 
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -516,16 +516,6 @@ rerun_vcpu:
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -1448,11 +1448,72 @@ xfs_vm_readpages(
+ 	return mpage_readpages(mapping, pages, nr_pages, xfs_get_blocks);
+ }
  
- 	BUG_ON(vcpu->kvm->arch.float_int.local_int[vcpu->vcpu_id] == NULL);
- 
--	switch (kvm_run->exit_reason) {
--	case KVM_EXIT_S390_SIEIC:
--	case KVM_EXIT_UNKNOWN:
--	case KVM_EXIT_INTR:
--	case KVM_EXIT_S390_RESET:
--		break;
--	default:
--		BUG();
--	}
--
- 	vcpu->arch.sie_block->gpsw.mask = kvm_run->psw_mask;
- 	vcpu->arch.sie_block->gpsw.addr = kvm_run->psw_addr;
- 
++/*
++ * This is basically a copy of __set_page_dirty_buffers() with one
++ * small tweak: buffers beyond EOF do not get marked dirty. If we mark them
++ * dirty, we'll never be able to clean them because we don't write buffers
++ * beyond EOF, and that means we can't invalidate pages that span EOF
++ * that have been marked dirty. Further, the dirty state can leak into
++ * the file interior if the file is extended, resulting in all sorts of
++ * bad things happening as the state does not match the underlying data.
++ *
++ * XXX: this really indicates that bufferheads in XFS need to die. Warts like
++ * this only exist because of bufferheads and how the generic code manages them.
++ */
++STATIC int
++xfs_vm_set_page_dirty(
++	struct page		*page)
++{
++	struct address_space	*mapping = page->mapping;
++	struct inode		*inode = mapping->host;
++	loff_t			end_offset;
++	loff_t			offset;
++	int			newly_dirty;
++
++	if (unlikely(!mapping))
++		return !TestSetPageDirty(page);
++
++	end_offset = i_size_read(inode);
++	offset = page_offset(page);
++
++	spin_lock(&mapping->private_lock);
++	if (page_has_buffers(page)) {
++		struct buffer_head *head = page_buffers(page);
++		struct buffer_head *bh = head;
++
++		do {
++			if (offset < end_offset)
++				set_buffer_dirty(bh);
++			bh = bh->b_this_page;
++			offset += 1 << inode->i_blkbits;
++		} while (bh != head);
++	}
++	newly_dirty = !TestSetPageDirty(page);
++	spin_unlock(&mapping->private_lock);
++
++	if (newly_dirty) {
++		/* sigh - __set_page_dirty() is static, so copy it here, too */
++		unsigned long flags;
++
++		spin_lock_irqsave(&mapping->tree_lock, flags);
++		if (page->mapping) {	/* Race with truncate? */
++			WARN_ON_ONCE(!PageUptodate(page));
++			account_page_dirtied(page, mapping);
++			radix_tree_tag_set(&mapping->page_tree,
++					page_index(page), PAGECACHE_TAG_DIRTY);
++		}
++		spin_unlock_irqrestore(&mapping->tree_lock, flags);
++		__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
++	}
++	return newly_dirty;
++}
++
+ const struct address_space_operations xfs_address_space_operations = {
+ 	.readpage		= xfs_vm_readpage,
+ 	.readpages		= xfs_vm_readpages,
+ 	.writepage		= xfs_vm_writepage,
+ 	.writepages		= xfs_vm_writepages,
++	.set_page_dirty		= xfs_vm_set_page_dirty,
+ 	.releasepage		= xfs_vm_releasepage,
+ 	.invalidatepage		= xfs_vm_invalidatepage,
+ 	.write_begin		= xfs_vm_write_begin,
 
