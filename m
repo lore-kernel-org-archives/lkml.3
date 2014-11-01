@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaKAWkq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:40:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60348 "EHLO
+	id S1752136AbaKAWkm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:40:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60372 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751855AbaKAWjf (ORCPT
+	by vger.kernel.org with ESMTP id S1751860AbaKAWjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:35 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Keith Busch" <keith.busch@intel.com>,
-        "Jens Axboe" <axboe@fb.com>
+CC: akpm@linux-foundation.org, "David Vrabel" <david.vrabel@citrix.com>,
+        "Ross Lagerwall" <ross.lagerwall@citrix.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.370330013@decadent.org.uk>
+Message-ID: <lsq.1414880883.405113527@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 023/102] block: Fix dev_t minor allocation lifetime
+Subject: [PATCH 3.2 021/102] xen/manage: Always freeze/thaw processes when
+ suspend/resuming
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,116 +32,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keith Busch <keith.busch@intel.com>
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
 
-commit 2da78092dda13f1efd26edbbf99a567776913750 upstream.
+commit 61a734d305e16944b42730ef582a7171dc733321 upstream.
 
-Releases the dev_t minor when all references are closed to prevent
-another device from acquiring the same major/minor.
+Always freeze processes when suspending and thaw processes when resuming
+to prevent a race noticeable with HVM guests.
 
-Since the partition's release may be invoked from call_rcu's soft-irq
-context, the ext_dev_idr's mutex had to be replaced with a spinlock so
-as not so sleep.
+This prevents a deadlock where the khubd kthread (which is designed to
+be freezable) acquires a usb device lock and then tries to allocate
+memory which requires the disk which hasn't been resumed yet.
+Meanwhile, the xenwatch thread deadlocks waiting for the usb device
+lock.
 
-Signed-off-by: Keith Busch <keith.busch@intel.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
-[bwh: Backported to 3.2:
- - Adjust filename
- - idr insertion API is different, and blk_alloc_devt() is preallocating
-   a node in a different way]
+Freezing processes fixes this because the khubd thread is only thawed
+after the xenwatch thread finishes resuming all the devices.
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -28,10 +28,10 @@ struct kobject *block_depr;
- /* for extended dynamic devt allocation, currently only one major is used */
- #define NR_EXT_DEVT		(1 << MINORBITS)
+ drivers/xen/manage.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -108,16 +108,11 @@ static void do_suspend(void)
  
--/* For extended devt allocation.  ext_devt_mutex prevents look up
-+/* For extended devt allocation.  ext_devt_lock prevents look up
-  * results from going away underneath its user.
-  */
--static DEFINE_MUTEX(ext_devt_mutex);
-+static DEFINE_SPINLOCK(ext_devt_lock);
- static DEFINE_IDR(ext_devt_idr);
+ 	shutting_down = SHUTDOWN_SUSPEND;
  
- static struct device_type disk_type;
-@@ -421,13 +421,13 @@ int blk_alloc_devt(struct hd_struct *par
- 	do {
- 		if (!idr_pre_get(&ext_devt_idr, GFP_KERNEL))
- 			return -ENOMEM;
--		mutex_lock(&ext_devt_mutex);
-+		spin_lock(&ext_devt_lock);
- 		rc = idr_get_new(&ext_devt_idr, part, &idx);
- 		if (!rc && idx >= NR_EXT_DEVT) {
- 			idr_remove(&ext_devt_idr, idx);
- 			rc = -EBUSY;
- 		}
--		mutex_unlock(&ext_devt_mutex);
-+		spin_unlock(&ext_devt_lock);
- 	} while (rc == -EAGAIN);
- 
- 	if (rc)
-@@ -454,9 +454,9 @@ void blk_free_devt(dev_t devt)
- 		return;
- 
- 	if (MAJOR(devt) == BLOCK_EXT_MAJOR) {
--		mutex_lock(&ext_devt_mutex);
-+		spin_lock(&ext_devt_lock);
- 		idr_remove(&ext_devt_idr, blk_mangle_minor(MINOR(devt)));
--		mutex_unlock(&ext_devt_mutex);
-+		spin_unlock(&ext_devt_lock);
+-#ifdef CONFIG_PREEMPT
+-	/* If the kernel is preemptible, we need to freeze all the processes
+-	   to prevent them from being in the middle of a pagetable update
+-	   during suspend. */
+ 	err = freeze_processes();
+ 	if (err) {
+ 		printk(KERN_ERR "xen suspend: freeze failed %d\n", err);
+ 		goto out;
  	}
+-#endif
+ 
+ 	err = dpm_suspend_start(PMSG_FREEZE);
+ 	if (err) {
+@@ -172,10 +167,8 @@ out_resume:
+ 	clock_was_set();
+ 
+ out_thaw:
+-#ifdef CONFIG_PREEMPT
+ 	thaw_processes();
+ out:
+-#endif
+ 	shutting_down = SHUTDOWN_INVALID;
  }
- 
-@@ -663,7 +663,6 @@ void del_gendisk(struct gendisk *disk)
- 	if (!sysfs_deprecated)
- 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
- 	device_del(disk_to_dev(disk));
--	blk_free_devt(disk_to_dev(disk)->devt);
- }
- EXPORT_SYMBOL(del_gendisk);
- 
-@@ -688,13 +687,13 @@ struct gendisk *get_gendisk(dev_t devt,
- 	} else {
- 		struct hd_struct *part;
- 
--		mutex_lock(&ext_devt_mutex);
-+		spin_lock(&ext_devt_lock);
- 		part = idr_find(&ext_devt_idr, blk_mangle_minor(MINOR(devt)));
- 		if (part && get_disk(part_to_disk(part))) {
- 			*partno = part->partno;
- 			disk = part_to_disk(part);
- 		}
--		mutex_unlock(&ext_devt_mutex);
-+		spin_unlock(&ext_devt_lock);
- 	}
- 
- 	return disk;
-@@ -1102,6 +1101,7 @@ static void disk_release(struct device *
- {
- 	struct gendisk *disk = dev_to_disk(dev);
- 
-+	blk_free_devt(dev->devt);
- 	disk_release_events(disk);
- 	kfree(disk->random);
- 	disk_replace_part_tbl(disk, NULL);
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -361,6 +361,7 @@ static const struct attribute_group *par
- static void part_release(struct device *dev)
- {
- 	struct hd_struct *p = dev_to_part(dev);
-+	blk_free_devt(dev->devt);
- 	free_part_stats(p);
- 	free_part_info(p);
- 	kfree(p);
-@@ -403,7 +404,6 @@ void delete_partition(struct gendisk *di
- 	rcu_assign_pointer(ptbl->last_lookup, NULL);
- 	kobject_put(part->holder_dir);
- 	device_del(part_to_dev(part));
--	blk_free_devt(part_devt(part));
- 
- 	hd_struct_put(part);
- }
+ #endif	/* CONFIG_HIBERNATE_CALLBACKS */
 
