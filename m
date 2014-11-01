@@ -1,113 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaKAJdu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 05:33:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54310 "EHLO mga09.intel.com"
+	id S1753563AbaKAKBH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 06:01:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52832 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388AbaKAJdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 05:33:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="600185613"
-Date: Sat, 1 Nov 2014 11:33:43 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v5 0/7] TPM 2.0 support
-Message-ID: <20141101093343.GA28272@intel.com>
-References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1751485AbaKAKBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Nov 2014 06:01:05 -0400
+Date: Sat, 1 Nov 2014 11:01:00 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: x86-ml <x86@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH for x86/urgent] x86, microcode, AMD: Fix early ucode loading
+ on 32-bit
+Message-ID: <20141101100100.GA4462@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I pushed couples of fixed in addition to these changes to:
+Hi guys,
 
-https://github.com/jsakkine/linux-tpm2/tree/tpm2-v5
+please queue this for the next batch to Linus.
 
-There was problem running self-test because the FIFO module that I have
-seems to give me TPM2_RC_TESTING when I try to start the self-test.
+Thanks.
 
-Additionally. I was able to test force parameter for tpm_tis. Resources
-are cleaned up properly at least for TPM2 devices.
+---
+From: Borislav Petkov <bp@suse.de>
+Date: Fri, 31 Oct 2014 23:23:43 +0100
+Subject: [PATCH] x86, microcode, AMD: Fix early ucode loading on 32-bit
 
-/Jarkko
+Konrad triggered the following splat below in a 32-bit guest on an AMD
+box. As it turns out, in save_microcode_in_initrd_amd() we're using the
+*physical* address of the container *after* we have enabled paging and
+thus we #PF in load_microcode_amd() when trying to access the microcode
+container in the ramdisk range.
 
-On Sat, Nov 01, 2014 at 11:01:28AM +0200, Jarkko Sakkinen wrote:
-> This patch set enables TPM2 protocol and provides drivers for FIFO and
-> CRB interfaces.
-> 
-> Major changes since v1:
-> 
-> - Improved struct tpm_chip life-cycle by taking advantage of devres
->   API.
-> - Refined sysfs attributes as simple key-values thereby not repeating
->   mistakes in TPM1 sysfs attributes.
-> - Documented functions in tpm-chip.c and tpm2-cmd.c.
-> - Documented sysfs attributes.
-> 
-> Major changes since v2:
-> 
-> - Lots of fixes in calling order in device drivers (thanks to Jason
->   Gunthorpe for pointing these out!).
-> - Attach sysfs attributes to the misc device because it represents
->   TPM device to the user space.
-> 
-> Major changes since v3:
-> 
-> - Disable sysfs attibutes for TPM 2.0 for until we can sort out the 
->   best approach for them.
-> - Fixed all the style issues found with checkpatch.pl.
-> 
-> Major changes since v4:
-> 
-> - missing EXPORT_SYMBOL_GPL()
-> - own class for TPM devices used for TPM 2.0 devices and onwards.
-> 
-> Jarkko Sakkinen (6):
->   tpm: merge duplicate transmit_cmd() functions
->   tpm: two-phase chip management functions
->   tpm: fix multiple race conditions in tpm_ppi.c
->   tpm: TPM 2.0 baseline support
->   tpm: TPM 2.0 CRB Interface
->   tpm: create TPM 2.0 devices using own device class
-> 
-> Will Arthur (1):
->   tpm: TPM 2.0 FIFO Interface
-> 
->  drivers/char/tpm/Kconfig            |   9 +
->  drivers/char/tpm/Makefile           |   3 +-
->  drivers/char/tpm/tpm-chip.c         | 209 +++++++++++++
->  drivers/char/tpm/tpm-dev.c          |  77 ++++-
->  drivers/char/tpm/tpm-interface.c    | 256 +++++-----------
->  drivers/char/tpm/tpm-sysfs.c        |  29 +-
->  drivers/char/tpm/tpm.h              | 113 ++++++-
->  drivers/char/tpm/tpm2-cmd.c         | 566 ++++++++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm_atmel.c        |  26 +-
->  drivers/char/tpm/tpm_crb.c          | 334 +++++++++++++++++++++
->  drivers/char/tpm/tpm_i2c_atmel.c    |  49 ++--
->  drivers/char/tpm/tpm_i2c_infineon.c |  43 +--
->  drivers/char/tpm/tpm_i2c_nuvoton.c  |  66 ++---
->  drivers/char/tpm/tpm_i2c_stm_st33.c |  44 ++-
->  drivers/char/tpm/tpm_ibmvtpm.c      |  17 +-
->  drivers/char/tpm/tpm_infineon.c     |  51 ++--
->  drivers/char/tpm/tpm_nsc.c          |  34 ++-
->  drivers/char/tpm/tpm_ppi.c          | 136 +++++----
->  drivers/char/tpm/tpm_tis.c          | 177 ++++++-----
->  drivers/char/tpm/xen-tpmfront.c     |  14 +-
->  20 files changed, 1711 insertions(+), 542 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm-chip.c
->  create mode 100644 drivers/char/tpm/tpm2-cmd.c
->  create mode 100644 drivers/char/tpm/tpm_crb.c
-> 
-> -- 
-> 2.1.0
-> 
+Because the ramdisk is exactly there:
+
+[    0.000000] RAMDISK: [mem 0x35e04000-0x36ef9fff]
+
+and we fault at 0x35e04304.
+
+And since this guest doesn't relocate the ramdisk, we don't do the
+computation which will give us the correct virtual address and we end up
+with the PA.
+
+So, we should actually be using virtual addresses on 32-bit too by the
+time we're freeing the initrd. Do that then!
+
+Unpacking initramfs...
+BUG: unable to handle kernel paging request at 35d4e304
+IP: [<c042e905>] load_microcode_amd+0x25/0x4a0
+*pde = 00000000
+Oops: 0000 [#1] SMP
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.1-302.fc21.i686 #1
+Hardware name: Xen HVM domU, BIOS 4.4.1 10/01/2014
+task: f5098000 ti: f50d0000 task.ti: f50d0000
+EIP: 0060:[<c042e905>] EFLAGS: 00010246 CPU: 0
+EIP is at load_microcode_amd+0x25/0x4a0
+EAX: 00000000 EBX: f6e9ec4c ECX: 00001ec4 EDX: 00000000
+ESI: f5d4e000 EDI: 35d4e2fc EBP: f50d1ed0 ESP: f50d1e94
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 35d4e304 CR3: 00e33000 CR4: 000406d0
+Stack:
+ 00000000 00000000 f50d1ebc f50d1ec4 f5d4e000 c0d7735a f50d1ed0 15a3d17f
+ f50d1ec4 00600f20 00001ec4 bfb83203 f6e9ec4c f5d4e000 c0d7735a f50d1ed8
+ c0d80861 f50d1ee0 c0d80429 f50d1ef0 c0d889a9 f5d4e000 c0000000 f50d1f04
+Call Trace:
+? unpack_to_rootfs
+? unpack_to_rootfs
+save_microcode_in_initrd_amd
+save_microcode_in_initrd
+free_initrd_mem
+populate_rootfs
+? unpack_to_rootfs
+do_one_initcall
+? unpack_to_rootfs
+? repair_env_string
+? proc_mkdir
+kernel_init_freeable
+kernel_init
+ret_from_kernel_thread
+? rest_init
+
+Reported-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1158204
+Fixes: 75a1ba5b2c52 ("x86, microcode, AMD: Unify valid container checks")
+Cc: <stable@vger.kernel.org> # v3.14+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/microcode/amd_early.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
+index 7aa1acc79789..8b75f7050129 100644
+--- a/arch/x86/kernel/cpu/microcode/amd_early.c
++++ b/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -348,6 +348,7 @@ int __init save_microcode_in_initrd_amd(void)
+ {
+ 	unsigned long cont;
+ 	enum ucode_state ret;
++	u8 *cont_va;
+ 	u32 eax;
+ 
+ 	if (!container)
+@@ -355,13 +356,15 @@ int __init save_microcode_in_initrd_amd(void)
+ 
+ #ifdef CONFIG_X86_32
+ 	get_bsp_sig();
+-	cont = (unsigned long)container;
++	cont	= (unsigned long)container;
++	cont_va = __va(container);
+ #else
+ 	/*
+ 	 * We need the physical address of the container for both bitness since
+ 	 * boot_params.hdr.ramdisk_image is a physical address.
+ 	 */
+-	cont = __pa(container);
++	cont    = __pa(container);
++	cont_va = container;
+ #endif
+ 
+ 	/*
+@@ -372,6 +375,8 @@ int __init save_microcode_in_initrd_amd(void)
+ 	if (relocated_ramdisk)
+ 		container = (u8 *)(__va(relocated_ramdisk) +
+ 			     (cont - boot_params.hdr.ramdisk_image));
++	else
++		container = cont_va;
+ 
+ 	if (ucode_new_rev)
+ 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
+-- 
+2.0.0
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
