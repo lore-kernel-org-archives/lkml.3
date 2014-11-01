@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760348AbaKAUUY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 16:20:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39856 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758762AbaKAUUW (ORCPT
+	id S1760460AbaKAUXz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 16:23:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47490 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758825AbaKAUXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 16:20:22 -0400
-Date: Sat, 1 Nov 2014 13:19:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PULL] Staging driver fixes for 3.18-rc3
-Message-ID: <20141101201910.GA3958@kroah.com>
+	Sat, 1 Nov 2014 16:23:54 -0400
+Date: Sat, 1 Nov 2014 21:23:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Custer <jcuster@sgi.com>
+cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, "H . Peter Anvin" <hpa@zytor.com>,
+        Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH] x86: UV BAU Increase maximum CPUs per socket/hub
+In-Reply-To: <1414792180-102802-1-git-send-email-jcuster@sgi.com>
+Message-ID: <alpine.DEB.2.11.1411012121350.5308@nanos>
+References: <1414792180-102802-1-git-send-email-jcuster@sgi.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+On Fri, 31 Oct 2014, James Custer wrote:
 
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+> We have encountered hardware with 18 cores/socket that gives 36 CPUs/socket
+> with hyperthreading enabled. This exceeds the current MAX_CPUS_PER_SOCKET
+> causing a failure in get_cpu_topology. Increase MAX_CPUS_PER_SOCKET to 64
+> and MAX_CPUS_PER_UVHUB to 128.
+> 
+> Additionally, this exposed another bug. When get_cpu_topology fails, we
+> need to make sure that we do not use bau_control->statp (e.g. when a
+> user reads /proc/sgi_uv/ptc_statistics causing ptc_seq_show to be
+> invoked). In uv_bau_init we call set_bau_off() when
+> init_per_cpu()->get_cpu_topology() fails -- therefore, to avoid
+> referencing a NULL pointer we add code that detects when the bau is off
+> and print out the bau is disabled.
 
-are available in the git repository at:
+Can you please split this in two patches. One fixing the ptc_seq_show
+bug and the other increasing the constants. 
+ 
+If someone looks for a fix for the ptc_seq_show wreckage he definitly
+is not going to look at a patch which increases the number of cpus per
+socket.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.18-rc3
+Thanks,
 
-for you to fetch changes up to 238b5ad855924919e5b98d0c772d9dc78795639b:
-
-  staging: comedi: fix memory leak / bad pointer freeing for chanlist (2014-10-29 16:18:31 +0800)
-
-----------------------------------------------------------------
-Staging fixes for 3.18-rc3
-
-Here are some staging driver fixes for 3.18-rc3.  Mostly iio and comedi
-driver fixes for issues reported by people.
-
-All of these have been in linux-next for a while with no reported issues.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Chen Gang (1):
-      drivers/staging/comedi/Kconfig: Let COMEDI_II_PCI20KC depend on HAS_IOMEM
-
-Fabio Estevam (1):
-      iio: adc: mxs-lradc: Disable the clock on probe failure
-
-Greg Kroah-Hartman (1):
-      Merge tag 'iio-fixes-for-3.18a' of git://git.kernel.org/.../jic23/iio into staging-linus
-
-Ian Abbott (4):
-      staging: comedi: (regression) channel list must be set for COMEDI_CMD ioctl
-      staging: comedi: widen subdevice number argument in ioctl handlers
-      staging: comedi: Kconfig: fix config COMEDI_ADDI_APCI_3120 dependants
-      staging: comedi: fix memory leak / bad pointer freeing for chanlist
-
-Jes Sorensen (1):
-      staging: rtl8723au: Fix alignment of mac_addr for ether_addr_copy() usage
-
-Lars-Peter Clausen (2):
-      staging:iio:ad5933: Fix NULL pointer deref when enabling buffer
-      staging:iio:ad5933: Drop "raw" from channel names
-
-Robin van der Gracht (1):
-      iio: st_sensors: Fix buffer copy
-
- drivers/iio/common/st_sensors/st_sensors_buffer.c |  2 +-
- drivers/staging/comedi/Kconfig                    |  2 +-
- drivers/staging/comedi/comedi_fops.c              | 26 ++++++++++++-----------
- drivers/staging/iio/adc/mxs-lradc.c               | 12 +++++++----
- drivers/staging/iio/impedance-analyzer/ad5933.c   | 15 ++++++-------
- drivers/staging/rtl8723au/include/rtw_eeprom.h    |  2 +-
- 6 files changed, 31 insertions(+), 28 deletions(-)
+	tglx
