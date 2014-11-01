@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759541AbaKACsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 22:48:16 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35046 "EHLO
+	id S1760078AbaKACt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 22:49:59 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:55049 "EHLO
 	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758967AbaKACsH (ORCPT
+	with ESMTP id S1751906AbaKACt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 22:48:07 -0400
-From: Chen Weixiang <weixiangchen@gmail.com>
-X-Google-Original-From: Chen Weixiang <weixiang.chen@gmail.com>
-To: Marek Belisko <marek.belisko@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chen Weixiang <weixiang.chen@gmail.com>,
-        Aybuke Ozdemir <aybuke.147@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Nicolas Thery <nthery@gmail.com>, Greg Donald <gdonald@gmail.com>,
-        Daniel Dodge <danieldodgese@gmail.com>,
-        Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/6] staging: ft1000: space required after that ','
-Date: Sat,  1 Nov 2014 10:47:27 +0800
-Message-Id: <1414810047-6975-7-git-send-email-weixiang.chen@gmail.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1414810047-6975-1-git-send-email-weixiang.chen@gmail.com>
-References: <1414810047-6975-1-git-send-email-weixiang.chen@gmail.com>
+	Fri, 31 Oct 2014 22:49:57 -0400
+Message-ID: <54544A45.1000505@gmail.com>
+Date: Sat, 01 Nov 2014 10:49:41 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "Chen, Tiejun" <tiejun.chen@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Gleb Natapov <gleb@kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: fix access memslots w/o hold srcu read lock
+References: <1414730012-7278-1-git-send-email-wanpeng.li@linux.intel.com> <54531E7B.1040006@intel.com> <5453663B.90500@redhat.com>
+In-Reply-To: <5453663B.90500@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove following code style error from ft1000/ft1000-usb/ft1000_debug.c:
-ERROR: space required after that ',' (ctx:VxV)
+Hi Paolo,
+On 14/10/31 下午6:36, Paolo Bonzini wrote:
+>
+> On 31/10/2014 06:30, Chen, Tiejun wrote:
+>> @@ -4442,6 +4442,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+>>   {
+>>          struct vcpu_vmx *vmx = to_vmx(vcpu);
+>>          struct msr_data apic_base_msr;
+>> +       int idx;
+>>
+>>          vmx->rmode.vm86_active = 0;
+>>
+>> @@ -4509,7 +4510,9 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+>>                  vmcs_write32(TPR_THRESHOLD, 0);
+>>          }
+>>
+>> +       idx = srcu_read_lock(&vcpu->kvm->srcu);
+>>          kvm_vcpu_reload_apic_access_page(vcpu);
+>> +       srcu_read_unlock(&vcpu->kvm->srcu, idx);
+>>
+>>          if (vmx_vm_has_apicv(vcpu->kvm))
+>>                  memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
+> Not enough; you can call vcpu_enter_guest -> kvm_apic_accept_events ->
+> kvm_vcpu_reset -> vmx_vcpu_reset while under the SRCU lock.  The right
+> place to add the lock is kvm_arch_vcpu_setup.
 
-Signed-off-by: Chen Weixiang <weixiang.chen@gmail.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_debug.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+This is also not enough. I see the warning in the below path during the 
+test:
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-index 7bc05fe..5e290e9 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-@@ -301,7 +301,7 @@ static int ft1000_open(struct inode *inode, struct file *file)
- {
- 	struct ft1000_info *info;
- 	struct ft1000_usb *dev = (struct ft1000_usb *)inode->i_private;
--    int i,num;
-+    int i, num;
- 
-     DEBUG("%s called\n", __func__);
-     num = (MINOR(inode->i_rdev) & 0xf);
-@@ -419,12 +419,16 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-     struct timeval tv;
- 	struct IOCTL_GET_VER get_ver_data;
- 	struct IOCTL_GET_DSP_STAT get_stat_data;
--    u8 ConnectionMsg[] = {0x00,0x44,0x10,0x20,0x80,0x00,0x00,0x00,0x00,0x00,0x03,0x00,0x00,0x00,0x93,0x64,
--                          0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x05,0x00,0x00,0x00,0x0a,
--                          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
--                          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x12,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
--                          0x00,0x00,0x02,0x37,0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x01,0x00,0x01,0x7f,0x00,
--                          0x00,0x01,0x00,0x00};
-+    u8 ConnectionMsg[] = {0x00, 0x44, 0x10, 0x20, 0x80, 0x00, 0x00, 0x00, 0x00,
-+                          0x00, 0x03, 0x00, 0x00, 0x00, 0x93, 0x64, 0x00, 0x00,
-+                          0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+                          0x05, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00,
-+                          0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
-+                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+                          0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+                          0x00, 0x00, 0x00, 0x02, 0x37, 0x00, 0x00, 0x00, 0x08,
-+                          0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x7f, 0x00, 0x00,
-+                          0x01, 0x00, 0x00};
- 
-     unsigned short ledStat = 0;
-     unsigned short conStat = 0;
-@@ -475,7 +479,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-             break;
-         }
- 
--        DEBUG("FT1000:ft1000_ioctl:driver version = 0x%x\n",(unsigned int)get_ver_data.drv_ver);
-+        DEBUG("FT1000:ft1000_ioctl:driver version = 0x%x\n", (unsigned int)get_ver_data.drv_ver);
- 
-         break;
-     case IOCTL_CONNECT:
-@@ -652,7 +656,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-                             }
-                             pmsg++;
- 				ppseudo_hdr = (struct pseudo_hdr *)pmsg;
--                           result = card_send_command(ft1000dev,(unsigned short *)dpram_data,total_len+2);
-+                           result = card_send_command(ft1000dev, (unsigned short *)dpram_data, total_len+2);
- 
- 
-                             ft1000dev->app_info[app_index].nTxMsg++;
--- 
-2.1.2
+kvm_arch_vcpu_ioctl_run
+-> kvm_apic_accept_events
+-> kvm_vcpu_reset
+
+I just send out the version 3 and hope it can take care all the 
+situations. ;-)
+
+Regards,
+Wanpeng Li
+
+>
+> Thanks,
+>
+> Paolo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
