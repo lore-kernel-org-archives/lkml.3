@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566AbaKAXEL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:04:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60019 "EHLO
+	id S1754536AbaKAXEG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:04:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60038 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750939AbaKAWj0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751410AbaKAWj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:26 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "=?UTF-8?q?Bj=C3=B8rn=20Mork?=" <bjorn@mork.no>,
-        "Johan Hovold" <johan@kernel.org>
+CC: akpm@linux-foundation.org, "Aurelien Jarno" <aurelien@aurel32.net>,
+        "Ralf Baechle" <ralf@linux-mips.org>, linux-mips@linux-mips.org
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.85373458@decadent.org.uk>
+Message-ID: <lsq.1414880883.953329422@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 016/102] USB: sierra: avoid CDC class functions on
- "68A3" devices
+Subject: [PATCH 3.2 008/102] MIPS: ZBOOT: add missing <linux/string.h> include
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,49 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Aurelien Jarno <aurelien@aurel32.net>
 
-commit 049255f51644c1105775af228396d187402a5934 upstream.
+commit 29593fd5a8149462ed6fad0d522234facdaee6c8 upstream.
 
-Sierra Wireless Direct IP devices using the 68A3 product ID
-can be configured for modes including a CDC ECM class function.
-The known example uses interface numbers 12 and 13 for the ECM
-control and data interfaces respectively, consistent with CDC
-MBIM function interface numbering on other Sierra devices.
+Commit dc4d7b37 (MIPS: ZBOOT: gather string functions into string.c)
+moved the string related functions into a separate file, which might
+cause the following build error, depending on the configuration:
 
-It seems cleaner to restrict this driver to the ff/ff/ff
-vendor specific interfaces rather than increasing the already
-long interface number blacklist.  This should be more future
-proof if Sierra adds more class functions using interface
-numbers not yet in the blacklist.
+| CC      arch/mips/boot/compressed/decompress.o
+| In file included from linux/arch/mips/boot/compressed/../../../../lib/decompress_unxz.c:234:0,
+|                  from linux/arch/mips/boot/compressed/decompress.c:67:
+| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c: In function 'fill_temp':
+| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c:162:2: error: implicit declaration of function 'memcpy' [-Werror=implicit-function-declaration]
+| cc1: some warnings being treated as errors
+| linux/scripts/Makefile.build:308: recipe for target 'arch/mips/boot/compressed/decompress.o' failed
+| make[6]: *** [arch/mips/boot/compressed/decompress.o] Error 1
+| linux/arch/mips/Makefile:308: recipe for target 'vmlinuz' failed
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Johan Hovold <johan@kernel.org>
-[bwh: Backported to 3.2: adjust context]
+It does not fail with the standard configuration, as when
+CONFIG_DYNAMIC_DEBUG is not enabled <linux/string.h> gets included in
+include/linux/dynamic_debug.h. There might be other ways for it to
+get indirectly included.
+
+We can't add the include directly in xz_dec_stream.c as some
+architectures might want to use a different version for the boot/
+directory (see for example arch/x86/boot/string.h).
+
+Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7420/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/sierra.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/mips/boot/compressed/decompress.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -296,14 +296,16 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1199, 0x68A2),   /* Sierra Wireless MC77xx in QMI mode */
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
--	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
-+	/* Sierra Wireless Direct IP modems */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68A3, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
- 	/* AT&T Direct IP LTE modems */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68AA, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
--	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
-+	/* Airprime/Sierra Wireless Direct IP modems */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68A3, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
+--- a/arch/mips/boot/compressed/decompress.c
++++ b/arch/mips/boot/compressed/decompress.c
+@@ -13,6 +13,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/string.h>
+ 
+ #include <asm/addrspace.h>
  
 
