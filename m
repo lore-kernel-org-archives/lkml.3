@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707AbaKALkI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 07:40:08 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:40456 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583AbaKALkG (ORCPT
+	id S1758547AbaKALnj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 07:43:39 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:44733 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756970AbaKALni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 07:40:06 -0400
-Message-ID: <5454C804.50407@gmail.com>
-Date: Sat, 01 Nov 2014 19:46:12 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 1 Nov 2014 07:43:38 -0400
+X-Auth-Info: wd3VRUAazVUh8J54A27arbUPJyBqAWjcxdRoGOxCLjc=
+From: Marek Vasut <marex@denx.de>
+To: Kim Phillips <kim.phillips@freescale.com>
+Subject: Re: [PATCH] crypto: caam: fix error reporting
+Date: Sat, 1 Nov 2014 12:43:31 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: Cristian Stoica <cristian.stoica@freescale.com>,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        horia.geanta@freescale.com
+References: <1414774653-3583-1-git-send-email-cristian.stoica@freescale.com> <20141031132209.5abced3ca9f55649d0bd6007@freescale.com>
+In-Reply-To: <20141031132209.5abced3ca9f55649d0bd6007@freescale.com>
 MIME-Version: 1.0
-To: JBottomley@parallels.com
-CC: qla2xxx-upstream@qlogic.com, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers: scsi: qla2xxx: Remove redundant declaration in 'qla_gbl.h'
-Content-Type: text/plain; charset=utf-8
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201411011243.31501.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove 2 redundant extern inline functions: qla8044_set_qsnt_ready() and
-qla8044_need_reset_handler(). At present, within upstream next kernel
-source code, they are only used within "drivers/scsi/qla2xxx/qla_nx2.c".
+On Friday, October 31, 2014 at 07:22:09 PM, Kim Phillips wrote:
+> On Fri, 31 Oct 2014 18:57:33 +0200
+> 
+> Cristian Stoica <cristian.stoica@freescale.com> wrote:
+> > The error code returned by hardware is four bits wide with an expected
+> > zero MSB. A hardware error condition where the error code can get between
+> > 0x8 and 0xf will trigger an out of bound array access on the error
+> > message table.
+> 
+> If this issue was brought up by h/w, the appropriate new error codes
+> should be being introduced.
+> 
+> Otherwise, I'm assuming it was brought up by a static code analyser,
+> which technically could be ignored, but...
+> 
+> > -	/*
+> > -	 * If there is no further error handling function, just
+> > -	 * print the error code, error string and exit. Otherwise
+> > -	 * call the handler function.
+> > -	 */
+> 
+> why remove the comment?  It's still valid.
+> 
+> > -	if (!status_src[ssrc].report_ssed)
+> > -		dev_err(jrdev, "%08x: %s: \n", status, status_src[ssrc].error);
+> > -	else
+> > +	if (status_src[ssrc].report_ssed)
+> > 
+> >  		status_src[ssrc].report_ssed(jrdev, status, error);
+> > 
+> > +	else if (error)
+> > +		dev_err(jrdev, "%d: %s\n", ssrc, error);
+> > +	else
+> > +		dev_err(jrdev, "%d: unknown error code\n", ssrc);
+> 
+> This is simpler:
+> 
+> diff --git a/drivers/crypto/caam/error.c b/drivers/crypto/caam/error.c
+> index 6531054..6f4a148 100644
+> --- a/drivers/crypto/caam/error.c
+> +++ b/drivers/crypto/caam/error.c
+> @@ -224,7 +224,12 @@ void caam_jr_strstatus(struct device *jrdev, u32
+> status) { report_cond_code_status, "Condition Code" },
+>         };
+>         u32 ssrc = status >> JRSTA_SSRC_SHIFT;
+> -       const char *error = status_src[ssrc].error;
+> +       const char *error;
+> +
+> +       if (ssrc >= ARRAY_SIZE(status_src)) {
+> +               dev_err(jrdev, "unknown error status source %d\n", ssrc);
+> +               return;
+> +       }
+> 
+>         /*
+>          * If there is no further error handling function, just
 
-The related error and warnings (with allmodconfig under tile):
+This indeed makes sense.
 
-    CC [M]  drivers/scsi/qla2xxx/qla_nx2.o
-  drivers/scsi/qla2xxx/qla_nx2.c:1633:1: error: static declaration of 'qla8044_need_reset_handler' follows non-static declaration
-   qla8044_need_reset_handler(struct scsi_qla_host *vha)
-   ^
-  In file included from drivers/scsi/qla2xxx/qla_def.h:3706:0,
-                   from drivers/scsi/qla2xxx/qla_nx2.c:11:
-  drivers/scsi/qla2xxx/qla_gbl.h:756:20: note: previous declaration of 'qla8044_need_reset_handler' was here
-   extern inline void qla8044_need_reset_handler(struct scsi_qla_host *vha);
-                      ^
-  drivers/scsi/qla2xxx/qla_gbl.h:756:20: warning: inline function 'qla8044_need_reset_handler' declared but never defined
-  make[3]: *** [drivers/scsi/qla2xxx/qla_nx2.o] Error 1
-  make[2]: *** [drivers/scsi/qla2xxx] Error 2
-  make[1]: *** [drivers/scsi] Error 2
-  make: *** [drivers] Error 2
-
-    CC [M]  drivers/scsi/qla2xxx/qla_tmpl.o
-  In file included from drivers/scsi/qla2xxx/qla_def.h:3706:0,
-                   from drivers/scsi/qla2xxx/qla_tmpl.c:7:
-  drivers/scsi/qla2xxx/qla_gbl.h:755:20: warning: inline function 'qla8044_set_qsnt_ready' declared but never defined
-   extern inline void qla8044_set_qsnt_ready(struct scsi_qla_host *vha);
-                    ^
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/scsi/qla2xxx/qla_gbl.h | 2 --
- drivers/scsi/qla2xxx/qla_nx2.c | 2 +-
- 2 files changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/scsi/qla2xxx/qla_gbl.h b/drivers/scsi/qla2xxx/qla_gbl.h
-index b1865a7..7686bfe 100644
---- a/drivers/scsi/qla2xxx/qla_gbl.h
-+++ b/drivers/scsi/qla2xxx/qla_gbl.h
-@@ -752,8 +752,6 @@ extern void qla8044_set_idc_dontreset(struct scsi_qla_host *ha);
- extern int qla8044_rd_direct(struct scsi_qla_host *vha, const uint32_t crb_reg);
- extern void qla8044_wr_direct(struct scsi_qla_host *vha,
- 			      const uint32_t crb_reg, const uint32_t value);
--extern inline void qla8044_set_qsnt_ready(struct scsi_qla_host *vha);
--extern inline void qla8044_need_reset_handler(struct scsi_qla_host *vha);
- extern int qla8044_device_state_handler(struct scsi_qla_host *vha);
- extern void qla8044_clear_qsnt_ready(struct scsi_qla_host *vha);
- extern void qla8044_clear_drv_active(struct qla_hw_data *);
-diff --git a/drivers/scsi/qla2xxx/qla_nx2.c b/drivers/scsi/qla2xxx/qla_nx2.c
-index 24a8528..ed4d6b6 100644
---- a/drivers/scsi/qla2xxx/qla_nx2.c
-+++ b/drivers/scsi/qla2xxx/qla_nx2.c
-@@ -238,7 +238,7 @@ qla8044_rmw_crb_reg(struct scsi_qla_host *vha,
- 	return;
- }
- 
--inline void
-+static inline void
- qla8044_set_qsnt_ready(struct scsi_qla_host *vha)
- {
- 	uint32_t qsnt_state;
--- 
-1.9.3
+Best regards,
+Marek Vasut
