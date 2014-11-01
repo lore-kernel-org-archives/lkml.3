@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760232AbaKATmH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 15:42:07 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:51268 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760068AbaKATmE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 15:42:04 -0400
-X-Originating-IP: 50.43.41.112
-Date: Sat, 1 Nov 2014 12:41:52 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [PATCH v3 3/3] x86: Support compiling out userspace I/O (iopl
- and ioperm)
-Message-ID: <20141101194151.GA11810@thin>
-References: <7159269982aac3b732af2c33a2e3d04e2048bdfb.1414598511.git.josh@joshtriplett.org>
- <9d77d0e4df8feb2cb55fb21689e016a3145cb7f8.1414598511.git.josh@joshtriplett.org>
- <alpine.DEB.2.11.1410292155300.5308@nanos>
+	id S1760264AbaKATq4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 15:46:56 -0400
+Received: from mout.gmx.net ([212.227.17.20]:54467 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758825AbaKATqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Nov 2014 15:46:53 -0400
+Message-ID: <545538A2.7080403@gmx.de>
+Date: Sat, 01 Nov 2014 20:46:42 +0100
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410292155300.5308@nanos>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Jonathan Cameron <jic23@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v4] iio: iadc: Qualcomm SPMI PMIC current ADC driver
+References: <1413987213-22218-1-git-send-email-iivanov@mm-sol.com>	 <5453ED55.2000003@gmx.de> <1414859945.2207.1.camel@mm-sol.com>
+In-Reply-To: <1414859945.2207.1.camel@mm-sol.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:UCw62cnzxQcXC200T+YDDncob0hUyFkBORVFbkwZczcsoFArDg8
+ nJ92Bg9RWtK/aDp3nHhzCP60Cf9Vm5FCN42zSsDuhJ7ac8JaucEMrG7qfIFNVf+nOPXsecW
+ JQ0hJti22d+8bYuQKFxnTazXu2aBTJ2NPPu5bau48vEb+g+4iZB5Ti8miP6rGinPav7mHcQ
+ bkm1lz2r5orO6BGBDD69A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 10:00:54PM +0100, Thomas Gleixner wrote:
-> On Wed, 29 Oct 2014, Josh Triplett wrote:
-> > v3: Eliminated several #ifdefs, and in particular almost all #ifdefs in
-> >     .c files, by adding a macro INIT_SET_IOPL_MASK to use in place of
-> >     the initializer for set_iopl_mask, and using __maybe_unused rather
-> >     than wrapping function definitions in #ifdef.  Rebased on v3.18-rc1.
-> >     Recomputed bloat-o-meter.
+Ivan T. Ivanov schrieb am 01.11.2014 17:39:
 > 
-> Can you please split this patch into smaller pieces?
+> On Fri, 2014-10-31 at 21:13 +0100, Hartmut Knaack wrote:
+>> Ivan T. Ivanov schrieb am 22.10.2014 16:13:
+>>> The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+>>> 16 bits resolution and register space inside PMIC accessible across
+>>> SPMI bus.
+>>>
+>>> The driver registers itself through IIO interface.
+>> Pretty much there, just one question I would like to double-check: 
+>> The CPU of these chips is Little Endian, right?
 > 
->     - Seperate the code move to header files
->     - Seperate the macro stuff
->     - Add the #ifdef CONFIG_.... changes
+> Yes, it is Little Endian.
+Cool.
+> 
+>> Annoyingly, you introduced a small typo in this revision, 
+> 
+> No it is not a typo. Calculation is really in nano Ohms.
+Right, but the typo is, that you wrote "nono" instead of "nano".
+> 
+> Regards,
+> Ivan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Done; sending v4 now.
-
-- Josh Triplett
