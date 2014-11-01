@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750874AbaKAVsw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 17:48:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34060 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaKAVsu (ORCPT
+	id S1751081AbaKAVtd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 17:49:33 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:45109 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaKAVtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 17:48:50 -0400
-Date: Sat, 1 Nov 2014 14:48:32 -0700
-From: tip-bot for Kees Cook <tipbot@zytor.com>
-Message-ID: <tip-fb7183ef3c016d9067ff83f3ff2455be1818f902@git.kernel.org>
-Cc: josh@joshtriplett.org, eternal.n08@gmail.com, keescook@chromium.org,
-        hpa@zytor.com, matt.fleming@intel.com, mingo@kernel.org,
-        ard.biesheuvel@linaro.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, matt.fleming@intel.com, tglx@linutronix.de,
-        ard.biesheuvel@linaro.org, linux-kernel@vger.kernel.org,
-        eternal.n08@gmail.com, josh@joshtriplett.org, keescook@chromium.org,
-        hpa@zytor.com
-In-Reply-To: <20141031162204.GA26268@www.outflux.net>
-References: <20141031162204.GA26268@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/boot] x86, boot: Document intermediates more clearly
-Git-Commit-ID: fb7183ef3c016d9067ff83f3ff2455be1818f902
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 1 Nov 2014 17:49:32 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.11.1411012135040.5308@nanos>
+References: <cover.1414190806.git.luto@amacapital.net> <266afcba1d1f91ea5501e4e16e94bbbc1a9339b6.1414190806.git.luto@amacapital.net>
+ <alpine.DEB.2.11.1411012058030.5308@nanos> <CALCETrXBkc8_rMdr0ueBTBYwSVQ7C3juZo4JCEY9UU=rm_nNww@mail.gmail.com>
+ <alpine.DEB.2.11.1411012135040.5308@nanos>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 1 Nov 2014 14:49:10 -0700
+Message-ID: <CALCETrVjG4T-+jZ+4AZX-i9s_Do8BY=+fp1JmWCxnbAfGiVvug@mail.gmail.com>
+Subject: Re: [PATCH v2 5/8] perf: Add pmu callbacks to track event mapping and unmapping
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
+        Vince Weaver <vince@deater.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Kees Cook <keescook@chromium.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb7183ef3c016d9067ff83f3ff2455be1818f902
-Gitweb:     http://git.kernel.org/tip/fb7183ef3c016d9067ff83f3ff2455be1818f902
-Author:     Kees Cook <keescook@chromium.org>
-AuthorDate: Fri, 31 Oct 2014 09:22:04 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 1 Nov 2014 22:46:02 +0100
+On Nov 1, 2014 1:39 PM, "Thomas Gleixner" <tglx@linutronix.de> wrote:
+>
+> On Sat, 1 Nov 2014, Andy Lutomirski wrote:
+> > On Sat, Nov 1, 2014 at 12:59 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > On Fri, 24 Oct 2014, Andy Lutomirski wrote:
+> > >
+> > > I'm probably missing something.
+> > >
+> > > Why is this tied to the mmap? If I just open a counter then I should
+> > > be able to read the counter from user space w/o mmapping something in
+> > > the first place.
+> >
+> > You can read it with read(2), which this patch shouldn't affect.  If
+> > you want to read it with rdpmc, then you need to know what rdpmc index
+> > to use, and the API for that is to mmap the event, check the
+> > userpage's cap_user_rdpmc, and then rdpmc on ->idx - 1 (assuming that
+> > ->idx != 0).  You can't safely make any assumptions about which rdpmc
+> > index it will be without explicitly checking, because perf reserves
+> > the right to change the index whenever it wants.
+>
+> Got it. As I expected: I was missing something :)
+>
+> > There's plenty of room to tighten up the restrictions further, but
+> > this is, I think, a decent first step, and it solves the problem of
+> > information leaking into seccomp sandboxes.
+>
+> In which way?
 
-x86, boot: Document intermediates more clearly
+All the performance counters were readable without using any syscalls.
+That leaks hints as to which events are in use, and it possibly leaks
+interesting side channel information.   With this series applied, you
+need a at least mmap an rdpmc-able event, which most seccomp sandboxes
+won't allow.
 
-This adds a comment detailing the various intermediate files used to build
-the bootable decompression image for the x86 kernel.
+Unfortunately, rdpmc access to counters can't be controlled
+individually, so it's hard to do all that much better than this.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Junjie Mao <eternal.n08@gmail.com>
-Link: http://lkml.kernel.org/r/20141031162204.GA26268@www.outflux.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/boot/compressed/Makefile | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+--Andy
 
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 704f58a..8a39181 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -3,6 +3,18 @@
- #
- # create a compressed vmlinux image from the original vmlinux
- #
-+# vmlinuz is:
-+#	decompression code (*.o)
-+#	asm globals (piggy.S), including:
-+#		vmlinux.bin.(gz|bz2|lzma|...)
-+#
-+# vmlinux.bin is:
-+#	vmlinux stripped of debugging and comments
-+# vmlinux.bin.all is:
-+#	vmlinux.bin + vmlinux.relocs
-+# vmlinux.bin.(gz|bz2|lzma|...) is:
-+#	(see scripts/Makefile.lib size_append)
-+#	compressed vmlinux.bin.all + u32 size of vmlinux.bin.all
- 
- targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
- 	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
+>
+> Thanks,
+>
+>         tglx
+>
