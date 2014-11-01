@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaKAWva (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:51:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60188 "EHLO
+	id S1753403AbaKAWvj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:51:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60136 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751646AbaKAWj3 (ORCPT
+	by vger.kernel.org with ESMTP id S1751600AbaKAWj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:29 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Anton Altaparmakov" <aia21@cantab.net>,
-        "Anton Altaparmakov" <aia21@cam.ac.uk>
+CC: akpm@linux-foundation.org, "Marc Kleine-Budde" <mkl@pengutronix.de>,
+        "David Jander" <david@protonic.nl>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.485153234@decadent.org.uk>
+Message-ID: <lsq.1414880883.584134652@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 067/102] Fix nasty 32-bit overflow bug in buffer i/o code.
+Subject: [PATCH 3.2 063/102] can: flexcan: implement workaround for errata
+ ERR005829
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,71 +32,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Altaparmakov <aia21@cam.ac.uk>
+From: David Jander <david@protonic.nl>
 
-commit f2d5a94436cc7cc0221b9a81bba2276a25187dd3 upstream.
+commit 25e924450fcb23c11c07c95ea8964dd9f174652e upstream.
 
-On 32-bit architectures, the legacy buffer_head functions are not always
-handling the sector number with the proper 64-bit types, and will thus
-fail on 4TB+ disks.
+This patch implements the workaround mentioned in ERR005829:
 
-Any code that uses __getblk() (and thus bread(), breadahead(),
-sb_bread(), sb_breadahead(), sb_getblk()), and calls it using a 64-bit
-block on a 32-bit arch (where "long" is 32-bit) causes an inifinite loop
-in __getblk_slow() with an infinite stream of errors logged to dmesg
-like this:
+    ERR005829: FlexCAN: FlexCAN does not transmit a message that is enabled to
+    be transmitted in a specific moment during the arbitration process.
 
-  __find_get_block_slow() failed. block=6740375944, b_blocknr=2445408648
-  b_state=0x00000020, b_size=512
-  device sda1 blocksize: 512
+Workaround: The workaround consists of two extra steps after setting up a
+message for transmission:
 
-Note how in hex block is 0x191C1F988 and b_blocknr is 0x91C1F988 i.e. the
-top 32-bits are missing (in this case the 0x1 at the top).
+Step 8: Reserve the first valid mailbox as an inactive mailbox (CODE=0b1000).
+If RX FIFO is disabled, this mailbox must be message buffer 0. Otherwise, the
+first valid mailbox can be found using the "RX FIFO filters" table in the
+FlexCAN chapter of the chip reference manual.
 
-This is because grow_dev_page() is broken and has a 32-bit overflow due
-to shifting the page index value (a pgoff_t - which is just 32 bits on
-32-bit architectures) left-shifted as the block number.  But the top
-bits to get lost as the pgoff_t is not type cast to sector_t / 64-bit
-before the shift.
+Step 9: Write twice INACTIVE code (0b1000) into the first valid mailbox.
 
-This patch fixes this issue by type casting "index" to sector_t before
-doing the left shift.
-
-Note this is not a theoretical bug but has been seen in the field on a
-4TiB hard drive with logical sector size 512 bytes.
-
-This patch has been verified to fix the infinite loop problem on 3.17-rc5
-kernel using a 4TB disk image mounted using "-o loop".  Without this patch
-doing a "find /nt" where /nt is an NTFS volume causes the inifinite loop
-100% reproducibly whilst with the patch it works fine as expected.
-
-Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Jander <david@protonic.nl>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/buffer.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/can/flexcan.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1021,7 +1021,8 @@ grow_dev_page(struct block_device *bdev,
- 		bh = page_buffers(page);
- 		if (bh->b_size == size) {
- 			end_block = init_page_buffers(page, bdev,
--						index << sizebits, size);
-+						(sector_t)index << sizebits,
-+						size);
- 			goto done;
- 		}
- 		if (!try_to_free_buffers(page))
-@@ -1042,7 +1043,8 @@ grow_dev_page(struct block_device *bdev,
- 	 */
- 	spin_lock(&inode->i_mapping->private_lock);
- 	link_dev_buffers(page, bh);
--	end_block = init_page_buffers(page, bdev, index << sizebits, size);
-+	end_block = init_page_buffers(page, bdev, (sector_t)index << sizebits,
-+			size);
- 	spin_unlock(&inode->i_mapping->private_lock);
- done:
- 	ret = (block < end_block) ? 1 : -ENXIO;
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -120,7 +120,9 @@
+ 	(FLEXCAN_ESR_ERR_BUS | FLEXCAN_ESR_ERR_STATE)
+ 
+ /* FLEXCAN interrupt flag register (IFLAG) bits */
+-#define FLEXCAN_TX_BUF_ID		8
++/* Errata ERR005829 step7: Reserve first valid MB */
++#define FLEXCAN_TX_BUF_RESERVED		8
++#define FLEXCAN_TX_BUF_ID		9
+ #define FLEXCAN_IFLAG_BUF(x)		BIT(x)
+ #define FLEXCAN_IFLAG_RX_FIFO_OVERFLOW	BIT(7)
+ #define FLEXCAN_IFLAG_RX_FIFO_WARN	BIT(6)
+@@ -313,6 +315,14 @@ static int flexcan_start_xmit(struct sk_
+ 	flexcan_write(can_id, &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_id);
+ 	flexcan_write(ctrl, &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
+ 
++	/* Errata ERR005829 step8:
++	 * Write twice INACTIVE(0x8) code to first MB.
++	 */
++	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
++		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
++	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
++		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
++
+ 	kfree_skb(skb);
+ 
+ 	/* tx_packets is incremented in flexcan_irq */
+@@ -751,6 +761,10 @@ static int flexcan_chip_start(struct net
+ 			      &regs->cantxfg[i].can_ctrl);
+ 	}
+ 
++	/* Errata ERR005829: mark first TX mailbox as INACTIVE */
++	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
++		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
++
+ 	/* mark TX mailbox as INACTIVE */
+ 	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
+ 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
 
