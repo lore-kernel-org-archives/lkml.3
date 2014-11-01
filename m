@@ -1,89 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760083AbaKATST (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 15:18:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47348 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950AbaKATSS (ORCPT
+	id S1760210AbaKATUm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 15:20:42 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:44026 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759204AbaKATUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 15:18:18 -0400
-Date: Sat, 1 Nov 2014 20:18:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Lameter <cl@linux.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
-In-Reply-To: <alpine.DEB.2.11.1410311058500.32582@gentwo.org>
-Message-ID: <alpine.DEB.2.11.1411012003390.5308@nanos>
-References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Sat, 1 Nov 2014 15:20:39 -0400
+X-Sasl-enc: OnGiR6qSNJhB91FSgs3X/7Ak4p4+KH51h2jlOaDrLOyT 1414869637
+Date: Sat, 1 Nov 2014 17:20:26 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 2/8] x86, microcode, intel: don't update each HT core
+ twice
+Message-ID: <20141101192026.GA9155@khazad-dum.debian.net>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-3-git-send-email-hmh@hmh.eng.br>
+ <20141020133252.GC3524@pd.tnic>
+ <20141020182427.GB19306@khazad-dum.debian.net>
+ <20141028173109.GB10873@pd.tnic>
+ <20141031184344.GB27028@khazad-dum.debian.net>
+ <20141101110626.GB4462@pd.tnic>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141101110626.GB4462@pd.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014, Christoph Lameter wrote:
-> The reasoning behind this function is not clear to me and removal seems
+On Sat, 01 Nov 2014, Borislav Petkov wrote:
+> Now, we're not about reducing the log info in general but rather only
+> saying something when we really have to. Microcode updates should work
+> in the background and the user should not be bothered at all about it in
+> the normal, success case. Only when there are issues with it, only then
+> we want to say something.
 
-The comment above the function is clear enough.
+I understand your objective, yes.  I just don't agree with your reasoning
+entirely.  I fully agree it should not bother the user by inducing doubts,
+or being too verbose, though.
 
-> to have a limited impact on the system overall. Even without the
-> cap to 1 second the system will be limited by the boundaries on the period
-> of interrupts by various devices (in my case I ended up with a 4 second
-> interval on x86 because of the limitations of periodicy of the underlying
-> interupt source).
+Suppose I do the work so that we get something like this:
 
-And just because it happens to do so on your machine it's not
-guaranteed. 
- 
-> Moreover this artificial limits the impact the benefit that commit
-> commit 7cc36bbddde5cd0c98f0c06e3304ab833d662565 (on-demand vmstat workers)
-> should be giving us.
+<microcode driver>: sig XXX, pf XXX, rev YYY
+
+or, if an update is done, we get this *instead*:
+
+<microcode driver>: sig XXX, pf XXX, updated from rev YYY to rev ZZZ (YYYYMMDD)
+
+And that will be all, unless you actually have multiple [different]
+microcodes in the system (which is rare), in which case you will get more
+lines.
+
+You'd get the same one line if an update is triggered at runtime and it
+manages to update at least one processor.
+
+> The late loader is for the cases where you don't want to reboot the
+> system when applying microcode.
+
+I used it also as a fallback in Debian/Ubuntu should the early update
+driver fail, but I have no idea whether it was effective or not because the
+early microcode driver currently fails silently.
+
+Anyway, the use of the late driver in initramfs (even as a fallback) is gone
+from Debian since two weeks ago, and it will be gone from Ubuntu when they
+sync to Debian once again.
+
+> But all systems out there should enable the early loader - microcode
+> should be applied as early as possible.
+
+Agreed.
+
+> > It was also really useful when I was searching the net for reports about a
+> > specific processor signature, /proc/cpuinfo is really unhelpful for that.
 > 
-> Without this patch timer interrupts will still occur in 1 second intervals
-> but no vmstat kworker will run. On a processor where all other
+> Why is that so? Can we improve it?
 
-And what has this to do with vmstat kworker? Nothing.
+Yes, we can, but I'd still like to have my one log line per boot, please.
 
-> events have been redirected to other processors nothing will be
-> going on just timer interrupts that do not do much.
+The log line has one feature /proc/cpuinfo won't ever have: it is always
+there in the boot logs, even if you didn't ask for it in advance.
 
-What the timer interrupt does is very clearly explained in the comment
-above the function you want to remove.
- 
-> With this patch the maximum deferrability of other items will become
-> evident and work can then proceed on eliminating those
+And the log currently has one feature that is valuable IMO: it is complete,
+it has all the errors, warnings and useful information, and you just need
+"grep microcode" to get it all.
 
-What about eliminating the requirement for this function first? It's
-clear what it does and it's also clear that this can be done remotely
-from a housekeeping cpu when the full nohz cpu is busy looping in user
-space. The function is there because nobody has tackled that problem
-yet.
+> Well, if you really need it, we could add it there:
+> 
+> cat /proc/cpuinfo:
+> 
+> ...
+> vendor_id       : AuthenticAMD
+> cpu family      : 21
+> model           : 2
+> model name      : AMD FX(tm)-8350 Eight-Core Processor
+> stepping        : 0
+> microcode       : 0x6000832
+> BIOS microcode	: 0x6000822
 
-> (like the 4 second limit that I encountered due to the timing
-> limitations of the underlying hardware)
+For /proc/cpuinfo to be complete for *tool use*, I'd really need
+cpuid_eax(1), and on intel, the three bits from MSR 0x17 [52:50] in pf_mask
+format (1 << (MSR 0x17[52:50])).
 
-You don't want to tackle the 4 seconds limit of the underlying
-hardware. What you really want is to eliminate the [hr]timer which is
-preventing the hardware timer to be shutdown completely.
+microcode sig: 0x0000000
+microcode pfm: 0x00	[only on intel]
 
-But we care about that _after_ we solved the scheduler tick
-requirement because that is the most evident one.
+We could make the "BIOS microcode" line optional, and supress it when no
+microcode update was applied (i.e. BIOS microcode == current microcode).
 
-Thanks,
+However, that's two new lines for AMD, and three for Intel.
 
-	tglx
+
+Somewhat related, but independent of what we do to /proc/cpuinfo,
+microcode.ko really should grow a signature field in sysfs, so that you
+don't need both microcode.ko *and* cpuid.ko to know what microcode the box
+needs.  I even have a patch that does this ready, if you want it.
+
+And it is much better to deal with sysfs than parse /proc/cpuinfo...
+cpuinfo is for humans, and it is quite important, but machine-parsing it
+properly is annoying (requires a state machine, etc).
+
+> but I don't see why you need it. Regardless of the effort, you want to have
+> microcode loader running on all systems, that's it.
+
+Eh, I don't _need_ it because right now the kernel log has everything I
+want (as long as the late microcode module gets loaded) other than error
+messages from the early loader.
+
+> > > > I really miss the full microcode ID information in /proc/cpuinfo, in fact.
+> > > 
+> > > Full ID, you mean all fields of struct cpu_signature on Intel?
+> > 
+> > cpu signature, pf mask and revision.  Since we already log the date, might
+> > as well keep it too.
+> > 
+> > >    ->sig - CPUID_EAX(1) which is in /proc/cpuinfo
+> > 
+> > Not in a format amicable to finding it through a search engine.  Besides, we
+> > lose the processor type bits.  Given that we have a brand new i586 chip, who
+> 
+> processor type bits? What is that?
+
+It is a field composed by cpuid_eax(1) [13:12].  According to the Intel
+SDM:
+
+  00b: Original OEM processor
+  01b: overdrive processor
+  10b: dual processor
+  11b: Intel reserved
+
+This is the microcode for the Pentium Overdrive processor:
+sig 0x00001632, pf mask 0x00, 1998-06-10, rev 0x0002, size 2048
+
+where you can see that bits 13:12 of the signture are 01b (type: overdrive
+processor).
+
+Anyway, AFAIK the Intel SDM defines the microcode signature to be all 32
+bits in cpuid_eax(1), including the reserved bits (which doesn't seem
+right, you're usually told to mask these to zero, but whatever).
+
+> You can access sysfs then in your scripts and query everything you need.
+> And use cpuid.ko and msr.ko too. I think with that you get all the info
+> needed.
+
+msr.ko is a security nightmare.  The less it is used, the better.  I'd like
+it to either go away entirely, or (more realistically) that it switched to
+a processor model-aware whitelist of safe, in-use-by-userspace MSRs, and
+reject everything else no matter what (even to processes with
+CAP_SYS_RAWIO).
+
+But yes, I can get that information as-is, and I don't even need msr.ko to
+do it.  It may not be convenient at all, but the information is reachable
+from userspace through cpuid.ko and the late microcode loader
+(microcode.ko).
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
