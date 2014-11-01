@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaKAWlU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:41:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60325 "EHLO
+	id S1752670AbaKAWl0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:41:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60316 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751792AbaKAWjd (ORCPT
+	by vger.kernel.org with ESMTP id S1751781AbaKAWjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:33 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Peter Zijlstra" <peterz@infradead.org>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        "Arnaldo Carvalho de Melo" <acme@kernel.org>,
+        "Cong Wang" <xiyou.wangcong@gmail.com>,
+        "Paul Mackerras" <paulus@samba.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Cong Wang" <cwang@twopensource.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.940278377@decadent.org.uk>
+Message-ID: <lsq.1414880883.2222066@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 020/102] ALSA: hda - Fix COEF setups for ALC1150 codec
+Subject: [PATCH 3.2 033/102] perf: Fix a race condition in perf_remove_from_context()
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,38 +36,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Cong Wang <cwang@twopensource.com>
 
-commit acf08081adb5e8fe0519eb97bb49797ef52614d6 upstream.
+commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
 
-ALC1150 codec seems to need the COEF- and PLL-setups just like its
-compatible ALC882 codec.  Some machines (e.g. SunMicro X10SAT) show
-the problem like too low output volumes unless the COEF setup is
-applied.
+We saw a kernel soft lockup in perf_remove_from_context(),
+it looks like the `perf` process, when exiting, could not go
+out of the retry loop. Meanwhile, the target process was forking
+a child. So either the target process should execute the smp
+function call to deactive the event (if it was running) or it should
+do a context switch which deactives the event.
 
-Reported-and-tested-by: Dana Goyette <danagoyette@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+It seems we optimize out a context switch in perf_event_context_sched_out(),
+and what's more important, we still test an obsolete task pointer when
+retrying, so no one actually would deactive that event in this situation.
+Fix it directly by reloading the task pointer in perf_remove_from_context().
+
+This should cure the above soft lockup.
+
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_realtek.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/events/core.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -789,6 +789,7 @@ static void alc_auto_init_amp(struct hda
- 		case 0x10ec0885:
- 		case 0x10ec0887:
- 		/*case 0x10ec0889:*/ /* this causes an SPDIF problem */
-+		case 0x10ec0900:
- 			alc889_coef_init(codec);
- 			break;
- 		case 0x10ec0888:
-@@ -4343,6 +4344,7 @@ static int patch_alc882(struct hda_codec
- 	switch (codec->vendor_id) {
- 	case 0x10ec0882:
- 	case 0x10ec0885:
-+	case 0x10ec0900:
- 		break;
- 	default:
- 		/* ALC883 and variants */
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1683,6 +1683,16 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
+ 		goto retry;
+ 	}
+ 
 
