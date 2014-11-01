@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaKAWje (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:39:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60020 "EHLO
+	id S1752490AbaKAWlH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:41:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60335 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750873AbaKAWj0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751831AbaKAWjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 18:39:26 -0400
+	Sat, 1 Nov 2014 18:39:33 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
-        "=?UTF-8?q?Bj=C3=B8rn=20Mork?=" <bjorn@mork.no>,
-        "Lars Melin" <larsm17@gmail.com>
+CC: akpm@linux-foundation.org, "Felipe Balbi" <balbi@ti.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.968829592@decadent.org.uk>
+Message-ID: <lsq.1414880883.454164569@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 017/102] USB: sierra: add 1199:68AA device ID
+Subject: [PATCH 3.2 026/102] usb: dwc3: core: fix order of PM runtime calls
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 5b3da69285c143b7ea76b3b9f73099ff1093ab73 upstream.
+commit fed33afce0eda44a46ae24d93aec1b5198c0bac4 upstream.
 
-This VID:PID is used for some Direct IP devices behaving
-identical to the already supported 0F3D:68AA devices.
+Currently, we disable pm_runtime before all register
+accesses are done, this is dangerous and might lead
+to abort exceptions due to the driver trying to access
+a register which is clocked by a clock which was long
+gated.
 
-Reported-by: Lars Melin <larsm17@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Fix that by moving pm_runtime_put_sync() and pm_runtime_disable()
+as the last thing we do before returning from our ->remove()
+method.
+
+Fixes: 72246da (usb: Introduce DesignWare USB3 DRD Driver)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/sierra.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/dwc3/core.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -300,6 +300,9 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68A3, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68AA, 0xFF, 0xFF, 0xFF),
-+	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
-+	},
- 	/* AT&T Direct IP LTE modems */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68AA, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -427,9 +427,6 @@ static int __devexit dwc3_remove(struct
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 
+-	pm_runtime_put_sync(&pdev->dev);
+-	pm_runtime_disable(&pdev->dev);
+-
+ 	dwc3_debugfs_exit(dwc);
+ 
+ 	if (features & DWC3_HAS_PERIPHERAL)
+@@ -440,6 +437,9 @@ static int __devexit dwc3_remove(struct
+ 	iounmap(dwc->regs);
+ 	kfree(dwc->mem);
+ 
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
+ 	return 0;
+ }
+ 
 
