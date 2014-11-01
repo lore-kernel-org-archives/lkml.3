@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073AbaKAMD1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 08:03:27 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:42520 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaKAMDZ (ORCPT
+	id S1757131AbaKAMXp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 08:23:45 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:63258 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752545AbaKAMXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 08:03:25 -0400
-Message-ID: <5454CC07.1070605@gmail.com>
-Date: Sat, 01 Nov 2014 15:03:19 +0300
-From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Sat, 1 Nov 2014 08:23:43 -0400
+Date: Sat, 1 Nov 2014 08:23:25 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [BUG] mm/page-writeback.c: divide by zero in pos_ratio_polynom not
+ fixed
+Message-ID: <20141101082325.7be0463f@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>, Jonathan Corbet <corbet@lwn.net>
-CC: Peter Foley <pefoley2@pefoley.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        "afaerber@suse.de" <afaerber@suse.de>
-Subject: Re: [PATCH] Documentation: Restrict TSC test code to x86
-References: <1414454639-7491-1-git-send-email-agraf@suse.de> <CAOFdcFOChK9Jdw9mQGL7Zdc=89GU4hmuPE=Mn_vvWJFDYEtQBw@mail.gmail.com> <20141028084735.6338d01b@lwn.net> <CF6E40FB-3CB1-43BD-8691-46AD21DA62A0@suse.de>
-In-Reply-To: <CF6E40FB-3CB1-43BD-8691-46AD21DA62A0@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-28.10.2014 16:12, Alexander Graf пишет:
-> 
-> 
-> 
->> Am 28.10.2014 um 13:47 schrieb Jonathan Corbet <corbet@lwn.net>:
->>
->> On Mon, 27 Oct 2014 20:07:51 -0400
->> Peter Foley <pefoley2@pefoley.com> wrote:
->>
->>>> The prctl test code in Documentation/ tries to show how to
->>>> use a call that only makes sense on x86. Restrict it there
->>>> so that other platforms don't try to call asm("rdtsc").
->>>>
->>>> Signed-off-by: Alexander Graf <agraf@suse.de>  
->>>
->>> Acked-by: Peter Foley <pefoley2@pefoley.com>
->>
->> Snagged into the docs tree, thanks.
-> 
-> Awesome, please make sure this makes it into 3.18 - the build is broken on non-x86 archs there ;).
-> 
-> Alex
-> 
 
-Hi,
+My tests hit this bug:
 
-Sorry for criticism, but the patch is not complete.
-CONFIG_X86 deals with target architecture, at the same time the problem
-deals with the host architecture.
+divide error: 0000 [#1] SMP 
+Modules linked in: nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 ppdev parport_pc parport microcode r8169
+CPU: 1 PID: 3379 Comm: trace-cmd Tainted: P               3.18.0-rc1-test+ #26
+Hardware name: MSI MS-7823/CSM-H87M-G43 (MS-7823), BIOS V1.6 02/22/2014
+task: ef4a2bc0 ti: efad4000 task.ti: efad4000
+EIP: 0060:[<c06979a9>] EFLAGS: 00010246 CPU: 1
+EIP is at div_u64_rem+0x11/0x24
+EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000000
+ESI: 00ef57e4 EDI: 00000000 EBP: efad5ca0 ESP: efad5c98
+ DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+CR0: 80050033 CR2: b77495dc CR3: 2fee1000 CR4: 001407f0
+Stack:
+ 00000000 0000061a efad5ccc c0697c48 efad5cbc c04ec9d5 0000304e 00ef57e4^M
+ 00000000 00000000 00000000 0000061a 00000000 efad5d08 c04ecbc5 00000000
+ 00000000 00000000 00000575 f0d84210 0000387b 387b0000 00000000 00000aeb
+Call Trace:
+ [<c0697c48>] div64_u64+0x2f/0xd7
+ [<c04ec9d5>] ? pos_ratio_polynom+0x42/0xb2
+ [<c04ecbc5>] bdi_position_ratio+0x180/0x1d4
+ [<c04eddb2>] balance_dirty_pages_ratelimited+0x2a3/0x549
+ [<c04c274e>] ? __buffer_unlock_commit+0x10/0x12
+ [<c04c2a5a>] ? trace_function+0x6b/0x73
+ [<c04e5993>] ? generic_perform_write+0x110/0x17f^M
+ [<c05001c5>] ? iov_iter_advance+0x9/0xf0
+ [<c04e59bf>] generic_perform_write+0x13c/0x17f
+ [<c04e746b>] __generic_file_write_iter+0x1a6/0x1db^M
+ [<c058aeee>] ? ext4_file_write_iter+0x146/0x489
+ [<c058b176>] ext4_file_write_iter+0x3ce/0x489
+ [<c04bcbed>] ? ring_buffer_unlock_commit+0x25/0x73
+ [<c04c274e>] ? __buffer_unlock_commit+0x10/0x12
+ [<c04c8459>] ? function_trace_call+0xc9/0xf6^M
+ [<c0c7753a>] ? ftrace_call+0x5/0xb
+ [<c054242f>] iter_file_splice_write+0x21f/0x30e
+ [<c0542210>] ? splice_direct_to_actor+0x178/0x178
+ [<c0543921>] SyS_splice+0x3b0/0x4cd
+ [<c0c76982>] syscall_call+0x7/0x7
+Code: 55 89 e5 5d 01 d0 c3 b9 0a 00 00 00 31 d2 f7 f1 55 89 e5 5d c1 e0 04 01 d0 c3 55 89 e5 56 89 c6 53 31 db 39 ca 72 08 89 d0 31 d2 <f7> f1 89 c3 89 f0 f7 f1 8b 4d 08 89 11 89 da 5b 5e 5d c3 55 89
+EIP: [<c06979a9>] div_u64_rem+0x11/0x24 SS:ESP 0068:efad5c98
+---[ end trace 04e65e2c8b607f3d ]---
 
-Imagine, that I run arm, aarch64 or something else and do
-cross-compiling kernel for x86 on it. Then CONFIG_X86 will evaluate to
-'y' and make will try to compile the apps with the host-compiler, which
-is not x86 one.
+Where the ip of the code points here:
+
+	/*
+	 * Use span=(8*write_bw) in single bdi case as indicated by
+	 * (thresh - bdi_thresh ~= 0) and transit to bdi_thresh in JBOD case.
+	 *
+	 *        bdi_thresh                    thresh - bdi_thresh
+	 * span = ---------- * (8 * write_bw) + ------------------- * bdi_thresh
+	 *          thresh                            thresh
+	 */
+	span = (thresh - bdi_thresh + 8 * write_bw) * (u64)x >> 16;
+	x_intercept = bdi_setpoint + span;
+
+	if (bdi_dirty < x_intercept - span / 4) {
+		pos_ratio = div64_u64(pos_ratio * (x_intercept - bdi_dirty),  <---- bug
+				    x_intercept - bdi_setpoint + 1);
+	} else
+		pos_ratio /= 4;
 
 
+Now my kernel contains d5c9fde3dae75 "mm/page-writeback.c: fix divide by
+zero in pos_ratio_polynom", which is suppose to fix a divide by zero by
+changing div_u64 to div64_u64(), which changes the divisor parameter
+from 32bit to 64bit. But the x_intercept and bdi_setpoint are still
+just unsigned longs, which on 32bit systems are 32 bits. Just using
+div64_u64() isn't enough, the value passed in must also be 64 bit
+otherwise the "x_intercept - bdi_setpoint + 1" will still be truncated
+before it gets passed into div64_u64(). I don't see how d5c9fde3dae75
+could have fixed anything.
+
+I'd write a patch to fix this, but my wife has me doing other chores.
+
+-- Steve
