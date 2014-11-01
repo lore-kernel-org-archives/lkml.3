@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbaKAWvn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:51:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60177 "EHLO
+	id S1753450AbaKAWvr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:51:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60176 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751617AbaKAWj3 (ORCPT
+	by vger.kernel.org with ESMTP id S1751622AbaKAWj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:29 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -17,10 +17,10 @@ CC: akpm@linux-foundation.org,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
         "Mark" <markk@clara.co.uk>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.71398723@decadent.org.uk>
+Message-ID: <lsq.1414880883.789277560@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 057/102] USB: storage: Add quirk for Adaptec
- USBConnect 2000 USB-to-SCSI Adapter
+Subject: [PATCH 3.2 059/102] USB: storage: Add quirks for Entrega/Xircom
+ USB to SCSI converters
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,37 +35,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark <markk@clara.co.uk>
 
-commit 67d365a57a51fb9dece6a5ceb504aa381cae1e5b upstream.
+commit c80b4495c61636edc58fe1ce300f09f24db28e10 upstream.
 
-The Adaptec USBConnect 2000 is another SCSI-USB converter which uses
-Shuttle Technology/SCM Microsystems chips. The US_FL_SCM_MULT_TARG quirk is
-required to use SCSI devices with ID other than 0.
+This patch adds quirks for Entrega Technologies (later Xircom PortGear) USB-
+SCSI converters. They use Shuttle Technology EUSB-01/EUSB-S1 chips. The
+US_FL_SCM_MULT_TARG quirk is needed to allow multiple devices on the SCSI
+chain to be accessed. Without it only the (single) device with SCSI ID 0
+can be used.
 
-I don't have a USBConnect 2000, but based on the other entries for Shuttle/
-SCM-based converters this patch is very likely correct. I used 0x0000 and
-0x9999 for bcdDeviceMin and bcdDeviceMax because I'm not sure which
-bcdDevice value the product uses.
+The standalone converter sold by Entrega had model number U1-SC25. Xircom
+acquired Entrega and re-branded the product line PortGear. The PortGear USB
+to SCSI Converter (model PGSCSI) is internally identical to the Entrega
+product, but later models may use a different USB ID. The Entrega-branded
+units have USB ID 1645:0007, as does my Xircom PGSCSI, but the Windows and
+Macintosh drivers also support 085A:0028.
+
+Entrega also sold the "Mac USB Dock", which provides two USB ports, a Mac
+(8-pin mini-DIN) serial port and a SCSI port. It appears to the computer as
+a four-port hub, USB-serial, and USB-SCSI converters. The USB-SCSI part may
+have initially used the same ID as the standalone U1-SC25 (1645:0007), but
+later production used 085A:0026.
+
+My Xircom PortGear PGSCSI has bcdDevice=0x0100. Units with bcdDevice=0x0133
+probably also exist.
+
+This patch adds quirks for 1645:0007, 085A:0026 and 085A:0028. The Windows
+driver INF file also mentions 085A:0032 "PortStation SCSI Module", but I
+couldn't find any mention of that actually existing in the wild; perhaps it
+was cancelled before release?
 
 Signed-off-by: Mark Knibbs <markk@clara.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_devs.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/storage/unusual_devs.h | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
 --- a/drivers/usb/storage/unusual_devs.h
 +++ b/drivers/usb/storage/unusual_devs.h
-@@ -93,6 +93,12 @@ UNUSUAL_DEV(  0x03f0, 0x4002, 0x0001, 0x
- 		"PhotoSmart R707",
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_FIX_CAPACITY),
+@@ -1117,6 +1117,18 @@ UNUSUAL_DEV(  0x0851, 0x1543, 0x0200, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_NOT_LOCKABLE),
  
-+UNUSUAL_DEV(  0x03f3, 0x0001, 0x0000, 0x9999,
-+		"Adaptec",
-+		"USBConnect 2000",
++UNUSUAL_DEV(  0x085a, 0x0026, 0x0100, 0x0133,
++		"Xircom",
++		"PortGear USB-SCSI (Mac USB Dock)",
 +		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
 +		US_FL_SCM_MULT_TARG ),
 +
- /* Reported by Sebastian Kapfer <sebastian_kapfer@gmx.net>
-  * and Olaf Hering <olh@suse.de> (different bcd's, same vendor/product)
-  * for USB floppies that need the SINGLE_LUN enforcement.
++UNUSUAL_DEV(  0x085a, 0x0028, 0x0100, 0x0133,
++		"Xircom",
++		"PortGear USB to SCSI Converter",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
++
+ /* Submitted by Jan De Luyck <lkml@kcore.org> */
+ UNUSUAL_DEV(  0x08bd, 0x1100, 0x0000, 0x0000,
+ 		"CITIZEN",
+@@ -1944,6 +1956,14 @@ UNUSUAL_DEV(  0x152d, 0x2329, 0x0100, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
+ 
++/* Entrega Technologies U1-SC25 (later Xircom PortGear PGSCSI)
++ * and Mac USB Dock USB-SCSI */
++UNUSUAL_DEV(  0x1645, 0x0007, 0x0100, 0x0133,
++		"Entrega Technologies",
++		"USB to SCSI Converter",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
++
+ /* Reported by Robert Schedel <r.schedel@yahoo.de>
+  * Note: this is a 'super top' device like the above 14cd/6600 device */
+ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x0201,
 
