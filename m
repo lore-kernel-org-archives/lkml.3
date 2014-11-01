@@ -1,130 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750985AbaKAWdu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:33:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47655 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaKAWdt (ORCPT
+	id S1751303AbaKAWgi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:36:38 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57888 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750785AbaKAWgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 18:33:49 -0400
-Date: Sat, 1 Nov 2014 23:33:43 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Lameter <cl@linux.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
-In-Reply-To: <alpine.DEB.2.11.1411011646280.7732@gentwo.org>
-Message-ID: <alpine.DEB.2.11.1411012313320.5308@nanos>
-References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org> <alpine.DEB.2.11.1411012003390.5308@nanos> <alpine.DEB.2.11.1411011646280.7732@gentwo.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Sat, 1 Nov 2014 18:36:36 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+K7PKmipuDBanIb/PfiUjAjZlvpYJdb9c=
+X-DKIM: OpenDKIM Filter v2.0.1 titan ABA5E60EEBC
+Date: Sat, 1 Nov 2014 18:36:25 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Benoit Masson <yahoo@perenite.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
+Message-ID: <20141101223625.GB3698@titan.lakedaemon.net>
+References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 1 Nov 2014, Christoph Lameter wrote:
-> On Sat, 1 Nov 2014, Thomas Gleixner wrote:
+Sebastian,
+
+On Fri, Sep 19, 2014 at 10:14:36PM +0200, Sebastian Hesselbarth wrote:
+> Guys,
 > 
-> > On Fri, 31 Oct 2014, Christoph Lameter wrote:
-> > > The reasoning behind this function is not clear to me and removal seems
-> >
-> > The comment above the function is clear enough.
+> this is a patch set preparing barebox support for ix4-300d. As usual,
+> I stumbled upon a few nice-to-haves before actually touching ix4-300d
+> dts. As it is a mach-mvebu thing, I just added the related mailing
+> lists instead of each of the DT maintainers.
 > 
-> I looked around into the functions called by the timer interrupt for
-> accounting etc. They have measures to compensate if the HZ is not
-> occurring for some time.
-
-Let's look at that comment first:
-
- * Keep at least one tick per second when a single
- * active task is running because the scheduler doesn't
- * yet completely support full dynticks environment.
- *
- * This makes sure that uptime, CFS vruntime, load
- * balancing, etc... continue to move forward, even
- * with a very low granularity.
-
-So this talks about the scheduler tick obviously, right?
-
-Now scheduler_tick() is invoked from update_process_times() and
-update_process_times() is invoked from tick_sched_handle() and that is
-invoked from either tick_sched_timer() or tick_nohz_handler().
-
-tick_sched_timer() is the hrtimer callback of tick_cpu_sched.sched_timer.
-That's used when high resolution timers are enabled.
-
-tick_nohz_handler() is the event handler for the clock event device if
-high resolution timers are disabled.
-
-Now the callsite of scheduler_tick_max_deferment() does:
-
-   time_delta = min(time_delta, scheduler_tick_max_deferment());
-
-And that is used further down after some other checks to arm either
-tick_cpu_sched.sched_timer or the clockevent itself.
-
-Which then when fired will invoke scheduler_tick() ....
-
-Really hard to figure out, right?
-
-> > > to have a limited impact on the system overall. Even without the
-> > > cap to 1 second the system will be limited by the boundaries on the period
-> > > of interrupts by various devices (in my case I ended up with a 4 second
-> > > interval on x86 because of the limitations of periodicy of the underlying
-> > > interupt source).
-> >
-> > And just because it happens to do so on your machine it's not
-> > guaranteed.
+> First 5 patches consolidate SoC-specific pinctrl nodes to one common
+> node in armada-xp.dtsi, compatible overwrites for each SoC, and node
+> alias usage for each board. Also, ge{0,1} pinctrl settings are moved
+> to the common node from one board specific node.
 > 
-> When would it not occur? Where do we lack a measure to cope with missing
-> timer interrupts now?
-
-I wont happen, if time_delta is KTIME_MAX and the following checks are
-not having a timer armed.
-
-                 if (unlikely(expires.tv64 == KTIME_MAX)) {
-                        if (ts->nohz_mode == NOHZ_MODE_HIGHRES)
-                                hrtimer_cancel(&ts->sched_timer);
-                        goto out;
-                }
-
-Which does either not arm the clockevent device (non highres) or
-cancels ts->sched_timer (highres).
-
-So in that case your timer interrupt will stop completely and therefor
-the scheduler updates on that cpu wont happen anymore.
-
-> > But we care about that _after_ we solved the scheduler tick
-> > requirement because that is the most evident one.
+> Last 3 patches then use that ge{0,1} pinctrl settings on ix4-300d which
+> is vital for bootloader init. During exploration of ix4-300d, I also
+> found a i2c eeprom that has not been added to the dts, yet. Finally,
+> there is only one 74hc595 on ix4 mainboard while dts property is set
+> for two.
 > 
-> Why does the scheduler require that tick? It seems that the processor is
-> always busy running exactly 1 process when the tick is not
-> occurring. Anything else will switch on the tick again. So the information
-> that the scheduler has never becomes outdated.
+> I cannot recall in detail what is on that eeprom, but IIRC it is nothing
+> important. Some reg,addr pairs for some init stuff that should have
+> already been done by stock u-boot. Anyway, adding the node will do no
+> harm.
+> 
+> Patches are based on v3.17-rc1 and intended for v3.18 but I am not in
+> a hurry. I only compile tested this, so a formal Tested-by from Benoit
+> for the ix4 and any other Armada XP board would be great.
 
-Surely vruntime, load balancing data, load accounting and all the
-other stuff which contributes to global and local state updates itself
-magically.
+I lost track of this thread, are you resending?  Did Benoit get a
+successful test run?
 
-As I said before: It can be delegated to a housekeeper, but this needs
-to be implemented first before we can remove that function.
+thx,
 
-There is a world outside of vmstat kworker, really.
-
-Thanks,
-
-	tglx
+Jason.
