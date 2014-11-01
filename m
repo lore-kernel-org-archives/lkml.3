@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887AbaKAIZc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 04:25:32 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:56491 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaKAIZa (ORCPT
+	id S1756657AbaKAIiM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 04:38:12 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57261 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaKAIiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 04:25:30 -0400
+	Sat, 1 Nov 2014 04:38:09 -0400
+Date: Sat, 1 Nov 2014 08:38:04 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dealing with proc_ns_follow_link() and "namespace" dentries
+Message-ID: <20141101083804.GO7996@ZenIV.linux.org.uk>
+References: <20141013062945.GX7996@ZenIV.linux.org.uk>
+ <87r3ybwq0b.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Reply-To: cw00.choi@samsung.com
-In-Reply-To: <1414814443-4695-1-git-send-email-a.kesavan@samsung.com>
-References: <1414759083-4555-1-git-send-email-a.kesavan@samsung.com>
-	<1414814443-4695-1-git-send-email-a.kesavan@samsung.com>
-Date: Sat, 1 Nov 2014 17:25:29 +0900
-Message-ID: <CAGTfZH09UB7ipvZ+R_eKta-_rD-ggR9NaFMW6tds0E+yR_=yYA@mail.gmail.com>
-Subject: Re: [PATCH v2] iio: adc: exynos_adc: Add support for exynos7
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Abhilash Kesavan <a.kesavan@samsung.com>
-Cc: linux-iio@vger.kernel.org, jic23@kernel.org,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r3ybwq0b.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Abhilash,
+On Mon, Oct 13, 2014 at 03:42:28PM -0700, Eric W. Biederman wrote:
 
-On Sat, Nov 1, 2014 at 1:00 PM, Abhilash Kesavan <a.kesavan@samsung.com> wrote:
-> The ADC on exynos7 is quite similar to ADCv2. The differences are as
-> follows:
->         - exynos7-adc has 8 input channels (as against 10 in ADCv2).
->         - exynos7 does not include an ADC PHY control register.
->         - Some ADC_CON2 register bits being used in ADCv2 are listed as
->           reserved in exynos7-adc. This results in a different init_hw
->           function for exynos7.
->
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> ---
-> - Based on Naveen's "iio: exynos-adc: use syscon instead of ioremap" patchset
-> http://comments.gmane.org/gmane.linux.kernel.iio/13943
->
->  .../devicetree/bindings/arm/samsung/exynos-adc.txt |  2 ++
->  drivers/iio/adc/exynos_adc.c                       | 32 ++++++++++++++++++++++
->  2 files changed, 34 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> index c368210..f46ca9a 100644
-> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> @@ -16,6 +16,8 @@ Required properties:
->                                 future controllers.
->                         Must be "samsung,exynos3250-adc" for
->                                 controllers compatible with ADC of Exynos3250.
-> +                       Must be "samsung,exynos7-adc" for
-> +                               the ADC in Exynos7 and compatibles
->                         Must be "samsung,s3c2410-adc" for
->                                 the ADC in s3c2410 and compatibles
->                         Must be "samsung,s3c2416-adc" for
-> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-> index fe03177..3a2dbb3 100644
-> --- a/drivers/iio/adc/exynos_adc.c
-> +++ b/drivers/iio/adc/exynos_adc.c
-> @@ -390,6 +390,35 @@ static const struct exynos_adc_data exynos3250_adc_data = {
->         .start_conv     = exynos_adc_v2_start_conv,
->  };
->
-> +static void exynos_adc_exynos7_init_hw(struct exynos_adc *info)
-> +{
-> +       u32 con1, con2;
-> +
-> +       if (info->data->needs_adc_phy)
-> +               regmap_write(info->pmu_map, info->data->phy_offset, 1);
-> +
-> +       con1 = ADC_V2_CON1_SOFT_RESET;
-> +       writel(con1, ADC_V2_CON1(info->regs));
-> +
-> +       con2 = readl(ADC_V2_CON2(info->regs));
-> +       con2 &= ~ADC_V2_CON2_C_TIME(7);
-> +       con2 |= ADC_V2_CON2_C_TIME(0);
-> +       writel(con2, ADC_V2_CON2(info->regs));
-> +
-> +       /* Enable interrupts */
-> +       writel(1, ADC_V2_INT_EN(info->regs));
-> +}
-> +
-> +static const struct exynos_adc_data exynos7_adc_data = {
-> +       .num_channels   = MAX_ADC_V1_CHANNELS,
-> +       .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
-> +
-> +       .init_hw        = exynos_adc_exynos7_init_hw,
-> +       .exit_hw        = exynos_adc_v2_exit_hw,
-> +       .clear_irq      = exynos_adc_v2_clear_irq,
-> +       .start_conv     = exynos_adc_v2_start_conv,
-> +};
-> +
->  static const struct of_device_id exynos_adc_match[] = {
->         {
->                 .compatible = "samsung,s3c2410-adc",
-> @@ -415,6 +444,9 @@ static const struct of_device_id exynos_adc_match[] = {
->         }, {
->                 .compatible = "samsung,exynos3250-adc",
->                 .data = &exynos3250_adc_data,
-> +       }, {
-> +               .compatible = "samsung,exynos7-adc",
-> +               .data = &exynos7_adc_data,
->         },
->         {},
->  };
+> >From looking at your proposed code that doesn't look like it will be
+> any more difficult to maintain from the namespace side.  So I have no
+> objects with moving the code in that direction. 
+> 
+> > 	It's obviously a project for the next cycle and it'll require
+> > some cooperation between vfs and userns trees, but not too much of it -
+> > all we really need is a never-changed commit embedding that structure into
+> > all ...ns and passing _that_ to proc_{alloc,free}_inum() replacements
+> > Merged both into vfs.git #for-next and usern one.  We can do that right
+> > after -rc1.  Incidentally, it might make sense to move refcount into that
+> > common piece as well, but that's independent from the stuff above.
+> 
+> That sounds like a reasonable direction to go.  I think your schedule
+> may be a tad optimistic time-wise, if for no other reason that code
+> reviews take time, but that plan should work.
 
-Looks good to me.
+OK, interim branch (_completely_ untested, and there's quite a bit of
+work remaining) is in vfs.git#nsfs.  It will be refactored; moreover,
+most of that stuff will move out from fs/proc/namespaces.c - either into
+fs/nsfs.c or into kernel/nsproxy.c.  And purely VFS followups are not even
+touched yet - I know what I want to do, and I think there's no obstacles
+left, but that's a separate story.  "Filesystem for ns dentries/inodes"
+part is done, though (modulo debugging and moving it out of fs/proc).
 
-Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+I wonder if we would be better off not using proc_alloc_inum() there -
+it's not hard to do a separate allocator, especially since there's no
+requirements re non-intersecting sets of inumbers for procfs and for this.
+That's the last part shared with procfs...
 
-Best Regards,
-Chanwoo Choi
+Anyway, I'm going down right now (nearly 5am here), so further fun will have
+to wait a bit...
