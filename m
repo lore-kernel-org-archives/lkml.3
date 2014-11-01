@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaKAWlX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:41:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60319 "EHLO
+	id S1752693AbaKAWla (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:41:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60313 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751797AbaKAWjd (ORCPT
+	by vger.kernel.org with ESMTP id S1751786AbaKAWjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:33 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,13 +14,19 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Jiri Kosina" <jkosina@suse.cz>
+        "Yasuaki Ishimatsu" <isimatu.yasuaki@jp.fujitsu.com>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        "Prarit Bhargava" <prarit@redhat.com>,
+        "Toshi Kani" <toshi.kani@hp.com>,
+        "Steven Rostedt" <srostedt@redhat.com>, "Linn Crosetto" <linn@hp.com>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "David Rientjes" <rientjes@google.com>, "Borislav Petkov" <bp@suse.de>,
+        "Wanpeng Li" <wanpeng.li@linux.intel.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.103430756@decadent.org.uk>
+Message-ID: <lsq.1414880883.328799341@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 024/102] ACPI / cpuidle: fix deadlock between
- cpuidle_lock and cpu_hotplug.lock
+Subject: [PATCH 3.2 069/102] sched: Fix unreleased llc_shared_mask bit
+ during CPU hotplug
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,69 +39,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-commit 6726655dfdd2dc60c035c690d9f10cb69d7ea075 upstream.
+commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
 
-There is a following AB-BA dependency between cpu_hotplug.lock and
-cpuidle_lock:
+The following bug can be triggered by hot adding and removing a large number of
+xen domain0's vcpus repeatedly:
 
-1) cpu_hotplug.lock -> cpuidle_lock
-enable_nonboot_cpus()
- _cpu_up()
-  cpu_hotplug_begin()
-   LOCK(cpu_hotplug.lock)
- cpu_notify()
-  ...
-  acpi_processor_hotplug()
-   cpuidle_pause_and_lock()
-    LOCK(cpuidle_lock)
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
+	PGD 5a9d5067 PUD 13067 PMD 0
+	Oops: 0000 [#3] SMP
+	[...]
+	Call Trace:
+	load_balance
+	? _raw_spin_unlock_irqrestore
+	idle_balance
+	__schedule
+	schedule
+	schedule_timeout
+	? lock_timer_base
+	schedule_timeout_uninterruptible
+	msleep
+	lock_device_hotplug_sysfs
+	online_store
+	dev_attr_store
+	sysfs_write_file
+	vfs_write
+	SyS_write
+	system_call_fastpath
 
-2) cpuidle_lock -> cpu_hotplug.lock
-acpi_os_execute_deferred() workqueue
- ...
- acpi_processor_cst_has_changed()
-  cpuidle_pause_and_lock()
-   LOCK(cpuidle_lock)
-  get_online_cpus()
-   LOCK(cpu_hotplug.lock)
+Last level cache shared mask is built during CPU up and the
+build_sched_domain() routine takes advantage of it to setup
+the sched domain CPU topology.
 
-Fix this by reversing the order acpi_processor_cst_has_changed() does
-thigs -- let it first execute the protection against CPU hotplug by
-calling get_online_cpus() and obtain the cpuidle lock only after that (and
-perform the symmentric change when allowing CPUs hotplug again and
-dropping cpuidle lock).
+However, llc_shared_mask is not released during CPU disable,
+which leads to an invalid sched domainCPU topology.
 
-Spotted by lockdep.
+This patch fix it by releasing the llc_shared_mask correctly
+during CPU disable.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Yasuaki also reported that this can happen on real hardware:
+
+  https://lkml.org/lkml/2014/7/22/1018
+
+His case is here:
+
+	==
+	Here is an example on my system.
+	My system has 4 sockets and each socket has 15 cores and HT is
+	enabled. In this case, each core of sockes is numbered as
+	follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-44, 90-104
+	Socket#3 | 45-59, 105-119
+
+	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+
+	It means that last level cache of Socket#2 is shared with
+	CPU#30-44 and 90-104.
+
+	When hot-removing socket#2 and #3, each core of sockets is
+	numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+
+	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
+	remains having 0x3fff80000001fffc0000000.
+
+	After that, when hot-adding socket#2 and #3, each core of
+	sockets is numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-59
+	Socket#3 | 90-119
+
+	Then llc_shared_mask of CPU#30 becomes
+	0x3fff8000fffffffc0000000. It means that last level cache of
+	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
+	the wrong value.
+
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Tested-by: Linn Crosetto <linn@hp.com>
+Reviewed-by: Borislav Petkov <bp@suse.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/processor_idle.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/smpboot.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1165,9 +1165,9 @@ int acpi_processor_cst_has_changed(struc
- 	if (smp_processor_id() == 0 &&
- 			cpuidle_get_driver() == &acpi_idle_driver) {
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1252,6 +1252,9 @@ static void remove_siblinginfo(int cpu)
  
--		cpuidle_pause_and_lock();
- 		/* Protect against cpu-hotplug */
- 		get_online_cpus();
-+		cpuidle_pause_and_lock();
- 
- 		/* Disable all cpuidle devices */
- 		for_each_online_cpu(cpu) {
-@@ -1192,8 +1192,8 @@ int acpi_processor_cst_has_changed(struc
- 				cpuidle_enable_device(&_pr->power.dev);
- 			}
- 		}
--		put_online_cpus();
- 		cpuidle_resume_and_unlock();
-+		put_online_cpus();
- 	}
- 
- 	return 0;
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 
