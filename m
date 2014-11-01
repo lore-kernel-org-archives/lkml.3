@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385AbaKAFa0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 01:30:26 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:34520 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562AbaKAFaZ (ORCPT
+	id S1758170AbaKAFdS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 01:33:18 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:61176 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaKAFdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 01:30:25 -0400
-Date: Sat, 1 Nov 2014 11:00:15 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Chen Weixiang <weixiangchen@gmail.com>,
-        Marek Belisko <marek.belisko@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chen Weixiang <weixiang.chen@gmail.com>,
-        Aybuke Ozdemir <aybuke.147@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Nicolas Thery <nthery@gmail.com>, Greg Donald <gdonald@gmail.com>,
-        Daniel Dodge <danieldodgese@gmail.com>,
-        Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] staging: ft1000: spaces required around that '=',
- '<' and '=='
-Message-ID: <20141101053015.GI3642@sudip-PC>
-References: <1414810047-6975-1-git-send-email-weixiang.chen@gmail.com>
- <1414810047-6975-2-git-send-email-weixiang.chen@gmail.com>
- <20141101050535.GC3642@sudip-PC>
- <1414818870.31550.1.camel@perches.com>
- <20141101052501.GH3642@sudip-PC>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141101052501.GH3642@sudip-PC>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 1 Nov 2014 01:33:17 -0400
+Message-ID: <1414819993.23500.1.camel@phoenix>
+Subject: [PATCH] soc: ti: knav_qmss_queue: Use list_for_each_entry_safe to
+ prevent use after free
+From: Axel Lin <axel.lin@ingics.com>
+To: Santosh Shilimkar <ssantosh@kernel.org>
+Cc: Sandeep Nair <sandeep_n@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Date: Sat, 01 Nov 2014 13:33:13 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 01, 2014 at 10:55:01AM +0530, Sudip Mukherjee wrote:
-> On Fri, Oct 31, 2014 at 10:14:30PM -0700, Joe Perches wrote:
-> > On Sat, 2014-11-01 at 10:35 +0530, Sudip Mukherjee wrote:
-> > > On Sat, Nov 01, 2014 at 10:47:22AM +0800, Chen Weixiang wrote:
-> > > > Remove following code style errors from ft1000/ft1000-usb/ft1000_debug.c
-> > > > and ft1000/ft1000-pcmcia/ft1000_hw.c:
-> > > > ERROR: spaces required around that '=' (ctx:VxV)
-> > > > ERROR: spaces required around that '<' (ctx:VxV)
-> > > > ERROR: spaces required around that '==' (ctx:VxV)
-> > > > 
-> > > 
-> > > many whitespace errors in the patch.
-> > > checkpatch gives total: 8 errors, 23 warnings, 125 lines checked
-> > 
-> > When fixing one thing (like spacing), it's pretty
-> > expected to have more checkpatch errors.
-> > 
-> > It's a process, don't worry about most intermediate
-> > warnings when doing checkpatch cleanups.
-> > 
-> > Adding trailing spaces is not good, nearly every
-> > other type of message can be ignored.
-> > 
-> ok, just to verify, i thought of trying to generate a similar patch which will not give checkpatch errors.
-> but this patch is not applying to next-20141031.
-> 
-> thanks
-> sudip
+list_for_each_entry_safe() is necessary if list objects are deleted from
+the list while traversing it.
 
-looks like Nicky Chorley has already done part of this cleanup and it was also applied on 26/10/2014.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/soc/ti/knav_qmss_queue.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-thanks
-sudip
+diff --git a/drivers/soc/ti/knav_qmss_queue.c b/drivers/soc/ti/knav_qmss_queue.c
+index 6f22d56..9b8dd67 100644
+--- a/drivers/soc/ti/knav_qmss_queue.c
++++ b/drivers/soc/ti/knav_qmss_queue.c
+@@ -1306,14 +1306,14 @@ static void knav_free_queue_ranges(struct knav_device *kdev)
+ static void knav_queue_free_regions(struct knav_device *kdev)
+ {
+ 	struct knav_region *region;
+-	struct knav_pool *pool;
++	struct knav_pool *pool, *tmp;
+ 	unsigned size;
+ 
+ 	for (;;) {
+ 		region = first_region(kdev);
+ 		if (!region)
+ 			break;
+-		list_for_each_entry(pool, &region->pools, region_inst)
++		list_for_each_entry_safe(pool, tmp, &region->pools, region_inst)
+ 			knav_pool_destroy(pool);
+ 
+ 		size = region->virt_end - region->virt_start;
+-- 
+1.9.1
+
+
+
