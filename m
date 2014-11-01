@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693AbaKAWla (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:41:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60313 "EHLO
+	id S1752719AbaKAWle (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:41:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60311 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751786AbaKAWjd (ORCPT
+	by vger.kernel.org with ESMTP id S1751779AbaKAWjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:33 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,20 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Yasuaki Ishimatsu" <isimatu.yasuaki@jp.fujitsu.com>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Prarit Bhargava" <prarit@redhat.com>,
-        "Toshi Kani" <toshi.kani@hp.com>,
-        "Steven Rostedt" <srostedt@redhat.com>, "Linn Crosetto" <linn@hp.com>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "David Rientjes" <rientjes@google.com>, "Borislav Petkov" <bp@suse.de>,
-        "Wanpeng Li" <wanpeng.li@linux.intel.com>
+CC: akpm@linux-foundation.org, "Dave " Trinity " Jones" <davej@redhat.com>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        "Davidlohr Bueso" <dave@stgolabs.net>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Darren Hart" <dvhart@linux.intel.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.328799341@decadent.org.uk>
+Message-ID: <lsq.1414880883.934544593@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 069/102] sched: Fix unreleased llc_shared_mask bit
- during CPU hotplug
+Subject: [PATCH 3.2 045/102] futex: Unlock hb->lock in futex_wait_requeue_pi()
+ error path
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -39,118 +35,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
+commit 13c42c2f43b19aab3195f2d357db00d1e885eaa8 upstream.
 
-The following bug can be triggered by hot adding and removing a large number of
-xen domain0's vcpus repeatedly:
+futex_wait_requeue_pi() calls futex_wait_setup(). If
+futex_wait_setup() succeeds it returns with hb->lock held and
+preemption disabled. Now the sanity check after this does:
 
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
-	PGD 5a9d5067 PUD 13067 PMD 0
-	Oops: 0000 [#3] SMP
-	[...]
-	Call Trace:
-	load_balance
-	? _raw_spin_unlock_irqrestore
-	idle_balance
-	__schedule
-	schedule
-	schedule_timeout
-	? lock_timer_base
-	schedule_timeout_uninterruptible
-	msleep
-	lock_device_hotplug_sysfs
-	online_store
-	dev_attr_store
-	sysfs_write_file
-	vfs_write
-	SyS_write
-	system_call_fastpath
+        if (match_futex(&q.key, &key2)) {
+	   	ret = -EINVAL;
+		goto out_put_keys;
+	}
 
-Last level cache shared mask is built during CPU up and the
-build_sched_domain() routine takes advantage of it to setup
-the sched domain CPU topology.
+which releases the keys but does not release hb->lock.
 
-However, llc_shared_mask is not released during CPU disable,
-which leads to an invalid sched domainCPU topology.
+So we happily return to user space with hb->lock held and therefor
+preemption disabled.
 
-This patch fix it by releasing the llc_shared_mask correctly
-during CPU disable.
+Unlock hb->lock before taking the exit route.
 
-Yasuaki also reported that this can happen on real hardware:
-
-  https://lkml.org/lkml/2014/7/22/1018
-
-His case is here:
-
-	==
-	Here is an example on my system.
-	My system has 4 sockets and each socket has 15 cores and HT is
-	enabled. In this case, each core of sockes is numbered as
-	follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-44, 90-104
-	Socket#3 | 45-59, 105-119
-
-	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-
-	It means that last level cache of Socket#2 is shared with
-	CPU#30-44 and 90-104.
-
-	When hot-removing socket#2 and #3, each core of sockets is
-	numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-
-	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
-	remains having 0x3fff80000001fffc0000000.
-
-	After that, when hot-adding socket#2 and #3, each core of
-	sockets is numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-59
-	Socket#3 | 90-119
-
-	Then llc_shared_mask of CPU#30 becomes
-	0x3fff8000fffffffc0000000. It means that last level cache of
-	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
-	the wrong value.
-
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Tested-by: Linn Crosetto <linn@hp.com>
-Reviewed-by: Borislav Petkov <bp@suse.de>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Dave "Trinity" Jones <davej@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Reviewed-by: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409112318500.4178@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bwh: Backported to 3.2: queue_unlock() takes two parameters]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/smpboot.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/futex.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1252,6 +1252,9 @@ static void remove_siblinginfo(int cpu)
- 
- 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
- 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-+	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-+		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-+	cpumask_clear(cpu_llc_shared_mask(cpu));
- 	cpumask_clear(cpu_sibling_mask(cpu));
- 	cpumask_clear(cpu_core_mask(cpu));
- 	c->phys_proc_id = 0;
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2460,6 +2460,7 @@ static int futex_wait_requeue_pi(u32 __u
+ 	 * shared futexes. We need to compare the keys:
+ 	 */
+ 	if (match_futex(&q.key, &key2)) {
++		queue_unlock(&q, hb);
+ 		ret = -EINVAL;
+ 		goto out_put_keys;
+ 	}
 
