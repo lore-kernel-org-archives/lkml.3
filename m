@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751081AbaKAVtd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 17:49:33 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:45109 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712AbaKAVtc (ORCPT
+	id S1751275AbaKAVwW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 17:52:22 -0400
+Received: from resqmta-po-09v.sys.comcast.net ([96.114.154.168]:59735 "EHLO
+	resqmta-po-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750873AbaKAVwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 17:49:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1411012135040.5308@nanos>
-References: <cover.1414190806.git.luto@amacapital.net> <266afcba1d1f91ea5501e4e16e94bbbc1a9339b6.1414190806.git.luto@amacapital.net>
- <alpine.DEB.2.11.1411012058030.5308@nanos> <CALCETrXBkc8_rMdr0ueBTBYwSVQ7C3juZo4JCEY9UU=rm_nNww@mail.gmail.com>
- <alpine.DEB.2.11.1411012135040.5308@nanos>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 1 Nov 2014 14:49:10 -0700
-Message-ID: <CALCETrVjG4T-+jZ+4AZX-i9s_Do8BY=+fp1JmWCxnbAfGiVvug@mail.gmail.com>
-Subject: Re: [PATCH v2 5/8] perf: Add pmu callbacks to track event mapping and unmapping
+	Sat, 1 Nov 2014 17:52:21 -0400
+Date: Sat, 1 Nov 2014 16:52:13 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: X86 ML <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
-        Vince Weaver <vince@deater.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Kees Cook <keescook@chromium.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Content-Type: text/plain; charset=UTF-8
+cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qti.qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
+In-Reply-To: <alpine.DEB.2.11.1411012003390.5308@nanos>
+Message-ID: <alpine.DEB.2.11.1411011646280.7732@gentwo.org>
+References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org> <alpine.DEB.2.11.1411012003390.5308@nanos>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 1, 2014 1:39 PM, "Thomas Gleixner" <tglx@linutronix.de> wrote:
+On Sat, 1 Nov 2014, Thomas Gleixner wrote:
+
+> On Fri, 31 Oct 2014, Christoph Lameter wrote:
+> > The reasoning behind this function is not clear to me and removal seems
 >
-> On Sat, 1 Nov 2014, Andy Lutomirski wrote:
-> > On Sat, Nov 1, 2014 at 12:59 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > On Fri, 24 Oct 2014, Andy Lutomirski wrote:
-> > >
-> > > I'm probably missing something.
-> > >
-> > > Why is this tied to the mmap? If I just open a counter then I should
-> > > be able to read the counter from user space w/o mmapping something in
-> > > the first place.
+> The comment above the function is clear enough.
+
+I looked around into the functions called by the timer interrupt for
+accounting etc. They have measures to compensate if the HZ is not
+occurring for some time.
+
+> > to have a limited impact on the system overall. Even without the
+> > cap to 1 second the system will be limited by the boundaries on the period
+> > of interrupts by various devices (in my case I ended up with a 4 second
+> > interval on x86 because of the limitations of periodicy of the underlying
+> > interupt source).
+>
+> And just because it happens to do so on your machine it's not
+> guaranteed.
+
+When would it not occur? Where do we lack a measure to cope with missing
+timer interrupts now?
+
+> > Moreover this artificial limits the impact the benefit that commit
+> > commit 7cc36bbddde5cd0c98f0c06e3304ab833d662565 (on-demand vmstat workers)
+> > should be giving us.
 > >
-> > You can read it with read(2), which this patch shouldn't affect.  If
-> > you want to read it with rdpmc, then you need to know what rdpmc index
-> > to use, and the API for that is to mmap the event, check the
-> > userpage's cap_user_rdpmc, and then rdpmc on ->idx - 1 (assuming that
-> > ->idx != 0).  You can't safely make any assumptions about which rdpmc
-> > index it will be without explicitly checking, because perf reserves
-> > the right to change the index whenever it wants.
+> > Without this patch timer interrupts will still occur in 1 second intervals
+> > but no vmstat kworker will run. On a processor where all other
 >
-> Got it. As I expected: I was missing something :)
->
-> > There's plenty of room to tighten up the restrictions further, but
-> > this is, I think, a decent first step, and it solves the problem of
-> > information leaking into seccomp sandboxes.
->
-> In which way?
+> And what has this to do with vmstat kworker? Nothing.
 
-All the performance counters were readable without using any syscalls.
-That leaks hints as to which events are in use, and it possibly leaks
-interesting side channel information.   With this series applied, you
-need a at least mmap an rdpmc-able event, which most seccomp sandboxes
-won't allow.
+This means that the timer interrupt occurs needlessly.
 
-Unfortunately, rdpmc access to counters can't be controlled
-individually, so it's hard to do all that much better than this.
+> > events have been redirected to other processors nothing will be
+> > going on just timer interrupts that do not do much.
+>
+> What the timer interrupt does is very clearly explained in the comment
+> above the function you want to remove.
 
---Andy
+Could you be specific?
 
+> > With this patch the maximum deferrability of other items will become
+> > evident and work can then proceed on eliminating those
 >
-> Thanks,
->
->         tglx
->
+> What about eliminating the requirement for this function first? It's
+> clear what it does and it's also clear that this can be done remotely
+> from a housekeeping cpu when the full nohz cpu is busy looping in user
+> space. The function is there because nobody has tackled that problem
+> yet.
+
+Where does that requirement exist?
+
+
+> You don't want to tackle the 4 seconds limit of the underlying
+> hardware. What you really want is to eliminate the [hr]timer which is
+> preventing the hardware timer to be shutdown completely.
+
+Yes after the 1 second issue here has been avoided we can move on to the 4
+second one and so on.
+
+> But we care about that _after_ we solved the scheduler tick
+> requirement because that is the most evident one.
+
+Why does the scheduler require that tick? It seems that the processor is
+always busy running exactly 1 process when the tick is not
+occurring. Anything else will switch on the tick again. So the information
+that the scheduler has never becomes outdated.
+
+
+
+
