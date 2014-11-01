@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaKAXGE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:06:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60018 "EHLO
+	id S1752615AbaKAXGB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:06:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59996 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751179AbaKAWj0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751407AbaKAWj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:26 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>
+CC: akpm@linux-foundation.org, "James Ralston" <james.d.ralston@intel.com>,
+        "Tejun Heo" <tj@kernel.org>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.700164972@decadent.org.uk>
+Message-ID: <lsq.1414880883.944531183@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 098/102] dm crypt: fix access beyond the end of
- allocated space
+Subject: [PATCH 3.2 013/102] ata_piix: Add Device IDs for Intel 9 Series PCH
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,90 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed upstream.
+commit 6cad1376954e591c3c41500c4e586e183e7ffe6d upstream.
 
-The DM crypt target accesses memory beyond allocated space resulting in
-a crash on 32 bit x86 systems.
+This patch adds the IDE mode SATA Device IDs for the Intel 9 Series PCH.
 
-This bug is very old (it dates back to 2.6.25 commit 3a7f6c990ad04 "dm
-crypt: use async crypto").  However, this bug was masked by the fact
-that kmalloc rounds the size up to the next power of two.  This bug
-wasn't exposed until 3.17-rc1 commit 298a9fa08a ("dm crypt: use per-bio
-data").  By switching to using per-bio data there was no longer any
-padding beyond the end of a dm-crypt allocated memory block.
-
-To minimize allocation overhead dm-crypt puts several structures into one
-block allocated with kmalloc.  The block holds struct ablkcipher_request,
-cipher-specific scratch pad (crypto_ablkcipher_reqsize(any_tfm(cc))),
-struct dm_crypt_request and an initialization vector.
-
-The variable dmreq_start is set to offset of struct dm_crypt_request
-within this memory block.  dm-crypt allocates the block with this size:
-cc->dmreq_start + sizeof(struct dm_crypt_request) + cc->iv_size.
-
-When accessing the initialization vector, dm-crypt uses the function
-iv_of_dmreq, which performs this calculation: ALIGN((unsigned long)(dmreq
-+ 1), crypto_ablkcipher_alignmask(any_tfm(cc)) + 1).
-
-dm-crypt allocated "cc->iv_size" bytes beyond the end of dm_crypt_request
-structure.  However, when dm-crypt accesses the initialization vector, it
-takes a pointer to the end of dm_crypt_request, aligns it, and then uses
-it as the initialization vector.  If the end of dm_crypt_request is not
-aligned on a crypto_ablkcipher_alignmask(any_tfm(cc)) boundary the
-alignment causes the initialization vector to point beyond the allocated
-space.
-
-Fix this bug by calculating the variable iv_size_padding and adding it
-to the allocated size.
-
-Also correct the alignment of dm_crypt_request.  struct dm_crypt_request
-is specific to dm-crypt (it isn't used by the crypto subsystem at all),
-so it is aligned on __alignof__(struct dm_crypt_request).
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-crypt.c |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/ata/ata_piix.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -1565,6 +1565,7 @@ static int crypt_ctr(struct dm_target *t
- 	unsigned int key_size, opt_params;
- 	unsigned long long tmpll;
- 	int ret;
-+	size_t iv_size_padding;
- 	struct dm_arg_set as;
- 	const char *opt_string;
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -362,6 +362,14 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 	/* SATA Controller IDE (Coleto Creek) */
+ 	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c88, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c89, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c80, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c81, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
  
-@@ -1600,12 +1601,23 @@ static int crypt_ctr(struct dm_target *t
- 
- 	cc->dmreq_start = sizeof(struct ablkcipher_request);
- 	cc->dmreq_start += crypto_ablkcipher_reqsize(any_tfm(cc));
--	cc->dmreq_start = ALIGN(cc->dmreq_start, crypto_tfm_ctx_alignment());
--	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
--			   ~(crypto_tfm_ctx_alignment() - 1);
-+	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
-+
-+	if (crypto_ablkcipher_alignmask(any_tfm(cc)) < CRYPTO_MINALIGN) {
-+		/* Allocate the padding exactly */
-+		iv_size_padding = -(cc->dmreq_start + sizeof(struct dm_crypt_request))
-+				& crypto_ablkcipher_alignmask(any_tfm(cc));
-+	} else {
-+		/*
-+		 * If the cipher requires greater alignment than kmalloc
-+		 * alignment, we don't know the exact position of the
-+		 * initialization vector. We must assume worst case.
-+		 */
-+		iv_size_padding = crypto_ablkcipher_alignmask(any_tfm(cc));
-+	}
- 
- 	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
--			sizeof(struct dm_crypt_request) + cc->iv_size);
-+			sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size);
- 	if (!cc->req_pool) {
- 		ti->error = "Cannot allocate crypt request mempool";
- 		goto bad;
+ 	{ }	/* terminate list */
+ };
 
