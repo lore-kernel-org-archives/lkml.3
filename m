@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759053AbaKACsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 22:48:08 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:46449 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758102AbaKACsD (ORCPT
+	id S1759541AbaKACsQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Oct 2014 22:48:16 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:35046 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758967AbaKACsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 22:48:03 -0400
+	Fri, 31 Oct 2014 22:48:07 -0400
 From: Chen Weixiang <weixiangchen@gmail.com>
 X-Google-Original-From: Chen Weixiang <weixiang.chen@gmail.com>
 To: Marek Belisko <marek.belisko@gmail.com>,
@@ -17,9 +17,9 @@ To: Marek Belisko <marek.belisko@gmail.com>,
         Daniel Dodge <danieldodgese@gmail.com>,
         Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/6] staging: ft1000: else should follow close brace '}'
-Date: Sat,  1 Nov 2014 10:47:26 +0800
-Message-Id: <1414810047-6975-6-git-send-email-weixiang.chen@gmail.com>
+Subject: [PATCH v2 6/6] staging: ft1000: space required after that ','
+Date: Sat,  1 Nov 2014 10:47:27 +0800
+Message-Id: <1414810047-6975-7-git-send-email-weixiang.chen@gmail.com>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1414810047-6975-1-git-send-email-weixiang.chen@gmail.com>
 References: <1414810047-6975-1-git-send-email-weixiang.chen@gmail.com>
@@ -27,66 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove code style error from ft1000/ft1000-pcmcia/ft1000_hw.c:
-ERROR: else should follow close brace '}'
+Remove following code style error from ft1000/ft1000-usb/ft1000_debug.c:
+ERROR: space required after that ',' (ctx:VxV)
 
 Signed-off-by: Chen Weixiang <weixiang.chen@gmail.com>
 ---
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c | 15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_debug.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-index db194bc..48c1ef2 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@ -595,8 +595,7 @@ static void ft1000_hbchk(u_long data)
- 		if (tempword != ho) {
- 			if (info->AsicID == ELECTRABUZZ_ID) {
- 				tempword = ft1000_read_dpram(dev, FT1000_HI_HO);
--			}
--			else {
-+			} else {
- 				tempword = ntohs(ft1000_read_dpram_mag_16(dev, FT1000_MAG_HI_HO, FT1000_MAG_HI_HO_INDX));
- 			}
- 		}
-@@ -715,15 +714,13 @@ static void ft1000_hbchk(u_long data)
- 		if (tempword != hi) {
- 			if (info->AsicID == ELECTRABUZZ_ID) {
- 				ft1000_write_dpram(dev, FT1000_HI_HO, hi);
--			}
--			else {
-+			} else {
- 				ft1000_write_dpram_mag_16(dev, FT1000_MAG_HI_HO, hi_mag, FT1000_MAG_HI_HO_INDX);
- 			}
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
+index 7bc05fe..5e290e9 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
+@@ -301,7 +301,7 @@ static int ft1000_open(struct inode *inode, struct file *file)
+ {
+ 	struct ft1000_info *info;
+ 	struct ft1000_usb *dev = (struct ft1000_usb *)inode->i_private;
+-    int i,num;
++    int i, num;
  
- 			if (info->AsicID == ELECTRABUZZ_ID) {
- 				tempword = ft1000_read_dpram(dev, FT1000_HI_HO);
--			}
--			else {
-+			} else {
- 				tempword = ntohs(ft1000_read_dpram_mag_16(dev, FT1000_MAG_HI_HO, FT1000_MAG_HI_HO_INDX));
- 			}
+     DEBUG("%s called\n", __func__);
+     num = (MINOR(inode->i_rdev) & 0xf);
+@@ -419,12 +419,16 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+     struct timeval tv;
+ 	struct IOCTL_GET_VER get_ver_data;
+ 	struct IOCTL_GET_DSP_STAT get_stat_data;
+-    u8 ConnectionMsg[] = {0x00,0x44,0x10,0x20,0x80,0x00,0x00,0x00,0x00,0x00,0x03,0x00,0x00,0x00,0x93,0x64,
+-                          0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x05,0x00,0x00,0x00,0x0a,
+-                          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+-                          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x12,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+-                          0x00,0x00,0x02,0x37,0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x01,0x00,0x01,0x7f,0x00,
+-                          0x00,0x01,0x00,0x00};
++    u8 ConnectionMsg[] = {0x00, 0x44, 0x10, 0x20, 0x80, 0x00, 0x00, 0x00, 0x00,
++                          0x00, 0x03, 0x00, 0x00, 0x00, 0x93, 0x64, 0x00, 0x00,
++                          0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++                          0x05, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00,
++                          0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
++                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++                          0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++                          0x00, 0x00, 0x00, 0x02, 0x37, 0x00, 0x00, 0x00, 0x08,
++                          0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x7f, 0x00, 0x00,
++                          0x01, 0x00, 0x00};
  
-@@ -994,8 +991,7 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+     unsigned short ledStat = 0;
+     unsigned short conStat = 0;
+@@ -475,7 +479,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+             break;
+         }
  
-     if (info->AsicID == ELECTRABUZZ_ID) {
-         tempword = FT1000_DPRAM_RX_BASE+2;
--    }
--    else {
-+    } else {
-         tempword = FT1000_DPRAM_MAG_RX_BASE;
-     }
-     if (ft1000_receive_cmd(dev, &cmdbuffer[0], MAX_CMD_SQSIZE, &tempword)) {
-@@ -1075,8 +1071,7 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
- 					info->ConTm = 0;
- 				}
- 			}
--            }
--            else {
-+            } else {
-                 DEBUG(1, "Media is down\n");
-                 if (info->mediastate == 1) {
-                     info->mediastate = 0;
+-        DEBUG("FT1000:ft1000_ioctl:driver version = 0x%x\n",(unsigned int)get_ver_data.drv_ver);
++        DEBUG("FT1000:ft1000_ioctl:driver version = 0x%x\n", (unsigned int)get_ver_data.drv_ver);
+ 
+         break;
+     case IOCTL_CONNECT:
+@@ -652,7 +656,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+                             }
+                             pmsg++;
+ 				ppseudo_hdr = (struct pseudo_hdr *)pmsg;
+-                           result = card_send_command(ft1000dev,(unsigned short *)dpram_data,total_len+2);
++                           result = card_send_command(ft1000dev, (unsigned short *)dpram_data, total_len+2);
+ 
+ 
+                             ft1000dev->app_info[app_index].nTxMsg++;
 -- 
 2.1.2
 
