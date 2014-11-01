@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaKAW43 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:56:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60116 "EHLO
+	id S1752964AbaKAW40 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:56:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60127 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751531AbaKAWj1 (ORCPT
+	by vger.kernel.org with ESMTP id S1751559AbaKAWj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:27 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nadav Amit" <namit@cs.technion.ac.il>,
-        "Paolo Bonzini" <pbonzini@redhat.com>
+CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.456017848@decadent.org.uk>
+Message-ID: <lsq.1414880883.573495844@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 091/102] KVM: x86: Emulator fixes for eip canonical
- checks on near branches
+Subject: [PATCH 3.2 083/102] ext4: fix BUG_ON in mb_free_blocks()
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,235 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 234f3ce485d54017f15cf5e0699cff4100121601 upstream.
+commit c99d1e6e83b06744c75d9f5e491ed495a7086b7b upstream.
 
-Before changing rip (during jmp, call, ret, etc.) the target should be asserted
-to be canonical one, as real CPUs do.  During sysret, both target rsp and rip
-should be canonical. If any of these values is noncanonical, a #GP exception
-should occur.  The exception to this rule are syscall and sysenter instructions
-in which the assigned rip is checked during the assignment to the relevant
-MSRs.
+If we suffer a block allocation failure (for example due to a memory
+allocation failure), it's possible that we will call
+ext4_discard_allocated_blocks() before we've actually allocated any
+blocks.  In that case, fe_len and fe_start in ac->ac_f_ex will still
+be zero, and this will result in mb_free_blocks(inode, e4b, 0, 0)
+triggering the BUG_ON on mb_free_blocks():
 
-This patch fixes the emulator to behave as real CPUs do for near branches.
-Far branches are handled by the next patch.
+	BUG_ON(last >= (sb->s_blocksize << 3));
 
-This fixes CVE-2014-3647.
+Fix this by bailing out of ext4_discard_allocated_blocks() if fs_len
+is zero.
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use ctxt->regs[] instead of reg_read(), reg_write(), reg_rmw()]
+Also fix a missing ext4_mb_unload_buddy() call in
+ext4_discard_allocated_blocks().
+
+Google-Bug-Id: 16844242
+
+Fixes: 86f0afd463215fc3e58020493482faa4ac3a4d69
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kvm/emulate.c | 78 ++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 54 insertions(+), 24 deletions(-)
+ fs/ext4/mballoc.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -529,7 +529,8 @@ static int emulate_nm(struct x86_emulate
- 	return emulate_exception(ctxt, NM_VECTOR, 0, false);
- }
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -1312,6 +1312,8 @@ static void mb_free_blocks(struct inode
+ 	void *buddy2;
+ 	struct super_block *sb = e4b->bd_sb;
  
--static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
-+static inline int assign_eip_far(struct x86_emulate_ctxt *ctxt, ulong dst,
-+			       int cs_l)
- {
- 	switch (ctxt->op_bytes) {
- 	case 2:
-@@ -539,16 +540,25 @@ static inline void assign_eip_near(struc
- 		ctxt->_eip = (u32)dst;
- 		break;
- 	case 8:
-+		if ((cs_l && is_noncanonical_address(dst)) ||
-+		    (!cs_l && (dst & ~(u32)-1)))
-+			return emulate_gp(ctxt, 0);
- 		ctxt->_eip = dst;
- 		break;
- 	default:
- 		WARN(1, "unsupported eip assignment size\n");
++	if (WARN_ON(count == 0))
++		return;
+ 	BUG_ON(first + count > (sb->s_blocksize << 3));
+ 	assert_spin_locked(ext4_group_lock_ptr(sb, e4b->bd_group));
+ 	mb_check_buddy(e4b);
+@@ -3132,6 +3134,8 @@ static void ext4_discard_allocated_block
+ 	int err;
+ 
+ 	if (pa == NULL) {
++		if (ac->ac_f_ex.fe_len == 0)
++			return;
+ 		err = ext4_mb_load_buddy(ac->ac_sb, ac->ac_f_ex.fe_group, &e4b);
+ 		if (err) {
+ 			/*
+@@ -3146,6 +3150,7 @@ static void ext4_discard_allocated_block
+ 		mb_free_blocks(ac->ac_inode, &e4b, ac->ac_f_ex.fe_start,
+ 			       ac->ac_f_ex.fe_len);
+ 		ext4_unlock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
++		ext4_mb_unload_buddy(&e4b);
+ 		return;
  	}
-+	return X86EMUL_CONTINUE;
-+}
-+
-+static inline int assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
-+{
-+	return assign_eip_far(ctxt, dst, ctxt->mode == X86EMUL_MODE_PROT64);
- }
- 
--static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
-+static inline int jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
- {
--	assign_eip_near(ctxt, ctxt->_eip + rel);
-+	return assign_eip_near(ctxt, ctxt->_eip + rel);
- }
- 
- static u16 get_segment_selector(struct x86_emulate_ctxt *ctxt, unsigned seg)
-@@ -1787,13 +1797,15 @@ static int em_grp45(struct x86_emulate_c
- 	case 2: /* call near abs */ {
- 		long int old_eip;
- 		old_eip = ctxt->_eip;
--		ctxt->_eip = ctxt->src.val;
-+		rc = assign_eip_near(ctxt, ctxt->src.val);
-+		if (rc != X86EMUL_CONTINUE)
-+			break;
- 		ctxt->src.val = old_eip;
- 		rc = em_push(ctxt);
- 		break;
- 	}
- 	case 4: /* jmp abs */
--		ctxt->_eip = ctxt->src.val;
-+		rc = assign_eip_near(ctxt, ctxt->src.val);
- 		break;
- 	case 5: /* jmp far */
- 		rc = em_jmp_far(ctxt);
-@@ -1825,10 +1837,14 @@ static int em_grp9(struct x86_emulate_ct
- 
- static int em_ret(struct x86_emulate_ctxt *ctxt)
- {
--	ctxt->dst.type = OP_REG;
--	ctxt->dst.addr.reg = &ctxt->_eip;
--	ctxt->dst.bytes = ctxt->op_bytes;
--	return em_pop(ctxt);
-+	int rc;
-+	unsigned long eip;
-+
-+	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
-+	if (rc != X86EMUL_CONTINUE)
-+		return rc;
-+
-+	return assign_eip_near(ctxt, eip);
- }
- 
- static int em_ret_far(struct x86_emulate_ctxt *ctxt)
-@@ -2060,7 +2076,7 @@ static int em_sysexit(struct x86_emulate
- {
- 	struct x86_emulate_ops *ops = ctxt->ops;
- 	struct desc_struct cs, ss;
--	u64 msr_data;
-+	u64 msr_data, rcx, rdx;
- 	int usermode;
- 	u16 cs_sel = 0, ss_sel = 0;
- 
-@@ -2076,6 +2092,9 @@ static int em_sysexit(struct x86_emulate
- 	else
- 		usermode = X86EMUL_MODE_PROT32;
- 
-+	rcx = ctxt->regs[VCPU_REGS_RCX];
-+	rdx = ctxt->regs[VCPU_REGS_RDX];
-+
- 	cs.dpl = 3;
- 	ss.dpl = 3;
- 	ops->get_msr(ctxt, MSR_IA32_SYSENTER_CS, &msr_data);
-@@ -2093,6 +2112,9 @@ static int em_sysexit(struct x86_emulate
- 		ss_sel = cs_sel + 8;
- 		cs.d = 0;
- 		cs.l = 1;
-+		if (is_noncanonical_address(rcx) ||
-+		    is_noncanonical_address(rdx))
-+			return emulate_gp(ctxt, 0);
- 		break;
- 	}
- 	cs_sel |= SELECTOR_RPL_MASK;
-@@ -2101,8 +2123,8 @@ static int em_sysexit(struct x86_emulate
- 	ops->set_segment(ctxt, cs_sel, &cs, 0, VCPU_SREG_CS);
- 	ops->set_segment(ctxt, ss_sel, &ss, 0, VCPU_SREG_SS);
- 
--	ctxt->_eip = ctxt->regs[VCPU_REGS_RDX];
--	ctxt->regs[VCPU_REGS_RSP] = ctxt->regs[VCPU_REGS_RCX];
-+	ctxt->_eip = rdx;
-+	ctxt->regs[VCPU_REGS_RSP] = rcx;
- 
- 	return X86EMUL_CONTINUE;
- }
-@@ -2555,10 +2577,13 @@ static int em_das(struct x86_emulate_ctx
- 
- static int em_call(struct x86_emulate_ctxt *ctxt)
- {
-+	int rc;
- 	long rel = ctxt->src.val;
- 
- 	ctxt->src.val = (unsigned long)ctxt->_eip;
--	jmp_rel(ctxt, rel);
-+	rc = jmp_rel(ctxt, rel);
-+	if (rc != X86EMUL_CONTINUE)
-+		return rc;
- 	return em_push(ctxt);
- }
- 
-@@ -2590,11 +2615,12 @@ static int em_call_far(struct x86_emulat
- static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
- {
- 	int rc;
-+	unsigned long eip;
- 
--	ctxt->dst.type = OP_REG;
--	ctxt->dst.addr.reg = &ctxt->_eip;
--	ctxt->dst.bytes = ctxt->op_bytes;
--	rc = emulate_pop(ctxt, &ctxt->dst.val, ctxt->op_bytes);
-+	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
-+	if (rc != X86EMUL_CONTINUE)
-+		return rc;
-+	rc = assign_eip_near(ctxt, eip);
- 	if (rc != X86EMUL_CONTINUE)
- 		return rc;
- 	register_address_increment(ctxt, &ctxt->regs[VCPU_REGS_RSP], ctxt->src.val);
-@@ -2840,20 +2866,24 @@ static int em_lmsw(struct x86_emulate_ct
- 
- static int em_loop(struct x86_emulate_ctxt *ctxt)
- {
-+	int rc = X86EMUL_CONTINUE;
-+
- 	register_address_increment(ctxt, &ctxt->regs[VCPU_REGS_RCX], -1);
- 	if ((address_mask(ctxt, ctxt->regs[VCPU_REGS_RCX]) != 0) &&
- 	    (ctxt->b == 0xe2 || test_cc(ctxt->b ^ 0x5, ctxt->eflags)))
--		jmp_rel(ctxt, ctxt->src.val);
-+		rc = jmp_rel(ctxt, ctxt->src.val);
- 
--	return X86EMUL_CONTINUE;
-+	return rc;
- }
- 
- static int em_jcxz(struct x86_emulate_ctxt *ctxt)
- {
-+	int rc = X86EMUL_CONTINUE;
-+
- 	if (address_mask(ctxt, ctxt->regs[VCPU_REGS_RCX]) == 0)
--		jmp_rel(ctxt, ctxt->src.val);
-+		rc = jmp_rel(ctxt, ctxt->src.val);
- 
--	return X86EMUL_CONTINUE;
-+	return rc;
- }
- 
- static int em_cli(struct x86_emulate_ctxt *ctxt)
-@@ -3946,7 +3976,7 @@ special_insn:
- 		break;
- 	case 0x70 ... 0x7f: /* jcc (short) */
- 		if (test_cc(ctxt->b, ctxt->eflags))
--			jmp_rel(ctxt, ctxt->src.val);
-+			rc = jmp_rel(ctxt, ctxt->src.val);
- 		break;
- 	case 0x8d: /* lea r16/r32, m */
- 		ctxt->dst.val = ctxt->src.addr.mem.ea;
-@@ -3994,7 +4024,7 @@ special_insn:
- 		goto do_io_out;
- 	case 0xe9: /* jmp rel */
- 	case 0xeb: /* jmp rel short */
--		jmp_rel(ctxt, ctxt->src.val);
-+		rc = jmp_rel(ctxt, ctxt->src.val);
- 		ctxt->dst.type = OP_NONE; /* Disable writeback. */
- 		break;
- 	case 0xec: /* in al,dx */
-@@ -4160,7 +4190,7 @@ twobyte_insn:
- 		break;
- 	case 0x80 ... 0x8f: /* jnz rel, etc*/
- 		if (test_cc(ctxt->b, ctxt->eflags))
--			jmp_rel(ctxt, ctxt->src.val);
-+			rc = jmp_rel(ctxt, ctxt->src.val);
- 		break;
- 	case 0x90 ... 0x9f:     /* setcc r/m8 */
- 		ctxt->dst.val = test_cc(ctxt->b, ctxt->eflags);
+ 	if (pa->pa_type == MB_INODE_PA)
 
