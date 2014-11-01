@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097AbaKAR5P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 13:57:15 -0400
-Received: from jabberwock.ucw.cz ([46.255.230.98]:45444 "EHLO
-	jabberwock.ucw.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758762AbaKAR5O (ORCPT
+	id S1760114AbaKAR5j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 13:57:39 -0400
+Received: from smtprelay0180.hostedemail.com ([216.40.44.180]:35761 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758762AbaKAR5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 13:57:14 -0400
-X-Greylist: delayed 312 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Nov 2014 13:57:14 EDT
-Date: Sat, 1 Nov 2014 18:51:59 +0100
-From: Martin Mares <mj@ucw.cz>
-To: Tom Gundersen <teg@jklm.no>
-Cc: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@vrfy.org>
-Subject: udev/hwdb support in pciutils (Re: [PATCH RESEND][pciutils] libpci:
- pci_id_lookup - add udev/hwdb support)
-Message-ID: <mj+md-20141101.174026.23374.albireo@ucw.cz>
-References: <CAG-2HqXsEBB_nxUF4gza-eTsUjmysYR7iPEjJPUFyR1rC2KGMg@mail.gmail.com>
- <CAPXgP12MLL_Z5gyrCndQLRT6SR_TJi9xHp1HkHMX1ahwnxx3yw@mail.gmail.com>
- <mj+md-20131215.091609.28546.nikam@ucw.cz>
- <CAPXgP10+1WtX8_xN+QSHvKws01hbKhP3FN95sXk9EtezdSPtqg@mail.gmail.com>
- <mj+md-20131215.110132.29802.nikam@ucw.cz>
- <CAG-2HqUGcBB1-YUvLZpqm1EZ69OSksa+iGcCEqVWxYsehDqx8Q@mail.gmail.com>
- <CAG-2HqWYZtTMNRvLwWRy-5_5yb=EasiWzpL2xc0_42SyP=bg1w@mail.gmail.com>
- <CAG-2HqVS1avGdvi6SFc1dq0sCzcA4z5sZUBH4WhpNN87tZrnxA@mail.gmail.com>
- <mj+md-20140212.194230.3341.nikam@ucw.cz>
- <CAG-2HqUN3Ftdd=3XSe-et3pgXy71Fu9DbMqREQDycwL4kD9Paw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG-2HqUN3Ftdd=3XSe-et3pgXy71Fu9DbMqREQDycwL4kD9Paw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 1 Nov 2014 13:57:38 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3865:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6119:6261:7903:9025:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12555:12740:13069:13095:13311:13357:14096:14097:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: burn50_5f70a2ad0572e
+X-Filterd-Recvd-Size: 1882
+Message-ID: <1414864654.31550.6.camel@perches.com>
+Subject: Re: [PATCH] x86, cpu: trivial printk formatting fixes
+From: Joe Perches <joe@perches.com>
+To: Steven Honeyman <stevenhoneyman@gmail.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jiri Kosina <trivial@kernel.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 01 Nov 2014 10:57:34 -0700
+In-Reply-To: <CABz95_BFew81JGAf=oP=6m9yPMi1_JmvfjKgX2CxFmha52A54w@mail.gmail.com>
+References: <1414856696-8094-1-git-send-email-stevenhoneyman@gmail.com>
+	 <20141101171909.GA5034@pd.tnic>
+	 <CABz95_BFew81JGAf=oP=6m9yPMi1_JmvfjKgX2CxFmha52A54w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tom!
+(Adding Len Brown, original post: https://lkml.org/lkml/2014/11/1/67)
 
-The support for hwdb has finally landed in mainline pciutils.
+On Sat, 2014-11-01 at 17:38 +0000, Steven Honeyman wrote:
+> On 1 November 2014 17:17, Joe Perches <joe@perches.com> wrote:
+> > This changes the logging level.
+> >
+> > You should either mention why in the changelog
+> > or use pr_warn_once
+> 
+> OK, I will resubmit with a new description if needed.
+> Would you agree that info is a more suitable log level than warn for
+> this message? Even notice seemed too much, as it isn't a 'significant
+> 	condition'
 
-I have modified your patch to bring it closer to the rest of device
-naming logic. Namely:
+This is only emitted when the bios didn't do the "right thing".
+See commit abe48b108247e9b90
 
-  •  The interface to HWDB now lives in a separate source file
-     lib/names-hwdb.c. It is called from the main entry point
-     to the name resolver (lib/names.c).
+So it seems more like the origial message isn't descriptive
+enough than KERN_WARN is not the correct level.
 
-  •  Resolved names are cached in the hash table and they participate
-     in the system of priorities. They have lower priority than pci.ids,
-     but higher than remote lookups via DNS. (Therefore if a distro
-     decides not to ship pci.ids, hwdb is used exclusively for all
-     local lookups.)
 
-  •  There is a flag to suppress the use of HWDB (PCI_LOOKUP_NO_HWDB)
-     and also a configuration parameter for the same (hwdb.disable).
-
-Aside of the README, everything should be ready for a public release.
-Could you please verify that it still works for you?
-
-				Have a nice fortnight
--- 
-Martin `MJ' Mares                          <mj@ucw.cz>   http://mj.ucw.cz/
-Faculty of Math and Physics, Charles University, Prague, Czech Rep., Earth
-Uncle Ed's Rule of Thumb:  Never use your thumb for a rule.
