@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaKAWlH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:41:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60335 "EHLO
+	id S1752532AbaKAWlM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:41:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60338 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751831AbaKAWjd (ORCPT
+	by vger.kernel.org with ESMTP id S1751816AbaKAWjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:33 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Felipe Balbi" <balbi@ti.com>
+CC: akpm@linux-foundation.org, "Murali Karicheri" <m-karicheri2@ti.com>,
+        "Santosh Shilimkar" <santosh.shilimkar@ti.com>,
+        "Tejun Heo" <tj@kernel.org>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.454164569@decadent.org.uk>
+Message-ID: <lsq.1414880883.68052749@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 026/102] usb: dwc3: core: fix order of PM runtime calls
+Subject: [PATCH 3.2 027/102] ahci: add pcid for Marvel 0x9182 controller
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,47 +32,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Murali Karicheri <m-karicheri2@ti.com>
 
-commit fed33afce0eda44a46ae24d93aec1b5198c0bac4 upstream.
+commit c5edfff9db6f4d2c35c802acb4abe0df178becee upstream.
 
-Currently, we disable pm_runtime before all register
-accesses are done, this is dangerous and might lead
-to abort exceptions due to the driver trying to access
-a register which is clocked by a clock which was long
-gated.
+Keystone K2E EVM uses Marvel 0x9182 controller. This requires support
+for the ID in the ahci driver.
 
-Fix that by moving pm_runtime_put_sync() and pm_runtime_disable()
-as the last thing we do before returning from our ->remove()
-method.
-
-Fixes: 72246da (usb: Introduce DesignWare USB3 DRD Driver)
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/dwc3/core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/ata/ahci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -427,9 +427,6 @@ static int __devexit dwc3_remove(struct
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	pm_runtime_put_sync(&pdev->dev);
--	pm_runtime_disable(&pdev->dev);
--
- 	dwc3_debugfs_exit(dwc);
- 
- 	if (features & DWC3_HAS_PERIPHERAL)
-@@ -440,6 +437,9 @@ static int __devexit dwc3_remove(struct
- 	iounmap(dwc->regs);
- 	kfree(dwc->mem);
- 
-+	pm_runtime_put_sync(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+
- 	return 0;
- }
- 
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -457,6 +457,8 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9182 */
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9182),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
 
