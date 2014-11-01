@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaKAWkm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:40:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60372 "EHLO
+	id S1752115AbaKAWos (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:44:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60306 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751860AbaKAWjf (ORCPT
+	by vger.kernel.org with ESMTP id S1750786AbaKAWjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 18:39:35 -0400
+	Sat, 1 Nov 2014 18:39:32 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Vrabel" <david.vrabel@citrix.com>,
-        "Ross Lagerwall" <ross.lagerwall@citrix.com>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Thomas Pugliese" <thomas.pugliese@gmail.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.405113527@decadent.org.uk>
+Message-ID: <lsq.1414880883.932811909@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 021/102] xen/manage: Always freeze/thaw processes when
- suspend/resuming
+Subject: [PATCH 3.2 032/102] uwb: init beacon cache entry before
+ registering uwb device
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,58 +33,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ross Lagerwall <ross.lagerwall@citrix.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-commit 61a734d305e16944b42730ef582a7171dc733321 upstream.
+commit 675f0ab2fe5a0f7325208e60b617a5f32b86d72c upstream.
 
-Always freeze processes when suspending and thaw processes when resuming
-to prevent a race noticeable with HVM guests.
+Make sure the uwb_dev->bce entry is set before calling uwb_dev_add in
+uwbd_dev_onair so that usermode will only see the device after it is
+properly initialized.  This fixes a kernel panic that can occur if
+usermode tries to access the IEs sysfs attribute of a UWB device before
+the driver has had a chance to set the beacon cache entry.
 
-This prevents a deadlock where the khubd kthread (which is designed to
-be freezable) acquires a usb device lock and then tries to allocate
-memory which requires the disk which hasn't been resumed yet.
-Meanwhile, the xenwatch thread deadlocks waiting for the usb device
-lock.
-
-Freezing processes fixes this because the khubd thread is only thawed
-after the xenwatch thread finishes resuming all the devices.
-
-Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/xen/manage.c | 7 -------
- 1 file changed, 7 deletions(-)
+ drivers/uwb/lc-dev.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -108,16 +108,11 @@ static void do_suspend(void)
- 
- 	shutting_down = SHUTDOWN_SUSPEND;
- 
--#ifdef CONFIG_PREEMPT
--	/* If the kernel is preemptible, we need to freeze all the processes
--	   to prevent them from being in the middle of a pagetable update
--	   during suspend. */
- 	err = freeze_processes();
- 	if (err) {
- 		printk(KERN_ERR "xen suspend: freeze failed %d\n", err);
- 		goto out;
+--- a/drivers/uwb/lc-dev.c
++++ b/drivers/uwb/lc-dev.c
+@@ -441,16 +441,19 @@ void uwbd_dev_onair(struct uwb_rc *rc, s
+ 	uwb_dev->mac_addr = *bce->mac_addr;
+ 	uwb_dev->dev_addr = bce->dev_addr;
+ 	dev_set_name(&uwb_dev->dev, macbuf);
++
++	/* plug the beacon cache */
++	bce->uwb_dev = uwb_dev;
++	uwb_dev->bce = bce;
++	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
++
+ 	result = uwb_dev_add(uwb_dev, &rc->uwb_dev.dev, rc);
+ 	if (result < 0) {
+ 		dev_err(dev, "new device %s: cannot instantiate device\n",
+ 			macbuf);
+ 		goto error_dev_add;
  	}
--#endif
+-	/* plug the beacon cache */
+-	bce->uwb_dev = uwb_dev;
+-	uwb_dev->bce = bce;
+-	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
++
+ 	dev_info(dev, "uwb device (mac %s dev %s) connected to %s %s\n",
+ 		 macbuf, devbuf, rc->uwb_dev.dev.parent->bus->name,
+ 		 dev_name(rc->uwb_dev.dev.parent));
+@@ -458,6 +461,8 @@ void uwbd_dev_onair(struct uwb_rc *rc, s
+ 	return;
  
- 	err = dpm_suspend_start(PMSG_FREEZE);
- 	if (err) {
-@@ -172,10 +167,8 @@ out_resume:
- 	clock_was_set();
- 
- out_thaw:
--#ifdef CONFIG_PREEMPT
- 	thaw_processes();
- out:
--#endif
- 	shutting_down = SHUTDOWN_INVALID;
+ error_dev_add:
++	bce->uwb_dev = NULL;
++	uwb_bce_put(bce);
+ 	kfree(uwb_dev);
+ 	return;
  }
- #endif	/* CONFIG_HIBERNATE_CALLBACKS */
 
