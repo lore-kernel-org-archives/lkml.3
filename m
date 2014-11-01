@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaKAXA5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:00:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60042 "EHLO
+	id S1753136AbaKAXAx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:00:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60059 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751426AbaKAWj1 (ORCPT
+	by vger.kernel.org with ESMTP id S1751494AbaKAWj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:27 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andy Honig" <ahonig@google.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>
+CC: akpm@linux-foundation.org, "Marcelo Ricardo Leitner" <mleitner@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.592571871@decadent.org.uk>
+Message-ID: <lsq.1414880883.609054648@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 086/102] KVM: x86: Improve thread safety in pit
+Subject: [PATCH 3.2 081/102] ipv4: disable bh while doing route gc
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,36 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Marcelo Ricardo Leitner <mleitner@redhat.com>
 
-commit 2febc839133280d5a5e8e1179c94ea674489dae2 upstream.
+Further tests revealed that after moving the garbage collector to a work
+queue and protecting it with a spinlock may leave the system prone to
+soft lockups if bottom half gets very busy.
 
-There's a race condition in the PIT emulation code in KVM.  In
-__kvm_migrate_pit_timer the pit_timer object is accessed without
-synchronization.  If the race condition occurs at the wrong time this
-can crash the host kernel.
+It was reproced with a set of firewall rules that REJECTed packets. If
+the NIC bottom half handler ends up running on the same CPU that is
+running the garbage collector on a very large cache, the garbage
+collector will not be able to do its job due to the amount of work
+needed for handling the REJECTs and also won't reschedule.
 
-This fixes CVE-2014-3611.
+The fix is to disable bottom half during the garbage collecting, as it
+already was in the first place (most calls to it came from softirqs).
 
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kvm/i8254.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/route.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -264,8 +264,10 @@ void __kvm_migrate_pit_timer(struct kvm_
- 		return;
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1000,7 +1000,7 @@ static void __do_rt_garbage_collect(int
+ 	 * do not make it too frequently.
+ 	 */
  
- 	timer = &pit->pit_state.pit_timer.timer;
-+	mutex_lock(&pit->pit_state.lock);
- 	if (hrtimer_cancel(timer))
- 		hrtimer_start_expires(timer, HRTIMER_MODE_ABS);
-+	mutex_unlock(&pit->pit_state.lock);
+-	spin_lock(&rt_gc_lock);
++	spin_lock_bh(&rt_gc_lock);
+ 
+ 	RT_CACHE_STAT_INC(gc_total);
+ 
+@@ -1103,7 +1103,7 @@ work_done:
+ 	    dst_entries_get_slow(&ipv4_dst_ops) < ipv4_dst_ops.gc_thresh)
+ 		expire = ip_rt_gc_timeout;
+ out:
+-	spin_unlock(&rt_gc_lock);
++	spin_unlock_bh(&rt_gc_lock);
  }
  
- static void destroy_pit_timer(struct kvm_pit *pit)
+ static void __rt_garbage_collect(struct work_struct *w)
 
