@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760045AbaKAS3y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 14:29:54 -0400
-Received: from imap.thunk.org ([74.207.234.97]:56409 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100AbaKAS3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 14:29:52 -0400
-Date: Sat, 1 Nov 2014 14:29:50 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 bug fixes for 3.18
-Message-ID: <20141101182950.GC31245@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-References: <20141031214949.GA644@thunk.org>
- <CA+55aFwiFx6ejtnEvZYJewHaskwjTr39bPstFvWYimqi6hMCsQ@mail.gmail.com>
- <20141101133802.GA31245@thunk.org>
- <CA+55aFz=Dv=FuVD=WDMjOAi-eG2ZbHT5F7Gc78BpMrVDZKpQnQ@mail.gmail.com>
+	id S1760177AbaKASak (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 14:30:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58354 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758469AbaKASaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Nov 2014 14:30:39 -0400
+Date: Sat, 1 Nov 2014 18:30:37 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dealing with proc_ns_follow_link() and "namespace" dentries
+Message-ID: <20141101183037.GQ7996@ZenIV.linux.org.uk>
+References: <20141013062945.GX7996@ZenIV.linux.org.uk>
+ <87r3ybwq0b.fsf@x220.int.ebiederm.org>
+ <20141101083804.GO7996@ZenIV.linux.org.uk>
+ <20141101150620.GP7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFz=Dv=FuVD=WDMjOAi-eG2ZbHT5F7Gc78BpMrVDZKpQnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20141101150620.GP7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And your point about >16TB filesystems is completely buggy. That was
-> *my* point. Most people - even on 64-bit - do *not* have 16TB
-> filesystems, and the high 32 bits are zero or contain very very little
-> information (ie even on a multi-terabyte filesystem, it's one or two
-> bits worth of information). So hash_32() is not only much more
-> reasonable on a 32-bit machine, the end result is basically as good
-> for 99.999% of all uses. Exactly *because* people don't have those big
-> filesystems.
+On Sat, Nov 01, 2014 at 03:06:20PM +0000, Al Viro wrote:
+> On Sat, Nov 01, 2014 at 08:38:04AM +0000, Al Viro wrote:
+> > OK, interim branch (_completely_ untested, and there's quite a bit of
+> > work remaining) is in vfs.git#nsfs.
+> 
+> ... except that what got pushed was completely buggered - the last changes
+> not committed *and* include/linux/ns_common.h not git-add'ed at the very
+> beginning.  Oh, well - it wasn't hard to reconstruct its history...
+> 
+> Anyway, that much got fixed and pushed; sorry about the noise - shouldn't
+> have posted before grabbing some sleep...
 
-I agree; that's why I suggested using hash_32() if the number of
-blocks in the file system is less than 2**32.  I did look at hash_u64
-and didn't think it was that bad, but that's probably because compared
-to crypto checksums it's positively fast, and it's really easy to get
-into the bad habit of thinking that all the world's an x86_64.  :-)
+And now it even seems to work.  Poking in /proc/*/ns/*, mount --bind of those
+suckers to regular files, unshare and nsenter (both by PID and by file,
+including the ones we'd bound somewhere).  Eric, could you hit it with
+whatever testsuite you are using and see if it survives?
 
-     	     	      	       	    	- Ted
+It's vfs.git#nsfs (head should be at 2e64120), branched at -rc2.  The meat
+of that sucker is in the next-to-last commit; the rest is preparation and
+a minor cleanup.
