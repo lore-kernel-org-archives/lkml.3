@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390AbaKAWtJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:49:09 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:53149 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbaKAWsi (ORCPT
+	id S1753307AbaKAWs7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:48:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60200 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751685AbaKAWja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 18:48:38 -0400
-Message-ID: <54556341.6040506@gmail.com>
-Date: Sat, 01 Nov 2014 23:48:33 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benoit Masson <yahoo@perenite.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
-References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com> <20141101223625.GB3698@titan.lakedaemon.net>
-In-Reply-To: <20141101223625.GB3698@titan.lakedaemon.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 1 Nov 2014 18:39:30 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Nicholas Bellinger" <nab@linux-iscsi.org>,
+        "Joern Engel" <joern@logfs.org>
+Date: Sat, 01 Nov 2014 22:28:03 +0000
+Message-ID: <lsq.1414880883.106217878@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 054/102] iscsi-target: avoid NULL pointer in
+ iscsi_copy_param_list failure
+In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.11.2014 23:36, Jason Cooper wrote:
-> On Fri, Sep 19, 2014 at 10:14:36PM +0200, Sebastian Hesselbarth wrote:
->> this is a patch set preparing barebox support for ix4-300d. As usual,
->> I stumbled upon a few nice-to-haves before actually touching ix4-300d
->> dts. As it is a mach-mvebu thing, I just added the related mailing
->> lists instead of each of the DT maintainers.
->>
->> First 5 patches consolidate SoC-specific pinctrl nodes to one common
->> node in armada-xp.dtsi, compatible overwrites for each SoC, and node
->> alias usage for each board. Also, ge{0,1} pinctrl settings are moved
->> to the common node from one board specific node.
->>
->> Last 3 patches then use that ge{0,1} pinctrl settings on ix4-300d which
->> is vital for bootloader init. During exploration of ix4-300d, I also
->> found a i2c eeprom that has not been added to the dts, yet. Finally,
->> there is only one 74hc595 on ix4 mainboard while dts property is set
->> for two.
->>
->> I cannot recall in detail what is on that eeprom, but IIRC it is nothing
->> important. Some reg,addr pairs for some init stuff that should have
->> already been done by stock u-boot. Anyway, adding the node will do no
->> harm.
->>
->> Patches are based on v3.17-rc1 and intended for v3.18 but I am not in
->> a hurry. I only compile tested this, so a formal Tested-by from Benoit
->> for the ix4 and any other Armada XP board would be great.
->
-> I lost track of this thread, are you resending?  Did Benoit get a
-> successful test run?
+3.2.64-rc1 review patch.  If anyone has any objections, please let me know.
 
-Looks like there was this A0 stepping thing, but basically yes
+------------------
 
-http://www.spinics.net/lists/devicetree/msg53364.html
+From: Joern Engel <joern@logfs.org>
 
-I have just rebased it on top of v3.18-rc1, feel free to pick them
-up from
+commit 8ae757d09c45102b347a1bc2867f54ffc1ab8fda upstream.
 
-git://git.infradead.org/users/hesselba/linux-berlin.git devel/mvebu/ix4-300d
-git://git.infradead.org/users/hesselba/linux-berlin.git
-Sebastian
+In iscsi_copy_param_list() a failed iscsi_param_list memory allocation
+currently invokes iscsi_release_param_list() to cleanup, and will promptly
+trigger a NULL pointer dereference.
+
+Instead, go ahead and return for the first iscsi_copy_param_list()
+failure case.
+
+Found by coverity.
+
+Signed-off-by: Joern Engel <joern@logfs.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/target/iscsi/iscsi_target_parameters.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/target/iscsi/iscsi_target_parameters.c
++++ b/drivers/target/iscsi/iscsi_target_parameters.c
+@@ -552,7 +552,7 @@ int iscsi_copy_param_list(
+ 	param_list = kzalloc(sizeof(struct iscsi_param_list), GFP_KERNEL);
+ 	if (!param_list) {
+ 		pr_err("Unable to allocate memory for struct iscsi_param_list.\n");
+-		goto err_out;
++		return -1;
+ 	}
+ 	INIT_LIST_HEAD(&param_list->param_list);
+ 	INIT_LIST_HEAD(&param_list->extra_response_list);
+
