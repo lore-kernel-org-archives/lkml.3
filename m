@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758986AbaKANiJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 09:38:09 -0400
-Received: from imap.thunk.org ([74.207.234.97]:56233 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758475AbaKANiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 09:38:07 -0400
-Date: Sat, 1 Nov 2014 09:38:02 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 bug fixes for 3.18
-Message-ID: <20141101133802.GA31245@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-References: <20141031214949.GA644@thunk.org>
- <CA+55aFwiFx6ejtnEvZYJewHaskwjTr39bPstFvWYimqi6hMCsQ@mail.gmail.com>
+	id S1759397AbaKANlR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 09:41:17 -0400
+Received: from fep12.mx.upcmail.net ([62.179.121.32]:40809 "EHLO
+	fep12.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758036AbaKANlQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Nov 2014 09:41:16 -0400
+X-SourceIP: 2001:470:25:65c::2
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <5454E2F3.2060404@odi.ch>
+Date: Sat, 01 Nov 2014 14:41:07 +0100
+From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwiFx6ejtnEvZYJewHaskwjTr39bPstFvWYimqi6hMCsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [drm] 3.18 regression: backlight dark after resume
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 04:26:16PM -0700, Linus Torvalds wrote:
-> On Fri, Oct 31, 2014 at 2:49 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> >
-> > Theodore Ts'o (1):
-> >       jbd2: use a better hash function for the revoke table
-> 
-> Does it really make sense to use hash_u64()? It can be quite expensive
-> (mainly on 32-bit targets), and since the low bits are where all the
-> information is anyway, I'd suggest using hash_32() here even if the
-> block number in theory can have a few bits above the 32-bit mark.
+Hi,
 
-Hmm... the problem is that since the block group size is normally
-32768 blocks, and most metadata blocks (which is what needs to be
-revoked) is located at the beginning of the block groups, if we drop
-the high 32-bits, then there would be some hash aliasing going on.
+Since 3.18-rc1 backlight is dark after resume from suspend. This is on a Samsung 
+laptop with i5 IvyBridge
 
-What we could do is use hash_32() unless we have a file system large
-enough that it matters, and then if we still wanted to avoid using
-hash_u64(), we could do something like this:
+00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core processor 
+Graphics Controller (rev 09)
 
-	hash_32(__swab32(blk >> 32) | (blk & 0xFFFFFFFF))
 
-That way we get the information from the block group number as well,
-and in a way where it doesn't interfere with the information in the
-low bits of the block number.
+I have bisected this problem to the following commit:
+73580fb764c4213d305c0d36bd8f856ae631eb42 is the first bad commit
+commit 73580fb764c4213d305c0d36bd8f856ae631eb42
+Author: Jani Nikula <jani.nikula@intel.com>
+Date:   Tue Aug 12 17:11:41 2014 +0300
 
-I didn't think hash_64 was *that* slow, so it's not clear the above
-would be faster, though.  And if someone is using a > 16TB file system
-on a 32-bit platform, I suspect they might be having other problems.  :-)
+     drm/i915/dp: make backlight bl_power control power sequencer backlight
 
-					- Ted
+     This lets the userspace switch off the backlight using the backlight
+     class sysfs bl_power file. The switch is done using the power sequencer;
+     the backlight PWM, and everything else, remains enabled. The display
+     backlight won't draw power, but for maximum power savings the encoder
+     needs to be switched off.
+
+     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+     Reviewed_by: Clinton Taylor <Clinton.A.Taylor@intel.com>
+     Tested_by: Clinton Taylor <Clinton.A.Taylor@intel.com>
+     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+
+
+Thanks,
+
+Ortwin
