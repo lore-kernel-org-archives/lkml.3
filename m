@@ -1,122 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaKAL3q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 07:29:46 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:59129 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaKAL3p (ORCPT
+	id S1757707AbaKALkI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 07:40:08 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:40456 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583AbaKALkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 07:29:45 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH]  net: mvpp2: fix possible memory leak
-Date: Sat,  1 Nov 2014 16:59:34 +0530
-Message-Id: <1414841374-30537-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sat, 1 Nov 2014 07:40:06 -0400
+Message-ID: <5454C804.50407@gmail.com>
+Date: Sat, 01 Nov 2014 19:46:12 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: JBottomley@parallels.com
+CC: qla2xxx-upstream@qlogic.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers: scsi: qla2xxx: Remove redundant declaration in 'qla_gbl.h'
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we are allocating memory using kzalloc for struct mvpp2_prs_entry,
-but later when we are getting error we were just returning the error
-value without releasing the memory.
+Remove 2 redundant extern inline functions: qla8044_set_qsnt_ready() and
+qla8044_need_reset_handler(). At present, within upstream next kernel
+source code, they are only used within "drivers/scsi/qla2xxx/qla_nx2.c".
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+The related error and warnings (with allmodconfig under tile):
+
+    CC [M]  drivers/scsi/qla2xxx/qla_nx2.o
+  drivers/scsi/qla2xxx/qla_nx2.c:1633:1: error: static declaration of 'qla8044_need_reset_handler' follows non-static declaration
+   qla8044_need_reset_handler(struct scsi_qla_host *vha)
+   ^
+  In file included from drivers/scsi/qla2xxx/qla_def.h:3706:0,
+                   from drivers/scsi/qla2xxx/qla_nx2.c:11:
+  drivers/scsi/qla2xxx/qla_gbl.h:756:20: note: previous declaration of 'qla8044_need_reset_handler' was here
+   extern inline void qla8044_need_reset_handler(struct scsi_qla_host *vha);
+                      ^
+  drivers/scsi/qla2xxx/qla_gbl.h:756:20: warning: inline function 'qla8044_need_reset_handler' declared but never defined
+  make[3]: *** [drivers/scsi/qla2xxx/qla_nx2.o] Error 1
+  make[2]: *** [drivers/scsi/qla2xxx] Error 2
+  make[1]: *** [drivers/scsi] Error 2
+  make: *** [drivers] Error 2
+
+    CC [M]  drivers/scsi/qla2xxx/qla_tmpl.o
+  In file included from drivers/scsi/qla2xxx/qla_def.h:3706:0,
+                   from drivers/scsi/qla2xxx/qla_tmpl.c:7:
+  drivers/scsi/qla2xxx/qla_gbl.h:755:20: warning: inline function 'qla8044_set_qsnt_ready' declared but never defined
+   extern inline void qla8044_set_qsnt_ready(struct scsi_qla_host *vha);
+                    ^
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 ---
+ drivers/scsi/qla2xxx/qla_gbl.h | 2 --
+ drivers/scsi/qla2xxx/qla_nx2.c | 2 +-
+ 2 files changed, 1 insertion(+), 3 deletions(-)
 
-hi,
-i could not build test after modifying it. I tried to compile using
-multi_v7_defconfig , but the cross compiler i have is not able to
-compile it and giving sevaral warnings from the assembler.
-
- drivers/net/ethernet/marvell/mvpp2.c | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/net/ethernet/marvell/mvpp2.c b/drivers/net/ethernet/marvell/mvpp2.c
-index ece83f1..c4382b3 100644
---- a/drivers/net/ethernet/marvell/mvpp2.c
-+++ b/drivers/net/ethernet/marvell/mvpp2.c
-@@ -1692,6 +1692,7 @@ static int mvpp2_prs_vlan_add(struct mvpp2 *priv, unsigned short tpid, int ai,
- {
- 	struct mvpp2_prs_entry *pe;
- 	int tid_aux, tid;
-+	int ret = 0;
- 
- 	pe = mvpp2_prs_vlan_find(priv, tpid, ai);
- 
-@@ -1723,8 +1724,10 @@ static int mvpp2_prs_vlan_add(struct mvpp2 *priv, unsigned short tpid, int ai,
- 				break;
- 		}
- 
--		if (tid <= tid_aux)
--			return -EINVAL;
-+		if (tid <= tid_aux) {
-+			ret = -EINVAL;
-+			goto error;
-+		}
- 
- 		memset(pe, 0 , sizeof(struct mvpp2_prs_entry));
- 		mvpp2_prs_tcam_lu_set(pe, MVPP2_PRS_LU_VLAN);
-@@ -1756,9 +1759,10 @@ static int mvpp2_prs_vlan_add(struct mvpp2 *priv, unsigned short tpid, int ai,
- 
- 	mvpp2_prs_hw_write(priv, pe);
- 
-+error:
- 	kfree(pe);
- 
--	return 0;
-+	return ret;
+diff --git a/drivers/scsi/qla2xxx/qla_gbl.h b/drivers/scsi/qla2xxx/qla_gbl.h
+index b1865a7..7686bfe 100644
+--- a/drivers/scsi/qla2xxx/qla_gbl.h
++++ b/drivers/scsi/qla2xxx/qla_gbl.h
+@@ -752,8 +752,6 @@ extern void qla8044_set_idc_dontreset(struct scsi_qla_host *ha);
+ extern int qla8044_rd_direct(struct scsi_qla_host *vha, const uint32_t crb_reg);
+ extern void qla8044_wr_direct(struct scsi_qla_host *vha,
+ 			      const uint32_t crb_reg, const uint32_t value);
+-extern inline void qla8044_set_qsnt_ready(struct scsi_qla_host *vha);
+-extern inline void qla8044_need_reset_handler(struct scsi_qla_host *vha);
+ extern int qla8044_device_state_handler(struct scsi_qla_host *vha);
+ extern void qla8044_clear_qsnt_ready(struct scsi_qla_host *vha);
+ extern void qla8044_clear_drv_active(struct qla_hw_data *);
+diff --git a/drivers/scsi/qla2xxx/qla_nx2.c b/drivers/scsi/qla2xxx/qla_nx2.c
+index 24a8528..ed4d6b6 100644
+--- a/drivers/scsi/qla2xxx/qla_nx2.c
++++ b/drivers/scsi/qla2xxx/qla_nx2.c
+@@ -238,7 +238,7 @@ qla8044_rmw_crb_reg(struct scsi_qla_host *vha,
+ 	return;
  }
  
- /* Get first free double vlan ai number */
-@@ -1821,7 +1825,7 @@ static int mvpp2_prs_double_vlan_add(struct mvpp2 *priv, unsigned short tpid1,
- 				     unsigned int port_map)
+-inline void
++static inline void
+ qla8044_set_qsnt_ready(struct scsi_qla_host *vha)
  {
- 	struct mvpp2_prs_entry *pe;
--	int tid_aux, tid, ai;
-+	int tid_aux, tid, ai, ret = 0;
- 
- 	pe = mvpp2_prs_double_vlan_find(priv, tpid1, tpid2);
- 
-@@ -1838,8 +1842,10 @@ static int mvpp2_prs_double_vlan_add(struct mvpp2 *priv, unsigned short tpid1,
- 
- 		/* Set ai value for new double vlan entry */
- 		ai = mvpp2_prs_double_vlan_ai_free_get(priv);
--		if (ai < 0)
--			return ai;
-+		if (ai < 0) {
-+			ret = ai;
-+			goto error;
-+		}
- 
- 		/* Get first single/triple vlan tid */
- 		for (tid_aux = MVPP2_PE_FIRST_FREE_TID;
-@@ -1859,8 +1865,10 @@ static int mvpp2_prs_double_vlan_add(struct mvpp2 *priv, unsigned short tpid1,
- 				break;
- 		}
- 
--		if (tid >= tid_aux)
--			return -ERANGE;
-+		if (tid >= tid_aux) {
-+			ret = -ERANGE;
-+			goto error;
-+		}
- 
- 		memset(pe, 0, sizeof(struct mvpp2_prs_entry));
- 		mvpp2_prs_tcam_lu_set(pe, MVPP2_PRS_LU_VLAN);
-@@ -1887,8 +1895,9 @@ static int mvpp2_prs_double_vlan_add(struct mvpp2 *priv, unsigned short tpid1,
- 	mvpp2_prs_tcam_port_map_set(pe, port_map);
- 	mvpp2_prs_hw_write(priv, pe);
- 
-+error:
- 	kfree(pe);
--	return 0;
-+	return ret;
- }
- 
- /* IPv4 header parsing for fragmentation and L4 offset */
+ 	uint32_t qsnt_state;
 -- 
-1.8.1.2
-
+1.9.3
