@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617AbaKAXGP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:06:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60017 "EHLO
+	id S1753192AbaKAXGE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:06:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60018 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751036AbaKAWj0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751179AbaKAWj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:26 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Thomas Hellstrom" <thellstrom@vmware.com>,
-        "Jakob Bornecrantz" <jakob@vmware.com>,
-        "Mark Sheldon" <markshel@vmware.com>
+CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.534547697@decadent.org.uk>
+Message-ID: <lsq.1414880883.700164972@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 018/102] drm/vmwgfx: Fix a potential infinite spin
- waiting for fifo idle
+Subject: [PATCH 3.2 098/102] dm crypt: fix access beyond the end of
+ allocated space
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,33 +31,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit f01ea0c3d9db536c64d47922716d8b3b8f21d850 upstream.
+commit d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed upstream.
 
-The code waiting for fifo idle was incorrect and could possibly spin
-forever under certain circumstances.
+The DM crypt target accesses memory beyond allocated space resulting in
+a crash on 32 bit x86 systems.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reported-by: Mark Sheldon <markshel@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Reivewed-by: Mark Sheldon <markshel@vmware.com>
+This bug is very old (it dates back to 2.6.25 commit 3a7f6c990ad04 "dm
+crypt: use async crypto").  However, this bug was masked by the fact
+that kmalloc rounds the size up to the next power of two.  This bug
+wasn't exposed until 3.17-rc1 commit 298a9fa08a ("dm crypt: use per-bio
+data").  By switching to using per-bio data there was no longer any
+padding beyond the end of a dm-crypt allocated memory block.
+
+To minimize allocation overhead dm-crypt puts several structures into one
+block allocated with kmalloc.  The block holds struct ablkcipher_request,
+cipher-specific scratch pad (crypto_ablkcipher_reqsize(any_tfm(cc))),
+struct dm_crypt_request and an initialization vector.
+
+The variable dmreq_start is set to offset of struct dm_crypt_request
+within this memory block.  dm-crypt allocates the block with this size:
+cc->dmreq_start + sizeof(struct dm_crypt_request) + cc->iv_size.
+
+When accessing the initialization vector, dm-crypt uses the function
+iv_of_dmreq, which performs this calculation: ALIGN((unsigned long)(dmreq
++ 1), crypto_ablkcipher_alignmask(any_tfm(cc)) + 1).
+
+dm-crypt allocated "cc->iv_size" bytes beyond the end of dm_crypt_request
+structure.  However, when dm-crypt accesses the initialization vector, it
+takes a pointer to the end of dm_crypt_request, aligns it, and then uses
+it as the initialization vector.  If the end of dm_crypt_request is not
+aligned on a crypto_ablkcipher_alignmask(any_tfm(cc)) boundary the
+alignment causes the initialization vector to point beyond the allocated
+space.
+
+Fix this bug by calculating the variable iv_size_padding and adding it
+to the allocated size.
+
+Also correct the alignment of dm_crypt_request.  struct dm_crypt_request
+is specific to dm-crypt (it isn't used by the crypto subsystem at all),
+so it is aligned on __alignof__(struct dm_crypt_request).
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/md/dm-crypt.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
-@@ -163,8 +163,9 @@ void vmw_fifo_release(struct vmw_private
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -1565,6 +1565,7 @@ static int crypt_ctr(struct dm_target *t
+ 	unsigned int key_size, opt_params;
+ 	unsigned long long tmpll;
+ 	int ret;
++	size_t iv_size_padding;
+ 	struct dm_arg_set as;
+ 	const char *opt_string;
  
- 	mutex_lock(&dev_priv->hw_mutex);
+@@ -1600,12 +1601,23 @@ static int crypt_ctr(struct dm_target *t
  
-+	vmw_write(dev_priv, SVGA_REG_SYNC, SVGA_SYNC_GENERIC);
- 	while (vmw_read(dev_priv, SVGA_REG_BUSY) != 0)
--		vmw_write(dev_priv, SVGA_REG_SYNC, SVGA_SYNC_GENERIC);
-+		;
+ 	cc->dmreq_start = sizeof(struct ablkcipher_request);
+ 	cc->dmreq_start += crypto_ablkcipher_reqsize(any_tfm(cc));
+-	cc->dmreq_start = ALIGN(cc->dmreq_start, crypto_tfm_ctx_alignment());
+-	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
+-			   ~(crypto_tfm_ctx_alignment() - 1);
++	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
++
++	if (crypto_ablkcipher_alignmask(any_tfm(cc)) < CRYPTO_MINALIGN) {
++		/* Allocate the padding exactly */
++		iv_size_padding = -(cc->dmreq_start + sizeof(struct dm_crypt_request))
++				& crypto_ablkcipher_alignmask(any_tfm(cc));
++	} else {
++		/*
++		 * If the cipher requires greater alignment than kmalloc
++		 * alignment, we don't know the exact position of the
++		 * initialization vector. We must assume worst case.
++		 */
++		iv_size_padding = crypto_ablkcipher_alignmask(any_tfm(cc));
++	}
  
- 	dev_priv->last_read_seqno = ioread32(fifo_mem + SVGA_FIFO_FENCE);
- 
+ 	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
+-			sizeof(struct dm_crypt_request) + cc->iv_size);
++			sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size);
+ 	if (!cc->req_pool) {
+ 		ti->error = "Cannot allocate crypt request mempool";
+ 		goto bad;
 
