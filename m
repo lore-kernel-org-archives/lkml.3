@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296AbaKAWkx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:40:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60312 "EHLO
+	id S1752245AbaKAWku (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:40:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60357 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751799AbaKAWje (ORCPT
+	by vger.kernel.org with ESMTP id S1751856AbaKAWje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:34 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,15 +14,14 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
+        "Taylor Braun-Jones" <taylor.braun-jones@ge.com>,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        "Joe Lawrence" <joe.lawrence@stratus.com>,
-        "David Bulkow" <david.bulkow@stratus.com>
+        "Johan Hovold" <johan@kernel.org>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.739949004@decadent.org.uk>
+Message-ID: <lsq.1414880883.41928806@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 040/102] usb: hub: take hub->hdev reference when
- processing from eventlist
+Subject: [PATCH 3.2 031/102] USB: ftdi_sio: Add support for GE Healthcare
+ Nemo Tracker device
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,46 +34,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Lawrence <joe.lawrence@stratus.com>
+From: Taylor Braun-Jones <taylor.braun-jones@ge.com>
 
-commit c605f3cdff53a743f6d875b76956b239deca1272 upstream.
+commit 9c491c372d677b6420e0f8c6361fe422791662cc upstream.
 
-During surprise device hotplug removal tests, it was observed that
-hub_events may try to call usb_lock_device on a device that has already
-been freed. Protect the usb_device by taking out a reference (under the
-hub_event_lock) when hub_events pulls it off the list, returning the
-reference after hub_events is finished using it.
-
-Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-Suggested-by: David Bulkow <david.bulkow@stratus.com> for using kref
-Suggested-by: Alan Stern <stern@rowland.harvard.edu> for placement
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Taylor Braun-Jones <taylor.braun-jones@ge.com>
+Cc: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/hub.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3651,9 +3651,10 @@ static void hub_events(void)
- 
- 		hub = list_entry(tmp, struct usb_hub, event_list);
- 		kref_get(&hub->kref);
-+		hdev = hub->hdev;
-+		usb_get_dev(hdev);
- 		spin_unlock_irq(&hub_event_lock);
- 
--		hdev = hub->hdev;
- 		hub_dev = hub->intfdev;
- 		intf = to_usb_interface(hub_dev);
- 		dev_dbg(hub_dev, "state %d ports %d chg %04x evt %04x\n",
-@@ -3888,6 +3889,7 @@ static void hub_events(void)
- 		usb_autopm_put_interface(intf);
-  loop_disconnected:
- 		usb_unlock_device(hdev);
-+		usb_put_dev(hdev);
- 		kref_put(&hub->kref, hub_release);
- 
-         } /* end while (1) */
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -962,6 +962,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
+ 	/* ekey Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_EKEY_CONV_USB_PID) },
++	/* GE Healthcare devices */
++	{ USB_DEVICE(GE_HEALTHCARE_VID, GE_HEALTHCARE_NEMO_TRACKER_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1385,3 +1385,9 @@
+  * ekey biometric systems GmbH (http://ekey.net/)
+  */
+ #define FTDI_EKEY_CONV_USB_PID		0xCB08	/* Converter USB */
++
++/*
++ * GE Healthcare devices
++ */
++#define GE_HEALTHCARE_VID		0x1901
++#define GE_HEALTHCARE_NEMO_TRACKER_PID	0x0015
 
