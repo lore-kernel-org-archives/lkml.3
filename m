@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaKAWos (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:44:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60306 "EHLO
+	id S1752787AbaKAWow (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:44:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60272 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750786AbaKAWjc (ORCPT
+	by vger.kernel.org with ESMTP id S1751757AbaKAWjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:32 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Thomas Pugliese" <thomas.pugliese@gmail.com>
+CC: akpm@linux-foundation.org, "James Bottomley" <JBottomley@Parallels.com>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Mike Christie" <michaelc@cs.wisc.edu>,
+        "Christoph Hellwig" <hch@lst.de>, "Sagi Grimberg" <sagig@mellanox.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.932811909@decadent.org.uk>
+Message-ID: <lsq.1414880883.964579982@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 032/102] uwb: init beacon cache entry before
- registering uwb device
+Subject: [PATCH 3.2 056/102] [SCSI] libiscsi: fix potential buffer overrun
+ in __iscsi_conn_send_pdu
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,57 +34,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Pugliese <thomas.pugliese@gmail.com>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-commit 675f0ab2fe5a0f7325208e60b617a5f32b86d72c upstream.
+commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
 
-Make sure the uwb_dev->bce entry is set before calling uwb_dev_add in
-uwbd_dev_onair so that usermode will only see the device after it is
-properly initialized.  This fixes a kernel panic that can occur if
-usermode tries to access the IEs sysfs attribute of a UWB device before
-the driver has had a chance to set the beacon cache entry.
+This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
+This function is used by iscsi drivers and userspace to send iscsi PDUs/
+commands. For login commands, we have a set buffer size. For all other
+commands we do not support data buffers.
 
-Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+This was reported by Dan Carpenter here:
+http://www.spinics.net/lists/linux-scsi/msg66838.html
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/uwb/lc-dev.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/scsi/libiscsi.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/uwb/lc-dev.c
-+++ b/drivers/uwb/lc-dev.c
-@@ -441,16 +441,19 @@ void uwbd_dev_onair(struct uwb_rc *rc, s
- 	uwb_dev->mac_addr = *bce->mac_addr;
- 	uwb_dev->dev_addr = bce->dev_addr;
- 	dev_set_name(&uwb_dev->dev, macbuf);
-+
-+	/* plug the beacon cache */
-+	bce->uwb_dev = uwb_dev;
-+	uwb_dev->bce = bce;
-+	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
-+
- 	result = uwb_dev_add(uwb_dev, &rc->uwb_dev.dev, rc);
- 	if (result < 0) {
- 		dev_err(dev, "new device %s: cannot instantiate device\n",
- 			macbuf);
- 		goto error_dev_add;
- 	}
--	/* plug the beacon cache */
--	bce->uwb_dev = uwb_dev;
--	uwb_dev->bce = bce;
--	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
-+
- 	dev_info(dev, "uwb device (mac %s dev %s) connected to %s %s\n",
- 		 macbuf, devbuf, rc->uwb_dev.dev.parent->bus->name,
- 		 dev_name(rc->uwb_dev.dev.parent));
-@@ -458,6 +461,8 @@ void uwbd_dev_onair(struct uwb_rc *rc, s
- 	return;
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -718,11 +718,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn
+ 			return NULL;
+ 		}
  
- error_dev_add:
-+	bce->uwb_dev = NULL;
-+	uwb_bce_put(bce);
- 	kfree(uwb_dev);
- 	return;
- }
++		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
++			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
++			return NULL;
++		}
++
+ 		task = conn->login_task;
+ 	} else {
+ 		if (session->state != ISCSI_STATE_LOGGED_IN)
+ 			return NULL;
+ 
++		if (data_size != 0) {
++			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
++			return NULL;
++		}
++
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
+ 
 
