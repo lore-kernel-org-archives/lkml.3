@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbaKAWsz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 18:48:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60207 "EHLO
+	id S1753333AbaKAWtB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 18:49:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60203 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751694AbaKAWja (ORCPT
+	by vger.kernel.org with ESMTP id S1751682AbaKAWja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:30 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Trond Myklebust" <trond.myklebust@primarydata.com>,
-        "James Drews" <drews@engr.wisc.edu>
+CC: akpm@linux-foundation.org, "Al Viro" <viro@zeniv.linux.org.uk>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.127591217@decadent.org.uk>
+Message-ID: <lsq.1414880883.999453185@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 055/102] NFSv4: Fix another bug in the close/open_downgrade
- code
+Subject: [PATCH 3.2 050/102] don't bugger nd->seq on set_root_rcu() from
+ follow_dotdot_rcu()
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,64 +31,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit cd9288ffaea4359d5cfe2b8d264911506aed26a4 upstream.
+commit 7bd88377d482e1eae3c5329b12e33cfd664fa6a9 upstream.
 
-James Drew reports another bug whereby the NFS client is now sending
-an OPEN_DOWNGRADE in a situation where it should really have sent a
-CLOSE: the client is opening the file for O_RDWR, but then trying to
-do a downgrade to O_RDONLY, which is not allowed by the NFSv4 spec.
+return the value instead, and have path_init() do the assignment.  Broken by
+"vfs: Fix absolute RCU path walk failures due to uninitialized seq number",
+which was Cc-stable with 2.6.38+ as destination.  This one should go where
+it went.
 
-Reported-by: James Drews <drews@engr.wisc.edu>
-Link: http://lkml.kernel.org/r/541AD7E5.8020409@engr.wisc.edu
-Fixes: aee7af356e15 (NFSv4: Fix problems with close in the presence...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-[bwh: Backported to 3.2: adjust context]
+To avoid dummy value returned in case when root is already set (it would do
+no harm, actually, since the only caller that doesn't ignore the return value
+is guaranteed to have nd->root *not* set, but it's more obvious that way),
+lift the check into callers.  And do the same to set_root(), to keep them
+in sync.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[bwh: Backported to 3.2: adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/nfs4proc.c | 30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
+ fs/namei.c | 33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2015,23 +2015,23 @@ static void nfs4_close_prepare(struct rp
- 	is_rdwr = test_bit(NFS_O_RDWR_STATE, &state->flags);
- 	is_rdonly = test_bit(NFS_O_RDONLY_STATE, &state->flags);
- 	is_wronly = test_bit(NFS_O_WRONLY_STATE, &state->flags);
--	/* Calculate the current open share mode */
--	calldata->arg.fmode = 0;
--	if (is_rdonly || is_rdwr)
--		calldata->arg.fmode |= FMODE_READ;
--	if (is_wronly || is_rdwr)
--		calldata->arg.fmode |= FMODE_WRITE;
- 	/* Calculate the change in open mode */
-+	calldata->arg.fmode = 0;
- 	if (state->n_rdwr == 0) {
--		if (state->n_rdonly == 0) {
--			call_close |= is_rdonly || is_rdwr;
--			calldata->arg.fmode &= ~FMODE_READ;
--		}
--		if (state->n_wronly == 0) {
--			call_close |= is_wronly || is_rdwr;
--			calldata->arg.fmode &= ~FMODE_WRITE;
--		}
--	}
-+		if (state->n_rdonly == 0)
-+			call_close |= is_rdonly;
-+		else if (is_rdonly)
-+			calldata->arg.fmode |= FMODE_READ;
-+		if (state->n_wronly == 0)
-+			call_close |= is_wronly;
-+		else if (is_wronly)
-+			calldata->arg.fmode |= FMODE_WRITE;
-+	} else if (is_rdwr)
-+		calldata->arg.fmode |= FMODE_READ|FMODE_WRITE;
-+
-+	if (calldata->arg.fmode == 0)
-+		call_close |= is_rdwr;
-+
- 	spin_unlock(&state->owner->so_lock);
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -554,24 +554,22 @@ static int complete_walk(struct nameidat
  
- 	if (!call_close) {
+ static __always_inline void set_root(struct nameidata *nd)
+ {
+-	if (!nd->root.mnt)
+-		get_fs_root(current->fs, &nd->root);
++	get_fs_root(current->fs, &nd->root);
+ }
+ 
+ static int link_path_walk(const char *, struct nameidata *);
+ 
+-static __always_inline void set_root_rcu(struct nameidata *nd)
++static __always_inline unsigned set_root_rcu(struct nameidata *nd)
+ {
+-	if (!nd->root.mnt) {
+-		struct fs_struct *fs = current->fs;
+-		unsigned seq;
++	struct fs_struct *fs = current->fs;
++	unsigned seq, res;
+ 
+-		do {
+-			seq = read_seqcount_begin(&fs->seq);
+-			nd->root = fs->root;
+-			nd->seq = __read_seqcount_begin(&nd->root.dentry->d_seq);
+-		} while (read_seqcount_retry(&fs->seq, seq));
+-	}
++	do {
++		seq = read_seqcount_begin(&fs->seq);
++		nd->root = fs->root;
++		res = __read_seqcount_begin(&nd->root.dentry->d_seq);
++	} while (read_seqcount_retry(&fs->seq, seq));
++	return res;
+ }
+ 
+ static __always_inline int __vfs_follow_link(struct nameidata *nd, const char *link)
+@@ -582,7 +580,8 @@ static __always_inline int __vfs_follow_
+ 		goto fail;
+ 
+ 	if (*link == '/') {
+-		set_root(nd);
++		if (!nd->root.mnt)
++			set_root(nd);
+ 		path_put(&nd->path);
+ 		nd->path = nd->root;
+ 		path_get(&nd->root);
+@@ -927,7 +926,8 @@ static void follow_mount_rcu(struct name
+ 
+ static int follow_dotdot_rcu(struct nameidata *nd)
+ {
+-	set_root_rcu(nd);
++	if (!nd->root.mnt)
++		set_root_rcu(nd);
+ 
+ 	while (1) {
+ 		if (nd->path.dentry == nd->root.dentry &&
+@@ -1030,7 +1030,8 @@ static void follow_mount(struct path *pa
+ 
+ static void follow_dotdot(struct nameidata *nd)
+ {
+-	set_root(nd);
++	if (!nd->root.mnt)
++		set_root(nd);
+ 
+ 	while(1) {
+ 		struct dentry *old = nd->path.dentry;
+@@ -1504,7 +1505,7 @@ static int path_init(int dfd, const char
+ 		if (flags & LOOKUP_RCU) {
+ 			br_read_lock(vfsmount_lock);
+ 			rcu_read_lock();
+-			set_root_rcu(nd);
++			nd->seq = set_root_rcu(nd);
+ 		} else {
+ 			set_root(nd);
+ 			path_get(&nd->root);
 
