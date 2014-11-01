@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaKAXBD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 19:01:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60010 "EHLO
+	id S1753259AbaKAXA5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 19:00:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60042 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751043AbaKAWj1 (ORCPT
+	by vger.kernel.org with ESMTP id S1751426AbaKAWj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Nov 2014 18:39:27 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Paolo Bonzini" <pbonzini@redhat.com>
+CC: akpm@linux-foundation.org, "Andy Honig" <ahonig@google.com>,
+        "Paolo Bonzini" <pbonzini@redhat.com>
 Date: Sat, 01 Nov 2014 22:28:03 +0000
-Message-ID: <lsq.1414880883.140975061@decadent.org.uk>
+Message-ID: <lsq.1414880883.592571871@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 092/102] KVM: x86: use new CS.RPL as CPL during task
- switch
+Subject: [PATCH 3.2 086/102] KVM: x86: Improve thread safety in pit
 In-Reply-To: <lsq.1414880882.522510247@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,166 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 2356aaeb2f58f491679dc0c38bc3f6dbe54e7ded upstream.
+commit 2febc839133280d5a5e8e1179c94ea674489dae2 upstream.
 
-During task switch, all of CS.DPL, CS.RPL, SS.DPL must match (in addition
-to all the other requirements) and will be the new CPL.  So far this
-worked by carefully setting the CS selector and flag before doing the
-task switch; setting CS.selector will already change the CPL.
+There's a race condition in the PIT emulation code in KVM.  In
+__kvm_migrate_pit_timer the pit_timer object is accessed without
+synchronization.  If the race condition occurs at the wrong time this
+can crash the host kernel.
 
-However, this will not work once we get the CPL from SS.DPL, because
-then you will have to set the full segment descriptor cache to change
-the CPL.  ctxt->ops->cpl(ctxt) will then return the old CPL during the
-task switch, and the check that SS.DPL == CPL will fail.
+This fixes CVE-2014-3611.
 
-Temporarily assume that the CPL comes from CS.RPL during task switch
-to a protected-mode task.  This is the same approach used in QEMU's
-emulation code, which (until version 2.0) manually tracks the CPL.
-
+Signed-off-by: Andrew Honig <ahonig@google.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - load_state_from_tss32() does not support VM86 mode]
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kvm/emulate.c | 60 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 33 insertions(+), 27 deletions(-)
+ arch/x86/kvm/i8254.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1233,11 +1233,11 @@ static int write_segment_descriptor(stru
+--- a/arch/x86/kvm/i8254.c
++++ b/arch/x86/kvm/i8254.c
+@@ -264,8 +264,10 @@ void __kvm_migrate_pit_timer(struct kvm_
+ 		return;
+ 
+ 	timer = &pit->pit_state.pit_timer.timer;
++	mutex_lock(&pit->pit_state.lock);
+ 	if (hrtimer_cancel(timer))
+ 		hrtimer_start_expires(timer, HRTIMER_MODE_ABS);
++	mutex_unlock(&pit->pit_state.lock);
  }
  
- /* Does not support long mode */
--static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
--				   u16 selector, int seg)
-+static int __load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
-+				     u16 selector, int seg, u8 cpl)
- {
- 	struct desc_struct seg_desc;
--	u8 dpl, rpl, cpl;
-+	u8 dpl, rpl;
- 	unsigned err_vec = GP_VECTOR;
- 	u32 err_code = 0;
- 	bool null_selector = !(selector & ~0x3); /* 0000-0003 are null */
-@@ -1286,7 +1286,6 @@ static int load_segment_descriptor(struc
- 
- 	rpl = selector & 3;
- 	dpl = seg_desc.dpl;
--	cpl = ctxt->ops->cpl(ctxt);
- 
- 	switch (seg) {
- 	case VCPU_SREG_SS:
-@@ -1349,6 +1348,13 @@ exception:
- 	return X86EMUL_PROPAGATE_FAULT;
- }
- 
-+static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
-+				   u16 selector, int seg)
-+{
-+	u8 cpl = ctxt->ops->cpl(ctxt);
-+	return __load_segment_descriptor(ctxt, selector, seg, cpl);
-+}
-+
- static void write_register_operand(struct operand *op)
- {
- 	/* The 4-byte case *is* correct: in 64-bit mode we zero-extend. */
-@@ -2213,6 +2219,7 @@ static int load_state_from_tss16(struct
- 				 struct tss_segment_16 *tss)
- {
- 	int ret;
-+	u8 cpl;
- 
- 	ctxt->_eip = tss->ip;
- 	ctxt->eflags = tss->flag | 2;
-@@ -2235,23 +2242,25 @@ static int load_state_from_tss16(struct
- 	set_segment_selector(ctxt, tss->ss, VCPU_SREG_SS);
- 	set_segment_selector(ctxt, tss->ds, VCPU_SREG_DS);
- 
-+	cpl = tss->cs & 3;
-+
- 	/*
- 	 * Now load segment descriptors. If fault happenes at this stage
- 	 * it is handled in a context of new task
- 	 */
--	ret = load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR);
-+	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES);
-+	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS);
-+	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS);
-+	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS);
-+	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
- 
-@@ -2330,6 +2339,7 @@ static int load_state_from_tss32(struct
- 				 struct tss_segment_32 *tss)
- {
- 	int ret;
-+	u8 cpl;
- 
- 	if (ctxt->ops->set_cr(ctxt, 3, tss->cr3))
- 		return emulate_gp(ctxt, 0);
-@@ -2346,7 +2356,8 @@ static int load_state_from_tss32(struct
- 
- 	/*
- 	 * SDM says that segment selectors are loaded before segment
--	 * descriptors
-+	 * descriptors.  This is important because CPL checks will
-+	 * use CS.RPL.
- 	 */
- 	set_segment_selector(ctxt, tss->ldt_selector, VCPU_SREG_LDTR);
- 	set_segment_selector(ctxt, tss->es, VCPU_SREG_ES);
-@@ -2356,29 +2367,31 @@ static int load_state_from_tss32(struct
- 	set_segment_selector(ctxt, tss->fs, VCPU_SREG_FS);
- 	set_segment_selector(ctxt, tss->gs, VCPU_SREG_GS);
- 
-+	cpl = tss->cs & 3;
-+
- 	/*
- 	 * Now load segment descriptors. If fault happenes at this stage
- 	 * it is handled in a context of new task
- 	 */
--	ret = load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR);
-+	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES);
-+	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS);
-+	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS);
-+	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS);
-+	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS);
-+	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS);
-+	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
- 
+ static void destroy_pit_timer(struct kvm_pit *pit)
 
