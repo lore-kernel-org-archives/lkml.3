@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaKBUGt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 15:06:49 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:40082 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaKBUGr convert rfc822-to-8bit (ORCPT
+	id S1751778AbaKBUPa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 15:15:30 -0500
+Received: from dehamd003.servertools24.de ([31.47.254.18]:33532 "EHLO
+	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751184AbaKBUP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 15:06:47 -0500
+	Sun, 2 Nov 2014 15:15:28 -0500
+Message-ID: <545690D0.5040904@ladisch.de>
+Date: Sun, 02 Nov 2014 21:15:12 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64;
+	rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1413499938-2378-1-git-send-email-roland@kernel.org>
-References: <1413499938-2378-1-git-send-email-roland@kernel.org>
-Date: Mon, 3 Nov 2014 06:06:45 +1000
-Message-ID: <CAPM=9tx+Zau+2EhVouEAM0XKxKhgOpEHSUgWhBuWDC8vA7wvig@mail.gmail.com>
-Subject: Re: [GIT PULL] please pull infiniband.git
-From: Dave Airlie <airlied@gmail.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-rdma@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "David S. Miller" <davem@davemloft.net>
+CC: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sparc64: Add preprocessor symbols for PAGE_* pgprot_t values.
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-PPP-Message-ID: <20141102201409.317970.89625@dehamd003.servertools24.de>
+X-PPP-Vhost: ladisch.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 October 2014 08:52, Roland Dreier <roland@kernel.org> wrote:
-> Hi Linus,
->
-> Please pull from
->
->     git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
->
-> ----------------------------------------------------------------
-> Main set of InfiniBand/RDMA updates for 3.18 merge window:
->
->  - Large set of iSER initiator improvements
->  - Hardware driver fixes for cxgb4, mlx5 and ocrdma
->  - Small fixes to core midlayer
->
+Kernel code assumes that the PAGE_* values are preprocessor symbols, and
+that therefore arch support can be checked for with #ifdef.
 
-building on 32-bit x86.
+At the moment, sparc64 does not implement any of the symbols checked
+for, so these checks happen to work.
 
- CC [M]  drivers/infiniband/ulp/iser/iser_verbs.o
-/home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:
-In function ‘iser_handle_comp_error’:
-/home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:1171:33:
-warning: cast to pointer from integer of different size
-[-Wint-to-pointer-cast]
-  if (is_iser_tx_desc(iser_conn, (void *)wc->wr_id)) {
-                                 ^
-/home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:1172:31:
-warning: cast to pointer from integer of different size
-[-Wint-to-pointer-cast]
-   struct iser_tx_desc *desc = (struct iser_tx_desc *)wc->wr_id;
-                               ^
-/home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:
-In function ‘iser_handle_wc’:
-/home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:1198:14:
-warning: cast to pointer from integer of different size
-[-Wint-to-pointer-cast]
-    rx_desc = (struct iser_rx_desc *)wc->wr_id;
-              ^
-/home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:1203:14:
-warning: cast to pointer from integer of different size
-[-Wint-to-pointer-cast]
-    tx_desc = (struct iser_tx_desc *)wc->wr_id;
-              ^
+To prevent potential breakage when another #ifdef check is added or when
+sparc64 implements another PAGE_ value, make such #ifdef checks work by
+adding preprocessor symbols on top of the PAGE_* variables.
 
-Not sure anyone would ever want to run this code on 32-bit boxes, but
-I'm a bit worried if wr_id is a 64-bit value, and we encode it into a
-32-bit pointer, you'd always lose the top 32-bits.
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ arch/sparc/include/asm/pgtable_64.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Dave.
+diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
+index bfeb626..a835fe9 100644
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -216,9 +216,13 @@ pte_t mk_pte_io(unsigned long, pgprot_t, int, unsigned long);
+ unsigned long pte_sz_bits(unsigned long size);
+
+ extern pgprot_t PAGE_KERNEL;
++#define PAGE_KERNEL		PAGE_KERNEL
+ extern pgprot_t PAGE_KERNEL_LOCKED;
++#define PAGE_KERNEL_LOCKED	PAGE_KERNEL_LOCKED
+ extern pgprot_t PAGE_COPY;
++#define PAGE_COPY		PAGE_COPY
+ extern pgprot_t PAGE_SHARED;
++#define PAGE_SHARED		PAGE_SHARED
+
+ /* XXX This uglyness is for the atyfb driver's sparc mmap() support. XXX */
+ extern unsigned long _PAGE_IE;
