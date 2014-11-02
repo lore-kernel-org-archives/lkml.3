@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750887AbaKBFYO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 01:24:14 -0400
-Received: from mga03.intel.com ([134.134.136.65]:58665 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737AbaKBFYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 01:24:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="483807751"
-Message-ID: <5455BFF4.6040401@linux.intel.com>
-Date: Sun, 02 Nov 2014 13:24:04 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750975AbaKBFrU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 01:47:20 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:8785 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750745AbaKBFrS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 01:47:18 -0400
+Date: Sun, 2 Nov 2014 13:44:16 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Jason Cooper <jason@lakedaemon.net>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] irqchip: dw-apb-ictl: select GENERIC_IRQ_CHIP
+Message-ID: <20141102134416.1679e632@xhacker>
+In-Reply-To: <20141102022311.GS3698@titan.lakedaemon.net>
+References: <1413982750-832-1-git-send-email-jszhang@marvell.com>
+	<20141102022311.GS3698@titan.lakedaemon.net>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, x86@kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [Patch v7 14/18] x86, irq, ACPI: Introduce a rwsem to protect
- IOAPIC operations from hotplug
-References: <1414387308-27148-1-git-send-email-jiang.liu@linux.intel.com> <1414387308-27148-15-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.11.1411011949370.5308@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411011949370.5308@nanos>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-02_02:2014-10-31,2014-11-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1411020063
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/2 2:59, Thomas Gleixner wrote:
-> On Mon, 27 Oct 2014, Jiang Liu wrote:
->> We are going to support ACPI based IOAPIC hotplug, so introduce a rwsem
->> to protect IOAPIC data structures from IOAPIC hotplug. We choose to
->> serialize in ACPI instead of in the IOAPIC core because:
->> 1) currently we are only plan to support ACPI based IOAPIC hotplug
->> 2) it's much more cleaner and easier
->> 3) It does't affect IOAPIC discovered by devicetree, SFI and mpparse.
+On Sat, 1 Nov 2014 19:23:11 -0700
+Jason Cooper <jason@lakedaemon.net> wrote:
+
+> Jisheng,
 > 
-> I had a last intensive look at this series as I was about to merge
-> it. So I looked at the locking rules here again
->  
->> +/*
->> + * Locks related to IOAPIC hotplug
->> + * Hotplug side:
->> + * 	->lock_device_hotplug()	//device_hotplug_lock
->> + *		->acpi_ioapic_rwsem
->> + *			->ioapic_lock
->> + * Interrupt mapping side:
->> + *	->acpi_ioapic_rwsem
->> + *		->ioapic_mutex
->> + *			->ioapic_lock
->> + */
+> On Wed, Oct 22, 2014 at 08:59:10PM +0800, Jisheng Zhang wrote:
+> > The dw-apb-ictl driver uses the generic-chip functions.
+> > Thus it needs to select GENERIC_IRQ_CHIP in Kconfig.
+> > 
+> > Change-Id: If748beffc4e0d0b47062bb067a59c10994a9148b
 > 
-> This looks sane, but I cannot figure out at all why this needs to be a
-> rwsem.
-> 
->> +static DECLARE_RWSEM(acpi_ioapic_rwsem);
-> 
-> I think it should be a simple mutex because the rwsem does not protect
-> against concurrent execution what taken for read.
-> 
-> And the site which takes it for write is in the early boot process
-> where nothing runs in parallel AFAICT.
-Hi Thomas,
-	You are right. It's not on hot path, so a mutex is better than
-a rwsem here. I will send out an updated version soon.
-Regards!
-Gerry
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+> Please don't include this is future patches.
+
+oops, sorry for my fault. I'll take care from now on.
+
+Thanks for kindly reminding,
+Jisheng
