@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaKBILK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 03:11:10 -0500
-Received: from numascale.com ([213.162.240.84]:34765 "EHLO numascale.com"
+	id S1752076AbaKBILI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 03:11:08 -0500
+Received: from numascale.com ([213.162.240.84]:50055 "EHLO numascale.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921AbaKBIK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751926AbaKBIK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Nov 2014 03:10:56 -0500
 From: Daniel J Blueman <daniel@numascale.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -12,9 +12,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
 Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Steffen Persvold <sp@numascale.com>
-Subject: [PATCH v3 5/5] Use 2GB memory block size on large x86-64 systems
-Date: Sun,  2 Nov 2014 16:10:13 +0800
-Message-Id: <1414915813-2462-5-git-send-email-daniel@numascale.com>
+Subject: [PATCH v3 4/5] Numachip: APIC driver cleanups
+Date: Sun,  2 Nov 2014 16:10:12 +0800
+Message-Id: <1414915813-2462-4-git-send-email-daniel@numascale.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414915813-2462-1-git-send-email-daniel@numascale.com>
 References: <1414915813-2462-1-git-send-email-daniel@numascale.com>
@@ -31,36 +31,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On larger x64-64 systems, use a 2GB memory block size to reduce sysfs
-entry creation time by 16x. Large is defined as 64GB or more memory.
+Drop printing that serves no purpose, as it's printing fixed or known
+values, and mark constant structure appropriately.
 
 Signed-off-by: Daniel J Blueman <daniel@numascale.com>
 ---
- arch/x86/mm/init_64.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/x86/kernel/apic/apic_numachip.c | 22 +++-------------------
+ arch/x86/pci/numachip.c              |  2 +-
+ 2 files changed, 4 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 4cb8763..6002e80 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -52,7 +52,6 @@
- #include <asm/numa.h>
- #include <asm/cacheflush.h>
- #include <asm/init.h>
--#include <asm/uv/uv.h>
- #include <asm/setup.h>
+diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+index c965b69..6374d94 100644
+--- a/arch/x86/kernel/apic/apic_numachip.c
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -153,20 +153,8 @@ static int __init numachip_probe(void)
+ 	return apic == &apic_numachip;
+ }
  
- #include "mm_internal.h"
-@@ -1247,9 +1246,9 @@ static unsigned long probe_memory_block_size(void)
- 	/* start from 2g */
- 	unsigned long bz = 1UL<<31;
+-static void __init map_csrs(void)
+-{
+-	printk(KERN_INFO "NumaChip: Mapping local CSR space (%016llx - %016llx)\n",
+-		NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_BASE + NUMACHIP_LCSR_SIZE - 1);
+-	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
+-
+-	printk(KERN_INFO "NumaChip: Mapping global CSR space (%016llx - %016llx)\n",
+-		NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_BASE + NUMACHIP_GCSR_SIZE - 1);
+-	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
+-}
+-
+ static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
+-
+ 	if (c->phys_proc_id != node) {
+ 		c->phys_proc_id = node;
+ 		per_cpu(cpu_llc_id, smp_processor_id()) = node;
+@@ -180,19 +168,15 @@ bool is_numachip_system(void)
  
--#ifdef CONFIG_X86_UV
--	if (is_uv_system()) {
--		printk(KERN_INFO "UV: memory block size 2GB\n");
-+#ifdef CONFIG_X86_64
-+	if (totalram_pages >= (64ULL << (30 - PAGE_SHIFT))) {
-+		pr_info("Using 2GB memory block size for large-memory system\n");
- 		return 2UL * 1024 * 1024 * 1024;
- 	}
- #endif
+ static int __init numachip_system_init(void)
+ {
+-	unsigned int val;
+-
+ 	if (!is_numachip_system())
+ 		return 0;
+ 
++	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
++	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
++
+ 	x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
+ 	x86_init.pci.arch_init = pci_numachip_init;
+ 
+-	map_csrs();
+-
+-	val = read_lcsr(CSR_G0_NODE_IDS);
+-	printk(KERN_INFO "NumaChip: Local NodeID = %08x\n", val);
+-
+ 	return 0;
+ }
+ early_initcall(numachip_system_init);
+diff --git a/arch/x86/pci/numachip.c b/arch/x86/pci/numachip.c
+index 7307d9d..2e565e6 100644
+--- a/arch/x86/pci/numachip.c
++++ b/arch/x86/pci/numachip.c
+@@ -103,7 +103,7 @@ static int pci_mmcfg_write_numachip(unsigned int seg, unsigned int bus,
+ 	return 0;
+ }
+ 
+-const struct pci_raw_ops pci_mmcfg_numachip = {
++static const struct pci_raw_ops pci_mmcfg_numachip = {
+ 	.read = pci_mmcfg_read_numachip,
+ 	.write = pci_mmcfg_write_numachip,
+ };
+-- 
+1.9.1
+
