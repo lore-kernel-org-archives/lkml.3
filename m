@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaKBBmC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 21:42:02 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:52657 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914AbaKBBmA (ORCPT
+	id S1751850AbaKBB4K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 21:56:10 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:54407 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaKBB4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 21:42:00 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+J7L5u3SpuSE722YlLNn0wCGJxjKVeeGo=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 4E71B60F3EC
-Date: Sat, 1 Nov 2014 21:41:58 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] irqchip: Fixes for v3.18
-Message-ID: <20141102014158.GO3698@titan.lakedaemon.net>
+	Sat, 1 Nov 2014 21:56:06 -0400
+Message-ID: <545590A6.2040407@gmail.com>
+Date: Sun, 02 Nov 2014 10:02:14 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: cmetcalf@tilera.com, dwalter@google.com, richard@nod.at,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: tile: kernel: signal.c: Use explicitly type case
+ "unsigned long *" for register copy
+References: <5454D6E9.1090900@gmail.com> <20141101202350.GS7996@ZenIV.linux.org.uk>
+In-Reply-To: <20141101202350.GS7996@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On 11/2/14 4:23, Al Viro wrote:
+> On Sat, Nov 01, 2014 at 08:49:45PM +0800, Chen Gang wrote:
+>> setup_sigcontext() wants to copy all kernel related registers to user
+>> space. So let it copy explicitly instead of copying by exceeding member
+>> array border. So let code more clearer and avoid warning.
+> 
+> Er...  Perhaps it would be better to avoid that shite completely and just
+> use __copy_to_user() instead of bothering with loops?
+> 
 
-Here's a couple of fixes for v3.18 that have been in -next longer than
-needed :-/
+OK, thanks, I shall send patch v2 for it.
 
-Please pull.
+Also use __copy_from_user() instead of the code in restore_sigcontext().
 
-thx,
+Thanks
+-- 
+Chen Gang
 
-Jason.
-
-
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-urgent-3.18
-
-for you to fetch changes up to 758e8366754d3fa57da978fef9d2c652f7b55c02:
-
-  irqchip: armada-370-xp: Fix MPIC interrupt handling (2014-11-02 01:31:10 +0000)
-
-----------------------------------------------------------------
-irqchip urgent changes for v3.18
-
- - armada-370-xp
-    - Fix MSI and MPIC interrupt handling.
-
-----------------------------------------------------------------
-Grzegorz Jaszczyk (2):
-      irqchip: armada-370-xp: Fix MSI interrupt handling
-      irqchip: armada-370-xp: Fix MPIC interrupt handling
-
- drivers/irqchip/irq-armada-370-xp.c | 23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+Open, share, and attitude like air, water, and life which God blessed
