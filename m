@@ -1,69 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaKBR52 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 12:57:28 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:58802 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaKBR5Z convert rfc822-to-8bit (ORCPT
+	id S1752185AbaKBSJH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 13:09:07 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57607 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751155AbaKBSJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 12:57:25 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sA2HvG5B025237, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH net-next v2 2/3] r8152: clear the flagofSCHEDULE_TASKLET in tasklet
-Thread-Topic: [PATCH net-next v2 2/3] r8152: clear the flag
- ofSCHEDULE_TASKLET in tasklet
-Thread-Index: AQHP9Udo4LlOKAxBVEemSNs6Z//IppxNkcYF
-Date: Sun, 2 Nov 2014 17:57:16 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2ECD8A7@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-75-Taiwan-albertk@realtek.com>
-	<1394712342-15778-79-Taiwan-albertk@realtek.com>
-	<1394712342-15778-81-Taiwan-albertk@realtek.com>,<20141031.161520.3547230591227504.davem@davemloft.net>
-In-Reply-To: <20141031.161520.3547230591227504.davem@davemloft.net>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [114.43.200.237]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 2 Nov 2014 13:09:05 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19k2mYR/696a24fGu/OEG1w
+Date: Sun, 2 Nov 2014 10:07:56 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
+ enabled
+Message-ID: <20141102180756.GH31454@atomide.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- David Miller [davem@davemloft.net]
+Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+configuration") enabled configuring the PM features for twl4030.
 
-> This is racey.
+This caused poweroff command to fail on devices that have the
+BCI charger on twl4030 wired, or have power wired for VBUS.
+Instead of powering off, the device reboots. This is because
+voltage is detected on charger or VBUS with the default bits
+enabled for the power transition registers.
 
-> If another thread of control sets the bit between the test and the
-> clear, you will lose an event.
+To fix the issue, let's just clear VBUS and CHG bits as we want
+poweroff command to keep the system powered off.
 
-It is fine. The flag is used to schedule a tasklet, so if the tasklet is
-starting running, all the other plans for scheduling a tasklet could
-be cleared.
+Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
+Cc: stable@vger.kernel.org # v3.16+
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 
-Besides, the flag is only set when a transmission occurs and the
-device is in autosuspend mode. Then the workqueue could wake
-up the device and schedule the tasklet to make sure the tasklet
-wouldn't be run when the device is in suspend mode. Therefore,
-if the tasklet is running, it means something happens and the
-device is waked up. And the queue for scheduling the tasklet is
-unnecessary. We don't need the tasklet runs again after current
-one except that the relative tx/rx flows schedule it.
-
-> It really never makes sense to work with atomic bitops in a non-atomic
-> test-and-whatever manner like this, it's always a red flag and
-> indicates you're doing something very wrong.
-
-I use atomic because I don't wish the different threads which
-set the different flags would chang the other bits which they
-don't interesting in.
-
-Best Regards,
-Hayes
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -44,6 +44,15 @@ static u8 twl4030_start_script_address = 0x2b;
+ #define PWR_DEVSLP		BIT(1)
+ #define PWR_DEVOFF		BIT(0)
+ 
++/* Register bits for CFG_P1_TRANSITION (also for P2 and P3) */
++#define STARTON_SWBUG		BIT(7)	/* Start on watchdog */
++#define STARTON_VBUS		BIT(5)	/* Start on VBUS */
++#define STARTON_VBAT		BIT(4)	/* Start on battery insert */
++#define STARTON_RTC		BIT(3)	/* Start on RTC */
++#define STARTON_USB		BIT(2)	/* Start on USB host */
++#define STARTON_CHG		BIT(1)	/* Start on charger */
++#define STARTON_PWON		BIT(0)	/* Start on PWRON button */
++
+ #define SEQ_OFFSYNC		(1 << 0)
+ 
+ #define PHY_TO_OFF_PM_MASTER(p)		(p - 0x36)
+@@ -606,6 +615,44 @@ twl4030_power_configure_resources(const struct twl4030_power_data *pdata)
+ 	return 0;
+ }
+ 
++static int twl4030_starton_mask_and_set(u8 bitmask, u8 bitvalues)
++{
++	u8 regs[3] = { TWL4030_PM_MASTER_CFG_P1_TRANSITION,
++		       TWL4030_PM_MASTER_CFG_P2_TRANSITION,
++		       TWL4030_PM_MASTER_CFG_P3_TRANSITION, };
++	u8 val;
++	int i, err;
++
++	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG1,
++			       TWL4030_PM_MASTER_PROTECT_KEY);
++	if (err)
++		goto relock;
++	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
++			       TWL4030_PM_MASTER_KEY_CFG2,
++			       TWL4030_PM_MASTER_PROTECT_KEY);
++	if (err)
++		goto relock;
++
++	for (i = 0; i < sizeof(regs); i++) {
++		err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER,
++				      &val, regs[i]);
++		if (err)
++			break;
++		val = (~bitmask & val) | (bitmask & bitvalues);
++		err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
++				       val, regs[i]);
++		if (err)
++			break;
++	}
++
++	if (err)
++		pr_err("TWL4030 Register access failed: %i\n", err);
++
++relock:
++	return twl_i2c_write_u8(TWL_MODULE_PM_MASTER, 0,
++				TWL4030_PM_MASTER_PROTECT_KEY);
++}
++
+ /*
+  * In master mode, start the power off sequence.
+  * After a successful execution, TWL shuts down the power to the SoC
+@@ -615,6 +662,11 @@ void twl4030_power_off(void)
+ {
+ 	int err;
+ 
++	/* Disable start on charger or VBUS as it can break poweroff */
++	err = twl4030_starton_mask_and_set(STARTON_VBUS | STARTON_CHG, 0);
++	if (err)
++		pr_err("TWL4030 Unable to configure start-up\n");
++
+ 	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, PWR_DEVOFF,
+ 			       TWL4030_PM_MASTER_P1_SW_EVENTS);
+ 	if (err)
