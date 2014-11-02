@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaKBPRx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 10:17:53 -0500
-Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:47446 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454AbaKBPRv (ORCPT
+	id S1751999AbaKBPbf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 10:31:35 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:56146 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaKBPbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 10:17:51 -0500
-X-ME-Helo: localhost.localdomain
-X-ME-Date: Sun, 02 Nov 2014 16:17:50 +0100
-X-ME-IP: 109.222.89.236
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Daniel Mack <zonque@gmail.com>,
-        linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH v1 3/3] ARM: pxa: move gpio11 clock to board files
-Date: Sun,  2 Nov 2014 16:16:55 +0100
-Message-Id: <1414941415-13146-4-git-send-email-robert.jarzmik@free.fr>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
-References: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
+	Sun, 2 Nov 2014 10:31:32 -0500
+Message-ID: <54564E3D.60806@linux.com>
+Date: Sun, 02 Nov 2014 16:31:09 +0100
+From: Matthias Klein <matthias.klein@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Lars Melin <larsm17@gmail.com>, johan@kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: option: Add ID for Peiker LTE NAD
+References: <1414857669-1292-1-git-send-email-matthias.klein@linux.com> <5455A676.2080305@gmail.com>
+In-Reply-To: <5455A676.2080305@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pxa25x gpio11 clock output was previously selected on its pin by the
-clock enabling, toggling the pin function.
 
-As we transition to common clock framework, the pin function is moved to
-board file for the 2 users, ie. lubbock and eseries.
-
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
----
- arch/arm/mach-pxa/eseries.c | 5 ++++-
- arch/arm/mach-pxa/lubbock.c | 3 +++
- 2 files changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-pxa/eseries.c b/arch/arm/mach-pxa/eseries.c
-index cfb8641..d8fc9a3 100644
---- a/arch/arm/mach-pxa/eseries.c
-+++ b/arch/arm/mach-pxa/eseries.c
-@@ -683,7 +683,7 @@ static unsigned long e750_pin_config[] __initdata = {
- 	/* PC Card */
- 	GPIO8_GPIO,   /* CD0 */
- 	GPIO44_GPIO,  /* CD1 */
--	GPIO11_GPIO,  /* IRQ0 */
-+	/* GPIO11_GPIO,  IRQ0 */
- 	GPIO6_GPIO,   /* IRQ1 */
- 	GPIO27_GPIO,  /* RST0 */
- 	GPIO24_GPIO,  /* RST1 */
-@@ -778,6 +778,9 @@ static unsigned long e800_pin_config[] __initdata = {
- 	GPIO29_AC97_SDATA_IN_0,
- 	GPIO30_AC97_SDATA_OUT,
- 	GPIO31_AC97_SYNC,
-+
-+	/* tc6393xb */
-+	GPIO11_3_6MHz,
- };
- 
- static struct w100_gen_regs e800_lcd_regs = {
-diff --git a/arch/arm/mach-pxa/lubbock.c b/arch/arm/mach-pxa/lubbock.c
-index d8a1be6..b742708 100644
---- a/arch/arm/mach-pxa/lubbock.c
-+++ b/arch/arm/mach-pxa/lubbock.c
-@@ -101,6 +101,9 @@ static unsigned long lubbock_pin_config[] __initdata = {
- 	GPIO6_MMC_CLK,
- 	GPIO8_MMC_CS0,
- 
-+	/* SA1111 chip */
-+	GPIO11_3_6MHz,
-+
- 	/* wakeup */
- 	GPIO1_GPIO | WAKEUP_ON_EDGE_RISE,
- };
--- 
-2.1.0
+Am 02.11.2014 um 04:35 schrieb Lars Melin:
+> On 2014-11-01 23:01, Matthias Klein wrote:
+>> Add ID of the Peiker LTE NAD for legacy serial interface
+>>
+>> Signed-off-by: Matthias Klein <matthias.klein@linux.com>
+>> ---
+>>   drivers/usb/serial/option.c | 1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+>> index d1a3f60..d7f1042 100644
+>> --- a/drivers/usb/serial/option.c
+>> +++ b/drivers/usb/serial/option.c
+>> @@ -1091,6 +1091,7 @@ static const struct usb_device_id option_ids[] = {
+>>       { USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE 
+>> MF330 */
+>>       { USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
+>>       { USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
+>> +    { USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9025)}, /* Peiker LTE NAD */
+>>       { USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
+>>       { USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_300) },
+>>       { USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6003),
+> 05c6:9025 already has its net interface (#4) supported by the qmi_wwan 
+> driver so your patch is wrong.
+> There is also an ADB interface which I don't think should be driven by 
+> option.
+>
+>
+The ID is right, and it can be used with the option driver or qmi_wwan.
+Ignore my patch, I will move to qmi_wwan in the future ...
 
