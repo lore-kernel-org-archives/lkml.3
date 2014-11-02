@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473AbaKBSQz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 13:16:55 -0500
-Received: from relay2.sgi.com ([192.48.180.65]:42203 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751155AbaKBSQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 13:16:51 -0500
-From: James Custer <jcuster@sgi.com>
-To: x86@kernel.org
-Cc: James Custer <jcuster@sgi.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H . Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>
-Subject: [PATCH 2/2] x86: UV BAU Avoid NULL pointer reference in ptc_seq_show
-Date: Sun,  2 Nov 2014 12:16:39 -0600
-Message-Id: <1414952199-185319-2-git-send-email-jcuster@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1414952199-185319-1-git-send-email-jcuster@sgi.com>
-References: <1414952199-185319-1-git-send-email-jcuster@sgi.com>
+	id S1752561AbaKBSRG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 13:17:06 -0500
+Received: from kastpost.cyber.ee ([193.40.6.70]:44172 "EHLO kastpost.cyber.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752488AbaKBSRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 13:17:03 -0500
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Nov 2014 13:17:02 EST
+Date: Sun, 2 Nov 2014 20:10:15 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Joe Carnuccio <joe.carnuccio@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>
+cc: Christoph Hellwig <hch@lst.de>, qla2xxx-upstream@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: bisected regression: qla2xxx endianness on sparc64
+Message-ID: <alpine.DEB.2.03.1411022004230.3979@cyber.ee>
+User-Agent: Alpine 2.03 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In init_per_cpu(), when get_cpu_topology() fails, init_per_cpu_tunables()
-is not called afterwards. This means that bau_control->statp is NULL.
-If a user then reads /proc/sgi_uv/ptc_statistics ptc_seq_show() references
-a NULL pointer. Therefore, since uv_bau_init calls set_bau_off when
-init_per_cpu() fails, we add code that detects when the bau is off in
-ptc_seq_show() to avoid referencing a NULL pointer.
+Between 3.17 and 3.18-rc2, qla2xxx is broken on my sparc64 machines. It 
+fails to boot (hangs in firmware rings init).
 
-Signed-off-by: James Custer <jcuster@sgi.com>
----
- arch/x86/platform/uv/tlb_uv.c | 4 ++++
- 1 file changed, 4 insertions(+)
+This is the result of bisect:
 
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 3968d67..570b1b1 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1384,6 +1384,10 @@ static int ptc_seq_show(struct seq_file *file, void *data)
- 	}
- 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
- 		bcp = &per_cpu(bau_control, cpu);
-+		if (bcp->nobau) {
-+			seq_printf(file, "cpu %d bau disabled\n", cpu);
-+			return 0;
-+		}
- 		stat = bcp->statp;
- 		/* source side statistics */
- 		seq_printf(file,
+98aee70d19a7e3203649fa2078464e4f402a0ad8 is the first bad commit
+commit 98aee70d19a7e3203649fa2078464e4f402a0ad8
+Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
+Date:   Thu Sep 25 05:16:38 2014 -0400
+
+     qla2xxx: Add endianizer to max_payload_size modifier.
+
+     Signed-off-by: Joe Carnuccio <joe.carnuccio@qlogic.com>
+     Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+     Signed-off-by: Christoph Hellwig <hch@lst.de>
+
+:040000 040000 041c1a26dc2a7988900acc982e3bd65d3cf7e751 9700d09c3226fc352d44352f22b84f1be632d324 M  s
+
+This may not be the only problem - when bisecting, I also came to commits 
+that got past this step but hang after about 165 seconds of uptime while 
+running userspace startup scripts. But let that be another issue at the 
+moment.
+
 -- 
-1.7.12.4
-
+Meelis Roos (mroos@linux.ee)
