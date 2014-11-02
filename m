@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaKBWft (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 17:35:49 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:34457 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaKBWfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 17:35:48 -0500
-Date: Sun, 2 Nov 2014 14:35:40 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [GIT PULL] MTD fixes for 3.18
-Message-ID: <20141102223540.GA22361@norris-Latitude-E6410>
+	id S1752593AbaKBWte (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 17:49:34 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406AbaKBWtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 17:49:33 -0500
+Message-ID: <5456B4F8.1000608@nod.at>
+Date: Sun, 02 Nov 2014 23:49:28 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>, hch@infradead.org,
+        axboe@fb.com, dedekind1@gmail.com
+CC: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] UBI: Block: Add blk-mq support
+References: <1414933255-3795-1-git-send-email-richard@nod.at> <5456A787.5060104@free-electrons.com> <5456AE72.1010409@nod.at> <5456AFEA.6000507@free-electrons.com>
+In-Reply-To: <5456AFEA.6000507@free-electrons.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="RLADkB1G3OeBfodXpuxBf5DIn5a57ifWP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--RLADkB1G3OeBfodXpuxBf5DIn5a57ifWP
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-The following changes since commit 8b3d58e554453ab858bbb169d93b7321bdc628d4:
+Am 02.11.2014 um 23:27 schrieb Ezequiel Garcia:
+> Wow. Where did you run this and on top of what storage device?
 
-  mtd: nand: omap: Correct CONFIG_MTD_NAND_OMAP_BCH help message (2014-10-06 23:40:09 -0700)
+nandsim, to make sure that the MTD is not our bottleneck.
 
-are available in the git repository at:
+> I'm still interested in the memory footprint, UBI is already heavy enou=
+gh.
 
-  git://git.infradead.org/linux-mtd.git tags/for-linus-20141102
+AFAICT blk-mq allocates one struct ubiblock_pdu per device.
+As all IO is done via scattergather the memory footprint should be good.
+But I'm sure Christoph can tell you the glory details.
 
-for you to fetch changes up to 89cf38dd536a7301d6b5f5ddd73f42074c01bfaa:
+>>> I kind of like the negative diffstat, but the code doesn't look clean=
+er
+>>> or simpler.
+>>>
+>>> In other words, we need a good reason before we agree on making this
+>>> "zen style" driver more complex.
+>>
+>> After reading my patch again I think we could move ubiblock_read_to_sg=
+()
+>> to kapi.c or io.c. It is rather generic and maybe we can tun more UBI =
+users to
+>> scattergather such that less vmalloc()s are needed.
+>>
+>> This would also make the diffstat nicer...
+>>
+>=20
+> Yes, any additional effort to make the current patch any simpler would
+> be great. In its current form it seems rather cumbersome to me.
 
-  mtd: cfi_cmdset_0001.c: fix resume for LH28F640BF chips (2014-10-29 18:50:52 -0700)
+Why cumbersome? It changes the way the driver works as blk-mq works diffe=
+rently.
+If you look at other blk-mq conversion patches you'll notice that they al=
+l change
+a lot.
 
-----------------------------------------------------------------
-Three main MTD fixes for 3.18:
+> If you can re-submit something better and put a more verbose commit log=
+,
+> I'd really appreciate it :)
 
- * A regression from 3.16 which was noticed in 3.17. With the restructuring of
-   the m25p80.c driver and the SPI NOR library framework, we omitted proper
-   listing of the SPI device IDs. This means m25p80.c wouldn't auto-load
-   (modprobe) properly when built as a module. For now, we duplicate the device
-   IDs into both modules.
+First I wait for a review. I'm not sure whether I'm used blk-ml correctly=
+=2E
 
-* The OMAP / ELM modules were depending on an implicit link ordering. Use
-  deferred probing so that the new link order (in 3.18-rc) can still allow for
-  successful probing.
+Thanks,
+//richard
 
-* Fix suspend/resume support for LH28F640BF NOR flash
 
-----------------------------------------------------------------
-Ben Hutchings (2):
-      mtd: spi-nor: make spi_nor_scan() take a chip type name, not spi_device_id
-      mtd: m25p80,spi-nor: Fix module aliases for m25p80
 
-Dmitry Eremin-Solenikov (1):
-      mtd: cfi_cmdset_0001.c: fix resume for LH28F640BF chips
+--RLADkB1G3OeBfodXpuxBf5DIn5a57ifWP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Frans Klaver (1):
-      mtd: omap: fix mtd devices not showing up
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Rafał Miłecki (1):
-      mtd: m25p80: get rid of spi_get_device_id
+iQIcBAEBAgAGBQJUVrT4AAoJEPmeIjfg4UaaJKMP/2cUppM2KAs1iyRAkd5Kbtd/
+1yYkCKVzTfQsy3q2CrbjzcRBiMx/KgemdXCfeKSGdMYHnAMWOgb1lPi1+AAg6AcU
+sEGFowPELPl60iEfCacLUNZEYVwkgpjP9zUSWQ6f8KYWcEkNUWViKNim8qcy+jiu
+OkjeaN5PfvS6CwJ55J4yIsPIWTZmL3P4dZxiUKxAhzoG5AdVDAfyg+SBruMywyjJ
+hoXtTLUHzy/wx2YSwfFb/fyzGqHJg/ioAuEMtDvwBzhoWoTBSG8x/9apm3k2UyB6
+C9P9ihofDu8c8lpbF8iNxLa57wnFw/mE73VIlmz1+AGB7X+Ox/nr6C4XnM+w0HGr
+4rEQW90xG/W0vD4g2I3zLSUawxwvKPpO2Bp+Q9OjaJzQM7C/N1zJkIOsG3nHxtqf
+QYQFB28b9Gba59KxOmPJiYU/qtcY5LbKoyRs8A06hP3RxL9orb6DMP9Y5XkND9M1
+1yQMPtZtCEnNjsXJnVuWp/e9smbk+1IBFRgp1crvsaqjT18qXcJhI2HKJ8vQMzCq
+hSgcoRGbtNsVGDh7QJe/hPpDnnVuKxgCXR6CHJ+uHGAeCOMVH6cSSE+c3Zl3KoXu
+XcDBXQlJtYz+S8hjT5HrvKlsxVnkuZTrMOwodJfZe0LlmzaFC1doI24SjlcZ7CUE
+t5kQ/BsgGCkMQnCS7zAh
+=teV/
+-----END PGP SIGNATURE-----
 
- drivers/mtd/chips/cfi_cmdset_0001.c |  2 ++
- drivers/mtd/devices/m25p80.c        | 64 ++++++++++++++++++++++++++++++++-----
- drivers/mtd/nand/omap_elm.c         |  2 +-
- drivers/mtd/spi-nor/fsl-quadspi.c   |  7 +---
- drivers/mtd/spi-nor/spi-nor.c       | 16 ++++++----
- include/linux/mtd/spi-nor.h         | 21 ++----------
- 6 files changed, 73 insertions(+), 39 deletions(-)
+--RLADkB1G3OeBfodXpuxBf5DIn5a57ifWP--
