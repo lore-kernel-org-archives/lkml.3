@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaKBPRk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 10:17:40 -0500
-Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:19768 "EHLO
+	id S1752504AbaKBPRu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 10:17:50 -0500
+Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:22015 "EHLO
 	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314AbaKBPRe (ORCPT
+	with ESMTP id S1752454AbaKBPRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 10:17:34 -0500
+	Sun, 2 Nov 2014 10:17:46 -0500
 X-ME-Helo: localhost.localdomain
-X-ME-Date: Sun, 02 Nov 2014 16:17:33 +0100
+X-ME-Date: Sun, 02 Nov 2014 16:17:44 +0100
 X-ME-IP: 109.222.89.236
 From: Robert Jarzmik <robert.jarzmik@free.fr>
 To: Haojian Zhuang <haojian.zhuang@gmail.com>,
@@ -18,9 +18,9 @@ To: Haojian Zhuang <haojian.zhuang@gmail.com>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 Cc: linux-arm-kernel@lists.infradead.org, Daniel Mack <zonque@gmail.com>,
         linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH v1 1/3] clk: add pxa25x clock drivers
-Date: Sun,  2 Nov 2014 16:16:53 +0100
-Message-Id: <1414941415-13146-2-git-send-email-robert.jarzmik@free.fr>
+Subject: [PATCH v1 2/3] arm: pxa: Transition pxa25x to clk framework
+Date: Sun,  2 Nov 2014 16:16:54 +0100
+Message-Id: <1414941415-13146-3-git-send-email-robert.jarzmik@free.fr>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
 References: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
@@ -28,314 +28,300 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move pxa25x clock drivers from arch/arm/mach-pxa to driver/clk.
-In the move :
- - convert to new clock framework legacy clocks
- - provide clocks as before for platform data based boards
- - provide clocks through devicetree with clk-pxa-dt
+Transition the PXA25x CPUs to the clock framework.
+This transition still enables legacy platforms to run without device
+tree as before, ie relying on platform data encoded in board specific
+files.
 
-This is the preliminary step in the conversion. The remaining steps are
-:
- - pxa3xx
- - once PXA is fully converted to device tree, if that happens,
-   clk-pxa2* and clk-pxa3* should only hold the core clocks which cannot
-   be described in devicetree.
+The transition breaks the previous clocks activation of pin
+control (gpio11 and gpio12). Machine files should be amended to take
+that into account.
 
 Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 ---
- drivers/clk/pxa/Makefile     |   1 +
- drivers/clk/pxa/clk-pxa25x.c | 274 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 275 insertions(+)
- create mode 100644 drivers/clk/pxa/clk-pxa25x.c
+ arch/arm/Kconfig            |   1 +
+ arch/arm/mach-pxa/Makefile  |   9 +--
+ arch/arm/mach-pxa/generic.c |   2 +
+ arch/arm/mach-pxa/generic.h |   1 +
+ arch/arm/mach-pxa/pxa25x.c  | 182 --------------------------------------------
+ 5 files changed, 8 insertions(+), 187 deletions(-)
 
-diff --git a/drivers/clk/pxa/Makefile b/drivers/clk/pxa/Makefile
-index 4ff2abc..38e9153 100644
---- a/drivers/clk/pxa/Makefile
-+++ b/drivers/clk/pxa/Makefile
-@@ -1,2 +1,3 @@
- obj-y				+= clk-pxa.o
-+obj-$(CONFIG_PXA25x)		+= clk-pxa25x.o
- obj-$(CONFIG_PXA27x)		+= clk-pxa27x.o
-diff --git a/drivers/clk/pxa/clk-pxa25x.c b/drivers/clk/pxa/clk-pxa25x.c
-new file mode 100644
-index 0000000..db07d4b
---- /dev/null
-+++ b/drivers/clk/pxa/clk-pxa25x.c
-@@ -0,0 +1,274 @@
-+/*
-+ * Marvell PXA25x family clocks
-+ *
-+ * Copyright (C) 2014 Robert Jarzmik
-+ *
-+ * Heavily inspired from former arch/arm/mach-pxa/pxa25x.c.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * For non-devicetree platforms. Once pxa is fully converted to devicetree, this
-+ * should go away.
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/clk.h>
-+#include <linux/clkdev.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <mach/pxa25x.h>
-+#include <mach/pxa2xx-regs.h>
-+
-+#include <dt-bindings/clock/pxa-clock.h>
-+#include "clk-pxa.h"
-+
-+#define KHz 1000
-+#define MHz (1000 * 1000)
-+
-+enum {
-+	PXA_CORE_RUN = 0,
-+	PXA_CORE_TURBO,
-+};
-+
-+/*
-+ * Various clock factors driven by the CCCR register.
-+ */
-+
-+/* Crystal Frequency to Memory Frequency Multiplier (L) */
-+static unsigned char L_clk_mult[32] = { 0, 27, 32, 36, 40, 45, 0, };
-+
-+/* Memory Frequency to Run Mode Frequency Multiplier (M) */
-+static unsigned char M_clk_mult[4] = { 0, 1, 2, 4 };
-+
-+/* Run Mode Frequency to Turbo Mode Frequency Multiplier (N) */
-+/* Note: we store the value N * 2 here. */
-+static unsigned char N2_clk_mult[8] = { 0, 0, 2, 3, 4, 0, 6, 0 };
-+
-+static const char * const get_freq_khz[] = {
-+	"core", "run", "cpll", "memory"
-+};
-+
-+/*
-+ * Get the clock frequency as reflected by CCCR and the turbo flag.
-+ * We assume these values have been applied via a fcs.
-+ * If info is not 0 we also display the current settings.
-+ */
-+unsigned int pxa25x_get_clk_frequency_khz(int info)
-+{
-+	struct clk *clk;
-+	unsigned long clks[5];
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(get_freq_khz); i++) {
-+		clk = clk_get(NULL, get_freq_khz[i]);
-+		if (IS_ERR(clk)) {
-+			clks[i] = 0;
-+		} else {
-+			clks[i] = clk_get_rate(clk);
-+			clk_put(clk);
-+		}
-+	}
-+
-+	if (info) {
-+		pr_info("Run Mode clock: %ld.%02ldMHz\n",
-+			clks[1] / 1000000, (clks[1] % 1000000) / 10000);
-+		pr_info("Turbo Mode clock: %ld.%02ldMHz\n",
-+			clks[2] / 1000000, (clks[2] % 1000000) / 10000);
-+		pr_info("Memory clock: %ld.%02ldMHz\n",
-+			clks[3] / 1000000, (clks[3] % 1000000) / 10000);
-+	}
-+
-+	return (unsigned int)clks[0];
-+}
-+
-+static unsigned long clk_pxa25x_memory_get_rate(struct clk_hw *hw,
-+						unsigned long parent_rate)
-+{
-+	unsigned long cccr = CCCR;
-+	unsigned int m = M_clk_mult[(cccr >> 5) & 0x03];
-+
-+	return parent_rate / m;
-+}
-+PARENTS(clk_pxa25x_memory) = { "run" };
-+RATE_RO_OPS(clk_pxa25x_memory, "memory");
-+
-+PARENTS(pxa25x_pbus95) = { "ppll_95_85mhz", "ppll_95_85mhz" };
-+PARENTS(pxa25x_pbus147) = { "ppll_147_46mhz", "ppll_147_46mhz" };
-+PARENTS(pxa25x_osc3) = { "osc_3_6864mhz", "osc_3_6864mhz" };
-+
-+#define PXA25X_CKEN(dev_id, con_id, parents, mult, div,			\
-+		    bit, is_lp, flags)					\
-+	PXA_CKEN(dev_id, con_id, bit, parents, mult, div, mult, div,	\
-+		 is_lp,  &CKEN, CKEN_ ## bit, flags)
-+#define PXA25X_PBUS95_CKEN(dev_id, con_id, bit, mult_hp, div_hp, delay)	\
-+	PXA25X_CKEN(dev_id, con_id, pxa25x_pbus95_parents, mult_hp,	\
-+		    div_hp, bit, NULL, 0)
-+#define PXA25X_PBUS147_CKEN(dev_id, con_id, bit, mult_hp, div_hp, delay)\
-+	PXA25X_CKEN(dev_id, con_id, pxa25x_pbus147_parents, mult_hp,	\
-+		    div_hp, bit, NULL, 0)
-+#define PXA25X_OSC3_CKEN(dev_id, con_id, bit, mult_hp, div_hp, delay)	\
-+	PXA25X_CKEN(dev_id, con_id, pxa25x_osc3_parents, mult_hp,	\
-+		    div_hp, bit, NULL, 0)
-+
-+#define PXA25X_CKEN_1RATE(dev_id, con_id, bit, parents, delay)		\
-+	PXA_CKEN_1RATE(dev_id, con_id, bit, parents,			\
-+		       &CKEN, CKEN_ ## bit, 0)
-+#define PXA25X_CKEN_1RATE_AO(dev_id, con_id, bit, parents, delay)	\
-+	PXA_CKEN_1RATE(dev_id, con_id, bit, parents,			\
-+		       &CKEN, CKEN_ ## bit, CLK_IGNORE_UNUSED)
-+
-+static struct desc_clk_cken pxa25x_clocks[] __initdata = {
-+	PXA25X_PBUS95_CKEN("pxa2xx-mci.0", NULL, MMC, 1, 5, 0),
-+	PXA25X_PBUS95_CKEN("pxa2xx-i2c.0", NULL, I2C, 1, 3, 0),
-+	PXA25X_PBUS95_CKEN("pxa2xx-ir", "FICPCLK", FICP, 1, 2, 0),
-+	PXA25X_PBUS95_CKEN("pxa25x-udc", NULL, USB, 1, 2, 5),
-+	PXA25X_PBUS147_CKEN("pxa2xx-uart.0", NULL, FFUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-uart.1", NULL, BTUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-uart.2", NULL, STUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-uart.3", NULL, HWUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-ir", "UARTCLK", STUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-i2s", NULL, I2S, 1, 1, 0),
-+	PXA25X_PBUS147_CKEN(NULL, "AC97CLK", AC97, 1, 12, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-ssp.0", NULL, SSP, 1, 1, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-nssp.1", NULL, NSSP, 1, 1, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-nssp.2", NULL, ASSP, 1, 1, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-pwm.0", NULL, PWM0, 1, 1, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-pwm.1", NULL, PWM1, 1, 1, 0),
-+
-+	PXA25X_CKEN_1RATE("pxa2xx-fb", NULL, LCD, clk_pxa25x_memory_parents, 0),
-+	PXA25X_CKEN_1RATE_AO("pxa2xx-pcmcia", NULL, MEMC,
-+			     clk_pxa25x_memory_parents, 0),
-+};
-+
-+static u8 clk_pxa25x_core_get_parent(struct clk_hw *hw)
-+{
-+	unsigned long clkcfg;
-+	unsigned int t;
-+
-+	asm("mrc\tp14, 0, %0, c6, c0, 0" : "=r" (clkcfg));
-+	t  = clkcfg & (1 << 0);
-+	if (t)
-+		return PXA_CORE_TURBO;
-+	return PXA_CORE_RUN;
-+}
-+
-+static unsigned long clk_pxa25x_core_get_rate(struct clk_hw *hw,
-+					      unsigned long parent_rate)
-+{
-+	return parent_rate;
-+}
-+PARENTS(clk_pxa25x_core) = { "run", "cpll" };
-+MUX_RO_RATE_RO_OPS(clk_pxa25x_core, "core");
-+
-+static unsigned long clk_pxa25x_run_get_rate(struct clk_hw *hw,
-+					     unsigned long parent_rate)
-+{
-+	unsigned long cccr = CCCR;
-+	unsigned int n2 = N2_clk_mult[(cccr >> 7) & 0x07];
-+
-+	return (parent_rate / n2) * 2;
-+}
-+PARENTS(clk_pxa25x_run) = { "cpll" };
-+RATE_RO_OPS(clk_pxa25x_run, "run");
-+
-+static unsigned long clk_pxa25x_cpll_get_rate(struct clk_hw *hw,
-+	unsigned long parent_rate)
-+{
-+	unsigned long clkcfg, cccr = CCCR;
-+	unsigned int l, m, n2, t;
-+
-+	asm("mrc\tp14, 0, %0, c6, c0, 0" : "=r" (clkcfg));
-+	t = clkcfg & (1 << 0);
-+	l  =  L_clk_mult[(cccr >> 0) & 0x1f];
-+	m = M_clk_mult[(cccr >> 5) & 0x03];
-+	n2 = N2_clk_mult[(cccr >> 7) & 0x07];
-+
-+	if (t)
-+		return m * l * n2 * parent_rate / 2;
-+	return m * l * parent_rate;
-+}
-+PARENTS(clk_pxa25x_cpll) = { "osc_3_6864mhz" };
-+RATE_RO_OPS(clk_pxa25x_cpll, "cpll");
-+
-+static void __init pxa25x_register_core(void)
-+{
-+	clk_register_clk_pxa25x_cpll();
-+	clk_register_clk_pxa25x_run();
-+	clkdev_pxa_register(CLK_CORE, "core", NULL,
-+			    clk_register_clk_pxa25x_core());
-+}
-+
-+static void __init pxa25x_register_plls(void)
-+{
-+	clk_register_fixed_rate(NULL, "osc_3_6864mhz", NULL,
-+				CLK_GET_RATE_NOCACHE | CLK_IS_ROOT,
-+				3686400);
-+	clk_register_fixed_rate(NULL, "osc_32_768khz", NULL,
-+				CLK_GET_RATE_NOCACHE | CLK_IS_ROOT,
-+				32768 * KHz);
-+	clk_register_fixed_rate(NULL, "clk_dummy", NULL, CLK_IS_ROOT, 0);
-+	clk_register_fixed_factor(NULL, "ppll_95_85mhz", "osc_3_6864mhz",
-+				  0, 26, 1);
-+	clk_register_fixed_factor(NULL, "ppll_147_46mhz", "osc_3_6864mhz",
-+				  0, 40, 1);
-+}
-+
-+static void __init pxa25x_base_clocks_init(void)
-+{
-+	pxa25x_register_plls();
-+	pxa25x_register_core();
-+	clk_register_clk_pxa25x_memory();
-+}
-+
-+#define DUMMY_CLK(_con_id, _dev_id, _parent) \
-+	{ .con_id = _con_id, .dev_id = _dev_id, .parent = _parent }
-+struct dummy_clk {
-+	const char *con_id;
-+	const char *dev_id;
-+	const char *parent;
-+};
-+static struct dummy_clk dummy_clks[] __initdata = {
-+	DUMMY_CLK(NULL, "pxa25x-gpio", "osc_32_768khz"),
-+	DUMMY_CLK(NULL, "pxa26x-gpio", "osc_32_768khz"),
-+	DUMMY_CLK("GPIO11_CLK", NULL, "osc_3_6864mhz"),
-+	DUMMY_CLK("GPIO12_CLK", NULL, "osc_32_768khz"),
-+	DUMMY_CLK("sa1100-rtc", NULL, "osc_32_768khz"),
-+	DUMMY_CLK("OSTIMER0", NULL, "osc_32_768khz"),
-+};
-+
-+static void __init pxa25x_dummy_clocks_init(void)
-+{
-+	struct clk *clk;
-+	struct dummy_clk *d;
-+	const char *name;
-+	int i;
-+
-+	/*
-+	 * All pinctrl logic has been wiped out of the clock driver, especially
-+	 * for gpio11 and gpio12 outputs. Machine code should ensure proper pin
-+	 * control (ie. pxa2xx_mfp_config() invocation).
-+	 */
-+	for (i = 0; i < ARRAY_SIZE(dummy_clks); i++) {
-+		d = &dummy_clks[i];
-+		name = d->dev_id ? d->dev_id : d->con_id;
-+		clk = clk_register_fixed_factor(NULL, name, d->parent, 0, 1, 1);
-+		if (!IS_ERR(clk))
-+			clk_register_clkdev(clk, d->con_id, d->dev_id);
-+	}
-+}
-+
-+int __init pxa25x_clocks_init(void)
-+{
-+	pxa25x_base_clocks_init();
-+	pxa25x_dummy_clocks_init();
-+	return clk_pxa_cken_init(pxa25x_clocks, ARRAY_SIZE(pxa25x_clocks));
-+}
-+
-+static void __init pxa25x_dt_clocks_init(struct device_node *np)
-+{
-+	pxa25x_clocks_init();
-+	clk_pxa_dt_common_init(np);
-+}
-+CLK_OF_DECLARE(pxa25x_clks, "marvell,pxa250-core-clocks",
-+	       pxa25x_dt_clocks_init);
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 89c4b5c..2bae231 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -625,6 +625,7 @@ config ARCH_PXA
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_CPU_SUSPEND if PM
+ 	select AUTO_ZRELADDR
++	select COMMON_CLK if PXA27x || PXA25x
+ 	select CLKDEV_LOOKUP
+ 	select CLKSRC_MMIO
+ 	select CLKSRC_OF
+diff --git a/arch/arm/mach-pxa/Makefile b/arch/arm/mach-pxa/Makefile
+index 2fe1824..f05b36d 100644
+--- a/arch/arm/mach-pxa/Makefile
++++ b/arch/arm/mach-pxa/Makefile
+@@ -3,16 +3,15 @@
+ #
+ 
+ # Common support (must be linked before board specific support)
+-obj-y				+= clock.o devices.o generic.o irq.o \
+-				   reset.o
++obj-y				+= devices.o generic.o irq.o reset.o
+ obj-$(CONFIG_PM)		+= pm.o sleep.o standby.o
+ 
+ # Generic drivers that other drivers may depend upon
+ 
+ # SoC-specific code
+-obj-$(CONFIG_PXA25x)		+= mfp-pxa2xx.o clock-pxa2xx.o pxa2xx.o pxa25x.o
+-obj-$(CONFIG_PXA27x)		+= mfp-pxa2xx.o clock-pxa2xx.o pxa2xx.o pxa27x.o
+-obj-$(CONFIG_PXA3xx)		+= mfp-pxa3xx.o clock-pxa3xx.o pxa3xx.o smemc.o pxa3xx-ulpi.o
++obj-$(CONFIG_PXA25x)		+= mfp-pxa2xx.o pxa2xx.o pxa25x.o
++obj-$(CONFIG_PXA27x)		+= mfp-pxa2xx.o pxa2xx.o pxa27x.o
++obj-$(CONFIG_PXA3xx)		+= mfp-pxa3xx.o clock.o clock-pxa3xx.o pxa3xx.o smemc.o pxa3xx-ulpi.o
+ obj-$(CONFIG_CPU_PXA300)	+= pxa300.o
+ obj-$(CONFIG_CPU_PXA320)	+= pxa320.o
+ obj-$(CONFIG_CPU_PXA930)	+= pxa930.o
+diff --git a/arch/arm/mach-pxa/generic.c b/arch/arm/mach-pxa/generic.c
+index 4ca801b..d988c53 100644
+--- a/arch/arm/mach-pxa/generic.c
++++ b/arch/arm/mach-pxa/generic.c
+@@ -63,6 +63,8 @@ EXPORT_SYMBOL(get_clock_tick_rate);
+  */
+ void __init pxa_timer_init(void)
+ {
++	if (cpu_is_pxa25x())
++		pxa25x_clocks_init();
+ 	if (cpu_is_pxa27x())
+ 		pxa27x_clocks_init();
+ 	pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
+diff --git a/arch/arm/mach-pxa/generic.h b/arch/arm/mach-pxa/generic.h
+index 7fda082..c66fe38 100644
+--- a/arch/arm/mach-pxa/generic.h
++++ b/arch/arm/mach-pxa/generic.h
+@@ -14,6 +14,7 @@
+ struct irq_data;
+ 
+ extern void pxa_timer_init(void);
++extern int pxa25x_clocks_init(void);
+ extern int pxa27x_clocks_init(void);
+ 
+ extern void __init pxa_map_io(void);
+diff --git a/arch/arm/mach-pxa/pxa25x.c b/arch/arm/mach-pxa/pxa25x.c
+index 66e4a2b..70e6d0e 100644
+--- a/arch/arm/mach-pxa/pxa25x.c
++++ b/arch/arm/mach-pxa/pxa25x.c
+@@ -44,181 +44,6 @@
+  * Various clock factors driven by the CCCR register.
+  */
+ 
+-/* Crystal Frequency to Memory Frequency Multiplier (L) */
+-static unsigned char L_clk_mult[32] = { 0, 27, 32, 36, 40, 45, 0, };
+-
+-/* Memory Frequency to Run Mode Frequency Multiplier (M) */
+-static unsigned char M_clk_mult[4] = { 0, 1, 2, 4 };
+-
+-/* Run Mode Frequency to Turbo Mode Frequency Multiplier (N) */
+-/* Note: we store the value N * 2 here. */
+-static unsigned char N2_clk_mult[8] = { 0, 0, 2, 3, 4, 0, 6, 0 };
+-
+-/* Crystal clock */
+-#define BASE_CLK	3686400
+-
+-/*
+- * Get the clock frequency as reflected by CCCR and the turbo flag.
+- * We assume these values have been applied via a fcs.
+- * If info is not 0 we also display the current settings.
+- */
+-unsigned int pxa25x_get_clk_frequency_khz(int info)
+-{
+-	unsigned long cccr, turbo;
+-	unsigned int l, L, m, M, n2, N;
+-
+-	cccr = CCCR;
+-	asm( "mrc\tp14, 0, %0, c6, c0, 0" : "=r" (turbo) );
+-
+-	l  =  L_clk_mult[(cccr >> 0) & 0x1f];
+-	m  =  M_clk_mult[(cccr >> 5) & 0x03];
+-	n2 = N2_clk_mult[(cccr >> 7) & 0x07];
+-
+-	L = l * BASE_CLK;
+-	M = m * L;
+-	N = n2 * M / 2;
+-
+-	if(info)
+-	{
+-		L += 5000;
+-		printk( KERN_INFO "Memory clock: %d.%02dMHz (*%d)\n",
+-			L / 1000000, (L % 1000000) / 10000, l );
+-		M += 5000;
+-		printk( KERN_INFO "Run Mode clock: %d.%02dMHz (*%d)\n",
+-			M / 1000000, (M % 1000000) / 10000, m );
+-		N += 5000;
+-		printk( KERN_INFO "Turbo Mode clock: %d.%02dMHz (*%d.%d, %sactive)\n",
+-			N / 1000000, (N % 1000000) / 10000, n2 / 2, (n2 % 2) * 5,
+-			(turbo & 1) ? "" : "in" );
+-	}
+-
+-	return (turbo & 1) ? (N/1000) : (M/1000);
+-}
+-
+-static unsigned long clk_pxa25x_mem_getrate(struct clk *clk)
+-{
+-	return L_clk_mult[(CCCR >> 0) & 0x1f] * BASE_CLK;
+-}
+-
+-static const struct clkops clk_pxa25x_mem_ops = {
+-	.enable		= clk_dummy_enable,
+-	.disable	= clk_dummy_disable,
+-	.getrate	= clk_pxa25x_mem_getrate,
+-};
+-
+-static const struct clkops clk_pxa25x_lcd_ops = {
+-	.enable		= clk_pxa2xx_cken_enable,
+-	.disable	= clk_pxa2xx_cken_disable,
+-	.getrate	= clk_pxa25x_mem_getrate,
+-};
+-
+-static unsigned long gpio12_config_32k[] = {
+-	GPIO12_32KHz,
+-};
+-
+-static unsigned long gpio12_config_gpio[] = {
+-	GPIO12_GPIO,
+-};
+-
+-static void clk_gpio12_enable(struct clk *clk)
+-{
+-	pxa2xx_mfp_config(gpio12_config_32k, 1);
+-}
+-
+-static void clk_gpio12_disable(struct clk *clk)
+-{
+-	pxa2xx_mfp_config(gpio12_config_gpio, 1);
+-}
+-
+-static const struct clkops clk_pxa25x_gpio12_ops = {
+-	.enable         = clk_gpio12_enable,
+-	.disable        = clk_gpio12_disable,
+-};
+-
+-static unsigned long gpio11_config_3m6[] = {
+-	GPIO11_3_6MHz,
+-};
+-
+-static unsigned long gpio11_config_gpio[] = {
+-	GPIO11_GPIO,
+-};
+-
+-static void clk_gpio11_enable(struct clk *clk)
+-{
+-	pxa2xx_mfp_config(gpio11_config_3m6, 1);
+-}
+-
+-static void clk_gpio11_disable(struct clk *clk)
+-{
+-	pxa2xx_mfp_config(gpio11_config_gpio, 1);
+-}
+-
+-static const struct clkops clk_pxa25x_gpio11_ops = {
+-	.enable         = clk_gpio11_enable,
+-	.disable        = clk_gpio11_disable,
+-};
+-
+-/*
+- * 3.6864MHz -> OST, GPIO, SSP, PWM, PLLs (95.842MHz, 147.456MHz)
+- * 95.842MHz -> MMC 19.169MHz, I2C 31.949MHz, FICP 47.923MHz, USB 47.923MHz
+- * 147.456MHz -> UART 14.7456MHz, AC97 12.288MHz, I2S 5.672MHz (allegedly)
+- */
+-
+-/*
+- * PXA 2xx clock declarations.
+- */
+-static DEFINE_PXA2_CKEN(pxa25x_hwuart, HWUART, 14745600, 1);
+-static DEFINE_PXA2_CKEN(pxa25x_ffuart, FFUART, 14745600, 1);
+-static DEFINE_PXA2_CKEN(pxa25x_btuart, BTUART, 14745600, 1);
+-static DEFINE_PXA2_CKEN(pxa25x_stuart, STUART, 14745600, 1);
+-static DEFINE_PXA2_CKEN(pxa25x_usb, USB, 47923000, 5);
+-static DEFINE_PXA2_CKEN(pxa25x_mmc, MMC, 19169000, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_i2c, I2C, 31949000, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_ssp, SSP, 3686400, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_nssp, NSSP, 3686400, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_assp, ASSP, 3686400, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_pwm0, PWM0, 3686400, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_pwm1, PWM1, 3686400, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_ac97, AC97, 24576000, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_i2s, I2S, 14745600, 0);
+-static DEFINE_PXA2_CKEN(pxa25x_ficp, FICP, 47923000, 0);
+-
+-static DEFINE_CK(pxa25x_lcd, LCD, &clk_pxa25x_lcd_ops);
+-static DEFINE_CLK(pxa25x_gpio11, &clk_pxa25x_gpio11_ops, 3686400, 0);
+-static DEFINE_CLK(pxa25x_gpio12, &clk_pxa25x_gpio12_ops, 32768, 0);
+-static DEFINE_CLK(pxa25x_mem, &clk_pxa25x_mem_ops, 0, 0);
+-
+-static struct clk_lookup pxa25x_clkregs[] = {
+-	INIT_CLKREG(&clk_pxa25x_lcd, "pxa2xx-fb", NULL),
+-	INIT_CLKREG(&clk_pxa25x_ffuart, "pxa2xx-uart.0", NULL),
+-	INIT_CLKREG(&clk_pxa25x_btuart, "pxa2xx-uart.1", NULL),
+-	INIT_CLKREG(&clk_pxa25x_stuart, "pxa2xx-uart.2", NULL),
+-	INIT_CLKREG(&clk_pxa25x_usb, "pxa25x-udc", NULL),
+-	INIT_CLKREG(&clk_pxa25x_mmc, "pxa2xx-mci.0", NULL),
+-	INIT_CLKREG(&clk_pxa25x_i2c, "pxa2xx-i2c.0", NULL),
+-	INIT_CLKREG(&clk_pxa25x_ssp, "pxa25x-ssp.0", NULL),
+-	INIT_CLKREG(&clk_pxa25x_nssp, "pxa25x-nssp.1", NULL),
+-	INIT_CLKREG(&clk_pxa25x_assp, "pxa25x-nssp.2", NULL),
+-	INIT_CLKREG(&clk_pxa25x_pwm0, "pxa25x-pwm.0", NULL),
+-	INIT_CLKREG(&clk_pxa25x_pwm1, "pxa25x-pwm.1", NULL),
+-	INIT_CLKREG(&clk_pxa25x_i2s, "pxa2xx-i2s", NULL),
+-	INIT_CLKREG(&clk_pxa25x_stuart, "pxa2xx-ir", "UARTCLK"),
+-	INIT_CLKREG(&clk_pxa25x_ficp, "pxa2xx-ir", "FICPCLK"),
+-	INIT_CLKREG(&clk_pxa25x_ac97, NULL, "AC97CLK"),
+-	INIT_CLKREG(&clk_pxa25x_gpio11, NULL, "GPIO11_CLK"),
+-	INIT_CLKREG(&clk_pxa25x_gpio12, NULL, "GPIO12_CLK"),
+-	INIT_CLKREG(&clk_pxa25x_mem, "pxa2xx-pcmcia", NULL),
+-#ifdef CONFIG_CPU_PXA26x
+-	INIT_CLKREG(&clk_dummy, "pxa26x-gpio", NULL),
+-#else
+-	INIT_CLKREG(&clk_dummy, "pxa25x-gpio", NULL),
+-#endif
+-	INIT_CLKREG(&clk_dummy, "sa1100-rtc", NULL),
+-};
+-
+-static struct clk_lookup pxa25x_hwuart_clkreg =
+-	INIT_CLKREG(&clk_pxa25x_hwuart, "pxa2xx-uart.3", NULL);
+-
+ #ifdef CONFIG_PM
+ 
+ #define SAVE(x)		sleep_save[SLEEP_SAVE_##x] = x
+@@ -374,8 +199,6 @@ static int __init pxa25x_init(void)
+ 
+ 		reset_status = RCSR;
+ 
+-		clkdev_add_table(pxa25x_clkregs, ARRAY_SIZE(pxa25x_clkregs));
+-
+ 		if ((ret = pxa_init_dma(IRQ_DMA, 16)))
+ 			return ret;
+ 
+@@ -383,7 +206,6 @@ static int __init pxa25x_init(void)
+ 
+ 		register_syscore_ops(&pxa_irq_syscore_ops);
+ 		register_syscore_ops(&pxa2xx_mfp_syscore_ops);
+-		register_syscore_ops(&pxa2xx_clock_syscore_ops);
+ 
+ 		pxa_register_device(&pxa25x_device_gpio, &pxa25x_gpio_info);
+ 		ret = platform_add_devices(pxa25x_devices,
+@@ -392,10 +214,6 @@ static int __init pxa25x_init(void)
+ 			return ret;
+ 	}
+ 
+-	/* Only add HWUART for PXA255/26x; PXA210/250 do not have it. */
+-	if (cpu_is_pxa255())
+-		clkdev_add(&pxa25x_hwuart_clkreg);
+-
+ 	return ret;
+ }
+ 
 -- 
 2.1.0
 
