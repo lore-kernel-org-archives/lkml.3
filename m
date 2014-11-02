@@ -1,90 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaKBTTq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 14:19:46 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:58164 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaKBTTn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 14:19:43 -0500
-Message-ID: <545683C9.6000101@gmail.com>
-Date: Sun, 02 Nov 2014 20:19:37 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benoit Masson <yahoo@perenite.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
-References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com> <20141101223625.GB3698@titan.lakedaemon.net> <54556341.6040506@gmail.com> <20141102190333.GV3698@titan.lakedaemon.net>
-In-Reply-To: <20141102190333.GV3698@titan.lakedaemon.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751804AbaKBTlM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 14:41:12 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:45654 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751285AbaKBTlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 14:41:09 -0500
+Date: Sun, 2 Nov 2014 19:41:02 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1411021938010.11887@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-503844566-1414957262=:11887"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.11.2014 20:03, Jason Cooper wrote:
-> On Sat, Nov 01, 2014 at 11:48:33PM +0100, Sebastian Hesselbarth wrote:
->> On 01.11.2014 23:36, Jason Cooper wrote:
->>> On Fri, Sep 19, 2014 at 10:14:36PM +0200, Sebastian Hesselbarth wrote:
->>>> this is a patch set preparing barebox support for ix4-300d. As usual,
->>>> I stumbled upon a few nice-to-haves before actually touching ix4-300d
->>>> dts. As it is a mach-mvebu thing, I just added the related mailing
->>>> lists instead of each of the DT maintainers.
->>>>
->>>> First 5 patches consolidate SoC-specific pinctrl nodes to one common
->>>> node in armada-xp.dtsi, compatible overwrites for each SoC, and node
->>>> alias usage for each board. Also, ge{0,1} pinctrl settings are moved
->>>> to the common node from one board specific node.
->>>>
->>>> Last 3 patches then use that ge{0,1} pinctrl settings on ix4-300d which
->>>> is vital for bootloader init. During exploration of ix4-300d, I also
->>>> found a i2c eeprom that has not been added to the dts, yet. Finally,
->>>> there is only one 74hc595 on ix4 mainboard while dts property is set
->>>> for two.
->>>>
->>>> I cannot recall in detail what is on that eeprom, but IIRC it is nothing
->>>> important. Some reg,addr pairs for some init stuff that should have
->>>> already been done by stock u-boot. Anyway, adding the node will do no
->>>> harm.
->>>>
->>>> Patches are based on v3.17-rc1 and intended for v3.18 but I am not in
->>>> a hurry. I only compile tested this, so a formal Tested-by from Benoit
->>>> for the ix4 and any other Armada XP board would be great.
->>>
->>> I lost track of this thread, are you resending?  Did Benoit get a
->>> successful test run?
->>
->> Looks like there was this A0 stepping thing, but basically yes
->>
->> http://www.spinics.net/lists/devicetree/msg53364.html
->>
->> I have just rebased it on top of v3.18-rc1, feel free to pick them
->> up from
->>
->> git://git.infradead.org/users/hesselba/linux-berlin.git devel/mvebu/ix4-300d
->> git://git.infradead.org/users/hesselba/linux-berlin.git
->
-> Ahh, that's right.  Do you still use the github repo?  I hadn't added
-> your infradead as a remote yet.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Usually, I use github for mvebu and infradead for berlin. But this time
-I was too lazy to either boot-up the other laptop or clone the github
-repo ;)
+--29444707-503844566-1414957262=:11887
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-> At any rate, I cherry-picked them and added Benoit's Tested-by's.  So if
-> you had this branch in -next, please remove it before tonight's run.
 
-I _did not_ put it into any -next branch. It's mvebu and that is your
-git tree, I only put berlin patches into -next ;)
+Hi Linus,
 
-> Applied to mvebu/dt.
+drm fixes, nothing too astounding or major, radeon, i915
+vmwgfx, armada and exynos.
 
-Thanks for having an eye on this patches, I almost forgot about them.
+biggest ones:
+vmwgfx has one big locking regression fix,
+i915 has come displayport fixes
+radeon has some stability and a memory alloc failure
+armada and exynos have some vblank fixes.
 
-Sebastian
+Dave.
 
+The following changes since commit f7e87a44ef60ad379e39b45437604141453bf0ec:
+
+  Merge tag 'media/v3.18-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media (2014-10-27 15:05:40 -0700)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 66338feee458cb2b04e8f2b515b8d660e49ba29a:
+
+  Merge branch 'exynos-drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/daeinki/drm-exynos into drm-fixes (2014-11-03 05:23:17 +1000)
+
+----------------------------------------------------------------
+
+Alex Deucher (3):
+      drm/radeon/dpm: disable ulv support on SI
+      drm/radeon: dpm fixes for asrock systems
+      drm/radeon: remove invalid pci id
+
+Andrzej Hajda (6):
+      drm/exynos: init vblank with real number of crtcs
+      drm/exynos: remove explicit encoder/connector de-initialization
+      drm/exynos: propagate plane initialization errors
+      drm/exynos: init kms poll at the end of initialization
+      drm/exynos: enable vblank after DPMS on
+      drm/exynos: correct connector->dpms field before resuming
+
+Dan Carpenter (1):
+      drm/radeon: remove some buggy dead code
+
+Dave Airlie (5):
+      Merge branch 'drm-armada-fixes' of git://ftp.arm.linux.org.uk/~rmk/linux-arm into drm-fixes
+      Merge tag 'drm-intel-fixes-2014-10-30' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      Merge branch 'drm-fixes-3.18' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+      Merge branch 'vmwgfx-fixes-3.18' of git://people.freedesktop.org/~thomash/linux
+      Merge branch 'exynos-drm-fixes' of git://git.kernel.org/.../daeinki/drm-exynos into drm-fixes
+
+Inki Dae (1):
+      drm/exynos: vidi: fix build warning
+
+Jani Nikula (1):
+      drm/i915/dp: only use training pattern 3 on platforms that support it
+
+Michel Dänzer (1):
+      drm/radeon: Use drm_malloc_ab instead of kmalloc_array
+
+Rob Clark (1):
+      drm/vmwgfx: fix lock breakage
+
+Russell King (3):
+      drm/armada: add IRQ support back
+      drm/armada: fix page_flip refcounting leak
+      drm/armada: convert to use vblank_on/off calls
+
+Sinclair Yeh (1):
+      drm/vmwgfx: Filter out modes those cannot be supported by the current VRAM size.
+
+Thomas Hellstrom (1):
+      drm/vmwgfx: Fix hash key computation
+
+Ville Syrjälä (3):
+      drm/i915: Do a dummy DPCD read before the actual read
+      drm/i915: Ignore long hpds on eDP ports
+      drm/i915: Fix GMBUSFREQ on vlv/chv
+
+Wilfried Klaebe (1):
+      radeon: clean up coding style differences in radeon_get_bios()
+
+jens stein (1):
+      drm/i915: Ignore VBT backlight check on Macbook 2, 1
+
+ drivers/gpu/drm/armada/armada_crtc.c       | 21 +++++++--------
+ drivers/gpu/drm/armada/armada_drv.c        |  3 ++-
+ drivers/gpu/drm/exynos/exynos_dp_core.c    |  5 ----
+ drivers/gpu/drm/exynos/exynos_drm_crtc.c   |  5 +++-
+ drivers/gpu/drm/exynos/exynos_drm_dpi.c    |  4 ---
+ drivers/gpu/drm/exynos/exynos_drm_drv.c    | 43 +++++++++++++++++-------------
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c    |  4 ---
+ drivers/gpu/drm/exynos/exynos_drm_vidi.c   |  4 ---
+ drivers/gpu/drm/exynos/exynos_hdmi.c       |  6 -----
+ drivers/gpu/drm/i915/intel_display.c       |  5 +++-
+ drivers/gpu/drm/i915/intel_dp.c            | 24 +++++++++++++++--
+ drivers/gpu/drm/radeon/evergreen.c         |  4 +--
+ drivers/gpu/drm/radeon/kv_dpm.c            | 19 ++++++++++---
+ drivers/gpu/drm/radeon/radeon_bios.c       |  6 ++---
+ drivers/gpu/drm/radeon/radeon_cs.c         |  2 +-
+ drivers/gpu/drm/radeon/radeon_ring.c       |  4 +--
+ drivers/gpu/drm/radeon/radeon_vm.c         |  4 +--
+ drivers/gpu/drm/radeon/si_dpm.c            |  2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_cmdbuf_res.c |  3 ++-
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c        |  6 ++++-
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c        | 24 ++++++++++++-----
+ include/drm/drm_pciids.h                   |  1 -
+ 22 files changed, 116 insertions(+), 83 deletions(-)
+--29444707-503844566-1414957262=:11887--
