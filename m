@@ -1,267 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332AbaKBJDm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 04:03:42 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:42078 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929AbaKBJDc (ORCPT
+	id S1751523AbaKBJIa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 04:08:30 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:42219 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbaKBJIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 04:03:32 -0500
-Message-ID: <5455F35E.1040304@redhat.com>
-Date: Sun, 02 Nov 2014 10:03:26 +0100
+	Sun, 2 Nov 2014 04:08:24 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-CC: akpm@linux-foundation.org, Jun Nakajima <jun.nakajima@intel.com>,
-        Xinhao Xu <xinhao.xu@intel.com>, Yang Zhang <yang.z.zhang@intel.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>, "Nadav Har'El" <nyh@il.ibm.com>
-Subject: Re: [PATCH 3.2 087/102] nEPT: Nested INVEPT
-References: <lsq.1414880883.12343835@decadent.org.uk>
-In-Reply-To: <lsq.1414880883.12343835@decadent.org.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, kvm@vger.kernel.org
+Subject: [GIT PULL] KVM fixes for Linux 3.18-rc3 or -rc4
+Date: Sun,  2 Nov 2014 10:08:12 +0100
+Message-Id: <1414919292-5890-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You can just use the same scheme as your patch 88/102:
+Linus,
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 685b8448d6e2..bd8cc9055fe2 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6740,6 +6740,12 @@ static int handle_vmptrst(struct kvm_vcpu *vcpu)
- 	return 1;
- }
- 
-+static int handle_invept(struct kvm_vcpu *vcpu)
-+{
-+	kvm_queue_exception(vcpu, UD_VECTOR);
-+	return 1;
-+}
-+
- /*
-  * The exit handlers return 1 if the exit was handled fully and guest execution
-  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
-@@ -6785,6 +6791,7 @@ static int (*const kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
- 	[EXIT_REASON_PAUSE_INSTRUCTION]       = handle_pause,
- 	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
- 	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
-+	[EXIT_REASON_INVEPT]                  = handle_invept,
- };
- 
- static const int kvm_vmx_max_exit_handlers =
-@@ -7020,6 +7027,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
- 	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
- 	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
- 	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
-+	case EXIT_REASON_INVEPT:
- 		/*
- 		 * VMX instructions trap unconditionally. This allows L1 to
- 		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
+The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
 
+  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+
+for you to fetch changes up to a73896cb5bbdce672945745db8224352a689f580:
+
+  KVM: vmx: defer load of APIC access page address during reset (2014-11-02 08:37:18 +0100)
+
+A bit late---needed some time to test the SRCU fix, which only came in
+on Friday.  I'm not going to complain if this misses -rc3!
+
+Thanks,
 
 Paolo
 
-On 01/11/2014 23:28, Ben Hutchings wrote:
-> 3.2.64-rc1 review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Nadav Har'El <nyh@il.ibm.com>
-> 
-> commit bfd0a56b90005f8c8a004baf407ad90045c2b11e upstream.
-> 
-> If we let L1 use EPT, we should probably also support the INVEPT instruction.
-> 
-> In our current nested EPT implementation, when L1 changes its EPT table
-> for L2 (i.e., EPT12), L0 modifies the shadow EPT table (EPT02), and in
-> the course of this modification already calls INVEPT. But if last level
-> of shadow page is unsync not all L1's changes to EPT12 are intercepted,
-> which means roots need to be synced when L1 calls INVEPT. Global INVEPT
-> should not be different since roots are synced by kvm_mmu_load() each
-> time EPTP02 changes.
-> 
-> Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> Signed-off-by: Nadav Har'El <nyh@il.ibm.com>
-> Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
-> Signed-off-by: Xinhao Xu <xinhao.xu@intel.com>
-> Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
-> Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> [bwh: Backported to 3.2:
->  - Adjust context, filename
->  - Add definition of nested_ept_get_cr3(), added upstream by commit
->    155a97a3d7c7 ("nEPT: MMU context for nested EPT")]
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
-> --- a/arch/x86/include/asm/vmx.h
-> +++ b/arch/x86/include/asm/vmx.h
-> @@ -279,6 +279,7 @@ enum vmcs_field {
->  #define EXIT_REASON_APIC_ACCESS         44
->  #define EXIT_REASON_EPT_VIOLATION       48
->  #define EXIT_REASON_EPT_MISCONFIG       49
-> +#define EXIT_REASON_INVEPT              50
->  #define EXIT_REASON_WBINVD		54
->  #define EXIT_REASON_XSETBV		55
->  
-> @@ -397,6 +398,7 @@ enum vmcs_field {
->  #define VMX_EPT_EXTENT_INDIVIDUAL_ADDR		0
->  #define VMX_EPT_EXTENT_CONTEXT			1
->  #define VMX_EPT_EXTENT_GLOBAL			2
-> +#define VMX_EPT_EXTENT_SHIFT			24
->  
->  #define VMX_EPT_EXECUTE_ONLY_BIT		(1ull)
->  #define VMX_EPT_PAGE_WALK_4_BIT			(1ull << 6)
-> @@ -404,6 +406,7 @@ enum vmcs_field {
->  #define VMX_EPTP_WB_BIT				(1ull << 14)
->  #define VMX_EPT_2MB_PAGE_BIT			(1ull << 16)
->  #define VMX_EPT_1GB_PAGE_BIT			(1ull << 17)
-> +#define VMX_EPT_INVEPT_BIT			(1ull << 20)
->  #define VMX_EPT_EXTENT_INDIVIDUAL_BIT		(1ull << 24)
->  #define VMX_EPT_EXTENT_CONTEXT_BIT		(1ull << 25)
->  #define VMX_EPT_EXTENT_GLOBAL_BIT		(1ull << 26)
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -2869,6 +2869,7 @@ void kvm_mmu_sync_roots(struct kvm_vcpu
->  	mmu_sync_roots(vcpu);
->  	spin_unlock(&vcpu->kvm->mmu_lock);
->  }
-> +EXPORT_SYMBOL_GPL(kvm_mmu_sync_roots);
->  
->  static gpa_t nonpaging_gva_to_gpa(struct kvm_vcpu *vcpu, gva_t vaddr,
->  				  u32 access, struct x86_exception *exception)
-> @@ -3131,6 +3132,7 @@ void kvm_mmu_flush_tlb(struct kvm_vcpu *
->  	++vcpu->stat.tlb_flush;
->  	kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
->  }
-> +EXPORT_SYMBOL_GPL(kvm_mmu_flush_tlb);
->  
->  static void paging_new_cr3(struct kvm_vcpu *vcpu)
->  {
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -602,6 +602,7 @@ static void nested_release_page_clean(st
->  	kvm_release_page_clean(page);
->  }
->  
-> +static unsigned long nested_ept_get_cr3(struct kvm_vcpu *vcpu);
->  static u64 construct_eptp(unsigned long root_hpa);
->  static void kvm_cpu_vmxon(u64 addr);
->  static void kvm_cpu_vmxoff(void);
-> @@ -1899,6 +1900,7 @@ static u32 nested_vmx_secondary_ctls_low
->  static u32 nested_vmx_pinbased_ctls_low, nested_vmx_pinbased_ctls_high;
->  static u32 nested_vmx_exit_ctls_low, nested_vmx_exit_ctls_high;
->  static u32 nested_vmx_entry_ctls_low, nested_vmx_entry_ctls_high;
-> +static u32 nested_vmx_ept_caps;
->  static __init void nested_vmx_setup_ctls_msrs(void)
->  {
->  	/*
-> @@ -5550,6 +5552,74 @@ static int handle_vmptrst(struct kvm_vcp
->  	return 1;
->  }
->  
-> +/* Emulate the INVEPT instruction */
-> +static int handle_invept(struct kvm_vcpu *vcpu)
-> +{
-> +	u32 vmx_instruction_info, types;
-> +	unsigned long type;
-> +	gva_t gva;
-> +	struct x86_exception e;
-> +	struct {
-> +		u64 eptp, gpa;
-> +	} operand;
-> +	u64 eptp_mask = ((1ull << 51) - 1) & PAGE_MASK;
-> +
-> +	if (!(nested_vmx_secondary_ctls_high & SECONDARY_EXEC_ENABLE_EPT) ||
-> +	    !(nested_vmx_ept_caps & VMX_EPT_INVEPT_BIT)) {
-> +		kvm_queue_exception(vcpu, UD_VECTOR);
-> +		return 1;
-> +	}
-> +
-> +	if (!nested_vmx_check_permission(vcpu))
-> +		return 1;
-> +
-> +	if (!kvm_read_cr0_bits(vcpu, X86_CR0_PE)) {
-> +		kvm_queue_exception(vcpu, UD_VECTOR);
-> +		return 1;
-> +	}
-> +
-> +	vmx_instruction_info = vmcs_read32(VMX_INSTRUCTION_INFO);
-> +	type = kvm_register_read(vcpu, (vmx_instruction_info >> 28) & 0xf);
-> +
-> +	types = (nested_vmx_ept_caps >> VMX_EPT_EXTENT_SHIFT) & 6;
-> +
-> +	if (!(types & (1UL << type))) {
-> +		nested_vmx_failValid(vcpu,
-> +				VMXERR_INVALID_OPERAND_TO_INVEPT_INVVPID);
-> +		return 1;
-> +	}
-> +
-> +	/* According to the Intel VMX instruction reference, the memory
-> +	 * operand is read even if it isn't needed (e.g., for type==global)
-> +	 */
-> +	if (get_vmx_mem_address(vcpu, vmcs_readl(EXIT_QUALIFICATION),
-> +			vmx_instruction_info, &gva))
-> +		return 1;
-> +	if (kvm_read_guest_virt(&vcpu->arch.emulate_ctxt, gva, &operand,
-> +				sizeof(operand), &e)) {
-> +		kvm_inject_page_fault(vcpu, &e);
-> +		return 1;
-> +	}
-> +
-> +	switch (type) {
-> +	case VMX_EPT_EXTENT_CONTEXT:
-> +		if ((operand.eptp & eptp_mask) !=
-> +				(nested_ept_get_cr3(vcpu) & eptp_mask))
-> +			break;
-> +	case VMX_EPT_EXTENT_GLOBAL:
-> +		kvm_mmu_sync_roots(vcpu);
-> +		kvm_mmu_flush_tlb(vcpu);
-> +		nested_vmx_succeed(vcpu);
-> +		break;
-> +	default:
-> +		BUG_ON(1);
-> +		break;
-> +	}
-> +
-> +	skip_emulated_instruction(vcpu);
-> +	return 1;
-> +}
-> +
->  /*
->   * The exit handlers return 1 if the exit was handled fully and guest execution
->   * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
-> @@ -5591,6 +5661,7 @@ static int (*kvm_vmx_exit_handlers[])(st
->  	[EXIT_REASON_PAUSE_INSTRUCTION]       = handle_pause,
->  	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
->  	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
-> +	[EXIT_REASON_INVEPT]                  = handle_invept,
->  };
->  
->  static const int kvm_vmx_max_exit_handlers =
-> @@ -5775,6 +5846,7 @@ static bool nested_vmx_exit_handled(stru
->  	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
->  	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
->  	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
-> +	case EXIT_REASON_INVEPT:
->  		/*
->  		 * VMX instructions trap unconditionally. This allows L1 to
->  		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
-> @@ -6436,6 +6508,12 @@ static void vmx_set_supported_cpuid(u32
->  		entry->ecx |= bit(X86_FEATURE_VMX);
->  }
->  
-> +static unsigned long nested_ept_get_cr3(struct kvm_vcpu *vcpu)
-> +{
-> +	/* return the page table to be shadowed - in our case, EPT12 */
-> +	return get_vmcs12(vcpu)->ept_pointer;
-> +}
-> +
->  /*
->   * prepare_vmcs02 is called when the L1 guest hypervisor runs its nested
->   * L2 guest. L1 has a vmcs for L2 (vmcs12), and this function "merges" it
-> 
+----------------------------------------------------------------
+A small set of x86 fixes.  The most serious is an SRCU lockdep fix.
+
+----------------------------------------------------------------
+Jan Kiszka (1):
+      KVM: nVMX: Disable preemption while reading from shadow VMCS
+
+Nadav Amit (1):
+      KVM: x86: Fix far-jump to non-canonical check
+
+Paolo Bonzini (3):
+      KVM: emulator: fix error code for __linearize
+      KVM: emulator: fix execution close to the segment limit
+      KVM: vmx: defer load of APIC access page address during reset
+
+ arch/x86/kvm/emulate.c | 55 ++++++++++++++++++++++++++++++++++++--------------
+ arch/x86/kvm/vmx.c     |  6 +++++-
+ 2 files changed, 45 insertions(+), 16 deletions(-)
