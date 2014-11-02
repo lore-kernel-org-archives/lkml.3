@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaKBBF6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 21:05:58 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:57419 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258AbaKBBFJ (ORCPT
+	id S1752665AbaKBBGU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 21:06:20 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:35677 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237AbaKBBFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 21:05:09 -0400
+	Sat, 1 Nov 2014 21:05:07 -0400
 From: Kevin Cernekee <cernekee@gmail.com>
 To: arnd@arndb.de, f.fainelli@gmail.com, tglx@linutronix.de,
         jason@lakedaemon.net, ralf@linux-mips.org
 Cc: linux-sh@vger.kernel.org, sergei.shtylyov@cogentembedded.com,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: [PATCH V3 14/14] irqchip: brcmstb-l2: Convert driver to use irq_reg_{readl,writel}
-Date: Sat,  1 Nov 2014 18:04:01 -0700
-Message-Id: <1414890241-9938-15-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V3 13/14] irqchip: bcm7120-l2: Convert driver to use irq_reg_{readl,writel}
+Date: Sat,  1 Nov 2014 18:04:00 -0700
+Message-Id: <1414890241-9938-14-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414890241-9938-1-git-send-email-cernekee@gmail.com>
 References: <1414890241-9938-1-git-send-email-cernekee@gmail.com>
@@ -23,122 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This effectively converts the __raw_ accessors to the non-__raw_
-equivalents.  To handle BE, we pass IRQ_GC_BE_IO, similar to what was
-done in irq-bcm7120-l2.c.
+On BE MIPS systems this needs to use the new IRQ_GC_BE_IO gc_flag.  In
+all other cases it will use the standard readl/writel accessors.
 
-Since irq_reg_writel now takes an irq_chip_generic argument, writel must
-be used for the initial hardware reset in the probe function.  But that
-operation never needs endian swapping, so it's probably not a big deal.
+The initial irq_fwd_mask setup runs before "gc" is initialized, so it
+is unchanged for now.  This could potentially be a problem on an ARM
+system that boots in LE mode but runs a BE kernel, but currently none
+of the supported ARM platforms are ever expected to run BE.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- drivers/irqchip/irq-brcmstb-l2.c | 34 ++++++++++++++++++++++------------
- 1 file changed, 22 insertions(+), 12 deletions(-)
+ drivers/irqchip/irq-bcm7120-l2.c | 24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
-index c9bdf20..4aa653a 100644
---- a/drivers/irqchip/irq-brcmstb-l2.c
-+++ b/drivers/irqchip/irq-brcmstb-l2.c
-@@ -18,6 +18,7 @@
+diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
+index e53a3a6..e7c6155 100644
+--- a/drivers/irqchip/irq-bcm7120-l2.c
++++ b/drivers/irqchip/irq-bcm7120-l2.c
+@@ -13,6 +13,7 @@
  #include <linux/init.h>
  #include <linux/slab.h>
  #include <linux/module.h>
 +#include <linux/kconfig.h>
  #include <linux/platform_device.h>
- #include <linux/spinlock.h>
  #include <linux/of.h>
-@@ -53,13 +54,14 @@ struct brcmstb_l2_intc_data {
- static void brcmstb_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
- {
- 	struct brcmstb_l2_intc_data *b = irq_desc_get_handler_data(desc);
-+	struct irq_chip_generic *gc = irq_get_domain_generic_chip(b->domain, 0);
- 	struct irq_chip *chip = irq_desc_get_chip(desc);
- 	u32 status;
+ #include <linux/of_irq.h>
+@@ -60,8 +61,7 @@ static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
+ 		int hwirq;
  
- 	chained_irq_enter(chip, desc);
+ 		irq_gc_lock(gc);
+-		pending = __raw_readl(b->base[idx] + IRQSTAT) &
+-			  gc->mask_cache;
++		pending = irq_reg_readl(gc, IRQSTAT) & gc->mask_cache;
+ 		irq_gc_unlock(gc);
  
--	status = __raw_readl(b->base + CPU_STATUS) &
--		~(__raw_readl(b->base + CPU_MASK_STATUS));
-+	status = irq_reg_readl(gc, CPU_STATUS) &
-+		~(irq_reg_readl(gc, CPU_MASK_STATUS));
- 
- 	if (status == 0) {
- 		raw_spin_lock(&desc->lock);
-@@ -71,7 +73,7 @@ static void brcmstb_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
- 	do {
- 		irq = ffs(status) - 1;
- 		/* ack at our level */
--		__raw_writel(1 << irq, b->base + CPU_CLEAR);
-+		irq_reg_writel(gc, 1 << irq, CPU_CLEAR);
- 		status &= ~(1 << irq);
- 		generic_handle_irq(irq_find_mapping(b->domain, irq));
- 	} while (status);
-@@ -86,12 +88,12 @@ static void brcmstb_l2_intc_suspend(struct irq_data *d)
+ 		for_each_set_bit(hwirq, &pending, IRQS_PER_WORD) {
+@@ -79,10 +79,8 @@ static void bcm7120_l2_intc_suspend(struct irq_data *d)
+ 	struct bcm7120_l2_intc_data *b = gc->private;
  
  	irq_gc_lock(gc);
- 	/* Save the current mask */
--	b->saved_mask = __raw_readl(b->base + CPU_MASK_STATUS);
-+	b->saved_mask = irq_reg_readl(gc, CPU_MASK_STATUS);
- 
- 	if (b->can_wake) {
- 		/* Program the wakeup mask */
--		__raw_writel(~gc->wake_active, b->base + CPU_MASK_SET);
--		__raw_writel(gc->wake_active, b->base + CPU_MASK_CLEAR);
-+		irq_reg_writel(gc, ~gc->wake_active, CPU_MASK_SET);
-+		irq_reg_writel(gc, gc->wake_active, CPU_MASK_CLEAR);
- 	}
+-	if (b->can_wake) {
+-		__raw_writel(gc->mask_cache | gc->wake_active,
+-			     gc->reg_base + IRQEN);
+-	}
++	if (b->can_wake)
++		irq_reg_writel(gc, gc->mask_cache | gc->wake_active, IRQEN);
  	irq_gc_unlock(gc);
  }
-@@ -103,11 +105,11 @@ static void brcmstb_l2_intc_resume(struct irq_data *d)
  
- 	irq_gc_lock(gc);
- 	/* Clear unmasked non-wakeup interrupts */
--	__raw_writel(~b->saved_mask & ~gc->wake_active, b->base + CPU_CLEAR);
-+	irq_reg_writel(gc, ~b->saved_mask & ~gc->wake_active, CPU_CLEAR);
+@@ -92,7 +90,7 @@ static void bcm7120_l2_intc_resume(struct irq_data *d)
  
  	/* Restore the saved mask */
--	__raw_writel(b->saved_mask, b->base + CPU_MASK_SET);
--	__raw_writel(~b->saved_mask, b->base + CPU_MASK_CLEAR);
-+	irq_reg_writel(gc, b->saved_mask, CPU_MASK_SET);
-+	irq_reg_writel(gc, ~b->saved_mask, CPU_MASK_CLEAR);
+ 	irq_gc_lock(gc);
+-	__raw_writel(gc->mask_cache, gc->reg_base + IRQEN);
++	irq_reg_writel(gc, gc->mask_cache, IRQEN);
  	irq_gc_unlock(gc);
  }
  
-@@ -119,6 +121,7 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
- 	struct irq_chip_generic *gc;
- 	struct irq_chip_type *ct;
- 	int ret;
-+	unsigned int flags;
+@@ -132,7 +130,7 @@ int __init bcm7120_l2_intc_of_init(struct device_node *dn,
+ 	const __be32 *map_mask;
+ 	int num_parent_irqs;
+ 	int ret = 0, len;
+-	unsigned int idx, irq;
++	unsigned int idx, irq, flags;
  
  	data = kzalloc(sizeof(*data), GFP_KERNEL);
  	if (!data)
-@@ -132,8 +135,8 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
- 	}
- 
- 	/* Disable all interrupts by default */
--	__raw_writel(0xffffffff, data->base + CPU_MASK_SET);
--	__raw_writel(0xffffffff, data->base + CPU_CLEAR);
-+	writel(0xffffffff, data->base + CPU_MASK_SET);
-+	writel(0xffffffff, data->base + CPU_CLEAR);
- 
- 	data->parent_irq = irq_of_parse_and_map(np, 0);
- 	if (data->parent_irq < 0) {
-@@ -149,9 +152,16 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
+@@ -195,9 +193,15 @@ int __init bcm7120_l2_intc_of_init(struct device_node *dn,
  		goto out_unmap;
  	}
  
 +	/* MIPS chips strapped for BE will automagically configure the
 +	 * peripheral registers for CPU-native byte order.
 +	 */
-+	flags = 0;
++	flags = IRQ_GC_INIT_MASK_CACHE;
 +	if (IS_ENABLED(CONFIG_MIPS) && IS_ENABLED(CONFIG_CPU_BIG_ENDIAN))
 +		flags |= IRQ_GC_BE_IO;
 +
- 	/* Allocate a single Generic IRQ chip for this node */
- 	ret = irq_alloc_domain_generic_chips(data->domain, 32, 1,
--				np->full_name, handle_edge_irq, clr, 0, 0);
-+				np->full_name, handle_edge_irq, clr, 0, flags);
+ 	ret = irq_alloc_domain_generic_chips(data->domain, IRQS_PER_WORD, 1,
+-				dn->full_name, handle_level_irq, clr, 0,
+-				IRQ_GC_INIT_MASK_CACHE);
++				dn->full_name, handle_level_irq, clr, 0, flags);
  	if (ret) {
  		pr_err("failed to allocate generic irq chip\n");
  		goto out_free_domain;
