@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaKBWCE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 17:02:04 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:35601 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbaKBWCB (ORCPT
+	id S1752183AbaKBWJt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 17:09:49 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:44723 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaKBWJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 17:02:01 -0500
-Date: Mon, 3 Nov 2014 06:01:46 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Linus =?iso-8859-1?Q?L=FCssing?= <linus.luessing@web.de>
-Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bridge: fix netfilter/NF_BR_LOCAL_OUT for own, locally
- generated queries
-Message-ID: <20141102220145.GA25604@gondor.apana.org.au>
-References: <1411342364-4791-1-git-send-email-linus.luessing@web.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411342364-4791-1-git-send-email-linus.luessing@web.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 2 Nov 2014 17:09:44 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chase Southwood <chase.southwood@yahoo.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: comedi: drivers: comedi_bond.c:  Remove unneeded #define
+Date: Sun,  2 Nov 2014 23:12:04 +0100
+Message-Id: <1414966324-18285-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 01:32:44AM +0200, Linus Lüssing wrote:
-> Ebtables on the OUTPUT chain (NF_BR_LOCAL_OUT) would not work as expected
-> for both locally generated IGMP and MLD queries. The IP header specific
-> filter options are off by 14 Bytes for netfilter (actual output on
-> interfaces is fine).
-> 
-> NF_HOOK() expects the skb->data to point to the IP header, not the
-> ethernet one (while dev_queue_xmit() does not). Luckily there is an
-> br_dev_queue_push_xmit() helper function already - let's just use that.
-> 
-> Introduced by eb1d16414339a6e113d89e2cca2556005d7ce919
-> ("bridge: Add core IGMP snooping support")
-> 
-> Ebtables example:
-> 
-> $ ebtables -I OUTPUT -p IPv6 -o eth1 --logical-out br0 \
-> 	--log --log-level 6 --log-ip6 --log-prefix="~EBT: " -j DROP
-> 
-> before (broken):
-> 
-> ~EBT:  IN= OUT=eth1 MAC source = 02:04:64:a4:39:c2 \
-> 	MAC dest = 33:33:00:00:00:01 proto = 0x86dd IPv6 \
-> 	SRC=64a4:39c2:86dd:6000:0000:0020:0001:fe80 IPv6 \
-> 	DST=0000:0000:0000:0004:64ff:fea4:39c2:ff02, \
-> 	IPv6 priority=0x3, Next Header=2
-> 
-> after (working):
-> 
-> ~EBT:  IN= OUT=eth1 MAC source = 02:04:64:a4:39:c2 \
-> 	MAC dest = 33:33:00:00:00:01 proto = 0x86dd IPv6 \
-> 	SRC=fe80:0000:0000:0000:0004:64ff:fea4:39c2 IPv6 \
-> 	DST=ff02:0000:0000:0000:0000:0000:0000:0001, \
-> 	IPv6 priority=0x0, Next Header=0
-> 
-> Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Remove unneeded #define. This was previously included in a patch set
+two but patchset one was taken by mistake.
 
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/comedi/drivers/comedi_bond.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Cheers,
+diff --git a/drivers/staging/comedi/drivers/comedi_bond.c b/drivers/staging/comedi/drivers/comedi_bond.c
+index 5d19861..85b2f4a 100644
+--- a/drivers/staging/comedi/drivers/comedi_bond.c
++++ b/drivers/staging/comedi/drivers/comedi_bond.c
+@@ -61,8 +61,7 @@ struct bonded_device {
+ };
+ 
+ struct comedi_bond_private {
+-# define MAX_BOARD_NAME 256
+-	char name[MAX_BOARD_NAME];
++	char name[256];
+ 	struct bonded_device **devs;
+ 	unsigned ndevs;
+ 	unsigned nchans;
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.10.4
+
