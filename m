@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaKBVD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 16:03:59 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:54704 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaKBVD5 (ORCPT
+	id S1752108AbaKBVPf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 16:15:35 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:46730 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628AbaKBVPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 16:03:57 -0500
-Date: Sun, 2 Nov 2014 22:03:53 +0100
+	Sun, 2 Nov 2014 16:15:31 -0500
 From: Frans Klaver <fransklaver@gmail.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 01/27] mtd: nand: introduce function to fix a common bug
- in most nand-drivers not showing a device in sysfs
-Message-ID: <20141102210353.GA9968@gmail.com>
-References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
- <1401142372-14148-2-git-send-email-holler@ahsoftware.de>
- <20140528084344.GB4285@norris-Latitude-E6410>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140528084344.GB4285@norris-Latitude-E6410>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Darren Hart <dvhart@infradead.org>
+Cc: Frans Klaver <fransklaver@gmail.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] eeepc-laptop: clean up control flow in eeepc_acpi_notify
+Date: Sun,  2 Nov 2014 22:14:58 +0100
+Message-Id: <1414962898-13917-1-git-send-email-fransklaver@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20141028052517.GG60814@vmdeb7>
+References: <20141028052517.GG60814@vmdeb7>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 01:43:44AM -0700, Brian Norris wrote:
-> And in fact, if any drivers are missing mtd->name, perhaps it's best to
-> just modify the MTD registration to give them a default:
-> 
-> 	if (!mtd->name)
-> 		mtd->name = dev_name(&pdev->dev);
-> 
+eeepc_acpi_notify increases the indentation level to a whopping four. If
+we revise the conditions a bit, we can reduce that to a more soothing
+two and satisfy the indentation guidelines in Documentation/CodingStyle.
 
-...
+Remove an unwanted space while we're in the neighbourhood.
 
-> How about we rethink the "helper" approach, and instead just do
-> validation in the core code? This would cover most of the important
-> parts of your helper, I think:
-> 
-> diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
-> index d201feeb3ca6..39ba5812a5a3 100644
-> --- a/drivers/mtd/mtdcore.c
-> +++ b/drivers/mtd/mtdcore.c
-> @@ -397,6 +397,11 @@ int add_mtd_device(struct mtd_info *mtd)
->  	if (device_register(&mtd->dev) != 0)
->  		goto fail_added;
->  
-> +	if (mtd->dev.parent)
-> +		mtd->owner = mtd->dev.parent->driver->owner;
-> +	else
-> +		WARN_ON(1);
-> +
+Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+---
+ drivers/platform/x86/eeepc-laptop.c | 53 ++++++++++++++++++-------------------
+ 1 file changed, 26 insertions(+), 27 deletions(-)
 
-So I've picked this up now. I do largely agree with the suggested
-approach where the validation and default settings are done in the core
-code. There is a problem with this, though. There are MTD devices that
-call mtd_device_parse_register() in the _init() function (such as the
-maps drivers). These don't have a device ready to be used as parent, and
-they would always be throwing this warning.
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index 73e8d39..03ffbce 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -1213,7 +1213,7 @@ static void eeepc_input_exit(struct eeepc_laptop *eeepc)
+ static void eeepc_input_notify(struct eeepc_laptop *eeepc, int event)
+ {
+ 	if (!eeepc->inputdev)
+-		return ;
++		return;
+ 	if (!sparse_keymap_report_event(eeepc->inputdev, event, 1, true))
+ 		pr_info("Unknown key %x pressed\n", event);
+ }
+@@ -1221,6 +1221,7 @@ static void eeepc_input_notify(struct eeepc_laptop *eeepc, int event)
+ static void eeepc_acpi_notify(struct acpi_device *device, u32 event)
+ {
+ 	struct eeepc_laptop *eeepc = acpi_driver_data(device);
++	int old_brightness, new_brightness;
+ 	u16 count;
+ 
+ 	if (event > ACPI_MAX_SYS_NOTIFY)
+@@ -1231,34 +1232,32 @@ static void eeepc_acpi_notify(struct acpi_device *device, u32 event)
+ 					count);
+ 
+ 	/* Brightness events are special */
+-	if (event >= NOTIFY_BRN_MIN && event <= NOTIFY_BRN_MAX) {
+-
+-		/* Ignore them completely if the acpi video driver is used */
+-		if (eeepc->backlight_device != NULL) {
+-			int old_brightness, new_brightness;
+-
+-			/* Update the backlight device. */
+-			old_brightness = eeepc_backlight_notify(eeepc);
+-
+-			/* Convert event to keypress (obsolescent hack) */
+-			new_brightness = event - NOTIFY_BRN_MIN;
+-
+-			if (new_brightness < old_brightness) {
+-				event = NOTIFY_BRN_MIN; /* brightness down */
+-			} else if (new_brightness > old_brightness) {
+-				event = NOTIFY_BRN_MAX; /* brightness up */
+-			} else {
+-				/*
+-				* no change in brightness - already at min/max,
+-				* event will be desired value (or else ignored)
+-				*/
+-			}
+-			eeepc_input_notify(eeepc, event);
+-		}
+-	} else {
+-		/* Everything else is a bona-fide keypress event */
++	if (event < NOTIFY_BRN_MIN || event > NOTIFY_BRN_MAX) {
+ 		eeepc_input_notify(eeepc, event);
++		return;
++	}
++
++	/* Ignore them completely if the acpi video driver is used */
++	if (!eeepc->backlight_device)
++		return;
++
++	/* Update the backlight device. */
++	old_brightness = eeepc_backlight_notify(eeepc);
++
++	/* Convert event to keypress (obsolescent hack) */
++	new_brightness = event - NOTIFY_BRN_MIN;
++
++	if (new_brightness < old_brightness) {
++		event = NOTIFY_BRN_MIN; /* brightness down */
++	} else if (new_brightness > old_brightness) {
++		event = NOTIFY_BRN_MAX; /* brightness up */
++	} else {
++		/*
++		 * no change in brightness - already at min/max,
++		 * event will be desired value (or else ignored)
++		 */
+ 	}
++	eeepc_input_notify(eeepc, event);
+ }
+ 
+ static void eeepc_dmi_check(struct eeepc_laptop *eeepc)
+-- 
+2.1.0
 
-So either not having a parent device is bad, or it isn't. The comment
-suggests it is, the existing code suggests it isn't. So we'll need to
-make a decision about who's right.
-
->  	if (MTD_DEVT(i))
->  		device_create(&mtd_class, mtd->dev.parent,
->  			      MTD_DEVT(i) + 1,
-> diff --git a/drivers/mtd/mtdpart.c b/drivers/mtd/mtdpart.c
-> index 1ca9aec141ff..9869bbef50cf 100644
-> --- a/drivers/mtd/mtdpart.c
-> +++ b/drivers/mtd/mtdpart.c
-> @@ -370,7 +370,6 @@ static struct mtd_part *allocate_partition(struct mtd_info *master,
->  	slave->mtd.subpage_sft = master->subpage_sft;
->  
->  	slave->mtd.name = name;
-> -	slave->mtd.owner = master->owner;
-
-What would be the purpose of removing this line? Owner is already set?
-Can we rely on that?
-
-Thanks,
-Frans
