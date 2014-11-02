@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaKBBat (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 21:30:49 -0400
-Received: from 218.subnet180-250-80.speedy.telkom.net.id ([180.250.80.218]:33067
-	"EHLO esav.telkomsigma.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750914AbaKBBal convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 21:30:41 -0400
-X-Greylist: delayed 1021 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Nov 2014 21:30:40 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApWEAAOEVVR2YdVM/2dsb2JhbABcgngBgTYBAbh0gmcCgWiFMpIZgTYBAQEBAX2DdQEIARUgE3cwBB0DAQ4BHguFUQEBBYIKAVEBARIBBaVlhUeBbgcBigCDVYEwhhYDAYcchhqKFBACAYQDInwFhjWFAzyGJkCGLoR4gTKDTYQXjEtwhACBaiQ2awEBAQ
-X-IPAS-Result: ApWEAAOEVVR2YdVM/2dsb2JhbABcgngBgTYBAbh0gmcCgWiFMpIZgTYBAQEBAX2DdQEIARUgE3cwBB0DAQ4BHguFUQEBBYIKAVEBARIBBaVlhUeBbgcBigCDVYEwhhYDAYcchhqKFBACAYQDInwFhjWFAzyGJkCGLoR4gTKDTYQXjEtwhACBaiQ2awEBAQ
-X-IronPort-AV: E=Sophos;i="5.07,295,1413219600"; 
-   d="scan'208";a="2676635"
-Content-Type: text/plain; charset=US-ASCII
+	id S1751633AbaKBBmC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 21:42:02 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:52657 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaKBBmA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Nov 2014 21:42:00 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+J7L5u3SpuSE722YlLNn0wCGJxjKVeeGo=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 4E71B60F3EC
+Date: Sat, 1 Nov 2014 21:41:58 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] irqchip: Fixes for v3.18
+Message-ID: <20141102014158.GO3698@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Easy Work,Great Pay,Start Today.
-To: Recipients <info@bhplc.co.uk>
-From: "BHP Billiton Plc" <info@bhplc.co.uk>
-Date: Sat, 01 Nov 2014 18:47:00 +0530
-Reply-To: bhpplc121@hotmail.com
-Message-Id: <20141101132032.91F17811295@mtasvr1.telkomsigma.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sir/Madam,
+Thomas,
 
-Would you like to work online from home/temporarily and earn constant
-Payment?We are glad to offer you a job position in our company,BHP Billiton Plc.
-You will be on a monthly salary, if you are interested you are to please fill the below form.
+Here's a couple of fixes for v3.18 that have been in -next longer than
+needed :-/
 
-Further information's on this job will be sent to you in our next mail.
+Please pull.
 
-Names in full: 
-Address:       
-Occupation:       
-SEX:               
-Nationality:     
-Marital status: 
-Fax:
-Mobile:   
-Email:           
-----------------------
-PLEASE CONTACT:
-Ms.Karen Wood
-Company Secretary
-BHP Billiton Plc
+thx,
+
+Jason.
+
+
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-urgent-3.18
+
+for you to fetch changes up to 758e8366754d3fa57da978fef9d2c652f7b55c02:
+
+  irqchip: armada-370-xp: Fix MPIC interrupt handling (2014-11-02 01:31:10 +0000)
+
+----------------------------------------------------------------
+irqchip urgent changes for v3.18
+
+ - armada-370-xp
+    - Fix MSI and MPIC interrupt handling.
+
+----------------------------------------------------------------
+Grzegorz Jaszczyk (2):
+      irqchip: armada-370-xp: Fix MSI interrupt handling
+      irqchip: armada-370-xp: Fix MPIC interrupt handling
+
+ drivers/irqchip/irq-armada-370-xp.c | 23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
