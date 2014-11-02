@@ -1,56 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751114AbaKBIQy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 03:16:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60814 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758AbaKBIQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 03:16:52 -0500
-Message-ID: <5455E871.7080700@suse.de>
-Date: Sun, 02 Nov 2014 09:16:49 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-CC: Jonathan Corbet <corbet@lwn.net>, Peter Foley <pefoley2@pefoley.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        "afaerber@suse.de" <afaerber@suse.de>
-Subject: Re: [PATCH] Documentation: Restrict TSC test code to x86
-References: <1414454639-7491-1-git-send-email-agraf@suse.de> <CAOFdcFOChK9Jdw9mQGL7Zdc=89GU4hmuPE=Mn_vvWJFDYEtQBw@mail.gmail.com> <20141028084735.6338d01b@lwn.net> <CF6E40FB-3CB1-43BD-8691-46AD21DA62A0@suse.de> <5454CC07.1070605@gmail.com> <54554DBC.3050607@suse.de> <CAJs94EaS5EQ=X9vRJzzApMuj9uiqH78Qq01HFNnRSXHNjeHRGw@mail.gmail.com>
-In-Reply-To: <CAJs94EaS5EQ=X9vRJzzApMuj9uiqH78Qq01HFNnRSXHNjeHRGw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1751227AbaKBIog (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 03:44:36 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:60747 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbaKBIof convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 03:44:35 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Subject: Re: [PATCH 3.2 091/102] KVM: x86: Emulator fixes for eip canonical checks on near branches
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <lsq.1414880883.456017848@decadent.org.uk>
+Date: Sun, 2 Nov 2014 10:44:30 +0200
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5662151C-90D9-425C-A271-25040AC995C9@gmail.com>
+References: <lsq.1414880883.456017848@decadent.org.uk>
+To: Ben Hutchings <ben@decadent.org.uk>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry, but this patch is incomplete due to a bug.
+The following patch - http://www.spinics.net/lists/kvm/msg109664.html - is needed as well (on top of the previous one).
 
+Nadav
 
-On 02.11.14 08:46, Matwey V. Kornilov wrote:
-> I wish I knew. We need KBuild guru to ask how to take into account
-> host architecture.
+> On Nov 2, 2014, at 00:28, Ben Hutchings <ben@decadent.org.uk> wrote:
+> 
+> 3.2.64-rc1 review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Nadav Amit <namit@cs.technion.ac.il>
+> 
+> commit 234f3ce485d54017f15cf5e0699cff4100121601 upstream.
+> 
+> Before changing rip (during jmp, call, ret, etc.) the target should be asserted
+> to be canonical one, as real CPUs do.  During sysret, both target rsp and rip
+> should be canonical. If any of these values is noncanonical, a #GP exception
+> should occur.  The exception to this rule are syscall and sysenter instructions
+> in which the assigned rip is checked during the assignment to the relevant
+> MSRs.
+> 
+> This patch fixes the emulator to behave as real CPUs do for near branches.
+> Far branches are handled by the next patch.
+> 
+> This fixes CVE-2014-3647.
+> 
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> [bwh: Backported to 3.2:
+> - Adjust context
+> - Use ctxt->regs[] instead of reg_read(), reg_write(), reg_rmw()]
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+> arch/x86/kvm/emulate.c | 78 ++++++++++++++++++++++++++++++++++----------------
+> 1 file changed, 54 insertions(+), 24 deletions(-)
+> 
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -529,7 +529,8 @@ static int emulate_nm(struct x86_emulate
+> 	return emulate_exception(ctxt, NM_VECTOR, 0, false);
+> }
+> 
+> -static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
+> +static inline int assign_eip_far(struct x86_emulate_ctxt *ctxt, ulong dst,
+> +			       int cs_l)
+> {
+> 	switch (ctxt->op_bytes) {
+> 	case 2:
+> @@ -539,16 +540,25 @@ static inline void assign_eip_near(struc
+> 		ctxt->_eip = (u32)dst;
+> 		break;
+> 	case 8:
+> +		if ((cs_l && is_noncanonical_address(dst)) ||
+> +		    (!cs_l && (dst & ~(u32)-1)))
+> +			return emulate_gp(ctxt, 0);
+> 		ctxt->_eip = dst;
+> 		break;
+> 	default:
+> 		WARN(1, "unsupported eip assignment size\n");
+> 	}
+> +	return X86EMUL_CONTINUE;
+> +}
+> +
+> +static inline int assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
+> +{
+> +	return assign_eip_far(ctxt, dst, ctxt->mode == X86EMUL_MODE_PROT64);
+> }
+> 
+> -static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
+> +static inline int jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
+> {
+> -	assign_eip_near(ctxt, ctxt->_eip + rel);
+> +	return assign_eip_near(ctxt, ctxt->_eip + rel);
+> }
+> 
+> static u16 get_segment_selector(struct x86_emulate_ctxt *ctxt, unsigned seg)
+> @@ -1787,13 +1797,15 @@ static int em_grp45(struct x86_emulate_c
+> 	case 2: /* call near abs */ {
+> 		long int old_eip;
+> 		old_eip = ctxt->_eip;
+> -		ctxt->_eip = ctxt->src.val;
+> +		rc = assign_eip_near(ctxt, ctxt->src.val);
+> +		if (rc != X86EMUL_CONTINUE)
+> +			break;
+> 		ctxt->src.val = old_eip;
+> 		rc = em_push(ctxt);
+> 		break;
+> 	}
+> 	case 4: /* jmp abs */
+> -		ctxt->_eip = ctxt->src.val;
+> +		rc = assign_eip_near(ctxt, ctxt->src.val);
+> 		break;
+> 	case 5: /* jmp far */
+> 		rc = em_jmp_far(ctxt);
+> @@ -1825,10 +1837,14 @@ static int em_grp9(struct x86_emulate_ct
+> 
+> static int em_ret(struct x86_emulate_ctxt *ctxt)
+> {
+> -	ctxt->dst.type = OP_REG;
+> -	ctxt->dst.addr.reg = &ctxt->_eip;
+> -	ctxt->dst.bytes = ctxt->op_bytes;
+> -	return em_pop(ctxt);
+> +	int rc;
+> +	unsigned long eip;
+> +
+> +	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
+> +	if (rc != X86EMUL_CONTINUE)
+> +		return rc;
+> +
+> +	return assign_eip_near(ctxt, eip);
+> }
+> 
+> static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+> @@ -2060,7 +2076,7 @@ static int em_sysexit(struct x86_emulate
+> {
+> 	struct x86_emulate_ops *ops = ctxt->ops;
+> 	struct desc_struct cs, ss;
+> -	u64 msr_data;
+> +	u64 msr_data, rcx, rdx;
+> 	int usermode;
+> 	u16 cs_sel = 0, ss_sel = 0;
+> 
+> @@ -2076,6 +2092,9 @@ static int em_sysexit(struct x86_emulate
+> 	else
+> 		usermode = X86EMUL_MODE_PROT32;
+> 
+> +	rcx = ctxt->regs[VCPU_REGS_RCX];
+> +	rdx = ctxt->regs[VCPU_REGS_RDX];
+> +
+> 	cs.dpl = 3;
+> 	ss.dpl = 3;
+> 	ops->get_msr(ctxt, MSR_IA32_SYSENTER_CS, &msr_data);
+> @@ -2093,6 +2112,9 @@ static int em_sysexit(struct x86_emulate
+> 		ss_sel = cs_sel + 8;
+> 		cs.d = 0;
+> 		cs.l = 1;
+> +		if (is_noncanonical_address(rcx) ||
+> +		    is_noncanonical_address(rdx))
+> +			return emulate_gp(ctxt, 0);
+> 		break;
+> 	}
+> 	cs_sel |= SELECTOR_RPL_MASK;
+> @@ -2101,8 +2123,8 @@ static int em_sysexit(struct x86_emulate
+> 	ops->set_segment(ctxt, cs_sel, &cs, 0, VCPU_SREG_CS);
+> 	ops->set_segment(ctxt, ss_sel, &ss, 0, VCPU_SREG_SS);
+> 
+> -	ctxt->_eip = ctxt->regs[VCPU_REGS_RDX];
+> -	ctxt->regs[VCPU_REGS_RSP] = ctxt->regs[VCPU_REGS_RCX];
+> +	ctxt->_eip = rdx;
+> +	ctxt->regs[VCPU_REGS_RSP] = rcx;
+> 
+> 	return X86EMUL_CONTINUE;
+> }
+> @@ -2555,10 +2577,13 @@ static int em_das(struct x86_emulate_ctx
+> 
+> static int em_call(struct x86_emulate_ctxt *ctxt)
+> {
+> +	int rc;
+> 	long rel = ctxt->src.val;
+> 
+> 	ctxt->src.val = (unsigned long)ctxt->_eip;
+> -	jmp_rel(ctxt, rel);
+> +	rc = jmp_rel(ctxt, rel);
+> +	if (rc != X86EMUL_CONTINUE)
+> +		return rc;
+> 	return em_push(ctxt);
+> }
+> 
+> @@ -2590,11 +2615,12 @@ static int em_call_far(struct x86_emulat
+> static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
+> {
+> 	int rc;
+> +	unsigned long eip;
+> 
+> -	ctxt->dst.type = OP_REG;
+> -	ctxt->dst.addr.reg = &ctxt->_eip;
+> -	ctxt->dst.bytes = ctxt->op_bytes;
+> -	rc = emulate_pop(ctxt, &ctxt->dst.val, ctxt->op_bytes);
+> +	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
+> +	if (rc != X86EMUL_CONTINUE)
+> +		return rc;
+> +	rc = assign_eip_near(ctxt, eip);
+> 	if (rc != X86EMUL_CONTINUE)
+> 		return rc;
+> 	register_address_increment(ctxt, &ctxt->regs[VCPU_REGS_RSP], ctxt->src.val);
+> @@ -2840,20 +2866,24 @@ static int em_lmsw(struct x86_emulate_ct
+> 
+> static int em_loop(struct x86_emulate_ctxt *ctxt)
+> {
+> +	int rc = X86EMUL_CONTINUE;
+> +
+> 	register_address_increment(ctxt, &ctxt->regs[VCPU_REGS_RCX], -1);
+> 	if ((address_mask(ctxt, ctxt->regs[VCPU_REGS_RCX]) != 0) &&
+> 	    (ctxt->b == 0xe2 || test_cc(ctxt->b ^ 0x5, ctxt->eflags)))
+> -		jmp_rel(ctxt, ctxt->src.val);
+> +		rc = jmp_rel(ctxt, ctxt->src.val);
+> 
+> -	return X86EMUL_CONTINUE;
+> +	return rc;
+> }
+> 
+> static int em_jcxz(struct x86_emulate_ctxt *ctxt)
+> {
+> +	int rc = X86EMUL_CONTINUE;
+> +
+> 	if (address_mask(ctxt, ctxt->regs[VCPU_REGS_RCX]) == 0)
+> -		jmp_rel(ctxt, ctxt->src.val);
+> +		rc = jmp_rel(ctxt, ctxt->src.val);
+> 
+> -	return X86EMUL_CONTINUE;
+> +	return rc;
+> }
+> 
+> static int em_cli(struct x86_emulate_ctxt *ctxt)
+> @@ -3946,7 +3976,7 @@ special_insn:
+> 		break;
+> 	case 0x70 ... 0x7f: /* jcc (short) */
+> 		if (test_cc(ctxt->b, ctxt->eflags))
+> -			jmp_rel(ctxt, ctxt->src.val);
+> +			rc = jmp_rel(ctxt, ctxt->src.val);
+> 		break;
+> 	case 0x8d: /* lea r16/r32, m */
+> 		ctxt->dst.val = ctxt->src.addr.mem.ea;
+> @@ -3994,7 +4024,7 @@ special_insn:
+> 		goto do_io_out;
+> 	case 0xe9: /* jmp rel */
+> 	case 0xeb: /* jmp rel short */
+> -		jmp_rel(ctxt, ctxt->src.val);
+> +		rc = jmp_rel(ctxt, ctxt->src.val);
+> 		ctxt->dst.type = OP_NONE; /* Disable writeback. */
+> 		break;
+> 	case 0xec: /* in al,dx */
+> @@ -4160,7 +4190,7 @@ twobyte_insn:
+> 		break;
+> 	case 0x80 ... 0x8f: /* jnz rel, etc*/
+> 		if (test_cc(ctxt->b, ctxt->eflags))
+> -			jmp_rel(ctxt, ctxt->src.val);
+> +			rc = jmp_rel(ctxt, ctxt->src.val);
+> 		break;
+> 	case 0x90 ... 0x9f:     /* setcc r/m8 */
+> 		ctxt->dst.val = test_cc(ctxt->b, ctxt->eflags);
+> 
 
-Hrm. At least this patch makes things more consistent with the other
-Documentation makefiles:
-
-Documentation/timers/Makefile:hostprogs-$(CONFIG_X86) := hpet_example
-Documentation/vDSO/Makefile:hostprogs-$(CONFIG_X86) :=
-vdso_standalone_test_x86
-
-But I agree, it is wrong in general - hostprogs should make sure the
-host arch matches.
-
-We could maybe just evaluate the host uname output:
-
-  ifeq ($(shell uname -m),x86_64)
-    hostprogs-$(CONFIG_X86) := ...
-  endif
-
-Then we're double safe ;). Not sure how to easily add x86 to the mix as
-well here, but I'm not sure anyone cares. Do people still compile on
-32bit x86 hosts? And expect Documentation/ examples to build?
-
-
-Alex
