@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503AbaKBVzq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 16:55:46 -0500
-Received: from cassarossa.samfundet.no ([193.35.52.29]:49782 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbaKBVzp (ORCPT
+	id S1752397AbaKBWCE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 17:02:04 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:35601 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaKBWCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 16:55:45 -0500
-Date: Sun, 2 Nov 2014 22:55:36 +0100
-From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-To: Thomas Graf <tgraf@suug.ch>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Nikolay Aleksandrov <nikolay@redhat.com>
-Subject: Re: getaddrinfo slowdown in 3.17.1, due to getifaddrs
-Message-ID: <20141102215536.GB29939@sesse.net>
-References: <20141017002132.GA29584@sesse.net>
- <20141017003430.GB29584@sesse.net>
- <20141017062517.GA11584@casper.infradead.org>
- <20141021132557.GA9440@sesse.net>
- <20141021133144.GA8802@casper.infradead.org>
- <20141023233751.GA10504@sesse.net>
+	Sun, 2 Nov 2014 17:02:01 -0500
+Date: Mon, 3 Nov 2014 06:01:46 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Linus =?iso-8859-1?Q?L=FCssing?= <linus.luessing@web.de>
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bridge: fix netfilter/NF_BR_LOCAL_OUT for own, locally
+ generated queries
+Message-ID: <20141102220145.GA25604@gondor.apana.org.au>
+References: <1411342364-4791-1-git-send-email-linus.luessing@web.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141023233751.GA10504@sesse.net>
-X-Operating-System: Linux 3.16.3 on a x86_64
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411342364-4791-1-git-send-email-linus.luessing@web.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 01:37:51AM +0200, Steinar H. Gunderson wrote:
->> I'm currently testing the patch below and will submit with proper
->> tested by attributions later today.
-> We applied this patch in a reboot today (on top of 3.17.1), and so far,
-> things seem to be going much better.
+On Mon, Sep 22, 2014 at 01:32:44AM +0200, Linus Lüssing wrote:
+> Ebtables on the OUTPUT chain (NF_BR_LOCAL_OUT) would not work as expected
+> for both locally generated IGMP and MLD queries. The IP header specific
+> filter options are off by 14 Bytes for netfilter (actual output on
+> interfaces is fine).
+> 
+> NF_HOOK() expects the skb->data to point to the IP header, not the
+> ethernet one (while dev_queue_xmit() does not). Luckily there is an
+> br_dev_queue_push_xmit() helper function already - let's just use that.
+> 
+> Introduced by eb1d16414339a6e113d89e2cca2556005d7ce919
+> ("bridge: Add core IGMP snooping support")
+> 
+> Ebtables example:
+> 
+> $ ebtables -I OUTPUT -p IPv6 -o eth1 --logical-out br0 \
+> 	--log --log-level 6 --log-ip6 --log-prefix="~EBT: " -j DROP
+> 
+> before (broken):
+> 
+> ~EBT:  IN= OUT=eth1 MAC source = 02:04:64:a4:39:c2 \
+> 	MAC dest = 33:33:00:00:00:01 proto = 0x86dd IPv6 \
+> 	SRC=64a4:39c2:86dd:6000:0000:0020:0001:fe80 IPv6 \
+> 	DST=0000:0000:0000:0004:64ff:fea4:39c2:ff02, \
+> 	IPv6 priority=0x3, Next Header=2
+> 
+> after (working):
+> 
+> ~EBT:  IN= OUT=eth1 MAC source = 02:04:64:a4:39:c2 \
+> 	MAC dest = 33:33:00:00:00:01 proto = 0x86dd IPv6 \
+> 	SRC=fe80:0000:0000:0000:0004:64ff:fea4:39c2 IPv6 \
+> 	DST=ff02:0000:0000:0000:0000:0000:0000:0001, \
+> 	IPv6 priority=0x0, Next Header=0
+> 
+> Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 
-I see 3.17.2 is out. Am I right in that this patch didn't make it?
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-/* Steinar */
+Cheers,
 -- 
-Homepage: http://www.sesse.net/
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
