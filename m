@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570AbaKBRci (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 12:32:38 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33053 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325AbaKBRcf (ORCPT
+	id S1752622AbaKBRcs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 12:32:48 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46233 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325AbaKBRco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 12:32:35 -0500
+	Sun, 2 Nov 2014 12:32:44 -0500
 X-Originating-IP: 50.43.41.112
-Date: Sun, 2 Nov 2014 09:32:28 -0800
+Date: Sun, 2 Nov 2014 09:32:34 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
         Kees Cook <keescook@chromium.org>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org, x86@kernel.org,
         xen-devel@lists.xenproject.org
-Subject: [PATCH v4 05/10] x86: cpu: Add helper function unifying 32-bit and
- 64-bit IO init in cpu_init
-Message-ID: <225193735620e87b14c5b34fda264c81b9f49a3f.1414870871.git.josh@joshtriplett.org>
+Subject: [PATCH v4 06/10] x86: process: Introduce helper to clear a thread's
+ IO bitmap
+Message-ID: <502c33cf56eed0a4cf98df1fe8ad665788d20284.1414870871.git.josh@joshtriplett.org>
 References: <cover.1414870871.git.josh@joshtriplett.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,83 +28,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, the 64-bit code initialized both the io_bitmap_base and
-io_bitmap, while the 32-bit code only initialized io_bitmap_base.
-
-Factor the initialization out into a helper function init_tss_io, and
-call it from both versions of cpu_init.
-
-This will also make it easier to make these IO-related fields optional
-later.
+This will make it easier to make the io_bitmap_ptr field optional later.
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- arch/x86/include/asm/processor.h | 14 ++++++++++++++
- arch/x86/kernel/cpu/common.c     | 12 ++----------
- 2 files changed, 16 insertions(+), 10 deletions(-)
+ arch/x86/kernel/process-io.h | 5 +++++
+ arch/x86/kernel/process_32.c | 4 ++--
+ arch/x86/kernel/process_64.c | 2 +-
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 0a12534..1fa78f7 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -286,6 +286,20 @@ struct tss_struct {
+diff --git a/arch/x86/kernel/process-io.h b/arch/x86/kernel/process-io.h
+index d884444..ffa65e8 100644
+--- a/arch/x86/kernel/process-io.h
++++ b/arch/x86/kernel/process-io.h
+@@ -1,6 +1,11 @@
+ #ifndef _X86_KERNEL_PROCESS_IO_H
+ #define _X86_KERNEL_PROCESS_IO_H
  
- DECLARE_PER_CPU_SHARED_ALIGNED(struct tss_struct, init_tss);
- 
-+static inline void init_tss_io(struct tss_struct *t)
++static inline void clear_thread_io_bitmap(struct task_struct *p)
 +{
-+	int i;
-+
-+	t->x86_tss.io_bitmap_base = offsetof(struct tss_struct, io_bitmap);
-+
-+	/*
-+	 * <= is required because the CPU will access up to
-+	 * 8 bits beyond the end of the IO permission bitmap.
-+	 */
-+	for (i = 0; i <= IO_BITMAP_LONGS; i++)
-+		t->io_bitmap[i] = ~0UL;
++	p->thread.io_bitmap_ptr = NULL;
 +}
 +
- /*
-  * Save the original ist values for checking stack pointers during debugging
-  */
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 4b4f78c..ae2e8d7 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1297,7 +1297,6 @@ void cpu_init(void)
- 	struct tss_struct *t;
- 	unsigned long v;
- 	int cpu = stack_smp_processor_id();
--	int i;
- 
- 	wait_for_master_cpu(cpu);
- 
-@@ -1357,14 +1356,7 @@ void cpu_init(void)
- 		}
+ static inline int copy_io_bitmap(struct task_struct *me,
+ 				 struct task_struct *p)
+ {
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 07550ff..b55f78e 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -154,7 +154,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 		childregs->orig_ax = -1;
+ 		childregs->cs = __KERNEL_CS | get_kernel_rpl();
+ 		childregs->flags = X86_EFLAGS_IF | X86_EFLAGS_FIXED;
+-		p->thread.io_bitmap_ptr = NULL;
++		clear_thread_io_bitmap(p);
+ 		return 0;
  	}
+ 	*childregs = *current_pt_regs();
+@@ -165,7 +165,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 	p->thread.ip = (unsigned long) ret_from_fork;
+ 	task_user_gs(p) = get_user_gs(current_pt_regs());
  
--	t->x86_tss.io_bitmap_base = offsetof(struct tss_struct, io_bitmap);
--
--	/*
--	 * <= is required because the CPU will access up to
--	 * 8 bits beyond the end of the IO permission bitmap.
--	 */
--	for (i = 0; i <= IO_BITMAP_LONGS; i++)
--		t->io_bitmap[i] = ~0UL;
-+	init_tss_io(t);
+-	p->thread.io_bitmap_ptr = NULL;
++	clear_thread_io_bitmap(p);
+ 	tsk = current;
  
- 	atomic_inc(&init_mm.mm_count);
- 	me->active_mm = &init_mm;
-@@ -1419,7 +1411,7 @@ void cpu_init(void)
- 	load_TR_desc();
- 	load_LDT(&init_mm.context);
+ 	/*
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index b1babb4..d18f3fc 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -164,7 +164,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 	p->thread.sp = (unsigned long) childregs;
+ 	p->thread.usersp = me->thread.usersp;
+ 	set_tsk_thread_flag(p, TIF_FORK);
+-	p->thread.io_bitmap_ptr = NULL;
++	clear_thread_io_bitmap(p);
  
--	t->x86_tss.io_bitmap_base = offsetof(struct tss_struct, io_bitmap);
-+	init_tss_io(t);
- 
- #ifdef CONFIG_DOUBLEFAULT
- 	/* Set up doublefault TSS pointer in the GDT */
+ 	savesegment(gs, p->thread.gsindex);
+ 	p->thread.gs = p->thread.gsindex ? 0 : me->thread.gs;
 -- 
 2.1.1
 
