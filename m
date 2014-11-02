@@ -1,208 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaKBVml (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 16:42:41 -0500
-Received: from smtprelay0038.hostedemail.com ([216.40.44.38]:56349 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750990AbaKBVmi (ORCPT
+	id S1752454AbaKBVsE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 16:48:04 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57168 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750990AbaKBVsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 16:42:38 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:2:41:69:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3865:3866:3867:3870:3871:3872:3874:4049:4117:4321:4605:5007:6261:7903:8603:9592:10004:10848:11026:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:12663:13255:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: view95_50eb215ba1b07
-X-Filterd-Recvd-Size: 6986
-Message-ID: <1414964554.17743.7.camel@perches.com>
-Subject: [PATCH] printk: Add and use LOGLEVEL_<level> defines for
- KERN_<LEVEL> equivalents
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jason Baron <jbaron@akamai.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 02 Nov 2014 13:42:34 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	Sun, 2 Nov 2014 16:48:00 -0500
+Message-ID: <1414964875.5310.24.camel@jarvis>
+Subject: [GIT PULL] SCSI fixes for 3.18-rc2
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sun, 02 Nov 2014 15:47:55 -0600
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use #defines instead of magic values.
+This is a set of six patches consisting of two MAINTAINER updates, two
+scsi-mq fixs for the old parallel interface (not every request is tagged
+and we need to set the right flags to populate the SPI tag message) and
+a fix for a memory leak in scatterlist traversal caused by a
+preallocation update in 3.17) and an ipv6 fix for cxgbi.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+The patch is available here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-for-linus
+
+The short changelog is:
+
+Anish Bhatt (1):
+      libcxgbi : support ipv6 address host_param
+
+Christoph Hellwig (2):
+      scsi: set REQ_QUEUE for the blk-mq case
+      Revert "block: all blk-mq requests are tagged"
+
+Don Brace (1):
+      MAINTAINERS: change hpsa and cciss maintainer
+
+Santosh Y (1):
+      MAINTAINERS: ufs - remove self
+
+Tony Battersby (1):
+      lib/scatterlist: fix memory leak with scsi-mq
+
+The diffstat is:
+
+ MAINTAINERS                   |  9 ++++++---
+ drivers/scsi/cxgbi/libcxgbi.c | 42 +++++++++++++++++++++++++++++++++++++-----
+ drivers/scsi/cxgbi/libcxgbi.h |  5 -----
+ drivers/scsi/scsi_lib.c       |  5 +++++
+ include/linux/blkdev.h        |  3 +--
+ include/scsi/scsi_tcq.h       |  8 ++++----
+ lib/scatterlist.c             |  6 +++---
+ 7 files changed, 56 insertions(+), 22 deletions(-)
+
+With full diff below.
+
+James
+
 ---
- drivers/usb/storage/debug.c |  2 +-
- include/linux/kern_levels.h | 13 +++++++++++++
- kernel/printk/printk.c      | 28 +++++++++++++---------------
- lib/dynamic_debug.c         |  4 ++--
- 4 files changed, 29 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/usb/storage/debug.c b/drivers/usb/storage/debug.c
-index e08f647..e43a956 100644
---- a/drivers/usb/storage/debug.c
-+++ b/drivers/usb/storage/debug.c
-@@ -186,7 +186,7 @@ int usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 82d4ad2..dab92a7 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4312,10 +4312,8 @@ F:	Documentation/blockdev/cpqarray.txt
+ F:	drivers/block/cpqarray.*
  
- 	va_start(args, fmt);
+ HEWLETT-PACKARD SMART ARRAY RAID DRIVER (hpsa)
+-M:	Don Brace <don.brace@pmcs.com>
++M:	"Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+ L:	iss_storagedev@hp.com
+-L:	storagedev@pmcs.com
+-L:	linux-scsi@vger.kernel.org
+ S:	Supported
+ F:	Documentation/scsi/hpsa.txt
+ F:	drivers/scsi/hpsa*.[ch]
+@@ -4323,10 +4321,8 @@ F:	include/linux/cciss*.h
+ F:	include/uapi/linux/cciss*.h
  
--	r = dev_vprintk_emit(7, &us->pusb_dev->dev, fmt, args);
-+	r = dev_vprintk_emit(LOGLEVEL_DEBUG, &us->pusb_dev->dev, fmt, args);
+ HEWLETT-PACKARD SMART CISS RAID DRIVER (cciss)
+-M:	Don Brace <don.brace@pmcs.com>
++M:	Mike Miller <mike.miller@hp.com>
+ L:	iss_storagedev@hp.com
+-L:	storagedev@pmcs.com
+-L:	linux-scsi@vger.kernel.org
+ S:	Supported
+ F:	Documentation/blockdev/cciss.txt
+ F:	drivers/block/cciss*
+@@ -9610,6 +9606,7 @@ F:     drivers/staging/unisys/
  
- 	va_end(args);
- 
-diff --git a/include/linux/kern_levels.h b/include/linux/kern_levels.h
-index 866caaa..3b9e71f 100644
---- a/include/linux/kern_levels.h
-+++ b/include/linux/kern_levels.h
-@@ -22,4 +22,17 @@
+ UNIVERSAL FLASH STORAGE HOST CONTROLLER DRIVER
+ M:	Vinayak Holikatti <vinholikatti@gmail.com>
++M:	Santosh Y <santoshsy@gmail.com>
+ L:	linux-scsi@vger.kernel.org
+ S:	Supported
+ F:	Documentation/scsi/ufs.txt
+diff --git a/drivers/scsi/cxgbi/libcxgbi.c b/drivers/scsi/cxgbi/libcxgbi.c
+index 674d498..54fa6e0 100644
+--- a/drivers/scsi/cxgbi/libcxgbi.c
++++ b/drivers/scsi/cxgbi/libcxgbi.c
+@@ -399,35 +399,6 @@ EXPORT_SYMBOL_GPL(cxgbi_hbas_add);
+  *   If the source port is outside our allocation range, the caller is
+  *   responsible for keeping track of their port usage.
   */
- #define KERN_CONT	""
- 
-+/* integer equivalents of KERN_<LEVEL> */
-+#define LOGLEVEL_SCHED		-2	/* Deferred messages from sched code
-+					 * are set to this special level */
-+#define LOGLEVEL_DEFAULT	-1	/* default (or last) loglevel */
-+#define LOGLEVEL_EMERG		0	/* system is unusable */
-+#define LOGLEVEL_ALERT		1	/* action must be taken immediately */
-+#define LOGLEVEL_CRIT		2	/* critical conditions */
-+#define LOGLEVEL_ERR		3	/* error conditions */
-+#define LOGLEVEL_WARNING	4	/* warning conditions */
-+#define LOGLEVEL_NOTICE		5	/* normal but significant condition */
-+#define LOGLEVEL_INFO		6	/* informational */
-+#define LOGLEVEL_DEBUG		7	/* debug-level messages */
-+
- #endif
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ced2b84..2b8606e 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -62,9 +62,6 @@ int console_printk[4] = {
- 	CONSOLE_LOGLEVEL_DEFAULT,	/* default_console_loglevel */
- };
- 
--/* Deferred messaged from sched code are marked by this special level */
--#define SCHED_MESSAGE_LOGLEVEL -2
 -
- /*
-  * Low level drivers may need that to know if they can schedule in
-  * their unblank() callback or not. So let's export it.
-@@ -1259,7 +1256,7 @@ static int syslog_print_all(char __user *buf, int size, bool clear)
- int do_syslog(int type, char __user *buf, int len, bool from_file)
+-static struct cxgbi_sock *find_sock_on_port(struct cxgbi_device *cdev,
+-					    unsigned char port_id)
+-{
+-	struct cxgbi_ports_map *pmap = &cdev->pmap;
+-	unsigned int i;
+-	unsigned int used;
+-
+-	if (!pmap->max_connect || !pmap->used)
+-		return NULL;
+-
+-	spin_lock_bh(&pmap->lock);
+-	used = pmap->used;
+-	for (i = 0; used && i < pmap->max_connect; i++) {
+-		struct cxgbi_sock *csk = pmap->port_csk[i];
+-
+-		if (csk) {
+-			if (csk->port_id == port_id) {
+-				spin_unlock_bh(&pmap->lock);
+-				return csk;
+-			}
+-			used--;
+-		}
+-	}
+-	spin_unlock_bh(&pmap->lock);
+-
+-	return NULL;
+-}
+-
+ static int sock_get_port(struct cxgbi_sock *csk)
  {
- 	bool clear = false;
--	static int saved_console_loglevel = -1;
-+	static int saved_console_loglevel = LOGLEVEL_DEFAULT;
- 	int error;
+ 	struct cxgbi_device *cdev = csk->cdev;
+@@ -778,7 +749,6 @@ static struct cxgbi_sock *cxgbi_check_route6(struct sockaddr *dst_addr)
+ 	csk->daddr6.sin6_addr = daddr6->sin6_addr;
+ 	csk->daddr6.sin6_port = daddr6->sin6_port;
+ 	csk->daddr6.sin6_family = daddr6->sin6_family;
+-	csk->saddr6.sin6_family = daddr6->sin6_family;
+ 	csk->saddr6.sin6_addr = pref_saddr;
  
- 	error = check_syslog_permissions(type, from_file);
-@@ -1316,15 +1313,15 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ 	neigh_release(n);
+@@ -2677,14 +2647,12 @@ int cxgbi_get_host_param(struct Scsi_Host *shost, enum iscsi_host_param param,
  		break;
- 	/* Disable logging to console */
- 	case SYSLOG_ACTION_CONSOLE_OFF:
--		if (saved_console_loglevel == -1)
-+		if (saved_console_loglevel == LOGLEVEL_DEFAULT)
- 			saved_console_loglevel = console_loglevel;
- 		console_loglevel = minimum_console_loglevel;
+ 	case ISCSI_HOST_PARAM_IPADDRESS:
+ 	{
+-		struct cxgbi_sock *csk = find_sock_on_port(chba->cdev,
+-							   chba->port_id);
+-		if (csk) {
+-			len = sprintf(buf, "%pIS",
+-				      (struct sockaddr *)&csk->saddr);
+-		}
++		__be32 addr;
++
++		addr = cxgbi_get_iscsi_ipv4(chba);
++		len = sprintf(buf, "%pI4", &addr);
+ 		log_debug(1 << CXGBI_DBG_ISCSI,
+-			  "hba %s, addr %s.\n", chba->ndev->name, buf);
++			"hba %s, ipv4 %pI4.\n", chba->ndev->name, &addr);
  		break;
- 	/* Enable logging to console */
- 	case SYSLOG_ACTION_CONSOLE_ON:
--		if (saved_console_loglevel != -1) {
-+		if (saved_console_loglevel != LOGLEVEL_DEFAULT) {
- 			console_loglevel = saved_console_loglevel;
--			saved_console_loglevel = -1;
-+			saved_console_loglevel = LOGLEVEL_DEFAULT;
- 		}
- 		break;
- 	/* Set level of messages printed to console */
-@@ -1336,7 +1333,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 			len = minimum_console_loglevel;
- 		console_loglevel = len;
- 		/* Implicitly re-enable logging to console */
--		saved_console_loglevel = -1;
-+		saved_console_loglevel = LOGLEVEL_DEFAULT;
- 		error = 0;
- 		break;
- 	/* Number of chars in the log buffer */
-@@ -1629,8 +1626,8 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	/* cpu currently holding logbuf_lock in this function */
- 	static volatile unsigned int logbuf_cpu = UINT_MAX;
- 
--	if (level == SCHED_MESSAGE_LOGLEVEL) {
--		level = -1;
-+	if (level == LOGLEVEL_SCHED) {
-+		level = LOGLEVEL_DEFAULT;
- 		in_sched = true;
  	}
- 
-@@ -1695,8 +1692,9 @@ asmlinkage int vprintk_emit(int facility, int level,
- 			const char *end_of_header = printk_skip_level(text);
- 			switch (kern_level) {
- 			case '0' ... '7':
--				if (level == -1)
-+				if (level == LOGLEVEL_DEFAULT)
- 					level = kern_level - '0';
-+				/* fallthrough */
- 			case 'd':	/* KERN_DEFAULT */
- 				lflags |= LOG_PREFIX;
- 			}
-@@ -1710,7 +1708,7 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		}
- 	}
- 
--	if (level == -1)
-+	if (level == LOGLEVEL_DEFAULT)
- 		level = default_message_loglevel;
- 
- 	if (dict)
-@@ -1788,7 +1786,7 @@ EXPORT_SYMBOL(vprintk_emit);
- 
- asmlinkage int vprintk(const char *fmt, va_list args)
- {
--	return vprintk_emit(0, -1, NULL, 0, fmt, args);
-+	return vprintk_emit(0, LOGLEVEL_DEFAULT, NULL, 0, fmt, args);
+ 	default:
+diff --git a/drivers/scsi/cxgbi/libcxgbi.h b/drivers/scsi/cxgbi/libcxgbi.h
+index 2c7cb1c..1d98fad 100644
+--- a/drivers/scsi/cxgbi/libcxgbi.h
++++ b/drivers/scsi/cxgbi/libcxgbi.h
+@@ -700,6 +700,11 @@ static inline void cxgbi_set_iscsi_ipv4(struct cxgbi_hba *chba, __be32 ipaddr)
+ 			chba->ndev->name);
  }
- EXPORT_SYMBOL(vprintk);
  
-@@ -1842,7 +1840,7 @@ asmlinkage __visible int printk(const char *fmt, ...)
++static inline __be32 cxgbi_get_iscsi_ipv4(struct cxgbi_hba *chba)
++{
++	return chba->ipv4addr;
++}
++
+ struct cxgbi_device *cxgbi_device_register(unsigned int, unsigned int);
+ void cxgbi_device_unregister(struct cxgbi_device *);
+ void cxgbi_device_unregister_all(unsigned int flag);
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 50a6e1a..9eff8a3 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1893,11 +1893,6 @@ static int scsi_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req,
+ 		blk_mq_start_request(req);
  	}
- #endif
- 	va_start(args, fmt);
--	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
-+	r = vprintk_emit(0, LOGLEVEL_DEFAULT, NULL, 0, fmt, args);
- 	va_end(args);
  
- 	return r;
-@@ -2634,7 +2632,7 @@ int printk_deferred(const char *fmt, ...)
+-	if (blk_queue_tagged(q))
+-		req->cmd_flags |= REQ_QUEUED;
+-	else
+-		req->cmd_flags &= ~REQ_QUEUED;
+-
+ 	scsi_init_cmd_errh(cmd);
+ 	cmd->scsi_done = scsi_mq_done;
  
- 	preempt_disable();
- 	va_start(args, fmt);
--	r = vprintk_emit(0, SCHED_MESSAGE_LOGLEVEL, NULL, 0, fmt, args);
-+	r = vprintk_emit(0, LOGLEVEL_SCHED, NULL, 0, fmt, args);
- 	va_end(args);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 51d0dc2..0207a78 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1136,7 +1136,8 @@ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
+ /*
+  * tag stuff
+  */
+-#define blk_rq_tagged(rq)		((rq)->cmd_flags & REQ_QUEUED)
++#define blk_rq_tagged(rq) \
++	((rq)->mq_ctx || ((rq)->cmd_flags & REQ_QUEUED))
+ extern int blk_queue_start_tag(struct request_queue *, struct request *);
+ extern struct request *blk_queue_find_tag(struct request_queue *, int);
+ extern void blk_queue_end_tag(struct request_queue *, struct request *);
+diff --git a/include/scsi/scsi_tcq.h b/include/scsi/scsi_tcq.h
+index 56ed843..e645835 100644
+--- a/include/scsi/scsi_tcq.h
++++ b/include/scsi/scsi_tcq.h
+@@ -67,9 +67,8 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
+ 	if (!sdev->tagged_supported)
+ 		return;
  
- 	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index dfba055..527799d 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -576,7 +576,7 @@ void __dynamic_dev_dbg(struct _ddebug *descriptor,
- 	} else {
- 		char buf[PREFIX_SIZE];
+-	if (shost_use_blk_mq(sdev->host))
+-		queue_flag_set_unlocked(QUEUE_FLAG_QUEUED, sdev->request_queue);
+-	else if (!blk_queue_tagged(sdev->request_queue))
++	if (!shost_use_blk_mq(sdev->host) &&
++	    !blk_queue_tagged(sdev->request_queue))
+ 		blk_queue_init_tags(sdev->request_queue, depth,
+ 				    sdev->host->bqt);
  
--		dev_printk_emit(7, dev, "%s%s %s: %pV",
-+		dev_printk_emit(LOGLEVEL_DEBUG, dev, "%s%s %s: %pV",
- 				dynamic_emit_prefix(descriptor, buf),
- 				dev_driver_string(dev), dev_name(dev),
- 				&vaf);
-@@ -605,7 +605,7 @@ void __dynamic_netdev_dbg(struct _ddebug *descriptor,
- 	if (dev && dev->dev.parent) {
- 		char buf[PREFIX_SIZE];
+@@ -82,7 +81,8 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
+  **/
+ static inline void scsi_deactivate_tcq(struct scsi_device *sdev, int depth)
+ {
+-	if (blk_queue_tagged(sdev->request_queue))
++	if (!shost_use_blk_mq(sdev->host) &&
++	    blk_queue_tagged(sdev->request_queue))
+ 		blk_queue_free_tags(sdev->request_queue);
+ 	scsi_adjust_queue_depth(sdev, 0, depth);
+ }
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index c9f2e8c..9cdf62f 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -203,10 +203,10 @@ void __sg_free_table(struct sg_table *table, unsigned int max_ents,
+ 		}
  
--		dev_printk_emit(7, dev->dev.parent,
-+		dev_printk_emit(LOGLEVEL_DEBUG, dev->dev.parent,
- 				"%s%s %s %s%s: %pV",
- 				dynamic_emit_prefix(descriptor, buf),
- 				dev_driver_string(dev->dev.parent),
+ 		table->orig_nents -= sg_size;
+-		if (skip_first_chunk)
+-			skip_first_chunk = false;
+-		else
++		if (!skip_first_chunk) {
+ 			free_fn(sgl, alloc_size);
++			skip_first_chunk = false;
++		}
+ 		sgl = next;
+ 	}
+ 
 
 
