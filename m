@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaKBUhd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 15:37:33 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:35825 "EHLO
+	id S1752345AbaKBUha (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 15:37:30 -0500
+Received: from mail.kmu-office.ch ([178.209.48.102]:35814 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362AbaKBUhY (ORCPT
+	with ESMTP id S1751355AbaKBUhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Nov 2014 15:37:24 -0500
 From: Stefan Agner <stefan@agner.ch>
@@ -12,9 +12,9 @@ To: shawn.guo@linaro.org, kernel@pengutronix.de, arnd@arndb.de
 Cc: b35083@freescale.com, bpringlemeir@nbsps.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH RESEND v2 2/4] ARM: imx: clk-vf610: get input clocks from assigned clocks
-Date: Sun,  2 Nov 2014 21:36:45 +0100
-Message-Id: <1414960607-29316-3-git-send-email-stefan@agner.ch>
+Subject: [PATCH RESEND v2 1/4] ARM: dts: vf610: assign oscillator to clock module
+Date: Sun,  2 Nov 2014 21:36:44 +0100
+Message-Id: <1414960607-29316-2-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1414960607-29316-1-git-send-email-stefan@agner.ch>
 References: <1414960607-29316-1-git-send-email-stefan@agner.ch>
@@ -22,64 +22,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the clock assignment device tree changes, the clocks get
-initialized properly but the search for those clocks fails with
-errors:
+The clock controller module (CCM) has several clock inputs, which
+are connected to external crystal oscillators. To reflect this,
+assign these fixed clocks to the CCM node directly.
 
-[    0.000000] i.MX clk 4: register failed with -17
-[    0.000000] i.MX clk 5: register failed with -17
-
-This is because the module can't find those clocks anymore, and
-tries to initialize fixed clocks with the same name.
-
-Get the clock modules input clocks from the assigned clocks by
-default by using of_clk_get_by_name(). If this function returns
-not a valid clock, fall back to the old behaviour and search the
-input clock from the device tree's /clocks/$name node.
+This especially resolves initialization order dependencies we had
+with the earlier initialization code: When resolving of the fixed
+clocks failed in clk-vf610, the code created fixed clocks with a
+rate of 0.
 
 Signed-off-by: Stefan Agner <stefan@agner.ch>
 ---
- arch/arm/mach-imx/clk-vf610.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ .../devicetree/bindings/clock/vf610-clock.txt      | 15 +++++++++++++
+ arch/arm/boot/dts/vf610-cosmic.dts                 | 14 ++++++------
+ arch/arm/boot/dts/vf610-twr.dts                    | 25 ++++++++++++----------
+ arch/arm/boot/dts/vf610.dtsi                       | 25 ++++++++++------------
+ 4 files changed, 48 insertions(+), 31 deletions(-)
 
-diff --git a/arch/arm/mach-imx/clk-vf610.c b/arch/arm/mach-imx/clk-vf610.c
-index a178184..1963a44 100644
---- a/arch/arm/mach-imx/clk-vf610.c
-+++ b/arch/arm/mach-imx/clk-vf610.c
-@@ -105,6 +105,17 @@ static unsigned int const clks_init_on[] __initconst = {
- 	VF610_CLK_DDR_SEL,
+diff --git a/Documentation/devicetree/bindings/clock/vf610-clock.txt b/Documentation/devicetree/bindings/clock/vf610-clock.txt
+index c80863d..63f9f1a 100644
+--- a/Documentation/devicetree/bindings/clock/vf610-clock.txt
++++ b/Documentation/devicetree/bindings/clock/vf610-clock.txt
+@@ -5,6 +5,19 @@ Required properties:
+ - reg: Address and length of the register set
+ - #clock-cells: Should be <1>
+ 
++Optional properties:
++- clocks: list of clock identifiers which are external input clocks to the
++	given clock controller. Please refer the next section to find
++	the input clocks for a given controller.
++- clock-names: list of names of clocks which are exteral input clocks to the
++	given clock controller.
++
++Input clocks for top clock controller:
++	- sxosc (external crystal oscillator 32KHz, recommended)
++	- fxosc (external crystal oscillator 24MHz, recommended)
++	- audio_ext
++	- enet_ext
++
+ The clock consumer should specify the desired clock by having the clock
+ ID in its "clocks" phandle cell. See include/dt-bindings/clock/vf610-clock.h
+ for the full list of VF610 clock IDs.
+@@ -15,6 +28,8 @@ clks: ccm@4006b000 {
+ 	compatible = "fsl,vf610-ccm";
+ 	reg = <0x4006b000 0x1000>;
+ 	#clock-cells = <1>;
++	clocks = <&sxosc>, <&fxosc>;
++	clock-names = "sxosc", "fxosc";
  };
  
-+static struct clk * __init vf610_get_fixed_clock(
-+				struct device_node *ccm_node, const char *name)
-+{
-+	struct clk *clk = of_clk_get_by_name(ccm_node, name);
-+
-+	/* Backward compatibility if device tree is missing clks assignments */
-+	if (IS_ERR(clk))
-+		clk = imx_obtain_fixed_clock(name, 0);
-+	return clk;
+ uart1: serial@40028000 {
+diff --git a/arch/arm/boot/dts/vf610-cosmic.dts b/arch/arm/boot/dts/vf610-cosmic.dts
+index 3fd1b74..b0ce8b8 100644
+--- a/arch/arm/boot/dts/vf610-cosmic.dts
++++ b/arch/arm/boot/dts/vf610-cosmic.dts
+@@ -23,14 +23,16 @@
+ 		reg = <0x80000000 0x10000000>;
+ 	};
+ 
+-	clocks {
+-		enet_ext {
+-			compatible = "fixed-clock";
+-			#clock-cells = <0>;
+-			clock-frequency = <50000000>;
+-		};
++	enet_ext: enet_ext {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <50000000>;
+ 	};
++};
+ 
++&clks {
++	clocks = <&sxosc>, <&fxosc>, <&enet_ext>;
++	clock-names = "sxosc", "fxosc", "enet_ext";
+ };
+ 
+ &fec1 {
+diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
+index 189b697..7d06d1a 100644
+--- a/arch/arm/boot/dts/vf610-twr.dts
++++ b/arch/arm/boot/dts/vf610-twr.dts
+@@ -22,18 +22,16 @@
+ 		reg = <0x80000000 0x8000000>;
+ 	};
+ 
+-	clocks {
+-		audio_ext {
+-			compatible = "fixed-clock";
+-			#clock-cells = <0>;
+-			clock-frequency = <24576000>;
+-		};
++	audio_ext: mclk_osc {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <24576000>;
++	};
+ 
+-		enet_ext {
+-			compatible = "fixed-clock";
+-			#clock-cells = <0>;
+-			clock-frequency = <50000000>;
+-		};
++	enet_ext: eth_osc {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <50000000>;
+ 	};
+ 
+ 	regulators {
+@@ -95,6 +93,11 @@
+ 	status = "okay";
+ };
+ 
++&clks {
++	clocks = <&sxosc>, <&fxosc>, <&enet_ext>, <&audio_ext>;
++	clock-names = "sxosc", "fxosc", "enet_ext", "audio_ext";
 +};
 +
- static void __init vf610_clocks_init(struct device_node *ccm_node)
- {
- 	struct device_node *np;
-@@ -115,11 +126,10 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
- 	clk[VF610_CLK_SIRC_32K] = imx_clk_fixed("sirc_32k", 32000);
- 	clk[VF610_CLK_FIRC] = imx_clk_fixed("firc", 24000000);
+ &dspi0 {
+ 	bus-num = <0>;
+ 	pinctrl-names = "default";
+diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+index 699da48..ed12d9a 100644
+--- a/arch/arm/boot/dts/vf610.dtsi
++++ b/arch/arm/boot/dts/vf610.dtsi
+@@ -44,21 +44,16 @@
+ 		};
+ 	};
  
--	clk[VF610_CLK_SXOSC] = imx_obtain_fixed_clock("sxosc", 0);
--	clk[VF610_CLK_FXOSC] = imx_obtain_fixed_clock("fxosc", 0);
--	clk[VF610_CLK_AUDIO_EXT] = imx_obtain_fixed_clock("audio_ext", 0);
--	clk[VF610_CLK_ENET_EXT] = imx_obtain_fixed_clock("enet_ext", 0);
+-	clocks {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
 -
-+	clk[VF610_CLK_SXOSC] = vf610_get_fixed_clock(ccm_node, "sxosc");
-+	clk[VF610_CLK_FXOSC] = vf610_get_fixed_clock(ccm_node, "fxosc");
-+	clk[VF610_CLK_AUDIO_EXT] = vf610_get_fixed_clock(ccm_node, "audio_ext");
-+	clk[VF610_CLK_ENET_EXT] = vf610_get_fixed_clock(ccm_node, "enet_ext");
- 	clk[VF610_CLK_FXOSC_HALF] = imx_clk_fixed_factor("fxosc_half", "fxosc", 1, 2);
+-		sxosc {
+-			compatible = "fixed-clock";
+-			#clock-cells = <0>;
+-			clock-frequency = <32768>;
+-		};
++	fxosc: fxosc {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <24000000>;
++	};
  
- 	np = of_find_compatible_node(NULL, NULL, "fsl,vf610-anatop");
+-		fxosc {
+-			compatible = "fixed-clock";
+-			#clock-cells = <0>;
+-			clock-frequency = <24000000>;
+-		};
++	sxosc: sxosc {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <32768>;
+ 	};
+ 
+ 	soc {
+@@ -358,6 +353,8 @@
+ 			clks: ccm@4006b000 {
+ 				compatible = "fsl,vf610-ccm";
+ 				reg = <0x4006b000 0x1000>;
++				clocks = <&sxosc>, <&fxosc>;
++				clock-names = "sxosc", "fxosc";
+ 				#clock-cells = <1>;
+ 			};
+ 
 -- 
 2.1.3
 
