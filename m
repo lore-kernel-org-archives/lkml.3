@@ -1,1044 +1,645 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696AbaKBDQJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 23:16:09 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:58056 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864AbaKBDQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 23:16:06 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        Tejun Heo <tj@kernel.org>, David Miller <davem@davemloft.net>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 1/3] mm: embed the memcg pointer directly into struct page
-Date: Sat,  1 Nov 2014 23:15:54 -0400
-Message-Id: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.1.3
+	id S1751554AbaKBDZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 23:25:56 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:21402 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864AbaKBDZx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Nov 2014 23:25:53 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Boaz Harrosh <boaz@plexistor.com>, Nick Piggin <npiggin@kernel.dk>,
+        "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "Knippers, Linda" <linda.knippers@hp.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvdimm@lists.01.org" <linux-nvdimm@ml01.01.org>
+Subject: RE: [PATCH 1/4] pmem: Initial version of persistent memory driver
+Thread-Topic: [PATCH 1/4] pmem: Initial version of persistent memory driver
+Thread-Index: AQHPwju+CJyN7gLloE2kV10Saf5ghpxNAAew
+Date: Sun, 2 Nov 2014 03:22:37 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net>
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
+In-Reply-To: <1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory cgroups used to have 5 per-page pointers.  To allow users to
-disable that amount of overhead during runtime, those pointers were
-allocated in a separate array, with a translation layer between them
-and struct page.
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Ross Zwisler
+> Sent: Wednesday, 27 August, 2014 4:12 PM
+> To: Jens Axboe; Matthew Wilcox; Boaz Harrosh; Nick Piggin; linux-
+> fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
+> nvdimm@lists.01.org
+> Cc: Ross Zwisler
+> Subject: [PATCH 1/4] pmem: Initial version of persistent memory
+> driver
+> 
+> PMEM is a new driver that presents a reserved range of memory as a
+> block device.  This is useful for developing with NV-DIMMs, and
+> can be used with volatile memory as a development platform.
+> 
+> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+> ---
+>  MAINTAINERS            |   6 +
+>  drivers/block/Kconfig  |  41 ++++++
+>  drivers/block/Makefile |   1 +
+>  drivers/block/pmem.c   | 330
+> +++++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 378 insertions(+)
+>  create mode 100644 drivers/block/pmem.c
+> 
+...
 
-There is now only one page pointer remaining: the memcg pointer, that
-indicates which cgroup the page is associated with when charged.  The
-complexity of runtime allocation and the runtime translation overhead
-is no longer justified to save that *potential* 0.19% of memory.  With
-CONFIG_SLUB, page->mem_cgroup actually sits in the doubleword padding
-after the page->private member and doesn't even increase struct page,
-and then this patch actually saves space.  Remaining users that care
-can still compile their kernels without CONFIG_MEMCG.
+> diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+> index 1b8094d..ac52f5a 100644
+> --- a/drivers/block/Kconfig
+> +++ b/drivers/block/Kconfig
+> @@ -404,6 +404,47 @@ config BLK_DEV_RAM_DAX
+>  	  and will prevent RAM block device backing store memory from
+> being
+>  	  allocated from highmem (only a problem for highmem systems).
+> 
+> +config BLK_DEV_PMEM
+> +	tristate "Persistent memory block device support"
+> +	help
+> +	  Saying Y here will allow you to use a contiguous range of
+> reserved
+> +	  memory as one or more block devices.  Memory for PMEM should
+> be
+> +	  reserved using the "memmap" kernel parameter.
+> +
+> +	  To compile this driver as a module, choose M here: the module
+> will be
+> +	  called pmem.
+> +
+> +	  Most normal users won't need this functionality, and can thus
+> say N
+> +	  here.
+> +
+> +config BLK_DEV_PMEM_START
+> +	int "Offset in GiB of where to start claiming space"
+> +	default "0"
+> +	depends on BLK_DEV_PMEM
+> +	help
+> +	  Starting offset in GiB that PMEM should use when claiming
+> memory.  This
+> +	  memory needs to be reserved from the OS at boot time using
+> the
+> +	  "memmap" kernel parameter.
+> +
+> +	  If you provide PMEM with volatile memory it will act as a
+> volatile
+> +	  RAM disk and your data will not be persistent.
+> +
+> +config BLK_DEV_PMEM_COUNT
+> +	int "Default number of PMEM disks"
+> +	default "4"
 
-   text    data     bss     dec     hex     filename
-8828345 1725264  983040 11536649 b00909  vmlinux.old
-8827425 1725264  966656 11519345 afc571  vmlinux.new
+For real use I think a default of 1 would be better.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> +	depends on BLK_DEV_PMEM
+> +	help
+> +	  Number of equal sized block devices that PMEM should create.
+> +
+> +config BLK_DEV_PMEM_SIZE
+> +	int "Size in GiB of space to claim"
+> +	depends on BLK_DEV_PMEM
+> +	default "0"
+> +	help
+> +	  Amount of memory in GiB that PMEM should use when creating
+> block
+> +	  devices.  This memory needs to be reserved from the OS at
+> +	  boot time using the "memmap" kernel parameter.
+> +
+>  config CDROM_PKTCDVD
+>  	tristate "Packet writing on CD/DVD media"
+>  	depends on !UML
+
+
+...
+
+> diff --git a/drivers/block/pmem.c b/drivers/block/pmem.c
+> new file mode 100644
+> index 0000000..d366b9b
+> --- /dev/null
+> +++ b/drivers/block/pmem.c
+> @@ -0,0 +1,330 @@
+> +/*
+> + * Persistent Memory Driver
+> + * Copyright (c) 2014, Intel Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but
+> WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of
+> MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+> License for
+> + * more details.
+> + *
+> + * This driver is heavily based on drivers/block/brd.c.
+> + * Copyright (C) 2007 Nick Piggin
+> + * Copyright (C) 2007 Novell Inc.
+> + */
+> +
+> +#include <linux/bio.h>
+> +#include <linux/blkdev.h>
+> +#include <linux/fs.h>
+> +#include <linux/hdreg.h>
+> +#include <linux/highmem.h>
+> +#include <linux/init.h>
+> +#include <linux/major.h>
+> +#include <linux/module.h>
+> +#include <linux/moduleparam.h>
+> +#include <linux/slab.h>
+> +#include <linux/uaccess.h>
+> +
+> +#define SECTOR_SHIFT		9
+> +#define PAGE_SECTORS_SHIFT	(PAGE_SHIFT - SECTOR_SHIFT)
+> +#define PAGE_SECTORS		(1 << PAGE_SECTORS_SHIFT)
+> +
+> +/*
+> + * driver-wide physical address and total_size - one single,
+> contiguous memory
+> + * region that we divide up in to same-sized devices
+> + */
+> +phys_addr_t	phys_addr;
+> +void		*virt_addr;
+> +size_t		total_size;
+> +
+> +struct pmem_device {
+> +	struct request_queue	*pmem_queue;
+> +	struct gendisk		*pmem_disk;
+> +	struct list_head	pmem_list;
+> +
+> +	phys_addr_t		phys_addr;
+> +	void			*virt_addr;
+> +	size_t			size;
+> +};
+> +
+> +/*
+> + * direct translation from (pmem,sector) => void*
+> + * We do not require that sector be page aligned.
+> + * The return value will point to the beginning of the page
+> containing the
+> + * given sector, not to the sector itself.
+> + */
+> +static void *pmem_lookup_pg_addr(struct pmem_device *pmem, sector_t
+> sector)
+> +{
+> +	size_t page_offset = sector >> PAGE_SECTORS_SHIFT;
+> +	size_t offset = page_offset << PAGE_SHIFT;
+> +
+
+Since page_offset is only used to calculate offset, they
+could be joined to avoid relying on the compiler to
+optimize it away:
+	size_t offset = sector >> PAGE_SECTORS_SHIFT << PAGE_SHIFT;
+
+> +	BUG_ON(offset >= pmem->size);
+
+BUG_ON is severe... should this function be designed to return 
+an error instead?
+
+> +	return pmem->virt_addr + offset;
+> +}
+
+> +
+> +/*
+> + * sector is not required to be page aligned.
+> + * n is at most a single page, but could be less.
+> + */
+> +static void copy_to_pmem(struct pmem_device *pmem, const void *src,
+> +			sector_t sector, size_t n)
+> +{
+> +	void *dst;
+> +	unsigned int offset = (sector & (PAGE_SECTORS - 1)) <<
+> SECTOR_SHIFT;
+> +	size_t copy;
+> +
+> +	BUG_ON(n > PAGE_SIZE);
+> +
+> +	copy = min_t(size_t, n, PAGE_SIZE - offset);
+> +	dst = pmem_lookup_pg_addr(pmem, sector);
+> +	memcpy(dst + offset, src, copy);
+> +
+> +	if (copy < n) {
+> +		src += copy;
+> +		sector += copy >> SECTOR_SHIFT;
+> +		copy = n - copy;
+> +		dst = pmem_lookup_pg_addr(pmem, sector);
+> +		memcpy(dst, src, copy);
+> +	}
+> +}
+> +
+> +/*
+> + * sector is not required to be page aligned.
+> + * n is at most a single page, but could be less.
+> + */
+> +static void copy_from_pmem(void *dst, struct pmem_device *pmem,
+> +			  sector_t sector, size_t n)
+> +{
+> +	void *src;
+> +	unsigned int offset = (sector & (PAGE_SECTORS - 1)) <<
+> SECTOR_SHIFT;
+> +	size_t copy;
+> +
+> +	BUG_ON(n > PAGE_SIZE);
+> +
+> +	copy = min_t(size_t, n, PAGE_SIZE - offset);
+> +	src = pmem_lookup_pg_addr(pmem, sector);
+> +
+> +	memcpy(dst, src + offset, copy);
+> +
+> +	if (copy < n) {
+> +		dst += copy;
+> +		sector += copy >> SECTOR_SHIFT;
+> +		copy = n - copy;
+> +		src = pmem_lookup_pg_addr(pmem, sector);
+> +		memcpy(dst, src, copy);
+> +	}
+> +}
+> +
+> +static void pmem_do_bvec(struct pmem_device *pmem, struct page
+> *page,
+> +			unsigned int len, unsigned int off, int rw,
+> +			sector_t sector)
+> +{
+> +	void *mem = kmap_atomic(page);
+> +
+> +	if (rw == READ) {
+> +		copy_from_pmem(mem + off, pmem, sector, len);
+> +		flush_dcache_page(page);
+
+Why does READ flush the dcache after reading?  It's fine to 
+leave data in dcache.
+
+> +	} else {
+> +		/*
+> +		 * FIXME: Need more involved flushing to ensure that
+> writes to
+> +		 * NVDIMMs are actually durable before returning.
+> +		 */
+> +		flush_dcache_page(page);
+> +		copy_to_pmem(pmem, mem + off, sector, len);
+
+Why is this flushing before the write to pmem? That might flush
+data that's going to be overwritten.  I'd expect a flush AFTER
+the write, to push data to a durable location that will survive 
+surprise power loss.
+
+> +	}
+> +
+> +	kunmap_atomic(mem);
+> +}
+
+If a read or write of a pmem address gets an uncorrectable
+error, the system should not crash; just report this IO is bad.  
+That reflects a difference in storage philosophy vs. memory
+philosophy.  All the rest of the data in the pmem might be
+fine, and many users prefer to recover 99% of their data
+than lose it all.
+
+pmem_do_bvec needs a way to turn off normal DRAM "crash on
+error" handling for its accesses, and provide a return value
+indicating success or failure.
+
+Also, most storage devices automatically remap bad sectors
+when they are overwritten or remap them on command (e.g.,
+REASSIGN BLOCKS in SCSI), rather than leave that sector 
+bad forever.  I don't know how many filesystems and
+applications rely on that feature now, vs. maintain their
+own bad block tables; this may be something that pmem
+needs to provide.
+
+> +
+> +static void pmem_make_request(struct request_queue *q, struct bio
+> *bio)
+> +{
+> +	struct block_device *bdev = bio->bi_bdev;
+> +	struct pmem_device *pmem = bdev->bd_disk->private_data;
+> +	int rw;
+> +	struct bio_vec bvec;
+> +	sector_t sector;
+> +	struct bvec_iter iter;
+> +	int err = 0;
+> +
+> +	sector = bio->bi_iter.bi_sector;
+> +	if (bio_end_sector(bio) > get_capacity(bdev->bd_disk)) {
+> +		err = -EIO;
+> +		goto out;
+> +	}
+> +
+> +	BUG_ON(bio->bi_rw & REQ_DISCARD);
+> +
+
+Since discard (i.e., unmap, trip) is just a hint, it could just 
+be ignored rather than trigger a drastic BUG.
+
+Related suggestion: keep track of each sector that has been 
+discarded, and whether it has been written after discard.
+This would tell flash-backed DRAM which sectors don't need 
+to be flushed to flash on a power failure.
+
+Related suggestion: Adding WRITE SAME support would be useful
+for some software (for at least the writing zeros subset) - 
+that command is not just a hint.  It would result in a memset.
+
+> +	rw = bio_rw(bio);
+> +	if (rw == READA)
+> +		rw = READ;
+> +
+> +	bio_for_each_segment(bvec, bio, iter) {
+> +		unsigned int len = bvec.bv_len;
+> +
+> +		BUG_ON(len > PAGE_SIZE);
+> +		pmem_do_bvec(pmem, bvec.bv_page, len,
+> +			    bvec.bv_offset, rw, sector);
+> +		sector += len >> SECTOR_SHIFT;
+> +	}
+> +
+> +out:
+> +	bio_endio(bio, err);
+> +}
+> +
+> +static const struct block_device_operations pmem_fops = {
+> +	.owner =		THIS_MODULE,
+> +};
+> +
+> +/* Kernel module stuff */
+> +static int pmem_start_gb = CONFIG_BLK_DEV_PMEM_START;
+> +module_param(pmem_start_gb, int, S_IRUGO);
+> +MODULE_PARM_DESC(pmem_start_gb, "Offset in GB of where to start
+> claiming space");
+> +
+> +static int pmem_size_gb = CONFIG_BLK_DEV_PMEM_SIZE;
+> +module_param(pmem_size_gb,  int, S_IRUGO);
+> +MODULE_PARM_DESC(pmem_size_gb,  "Total size in GB of space to claim
+> for all disks");
+> +
+
+These modparam variable names and description scripts use gb 
+and GB when they mean GiB.  The storage market generally uses 
+correct SI units; please don't follow JEDEC's misuse.  The
+Kconfig descriptions use the right IEC binary units.
+
+Using GiB as the base unit prevents having persistent memory 
+blocks < 1 GiB or not multiples of 1 GiB.  For RAID controller 
+caches, 256 MiB and 512 MiB are still used.  Smaller units
+may be warranted.  Accepting the number and unit would be
+the most flexible and clear: allow strings like 512MiB, 
+2GiB, 1GB, and 4096B.
+
+> +static int pmem_count = CONFIG_BLK_DEV_PMEM_COUNT;
+> +module_param(pmem_count, int, S_IRUGO);
+> +MODULE_PARM_DESC(pmem_count, "Number of pmem devices to evenly split
+> allocated space");
+> +
+> +static LIST_HEAD(pmem_devices);
+> +static int pmem_major;
+> +
+> +/* FIXME: move phys_addr, virt_addr, size calls up to caller */
+
+It is unclear what that wants to fix.
+
+> +static struct pmem_device *pmem_alloc(int i)
+> +{
+> +	struct pmem_device *pmem;
+> +	struct gendisk *disk;
+> +	size_t disk_size = total_size / pmem_count;
+
+There is no protection for pmem_count being 0 and causing
+divide-by-zero.
+
+There is no check for disk_size being 0.  That might
+cause problems in pmem_init.
+
+> +	size_t disk_sectors = disk_size / 512;
+> +
+> +	pmem = kzalloc(sizeof(*pmem), GFP_KERNEL);
+> +	if (!pmem)
+> +		goto out;
+> +
+> +	pmem->phys_addr = phys_addr + i * disk_size;
+> +	pmem->virt_addr = virt_addr + i * disk_size;
+> +	pmem->size = disk_size;
+> +
+> +	pmem->pmem_queue = blk_alloc_queue(GFP_KERNEL);
+> +	if (!pmem->pmem_queue)
+> +		goto out_free_dev;
+> +
+
+General comment:
+This driver should be blk-mq based.  Not doing so loses
+out on a number of SMP and NUMA performance improvements.
+For example, blk_alloc_queue calls blk_alloc_queue_node
+with NUMA_NO_NODE.  If it called blk_mq_init_queue, then
+each CPU would get structures located on its node.
+
+> +	blk_queue_make_request(pmem->pmem_queue, pmem_make_request);
+> +	blk_queue_max_hw_sectors(pmem->pmem_queue, 1024);
+
+Many storage controllers support 1 MiB IOs now, and increasing
+amounts of software feel comfortable generating those sizes.  
+That means this should be at least 2048.
+
+> +	blk_queue_bounce_limit(pmem->pmem_queue, BLK_BOUNCE_ANY);
+> +
+
+It might be appropriate to call blk_queue_rq_timeout
+and set up a very short timeout, since persistent memory is
+very fast.  I'm not sure what the default is for non-blk-mq
+drivers; for blk-mq, I think it is 30 seconds, which is
+far too long for memory based storage.
+
+> +	disk = pmem->pmem_disk = alloc_disk(0);
+> +	if (!disk)
+> +		goto out_free_queue;
+> +	disk->major		= pmem_major;
+> +	disk->first_minor	= 0;
+> +	disk->fops		= &pmem_fops;
+> +	disk->private_data	= pmem;
+> +	disk->queue		= pmem->pmem_queue;
+> +	disk->flags		= GENHD_FL_EXT_DEVT;
+> +	sprintf(disk->disk_name, "pmem%d", i);
+> +	set_capacity(disk, disk_sectors);
+> +
+> +	return pmem;
+> +
+> +out_free_queue:
+> +	blk_cleanup_queue(pmem->pmem_queue);
+> +out_free_dev:
+> +	kfree(pmem);
+> +out:
+> +	return NULL;
+> +}
+> +
+> +static void pmem_free(struct pmem_device *pmem)
+> +{
+> +	put_disk(pmem->pmem_disk);
+> +	blk_cleanup_queue(pmem->pmem_queue);
+> +	kfree(pmem);
+> +}
+> +
+> +static void pmem_del_one(struct pmem_device *pmem)
+> +{
+> +	list_del(&pmem->pmem_list);
+> +	del_gendisk(pmem->pmem_disk);
+> +	pmem_free(pmem);
+> +}
+> +
+> +static int __init pmem_init(void)
+> +{
+> +	int result, i;
+> +	struct resource *res_mem;
+> +	struct pmem_device *pmem, *next;
+> +
+> +	phys_addr  = (phys_addr_t) pmem_start_gb * 1024 * 1024 * 1024;
+> +	total_size = (size_t)	   pmem_size_gb  * 1024 * 1024 * 1024;
+> +
+
+There is no check for start+size wrapping around the
+address space. 
+
+Although modparams are a fine starting point, some way to
+automatically load drivers based on e820 table and other ACPI
+content will be needed.  pmem may not be the only driver
+vying for use of persistent memory regions; some sort of
+arbiter will be needed to implement the user's choice (the
+same way each boot).
+
+> +	res_mem = request_mem_region_exclusive(phys_addr, total_size,
+> "pmem");
+> +	if (!res_mem)
+> +		return -ENOMEM;
+> +
+
+Does the call to request_mem_region_exclusive, which uses:
+	#define IORESOURCE_EXCLUSIVE    0x08000000      /* Userland may not map this resource */
+mean that userspace cannot mmap files and directly access
+persistent memory?  There are only 3 drivers that use
+request.*exclusive functions: drivers/net/ethernet/intel/e1000e
+and drivers/watchdog/sp5100-tco. None of the storage drivers 
+do so.
+
+> +	virt_addr = ioremap_cache(phys_addr, total_size);
+> +	if (!virt_addr) {
+> +		result = -ENOMEM;
+> +		goto out_release;
+> +	}
+> +
+
+ioremap_cache maps the addresses as writeback cacheable.  How 
+about offering all the cache attributes as modparams?
+* writeback (WB): costly cache flushes to preserve data
+* write combining (WC): must flush the WC buffers
+* writethrough (WT): safe, good for cases where the application
+  expects to read the data again soon
+* uncacheable (UC): safe, good for cases where the application
+  does not expect to read the data
+
+There are some use cases for persistence across reboots
+that don't care about persistence across power cycles;
+for these, separate options could be provided for:
+* WB
+* WB+flush
+* WC
+* WC+flush
+
+
+> +	result = register_blkdev(0, "pmem");
+> +	if (result < 0) {
+> +		result = -EIO;
+> +		goto out_unmap;
+> +	} else
+> +		pmem_major = result;
+> +
+
+In comparison, if sd fails register_blkdev, it returns
+-ENODEV.  Since no pmem device is created, -ENODEV might
+be more appropriate.
+
+The pmem_major variable might be unsafe/racy if multiple
+concurrent module loads are possible.  The value is stored in 
+disk->major; that's the only place it should be stored,
+and pmem_exit should pull the value from that location to
+later pass into unregister_blkdev before deleting its
+containing structure.  This might not be an issue until
+you get to 16 Ki modules.
+
+Should this function call blk_register_region after
+calling register_blkdev?
+
+> +	for (i = 0; i < pmem_count; i++) {
+> +		pmem = pmem_alloc(i);
+> +		if (!pmem) {
+> +			result = -ENOMEM;
+> +			goto out_free;
+> +		}
+> +		list_add_tail(&pmem->pmem_list, &pmem_devices);
+> +	}
+> +
+> +	list_for_each_entry(pmem, &pmem_devices, pmem_list)
+> +		add_disk(pmem->pmem_disk);
+> +
+> +	pr_info("pmem: module loaded\n");
+> +	return 0;
+> +
+> +out_free:
+> +	list_for_each_entry_safe(pmem, next, &pmem_devices, pmem_list)
+> {
+> +		list_del(&pmem->pmem_list);
+> +		pmem_free(pmem);
+> +	}
+> +	unregister_blkdev(pmem_major, "pmem");
+> +
+> +out_unmap:
+> +	iounmap(virt_addr);
+> +
+> +out_release:
+> +	release_mem_region(phys_addr, total_size);
+> +	return result;
+> +}
+> +
+> +static void __exit pmem_exit(void)
+> +{
+> +	struct pmem_device *pmem, *next;
+> +
+> +	list_for_each_entry_safe(pmem, next, &pmem_devices, pmem_list)
+> +		pmem_del_one(pmem);
+> +
+> +	unregister_blkdev(pmem_major, "pmem");
+> +	iounmap(virt_addr);
+> +	release_mem_region(phys_addr, total_size);
+> +
+> +	pr_info("pmem: module unloaded\n");
+> +}
+> +
+> +MODULE_AUTHOR("Ross Zwisler <ross.zwisler@linux.intel.com>");
+> +MODULE_LICENSE("GPL");
+> +module_init(pmem_init);
+> +module_exit(pmem_exit);
+
+
 ---
- include/linux/memcontrol.h  |   6 +-
- include/linux/mm_types.h    |   5 +
- include/linux/mmzone.h      |  12 --
- include/linux/page_cgroup.h |  53 --------
- init/main.c                 |   7 -
- mm/memcontrol.c             | 124 +++++------------
- mm/page_alloc.c             |   2 -
- mm/page_cgroup.c            | 319 --------------------------------------------
- 8 files changed, 41 insertions(+), 487 deletions(-)
+Rob Elliott    HP Server Storage
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index d4575a1d6e99..dafba59b31b4 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -25,7 +25,6 @@
- #include <linux/jump_label.h>
- 
- struct mem_cgroup;
--struct page_cgroup;
- struct page;
- struct mm_struct;
- struct kmem_cache;
-@@ -466,8 +465,6 @@ memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
-  * memcg_kmem_uncharge_pages: uncharge pages from memcg
-  * @page: pointer to struct page being freed
-  * @order: allocation order.
-- *
-- * there is no need to specify memcg here, since it is embedded in page_cgroup
-  */
- static inline void
- memcg_kmem_uncharge_pages(struct page *page, int order)
-@@ -484,8 +481,7 @@ memcg_kmem_uncharge_pages(struct page *page, int order)
-  *
-  * Needs to be called after memcg_kmem_newpage_charge, regardless of success or
-  * failure of the allocation. if @page is NULL, this function will revert the
-- * charges. Otherwise, it will commit the memcg given by @memcg to the
-- * corresponding page_cgroup.
-+ * charges. Otherwise, it will commit @page to @memcg.
-  */
- static inline void
- memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index de183328abb0..57e47dffbdda 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -23,6 +23,7 @@
- #define AT_VECTOR_SIZE (2*(AT_VECTOR_SIZE_ARCH + AT_VECTOR_SIZE_BASE + 1))
- 
- struct address_space;
-+struct mem_cgroup;
- 
- #define USE_SPLIT_PTE_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
- #define USE_SPLIT_PMD_PTLOCKS	(USE_SPLIT_PTE_PTLOCKS && \
-@@ -168,6 +169,10 @@ struct page {
- 		struct page *first_page;	/* Compound tail pages */
- 	};
- 
-+#ifdef CONFIG_MEMCG
-+	struct mem_cgroup *mem_cgroup;
-+#endif
-+
- 	/*
- 	 * On machines where all RAM is mapped into kernel address space,
- 	 * we can simply calculate the virtual address. On machines with
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 48bf12ef6620..de32d9344446 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -713,9 +713,6 @@ typedef struct pglist_data {
- 	int nr_zones;
- #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
- 	struct page *node_mem_map;
--#ifdef CONFIG_MEMCG
--	struct page_cgroup *node_page_cgroup;
--#endif
- #endif
- #ifndef CONFIG_NO_BOOTMEM
- 	struct bootmem_data *bdata;
-@@ -1069,7 +1066,6 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
- #define SECTION_ALIGN_DOWN(pfn)	((pfn) & PAGE_SECTION_MASK)
- 
- struct page;
--struct page_cgroup;
- struct mem_section {
- 	/*
- 	 * This is, logically, a pointer to an array of struct
-@@ -1087,14 +1083,6 @@ struct mem_section {
- 
- 	/* See declaration of similar field in struct zone */
- 	unsigned long *pageblock_flags;
--#ifdef CONFIG_MEMCG
--	/*
--	 * If !SPARSEMEM, pgdat doesn't have page_cgroup pointer. We use
--	 * section. (see memcontrol.h/page_cgroup.h about this.)
--	 */
--	struct page_cgroup *page_cgroup;
--	unsigned long pad;
--#endif
- 	/*
- 	 * WARNING: mem_section must be a power-of-2 in size for the
- 	 * calculation and use of SECTION_ROOT_MASK to make sense.
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index 1289be6b436c..65be35785c86 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -1,59 +1,6 @@
- #ifndef __LINUX_PAGE_CGROUP_H
- #define __LINUX_PAGE_CGROUP_H
- 
--struct pglist_data;
--
--#ifdef CONFIG_MEMCG
--struct mem_cgroup;
--
--/*
-- * Page Cgroup can be considered as an extended mem_map.
-- * A page_cgroup page is associated with every page descriptor. The
-- * page_cgroup helps us identify information about the cgroup
-- * All page cgroups are allocated at boot or memory hotplug event,
-- * then the page cgroup for pfn always exists.
-- */
--struct page_cgroup {
--	struct mem_cgroup *mem_cgroup;
--};
--
--extern void pgdat_page_cgroup_init(struct pglist_data *pgdat);
--
--#ifdef CONFIG_SPARSEMEM
--static inline void page_cgroup_init_flatmem(void)
--{
--}
--extern void page_cgroup_init(void);
--#else
--extern void page_cgroup_init_flatmem(void);
--static inline void page_cgroup_init(void)
--{
--}
--#endif
--
--struct page_cgroup *lookup_page_cgroup(struct page *page);
--
--#else /* !CONFIG_MEMCG */
--struct page_cgroup;
--
--static inline void pgdat_page_cgroup_init(struct pglist_data *pgdat)
--{
--}
--
--static inline struct page_cgroup *lookup_page_cgroup(struct page *page)
--{
--	return NULL;
--}
--
--static inline void page_cgroup_init(void)
--{
--}
--
--static inline void page_cgroup_init_flatmem(void)
--{
--}
--#endif /* CONFIG_MEMCG */
--
- #include <linux/swap.h>
- 
- #ifdef CONFIG_MEMCG_SWAP
-diff --git a/init/main.c b/init/main.c
-index c4912d9abaee..a091bbcadd33 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -51,7 +51,6 @@
- #include <linux/mempolicy.h>
- #include <linux/key.h>
- #include <linux/buffer_head.h>
--#include <linux/page_cgroup.h>
- #include <linux/debug_locks.h>
- #include <linux/debugobjects.h>
- #include <linux/lockdep.h>
-@@ -485,11 +484,6 @@ void __init __weak thread_info_cache_init(void)
-  */
- static void __init mm_init(void)
- {
--	/*
--	 * page_cgroup requires contiguous pages,
--	 * bigger than MAX_ORDER unless SPARSEMEM.
--	 */
--	page_cgroup_init_flatmem();
- 	mem_init();
- 	kmem_cache_init();
- 	percpu_init_late();
-@@ -627,7 +621,6 @@ asmlinkage __visible void __init start_kernel(void)
- 		initrd_start = 0;
- 	}
- #endif
--	page_cgroup_init();
- 	debug_objects_mem_init();
- 	kmemleak_init();
- 	setup_per_cpu_pageset();
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 19bac2ce827c..dc5e0abb18cb 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1274,7 +1274,6 @@ struct lruvec *mem_cgroup_page_lruvec(struct page *page, struct zone *zone)
- {
- 	struct mem_cgroup_per_zone *mz;
- 	struct mem_cgroup *memcg;
--	struct page_cgroup *pc;
- 	struct lruvec *lruvec;
- 
- 	if (mem_cgroup_disabled()) {
-@@ -1282,8 +1281,7 @@ struct lruvec *mem_cgroup_page_lruvec(struct page *page, struct zone *zone)
- 		goto out;
- 	}
- 
--	pc = lookup_page_cgroup(page);
--	memcg = pc->mem_cgroup;
-+	memcg = page->mem_cgroup;
- 	/*
- 	 * Swapcache readahead pages are added to the LRU - and
- 	 * possibly migrated - before they are charged.
-@@ -2020,16 +2018,13 @@ struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page,
- 					      unsigned long *flags)
- {
- 	struct mem_cgroup *memcg;
--	struct page_cgroup *pc;
- 
- 	rcu_read_lock();
- 
- 	if (mem_cgroup_disabled())
- 		return NULL;
--
--	pc = lookup_page_cgroup(page);
- again:
--	memcg = pc->mem_cgroup;
-+	memcg = page->mem_cgroup;
- 	if (unlikely(!memcg))
- 		return NULL;
- 
-@@ -2038,7 +2033,7 @@ again:
- 		return memcg;
- 
- 	spin_lock_irqsave(&memcg->move_lock, *flags);
--	if (memcg != pc->mem_cgroup) {
-+	if (memcg != page->mem_cgroup) {
- 		spin_unlock_irqrestore(&memcg->move_lock, *flags);
- 		goto again;
- 	}
-@@ -2405,15 +2400,12 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
- struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
- {
- 	struct mem_cgroup *memcg;
--	struct page_cgroup *pc;
- 	unsigned short id;
- 	swp_entry_t ent;
- 
- 	VM_BUG_ON_PAGE(!PageLocked(page), page);
- 
--	pc = lookup_page_cgroup(page);
--	memcg = pc->mem_cgroup;
--
-+	memcg = page->mem_cgroup;
- 	if (memcg) {
- 		if (!css_tryget_online(&memcg->css))
- 			memcg = NULL;
-@@ -2463,10 +2455,9 @@ static void unlock_page_lru(struct page *page, int isolated)
- static void commit_charge(struct page *page, struct mem_cgroup *memcg,
- 			  bool lrucare)
- {
--	struct page_cgroup *pc = lookup_page_cgroup(page);
- 	int isolated;
- 
--	VM_BUG_ON_PAGE(pc->mem_cgroup, page);
-+	VM_BUG_ON_PAGE(page->mem_cgroup, page);
- 
- 	/*
- 	 * In some cases, SwapCache and FUSE(splice_buf->radixtree), the page
-@@ -2477,7 +2468,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
- 
- 	/*
- 	 * Nobody should be changing or seriously looking at
--	 * pc->mem_cgroup at this point:
-+	 * page->mem_cgroup at this point:
- 	 *
- 	 * - the page is uncharged
- 	 *
-@@ -2489,7 +2480,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
- 	 * - a page cache insertion, a swapin fault, or a migration
- 	 *   have the page locked
- 	 */
--	pc->mem_cgroup = memcg;
-+	page->mem_cgroup = memcg;
- 
- 	if (lrucare)
- 		unlock_page_lru(page, isolated);
-@@ -2972,8 +2963,6 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
- void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
- 			      int order)
- {
--	struct page_cgroup *pc;
--
- 	VM_BUG_ON(mem_cgroup_is_root(memcg));
- 
- 	/* The page allocation failed. Revert */
-@@ -2981,14 +2970,12 @@ void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
- 		memcg_uncharge_kmem(memcg, 1 << order);
- 		return;
- 	}
--	pc = lookup_page_cgroup(page);
--	pc->mem_cgroup = memcg;
-+	page->mem_cgroup = memcg;
- }
- 
- void __memcg_kmem_uncharge_pages(struct page *page, int order)
- {
--	struct page_cgroup *pc = lookup_page_cgroup(page);
--	struct mem_cgroup *memcg = pc->mem_cgroup;
-+	struct mem_cgroup *memcg = page->mem_cgroup;
- 
- 	if (!memcg)
- 		return;
-@@ -2996,7 +2983,7 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
- 	VM_BUG_ON_PAGE(mem_cgroup_is_root(memcg), page);
- 
- 	memcg_uncharge_kmem(memcg, 1 << order);
--	pc->mem_cgroup = NULL;
-+	page->mem_cgroup = NULL;
- }
- #else
- static inline void memcg_unregister_all_caches(struct mem_cgroup *memcg)
-@@ -3014,16 +3001,15 @@ static inline void memcg_unregister_all_caches(struct mem_cgroup *memcg)
-  */
- void mem_cgroup_split_huge_fixup(struct page *head)
- {
--	struct page_cgroup *pc = lookup_page_cgroup(head);
- 	int i;
- 
- 	if (mem_cgroup_disabled())
- 		return;
- 
- 	for (i = 1; i < HPAGE_PMD_NR; i++)
--		pc[i].mem_cgroup = pc[0].mem_cgroup;
-+		head[i].mem_cgroup = head->mem_cgroup;
- 
--	__this_cpu_sub(pc[0].mem_cgroup->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
-+	__this_cpu_sub(head->mem_cgroup->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
- 		       HPAGE_PMD_NR);
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
-@@ -3032,7 +3018,6 @@ void mem_cgroup_split_huge_fixup(struct page *head)
-  * mem_cgroup_move_account - move account of the page
-  * @page: the page
-  * @nr_pages: number of regular pages (>1 for huge pages)
-- * @pc:	page_cgroup of the page.
-  * @from: mem_cgroup which the page is moved from.
-  * @to:	mem_cgroup which the page is moved to. @from != @to.
-  *
-@@ -3045,7 +3030,6 @@ void mem_cgroup_split_huge_fixup(struct page *head)
-  */
- static int mem_cgroup_move_account(struct page *page,
- 				   unsigned int nr_pages,
--				   struct page_cgroup *pc,
- 				   struct mem_cgroup *from,
- 				   struct mem_cgroup *to)
- {
-@@ -3065,7 +3049,7 @@ static int mem_cgroup_move_account(struct page *page,
- 		goto out;
- 
- 	/*
--	 * Prevent mem_cgroup_migrate() from looking at pc->mem_cgroup
-+	 * Prevent mem_cgroup_migrate() from looking at page->mem_cgroup
- 	 * of its source page while we change it: page migration takes
- 	 * both pages off the LRU, but page cache replacement doesn't.
- 	 */
-@@ -3073,7 +3057,7 @@ static int mem_cgroup_move_account(struct page *page,
- 		goto out;
- 
- 	ret = -EINVAL;
--	if (pc->mem_cgroup != from)
-+	if (page->mem_cgroup != from)
- 		goto out_unlock;
- 
- 	spin_lock_irqsave(&from->move_lock, flags);
-@@ -3093,13 +3077,13 @@ static int mem_cgroup_move_account(struct page *page,
- 	}
- 
- 	/*
--	 * It is safe to change pc->mem_cgroup here because the page
-+	 * It is safe to change page->mem_cgroup here because the page
- 	 * is referenced, charged, and isolated - we can't race with
- 	 * uncharging, charging, migration, or LRU putback.
- 	 */
- 
- 	/* caller should have done css_get */
--	pc->mem_cgroup = to;
-+	page->mem_cgroup = to;
- 	spin_unlock_irqrestore(&from->move_lock, flags);
- 
- 	ret = 0;
-@@ -3174,36 +3158,17 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
- #endif
- 
- #ifdef CONFIG_DEBUG_VM
--static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
--{
--	struct page_cgroup *pc;
--
--	pc = lookup_page_cgroup(page);
--	/*
--	 * Can be NULL while feeding pages into the page allocator for
--	 * the first time, i.e. during boot or memory hotplug;
--	 * or when mem_cgroup_disabled().
--	 */
--	if (likely(pc) && pc->mem_cgroup)
--		return pc;
--	return NULL;
--}
--
- bool mem_cgroup_bad_page_check(struct page *page)
- {
- 	if (mem_cgroup_disabled())
- 		return false;
- 
--	return lookup_page_cgroup_used(page) != NULL;
-+	return page->mem_cgroup != NULL;
- }
- 
- void mem_cgroup_print_bad_page(struct page *page)
- {
--	struct page_cgroup *pc;
--
--	pc = lookup_page_cgroup_used(page);
--	if (pc)
--		pr_alert("pc:%p pc->mem_cgroup:%p\n", pc, pc->mem_cgroup);
-+	pr_alert("page->mem_cgroup:%p\n", page->mem_cgroup);
- }
- #endif
- 
-@@ -5123,7 +5088,6 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
- 		unsigned long addr, pte_t ptent, union mc_target *target)
- {
- 	struct page *page = NULL;
--	struct page_cgroup *pc;
- 	enum mc_target_type ret = MC_TARGET_NONE;
- 	swp_entry_t ent = { .val = 0 };
- 
-@@ -5137,13 +5101,12 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
- 	if (!page && !ent.val)
- 		return ret;
- 	if (page) {
--		pc = lookup_page_cgroup(page);
- 		/*
- 		 * Do only loose check w/o serialization.
--		 * mem_cgroup_move_account() checks the pc is valid or
-+		 * mem_cgroup_move_account() checks the page is valid or
- 		 * not under LRU exclusion.
- 		 */
--		if (pc->mem_cgroup == mc.from) {
-+		if (page->mem_cgroup == mc.from) {
- 			ret = MC_TARGET_PAGE;
- 			if (target)
- 				target->page = page;
-@@ -5171,15 +5134,13 @@ static enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
- 		unsigned long addr, pmd_t pmd, union mc_target *target)
- {
- 	struct page *page = NULL;
--	struct page_cgroup *pc;
- 	enum mc_target_type ret = MC_TARGET_NONE;
- 
- 	page = pmd_page(pmd);
- 	VM_BUG_ON_PAGE(!page || !PageHead(page), page);
- 	if (!move_anon())
- 		return ret;
--	pc = lookup_page_cgroup(page);
--	if (pc->mem_cgroup == mc.from) {
-+	if (page->mem_cgroup == mc.from) {
- 		ret = MC_TARGET_PAGE;
- 		if (target) {
- 			get_page(page);
-@@ -5378,7 +5339,6 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
- 	enum mc_target_type target_type;
- 	union mc_target target;
- 	struct page *page;
--	struct page_cgroup *pc;
- 
- 	/*
- 	 * We don't take compound_lock() here but no race with splitting thp
-@@ -5399,9 +5359,8 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
- 		if (target_type == MC_TARGET_PAGE) {
- 			page = target.page;
- 			if (!isolate_lru_page(page)) {
--				pc = lookup_page_cgroup(page);
- 				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
--							pc, mc.from, mc.to)) {
-+							     mc.from, mc.to)) {
- 					mc.precharge -= HPAGE_PMD_NR;
- 					mc.moved_charge += HPAGE_PMD_NR;
- 				}
-@@ -5429,9 +5388,7 @@ retry:
- 			page = target.page;
- 			if (isolate_lru_page(page))
- 				goto put;
--			pc = lookup_page_cgroup(page);
--			if (!mem_cgroup_move_account(page, 1, pc,
--						     mc.from, mc.to)) {
-+			if (!mem_cgroup_move_account(page, 1, mc.from, mc.to)) {
- 				mc.precharge--;
- 				/* we uncharge from mc.from later. */
- 				mc.moved_charge++;
-@@ -5623,7 +5580,6 @@ static void __init enable_swap_cgroup(void)
- void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
- {
- 	struct mem_cgroup *memcg;
--	struct page_cgroup *pc;
- 	unsigned short oldid;
- 
- 	VM_BUG_ON_PAGE(PageLRU(page), page);
-@@ -5632,8 +5588,7 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
- 	if (!do_swap_account)
- 		return;
- 
--	pc = lookup_page_cgroup(page);
--	memcg = pc->mem_cgroup;
-+	memcg = page->mem_cgroup;
- 
- 	/* Readahead page, never charged */
- 	if (!memcg)
-@@ -5643,7 +5598,7 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
- 	VM_BUG_ON_PAGE(oldid, page);
- 	mem_cgroup_swap_statistics(memcg, true);
- 
--	pc->mem_cgroup = NULL;
-+	page->mem_cgroup = NULL;
- 
- 	if (!mem_cgroup_is_root(memcg))
- 		page_counter_uncharge(&memcg->memory, 1);
-@@ -5710,7 +5665,6 @@ int mem_cgroup_try_charge(struct page *page, struct mm_struct *mm,
- 		goto out;
- 
- 	if (PageSwapCache(page)) {
--		struct page_cgroup *pc = lookup_page_cgroup(page);
- 		/*
- 		 * Every swap fault against a single page tries to charge the
- 		 * page, bail as early as possible.  shmem_unuse() encounters
-@@ -5718,7 +5672,7 @@ int mem_cgroup_try_charge(struct page *page, struct mm_struct *mm,
- 		 * the page lock, which serializes swap cache removal, which
- 		 * in turn serializes uncharging.
- 		 */
--		if (pc->mem_cgroup)
-+		if (page->mem_cgroup)
- 			goto out;
- 	}
- 
-@@ -5871,7 +5825,6 @@ static void uncharge_list(struct list_head *page_list)
- 	next = page_list->next;
- 	do {
- 		unsigned int nr_pages = 1;
--		struct page_cgroup *pc;
- 
- 		page = list_entry(next, struct page, lru);
- 		next = page->lru.next;
-@@ -5879,23 +5832,22 @@ static void uncharge_list(struct list_head *page_list)
- 		VM_BUG_ON_PAGE(PageLRU(page), page);
- 		VM_BUG_ON_PAGE(page_count(page), page);
- 
--		pc = lookup_page_cgroup(page);
--		if (!pc->mem_cgroup)
-+		if (!page->mem_cgroup)
- 			continue;
- 
- 		/*
- 		 * Nobody should be changing or seriously looking at
--		 * pc->mem_cgroup at this point, we have fully
-+		 * page->mem_cgroup at this point, we have fully
- 		 * exclusive access to the page.
- 		 */
- 
--		if (memcg != pc->mem_cgroup) {
-+		if (memcg != page->mem_cgroup) {
- 			if (memcg) {
- 				uncharge_batch(memcg, pgpgout, nr_anon, nr_file,
- 					       nr_huge, page);
- 				pgpgout = nr_anon = nr_file = nr_huge = 0;
- 			}
--			memcg = pc->mem_cgroup;
-+			memcg = page->mem_cgroup;
- 		}
- 
- 		if (PageTransHuge(page)) {
-@@ -5909,7 +5861,7 @@ static void uncharge_list(struct list_head *page_list)
- 		else
- 			nr_file += nr_pages;
- 
--		pc->mem_cgroup = NULL;
-+		page->mem_cgroup = NULL;
- 
- 		pgpgout++;
- 	} while (next != page_list);
-@@ -5928,14 +5880,11 @@ static void uncharge_list(struct list_head *page_list)
-  */
- void mem_cgroup_uncharge(struct page *page)
- {
--	struct page_cgroup *pc;
--
- 	if (mem_cgroup_disabled())
- 		return;
- 
- 	/* Don't touch page->lru of any random page, pre-check: */
--	pc = lookup_page_cgroup(page);
--	if (!pc->mem_cgroup)
-+	if (!page->mem_cgroup)
- 		return;
- 
- 	INIT_LIST_HEAD(&page->lru);
-@@ -5972,7 +5921,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 			bool lrucare)
- {
- 	struct mem_cgroup *memcg;
--	struct page_cgroup *pc;
- 	int isolated;
- 
- 	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
-@@ -5987,8 +5935,7 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 		return;
- 
- 	/* Page cache replacement: new page already charged? */
--	pc = lookup_page_cgroup(newpage);
--	if (pc->mem_cgroup)
-+	if (newpage->mem_cgroup)
- 		return;
- 
- 	/*
-@@ -5997,15 +5944,14 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 	 * uncharged page when the PFN walker finds a page that
- 	 * reclaim just put back on the LRU but has not released yet.
- 	 */
--	pc = lookup_page_cgroup(oldpage);
--	memcg = pc->mem_cgroup;
-+	memcg = oldpage->mem_cgroup;
- 	if (!memcg)
- 		return;
- 
- 	if (lrucare)
- 		lock_page_lru(oldpage, &isolated);
- 
--	pc->mem_cgroup = NULL;
-+	oldpage->mem_cgroup = NULL;
- 
- 	if (lrucare)
- 		unlock_page_lru(oldpage, isolated);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index fa9426389c6c..6a952237a677 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -48,7 +48,6 @@
- #include <linux/backing-dev.h>
- #include <linux/fault-inject.h>
- #include <linux/page-isolation.h>
--#include <linux/page_cgroup.h>
- #include <linux/debugobjects.h>
- #include <linux/kmemleak.h>
- #include <linux/compaction.h>
-@@ -4899,7 +4898,6 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- #endif
- 	init_waitqueue_head(&pgdat->kswapd_wait);
- 	init_waitqueue_head(&pgdat->pfmemalloc_wait);
--	pgdat_page_cgroup_init(pgdat);
- 
- 	for (j = 0; j < MAX_NR_ZONES; j++) {
- 		struct zone *zone = pgdat->node_zones + j;
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 5331c2bd85a2..f0f31c1d4d0c 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -1,326 +1,7 @@
- #include <linux/mm.h>
--#include <linux/mmzone.h>
--#include <linux/bootmem.h>
--#include <linux/bit_spinlock.h>
- #include <linux/page_cgroup.h>
--#include <linux/hash.h>
--#include <linux/slab.h>
--#include <linux/memory.h>
- #include <linux/vmalloc.h>
--#include <linux/cgroup.h>
- #include <linux/swapops.h>
--#include <linux/kmemleak.h>
--
--static unsigned long total_usage;
--
--#if !defined(CONFIG_SPARSEMEM)
--
--
--void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
--{
--	pgdat->node_page_cgroup = NULL;
--}
--
--struct page_cgroup *lookup_page_cgroup(struct page *page)
--{
--	unsigned long pfn = page_to_pfn(page);
--	unsigned long offset;
--	struct page_cgroup *base;
--
--	base = NODE_DATA(page_to_nid(page))->node_page_cgroup;
--#ifdef CONFIG_DEBUG_VM
--	/*
--	 * The sanity checks the page allocator does upon freeing a
--	 * page can reach here before the page_cgroup arrays are
--	 * allocated when feeding a range of pages to the allocator
--	 * for the first time during bootup or memory hotplug.
--	 */
--	if (unlikely(!base))
--		return NULL;
--#endif
--	offset = pfn - NODE_DATA(page_to_nid(page))->node_start_pfn;
--	return base + offset;
--}
--
--static int __init alloc_node_page_cgroup(int nid)
--{
--	struct page_cgroup *base;
--	unsigned long table_size;
--	unsigned long nr_pages;
--
--	nr_pages = NODE_DATA(nid)->node_spanned_pages;
--	if (!nr_pages)
--		return 0;
--
--	table_size = sizeof(struct page_cgroup) * nr_pages;
--
--	base = memblock_virt_alloc_try_nid_nopanic(
--			table_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS),
--			BOOTMEM_ALLOC_ACCESSIBLE, nid);
--	if (!base)
--		return -ENOMEM;
--	NODE_DATA(nid)->node_page_cgroup = base;
--	total_usage += table_size;
--	return 0;
--}
--
--void __init page_cgroup_init_flatmem(void)
--{
--
--	int nid, fail;
--
--	if (mem_cgroup_disabled())
--		return;
--
--	for_each_online_node(nid)  {
--		fail = alloc_node_page_cgroup(nid);
--		if (fail)
--			goto fail;
--	}
--	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
--	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
--	" don't want memory cgroups\n");
--	return;
--fail:
--	printk(KERN_CRIT "allocation of page_cgroup failed.\n");
--	printk(KERN_CRIT "please try 'cgroup_disable=memory' boot option\n");
--	panic("Out of memory");
--}
--
--#else /* CONFIG_FLAT_NODE_MEM_MAP */
--
--struct page_cgroup *lookup_page_cgroup(struct page *page)
--{
--	unsigned long pfn = page_to_pfn(page);
--	struct mem_section *section = __pfn_to_section(pfn);
--#ifdef CONFIG_DEBUG_VM
--	/*
--	 * The sanity checks the page allocator does upon freeing a
--	 * page can reach here before the page_cgroup arrays are
--	 * allocated when feeding a range of pages to the allocator
--	 * for the first time during bootup or memory hotplug.
--	 */
--	if (!section->page_cgroup)
--		return NULL;
--#endif
--	return section->page_cgroup + pfn;
--}
--
--static void *__meminit alloc_page_cgroup(size_t size, int nid)
--{
--	gfp_t flags = GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN;
--	void *addr = NULL;
--
--	addr = alloc_pages_exact_nid(nid, size, flags);
--	if (addr) {
--		kmemleak_alloc(addr, size, 1, flags);
--		return addr;
--	}
--
--	if (node_state(nid, N_HIGH_MEMORY))
--		addr = vzalloc_node(size, nid);
--	else
--		addr = vzalloc(size);
--
--	return addr;
--}
--
--static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
--{
--	struct mem_section *section;
--	struct page_cgroup *base;
--	unsigned long table_size;
--
--	section = __pfn_to_section(pfn);
--
--	if (section->page_cgroup)
--		return 0;
--
--	table_size = sizeof(struct page_cgroup) * PAGES_PER_SECTION;
--	base = alloc_page_cgroup(table_size, nid);
--
--	/*
--	 * The value stored in section->page_cgroup is (base - pfn)
--	 * and it does not point to the memory block allocated above,
--	 * causing kmemleak false positives.
--	 */
--	kmemleak_not_leak(base);
--
--	if (!base) {
--		printk(KERN_ERR "page cgroup allocation failure\n");
--		return -ENOMEM;
--	}
--
--	/*
--	 * The passed "pfn" may not be aligned to SECTION.  For the calculation
--	 * we need to apply a mask.
--	 */
--	pfn &= PAGE_SECTION_MASK;
--	section->page_cgroup = base - pfn;
--	total_usage += table_size;
--	return 0;
--}
--#ifdef CONFIG_MEMORY_HOTPLUG
--static void free_page_cgroup(void *addr)
--{
--	if (is_vmalloc_addr(addr)) {
--		vfree(addr);
--	} else {
--		struct page *page = virt_to_page(addr);
--		size_t table_size =
--			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
--
--		BUG_ON(PageReserved(page));
--		kmemleak_free(addr);
--		free_pages_exact(addr, table_size);
--	}
--}
--
--static void __free_page_cgroup(unsigned long pfn)
--{
--	struct mem_section *ms;
--	struct page_cgroup *base;
--
--	ms = __pfn_to_section(pfn);
--	if (!ms || !ms->page_cgroup)
--		return;
--	base = ms->page_cgroup + pfn;
--	free_page_cgroup(base);
--	ms->page_cgroup = NULL;
--}
--
--static int __meminit online_page_cgroup(unsigned long start_pfn,
--				unsigned long nr_pages,
--				int nid)
--{
--	unsigned long start, end, pfn;
--	int fail = 0;
--
--	start = SECTION_ALIGN_DOWN(start_pfn);
--	end = SECTION_ALIGN_UP(start_pfn + nr_pages);
--
--	if (nid == -1) {
--		/*
--		 * In this case, "nid" already exists and contains valid memory.
--		 * "start_pfn" passed to us is a pfn which is an arg for
--		 * online__pages(), and start_pfn should exist.
--		 */
--		nid = pfn_to_nid(start_pfn);
--		VM_BUG_ON(!node_state(nid, N_ONLINE));
--	}
--
--	for (pfn = start; !fail && pfn < end; pfn += PAGES_PER_SECTION) {
--		if (!pfn_present(pfn))
--			continue;
--		fail = init_section_page_cgroup(pfn, nid);
--	}
--	if (!fail)
--		return 0;
--
--	/* rollback */
--	for (pfn = start; pfn < end; pfn += PAGES_PER_SECTION)
--		__free_page_cgroup(pfn);
--
--	return -ENOMEM;
--}
--
--static int __meminit offline_page_cgroup(unsigned long start_pfn,
--				unsigned long nr_pages, int nid)
--{
--	unsigned long start, end, pfn;
--
--	start = SECTION_ALIGN_DOWN(start_pfn);
--	end = SECTION_ALIGN_UP(start_pfn + nr_pages);
--
--	for (pfn = start; pfn < end; pfn += PAGES_PER_SECTION)
--		__free_page_cgroup(pfn);
--	return 0;
--
--}
--
--static int __meminit page_cgroup_callback(struct notifier_block *self,
--			       unsigned long action, void *arg)
--{
--	struct memory_notify *mn = arg;
--	int ret = 0;
--	switch (action) {
--	case MEM_GOING_ONLINE:
--		ret = online_page_cgroup(mn->start_pfn,
--				   mn->nr_pages, mn->status_change_nid);
--		break;
--	case MEM_OFFLINE:
--		offline_page_cgroup(mn->start_pfn,
--				mn->nr_pages, mn->status_change_nid);
--		break;
--	case MEM_CANCEL_ONLINE:
--		offline_page_cgroup(mn->start_pfn,
--				mn->nr_pages, mn->status_change_nid);
--		break;
--	case MEM_GOING_OFFLINE:
--		break;
--	case MEM_ONLINE:
--	case MEM_CANCEL_OFFLINE:
--		break;
--	}
--
--	return notifier_from_errno(ret);
--}
--
--#endif
--
--void __init page_cgroup_init(void)
--{
--	unsigned long pfn;
--	int nid;
--
--	if (mem_cgroup_disabled())
--		return;
--
--	for_each_node_state(nid, N_MEMORY) {
--		unsigned long start_pfn, end_pfn;
--
--		start_pfn = node_start_pfn(nid);
--		end_pfn = node_end_pfn(nid);
--		/*
--		 * start_pfn and end_pfn may not be aligned to SECTION and the
--		 * page->flags of out of node pages are not initialized.  So we
--		 * scan [start_pfn, the biggest section's pfn < end_pfn) here.
--		 */
--		for (pfn = start_pfn;
--		     pfn < end_pfn;
--                     pfn = ALIGN(pfn + 1, PAGES_PER_SECTION)) {
--
--			if (!pfn_valid(pfn))
--				continue;
--			/*
--			 * Nodes's pfns can be overlapping.
--			 * We know some arch can have a nodes layout such as
--			 * -------------pfn-------------->
--			 * N0 | N1 | N2 | N0 | N1 | N2|....
--			 */
--			if (pfn_to_nid(pfn) != nid)
--				continue;
--			if (init_section_page_cgroup(pfn, nid))
--				goto oom;
--		}
--	}
--	hotplug_memory_notifier(page_cgroup_callback, 0);
--	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
--	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you "
--			 "don't want memory cgroups\n");
--	return;
--oom:
--	printk(KERN_CRIT "try 'cgroup_disable=memory' boot option\n");
--	panic("Out of memory");
--}
--
--void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
--{
--	return;
--}
--
--#endif
--
- 
- #ifdef CONFIG_MEMCG_SWAP
- 
--- 
-2.1.3
+
 
