@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789AbaKBGCF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 01:02:05 -0500
+	id S1751895AbaKBGCN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 01:02:13 -0500
 Received: from mga09.intel.com ([134.134.136.24]:21473 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaKBGB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 01:01:59 -0500
+	id S1751796AbaKBGCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 01:02:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="600463351"
+   d="scan'208";a="600463720"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -16,18 +16,17 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, x86@kernel.org
+        Borislav Petkov <bp@alien8.de>, Len Brown <lenb@kernel.org>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch v8 03/18] x86, irq, ACPI: Return IRQ instead of GSI in mp_register_gsi()
-Date: Sun,  2 Nov 2014 14:04:18 +0800
-Message-Id: <1414908273-7552-4-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org
+Subject: [Patch v8 05/18] ACPI: Correct return value of acpi_dev_resource_address_space()
+Date: Sun,  2 Nov 2014 14:04:20 +0800
+Message-Id: <1414908273-7552-6-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1414908273-7552-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1414908273-7552-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,57 +34,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function mp_register_gsi() returns blindly the GSI number for the ACPI
-SCI interrupt. That causes a regression when the GSI for ACPI SCI is
-shared with other devices.
+Change acpi_dev_resource_address_space() to return failure if the
+acpi_resource structure can't be converted to an ACPI address64
+structure, so caller could correctly detect failure.
 
-The regression was caused by commit 84245af7297ced9e8fe "x86, irq, ACPI:
-Change __acpi_register_gsi to return IRQ number instead of GSI" and
-exposed on a SuperMicro system, which shares one GSI between ACPI SCI
-and PCI device, with following failure:
-
-http://sourceforge.net/p/linux1394/mailman/linux1394-user/?viewmonth=201410
-[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low
-level)
-[    2.699224] firewire_ohci 0000:06:00.0: failed to allocate interrupt
-20
-
-Return mp_map_gsi_to_irq(gsi, 0) instead of the GSI number.
-
-Reported-and-Tested-by: Daniel Robbins <drobbins@funtoo.org>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: <stable@vger.kernel.org> # 3.17
-Link: http://lkml.kernel.org/r/1414387308-27148-4-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
 ---
- arch/x86/kernel/acpi/boot.c |    2 +-
+ drivers/acpi/resource.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index eceba9d9e116..e077c080a519 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -397,7 +397,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+index 2ba8f02ced36..782a0d15c25f 100644
+--- a/drivers/acpi/resource.c
++++ b/drivers/acpi/resource.c
+@@ -200,7 +200,7 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
  
- 	/* Don't set up the ACPI SCI because it's already set up */
- 	if (acpi_gbl_FADT.sci_interrupt == gsi)
--		return gsi;
-+		return mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC);
+ 	status = acpi_resource_to_address64(ares, &addr);
+ 	if (ACPI_FAILURE(status))
+-		return true;
++		return false;
  
- 	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
- 	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
+ 	res->start = addr.minimum;
+ 	res->end = addr.maximum;
 -- 
 1.7.10.4
 
