@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345AbaKBUha (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 15:37:30 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:35814 "EHLO
+	id S1752001AbaKBUh1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 15:37:27 -0500
+Received: from mail.kmu-office.ch ([178.209.48.102]:35812 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaKBUhY (ORCPT
+	with ESMTP id S1751206AbaKBUhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Nov 2014 15:37:24 -0500
 From: Stefan Agner <stefan@agner.ch>
@@ -12,181 +12,61 @@ To: shawn.guo@linaro.org, kernel@pengutronix.de, arnd@arndb.de
 Cc: b35083@freescale.com, bpringlemeir@nbsps.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH RESEND v2 1/4] ARM: dts: vf610: assign oscillator to clock module
-Date: Sun,  2 Nov 2014 21:36:44 +0100
-Message-Id: <1414960607-29316-2-git-send-email-stefan@agner.ch>
+Subject: [PATCH RESEND v2 0/4] ARM: vf610: restructure device trees
+Date: Sun,  2 Nov 2014 21:36:43 +0100
+Message-Id: <1414960607-29316-1-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1414960607-29316-1-git-send-email-stefan@agner.ch>
-References: <1414960607-29316-1-git-send-email-stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock controller module (CCM) has several clock inputs, which
-are connected to external crystal oscillators. To reflect this,
-assign these fixed clocks to the CCM node directly.
+This patchset is v2 of "ARM: dts: vf500/vf610: support VF500 SoC",
+and grew by some patches. It now also solves some issues uncovered
+by the "ARM: vf610m4: Add Vybrid Cortex-M4 support" patchset.  The
+next Cortex-M4 patchset will then base on this patchset.
 
-This especially resolves initialization order dependencies we had
-with the earlier initialization code: When resolving of the fixed
-clocks failed in clk-vf610, the code created fixed clocks with a
-rate of 0.
+I could again not use the -M/-B parameter to generate smaller and
+better readable patches. Those patches ended up not apply-able.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- .../devicetree/bindings/clock/vf610-clock.txt      | 15 +++++++++++++
- arch/arm/boot/dts/vf610-cosmic.dts                 | 14 ++++++------
- arch/arm/boot/dts/vf610-twr.dts                    | 25 ++++++++++++----------
- arch/arm/boot/dts/vf610.dtsi                       | 25 ++++++++++------------
- 4 files changed, 48 insertions(+), 31 deletions(-)
+Resend also to Shawn's new address. This patchset is queueing up
+other work on the vf610 device trees somewhat, so it would be nice
+getting it in soon, if accepted.
 
-diff --git a/Documentation/devicetree/bindings/clock/vf610-clock.txt b/Documentation/devicetree/bindings/clock/vf610-clock.txt
-index c80863d..63f9f1a 100644
---- a/Documentation/devicetree/bindings/clock/vf610-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/vf610-clock.txt
-@@ -5,6 +5,19 @@ Required properties:
- - reg: Address and length of the register set
- - #clock-cells: Should be <1>
- 
-+Optional properties:
-+- clocks: list of clock identifiers which are external input clocks to the
-+	given clock controller. Please refer the next section to find
-+	the input clocks for a given controller.
-+- clock-names: list of names of clocks which are exteral input clocks to the
-+	given clock controller.
-+
-+Input clocks for top clock controller:
-+	- sxosc (external crystal oscillator 32KHz, recommended)
-+	- fxosc (external crystal oscillator 24MHz, recommended)
-+	- audio_ext
-+	- enet_ext
-+
- The clock consumer should specify the desired clock by having the clock
- ID in its "clocks" phandle cell. See include/dt-bindings/clock/vf610-clock.h
- for the full list of VF610 clock IDs.
-@@ -15,6 +28,8 @@ clks: ccm@4006b000 {
- 	compatible = "fsl,vf610-ccm";
- 	reg = <0x4006b000 0x1000>;
- 	#clock-cells = <1>;
-+	clocks = <&sxosc>, <&fxosc>;
-+	clock-names = "sxosc", "fxosc";
- };
- 
- uart1: serial@40028000 {
-diff --git a/arch/arm/boot/dts/vf610-cosmic.dts b/arch/arm/boot/dts/vf610-cosmic.dts
-index 3fd1b74..b0ce8b8 100644
---- a/arch/arm/boot/dts/vf610-cosmic.dts
-+++ b/arch/arm/boot/dts/vf610-cosmic.dts
-@@ -23,14 +23,16 @@
- 		reg = <0x80000000 0x10000000>;
- 	};
- 
--	clocks {
--		enet_ext {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <50000000>;
--		};
-+	enet_ext: enet_ext {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <50000000>;
- 	};
-+};
- 
-+&clks {
-+	clocks = <&sxosc>, <&fxosc>, <&enet_ext>;
-+	clock-names = "sxosc", "fxosc", "enet_ext";
- };
- 
- &fec1 {
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index 189b697..7d06d1a 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -22,18 +22,16 @@
- 		reg = <0x80000000 0x8000000>;
- 	};
- 
--	clocks {
--		audio_ext {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <24576000>;
--		};
-+	audio_ext: mclk_osc {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <24576000>;
-+	};
- 
--		enet_ext {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <50000000>;
--		};
-+	enet_ext: eth_osc {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <50000000>;
- 	};
- 
- 	regulators {
-@@ -95,6 +93,11 @@
- 	status = "okay";
- };
- 
-+&clks {
-+	clocks = <&sxosc>, <&fxosc>, <&enet_ext>, <&audio_ext>;
-+	clock-names = "sxosc", "fxosc", "enet_ext", "audio_ext";
-+};
-+
- &dspi0 {
- 	bus-num = <0>;
- 	pinctrl-names = "default";
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index 699da48..ed12d9a 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -44,21 +44,16 @@
- 		};
- 	};
- 
--	clocks {
--		#address-cells = <1>;
--		#size-cells = <0>;
--
--		sxosc {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <32768>;
--		};
-+	fxosc: fxosc {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <24000000>;
-+	};
- 
--		fxosc {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <24000000>;
--		};
-+	sxosc: sxosc {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <32768>;
- 	};
- 
- 	soc {
-@@ -358,6 +353,8 @@
- 			clks: ccm@4006b000 {
- 				compatible = "fsl,vf610-ccm";
- 				reg = <0x4006b000 0x1000>;
-+				clocks = <&sxosc>, <&fxosc>;
-+				clock-names = "sxosc", "fxosc";
- 				#clock-cells = <1>;
- 			};
- 
+Changes in v2:
+- Assign fixed input clocks to clock controller module to ensure correct
+  initialization order
+- Get rid of "clocks"-node and move fixed clocks to the root level
+- Move peripherals to vfxxx.dtsi to allow share the nodes for Cortex-A5
+  and Cortex-M4 SoC device trees.
+  
+Stefan Agner (4):
+  ARM: dts: vf610: assign oscillator to clock module
+  ARM: imx: clk-vf610: get input clocks from assigned clocks
+  ARM: dts: vf610: create generic base device trees
+  ARM: dts: vf500-colibri: add Colibri VF50 support
+
+ .../devicetree/bindings/clock/vf610-clock.txt      |  15 +
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/vf-colibri-eval-v3.dtsi          |  54 +++
+ arch/arm/boot/dts/vf-colibri.dtsi                  | 142 ++++++
+ arch/arm/boot/dts/vf500-colibri-eval-v3.dts        |  17 +
+ arch/arm/boot/dts/vf500-colibri.dtsi               |  20 +
+ arch/arm/boot/dts/vf500.dtsi                       | 171 +++++++
+ arch/arm/boot/dts/vf610-colibri-eval-v3.dts        |  47 +-
+ arch/arm/boot/dts/vf610-colibri.dtsi               | 137 +-----
+ arch/arm/boot/dts/vf610-cosmic.dts                 |  14 +-
+ arch/arm/boot/dts/vf610-twr.dts                    |  37 +-
+ arch/arm/boot/dts/vf610.dtsi                       | 507 +--------------------
+ arch/arm/boot/dts/vfxxx.dtsi                       | 436 ++++++++++++++++++
+ arch/arm/mach-imx/clk-vf610.c                      |  20 +-
+ 14 files changed, 920 insertions(+), 698 deletions(-)
+ create mode 100644 arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
+ create mode 100644 arch/arm/boot/dts/vf-colibri.dtsi
+ create mode 100644 arch/arm/boot/dts/vf500-colibri-eval-v3.dts
+ create mode 100644 arch/arm/boot/dts/vf500-colibri.dtsi
+ create mode 100644 arch/arm/boot/dts/vf500.dtsi
+ create mode 100644 arch/arm/boot/dts/vfxxx.dtsi
+
 -- 
 2.1.3
 
