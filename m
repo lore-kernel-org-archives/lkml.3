@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaKBILI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 03:11:08 -0500
-Received: from numascale.com ([213.162.240.84]:50055 "EHLO numascale.com"
+	id S1751800AbaKBIKs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 03:10:48 -0500
+Received: from numascale.com ([213.162.240.84]:59356 "EHLO numascale.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926AbaKBIK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 03:10:56 -0500
+	id S1751277AbaKBIKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 03:10:46 -0500
 From: Daniel J Blueman <daniel@numascale.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
 Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Steffen Persvold <sp@numascale.com>
-Subject: [PATCH v3 4/5] Numachip: APIC driver cleanups
-Date: Sun,  2 Nov 2014 16:10:12 +0800
-Message-Id: <1414915813-2462-4-git-send-email-daniel@numascale.com>
+Subject: [PATCH v3 2/5] Numachip: Elide self-IPI ICR polling
+Date: Sun,  2 Nov 2014 16:10:10 +0800
+Message-Id: <1414915813-2462-2-git-send-email-daniel@numascale.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414915813-2462-1-git-send-email-daniel@numascale.com>
 References: <1414915813-2462-1-git-send-email-daniel@numascale.com>
@@ -31,76 +31,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop printing that serves no purpose, as it's printing fixed or known
-values, and mark constant structure appropriately.
+The default self-IPI path polls the ICR to delay sending the IPI until
+there is no IPI in progress. This is redundant on x86-86 APICs, since
+IPIs are queued. See the AMD64 Architecture Programmer's Manual, vol 2,
+p525.
 
 Signed-off-by: Daniel J Blueman <daniel@numascale.com>
 ---
- arch/x86/kernel/apic/apic_numachip.c | 22 +++-------------------
- arch/x86/pci/numachip.c              |  2 +-
- 2 files changed, 4 insertions(+), 20 deletions(-)
+ arch/x86/kernel/apic/apic_numachip.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index c965b69..6374d94 100644
+index 81d70ba..bd083c0 100644
 --- a/arch/x86/kernel/apic/apic_numachip.c
 +++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -153,20 +153,8 @@ static int __init numachip_probe(void)
- 	return apic == &apic_numachip;
- }
+@@ -145,7 +145,7 @@ static void numachip_send_IPI_all(int vector)
  
--static void __init map_csrs(void)
--{
--	printk(KERN_INFO "NumaChip: Mapping local CSR space (%016llx - %016llx)\n",
--		NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_BASE + NUMACHIP_LCSR_SIZE - 1);
--	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
--
--	printk(KERN_INFO "NumaChip: Mapping global CSR space (%016llx - %016llx)\n",
--		NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_BASE + NUMACHIP_GCSR_SIZE - 1);
--	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
--}
--
- static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ static void numachip_send_IPI_self(int vector)
  {
--
- 	if (c->phys_proc_id != node) {
- 		c->phys_proc_id = node;
- 		per_cpu(cpu_llc_id, smp_processor_id()) = node;
-@@ -180,19 +168,15 @@ bool is_numachip_system(void)
- 
- static int __init numachip_system_init(void)
- {
--	unsigned int val;
--
- 	if (!is_numachip_system())
- 		return 0;
- 
-+	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
-+	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
-+
- 	x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
- 	x86_init.pci.arch_init = pci_numachip_init;
- 
--	map_csrs();
--
--	val = read_lcsr(CSR_G0_NODE_IDS);
--	printk(KERN_INFO "NumaChip: Local NodeID = %08x\n", val);
--
- 	return 0;
- }
- early_initcall(numachip_system_init);
-diff --git a/arch/x86/pci/numachip.c b/arch/x86/pci/numachip.c
-index 7307d9d..2e565e6 100644
---- a/arch/x86/pci/numachip.c
-+++ b/arch/x86/pci/numachip.c
-@@ -103,7 +103,7 @@ static int pci_mmcfg_write_numachip(unsigned int seg, unsigned int bus,
- 	return 0;
+-	__default_send_IPI_shortcut(APIC_DEST_SELF, vector, APIC_DEST_PHYSICAL);
++	apic_write(APIC_SELF_IPI, vector);
  }
  
--const struct pci_raw_ops pci_mmcfg_numachip = {
-+static const struct pci_raw_ops pci_mmcfg_numachip = {
- 	.read = pci_mmcfg_read_numachip,
- 	.write = pci_mmcfg_write_numachip,
- };
+ static int __init numachip_probe(void)
 -- 
 1.9.1
 
