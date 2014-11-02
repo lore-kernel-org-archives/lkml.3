@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbaKBGCN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 01:02:13 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21473 "EHLO mga09.intel.com"
+	id S1751977AbaKBGCR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 01:02:17 -0500
+Received: from mga03.intel.com ([134.134.136.65]:23669 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaKBGCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 01:02:08 -0500
+	id S1751796AbaKBGCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 01:02:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="600463720"
+   d="scan'208";a="600463932"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,9 +24,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch v8 05/18] ACPI: Correct return value of acpi_dev_resource_address_space()
-Date: Sun,  2 Nov 2014 14:04:20 +0800
-Message-Id: <1414908273-7552-6-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch v8 06/18] ACPI: Fix minor syntax issues in processor_core.c
+Date: Sun,  2 Nov 2014 14:04:21 +0800
+Message-Id: <1414908273-7552-7-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1414908273-7552-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1414908273-7552-1-git-send-email-jiang.liu@linux.intel.com>
@@ -34,29 +34,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change acpi_dev_resource_address_space() to return failure if the
-acpi_resource structure can't be converted to an ACPI address64
-structure, so caller could correctly detect failure.
+Fix minor syntax issues in processor_core.c to follow coding styles.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
 ---
- drivers/acpi/resource.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/processor_core.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
-index 2ba8f02ced36..782a0d15c25f 100644
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -200,7 +200,7 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+index ef58f46c8442..342942f90a10 100644
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -125,13 +125,12 @@ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
+ 	}
  
- 	status = acpi_resource_to_address64(ares, &addr);
- 	if (ACPI_FAILURE(status))
--		return true;
-+		return false;
+ 	header = (struct acpi_subtable_header *)obj->buffer.pointer;
+-	if (header->type == ACPI_MADT_TYPE_LOCAL_APIC) {
++	if (header->type == ACPI_MADT_TYPE_LOCAL_APIC)
+ 		map_lapic_id(header, acpi_id, &apic_id);
+-	} else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC) {
++	else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC)
+ 		map_lsapic_id(header, type, acpi_id, &apic_id);
+-	} else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC) {
++	else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC)
+ 		map_x2apic_id(header, type, acpi_id, &apic_id);
+-	}
  
- 	res->start = addr.minimum;
- 	res->end = addr.maximum;
+ exit:
+ 	kfree(buffer.pointer);
+@@ -164,7 +163,7 @@ int acpi_map_cpuid(int apic_id, u32 acpi_id)
+ 		 * For example,
+ 		 *
+ 		 * Scope (_PR)
+-                 * {
++		 * {
+ 		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
+ 		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
+ 		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
 -- 
 1.7.10.4
 
