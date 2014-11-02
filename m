@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750804AbaKBEDz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 00:03:55 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:59862 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaKBEDx (ORCPT
+	id S1750849AbaKBE7F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 00:59:05 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43545 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739AbaKBE7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 00:03:53 -0400
+	Sun, 2 Nov 2014 00:59:03 -0400
+Date: Sun, 2 Nov 2014 10:28:51 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Tyrel Datwyler <tyreld@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Thomas Falcon <tlfalcon@linux.vnet.ibm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walter <dwalter@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Neil Zhang <zhangwm@marvell.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: use device_online/offline() instead of
+ cpu_up/down()
+Message-ID: <20141102045851.GA8334@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+References: <CALZtONCwrBb+HPY7j7x4R-xmyhajFNCwaS3sns50RMDxHxyiEQ@mail.gmail.com>
+ <1414784494-12573-1-git-send-email-ddstreet@ieee.org>
 MIME-Version: 1.0
-In-Reply-To: <20141101175129.GC4462@pd.tnic>
-References: <1414856696-8094-1-git-send-email-stevenhoneyman@gmail.com>
-	<20141101171909.GA5034@pd.tnic>
-	<CABz95_BFew81JGAf=oP=6m9yPMi1_JmvfjKgX2CxFmha52A54w@mail.gmail.com>
-	<20141101175129.GC4462@pd.tnic>
-Date: Sun, 2 Nov 2014 04:03:52 +0000
-Message-ID: <CABz95_CYGw1sBro2GtehyczYCEBs-SrSzkgF64ibJsdDvQ24VA@mail.gmail.com>
-Subject: Re: [PATCH] x86, cpu: trivial printk formatting fixes
-From: Steven Honeyman <stevenhoneyman@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Joe Perches <joe@perches.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jiri Kosina <trivial@kernel.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414784494-12573-1-git-send-email-ddstreet@ieee.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110204-0025-0000-0000-000001A30EE2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 November 2014 17:51, Borislav Petkov <bp@alien8.de> wrote:
-> On Sat, Nov 01, 2014 at 05:38:18PM +0000, Steven Honeyman wrote:
->> On 1 November 2014 17:19, Borislav Petkov <bp@alien8.de> wrote:
->> > On Sat, Nov 01, 2014 at 03:44:56PM +0000, Steven Honeyman wrote:
->> >> A 2 line printk makes dmesg output messy, because the second line does not get a timestamp.
->> >> For example:
->> >>
->> >> [    0.012863] CPU0: Thermal monitoring enabled (TM1)
->> >> [    0.012869] Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 1024
->> >> Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 1024, 1GB 4
->> >> [    0.012958] Freeing SMP alternatives memory: 28K (ffffffff81d86000 - ffffffff81d8d000)
->> >> [    0.014961] dmar: Host address width 39
->> >
->> > It looks just fine here, albeit with repeated timestamp:
->> >
->> > $ dmesg | grep -E "[id]TLB"
->> > [    0.269607] Last level iTLB entries: 4KB 512, 2MB 1024, 4MB 512
->> > [    0.269607] Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 512, 1GB 0
->>
->> That's strange! Is it the same for the other one? I just double
->
-> dmesg | grep ENERGY
-> [    0.061976] ENERGY_PERF_BIAS: Set to 'normal', was 'performance'
-> [    0.061976] ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)
->
->> checked on the slight chance I had an alias causing problems etc, but
->> that wasn't the case:
->>
->> $ 'dmesg'|'grep' ENERGY
->> [    0.010557] ENERGY_PERF_BIAS: Set to 'normal', was 'performance'
->> ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)
->> $ dmesg --version && grep --version
->> dmesg from util-linux 2.25.2
->> grep (GNU grep) 2.20
->
-> $ dmesg --version && grep --version
-> dmesg from util-linux 2.20.1
-> grep (GNU grep) 2.20
->
-> I've upgraged util-linux (for dmesg) on the other box:
->
-> $ dmesg --version && grep --version
-> dmesg from util-linux 2.25.1
-> grep (GNU grep) 2.18
->
-> and now I get:
->
-> dmesg | grep -E "[id]TLB"
-> [    0.269607] Last level iTLB entries: 4KB 512, 2MB 1024, 4MB 512
-> Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 512, 1GB 0
->
-> So I'd say it looks like a regression in dmesg itself.
+On Fri, Oct 31, 2014 at 03:41:34PM -0400, Dan Streetman wrote:
+> In powerpc pseries platform dlpar operations, Use device_online() and
+> device_offline() instead of cpu_up() and cpu_down().
+> 
+> Calling cpu_up/down directly does not update the cpu device offline
+> field, which is used to online/offline a cpu from sysfs.  Calling
+> device_online/offline instead keeps the sysfs cpu online value correct.
+> The hotplug lock, which is required to be held when calling
+> device_online/offline, is already held when dlpar_online/offline_cpu
+> are called, since they are called only from cpu_probe|release_store.
+> 
+> This patch fixes errors on PowerVM systems that have cpu(s) added/removed
+> using dlpar operations; without this patch, the
+> /sys/devices/system/cpu/cpuN/online nodes do not correctly show the
+> online state of added/removed cpus.
 
-Hmm - the difference is to do with the source of the kernel ring
-buffer. The old output format be obtained using the latest dmesg by
-adding "-S", which uses syslog(2) rather than /dev/kmsg.
-(added in commit 7af230601ab)
+Verified the patch to be working as expected when I online and offline
+CPUs of a PowerKVM guest using QEMU (plus my RFC hotplug patchset for
+QEMU)
 
-The klogctl version interprets the \n and adds the timestamp
-afterwards, but /dev/kmsg changes the '\n' to "\x0a" resulting in:
-4,355,10557,-;ENERGY_PERF_BIAS: Set to 'normal', was
-'performance'\x0aENERGY_P...
+Regards,
+Bharata.
 
-It looks as though it's just a matter of opinion/preference whether
-control characters are printed (rfc5424)
