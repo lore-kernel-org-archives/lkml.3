@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751122AbaKBGez (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 01:34:55 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:42467 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaKBGey (ORCPT
+	id S1751183AbaKBGuh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 01:50:37 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:62864 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaKBGuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 01:34:54 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+	Sun, 2 Nov 2014 01:50:35 -0500
+Message-ID: <5455D435.5050405@redhat.com>
+Date: Sun, 02 Nov 2014 07:50:29 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel,gmane.comp.emulators.kvm.devel
+To: Wanpeng Li <kernellwp@gmail.com>, "Chen, Tiejun" <tiejun.chen@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Gleb Natapov <gleb@kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: Intel: fix missing mutex
-Date: Sun,  2 Nov 2014 12:04:41 +0530
-Message-Id: <1414910081-2487-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+Subject: Re: [PATCH] KVM: x86: fix access memslots w/o hold srcu read lock
+References: <1414730012-7278-1-git-send-email-wanpeng.li@linux.intel.com> <54531E7B.1040006@intel.com> <5453663B.90500@redhat.com> <54544A45.1000505@gmail.com>
+In-Reply-To: <54544A45.1000505@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on error in block prepare, we were returning the error code while still
-holding the mutex. We are releasing the mutex in this patch before
-return.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
- sound/soc/intel/sst-firmware.c | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/sound/soc/intel/sst-firmware.c b/sound/soc/intel/sst-firmware.c
-index 35788ad..dca6d9a 100644
---- a/sound/soc/intel/sst-firmware.c
-+++ b/sound/soc/intel/sst-firmware.c
-@@ -1120,6 +1120,7 @@ int sst_block_alloc_scratch(struct sst_dsp *dsp)
- 	ret = block_list_prepare(dsp, &dsp->scratch_block_list);
- 	if (ret < 0) {
- 		dev_err(dsp->dev, "error: scratch block prepare failed\n");
-+		mutex_unlock(&dsp->mutex);
- 		return ret;
+On 01/11/2014 03:49, Wanpeng Li wrote:
+> 
+> This is also not enough. I see the warning in the below path during the
+> test:
+> 
+> kvm_arch_vcpu_ioctl_run
+> -> kvm_apic_accept_events
+> -> kvm_vcpu_reset
+
+Hmm, better bypass the problem altogether:
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index a0f78dbaabee..3e556c68351b 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4579,7 +4579,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+ 		vmcs_write32(TPR_THRESHOLD, 0);
  	}
  
--- 
-1.8.1.2
+-	kvm_vcpu_reload_apic_access_page(vcpu);
++	kvm_make_request(KVM_REQ_APIC_PAGE_RELOAD, vcpu);
+ 
+ 	if (vmx_vm_has_apicv(vcpu->kvm))
+ 		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
 
+(untested)
+
+Paolo
