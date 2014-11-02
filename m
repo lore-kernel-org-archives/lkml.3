@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaKBGBq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 01:01:46 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53510 "EHLO mga09.intel.com"
+	id S1751522AbaKBGB6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 01:01:58 -0500
+Received: from mga09.intel.com ([134.134.136.24]:21473 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaKBGBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 01:01:44 -0500
+	id S1751078AbaKBGB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 01:01:56 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,295,1413270000"; 
-   d="scan'208";a="600463274"
+   d="scan'208";a="600463329"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -16,19 +16,18 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Thomas Richter <thor@math.tu-berlin.de>,
-        rui.zhang@intel.com, linux-pm@vger.kernel.org
-Subject: [Patch v8 01/18] x86: ACPI: Do not translate GSI number if IOAPIC is disabled
-Date: Sun,  2 Nov 2014 14:04:16 +0800
-Message-Id: <1414908273-7552-2-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [Patch v8 02/18] x86, intel-mid: Create IRQs for APB timers and RTC timers
+Date: Sun,  2 Nov 2014 14:04:17 +0800
+Message-Id: <1414908273-7552-3-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1414908273-7552-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1414908273-7552-1-git-send-email-jiang.liu@linux.intel.com>
@@ -36,55 +35,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When IOAPIC is disabled, acpi_gsi_to_irq() should return gsi directly
-instead of calling mp_map_gsi_to_irq() to translate gsi to IRQ by IOAPIC.
-It fixes https://bugzilla.kernel.org/show_bug.cgi?id=84381.
+Intel MID platforms has no legacy interrupts, so no IRQ descriptors
+preallocated. We need to call mp_map_gsi_to_irq() to create IRQ
+descriptors for APB timers and RTC timers, otherwise it may cause
+invalid memory access as:
+[    0.116839] BUG: unable to handle kernel NULL pointer dereference at
+0000003a
+[    0.123803] IP: [<c1071c0e>] setup_irq+0xf/0x4d
 
-This regression was introduced with commit 6b9fb7082409 "x86, ACPI,
-irq: Consolidate algorithm of mapping (ioapic, pin) to IRQ number"
-
-Reported-and-Tested-by: Thomas Richter <thor@math.tu-berlin.de>
+Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
-Cc: Thomas Richter <thor@math.tu-berlin.de>
-Cc: rui.zhang@intel.com
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Cohen <david.a.cohen@linux.intel.com>
 Cc: <stable@vger.kernel.org> # 3.17
-Link: http://lkml.kernel.org/r/1413816327-12850-1-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1414387308-27148-3-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/acpi/boot.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ arch/x86/kernel/apb_timer.c       |    2 --
+ arch/x86/platform/intel-mid/sfi.c |    2 ++
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index b436fc735aa4..eceba9d9e116 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -604,14 +604,19 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 5972b108f15a..b708738d016e 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -185,8 +185,6 @@ static void apbt_setup_irq(struct apbt_dev *adev)
  
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- {
--	int irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+	int irq;
+ 	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+ 	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+-	/* APB timer irqs are set up as mp_irqs, timer is edge type */
+-	__irq_set_handler(adev->irq, handle_edge_irq, 0, "edge");
+ }
  
--	if (irq >= 0) {
-+	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
-+		*irqp = gsi;
-+	} else {
-+		irq = mp_map_gsi_to_irq(gsi,
-+					IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+		if (irq < 0)
-+			return -1;
- 		*irqp = irq;
--		return 0;
+ /* Should be called with per cpu */
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 3c53a90fdb18..c14ad34776c4 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -106,6 +106,7 @@ int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 			mp_irq.dstapic = MP_APIC_ALL;
+ 			mp_irq.dstirq = pentry->irq;
+ 			mp_save_irq(&mp_irq);
++			mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
  	}
  
--	return -1;
-+	return 0;
+ 	return 0;
+@@ -176,6 +177,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
+ 		mp_irq.dstapic = MP_APIC_ALL;
+ 		mp_irq.dstirq = pentry->irq;
+ 		mp_save_irq(&mp_irq);
++		mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
+ 	}
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
- 
 -- 
 1.7.10.4
 
