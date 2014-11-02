@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaKBLkX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 06:40:23 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:39215 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaKBLkV (ORCPT
+	id S1751931AbaKBL5G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 06:57:06 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52160 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaKBL5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 06:40:21 -0500
-Date: Sun, 2 Nov 2014 12:40:13 +0100
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-Cc: Jarod Wilson <jarod@wilsonet.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Gulsah Kose <gulsah.1004@gmail.com>,
-        Matina Maria Trompouki <mtrompou@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] staging: media: lirc: lirc_zilog.c: adjust debug messages
-Message-ID: <20141102114013.GD21791@t400>
-References: <20141101213654.GA3191@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141101213654.GA3191@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 2 Nov 2014 06:57:00 -0500
+From: Steven Honeyman <stevenhoneyman@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jiri Kosina <trivial@kernel.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Steven Honeyman <stevenhoneyman@gmail.com>
+Subject: [PATCH V2] x86, cpu: trivial printk formatting fixes
+Date: Sun,  2 Nov 2014 11:56:42 +0000
+Message-Id: <1414929402-13377-1-git-send-email-stevenhoneyman@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01, Aya Mahfouz wrote:
-> This patch removes one debug message and replaces a dev_err
-> call by pr_err.
+A 2 line printk makes dmesg output messy, because the second line does not get a timestamp.
+For example:
 
-Usually you would like to send this as two separate patches because
-replacing a debug message is way different than removing some code. It
-should look like:
+[    0.012863] CPU0: Thermal monitoring enabled (TM1)
+[    0.012869] Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 1024
+Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 1024, 1GB 4
+[    0.012958] Freeing SMP alternatives memory: 28K (ffffffff81d86000 - ffffffff81d8d000)
+[    0.014961] dmar: Host address width 39
 
-	PATCH 0/2 staging: media: adjust debug messages
-		PATCH 1/2 staging: media: replace dev_err...
-		PATCH 2/2 staging: media: remove debug message..
+V2: Revert change to log level, only fix the newline formatting issue
 
-The lirc_zilog.c is not necessary in the topic line, as this can be seen
-from the diff.
+Signed-off-by: Steven Honeyman <stevenhoneyman@gmail.com>
+---
+ arch/x86/kernel/cpu/common.c | 11 ++++++-----
+ arch/x86/kernel/cpu/intel.c  |  6 ++----
+ 2 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 4b4f78c..fbdd7bf 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -494,12 +494,13 @@ void cpu_detect_tlb(struct cpuinfo_x86 *c)
+ 	if (this_cpu->c_detect_tlb)
+ 		this_cpu->c_detect_tlb(c);
  
-> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-> ---
->  drivers/staging/media/lirc/lirc_zilog.c | 7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
-> 
-> diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-> index 11a7cb1..ba538cd4 100644
-> --- a/drivers/staging/media/lirc/lirc_zilog.c
-> +++ b/drivers/staging/media/lirc/lirc_zilog.c
-> @@ -1336,11 +1336,6 @@ static int close(struct inode *node, struct file *filep)
->  	/* find our IR struct */
->  	struct IR *ir = filep->private_data;
->  
-> -	if (ir == NULL) {
-> -		dev_err(ir->l.dev, "close: no private_data attached to the file!\n");
-> -		return -ENODEV;
-> -	}
-> -
+-	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
+-		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
++	pr_info("Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
+ 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
+-		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
+-		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
+-		tlb_lld_1g[ENTRIES]);
++		tlb_lli_4m[ENTRIES]);
++
++	pr_info("Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
++		tlb_lld_4k[ENTRIES], tlb_lld_2m[ENTRIES],
++		tlb_lld_4m[ENTRIES], tlb_lld_1g[ENTRIES]);
+ }
+ 
+ void detect_ht(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 9cc6b6f..94d7dcb 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -487,10 +487,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 
+ 		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+ 		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
+-			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
+-				" Set to 'normal', was 'performance'\n"
+-				"ENERGY_PERF_BIAS: View and update with"
+-				" x86_energy_perf_policy(8)\n");
++			pr_warn_once("ENERGY_PERF_BIAS: Set to 'normal', was 'performance'\n");
++			pr_warn_once("ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)\n");
+ 			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
+ 			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+ 		}
+-- 
+2.1.3
 
-What is the reason behind this change? What would happen if the
-filep->private_data is NULL? Are the callers of this function aware that
-it will not return ENODEV anymore?
-
-thanks,
-konrad
-
->  	atomic_dec(&ir->open_count);
->  
->  	put_ir_device(ir, false);
-> @@ -1633,7 +1628,7 @@ out_put_xx:
->  out_put_ir:
->  	put_ir_device(ir, true);
->  out_no_ir:
-> -	dev_err(ir->l.dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
-> +	pr_err("%s: probing IR %s on %s (i2c-%d) failed with %d\n",
->  		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
->  		   ret);
->  	mutex_unlock(&ir_devices_lock);
-> -- 
-> 1.9.3
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
