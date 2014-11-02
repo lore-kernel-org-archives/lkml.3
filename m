@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaKBLJU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 06:09:20 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33606 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133AbaKBLJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 06:09:19 -0500
-Date: Sun, 2 Nov 2014 11:07:46 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+	id S1752024AbaKBLNn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 06:13:43 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57019 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973AbaKBLNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 06:13:41 -0500
+Date: Sun, 2 Nov 2014 12:13:37 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Honeyman <stevenhoneyman@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jiri Kosina <trivial@kernel.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Message-ID: <20141102110746.GA3815@sirena.org.uk>
-References: <1414910081-2487-1-git-send-email-sudipm.mukherjee@gmail.com>
+Subject: Re: [PATCH] x86, cpu: trivial printk formatting fixes
+Message-ID: <20141102111336.GD5229@pd.tnic>
+References: <1414856696-8094-1-git-send-email-stevenhoneyman@gmail.com>
+ <20141101171909.GA5034@pd.tnic>
+ <CABz95_BFew81JGAf=oP=6m9yPMi1_JmvfjKgX2CxFmha52A54w@mail.gmail.com>
+ <20141101175129.GC4462@pd.tnic>
+ <CABz95_CYGw1sBro2GtehyczYCEBs-SrSzkgF64ibJsdDvQ24VA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/9DWx/yDrRhgMJTb"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1414910081-2487-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Cookie: Some optional equipment shown.
+In-Reply-To: <CABz95_CYGw1sBro2GtehyczYCEBs-SrSzkgF64ibJsdDvQ24VA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: Intel: fix missing mutex
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 02, 2014 at 04:03:52AM +0000, Steven Honeyman wrote:
+> Hmm - the difference is to do with the source of the kernel ring
+> buffer. The old output format be obtained using the latest dmesg by
+> adding "-S", which uses syslog(2) rather than /dev/kmsg.
+> (added in commit 7af230601ab)
+> 
+> The klogctl version interprets the \n and adds the timestamp
+> afterwards, but /dev/kmsg changes the '\n' to "\x0a" resulting in:
+> 4,355,10557,-;ENERGY_PERF_BIAS: Set to 'normal', was
+> 'performance'\x0aENERGY_P...
+> 
+> It looks as though it's just a matter of opinion/preference whether
+> control characters are printed (rfc5424)
 
---/9DWx/yDrRhgMJTb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, I see what you mean. There's this in the /dev/kmsg code
 
-On Sun, Nov 02, 2014 at 12:04:41PM +0530, Sudip Mukherjee wrote:
-> on error in block prepare, we were returning the error code while still
-> holding the mutex. We are releasing the mutex in this patch before
-> return.
+---
+ * /dev/kmsg exports the structured data in the following line format:
+ *   "level,sequnum,timestamp;<message text>\n"
+ *
+ * The optional key/value pairs are attached as continuation lines starting
+ * with a space character and terminated by a newline. All possible
+ * non-prinatable characters are escaped in the "\xff" notation.
+ *
+ * Users of the export format should ignore possible additional values
+ * separated by ',', and find the message after the ';' character.
+ */
+--
 
-Applied, thanks.
+and also
 
---/9DWx/yDrRhgMJTb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
+        /* escape non-printable characters */
+        for (i = 0; i < msg->text_len; i++) {
+                unsigned char c = log_text(msg)[i];
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+                if (c < ' ' || c >= 127 || c == '\\')
+                        len += sprintf(user->buf + len, "\\x%02x", c);
+                else
+                        user->buf[len++] = c;
+        }
+--
 
-iQEcBAEBAgAGBQJUVhB7AAoJECTWi3JdVIfQcZUH/RoQnYrPMaboeP9/y82hei2r
-yJLn7r5a3tqjyPOqUc4aZPCcaY7B50gtk2HhheVprHh4h1oe+iq1tSorP/u0g2ai
-a+9H4/qmS2qH1oVBHJDmFLgl6csFzhvyQatvAdCEuCyvOuCiUamoocDqTHs0v6wu
-iLQCjgdYM6HLHAlcB8tnR1cJccrqeFpN61bAxihUUwDJbz2zIHeMDbieFMduY5QZ
-QVhJ2x+QGZZC0AzjvWj6RNnIPhxQQtBAtN/Pg4y06sHXTW1gI0gh+P6kqxjjgN8Y
-CKzIxafBTurDDYd1NGEuWjuvpDVC6si+YRWvG+j+QK8RDWH3FDTHMSQ7ypfrP5w=
-=9h1N
------END PGP SIGNATURE-----
+in devkmsg_read().
 
---/9DWx/yDrRhgMJTb--
+Hmm, so this all looks like an agreed upon thing or whatever. Oh, and
+btw, if you don't enable printk timestamping, you won't see the issue.
+
+I'd say the simplest solution - and this is only me and I like practical
+- is to accept your patch after all and stop wasting time with this :-)
+
+Only after you fix it, though, to *not* change log levels for the other
+printk message. FWIW, your change even improves the readability a bit of
+those printks.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
