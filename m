@@ -1,491 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877AbaKBBIV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Nov 2014 21:08:21 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:50147 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaKBBEt (ORCPT
+	id S1751470AbaKBBWp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Nov 2014 21:22:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41096 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaKBBWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Nov 2014 21:04:49 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-To: arnd@arndb.de, f.fainelli@gmail.com, tglx@linutronix.de,
-        jason@lakedaemon.net, ralf@linux-mips.org
-Cc: linux-sh@vger.kernel.org, sergei.shtylyov@cogentembedded.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: [PATCH V3 02/14] genirq: Generic chip: Change irq_reg_{readl,writel} arguments
-Date: Sat,  1 Nov 2014 18:03:49 -0700
-Message-Id: <1414890241-9938-3-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414890241-9938-1-git-send-email-cernekee@gmail.com>
-References: <1414890241-9938-1-git-send-email-cernekee@gmail.com>
+	Sat, 1 Nov 2014 21:22:42 -0400
+Date: Sat, 1 Nov 2014 18:21:30 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org,
+        marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
+        dh.herrmann@gmail.com, tixxdz@opendz.org,
+        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        teg@jklm.no
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+Message-ID: <20141102012130.GA9335@kroah.com>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+ <alpine.LRH.2.00.1410292354480.11562@twin.jikos.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LRH.2.00.1410292354480.11562@twin.jikos.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass in the irq_chip_generic struct so we can use different readl/writel
-settings for each irqchip driver, when appropriate.  Compute
-(gc->reg_base + reg_offset) in the helper function because this is pretty
-much what all callers want to do anyway.
+On Thu, Oct 30, 2014 at 12:00:16AM +0100, Jiri Kosina wrote:
+> On Wed, 29 Oct 2014, Greg Kroah-Hartman wrote:
+> 
+> > kdbus is a kernel-level IPC implementation that aims for resemblance to
+> > the the protocol layer with the existing userspace D-Bus daemon while
+> > enabling some features that couldn't be implemented before in userspace.
+> 
+> I'd be interested in the features that can't be implemented in userspace 
+> (and therefore would justify existence of kdbus in the kernel). Could you 
+> please point me to such list / documentation?
+> 
+> It seems to me that most of the highlight features from the cover letter 
+> can be "easily" (for certain definition of that word, of course) 
+> implemented in userspace (vmsplice(), sending fd through unix socket, user 
+> namespaces, UUID management, etc).
 
-Compile-tested using the following configurations:
+Sorry for the long delay in getting back to this, I'm battling a bad
+case of jet-lag at the moment...
 
-    at91_dt_defconfig (CONFIG_ATMEL_AIC_IRQ=y)
-    sama5_defconfig (CONFIG_ATMEL_AIC5_IRQ=y)
-    sunxi_defconfig (CONFIG_ARCH_SUNXI=y)
+Here's some reasons why I feel it is better to have kdbus in the kernel
+rather than trying to implement the same thing in a userspace daemon:
 
-tb10x (ARC) is untested.
+- performance: fewer process context switches, fewer copies, fewer
+  syscalls, larger memory chunks via memfd.  This is really important
+  for a whole class of userspace programs that are ported from other
+  operating systems that are run on tiny ARM systems that rely on
+  hundreds of thousands of messages passed at boot time, and at
+  "critical" times in their user interaction loops.
+- security: the peers which communicate do not have to trust each other,
+  as the only trustworthy compoenent in the game is the kernel which
+  adds metadata and ensures that all data passed as payload is either
+  copied or sealed, so that the receiver can parse the data without
+  having to protect against changing memory while parsing buffers.  Also,
+  all the data transfer is controlled by the kernel, so that LSMs can
+  track and control what is going on, without involving userspace.
+  Because of the LSM issue, security people are much happier with this
+  model than the current scheme of having to hook into dbus to mediate
+  things.
+- more metadata can be attached to messages than in userspace
+- semantics for apps with heavy data payloads (media apps, for instance)
+  with optinal priority message dequeuing, and global message ordering.
+  Some "crazy" people are playing with using kdbus for audio data in the
+  system.  I'm not saying that this is the best model for this, but
+  until now, there wasn't any other way to do this without having to
+  create custom "busses", one for each application library.
+- being in the kernle closes a lot of races which can't be fixed with
+  the current userspace solutions.  For example, with kdbus, there is a
+  way a client can disconnect from a bus, but do so only if no further
+  messages present in its queue, which is crucial for implementing
+  race-free "exit-on-idle" services
+- eavesdropping on the kernel level, so privileged users can hook into
+  the message stream without hacking support for that into their
+  userspace processes
+- a number of smaller benefits: for example kdbus learned a way to peek
+  full messages without dequeing them, which is really useful for
+  logging metadata when handling bus-activation requests. 
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- drivers/irqchip/irq-atmel-aic.c  | 40 ++++++++++++-------------
- drivers/irqchip/irq-atmel-aic5.c | 65 +++++++++++++++++++---------------------
- drivers/irqchip/irq-sunxi-nmi.c  |  4 +--
- drivers/irqchip/irq-tb10x.c      |  4 +--
- include/linux/irq.h              | 19 +++++++-----
- kernel/irq/generic-chip.c        | 20 ++++++-------
- 6 files changed, 77 insertions(+), 75 deletions(-)
+Of course, some of the bits above could be implemented in userspace
+alone, for example with more sophisticated memory management APIs, but
+this is usually done by losing out on the other details.  For example,
+for many of the memory management APIs, it's hard to not require the
+communicating peers to fully trust each other.  And we _really_ don't
+want peers to have to trust each other.
 
-diff --git a/drivers/irqchip/irq-atmel-aic.c b/drivers/irqchip/irq-atmel-aic.c
-index 9a2cf3c..27fdd8c 100644
---- a/drivers/irqchip/irq-atmel-aic.c
-+++ b/drivers/irqchip/irq-atmel-aic.c
-@@ -65,11 +65,11 @@ aic_handle(struct pt_regs *regs)
- 	u32 irqnr;
- 	u32 irqstat;
- 
--	irqnr = irq_reg_readl(gc->reg_base + AT91_AIC_IVR);
--	irqstat = irq_reg_readl(gc->reg_base + AT91_AIC_ISR);
-+	irqnr = irq_reg_readl(gc, AT91_AIC_IVR);
-+	irqstat = irq_reg_readl(gc, AT91_AIC_ISR);
- 
- 	if (!irqstat)
--		irq_reg_writel(0, gc->reg_base + AT91_AIC_EOICR);
-+		irq_reg_writel(gc, 0, AT91_AIC_EOICR);
- 	else
- 		handle_domain_irq(aic_domain, irqnr, regs);
- }
-@@ -80,7 +80,7 @@ static int aic_retrigger(struct irq_data *d)
- 
- 	/* Enable interrupt on AIC5 */
- 	irq_gc_lock(gc);
--	irq_reg_writel(d->mask, gc->reg_base + AT91_AIC_ISCR);
-+	irq_reg_writel(gc, d->mask, AT91_AIC_ISCR);
- 	irq_gc_unlock(gc);
- 
- 	return 0;
-@@ -92,12 +92,12 @@ static int aic_set_type(struct irq_data *d, unsigned type)
- 	unsigned int smr;
- 	int ret;
- 
--	smr = irq_reg_readl(gc->reg_base + AT91_AIC_SMR(d->hwirq));
-+	smr = irq_reg_readl(gc, AT91_AIC_SMR(d->hwirq));
- 	ret = aic_common_set_type(d, type, &smr);
- 	if (ret)
- 		return ret;
- 
--	irq_reg_writel(smr, gc->reg_base + AT91_AIC_SMR(d->hwirq));
-+	irq_reg_writel(gc, smr, AT91_AIC_SMR(d->hwirq));
- 
- 	return 0;
- }
-@@ -108,8 +108,8 @@ static void aic_suspend(struct irq_data *d)
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(gc->mask_cache, gc->reg_base + AT91_AIC_IDCR);
--	irq_reg_writel(gc->wake_active, gc->reg_base + AT91_AIC_IECR);
-+	irq_reg_writel(gc, gc->mask_cache, AT91_AIC_IDCR);
-+	irq_reg_writel(gc, gc->wake_active, AT91_AIC_IECR);
- 	irq_gc_unlock(gc);
- }
- 
-@@ -118,8 +118,8 @@ static void aic_resume(struct irq_data *d)
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(gc->wake_active, gc->reg_base + AT91_AIC_IDCR);
--	irq_reg_writel(gc->mask_cache, gc->reg_base + AT91_AIC_IECR);
-+	irq_reg_writel(gc, gc->wake_active, AT91_AIC_IDCR);
-+	irq_reg_writel(gc, gc->mask_cache, AT91_AIC_IECR);
- 	irq_gc_unlock(gc);
- }
- 
-@@ -128,8 +128,8 @@ static void aic_pm_shutdown(struct irq_data *d)
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(0xffffffff, gc->reg_base + AT91_AIC_IDCR);
--	irq_reg_writel(0xffffffff, gc->reg_base + AT91_AIC_ICCR);
-+	irq_reg_writel(gc, 0xffffffff, AT91_AIC_IDCR);
-+	irq_reg_writel(gc, 0xffffffff, AT91_AIC_ICCR);
- 	irq_gc_unlock(gc);
- }
- #else
-@@ -148,24 +148,24 @@ static void __init aic_hw_init(struct irq_domain *domain)
- 	 * will not Lock out nIRQ
- 	 */
- 	for (i = 0; i < 8; i++)
--		irq_reg_writel(0, gc->reg_base + AT91_AIC_EOICR);
-+		irq_reg_writel(gc, 0, AT91_AIC_EOICR);
- 
- 	/*
- 	 * Spurious Interrupt ID in Spurious Vector Register.
- 	 * When there is no current interrupt, the IRQ Vector Register
- 	 * reads the value stored in AIC_SPU
- 	 */
--	irq_reg_writel(0xffffffff, gc->reg_base + AT91_AIC_SPU);
-+	irq_reg_writel(gc, 0xffffffff, AT91_AIC_SPU);
- 
- 	/* No debugging in AIC: Debug (Protect) Control Register */
--	irq_reg_writel(0, gc->reg_base + AT91_AIC_DCR);
-+	irq_reg_writel(gc, 0, AT91_AIC_DCR);
- 
- 	/* Disable and clear all interrupts initially */
--	irq_reg_writel(0xffffffff, gc->reg_base + AT91_AIC_IDCR);
--	irq_reg_writel(0xffffffff, gc->reg_base + AT91_AIC_ICCR);
-+	irq_reg_writel(gc, 0xffffffff, AT91_AIC_IDCR);
-+	irq_reg_writel(gc, 0xffffffff, AT91_AIC_ICCR);
- 
- 	for (i = 0; i < 32; i++)
--		irq_reg_writel(i, gc->reg_base + AT91_AIC_SVR(i));
-+		irq_reg_writel(gc, i, AT91_AIC_SVR(i));
- }
- 
- static int aic_irq_domain_xlate(struct irq_domain *d,
-@@ -195,10 +195,10 @@ static int aic_irq_domain_xlate(struct irq_domain *d,
- 	gc = dgc->gc[idx];
- 
- 	irq_gc_lock(gc);
--	smr = irq_reg_readl(gc->reg_base + AT91_AIC_SMR(*out_hwirq));
-+	smr = irq_reg_readl(gc, AT91_AIC_SMR(*out_hwirq));
- 	ret = aic_common_set_priority(intspec[2], &smr);
- 	if (!ret)
--		irq_reg_writel(smr, gc->reg_base + AT91_AIC_SMR(*out_hwirq));
-+		irq_reg_writel(gc, smr, AT91_AIC_SMR(*out_hwirq));
- 	irq_gc_unlock(gc);
- 
- 	return ret;
-diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
-index a11aae8..a2e8c3f 100644
---- a/drivers/irqchip/irq-atmel-aic5.c
-+++ b/drivers/irqchip/irq-atmel-aic5.c
-@@ -75,11 +75,11 @@ aic5_handle(struct pt_regs *regs)
- 	u32 irqnr;
- 	u32 irqstat;
- 
--	irqnr = irq_reg_readl(gc->reg_base + AT91_AIC5_IVR);
--	irqstat = irq_reg_readl(gc->reg_base + AT91_AIC5_ISR);
-+	irqnr = irq_reg_readl(gc, AT91_AIC5_IVR);
-+	irqstat = irq_reg_readl(gc, AT91_AIC5_ISR);
- 
- 	if (!irqstat)
--		irq_reg_writel(0, gc->reg_base + AT91_AIC5_EOICR);
-+		irq_reg_writel(gc, 0, AT91_AIC5_EOICR);
- 	else
- 		handle_domain_irq(aic5_domain, irqnr, regs);
- }
-@@ -92,8 +92,8 @@ static void aic5_mask(struct irq_data *d)
- 
- 	/* Disable interrupt on AIC5 */
- 	irq_gc_lock(gc);
--	irq_reg_writel(d->hwirq, gc->reg_base + AT91_AIC5_SSR);
--	irq_reg_writel(1, gc->reg_base + AT91_AIC5_IDCR);
-+	irq_reg_writel(gc, d->hwirq, AT91_AIC5_SSR);
-+	irq_reg_writel(gc, 1, AT91_AIC5_IDCR);
- 	gc->mask_cache &= ~d->mask;
- 	irq_gc_unlock(gc);
- }
-@@ -106,8 +106,8 @@ static void aic5_unmask(struct irq_data *d)
- 
- 	/* Enable interrupt on AIC5 */
- 	irq_gc_lock(gc);
--	irq_reg_writel(d->hwirq, gc->reg_base + AT91_AIC5_SSR);
--	irq_reg_writel(1, gc->reg_base + AT91_AIC5_IECR);
-+	irq_reg_writel(gc, d->hwirq, AT91_AIC5_SSR);
-+	irq_reg_writel(gc, 1, AT91_AIC5_IECR);
- 	gc->mask_cache |= d->mask;
- 	irq_gc_unlock(gc);
- }
-@@ -120,8 +120,8 @@ static int aic5_retrigger(struct irq_data *d)
- 
- 	/* Enable interrupt on AIC5 */
- 	irq_gc_lock(gc);
--	irq_reg_writel(d->hwirq, gc->reg_base + AT91_AIC5_SSR);
--	irq_reg_writel(1, gc->reg_base + AT91_AIC5_ISCR);
-+	irq_reg_writel(gc, d->hwirq, AT91_AIC5_SSR);
-+	irq_reg_writel(gc, 1, AT91_AIC5_ISCR);
- 	irq_gc_unlock(gc);
- 
- 	return 0;
-@@ -136,11 +136,11 @@ static int aic5_set_type(struct irq_data *d, unsigned type)
- 	int ret;
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(d->hwirq, gc->reg_base + AT91_AIC5_SSR);
--	smr = irq_reg_readl(gc->reg_base + AT91_AIC5_SMR);
-+	irq_reg_writel(gc, d->hwirq, AT91_AIC5_SSR);
-+	smr = irq_reg_readl(gc, AT91_AIC5_SMR);
- 	ret = aic_common_set_type(d, type, &smr);
- 	if (!ret)
--		irq_reg_writel(smr, gc->reg_base + AT91_AIC5_SMR);
-+		irq_reg_writel(gc, smr, AT91_AIC5_SMR);
- 	irq_gc_unlock(gc);
- 
- 	return ret;
-@@ -162,12 +162,11 @@ static void aic5_suspend(struct irq_data *d)
- 		if ((mask & gc->mask_cache) == (mask & gc->wake_active))
- 			continue;
- 
--		irq_reg_writel(i + gc->irq_base,
--			       bgc->reg_base + AT91_AIC5_SSR);
-+		irq_reg_writel(bgc, i + gc->irq_base, AT91_AIC5_SSR);
- 		if (mask & gc->wake_active)
--			irq_reg_writel(1, bgc->reg_base + AT91_AIC5_IECR);
-+			irq_reg_writel(bgc, 1, AT91_AIC5_IECR);
- 		else
--			irq_reg_writel(1, bgc->reg_base + AT91_AIC5_IDCR);
-+			irq_reg_writel(bgc, 1, AT91_AIC5_IDCR);
- 	}
- 	irq_gc_unlock(bgc);
- }
-@@ -187,12 +186,11 @@ static void aic5_resume(struct irq_data *d)
- 		if ((mask & gc->mask_cache) == (mask & gc->wake_active))
- 			continue;
- 
--		irq_reg_writel(i + gc->irq_base,
--			       bgc->reg_base + AT91_AIC5_SSR);
-+		irq_reg_writel(bgc, i + gc->irq_base, AT91_AIC5_SSR);
- 		if (mask & gc->mask_cache)
--			irq_reg_writel(1, bgc->reg_base + AT91_AIC5_IECR);
-+			irq_reg_writel(bgc, 1, AT91_AIC5_IECR);
- 		else
--			irq_reg_writel(1, bgc->reg_base + AT91_AIC5_IDCR);
-+			irq_reg_writel(bgc, 1, AT91_AIC5_IDCR);
- 	}
- 	irq_gc_unlock(bgc);
- }
-@@ -207,10 +205,9 @@ static void aic5_pm_shutdown(struct irq_data *d)
- 
- 	irq_gc_lock(bgc);
- 	for (i = 0; i < dgc->irqs_per_chip; i++) {
--		irq_reg_writel(i + gc->irq_base,
--			       bgc->reg_base + AT91_AIC5_SSR);
--		irq_reg_writel(1, bgc->reg_base + AT91_AIC5_IDCR);
--		irq_reg_writel(1, bgc->reg_base + AT91_AIC5_ICCR);
-+		irq_reg_writel(bgc, i + gc->irq_base, AT91_AIC5_SSR);
-+		irq_reg_writel(bgc, 1, AT91_AIC5_IDCR);
-+		irq_reg_writel(bgc, 1, AT91_AIC5_ICCR);
- 	}
- 	irq_gc_unlock(bgc);
- }
-@@ -230,24 +227,24 @@ static void __init aic5_hw_init(struct irq_domain *domain)
- 	 * will not Lock out nIRQ
- 	 */
- 	for (i = 0; i < 8; i++)
--		irq_reg_writel(0, gc->reg_base + AT91_AIC5_EOICR);
-+		irq_reg_writel(gc, 0, AT91_AIC5_EOICR);
- 
- 	/*
- 	 * Spurious Interrupt ID in Spurious Vector Register.
- 	 * When there is no current interrupt, the IRQ Vector Register
- 	 * reads the value stored in AIC_SPU
- 	 */
--	irq_reg_writel(0xffffffff, gc->reg_base + AT91_AIC5_SPU);
-+	irq_reg_writel(gc, 0xffffffff, AT91_AIC5_SPU);
- 
- 	/* No debugging in AIC: Debug (Protect) Control Register */
--	irq_reg_writel(0, gc->reg_base + AT91_AIC5_DCR);
-+	irq_reg_writel(gc, 0, AT91_AIC5_DCR);
- 
- 	/* Disable and clear all interrupts initially */
- 	for (i = 0; i < domain->revmap_size; i++) {
--		irq_reg_writel(i, gc->reg_base + AT91_AIC5_SSR);
--		irq_reg_writel(i, gc->reg_base + AT91_AIC5_SVR);
--		irq_reg_writel(1, gc->reg_base + AT91_AIC5_IDCR);
--		irq_reg_writel(1, gc->reg_base + AT91_AIC5_ICCR);
-+		irq_reg_writel(gc, i, AT91_AIC5_SSR);
-+		irq_reg_writel(gc, i, AT91_AIC5_SVR);
-+		irq_reg_writel(gc, 1, AT91_AIC5_IDCR);
-+		irq_reg_writel(gc, 1, AT91_AIC5_ICCR);
- 	}
- }
- 
-@@ -273,11 +270,11 @@ static int aic5_irq_domain_xlate(struct irq_domain *d,
- 	gc = dgc->gc[0];
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(*out_hwirq, gc->reg_base + AT91_AIC5_SSR);
--	smr = irq_reg_readl(gc->reg_base + AT91_AIC5_SMR);
-+	irq_reg_writel(gc, *out_hwirq, AT91_AIC5_SSR);
-+	smr = irq_reg_readl(gc, AT91_AIC5_SMR);
- 	ret = aic_common_set_priority(intspec[2], &smr);
- 	if (!ret)
--		irq_reg_writel(intspec[2] | smr, gc->reg_base + AT91_AIC5_SMR);
-+		irq_reg_writel(gc, intspec[2] | smr, AT91_AIC5_SMR);
- 	irq_gc_unlock(gc);
- 
- 	return ret;
-diff --git a/drivers/irqchip/irq-sunxi-nmi.c b/drivers/irqchip/irq-sunxi-nmi.c
-index 12f547a..4a9ce5b 100644
---- a/drivers/irqchip/irq-sunxi-nmi.c
-+++ b/drivers/irqchip/irq-sunxi-nmi.c
-@@ -50,12 +50,12 @@ static struct sunxi_sc_nmi_reg_offs sun6i_reg_offs = {
- static inline void sunxi_sc_nmi_write(struct irq_chip_generic *gc, u32 off,
- 				      u32 val)
- {
--	irq_reg_writel(val, gc->reg_base + off);
-+	irq_reg_writel(gc, val, off);
- }
- 
- static inline u32 sunxi_sc_nmi_read(struct irq_chip_generic *gc, u32 off)
- {
--	return irq_reg_readl(gc->reg_base + off);
-+	return irq_reg_readl(gc, off);
- }
- 
- static void sunxi_sc_nmi_handle_irq(unsigned int irq, struct irq_desc *desc)
-diff --git a/drivers/irqchip/irq-tb10x.c b/drivers/irqchip/irq-tb10x.c
-index 7c44c99..accc200 100644
---- a/drivers/irqchip/irq-tb10x.c
-+++ b/drivers/irqchip/irq-tb10x.c
-@@ -43,12 +43,12 @@
- static inline void ab_irqctl_writereg(struct irq_chip_generic *gc, u32 reg,
- 	u32 val)
- {
--	irq_reg_writel(val, gc->reg_base + reg);
-+	irq_reg_writel(gc, val, reg);
- }
- 
- static inline u32 ab_irqctl_readreg(struct irq_chip_generic *gc, u32 reg)
- {
--	return irq_reg_readl(gc->reg_base + reg);
-+	return irq_reg_readl(gc, reg);
- }
- 
- static int tb10x_irq_set_type(struct irq_data *data, unsigned int flow_type)
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 03f48d9..0743743 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -639,13 +639,6 @@ void arch_teardown_hwirq(unsigned int irq);
- void irq_init_desc(unsigned int irq);
- #endif
- 
--#ifndef irq_reg_writel
--# define irq_reg_writel(val, addr)	writel(val, addr)
--#endif
--#ifndef irq_reg_readl
--# define irq_reg_readl(addr)		readl(addr)
--#endif
--
- /**
-  * struct irq_chip_regs - register offsets for struct irq_gci
-  * @enable:	Enable register offset to reg_base
-@@ -821,4 +814,16 @@ static inline void irq_gc_lock(struct irq_chip_generic *gc) { }
- static inline void irq_gc_unlock(struct irq_chip_generic *gc) { }
- #endif
- 
-+static inline void irq_reg_writel(struct irq_chip_generic *gc,
-+				  u32 val, int reg_offset)
-+{
-+	writel(val, gc->reg_base + reg_offset);
-+}
-+
-+static inline u32 irq_reg_readl(struct irq_chip_generic *gc,
-+				int reg_offset)
-+{
-+	return readl(gc->reg_base + reg_offset);
-+}
-+
- #endif /* _LINUX_IRQ_H */
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index cf80e7b..db458c6 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -39,7 +39,7 @@ void irq_gc_mask_disable_reg(struct irq_data *d)
- 	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(mask, gc->reg_base + ct->regs.disable);
-+	irq_reg_writel(gc, mask, ct->regs.disable);
- 	*ct->mask_cache &= ~mask;
- 	irq_gc_unlock(gc);
- }
-@@ -59,7 +59,7 @@ void irq_gc_mask_set_bit(struct irq_data *d)
- 
- 	irq_gc_lock(gc);
- 	*ct->mask_cache |= mask;
--	irq_reg_writel(*ct->mask_cache, gc->reg_base + ct->regs.mask);
-+	irq_reg_writel(gc, *ct->mask_cache, ct->regs.mask);
- 	irq_gc_unlock(gc);
- }
- EXPORT_SYMBOL_GPL(irq_gc_mask_set_bit);
-@@ -79,7 +79,7 @@ void irq_gc_mask_clr_bit(struct irq_data *d)
- 
- 	irq_gc_lock(gc);
- 	*ct->mask_cache &= ~mask;
--	irq_reg_writel(*ct->mask_cache, gc->reg_base + ct->regs.mask);
-+	irq_reg_writel(gc, *ct->mask_cache, ct->regs.mask);
- 	irq_gc_unlock(gc);
- }
- EXPORT_SYMBOL_GPL(irq_gc_mask_clr_bit);
-@@ -98,7 +98,7 @@ void irq_gc_unmask_enable_reg(struct irq_data *d)
- 	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(mask, gc->reg_base + ct->regs.enable);
-+	irq_reg_writel(gc, mask, ct->regs.enable);
- 	*ct->mask_cache |= mask;
- 	irq_gc_unlock(gc);
- }
-@@ -114,7 +114,7 @@ void irq_gc_ack_set_bit(struct irq_data *d)
- 	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(mask, gc->reg_base + ct->regs.ack);
-+	irq_reg_writel(gc, mask, ct->regs.ack);
- 	irq_gc_unlock(gc);
- }
- EXPORT_SYMBOL_GPL(irq_gc_ack_set_bit);
-@@ -130,7 +130,7 @@ void irq_gc_ack_clr_bit(struct irq_data *d)
- 	u32 mask = ~d->mask;
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(mask, gc->reg_base + ct->regs.ack);
-+	irq_reg_writel(gc, mask, ct->regs.ack);
- 	irq_gc_unlock(gc);
- }
- 
-@@ -145,8 +145,8 @@ void irq_gc_mask_disable_reg_and_ack(struct irq_data *d)
- 	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(mask, gc->reg_base + ct->regs.mask);
--	irq_reg_writel(mask, gc->reg_base + ct->regs.ack);
-+	irq_reg_writel(gc, mask, ct->regs.mask);
-+	irq_reg_writel(gc, mask, ct->regs.ack);
- 	irq_gc_unlock(gc);
- }
- 
-@@ -161,7 +161,7 @@ void irq_gc_eoi(struct irq_data *d)
- 	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
--	irq_reg_writel(mask, gc->reg_base + ct->regs.eoi);
-+	irq_reg_writel(gc, mask, ct->regs.eoi);
- 	irq_gc_unlock(gc);
- }
- 
-@@ -245,7 +245,7 @@ irq_gc_init_mask_cache(struct irq_chip_generic *gc, enum irq_gc_flags flags)
- 		}
- 		ct[i].mask_cache = mskptr;
- 		if (flags & IRQ_GC_INIT_MASK_CACHE)
--			*mskptr = irq_reg_readl(gc->reg_base + mskreg);
-+			*mskptr = irq_reg_readl(gc, mskreg);
- 	}
- }
- 
--- 
-2.1.1
+Another benefit of having this in the kernel, rather than as a userspace
+daemon, is that you can now easily use the bus from the initrd, or up to
+the very end when the system shuts down.  On current userspace D-Bus,
+this is not really possible, as this requires passing the bus instance
+around between initrd and the "real" system.  Such a transition of all
+fds also requires keeping full state of what has already been read from
+the connection fds.  kdbus makes this much simpler, as we can change the
+ownership of the bus, just by passing one fd over from one part to the
+other.
 
+Regarding binder: binder and kdbus follow very different design
+concepts.  Binder implies the use of thread-pools to dispatch incoming
+method calls.  This is a very efficient scheme, and completely natural
+in programming languages like Java.  On most Linux programs, however,
+there's a much stronger focus on central poll() loops that dispatch all
+sources a program cares about.  kdbus is much more usable in such
+environments, as it doesn't enforce a threading model, and it is happy
+with serialized dispatching.  In fact, this major difference had an
+effect on much of the design decisions: binder does not guarantee global
+message ordering due to the parallel dispatching in the thread-pools,
+but  kdbus does.  Moreover, there's also a difference in the way message
+handling.  In kdbus, every message is basically taken and dispatched as
+one blob, while in binder, continious connections to other peers are
+created, which are then used to send messages on.  Hence, the models are
+quite different, and they serve different needs.  I believe that the
+D-Bus/kdbus model is more compatible and friendly with how Linux
+programs are usually implemented.  I went into the kdbus vs. binder
+stuff in a blog post that I linked to earlier in this thread that goes
+into more detail here.
+
+Hopefully this helps explain why I feel kdbus should be in the kernel
+and not a userspace daemon.  I'll put this information in the cover
+letter for the next round of patches that are sent out.
+
+thanks,
+
+greg k-h
