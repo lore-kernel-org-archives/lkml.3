@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaKBKpV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 05:45:21 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:36466 "EHLO mail.skyhub.de"
+	id S1752005AbaKBKuC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 05:50:02 -0500
+Received: from pepin.polanet.pl ([193.34.52.2]:40793 "EHLO pepin.polanet.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973AbaKBKpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 05:45:18 -0500
-Date: Sun, 2 Nov 2014 11:45:14 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tomasz Pala <gotar@polanet.pl>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH] amd64_edac: Document why it is 64-bit only
-Message-ID: <20141102104514.GC5229@pd.tnic>
-References: <20141102102212.GA7034@polanet.pl>
- <20141102103300.GB5229@pd.tnic>
+	id S1750973AbaKBKuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 05:50:00 -0500
+X-Greylist: delayed 1664 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Nov 2014 05:49:59 EST
+Date: Sun, 2 Nov 2014 11:22:12 +0100
+From: Tomasz Pala <gotar@polanet.pl>
+To: Borislav Petkov <bp@alien8.de>, linux-edac@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH] amd64_edac: Build module on x86-32
+Message-ID: <20141102102212.GA7034@polanet.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <20141102103300.GB5229@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 02, 2014 at 11:33:00AM +0100, Borislav Petkov wrote:
-> I guess I'll add a note about this in the Kconfig text because I keep
-> getting patches about this once every couple of months :-)
+While both K8 and F10h are AMD64 CPUs, EDAC doesn't require them to run
+in long mode; AMD_NB dependency is enough.
 
+Fixes: 3d373290450b ("amd64_edac: do not enable module by default").
+
+Signed-off-by: Tomasz Pala <gotar@polanet.pl>
 ---
-From: Borislav Petkov <bp@suse.de>
-Subject: [PATCH] amd64_edac: Document why it is 64-bit only
-
-I keep getting requests for this so let's hold it down why it doesn't
-make sense. Also, drop incorrect statement about K8 and F10h - this
-driver supports all relevant AMD CPUs.
-
-Cc: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- drivers/edac/Kconfig | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/edac/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index 7072c2892d63..4be205741221 100644
+index 7072c28..af9c9fa 100644
 --- a/drivers/edac/Kconfig
 +++ b/drivers/edac/Kconfig
-@@ -105,11 +105,16 @@ config EDAC_GHES
- 	  In doubt, say 'Y'.
+@@ -106,7 +106,7 @@ config EDAC_GHES
  
  config EDAC_AMD64
--	tristate "AMD64 (Opteron, Athlon64) K8, F10h"
-+	tristate "AMD64 (Opteron, Athlon64)"
- 	depends on EDAC_MM_EDAC && AMD_NB && X86_64 && EDAC_DECODE_MCE
+ 	tristate "AMD64 (Opteron, Athlon64) K8, F10h"
+-	depends on EDAC_MM_EDAC && AMD_NB && X86_64 && EDAC_DECODE_MCE
++	depends on EDAC_MM_EDAC && AMD_NB && EDAC_DECODE_MCE
  	help
  	  Support for error detection and correction of DRAM ECC errors on
--	  the AMD64 families of memory controllers (K8 and F10h)
-+	  the AMD64 families of memory controllers, everything >= K8.
-+
-+	  Note: this driver is 64-bit only on purpose because having a big
-+	  driver report errors for 1 or 2 DIMMs max on 32-bit, considering
-+	  current DIMM sizes, does not make a lot of sense to be worth the
-+	  effort and energy.
- 
- config EDAC_AMD64_ERROR_INJECTION
- 	bool "Sysfs HW Error injection facilities"
+ 	  the AMD64 families of memory controllers (K8 and F10h)
 -- 
-2.0.0
+1.6.0.4
+
 
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Tomasz Pala <gotar@pld-linux.org>
