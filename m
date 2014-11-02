@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaKBSJH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 13:09:07 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57607 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751155AbaKBSJF (ORCPT
+	id S1752372AbaKBSKu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 13:10:50 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48780 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaKBSKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 13:09:05 -0500
+	Sun, 2 Nov 2014 13:10:47 -0500
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 104.193.169.186
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19k2mYR/696a24fGu/OEG1w
-Date: Sun, 2 Nov 2014 10:07:56 -0800
+X-MHO-User: U2FsdGVkX18fny2vaIg5zA3nl/4/bsO6
+Date: Sun, 2 Nov 2014 10:09:38 -0800
 From: Tony Lindgren <tony@atomide.com>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
         linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
- enabled
-Message-ID: <20141102180756.GH31454@atomide.com>
+Subject: [PATCH] mfd: twl4030-power: Fix regression with missing compatible
+ flag
+Message-ID: <20141102180938.GI31454@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,94 +29,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
-configuration") enabled configuring the PM features for twl4030.
+configuration") accidentally removed the compatible flag for
+"ti,twl4030-power" that should be there as documented in the
+binding.
 
-This caused poweroff command to fail on devices that have the
-BCI charger on twl4030 wired, or have power wired for VBUS.
-Instead of powering off, the device reboots. This is because
-voltage is detected on charger or VBUS with the default bits
-enabled for the power transition registers.
-
-To fix the issue, let's just clear VBUS and CHG bits as we want
-poweroff command to keep the system powered off.
+If "ti,twl4030-power" only the poweroff configuration is done
+by the driver.
 
 Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
 Cc: stable@vger.kernel.org # v3.16+
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
 Signed-off-by: Tony Lindgren <tony@atomide.com>
 
 --- a/drivers/mfd/twl4030-power.c
 +++ b/drivers/mfd/twl4030-power.c
-@@ -44,6 +44,15 @@ static u8 twl4030_start_script_address = 0x2b;
- #define PWR_DEVSLP		BIT(1)
- #define PWR_DEVOFF		BIT(0)
+@@ -831,6 +831,9 @@ static struct twl4030_power_data osc_off_idle = {
  
-+/* Register bits for CFG_P1_TRANSITION (also for P2 and P3) */
-+#define STARTON_SWBUG		BIT(7)	/* Start on watchdog */
-+#define STARTON_VBUS		BIT(5)	/* Start on VBUS */
-+#define STARTON_VBAT		BIT(4)	/* Start on battery insert */
-+#define STARTON_RTC		BIT(3)	/* Start on RTC */
-+#define STARTON_USB		BIT(2)	/* Start on USB host */
-+#define STARTON_CHG		BIT(1)	/* Start on charger */
-+#define STARTON_PWON		BIT(0)	/* Start on PWRON button */
-+
- #define SEQ_OFFSYNC		(1 << 0)
- 
- #define PHY_TO_OFF_PM_MASTER(p)		(p - 0x36)
-@@ -606,6 +615,44 @@ twl4030_power_configure_resources(const struct twl4030_power_data *pdata)
- 	return 0;
- }
- 
-+static int twl4030_starton_mask_and_set(u8 bitmask, u8 bitvalues)
-+{
-+	u8 regs[3] = { TWL4030_PM_MASTER_CFG_P1_TRANSITION,
-+		       TWL4030_PM_MASTER_CFG_P2_TRANSITION,
-+		       TWL4030_PM_MASTER_CFG_P3_TRANSITION, };
-+	u8 val;
-+	int i, err;
-+
-+	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG1,
-+			       TWL4030_PM_MASTER_PROTECT_KEY);
-+	if (err)
-+		goto relock;
-+	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
-+			       TWL4030_PM_MASTER_KEY_CFG2,
-+			       TWL4030_PM_MASTER_PROTECT_KEY);
-+	if (err)
-+		goto relock;
-+
-+	for (i = 0; i < sizeof(regs); i++) {
-+		err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER,
-+				      &val, regs[i]);
-+		if (err)
-+			break;
-+		val = (~bitmask & val) | (bitmask & bitvalues);
-+		err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
-+				       val, regs[i]);
-+		if (err)
-+			break;
-+	}
-+
-+	if (err)
-+		pr_err("TWL4030 Register access failed: %i\n", err);
-+
-+relock:
-+	return twl_i2c_write_u8(TWL_MODULE_PM_MASTER, 0,
-+				TWL4030_PM_MASTER_PROTECT_KEY);
-+}
-+
- /*
-  * In master mode, start the power off sequence.
-  * After a successful execution, TWL shuts down the power to the SoC
-@@ -615,6 +662,11 @@ void twl4030_power_off(void)
- {
- 	int err;
- 
-+	/* Disable start on charger or VBUS as it can break poweroff */
-+	err = twl4030_starton_mask_and_set(STARTON_VBUS | STARTON_CHG, 0);
-+	if (err)
-+		pr_err("TWL4030 Unable to configure start-up\n");
-+
- 	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, PWR_DEVOFF,
- 			       TWL4030_PM_MASTER_P1_SW_EVENTS);
- 	if (err)
+ static struct of_device_id twl4030_power_of_match[] = {
+ 	{
++		.compatible = "ti,twl4030-power",
++	},
++	{
+ 		.compatible = "ti,twl4030-power-reset",
+ 		.data = &omap3_reset,
+ 	},
