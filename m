@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899AbaKBUpL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 15:45:11 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54243 "EHLO mail.eperm.de"
+	id S1752923AbaKBUpe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 15:45:34 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54228 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599AbaKBUoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 15:44:03 -0500
+	id S1752710AbaKBUn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 15:43:56 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -15,9 +15,9 @@ Cc: "David S. Miller" <davem@davemloft.net>, Marek Vasut <marex@denx.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
         linux-crypto@vger.kernel.org
-Subject: [PATCH v2 02/11] crypto: Documentation - userspace interface spec
-Date: Sun, 02 Nov 2014 21:36:17 +0100
-Message-ID: <1959144.oe4Wmhi0gN@tachyon.chronox.de>
+Subject: [PATCH v2 04/11] crypto: Documentation - AHASH API documentation
+Date: Sun, 02 Nov 2014 21:37:35 +0100
+Message-ID: <3031970.r1C4nyeuS1@tachyon.chronox.de>
 User-Agent: KMail/4.14.1 (Linux/3.17.1-302.fc21.x86_64; KDE/4.14.1; x86_64; ; )
 In-Reply-To: <6375771.bx7QqLJLuR@tachyon.chronox.de>
 References: <6375771.bx7QqLJLuR@tachyon.chronox.de>
@@ -28,690 +28,342 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The userspace interface of the kernel crypto API is documented with
- * a general explanation
- * a discussion of the memory in-place operation
- * the description of the message digest API
- * the description of the symmetric cipher API
-
-In addition, a fully self contained example that can readily be used as
-a library is added as well.
+The API function calls exported by the kernel crypto API for AHASHes
+to be used by consumers are documented.
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 CC: Marek Vasut <marex@denx.de>
 ---
- Documentation/crypto/crypto-API-userspace.txt | 662 ++++++++++++++++++++++++++
- 1 file changed, 662 insertions(+)
- create mode 100644 Documentation/crypto/crypto-API-userspace.txt
+ include/crypto/hash.h | 224 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 224 insertions(+)
 
-diff --git a/Documentation/crypto/crypto-API-userspace.txt b/Documentation/crypto/crypto-API-userspace.txt
-new file mode 100644
-index 0000000..30ca6a7
---- /dev/null
-+++ b/Documentation/crypto/crypto-API-userspace.txt
-@@ -0,0 +1,662 @@
-+Introduction
-+============
-+
-+The concepts of the kernel crypto API visible to kernel space is fully
-+applicable to the user space interface as well. Therefore, the kernel crypto API
-+high level discussion for the in-kernel use cases applies here as well.
-+
-+The major difference, however, is that user space can only act as a consumer
-+and never as a provider of a transformation or cipher algorithm.
-+
-+The following covers the user space interface exported by the kernel crypto
-+API. It provides a fully working sample code at the that can be used as a
-+library for user space applications that require cryptographic services from
-+the kernel.
-+
-+Some details of the in-kernel kernel crypto API aspects do not
-+apply to user space, however. This includes the difference between synchronous
-+and asynchronous invocations. The user space API call is fully synchronous.
-+In addition, only a subset of all cipher types are available as documented
-+below.
-+
-+
-+User space API general remarks
-+==============================
-+
-+The kernel crypto API is accessible from user space. Currently, the following
-+ciphers are accessible:
-+
-+	* Message digest including keyed message digest (HMAC, CMAC)
-+
-+	* Symmetric ciphers
-+
-+Note, AEAD ciphers are currently not supported via the symmetric cipher
-+interface.
-+
-+The interface is provided via Netlink using the type AF_ALG. In addition, the
-+setsockopt option type is SOL_ALG. In case the user space header files do not
-+export these flags yet, use the following macros:
-+
-+#ifndef AF_ALG
-+#define AF_ALG 38
-+#endif
-+#ifndef SOL_ALG
-+#define SOL_ALG 279
-+#endif
-+
-+A cipher is accessed with the same name as done for the in-kernel API calls.
-+This includes the generic vs. unique naming schema for ciphers as well as the
-+enforcement of priorities for generic names.
-+
-+To interact with the kernel crypto API, a Netlink socket must be created by
-+the user space application. User space invokes the cipher operation with the
-+send/write system call family. The result of the cipher operation is obtained
-+with the read/recv system call family.
-+
-+The following API calls assume that the Netlink socket descriptor is already
-+opened by the user space application and discusses only the kernel crypto API
-+specific invocations.
-+
-+In-place cipher operation
-+=========================
-+
-+Just like the in-kernel operation of the kernel crypto API, the user space
-+interface allows the cipher operation in-place. That means that the input buffer
-+used for the send/write system call and the output buffer used by the read/recv
-+system call may be one and the same. This is of particular interest for
-+symmetric cipher operations where a copying of the output data to its final
-+destination can be avoided.
-+
-+Message digest API
-+==================
-+
-+The message digest type to be used for the cipher operation is selected when
-+invoking the bind syscall. bind requires the caller to provide a filled
-+struct sockaddr data structure. This data structure must be filled as follows:
-+
-+struct sockaddr_alg sa = {
-+	.salg_family = AF_ALG,
-+	.salg_type = "hash", /* this selects the hash logic in the kernel */
-+	.salg_name = "sha1" /* this is the cipher name */
-+};
-+
-+The salg_type value "hash" applies to message digests and keyed message digests.
-+Though, a keyed message digest is referenced by the appropriate salg_name and
-+providing a key for the cipher operation.
-+
-+Using the send() system call, the application provides the data that should be
-+processed with the message digest. The send system call allows the following
-+flags to be specified:
-+
-+	* MSG_MORE: If this flag is set, the send system call acts like a
-+		    message digest update function where the final hash is not
-+		    yet calculated. If the flag is not set, the send system call
-+		    calculates the final message digest immediately.
-+
-+With the recv() system call, the application can read the message digest from
-+the kernel crypto API. If the buffer is too small for the message digest, the
-+flag MSG_TRUNC is set by the kernel.
-+
-+In order to set a message digest key, the calling application must use the
-+setsockopt() option of ALG_SET_KEY. If the key is not set the HMAC operation is
-+performed without the initial HMAC state change caused by the key.
-+
-+
-+Symmetric cipher API
-+====================
-+
-+The operation is very similar to the message digest discussion. During
-+initialization, the struct sockaddr data structure must be filled as follows:
-+
-+struct sockaddr_alg sa = {
-+	.salg_family = AF_ALG,
-+	.salg_type = "skcipher", /* this selects the symmetric cipher */
-+	.salg_name = "cbc(aes)" /* this is the cipher name */
-+};
-+
-+Using the sendmsg() system call, the application provides the data that should
-+be processed for encryption or decryption. In addition, the IV is specified
-+with the data structure provided by the sendmsg() system call.
-+
-+The sendmsg system call parameter of struct msghdr is embedded into the
-+struct cmsghdr data structure. See recv(2) and cmsg(3) for more information
-+on how the cmsghdr data structure is used together with the send/recv system
-+call family. That cmsghdr data structure holds the following information
-+specified with a separate header instances:
-+
-+	* specification of the cipher operation type with one of these flags:
-+		ALG_OP_ENCRYPT - encryption of data
-+		ALG_OP_DECRYPT - decryption of data
-+
-+	* specification of the IV information marked with the flag ALG_SET_IV
-+
-+The send system call family allows the following flag to be specified:
-+
-+	* MSG_MORE: If this flag is set, the send system call acts like a
-+		    cipher update function where more input data is expected
-+		    with a subsequent invocation of the send system call.
-+
-+Note: The kernel reports -EINVAL for any unexpected data. The caller must
-+make sure that all data matches the constraints given in /proc/crypto for the
-+selected cipher.
-+
-+With the recv() system call, the application can read the result of the
-+cipher operation from the kernel crypto API. The output buffer must be at least
-+as large as to hold all blocks of the encrypted or decrypted data. If the output
-+data size is smaller, only as many blocks are returned that fit into that
-+output buffer size.
-+
-+User space API example
-+======================
-+
-+Compile the following code with the gcc flags of "-Wextra -Wall -pedantic".
-+
-+/*
-+ * Generic kernel crypto API user space interface library
+diff --git a/include/crypto/hash.h b/include/crypto/hash.h
+index 74b13ec..0d43dbc 100644
+--- a/include/crypto/hash.h
++++ b/include/crypto/hash.h
+@@ -107,11 +107,39 @@ struct crypto_shash {
+ 	struct crypto_tfm base;
+ };
+ 
++/**
++ * Asynchronous message digest API to use the ciphers of type
++ * CRYPTO_ALG_TYPE_AHASH (listed as type "ahash" in /proc/crypto)
 + *
-+ * Copyright (C) 2014, Stephan Mueller <smueller@chronox.de>
++ * The asynchronous cipher operation discussion provided for the
++ * CRYPTO_ALG_TYPE_ABLKCIPHER API applies here as well.
 + *
-+ * Derived from cryptsetup 1.6.4:
++ * Example code:
 + *
-+ * Linux kernel user space API crypto backend implementation (skcipher)
-+ *
-+ * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
-+ * Copyright (C) 2012, Milan Broz
-+ *
-+ * This file is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU Lesser General Public
-+ * License as published by the Free Software Foundation; either
-+ * version 2.1 of the License, or (at your option) any later version.
-+ *
-+ * This file is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * Lesser General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU Lesser General Public
-+ * License along with this file; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ * The example code given for the asynchronous block cipher operation can be
++ * used as a template where the ablkcipher function calls are swapped with ahash
++ * function calls.
 + */
 +
-+/*
-+ * Code from cryptsetup version 1.6.4 used as a basis. See files
-+ * lib/crypto_backend/crypto_cipher_kernel.c and
-+ * lib/crypto_backend/crypto_kernel.c
+ static inline struct crypto_ahash *__crypto_ahash_cast(struct crypto_tfm *tfm)
+ {
+ 	return container_of(tfm, struct crypto_ahash, base);
+ }
+ 
++/**
++ * Allocate a cipher handle for an ahash. The returned struct
++ * crypto_ahash is the cipher handle that is required for any subsequent
++ * API invocation for that ahash.
++ *
++ * @alg_name is the cra_name / name or cra_driver_name / driver name of the
++ *	     ahash cipher
++ * @type specifies the type of the cipher (see Documentation/crypto/)
++ * @mask specifies the mask for the cipher (see Documentation/crypto/)
++ *
++ * return value:
++ *	allocated cipher handle in case of success
++ *	IS_ERR() is true in case of an error, PTR_ERR() returns the error code.
++ */
+ struct crypto_ahash *crypto_alloc_ahash(const char *alg_name, u32 type,
+ 					u32 mask);
+ 
+@@ -120,6 +148,11 @@ static inline struct crypto_tfm *crypto_ahash_tfm(struct crypto_ahash *tfm)
+ 	return &tfm->base;
+ }
+ 
++/**
++ * The referenced ahash handle is zeroized and subsequently freed.
++ *
++ * @tfm cipher handle to be freed
++ */
+ static inline void crypto_free_ahash(struct crypto_ahash *tfm)
+ {
+ 	crypto_destroy_tfm(tfm, crypto_ahash_tfm(tfm));
+@@ -143,6 +176,15 @@ static inline struct hash_alg_common *crypto_hash_alg_common(
+ 	return __crypto_hash_alg_common(crypto_ahash_tfm(tfm)->__crt_alg);
+ }
+ 
++/**
++ * The size for the message digest created by the message digest cipher
++ * referenced with the cipher handle is returned.
++ *
++ * @tfm cipher handle
++ *
++ * return value:
++ * 	block size of cipher
++ */
+ static inline unsigned int crypto_ahash_digestsize(struct crypto_ahash *tfm)
+ {
+ 	return crypto_hash_alg_common(tfm)->digestsize;
+@@ -168,12 +210,32 @@ static inline void crypto_ahash_clear_flags(struct crypto_ahash *tfm, u32 flags)
+ 	crypto_tfm_clear_flags(crypto_ahash_tfm(tfm), flags);
+ }
+ 
++/**
++ * Return the ahash cipher handle that is registered with the asynchronous
++ * request handle ahash_request.
++ *
++ * @req asynchronous request handle that contains the reference to the ahash
++ *	cipher handle
++ *
++ * return value:
++ *	ahash cipher handle
++ */
+ static inline struct crypto_ahash *crypto_ahash_reqtfm(
+ 	struct ahash_request *req)
+ {
+ 	return __crypto_ahash_cast(req->base.tfm);
+ }
+ 
++/**
++ * Return the size of the ahash state size. With the crypto_ahash_export
++ * function, the caller can export the state into a buffer whose size is
++ * defined with this function.
++ *
++ * @tfm cipher handle
++ *
++ * return value:
++ *	size of the ahash state
++ */
+ static inline unsigned int crypto_ahash_reqsize(struct crypto_ahash *tfm)
+ {
+ 	return tfm->reqsize;
+@@ -184,38 +246,159 @@ static inline void *ahash_request_ctx(struct ahash_request *req)
+ 	return req->__ctx;
+ }
+ 
++/**
++ * The caller provided key is set for the ahash cipher. The cipher
++ * handle must point to a keyed hash in order for this function to succeed.
++ *
++ * @tfm cipher handle
++ * @key buffer holding the key
++ * @keylen length of the key in bytes
++ *
++ * return value:
++ *	0 if the setting of the key was successful
++ *	< 0 if an error occurred
++ */
+ int crypto_ahash_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 			unsigned int keylen);
++
++/**
++ * This function is a "short-hand" for the function calls of
++ * crypto_ahash_update and crypto_shash_final. The parameters have the same
++ * meaning as discussed for those separate functions.
++ *
++ * return value:
++ *	0 if the message digest creation was successful
++ *	< 0 if an error occurred
++ */
+ int crypto_ahash_finup(struct ahash_request *req);
++
++/**
++ * Finalize the message digest operation and create the message digest
++ * based on all data added to the cipher handle. The message digest is placed
++ * into the output buffer registered with the ahash_request handle.
++ *
++ * @req reference to the ahash_request handle that holds all information
++ *	needed to perform the cipher operation
++ *
++ * return value:
++ *	0 if the message digest creation was successful
++ *	< 0 if an error occurred
++ */
+ int crypto_ahash_final(struct ahash_request *req);
++
++/**
++ * This function is a "short-hand" for the function calls of crypto_ahash_init,
++ * crypto_ahash_update and crypto_ahash_final. The parameters have the same
++ * meaning as discussed for those separate three functions.
++ *
++ * return value:
++ *	0 if the message digest creation was successful
++ *	< 0 if an error occurred
++ */
+ int crypto_ahash_digest(struct ahash_request *req);
+ 
++/**
++ * This function exports the hash state of the ahash_request handle into the
++ * caller-allocated output buffer out which must have sufficient size (e.g. by
++ * calling crypto_ahash_reqsize).
++ *
++ * @req reference to the ahash_request handle whose state is exported
++ * @out output buffer of sufficient size that can hold the hash state
++ *
++ * return value:
++ *	0 if the export was successful
++ *	< 0 if an error occurred
++ */
+ static inline int crypto_ahash_export(struct ahash_request *req, void *out)
+ {
+ 	return crypto_ahash_reqtfm(req)->export(req, out);
+ }
+ 
++/**
++ * This function imports the hash state into the ahash_request handle from the
++ * input buffer. That buffer should have been generated with the
++ * crypto_ahash_export function.
++ *
++ * @req reference to ahash_request handle the state is imported into
++ * @in buffer holding the state
++ *
++ * return value:
++ *	0 if the import was successful
++ *	< 0 if an error occurred
++ */
+ static inline int crypto_ahash_import(struct ahash_request *req, const void *in)
+ {
+ 	return crypto_ahash_reqtfm(req)->import(req, in);
+ }
+ 
++/**
++ * The call (re-)initializes the message digest referenced by the ahash_request
++ * handle. Any potentially existing state created by previous operations is
++ * discarded.
++ *
++ * @req ahash_request handle that already is initialized with all necessary
++ *	data using the ahash_request_* API functions
++ *
++ * return value:
++ *	0 if the message digest initialization was successful
++ *	< 0 if an error occurred
++ */
+ static inline int crypto_ahash_init(struct ahash_request *req)
+ {
+ 	return crypto_ahash_reqtfm(req)->init(req);
+ }
+ 
++/**
++ * Updates the message digest state of the ahash_request handle. The input data
++ * is pointed to by the scatter/gather list registered in the ahash_request
++ * handle
++ *
++ * @req ahash_request handle that was previously initialized with the
++ *	crypto_ahash_init call.
++ *
++ * return value:
++ *	0 if the message digest update was successful
++ *	< 0 if an error occurred
++ */
+ static inline int crypto_ahash_update(struct ahash_request *req)
+ {
+ 	return crypto_ahash_reqtfm(req)->update(req);
+ }
+ 
++/**
++ * Allow the caller to replace the existing ahash handle in the request
++ * data structure with a different one.
++ *
++ * @req request handle to be modified
++ * @tfm cipher handle that shall be added to the request handle
++ */
+ static inline void ahash_request_set_tfm(struct ahash_request *req,
+ 					 struct crypto_ahash *tfm)
+ {
+ 	req->base.tfm = crypto_ahash_tfm(tfm);
+ }
+ 
++/**
++ * The hash_request data structure contains all pointers to data
++ * required for the asynchronous cipher operation. This includes the cipher
++ * handle (which can be used by multiple ahash_request instances), pointer
++ * to plaintext and the message digest output buffer, asynchronous callback
++ * function, etc. It acts as a handle to the ahash_request_* API calls in a
++ * similar way as ahash handle to the crypto_ahash_* API calls.
 + */
 +
-+#include <stdio.h>
-+
-+#include <unistd.h>
-+#include <sys/socket.h>
-+#include <sys/types.h>
-+#include <linux/if_alg.h>
-+#include <stdint.h>
-+#include <errno.h>
-+#include <string.h>
-+#include <stdlib.h>
-+
-+#ifndef AF_ALG
-+#define AF_ALG 38
-+#endif
-+#ifndef SOL_ALG
-+#define SOL_ALG 279
-+#endif
-+
-+/************************************************************
-+ * Application interfaces
-+ ************************************************************/
-+
-+/* Cipher handle */
-+struct kcapi_handle {
-+	int tfmfd;
-+	int opfd;
-+};
-+
-+/************************************************************
-+ * Internal logic
-+ ************************************************************/
-+
-+/* The in/out should be aligned to page boundary */
-+static int _kcapi_cipher_crypt(struct kcapi_handle *handle,
-+			       const unsigned char *in, size_t inlen,
-+			       unsigned char *out, size_t outlen,
-+			       const unsigned char *iv, size_t ivlen,
-+			       uint32_t enc)
-+{
-+	int r = 0;
-+	ssize_t ret;
-+	struct af_alg_iv *alg_iv;
-+	struct cmsghdr *header;
-+	uint32_t *type;
-+	struct iovec iov;
-+	int iv_msg_size = iv ? CMSG_SPACE(sizeof(*alg_iv) + ivlen) : 0;
-+	char *buffer = NULL;
-+	volatile void *_buffer = NULL;
-+	unsigned int bufferlen = CMSG_SPACE(sizeof(*type)) + iv_msg_size;
-+	struct msghdr msg;
-+
-+	memset(&msg, 0, sizeof(msg));
-+
-+	if (!in || !out || !inlen || !outlen)
-+		return -EINVAL;
-+
-+	if ((!iv && ivlen) || (iv && !ivlen))
-+		return -EINVAL;
-+
-+	buffer = calloc(1, bufferlen);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	iov.iov_base = (void*)(uintptr_t)in;
-+	iov.iov_len = inlen;
-+	msg.msg_control = buffer;
-+	msg.msg_controllen = bufferlen;
-+	msg.msg_iov = &iov;
-+	msg.msg_iovlen = 1;
-+
-+	/* encrypt/decrypt operation */
-+	header = CMSG_FIRSTHDR(&msg);
-+	header->cmsg_level = SOL_ALG;
-+	header->cmsg_type = ALG_SET_OP;
-+	header->cmsg_len = CMSG_LEN(sizeof(*type));
-+	type = (void*)CMSG_DATA(header);
-+	*type = enc;
-+
-+	/* set IV */
-+	if (iv) {
-+		header = CMSG_NXTHDR(&msg, header);
-+		header->cmsg_level = SOL_ALG;
-+		header->cmsg_type = ALG_SET_IV;
-+		header->cmsg_len = iv_msg_size;
-+		alg_iv = (void*)CMSG_DATA(header);
-+		alg_iv->ivlen = ivlen;
-+		memcpy(alg_iv->iv, iv, ivlen);
-+	}
-+
-+	ret = sendmsg(handle->opfd, &msg, 0);
-+	if (ret != (ssize_t)inlen) {
-+		r = -EIO;
-+		goto bad;
-+	}
-+
-+	ret = read(handle->opfd, out, outlen);
-+	if (ret != (ssize_t)outlen)
-+		r = -EIO;
-+bad:
-+	memset(buffer, 0, bufferlen);
-+	_buffer = memchr(buffer, 1, bufferlen);
-+	if (_buffer)
-+		_buffer = '\0';
-+	free(buffer);
-+	return r;
-+}
-+
-+/************************************************************
-+ * API to application
-+ ************************************************************/
-+
-+/*
-+ * Initialization of a cipher handle and establishing the connection to
-+ * the kernel
++/**
++ * Allocate the request data structure that must be used with the ahash
++ * message digest API calls. During the allocation, the provided ahash handle
++ * is registered in the request data structure.
 + *
-+ * @handle cipher handle filled during the call - output
-+ * @type cipher type, one of the following - input:
-+ *	 "hash" for message digests (including keyed message digests)
-+ *	 "skcipher" for symmetric ciphers
-+ * @ciphername kernel crypto API cipher name as specified in
-+ *	       /proc/crypto - input
++ * @tfm cipher handle to be registered with the request
++ * @gfp memory allocation flag that is handed to kmalloc by the API call.
 + *
-+ * return: 0 upon success
-+ *	   < 0 in case of error
-+ *		ENOENT - algorithm not available
-+ *		ENOTSUP - AF_ALG family not available
-+ *		EINVAL - accept syscall failed
++ * return value:
++ *	allocated request handle in case of success
++ *	IS_ERR() is true in case of an error, PTR_ERR() returns the error code.
 + */
-+int kcapi_cipher_init(struct kcapi_handle *handle,
-+		      const char *type, const char *ciphername)
-+{
-+	struct sockaddr_alg sa;
-+
-+	memset(&sa, 0, sizeof(sa));
-+	sa.salg_family = AF_ALG;
-+	snprintf((char *)sa.salg_type, sizeof(sa.salg_type),"%s", type);
-+	snprintf((char *)sa.salg_name, sizeof(sa.salg_name),"%s", ciphername);
-+
-+	handle->tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
-+	if (handle->tfmfd == -1)
-+		return -ENOTSUP;
-+
-+	if (bind(handle->tfmfd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
-+		close(handle->tfmfd);
-+		handle->tfmfd = -1;
-+		return -ENOENT;
-+	}
-+
-+	handle->opfd = accept(handle->tfmfd, NULL, 0);
-+	if (handle->opfd == -1) {
-+		close(handle->tfmfd);
-+		handle->tfmfd = -1;
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Close the cipher handle and release resources
+ static inline struct ahash_request *ahash_request_alloc(
+ 	struct crypto_ahash *tfm, gfp_t gfp)
+ {
+@@ -230,6 +413,11 @@ static inline struct ahash_request *ahash_request_alloc(
+ 	return req;
+ }
+ 
++/**
++ * The referenced request data structure is zeroized and subsequently freed.
 + *
-+ * @handle cipher handle to release - input
-+ *
-+ * return: 0 upon success
++ * @req request data structure cipher handle to be freed
 + */
-+int kcapi_cipher_destory(struct kcapi_handle *handle)
-+{
-+	if (handle->tfmfd != -1)
-+		close(handle->tfmfd);
-+	if (handle->opfd != -1)
-+		close(handle->opfd);
-+	return 0;
-+}
-+
-+
-+/*
-+ * Set the key for the cipher handle
+ static inline void ahash_request_free(struct ahash_request *req)
+ {
+ 	kzfree(req);
+@@ -241,6 +429,30 @@ static inline struct ahash_request *ahash_request_cast(
+ 	return container_of(req, struct ahash_request, base);
+ }
+ 
++/**
++ * Setting the callback function that is triggered once the cipher operation
++ * completes
 + *
-+ * This call is applicable for keyed message digests and symmetric ciphers.
++ * The callback function is registered with the ahash_request handle and
++ * must comply with the following template:
 + *
-+ * @handle cipher handle - input
-+ * @key key buffer - input
-+ * @keylen length of key buffer - input
++ *	void callback_function(struct crypto_async_request *req, int error)
 + *
-+ * return: 0 upon success
-+ *	   < 0 in case of error
++ * @req request handle
++ * @flags specify zero or an ORing of the following flags:
++ *	* CRYPTO_TFM_REQ_MAY_BACKLOG: the request queue may back log and
++ *	  increase the wait queue beyond the initial maximum size
++ *	* CRYPTO_TFM_REQ_MAY_SLEEP: the request processing may sleep
++ * @compl callback function pointer to be registered with the request handle
++ * @data The data pointer refers to memory that is not used by the kernel
++ *	 crypto API, but provided to the callback function for it to use. Here,
++ *	 the caller can provide a reference to memory the callback function can
++ *	 operate on. As the callback function is invoked asynchronously to the
++ *	 related functionality, it may need to access data structures of the
++ *	 related functionality which can be referenced using this pointer. The
++ *	 callback function can access the memory via the "data" field in the
++ *	 crypto_async_request data structure provided to the callback function.
 + */
-+int kcapi_cipher_setkey(struct kcapi_handle *handle,
-+			const unsigned char *key, size_t keylen)
-+{
-+	if (setsockopt(handle->tfmfd, SOL_ALG, ALG_SET_KEY,
-+		       key, keylen) == -1)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Message digest update function
+ static inline void ahash_request_set_callback(struct ahash_request *req,
+ 					      u32 flags,
+ 					      crypto_completion_t compl,
+@@ -251,6 +463,18 @@ static inline void ahash_request_set_callback(struct ahash_request *req,
+ 	req->base.flags = flags;
+ }
+ 
++/**
++ * By using this call, the caller references the source scatter/gather list.
++ * The source scatter/gather list points to the data the message digest is to
++ * be calculated for.
 + *
-+ * @handle cipher handle - input
-+ * @buffer holding the data to add to the message digest - input
-+ * @len buffer length - input
-+ *
-+ * return: 0 upon success
-+ *	   < 0 in case of error
++ * @req ahash_request handle to be updated
++ * @src source scatter/gather list
++ * @result buffer that is filled with the message digest -- the caller must
++ *	   ensure that the buffer has sufficient space by, for example, calling
++ *	   crypto_ahash_digestsize
++ * @nbytes number of bytes to process from the source scatter/gather list
 + */
-+int kcapi_md_update(struct kcapi_handle *handle,
-+		    const unsigned char *buffer, size_t len)
-+{
-+	ssize_t r;
-+
-+	r = send(handle->opfd, buffer, len, MSG_MORE);
-+	if (r < 0 || (size_t)r < len)
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Message digest finalization function
-+ *
-+ * @handle cipher handle - input
-+ * @buffer filled with the message digest - output
-+ * @len buffer length - input
-+ *
-+ * return: 0 upon success
-+ *	   < 0 in case of error
-+ *		EIO - data cannot be obtained
-+ *		ENOMEM - buffer is too small for the complete message digest,
-+ *			 the buffer is filled with the truncated message digest
-+ */
-+
-+int kcapi_md_final(struct kcapi_handle *handle,
-+		   unsigned char *buffer, size_t len)
-+{
-+	ssize_t r;
-+	struct iovec iov;
-+	struct msghdr msg;
-+
-+	iov.iov_base = (void*)(uintptr_t)buffer;
-+	iov.iov_len = len;
-+	msg.msg_name = NULL;
-+	msg.msg_namelen = 0;
-+	msg.msg_iov = &iov;
-+	msg.msg_iovlen = 1;
-+	msg.msg_control = NULL;
-+	msg.msg_controllen = 0;
-+
-+	r = recvmsg(handle->opfd, &msg, 0);
-+	if (r < 0)
-+		return -EIO;
-+	if (msg.msg_flags & MSG_TRUNC)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Encrypt data
-+ *
-+ * @handle cipher handle - input
-+ * @in plaintext data buffer - input
-+ * @inlen length of in buffer - input
-+ * @out ciphertext data buffer - output
-+ * @outlen length of out buffer - input
-+ * @iv buffer holding the IV (may be NULL if IV is not needed) - input
-+ * @ivlen length of iv (should be zero if iv is NULL) - input
-+ *
-+ * return: 0 upon success
-+ *	   < 0 in case of error
-+ */
-+int kcapi_cipher_encrypt(struct kcapi_handle *handle,
-+			 const unsigned char *in, size_t inlen,
-+			 unsigned char *out, size_t outlen,
-+			 const unsigned char *iv, size_t ivlen)
-+{
-+	return _kcapi_cipher_crypt(handle, in, inlen, out, outlen,
-+				   iv, ivlen, ALG_OP_ENCRYPT);
-+}
-+
-+/*
-+ * Decrypt data
-+ *
-+ * @handle cipher handle - input
-+ * @in ciphertext data buffer - input
-+ * @inlen length of in buffer - input
-+ * @out plaintext data buffer - output
-+ * @outlen length of out buffer - input
-+ * @iv buffer holding the IV (may be NULL if IV is not needed) - input
-+ * @ivlen length of iv (should be zero if iv is NULL) - input
-+ *
-+ * return: 0 upon success
-+ *	   < 0 in case of error
-+ */
-+int kcapi_cipher_decrypt(struct kcapi_handle *handle,
-+			 const unsigned char *in, size_t inlen,
-+			 unsigned char *out, size_t outlen,
-+			 const unsigned char *iv, size_t ivlen)
-+{
-+	return _kcapi_cipher_crypt(handle, in, inlen, out, outlen,
-+				   iv, ivlen, ALG_OP_DECRYPT);
-+}
-+
-+/************************************************************
-+ * Application requiring cryptographic services
-+ ************************************************************/
-+
-+static char hex_char_map_l[] = { '0', '1', '2', '3', '4', '5', '6', '7',
-+				 '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-+static char hex_char_map_u[] = { '0', '1', '2', '3', '4', '5', '6', '7',
-+				 '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-+static char hex_char(unsigned int bin, int u)
-+{
-+	if (bin < sizeof(hex_char_map_l))
-+		return (u) ? hex_char_map_u[bin] : hex_char_map_l[bin];
-+	return 'X';
-+}
-+
-+/*
-+ * Convert binary string into hex representation
-+ * @bin input buffer with binary data
-+ * @binlen length of bin
-+ * @hex output buffer to store hex data
-+ * @hexlen length of already allocated hex buffer (should be at least
-+ *	   twice binlen -- if not, only a fraction of binlen is converted)
-+ * @u case of hex characters (0=>lower case, 1=>upper case)
-+ */
-+static void bin2hex(const unsigned char *bin, size_t binlen,
-+		    char *hex, size_t hexlen, int u)
-+{
-+	size_t i = 0;
-+	size_t chars = (binlen > (hexlen / 2)) ? (hexlen / 2) : binlen;
-+
-+	for (i = 0; i < chars; i++) {
-+		hex[(i*2)] = hex_char((bin[i] >> 4), u);
-+		hex[((i*2)+1)] = hex_char((bin[i] & 0x0f), u);
-+	}
-+}
-+
-+
-+int main(int argc, char *argv[])
-+{
-+	struct kcapi_handle handle;
-+#define BUFLEN 32
-+	unsigned char inbuf[BUFLEN]; /* Plaintext */
-+#define IVLEN 16
-+	unsigned char ivbuf[IVLEN]; /* IV */
-+	unsigned char outbuf[BUFLEN]; /* ciphertext for encryption */
-+	unsigned char outbuf2[BUFLEN]; /* plaintext for decryption */
-+	char hexbuf[BUFLEN * 2 + 1];
-+
-+	(void)argc;
-+	(void)argv;
-+
-+	/*
-+	 * Calculate a message digest
-+	 */
-+	if (kcapi_cipher_init(&handle, "hash", "sha256")) {
-+		printf("Allocation of hash failed\n");
-+		return(1);
-+	}
-+	memcpy(inbuf, "\x00\x01\x02\x03\x04\x05\x06\x07"
-+		      "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
-+		      "\x00\x01\x02\x03\x04\x05\x06\x07"
-+		      "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f", BUFLEN);
-+	if (kcapi_md_update(&handle, inbuf, BUFLEN)) {
-+		printf("Hash update of buffer failed\n");
-+		return(1);
-+	}
-+	if (kcapi_md_final(&handle, outbuf, BUFLEN)) {
-+		printf("Hash final failed\n");
-+		return(1);
-+	}
-+	kcapi_cipher_destory(&handle);
-+	memset(hexbuf, 0, BUFLEN * 2 + 1);
-+	bin2hex(outbuf, BUFLEN, hexbuf, BUFLEN * 2 + 1, 0);
-+	printf("Calculated hash %s\n", hexbuf);
-+
-+	/*
-+	 * Calculate a keyed message digest
-+	 */
-+	if (kcapi_cipher_init(&handle, "hash", "hmac(sha256)")) {
-+		printf("Allocation of HMAC failed\n");
-+		return(1);
-+	}
-+	memcpy(inbuf, "\x00\x01\x02\x03\x04\x05\x06\x07"
-+		      "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
-+		      "\x00\x01\x02\x03\x04\x05\x06\x07"
-+		      "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f", BUFLEN);
-+	if (kcapi_cipher_setkey(&handle, inbuf, BUFLEN)) {
-+		printf("HMAC setkey failed\n");
-+		return(1);
-+	}
-+	if (kcapi_md_update(&handle, inbuf, BUFLEN)) {
-+		printf("HMAC update of buffer failed\n");
-+		return(1);
-+	}
-+	if (kcapi_md_final(&handle, outbuf, BUFLEN)) {
-+		printf("HMAC final failed\n");
-+		return(1);
-+	}
-+	kcapi_cipher_destory(&handle);
-+	memset(hexbuf, 0, BUFLEN * 2 + 1);
-+	bin2hex(outbuf, BUFLEN, hexbuf, BUFLEN * 2 + 1, 0);
-+	printf("Calculated hmac %s\n", hexbuf);
-+
-+	/*
-+	 * Encrypt data
-+	 */
-+	if (kcapi_cipher_init(&handle, "skcipher", "cbc(aes)")) {
-+		printf("Allocation of cipher failed\n");
-+		return(1);
-+	}
-+
-+	/* Set key */
-+	memcpy(inbuf, "\x00\x01\x02\x03\x04\x05\x06\x07"
-+		      "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
-+		      "\x00\x01\x02\x03\x04\x05\x06\x07"
-+		      "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f", BUFLEN);
-+	if (kcapi_cipher_setkey(&handle, inbuf, BUFLEN)) {
-+		printf("AES setkey failed\n");
-+		return(1);
-+	}
-+
-+	/* Prepare IV */
-+	memcpy(ivbuf, "\x00\x01\x02\x03\x04\x05\x06\x07"
-+		      "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f", IVLEN);
-+
-+	/*
-+	 * Encrypt inbuf -- key and plaintext are the same in this example
-+	 *
-+	 * It is perfectly legal to use inbuf for the plaintext and ciphertext
-+	 * pointers. That would mean that after the encryption operation, the
-+	 * plaintext is overwritten with the cipher text.
-+	 */
-+	if (kcapi_cipher_encrypt(&handle, inbuf, BUFLEN,
-+				 outbuf, BUFLEN, ivbuf, IVLEN)) {
-+		printf("Encryption buffer failed\n");
-+		return(1);
-+	}
-+
-+	/* outbuf now contains the cipher text */
-+	memset(hexbuf, 0, BUFLEN * 2 + 1);
-+	bin2hex(outbuf, BUFLEN, hexbuf, BUFLEN * 2 + 1, 0);
-+	printf("Encrypted data %s\n", hexbuf);
-+
-+	/*
-+	 * Decrypt previously encrypted data
-+	 *
-+	 * Just like for the encryption operation, the ciphertext buffer pointer
-+	 * and the plaintext buffer pointer may point to the same memory
-+	 * location. After completion of this operation, the ciphertext is
-+	 * overwritten with the plaintext.
-+	 */
-+	if (kcapi_cipher_decrypt(&handle, outbuf, BUFLEN,
-+				 outbuf2, BUFLEN, ivbuf, IVLEN)) {
-+		printf("Decryption buffer failed\n");
-+		return(1);
-+	}
-+	kcapi_cipher_destory(&handle);
-+	memset(hexbuf, 0, BUFLEN * 2 + 1);
-+	bin2hex(outbuf2, BUFLEN, hexbuf, BUFLEN * 2 + 1, 0);
-+	printf("Decrypted data %s\n", hexbuf);
-+	if (!memcmp(inbuf, outbuf2, BUFLEN))
-+		printf("Decrypted data match original plaintext as expected\n");
-+	else
-+		printf("FAILURE: Decrypted data does not match original plaintext\n");
-+
-+	return 0;
-+}
-+
-+Author
-+======
-+
-+Stephan Mueller <smueller@chronox.de>
+ static inline void ahash_request_set_crypt(struct ahash_request *req,
+ 					   struct scatterlist *src, u8 *result,
+ 					   unsigned int nbytes)
 -- 
 2.1.0
 
