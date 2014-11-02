@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372AbaKBSKu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 13:10:50 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48780 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaKBSKr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 13:10:47 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18fny2vaIg5zA3nl/4/bsO6
-Date: Sun, 2 Nov 2014 10:09:38 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: [PATCH] mfd: twl4030-power: Fix regression with missing compatible
- flag
-Message-ID: <20141102180938.GI31454@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752315AbaKBSQu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 13:16:50 -0500
+Received: from relay2.sgi.com ([192.48.180.65]:42196 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751155AbaKBSQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 13:16:49 -0500
+From: James Custer <jcuster@sgi.com>
+To: x86@kernel.org
+Cc: James Custer <jcuster@sgi.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H . Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>
+Subject: [PATCH 1/2] x86: UV BAU Increase maximum CPUs per socket/hub
+Date: Sun,  2 Nov 2014 12:16:38 -0600
+Message-Id: <1414952199-185319-1-git-send-email-jcuster@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
-configuration") accidentally removed the compatible flag for
-"ti,twl4030-power" that should be there as documented in the
-binding.
+We have encountered hardware with 18 cores/socket that gives 36 CPUs/socket
+with hyperthreading enabled. This exceeds the current MAX_CPUS_PER_SOCKET
+causing a failure in get_cpu_topology. Increase MAX_CPUS_PER_SOCKET to 64
+and MAX_CPUS_PER_UVHUB to 128.
 
-If "ti,twl4030-power" only the poweroff configuration is done
-by the driver.
+Signed-off-by: James Custer <jcuster@sgi.com>
+---
+ arch/x86/include/asm/uv/uv_bau.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
-Cc: stable@vger.kernel.org # v3.16+
-Reported-by: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/drivers/mfd/twl4030-power.c
-+++ b/drivers/mfd/twl4030-power.c
-@@ -831,6 +831,9 @@ static struct twl4030_power_data osc_off_idle = {
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index 2d60a78..fc808b8 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -33,8 +33,8 @@
+  * Each of the descriptors is 64 bytes in size (8*64 = 512 bytes in a set).
+  */
  
- static struct of_device_id twl4030_power_of_match[] = {
- 	{
-+		.compatible = "ti,twl4030-power",
-+	},
-+	{
- 		.compatible = "ti,twl4030-power-reset",
- 		.data = &omap3_reset,
- 	},
+-#define MAX_CPUS_PER_UVHUB		64
+-#define MAX_CPUS_PER_SOCKET		32
++#define MAX_CPUS_PER_UVHUB		128
++#define MAX_CPUS_PER_SOCKET		64
+ #define ADP_SZ				64 /* hardware-provided max. */
+ #define UV_CPUS_PER_AS			32 /* hardware-provided max. */
+ #define ITEMS_PER_DESC			8
+-- 
+1.7.12.4
+
