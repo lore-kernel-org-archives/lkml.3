@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaKBHLO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 02:11:14 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50513 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaKBHLM (ORCPT
+	id S1751261AbaKBHaf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 02:30:35 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:53772 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaKBHad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 02:11:12 -0500
-Message-ID: <5455D903.3080801@gmail.com>
-Date: Sun, 02 Nov 2014 15:10:59 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        "Chen, Tiejun" <tiejun.chen@intel.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Gleb Natapov <gleb@kernel.org>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: fix access memslots w/o hold srcu read lock
-References: <1414730012-7278-1-git-send-email-wanpeng.li@linux.intel.com> <54531E7B.1040006@intel.com> <5453663B.90500@redhat.com> <54544A45.1000505@gmail.com> <5455D435.5050405@redhat.com>
-In-Reply-To: <5455D435.5050405@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 2 Nov 2014 02:30:33 -0500
+Message-ID: <1414913427.5380.110.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.14.23-rt20
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Date: Sun, 02 Nov 2014 08:30:27 +0100
+In-Reply-To: <20141031170326.1491a63f@gandalf.local.home>
+References: <20141031170326.1491a63f@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paolo,
-On 14/11/2 下午2:50, Paolo Bonzini wrote:
->
-> On 01/11/2014 03:49, Wanpeng Li wrote:
->> This is also not enough. I see the warning in the below path during the
->> test:
->>
->> kvm_arch_vcpu_ioctl_run
->> -> kvm_apic_accept_events
->> -> kvm_vcpu_reset
-> Hmm, better bypass the problem altogether:
->
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index a0f78dbaabee..3e556c68351b 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -4579,7 +4579,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
->   		vmcs_write32(TPR_THRESHOLD, 0);
->   	}
->   
-> -	kvm_vcpu_reload_apic_access_page(vcpu);
-> +	kvm_make_request(KVM_REQ_APIC_PAGE_RELOAD, vcpu);
->   
->   	if (vmx_vm_has_apicv(vcpu->kvm))
->   		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
->
+On Fri, 2014-10-31 at 17:03 -0400, Steven Rostedt wrote:
+> Dear RT Folks,
+> 
+> I'm pleased to announce the 3.14.23-rt20 stable release.
+> 
+> This is the first 3.14-rt release in the stable-rt series. Normally I
+> wait till the next development release is out before I pull in a new
+> one. That is, I would pull in 3.14-rt when 3.16-rt or later was
+> released. But because development is now moving at a "hobbyist rate" 
+> (read http://lwn.net/Articles/617140/ for details)
+> and 3.14-rt is no longer being developed against, I figured it was
+time
+> to put it under the "stable-rt" umbrella.
 
-Great idea and it works. Just send out version 4 of the patch. ;-)
+I piddled about with it yesterday, found that you can't change cpufreq
+governor IFF the tree is configured as rt, but works fine as voluntary
+preempt.  I'll poke about for the entertainment value.  Having no
+personal need/use for rt detracts from its hobby value somewhat, but rt
+problems do have a tendency to be 'entertaining'.
 
-Regards,
-Wanpeng Li
+I'll follow up with a few patches that folks can apply to their trees if
+they so desire.  There being no devel tree to submit against, I can't do
+a proper submission (rules), and some of them you surely don't want :) 
 
-> (untested)
->
-> Paolo
+	-Mike
+
 
