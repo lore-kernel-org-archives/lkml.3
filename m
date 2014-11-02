@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaKBXQz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 18:16:55 -0500
-Received: from roy.gaast.net ([80.101.33.21]:58627 "EHLO mail.gaast.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463AbaKBXQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 18:16:52 -0500
-Message-ID: <5456BB5D.5010801@gaast.net>
-Date: Sun, 02 Nov 2014 23:16:45 +0000
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Machine crashes right *after* ~successful resume
-References: <543F049F.5090605@gaast.net> <545027F9.1040703@gaast.net> <CAE9FiQXM=uAWPD04o8ic2juEaWVQ=seq=+CBjnPnFdrueY-RjQ@mail.gmail.com> <5450B55E.6010103@gaast.net> <CAE9FiQUH_Ce4ejnn_GG=QnG=R3jt7jHzYScPy-hqPzBMbFU=EQ@mail.gmail.com> <545214C5.6070004@gaast.net> <CAE9FiQVZV8xk0haCPo=nikBCNQfawPiw20kdEUGfJ_NdtSi5JQ@mail.gmail.com> <5452B3A6.7060100@gaast.net> <CAE9FiQUGm-gvqpzPymxqa6vdfV7xhv8-fb433irZE1AT-eNg9A@mail.gmail.com> <5452C8BE.3060206@gaast.net> <CAE9FiQWd7wC9ijzgObCcGd9QE+U3_wzjQwafXhV=U61hLxGszg@mail.gmail.com> <CAE9FiQXPZdYndp6rTKxLUkkwX=AQtRVH3JJC=xzQfsehtBgOqA@mail.gmail.com> <545358D5.6070903@gaast.net> <CAE9FiQWeZ4AXwwT=NS96Q+FxPz+3Bj5rf8JoRDmJ-RHBhjj78g@mail.gmail.com> <5453FB8E.8050506@gaast.net> <CAE9FiQX7nhBKBGUm6SkWdA3EUm1MZ3rgWf04+AUPAPgSCNam=w@mail.gmail.com> <CAE9FiQVQK4aa9bW3d3=rw+hgogSFuKnwFSutSqcMrmCCc9_3dw@mail.gmail.com> <545422A3.5010101@gaast.net> <CAE9FiQXFeuQCrc2EAXsVaBGT+TpCpg+0uJsukCTNQTjDG7p5Rw@mail.gmail.com>
-In-Reply-To: <CAE9FiQXFeuQCrc2EAXsVaBGT+TpCpg+0uJsukCTNQTjDG7p5Rw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752651AbaKBXYg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 18:24:36 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40378 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461AbaKBXYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 18:24:35 -0500
+Date: Sun, 02 Nov 2014 18:24:30 -0500 (EST)
+Message-Id: <20141102.182430.2172669108987505623.davem@davemloft.net>
+To: clemens@ladisch.de
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc64: Add preprocessor symbols for PAGE_* pgprot_t
+ values.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <545690D0.5040904@ladisch.de>
+References: <545690D0.5040904@ladisch.de>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 02 Nov 2014 15:24:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01-11-14 02:10, Yinghai Lu wrote:
->> Patch #1 worked after a simple s/&&/)/. And patch #2 seems to fix the
->> problem as well!
-> updated first #1.
->
-Works as well!
+From: Clemens Ladisch <clemens@ladisch.de>
+Date: Sun, 02 Nov 2014 21:15:12 +0100
 
+> Kernel code assumes that the PAGE_* values are preprocessor symbols, and
+> that therefore arch support can be checked for with #ifdef.
+> 
+> At the moment, sparc64 does not implement any of the symbols checked
+> for, so these checks happen to work.
+> 
+> To prevent potential breakage when another #ifdef check is added or when
+> sparc64 implements another PAGE_ value, make such #ifdef checks work by
+> adding preprocessor symbols on top of the PAGE_* variables.
+> 
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 
-Wilmer v/d Gaast.
+"This change actually doesn't have any effect, and doesn't matter,
+ so let's make this change."
 
--- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
+I really don't buy this.
+
+I'd also rather the kernel use Kconfig based symbols to detect for
+arch availability of feature X or Y, assuming things are CPP symbols
+is very fragile at best.
+
+I'm not applying this, sorry.  I mean, you didn't even bother to
+mention what symbol this does matter for.
+
