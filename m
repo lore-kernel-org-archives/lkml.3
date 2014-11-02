@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750975AbaKBFrU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 01:47:20 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:8785 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750745AbaKBFrS (ORCPT
+	id S1751017AbaKBF7A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 01:59:00 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60010 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaKBF66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 01:47:18 -0400
-Date: Sun, 2 Nov 2014 13:44:16 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Jason Cooper <jason@lakedaemon.net>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] irqchip: dw-apb-ictl: select GENERIC_IRQ_CHIP
-Message-ID: <20141102134416.1679e632@xhacker>
-In-Reply-To: <20141102022311.GS3698@titan.lakedaemon.net>
-References: <1413982750-832-1-git-send-email-jszhang@marvell.com>
-	<20141102022311.GS3698@titan.lakedaemon.net>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Sun, 2 Nov 2014 01:58:58 -0400
+Date: Sun, 2 Nov 2014 05:58:56 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs.git
+Message-ID: <20141102055856.GU7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-02_02:2014-10-31,2014-11-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1411020063
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 1 Nov 2014 19:23:11 -0700
-Jason Cooper <jason@lakedaemon.net> wrote:
+	A bunch of assorted fixes, most of them - followups to overlayfs
+merge.  Please, pull from the usual place:
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-> Jisheng,
-> 
-> On Wed, Oct 22, 2014 at 08:59:10PM +0800, Jisheng Zhang wrote:
-> > The dw-apb-ictl driver uses the generic-chip functions.
-> > Thus it needs to select GENERIC_IRQ_CHIP in Kconfig.
-> > 
-> > Change-Id: If748beffc4e0d0b47062bb067a59c10994a9148b
-> 
-> Please don't include this is future patches.
+Shortlog:
+Al Viro (3):
+      overlayfs: barriers for opening upper-layer directory
+      isofs_cmp(): we'll never see a dentry for . or ..
+      isofs: don't bother with ->d_op for normal case
 
-oops, sorry for my fault. I'll take care from now on.
+Daniel Thompson (1):
+      staging: android: logger: Fix log corruption regression
 
-Thanks for kindly reminding,
-Jisheng
+David Jeffery (1):
+      Return short read or 0 at end of a raw device, not EIO
+
+Miklos Szeredi (3):
+      ovl: fix check for cursor
+      overlayfs: fix lockdep misannotation
+      ovl: initialize ->is_cursor
+
+Paul E. McKenney (1):
+      rcu: Provide counterpart to rcu_dereference() for non-RCU situations
+
+Diffstat:
+ drivers/char/raw.c               |    2 +-
+ drivers/staging/android/logger.c |   13 ++++++++-----
+ fs/block_dev.c                   |    3 ++-
+ fs/isofs/inode.c                 |   24 ++----------------------
+ fs/isofs/namei.c                 |   22 ++++------------------
+ fs/namei.c                       |    2 +-
+ fs/overlayfs/readdir.c           |   17 ++++++++++-------
+ include/linux/fs.h               |   10 +++++++---
+ include/linux/rcupdate.h         |   15 +++++++++++++++
+ 9 files changed, 50 insertions(+), 58 deletions(-)
