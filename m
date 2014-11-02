@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaKBIKu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 03:10:50 -0500
-Received: from numascale.com ([213.162.240.84]:36026 "EHLO numascale.com"
+	id S1752012AbaKBIK6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 03:10:58 -0500
+Received: from numascale.com ([213.162.240.84]:52370 "EHLO numascale.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332AbaKBIKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 03:10:46 -0500
+	id S1751332AbaKBIKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 03:10:52 -0500
 From: Daniel J Blueman <daniel@numascale.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
 Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Steffen Persvold <sp@numascale.com>
-Subject: [PATCH v3 1/5] Numachip: Fix 16-bit APIC ID truncation
-Date: Sun,  2 Nov 2014 16:10:09 +0800
-Message-Id: <1414915813-2462-1-git-send-email-daniel@numascale.com>
+Subject: [PATCH v3 3/5] Numachip: Add safe is-present function
+Date: Sun,  2 Nov 2014 16:10:11 +0800
+Message-Id: <1414915813-2462-3-git-send-email-daniel@numascale.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414915813-2462-1-git-send-email-daniel@numascale.com>
+References: <1414915813-2462-1-git-send-email-daniel@numascale.com>
 X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
 X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
 X-AntiAbuse: Original Domain - vger.kernel.org
@@ -29,28 +31,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent 16-bit APIC IDs being truncated by using correct mask. This fixes
-booting large systems, where the wrong core would receive the startup and
-init IPIs, causing hanging.
+Add safe function to check if Numachip is detected, to be used elsewhere.
 
 Signed-off-by: Daniel J Blueman <daniel@numascale.com>
 ---
- arch/x86/kernel/apic/apic_numachip.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/numachip/numachip.h | 9 +++++++++
+ arch/x86/kernel/apic/apic_numachip.c     | 9 +++++++--
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/include/asm/numachip/numachip.h b/arch/x86/include/asm/numachip/numachip.h
+index 1c6f7f6..3e1f4f9 100644
+--- a/arch/x86/include/asm/numachip/numachip.h
++++ b/arch/x86/include/asm/numachip/numachip.h
+@@ -16,4 +16,13 @@
+ 
+ extern int __init pci_numachip_init(void);
+ 
++#ifdef CONFIG_X86_NUMACHIP
++extern bool is_numachip_system(void);
++#else
++static inline bool is_numachip_system(void)
++{
++	return 0;
++}
++#endif
++
+ #endif /* _ASM_X86_NUMACHIP_NUMACHIP_H */
 diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 81d70ba..bd083c0 100644
+index bd083c0..c965b69 100644
 --- a/arch/x86/kernel/apic/apic_numachip.c
 +++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -40,7 +40,7 @@ static unsigned int get_apic_id(unsigned long x)
- 	unsigned int id;
+@@ -30,7 +30,7 @@
+ #include <asm/apic_flat_64.h>
+ #include <asm/pgtable.h>
  
- 	rdmsrl(MSR_FAM10H_NODE_ID, value);
--	id = ((x >> 24) & 0xffU) | ((value << 2) & 0x3f00U);
-+	id = ((x >> 24) & 0xffU) | ((value << 2) & 0xff00U);
+-static int numachip_system __read_mostly;
++static bool numachip_system __read_mostly;
  
- 	return id;
+ static const struct apic apic_numachip __refconst;
+ 
+@@ -173,11 +173,16 @@ static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ 	}
  }
+ 
++bool is_numachip_system(void)
++{
++	return numachip_system;
++}
++
+ static int __init numachip_system_init(void)
+ {
+ 	unsigned int val;
+ 
+-	if (!numachip_system)
++	if (!is_numachip_system())
+ 		return 0;
+ 
+ 	x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
 -- 
 1.9.1
 
