@@ -1,93 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaKCQZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:25:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40931 "EHLO mail.kernel.org"
+	id S1752858AbaKCQ1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:27:10 -0500
+Received: from mga14.intel.com ([192.55.52.115]:15595 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023AbaKCQZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:25:53 -0500
-Date: Mon, 3 Nov 2014 14:25:48 -0200
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFD] perf syscall error handling
-Message-ID: <20141103162548.GB18464@kernel.org>
-References: <20141030222814.GF15602@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410302111150.2766@pianoman.cluster.toy>
- <20141031072109.GD12706@worktop.programming.kicks-ass.net>
- <20141031092713.GA23124@gmail.com>
- <20141031122824.GZ12020@console-pimps.org>
- <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
- <alpine.DEB.2.10.1411010130170.6256@pianoman.cluster.toy>
+	id S1751922AbaKCQ1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 11:27:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
+   d="scan'208";a="616093605"
+Date: Mon, 3 Nov 2014 21:57:28 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v8 1/5] PM / Runtime: Add getter for querying the IRQ
+ safe option
+Message-ID: <20141103162728.GB1870@intel.com>
+References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
+ <20141031142241.GA17547@amd>
+ <1414766416.6537.6.camel@AMDC1943>
+ <3452823.YQ5FR2FtKz@avalon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1411010130170.6256@pianoman.cluster.toy>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3452823.YQ5FR2FtKz@avalon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Nov 01, 2014 at 01:30:39AM -0400, Vince Weaver escreveu:
-> On Fri, 31 Oct 2014, Stephane Eranian wrote:
+On Sat, Nov 01, 2014 at 02:29:42AM +0200, Laurent Pinchart wrote:
+> Hi Krzysztof,
 > 
-> > On Fri, Oct 31, 2014 at 1:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
-> > >
-> > > I guess we'd run into a problem if userspace doesn't want to just print
-> > > the kernel string but instead wants to parse it in some fashion.
- 
-> If the string interface went in it would be a help when debugging 
-> perf_event_open().
+> On Friday 31 October 2014 15:40:16 Krzysztof Kozlowski wrote:
+> > On pią, 2014-10-31 at 15:22 +0100, Pavel Machek wrote:
+> > > On Fri 2014-10-31 10:14:55, Krzysztof Kozlowski wrote:
+> > >> On pon, 2014-10-20 at 11:04 +0200, Krzysztof Kozlowski wrote:
+> > >>> Add a simple getter pm_runtime_is_irq_safe() for querying whether
+> > >>> runtime PM IRQ safe was set or not.
+> > >>> 
+> > >>> Various bus drivers implementing runtime PM may use choose to suspend
+> > >>> differently based on IRQ safeness status of child driver (e.g. do not
+> > >>> unprepare the clock if IRQ safe is not set).
+> > >>> 
+> > >>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > >>> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+> > >> 
+> > >> Rafael, Len, Pavel,
+> > >> 
+> > >> Is proposed API ok? Do you have any comments?
+> > >> 
+> > >> I'll upload whole patchset to Russell's patch tracking system. However
+> > >> an ack from PM maintainer is probably needed.
+> > > 
+> > > I don't like the API. Having callbacks work in different context (irq
+> > > / noirq) based on what another function reports is ugly.
+> > > 
+> > > What is the penalty if we always decide callbacks are not IRQ safe?
+> > 
+> > Then pm_runtime_get_sync() could not be called in atomic context. The
+> > pl330 runtime PM would have to be completely reworked because one
+> > pm_runtime_get_sync() is called in device_issue_pending which cannot
+> > sleep (at least in non preemptible kernels). Probably this can be solved
+> > some way...
+> 
+> Many other drivers suffer from the same problem. While I won't reject your 
+> proposed fix, I would prefer a more generic approach.
+> 
+> One option that has been discussed previously was to use a work queue to delay 
+> starting the DMA transfer to an interruptible context where 
+> pm_runtime_get_sync() could be called. However, as Russell pointed out [1], 
+> even that won't work in all cases as the DMA slave might need the transfer to 
+> be started before enabling part of its hardware (OMAP audio seem to be such a 
+> case).
+> 
+> I've heard a rumor of a possible DMA engine rework to forbid calling the 
+> descriptor preparation API from atomic context. This could be used as a base 
+> to implement runtime PM, as DMA slave drivers should not prepare descriptors 
+> if they don't need to use them. However that's a long term plan, and we need a 
+> solution sooner than that.
 
-The way that peterz suggested, i.e. returning information about which
-perf_event_attr and which of the parameters was invalid/had issues could
-help with fallbacking/capability querying, i.e. tooling may want to use
-some features if available automagically, fallbacking to something else
-when that fails.
+Well it is not a rumour :)
 
-We already do that to some degree in various cases, but for some if the
-only way that becomes available to disambiguate some EINVAL return is a
-string, code will start having strcmps :-\
- 
-> Support would probably get added to PAPI, but PAPI has its own error 
-> reporting issues and it's not always easy to pass a string the whole way 
-> back to the user.
+I have been contemplating that now that async_tx will be killed so we dont
+have to worry about that usage. For the slave dma usage, we can change the
+prepare API to be non atomic. I think the users will be okay with approach.
+This way drivers can use runtime pm calls in prepare.
 
-Having the last resort being an string instead of EINVAL is indeed much
-better than what we have now.
- 
-> Also with PAPI many of the users reporting obscure perf_event_open() 
-> problems are often running 2.6.32-vendor-patched kernels, so sadly it will 
-> be years before any improved error handling filters down to many of the 
-> users.
- 
-> This proposal also doesn't help with other weird failure modes in the 
-> interface, the most annoying of which is the watchdog stealing a counter 
-> so event groups perf_event_open() and start just fine but fail at read 
-> time.
- 
-> > > That may or may not be a problem in practice, Vince can probably comment
-> > > on that. I'm just thinking along the lines of making the perf syscall
-> > > interface as useful as possible for tools other than tools/perf.
+-- 
+~Vinod
 
-> > Maybe I missed something in the earlier thread, but I am trying to understand
-> > why perf_event_open() would need such extended error retrieval system when
-> > no other syscall does.
- 
-> well perf_event_open() is so complex, with it's 40+ different parameters.  
-> Having a wrong value in any one of those (or one of the combinations of 
-> those) can trigger EINVAL and it's not clear where the issue is.  
-> I think other system calls tend to have slighly more straightforward 
-> interfaces.
+> 
+> I've been toying with the idea of adding explicit open/close (or whatever we 
+> would call them) operations to the DMA engine API. Those would be used by DMA 
+> slave drivers to signal that they will start/stop using the DMA engine.
+> 
+> If (1) we must start the DMA synchronously with a DMA slave call, (2) need to 
+> sleep to handle PM, and (3) don't want to keep the DMA engine powered for as 
+> long as one channel is requested, then we need to turn at least preparation as 
+> not callable in atomic context, or introduce a new operation.
+> 
+> [1] http://www.spinics.net/lists/dmaengine/msg01548.html
+> 
+> > >>> --- a/Documentation/power/runtime_pm.txt
+> > >>> +++ b/Documentation/power/runtime_pm.txt
+> > >>> 
+> > >>> @@ -468,6 +468,10 @@ drivers/base/power/runtime.c and
+> > >>> include/linux/pm_runtime.h:
+> > >>>      - set the power.irq_safe flag for the device, causing the
+> > >>>      runtime-PM
+> > >>>      
+> > >>>        callbacks to be invoked with interrupts off
+> > >>> 
+> > >>> +  bool pm_runtime_is_irq_safe(struct device *dev);
+> > >>> +    - return true if power.irq_safe flag was set for the device,
+> > >>> causing
+> > >>> +      the runtime-PM callbacks to be invoked with interrupts off
+> > >>> +
+> > >>> 
+> > >>>    void pm_runtime_mark_last_busy(struct device *dev);
+> > >>>    
+> > >>>      - set the power.last_busy field to the current time
+> 
+> -- 
+> Regards,
+> 
+> Laurent Pinchart
+> 
 
-Yes, it is a PITA to figure out which codepath returned -EINVAL.
-
-Its just a "No comprendo", we're left wondering what is it that is not
-being understood or accepted...
-
-- Arnaldo
+-- 
