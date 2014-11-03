@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaKCDbo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 22:31:44 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:35823 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190AbaKCDbm (ORCPT
+	id S1752998AbaKCDjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 22:39:16 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39456 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301AbaKCDjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 22:31:42 -0500
-Message-ID: <5456F713.8090503@gmail.com>
-Date: Sun, 02 Nov 2014 19:31:31 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sun, 2 Nov 2014 22:39:15 -0500
+Date: Mon, 3 Nov 2014 11:39:08 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stefan Agner <stefan@agner.ch>
+Cc: kernel@pengutronix.de, jingchang.lu@freescale.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] ARM: imx: clk-vf610: define PLL's clock tree
+Message-ID: <20141103033907.GB10821@tiger>
+References: <1414428044-22103-1-git-send-email-stefan@agner.ch>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: devicetree@vger.kernel.org, Brian Norris <computersforpeace@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of/irq: Drop obsolete 'interrupts' vs 'interrupts-extended'
- text
-References: <20141101233531.4958.96713.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-In-Reply-To: <20141101233531.4958.96713.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414428044-22103-1-git-send-email-stefan@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 01/11/2014 16:35, Bjorn Helgaas a écrit :
-> a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property
-> first") updated the description to say that:
->
->    - Both 'interrupts' and 'interrupts-extended' may be present
->    - Software should prefer 'interrupts-extended'
->    - Software that doesn't comprehend 'interrupts-extended' may use
->      'interrupts'
->
-> But there is still a paragraph at the end that prohibits having both and
-> says 'interrupts' should be preferred.
->
-> Remove the contradictory text.
->
-> Fixes: a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property first")
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+On Mon, Oct 27, 2014 at 05:40:44PM +0100, Stefan Agner wrote:
+> So far, the required PLL's (PLL1/PLL2/PLL5) have been initialized
+> by boot loader and the kernel code defined fixed rates according
+> to those default configurations. Beginning with the USB PLL7 the
+> code started to initialize the PLL's itself (using imx_clk_pllv3).
+> 
+> However, since commit dc4805c2e78ba5a22ea1632f3e3e4ee601a1743b
+> (ARM: imx: remove ENABLE and BYPASS bits from clk-pllv3 driver)
+> imx_clk_pllv3 no longer takes care of the ENABLE and BYPASS bits,
+> hence the USB PLL were not configured correctly anymore.
 
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+Sorry for that.
 
-> CC: stable@vger.kernel.org	# v3.13+
+> 
+> This patch not only fixes those USB PLL's, but also makes use of
+> the imx_clk_pllv3 for all PLL's and alignes the code with the PLL
+> support of the i.MX6 series.
+> 
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
 > ---
->   .../bindings/interrupt-controller/interrupts.txt   |    4 ----
->   1 file changed, 4 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> index ce6a1a072028..8a3c40829899 100644
-> --- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> +++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> @@ -30,10 +30,6 @@ should only be used when a device has multiple interrupt parents.
->     Example:
->   	interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
->
-> -A device node may contain either "interrupts" or "interrupts-extended", but not
-> -both. If both properties are present, then the operating system should log an
-> -error and use only the data in "interrupts".
-> -
->   2) Interrupt controller nodes
->   -----------------------------
->
->
+> Shawn, I sent this almost 1 month ago, along with a mail asking
+> of the state a week ago. But both to your old e-mail, I guess you
+> didn't received it then...?
+
+> Also some other Vybrid related patches,
+> shall I resend them with your new e-mail?
+
+Yes, resending them helps.
+
+> 
+> If possible, it still would be great if this makes it into 3.18.
+> Right now, because of the clk-pllv3 change, the newly added USB
+> support is broken...
+> 
+> I could have created a patch which only fixes the USB PLL7, but
+> then we touch the header file twice and its getting a mess in
+> there. I prefer to have it fixed once for all PLL's. I hope this
+> makes it into 3.18 nonetheless. If not, I'm also fine if this
+> makes it into next.
+
+The diff looks a little bit big, but it does fix a regression, so let
+me try to send it for 3.18.
+
+Thanks for the fixing.
+
+Shawn
+
+> 
+>  arch/arm/mach-imx/clk-vf610.c           | 134 ++++++++++++++++++++++----------
+>  include/dt-bindings/clock/vf610-clock.h |  39 ++++++++--
+>  2 files changed, 123 insertions(+), 50 deletions(-)
