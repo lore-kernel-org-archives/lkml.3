@@ -1,182 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385AbaKCNC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 08:02:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49962 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169AbaKCNCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 08:02:19 -0500
-From: Juergen Gross <jgross@suse.com>
-To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
-        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, bhelgaas@google.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V6 18/18] xen: Support Xen pv-domains using PAT
-Date: Mon,  3 Nov 2014 14:02:04 +0100
-Message-Id: <1415019724-4317-19-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1415019724-4317-1-git-send-email-jgross@suse.com>
-References: <1415019724-4317-1-git-send-email-jgross@suse.com>
+	id S1752701AbaKCNEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 08:04:13 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62875 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595AbaKCNED (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 08:04:03 -0500
+Message-ID: <54577D3A.7020306@gmail.com>
+Date: Mon, 03 Nov 2014 21:03:54 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v8 00/10] sched: consolidation of CPU capacity and usage
+References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org> <5456E48C.6020800@gmail.com> <CAKfTPtDmyUBaUQ210w36fuao9iKRGP41MqSRxhhy_3O6k4UNrg@mail.gmail.com>
+In-Reply-To: <CAKfTPtDmyUBaUQ210w36fuao9iKRGP41MqSRxhhy_3O6k4UNrg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the dynamical mapping between cache modes and pgprot values it is
-now possible to use all cache modes via the Xen hypervisor PAT settings
-in a pv domain.
 
-All to be done is to read the PAT configuration MSR and set up the
-translation tables accordingly.
+On 14/11/3 下午6:55, Vincent Guittot wrote:
+> On 3 November 2014 03:12, Wanpeng Li <kernellwp@gmail.com> wrote:
+>> Hi Vincent,
+>> On 14/10/31 下午4:47, Vincent Guittot wrote:
+>>> This patchset consolidates several changes in the capacity and the usage
+>>> tracking of the CPU. It provides a frequency invariant metric of the usage
+>>> of
+>>> CPUs and generally improves the accuracy of load/usage tracking in the
+>>> scheduler. The frequency invariant metric is the foundation required for
+>>> the
+>>> consolidation of cpufreq and implementation of a fully invariant load
+>>> tracking.
+>>> These are currently WIP and require several changes to the load balancer
+>>> (including how it will use and interprets load and capacity metrics) and
+>>> extensive validation. The frequency invariance is done with
+>>> arch_scale_freq_capacity and this patchset doesn't provide the backends of
+>>> the function which are architecture dependent.
+>>>
+>>> As discussed at LPC14, Morten and I have consolidated our changes into a
+>>> single
+>>> patchset to make it easier to review and merge.
+>>>
+>>> During load balance, the scheduler evaluates the number of tasks that a
+>>> group
+>>> of CPUs can handle. The current method assumes that tasks have a fix load
+>>> of
+>>> SCHED_LOAD_SCALE and CPUs have a default capacity of SCHED_CAPACITY_SCALE.
+>>> This assumption generates wrong decision by creating ghost cores or by
+>>
+>> I don't know the history, could you explain what's the meaning of 'ghost
+>> cores' ?
+> The capacity_factor gives the number of tasks that can be handled by a
+> group of CPUs by dividing the group's capacity by SCHED_CAPACITY_SCALE
+>
+> For a system with SMT, the default capacity of a core is 1178 so the
+> capacity of each CPU for a dual threads per core is 589.
+>
+> At CPU level we have a capacity_factor of 1  = div_round_closest(589, 1024)
+> At core level we still have a capacity_factor of 1  =
+> div_round_closest(1178, 1024).  This is a intended behavior to promote
+> 1 task per core
+> Then, if we have 4 cores in a node, the capacity_factor is 5 =
+> div_round_closest(4712, 1024) whereas we should have 4. So a 5th ghost
+> core has appeared in the group and the load balancer will not
+> considered the group as overloaded if there is 5 tasks whereas it
+> should in order to try to move this 5th task on an idle core (if there
+> is one)
+> Patch [0] solves some use cases by ensuring that we will not have more
+> cores than possible so we can't have more than 4 core for the previous
+> example.
+> Now, if some RT tasks are running and using almost 1 core (1024 as an
+> example), the capacity_factor is still 4 = div_round_closest(3688,
+> 1024) whereas a core is nearly fully used and the capacity_factor
+> should be 3
+>
+> [0] https://lkml.org/lkml/2013/8/28/194
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/xen/enlighten.c | 25 +++++++------------------
- arch/x86/xen/mmu.c       | 47 +----------------------------------------------
- arch/x86/xen/xen-ops.h   |  1 -
- 3 files changed, 8 insertions(+), 65 deletions(-)
+Got it, thanks for your great explanation.
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index fac5e4f..6bf3a13 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1100,12 +1100,6 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
- 		/* Fast syscall setup is all done in hypercalls, so
- 		   these are all ignored.  Stub them out here to stop
- 		   Xen console noise. */
--		break;
--
--	case MSR_IA32_CR_PAT:
--		if (smp_processor_id() == 0)
--			xen_set_pat(((u64)high << 32) | low);
--		break;
- 
- 	default:
- 		ret = native_write_msr_safe(msr, low, high);
-@@ -1561,10 +1555,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
- 
- 	/* Prevent unwanted bits from being set in PTEs. */
- 	__supported_pte_mask &= ~_PAGE_GLOBAL;
--#if 0
--	if (!xen_initial_domain())
--#endif
--		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
- 
- 	/*
- 	 * Prevent page tables from being allocated in highmem, even
-@@ -1618,14 +1608,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
- 	 */
- 	acpi_numa = -1;
- #endif
--#ifdef CONFIG_X86_PAT
--	/*
--	 * For right now disable the PAT. We should remove this once
--	 * git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
--	 * (xen/pat: Disable PAT support for now) is reverted.
--	 */
--	pat_enabled = 0;
--#endif
- 	/* Don't do the full vcpu_info placement stuff until we have a
- 	   possible map and a non-dummy shared_info. */
- 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-@@ -1636,6 +1618,13 @@ asmlinkage __visible void __init xen_start_kernel(void)
- 	xen_raw_console_write("mapping kernel into physical memory\n");
- 	xen_setup_kernel_pagetable((pgd_t *)xen_start_info->pt_base, xen_start_info->nr_pages);
- 
-+	/*
-+	 * Modify the cache mode translation tables to match Xen's PAT
-+	 * configuration.
-+	 */
-+
-+	pat_init_cache_modes();
-+
- 	/* keep using Xen gdt for now; no urgent need to change it */
- 
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index a8a1a3d..9855eb8 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -410,13 +410,7 @@ static pteval_t pte_pfn_to_mfn(pteval_t val)
- __visible pteval_t xen_pte_val(pte_t pte)
- {
- 	pteval_t pteval = pte.pte;
--#if 0
--	/* If this is a WC pte, convert back from Xen WC to Linux WC */
--	if ((pteval & (_PAGE_PAT | _PAGE_PCD | _PAGE_PWT)) == _PAGE_PAT) {
--		WARN_ON(!pat_enabled);
--		pteval = (pteval & ~_PAGE_PAT) | _PAGE_PWT;
--	}
--#endif
-+
- 	return pte_mfn_to_pfn(pteval);
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_pte_val);
-@@ -427,47 +421,8 @@ __visible pgdval_t xen_pgd_val(pgd_t pgd)
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
- 
--/*
-- * Xen's PAT setup is part of its ABI, though I assume entries 6 & 7
-- * are reserved for now, to correspond to the Intel-reserved PAT
-- * types.
-- *
-- * We expect Linux's PAT set as follows:
-- *
-- * Idx  PTE flags        Linux    Xen    Default
-- * 0                     WB       WB     WB
-- * 1            PWT      WC       WT     WT
-- * 2        PCD          UC-      UC-    UC-
-- * 3        PCD PWT      UC       UC     UC
-- * 4    PAT              WB       WC     WB
-- * 5    PAT     PWT      WC       WP     WT
-- * 6    PAT PCD          UC-      rsv    UC-
-- * 7    PAT PCD PWT      UC       rsv    UC
-- */
--
--void xen_set_pat(u64 pat)
--{
--	/* We expect Linux to use a PAT setting of
--	 * UC UC- WC WB (ignoring the PAT flag) */
--	WARN_ON(pat != 0x0007010600070106ull);
--}
--
- __visible pte_t xen_make_pte(pteval_t pte)
- {
--#if 0
--	/* If Linux is trying to set a WC pte, then map to the Xen WC.
--	 * If _PAGE_PAT is set, then it probably means it is really
--	 * _PAGE_PSE, so avoid fiddling with the PAT mapping and hope
--	 * things work out OK...
--	 *
--	 * (We should never see kernel mappings with _PAGE_PSE set,
--	 * but we could see hugetlbfs mappings, I think.).
--	 */
--	if (pat_enabled && !WARN_ON(pte & _PAGE_PAT)) {
--		if ((pte & (_PAGE_PCD | _PAGE_PWT)) == _PAGE_PWT)
--			pte = (pte & ~(_PAGE_PCD | _PAGE_PWT)) | _PAGE_PAT;
--	}
--#endif
- 	pte = pte_pfn_to_mfn(pte);
- 
- 	return native_make_pte(pte);
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 28c7e0b..4ab9298 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -33,7 +33,6 @@ extern unsigned long xen_max_p2m_pfn;
- 
- void xen_mm_pin_all(void);
- void xen_mm_unpin_all(void);
--void xen_set_pat(u64);
- 
- char * __init xen_memory_setup(void);
- char * xen_auto_xlated_memory_setup(void);
--- 
-1.8.4.5
+Regards,
+Wanpeng Li
+
+>
+> Regards,
+> Vincent
+>
+>> Regards,
+>> Wanpeng Li
+>>
+>>
+>>> removing real ones when the original capacity of CPUs is different from
+>>> the
+>>> default SCHED_CAPACITY_SCALE. With this patch set, we don't try anymore to
+>>> evaluate the number of available cores based on the group_capacity but
+>>> instead
+>>> we evaluate the usage of a group and compare it with its capacity.
+>>>
+>>> This patchset mainly replaces the old capacity_factor method by a new one
+>>> and
+>>> keeps the general policy almost unchanged. These new metrics will be also
+>>> used
+>>> in later patches.
+>>>
+> [snip]
 
