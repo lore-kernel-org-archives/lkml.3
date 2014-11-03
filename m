@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475AbaKCNJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 08:09:56 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:38899 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364AbaKCNJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 08:09:55 -0500
-Date: Mon, 3 Nov 2014 13:09:49 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Raymond Tan <raymond.tan@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Alvin Chen <alvin.chen@intel.com>
-Subject: Re: [PATCH 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
- I2C-GPIO MFD Driver
-Message-ID: <20141103130949.GG4538@x1>
-References: <1415000344-23575-1-git-send-email-raymond.tan@intel.com>
- <1415000344-23575-2-git-send-email-raymond.tan@intel.com>
- <1415005892.2396.82.camel@linux.intel.com>
+	id S1752379AbaKCNMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 08:12:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39653 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751651AbaKCNL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 08:11:59 -0500
+Date: Mon, 3 Nov 2014 14:11:11 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/7] perf tools: Enhance the thread stack to output
+ call/return data
+Message-ID: <20141103131111.GB29906@krava.brq.redhat.com>
+References: <1414678188-14946-1-git-send-email-adrian.hunter@intel.com>
+ <1414678188-14946-5-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415005892.2396.82.camel@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1414678188-14946-5-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Nov 2014, Andy Shevchenko wrote:
-
-> On Mon, 2014-11-03 at 15:39 +0800, Raymond Tan wrote:
-> > In Quark X1000, there's a single PCI device that provides both
-> > an I2C controller and a GPIO controller. This MFD driver will
-> > split the 2 devices for their respective drivers.
-> > 
-> > This patch is based on Josef Ahmad's initial work for Quark enabling.
+On Thu, Oct 30, 2014 at 04:09:45PM +0200, Adrian Hunter wrote:
+> Enhance the thread stack to output detailed information
+> about paired calls and returns.
 > 
-> Few comments below.
+> The enhanced processing consumes sample information via
+> thread_stack__process() and outputs information about
+> paired calls / returns via a call-back.  While the
+> call-back makes it possible for the facility to be used
+> by arbitrary tools, a subsequent patch will provide the
+> information to Python scripting via the db-export
+> interface.
 > 
-> After addressing take my
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-
-[...]
-
-> > +static const struct i2c_mode_info platform_i2c_mode_info[] = {
-> > +	{
-> > +		.name = "Galileo",
-> > +		.i2c_scl_freq = 100000,
-> > +	},
-> > +	{
-> > +		.name = "GalileoGen2",
-> > +		.i2c_scl_freq = 400000,
-> > +	},
+> An important part of the call/return information is the
+> call path which provides a structure that defines a context
+> sensitive call graph.
 > 
-> You can decrease indentation level if you want to by using
-> 
-> = {{
-> }, {
-> }};
-> 
-> Though I don't know if Lee likes it :-)
+> Note that there are now two ways to use the thread stack.
+> For simply providing a call stack (like you would get
+> from the perf record -g option) the interface consists of
+> thread_stack__event() and thread_stack__sample().  Whereas
+> the enhanced interface consists of call_return_processor__new()
+> and thread_stack__process().
 
-No, please don't do that.
+the interface seems pretty separated, with clear in and out values,
+so it should be fairly easy to write automated tests for that ;-)
 
-[...]
+also given that there's no real user of this interface at the moment,
+it'd be really nice to have ;-) anyway
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+
+jirka
