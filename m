@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624AbaKCWTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 17:19:39 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:52209 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751125AbaKCWTi (ORCPT
+	id S1751393AbaKCW0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 17:26:41 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:37201 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810AbaKCW0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 17:19:38 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApQuACP/V1R5LbBU/2dsb2JhbABcgw6BLII2uBoGlSiFagQCAoEnFwEBAQEBfYQDAQEEOhwjEAgDDgoJJQ8FJQMhE4hAyw0BAQEHAgEfGIYfilkHgy2BHgWeAIEyi0iFToQJhAwpL4JLAQEB
-Date: Tue, 4 Nov 2014 09:18:49 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Jan Kara <jack@suse.cz>, xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: your patch "mm: Remove false WARN_ON from
- pagecache_isize_extended()"
-Message-ID: <20141103221849.GB23575@dastard>
-References: <5457BE390200007800044838@mail.emea.novell.com>
+	Mon, 3 Nov 2014 17:26:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5457BE390200007800044838@mail.emea.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.03.1411022004230.3979@cyber.ee>
+References: <alpine.DEB.2.03.1411022004230.3979@cyber.ee>
+Date: Mon, 3 Nov 2014 23:26:38 +0100
+X-Google-Sender-Auth: 86CeWtrdLoRju_jt4qJJAbkEUWU
+Message-ID: <CAMuHMdVoVjCyJAWiKePXzfx8WyXoFd8CwwAk8DM8jxcOHC1Mnw@mail.gmail.com>
+Subject: Re: bisected regression: qla2xxx endianness on sparc64
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Joe Carnuccio <joe.carnuccio@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Christoph Hellwig <hch@lst.de>, qla2xxx-upstream@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        scsi <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 04:41:13PM +0000, Jan Beulich wrote:
-> Jan,
-> 
-> having run into that warning too, I looked into it a little, and now
-> having found that patch am pretty uncertain: Both truncate_setsize()
-> and pagecache_isize_extended() document that they want to be
-> called with i_mutex held, so removing the WARN_ON() alone seems
-> either incomplete or wrong. What I found to work without violating
-> this documented requirement is the patch below.
+On Sun, Nov 2, 2014 at 7:10 PM, Meelis Roos <mroos@linux.ee> wrote:
+> Between 3.17 and 3.18-rc2, qla2xxx is broken on my sparc64 machines. It
+> fails to boot (hangs in firmware rings init).
+>
+> This is the result of bisect:
+>
+> 98aee70d19a7e3203649fa2078464e4f402a0ad8 is the first bad commit
+> commit 98aee70d19a7e3203649fa2078464e4f402a0ad8
+> Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
+> Date:   Thu Sep 25 05:16:38 2014 -0400
+>
+>     qla2xxx: Add endianizer to max_payload_size modifier.
+>
+>     Signed-off-by: Joe Carnuccio <joe.carnuccio@qlogic.com>
+>     Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+>     Signed-off-by: Christoph Hellwig <hch@lst.de>
+>
+> :040000 040000 041c1a26dc2a7988900acc982e3bd65d3cf7e751
+> 9700d09c3226fc352d44352f22b84f1be632d324 M  s
+>
+> This may not be the only problem - when bisecting, I also came to commits
+> that got past this step but hang after about 165 seconds of uptime while
+> running userspace startup scripts. But let that be another issue at the
+> moment.
 
-Or, just perhaps, the comments are wrong....
+Switching from uint16_t to __le16 but _removing_ cpu_to_le16() operations
+looks indeed very fishy.
 
-Some filesystems have stronger, more robust internal serialisation
-than the VFS provides with i_mutex....
+Gr{oetje,eeting}s,
 
-> --- a/fs/xfs/xfs_file.c
-> +++ b/fs/xfs/xfs_file.c
-> @@ -797,7 +797,7 @@ xfs_file_fallocate(
->  		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
->  		return -EOPNOTSUPP;
->  
-> -	xfs_ilock(ip, XFS_IOLOCK_EXCL);
-> +	xfs_rw_ilock(ip, XFS_IOLOCK_EXCL);
->  	if (mode & FALLOC_FL_PUNCH_HOLE) {
->  		error = xfs_free_file_space(ip, offset, len);
->  		if (error)
+                        Geert
 
-The i_mutex is completely redundant here. Not to mention there are
-multiple callers of these xfs_*_file_space() functions used to
-implement fallocate(), and we're not about to change the locking
-model for them....
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
