@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaKCW0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 17:26:41 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:37201 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaKCW0k (ORCPT
+	id S1751587AbaKCW3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 17:29:09 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:35362 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaKCW3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 17:26:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.03.1411022004230.3979@cyber.ee>
-References: <alpine.DEB.2.03.1411022004230.3979@cyber.ee>
-Date: Mon, 3 Nov 2014 23:26:38 +0100
-X-Google-Sender-Auth: 86CeWtrdLoRju_jt4qJJAbkEUWU
-Message-ID: <CAMuHMdVoVjCyJAWiKePXzfx8WyXoFd8CwwAk8DM8jxcOHC1Mnw@mail.gmail.com>
-Subject: Re: bisected regression: qla2xxx endianness on sparc64
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Joe Carnuccio <joe.carnuccio@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Christoph Hellwig <hch@lst.de>, qla2xxx-upstream@qlogic.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        scsi <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Nov 2014 17:29:06 -0500
+Message-ID: <1415052905.10958.39.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Cc: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgross@suse.com" <jgross@suse.com>,
+        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
+        "luto@amacapital.net" <luto@amacapital.net>,
+        "hmh@hmh.eng.br" <hmh@hmh.eng.br>,
+        "yigal@plexistor.com" <yigal@plexistor.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Date: Mon, 03 Nov 2014 15:15:05 -0700
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B4029593578ED@G9W0745.americas.hpqcorp.net>
+References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
+	 <1414450545-14028-5-git-send-email-toshi.kani@hp.com>
+	 <94D0CD8314A33A4D9D801C0FE68B4029593578ED@G9W0745.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 2, 2014 at 7:10 PM, Meelis Roos <mroos@linux.ee> wrote:
-> Between 3.17 and 3.18-rc2, qla2xxx is broken on my sparc64 machines. It
-> fails to boot (hangs in firmware rings init).
->
-> This is the result of bisect:
->
-> 98aee70d19a7e3203649fa2078464e4f402a0ad8 is the first bad commit
-> commit 98aee70d19a7e3203649fa2078464e4f402a0ad8
-> Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
-> Date:   Thu Sep 25 05:16:38 2014 -0400
->
->     qla2xxx: Add endianizer to max_payload_size modifier.
->
->     Signed-off-by: Joe Carnuccio <joe.carnuccio@qlogic.com>
->     Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
->     Signed-off-by: Christoph Hellwig <hch@lst.de>
->
-> :040000 040000 041c1a26dc2a7988900acc982e3bd65d3cf7e751
-> 9700d09c3226fc352d44352f22b84f1be632d324 M  s
->
-> This may not be the only problem - when bisecting, I also came to commits
-> that got past this step but hang after about 165 seconds of uptime while
-> running userspace startup scripts. But let that be another issue at the
-> moment.
+On Mon, 2014-11-03 at 22:10 +0000, Elliott, Robert (Server Storage)
+wrote:
+ :
+> > Subject: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for
+> > WT
+> > 
+> > This patch adds pgprot_writethrough() for setting WT to a given
+> > pgprot_t.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ...
+> > diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+> > index a214f5a..a0264d3 100644
+> > --- a/arch/x86/mm/pat.c
+> > +++ b/arch/x86/mm/pat.c
+> > @@ -896,6 +896,16 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
+> >  }
+> >  EXPORT_SYMBOL_GPL(pgprot_writecombine);
+> > 
+> > +pgprot_t pgprot_writethrough(pgprot_t prot)
+> > +{
+> > +	if (pat_enabled)
+> > +		return __pgprot(pgprot_val(prot) |
+> > +				cachemode2protval(_PAGE_CACHE_MODE_WT));
+> > +	else
+> > +		return pgprot_noncached(prot);
+> > +}
+> > +EXPORT_SYMBOL_GPL(pgprot_writethrough);
+> ...
+> 
+> Would you be willing to use EXPORT_SYMBOL for the new 
+> pgprot_writethrough function to provide more flexibility
+> for modules to utilize the new feature?  In x86/mm, 18 of 60
+> current exports are GPL and 42 are not GPL.
 
-Switching from uint16_t to __le16 but _removing_ cpu_to_le16() operations
-looks indeed very fishy.
+I simply used EXPORT_SYMBOL_GPL() since pgprot_writecombine() used
+it. :-)  This interface is intended to be used along with
+remap_pfn_range() and ioremap_prot(), which are both exported with
+EXPORT_SYMBOL().  So, it seems reasonable to export it with
+EXPORT_SYMBOL() as well.  I will make this change.
 
-Gr{oetje,eeting}s,
+Thanks,
+-Toshi
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
