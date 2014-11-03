@@ -1,123 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaKCRFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:05:40 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:64073 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318AbaKCRFh (ORCPT
+	id S1753472AbaKCRFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:05:54 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:57897 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391AbaKCRFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:05:37 -0500
+	Mon, 3 Nov 2014 12:05:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <54576E48.40800@collabora.co.uk>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <1414620056-6675-7-git-send-email-gregkh@linuxfoundation.org>
- <CALCETrWqbpxk83L0k0_78JZCO+ntZhx_hHMcRu=vxs6VE2f5JQ@mail.gmail.com>
- <CALCETrVkuKxMMEw3HBEOZoFUuw8PndXtB13+bLWmcp_E34SaFw@mail.gmail.com>
- <5451FA9B.8070501@zonque.org> <CALCETrWjOS0AHF33zN0Vy1NC1441To7AgNPge3sKCz8bn2d8gg@mail.gmail.com>
- <54525F32.3040502@zonque.org> <CALCETrV6MLYUQN6mqZbH=FrLyrETVoemtdC05po8+X=6SKQ70A@mail.gmail.com>
- <5454BE6E.5040507@zonque.org> <CALCETrXxx4juUGA3mwOxq0BtErM0kj7_THxiO5LwCVLzCXnd2A@mail.gmail.com>
- <54576E48.40800@collabora.co.uk>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Nov 2014 09:05:14 -0800
-Message-ID: <CALCETrXMZobdWkJz6mZHGMJU-asMJXc5+4JRisyACn=h9sOPtA@mail.gmail.com>
-Subject: Re: kdbus: add code to gather metadata
-To: Simon McVittie <simon.mcvittie@collabora.co.uk>
-Cc: Daniel Mack <daniel@zonque.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
+In-Reply-To: <20141103083447.GA8617@infradead.org>
+References: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
+	<5452B241.5010603@amacapital.net>
+	<CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
+	<CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+	<CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
+	<20141031084220.GA29085@infradead.org>
+	<CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
+	<CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
+	<20141103083447.GA8617@infradead.org>
+Date: Mon, 3 Nov 2014 09:05:51 -0800
+X-Google-Sender-Auth: -rmga4xqMM-gn50RAiEzDCNsi24
+Message-ID: <CA+55aFz_C4nVX580nvvAngsB3U9oMnCGPDs8Yo1Qpx=XagcpMA@mail.gmail.com>
+Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Al Viro <viro@zeniv.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        "alban.crequy" <alban.crequy@collabora.co.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tom Gundersen <teg@jklm.no>
+        Eric Rannaud <e@nanocritical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 4:00 AM, Simon McVittie
-<simon.mcvittie@collabora.co.uk> wrote:
-> On 01/11/14 16:19, Andy Lutomirski wrote:
->> You can't justify logging fundamentally unverifiable things like the
->> command line by saying that you want to know if someone tries to play
->> (impossible-to-reliably-detect) games to obscure their command line.
+On Mon, Nov 3, 2014 at 12:34 AM, Christoph Hellwig <hch@infradead.org> wrote:
 >
-> I think kdbus might be mixing up two orthogonal things here.
->
-> It has an easy, kernel-checked, race-free way to determine
-> kernel-mediated credential-like information that cannot be faked or
-> interfered with (uid, primary gid, other gids?, security label,
-> capabilities) because these are usable for security decisions, but if
-> they are *not* received in a kernel-checked, race-free way, then they
-> are useless.
->
-> One concrete example of using non-ucred credential-like information is
-> that traditional D-Bus can only restrict sysadmin tasks to uid 0 (or a
-> root-equivalent uid in group sudo/admin/whatever), whereas when systemd
-> and systemd-logind are run on kdbus, many of their D-Bus methods require
-> specific capabilities(7): KillUser requires CAP_KILL, PowerOff requires
-> CAP_SYS_BOOT, and so on. If capabilities(7) are a good thing, then
-> that's surely a good thing too. (On the other hand, if you think
-> capabilities(7) are a waste of time, then so is this.)
+> That doesn't help because we explicitly reject O_RDONLY when combined
+> with O_TMPFILE.
 
-I think that capabilities(7) is largely a disaster.  That aside, I
-don't think that all of these capabilities should refer to the
-*kernel* privileges.  For example, CAP_SYS_BOOT should be, and remain,
-the ability to reboot the system *yourself*.  For example, if someone
-wants to implement Windows 7 (or Visa?  Or 2003?  I forget.) style
-reboot auditing, then userspace specifically does not want programs
-that can ask for a reboot to hold CAP_SYS_BOOT.
+You obviously cannot actually have a read-only file descriptor with
+O_TMPFILE, unless all you care about is a zero-sized file with no
+contents.
 
->
-> It also uses the same mechanism as an easy, race-free, but *not*
-> kernel-checked way to determine bits and pieces that are valuable for
-> debugging (dbus-monitor etc.), but unsuitable for security decisions,
-> such as cmdline.
->
-> In traditional D-Bus, you can get the uid and pid of a remote process,
-> but in a debug log you would probably actually prefer to log the cmdline
-> in addition; yes a malicious user could fake the cmdline, but when
-> debugging a system problem, information that is known to be forgeable
-> seems better than no information at all. After all, ps(1) shows the
-> forgeable cmdline, not just the executable. You can get that by
-> rummaging in /proc/$pid, but there is a race: if the remote process
-> exits too soon (a "fire and forget" method call) then you'll never know
-> who it was. kdbus solves that race, but does not make cmdline unforgeable.
->
+That's why people are talking about things like downgrading the file
+*after* filling it, using sealing.
 
-I would love to fix this race.  That opens the door to a lot more
-debugging (maps, status, etc) while not pretending to offer a kernel
-check that doesn't, and can't, exist.
-
-Materializing some sort of pid fd on the receiving end would be one
-solution.  Another would be to give the receiver some token that can
-be used to check for pid recycling.
-
-Can we give each task a pid-namespace-local 64-bit (or even longer)
-number that is mostly guaranteed not to be reused for the lifetime of
-the namespace?
-
-For example, give each task a per-pidns tid_unique, and give each
-pidns a next_tid_unique.  Creating a task assigns it
-next_tid_unique++.  (On overflow, clone fails.)  For CRIU's benefit,
-if you have CAP_SYS_ADMIN over the pidns's userns and you are not in
-the pidns, then you can change tid_unique and next_tid_unique.  Doing
-that carelessly will introduce races, but that's fine -- it should
-only be done on restore when everything's frozen.
-
-> If client libraries wishing to attach their cmdline (or other debug
-> info) to messages for debugging were required to add it as an
-> out-of-band KDBUS_ITEM, or as a D-Bus message header inside the payload,
-> then that would be duplicating work in client libraries that could have
-> been done centrally, but would still solve the race.
->
-
-I much prefer that approach.  If a kernel feature is being added to
-just to avoid duplication of a debugging aid in user code, then let's
-leave it to user code.
-
---Andy
+                  Linus
