@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526AbaKCSFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:05:40 -0500
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:48040 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaKCSFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:05:35 -0500
-X-Originating-IP: 50.43.41.112
-Date: Mon, 3 Nov 2014 10:05:28 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CodingStyle: Add a chapter on conditional compilation
-Message-ID: <20141103180528.GA9026@jtriplet-mobl1>
-References: <430ce084b015d22a597ef7e4f6436dadaea7b23d.1414606455.git.josh@joshtriplett.org>
- <20141103114656.3bf200df@lwn.net>
- <1415036860.17743.25.camel@perches.com>
+	id S1753616AbaKCSGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:06:38 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48008 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753080AbaKCSGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 13:06:37 -0500
+Date: Mon, 3 Nov 2014 12:06:02 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Felipe Balbi <balbi@ti.com>, <myungjoo.ham@samsung.com>,
+        <cw00.choi@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
+        <grant.likely@linaro.org>, George Cherian <george.cherian@ti.com>
+Subject: Re: [PATCH 1/4] extcon: gpio: Convert the driver to use gpio desc
+ API's
+Message-ID: <20141103180602.GU27425@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415032350-8459-1-git-send-email-balbi@ti.com>
+ <1415032350-8459-2-git-send-email-balbi@ti.com>
+ <20141103180150.GA10164@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l/3WCmqZNZ+BnHMk"
 Content-Disposition: inline
-In-Reply-To: <1415036860.17743.25.camel@perches.com>
+In-Reply-To: <20141103180150.GA10164@roeck-us.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 09:47:40AM -0800, Joe Perches wrote:
-> On Mon, 2014-11-03 at 11:46 -0500, Jonathan Corbet wrote:
-> > On Wed, 29 Oct 2014 11:15:17 -0700
-> > Josh Triplett <josh@joshtriplett.org> wrote:
-> > 
-> > > Document several common practices and conventions regarding conditional
-> > > compilation, most notably the preference for ifdefs in headers rather
-> > > than .c files.
-> > 
-> > OK, I've picked this one up for my 3.19 docs pull.
-> 
-> I think that Al Viro's suggestion from awhile ago:
-> 
-> https://lkml.org/lkml/2013/3/20/388
-> 
-> could still be in CodingStyle somewhere or in
-> another document like CodingStyleSuggestions.
+--l/3WCmqZNZ+BnHMk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think that text needs some cleanup to better fit CodingStyle, but the
-intent and recommendations definitely ought to go in.  A few of those
-seem too far down the road of "don't stuff beans up your nose", and some
-of them need shortening (just "don't put an else after an if condition
-ending with break or return; remember to handle errors via break,
-return, or continue, and outdent the subsequent code").
+On Mon, Nov 03, 2014 at 10:01:50AM -0800, Guenter Roeck wrote:
+> On Mon, Nov 03, 2014 at 10:32:27AM -0600, Felipe Balbi wrote:
+> > From: George Cherian <george.cherian@ti.com>
+> >=20
+> > Convert the driver to use gpiod_* API's.
+> >=20
+> > Reviewed-by: Roger Quadros <rogerq@ti.com>
+> > Signed-off-by: George Cherian <george.cherian@ti.com>
+> > Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > ---
+>=20
+> I think it might be useful and appropriate to explain that and why
+> you remove support for active-low pins, instead of hiding it in a
+> seemingly unrelated patch.
 
-> Another thing that could go is the suggestion to
-> use Lindent.
-> 
-> https://lkml.org/lkml/2013/2/11/390
+removed ? why removed ? gpio descs handle that for you, read the source
+code.
 
-Agreed completely.  We might consider coming up with settings for
-clang-format, which seems like a far more capable replacement that
-actually understands C.
+--=20
+balbi
 
-- Josh Triplett
+--l/3WCmqZNZ+BnHMk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUV8QKAAoJEIaOsuA1yqREwb8P/3iyJi7rgFgtJK2ZcXxZWFJ7
+gv/yt0byPdY2C1tALT0kriVWlfZXP+YwHRXhLLQjeDPvyvn2VCVSx0ZPJYJzQJ7X
+CKqkioFxifKDrPBA+r9w3dQgHgBN7W08DtVMNk7Tn/p6Vb2km4TLOfNDIu7vu+TK
+A/xwkIeEh8FIrxw61/AqZqRHDrOfEcB0Y7XteaPuRPyitjBPprSStfNSWFBQjSW/
+e2Uza9pbdPNvy+6heZKdrtsdAsfGyBBTOrcp96G6aZ+ooJVIPehDOJV9+OsAS7QM
+iXk4IqwOVA/omKFE/u68jFlGUqiGYzcE/ZBApwmiGCALzFkSH5OyZlAQ2qTnlofV
+EXjSx9oCgDnfaH7QM9Wo6ktC9wiOQfSTl9ttn0L4ksDMu1Bn0HecnDIijOK2leam
+a1oJRlddbb1EVRr/CoQHWFdmI0MfHF9pgk2PJfoGsy3BmaRIo4YD73iqGuyc0fqa
+UI1RxaKEn4scVe8Yy7q4ZJveSggbGQWMQjqH21yFwaLOob3kPcBv8rOfAbdOiF+6
+W4Z03qVh6H2KlpLcgmNOmxr6b4GcVGJus2NXOe7tHmRulkIcow3mIeqxzG4nARMh
+Dzfpd4Ps9C2pYBieUaQWWWEdAcgiHzRhQYhfSFIi1bAkKYsMtIjPpqOlbwRYIc9j
+LrLhYkuIlyAywiSTM65s
+=7vjF
+-----END PGP SIGNATURE-----
+
+--l/3WCmqZNZ+BnHMk--
