@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaKCXCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 18:02:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33568 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaKCXCf (ORCPT
+	id S1752390AbaKCXDI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 18:03:08 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:51840 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaKCXDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 18:02:35 -0500
-Date: Mon, 3 Nov 2014 15:02:34 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Kweh Hock Leong <hock.leong.kweh@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Sam Protsenko <semen.protsenko@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Ong Boon Leong <boon.leong.ong@intel.com>
-Subject: Re: [PATCH v2 0/3] Enable user helper interface for efi capsule
- update
-Message-ID: <20141103230234.GA9427@kroah.com>
-References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
- <5457D883.4050201@amacapital.net>
- <20141103212706.GE7379@kroah.com>
- <CALCETrUNCuFvwkzbU4dWB0GH4mJKKV1e6jCNrSLVJe+n_et3kQ@mail.gmail.com>
+	Mon, 3 Nov 2014 18:03:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUNCuFvwkzbU4dWB0GH4mJKKV1e6jCNrSLVJe+n_et3kQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141103225721.GA12117@redhat.com>
+References: <bf6fb790787eb95b922157838f52712c25dda157.1412187233.git.luto@amacapital.net>
+ <tip-2c7577a7583747c9b71f26dced7f696b739da745@git.kernel.org>
+ <CALCETrWM2wVynp1rrip9AWtNYDzjC4M8JqKR82ew5dpyrTWMgA@mail.gmail.com>
+ <20141103214712.GA8711@redhat.com> <20141103215837.GB8711@redhat.com>
+ <CALCETrUMLaz_McO=f-v6JmPY7pJSU4M4g1+p1un1UiVcNf+4XQ@mail.gmail.com> <20141103225721.GA12117@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Nov 2014 15:02:43 -0800
+Message-ID: <CALCETrWoqu=7=-JYgZzcOcPsvYkA0eFTpbpmDUNA5=CLT3ykSw@mail.gmail.com>
+Subject: Re: [tip:x86/asm] sched/x86_64: Don't save flags on context switch
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jan Beulich <jbeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Sebastian Lackner <sebastian@fds-team.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, Anish Bhatt <anish@chelsio.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 01:32:46PM -0800, Andy Lutomirski wrote:
-> On Mon, Nov 3, 2014 at 1:27 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Nov 03, 2014 at 11:33:23AM -0800, Andy Lutomirski wrote:
-> >> On 11/02/2014 07:07 PM, Kweh Hock Leong wrote:
-> >> > From: "Kweh, Hock Leong" <hock.leong.kweh-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
-> >> >
-> >> > Hi Guys,
-> >> >
-> >> > This patchset is created on top of "efi: Capsule update support" patch:
-> >> > http://permalink.gmane.org/gmane.linux.kernel.efi/4837
-> >> >
-> >> > It leverages the request_firmware_nowait() to expose the user helper interface for user to upload the capsule binary and calling the
-> >> > efi_capsule_update() API to pass the binary to EFI firmware.
-> >>
-> >> I don't get it.  Why is the firmware interface at all reasonable for
-> >> uploading capsules?
-> >
-> > Tradition dictates that BIOS updates go through the firmware interface,
-> > that way you don't have to write a new userspace tool, which is a good
-> > thing.
-> >
-> >> The firmware interface makes sense for nonvolatile firmware where
-> >> hotplugging something or otherwise loading a driver needs a blob.
-> >
-> > Or BIOS data.  We've been doing it this way for a long time now.
-> 
-> On what system?  Dell?
+On Mon, Nov 3, 2014 at 2:57 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Argh, sorry for confusion...
+>
+> On 11/03, Andy Lutomirski wrote:
+>>
+>> On Mon, Nov 3, 2014 at 1:58 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > On 11/03, Oleg Nesterov wrote:
+>> >>
+>> > Btw, why retint_kernel() checks "interrupts on" ? It seems to me that
+>> > that "interrupts off" is not possible, no? And this will be more clear
+>> > when we remove the "exit_intr" label.
+>>
+>> We might get there from #MC or from any of a number of synchronous
+>> errors (#GP from xyz_safe, #PF from some atomic uaccess thing or a
+>> vmap fault, etc), and all of those have interrupts off.
+>
+> Yes, yes, exactly.
+>
+> I actually tried to say that irqs should be always disabled (afaics!).
+> IOW "interrupts on" should not be possible, not "interrupts off".
 
-Yes.
+But this is checking whether interrupts were on in the frame we're
+returning to, not whether they're on right now, right?
 
-> IMO this sucks from a UI point of view.  When I install wifi firmware,
-> I expect to stick it somewhere and have the driver find it, because
-> the driver knows exactly when it needs the firmware.  When I update my
-> BIOS, I want to click a button or type a command and update my bios.
-
-I agree, it should be "triggered" by something, not just automagically
-loaded whenever the kernel randomly looks for it.
-
-> >> But uploading an EFI capsule is an *action*, not something that should
-> >> happen transparently.  If there's an EFI firmware update available and
-> >> the user wants to install it, then the userspace tool should install it,
-> >> and it shouldn't hang around in /lib/firmware.  In fact, you shouldn't
-> >> even need /lib to be on writable media to use this.
-> >
-> > What does /lib have to do with this?
-> 
-> Where else does the file come from, given that udev no longer supports
-> userspace firmware loading?  Is there really some pre-existing tool
-> that pokes it into the sysfs firmware class thing?
-
-Well, you can specify other locations than /lib/firmware/ for firmware
-updates, but yes, you are right, it should be in /lib somewhere.  But
-/lib doesn't need to be writable, it's a read-only file.
-
-> Since EFI capsules are apparently on their way to becoming a
-> ubiquitous mechanism, I think it might be time to rethink
-> request_firmware for this.
-
-What do you suggest instead?  A "custom" sysfs file?  What is going to
-trigger it to be loaded?  A userspace script that someone else has to
-write?  :)
-
-thanks,
-
-greg k-h
+--Andy
