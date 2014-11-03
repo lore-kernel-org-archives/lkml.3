@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaKCKgi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:36:38 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:43826 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196AbaKCKgg (ORCPT
+	id S1752260AbaKCKhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:37:10 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:55969 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379AbaKCKhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:36:36 -0500
-Date: Mon, 3 Nov 2014 18:35:28 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org, joe@perches.com,
-        mchehab@osg.samsung.com, crope@iki.fi, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto
- accelerator
-Message-ID: <20141103103528.GA30154@gondor.apana.org.au>
-References: <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>
- <20141021191149.GQ21108@lukather>
- <544A9FEA.6020304@gmail.com>
- <20141030171933.GR21251@lukather>
- <20141031072030.GA7563@gondor.apana.org.au>
- <20141031081323.GS21251@lukather>
- <20141031081803.GA8012@gondor.apana.org.au>
- <20141031095706.GA8054@lukather>
- <20141031100522.GA8655@gondor.apana.org.au>
- <20141103093446.GG11263@lukather>
+	Mon, 3 Nov 2014 05:37:05 -0500
+Date: Mon, 3 Nov 2014 11:37:01 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 3.18 (take two)
+Message-ID: <alpine.DEB.2.10.1411031135330.7868@ayla.of.borg>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103093446.GG11263@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 10:34:46AM +0100, Maxime Ripard wrote:
-> What I mean is that since you are saying that drivers should do the
-> kmap themselves, then *all* of the drivers are broken if they are not
-> using it. And all of them are missing this kmap.
+	Hi Linus,
 
-kmap is used by the software implementations to map the input/output
-into virtual address space.  Drivers typically use DMA and operate
-on physical addresses so they don't need kmap.
+The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+
+for you to fetch changes up to f7bbd12a4b7e088f53f20dd31019984459699fb9:
+
+  m68k: Wire up bpf (2014-10-27 11:02:19 +0100)
+
+Thanks for pulling!
+
+----------------------------------------------------------------
+Geert Uytterhoeven (1):
+      m68k: Wire up bpf
+
+ arch/m68k/include/asm/unistd.h      | 2 +-
+ arch/m68k/include/uapi/asm/unistd.h | 1 +
+ arch/m68k/kernel/syscalltable.S     | 1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
