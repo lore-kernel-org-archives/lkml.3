@@ -1,357 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaKCK7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:59:12 -0500
-Received: from mail-by2on0081.outbound.protection.outlook.com ([207.46.100.81]:39362
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752458AbaKCKyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:54:36 -0500
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
-        <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v6 17/29] nios2: System calls handling
-Date: Mon, 3 Nov 2014 18:52:13 +0800
-Message-ID: <1415011945-3297-18-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
-References: <1415011945-3297-1-git-send-email-lftan@altera.com>
+	id S1752893AbaKCK7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:59:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48126 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781AbaKCK7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:59:35 -0500
+Date: Mon, 3 Nov 2014 02:57:49 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-36ef5fb509c1b19be0dec02caf4e5081c33328df@git.kernel.org>
+Cc: bp@alien8.de, konrad.wilk@oracle.com, benh@kernel.crashing.org,
+        rjw@rjwysocki.net, joro@8bytes.org, tony.luck@intel.com, hpa@zytor.com,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        bhelgaas@google.com, jiang.liu@linux.intel.com, mingo@kernel.org,
+        tglx@linutronix.de, yinghai@kernel.org, gregkh@linuxfoundation.org
+Reply-To: yinghai@kernel.org, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        mingo@kernel.org, bhelgaas@google.com, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, lenb@kernel.org, rdunlap@infradead.org,
+        hpa@zytor.com, tony.luck@intel.com, benh@kernel.crashing.org,
+        joro@8bytes.org, rjw@rjwysocki.net, bp@alien8.de,
+        konrad.wilk@oracle.com
+In-Reply-To: <1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] ACPI:
+  Correct return value of acpi_dev_resource_address_space()
+Git-Commit-ID: 36ef5fb509c1b19be0dec02caf4e5081c33328df
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(22564002)(189002)(199003)(86362001)(76176999)(47776003)(50986999)(4396001)(19580395003)(84676001)(92566001)(2201001)(92726001)(42186005)(20776003)(64706001)(120916001)(62966003)(50466002)(99396003)(93916002)(15975445006)(50226001)(104166001)(89996001)(88136002)(33646002)(48376002)(46102003)(97736003)(44976005)(68736004)(87936001)(36756003)(31966008)(87286001)(105596002)(15202345003)(6806004)(19580405001)(107046002)(102836001)(229853001)(106466001)(21056001)(77156002)(77096003)(95666004);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB1021;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB1021;
-X-Forefront-PRVS: 0384275935
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB528;
-X-OriginatorOrg: altera.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for system calls from userspaces. It uses the
-asm-generic/unistd.h definitions with architecture spcific syscall.
-The sys_call_table is just an array defined in a C file and it contains
-pointers to the syscall functions.
+Commit-ID:  36ef5fb509c1b19be0dec02caf4e5081c33328df
+Gitweb:     http://git.kernel.org/tip/36ef5fb509c1b19be0dec02caf4e5081c33328df
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 13:21:35 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 3 Nov 2014 11:56:07 +0100
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
+ACPI: Correct return value of acpi_dev_resource_address_space()
+
+Change acpi_dev_resource_address_space() to return failure if the
+acpi_resource structure can't be converted to an ACPI address64
+structure, so caller could correctly detect failure.
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Len Brown <lenb@kernel.org>
+Link: http://lkml.kernel.org/r/1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/nios2/include/asm/syscall.h     | 138 +++++++++++++++++++++++++++++++++++
- arch/nios2/include/asm/syscalls.h    |  25 +++++++
- arch/nios2/include/uapi/asm/unistd.h |  25 +++++++
- arch/nios2/kernel/sys_nios2.c        |  53 ++++++++++++++
- arch/nios2/kernel/syscall_table.c    |  29 ++++++++
- 5 files changed, 270 insertions(+)
- create mode 100644 arch/nios2/include/asm/syscall.h
- create mode 100644 arch/nios2/include/asm/syscalls.h
- create mode 100644 arch/nios2/include/uapi/asm/unistd.h
- create mode 100644 arch/nios2/kernel/sys_nios2.c
- create mode 100644 arch/nios2/kernel/syscall_table.c
+ drivers/acpi/resource.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/nios2/include/asm/syscall.h b/arch/nios2/include/asm/syscall.h
-new file mode 100644
-index 0000000..9de2208
---- /dev/null
-+++ b/arch/nios2/include/asm/syscall.h
-@@ -0,0 +1,138 @@
-+/*
-+ * Copyright Altera Corporation (C) <2014>. All rights reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#ifndef __ASM_NIOS2_SYSCALL_H__
-+#define __ASM_NIOS2_SYSCALL_H__
-+
-+#include <linux/err.h>
-+#include <linux/sched.h>
-+
-+static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
-+{
-+	return regs->r2;
-+}
-+
-+static inline void syscall_rollback(struct task_struct *task,
-+				struct pt_regs *regs)
-+{
-+	regs->r2 = regs->orig_r2;
-+	regs->r7 = regs->orig_r7;
-+}
-+
-+static inline long syscall_get_error(struct task_struct *task,
-+				struct pt_regs *regs)
-+{
-+	return regs->r7 ? regs->r2 : 0;
-+}
-+
-+static inline long syscall_get_return_value(struct task_struct *task,
-+	struct pt_regs *regs)
-+{
-+	return regs->r2;
-+}
-+
-+static inline void syscall_set_return_value(struct task_struct *task,
-+	struct pt_regs *regs, int error, long val)
-+{
-+	if (error) {
-+		/* error < 0, but nios2 uses > 0 return value */
-+		regs->r2 = -error;
-+		regs->r7 = 1;
-+	} else {
-+		regs->r2 = val;
-+		regs->r7 = 0;
-+	}
-+}
-+
-+static inline void syscall_get_arguments(struct task_struct *task,
-+	struct pt_regs *regs, unsigned int i, unsigned int n,
-+	unsigned long *args)
-+{
-+	BUG_ON(i + n > 6);
-+
-+	switch (i) {
-+	case 0:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r4;
-+	case 1:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r5;
-+	case 2:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r6;
-+	case 3:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r7;
-+	case 4:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r8;
-+	case 5:
-+		if (!n--)
-+			break;
-+		*args++ = regs->r9;
-+	case 6:
-+		if (!n--)
-+			break;
-+	default:
-+		BUG();
-+	}
-+}
-+
-+static inline void syscall_set_arguments(struct task_struct *task,
-+	struct pt_regs *regs, unsigned int i, unsigned int n,
-+	const unsigned long *args)
-+{
-+	BUG_ON(i + n > 6);
-+
-+	switch (i) {
-+	case 0:
-+		if (!n--)
-+			break;
-+		regs->r4 = *args++;
-+	case 1:
-+		if (!n--)
-+			break;
-+		regs->r5 = *args++;
-+	case 2:
-+		if (!n--)
-+			break;
-+		regs->r6 = *args++;
-+	case 3:
-+		if (!n--)
-+			break;
-+		regs->r7 = *args++;
-+	case 4:
-+		if (!n--)
-+			break;
-+		regs->r8 = *args++;
-+	case 5:
-+		if (!n--)
-+			break;
-+		regs->r9 = *args++;
-+	case 6:
-+		if (!n)
-+			break;
-+	default:
-+		BUG();
-+	}
-+}
-+
-+#endif
-diff --git a/arch/nios2/include/asm/syscalls.h b/arch/nios2/include/asm/syscalls.h
-new file mode 100644
-index 0000000..0245d78
---- /dev/null
-+++ b/arch/nios2/include/asm/syscalls.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright Altera Corporation (C) 2013. All rights reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+#ifndef __ASM_NIOS2_SYSCALLS_H
-+#define __ASM_NIOS2_SYSCALLS_H
-+
-+int sys_cacheflush(unsigned long addr, unsigned long len,
-+				unsigned int op);
-+
-+#include <asm-generic/syscalls.h>
-+
-+#endif /* __ASM_NIOS2_SYSCALLS_H */
-diff --git a/arch/nios2/include/uapi/asm/unistd.h b/arch/nios2/include/uapi/asm/unistd.h
-new file mode 100644
-index 0000000..c4bf795
---- /dev/null
-+++ b/arch/nios2/include/uapi/asm/unistd.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright (C) 2013 Altera Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+ #define sys_mmap2 sys_mmap_pgoff
-+
-+/* Use the standard ABI for syscalls */
-+#include <asm-generic/unistd.h>
-+
-+/* Additional Nios II specific syscalls. */
-+#define __NR_cacheflush (__NR_arch_specific_syscall)
-+__SYSCALL(__NR_cacheflush, sys_cacheflush)
-diff --git a/arch/nios2/kernel/sys_nios2.c b/arch/nios2/kernel/sys_nios2.c
-new file mode 100644
-index 0000000..cd390ec
---- /dev/null
-+++ b/arch/nios2/kernel/sys_nios2.c
-@@ -0,0 +1,53 @@
-+/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011-2012 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/file.h>
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/syscalls.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/traps.h>
-+
-+/* sys_cacheflush -- flush the processor cache. */
-+asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
-+				unsigned int op)
-+{
-+	struct vm_area_struct *vma;
-+
-+	if (len == 0)
-+		return 0;
-+
-+	/* We only support op 0 now, return error if op is non-zero.*/
-+	if (op)
-+		return -EINVAL;
-+
-+	/* Check for overflow */
-+	if (addr + len < addr)
-+		return -EFAULT;
-+
-+	/*
-+	 * Verify that the specified address region actually belongs
-+	 * to this process.
-+	 */
-+	vma = find_vma(current->mm, addr);
-+	if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
-+		return -EFAULT;
-+
-+	flush_cache_range(vma, addr, addr + len);
-+
-+	return 0;
-+}
-+
-+asmlinkage int sys_getpagesize(void)
-+{
-+	return PAGE_SIZE;
-+}
-diff --git a/arch/nios2/kernel/syscall_table.c b/arch/nios2/kernel/syscall_table.c
-new file mode 100644
-index 0000000..06e6ac1
---- /dev/null
-+++ b/arch/nios2/kernel/syscall_table.c
-@@ -0,0 +1,29 @@
-+/*
-+ * Copyright Altera Corporation (C) 2013. All rights reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#include <linux/syscalls.h>
-+#include <linux/signal.h>
-+#include <linux/unistd.h>
-+
-+#include <asm/syscalls.h>
-+
-+#undef __SYSCALL
-+#define __SYSCALL(nr, call) [nr] = (call),
-+
-+void *sys_call_table[__NR_syscalls] = {
-+#include <asm/unistd.h>
-+};
--- 
-1.8.2.1
-
+diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+index 2ba8f02..782a0d1 100644
+--- a/drivers/acpi/resource.c
++++ b/drivers/acpi/resource.c
+@@ -200,7 +200,7 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+ 
+ 	status = acpi_resource_to_address64(ares, &addr);
+ 	if (ACPI_FAILURE(status))
+-		return true;
++		return false;
+ 
+ 	res->start = addr.minimum;
+ 	res->end = addr.maximum;
