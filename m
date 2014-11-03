@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189AbaKCKg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:36:26 -0500
-Received: from mga14.intel.com ([192.55.52.115]:18135 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148AbaKCKgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:36:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,307,1413270000"; 
-   d="scan'208";a="615934454"
-Message-ID: <1415010975.3828.21.camel@spandruv-hsb-test>
-Subject: Re: [PATCH v2] iio: inkern: Add of_xlate function to struct iio_info
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Peter Meerwald <pmeerw@pmeerw.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Mon, 03 Nov 2014 02:36:15 -0800
-In-Reply-To: <1415009224.407.13.camel@mm-sol.com>
-References: <1413991783-24562-1-git-send-email-iivanov@mm-sol.com>
-	 <5447CDFA.5030407@metafoo.de> <544B75B8.1010505@kernel.org>
-	 <1415009224.407.13.camel@mm-sol.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752227AbaKCKgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:36:38 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:43826 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196AbaKCKgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:36:36 -0500
+Date: Mon, 3 Nov 2014 18:35:28 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org, joe@perches.com,
+        mchehab@osg.samsung.com, crope@iki.fi, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto
+ accelerator
+Message-ID: <20141103103528.GA30154@gondor.apana.org.au>
+References: <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>
+ <20141021191149.GQ21108@lukather>
+ <544A9FEA.6020304@gmail.com>
+ <20141030171933.GR21251@lukather>
+ <20141031072030.GA7563@gondor.apana.org.au>
+ <20141031081323.GS21251@lukather>
+ <20141031081803.GA8012@gondor.apana.org.au>
+ <20141031095706.GA8054@lukather>
+ <20141031100522.GA8655@gondor.apana.org.au>
+ <20141103093446.GG11263@lukather>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103093446.GG11263@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 12:07 +0200, Ivan T. Ivanov wrote:
-> On Sat, 2014-10-25 at 11:04 +0100, Jonathan Cameron wrote:
-> > On 22/10/14 16:32, Lars-Peter Clausen wrote:
-> > > On 10/22/2014 05:29 PM, Ivan T. Ivanov wrote:
-> > > > When #iio-cells is greater than '0', the driver could provide
-> > > > a custom of_xlate function that reads the *args* and returns
-> > > > the appropriate index in registered IIO channels array.
-> > > > 
-> > > > Add simple translation function, suitable for the most 1:1
-> > > > mapped channels in IIO chips, and use it when driver did not
-> > > > provide custom implementation.
-> > > > 
-> > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > 
-> > > Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-> > > 
-> > Applied to the togreg branch of iio.git - initially pushed out as testing
-> > for the autobuilders to play with it.
-> 
-> Thank you. Probably my git skills failed me, but I can not
-> find it in aforementioned branches. Is it publicly pushed?
-> 
-check here
-https://www.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
-checkout branch: remotes/origin/testing
+On Mon, Nov 03, 2014 at 10:34:46AM +0100, Maxime Ripard wrote:
+> What I mean is that since you are saying that drivers should do the
+> kmap themselves, then *all* of the drivers are broken if they are not
+> using it. And all of them are missing this kmap.
 
-> Regards,
-> Ivan
-> 
+kmap is used by the software implementations to map the input/output
+into virtual address space.  Drivers typically use DMA and operate
+on physical addresses so they don't need kmap.
 
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
