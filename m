@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaKCMRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 07:17:39 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51549 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaKCMRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 07:17:36 -0500
-Message-ID: <54577258.9080508@linutronix.de>
-Date: Mon, 03 Nov 2014 13:17:28 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1751984AbaKCMWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 07:22:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60051 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175AbaKCMWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 07:22:13 -0500
+Message-ID: <54577368.9060000@redhat.com>
+Date: Mon, 03 Nov 2014 13:22:00 +0100
+From: Laszlo Ersek <lersek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: "Griffis, Brad" <bgriffis@ti.com>, "R, Vignesh" <vigneshr@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "Balbi, Felipe" <balbi@ti.com>, Jan Kardell <jan.kardell@telliq.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com> <544E821D.5040004@linutronix.de> <912A29987EAE174BA6CF187D7CDFA9CE26F46B2B@DLEE08.ent.ti.com>
-In-Reply-To: <912A29987EAE174BA6CF187D7CDFA9CE26F46B2B@DLEE08.ent.ti.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH] xen/blkfront: improve protection against issuing unsupported
+ REQ_FUA
+References: <1414417478-20268-1-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1414417478-20268-1-git-send-email-vkuznets@redhat.com>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 08:02 PM, Griffis, Brad wrote:
-> On 10/27/2014 12:34 PM, Sebastian Andrzej Siewior wrote:
->> Do we really need #3 (and then #4)? Given the complexity we have already, is there any benefit by decreasing this value? 
+On 10/27/14 14:44, Vitaly Kuznetsov wrote:
+> Guard against issuing unsupported REQ_FUA and REQ_FLUSH was introduced
+> in d11e61583 and was factored out into blkif_request_flush_valid() in
+> 0f1ca65ee. However:
+> 1) This check in incomplete. In case we negotiated to feature_flush = REQ_FLUSH
+>    and flush_op = BLKIF_OP_FLUSH_DISKCACHE (so FUA is unsupported) FUA request
+>    will still pass the check.
+> 2) blkif_request_flush_valid() is misnamed. It is bool but returns true when
+>    the request is invalid.
+> 3) When blkif_request_flush_valid() fails -EIO is being returned. It seems that
+>    -EOPNOTSUPP is more appropriate here.
+> Fix all of the above issues.
 > 
-> I specifically requested we add ti,charge-delay to the device tree because it is THE critical value to tune for a given design.  Although I think the current value of 0xB000 will be suitable for a great many designs, I expect that many users will need to adjust this value for their hardware.  Details such as which touchscreen vendor is being used and how the touchscreen is connected (header vs cable) have an effect on what's appropriate here.
-
-Oh. That is one knob I hoped we could avoid since I haven't seen it
-before on other TSCs. But okay. Please make sure that there is a
-message printed if the default value is used. And lets hope the user
-will do something about his.
-
->> Would  someone want to increase it? Can we safely determine a value which works for everyone?
+> This patch is based on the original patch by Laszlo Ersek and a comment by
+> Jeff Moyer.
 > 
-> This value represents a hardware delay before checking for the pen-up event.  So in the scenario where someone is seeing excessive false pen-up events they will want to increase this parameter.  The downsize of making this larger is that it decreases the overall sampling speed of both the touchscreen as well as the standalone ADC samples.  At one point I tried making it huge, but that made the touchscreen overly sluggish because the sampling became too slow.  So there is a definite trade-off that if you make it too large the touchscreen becomes sluggish, and if you make it too small then you may see false pen-up events.  The optimal value will need to be tuned for a given design.
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> ---
+>  drivers/block/xen-blkfront.c | 14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 5ac312f..2e6c103 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -582,12 +582,14 @@ static inline void flush_requests(struct blkfront_info *info)
+>  		notify_remote_via_irq(info->irq);
+>  }
+>  
+> -static inline bool blkif_request_flush_valid(struct request *req,
+> -					     struct blkfront_info *info)
+> +static inline bool blkif_request_flush_invalid(struct request *req,
+> +					       struct blkfront_info *info)
+>  {
+>  	return ((req->cmd_type != REQ_TYPE_FS) ||
+> -		((req->cmd_flags & (REQ_FLUSH | REQ_FUA)) &&
+> -		!info->flush_op));
+> +		((req->cmd_flags & REQ_FLUSH) &&
+> +		 !(info->feature_flush & REQ_FLUSH)) ||
+> +		((req->cmd_flags & REQ_FUA) &&
+> +		 !(info->feature_flush & REQ_FUA)));
+>  }
+>  
+>  /*
+> @@ -612,8 +614,8 @@ static void do_blkif_request(struct request_queue *rq)
+>  
+>  		blk_start_request(req);
+>  
+> -		if (blkif_request_flush_valid(req, info)) {
+> -			__blk_end_request_all(req, -EIO);
+> +		if (blkif_request_flush_invalid(req, info)) {
+> +			__blk_end_request_all(req, -EOPNOTSUPP);
+>  			continue;
+>  		}
+>  
+> 
 
-I applied the patches from this series and did the following test on my
-am335x-evm: A mug on the touchscreen (to make sure the events are
-coming), evtest on the event node to see that the events and loop of
+Not sure if there has been some feedback yet (I can't see anything
+threaded with this message in my inbox).
 
-	cat /sys/bus/iio/devices/iio\:device0/in_voltage4_raw
+FWIW I consulted "Documentation/block/writeback_cache_control.txt" for
+this review. Apparently, REQ_FLUSH forces out "previously completed
+write requests", whereas REQ_FUA delays the IO completion signal for
+*this* request until "the data has been committed to non-volatile
+storage". So, indeed, support for REQ_FLUSH only does not guarantee that
+REQ_FUA can be served.
 
-In the past I was able lock up the TSC/ADC HW that way (see commit
-7ca6740cd1 ("mfd: input: iio: ti_amm335x: Rework TSC/ADC
-synchronization")) for details.
-With this patches applied I don't seen any TSC events once the IIO
-interface is (heavily) used. Can this be fixed?
+Reviewed-by: Laszlo Ersek <lersek@redhat.com>
 
-Sebastian
+Thanks
+Laszlo
