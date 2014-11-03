@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030AbaKCPfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:35:10 -0500
-Received: from laurent.telenet-ops.be ([195.130.137.89]:58299 "EHLO
-	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117AbaKCPfC (ORCPT
+	id S1753094AbaKCPfP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:35:15 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:42128 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893AbaKCPfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:35:02 -0500
+	Mon, 3 Nov 2014 10:35:03 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
         Magnus Damm <magnus.damm@gmail.com>
@@ -17,115 +17,153 @@ Cc: Ulf Hansson <ulf.hansson@linaro.org>, Kevin Hilman <khilman@linaro.org>,
         linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v4 0/9] ARM: shmobile: R-Mobile: DT PM domain support
-Date: Mon,  3 Nov 2014 16:34:47 +0100
-Message-Id: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH v4 3/9] PM / Domains: Add DT bindings for the R-Mobile System Controller
+Date: Mon,  3 Nov 2014 16:34:50 +0100
+Message-Id: <1415028896-9005-4-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
+References: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Rafael, Simon, Magnus,
+The Renesas R-Mobile System Controller provides a.o. power management
+support, following the generic PM domain bindings in
+Documentation/devicetree/bindings/power/power_domain.txt.
 
-This patch series enables DT support for PM domains on Renesas R-Mobile SoCs.
+For now this supports the R-Mobile A1 (r8a7740) only, but it should be
+sufficiently generic to handle other members of the SH-Mobile/R-Mobile
+family in the future.
 
-Currently it's limited to R-Mobile A1 (r8a7740), but given the similarity of
-the SYSC System-Controller on the various SH-Mobile/R-Mobile SoCs, and the
-abstraction of PM domains in DT, it should be sufficiently generic to handle
-other SoCs in the future (e.g. SH-Mobile AP4 (sh7372), SH-Mobile AG5 (sh73a0),
-R-Mobile APE6 (r8a73a4)).
-
-Functionality-wise, this behaves the same as the legacy (non-DT) version
-(modulo missing DT support in some device drivers).
-
-Dependencies:
-  - This is based on Simon Horman's renesas-devel-20141030-v3.18-rc2, and
-    Rafael J. Wysocki's linux-pm.git#linux-next,
-  - This depends on "PM / Domains: Change prototype for the ->attach_dev()
-    callback" from Ulf hanson, which is intended to still enter v3.18-rcX
-    through the linux-pm tree.
-    As this is a one-line change, I included this patch as the first patch of
-    this series.  Perhaps it's even acceptable for Simon to (also) apply it, so
-    we don't have to wait for the v3.18-rcX that will include it?
-
-For your convenience, I've also pushed this to
-git://git.kernel.org/pub/scm/linux/kernel/git/geert/renesas-drivers.git#rmobile-genpd
-
-Changes compared to v3 (more detailed changelogs in the individual patches):
-  - I dropped the patch to add preliminary PM domain latencies, as I want to do
-    more measurements for PM domains that are currently never powered off.
-    Values seem to range between 8.5 and 26 us, depending on the PM domain.
-  - I dropped all patches related to QoS device latencies, as these need more
-    discussion,
-  - The power-{on,off}-latency properties have been changed from a single value
-    to a list,
-  - Device save/restore state latencies have been dropped, as they're Linux
-    driver-specific, and thus don't belong in DT,
-  - Use proper pm_clk_create()/pm_clk_destroy(), and update for attach_dev()
-    returning an error code again,
-  - New patch to enable module clocks if !CONFIG_PM_RUNTIME,
-  - Always keep D4 powered, until the new Coresight code handles runtime
-    PM,
-  - Remove bogus power-domains properties from clock nodes, as these will not
-    be instantiated as platform devices,
-  - Add power-domains properties to the recently added TMU nodes,
-  - Added Acked-by, Reviewed-by.
-
-Changes compared to v2 (more detailed changelogs in the individual patches):
-  - Minor changes to attach/detach callbacks,
-  - Really add the A4MP and D4 PM domains, as fixes are available (see
-    dependencies below),
-  - Scan DT topology to identify special PM domains (CPUs and console),
-  - Move PM domain power-on/off latencies to a separate patch.
-
-Changes compared to v1 (more detailed changelogs in the individual patches):
-  - Several new patches: PM QoS device latencies in DT, attach/detach
-    callbacks,
-  - Run-Time management of the module clocks, making the hack in
-    drivers/sh/pm_runtime.c obsolete for DT platforms using genpd,
-  - Addition of PM QoS device latencies, specified from DT,
-  - Addition of build glue, so this builds and runs without additional
-    changes, incl. s2ram.
-
-Thanks!
-
-Geert Uytterhoeven (8):
-  PM / Domains: Add DT bindings for power-on/off latencies
-  PM / Domains: Add DT bindings for the R-Mobile System Controller
-  ARM: shmobile: R-Mobile: Use generic_pm_domain.attach_dev() for pm_clk
-    setup
-  ARM: shmobile: R-Mobile: Enable module clocks if !CONFIG_PM_RUNTIME
-  ARM: shmobile: R-Mobile: Store SYSC base address in rmobile_pm_domain
-  ARM: shmobile: R-Mobile: Add DT support for PM domains
-  ARM: shmobile: r8a7740 dtsi: Add PM domain support
-  drivers: sh: Disable PM runtime for multi-platform r8a7740 with genpd
-
-Ulf Hansson (1):
-  PM / Domains: Change prototype for the ->attach_dev() callback
-
- .../devicetree/bindings/power/power_domain.txt     |  14 +-
- .../bindings/power/renesas,sysc-rmobile.txt        | 107 ++++++++
- arch/arm/boot/dts/r8a7740.dtsi                     |  99 +++++++
- arch/arm/mach-shmobile/Kconfig                     |   3 +-
- arch/arm/mach-shmobile/pm-r8a7740.c                |  14 +
- arch/arm/mach-shmobile/pm-rmobile.c                | 284 +++++++++++++++++++--
- arch/arm/mach-shmobile/pm-rmobile.h                |   3 +-
- arch/arm/mach-shmobile/pm-sh7372.c                 |  11 +
- drivers/sh/pm_runtime.c                            |   2 +
- include/linux/pm_domain.h                          |   2 +-
- 10 files changed, 519 insertions(+), 20 deletions(-)
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+v4:
+  - Drop device save/restore state latencies, as they're Linux driver-specific,
+  - Drop PM QoS device latencies, as they're put on hold,
+v3:
+  - Reword,
+v2:
+  - Fix copy-and-paste s/#address-cells/#size-cells/,
+  - Add optional PM QoS device latencies.
+---
+ .../bindings/power/renesas,sysc-rmobile.txt        | 107 +++++++++++++++++++++
+ 1 file changed, 107 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
 
+diff --git a/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt b/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
+new file mode 100644
+index 0000000000000000..89ca3f35aec69750
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
+@@ -0,0 +1,107 @@
++DT bindings for the Renesas R-Mobile System Controller
++
++== System Controller Node ==
++
++The R-Mobile System Controller provides the following functions:
++  - Boot mode management,
++  - Reset generation,
++  - Power management.
++
++Required properties:
++- compatible: Should be "renesas,sysc-<soctype>", "renesas,sysc-rmobile" as
++	      fallback.
++	      Examples with soctypes are:
++		- "renesas,sysc-r8a7740" (R-Mobile A1)
++- reg: Two address start and address range blocks for the device:
++         - The first block refers to the normally accessible registers,
++         - the second block refers to the registers protected by the HPB
++	   semaphore.
++
++Optional nodes:
++- pm-domains: This node contains a hierarchy of PM domain nodes, which should
++  match the Power Area Hierarchy in the Power Domain Specifications section of
++  the device's datasheet.
++
++
++== PM Domain Nodes ==
++
++Each of the PM domain nodes represents a PM domain, as documented by the
++generic PM domain bindings in
++Documentation/devicetree/bindings/power/power_domain.txt.
++
++The nodes should be named by the real power area names, and thus their names
++should be unique.
++
++Required properties:
++  - #power-domain-cells: Must be 0.
++
++Optional properties:
++- reg: If the PM domain is not always-on, this property must contain the bit
++       index number for the corresponding power area in the various Power
++       Control and Status Registers. The parent's node must contain the
++       following two properties:
++	 - #address-cells: Must be 1,
++	 - #size-cells: Must be 0.
++       If the PM domain is always-on, this property must be omitted.
++- power-on-latency: Power-on latency of the PM domain, in ns,
++- power-off-latency: Power-off latency of the PM domain, in ns.
++
++
++Example:
++
++This shows a subset of the r8a7740 PM domain hierarchy, containing the
++C5 "always-on" domain, 2 of its subdomains (A4S and A4SU), and the A3SP domain,
++which is a subdomain of A4S.
++
++	sysc: system-controller@e6180000 {
++		compatible = "renesas,sysc-r8a7740", "renesas,sysc-rmobile";
++		reg = <0xe6180000 8000>, <0xe6188000 8000>;
++
++		pm-domains {
++			pd_c5: c5 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				#power-domain-cells = <0>;
++
++				pd_a4s: a4s@10 {
++					reg = <10>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++					#power-domain-cells = <0>;
++					power-on-latency = <250000>;
++					power-off-latency = <250000>;
++
++					pd_a3sp: a3sp@11 {
++						reg = <11>;
++						#power-domain-cells = <0>;
++						power-on-latency = <250000>;
++						power-off-latency = <250000>;
++					};
++				};
++
++				pd_a4su: a4su@20 {
++					reg = <20>;
++					#power-domain-cells = <0>;
++					power-on-latency = <250000>;
++					power-off-latency = <250000>;
++				};
++			};
++		};
++	};
++
++
++== PM Domain Consumers ==
++
++Hardware blocks belonging to a PM domain should contain a "power-domains"
++property that is a phandle pointing to the corresponding PM domain node,
++and optional PM QoS device latencies:
++
++Example:
++
++	tpu: pwm@e6600000 {
++		compatible = "renesas,tpu-r8a7740", "renesas,tpu";
++		reg = <0xe6600000 0x100>;
++		clocks = <&mstp3_clks R8A7740_CLK_TPU0>;
++		power-domains = <&pd_a3sp>;
++		#pwm-cells = <3>;
++	};
 -- 
 1.9.1
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
