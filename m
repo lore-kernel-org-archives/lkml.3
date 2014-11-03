@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaKCSwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:52:08 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:33725 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906AbaKCSwE (ORCPT
+	id S1753484AbaKCSxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:53:11 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:35366 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128AbaKCSxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:52:04 -0500
-Message-ID: <5457CEB4.9020700@gmail.com>
-Date: Mon, 03 Nov 2014 10:51:32 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, lauraa@codeaurora.org, gioh.kim@lge.com,
-        aneesh.kumar@linux.vnet.ibm.com, m.szyprowski@samsung.com,
-        akpm@linux-foundation.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: DMA allocations from CMA and fatal_signal_pending check
-References: <544FE9BE.6040503@gmail.com> <20141031082818.GB14642@js1304-P5Q-DELUXE> <5453F80C.4090006@gmail.com> <xa1tlhnsw7v8.fsf@mina86.com>
-In-Reply-To: <xa1tlhnsw7v8.fsf@mina86.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Mon, 3 Nov 2014 13:53:07 -0500
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz, cascardo@linux.vnet.ibm.com,
+        markh@compro.net
+Cc: lidza.louina@gmail.com, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-serial@vger.kernel.org,
+        Konrad Zapalowicz <bergo.torino@gmail.com>
+Subject: [PATCH 1/5] drivers: serial: jsm: Add Classic board UART structure
+Date: Mon,  3 Nov 2014 19:52:37 +0100
+Message-Id: <1415040760-12172-1-git-send-email-bergo.torino@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20141103093800.GK6879@mwanda>
+References: <20141103093800.GK6879@mwanda>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 08:45 AM, Michal Nazarewicz wrote:
-> On Fri, Oct 31 2014, Florian Fainelli wrote:
->> I agree that the CMA allocation should not be allowed to succeed, but
->> the dma_alloc_coherent() allocation should succeed. If we look at the
->> sysport driver, there are kmalloc() calls to initialize private
->> structures, those will succeed (except under high memory pressure), so
->> by the same token, a driver expects DMA allocations to succeed (unless
->> we are under high memory pressure)
->>
->> What are we trying to solve exactly with the fatal_signal_pending()
->> check here? Are we just optimizing for the case where a process has
->> allocated from a CMA region to allow this region to be returned to the
->> pool of free pages when it gets killed? Could there be another mechanism
->> used to reclaim those pages if we know the process is getting killed
->> anyway?
-> 
-> We're guarding against situations where process may hang around
-> arbitrarily long time after receiving SIGKILL.  If user does “kill -9
-> $pid” the usual expectation is that the $pid process will die within
-> seconds and anything longer is perceived by user as a bug.
-> 
-> What problem are *you* trying to solve?  If user sent SIGKILL to
-> a process that imitated device initialisation, what is the point of
-> continuing initialising the device?  Just recover and return -EINTR.
+This commit adds the UART structure for the Digi Classic cards. This
+code comes from the staging/dgnc driver.
 
-I have two problems with the current approach:
+Signed-off-by: Konrad Zapalowicz <bergo.torino@gmail.com>
+---
+ drivers/tty/serial/jsm/jsm.h | 59 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 58 insertions(+), 1 deletion(-)
 
-- behavior of a dma_alloc_coherent() call is not consistent between a
-CONFIG_CMA=y vs. CONFIG_CMA=n build, which is probably fine as long as
-we document that properly
-
-- there is currently no way for a caller of dma_alloc_coherent to tell
-whether the allocation failed because it was interrupted by a signal, a
-genuine OOM or something else, this is largely made worse by problem 1
-
-> 
->> Well, not really. This driver is not an isolated case, there are tons of
->> other networking drivers that do exactly the same thing, and we do
->> expect these dma_alloc_* calls to succeed.
-> 
-> Again, why do you expect them to succeed?  The code must handle failures
-> correctly anyway so why do you wish to ignore fatal signal?
-
-I guess expecting them to succeed is probably not good, but at we should
-at least be able to report an accurate error code to the caller and down
-to user-space.
-
-Thanks
---
-Florian
+diff --git a/drivers/tty/serial/jsm/jsm.h b/drivers/tty/serial/jsm/jsm.h
+index af70134..9861639 100644
+--- a/drivers/tty/serial/jsm/jsm.h
++++ b/drivers/tty/serial/jsm/jsm.h
+@@ -222,7 +222,10 @@ struct jsm_channel {
+ 	u8		ch_mostat;	/* FEP output modem status	*/
+ 	u8		ch_mistat;	/* FEP input modem status	*/
+ 
+-	struct neo_uart_struct __iomem *ch_neo_uart;	/* Pointer to the "mapped" UART struct */
++	/* Pointers to the "mapped" UART structs */
++	struct neo_uart_struct __iomem *ch_neo_uart; /* NEO card */
++	struct cls_uart_struct __iomem *ch_cls_uart; /* Classic card */
++
+ 	u8		ch_cached_lsr;	/* Cached value of the LSR register */
+ 
+ 	u8		*ch_rqueue;	/* Our read queue buffer - malloc'ed */
+@@ -254,6 +257,60 @@ struct jsm_channel {
+ 	u64		ch_xoff_sends;	/* Count of xoffs transmitted */
+ };
+ 
++/************************************************************************
++ * Per channel/port Classic UART structures				*
++ ************************************************************************
++ *		Base Structure Entries Usage Meanings to Host		*
++ *									*
++ *	W = read write		R = read only				*
++ *			U = Unused.					*
++ ************************************************************************/
++
++struct cls_uart_struct {
++	u8 txrx;	/* WR  RHR/THR - Holding Reg */
++	u8 ier;		/* WR  IER - Interrupt Enable Reg */
++	u8 isr_fcr;	/* WR  ISR/FCR - Interrupt Status Reg/Fifo Control Reg*/
++	u8 lcr;		/* WR  LCR - Line Control Reg */
++	u8 mcr;		/* WR  MCR - Modem Control Reg */
++	u8 lsr;		/* WR  LSR - Line Status Reg */
++	u8 msr;		/* WR  MSR - Modem Status Reg */
++	u8 spr;		/* WR  SPR - Scratch Pad Reg */
++};
++
++/* Where to read the interrupt register (8bits) */
++#define UART_CLASSIC_POLL_ADDR_OFFSET	0x40
++
++#define UART_EXAR654_ENHANCED_REGISTER_SET 0xBF
++
++#define UART_16654_FCR_TXTRIGGER_8	0x0
++#define UART_16654_FCR_TXTRIGGER_16	0x10
++#define UART_16654_FCR_TXTRIGGER_32	0x20
++#define UART_16654_FCR_TXTRIGGER_56	0x30
++
++#define UART_16654_FCR_RXTRIGGER_8	0x0
++#define UART_16654_FCR_RXTRIGGER_16	0x40
++#define UART_16654_FCR_RXTRIGGER_56	0x80
++#define UART_16654_FCR_RXTRIGGER_60	0xC0
++
++#define UART_IIR_CTSRTS			0x20	/* Received CTS/RTS change of state */
++#define UART_IIR_RDI_TIMEOUT		0x0C    /* Receiver data TIMEOUT */
++
++/*
++ * These are the EXTENDED definitions for the Exar 654's Interrupt
++ * Enable Register.
++ */
++#define UART_EXAR654_EFR_ECB      0x10    /* Enhanced control bit */
++#define UART_EXAR654_EFR_IXON     0x2     /* Receiver compares Xon1/Xoff1 */
++#define UART_EXAR654_EFR_IXOFF    0x8     /* Transmit Xon1/Xoff1 */
++#define UART_EXAR654_EFR_RTSDTR   0x40    /* Auto RTS/DTR Flow Control Enable */
++#define UART_EXAR654_EFR_CTSDSR   0x80    /* Auto CTS/DSR Flow COntrol Enable */
++
++#define UART_EXAR654_XOFF_DETECT  0x1     /* Indicates whether chip saw an incoming XOFF char  */
++#define UART_EXAR654_XON_DETECT   0x2     /* Indicates whether chip saw an incoming XON char */
++
++#define UART_EXAR654_IER_XOFF     0x20    /* Xoff Interrupt Enable */
++#define UART_EXAR654_IER_RTSDTR   0x40    /* Output Interrupt Enable */
++#define UART_EXAR654_IER_CTSDSR   0x80    /* Input Interrupt Enable */
+ 
+ /************************************************************************
+  * Per channel/port NEO UART structure					*
+-- 
+1.9.1
 
