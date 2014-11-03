@@ -1,108 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaKCTGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 14:06:07 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:41965 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753400AbaKCTGD (ORCPT
+	id S1753584AbaKCTGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 14:06:13 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:37954 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522AbaKCTGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 14:06:03 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-rockchip@lists.infradead.org, linux-sh@vger.kernel.org
-Subject: [PATCH 2/7] pinctrl: pinconf-generic: Infer map type from DT property
-Date: Mon,  3 Nov 2014 11:05:26 -0800
-Message-Id: <1415041531-15520-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
+	Mon, 3 Nov 2014 14:06:07 -0500
+Date: Mon, 3 Nov 2014 11:06:02 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Chris Zhong <zyw@rock-chips.com>,
+        Zhang Qing <zhangqing@rock-chips.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH v3 19/47] mfd: rk808: Register power-off handler with
+ kernel power-off handler
+Message-ID: <20141103190602.GE10558@roeck-us.net>
+References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+ <1414425354-10359-20-git-send-email-linux@roeck-us.net>
+ <20141103175346.GI12011@x1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103175346.GI12011@x1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.5457D21E.0300,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the new 'groups' property, the DT parser can infer the map type
-from the fact whether 'pins' or 'groups' is used to specify the pin
-group to work on.
-To maintain backwards compatibitliy with current usage of the DT
-binding, this is only done when an invalid map type is passed to the
-parsing function.
+On Mon, Nov 03, 2014 at 05:53:46PM +0000, Lee Jones wrote:
+> On Mon, 27 Oct 2014, Guenter Roeck wrote:
+> 
+> > Register with kernel power-off handler instead of setting pm_power_off
+> > directly. Register with low priority to reflect that the original code
+> > only sets pm_power_off if it was not already set.
+> > 
+> > Cc: Chris Zhong <zyw@rock-chips.com>
+> > Cc: Zhang Qing <zhangqing@rock-chips.com>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> > v3:
+> > - Replace poweroff in all newly introduced variables and in text
+> >   with power_off or power-off as appropriate
+> > - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+> > v2:
+> > - New patch
+> > 
+> >  drivers/mfd/rk808.c       | 30 ++++++++++++++++--------------
+> >  include/linux/mfd/rk808.h |  2 ++
+> >  2 files changed, 18 insertions(+), 14 deletions(-)
+> 
+> Code looks okay:
+> 
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> 
+Thanks!
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-Changes since RFC v2:
- - none
----
- drivers/pinctrl/pinconf-generic.c       | 17 ++++++++++++++---
- include/linux/pinctrl/pinconf-generic.h |  7 +++++++
- 2 files changed, 21 insertions(+), 3 deletions(-)
+> ... but how are you thinking about handling this set?
+> 
 
-diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-index f78b416d7984..1e782a0d6e48 100644
---- a/drivers/pinctrl/pinconf-generic.c
-+++ b/drivers/pinctrl/pinconf-generic.c
-@@ -264,6 +264,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 	unsigned reserve;
- 	struct property *prop;
- 	const char *group;
-+	const char *dt_pin_specifier = "pins";
- 
- 	ret = of_property_read_string(np, "function", &function);
- 	if (ret < 0) {
-@@ -284,10 +285,20 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 		reserve++;
- 	if (num_configs)
- 		reserve++;
-+
- 	ret = of_property_count_strings(np, "pins");
- 	if (ret < 0) {
--		dev_err(dev, "could not parse property pins\n");
--		goto exit;
-+		ret = of_property_count_strings(np, "groups");
-+		if (ret < 0) {
-+			dev_err(dev, "could not parse property pins/groups\n");
-+			goto exit;
-+		}
-+		if (type == PIN_MAP_TYPE_INVALID)
-+			type = PIN_MAP_TYPE_CONFIGS_GROUP;
-+		dt_pin_specifier = "groups";
-+	} else {
-+		if (type == PIN_MAP_TYPE_INVALID)
-+			type = PIN_MAP_TYPE_CONFIGS_PIN;
- 	}
- 	reserve *= ret;
- 
-@@ -296,7 +307,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 	if (ret < 0)
- 		goto exit;
- 
--	of_property_for_each_string(np, "pins", prop, group) {
-+	of_property_for_each_string(np, dt_pin_specifier, prop, group) {
- 		if (function) {
- 			ret = pinctrl_utils_add_map_mux(pctldev, map,
- 					reserved_maps, num_maps, group,
-diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
-index d578a60eff23..b6dedfbfce69 100644
---- a/include/linux/pinctrl/pinconf-generic.h
-+++ b/include/linux/pinctrl/pinconf-generic.h
-@@ -174,6 +174,13 @@ static inline int pinconf_generic_dt_node_to_map_pin(
- 			PIN_MAP_TYPE_CONFIGS_PIN);
- }
- 
-+static inline int pinconf_generic_dt_node_to_map_all(
-+		struct pinctrl_dev *pctldev, struct device_node *np_config,
-+		struct pinctrl_map **map, unsigned *num_maps)
-+{
-+	return pinconf_generic_dt_node_to_map(pctldev, np_config, map, num_maps,
-+			PIN_MAP_TYPE_INVALID);
-+}
- #endif
- 
- #endif /* CONFIG_GENERIC_PINCONF */
--- 
-1.9.1
+Plan is to send the entire series directly to Linus in the next
+commit window, as suggested by several of the affected maintainers.
 
+I am still missing an Ack for patch 1 of the series. If/when I get
+that, I'll set up the series except for the last patch to be added
+to linux-next for it to get some exposure.
+
+Of course, that plan may all fall apart if someone objects. In that case,
+the patches would have to be taken over several releases by the individual
+maintainers.
+
+Guenter
