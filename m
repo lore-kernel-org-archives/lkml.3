@@ -1,486 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaKCKxf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:53:35 -0500
-Received: from mail-bn1bon0064.outbound.protection.outlook.com ([157.56.111.64]:52832
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1752120AbaKCKxj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:53:39 -0500
+Received: from mail-by2on0056.outbound.protection.outlook.com ([207.46.100.56]:30751
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751999AbaKCKx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:53:27 -0500
+	id S1751230AbaKCKxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:53:33 -0500
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v6 02/29] nios2: Assembly macros and definitions
-Date: Mon, 3 Nov 2014 18:51:58 +0800
-Message-ID: <1415011945-3297-3-git-send-email-lftan@altera.com>
+Subject: [PATCH v6 01/29] asm-generic: add generic futex for !CONFIG_SMP
+Date: Mon, 3 Nov 2014 18:51:57 +0800
+Message-ID: <1415011945-3297-2-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
 References: <1415011945-3297-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(102836001)(50226001)(4396001)(20776003)(44976005)(64706001)(6806004)(97736003)(47776003)(15202345003)(84676001)(19580395003)(19580405001)(15975445006)(99396003)(68736004)(87286001)(42186005)(21056001)(76176999)(50986999)(87936001)(104166001)(89996001)(88136002)(86362001)(95666004)(36756003)(46102003)(105596002)(120916001)(31966008)(93916002)(106466001)(48376002)(50466002)(2201001)(92566001)(92726001)(33646002)(62966003)(77156002)(77096003)(107046002)(229853001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB209;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB209;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(88136002)(50466002)(4396001)(64706001)(106466001)(46102003)(104166001)(95666004)(76176999)(50226001)(68736004)(87286001)(84676001)(77156002)(86362001)(92726001)(47776003)(87936001)(50986999)(42186005)(92566001)(107046002)(89996001)(44976005)(48376002)(36756003)(102836001)(31966008)(21056001)(2201001)(229853001)(6806004)(120916001)(99396003)(33646002)(105596002)(19580395003)(93916002)(97736003)(20776003)(62966003)(77096003)(19580405001)(41533002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB1016;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB1016;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0384275935
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB329;
 X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add assembly macros and definitions used in
-the .S files across arch/nios2/ and together with asm-offsets.c.
+Follow m68k futex implementation for !CONFIG_SMP.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/nios2/include/asm/asm-macros.h  | 309 +++++++++++++++++++++++++++++++++++
- arch/nios2/include/asm/asm-offsets.h |  20 +++
- arch/nios2/kernel/asm-offsets.c      |  88 ++++++++++
- 3 files changed, 417 insertions(+)
- create mode 100644 arch/nios2/include/asm/asm-macros.h
- create mode 100644 arch/nios2/include/asm/asm-offsets.h
- create mode 100644 arch/nios2/kernel/asm-offsets.c
+ include/asm-generic/futex.h | 114 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
 
-diff --git a/arch/nios2/include/asm/asm-macros.h b/arch/nios2/include/asm/asm-macros.h
-new file mode 100644
-index 0000000..29fa2e4
---- /dev/null
-+++ b/arch/nios2/include/asm/asm-macros.h
-@@ -0,0 +1,309 @@
+diff --git a/include/asm-generic/futex.h b/include/asm-generic/futex.h
+index 01f227e..b59b5a5 100644
+--- a/include/asm-generic/futex.h
++++ b/include/asm-generic/futex.h
+@@ -5,6 +5,119 @@
+ #include <linux/uaccess.h>
+ #include <asm/errno.h>
+ 
++#ifndef CONFIG_SMP
 +/*
-+ * Macro used to simplify coding multi-line assembler.
-+ * Some of the bit test macro can simplify down to one line
-+ * depending on the mask value.
-+ *
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ *
-+ */
-+#ifndef _ASM_NIOS2_ASMMACROS_H
-+#define _ASM_NIOS2_ASMMACROS_H
-+/*
-+ * ANDs reg2 with mask and places the result in reg1.
-+ *
-+ * You cannnot use the same register for reg1 & reg2.
-+ */
-+
-+.macro ANDI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		movhi	\reg1, %hi(\mask)
-+		movui	\reg1, %lo(\mask)
-+		and	\reg1, \reg1, \reg2
-+	.else
-+		andi	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	andhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
-+
-+/*
-+ * ORs reg2 with mask and places the result in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro ORI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		orhi	\reg1, \reg2, %hi(\mask)
-+		ori	\reg1, \reg2, %lo(\mask)
-+	.else
-+		ori	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	orhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
-+
-+/*
-+ * XORs reg2 with mask and places the result in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro XORI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		xorhi	\reg1, \reg2, %hi(\mask)
-+		xori	\reg1, \reg1, %lo(\mask)
-+	.else
-+		xori	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	xorhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
-+
-+/*
-+ * This is a support macro for BTBZ & BTBNZ.  It checks
-+ * the bit to make sure it is valid 32 value.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BT	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and branches to label if the
-+ * bit is zero.  The result of the bit test is stored in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTBZ	reg1, reg2, bit, label
-+	BT	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and branches to label if the
-+ * bit is non-zero.  The result of the bit test is stored in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTBNZ	reg1, reg2, bit, label
-+	BT	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTC	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		xori	\reg2, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		xorhi	\reg2, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTS	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		ori	\reg2, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		orhi	\reg2, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTR	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		andi	\reg2, \reg2, %lo(~(1 << \bit))
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		andhi	\reg2, \reg2, %lo(~(1 << (\bit - 16)))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTCBZ	reg1, reg2, bit, label
-+	BTC	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTCBNZ	reg1, reg2, bit, label
-+	BTC	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTSBZ	reg1, reg2, bit, label
-+	BTS	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTSBNZ	reg1, reg2, bit, label
-+	BTS	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTRBZ	reg1, reg2, bit, label
-+	BTR	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTRBNZ	reg1, reg2, bit, label
-+	BTR	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bits in mask against reg2 stores the result in reg1.
-+ * If the all the bits in the mask are zero it branches to label.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro TSTBZ	reg1, reg2, mask, label
-+	ANDI32	\reg1, \reg2, \mask
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bits in mask against reg2 stores the result in reg1.
-+ * If the any of the bits in the mask are 1 it branches to label.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro TSTBNZ	reg1, reg2, mask, label
-+	ANDI32	\reg1, \reg2, \mask
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Pushes reg onto the stack.
-+ */
-+
-+.macro PUSH	reg
-+	addi	sp, sp, -4
-+	stw	\reg, 0(sp)
-+.endm
-+
-+/*
-+ * Pops the top of the stack into reg.
-+ */
-+
-+.macro POP	reg
-+	ldw	\reg, 0(sp)
-+	addi	sp, sp, 4
-+.endm
-+
-+
-+#endif /* _ASM_NIOS2_ASMMACROS_H */
-diff --git a/arch/nios2/include/asm/asm-offsets.h b/arch/nios2/include/asm/asm-offsets.h
-new file mode 100644
-index 0000000..5b9f5e0
---- /dev/null
-+++ b/arch/nios2/include/asm/asm-offsets.h
-@@ -0,0 +1,20 @@
-+/*
-+ *  Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ *  Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ * The following implementation only for uniprocessor machines.
++ * For UP, it's relies on the fact that pagefault_disable() also disables
++ * preemption to ensure mutual exclusion.
 + *
 + */
 +
-+#include <generated/asm-offsets.h>
-diff --git a/arch/nios2/kernel/asm-offsets.c b/arch/nios2/kernel/asm-offsets.c
-new file mode 100644
-index 0000000..3852f5c
---- /dev/null
-+++ b/arch/nios2/kernel/asm-offsets.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++/**
++ * futex_atomic_op_inuser() - Atomic arithmetic operation with constant
++ *			  argument and comparison of the previous
++ *			  futex value with another constant.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * @encoded_op:	encoded operation to execute
++ * @uaddr:	pointer to user space address
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
++ * Return:
++ * 0 - On success
++ * <0 - On error
 + */
-+
-+#include <linux/stddef.h>
-+#include <linux/sched.h>
-+#include <linux/kernel_stat.h>
-+#include <linux/ptrace.h>
-+#include <linux/hardirq.h>
-+#include <linux/thread_info.h>
-+#include <linux/kbuild.h>
-+
-+int main(void)
++static inline int
++futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
 +{
-+	/* struct task_struct */
-+	OFFSET(TASK_THREAD, task_struct, thread);
-+	BLANK();
++	int op = (encoded_op >> 28) & 7;
++	int cmp = (encoded_op >> 24) & 15;
++	int oparg = (encoded_op << 8) >> 20;
++	int cmparg = (encoded_op << 20) >> 20;
++	int oldval, ret;
++	u32 tmp;
 +
-+	/* struct thread_struct */
-+	OFFSET(THREAD_KSP, thread_struct, ksp);
-+	OFFSET(THREAD_KPSR, thread_struct, kpsr);
-+	BLANK();
++	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
++		oparg = 1 << oparg;
 +
-+	/* struct pt_regs */
-+	OFFSET(PT_ORIG_R2, pt_regs, orig_r2);
-+	OFFSET(PT_ORIG_R7, pt_regs, orig_r7);
++	pagefault_disable();
 +
-+	OFFSET(PT_R1, pt_regs, r1);
-+	OFFSET(PT_R2, pt_regs, r2);
-+	OFFSET(PT_R3, pt_regs, r3);
-+	OFFSET(PT_R4, pt_regs, r4);
-+	OFFSET(PT_R5, pt_regs, r5);
-+	OFFSET(PT_R6, pt_regs, r6);
-+	OFFSET(PT_R7, pt_regs, r7);
-+	OFFSET(PT_R8, pt_regs, r8);
-+	OFFSET(PT_R9, pt_regs, r9);
-+	OFFSET(PT_R10, pt_regs, r10);
-+	OFFSET(PT_R11, pt_regs, r11);
-+	OFFSET(PT_R12, pt_regs, r12);
-+	OFFSET(PT_R13, pt_regs, r13);
-+	OFFSET(PT_R14, pt_regs, r14);
-+	OFFSET(PT_R15, pt_regs, r15);
-+	OFFSET(PT_EA, pt_regs, ea);
-+	OFFSET(PT_RA, pt_regs, ra);
-+	OFFSET(PT_FP, pt_regs, fp);
-+	OFFSET(PT_SP, pt_regs, sp);
-+	OFFSET(PT_GP, pt_regs, gp);
-+	OFFSET(PT_ESTATUS, pt_regs, estatus);
-+	DEFINE(PT_REGS_SIZE, sizeof(struct pt_regs));
-+	BLANK();
++	ret = -EFAULT;
++	if (unlikely(get_user(oldval, uaddr) != 0))
++		goto out_pagefault_enable;
 +
-+	/* struct switch_stack */
-+	OFFSET(SW_R16, switch_stack, r16);
-+	OFFSET(SW_R17, switch_stack, r17);
-+	OFFSET(SW_R18, switch_stack, r18);
-+	OFFSET(SW_R19, switch_stack, r19);
-+	OFFSET(SW_R20, switch_stack, r20);
-+	OFFSET(SW_R21, switch_stack, r21);
-+	OFFSET(SW_R22, switch_stack, r22);
-+	OFFSET(SW_R23, switch_stack, r23);
-+	OFFSET(SW_FP, switch_stack, fp);
-+	OFFSET(SW_GP, switch_stack, gp);
-+	OFFSET(SW_RA, switch_stack, ra);
-+	DEFINE(SWITCH_STACK_SIZE, sizeof(struct switch_stack));
-+	BLANK();
++	ret = 0;
++	tmp = oldval;
 +
-+	/* struct thread_info */
-+	OFFSET(TI_TASK, thread_info, task);
-+	OFFSET(TI_FLAGS, thread_info, flags);
-+	OFFSET(TI_PREEMPT_COUNT, thread_info, preempt_count);
-+	BLANK();
++	switch (op) {
++	case FUTEX_OP_SET:
++		tmp = oparg;
++		break;
++	case FUTEX_OP_ADD:
++		tmp += oparg;
++		break;
++	case FUTEX_OP_OR:
++		tmp |= oparg;
++		break;
++	case FUTEX_OP_ANDN:
++		tmp &= ~oparg;
++		break;
++	case FUTEX_OP_XOR:
++		tmp ^= oparg;
++		break;
++	default:
++		ret = -ENOSYS;
++	}
++
++	if (ret == 0 && unlikely(put_user(tmp, uaddr) != 0))
++		ret = -EFAULT;
++
++out_pagefault_enable:
++	pagefault_enable();
++
++	if (ret == 0) {
++		switch (cmp) {
++		case FUTEX_OP_CMP_EQ: ret = (oldval == cmparg); break;
++		case FUTEX_OP_CMP_NE: ret = (oldval != cmparg); break;
++		case FUTEX_OP_CMP_LT: ret = (oldval < cmparg); break;
++		case FUTEX_OP_CMP_GE: ret = (oldval >= cmparg); break;
++		case FUTEX_OP_CMP_LE: ret = (oldval <= cmparg); break;
++		case FUTEX_OP_CMP_GT: ret = (oldval > cmparg); break;
++		default: ret = -ENOSYS;
++		}
++	}
++	return ret;
++}
++
++/**
++ * futex_atomic_cmpxchg_inatomic() - Compare and exchange the content of the
++ *				uaddr with newval if the current value is
++ *				oldval.
++ * @uval:	pointer to store content of @uaddr
++ * @uaddr:	pointer to user space address
++ * @oldval:	old value
++ * @newval:	new value to store to @uaddr
++ *
++ * Return:
++ * 0 - On success
++ * <0 - On error
++ */
++static inline int
++futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
++			      u32 oldval, u32 newval)
++{
++	u32 val;
++
++	if (unlikely(get_user(val, uaddr) != 0))
++		return -EFAULT;
++
++	if (val == oldval && unlikely(put_user(newval, uaddr) != 0))
++		return -EFAULT;
++
++	*uval = val;
 +
 +	return 0;
 +}
++
++#else
+ static inline int
+ futex_atomic_op_inuser (int encoded_op, u32 __user *uaddr)
+ {
+@@ -54,4 +167,5 @@ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+ 	return -ENOSYS;
+ }
+ 
++#endif /* CONFIG_SMP */
+ #endif
 -- 
 1.8.2.1
 
