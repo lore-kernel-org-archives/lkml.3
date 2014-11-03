@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752AbaKCSCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:02:06 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:37245 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617AbaKCSCB (ORCPT
+	id S1753657AbaKCSCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:02:22 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:58909 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678AbaKCSCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:02:01 -0500
-Message-ID: <1415036879.29109.26.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
-From: Toshi Kani <toshi.kani@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: hpa@zytor.com, mingo@redhat.com, akpm@linux-foundation.org, arnd@arndb.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
-        yigal@plexistor.com, konrad.wilk@oracle.com
-Date: Mon, 03 Nov 2014 10:47:59 -0700
-In-Reply-To: <alpine.DEB.2.11.1411031812390.5308@nanos>
-References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
-	 <1414450545-14028-2-git-send-email-toshi.kani@hp.com>
-	 <alpine.DEB.2.11.1411031812390.5308@nanos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Nov 2014 13:02:14 -0500
+Date: Mon, 3 Nov 2014 10:01:50 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Felipe Balbi <balbi@ti.com>
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, nsekhar@ti.com,
+        grant.likely@linaro.org, George Cherian <george.cherian@ti.com>
+Subject: Re: [PATCH 1/4] extcon: gpio: Convert the driver to use gpio desc
+ API's
+Message-ID: <20141103180150.GA10164@roeck-us.net>
+References: <1415032350-8459-1-git-send-email-balbi@ti.com>
+ <1415032350-8459-2-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415032350-8459-2-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.5457C325.01AA,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 18:14 +0100, Thomas Gleixner wrote:
-> On Mon, 27 Oct 2014, Toshi Kani wrote:
-> > +	} else {
-> > +		/*
-> > +		 * PAT full support. WT is set to slot 7, which minimizes
-> > +		 * the risk of using the PAT bit as slot 3 is UC and is
-> > +		 * currently unused. Slot 4 should remain as reserved.
+On Mon, Nov 03, 2014 at 10:32:27AM -0600, Felipe Balbi wrote:
+> From: George Cherian <george.cherian@ti.com>
 > 
-> This comment makes no sense. What minimizes which risk and what has
-> this to do with slot 3 and slot 4?
-
-This is for precaution.  Since the patch enables the PAT bit the first
-time, it was suggested that we keep slot 4 reserved and set it to WB.
-The PAT bit still has no effect to slot 0/1/2 (WB/WC/UC-) after this
-patch.  Slot 7 is the safest slot since slot 3 (UC) is unused today.
-
-https://lkml.org/lkml/2014/9/4/691
-https://lkml.org/lkml/2014/9/5/394
-
-> > +		 *
-> > +		 *  PTE encoding used in Linux:
-> > +		 *      PAT
-> > +		 *      |PCD
-> > +		 *      ||PWT  PAT
-> > +		 *      |||    slot
-> > +		 *      000    0    WB : _PAGE_CACHE_MODE_WB
-> > +		 *      001    1    WC : _PAGE_CACHE_MODE_WC
-> > +		 *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
-> > +		 *      011    3    UC : _PAGE_CACHE_MODE_UC
-> > +		 *      100    4    <reserved>
-> > +		 *      101    5    <reserved>
-> > +		 *      110    6    <reserved>
+> Convert the driver to use gpiod_* API's.
 > 
-> Well, they are still mapped to WB/WC/UC_MINUS ....
+> Reviewed-by: Roger Quadros <rogerq@ti.com>
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
 
-Right, the reserved slots are also initialized with their safe values.
-However, the macros _PAGE_CACHE_MODE_XXX only refer to the slots
-specified above.
+I think it might be useful and appropriate to explain that and why
+you remove support for active-low pins, instead of hiding it in a
+seemingly unrelated patch.
 
-> > +		 *      111    7    WT : _PAGE_CACHE_MODE_WT
-> > +		 */
-> > +		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
-> > +		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
-> > +	}
-> 
-> Thanks,
+Also, since you don't use the platform data flag anymore, you might
+as well remove it to give out-of-tree users a fair warning. Overall,
+it might be easier to just revert the patch introducing it (5bfbdc9caa7)
+before converting extcon to gpiod.
 
-Thanks for the review!
--Toshi
+I am just glad that we stopped using extcon for other reasons ;-)
 
+Guenter
