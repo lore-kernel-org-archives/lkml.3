@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaKBXkT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 18:40:19 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:36899 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141AbaKBXkP (ORCPT
+	id S1752590AbaKCADz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 19:03:55 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:37982 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141AbaKCADy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 18:40:15 -0500
+	Sun, 2 Nov 2014 19:03:54 -0500
+X-Original-SENDERIP: 10.177.222.33
+X-Original-MAILFROM: byungchul.park@lge.com
+Date: Mon, 3 Nov 2014 09:03:42 +0900
+From: Byungchul Park <byungchul.park@lge.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: mingo@redhat.com, jolsa@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] tracing, function_graph: add additional marks to
+ signal very large function execution time
+Message-ID: <20141103000342.GA3393@byungchulpark-X58A-UD3R>
+References: <1414052242-9828-1-git-send-email-byungchul.park@lge.com>
+ <1414052242-9828-3-git-send-email-byungchul.park@lge.com>
+ <20141031130129.022b0bf3@gandalf.local.home>
+ <20141031130449.68be6127@gandalf.local.home>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20141102214801.GA19097@localhost>
-References: <20141102214801.GA19097@localhost>
-Date: Sun, 2 Nov 2014 15:40:14 -0800
-Message-ID: <CAOesGMj0hYbjxXMO4xhcaTZ1BmJaP8x9jZ1SmW8javQ33kCMqA@mail.gmail.com>
-Subject: Re: [GIT PULL] ARM: SoC fixes for 3.18-rc3
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Olof Johansson <olof@lixom.net>, "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031130449.68be6127@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 2, 2014 at 1:48 PM, Olof Johansson <olof@lixom.net> wrote:
-> Hi Linus,
->
-> The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
->
->   Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
+Hello,
 
-Argh, and yet again I also forgot to refer to the tag instead of the branch.
+On Fri, Oct 31, 2014 at 01:04:49PM -0400, Steven Rostedt wrote:
+> BTW, what is this vanilla@blackduck.lge.com address? It prevents
+> claws-mail from sending my email.
+> 
+> If it is some internal mailing list at lge, please 'bcc' it so that it
+> doesn't cause problems for those in the public mailing lists replying
+> to you.
 
-There's a tag tags/armsoc-for-rc3 for this:
+Thank you very much for informing.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
-tags/armsoc-for-rc3
+Thanks,
+Byungchul
 
-
-
--Olof
+> 
+> Thanks,
+> 
+> -- Steve
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
