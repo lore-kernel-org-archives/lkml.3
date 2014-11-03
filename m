@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322AbaKCStu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:49:50 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:52661 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202AbaKCStq (ORCPT
+	id S1753390AbaKCSvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:51:20 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:36334 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324AbaKCSvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:49:46 -0500
+	Mon, 3 Nov 2014 13:51:19 -0500
+Date: Mon, 3 Nov 2014 10:51:08 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Felipe Balbi <balbi@ti.com>
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, nsekhar@ti.com,
+        grant.likely@linaro.org, George Cherian <george.cherian@ti.com>
+Subject: Re: [PATCH 1/4] extcon: gpio: Convert the driver to use gpio desc
+ API's
+Message-ID: <20141103185101.GC10558@roeck-us.net>
+References: <1415032350-8459-1-git-send-email-balbi@ti.com>
+ <1415032350-8459-2-git-send-email-balbi@ti.com>
+ <20141103180150.GA10164@roeck-us.net>
+ <20141103180602.GU27425@saruman>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
-References: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
- <5452B241.5010603@amacapital.net> <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
- <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
- <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
- <20141031084220.GA29085@infradead.org> <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
- <CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
- <20141103083447.GA8617@infradead.org> <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
-From: Eric Rannaud <e@nanocritical.com>
-Date: Mon, 3 Nov 2014 10:49:24 -0800
-Message-ID: <CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
-Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103180602.GU27425@saruman>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020207.5457CEA6.0340,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 14
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 9:06 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> That doesn't help because we explicitly reject O_RDONLY when combined
->> with O_TMPFILE.
->
-> I think I'm missing something.  How is an O_RDONLY temporary file
-> useful?  Wouldn't you want an O_RDWR tempfile with mode 0400 or
-> something like that?
+On Mon, Nov 03, 2014 at 12:06:02PM -0600, Felipe Balbi wrote:
+> On Mon, Nov 03, 2014 at 10:01:50AM -0800, Guenter Roeck wrote:
+> > On Mon, Nov 03, 2014 at 10:32:27AM -0600, Felipe Balbi wrote:
+> > > From: George Cherian <george.cherian@ti.com>
+> > > 
+> > > Convert the driver to use gpiod_* API's.
+> > > 
+> > > Reviewed-by: Roger Quadros <rogerq@ti.com>
+> > > Signed-off-by: George Cherian <george.cherian@ti.com>
+> > > Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > > ---
+> > 
+> > I think it might be useful and appropriate to explain that and why
+> > you remove support for active-low pins, instead of hiding it in a
+> > seemingly unrelated patch.
+> 
+> removed ? why removed ? gpio descs handle that for you, read the source
+> code.
+> 
+Well, it for sure looks like it. Care to explain that in the patch,
+as well as how the platform data flag is used ?
 
-Isn't it because they are essentially emulating an atomic open()
-capable of creating a file with inherited ACLs, according to
-relatively complex rules? open *can* be used with O_CREAT|O_RDONLY
-(touch(1) might do that), which would naively translate into:
-
-        fd = open(dir, O_TMPFILE|O_RDONLY, 0600)
-        fsetxattr(fd, "...")
-        fsetxattr(fd, "...")
-        linkat(AT_FDCWD, "/proc/self/fd/...", ..., AT_SYMLINK_FOLLOW)
-        return fd;
-
-Now this would be happening on the server, and the only reason why it
-would be important to ensure that fd is O_RDONLY, is that smbd does
-not do its own bookkeeping of how each file handle was opened, and
-would rather have the kernel enforce O_RDONLY?
-
-With O_TMPFILE as implemented now, smbd would have to do open(dir,
-O_TMPFILE|O_RDWR, 0600), but internally keep track that O_RDONLY was
-requested by the client on that fd, and block any writes to fd itself.
+Thanks,
+Guenter
