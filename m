@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaKCTp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 14:45:56 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55166 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458AbaKCTpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 14:45:52 -0500
-Date: Mon, 3 Nov 2014 20:45:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel J Blueman <daniel@numascale.com>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH v3 3/5] Numachip: Add safe is-present function
-In-Reply-To: <1414915813-2462-3-git-send-email-daniel@numascale.com>
-Message-ID: <alpine.DEB.2.11.1411032044590.5308@nanos>
-References: <1414915813-2462-1-git-send-email-daniel@numascale.com> <1414915813-2462-3-git-send-email-daniel@numascale.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753578AbaKCTvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 14:51:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38252 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753205AbaKCTvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 14:51:03 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] HID: logitech-hidpp: 2 fixes in hidpp_root_get_protocol_version()
+Date: Mon,  3 Nov 2014 14:50:53 -0500
+Message-Id: <1415044253-18734-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1415044253-18734-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1415044253-18734-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Nov 2014, Daniel J Blueman wrote:
+- remove the constant '1'
+- when the device is not connected, the protocol error
+  HIDPP_ERROR_RESOURCE_ERROR is raised. We should not warn the user about
+  it because it is somewhat expected as an answer when we check if the
+  device is connected.
 
-> Add safe function to check if Numachip is detected, to be used elsewhere.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/hid-logitech-hidpp.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-I cannot find a use case for this. I guess this is a left over of the
-earlier 2G change, right?
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+index 4793d4b..2683564 100644
+--- a/drivers/hid/hid-logitech-hidpp.c
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -361,12 +361,16 @@ static int hidpp_root_get_protocol_version(struct hidpp_device *hidpp)
+ 			CMD_ROOT_GET_PROTOCOL_VERSION,
+ 			NULL, 0, &response);
  
-Thanks,
+-	if (ret == 1) {
++	if (ret == HIDPP_ERROR_INVALID_SUBID) {
+ 		hidpp->protocol_major = 1;
+ 		hidpp->protocol_minor = 0;
+ 		return 0;
+ 	}
+ 
++	/* the device might not be connected */
++	if (ret == HIDPP_ERROR_RESOURCE_ERROR)
++		return -EIO;
++
+ 	if (ret > 0) {
+ 		hid_err(hidpp->hid_dev, "%s: received protocol error 0x%02x\n",
+ 			__func__, ret);
+-- 
+2.1.0
 
-	tglx
