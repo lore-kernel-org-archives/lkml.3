@@ -1,128 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaKCIi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:38:28 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:33343 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268AbaKCIhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 03:37:01 -0500
-From: Dudley Du <dudley.dulixin@gmail.com>
-X-Google-Original-From: Dudley Du <dudl@cypress.com>
-To: dmitry.torokhov@gmail.com, rydberg@euromail.se
-Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v9 15/18] input: cyapa: add gen3 trackpad device read firmware image function support
-Date: Mon,  3 Nov 2014 16:33:07 +0800
-Message-Id: <1415003590-30485-16-git-send-email-dudl@cypress.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415003590-30485-1-git-send-email-dudl@cypress.com>
-References: <1415003590-30485-1-git-send-email-dudl@cypress.com>
+	id S1751983AbaKCIjt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:39:49 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:59416 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650AbaKCIjq convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 3 Nov 2014 03:39:46 -0500
+Message-Id: <54574D5F0200007800044389@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Mon, 03 Nov 2014 08:39:43 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: avoid building unused IRQ entry stubs
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add read firmware image function supported for gen3 trackpad device,
-it can be used through debugfs read_fw interface.
-TEST=test on Chromebooks.
+When X86_LOCAL_APIC (i.e. unconditionally on x86-64),
+first_system_vector will never end up being higher than
+LOCAL_TIMER_VECTOR (0xef), and hence building stubs for vectors
+0xef...0xff is pointlessly reducing code density. Deal with this at
+build time already.
 
-Signed-off-by: Dudley Du <dudl@cypress.com>
+Taking into consideration that X86_64 implies X86_LOCAL_APIC, also
+simplify (and hence make easier to read and more consistent with the
+change done here) some #if-s in arch/x86/kernel/irqinit.c.
+
+While we could further improve the packing of the IRQ entry stubs (the
+four ones now left in the last set could be fit into the four padding
+bytes each of the final four sets have) this doesn't seem to provide
+any real benefit: Both irq_entries_start and common_interrupt getting
+cache line aligned, eliminating the 30th set would just produce 32
+bytes of padding between the 29th and common_interrupt.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 ---
- drivers/input/mouse/cyapa_gen3.c | 67 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 67 insertions(+)
+ arch/x86/include/asm/hw_irq.h      |    3 ++-
+ arch/x86/include/asm/irq_vectors.h |    6 ++++++
+ arch/x86/kernel/apic/apic.c        |   22 ++++++++++++----------
+ arch/x86/kernel/entry_32.S         |    4 ++--
+ arch/x86/kernel/entry_64.S         |    4 ++--
+ arch/x86/kernel/irqinit.c          |   13 +++++++++----
+ 6 files changed, 33 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
-index b477d67..f8aeb58 100644
---- a/drivers/input/mouse/cyapa_gen3.c
-+++ b/drivers/input/mouse/cyapa_gen3.c
-@@ -710,6 +710,36 @@ static int cyapa_gen3_write_fw_block(struct cyapa *cyapa,
- 	return ret;
+--- 3.18-rc3/arch/x86/include/asm/hw_irq.h
++++ 3.18-rc3-x86-first-system-vector/arch/x86/include/asm/hw_irq.h
+@@ -185,7 +185,8 @@ extern __visible void smp_call_function_
+ extern __visible void smp_invalidate_interrupt(struct pt_regs *);
+ #endif
+ 
+-extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
++extern void (*__initconst interrupt[FIRST_SYSTEM_VECTOR
++				    - FIRST_EXTERNAL_VECTOR])(void);
+ #ifdef CONFIG_TRACING
+ #define trace_interrupt interrupt
+ #endif
+--- 3.18-rc3/arch/x86/include/asm/irq_vectors.h
++++ 3.18-rc3-x86-first-system-vector/arch/x86/include/asm/irq_vectors.h
+@@ -126,6 +126,12 @@
+ 
+ #define NR_VECTORS			 256
+ 
++#ifdef CONFIG_X86_LOCAL_APIC
++#define FIRST_SYSTEM_VECTOR		LOCAL_TIMER_VECTOR
++#else
++#define FIRST_SYSTEM_VECTOR		NR_VECTORS
++#endif
++
+ #define FPU_IRQ				  13
+ 
+ #define	FIRST_VM86_IRQ			   3
+--- 3.18-rc3/arch/x86/kernel/apic/apic.c
++++ 3.18-rc3-x86-first-system-vector/arch/x86/kernel/apic/apic.c
+@@ -196,7 +196,7 @@ static int disable_apic_timer __initdata
+ int local_apic_timer_c2_ok;
+ EXPORT_SYMBOL_GPL(local_apic_timer_c2_ok);
+ 
+-int first_system_vector = 0xfe;
++int first_system_vector = FIRST_SYSTEM_VECTOR;
+ 
+ /*
+  * Debug level, exported for io_apic.c
+@@ -1930,7 +1930,7 @@ int __init APIC_init_uniprocessor(void)
+ /*
+  * This interrupt should _never_ happen with our APIC/SMP architecture
+  */
+-static inline void __smp_spurious_interrupt(void)
++static inline void __smp_spurious_interrupt(u8 vector)
+ {
+ 	u32 v;
+ 
+@@ -1939,30 +1939,32 @@ static inline void __smp_spurious_interr
+ 	 * if it is a vectored one.  Just in case...
+ 	 * Spurious interrupts should not be ACKed.
+ 	 */
+-	v = apic_read(APIC_ISR + ((SPURIOUS_APIC_VECTOR & ~0x1f) >> 1));
+-	if (v & (1 << (SPURIOUS_APIC_VECTOR & 0x1f)))
++	v = apic_read(APIC_ISR + ((vector & ~0x1f) >> 1));
++	if (v & (1 << (vector & 0x1f)))
+ 		ack_APIC_irq();
+ 
+ 	inc_irq_stat(irq_spurious_count);
+ 
+ 	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
+-	pr_info("spurious APIC interrupt on CPU#%d, "
+-		"should never happen.\n", smp_processor_id());
++	pr_info("spurious APIC interrupt through vector %02x on CPU#%d, "
++		"should never happen.\n", vector, smp_processor_id());
  }
  
-+/*
-+ * A firmware block read command reads 16 bytes of data from flash starting
-+ * from a given address.  The 12-byte block read command has the format:
-+ *   <0xff> <CMD> <Key> <Addr>
-+ *
-+ *  <0xff>  - every command starts with 0xff
-+ *  <CMD>   - the read command value is 0x3c
-+ *  <Key>   - read commands include an 8-byte key: { 00 01 02 03 04 05 06 07 }
-+ *  <Addr>  - Memory address (16-bit, big-endian)
-+ *
-+ * The command is followed by an i2c block read to read the 16 bytes of data.
-+ */
-+static int cyapa_gen3_read_fw_bytes(struct cyapa *cyapa, u16 addr, u8 *data)
-+{
-+	int ret;
-+	u8 cmd[] = { 0xff, 0x3c, 0x00, 0x01, 0x02, 0x03, 0x04,
-+		0x05, 0x06, 0x07, addr >> 8, addr };
-+
-+	ret = cyapa_gen3_write_buffer(cyapa, cmd, sizeof(cmd));
-+	if (ret)
-+		return ret;
-+
-+	/* Read data buffer starting from offset 16 */
-+	ret = cyapa_i2c_reg_read_block(cyapa, 16, CYAPA_FW_READ_SIZE, data);
-+	if (ret != CYAPA_FW_READ_SIZE)
-+		return (ret < 0) ? ret : -EIO;
-+
-+	return 0;
-+}
-+
- static int cyapa_gen3_write_blocks(struct cyapa *cyapa,
- 		size_t start_block, size_t block_count,
- 		const u8 *image_data)
-@@ -756,6 +786,41 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
- 	return 0;
+ __visible void smp_spurious_interrupt(struct pt_regs *regs)
+ {
+ 	entering_irq();
+-	__smp_spurious_interrupt();
++	__smp_spurious_interrupt(~regs->orig_ax);
+ 	exiting_irq();
  }
  
-+/*
-+ * Read the entire firmware image into ->fw_image.
-+ * If the ->fw_image has already been allocated, then this function
-+ * doesn't do anything and just returns 0.
-+ * If an error occurs while reading the image, ->fw_image is freed, and
-+ * the error is returned.
-+ *
-+ * The firmware is a fixed size (CYAPA_FW_SIZE), and is read out in
-+ * fixed length (CYAPA_FW_READ_SIZE) chunks.
-+ */
-+static int cyapa_gen3_read_fw(struct cyapa *cyapa)
-+{
-+	int ret;
-+	int addr;
+ __visible void smp_trace_spurious_interrupt(struct pt_regs *regs)
+ {
++	u8 vector = ~regs->orig_ax;
 +
-+	ret = cyapa_gen3_bl_enter(cyapa);
-+	if (ret)
-+		return ret;
-+
-+	cyapa->fw_image = cyapa->fw_image ? cyapa->fw_image :
-+		devm_kzalloc(&cyapa->client->dev, CYAPA_FW_SIZE, GFP_KERNEL);
-+	if (!cyapa->fw_image)
-+		return -ENOMEM;
-+
-+	for (addr = 0; addr < CYAPA_FW_SIZE; addr += CYAPA_FW_READ_SIZE) {
-+		ret = cyapa_gen3_read_fw_bytes(cyapa, CYAPA_FW_HDR_START + addr,
-+					  &cyapa->fw_image[addr]);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	cyapa->fw_image_size = CYAPA_FW_SIZE;
-+	return 0;
-+}
-+
- static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
- 				     struct device_attribute *attr,
- 				     const char *buf, size_t count)
-@@ -1203,6 +1268,8 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
- 	.show_baseline = cyapa_gen3_show_baseline,
- 	.calibrate_store = cyapa_gen3_do_calibrate,
+ 	entering_irq();
+-	trace_spurious_apic_entry(SPURIOUS_APIC_VECTOR);
+-	__smp_spurious_interrupt();
+-	trace_spurious_apic_exit(SPURIOUS_APIC_VECTOR);
++	trace_spurious_apic_entry(vector);
++	__smp_spurious_interrupt(vector);
++	trace_spurious_apic_exit(vector);
+ 	exiting_irq();
+ }
  
-+	.read_fw = cyapa_gen3_read_fw,
-+
- 	.state_parse = cyapa_gen3_state_parse,
- 	.operational_check = cyapa_gen3_do_operational_check,
+--- 3.18-rc3/arch/x86/kernel/entry_32.S
++++ 3.18-rc3-x86-first-system-vector/arch/x86/kernel/entry_32.S
+@@ -732,10 +732,10 @@ ENTRY(interrupt)
+ ENTRY(irq_entries_start)
+ 	RING0_INT_FRAME
+ vector=FIRST_EXTERNAL_VECTOR
+-.rept (NR_VECTORS-FIRST_EXTERNAL_VECTOR+6)/7
++.rept (FIRST_SYSTEM_VECTOR-FIRST_EXTERNAL_VECTOR+6)/7
+ 	.balign 32
+   .rept	7
+-    .if vector < NR_VECTORS
++    .if vector < FIRST_SYSTEM_VECTOR
+       .if vector <> FIRST_EXTERNAL_VECTOR
+ 	CFI_ADJUST_CFA_OFFSET -4
+       .endif
+--- 3.18-rc3/arch/x86/kernel/entry_64.S
++++ 3.18-rc3-x86-first-system-vector/arch/x86/kernel/entry_64.S
+@@ -712,10 +712,10 @@ ENTRY(interrupt)
+ ENTRY(irq_entries_start)
+ 	INTR_FRAME
+ vector=FIRST_EXTERNAL_VECTOR
+-.rept (NR_VECTORS-FIRST_EXTERNAL_VECTOR+6)/7
++.rept (FIRST_SYSTEM_VECTOR-FIRST_EXTERNAL_VECTOR+6)/7
+ 	.balign 32
+   .rept	7
+-    .if vector < NR_VECTORS
++    .if vector < FIRST_SYSTEM_VECTOR
+       .if vector <> FIRST_EXTERNAL_VECTOR
+ 	CFI_ADJUST_CFA_OFFSET -8
+       .endif
+--- 3.18-rc3/arch/x86/kernel/irqinit.c
++++ 3.18-rc3-x86-first-system-vector/arch/x86/kernel/irqinit.c
+@@ -124,7 +124,6 @@ void setup_vector_irq(int cpu)
+ static void __init smp_intr_init(void)
+ {
+ #ifdef CONFIG_SMP
+-#if defined(CONFIG_X86_64) || defined(CONFIG_X86_LOCAL_APIC)
+ 	/*
+ 	 * The reschedule interrupt is a CPU-to-CPU reschedule-helper
+ 	 * IPI, driven by wakeup.
+@@ -144,7 +143,6 @@ static void __init smp_intr_init(void)
  
--- 
-1.9.1
+ 	/* IPI used for rebooting/stopping */
+ 	alloc_intr_gate(REBOOT_VECTOR, reboot_interrupt);
+-#endif
+ #endif /* CONFIG_SMP */
+ }
+ 
+@@ -159,7 +157,7 @@ static void __init apic_intr_init(void)
+ 	alloc_intr_gate(THRESHOLD_APIC_VECTOR, threshold_interrupt);
+ #endif
+ 
+-#if defined(CONFIG_X86_64) || defined(CONFIG_X86_LOCAL_APIC)
++#ifdef CONFIG_X86_LOCAL_APIC
+ 	/* self generated IPI for local APIC timer */
+ 	alloc_intr_gate(LOCAL_TIMER_VECTOR, apic_timer_interrupt);
+ 
+@@ -197,10 +195,17 @@ void __init native_init_IRQ(void)
+ 	 * 'special' SMP interrupts)
+ 	 */
+ 	i = FIRST_EXTERNAL_VECTOR;
+-	for_each_clear_bit_from(i, used_vectors, NR_VECTORS) {
++#ifndef CONFIG_X86_LOCAL_APIC
++#define first_system_vector NR_VECTORS
++#endif
++	for_each_clear_bit_from(i, used_vectors, first_system_vector) {
+ 		/* IA32_SYSCALL_VECTOR could be used in trap_init already. */
+ 		set_intr_gate(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
+ 	}
++#ifdef CONFIG_X86_LOCAL_APIC
++	for_each_clear_bit_from(i, used_vectors, NR_VECTORS)
++		set_intr_gate(i, spurious_interrupt);
++#endif
+ 
+ 	if (!acpi_ioapic && !of_ioapic && nr_legacy_irqs())
+ 		setup_irq(2, &irq2);
+
 
