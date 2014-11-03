@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359AbaKCNmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 08:42:00 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:54221 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496AbaKCNl5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 08:41:57 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, m.chehab@samsung.com
-Subject: Re: [PATCH v4] media: spi: Add support for LMH0395
-Date: Mon, 03 Nov 2014 15:42:09 +0200
-Message-ID: <12414520.uxZUhSYI7c@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <545784DA.50109@xs4all.nl>
-References: <1410342234-7444-1-git-send-email-jean-michel.hautbois@vodalys.com> <1630377.tEqlt7fWO7@avalon> <545784DA.50109@xs4all.nl>
+	id S1752144AbaKCNo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 08:44:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60927 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751713AbaKCNoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 08:44:25 -0500
+Message-ID: <54578693.1050401@redhat.com>
+Date: Mon, 03 Nov 2014 08:43:47 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-api@vger.kernel.org, hedi@sgi.com
+Subject: Re: [PATCH V2] kernel, add bug_on_warn
+References: <1413910077-9464-1-git-send-email-prarit@redhat.com> <87bnp491b3.fsf@rustcorp.com.au> <54478367.7030505@redhat.com> <87ppd984qv.fsf@rustcorp.com.au>
+In-Reply-To: <87ppd984qv.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 November 2014 14:36:26 Hans Verkuil wrote:
-> On 11/03/2014 02:13 PM, Laurent Pinchart wrote:
-> > Hi Jean-Michel,
-> > 
-> > Thank you for the patch.
-> 
-> > On Wednesday 10 September 2014 11:43:54 Jean-Michel Hautbois wrote:
-> <snip>
-> 
-> >> +static int lmh0395_s_routing(struct v4l2_subdev *sd, u32 input, u32
-> >> output, +				u32 config)
-> >> +{
-> >> +	struct lmh0395_state *state = to_state(sd);
-> >> +	int err = 0;
-> >> +
-> >> +	if (state->output_type != output)
-> >> +		err = lmh0395_set_output_type(sd, output);
-> >> +
-> >> +	return err;
-> >> 
-> >         if (state->output_type == output)
-> >                 return 0;
-> >         
-> >         return lmh0395_set_output_type(sd, output);
-> > 
-> > You can then get rid of the err variable.
-> > 
-> > I don't really like this implementation though, the output argument is
-> > device- specific, you thus require explicit knowledge of the LMH0395 in
-> > your bridge driver.
-> 
-> Well, that's the way s_routing is defined. It's the bridge driver's job to
-> translate between V4L2 inputs/outputs and low-level routing information.
-> 
-> > I'm not sure what the config argument is used for, but naively I would
-> > have
-> 
-> config is normally not used. There are one or two drivers that need it for
-> additional routing configuration, but it's rare.
 
-OK.
 
-> > used it to tell whether to enable (1) or disable (0) the route from input
-> > to output. The input value should then always be 0, and the output value
-> > can be 1 or 2. Another option would be to use the new S_ROUTING userspace
-> > ioctl I've proposed in
-> > http://git.linuxtv.org/cgit.cgi/pinchartl/media.git/commit/?h=xilinx-wip&i
-> > d=fc094c354338861673464ed4b8fa198089fe7bf0.
-> > 
-> > Hans, could you comment on that ?
-> 
-> Well, first of all your proposed API isn't merged yet, or even posted on the
-> mailinglist, so it's a bit unfair to require someone else to use it :-)
+On 10/30/2014 08:25 PM, Rusty Russell wrote:
+> Prarit Bhargava <prarit@redhat.com> writes:
+>> On 10/22/2014 12:27 AM, Rusty Russell wrote:
+>>> Prarit Bhargava <prarit@redhat.com> writes:
+>>>> There have been several times where I have had to rebuild a kernel to
+>>>> cause a panic when hitting a WARN() in the code in order to get a crash
+>>>> dump from a system.  Sometimes this is easy to do, other times (such as
+>>>> in the case of a remote admin) it is not trivial to send new images to the
+>>>> user.
+>>>
+>>> What about during early boot?
+>>
+>> Hi Rusty,
+>>
+>> I really don't have a use case for this in early boot.  The kernel boots, the
+>> initramfs, and then we run whatever init (systemd in my case).  A systemd script
+>> configures kexec for kdump and that point kdump is "armed".  Doing a bug_on_warn
+>> before this will simply result in a panicked system.  I don't get any "new"
+>> information FWIW as I get a stack trace, etc., in both the WARN() and BUG() cases.
+>>
+>>>
+>>> I'd recommend you use core_param().  Less code, and can be set on
+>>> commandline.
 
-It's not a requirement, just a proposal :-) I can send a patch series if 
-there's enough interest for using that API.
+Yeah, I was just starting to do this and then I saw Hedi's comment about
+disabling panic_on_warn during kdump to avoid a situation where the kdump kernel
+bogus panics on a warn.
 
-> Also, while I do agree with your proposed new API I am a lot less
-> enthusiastic about creating yet another duplicate pad op for an existing
-> audio/video routing op.
-> 
-> The problem is that existing drivers are never updated for the new op and
-> you are stuck with competing internal APIs. Not nice at all.
+So that makes the setup function look like:
 
-Agreed, it's not nice, feel free to propose a better solution :-)
+static int __init panic_on_warn_setup(char *s)
+{
+        /* Enabling this on a kdump kernel could cause a bogus panic. */
+        if (!is_kdump_kernel())
+                panic_on_warn = 1;
+        return 0;
+}
+early_param("panic_on_warn", panic_on_warn_setup);
 
-> Bottom line is that this driver uses s_routing like any other driver
-> currently in the kernel, so I have no problem with that.
+... so I dunno if core_param would work here :(.  It would have been nice if it did.
 
-I do :-)
-
-The bridge to subdev dependency is fine for PCI or USB devices where the 
-hardware topology is known to the driver. It isn't for composite embedded 
-devices, as we don't want to teach all bridges about all subdevs.
-
--- 
-Regards,
-
-Laurent Pinchart
-
+P.
