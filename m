@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886AbaKCLHo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:07:44 -0500
-Received: from mail-bl2on0068.outbound.protection.outlook.com ([65.55.169.68]:55943
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1752957AbaKCLIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:08:13 -0500
+Received: from mail-by2on0067.outbound.protection.outlook.com ([207.46.100.67]:24224
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751281AbaKCKxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:53:47 -0500
+	id S1751999AbaKCKxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:53:37 -0500
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v6 06/29] nios2: Memory management
-Date: Mon, 3 Nov 2014 18:52:02 +0800
-Message-ID: <1415011945-3297-7-git-send-email-lftan@altera.com>
+Subject: [PATCH v6 04/29] nios2: Exception handling
+Date: Mon, 3 Nov 2014 18:52:00 +0800
+Message-ID: <1415011945-3297-5-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
 References: <1415011945-3297-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(36756003)(4396001)(50226001)(97736003)(48376002)(107046002)(95666004)(105596002)(50466002)(229853001)(77156002)(6806004)(575784001)(2201001)(19580395003)(44976005)(99396003)(19580405001)(86362001)(93916002)(102836001)(120916001)(92566001)(92726001)(68736004)(106466001)(88136002)(42186005)(87286001)(104166001)(87936001)(20776003)(47776003)(31966008)(21056001)(89996001)(33646002)(84676001)(46102003)(64706001)(76176999)(50986999)(77096003)(62966003)(21314002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB223;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(86362001)(68736004)(104166001)(31966008)(93916002)(575784001)(50466002)(2201001)(84676001)(92566001)(92726001)(33646002)(48376002)(97736003)(89996001)(99396003)(50226001)(4396001)(62966003)(120916001)(88136002)(44976005)(42186005)(87286001)(87936001)(76176999)(64706001)(47776003)(107046002)(46102003)(229853001)(20776003)(95666004)(6806004)(19580405001)(21056001)(102836001)(50986999)(36756003)(19580395003)(77096003)(106466001)(77156002)(105596002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB210;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB223;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB210;
 X-Forefront-PRVS: 0384275935
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
@@ -32,716 +32,840 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains the initialisation of the memory blocks, MMU
-attributes and the memory map.
+This patch contains the exception entry code (kernel/entry.S) and
+misaligned exception.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/mmu.h     |  16 +++
- arch/nios2/include/asm/page.h    | 111 +++++++++++++++++++
- arch/nios2/include/asm/uaccess.h | 231 +++++++++++++++++++++++++++++++++++++++
- arch/nios2/mm/init.c             | 142 ++++++++++++++++++++++++
- arch/nios2/mm/uaccess.c          | 163 +++++++++++++++++++++++++++
- 5 files changed, 663 insertions(+)
- create mode 100644 arch/nios2/include/asm/mmu.h
- create mode 100644 arch/nios2/include/asm/page.h
- create mode 100644 arch/nios2/include/asm/uaccess.h
- create mode 100644 arch/nios2/mm/init.c
- create mode 100644 arch/nios2/mm/uaccess.c
+ arch/nios2/kernel/entry.S      | 555 +++++++++++++++++++++++++++++++++++++++++
+ arch/nios2/kernel/misaligned.c | 256 +++++++++++++++++++
+ 2 files changed, 811 insertions(+)
+ create mode 100644 arch/nios2/kernel/entry.S
+ create mode 100644 arch/nios2/kernel/misaligned.c
 
-diff --git a/arch/nios2/include/asm/mmu.h b/arch/nios2/include/asm/mmu.h
+diff --git a/arch/nios2/kernel/entry.S b/arch/nios2/kernel/entry.S
 new file mode 100644
-index 0000000..d9c0b10
+index 0000000..83bca17
 --- /dev/null
-+++ b/arch/nios2/include/asm/mmu.h
-@@ -0,0 +1,16 @@
++++ b/arch/nios2/kernel/entry.S
+@@ -0,0 +1,555 @@
 +/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ * linux/arch/nios2/kernel/entry.S
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_MMU_H
-+#define _ASM_NIOS2_MMU_H
-+
-+/* Default "unsigned long" context */
-+typedef unsigned long mm_context_t;
-+
-+#endif /* _ASM_NIOS2_MMU_H */
-diff --git a/arch/nios2/include/asm/page.h b/arch/nios2/include/asm/page.h
-new file mode 100644
-index 0000000..7a0d9bd
---- /dev/null
-+++ b/arch/nios2/include/asm/page.h
-@@ -0,0 +1,111 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * MMU support based on asm/page.h from mips which is:
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03 Ralf Baechle
-+ * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_PAGE_H
-+#define _ASM_NIOS2_PAGE_H
-+
-+#include <linux/pfn.h>
-+#include <linux/const.h>
-+
-+/*
-+ * PAGE_SHIFT determines the page size
-+ */
-+#define PAGE_SHIFT	12
-+#define PAGE_SIZE	(_AC(1, UL) << PAGE_SHIFT)
-+#define PAGE_MASK	(~(PAGE_SIZE - 1))
-+
-+/*
-+ * PAGE_OFFSET -- the first address of the first page of memory.
-+ */
-+#define PAGE_OFFSET	\
-+	(CONFIG_NIOS2_MEM_BASE + CONFIG_NIOS2_KERNEL_REGION_BASE)
-+
-+#ifndef __ASSEMBLY__
-+
-+/*
-+ * This gives the physical RAM offset.
-+ */
-+#define PHYS_OFFSET		CONFIG_NIOS2_MEM_BASE
-+
-+/*
-+ * It's normally defined only for FLATMEM config but it's
-+ * used in our early mem init code for all memory models.
-+ * So always define it.
-+ */
-+#define ARCH_PFN_OFFSET		PFN_UP(PHYS_OFFSET)
-+
-+#define clear_page(page)	memset((page), 0, PAGE_SIZE)
-+#define copy_page(to, from)	memcpy((to), (from), PAGE_SIZE)
-+
-+struct page;
-+
-+extern void clear_user_page(void *addr, unsigned long vaddr, struct page *page);
-+extern void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
-+				struct page *to);
-+
-+extern unsigned long shm_align_mask;
-+
-+/*
-+ * These are used to make use of C type-checking.
-+ */
-+typedef struct page *pgtable_t;
-+typedef struct { unsigned long pte; } pte_t;
-+typedef struct { unsigned long pgd; } pgd_t;
-+typedef struct { unsigned long pgprot; } pgprot_t;
-+
-+#define pte_val(x)	((x).pte)
-+#define pgd_val(x)	((x).pgd)
-+#define pgprot_val(x)	((x).pgprot)
-+
-+#define __pte(x)	((pte_t) { (x) })
-+#define __pgd(x)	((pgd_t) { (x) })
-+#define __pgprot(x)	((pgprot_t) { (x) })
-+
-+extern unsigned long memory_start;
-+extern unsigned long memory_end;
-+extern unsigned long memory_size;
-+
-+extern struct page *mem_map;
-+
-+#endif /* !__ASSEMBLY__ */
-+
-+# define __pa(x)		\
-+	((unsigned long)(x) - PAGE_OFFSET + PHYS_OFFSET)
-+# define __va(x)		\
-+	((void *)((unsigned long)(x) + PAGE_OFFSET - PHYS_OFFSET))
-+
-+#define page_to_virt(page)	\
-+	((((page) - mem_map) << PAGE_SHIFT) + PAGE_OFFSET)
-+
-+# define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
-+# define pfn_valid(pfn)		((pfn) >= ARCH_PFN_OFFSET &&	\
-+					(pfn) < max_mapnr)
-+
-+# define virt_to_page(vaddr)	pfn_to_page(PFN_DOWN(virt_to_phys(vaddr)))
-+# define virt_addr_valid(vaddr)	pfn_valid(PFN_DOWN(virt_to_phys(vaddr)))
-+
-+# define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
-+				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-+
-+# define UNCAC_ADDR(addr)	\
-+	((void *)((unsigned)(addr) | CONFIG_NIOS2_IO_REGION_BASE))
-+# define CAC_ADDR(addr)		\
-+	((void *)(((unsigned)(addr) & ~CONFIG_NIOS2_IO_REGION_BASE) |	\
-+		CONFIG_NIOS2_KERNEL_REGION_BASE))
-+
-+#include <asm-generic/memory_model.h>
-+
-+#include <asm-generic/getorder.h>
-+
-+#endif /* _ASM_NIOS2_PAGE_H */
-diff --git a/arch/nios2/include/asm/uaccess.h b/arch/nios2/include/asm/uaccess.h
-new file mode 100644
-index 0000000..acedc0a
---- /dev/null
-+++ b/arch/nios2/include/asm/uaccess.h
-@@ -0,0 +1,231 @@
-+/*
-+ * User space memory access functions for Nios II
-+ *
-+ * Copyright (C) 2010-2011, Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2013-2014  Altera Corporation
 + * Copyright (C) 2009, Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ *  Copyright (C) 1999-2002, Greg Ungerer (gerg@snapgear.com)
++ *  Copyright (C) 1998  D. Jeff Dionne <jeff@lineo.ca>,
++ *                      Kenneth Albanowski <kjahds@kjahds.com>,
++ *  Copyright (C) 2000  Lineo Inc. (www.lineo.com)
++ *  Copyright (C) 2004  Microtronix Datacom Ltd.
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_UACCESS_H
-+#define _ASM_NIOS2_UACCESS_H
-+
-+#include <linux/errno.h>
-+#include <linux/thread_info.h>
-+#include <linux/string.h>
-+
-+#include <asm/page.h>
-+
-+#define VERIFY_READ	0
-+#define VERIFY_WRITE	1
-+
-+/*
-+ * The exception table consists of pairs of addresses: the first is the
-+ * address of an instruction that is allowed to fault, and the second is
-+ * the address at which the program should continue.  No registers are
-+ * modified, so it is entirely up to the continuation code to figure out
-+ * what to do.
 + *
-+ * All the routines below use bits of fixup code that are out of line
-+ * with the main instruction path.  This means when everything is well,
-+ * we don't even have to jump over them.  Further, they do not intrude
-+ * on our cache or tlb entries.
-+ */
-+struct exception_table_entry {
-+	unsigned long insn;
-+	unsigned long fixup;
-+};
-+
-+extern int fixup_exception(struct pt_regs *regs);
-+
-+/*
-+ * Segment stuff
-+ */
-+#define MAKE_MM_SEG(s)		((mm_segment_t) { (s) })
-+#define USER_DS			MAKE_MM_SEG(0x80000000UL)
-+#define KERNEL_DS		MAKE_MM_SEG(0)
-+
-+#define get_ds()		(KERNEL_DS)
-+
-+#define get_fs()		(current_thread_info()->addr_limit)
-+#define set_fs(seg)		(current_thread_info()->addr_limit = (seg))
-+
-+#define segment_eq(a, b)	((a).seg == (b).seg)
-+
-+#define __access_ok(addr, len)			\
-+	(((signed long)(((long)get_fs().seg) &	\
-+		((long)(addr) | (((long)(addr)) + (len)) | (len)))) == 0)
-+
-+#define access_ok(type, addr, len)		\
-+	likely(__access_ok((unsigned long)(addr), (unsigned long)(len)))
-+
-+# define __EX_TABLE_SECTION	".section __ex_table,\"a\"\n"
-+
-+/*
-+ * Zero Userspace
-+ */
-+
-+static inline unsigned long __must_check __clear_user(void __user *to,
-+						      unsigned long n)
-+{
-+	__asm__ __volatile__ (
-+		"1:     stb     zero, 0(%1)\n"
-+		"       addi    %0, %0, -1\n"
-+		"       addi    %1, %1, 1\n"
-+		"       bne     %0, zero, 1b\n"
-+		"2:\n"
-+		__EX_TABLE_SECTION
-+		".word  1b, 2b\n"
-+		".previous\n"
-+		: "=r" (n), "=r" (to)
-+		: "0" (n), "1" (to)
-+	);
-+
-+	return n;
-+}
-+
-+static inline unsigned long __must_check clear_user(void __user *to,
-+						    unsigned long n)
-+{
-+	if (!access_ok(VERIFY_WRITE, to, n))
-+		return n;
-+	return __clear_user(to, n);
-+}
-+
-+extern long __copy_from_user(void *to, const void __user *from,
-+				unsigned long n);
-+extern long __copy_to_user(void __user *to, const void *from, unsigned long n);
-+
-+static inline long copy_from_user(void *to, const void __user *from,
-+				unsigned long n)
-+{
-+	if (!access_ok(VERIFY_READ, from, n))
-+		return n;
-+	return __copy_from_user(to, from, n);
-+}
-+
-+static inline long copy_to_user(void __user *to, const void *from,
-+				unsigned long n)
-+{
-+	if (!access_ok(VERIFY_WRITE, to, n))
-+		return n;
-+	return __copy_to_user(to, from, n);
-+}
-+
-+extern long strncpy_from_user(char *__to, const char __user *__from,
-+				long __len);
-+extern long strnlen_user(const char __user *s, long n);
-+
-+#define __copy_from_user_inatomic	__copy_from_user
-+#define __copy_to_user_inatomic		__copy_to_user
-+
-+/* Optimized macros */
-+#define __get_user_asm(val, insn, addr, err)				\
-+{									\
-+	__asm__ __volatile__(						\
-+	"       movi    %0, %3\n"					\
-+	"1:   " insn " %1, 0(%2)\n"					\
-+	"       movi     %0, 0\n"					\
-+	"2:\n"								\
-+	"       .section __ex_table,\"a\"\n"				\
-+	"       .word 1b, 2b\n"						\
-+	"       .previous"						\
-+	: "=&r" (err), "=r" (val)					\
-+	: "r" (addr), "i" (-EFAULT));					\
-+}
-+
-+#define __get_user_unknown(val, size, ptr, err) do {			\
-+	err = 0;							\
-+	if (copy_from_user(&(val), ptr, size)) {			\
-+		err = -EFAULT;						\
-+	}								\
-+	} while (0)
-+
-+#define __get_user_common(val, size, ptr, err)				\
-+do {									\
-+	switch (size) {							\
-+	case 1:								\
-+		__get_user_asm(val, "ldbu", ptr, err);			\
-+		break;							\
-+	case 2:								\
-+		__get_user_asm(val, "ldhu", ptr, err);			\
-+		break;							\
-+	case 4:								\
-+		__get_user_asm(val, "ldw", ptr, err);			\
-+		break;							\
-+	default:							\
-+		__get_user_unknown(val, size, ptr, err);		\
-+		break;							\
-+	}								\
-+} while (0)
-+
-+#define __get_user(x, ptr)						\
-+	({								\
-+	long __gu_err = -EFAULT;					\
-+	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
-+	unsigned long __gu_val;						\
-+	__get_user_common(__gu_val, sizeof(*(ptr)), __gu_ptr, __gu_err);\
-+	(x) = (__typeof__(x))__gu_val;					\
-+	__gu_err;							\
-+	})
-+
-+#define get_user(x, ptr)						\
-+({									\
-+	long __gu_err = -EFAULT;					\
-+	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
-+	unsigned long __gu_val = 0;					\
-+	if (access_ok(VERIFY_READ,  __gu_ptr, sizeof(*__gu_ptr)))	\
-+		__get_user_common(__gu_val, sizeof(*__gu_ptr),		\
-+			__gu_ptr, __gu_err);				\
-+	(x) = (__typeof__(x))__gu_val;					\
-+	__gu_err;							\
-+})
-+
-+#define __put_user_asm(val, insn, ptr, err)				\
-+{									\
-+	__asm__ __volatile__(						\
-+	"       movi    %0, %3\n"					\
-+	"1:   " insn " %1, 0(%2)\n"					\
-+	"       movi     %0, 0\n"					\
-+	"2:\n"								\
-+	"       .section __ex_table,\"a\"\n"				\
-+	"       .word 1b, 2b\n"						\
-+	"       .previous\n"						\
-+	: "=&r" (err)							\
-+	: "r" (val), "r" (ptr), "i" (-EFAULT));				\
-+}
-+
-+#define put_user(x, ptr)						\
-+({									\
-+	long __pu_err = -EFAULT;					\
-+	__typeof__(*(ptr)) __user *__pu_ptr = (ptr);			\
-+	__typeof__(*(ptr)) __pu_val = (__typeof(*ptr))(x);		\
-+	if (access_ok(VERIFY_WRITE, __pu_ptr, sizeof(*__pu_ptr))) {	\
-+		switch (sizeof(*__pu_ptr)) {				\
-+		case 1:							\
-+			__put_user_asm(__pu_val, "stb", __pu_ptr, __pu_err); \
-+			break;						\
-+		case 2:							\
-+			__put_user_asm(__pu_val, "sth", __pu_ptr, __pu_err); \
-+			break;						\
-+		case 4:							\
-+			__put_user_asm(__pu_val, "stw", __pu_ptr, __pu_err); \
-+			break;						\
-+		default:						\
-+			/* XXX: This looks wrong... */			\
-+			__pu_err = 0;					\
-+			if (copy_to_user(__pu_ptr, &(__pu_val),		\
-+				sizeof(*__pu_ptr)))			\
-+				__pu_err = -EFAULT;			\
-+			break;						\
-+		}							\
-+	}								\
-+	__pu_err;							\
-+})
-+
-+#define __put_user(x, ptr) put_user(x, ptr)
-+
-+#endif /* _ASM_NIOS2_UACCESS_H */
-diff --git a/arch/nios2/mm/init.c b/arch/nios2/mm/init.c
-new file mode 100644
-index 0000000..e75c75d
---- /dev/null
-+++ b/arch/nios2/mm/init.c
-@@ -0,0 +1,142 @@
-+/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
++ * Linux/m68k support by Hamish Macdonald
 + *
-+ * based on arch/m68k/mm/init.c
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * 68060 fixes by Jesper Skov
++ * ColdFire support by Greg Ungerer (gerg@snapgear.com)
++ * 5307 fixes by David W. Miller
++ * linux 2.4 support David McCullough <davidm@snapgear.com>
 + */
 +
-+#include <linux/signal.h>
-+#include <linux/sched.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/string.h>
-+#include <linux/types.h>
-+#include <linux/ptrace.h>
-+#include <linux/mman.h>
-+#include <linux/mm.h>
-+#include <linux/init.h>
-+#include <linux/pagemap.h>
-+#include <linux/bootmem.h>
-+#include <linux/slab.h>
-+#include <linux/binfmts.h>
-+
++#include <linux/sys.h>
++#include <linux/linkage.h>
++#include <asm/asm-offsets.h>
++#include <asm/asm-macros.h>
++#include <asm/thread_info.h>
++#include <asm/errno.h>
 +#include <asm/setup.h>
-+#include <asm/page.h>
-+#include <asm/pgtable.h>
-+#include <asm/sections.h>
-+#include <asm/tlb.h>
-+#include <asm/mmu_context.h>
-+#include <asm/cpuinfo.h>
++#include <asm/entry.h>
++#include <asm/unistd.h>
 +#include <asm/processor.h>
 +
-+pgd_t *pgd_current;
++.macro GET_THREAD_INFO reg
++.if THREAD_SIZE & 0xffff0000
++	andhi	\reg, sp, %hi(~(THREAD_SIZE-1))
++.else
++	addi	\reg, r0, %lo(~(THREAD_SIZE-1))
++	and	\reg, \reg, sp
++.endif
++.endm
 +
-+/*
-+ * paging_init() continues the virtual memory environment setup which
-+ * was begun by the code in arch/head.S.
-+ * The parameters are pointers to where to stick the starting and ending
-+ * addresses of available kernel virtual memory.
++.macro	kuser_cmpxchg_check
++	/*
++	 * Make sure our user space atomic helper is restarted if it was
++	 * interrupted in a critical region.
++	 * ea-4 = address of interrupted insn (ea must be preserved).
++	 * sp = saved regs.
++	 * cmpxchg_ldw = first critical insn, cmpxchg_stw = last critical insn.
++	 * If ea <= cmpxchg_stw and ea > cmpxchg_ldw then saved EA is set to
++	 * cmpxchg_ldw + 4.
++	*/
++	/* et = cmpxchg_stw + 4 */
++	movui   et, (KUSER_BASE + 4 + (cmpxchg_stw - __kuser_helper_start))
++	bgtu	ea, et, 1f
++
++	subi	et, et, (cmpxchg_stw - cmpxchg_ldw) /* et = cmpxchg_ldw + 4 */
++	bltu	ea, et, 1f
++	stw	et, PT_EA(sp)	/* fix up EA */
++	mov	ea, et
++1:
++.endm
++
++.section .rodata
++.align 4
++exception_table:
++	.word unhandled_exception	/* 0 - Reset */
++	.word unhandled_exception	/* 1 - Processor-only Reset */
++	.word external_interrupt	/* 2 - Interrupt */
++	.word handle_trap		/* 3 - Trap Instruction */
++
++	.word instruction_trap		/* 4 - Unimplemented instruction */
++	.word handle_illegal		/* 5 - Illegal instruction */
++	.word handle_unaligned		/* 6 - Misaligned data access */
++	.word handle_unaligned		/* 7 - Misaligned destination address */
++
++	.word handle_diverror		/* 8 - Division error */
++	.word protection_exception_ba	/* 9 - Supervisor-only instr. address */
++	.word protection_exception_instr /* 10 - Supervisor only instruction */
++	.word protection_exception_ba	/* 11 - Supervisor only data address */
++
++	.word unhandled_exception	/* 12 - Double TLB miss (data) */
++	.word protection_exception_pte	/* 13 - TLB permission violation (x) */
++	.word protection_exception_pte	/* 14 - TLB permission violation (r) */
++	.word protection_exception_pte	/* 15 - TLB permission violation (w) */
++
++	.word unhandled_exception	/* 16 - MPU region violation */
++
++trap_table:
++	.word	handle_system_call	/* 0  */
++	.word	instruction_trap	/* 1  */
++	.word	instruction_trap	/* 2  */
++	.word	instruction_trap	/* 3  */
++	.word	instruction_trap	/* 4  */
++	.word	instruction_trap	/* 5  */
++	.word	instruction_trap	/* 6  */
++	.word	instruction_trap	/* 7  */
++	.word	instruction_trap	/* 8  */
++	.word	instruction_trap	/* 9  */
++	.word	instruction_trap	/* 10 */
++	.word	instruction_trap	/* 11 */
++	.word	instruction_trap	/* 12 */
++	.word	instruction_trap	/* 13 */
++	.word	instruction_trap	/* 14 */
++	.word	instruction_trap	/* 15 */
++	.word	instruction_trap	/* 16 */
++	.word	instruction_trap	/* 17 */
++	.word	instruction_trap	/* 18 */
++	.word	instruction_trap	/* 19 */
++	.word	instruction_trap	/* 20 */
++	.word	instruction_trap	/* 21 */
++	.word	instruction_trap	/* 22 */
++	.word	instruction_trap	/* 23 */
++	.word	instruction_trap	/* 24 */
++	.word	instruction_trap	/* 25 */
++	.word	instruction_trap	/* 26 */
++	.word	instruction_trap	/* 27 */
++	.word	instruction_trap	/* 28 */
++	.word	instruction_trap	/* 29 */
++	.word	instruction_trap	/* 30 */
++	.word	handle_breakpoint	/* 31 */
++
++.text
++.set noat
++.set nobreak
++
++ENTRY(inthandler)
++	SAVE_ALL
++
++	kuser_cmpxchg_check
++
++	/* Clear EH bit before we get a new excpetion in the kernel
++	 * and after we have saved it to the exception frame. This is done
++	 * whether it's trap, tlb-miss or interrupt. If we don't do this
++	 * estatus is not updated the next exception.
++	 */
++	rdctl	r24, status
++	movi	r9, %lo(~STATUS_EH)
++	and	r24, r24, r9
++	wrctl	status, r24
++
++	/* Read cause and vector and branch to the associated handler */
++	mov	r4, sp
++	rdctl	r5, exception
++	movia	r9, exception_table
++	add	r24, r9, r5
++	ldw	r24, 0(r24)
++	jmp	r24
++
++
++/***********************************************************************
++ * Handle traps
++ ***********************************************************************
 + */
-+void __init paging_init(void)
-+{
-+	unsigned long zones_size[MAX_NR_ZONES];
++ENTRY(handle_trap)
++	ldw	r24, -4(ea)	/* instruction that caused the exception */
++	srli	r24, r24, 4
++	andi	r24, r24, 0x7c
++	movia	r9,trap_table
++	add	r24, r24, r9
++	ldw	r24, 0(r24)
++	jmp	r24
 +
-+	memset(zones_size, 0, sizeof(zones_size));
 +
-+	pagetable_init();
-+	pgd_current = swapper_pg_dir;
++/***********************************************************************
++ * Handle system calls
++ ***********************************************************************
++ */
++ENTRY(handle_system_call)
++	/* Enable interrupts */
++	rdctl	r10, status
++	ori	r10, r10, STATUS_PIE
++	wrctl	status, r10
 +
-+	zones_size[ZONE_NORMAL] = max_mapnr;
++	/* Reload registers destroyed by common code. */
++	ldw	r4, PT_R4(sp)
++	ldw	r5, PT_R5(sp)
 +
-+	/* pass the memory from the bootmem allocator to the main allocator */
-+	free_area_init(zones_size);
++local_restart:
++	/* Check that the requested system call is within limits */
++	movui	r1, __NR_syscalls
++	bgeu	r2, r1, ret_invsyscall
++	slli	r1, r2, 2
++	movhi	r11, %hiadj(sys_call_table)
++	add	r1, r1, r11
++	ldw	r1, %lo(sys_call_table)(r1)
++	beq	r1, r0, ret_invsyscall
 +
-+	flush_dcache_range((unsigned long)empty_zero_page,
-+			(unsigned long)empty_zero_page + PAGE_SIZE);
-+}
++	/* Check if we are being traced */
++	GET_THREAD_INFO r11
++	ldw	r11,TI_FLAGS(r11)
++	BTBNZ   r11,r11,TIF_SYSCALL_TRACE,traced_system_call
 +
-+void __init mem_init(void)
-+{
-+	unsigned long end_mem   = memory_end; /* this must not include
-+						kernel stack at top */
++	/* Execute the system call */
++	callr	r1
 +
-+	pr_debug("mem_init: start=%lx, end=%lx\n", memory_start, memory_end);
++	/* If the syscall returns a negative result:
++	 *   Set r7 to 1 to indicate error,
++	 *   Negate r2 to get a positive error code
++	 * If the syscall returns zero or a positive value:
++	 *   Set r7 to 0.
++	 * The sigreturn system calls will skip the code below by
++	 * adding to register ra. To avoid destroying registers
++	 */
++translate_rc_and_ret:
++	movi	r1, 0
++	bge	r2, zero, 3f
++	sub	r2, zero, r2
++	movi	r1, 1
++3:
++	stw	r2, PT_R2(sp)
++	stw	r1, PT_R7(sp)
++end_translate_rc_and_ret:
 +
-+	end_mem &= PAGE_MASK;
-+	high_memory = __va(end_mem);
++ret_from_exception:
++	ldw	r1, PT_ESTATUS(sp)
++	/* if so, skip resched, signals */
++	TSTBNZ	r1, r1, ESTATUS_EU, Luser_return
 +
-+	/* this will put all memory onto the freelists */
-+	free_all_bootmem();
-+	mem_init_print_info(NULL);
-+}
++restore_all:
++	rdctl	r10, status			/* disable intrs */
++	andi	r10, r10, %lo(~STATUS_PIE)
++	wrctl	status, r10
++	RESTORE_ALL
++	eret
 +
-+void __init mmu_init(void)
-+{
-+	flush_tlb_all();
-+}
++	/* If the syscall number was invalid return ENOSYS */
++ret_invsyscall:
++	movi	r2, -ENOSYS
++	br	translate_rc_and_ret
 +
-+#ifdef CONFIG_BLK_DEV_INITRD
-+void __init free_initrd_mem(unsigned long start, unsigned long end)
-+{
-+	free_reserved_area((void *)start, (void *)end, -1, "initrd");
-+}
++	/* This implements the same as above, except it calls
++	 * do_syscall_trace_enter and do_syscall_trace_exit before and after the
++	 * syscall in order for utilities like strace and gdb to work.
++	 */
++traced_system_call:
++	SAVE_SWITCH_STACK
++	call	do_syscall_trace_enter
++	RESTORE_SWITCH_STACK
++
++	/* Create system call register arguments. The 5th and 6th
++	   arguments on stack are already in place at the beginning
++	   of pt_regs. */
++	ldw	r2, PT_R2(sp)
++	ldw	r4, PT_R4(sp)
++	ldw	r5, PT_R5(sp)
++	ldw	r6, PT_R6(sp)
++	ldw	r7, PT_R7(sp)
++
++	/* Fetch the syscall function, we don't need to check the boundaries
++	 * since this is already done.
++	 */
++	slli	r1, r2, 2
++	movhi	r11,%hiadj(sys_call_table)
++	add	r1, r1, r11
++	ldw	r1, %lo(sys_call_table)(r1)
++
++	callr	r1
++
++	/* If the syscall returns a negative result:
++	 *   Set r7 to 1 to indicate error,
++	 *   Negate r2 to get a positive error code
++	 * If the syscall returns zero or a positive value:
++	 *   Set r7 to 0.
++	 * The sigreturn system calls will skip the code below by
++	 * adding to register ra. To avoid destroying registers
++	 */
++translate_rc_and_ret2:
++	movi	r1, 0
++	bge	r2, zero, 4f
++	sub	r2, zero, r2
++	movi	r1, 1
++4:
++	stw	r2, PT_R2(sp)
++	stw	r1, PT_R7(sp)
++end_translate_rc_and_ret2:
++	SAVE_SWITCH_STACK
++	call	do_syscall_trace_exit
++	RESTORE_SWITCH_STACK
++	br	ret_from_exception
++
++Luser_return:
++	GET_THREAD_INFO	r11			/* get thread_info pointer */
++	ldw	r10, TI_FLAGS(r11)		/* get thread_info->flags */
++	ANDI32	r11, r10, _TIF_WORK_MASK
++	beq	r11, r0, restore_all		/* Nothing to do */
++	BTBZ	r1, r10, TIF_NEED_RESCHED, Lsignal_return
++
++	/* Reschedule work */
++	call	schedule
++	br	ret_from_exception
++
++Lsignal_return:
++	ANDI32	r1, r10, _TIF_SIGPENDING | _TIF_NOTIFY_RESUME
++	beq	r1, r0, restore_all
++	mov	r4, sp			/* pt_regs */
++	SAVE_SWITCH_STACK
++	call	do_notify_resume
++	beq	r2, r0, no_work_pending
++	RESTORE_SWITCH_STACK
++	/* prepare restart syscall here without leaving kernel */
++	ldw	r2, PT_R2(sp)	/* reload syscall number in r2 */
++	ldw 	r4, PT_R4(sp)	/* reload syscall arguments r4-r9 */
++	ldw 	r5, PT_R5(sp)
++	ldw 	r6, PT_R6(sp)
++	ldw 	r7, PT_R7(sp)
++	ldw 	r8, PT_R8(sp)
++	ldw 	r9, PT_R9(sp)
++	br	local_restart	/* restart syscall */
++
++no_work_pending:
++	RESTORE_SWITCH_STACK
++	br	ret_from_exception
++
++/***********************************************************************
++ * Handle external interrupts.
++ ***********************************************************************
++ */
++/*
++ * This is the generic interrupt handler (for all hardware interrupt
++ * sources). It figures out the vector number and calls the appropriate
++ * interrupt service routine directly.
++ */
++external_interrupt:
++	rdctl	r12, ipending
++	rdctl	r9, ienable
++	and	r12, r12, r9
++	/* skip if no interrupt is pending */
++	beq	r12, r0, ret_from_interrupt
++
++	movi	r24, -1
++	stw	r24, PT_ORIG_R2(sp)
++
++	/*
++	 * Process an external hardware interrupt.
++	 */
++
++	addi	ea, ea, -4	/* re-issue the interrupted instruction */
++	stw	ea, PT_EA(sp)
++2:	movi	r4, %lo(-1)	/* Start from bit position 0,
++					highest priority */
++				/* This is the IRQ # for handler call */
++1:	andi	r10, r12, 1	/* Isolate bit we are interested in */
++	srli	r12, r12, 1	/* shift count is costly without hardware
++					multiplier */
++	addi	r4, r4, 1
++	beq	r10, r0, 1b
++	mov	r5, sp		/* Setup pt_regs pointer for handler call */
++	call	do_IRQ
++	rdctl	r12, ipending	/* check again if irq still pending */
++	rdctl	r9, ienable	/* Isolate possible interrupts */
++	and	r12, r12, r9
++	bne	r12, r0, 2b
++	/* br	ret_from_interrupt */ /* fall through to ret_from_interrupt */
++
++ENTRY(ret_from_interrupt)
++	ldw	r1, PT_ESTATUS(sp)	/* check if returning to kernel */
++	TSTBNZ	r1, r1, ESTATUS_EU, Luser_return
++
++#ifdef CONFIG_PREEMPT
++	GET_THREAD_INFO	r1
++	ldw	r4, TI_PREEMPT_COUNT(r1)
++	bne	r4, r0, restore_all
++
++need_resched:
++	ldw	r4, TI_FLAGS(r1)		/* ? Need resched set */
++	BTBZ	r10, r4, TIF_NEED_RESCHED, restore_all
++	ldw	r4, PT_ESTATUS(sp)	/* ? Interrupts off */
++	andi	r10, r4, ESTATUS_EPIE
++	beq	r10, r0, restore_all
++	movia	r4, PREEMPT_ACTIVE
++	stw	r4, TI_PREEMPT_COUNT(r1)
++	rdctl	r10, status		/* enable intrs again */
++	ori	r10, r10 ,STATUS_PIE
++	wrctl	status, r10
++	PUSH	r1
++	call	schedule
++	POP	r1
++	mov	r4, r0
++	stw	r4, TI_PREEMPT_COUNT(r1)
++	rdctl	r10, status		/* disable intrs */
++	andi	r10, r10, %lo(~STATUS_PIE)
++	wrctl	status, r10
++	br	need_resched
++#else
++	br	restore_all
 +#endif
 +
-+void __init_refok free_initmem(void)
++/***********************************************************************
++ * A few syscall wrappers
++ ***********************************************************************
++ */
++/*
++ * int clone(unsigned long clone_flags, unsigned long newsp,
++ *		int __user * parent_tidptr, int __user * child_tidptr,
++ *		int tls_val)
++ */
++ENTRY(sys_clone)
++	SAVE_SWITCH_STACK
++	addi	sp, sp, -4
++	stw	r7, 0(sp)	/* Pass 5th arg thru stack */
++	mov	r7, r6		/* 4th arg is 3rd of clone() */
++	mov	r6, zero	/* 3rd arg always 0 */
++	call	do_fork
++	addi	sp, sp, 4
++	RESTORE_SWITCH_STACK
++	ret
++
++ENTRY(sys_rt_sigreturn)
++	SAVE_SWITCH_STACK
++	mov	r4, sp
++	call	do_rt_sigreturn
++	RESTORE_SWITCH_STACK
++	addi	ra, ra, (end_translate_rc_and_ret - translate_rc_and_ret)
++	ret
++
++/***********************************************************************
++ * A few other wrappers and stubs
++ ***********************************************************************
++ */
++protection_exception_pte:
++	rdctl	r6, pteaddr
++	slli	r6, r6, 10
++	call	do_page_fault
++	br	ret_from_exception
++
++protection_exception_ba:
++	rdctl	r6, badaddr
++	call	do_page_fault
++	br	ret_from_exception
++
++protection_exception_instr:
++	call	handle_supervisor_instr
++	br	ret_from_exception
++
++handle_breakpoint:
++	call	breakpoint_c
++	br	ret_from_exception
++
++#ifdef CONFIG_NIOS2_ALIGNMENT_TRAP
++handle_unaligned:
++	SAVE_SWITCH_STACK
++	call	handle_unaligned_c
++	RESTORE_SWITCH_STACK
++	br	ret_from_exception
++#else
++handle_unaligned:
++	call	handle_unaligned_c
++	br	ret_from_exception
++#endif
++
++handle_illegal:
++	call	handle_illegal_c
++	br	ret_from_exception
++
++handle_diverror:
++	call	handle_diverror_c
++	br	ret_from_exception
++
++/*
++ * Beware - when entering resume, prev (the current task) is
++ * in r4, next (the new task) is in r5, don't change these
++ * registers.
++ */
++ENTRY(resume)
++
++	rdctl	r7, status			/* save thread status reg */
++	stw	r7, TASK_THREAD + THREAD_KPSR(r4)
++
++	andi	r7, r7, %lo(~STATUS_PIE)	/* disable interrupts */
++	wrctl	status, r7
++
++	SAVE_SWITCH_STACK
++	stw	sp, TASK_THREAD + THREAD_KSP(r4)/* save kernel stack pointer */
++	ldw	sp, TASK_THREAD + THREAD_KSP(r5)/* restore new thread stack */
++	movia	r24, _current_thread		/* save thread */
++	GET_THREAD_INFO r1
++	stw	r1, 0(r24)
++	RESTORE_SWITCH_STACK
++
++	ldw	r7, TASK_THREAD + THREAD_KPSR(r5)/* restore thread status reg */
++	wrctl	status, r7
++	ret
++
++ENTRY(ret_from_fork)
++	call	schedule_tail
++	br	ret_from_exception
++
++ENTRY(ret_from_kernel_thread)
++	call	schedule_tail
++	mov	r4,r17	/* arg */
++	callr	r16	/* function */
++	br	ret_from_exception
++
++/*
++ * Kernel user helpers.
++ *
++ * Each segment is 64-byte aligned and will be mapped to the <User space>.
++ * New segments (if ever needed) must be added after the existing ones.
++ * This mechanism should be used only for things that are really small and
++ * justified, and not be abused freely.
++ *
++ */
++
++ /* Filling pads with undefined instructions. */
++.macro	kuser_pad sym size
++	.if	((. - \sym) & 3)
++	.rept	(4 - (. - \sym) & 3)
++	.byte	0
++	.endr
++	.endif
++	.rept	((\size - (. - \sym)) / 4)
++	.word	0xdeadbeef
++	.endr
++.endm
++
++	.align	6
++	.globl	__kuser_helper_start
++__kuser_helper_start:
++
++__kuser_helper_version:				/* @ 0x1000 */
++	.word	((__kuser_helper_end - __kuser_helper_start) >> 6)
++
++__kuser_cmpxchg:				/* @ 0x1004 */
++	/*
++	 * r4 pointer to exchange variable
++	 * r5 old value
++	 * r6 new value
++	 */
++cmpxchg_ldw:
++	ldw	r2, 0(r4)			/* load current value */
++	sub	r2, r2, r5			/* compare with old value */
++	bne	r2, zero, cmpxchg_ret
++
++	/* We had a match, store the new value */
++cmpxchg_stw:
++	stw	r6, 0(r4)
++cmpxchg_ret:
++	ret
++
++	kuser_pad __kuser_cmpxchg, 64
++
++	.globl	__kuser_sigtramp
++__kuser_sigtramp:
++	movi	r2, __NR_rt_sigreturn
++	trap
++
++	kuser_pad __kuser_sigtramp, 64
++
++	.globl	__kuser_helper_end
++__kuser_helper_end:
+diff --git a/arch/nios2/kernel/misaligned.c b/arch/nios2/kernel/misaligned.c
+new file mode 100644
+index 0000000..4e5907a
+--- /dev/null
++++ b/arch/nios2/kernel/misaligned.c
+@@ -0,0 +1,256 @@
++/*
++ *  linux/arch/nios2/kernel/misaligned.c
++ *
++ *  basic emulation for mis-aligned accesses on the NIOS II cpu
++ *  modelled after the version for arm in arm/alignment.c
++ *
++ *  Brad Parker <brad@heeltoe.com>
++ *  Copyright (C) 2010 Ambient Corporation
++ *  Copyright (c) 2010 Altera Corporation, San Jose, California, USA.
++ *  Copyright (c) 2010 Arrow Electronics, Inc.
++ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License.  See the file COPYING in the main directory of
++ * this archive for more details.
++ */
++
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/proc_fs.h>
++#include <linux/init.h>
++#include <linux/sched.h>
++#include <linux/uaccess.h>
++#include <linux/seq_file.h>
++
++#include <asm/traps.h>
++#include <asm/unaligned.h>
++
++/* instructions we emulate */
++#define INST_LDHU	0x0b
++#define INST_STH	0x0d
++#define INST_LDH	0x0f
++#define INST_STW	0x15
++#define INST_LDW	0x17
++
++static unsigned long ma_user, ma_kern, ma_skipped, ma_half, ma_word;
++
++static unsigned int ma_usermode;
++#define UM_WARN		0x01
++#define UM_FIXUP	0x02
++#define UM_SIGNAL	0x04
++#define KM_WARN		0x08
++
++/* see arch/nios2/include/asm/ptrace.h */
++static u8 sys_stack_frame_reg_offset[] = {
++	/* struct pt_regs */
++	8, 9, 10, 11, 12, 13, 14, 15, 1, 2, 3, 4, 5, 6, 7, 0,
++	/* struct switch_stack */
++	16, 17, 18, 19, 20, 21, 22, 23, 0, 0, 0, 0, 0, 0, 0, 0
++};
++
++static int reg_offsets[32];
++
++static inline u32 get_reg_val(struct pt_regs *fp, int reg)
 +{
-+	free_initmem_default(-1);
++	u8 *p = ((u8 *)fp) + reg_offsets[reg];
++
++	return *(u32 *)p;
 +}
 +
-+#define __page_aligned(order) __aligned(PAGE_SIZE << (order))
-+pgd_t swapper_pg_dir[PTRS_PER_PGD] __page_aligned(PGD_ORDER);
-+pte_t invalid_pte_table[PTRS_PER_PTE] __page_aligned(PTE_ORDER);
-+static struct page *kuser_page[1];
-+
-+static int alloc_kuser_page(void)
++static inline void put_reg_val(struct pt_regs *fp, int reg, u32 val)
 +{
-+	extern char __kuser_helper_start[], __kuser_helper_end[];
-+	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
-+	unsigned long vpage;
++	u8 *p = ((u8 *)fp) + reg_offsets[reg];
++	*(u32 *)p = val;
++}
 +
-+	vpage = get_zeroed_page(GFP_ATOMIC);
-+	if (!vpage)
-+		return -ENOMEM;
++/*
++ * (mis)alignment handler
++ */
++asmlinkage void handle_unaligned_c(struct pt_regs *fp, int cause)
++{
++	u32 isn, addr, val;
++	int in_kernel;
++	u8 a, b, d0, d1, d2, d3;
++	u16 imm16;
++	unsigned int fault;
 +
-+	/* Copy kuser helpers */
-+	memcpy((void *)vpage, __kuser_helper_start, kuser_sz);
++	/* back up one instruction */
++	fp->ea -= 4;
 +
-+	flush_icache_range(vpage, vpage + KUSER_SIZE);
-+	kuser_page[0] = virt_to_page(vpage);
++	if (fixup_exception(fp)) {
++		ma_skipped++;
++		return;
++	}
++
++	in_kernel = !user_mode(fp);
++
++	isn = *(unsigned long *)(fp->ea);
++
++	fault = 0;
++
++	/* do fixup if in kernel or mode turned on */
++	if (in_kernel || (ma_usermode & UM_FIXUP)) {
++		/* decompose instruction */
++		a = (isn >> 27) & 0x1f;
++		b = (isn >> 22) & 0x1f;
++		imm16 = (isn >> 6) & 0xffff;
++		addr = get_reg_val(fp, a) + imm16;
++
++		/* do fixup to saved registers */
++		switch (isn & 0x3f) {
++		case INST_LDHU:
++			fault |= __get_user(d0, (u8 *)(addr+0));
++			fault |= __get_user(d1, (u8 *)(addr+1));
++			val = (d1 << 8) | d0;
++			put_reg_val(fp, b, val);
++			ma_half++;
++			break;
++		case INST_STH:
++			val = get_reg_val(fp, b);
++			d1 = val >> 8;
++			d0 = val >> 0;
++
++			pr_debug("sth: ra=%d (%08x) rb=%d (%08x), imm16 %04x addr %08x val %08x\n",
++				a, get_reg_val(fp, a),
++				b, get_reg_val(fp, b),
++				imm16, addr, val);
++
++			if (in_kernel) {
++				*(u8 *)(addr+0) = d0;
++				*(u8 *)(addr+1) = d1;
++			} else {
++				fault |= __put_user(d0, (u8 *)(addr+0));
++				fault |= __put_user(d1, (u8 *)(addr+1));
++			}
++			ma_half++;
++			break;
++		case INST_LDH:
++			fault |= __get_user(d0, (u8 *)(addr+0));
++			fault |= __get_user(d1, (u8 *)(addr+1));
++			val = (short)((d1 << 8) | d0);
++			put_reg_val(fp, b, val);
++			ma_half++;
++			break;
++		case INST_STW:
++			val = get_reg_val(fp, b);
++			d3 = val >> 24;
++			d2 = val >> 16;
++			d1 = val >> 8;
++			d0 = val >> 0;
++			if (in_kernel) {
++				*(u8 *)(addr+0) = d0;
++				*(u8 *)(addr+1) = d1;
++				*(u8 *)(addr+2) = d2;
++				*(u8 *)(addr+3) = d3;
++			} else {
++				fault |= __put_user(d0, (u8 *)(addr+0));
++				fault |= __put_user(d1, (u8 *)(addr+1));
++				fault |= __put_user(d2, (u8 *)(addr+2));
++				fault |= __put_user(d3, (u8 *)(addr+3));
++			}
++			ma_word++;
++			break;
++		case INST_LDW:
++			fault |= __get_user(d0, (u8 *)(addr+0));
++			fault |= __get_user(d1, (u8 *)(addr+1));
++			fault |= __get_user(d2, (u8 *)(addr+2));
++			fault |= __get_user(d3, (u8 *)(addr+3));
++			val = (d3 << 24) | (d2 << 16) | (d1 << 8) | d0;
++			put_reg_val(fp, b, val);
++			ma_word++;
++			break;
++		}
++	}
++
++	addr = RDCTL(CTL_BADADDR);
++	cause >>= 2;
++
++	if (fault) {
++		if (in_kernel) {
++			pr_err("fault during kernel misaligned fixup @ %#lx; addr 0x%08x; isn=0x%08x\n",
++				fp->ea, (unsigned int)addr,
++				(unsigned int)isn);
++		} else {
++			pr_err("fault during user misaligned fixup @ %#lx; isn=%08x addr=0x%08x sp=0x%08lx pid=%d\n",
++				fp->ea,
++				(unsigned int)isn, addr, fp->sp,
++				current->pid);
++
++			_exception(SIGSEGV, fp, SEGV_MAPERR, fp->ea);
++			return;
++		}
++	}
++
++	/*
++	 * kernel mode -
++	 *  note exception and skip bad instruction (return)
++	 */
++	if (in_kernel) {
++		ma_kern++;
++		fp->ea += 4;
++
++		if (ma_usermode & KM_WARN) {
++			pr_err("kernel unaligned access @ %#lx; BADADDR 0x%08x; cause=%d, isn=0x%08x\n",
++				fp->ea,
++				(unsigned int)addr, cause,
++				(unsigned int)isn);
++			/* show_regs(fp); */
++		}
++
++		return;
++	}
++
++	ma_user++;
++
++	/*
++	 * user mode -
++	 *  possibly warn,
++	 *  possibly send SIGBUS signal to process
++	 */
++	if (ma_usermode & UM_WARN) {
++		pr_err("user unaligned access @ %#lx; isn=0x%08lx ea=0x%08lx ra=0x%08lx sp=0x%08lx\n",
++			(unsigned long)addr, (unsigned long)isn,
++			fp->ea, fp->ra, fp->sp);
++	}
++
++	if (ma_usermode & UM_SIGNAL)
++		_exception(SIGBUS, fp, BUS_ADRALN, fp->ea);
++	else
++		fp->ea += 4;	/* else advance */
++}
++
++static void __init misaligned_calc_reg_offsets(void)
++{
++	int i, r, offset;
++
++	/* pre-calc offsets of registers on sys call stack frame */
++	offset = 0;
++
++	/* struct pt_regs */
++	for (i = 0; i < 16; i++) {
++		r = sys_stack_frame_reg_offset[i];
++		reg_offsets[r] = offset;
++		offset += 4;
++	}
++
++	/* struct switch_stack */
++	offset = -sizeof(struct switch_stack);
++	for (i = 16; i < 32; i++) {
++		r = sys_stack_frame_reg_offset[i];
++		reg_offsets[r] = offset;
++		offset += 4;
++	}
++}
++
++
++static int __init misaligned_init(void)
++{
++	/* default mode - silent fix */
++	ma_usermode = UM_FIXUP | KM_WARN;
++
++	misaligned_calc_reg_offsets();
 +
 +	return 0;
 +}
-+arch_initcall(alloc_kuser_page);
 +
-+int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
-+{
-+	struct mm_struct *mm = current->mm;
-+	int ret;
-+
-+	down_write(&mm->mmap_sem);
-+
-+	/* Map kuser helpers to user space address */
-+	ret = install_special_mapping(mm, KUSER_BASE, KUSER_SIZE,
-+				      VM_READ | VM_EXEC | VM_MAYREAD |
-+				      VM_MAYEXEC, kuser_page);
-+
-+	up_write(&mm->mmap_sem);
-+
-+	return ret;
-+}
-+
-+const char *arch_vma_name(struct vm_area_struct *vma)
-+{
-+	return (vma->vm_start == KUSER_BASE) ? "[kuser]" : NULL;
-+}
-diff --git a/arch/nios2/mm/uaccess.c b/arch/nios2/mm/uaccess.c
-new file mode 100644
-index 0000000..7663e15
---- /dev/null
-+++ b/arch/nios2/mm/uaccess.c
-@@ -0,0 +1,163 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/uaccess.h>
-+
-+asm(".global	__copy_from_user\n"
-+	"   .type __copy_from_user, @function\n"
-+	"__copy_from_user:\n"
-+	"   movi  r2,7\n"
-+	"   mov   r3,r4\n"
-+	"   bge   r2,r6,1f\n"
-+	"   xor   r2,r4,r5\n"
-+	"   andi  r2,r2,3\n"
-+	"   movi  r7,3\n"
-+	"   beq   r2,zero,4f\n"
-+	"1: addi  r6,r6,-1\n"
-+	"   movi  r2,-1\n"
-+	"   beq   r6,r2,3f\n"
-+	"   mov   r7,r2\n"
-+	"2: ldbu  r2,0(r5)\n"
-+	"   addi  r6,r6,-1\n"
-+	"   addi  r5,r5,1\n"
-+	"   stb   r2,0(r3)\n"
-+	"   addi  r3,r3,1\n"
-+	"   bne   r6,r7,2b\n"
-+	"3:\n"
-+	"   addi  r2,r6,1\n"
-+	"   ret\n"
-+	"13:mov   r2,r6\n"
-+	"   ret\n"
-+	"4: andi  r2,r4,1\n"
-+	"   cmpeq r2,r2,zero\n"
-+	"   beq   r2,zero,7f\n"
-+	"5: andi  r2,r3,2\n"
-+	"   beq   r2,zero,6f\n"
-+	"9: ldhu  r2,0(r5)\n"
-+	"   addi  r6,r6,-2\n"
-+	"   addi  r5,r5,2\n"
-+	"   sth   r2,0(r3)\n"
-+	"   addi  r3,r3,2\n"
-+	"6: bge   r7,r6,1b\n"
-+	"10:ldw   r2,0(r5)\n"
-+	"   addi  r6,r6,-4\n"
-+	"   addi  r5,r5,4\n"
-+	"   stw   r2,0(r3)\n"
-+	"   addi  r3,r3,4\n"
-+	"   br    6b\n"
-+	"7: ldbu  r2,0(r5)\n"
-+	"   addi  r6,r6,-1\n"
-+	"   addi  r5,r5,1\n"
-+	"   addi  r3,r4,1\n"
-+	"   stb   r2,0(r4)\n"
-+	"   br    5b\n"
-+	".section __ex_table,\"a\"\n"
-+	".word 2b,3b\n"
-+	".word 9b,13b\n"
-+	".word 10b,13b\n"
-+	".word 7b,13b\n"
-+	".previous\n"
-+	);
-+EXPORT_SYMBOL(__copy_from_user);
-+
-+asm(
-+	"   .global __copy_to_user\n"
-+	"   .type __copy_to_user, @function\n"
-+	"__copy_to_user:\n"
-+	"   movi  r2,7\n"
-+	"   mov   r3,r4\n"
-+	"   bge   r2,r6,1f\n"
-+	"   xor   r2,r4,r5\n"
-+	"   andi  r2,r2,3\n"
-+	"   movi  r7,3\n"
-+	"   beq   r2,zero,4f\n"
-+	/* Bail if we try to copy zero bytes  */
-+	"1: addi  r6,r6,-1\n"
-+	"   movi  r2,-1\n"
-+	"   beq   r6,r2,3f\n"
-+	/* Copy byte by byte for small copies and if src^dst != 0 */
-+	"   mov   r7,r2\n"
-+	"2: ldbu  r2,0(r5)\n"
-+	"   addi  r5,r5,1\n"
-+	"9: stb   r2,0(r3)\n"
-+	"   addi  r6,r6,-1\n"
-+	"   addi  r3,r3,1\n"
-+	"   bne   r6,r7,2b\n"
-+	"3: addi  r2,r6,1\n"
-+	"   ret\n"
-+	"13:mov   r2,r6\n"
-+	"   ret\n"
-+	/*  If 'to' is an odd address byte copy */
-+	"4: andi  r2,r4,1\n"
-+	"   cmpeq r2,r2,zero\n"
-+	"   beq   r2,zero,7f\n"
-+	/* If 'to' is not divideable by four copy halfwords */
-+	"5: andi  r2,r3,2\n"
-+	"   beq   r2,zero,6f\n"
-+	"   ldhu  r2,0(r5)\n"
-+	"   addi  r5,r5,2\n"
-+	"10:sth   r2,0(r3)\n"
-+	"   addi  r6,r6,-2\n"
-+	"   addi  r3,r3,2\n"
-+	/* Copy words */
-+	"6: bge   r7,r6,1b\n"
-+	"   ldw   r2,0(r5)\n"
-+	"   addi  r5,r5,4\n"
-+	"11:stw   r2,0(r3)\n"
-+	"   addi  r6,r6,-4\n"
-+	"   addi  r3,r3,4\n"
-+	"   br    6b\n"
-+	/* Copy remaining bytes */
-+	"7: ldbu  r2,0(r5)\n"
-+	"   addi  r5,r5,1\n"
-+	"   addi  r3,r4,1\n"
-+	"12: stb  r2,0(r4)\n"
-+	"   addi  r6,r6,-1\n"
-+	"   br    5b\n"
-+	".section __ex_table,\"a\"\n"
-+	".word 9b,3b\n"
-+	".word 10b,13b\n"
-+	".word 11b,13b\n"
-+	".word 12b,13b\n"
-+	".previous\n");
-+EXPORT_SYMBOL(__copy_to_user);
-+
-+long strncpy_from_user(char *__to, const char __user *__from, long __len)
-+{
-+	int l = strnlen_user(__from, __len);
-+	int is_zt = 1;
-+
-+	if (l > __len) {
-+		is_zt = 0;
-+		l = __len;
-+	}
-+
-+	if (l == 0 || copy_from_user(__to, __from, l))
-+		return -EFAULT;
-+
-+	if (is_zt)
-+		l--;
-+	return l;
-+}
-+
-+long strnlen_user(const char __user *s, long n)
-+{
-+	long i;
-+
-+	for (i = 0; i < n; i++) {
-+		char c;
-+
-+		if (get_user(c, s + i) == -EFAULT)
-+			return 0;
-+		if (c == 0)
-+			return i + 1;
-+	}
-+	return n + 1;
-+}
++fs_initcall(misaligned_init);
 -- 
 1.8.2.1
 
