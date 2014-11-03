@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaKCOrv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:47:51 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:63785 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991AbaKCOru (ORCPT
+	id S1753013AbaKCOsP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:48:15 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:42004 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375AbaKCOsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:47:50 -0500
+	Mon, 3 Nov 2014 09:48:13 -0500
+X-Originating-IP: 50.43.41.112
+Date: Mon, 3 Nov 2014 06:48:01 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: sparse@chrisli.org, Mark Rustad <mark.d.rustad@intel.com>,
+        linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org
+Subject: Re: [PATCH] compiler: Correct macro parameter expansion problem
+Message-ID: <20141103144800.GA23094@thin>
+References: <1415025253-15976-1-git-send-email-jeffrey.t.kirsher@intel.com>
 MIME-Version: 1.0
-Date: Mon, 3 Nov 2014 15:47:49 +0100
-Message-ID: <CACRpkdb4xYmz3d6O3GVvffAx2+oWfsRwMyjQULXj5gAKe1j83g@mail.gmail.com>
-Subject: [GIT PULL] pin control fixes for v3.18
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415025253-15976-1-git-send-email-jeffrey.t.kirsher@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Nov 03, 2014 at 06:34:13AM -0800, Jeff Kirsher wrote:
+> From: Mark Rustad <mark.d.rustad@intel.com>
+> 
+> The macro __compiletime_error_fallback has an error in that it
+> lacks parens around the expansion of an expression. It also
+> lacks a conversion to a boolean value. The first problem can
+> result in a mis-evaluation. The second problem can also result
+> in an error if the value comes out negative. That would thwart
+> the intended error generation. That is, the error being asserted
+> would not in fact generate an error. Fix both problems by adding
+> !!() to the expansion.
+> 
+> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+> Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-this kernel cycle has been calm for both pin control and GPIO
-so far but here are three pin control patches for you anyway,
-only really dealing with Baytrail.
+Good catch.
 
-Please pull them in!
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Yours,
-Linus Walleij
-
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-v3.18-2
-
-for you to fetch changes up to d90c33818967c5e5371961604ad98b4dea4fa3f4:
-
-  pinctrl: baytrail: show output gpio state correctly on Intel
-Baytrail (2014-10-28 11:16:26 +0100)
-
-----------------------------------------------------------------
-Pin control fixes for the v3.18 series:
-- Two fixes for the Baytrail driver affecting IRQs and
-  output state in sysfs
-- Use the linux-gpio mailing list also for pinctrl patches
-
-----------------------------------------------------------------
-David Cohen (2):
-      pinctrl: use linux-gpio mailing list
-      pinctrl: baytrail: show output gpio state correctly on Intel Baytrail
-
-Loic Poulain (1):
-      pinctrl: baytrail: Clear DIRECT_IRQ bit
-
- MAINTAINERS                        | 1 +
- drivers/pinctrl/pinctrl-baytrail.c | 8 ++++++--
- 2 files changed, 7 insertions(+), 2 deletions(-)
+>  include/linux/compiler.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> index d5ad7b1..59dc611 100644
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -331,7 +331,7 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+>   */
+>  # ifndef __CHECKER__
+>  #  define __compiletime_error_fallback(condition) \
+> -	do { ((void)sizeof(char[1 - 2 * condition])); } while (0)
+> +	do { ((void)sizeof(char[1 - 2 * !!(condition)])); } while (0)
+>  # endif
+>  #endif
+>  #ifndef __compiletime_error_fallback
+> -- 
+> 1.9.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sparse" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
