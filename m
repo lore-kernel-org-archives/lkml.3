@@ -1,61 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaKCQw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:52:57 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48349 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaKCQwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:52:55 -0500
-Date: Mon, 3 Nov 2014 22:22:43 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] ALSA: echoaudio: add reference of struct echoaudio
-Message-ID: <20141103165243.GA7562@sudip-PC>
-References: <1415010853-4334-1-git-send-email-sudipm.mukherjee@gmail.com>
- <s5hwq7c1i7k.wl-tiwai@suse.de>
- <1415027288.17743.16.camel@perches.com>
+	id S1752946AbaKCQzS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:55:18 -0500
+Received: from tex.lwn.net ([70.33.254.29]:38275 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908AbaKCQzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 11:55:16 -0500
+Date: Mon, 3 Nov 2014 11:55:14 -0500
+From: Jonathan Corbet <corbet@lwn.net>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: jaswinder.singh@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: Fix a typo in mailbox.txt
+Message-ID: <20141103115514.46926d57@lwn.net>
+In-Reply-To: <1413934567-1207-1-git-send-email-standby24x7@gmail.com>
+References: <1413934567-1207-1-git-send-email-standby24x7@gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415027288.17743.16.camel@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 07:08:08AM -0800, Joe Perches wrote:
-> On Mon, 2014-11-03 at 15:17 +0100, Takashi Iwai wrote:
-> > At Mon,  3 Nov 2014 16:04:12 +0530,
-> > Sudip Mukherjee wrote:
-> > > 
-> > > added reference of struct echoaudio to free_firmware function.
-> > > this structure will be later used to get a reference of the card
-> > > when converting snd_printk to dev_* in the next patch of the series.
-> > > 
-> > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > 
-> > Thanks, now applied both.  Though, I noticed that there is also a
-> > dev_notice() usage that should be also dev_dbg().  Corrected such
-> > lines in my side.
-> 
-> Are any of these changes going to cause a
-> null pointer dereference of chip->card->dev?
-should not. while converting i have checked the place from where the particular function is called, to see if chip is valid there.
-if chip is valid, then chip->card->dev should be ok. card is coming from snd_card_new and chip from snd_echo_create.
-> 
-> ftrace exists and is generic.
-> 
-> Several of these seem to be function tracing
-> style uses and should just be deleted instead.
+On Wed, 22 Oct 2014 08:36:07 +0900
+Masanari Iida <standby24x7@gmail.com> wrote:
 
-function tracing style uses means?
-there are some prints which are printing the function name while printing the debug message.
-are those function tracing style uses??
+> This patch fix a typo in Documentation/mailbox.txt
+> "bool async" is defined in struct demo_client.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-thanks
-sudip
-> 
-> 
+I've (finally) applied this one, thanks.
+
+jon
