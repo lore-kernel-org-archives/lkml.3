@@ -1,149 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaKCPFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:05:40 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:57834 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164AbaKCPFf (ORCPT
+	id S1752714AbaKCPGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:06:46 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:56760 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaKCPGo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:05:35 -0500
-Date: Mon, 3 Nov 2014 15:05:26 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Vignesh R <vigneshr@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	Mon, 3 Nov 2014 10:06:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Rob Herring <robherring2@gmail.com>, Gilad Avidov <gavidov@codeaurora.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Jan Kardell <jan.kardell@telliq.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Brad Griffis <bgriffis@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/4] input: touchscreen: ti_am335x_tsc: Remove udelay in
- interrupt handler
-Message-ID: <20141103150526.GI4538@x1>
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
- <1414408111-2631-3-git-send-email-vigneshr@ti.com>
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 0/1] Compact interface for Device-Tree
+Date: Mon, 03 Nov 2014 16:06:03 +0100
+Message-ID: <40803956.DTL7dD7CLv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <7637604.7PK9W8ePf3@vostro.rjw.lan>
+References: <1414709964-27284-1-git-send-email-gavidov@codeaurora.org> <CAL_JsqLtkiiyisxSG_qBknmz6n2qDKUdpwM-ZY3tH3wgYSrO1w@mail.gmail.com> <7637604.7PK9W8ePf3@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414408111-2631-3-git-send-email-vigneshr@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:rf6KSeo0rQyf2SPEr58jDCp1EHgkQQKpzhcfUu0O/WV
+ roEObOOT8HXU4D6GPHpY1PxK8BTisRWladmLrqy4108Gwnw0GS
+ QPWJ0UAgIWwW3VUFLTpqCwpfiytDxpv1YMMppGFTondTBfJteb
+ mi10oqrBSlEYkGFZyPeMS750BS1NXbnYr1OT1XwjrIs2xxp6Zq
+ PZQJuV5nwLwzpHS9SQo6uKKo2zYAIdSc9TwxdvKwuaZaPHotzq
+ FpbBk0dKMQL8vdIHn9DYZNP2h4adz+xkJZyeHI5Hx1LonQjFr8
+ aFfIp5qkDnxQSEe/jLyE1jPrJRZMhd6xe5hKJk6XQ6/wwgU2lC
+ KTNN7jLLyZiw07yhrmlc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Vignesh R wrote:
-> From: Brad Griffis <bgriffis@ti.com>
+On Friday 31 October 2014 23:53:28 Rafael J. Wysocki wrote:
+> On Saturday, November 01, 2014 05:13:45 AM Rob Herring wrote:
+> > On Fri, Oct 31, 2014 at 6:59 AM, Gilad Avidov <gavidov@codeaurora.org> wrote:
+> > >
+> > > Device-Tree compact API
+> > > ------------------------
+> > >
+> > > Common code seen in driver’s probe reads device tree values and handling
+> > > erroneous return codes from all those of_property_read_xxx()  APIs. This
+> > > common code is factored out by the of_property_map module which allows
+> > > driver’s probe to replace that (often lengthy) code with a concise table:
+> > >
+> > > struct of_prop_map map[] = {
+> > >     {"i2c",            &dev->id,        OF_REQ,  OF_ID,  -1},
+> > >     {"qcom,clk-freq-out",    &dev->clk_freq_out,    OF_REQ,  OF_U32,  0},
+> > >     {"qcom,clk-freq-in",    &dev->clk_freq_in,    OF_REQ,  OF_U32,  0},
+> > >     {"qcom,disable-dma",    &dev->disable_dma,    OF_OPT,  OF_BOOL, 0},
+> > >     {"qcom,master-id",    &dev->mstr_id,        OF_SGST, OF_U32,  0},
+> > >     {NULL,            NULL,            0,       0,       0},
+> > > };
+> > >
+> > > Then call populate to read the values into the device’s variables:
+> > >
+> > > ret = of_prop_populate(dev, dev->of_node, map);
+> > 
+> > Interesting idea. The main concern I have with this is there has been
+> > on-going discussions about how to generalize property handling across
+> > DT and ACPI to make drivers more agnostic, so I'm copying a few folks
+> > involved in that. That may be a bit orthogonal to what this is doing,
+> > but we may want some coordination here.
 > 
-> TSC interrupt handler had udelay to avoid reporting of false pen-up
-> interrupt to user space. This patch implements workaround suggesting in
-> Advisory 1.0.31 of silicon errata for am335x, thus eliminating udelay
-> and touchscreen lag. This also improves performance of touchscreen and
-> eliminates sudden jump of cursor at touch release.
+> Agreed.
 > 
-> IDLECONFIG and CHARGECONFIG registers are to be configured
-> with same values in order to eliminate false pen-up events. This
-> workaround may result in false pen-down to be detected, hence considerable
-> charge step delay needs to be added. The charge delay is set to 0xB000
-> (in terms of ADC clock cycles) by default.
-> 
-> TSC steps are disabled at the end of every sampling cycle and EOS bit is
-> set. Once the EOS bit is set, the TSC steps need to be re-enabled to begin
-> next sampling cycle.
-> 
-> In one shot mode, sequencer automatically disables all enabled steps at
-> the end of each cycle. (both ADC steps and TSC steps) Hence these steps
-> need not be saved in reg_se_cache for clearing these steps at a later
-> stage.
-> 
-> Signed-off-by: Brad Griffis <bgriffis@ti.com>
-> [vigneshr@ti.com: Ported patch from v3.12 to v3.18rc2]
-> Signed-off-by: Vignesh R <vigneshr@ti.com>
-> ---
->  drivers/input/touchscreen/ti_am335x_tsc.c | 56 ++++++++++++-------------------
->  drivers/mfd/ti_am335x_tscadc.c            |  7 ++--
->  include/linux/mfd/ti_am335x_tscadc.h      |  4 ++-
->  3 files changed, 30 insertions(+), 37 deletions(-)
+> We actually have a patchset adding a unified device property API in 
+> linux-next (http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/log/?h=device-properties)
+> and I'd prefer to see the "compactization" to happen at that level, if possible,
+> rather that for of_ only.
 
-[...]
+Agreed, this should definitely use the new generalized API.
+I have prototyped a similar concept last year, which actually went much
+further and also abstracted high-level properties such as interrupts,
+gpios, pwm, dma-engine, etc. I still think we should do something
+like that, but I've never had the time to follow up and nobody else
+picked up my work from back then.
 
-> diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-> index d877e777cce6..94ef8992f46b 100644
-> --- a/drivers/mfd/ti_am335x_tscadc.c
-> +++ b/drivers/mfd/ti_am335x_tscadc.c
-> @@ -86,8 +86,12 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
->  		spin_lock_irq(&tsadc->reg_lock);
->  		finish_wait(&tsadc->reg_se_wait, &wait);
->  
-> +		/*
-> +		 * Sequencer should either be idle or
-> +		 * busy applying the charge step.
-> +		 */
->  		reg = tscadc_readl(tsadc, REG_ADCFSM);
-> -		WARN_ON(reg & SEQ_STATUS);
-> +		WARN_ON(reg & SEQ_STATUS & (!CHARGE_STEP));
->  		tsadc->adc_waiting = false;
->  	}
->  	tsadc->adc_in_use = true;
-> @@ -96,7 +100,6 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
->  void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
->  {
->  	spin_lock_irq(&tsadc->reg_lock);
-> -	tsadc->reg_se_cache |= val;
->  	am335x_tscadc_need_adc(tsadc);
->  
->  	tscadc_writel(tsadc, REG_SE, val);
+Would others like to see that?
 
-I believe all of these changes can, and therefor should live in a
-separate patch.
-
-> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-> index e2e70053470e..fcce182e4a35 100644
-> --- a/include/linux/mfd/ti_am335x_tscadc.h
-> +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> @@ -52,6 +52,7 @@
->  
->  /* IRQ enable */
->  #define IRQENB_HW_PEN		BIT(0)
-> +#define IRQENB_EOS		BIT(1)
->  #define IRQENB_FIFO0THRES	BIT(2)
->  #define IRQENB_FIFO0OVRRUN	BIT(3)
->  #define IRQENB_FIFO0UNDRFLW	BIT(4)
-> @@ -107,7 +108,7 @@
->  /* Charge delay */
->  #define CHARGEDLY_OPEN_MASK	(0x3FFFF << 0)
->  #define CHARGEDLY_OPEN(val)	((val) << 0)
-> -#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(1)
-> +#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(0xB000)
->  
->  /* Control register */
->  #define CNTRLREG_TSCSSENB	BIT(0)
-> @@ -127,6 +128,7 @@
->  
->  /* Sequencer Status */
->  #define SEQ_STATUS BIT(5)
-> +#define CHARGE_STEP		0x11
->  
->  #define ADC_CLK			3000000
->  #define TOTAL_STEPS		16
-
-The header changes should be split between the two Input and MFD
-patches.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	Arnd
