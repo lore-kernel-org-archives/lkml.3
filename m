@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaKCJnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:43:25 -0500
-Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:56842 "EHLO
-	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751256AbaKCJnW (ORCPT
+	id S1752017AbaKCJnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:43:52 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:46893 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaKCJnr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:43:22 -0500
-Message-ID: <54574E35.1030402@nexus-software.ie>
-Date: Mon, 03 Nov 2014 09:43:17 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 3 Nov 2014 04:43:47 -0500
 MIME-Version: 1.0
-To: Raymond Tan <raymond.tan@intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, Alvin Chen <alvin.chen@intel.com>,
-        Andriy Shevchenko <andriy.shevchenko@intel.com>
-Subject: Re: [PATCH 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
- I2C-GPIO MFD Driver
-References: <1415000344-23575-1-git-send-email-raymond.tan@intel.com> <1415000344-23575-2-git-send-email-raymond.tan@intel.com>
-In-Reply-To: <1415000344-23575-2-git-send-email-raymond.tan@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <3D00ADB3-00B3-40A8-8263-444BCADDAC33@gmail.com>
+References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
+	<3D00ADB3-00B3-40A8-8263-444BCADDAC33@gmail.com>
+Date: Mon, 3 Nov 2014 10:43:46 +0100
+Message-ID: <CACRpkda-HbKmN_RisHpWRV4bquwpBsd4RgaA5pW0qXrhYChRYA@mail.gmail.com>
+Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Pantelis Antoniou <pantelis.antoniou@gmail.com>
+Cc: Benoit Parrot <bparrot@ti.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/14 07:39, Raymond Tan wrote:
-> In Quark X1000, there's a single PCI device that provides both
-> an I2C controller and a GPIO controller. This MFD driver will
-> split the 2 devices for their respective drivers.
->
-> This patch is based on Josef Ahmad's initial work for Quark enabling.
+On Wed, Oct 29, 2014 at 9:53 AM, Pantelis Antoniou
+<pantelis.antoniou@gmail.com> wrote:
 
-Hi Raymond.
+> 3) I’m not very fond of having this being part of the gpio controller. This
+> configuration conceptually has little to do with the gpio controller per se,
+> it is more of a board specific thing. Why not come up with a gpio-hog driver that
+> references GPIOs? That way with a single gpio-hog driver instance you could setup
+> all the GPIO-hogging configuration for all GPIOs on the board, even one that
+> lie on different GPIO controllers.
 
-I see support for interrupts on GPIO input has been dropped. In fact it 
-doesn't appear you have any IRQ support here at all.
+You have a point. But it's vital that we set up hogs at the same time as the
+gpio_chip is probed, not later, or there may be a race as to who
+gets the GPIO line, and that should be avoided at any cost.
 
-Could you detail the reasons why ?
-
-Bryan
+Yours,
+Linus Walleij
