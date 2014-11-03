@@ -1,250 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911AbaKCVCN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:02:13 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:38897 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756AbaKCVAH (ORCPT
+	id S1754127AbaKCVCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:02:35 -0500
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:51905 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753960AbaKCVCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:00:07 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 2/8] slab: charge slab pages to the current memory cgroup
-Date: Mon, 3 Nov 2014 23:59:40 +0300
-Message-ID: <16d8b42a986bd5931459d11490f959bd9a2c5b7e.1415046910.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1415046910.git.vdavydov@parallels.com>
-References: <cover.1415046910.git.vdavydov@parallels.com>
+	Mon, 3 Nov 2014 16:02:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [81.5.99.36]
+In-Reply-To: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
+References: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
+Date: Mon, 3 Nov 2014 14:02:31 -0700
+Message-ID: <CANLsYkzVw_fQQuK9pEomMp6A_z2Qg9L-Hj1f+8b_1o7cFjMiDw@mail.gmail.com>
+Subject: Re: [PATCH v4 0/9] ARM: shmobile: R-Mobile: DT PM domain support
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        linux-pm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, new slabs are charged to the memory cgroup that owns the
-cache (kmem_cache->memcg_params->memcg), but I'm going to decouple kmem
-caches from memory cgroups so I make them charged to the current cgroup.
+On 3 November 2014 08:34, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+>         Hi Rafael, Simon, Magnus,
+>
+> This patch series enables DT support for PM domains on Renesas R-Mobile SoCs.
+>
+> Currently it's limited to R-Mobile A1 (r8a7740), but given the similarity of
+> the SYSC System-Controller on the various SH-Mobile/R-Mobile SoCs, and the
+> abstraction of PM domains in DT, it should be sufficiently generic to handle
+> other SoCs in the future (e.g. SH-Mobile AP4 (sh7372), SH-Mobile AG5 (sh73a0),
+> R-Mobile APE6 (r8a73a4)).
+>
+> Functionality-wise, this behaves the same as the legacy (non-DT) version
+> (modulo missing DT support in some device drivers).
+>
+> Dependencies:
+>   - This is based on Simon Horman's renesas-devel-20141030-v3.18-rc2, and
+>     Rafael J. Wysocki's linux-pm.git#linux-next,
+>   - This depends on "PM / Domains: Change prototype for the ->attach_dev()
+>     callback" from Ulf hanson, which is intended to still enter v3.18-rcX
+>     through the linux-pm tree.
+>     As this is a one-line change, I included this patch as the first patch of
+>     this series.  Perhaps it's even acceptable for Simon to (also) apply it, so
+>     we don't have to wait for the v3.18-rcX that will include it?
+>
+> For your convenience, I've also pushed this to
+> git://git.kernel.org/pub/scm/linux/kernel/git/geert/renesas-drivers.git#rmobile-genpd
+>
+> Changes compared to v3 (more detailed changelogs in the individual patches):
+>   - I dropped the patch to add preliminary PM domain latencies, as I want to do
+>     more measurements for PM domains that are currently never powered off.
+>     Values seem to range between 8.5 and 26 us, depending on the PM domain.
+>   - I dropped all patches related to QoS device latencies, as these need more
+>     discussion,
+>   - The power-{on,off}-latency properties have been changed from a single value
+>     to a list,
+>   - Device save/restore state latencies have been dropped, as they're Linux
+>     driver-specific, and thus don't belong in DT,
+>   - Use proper pm_clk_create()/pm_clk_destroy(), and update for attach_dev()
+>     returning an error code again,
+>   - New patch to enable module clocks if !CONFIG_PM_RUNTIME,
+>   - Always keep D4 powered, until the new Coresight code handles runtime
+>     PM,
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- include/linux/memcontrol.h |    5 -----
- mm/memcontrol.c            |   14 --------------
- mm/slab.c                  |   22 +++++++++++++++-------
- mm/slab.h                  |   28 ----------------------------
- mm/slub.c                  |   18 ++++++++----------
- 5 files changed, 23 insertions(+), 64 deletions(-)
+I took the time to really look at the problems you are experiencing
+with pm runtime in hw_breackpoint.c this weekend.  The coresight
+patchset, when supplemented with PM runtime awareness, will fix that
+problem *only* when traces are activated.  The other obvious condition
+is that other component using the same power domain are also converted
+to using runtime PM.
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index e789551d4db0..31b495ff5f3a 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -416,9 +416,6 @@ void memcg_update_array_size(int num_groups);
- struct kmem_cache *
- __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
- 
--int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order);
--void __memcg_uncharge_slab(struct kmem_cache *cachep, int order);
--
- int __memcg_cleanup_cache_params(struct kmem_cache *s);
- 
- /**
-@@ -490,8 +487,6 @@ memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
-  * memcg_kmem_get_cache: selects the correct per-memcg cache for allocation
-  * @cachep: the original global kmem cache
-  * @gfp: allocation flags.
-- *
-- * All memory allocated from a per-memcg cache is charged to the owner memcg.
-  */
- static __always_inline struct kmem_cache *
- memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 370a27509e45..8c60d7a30f4f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2778,20 +2778,6 @@ static void memcg_schedule_register_cache(struct mem_cgroup *memcg,
- 	memcg_resume_kmem_account();
- }
- 
--int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
--{
--	unsigned int nr_pages = 1 << order;
--
--	return memcg_charge_kmem(cachep->memcg_params->memcg, gfp, nr_pages);
--}
--
--void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
--{
--	unsigned int nr_pages = 1 << order;
--
--	memcg_uncharge_kmem(cachep->memcg_params->memcg, nr_pages);
--}
--
- /*
-  * Return the kmem_cache we're supposed to use for a slab allocation.
-  * We try to use the current memcg's version of the cache.
-diff --git a/mm/slab.c b/mm/slab.c
-index 458613d75533..a9eb49f40c0a 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1559,6 +1559,19 @@ slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
- #endif
- }
- 
-+static inline struct page *alloc_slab_page(gfp_t flags, int nodeid, int order)
-+{
-+	struct mem_cgroup *memcg = NULL;
-+	struct page *page;
-+
-+	flags |= __GFP_NOTRACK;
-+	if (!memcg_kmem_newpage_charge(flags, &memcg, order))
-+		return NULL;
-+	page = alloc_pages_exact_node(nodeid, flags, order);
-+	memcg_kmem_commit_charge(page, memcg, order);
-+	return page;
-+}
-+
- /*
-  * Interface to system's page allocator. No need to hold the
-  * kmem_cache_node ->list_lock.
-@@ -1577,12 +1590,8 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
- 		flags |= __GFP_RECLAIMABLE;
- 
--	if (memcg_charge_slab(cachep, flags, cachep->gfporder))
--		return NULL;
--
--	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
-+	page = alloc_slab_page(flags, nodeid, cachep->gfporder);
- 	if (!page) {
--		memcg_uncharge_slab(cachep, cachep->gfporder);
- 		slab_out_of_memory(cachep, flags, nodeid);
- 		return NULL;
- 	}
-@@ -1638,8 +1647,7 @@ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
- 
- 	if (current->reclaim_state)
- 		current->reclaim_state->reclaimed_slab += nr_freed;
--	__free_pages(page, cachep->gfporder);
--	memcg_uncharge_slab(cachep, cachep->gfporder);
-+	__free_kmem_pages(page, cachep->gfporder);
- }
- 
- static void kmem_rcu_free(struct rcu_head *head)
-diff --git a/mm/slab.h b/mm/slab.h
-index 3347fd77f7be..1ba7ad07dce4 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -227,25 +227,6 @@ static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
- 		return s;
- 	return s->memcg_params->root_cache;
- }
--
--static __always_inline int memcg_charge_slab(struct kmem_cache *s,
--					     gfp_t gfp, int order)
--{
--	if (!memcg_kmem_enabled())
--		return 0;
--	if (is_root_cache(s))
--		return 0;
--	return __memcg_charge_slab(s, gfp, order);
--}
--
--static __always_inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
--{
--	if (!memcg_kmem_enabled())
--		return;
--	if (is_root_cache(s))
--		return;
--	__memcg_uncharge_slab(s, order);
--}
- #else
- static inline bool is_root_cache(struct kmem_cache *s)
- {
-@@ -273,15 +254,6 @@ static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
- {
- 	return s;
- }
--
--static inline int memcg_charge_slab(struct kmem_cache *s, gfp_t gfp, int order)
--{
--	return 0;
--}
--
--static inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
--{
--}
- #endif
- 
- static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
-diff --git a/mm/slub.c b/mm/slub.c
-index 80c170e92ffc..205eaca18b7b 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1276,15 +1276,16 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x)
- /*
-  * Slab allocation and freeing
-  */
--static inline struct page *alloc_slab_page(struct kmem_cache *s,
--		gfp_t flags, int node, struct kmem_cache_order_objects oo)
-+static inline struct page *alloc_slab_page(gfp_t flags, int node,
-+					   struct kmem_cache_order_objects oo)
- {
-+	struct mem_cgroup *memcg = NULL;
- 	struct page *page;
- 	int order = oo_order(oo);
- 
- 	flags |= __GFP_NOTRACK;
- 
--	if (memcg_charge_slab(s, flags, order))
-+	if (!memcg_kmem_newpage_charge(flags, &memcg, order))
- 		return NULL;
- 
- 	if (node == NUMA_NO_NODE)
-@@ -1292,9 +1293,7 @@ static inline struct page *alloc_slab_page(struct kmem_cache *s,
- 	else
- 		page = alloc_pages_exact_node(node, flags, order);
- 
--	if (!page)
--		memcg_uncharge_slab(s, order);
--
-+	memcg_kmem_commit_charge(page, memcg, order);
- 	return page;
- }
- 
-@@ -1317,7 +1316,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
- 	 */
- 	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
- 
--	page = alloc_slab_page(s, alloc_gfp, node, oo);
-+	page = alloc_slab_page(alloc_gfp, node, oo);
- 	if (unlikely(!page)) {
- 		oo = s->min;
- 		alloc_gfp = flags;
-@@ -1325,7 +1324,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
- 		 * Allocation may have failed due to fragmentation.
- 		 * Try a lower order alloc if possible
- 		 */
--		page = alloc_slab_page(s, alloc_gfp, node, oo);
-+		page = alloc_slab_page(alloc_gfp, node, oo);
- 
- 		if (page)
- 			stat(s, ORDER_FALLBACK);
-@@ -1438,8 +1437,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
- 	page_mapcount_reset(page);
- 	if (current->reclaim_state)
- 		current->reclaim_state->reclaimed_slab += pages;
--	__free_pages(page, order);
--	memcg_uncharge_slab(s, order);
-+	__free_kmem_pages(page, order);
- }
- 
- #define need_reserve_slab_rcu						\
--- 
-1.7.10.4
+That being said, the coresight framework and breakpoint handler code
+are two different subsystem.  Their only commonality is that they make
+use of the debug registers (and not even the same ones).  As such (and
+in my opinion) the code in hw_breakpoint should be getting its own pm
+runtime reference without relying on the coresight subsystem.  As
+indicated above, that would only work in some cases.
 
+Supplementing hw_breakpoint to interact with the runtime PM may prove
+trickier than it seems... I'm especially worried about the
+non-blocking requirement inherent to using "smp_call_function()".  I'm
+stepping forward to look into that problem but before doing so I need
+to finish runtime PM on coresight.
+
+
+>   - Remove bogus power-domains properties from clock nodes, as these will not
+>     be instantiated as platform devices,
+>   - Add power-domains properties to the recently added TMU nodes,
+>   - Added Acked-by, Reviewed-by.
+>
+> Changes compared to v2 (more detailed changelogs in the individual patches):
+>   - Minor changes to attach/detach callbacks,
+>   - Really add the A4MP and D4 PM domains, as fixes are available (see
+>     dependencies below),
+>   - Scan DT topology to identify special PM domains (CPUs and console),
+>   - Move PM domain power-on/off latencies to a separate patch.
+>
+> Changes compared to v1 (more detailed changelogs in the individual patches):
+>   - Several new patches: PM QoS device latencies in DT, attach/detach
+>     callbacks,
+>   - Run-Time management of the module clocks, making the hack in
+>     drivers/sh/pm_runtime.c obsolete for DT platforms using genpd,
+>   - Addition of PM QoS device latencies, specified from DT,
+>   - Addition of build glue, so this builds and runs without additional
+>     changes, incl. s2ram.
+>
+> Thanks!
+>
+> Geert Uytterhoeven (8):
+>   PM / Domains: Add DT bindings for power-on/off latencies
+>   PM / Domains: Add DT bindings for the R-Mobile System Controller
+>   ARM: shmobile: R-Mobile: Use generic_pm_domain.attach_dev() for pm_clk
+>     setup
+>   ARM: shmobile: R-Mobile: Enable module clocks if !CONFIG_PM_RUNTIME
+>   ARM: shmobile: R-Mobile: Store SYSC base address in rmobile_pm_domain
+>   ARM: shmobile: R-Mobile: Add DT support for PM domains
+>   ARM: shmobile: r8a7740 dtsi: Add PM domain support
+>   drivers: sh: Disable PM runtime for multi-platform r8a7740 with genpd
+>
+> Ulf Hansson (1):
+>   PM / Domains: Change prototype for the ->attach_dev() callback
+>
+>  .../devicetree/bindings/power/power_domain.txt     |  14 +-
+>  .../bindings/power/renesas,sysc-rmobile.txt        | 107 ++++++++
+>  arch/arm/boot/dts/r8a7740.dtsi                     |  99 +++++++
+>  arch/arm/mach-shmobile/Kconfig                     |   3 +-
+>  arch/arm/mach-shmobile/pm-r8a7740.c                |  14 +
+>  arch/arm/mach-shmobile/pm-rmobile.c                | 284 +++++++++++++++++++--
+>  arch/arm/mach-shmobile/pm-rmobile.h                |   3 +-
+>  arch/arm/mach-shmobile/pm-sh7372.c                 |  11 +
+>  drivers/sh/pm_runtime.c                            |   2 +
+>  include/linux/pm_domain.h                          |   2 +-
+>  10 files changed, 519 insertions(+), 20 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
+>
+> --
+> 1.9.1
+>
+> Gr{oetje,eeting}s,
+>
+>                                                 Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                                             -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
