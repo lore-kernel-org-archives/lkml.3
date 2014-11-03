@@ -1,144 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaKCRDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:03:07 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:38391 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaKCRDC (ORCPT
+	id S1753117AbaKCREd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:04:33 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:54118 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752678AbaKCREa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:03:02 -0500
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
-        kamalesh@linux.vnet.ibm.com, linux-arm-kernel@lists.infradead.org
-Cc: riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Paul Turner <pjt@google.com>, Ben Segall <bsegall@google.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v9 04/10] sched: Make sched entity usage tracking scale-invariant
-Date: Mon,  3 Nov 2014 17:54:41 +0100
-Message-Id: <1415033687-23294-5-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
-References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
+	Mon, 3 Nov 2014 12:04:30 -0500
+Date: Mon, 3 Nov 2014 17:04:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Jonathan Corbet <corbet@lwn.net>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v8 1/5] PM / Runtime: Add getter for querying the IRQ
+ safe option
+Message-ID: <20141103170408.GD4042@n2100.arm.linux.org.uk>
+References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
+ <20141031142241.GA17547@amd>
+ <1414766416.6537.6.camel@AMDC1943>
+ <3452823.YQ5FR2FtKz@avalon>
+ <20141103162728.GB1870@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103162728.GB1870@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Morten Rasmussen <morten.rasmussen@arm.com>
+On Mon, Nov 03, 2014 at 09:57:28PM +0530, Vinod Koul wrote:
+> On Sat, Nov 01, 2014 at 02:29:42AM +0200, Laurent Pinchart wrote:
+> > Many other drivers suffer from the same problem. While I won't reject your 
+> > proposed fix, I would prefer a more generic approach.
+> > 
+> > One option that has been discussed previously was to use a work queue to delay 
+> > starting the DMA transfer to an interruptible context where 
+> > pm_runtime_get_sync() could be called. However, as Russell pointed out [1], 
+> > even that won't work in all cases as the DMA slave might need the transfer to 
+> > be started before enabling part of its hardware (OMAP audio seem to be such a 
+> > case).
+> > 
+> > I've heard a rumor of a possible DMA engine rework to forbid calling the 
+> > descriptor preparation API from atomic context. This could be used as a base 
+> > to implement runtime PM, as DMA slave drivers should not prepare descriptors 
+> > if they don't need to use them. However that's a long term plan, and we need a 
+> > solution sooner than that.
+> 
+> Well it is not a rumour :)
+> 
+> I have been contemplating that now that async_tx will be killed so we dont
+> have to worry about that usage. For the slave dma usage, we can change the
+> prepare API to be non atomic. I think the users will be okay with approach.
+> This way drivers can use runtime pm calls in prepare.
 
-Apply frequency scale-invariance correction factor to usage tracking.
-Each segment of the running_load_avg geometric series is now scaled by the
-current frequency so the utilization_avg_contrib of each entity will be
-invariant with frequency scaling. As a result, utilization_load_avg which is
-the sum of utilization_avg_contrib, becomes invariant too. So the usage level
-that is returned by get_cpu_usage, stays relative to the max frequency as the
-cpu_capacity which is is compared against.
-Then, we want the keep the load tracking values in a 32bits type, which implies
-that the max value of {runnable|running}_avg_sum must be lower than
-2^32/88761=48388 (88761 is the max weigth of a task). As LOAD_AVG_MAX = 47742,
-arch_scale_freq_capacity must return a value less than
-(48388/47742) << SCHED_CAPACITY_SHIFT = 1037 (SCHED_SCALE_CAPACITY = 1024).
-So we define the range to [0..SCHED_SCALE_CAPACITY] in order to avoid overflow.
+Except we /do/ have a fair number of places where the prep calls are made
+from atomic contexts, particularly in serial drivers.  You'd need to
+introduce a tasklet into almost every serial driver which doesn't
+already have one to restart RX DMA after an error or pause.  Eg,
 
-cc: Paul Turner <pjt@google.com>
-cc: Ben Segall <bsegall@google.com>
+drivers/tty/serial/amba-pl011.c
+drivers/tty/serial/pch_uart.c
+drivers/tty/serial/imx.c
 
-Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/sched/fair.c | 21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+Probably also:
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index a96affd..a5039da 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2266,6 +2266,8 @@ static u32 __compute_runnable_contrib(u64 n)
- 	return contrib + runnable_avg_yN_sum[n];
- }
- 
-+unsigned long __weak arch_scale_freq_capacity(struct sched_domain *sd, int cpu);
-+
- /*
-  * We can represent the historical contribution to runnable average as the
-  * coefficients of a geometric series.  To do this we sub-divide our runnable
-@@ -2294,7 +2296,7 @@ static u32 __compute_runnable_contrib(u64 n)
-  *   load_avg = u_0` + y*(u_0 + u_1*y + u_2*y^2 + ... )
-  *            = u_0 + u_1*y + u_2*y^2 + ... [re-labeling u_i --> u_{i+1}]
-  */
--static __always_inline int __update_entity_runnable_avg(u64 now,
-+static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
- 							struct sched_avg *sa,
- 							int runnable,
- 							int running)
-@@ -2302,6 +2304,7 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 	u64 delta, periods;
- 	u32 runnable_contrib;
- 	int delta_w, decayed = 0;
-+	unsigned long scale_freq = arch_scale_freq_capacity(NULL, cpu);
- 
- 	delta = now - sa->last_runnable_update;
- 	/*
-@@ -2337,7 +2340,8 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 		if (runnable)
- 			sa->runnable_avg_sum += delta_w;
- 		if (running)
--			sa->running_avg_sum += delta_w;
-+			sa->running_avg_sum += delta_w * scale_freq
-+				>> SCHED_CAPACITY_SHIFT;
- 		sa->avg_period += delta_w;
- 
- 		delta -= delta_w;
-@@ -2358,7 +2362,8 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 		if (runnable)
- 			sa->runnable_avg_sum += runnable_contrib;
- 		if (running)
--			sa->running_avg_sum += runnable_contrib;
-+			sa->running_avg_sum += runnable_contrib * scale_freq
-+				>> SCHED_CAPACITY_SHIFT;
- 		sa->avg_period += runnable_contrib;
- 	}
- 
-@@ -2366,7 +2371,8 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 	if (runnable)
- 		sa->runnable_avg_sum += delta;
- 	if (running)
--		sa->running_avg_sum += delta;
-+		sa->running_avg_sum += delta * scale_freq
-+			>> SCHED_CAPACITY_SHIFT;
- 	sa->avg_period += delta;
- 
- 	return decayed;
-@@ -2474,8 +2480,8 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
- 
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
- {
--	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable,
--			runnable);
-+	__update_entity_runnable_avg(rq_clock_task(rq), cpu_of(rq), &rq->avg,
-+			runnable, runnable);
- 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
- }
- #else /* CONFIG_FAIR_GROUP_SCHED */
-@@ -2553,6 +2559,7 @@ static inline void update_entity_load_avg(struct sched_entity *se,
- {
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
- 	long contrib_delta, utilization_delta;
-+	int cpu = cpu_of(rq_of(cfs_rq));
- 	u64 now;
- 
- 	/*
-@@ -2564,7 +2571,7 @@ static inline void update_entity_load_avg(struct sched_entity *se,
- 	else
- 		now = cfs_rq_clock_task(group_cfs_rq(se));
- 
--	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq,
-+	if (!__update_entity_runnable_avg(now, cpu, &se->avg, se->on_rq,
- 					cfs_rq->curr == se))
- 		return;
- 
+drivers/net/ethernet/micrel/ks8842.c
+
+There could well be other places as well, I've not gone through and
+checked exhaustively.
+
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
