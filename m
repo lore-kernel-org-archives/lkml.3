@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaKCC1X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 21:27:23 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:48680 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752715AbaKCC1U (ORCPT
+	id S1753077AbaKCC20 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 21:28:26 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:32902 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752796AbaKCC2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 21:27:20 -0500
+	Sun, 2 Nov 2014 21:28:24 -0500
 X-Listener-Flag: 11101
-Subject: Re: [PATCH RESEND] tty: serial: 8250_mtk: Fix quot calculation
-From: eddie huang <eddie.huang@mediatek.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <heiko@sntech.de>,
-        <yingjoe.chen@gmail.com>, <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <ibanezchen@gmail.com>,
-        <linux-serial@vger.kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, <jslaby@suse.cz>,
-        <alan@linux.intel.com>
-In-Reply-To: <9001280.dDNTE2ykLV@wuerfel>
-References: <1414773395-9916-1-git-send-email-matthias.brugger@bq.com>
-	 <9001280.dDNTE2ykLV@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 3 Nov 2014 10:27:11 +0800
-Message-ID: <1414981632.23623.4.camel@mtksdaap41>
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <srv_heupstream@mediatek.com>, <yingjoe.chen@gmail.com>,
+        <hc.yen@mediatek.com>, <eddie.huang@mediatek.com>,
+        <nathan.chung@mediatek.com>, <yh.chen@mediatek.com>
+Subject: [PATCH] pinctrl: Fix path error in documentation
+Date: Mon, 3 Nov 2014 10:28:11 +0800
+Message-ID: <1414981691-14087-1-git-send-email-yingjoe.chen@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-31 at 17:48 +0100, Arnd Bergmann wrote:
-> On Friday 31 October 2014 17:36:35 Matthias Brugger wrote:
-> > -               quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
-> > +               quot = (port->uartclk / (256 * baud)) + 1;
-> 
-> Should this be DIV_ROUND_UP then?
-> 
-> 	Arnd
-> 
+Fix pinconfig include file path.
 
-I think DIV_ROUND_UP is more suitable in this case, and I already do
-this and test OK on my MTK platform
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+---
+ Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296149.html
-
-
+diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+index 98eb94d..47d84b6 100644
+--- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
++++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+@@ -216,4 +216,4 @@ arguments are described below.
+   or 0 to disable debouncing
+ 
+ More in-depth documentation on these parameters can be found in
+-<include/linux/pinctrl/pinconfig-generic.h>
++<include/linux/pinctrl/pinconf-generic.h>
+-- 
+1.8.1.1.dirty
 
