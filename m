@@ -1,122 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300AbaKCIhF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:37:05 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:65058 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231AbaKCIgv (ORCPT
+	id S1752337AbaKCIhP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:37:15 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:32975 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307AbaKCIhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 03:36:51 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-bd-54573e9f0d71
-Message-id: <1415003805.4241.6.camel@AMDC1943>
-Subject: Re: [PATCH v8 3/5] amba: Don't unprepare the clocks if device driver
- wants IRQ safe runtime PM
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jonathan Corbet <corbet@lwn.net>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Mon, 03 Nov 2014 09:36:45 +0100
-In-reply-to: <20141101010113.GA3831@n2100.arm.linux.org.uk>
-References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
- <1413795888-18559-4-git-send-email-k.kozlowski@samsung.com>
- <1479283.dvHduzBoyf@vostro.rjw.lan>
- <20141101005514.GY27405@n2100.arm.linux.org.uk>
- <20141101010113.GA3831@n2100.arm.linux.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4Nd35duEhBj96ZS02zljPavHkQDuj
-	xfSpFxgtVk/9y2pxtukNu8WSyfNZLWZN2ctksbBtCYvF5V1z2Cw+9x5htLh9mddi7ZG77Bbv
-	XkZY3D11lM3izOlLrBYTfl9gszi+NtziZd9+Fgchj5bmHjaPxXteMnncubYHyOqbzOqx5M0h
-	Vo8tV9tZPGbf/cHo0bdlFaPHitXf2T0+b5Lz2Pv5N0sAdxSXTUpqTmZZapG+XQJXxvsfjcwF
-	O4QrbrYUNTD28XUxcnBICJhIfDti1MXICWSKSVy4t56ti5GLQ0hgKaNE57RlrBDOZ0aJP2v3
-	MYJU8QroSTRtv8QKYgsLZEp0/vkJZrMJGEtsXr6EDcQWETCVuPboGTNIM7NAI6vE+YMdYEUs
-	AqoS558eZgGxOQWsJVZMmsQEYgsJ9DFJnNsnD2IzC6hLTJq3iBniOmWJxn43iL2CEj8m32OB
-	KJGX2LzmLfMERoFZSDpmISmbhaRsASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQOPy6
-	g3HpMatDjAIcjEo8vBMuh4UIsSaWFVfmHmKU4GBWEuHt0QkPEeJNSaysSi3Kjy8qzUktPsTI
-	xMEp1cAoE3T/VclH5ZWCu4M0Pp76z+O4y6Dvzh4bGYupD89kPd5UsGvVFR63J5UnlRrO3DpW
-	s3hFfepO1oXbxWe914/K6n/1fItK+d7mhPbfZkt+CoQKbvkQeFNm773jUceDH2yccHnyq+VV
-	PYp8cl7bz9f/fGrdPkFhqtRNT9aYo6vPx0U/2cfAeEYrRImlOCPRUIu5qDgRAIbrDwmhAgAA
+	Mon, 3 Nov 2014 03:37:11 -0500
+From: Dudley Du <dudley.dulixin@gmail.com>
+X-Google-Original-From: Dudley Du <dudl@cypress.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v9 16/18] input: cyapa: add gen5 trackpad device read firmware image function support
+Date: Mon,  3 Nov 2014 16:33:08 +0800
+Message-Id: <1415003590-30485-17-git-send-email-dudl@cypress.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415003590-30485-1-git-send-email-dudl@cypress.com>
+References: <1415003590-30485-1-git-send-email-dudl@cypress.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sob, 2014-11-01 at 01:01 +0000, Russell King - ARM Linux wrote:
-> On Sat, Nov 01, 2014 at 12:55:14AM +0000, Russell King - ARM Linux wrote:
-> > On Sat, Nov 01, 2014 at 01:45:47AM +0100, Rafael J. Wysocki wrote:
-> > > On Monday, October 20, 2014 11:04:46 AM Krzysztof Kozlowski wrote:
-> > > > @@ -198,8 +217,10 @@ static int amba_probe(struct device *dev)
-> > > >  		pm_runtime_enable(dev);
-> > > >  
-> > > >  		ret = pcdrv->probe(pcdev, id);
-> > > > -		if (ret == 0)
-> > > > +		if (ret == 0) {
-> > > > +			pcdev->irq_safe = pm_runtime_is_irq_safe(dev);
-> > > 
-> > > This looks racy.
-> > > 
-> > > Is it guaranteed that runtime PM callbacks won't be run for the device
-> > > after pcdrv->probe() has returned and before setting pcdev->irq_safe?
-> > > If not, inconsistent behavior may ensue.
-> > 
-> > You are absolutely correct.  So that knocks that idea on its head.
-> 
-> Actually, I think we shouldn't give up hope here.  Currently, we do this:
-> 
->                 pm_runtime_get_noresume(dev);
->                 pm_runtime_set_active(dev);
->                 pm_runtime_enable(dev);
-> 
->                 ret = pcdrv->probe(pcdev, id);
-> 
-> What we could do is:
-> 
-> 		pm_runtime_get_noresume(dev);
->                 pm_runtime_get_noresume(dev);
->                 pm_runtime_set_active(dev);
->                 pm_runtime_enable(dev);
-> 
->                 ret = pcdrv->probe(pcdev, id);
-> 		if (ret == 0) {
-> 			pcdev->irq_safe = pm_runtime_is_irq_safe(dev);
-> 			pm_runtime_put(dev);
-> 			break;
-> 		}
-> 
->                 pm_runtime_disable(dev);
->                 pm_runtime_set_suspended(dev);
->                 pm_runtime_put_noidle(dev);
->                 pm_runtime_put_noidle(dev);
-> 
-> which would ensure that we hold a usecount until after the probe function
-> has returned.  Would that work?
-> 
-> I'll give you that it's pretty horrid.
+Add read firmware image function supported for gen5 trackpad device,
+it can be used through debugfs read_fw interface.
+TEST=test on Chromebooks.
 
-> Would another possible solution be to remember the irq-safeness in the
-> suspend handler, and use that in the resume handler?  Resume should
-> /always/ undo what the suspend handler previously did wrt clk API stuff.
+Signed-off-by: Dudley Du <dudl@cypress.com>
+---
+ drivers/input/mouse/cyapa_gen5.c | 154 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 154 insertions(+)
 
-I think the second solution could be more readable. The WARN_ON wouldn't
-be needed. However this won't solve the two dual nature of runtime
-callbacks.
-
-I wondered also about removing runtime PM callbacks from amba/bus.c
-completely and moving this to child drivers. This way runtime PM would
-be obvious in each driver case.
-
-Best regards,
-Krzysztof
-
+diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
+index 7e7de12..35334dc 100644
+--- a/drivers/input/mouse/cyapa_gen5.c
++++ b/drivers/input/mouse/cyapa_gen5.c
+@@ -1213,6 +1213,153 @@ static int cyapa_gen5_write_fw_block(struct cyapa *cyapa,
+ 	return 0;
+ }
+ 
++static int cyapa_gen5_read_fw_bytes(struct cyapa *cyapa, u16 row_num, u8 *data)
++{
++	int ret;
++	u8 cmd[16];
++	size_t cmd_len;
++	u8 resp_data[CYAPA_TSG_FW_ROW_SIZE / 2 + GEN5_MIN_BL_RESP_LENGTH];
++	int resp_len;
++	u16 offset;
++	u16 cmd_crc;
++	struct cyapa_tsg_bin_image_data_record *fw_img_record;
++
++	fw_img_record = (struct cyapa_tsg_bin_image_data_record *)data;
++
++	cmd[0] = 0x04;  /* Register address */
++	cmd[1] = 0x00;
++	cmd[2] = 0x0e;
++	cmd[3] = 0x00;
++	cmd[4] = 0x40;  /* Report id 40h */
++	cmd[5] = 0x00;
++	cmd[6] = GEN5_SOP_KEY;
++	cmd[7] = 0x3d;  /* Read application image command code */
++	cmd[8] = 0x03;
++	cmd[9] = 0x00;
++	offset = row_num * CYAPA_TSG_FW_ROW_SIZE -
++			CYAPA_TSG_START_OF_APPLICATION;
++	put_unaligned_le16(offset, &cmd[10]);
++	cmd[12] = CYAPA_TSG_IMG_READ_SIZE;
++	cmd_crc = crc_itu_t(0xffff, &cmd[6], 7);
++	put_unaligned_le16(cmd_crc, &cmd[13]);  /* CRC[15:0] */
++	cmd[15] = GEN5_EOP_KEY;  /* EOP = 17h */
++	cmd_len = 16;
++
++	resp_len = CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH;
++	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
++			cmd, cmd_len,
++			resp_data, &resp_len,
++			50, cyapa_gen5_sort_tsg_pip_bl_resp_data, true);
++	if (resp_len != (CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH) ||
++			ret || resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
++			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
++		return (ret < 0) ? ret : -EAGAIN;
++
++	/* Copy first 64 bytes in the row. */
++	memcpy(&fw_img_record->record_data[0], &resp_data[8],
++			CYAPA_TSG_IMG_READ_SIZE);
++
++	if (row_num == CYAPA_TSG_IMG_APP_INTEGRITY_ROW_NUM) {
++		/* Last row's rest 64 bytes are bootloader metadata,
++		 * it's not allowed to be read out, will respond with error. */
++		memset(&fw_img_record->record_data[CYAPA_TSG_IMG_READ_SIZE],
++			0, CYAPA_TSG_IMG_READ_SIZE);
++		goto skip_last_row;
++	}
++
++	/* Read next 64 bytes in the row. */
++	offset = offset + CYAPA_TSG_IMG_READ_SIZE;
++	put_unaligned_le16(offset, &cmd[10]);
++	cmd_crc = crc_itu_t(0xffff, &cmd[6], 7);
++	put_unaligned_le16(cmd_crc, &cmd[13]);  /* CRC[15:0] */
++	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
++			cmd, cmd_len,
++			resp_data, &resp_len,
++			500, cyapa_gen5_sort_tsg_pip_bl_resp_data, true);
++	if (resp_len != (CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH) ||
++			ret || resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
++			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
++		return (ret < 0) ? ret : -EAGAIN;
++
++	/* Copy last 64 bytes in the row. */
++	memcpy(&fw_img_record->record_data[CYAPA_TSG_IMG_READ_SIZE],
++		&resp_data[8], CYAPA_TSG_IMG_READ_SIZE);
++
++skip_last_row:
++	fw_img_record->flash_array_id = 0;
++	put_unaligned_be16(row_num, &fw_img_record->row_number);
++	put_unaligned_be16(CYAPA_TSG_FW_ROW_SIZE, &fw_img_record->record_len);
++
++	return 0;
++}
++
++static int cyapa_gen5_read_fw(struct cyapa *cyapa)
++{
++	int ret;
++	int fw_img_head_size;
++	int fw_img_record_size;
++	int fw_img_size;
++	int row_index;
++	int array_index;
++	u32 img_start;
++	u16 img_len;
++	u16 img_start_row;
++	u16 img_end_row;
++	struct cyapa_tsg_bin_image_data_record app_integrity;
++	u8 *record_data;
++
++	ret = cyapa_gen5_bl_enter(cyapa);
++	if (ret)
++		return ret;
++
++	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
++
++	fw_img_head_size = sizeof(struct cyapa_tsg_bin_image_head);
++	fw_img_record_size = sizeof(struct cyapa_tsg_bin_image_data_record);
++
++	/* Read app integrity block data. */
++	row_index = CYAPA_TSG_IMG_APP_INTEGRITY_ROW_NUM;
++	ret = cyapa_gen5_read_fw_bytes(cyapa, row_index, (u8 *)&app_integrity);
++	if (ret)
++		return ret;
++	img_start = get_unaligned_le32(&app_integrity.record_data[16]);
++	img_len = get_unaligned_le16(&app_integrity.record_data[20]);
++	if ((img_start + img_len) % CYAPA_TSG_FW_ROW_SIZE)
++		return -EINVAL;
++	img_start_row = img_start / CYAPA_TSG_FW_ROW_SIZE;
++	img_end_row = (img_start + img_len) / CYAPA_TSG_FW_ROW_SIZE - 1;
++
++	/* Allocate memory for image. */
++	fw_img_size = fw_img_head_size +
++			(img_end_row -  img_start_row + 2) * fw_img_record_size;
++	cyapa->fw_image = cyapa->fw_image ? cyapa->fw_image :
++		devm_kzalloc(&cyapa->client->dev, fw_img_size, GFP_KERNEL);
++	if (!cyapa->fw_image)
++			return -ENOMEM;
++
++	/* Set image head data. */
++	memcpy(cyapa->fw_image, &cyapa->fw_img_head, fw_img_head_size);
++
++	/* Read image blocks. */
++	for (row_index = img_start_row, array_index = 0;
++			row_index <= img_end_row;
++			row_index++, array_index++) {
++		record_data = &cyapa->fw_image[fw_img_head_size +
++				array_index * fw_img_record_size];
++		ret = cyapa_gen5_read_fw_bytes(cyapa, row_index, record_data);
++		if (ret)
++			return ret;
++	}
++
++	/* Append last app integrity block data. */
++	record_data = &cyapa->fw_image[fw_img_head_size +
++				array_index * fw_img_record_size];
++	memcpy(record_data, &app_integrity, fw_img_record_size);
++
++	cyapa->fw_image_size = fw_img_size;
++	return 0;
++}
++
+ static int cyapa_gen5_do_fw_update(struct cyapa *cyapa,
+ 		const struct firmware *fw)
+ {
+@@ -2276,6 +2423,11 @@ static int cyapa_gen5_get_query_data(struct cyapa *cyapa)
+ 	if (ret || resp_len < sizeof(resp_data))
+ 		return ret;
+ 
++	cyapa->fw_img_head.head_size =
++		sizeof(struct cyapa_tsg_bin_image_head) - 1;
++	memcpy(&cyapa->fw_img_head.ttda_driver_major_version,
++		&resp_data[5], cyapa->fw_img_head.head_size);
++
+ 	product_family = get_unaligned_le16(&resp_data[7]);
+ 	if ((product_family & GEN5_PRODUCT_FAMILY_MASK) !=
+ 		GEN5_PRODUCT_FAMILY_TRACKPAD)
+@@ -2609,6 +2761,8 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
+ 	.show_baseline = cyapa_gen5_show_baseline,
+ 	.calibrate_store = cyapa_gen5_do_calibrate,
+ 
++	.read_fw = cyapa_gen5_read_fw,
++
+ 	.initialize = cyapa_gen5_initialize,
+ 
+ 	.state_parse = cyapa_gen5_state_parse,
+-- 
+1.9.1
 
