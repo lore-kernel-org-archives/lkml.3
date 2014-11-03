@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbaKCNCY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 08:02:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49723 "EHLO mx2.suse.de"
+	id S1752209AbaKCNCV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 08:02:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49724 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651AbaKCNCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 08:02:12 -0500
+	id S1751711AbaKCNCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 08:02:13 -0500
 From: Juergen Gross <jgross@suse.com>
 To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
         stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
         jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
         tomi.valkeinen@ti.com, bhelgaas@google.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V6 01/18] x86: Make page cache mode a real type
-Date: Mon,  3 Nov 2014 14:01:47 +0100
-Message-Id: <1415019724-4317-2-git-send-email-jgross@suse.com>
+Subject: [PATCH V6 03/18] x86: Use new cache mode type in drivers/video/fbdev/gbefb.c
+Date: Mon,  3 Nov 2014 14:01:49 +0100
+Message-Id: <1415019724-4317-4-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1415019724-4317-1-git-send-email-jgross@suse.com>
 References: <1415019724-4317-1-git-send-email-jgross@suse.com>
@@ -24,167 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the moment there are a lot of places that handle setting or getting
-the page cache mode by treating the pgprot bits equal to the cache mode.
-This is only true because there are a lot of assumptions about the setup
-of the PAT MSR. Otherwise the cache type needs to get translated into
-pgprot bits and vice versa.
-
-This patch tries to prepare for that by introducing a separate type
-for the cache mode and adding functions to translate between those and
-pgprot values.
-
-To avoid too much performance penalty the translation between cache mode
-and pgprot values is done via tables which contain the relevant
-information.  Write-back cache mode is hard-wired to be 0, all other
-modes are configurable via those tables. For large pages there are
-translation functions as the PAT bit is located at different positions
-in the ptes of 4k and large pages.
+Instead of directly using the cache mode bits in the pte switch to
+using the cache mode type.
 
 Based-on-patch-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Juergen Gross <jgross@suse.com>
 Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/pgtable_types.h | 73 +++++++++++++++++++++++++++++++++++-
- arch/x86/mm/init.c                   | 29 ++++++++++++++
- 2 files changed, 101 insertions(+), 1 deletion(-)
+ drivers/video/fbdev/gbefb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 0778964..5124642 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -128,12 +128,34 @@
- 			 _PAGE_SOFT_DIRTY | _PAGE_NUMA)
- #define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE | _PAGE_NUMA)
+diff --git a/drivers/video/fbdev/gbefb.c b/drivers/video/fbdev/gbefb.c
+index 4aa56ba..6d9ef39 100644
+--- a/drivers/video/fbdev/gbefb.c
++++ b/drivers/video/fbdev/gbefb.c
+@@ -54,7 +54,8 @@ struct gbefb_par {
+ #endif
+ #endif
+ #ifdef CONFIG_X86
+-#define pgprot_fb(_prot) ((_prot) | _PAGE_PCD)
++#define pgprot_fb(_prot) (((_prot) & ~_PAGE_CACHE_MASK) |	\
++			  cachemode2protval(_PAGE_CACHE_MODE_UC_MINUS))
+ #endif
  
--#define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
- #define _PAGE_CACHE_WB		(0)
- #define _PAGE_CACHE_WC		(_PAGE_PWT)
- #define _PAGE_CACHE_UC_MINUS	(_PAGE_PCD)
- #define _PAGE_CACHE_UC		(_PAGE_PCD | _PAGE_PWT)
- 
-+/*
-+ * The cache modes defined here are used to translate between pure SW usage
-+ * and the HW defined cache mode bits and/or PAT entries.
-+ *
-+ * The resulting bits for PWT, PCD and PAT should be chosen in a way
-+ * to have the WB mode at index 0 (all bits clear). This is the default
-+ * right now and likely would break too much if changed.
-+ */
-+#ifndef __ASSEMBLY__
-+enum page_cache_mode {
-+	_PAGE_CACHE_MODE_WB = 0,
-+	_PAGE_CACHE_MODE_WC = 1,
-+	_PAGE_CACHE_MODE_UC_MINUS = 2,
-+	_PAGE_CACHE_MODE_UC = 3,
-+	_PAGE_CACHE_MODE_WT = 4,
-+	_PAGE_CACHE_MODE_WP = 5,
-+	_PAGE_CACHE_MODE_NUM = 8
-+};
-+#endif
-+
-+#define _PAGE_CACHE_MASK	(_PAGE_PAT | _PAGE_PCD | _PAGE_PWT)
-+#define _PAGE_NOCACHE		(cachemode2protval(_PAGE_CACHE_MODE_UC))
-+
- #define PAGE_NONE	__pgprot(_PAGE_PROTNONE | _PAGE_ACCESSED)
- #define PAGE_SHARED	__pgprot(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER | \
- 				 _PAGE_ACCESSED | _PAGE_NX)
-@@ -341,6 +363,55 @@ static inline pmdval_t pmdnuma_flags(pmd_t pmd)
- #define pgprot_val(x)	((x).pgprot)
- #define __pgprot(x)	((pgprot_t) { (x) } )
- 
-+extern uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM];
-+extern uint8_t __pte2cachemode_tbl[8];
-+
-+#define __pte2cm_idx(cb)				\
-+	((((cb) >> (_PAGE_BIT_PAT - 2)) & 4) |		\
-+	 (((cb) >> (_PAGE_BIT_PCD - 1)) & 2) |		\
-+	 (((cb) >> _PAGE_BIT_PWT) & 1))
-+
-+static inline unsigned long cachemode2protval(enum page_cache_mode pcm)
-+{
-+	if (likely(pcm == 0))
-+		return 0;
-+	return __cachemode2pte_tbl[pcm];
-+}
-+static inline pgprot_t cachemode2pgprot(enum page_cache_mode pcm)
-+{
-+	return __pgprot(cachemode2protval(pcm));
-+}
-+static inline enum page_cache_mode pgprot2cachemode(pgprot_t pgprot)
-+{
-+	unsigned long masked;
-+
-+	masked = pgprot_val(pgprot) & _PAGE_CACHE_MASK;
-+	if (likely(masked == 0))
-+		return 0;
-+	return __pte2cachemode_tbl[__pte2cm_idx(masked)];
-+}
-+static inline pgprot_t pgprot_4k_2_large(pgprot_t pgprot)
-+{
-+	pgprot_t new;
-+	unsigned long val;
-+
-+	val = pgprot_val(pgprot);
-+	pgprot_val(new) = (val & ~(_PAGE_PAT | _PAGE_PAT_LARGE)) |
-+		((val & _PAGE_PAT) << (_PAGE_BIT_PAT_LARGE - _PAGE_BIT_PAT));
-+	return new;
-+}
-+static inline pgprot_t pgprot_large_2_4k(pgprot_t pgprot)
-+{
-+	pgprot_t new;
-+	unsigned long val;
-+
-+	val = pgprot_val(pgprot);
-+	pgprot_val(new) = (val & ~(_PAGE_PAT | _PAGE_PAT_LARGE)) |
-+			  ((val & _PAGE_PAT_LARGE) >>
-+			   (_PAGE_BIT_PAT_LARGE - _PAGE_BIT_PAT));
-+	return new;
-+}
-+
- 
- typedef struct page *pgtable_t;
- 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 66dba36..a9776ba 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -27,6 +27,35 @@
- 
- #include "mm_internal.h"
- 
-+/*
-+ * Tables translating between page_cache_type_t and pte encoding.
-+ * Minimal supported modes are defined statically, modified if more supported
-+ * cache modes are available.
-+ * Index into __cachemode2pte_tbl is the cachemode.
-+ * Index into __pte2cachemode_tbl are the caching attribute bits of the pte
-+ * (_PAGE_PWT, _PAGE_PCD, _PAGE_PAT) at index bit positions 0, 1, 2.
-+ */
-+uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM] = {
-+	[_PAGE_CACHE_MODE_WB]		= 0,
-+	[_PAGE_CACHE_MODE_WC]		= _PAGE_PWT,
-+	[_PAGE_CACHE_MODE_UC_MINUS]	= _PAGE_PCD,
-+	[_PAGE_CACHE_MODE_UC]		= _PAGE_PCD | _PAGE_PWT,
-+	[_PAGE_CACHE_MODE_WT]		= _PAGE_PCD,
-+	[_PAGE_CACHE_MODE_WP]		= _PAGE_PCD,
-+};
-+EXPORT_SYMBOL_GPL(__cachemode2pte_tbl);
-+uint8_t __pte2cachemode_tbl[8] = {
-+	[__pte2cm_idx(0)] = _PAGE_CACHE_MODE_WB,
-+	[__pte2cm_idx(_PAGE_PWT)] = _PAGE_CACHE_MODE_WC,
-+	[__pte2cm_idx(_PAGE_PCD)] = _PAGE_CACHE_MODE_UC_MINUS,
-+	[__pte2cm_idx(_PAGE_PWT | _PAGE_PCD)] = _PAGE_CACHE_MODE_UC,
-+	[__pte2cm_idx(_PAGE_PAT)] = _PAGE_CACHE_MODE_WB,
-+	[__pte2cm_idx(_PAGE_PWT | _PAGE_PAT)] = _PAGE_CACHE_MODE_WC,
-+	[__pte2cm_idx(_PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC_MINUS,
-+	[__pte2cm_idx(_PAGE_PWT | _PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC,
-+};
-+EXPORT_SYMBOL_GPL(__pte2cachemode_tbl);
-+
- static unsigned long __initdata pgt_buf_start;
- static unsigned long __initdata pgt_buf_end;
- static unsigned long __initdata pgt_buf_top;
+ /*
 -- 
 1.8.4.5
 
