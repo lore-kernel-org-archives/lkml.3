@@ -1,175 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734AbaKCUNM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 15:13:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45728 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753668AbaKCUNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 15:13:04 -0500
-Date: Mon, 3 Nov 2014 21:13:17 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Evan Teran <eteran@alum.rit.edu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Pedro Alves <palves@redhat.com>, Roland McGrath <roland@hack.frob.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] ptrace/x86: fix the TIF_FORCED_TF logic in
-	handle_signal()
-Message-ID: <20141103201317.GA5221@redhat.com>
-References: <20141103201256.GA5213@redhat.com>
+	id S1753454AbaKCUS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 15:18:29 -0500
+Received: from www.linutronix.de ([62.245.132.108]:55326 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335AbaKCUS1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 15:18:27 -0500
+Date: Mon, 3 Nov 2014 21:18:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Kevin Cernekee <cernekee@gmail.com>, f.fainelli@gmail.com,
+        jason@lakedaemon.net, ralf@linux-mips.org, linux-sh@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH V3 00/14] genirq endian fixes; bcm7120/brcmstb IRQ
+ updates
+In-Reply-To: <2217077.1aQXS9nJph@wuerfel>
+Message-ID: <alpine.DEB.2.11.1411032117050.5308@nanos>
+References: <1414890241-9938-1-git-send-email-cernekee@gmail.com> <2217077.1aQXS9nJph@wuerfel>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103201256.GA5213@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the TIF_SINGLESTEP tracee dequeues a signal, handle_signal()
-clears TIF_FORCED_TF and X86_EFLAGS_TF but leaves TIF_SINGLESTEP set.
+On Mon, 3 Nov 2014, Arnd Bergmann wrote:
+> On Saturday 01 November 2014 18:03:47 Kevin Cernekee wrote:
+> > V2->V3:
+> > 
+> >  - Move updated irq_reg_{readl,writel} functions back into <linux/irq.h>
+> >    so they can be called by irqchip drivers
+> > 
+> >  - Add gc->reg_{readl,writel} function pointers so that irqchip
+> >    drivers like arch/sh/boards/mach-se/{7343,7722}/irq.c can override them
+> > 
+> >  - CC: linux-sh list in lieu of Paul's defunct linux-sh.org email address
+> > 
+> >  - Fix handling of zero L2 status in bcm7120-l2.c
+> > 
+> >  - Rebase on Linus' head of tree
+> 
+> Looks all great. I also looked at the series now and am very happy
+> about how it turned out.
 
-If the tracer does PTRACE_SINGLESTEP again, enable_single_step() sets
-X86_EFLAGS_TF but not TIF_FORCED_TF. This means that the subsequent
-PTRACE_CONT doesn't not clear X86_EFLAGS_TF, and the tracee gets the
-wrong SIGTRAP.
+Does that translate to an Acked-by on the whole lot?
 
-Test-case (needs -O2 to avoid prologue insns in signal handler):
+Jason, can you please pick that lot up with an Acked-by-me on the
+changes to the existing infrastructure?
 
-	#include <unistd.h>
-	#include <stdio.h>
-	#include <sys/ptrace.h>
-	#include <sys/wait.h>
-	#include <sys/user.h>
-	#include <assert.h>
-	#include <stddef.h>
+Thanks,
 
-	void handler(int n)
-	{
-		asm("nop");
-	}
-
-	int child(void)
-	{
-		assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
-		signal(SIGALRM, handler);
-		kill(getpid(), SIGALRM);
-		return 0x23;
-	}
-
-	void *getip(int pid)
-	{
-		return (void*)ptrace(PTRACE_PEEKUSER, pid,
-					offsetof(struct user, regs.rip), 0);
-	}
-
-	int main(void)
-	{
-		int pid, status;
-
-		pid = fork();
-		if (!pid)
-			return child();
-
-		assert(wait(&status) == pid);
-		assert(WIFSTOPPED(status) && WSTOPSIG(status) == SIGALRM);
-
-		assert(ptrace(PTRACE_SINGLESTEP, pid, 0, SIGALRM) == 0);
-		assert(wait(&status) == pid);
-		assert(WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP);
-		assert((getip(pid) - (void*)handler) == 0);
-
-		assert(ptrace(PTRACE_SINGLESTEP, pid, 0, SIGALRM) == 0);
-		assert(wait(&status) == pid);
-		assert(WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP);
-		assert((getip(pid) - (void*)handler) == 1);
-
-		assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
-		assert(wait(&status) == pid);
-		assert(WIFEXITED(status) && WEXITSTATUS(status) == 0x23);
-
-		return 0;
-	}
-
-The last assert() fails because PTRACE_CONT wrongly triggers another
-single-step and X86_EFLAGS_TF can't be cleared by debugger until the
-tracee does sys_rt_sigreturn().
-
-Change handle_signal() to do user_disable_single_step() if stepping,
-we do not need to preserve TIF_SINGLESTEP because we are going to do
-ptrace_notify(), and it is simply wrong to leak this bit.
-
-While at it, change the comment to explain why we also need to clear
-TF unconditionally after setup_rt_frame().
-
-Note: in the longer term we should probably change setup_sigcontext()
-to use get_flags() and then just remove this user_disable_single_step().
-And, the state of TIF_FORCED_TF can be wrong after restore_sigcontext()
-which can set/clear TF, this needs another fix.
-
-Reported-by: Evan Teran <eteran@alum.rit.edu>
-Reported-by: Pedro Alves <palves@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/signal.c |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index ed37a76..9d3a15b 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -629,7 +629,8 @@ setup_rt_frame(struct ksignal *ksig, struct pt_regs *regs)
- static void
- handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- {
--	bool failed;
-+	bool stepping, failed;
-+
- 	/* Are we from a system call? */
- 	if (syscall_get_nr(current, regs) >= 0) {
- 		/* If so, check system call restarting.. */
-@@ -653,12 +654,13 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- 	}
- 
- 	/*
--	 * If TF is set due to a debugger (TIF_FORCED_TF), clear the TF
--	 * flag so that register information in the sigcontext is correct.
-+	 * If TF is set due to a debugger (TIF_FORCED_TF), clear TF now
-+	 * so that register information in the sigcontext is correct and
-+	 * then notify the tracer before entering the signal handler.
- 	 */
--	if (unlikely(regs->flags & X86_EFLAGS_TF) &&
--	    likely(test_and_clear_thread_flag(TIF_FORCED_TF)))
--		regs->flags &= ~X86_EFLAGS_TF;
-+	stepping = test_thread_flag(TIF_SINGLESTEP);
-+	if (stepping)
-+		user_disable_single_step(current);
- 
- 	failed = (setup_rt_frame(ksig, regs) < 0);
- 	if (!failed) {
-@@ -669,10 +671,8 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- 		 * it might disable possible debug exception from the
- 		 * signal handler.
- 		 *
--		 * Clear TF when entering the signal handler, but
--		 * notify any tracer that was single-stepping it.
--		 * The tracer may want to single-step inside the
--		 * handler too.
-+		 * Clear TF for the case when it wasn't set by debugger to
-+		 * avoid the recursive send_sigtrap() in SIGTRAP handler.
- 		 */
- 		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
- 		/*
-@@ -681,7 +681,7 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- 		if (used_math())
- 			drop_init_fpu(current);
- 	}
--	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
-+	signal_setup_done(failed, ksig, stepping);
- }
- 
- #ifdef CONFIG_X86_32
--- 
-1.5.5.1
-
-
+	tglx
