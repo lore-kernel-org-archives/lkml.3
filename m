@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaKCKx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:53:26 -0500
-Received: from mail-bl2on0068.outbound.protection.outlook.com ([65.55.169.68]:64644
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1752080AbaKCKxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:53:35 -0500
+Received: from mail-bn1bon0064.outbound.protection.outlook.com ([157.56.111.64]:52832
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751114AbaKCKxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:53:21 -0500
+	id S1751999AbaKCKx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:53:27 -0500
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v6 00/29] nios2 Linux kernel port
-Date: Mon, 3 Nov 2014 18:51:56 +0800
-Message-ID: <1415011945-3297-1-git-send-email-lftan@altera.com>
+Subject: [PATCH v6 02/29] nios2: Assembly macros and definitions
+Date: Mon, 3 Nov 2014 18:51:58 +0800
+Message-ID: <1415011945-3297-3-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
+References: <1415011945-3297-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(54164003)(189002)(199003)(19580395003)(44976005)(104166001)(2201001)(92566001)(92726001)(105596002)(6806004)(95666004)(36756003)(15975445006)(50466002)(68736004)(86362001)(62966003)(93916002)(46102003)(48376002)(15202345003)(21056001)(102836001)(33646002)(84676001)(50986999)(99396003)(87936001)(31966008)(97736003)(20776003)(64706001)(47776003)(87286001)(50226001)(4396001)(120916001)(89996001)(229853001)(107046002)(106466001)(88136002)(42186005)(77156002)(77096003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB220;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(102836001)(50226001)(4396001)(20776003)(44976005)(64706001)(6806004)(97736003)(47776003)(15202345003)(84676001)(19580395003)(19580405001)(15975445006)(99396003)(68736004)(87286001)(42186005)(21056001)(76176999)(50986999)(87936001)(104166001)(89996001)(88136002)(86362001)(95666004)(36756003)(46102003)(105596002)(120916001)(31966008)(93916002)(106466001)(48376002)(50466002)(2201001)(92566001)(92726001)(33646002)(62966003)(77156002)(77096003)(107046002)(229853001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB209;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB220;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB209;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0384275935
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,275 +33,454 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the 6th version of patchset adds the Linux kernel port for Nios II
-processor from Altera. All of the feedback from v5 patchseries has been
-addressed. Note, only patch #1, #7 and #21 have non-trivial changes. 
-Thanks to all who provided feedback on the previous version.
+This patch add assembly macros and definitions used in
+the .S files across arch/nios2/ and together with asm-offsets.c.
 
-About Nios II Cores
--------------------
-Nios II is a 32-bit embedded-processor architecture designed specifically for the
-Altera family of FPGAs.
-More information is available  at http://www.altera.com/devices/processor/nios2/ni2-index.html
-
-Instruction set and architecture overview documents can be found on the
-following page:
-http://www.altera.com/literature/lit-nio2.jsp
-
-Nios2 GCC port is in mainline and will be in the FSF 4.9 release.
-
-The patchset are based on v3.18-rc3 and can also be found in the following git tree:
-git://git.rocketboards.org/linux-socfpga-next.git  nios2-upstream
-
-v6:
-* time: change from setup_irq to request_irq
-* time: move num_called to nios2_time_init()
-* time: remove checking for period==0
-* time: change to use statically allocation for nios2 clock structures
-* time: remove ARCH_HAS_READ_CURRENT_TIMER and use lpj_fine
-* io: remove unused outs{b,w,l}, ins{b,w,l}, out{b,w,l} and in{b,w,l}
-* remove __divdi3 and __udivdi3 sysmbol export
-* add description to futex.h
-
-
-patchset history
------------------
-[v1] : https://lkml.org/lkml/2014/4/18/216
-[v2] : https://lkml.org/lkml/2014/7/15/120
-[v3] : https://lkml.org/lkml/2014/9/8/139
-[v4] : https://lkml.org/lkml/2014/10/8/141
-[v5] : https://lkml.org/lkml/2014/10/24/104
-
-Ley Foon Tan (29):
-  asm-generic: add generic futex for !CONFIG_SMP
-  nios2: Assembly macros and definitions
-  nios2: Kernel booting and initialization
-  nios2: Exception handling
-  nios2: Traps exception handling
-  nios2: Memory management
-  nios2: I/O Mapping
-  nios2: MMU Fault handling
-  nios2: Page table management
-  nios2: Process management
-  nios2: Cache handling
-  nios2: TLB handling
-  nios2: Interrupt handling
-  nios2: DMA mapping API
-  Add ELF machine define for Nios2
-  nios2: ELF definitions
-  nios2: System calls handling
-  nios2: Signal handling support
-  nios2: Library functions
-  nios2: Device tree support
-  nios2: Time keeping
-  nios2: Cpuinfo handling
-  nios2: Miscellaneous header files
-  nios2: Nios2 registers
-  nios2: Module support
-  nios2: ptrace support
-  MAINTAINERS: Add nios2 maintainer
-  Documentation: Add documentation for Nios2 architecture
-  nios2: Build infrastructure
-
- Documentation/devicetree/bindings/nios2/nios2.txt |  62 +++
- Documentation/devicetree/bindings/nios2/timer.txt |  19 +
- Documentation/nios2/README                        |  23 +
- MAINTAINERS                                       |   7 +
- arch/nios2/Kconfig                                | 201 ++++++++
- arch/nios2/Kconfig.debug                          |  17 +
- arch/nios2/Makefile                               |  73 +++
- arch/nios2/boot/Makefile                          |  52 ++
- arch/nios2/boot/dts/3c120_devboard.dts            | 164 ++++++
- arch/nios2/boot/install.sh                        |  52 ++
- arch/nios2/boot/linked_dtb.S                      |  19 +
- arch/nios2/configs/3c120_defconfig                |  77 +++
- arch/nios2/include/asm/Kbuild                     |  66 +++
- arch/nios2/include/asm/asm-macros.h               | 309 +++++++++++
- arch/nios2/include/asm/asm-offsets.h              |  20 +
- arch/nios2/include/asm/cache.h                    |  36 ++
- arch/nios2/include/asm/cacheflush.h               |  52 ++
- arch/nios2/include/asm/checksum.h                 |  78 +++
- arch/nios2/include/asm/cmpxchg.h                  |  61 +++
- arch/nios2/include/asm/cpuinfo.h                  |  57 +++
- arch/nios2/include/asm/delay.h                    |  21 +
- arch/nios2/include/asm/dma-mapping.h              | 140 +++++
- arch/nios2/include/asm/elf.h                      | 101 ++++
- arch/nios2/include/asm/entry.h                    | 120 +++++
- arch/nios2/include/asm/io.h                       |  61 +++
- arch/nios2/include/asm/irq.h                      |  28 +
- arch/nios2/include/asm/irqflags.h                 |  72 +++
- arch/nios2/include/asm/linkage.h                  |  25 +
- arch/nios2/include/asm/mmu.h                      |  16 +
- arch/nios2/include/asm/mmu_context.h              |  66 +++
- arch/nios2/include/asm/mutex.h                    |   1 +
- arch/nios2/include/asm/page.h                     | 111 ++++
- arch/nios2/include/asm/pgalloc.h                  |  86 ++++
- arch/nios2/include/asm/pgtable-bits.h             |  35 ++
- arch/nios2/include/asm/pgtable.h                  | 310 +++++++++++
- arch/nios2/include/asm/processor.h                | 103 ++++
- arch/nios2/include/asm/ptrace.h                   |  33 ++
- arch/nios2/include/asm/registers.h                |  71 +++
- arch/nios2/include/asm/setup.h                    |  38 ++
- arch/nios2/include/asm/signal.h                   |  22 +
- arch/nios2/include/asm/string.h                   |  24 +
- arch/nios2/include/asm/switch_to.h                |  31 ++
- arch/nios2/include/asm/syscall.h                  | 138 +++++
- arch/nios2/include/asm/syscalls.h                 |  25 +
- arch/nios2/include/asm/thread_info.h              | 120 +++++
- arch/nios2/include/asm/timex.h                    |  24 +
- arch/nios2/include/asm/tlb.h                      |  34 ++
- arch/nios2/include/asm/tlbflush.h                 |  46 ++
- arch/nios2/include/asm/traps.h                    |  19 +
- arch/nios2/include/asm/uaccess.h                  | 231 +++++++++
- arch/nios2/include/asm/ucontext.h                 |  32 ++
- arch/nios2/include/uapi/asm/Kbuild                |   4 +
- arch/nios2/include/uapi/asm/byteorder.h           |  22 +
- arch/nios2/include/uapi/asm/elf.h                 |  67 +++
- arch/nios2/include/uapi/asm/ptrace.h              | 120 +++++
- arch/nios2/include/uapi/asm/sigcontext.h          |  28 +
- arch/nios2/include/uapi/asm/signal.h              |  23 +
- arch/nios2/include/uapi/asm/swab.h                |  37 ++
- arch/nios2/include/uapi/asm/unistd.h              |  25 +
- arch/nios2/kernel/Makefile                        |  24 +
- arch/nios2/kernel/asm-offsets.c                   |  88 ++++
- arch/nios2/kernel/cpuinfo.c                       | 201 ++++++++
- arch/nios2/kernel/entry.S                         | 555 ++++++++++++++++++++
- arch/nios2/kernel/head.S                          | 175 +++++++
- arch/nios2/kernel/insnemu.S                       | 592 ++++++++++++++++++++++
- arch/nios2/kernel/irq.c                           |  93 ++++
- arch/nios2/kernel/misaligned.c                    | 256 ++++++++++
- arch/nios2/kernel/module.c                        | 138 +++++
- arch/nios2/kernel/nios2_ksyms.c                   |  33 ++
- arch/nios2/kernel/process.c                       | 258 ++++++++++
- arch/nios2/kernel/prom.c                          |  65 +++
- arch/nios2/kernel/ptrace.c                        | 166 ++++++
- arch/nios2/kernel/setup.c                         | 218 ++++++++
- arch/nios2/kernel/signal.c                        | 323 ++++++++++++
- arch/nios2/kernel/sys_nios2.c                     |  53 ++
- arch/nios2/kernel/syscall_table.c                 |  29 ++
- arch/nios2/kernel/time.c                          | 310 +++++++++++
- arch/nios2/kernel/traps.c                         | 185 +++++++
- arch/nios2/kernel/vmlinux.lds.S                   |  75 +++
- arch/nios2/lib/Makefile                           |   8 +
- arch/nios2/lib/delay.c                            |  52 ++
- arch/nios2/lib/memcpy.c                           | 202 ++++++++
- arch/nios2/lib/memmove.c                          |  82 +++
- arch/nios2/lib/memset.c                           |  81 +++
- arch/nios2/mm/Makefile                            |  14 +
- arch/nios2/mm/cacheflush.c                        | 271 ++++++++++
- arch/nios2/mm/dma-mapping.c                       | 186 +++++++
- arch/nios2/mm/extable.c                           |  25 +
- arch/nios2/mm/fault.c                             | 251 +++++++++
- arch/nios2/mm/init.c                              | 142 ++++++
- arch/nios2/mm/ioremap.c                           | 187 +++++++
- arch/nios2/mm/mmu_context.c                       | 116 +++++
- arch/nios2/mm/pgtable.c                           |  74 +++
- arch/nios2/mm/tlb.c                               | 275 ++++++++++
- arch/nios2/mm/uaccess.c                           | 163 ++++++
- arch/nios2/platform/Kconfig.platform              | 129 +++++
- arch/nios2/platform/Makefile                      |   1 +
- arch/nios2/platform/platform.c                    |  46 ++
- include/asm-generic/futex.h                       | 114 +++++
- include/uapi/linux/elf-em.h                       |   1 +
- 100 files changed, 10212 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/nios2/nios2.txt
- create mode 100644 Documentation/devicetree/bindings/nios2/timer.txt
- create mode 100644 Documentation/nios2/README
- create mode 100644 arch/nios2/Kconfig
- create mode 100644 arch/nios2/Kconfig.debug
- create mode 100644 arch/nios2/Makefile
- create mode 100644 arch/nios2/boot/Makefile
- create mode 100644 arch/nios2/boot/dts/3c120_devboard.dts
- create mode 100644 arch/nios2/boot/install.sh
- create mode 100644 arch/nios2/boot/linked_dtb.S
- create mode 100644 arch/nios2/configs/3c120_defconfig
- create mode 100644 arch/nios2/include/asm/Kbuild
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ arch/nios2/include/asm/asm-macros.h  | 309 +++++++++++++++++++++++++++++++++++
+ arch/nios2/include/asm/asm-offsets.h |  20 +++
+ arch/nios2/kernel/asm-offsets.c      |  88 ++++++++++
+ 3 files changed, 417 insertions(+)
  create mode 100644 arch/nios2/include/asm/asm-macros.h
  create mode 100644 arch/nios2/include/asm/asm-offsets.h
- create mode 100644 arch/nios2/include/asm/cache.h
- create mode 100644 arch/nios2/include/asm/cacheflush.h
- create mode 100644 arch/nios2/include/asm/checksum.h
- create mode 100644 arch/nios2/include/asm/cmpxchg.h
- create mode 100644 arch/nios2/include/asm/cpuinfo.h
- create mode 100644 arch/nios2/include/asm/delay.h
- create mode 100644 arch/nios2/include/asm/dma-mapping.h
- create mode 100644 arch/nios2/include/asm/elf.h
- create mode 100644 arch/nios2/include/asm/entry.h
- create mode 100644 arch/nios2/include/asm/io.h
- create mode 100644 arch/nios2/include/asm/irq.h
- create mode 100644 arch/nios2/include/asm/irqflags.h
- create mode 100644 arch/nios2/include/asm/linkage.h
- create mode 100644 arch/nios2/include/asm/mmu.h
- create mode 100644 arch/nios2/include/asm/mmu_context.h
- create mode 100644 arch/nios2/include/asm/mutex.h
- create mode 100644 arch/nios2/include/asm/page.h
- create mode 100644 arch/nios2/include/asm/pgalloc.h
- create mode 100644 arch/nios2/include/asm/pgtable-bits.h
- create mode 100644 arch/nios2/include/asm/pgtable.h
- create mode 100644 arch/nios2/include/asm/processor.h
- create mode 100644 arch/nios2/include/asm/ptrace.h
- create mode 100644 arch/nios2/include/asm/registers.h
- create mode 100644 arch/nios2/include/asm/setup.h
- create mode 100644 arch/nios2/include/asm/signal.h
- create mode 100644 arch/nios2/include/asm/string.h
- create mode 100644 arch/nios2/include/asm/switch_to.h
- create mode 100644 arch/nios2/include/asm/syscall.h
- create mode 100644 arch/nios2/include/asm/syscalls.h
- create mode 100644 arch/nios2/include/asm/thread_info.h
- create mode 100644 arch/nios2/include/asm/timex.h
- create mode 100644 arch/nios2/include/asm/tlb.h
- create mode 100644 arch/nios2/include/asm/tlbflush.h
- create mode 100644 arch/nios2/include/asm/traps.h
- create mode 100644 arch/nios2/include/asm/uaccess.h
- create mode 100644 arch/nios2/include/asm/ucontext.h
- create mode 100644 arch/nios2/include/uapi/asm/Kbuild
- create mode 100644 arch/nios2/include/uapi/asm/byteorder.h
- create mode 100644 arch/nios2/include/uapi/asm/elf.h
- create mode 100644 arch/nios2/include/uapi/asm/ptrace.h
- create mode 100644 arch/nios2/include/uapi/asm/sigcontext.h
- create mode 100644 arch/nios2/include/uapi/asm/signal.h
- create mode 100644 arch/nios2/include/uapi/asm/swab.h
- create mode 100644 arch/nios2/include/uapi/asm/unistd.h
- create mode 100644 arch/nios2/kernel/Makefile
  create mode 100644 arch/nios2/kernel/asm-offsets.c
- create mode 100644 arch/nios2/kernel/cpuinfo.c
- create mode 100644 arch/nios2/kernel/entry.S
- create mode 100644 arch/nios2/kernel/head.S
- create mode 100644 arch/nios2/kernel/insnemu.S
- create mode 100644 arch/nios2/kernel/irq.c
- create mode 100644 arch/nios2/kernel/misaligned.c
- create mode 100644 arch/nios2/kernel/module.c
- create mode 100644 arch/nios2/kernel/nios2_ksyms.c
- create mode 100644 arch/nios2/kernel/process.c
- create mode 100644 arch/nios2/kernel/prom.c
- create mode 100644 arch/nios2/kernel/ptrace.c
- create mode 100644 arch/nios2/kernel/setup.c
- create mode 100644 arch/nios2/kernel/signal.c
- create mode 100644 arch/nios2/kernel/sys_nios2.c
- create mode 100644 arch/nios2/kernel/syscall_table.c
- create mode 100644 arch/nios2/kernel/time.c
- create mode 100644 arch/nios2/kernel/traps.c
- create mode 100644 arch/nios2/kernel/vmlinux.lds.S
- create mode 100644 arch/nios2/lib/Makefile
- create mode 100644 arch/nios2/lib/delay.c
- create mode 100644 arch/nios2/lib/memcpy.c
- create mode 100644 arch/nios2/lib/memmove.c
- create mode 100644 arch/nios2/lib/memset.c
- create mode 100644 arch/nios2/mm/Makefile
- create mode 100644 arch/nios2/mm/cacheflush.c
- create mode 100644 arch/nios2/mm/dma-mapping.c
- create mode 100644 arch/nios2/mm/extable.c
- create mode 100644 arch/nios2/mm/fault.c
- create mode 100644 arch/nios2/mm/init.c
- create mode 100644 arch/nios2/mm/ioremap.c
- create mode 100644 arch/nios2/mm/mmu_context.c
- create mode 100644 arch/nios2/mm/pgtable.c
- create mode 100644 arch/nios2/mm/tlb.c
- create mode 100644 arch/nios2/mm/uaccess.c
- create mode 100644 arch/nios2/platform/Kconfig.platform
- create mode 100644 arch/nios2/platform/Makefile
- create mode 100644 arch/nios2/platform/platform.c
 
+diff --git a/arch/nios2/include/asm/asm-macros.h b/arch/nios2/include/asm/asm-macros.h
+new file mode 100644
+index 0000000..29fa2e4
+--- /dev/null
++++ b/arch/nios2/include/asm/asm-macros.h
+@@ -0,0 +1,309 @@
++/*
++ * Macro used to simplify coding multi-line assembler.
++ * Some of the bit test macro can simplify down to one line
++ * depending on the mask value.
++ *
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ *
++ */
++#ifndef _ASM_NIOS2_ASMMACROS_H
++#define _ASM_NIOS2_ASMMACROS_H
++/*
++ * ANDs reg2 with mask and places the result in reg1.
++ *
++ * You cannnot use the same register for reg1 & reg2.
++ */
++
++.macro ANDI32	reg1, reg2, mask
++.if \mask & 0xffff
++	.if \mask & 0xffff0000
++		movhi	\reg1, %hi(\mask)
++		movui	\reg1, %lo(\mask)
++		and	\reg1, \reg1, \reg2
++	.else
++		andi	\reg1, \reg2, %lo(\mask)
++	.endif
++.else
++	andhi	\reg1, \reg2, %hi(\mask)
++.endif
++.endm
++
++/*
++ * ORs reg2 with mask and places the result in reg1.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro ORI32	reg1, reg2, mask
++.if \mask & 0xffff
++	.if \mask & 0xffff0000
++		orhi	\reg1, \reg2, %hi(\mask)
++		ori	\reg1, \reg2, %lo(\mask)
++	.else
++		ori	\reg1, \reg2, %lo(\mask)
++	.endif
++.else
++	orhi	\reg1, \reg2, %hi(\mask)
++.endif
++.endm
++
++/*
++ * XORs reg2 with mask and places the result in reg1.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro XORI32	reg1, reg2, mask
++.if \mask & 0xffff
++	.if \mask & 0xffff0000
++		xorhi	\reg1, \reg2, %hi(\mask)
++		xori	\reg1, \reg1, %lo(\mask)
++	.else
++		xori	\reg1, \reg2, %lo(\mask)
++	.endif
++.else
++	xorhi	\reg1, \reg2, %hi(\mask)
++.endif
++.endm
++
++/*
++ * This is a support macro for BTBZ & BTBNZ.  It checks
++ * the bit to make sure it is valid 32 value.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro BT	reg1, reg2, bit
++.if \bit > 31
++	.err
++.else
++	.if \bit < 16
++		andi	\reg1, \reg2, (1 << \bit)
++	.else
++		andhi	\reg1, \reg2, (1 << (\bit - 16))
++	.endif
++.endif
++.endm
++
++/*
++ * Tests the bit in reg2 and branches to label if the
++ * bit is zero.  The result of the bit test is stored in reg1.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTBZ	reg1, reg2, bit, label
++	BT	\reg1, \reg2, \bit
++	beq	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and branches to label if the
++ * bit is non-zero.  The result of the bit test is stored in reg1.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTBNZ	reg1, reg2, bit, label
++	BT	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then compliments the bit in reg2.
++ * The result of the bit test is stored in reg1.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTC	reg1, reg2, bit
++.if \bit > 31
++	.err
++.else
++	.if \bit < 16
++		andi	\reg1, \reg2, (1 << \bit)
++		xori	\reg2, \reg2, (1 << \bit)
++	.else
++		andhi	\reg1, \reg2, (1 << (\bit - 16))
++		xorhi	\reg2, \reg2, (1 << (\bit - 16))
++	.endif
++.endif
++.endm
++
++/*
++ * Tests the bit in reg2 and then sets the bit in reg2.
++ * The result of the bit test is stored in reg1.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTS	reg1, reg2, bit
++.if \bit > 31
++	.err
++.else
++	.if \bit < 16
++		andi	\reg1, \reg2, (1 << \bit)
++		ori	\reg2, \reg2, (1 << \bit)
++	.else
++		andhi	\reg1, \reg2, (1 << (\bit - 16))
++		orhi	\reg2, \reg2, (1 << (\bit - 16))
++	.endif
++.endif
++.endm
++
++/*
++ * Tests the bit in reg2 and then resets the bit in reg2.
++ * The result of the bit test is stored in reg1.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTR	reg1, reg2, bit
++.if \bit > 31
++	.err
++.else
++	.if \bit < 16
++		andi	\reg1, \reg2, (1 << \bit)
++		andi	\reg2, \reg2, %lo(~(1 << \bit))
++	.else
++		andhi	\reg1, \reg2, (1 << (\bit - 16))
++		andhi	\reg2, \reg2, %lo(~(1 << (\bit - 16)))
++	.endif
++.endif
++.endm
++
++/*
++ * Tests the bit in reg2 and then compliments the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTCBZ	reg1, reg2, bit, label
++	BTC	\reg1, \reg2, \bit
++	beq	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then compliments the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was non-zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTCBNZ	reg1, reg2, bit, label
++	BTC	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then sets the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTSBZ	reg1, reg2, bit, label
++	BTS	\reg1, \reg2, \bit
++	beq	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then sets the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was non-zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTSBNZ	reg1, reg2, bit, label
++	BTS	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then resets the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTRBZ	reg1, reg2, bit, label
++	BTR	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then resets the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was non-zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTRBNZ	reg1, reg2, bit, label
++	BTR	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bits in mask against reg2 stores the result in reg1.
++ * If the all the bits in the mask are zero it branches to label.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro TSTBZ	reg1, reg2, mask, label
++	ANDI32	\reg1, \reg2, \mask
++	beq	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bits in mask against reg2 stores the result in reg1.
++ * If the any of the bits in the mask are 1 it branches to label.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro TSTBNZ	reg1, reg2, mask, label
++	ANDI32	\reg1, \reg2, \mask
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Pushes reg onto the stack.
++ */
++
++.macro PUSH	reg
++	addi	sp, sp, -4
++	stw	\reg, 0(sp)
++.endm
++
++/*
++ * Pops the top of the stack into reg.
++ */
++
++.macro POP	reg
++	ldw	\reg, 0(sp)
++	addi	sp, sp, 4
++.endm
++
++
++#endif /* _ASM_NIOS2_ASMMACROS_H */
+diff --git a/arch/nios2/include/asm/asm-offsets.h b/arch/nios2/include/asm/asm-offsets.h
+new file mode 100644
+index 0000000..5b9f5e0
+--- /dev/null
++++ b/arch/nios2/include/asm/asm-offsets.h
+@@ -0,0 +1,20 @@
++/*
++ *  Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ *  Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include <generated/asm-offsets.h>
+diff --git a/arch/nios2/kernel/asm-offsets.c b/arch/nios2/kernel/asm-offsets.c
+new file mode 100644
+index 0000000..3852f5c
+--- /dev/null
++++ b/arch/nios2/kernel/asm-offsets.c
+@@ -0,0 +1,88 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include <linux/stddef.h>
++#include <linux/sched.h>
++#include <linux/kernel_stat.h>
++#include <linux/ptrace.h>
++#include <linux/hardirq.h>
++#include <linux/thread_info.h>
++#include <linux/kbuild.h>
++
++int main(void)
++{
++	/* struct task_struct */
++	OFFSET(TASK_THREAD, task_struct, thread);
++	BLANK();
++
++	/* struct thread_struct */
++	OFFSET(THREAD_KSP, thread_struct, ksp);
++	OFFSET(THREAD_KPSR, thread_struct, kpsr);
++	BLANK();
++
++	/* struct pt_regs */
++	OFFSET(PT_ORIG_R2, pt_regs, orig_r2);
++	OFFSET(PT_ORIG_R7, pt_regs, orig_r7);
++
++	OFFSET(PT_R1, pt_regs, r1);
++	OFFSET(PT_R2, pt_regs, r2);
++	OFFSET(PT_R3, pt_regs, r3);
++	OFFSET(PT_R4, pt_regs, r4);
++	OFFSET(PT_R5, pt_regs, r5);
++	OFFSET(PT_R6, pt_regs, r6);
++	OFFSET(PT_R7, pt_regs, r7);
++	OFFSET(PT_R8, pt_regs, r8);
++	OFFSET(PT_R9, pt_regs, r9);
++	OFFSET(PT_R10, pt_regs, r10);
++	OFFSET(PT_R11, pt_regs, r11);
++	OFFSET(PT_R12, pt_regs, r12);
++	OFFSET(PT_R13, pt_regs, r13);
++	OFFSET(PT_R14, pt_regs, r14);
++	OFFSET(PT_R15, pt_regs, r15);
++	OFFSET(PT_EA, pt_regs, ea);
++	OFFSET(PT_RA, pt_regs, ra);
++	OFFSET(PT_FP, pt_regs, fp);
++	OFFSET(PT_SP, pt_regs, sp);
++	OFFSET(PT_GP, pt_regs, gp);
++	OFFSET(PT_ESTATUS, pt_regs, estatus);
++	DEFINE(PT_REGS_SIZE, sizeof(struct pt_regs));
++	BLANK();
++
++	/* struct switch_stack */
++	OFFSET(SW_R16, switch_stack, r16);
++	OFFSET(SW_R17, switch_stack, r17);
++	OFFSET(SW_R18, switch_stack, r18);
++	OFFSET(SW_R19, switch_stack, r19);
++	OFFSET(SW_R20, switch_stack, r20);
++	OFFSET(SW_R21, switch_stack, r21);
++	OFFSET(SW_R22, switch_stack, r22);
++	OFFSET(SW_R23, switch_stack, r23);
++	OFFSET(SW_FP, switch_stack, fp);
++	OFFSET(SW_GP, switch_stack, gp);
++	OFFSET(SW_RA, switch_stack, ra);
++	DEFINE(SWITCH_STACK_SIZE, sizeof(struct switch_stack));
++	BLANK();
++
++	/* struct thread_info */
++	OFFSET(TI_TASK, thread_info, task);
++	OFFSET(TI_FLAGS, thread_info, flags);
++	OFFSET(TI_PREEMPT_COUNT, thread_info, preempt_count);
++	BLANK();
++
++	return 0;
++}
 -- 
 1.8.2.1
 
