@@ -1,233 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460AbaKCJbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:31:39 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39499 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaKCJbg (ORCPT
+	id S1751554AbaKCJdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:33:01 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:47985 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaKCJc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:31:36 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: =?UTF-8?q?Janusz=20U=C5=BCycki?= <j.uzycki@elproma.com.pl>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2] clk: Add PWM clock driver
-Date: Mon,  3 Nov 2014 10:31:18 +0100
-Message-Id: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.1
-X-SA-Exim-Connect-IP: 10.1.0.120
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 3 Nov 2014 04:32:58 -0500
+Message-ID: <1415007176.18669.3.camel@BR9GV9YG.de.ibm.com>
+Subject: Re: [PATCH v3] drivers: s390: net: ctcm: migrate variables to
+ handle y2038 problem
+From: Ursula Braun <ubraun@linux.vnet.ibm.com>
+To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+Cc: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, opw-kernel@googlegroups.com
+Date: Mon, 03 Nov 2014 10:32:56 +0100
+In-Reply-To: <20141101001614.GA9494@localhost.localdomain>
+References: <20141101001614.GA9494@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110309-0005-0000-0000-000001EA8A29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some board designers, when running out of clock output pads, decide to
-(mis)use PWM output pads to provide a clock to external components.
-This driver supports this practice by providing an adapter between the
-PWM and clock bindings in the device tree. As the PWM bindings specify
-the period in the device tree, this is a fixed clock.
+Thx, Aya. Now I will add your patch to our collection for our next
+upstream posting on net_next.
+The only thing I want to change is removing your
+	#include <linux/jiffies.h>
+lines. All affected routines use already
+	#include <linux/timer.h>
+Thus these lines are not needed.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
-I'm resending this because last time the linux-pwm list was not in Cc:
-So far I have not received any comments on the patch itself. I have used
-it on a BoundaryDevices Nitrogen6X board to produce a master clock for
-the OV5640 MIPI CSI-2 camera module.
+Regards, Ursula Braun
 
-Changes since v1:
- - none (rebased onto v3.18-rc3)
----
- .../devicetree/bindings/clock/pwm-clock.txt        |  23 +++++
- drivers/clk/Kconfig                                |   7 ++
- drivers/clk/Makefile                               |   1 +
- drivers/clk/clk-pwm.c                              | 110 +++++++++++++++++++++
- 4 files changed, 141 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/pwm-clock.txt
- create mode 100644 drivers/clk/clk-pwm.c
+On Sat, 2014-11-01 at 02:16 +0200, Aya Mahfouz wrote:
+> This patch is concerned with migrating the time variables for the s390
+> network driver. The changes handle the y2038 problem where timespec will
+> overflow in the year 2038. timespec was replaced by unsigned long and
+> all time variables get their values from the jiffies global variable.
+> This was done for the sake of speed and efficiency.
+> 
+> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+> ---
+> v1: Arnd has advised me to provide you with options for time
+>     calculation. The first option: "accuracy" is used in this
+>     patch. The second option: "speed" can be done through
+>     jiffies.
+> 
+> v2: Moved on to the speed option. Let me know if I explicitly
+>     need to include the jiffies header. The module compiles with
+>     no problems on my side.
+> 
+> v3: Handled the error pointed out by Ursula. The current version
+>     does not handle overflows. There are two solutions for this.
+>     The first is to use jiffies_64 since s/390 is a 64-bit
+>     architecture after all. The second is to use wrapper functions
+>     like time_before and time_after. Two files were added too. 
+>     They are: ctcm_main.c and netiucv.c. This patch could be sent
+>     as a patchset in its final version for convenience. 
+> 
+>  drivers/s390/net/ctcm_fsms.c | 19 ++++++++-----------
+>  drivers/s390/net/ctcm_main.c |  5 +++--
+>  drivers/s390/net/ctcm_main.h |  4 +++-
+>  drivers/s390/net/netiucv.c   |  8 +++++---
+>  4 files changed, 19 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
+> index fb92524..86ed7bf 100644
+> --- a/drivers/s390/net/ctcm_fsms.c
+> +++ b/drivers/s390/net/ctcm_fsms.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/timer.h>
+>  #include <linux/bitops.h>
+> +#include <linux/jiffies.h>
+> 
+>  #include <linux/signal.h>
+>  #include <linux/string.h>
+> @@ -251,13 +252,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+>  	int first = 1;
+>  	int i;
+>  	unsigned long duration;
+> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
+> +	unsigned long done_stamp = jiffies;
+> 
+>  	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
+> 
+> -	duration =
+> -	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+> -	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
+> +	duration =  jiffies_to_usecs(done_stamp - ch->prof.send_stamp);
+>  	if (duration > ch->prof.tx_time)
+>  		ch->prof.tx_time = duration;
+> 
+> @@ -307,7 +306,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+>  		spin_unlock(&ch->collect_lock);
+>  		ch->ccw[1].count = ch->trans_skb->len;
+>  		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+> -		ch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +		ch->prof.send_stamp = jiffies;
+>  		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+>  						(unsigned long)ch, 0xff, 0);
+>  		ch->prof.doios_multi++;
+> @@ -1229,14 +1228,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+>  	int		rc;
+>  	struct th_header *header;
+>  	struct pdu	*p_header;
+> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
+> +	unsigned long done_stamp = jiffies;
+> 
+>  	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
+>  			__func__, dev->name, smp_processor_id());
+> 
+> -	duration =
+> -		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+> -		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
+> +	duration =  jiffies_to_usecs(done_stamp - ch->prof.send_stamp);
+>  	if (duration > ch->prof.tx_time)
+>  		ch->prof.tx_time = duration;
+> 
+> @@ -1361,7 +1358,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+> 
+>  	ch->ccw[1].count = ch->trans_skb->len;
+>  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +	ch->prof.send_stamp = jiffies;
+>  	if (do_debug_ccw)
+>  		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
+>  	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+> @@ -1827,7 +1824,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
+>  	fsm_newstate(wch->fsm, CTC_STATE_TX);
+> 
+>  	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
+> -	wch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +	wch->prof.send_stamp = jiffies;
+>  	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
+>  					(unsigned long) wch, 0xff, 0);
+>  	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
+> diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
+> index e056dd4..5dd68d9 100644
+> --- a/drivers/s390/net/ctcm_main.c
+> +++ b/drivers/s390/net/ctcm_main.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/timer.h>
+>  #include <linux/bitops.h>
+> +#include <linux/jiffies.h>
+> 
+>  #include <linux/signal.h>
+>  #include <linux/string.h>
+> @@ -567,7 +568,7 @@ static int ctcm_transmit_skb(struct channel *ch, struct sk_buff *skb)
+>  	fsm_newstate(ch->fsm, CTC_STATE_TX);
+>  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+>  	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
+> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +	ch->prof.send_stamp = jiffies;
+>  	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
+>  					(unsigned long)ch, 0xff, 0);
+>  	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
+> @@ -831,7 +832,7 @@ static int ctcmpc_transmit_skb(struct channel *ch, struct sk_buff *skb)
+>  					sizeof(struct ccw1) * 3);
+> 
+>  	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
+> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +	ch->prof.send_stamp = jiffies;
+>  	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
+>  					(unsigned long)ch, 0xff, 0);
+>  	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
+> diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
+> index 477c933..c036e43 100644
+> --- a/drivers/s390/net/ctcm_main.h
+> +++ b/drivers/s390/net/ctcm_main.h
+> @@ -10,6 +10,8 @@
+>  #include <asm/ccwdev.h>
+>  #include <asm/ccwgroup.h>
+> 
+> +#include <linux/jiffies.h>
+> +
+>  #include <linux/skbuff.h>
+>  #include <linux/netdevice.h>
+> 
+> @@ -121,7 +123,7 @@ struct ctcm_profile {
+>  	unsigned long doios_multi;
+>  	unsigned long txlen;
+>  	unsigned long tx_time;
+> -	struct timespec send_stamp;
+> +	unsigned long send_stamp;
+>  };
+> 
+>  /*
+> diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
+> index 0a87809..5ea43fb 100644
+> --- a/drivers/s390/net/netiucv.c
+> +++ b/drivers/s390/net/netiucv.c
+> @@ -49,6 +49,8 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/timer.h>
+>  #include <linux/bitops.h>
+> +#include <linux/jiffies.h>
+> +
+> 
+>  #include <linux/signal.h>
+>  #include <linux/string.h>
+> @@ -178,7 +180,7 @@ struct connection_profile {
+>  	unsigned long doios_multi;
+>  	unsigned long txlen;
+>  	unsigned long tx_time;
+> -	struct timespec send_stamp;
+> +	unsigned long send_stamp;
+>  	unsigned long tx_pending;
+>  	unsigned long tx_max_pending;
+>  };
+> @@ -786,7 +788,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
+> 
+>  	header.next = 0;
+>  	memcpy(skb_put(conn->tx_buff, NETIUCV_HDRLEN), &header, NETIUCV_HDRLEN);
+> -	conn->prof.send_stamp = current_kernel_time();
+> +	conn->prof.send_stamp = jiffies;
+>  	txmsg.class = 0;
+>  	txmsg.tag = 0;
+>  	rc = iucv_message_send(conn->path, &txmsg, 0, 0,
+> @@ -1220,7 +1222,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
+>  		memcpy(skb_put(nskb, NETIUCV_HDRLEN), &header,  NETIUCV_HDRLEN);
+> 
+>  		fsm_newstate(conn->fsm, CONN_STATE_TX);
+> -		conn->prof.send_stamp = current_kernel_time();
+> +		conn->prof.send_stamp = jiffies;
+> 
+>  		msg.tag = 1;
+>  		msg.class = 0;
 
-diff --git a/Documentation/devicetree/bindings/clock/pwm-clock.txt b/Documentation/devicetree/bindings/clock/pwm-clock.txt
-new file mode 100644
-index 0000000..d127d17
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/pwm-clock.txt
-@@ -0,0 +1,23 @@
-+Binding for an external clock signal driven by a PWM pin.
-+
-+This binding uses the common clock binding[1] and the common PWM binding[2].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+[2] Documentation/devicetree/bindings/pwm/pwm.txt
-+
-+Required properties:
-+- compatible : shall be "pwm-clock".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- pwms : from common PWM binding; this determines the clock frequency
-+  via the PWM period given in the pwm-specifier.
-+
-+Optional properties:
-+- clock-output-names : From common clock binding.
-+
-+Example:
-+	clock {
-+		compatible = "pwm-clock";
-+		#clock-cells = <0>;
-+		clock-output-names = "mipi_mclk";
-+		pwms = <&pwm2 0 40>; /* 1 / 40 ns = 25 MHz */
-+	};
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 455fd17..36a6918a 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -129,6 +129,13 @@ config COMMON_CLK_PALMAS
- 	  This driver supports TI Palmas devices 32KHz output KG and KG_AUDIO
- 	  using common clock framework.
- 
-+config COMMON_CLK_PWM
-+	bool "Clock driver for PWMs used as clock outputs"
-+	depends on PWM
-+	---help---
-+	  Adapter driver so that any PWM output can be (mis)used as clock signal
-+	  at 50% duty cycle.
-+
- config COMMON_CLK_PXA
- 	def_bool COMMON_CLK && ARCH_PXA
- 	---help---
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index d5fba5b..6a0c5cf 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -40,6 +40,7 @@ obj-$(CONFIG_ARCH_U300)			+= clk-u300.o
- obj-$(CONFIG_ARCH_VT8500)		+= clk-vt8500.o
- obj-$(CONFIG_COMMON_CLK_WM831X)		+= clk-wm831x.o
- obj-$(CONFIG_COMMON_CLK_XGENE)		+= clk-xgene.o
-+obj-$(CONFIG_COMMON_CLK_PWM)		+= clk-pwm.o
- obj-$(CONFIG_COMMON_CLK_AT91)		+= at91/
- obj-$(CONFIG_ARCH_BCM_MOBILE)		+= bcm/
- obj-$(CONFIG_ARCH_BERLIN)		+= berlin/
-diff --git a/drivers/clk/clk-pwm.c b/drivers/clk/clk-pwm.c
-new file mode 100644
-index 0000000..8f747b3
---- /dev/null
-+++ b/drivers/clk/clk-pwm.c
-@@ -0,0 +1,110 @@
-+/*
-+ * Copyright (C) 2014 Philipp Zabel, Pengutronix
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * PWM (mis)used as clock output
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+struct clk_pwm {
-+	struct clk_hw hw;
-+	struct pwm_device *pwm;
-+};
-+
-+#define to_clk_pwm(_hw) container_of(_hw, struct clk_pwm, hw)
-+
-+static int clk_pwm_enable(struct clk_hw *hw)
-+{
-+	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-+
-+	return pwm_enable(clk_pwm->pwm);
-+}
-+
-+static void clk_pwm_disable(struct clk_hw *hw)
-+{
-+	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-+
-+	pwm_disable(clk_pwm->pwm);
-+}
-+
-+static unsigned long clk_pwm_recalc_rate(struct clk_hw *hw,
-+					 unsigned long parent_rate)
-+{
-+	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-+	unsigned int period_ns = pwm_get_period(clk_pwm->pwm);
-+
-+	return period_ns ? (1000000000 / period_ns) : 0;
-+}
-+
-+const struct clk_ops clk_pwm_ops = {
-+	.enable = clk_pwm_enable,
-+	.disable = clk_pwm_disable,
-+	.recalc_rate = clk_pwm_recalc_rate,
-+};
-+
-+int clk_pwm_probe(struct platform_device *pdev)
-+{
-+	struct clk_init_data init;
-+	struct clk_pwm *clk_pwm;
-+	struct pwm_device *pwm;
-+	struct clk *clk;
-+	int ret;
-+
-+	clk_pwm = devm_kzalloc(&pdev->dev, sizeof(*clk_pwm), GFP_KERNEL);
-+	if (!clk_pwm)
-+		return -ENOMEM;
-+
-+	pwm = devm_pwm_get(&pdev->dev, NULL);
-+	if (IS_ERR(pwm))
-+		return PTR_ERR(pwm);
-+
-+	ret = pwm_config(pwm, (pwm->period + 1) >> 1, pwm->period);
-+	if (ret < 0)
-+		return ret;
-+
-+	init.name = "pwm-clock";
-+	init.ops = &clk_pwm_ops;
-+	init.flags = CLK_IS_ROOT;
-+	init.num_parents = 0;
-+
-+	clk_pwm->pwm = pwm;
-+	clk_pwm->hw.init = &init;
-+	clk = devm_clk_register(&pdev->dev, &clk_pwm->hw);
-+	if (IS_ERR(clk))
-+		return PTR_ERR(clk);
-+
-+	return of_clk_add_provider(pdev->dev.of_node,
-+				   of_clk_src_simple_get, clk);
-+}
-+
-+int clk_pwm_remove(struct platform_device *pdev)
-+{
-+	of_clk_del_provider(pdev->dev.of_node);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id clk_pwm_dt_ids[] = {
-+	{ .compatible = "pwm-clock" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, clk_pwm_dt_ids);
-+
-+static struct platform_driver clk_pwm_driver = {
-+	.probe = clk_pwm_probe,
-+	.driver = {
-+		.name = "pwm-clock",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(clk_pwm_dt_ids),
-+	},
-+};
-+
-+module_platform_driver(clk_pwm_driver);
--- 
-2.1.1
 
