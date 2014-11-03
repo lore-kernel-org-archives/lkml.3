@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaKCSlC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:41:02 -0500
-Received: from mout.web.de ([212.227.17.11]:58773 "EHLO mout.web.de"
+	id S1753230AbaKCSmx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:42:53 -0500
+Received: from mga11.intel.com ([192.55.52.93]:24248 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908AbaKCSk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:40:57 -0500
-Message-ID: <5457CC33.4050906@users.sourceforge.net>
-Date: Mon, 03 Nov 2014 19:40:51 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752340AbaKCSmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 13:42:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
+   d="scan'208";a="625678605"
+Date: Mon, 3 Nov 2014 20:42:47 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: David Cohen <david.a.cohen@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
+Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
+ Intel Baytrail
+Message-ID: <20141103184247.GD1618@lahna.fi.intel.com>
+References: <20141028144249.GD8123@saruman>
+ <CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
+ <20141031132005.GB1273@saruman>
+ <20141031162339.GA7136@psi-dev26.jf.intel.com>
+ <20141031184509.GA2224@psi-dev26.jf.intel.com>
+ <20141103092402.GA1304@lahna.fi.intel.com>
+ <20141103150048.GB27425@saruman>
+ <20141103152743.GB1618@lahna.fi.intel.com>
+ <20141103154207.GC1618@lahna.fi.intel.com>
+ <20141103155011.GH27425@saruman>
 MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: [PATCH v2] kconfig: Deletion of unnecessary checks before the function
- call "sym_calc_value"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54568924.5010008@users.sourceforge.net>
-In-Reply-To: <54568924.5010008@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:27Q0biP67eP/oA4RCNV1g1dHghemruYzNzskSxKkil6YBl64DrU
- ys7aZsNRBBtUgKkKGTvk1MoNlavVE7vpVf+XiVAEO6tV2eJ7HOsdqQkHsdT9/C5ebay/scY
- qCLpSRTvpj/WjjCx7RUpYlL2gtleX52ZFhxJVr18qSExA7zVHfLqinJM1TnCtE0UdjWJJov
- 2zEYz72JR46O+peTYo+FQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103155011.GH27425@saruman>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
+On Mon, Nov 03, 2014 at 09:50:11AM -0600, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Nov 03, 2014 at 05:42:07PM +0200, Mika Westerberg wrote:
+> > On Mon, Nov 03, 2014 at 05:27:43PM +0200, Mika Westerberg wrote:
+> > > On Mon, Nov 03, 2014 at 09:00:48AM -0600, Felipe Balbi wrote:
+> > > > On Mon, Nov 03, 2014 at 11:24:02AM +0200, Mika Westerberg wrote:
+> > > > > On Fri, Oct 31, 2014 at 11:45:09AM -0700, David Cohen wrote:
+> > > > > > > I think adding the module exit + allowing this driver to be a module
+> > > > > > > would be a good approach. Then we don't need to force generic x86 kernel
+> > > > > > > binaries to always have this driver. Unless Mathias or Mika knows a
+> > > > > > > constraint to force this driver to be builtin only.
+> > > > > > 
+> > > > > > It helps if I CC them when asking for feedback :)
+> > > > > > 
+> > > > > > Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
+> > > > > > to be bool?
+> > > > > 
+> > > > > The only constraint that has been keeping this driver as bool is that
+> > > > > some machines like, Asus T100, uses ACPI GPIO operation regions for
+> > > > > toggling GPIOs to get things like sensor hub powered on. The GPIO
+> > > > > operation region code does not yet handle -EPROBE_DEFER so only way to
+> > > > > ensure that the operation region is there is to have the driver compiled
+> > > > > in to the kernel.
+> > > > 
+> > > > But that's not enough excuse to have every single x86 in the market
+> > > > shipping with this driver. Think about a distro kernel, most likely this
+> > > > gets enabled and it's wrong in 80% of the cases.
+> > > 
+> > > True, but see below.
+> > > 
+> > > > It would be nicer to add EPROBE_DEFER support, convert this into
+> > > > tristate and have default = M if BAYTRAIL, or something.
+> > > 
+> > > If it were simple as that we would have done that already. Please check
+> > > drivers/gpio/gpiolib-acpi.c:acpi_gpio_adr_space_handler() and tell me
+> > > how we can do that.
+> > 
+> > Actually the above is not the problem because we already have registered
+> > the GPIO chip and hence we have the GPIO available to the firmware code.
+> 
+> what happens before you registered the gpio chip ? It takes some time
+> from head.S to gpiochip_irqchip_add(). Anywhere between that time,
+> firmware could try to access gpios and the same problem would occur.
 
-The sym_calc_value() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+The operation region is not ready and the firmware does not try to use
+it. However, the subsys_initcall() is there just to be sure that the
+GPIO driver gets loaded before anything that is going to use GPIOs from
+firmware.
 
-This issue was detected by using the Coccinelle software.
+> > The real problem is that if the ACPI GPIO operation handler is not there
+> > at the time firmware decides to do something it will just skip things
+> > that depend on the operation region. So if it has a GPIO that is used to
+> > turn on sensor hub or touch panel or whatever, this will not be done and
+> > it results that the device in question might not work properly.
+> 
+> that's an issue that needs solving, but forcing every x86 kernel to ship
+> with this driver, is not a proper solution.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-Acked-by: Paul Bolle <pebolle@tiscali.nl>
----
- scripts/kconfig/confdata.c | 6 ++----
- scripts/kconfig/symbol.c   | 3 +--
- 2 files changed, 3 insertions(+), 6 deletions(-)
+I would rather have the driver build in to the kernel now (and btw it
+has been already in mainline quite some time so I suspect many distros
+have already enabled it), than turning it module and render some devices
+that have been working previously, fail suddenly.
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index f88d90f..3073cb6 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -262,8 +262,7 @@ int conf_read_simple(const char *name, int def)
- 			goto load;
- 		sym_add_change_count(1);
- 		if (!sym_defconfig_list) {
--			if (modules_sym)
--				sym_calc_value(modules_sym);
-+			sym_calc_value(modules_sym);
- 			return 1;
- 		}
- 
-@@ -399,8 +398,7 @@ setsym:
- 	free(line);
- 	fclose(in);
- 
--	if (modules_sym)
--		sym_calc_value(modules_sym);
-+	sym_calc_value(modules_sym);
- 	return 0;
- }
- 
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index 7caabdb..3f7797b 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -447,8 +447,7 @@ void sym_clear_all_valid(void)
- 	for_all_symbols(i, sym)
- 		sym->flags &= ~SYMBOL_VALID;
- 	sym_add_change_count(1);
--	if (modules_sym)
--		sym_calc_value(modules_sym);
-+	sym_calc_value(modules_sym);
- }
- 
- void sym_set_changed(struct symbol *sym)
--- 
-2.1.3
-
-
+There is a mechanism in ACPI to solve these issues, called _DEP, but it
+is still very much work in progress.
