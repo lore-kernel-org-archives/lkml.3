@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaKCOne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:43:34 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:53033 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752979AbaKCOna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:43:30 -0500
-Message-ID: <54579476.10702@ti.com>
-Date: Mon, 3 Nov 2014 16:43:02 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: dra7-evm: Keep all VDD rails always-on
-References: <1413902290-304-1-git-send-email-nm@ti.com>
-In-Reply-To: <1413902290-304-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753126AbaKCOnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:43:46 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:15518 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209AbaKCOnl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 09:43:41 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-90-5457949ba6e9
+From: Kamil Debski <k.debski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: kgene.kim@samsung.com, Kamil Debski <k.debski@samsung.com>
+Subject: [PATCH] ARM: dts: Add pwm-fan node to the Odroid-U3 board
+Date: Mon, 03 Nov 2014 15:43:24 +0100
+Message-id: <1415025804-24274-1-git-send-email-k.debski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t9jAd3ZU8JDDI5eNbH48foCm0Xvgqts
+	Fpd3zWGzmHF+H5MDi0ffllWMHp83yQUwRXHZpKTmZJalFunbJXBl9Oy+wFZwmK1i1uzJLA2M
+	C1m7GDk4JARMJOa89e9i5AQyxSQu3FvP1sXIxSEksIhR4taWZiYIp4NJ4s3ZRhaQBjYBTYlV
+	9zxAGkQEnCVuf/jGAmIzC9hJHG9dzwxiCws4STw4fJURxGYRUJXYtagDzOYVcJG49fYsI8Re
+	BYk5k2wmMHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRHs5WfSOxhXNVgcYhTgYFTi
+	4S3YHhYixJpYVlyZe4hRgoNZSYT3X0p4iBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC
+	6YklqdmpqQWpRTBZJg5OqQZGuz0dN77IWE5gVZgte37Gf7Ps66KTA5bxxMgdnyh6VO8B3x/W
+	ew12si8E1qXbhejcXFefNMH47VTGe2yGfJxb5Q5Kfa1Mv25aedlC49XGdAUO2c3Mt5OcuJfN
+	fP20dIfu5AzRE39VjoXOa9ETnZfF+MKuy2Kv1jLTXxVlhQtnyeS+dfgk1FCoxFKckWioxVxU
+	nAgAvhNKOO4BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nishant,
+Add pwm-fan node to the Odroid-U3 board file to enable PWM control of the
+cooling fan.
 
-On 10/21/2014 05:38 PM, Nishanth Menon wrote:
-> DRA7 Data Manual (SPRS857L - August 2014) section 4.1.1 states: "All
-> unused power supply balls must be supplied with the voltages specified
-> in the Section 5.2, Recommended Operating Conditions".
-> 
-> This implies that all unused voltage rails for Vayu can never be
-> switched off even if the hardware blocks inside that voltage domain is
-> unused. Switching off these unused rails may result in stability issues
-> on other domains and increased leakage and power-on-hour impacts.
-> 
-> J6eco-evm dts file already considers this, however j6evm-dts file needs
-> to be fixed to consider this constraint of the SoC.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+---
+ arch/arm/boot/dts/exynos4412-odroidu3.dts |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-Acked-by: Roger Quadros <rogerq@ti.com>
-
-I'm assuming that vddshv8 (MMC1 power group) can be switched off.
-
-cheers,
--roger
-
-> ---
-> 
-> Patch is based on v3.18-rc1 tag.
-> 
->  arch/arm/boot/dts/dra7-evm.dts |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-> index c6ce625..4f4c469 100644
-> --- a/arch/arm/boot/dts/dra7-evm.dts
-> +++ b/arch/arm/boot/dts/dra7-evm.dts
-> @@ -201,6 +201,7 @@
->  					regulator-name = "smps45";
->  					regulator-min-microvolt = < 850000>;
->  					regulator-max-microvolt = <1150000>;
-> +					regulator-always-on;
->  					regulator-boot-on;
->  				};
->  
-> @@ -209,6 +210,7 @@
->  					regulator-name = "smps6";
->  					regulator-min-microvolt = <850000>;
->  					regulator-max-microvolt = <12500000>;
-> +					regulator-always-on;
->  					regulator-boot-on;
->  				};
->  
-> @@ -226,6 +228,7 @@
->  					regulator-name = "smps8";
->  					regulator-min-microvolt = < 850000>;
->  					regulator-max-microvolt = <1250000>;
-> +					regulator-always-on;
->  					regulator-boot-on;
->  				};
->  
-> @@ -252,6 +255,7 @@
->  					regulator-name = "ldo2";
->  					regulator-min-microvolt = <3300000>;
->  					regulator-max-microvolt = <3300000>;
-> +					regulator-always-on;
->  					regulator-boot-on;
->  				};
->  
-> @@ -269,6 +273,7 @@
->  					regulator-name = "ldo9";
->  					regulator-min-microvolt = <1050000>;
->  					regulator-max-microvolt = <1050000>;
-> +					regulator-always-on;
->  					regulator-boot-on;
->  				};
->  
-> 
+diff --git a/arch/arm/boot/dts/exynos4412-odroidu3.dts b/arch/arm/boot/dts/exynos4412-odroidu3.dts
+index c8a64be..764bda4 100644
+--- a/arch/arm/boot/dts/exynos4412-odroidu3.dts
++++ b/arch/arm/boot/dts/exynos4412-odroidu3.dts
+@@ -31,6 +31,19 @@
+ 			linux,default-trigger = "heartbeat";
+ 		};
+ 	};
++
++	pwm: pwm@139D0000 {
++		pinctrl-0 = <&pwm0_out>;
++		pinctrl-names = "default";
++		samsung,pwm-outputs = <0>;
++		status = "okay";
++	};
++
++	pwm-fan {
++		compatible = "pwm-fan";
++		status = "okay";
++		pwms = <&pwm 0 10000 0>;
++	};
+ };
+ 
+ &usb3503 {
+-- 
+1.7.9.5
 
