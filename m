@@ -1,60 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaKCMLX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 07:11:23 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:52972 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaKCMLV convert rfc822-to-8bit (ORCPT
+	id S1752098AbaKCML3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 07:11:29 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:45762 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864AbaKCMLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 07:11:21 -0500
-Date: Mon, 3 Nov 2014 12:10:49 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, x86@kernel.org
-Subject: Re: [PATCH v4 10/10] x86: Support compiling out userspace IO (iopl
- and ioperm)
-Message-ID: <20141103121049.2f0c81a9@alan.etchedpixels.co.uk>
-In-Reply-To: <ec10c497d3a7f44f335dbc267edd6de5b4acd671.1414870871.git.josh@joshtriplett.org>
-References: <cover.1414870871.git.josh@joshtriplett.org>
-	<ec10c497d3a7f44f335dbc267edd6de5b4acd671.1414870871.git.josh@joshtriplett.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 3 Nov 2014 07:11:25 -0500
+Message-ID: <545770E6.2010506@hitachi.com>
+Date: Mon, 03 Nov 2014 21:11:18 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
+        namhyung@kernel.org, Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options
+ for cache
+References: <20141031185128.27889.32747.stgit@localhost.localdomain> <20141031121301.GI1313@kernel.org>
+In-Reply-To: <20141031121301.GI1313@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Nov 2014 09:33:01 -0800
-Josh Triplett <josh@joshtriplett.org> wrote:
+(2014/10/31 21:13), Arnaldo Carvalho de Melo wrote:
+> Em Fri, Oct 31, 2014 at 02:51:29PM -0400, Masami Hiramatsu escreveu:
+>> Hi,
+>>
+>> Here is a sereis of patches for enabling "event cache" feature
+>> to perf probe. Brendan gives me this cool idea, thanks! :)
+>>
+>> In this series, I added following options/features;
+>>  - --output option
+>>    We can save the probe definition command for given probe-event
+>>    instead of setting up the local tracing/kprobe_events.
+>>
+>>  - --no-inlines option
+>>    We can avoid searching the inline functions in debuginfo. Usually
+>>    useful with wildcards since the wildcards will hit a huge amount
+>>    of probe-points.
+>>
+>>  - $params special probe argument
+>>    $params is expanded to function parameters only, no locally defined
+>>    variables. This is useful for function-call tracing.
+>>
+>>  - wildcard support for function name
+>>    Wildcard support is the key feature for this idea. Now we can use
+>>    '*foo*' for function name to define the probe-point.
+>>
+>> So by using all of them, we can make an "event cache" file on all
+>> functions (except for inlined functions) as below.
+>>
+>>   # perf probe --max-probes=100000 --no-inlines -a '* $params' -o event.cache
+>>
+>> builds "event.cache" file in which event settings for
+>> all function entries, like below;
+>>
+>>   p:probe/reset_early_page_tables _text+12980741
+>>   p:probe/copy_bootdata _text+12980830 real_mode_data=%di:u64
+>>   p:probe/exit_amd_microcode _text+14692680
+>>   p:probe/early_make_pgtable _text+12981274 address=%di:u64
+>>   p:probe/x86_64_start_reservations _text+12981700 real_mode_data=%di:u64
+>>   p:probe/x86_64_start_kernel _text+12981744 real_mode_data=%di:u64
+>>   p:probe/reserve_ebda_region _text+12982117
+>>
+>> This event.cache file will be big (but much smaller than native
+>> debuginfo :) ) if your kernel have many option embedded.
+>> Anyway, you can compress it too.
+> 
+> How do you validate that the cache can be used against some kernel? I.e.
+> is this that the user has to do? Isn't this prone to errors?
 
-> On the vast majority of modern systems, no processes will use the
-> userspsace IO syscalls, iopl and ioperm.  Add a new config option,
-> CONFIG_X86_IOPORT, to support configuring them out of the kernel
-> entirely.  Most current systems do not run programs using these
-> syscalls, so X86_IOPORT does not depend on EXPERT, though it does still
-> default to y.
+Actually, kprobe event itself can reject command if the given address
+is not in the kernel text nor instruction boundary (perhaps, uprobes
+may have a problem...), so for the kernel level, it is safe.
 
-This isn't unreasonable but there are drivers with userspace helpers that
-use iopl/ioperm type functionality where you should be doing a SELECT of
-X86_IOPORT. The one that comes to mind is the uvesa driver. From a quick
-scan it may these days be the only mainstream one that needs the select
-adding.
+> 
+> Perhaps you could pick the build-id and store it into the event cache
+> file, in the first lines, somethings like:
 
-Some X servers for legacy cards still use io port access. There are also
-a couple of other highly non-obvious userspace users that hang on for
-some systems - eg some older servers DMI and error records can only by
-read via a real mode BIOS call so management tools have no choice but to
-go the lrmi/io path.
+Agreed, build-id should be the best way to check that.
 
-Still makes sense IMHO.
+For kprobes, user can easy to get and compare it with local one as below :)
+  ----
+  RLOGIN=root@$REMOTE
+  rid=`ssh $RLOGIN "od -j16 -w48 -An -t x1 /sys/kernel/notes |  tr -d ' '"`
+  lid=`od -j16 -w48 -An -t x1 /sys/kernel/notes | tr -d ' '`
+  if [ $rid != $lid ]; then
+    echo "Error: Build-id mis-matched!"
+    exit 1;
+  fi
+  echo "Setting up $EVENTNAME at $REMOTE"
+  zcat event.cache.gz | grep $EVENTNAME |\
+  ssh $RLOGIN "tee -a /sys/kernel/debug/tracing/kprobe_events"
+  echo "Done"
+  ----
 
->From a code perspective however you could define IO_BITMAP_LONGS to 0,
-add an IO_BITMAP_SIZE (defined as LONGS + 1 or 0) and as far as I can see
-gcc would then optimise out a lot of the code you are ifdeffing
+With this script, you don't need to install perf at remote hosts.
+(This is what enterprise people called "agent-less")
 
-Alan
+> [acme@zoo ~]$ printf "buildid: %s\n" $(perf buildid-list --kernel) 
+> buildid: a4cacca49391fc4f42ac8f58990f4e97042efae8
+> 
+> [acme@zoo ~]$ printf "buildid: %s\n" $(perf buildid-list --kernel) 
+> buildid: a4cacca49391fc4f42ac8f58990f4e97042efae8
+> 
+> Maybe this would be nice to have integrated with 'perf archive' somehow
+> and then store this into ~/.debug/[probe]/<BUILDID>/dso-name
+> 
+> where dso-name would be [kernel] for the kernel and the full path for
+> userspace stuff, and then when adding a new probe we would look there
+> for a pre-built/cached event definition, only looking for the debuginfo
+> (which is done using the build-id already, right) and would insert the
+> probe definitions there, etc.
+
+This will be good for SDT too. Perhaps, both of SDT and cached probes
+should share the same file.
+
+> Then, later, one would use 'perf archive' passing some keys (or a
+> perf.data file, like done nowadays to pick the files in ~/.debug for
+> dsos that had hits on the specified perf.data file) to get the cached
+> values to use on some other machine, to avoid having to use the
+> debuginfo files there.
+
+Yeah, querying it from the BUILDID database by using a pair of remote
+build-id and the binary path is a good feature.
+
+> 
+> I.e. in summary I think that the format is ok, but we need to have this
+> inside the ~/.debug hierarchy so that we can make sure that we use the
+> right probe definition, one that matches the DSOs being used (the kernel
+> or some other userspace binary).
+
+OK, perhaps, that is also good to SDT series at last.
+
+> 
+> Great stuff, keep it up!
+
+Thanks!
+
+> 
+> - Arnaldo
+>  
+>>   # wc -l event.cache
+>>   33813 event.cache
+>>   # ls -sh event.cache
+>>   2.3M event.cache
+>>   # ls -sh event.cache.gz
+>>   464K event.cache.gz
+>>
+>> For setting up a probe event, you can grep the function name
+>> and write it to tracing/kprobe_events, as below;
+>>
+>>   # zcat event.cache.gz | \
+>>     grep probe/vfs_symlink > /sys/kernel/debug/tracing/kprobe_events
+>>
+>> This can be applied for the remote machine only if the machine
+>> runs on completely same kernel binary. Perhaps, we need some
+>> helper tool to check it.
+>>
+>> Thank you,
+>>
+>>
+>> ---
+>>
+>> Masami Hiramatsu (6):
+>>       [BUGFIX] perf-probe: Fix to handle optimized not-inlined but has no instance
+>>       [DOC] perf-probe: Update perf-probe document
+>>       perf-probe: Add --output option to write commands in a standard file
+>>       perf-probe: Add --no-inlines option to avoid searching inline functions
+>>       perf-probe: Support $params special probe argument
+>>       perf-probe: Support glob wildcards for function name
+>>
+>>
+>>  tools/perf/Documentation/perf-probe.txt |   25 ++++++++++
+>>  tools/perf/builtin-probe.c              |   32 +++++++++++++
+>>  tools/perf/util/dwarf-aux.c             |   31 +++++++++++++
+>>  tools/perf/util/dwarf-aux.h             |    6 +++
+>>  tools/perf/util/probe-event.c           |   73 +++++++++++++++++++++++--------
+>>  tools/perf/util/probe-event.h           |    4 +-
+>>  tools/perf/util/probe-finder.c          |   74 +++++++++++++++++++------------
+>>  tools/perf/util/probe-finder.h          |    6 ++-
+>>  tools/perf/util/util.h                  |    4 ++
+>>  9 files changed, 202 insertions(+), 53 deletions(-)
+>>
+>> --
+>> Masami HIRAMATSU
+>> Software Platform Research Dpt. Linux Technology Center
+>> Hitachi, Ltd., Yokohama Research Laboratory
+>> E-mail: masami.hiramatsu.pt@hitachi.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
