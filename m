@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722AbaKCPTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:19:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620AbaKCPTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:19:15 -0500
-Date: Mon, 3 Nov 2014 10:18:37 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Jonathan Corbet <corbet@lwn.net>, kexec@lists.infradead.org,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-doc@vger.kernel.org,
-        jbaron@akamai.com, Fabian Frederick <fabf@skynet.be>,
-        isimatu.yasuaki@jp.fujitsu.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH] kernel, add panic_on_warn
-Message-ID: <20141103151837.GA22503@redhat.com>
-References: <1414688627-5298-1-git-send-email-prarit@redhat.com>
- <20141031015843.GW9743@dangermouse.emea.sgi.com>
- <545783FA.4050508@redhat.com>
+	id S1752786AbaKCPUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:20:41 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38018 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaKCPUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:20:40 -0500
+Date: Mon, 3 Nov 2014 15:20:36 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Drysdale <drysdale@google.com>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Will Drewry <wad@chromium.org>,
+        Jorge Lucangeli Obes <jorgelo@google.com>,
+        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
+        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/3] fs: add O_BENEATH flag to openat(2)
+Message-ID: <20141103152036.GA7996@ZenIV.linux.org.uk>
+References: <1415015305-15494-1-git-send-email-drysdale@google.com>
+ <1415015305-15494-2-git-send-email-drysdale@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <545783FA.4050508@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415015305-15494-2-git-send-email-drysdale@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 08:32:42AM -0500, Prarit Bhargava wrote:
-> 
-> 
-> On 10/30/2014 09:58 PM, Hedi Berriche wrote:
-> > On Thu, Oct 30, 2014 at 17:06 Prarit Bhargava wrote:
-> > | There have been several times where I have had to rebuild a kernel to
-> > | cause a panic when hitting a WARN() in the code in order to get a crash
-> > | dump from a system.  Sometimes this is easy to do, other times (such as
-> > | in the case of a remote admin) it is not trivial to send new images to the
-> > | user.
-> > | 
-> > | A much easier method would be a switch to change the WARN() over to a
-> > | panic.  This makes debugging easier in that I can now test the actual
-> > | image the WARN() was seen on and I do not have to engage in remote
-> > | debugging.
-> > 
-> > Do we want to leave it to usersspace[1] to ensure panic_on_warn is out
-> > of the way in when the kdump kernel boots? or would a self-contained
-> > approach be more preferable i.e. test whether we're a kdump kernel
-> > before bothering with panic_on_warn?
-> 
-> Hmm ... this is a good point.  Vivek, do you have a preference?  I'm willing to
-> code it either way.  I should be able to put in a is_kdump_kernel() check
-> without any problems but I'm not sure if that is the right thing to do here.
-> 
+On Mon, Nov 03, 2014 at 11:48:23AM +0000, David Drysdale wrote:
+> Add a new O_BENEATH flag for openat(2) which restricts the
+> provided path, rejecting (with -EACCES) paths that are not beneath
+> the provided dfd.  In particular, reject:
+>  - paths that contain .. components
+>  - paths that begin with /
+>  - symlinks that have paths as above.
 
-I think it will make sense to modify user space scripts to get rid of
-panic_on_warn for kdump kernel.
-
-Thanks
-Vivek
+Yecch...  The degree of usefulness aside (and I'm not convinced that it
+is non-zero), WTF pass one bit out of nameidata->flags in a separate argument?
+Through the mutual recursion, no less...  And then you are not even attempting
+to detect symlinks that are not followed by interpretation of _any_ pathname.
