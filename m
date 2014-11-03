@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaKCRGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:06:55 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:52013 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908AbaKCRGw (ORCPT
+	id S1753535AbaKCRHi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:07:38 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:44094 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112AbaKCRHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:06:52 -0500
+	Mon, 3 Nov 2014 12:07:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141103083447.GA8617@infradead.org>
-References: <4e8f7a1abcf5e0527ef8968143b2d0fcae48f5f4.1414658968.git.e@nanocritical.com>
- <5452B241.5010603@amacapital.net> <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
- <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
- <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
- <20141031084220.GA29085@infradead.org> <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
- <CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com> <20141103083447.GA8617@infradead.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Nov 2014 09:06:30 -0800
-Message-ID: <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
-Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Rannaud <e@nanocritical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <1414845873-26351-1-git-send-email-kever.yang@rock-chips.com>
+References: <1414845873-26351-1-git-send-email-kever.yang@rock-chips.com>
+Date: Mon, 3 Nov 2014 09:07:36 -0800
+X-Google-Sender-Auth: YFGdWGBRTqG-YPBoVCotBM6mp9U
+Message-ID: <CAD=FV=WrtDYaQqRsx7tfhfvvZzewFmhqRPt0vAF-i0vke5ZaFQ@mail.gmail.com>
+Subject: Re: [PATCH v4] clk: rockchip: disable unused clocks
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 3, 2014 12:34 AM, "Christoph Hellwig" <hch@infradead.org> wrote:
->
-> On Fri, Oct 31, 2014 at 11:53:09AM -0700, Linus Torvalds wrote:
-> > On Fri, Oct 31, 2014 at 11:44 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > >
-> > > Does the patch in this thread not fix that?
-> >
-> > It should. Modulo the glibc problem that makes it hard to actually set
-> > the mode properly.
->
-> That doesn't help because we explicitly reject O_RDONLY when combined
-> with O_TMPFILE.
+Kever,
 
-I think I'm missing something.  How is an O_RDONLY temporary file
-useful?  Wouldn't you want an O_RDWR tempfile with mode 0400 or
-something like that?
+On Sat, Nov 1, 2014 at 5:44 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> -       COMPOSITE(SCLK_EMMC, "sclk_emmc", mux_mmc_src_p, 0,
+> +       COMPOSITE(SCLK_EMMC, "sclk_emmc", mux_mmc_src_p, CLK_IGNORE_UNUSED,
 
---Andy
+Is there a reason why this is needed?  I took it out (AKA let eMMC get
+disabled when unused) and my system booted w/ eMMC as the root
+filesystem.
+
+
+> -       GATE(PCLK_UART2, "pclk_uart2", "pclk_cpu", 0, RK3288_CLKGATE_CON(11), 9, GFLAGS),
+> +       GATE(PCLK_UART2, "pclk_uart2", "pclk_cpu", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(11), 9, GFLAGS),
+
+Is there a reason why this is needed?  I took it out (AKA let UART2
+get disabled) and my system booted.
+
+The console-related bits in my cmdline are:
+  earlyprintk=ttyS2,115200n8 console=tty1 console=ttyS2,115200n8 kgdboc=ttyS2
+
+Do you have a different cmdline where it's failing?
+
+
+Other than the two above this looks sane to me (only looked at
+rk3288).  At some point soon we should definitely fix the PWM and the
+USB ones and then start looking at the others and see if there are any
+others that can be fixed.  ...but this seems like it's moving us in
+the right direction and I'd like to see it landed.
+
+
+So with the above two fixes, you can add my Reviewed-by and Tested-by.
+I tested this in the chromeos-3.14 tree (which has tons of backports)
+on rk3288-pinky.  I tested:
+* System continues to work normally (including graphics).
+* WIP Suspend / Resume patches work better with this patch than
+without (both normal and deep modes).
+
+
+-Doug
