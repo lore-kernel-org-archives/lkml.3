@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaKCP1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:27:14 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:49768 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbaKCP1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:27:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141103125732.GF4538@x1>
-References: <1413636974-3244-1-git-send-email-linus.walleij@linaro.org>
-	<20141020064605.GB25349@x1>
-	<CACRpkdbsswGBy69+EGJTbTpxD7j2FnruyGdyUZRBVtt-JaScfg@mail.gmail.com>
-	<58957675.Bh6LToE4gg@dtor-glaptop>
-	<CACRpkdYNBZdB14fjj0LnQ8GchaGLTgfpvxhe4J9nc3XF80dFgQ@mail.gmail.com>
-	<20141103125732.GF4538@x1>
-Date: Mon, 3 Nov 2014 16:27:10 +0100
-Message-ID: <CACRpkda_s3iAPYvi=v=6VEY8WWrgtVy==_MkBtqMoJC=UnqBtQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: stmpe: add pull up/down register offsets for STMPE
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
+	id S1752936AbaKCP1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:27:49 -0500
+Received: from mga14.intel.com ([192.55.52.115]:7383 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470AbaKCP1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:27:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="410419383"
+Date: Mon, 3 Nov 2014 17:27:43 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: David Cohen <david.a.cohen@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
+Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
+ Intel Baytrail
+Message-ID: <20141103152743.GB1618@lahna.fi.intel.com>
+References: <20141013192632.GC29810@saruman>
+ <20141013193618.GD29810@saruman>
+ <CACRpkdYDiFvwsPwqACXS2bZU9peUyJEn-fpzVqZKYXseuEFGGA@mail.gmail.com>
+ <20141028144249.GD8123@saruman>
+ <CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
+ <20141031132005.GB1273@saruman>
+ <20141031162339.GA7136@psi-dev26.jf.intel.com>
+ <20141031184509.GA2224@psi-dev26.jf.intel.com>
+ <20141103092402.GA1304@lahna.fi.intel.com>
+ <20141103150048.GB27425@saruman>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103150048.GB27425@saruman>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 1:57 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 03 Nov 2014, Linus Walleij wrote:
->
->> Lee, can Dmitry take these through input?
->
-> That was weird, I replied at the same as as you sent this.
+On Mon, Nov 03, 2014 at 09:00:48AM -0600, Felipe Balbi wrote:
+> On Mon, Nov 03, 2014 at 11:24:02AM +0200, Mika Westerberg wrote:
+> > On Fri, Oct 31, 2014 at 11:45:09AM -0700, David Cohen wrote:
+> > > > I think adding the module exit + allowing this driver to be a module
+> > > > would be a good approach. Then we don't need to force generic x86 kernel
+> > > > binaries to always have this driver. Unless Mathias or Mika knows a
+> > > > constraint to force this driver to be builtin only.
+> > > 
+> > > It helps if I CC them when asking for feedback :)
+> > > 
+> > > Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
+> > > to be bool?
+> > 
+> > The only constraint that has been keeping this driver as bool is that
+> > some machines like, Asus T100, uses ACPI GPIO operation regions for
+> > toggling GPIOs to get things like sensor hub powered on. The GPIO
+> > operation region code does not yet handle -EPROBE_DEFER so only way to
+> > ensure that the operation region is there is to have the driver compiled
+> > in to the kernel.
+> 
+> But that's not enough excuse to have every single x86 in the market
+> shipping with this driver. Think about a distro kernel, most likely this
+> gets enabled and it's wrong in 80% of the cases.
 
-Synchronicity... :)
+True, but see below.
 
-Yours,
-Linus Walleij
+> It would be nicer to add EPROBE_DEFER support, convert this into
+> tristate and have default = M if BAYTRAIL, or something.
+
+If it were simple as that we would have done that already. Please check
+drivers/gpio/gpiolib-acpi.c:acpi_gpio_adr_space_handler() and tell me
+how we can do that.
+
+The problem is that it is *firmware* code that decides to use the GPIO
+at some random point in time and we have no way to tell it to retry
+later when the GPIO is available.
