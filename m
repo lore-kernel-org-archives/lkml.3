@@ -1,95 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaKCUnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 15:43:40 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54794 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752635AbaKCUni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 15:43:38 -0500
-Date: Mon, 3 Nov 2014 14:43:04 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Felipe Balbi <balbi@ti.com>, <myungjoo.ham@samsung.com>,
-        <cw00.choi@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
-        <grant.likely@linaro.org>, George Cherian <george.cherian@ti.com>
-Subject: Re: [PATCH 1/4] extcon: gpio: Convert the driver to use gpio desc
- API's
-Message-ID: <20141103204304.GC17356@saruman>
-Reply-To: <balbi@ti.com>
-References: <1415032350-8459-1-git-send-email-balbi@ti.com>
- <1415032350-8459-2-git-send-email-balbi@ti.com>
- <20141103180150.GA10164@roeck-us.net>
- <20141103180602.GU27425@saruman>
- <20141103185101.GC10558@roeck-us.net>
+	id S1753716AbaKCUql (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 15:46:41 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:59448 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335AbaKCUqh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 15:46:37 -0500
+From: j.glisse@gmail.com
+To: akpm@linux-foundation.org
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>, <linux-fsdevel@vger.kernel.org>,
+        "Linda Wang" <lwang@redhat.com>, "Kevin E Martin" <kem@redhat.com>,
+        "Jerome Glisse" <jglisse@redhat.com>, "Jeff Law" <law@redhat.com>,
+        "Haggai Eran" <haggaie@mellanox.com>,
+        "Or Gerlitz" <ogerlitz@mellanox.com>,
+        "Sagi Grimberg" <sagig@mellanox.com>
+Subject: HMM (heterogeneous memory management) v5
+Date: Mon,  3 Nov 2014 15:42:28 -0500
+Message-Id: <1415047353-29160-1-git-send-email-j.glisse@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DIOMP1UsTsWJauNi"
-Content-Disposition: inline
-In-Reply-To: <20141103185101.GC10558@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---DIOMP1UsTsWJauNi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Andrew i received no feedback since last time i sent this patchset, so i
+would really like to have it merge for next kernel. While right now there
+is no kernel driver that leverage this code, the hardware is coming and we
+still have a long way to go before we have all the features needed. Right
+now i am blocking any further work on the merge of this core code.
 
-Hi,
+(Note that patch 5 the dummy driver is included as reference and should not
+be merge unless you want me to grow it into some testing infrastructure. I
+only include it here so people can have a look on how HMM is suppose to be
+use).
 
-On Mon, Nov 03, 2014 at 10:51:08AM -0800, Guenter Roeck wrote:
-> On Mon, Nov 03, 2014 at 12:06:02PM -0600, Felipe Balbi wrote:
-> > On Mon, Nov 03, 2014 at 10:01:50AM -0800, Guenter Roeck wrote:
-> > > On Mon, Nov 03, 2014 at 10:32:27AM -0600, Felipe Balbi wrote:
-> > > > From: George Cherian <george.cherian@ti.com>
-> > > >=20
-> > > > Convert the driver to use gpiod_* API's.
-> > > >=20
-> > > > Reviewed-by: Roger Quadros <rogerq@ti.com>
-> > > > Signed-off-by: George Cherian <george.cherian@ti.com>
-> > > > Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-> > > > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > > > ---
-> > >=20
-> > > I think it might be useful and appropriate to explain that and why
-> > > you remove support for active-low pins, instead of hiding it in a
-> > > seemingly unrelated patch.
-> >=20
-> > removed ? why removed ? gpio descs handle that for you, read the source
-> > code.
-> >=20
-> Well, it for sure looks like it. Care to explain that in the patch,
-> as well as how the platform data flag is used ?
 
-I'll leave that to $author, I just cherry-picked and tested them.
-Certainly that commit log needs some love.
+What it is ?
 
---=20
-balbi
+In a nutshell HMM is a subsystem that provide an easy to use api to mirror a
+process address on a device with minimal hardware requirement (mainly device
+page fault and read only page mapping). This does not rely on ATS and PASID
+PCIE extensions. It intends to supersede those extensions by allowing to move
+system memory to device memory in a transparent fashion for core kernel mm
+code (ie cpu page fault on page residing in device memory will trigger
+migration back to system memory).
 
---DIOMP1UsTsWJauNi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Why doing this ?
 
-iQIcBAEBAgAGBQJUV+jYAAoJEIaOsuA1yqRE+WIP/23zDMklzhoK4JYGU2XpOfkM
-8s+x8C547vsLBadY2WOLW7khPu8aLyw2fj3iXh7OKx6ZRD958JdUKKhwvQnJbAGA
-NOs6QRrfhfyMG3xbb3pIv1GRRajPwrhPPyoSMPoVbOmort5KXPOur2qUuaS8nyBR
-3AIZglADyDQcR/hDQvfHxqj2gfpUXEoHd2ZuwrI4IkupguC45WWK/BYfF2hKGeJr
-12zSYvm1cQ7bkiwJftPMpLCzSUGf/OW1FE/n42bCcimhM/vUWu9nt8H/BBqIzYF2
-k9hzFZnoRyE2iLPSCwZ7EHTbU1hyGNwSFkru/82tDVcbG+llr2QkNrxO8I3DiDEq
-HhuyzvsZR2qS0l0SSAS8Ms0W5YcFTqSkWOnMzWh2lKXod7efSmKQllhP8iHDsMOF
-FJk5QjMXC4PZ8m2yTzOgWpXXI6sZnyXpzO3iVEqCqzZkTY878iUib7SbLU6GYDTT
-Ph3dd6n5/v7uHsDRrCz/0krRbN1FsIL5i379rk1f3vvSgqtPUU89kl2gat1loRD0
-o0uDsMFVFXDUj8I/ePf8BQSKcXPzC9BcG1gps7X/Opqo1YfSPBsBw3FKkTD0mg7i
-Rr6OyMWWntB+KY+X+4ydg3gP8BIYWRS+HIeyGXLVOL/10qvx/ocuMb+TLDozEqHM
-6dT80Y8cftb9NLpoy74s
-=a5M1
------END PGP SIGNATURE-----
+We want to be able to mirror a process address space so that compute api such
+as OpenCL or other similar api can start using the exact same address space on
+the GPU as on the CPU. This will greatly simplify usages of those api. Moreover
+we believe that we will see more and more specialize unit functions that will
+want to mirror process address using their own mmu.
 
---DIOMP1UsTsWJauNi--
+The migration side is simply because GPU memory bandwidth is far beyond than
+system memory bandwith and there is no sign that this gap is closing (quite the
+opposite).
+
+
+Current status and future features :
+
+None of this core code change in any major way core kernel mm code. This
+is simple ground work with no impact on existing code path. Features that
+will be implemented on top of this are :
+  1 - Tansparently handle page mapping on behalf of device driver (DMA).
+  2 - Improve DMA api to better match new usage pattern of HMM.
+  3 - Migration of anonymous memory to device memory.
+  4 - Locking memory to remote memory (CPU access triger SIGBUS).
+  5 - Access exclusion btw CPU and device for atomic operations.
+  6 - Migration of file backed memory to device memory.
+
+
+How future features will be implemented :
+1 - Simply use existing DMA api to map page on behalf of a device.
+2 - Introduce new DMA api to match new semantic of HMM. It is no longer page
+    we map but address range and managing which page is effectively backing
+    an address should be easy to update. I gave a presentation about that
+    during this LPC.
+3 - Requires change to cpu page fault code path to handle migration back to
+    system memory on cpu access. An implementation of this was already sent
+    as part of v1. This will be low impact and only add a new special swap
+    type handling to existing fault code.
+4 - Require a new syscall as i can not see which current syscall would be
+    appropriate for this. My first feeling was to use mbind as it has the
+    right semantic (binding a range of address to a device) but mbind is
+    too numa centric.
+
+    Second one was madvise, but semantic does not match, madvise does allow
+    kernel to ignore them while we do want to block cpu access for as long
+    as the range is bind to a device.
+
+    So i do not think any of existing syscall can be extended with new flags
+    but maybe i am wrong.
+5 - Allowing to map a page as read only on the CPU while a device perform
+    some atomic operation on it (this is mainly to work around system bus
+    that do not support atomic memory access and sadly there is a large
+    base of hardware without that feature).
+
+    Easiest implementation would be using some page flags but there is none
+    left. So it must be some flags in vma to know if there is a need to query
+    HMM for write protection.
+
+6 - This is the trickiest one to implement and while i showed a proof of
+    concept with v1, i am still have a lot of conflictual feeling about how
+    to achieve this.
+
+
+As usual comments are more then welcome. Thanks in advance to anyone that
+take a look at this code.
+
+Previous patchset posting :
+  v1 http://lwn.net/Articles/597289/
+  v2 https://lkml.org/lkml/2014/6/12/559 (cover letter did not make it to ml)
+  v3 https://lkml.org/lkml/2014/6/13/633
+  v4 https://lkml.org/lkml/2014/8/29/423
+
+Cheers,
+Jérôme
+
+To: "Andrew Morton" <akpm@linux-foundation.org>,
+Cc: <linux-kernel@vger.kernel.org>,
+Cc: linux-mm <linux-mm@kvack.org>,
+Cc: <linux-fsdevel@vger.kernel.org>,
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+Cc: "Mel Gorman" <mgorman@suse.de>,
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+Cc: "Peter Zijlstra" <peterz@infradead.org>,
+Cc: "Linda Wang" <lwang@redhat.com>,
+Cc: "Kevin E Martin" <kem@redhat.com>,
+Cc: "Jerome Glisse" <jglisse@redhat.com>,
+Cc: "Andrea Arcangeli" <aarcange@redhat.com>,
+Cc: "Johannes Weiner" <jweiner@redhat.com>,
+Cc: "Larry Woodman" <lwoodman@redhat.com>,
+Cc: "Rik van Riel" <riel@redhat.com>,
+Cc: "Dave Airlie" <airlied@redhat.com>,
+Cc: "Jeff Law" <law@redhat.com>,
+Cc: "Brendan Conoboy" <blc@redhat.com>,
+Cc: "Joe Donohue" <jdonohue@redhat.com>,
+Cc: "Duncan Poole" <dpoole@nvidia.com>,
+Cc: "Sherry Cheung" <SCheung@nvidia.com>,
+Cc: "Subhash Gutti" <sgutti@nvidia.com>,
+Cc: "John Hubbard" <jhubbard@nvidia.com>,
+Cc: "Mark Hairgrove" <mhairgrove@nvidia.com>,
+Cc: "Lucien Dunning" <ldunning@nvidia.com>,
+Cc: "Cameron Buschardt" <cabuschardt@nvidia.com>,
+Cc: "Arvind Gopalakrishnan" <arvindg@nvidia.com>,
+Cc: "Haggai Eran" <haggaie@mellanox.com>,
+Cc: "Or Gerlitz" <ogerlitz@mellanox.com>,
+Cc: "Sagi Grimberg" <sagig@mellanox.com>
+Cc: "Shachar Raindel" <raindel@mellanox.com>,
+Cc: "Liran Liss" <liranl@mellanox.com>,
+Cc: "Roland Dreier" <roland@purestorage.com>,
+Cc: "Sander, Ben" <ben.sander@amd.com>,
+Cc: "Stoner, Greg" <Greg.Stoner@amd.com>,
+Cc: "Bridgman, John" <John.Bridgman@amd.com>,
+Cc: "Mantor, Michael" <Michael.Mantor@amd.com>,
+Cc: "Blinzer, Paul" <Paul.Blinzer@amd.com>,
+Cc: "Morichetti, Laurent" <Laurent.Morichetti@amd.com>,
+Cc: "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+Cc: "Gabbay, Oded" <Oded.Gabbay@amd.com>,
+
