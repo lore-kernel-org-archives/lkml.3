@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaKCNDE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 08:03:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49924 "EHLO mx2.suse.de"
+	id S1752415AbaKCNDC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 08:03:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49780 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752143AbaKCNCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 08:02:18 -0500
+	id S1752161AbaKCNCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 08:02:19 -0500
 From: Juergen Gross <jgross@suse.com>
 To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
         stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
         jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
         tomi.valkeinen@ti.com, bhelgaas@google.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V6 16/18] x86: Respect PAT bit when copying pte values between large and normal pages
-Date: Mon,  3 Nov 2014 14:02:02 +0100
-Message-Id: <1415019724-4317-17-git-send-email-jgross@suse.com>
+Subject: [PATCH V6 17/18] x86: Enable PAT to use cache mode translation tables
+Date: Mon,  3 Nov 2014 14:02:03 +0100
+Message-Id: <1415019724-4317-18-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1415019724-4317-1-git-send-email-jgross@suse.com>
 References: <1415019724-4317-1-git-send-email-jgross@suse.com>
@@ -24,115 +24,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PAT bit in the ptes is not moved to the correct position when
-copying page protection attributes between entries of different sized
-pages. Translate the ptes according to their page size.
+Update the translation tables from cache mode to pgprot values
+according to the PAT settings. This enables changing the cache
+attributes of a PAT index in just one place without having to change
+at the users side.
 
-Based-on-patch-by: Stefan Bader <stefan.bader@canonical.com>
+With this change it is possible to use the same kernel with different
+PAT configurations, e.g. supporting Xen.
+
 Signed-off-by: Juergen Gross <jgross@suse.com>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/mm/pageattr.c | 33 +++++++++++++++++++++++----------
- 1 file changed, 23 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/pat.h           |  1 +
+ arch/x86/include/asm/pgtable_types.h |  4 +++
+ arch/x86/mm/init.c                   |  8 ++++++
+ arch/x86/mm/mm_internal.h            |  2 ++
+ arch/x86/mm/pat.c                    | 50 ++++++++++++++++++++++++++++++++++--
+ 5 files changed, 63 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index de807c9..6c8e3fd 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -485,14 +485,23 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+diff --git a/arch/x86/include/asm/pat.h b/arch/x86/include/asm/pat.h
+index 150407a..91bc4ba 100644
+--- a/arch/x86/include/asm/pat.h
++++ b/arch/x86/include/asm/pat.h
+@@ -11,6 +11,7 @@ static const int pat_enabled;
+ #endif
  
- 	/*
- 	 * We are safe now. Check whether the new pgprot is the same:
-+	 * Convert protection attributes to 4k-format, as cpa->mask* are set
-+	 * up accordingly.
- 	 */
- 	old_pte = *kpte;
--	old_prot = req_prot = pte_pgprot(old_pte);
-+	old_prot = req_prot = pgprot_large_2_4k(pte_pgprot(old_pte));
+ extern void pat_init(void);
++void pat_init_cache_modes(void);
  
- 	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
- 	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
+ extern int reserve_memtype(u64 start, u64 end,
+ 		enum page_cache_mode req_pcm, enum page_cache_mode *ret_pcm);
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 6d5f6d1..af447f9 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -351,6 +351,10 @@ extern uint8_t __pte2cachemode_tbl[8];
+ 	((((cb) >> (_PAGE_BIT_PAT - 2)) & 4) |		\
+ 	 (((cb) >> (_PAGE_BIT_PCD - 1)) & 2) |		\
+ 	 (((cb) >> _PAGE_BIT_PWT) & 1))
++#define __cm_idx2pte(i)					\
++	((((i) & 4) << (_PAGE_BIT_PAT - 2)) |		\
++	 (((i) & 2) << (_PAGE_BIT_PCD - 1)) |		\
++	 (((i) & 1) << _PAGE_BIT_PWT))
  
- 	/*
-+	 * req_prot is in format of 4k pages. It must be converted to large
-+	 * page format: the caching mode includes the PAT bit located at
-+	 * different bit positions in the two formats.
-+	 */
-+	req_prot = pgprot_4k_2_large(req_prot);
-+
-+	/*
- 	 * Set the PSE and GLOBAL flags only if the PRESENT flag is
- 	 * set otherwise pmd_present/pmd_huge will return true even on
- 	 * a non present pmd. The canon_pgprot will clear _PAGE_GLOBAL
-@@ -585,13 +594,10 @@ __split_large_page(struct cpa_data *cpa, pte_t *kpte, unsigned long address,
- 
- 	paravirt_alloc_pte(&init_mm, page_to_pfn(base));
- 	ref_prot = pte_pgprot(pte_clrhuge(*kpte));
--	/*
--	 * If we ever want to utilize the PAT bit, we need to
--	 * update this function to make sure it's converted from
--	 * bit 12 to bit 7 when we cross from the 2MB level to
--	 * the 4K level:
--	 */
--	WARN_ON_ONCE(pgprot_val(ref_prot) & _PAGE_PAT_LARGE);
-+
-+	/* promote PAT bit to correct position */
-+	if (level == PG_LEVEL_2M)
-+		ref_prot = pgprot_large_2_4k(ref_prot);
- 
- #ifdef CONFIG_X86_64
- 	if (level == PG_LEVEL_1G) {
-@@ -879,6 +885,7 @@ static int populate_pmd(struct cpa_data *cpa,
+ static inline unsigned long cachemode2protval(enum page_cache_mode pcm)
  {
- 	unsigned int cur_pages = 0;
- 	pmd_t *pmd;
-+	pgprot_t pmd_pgprot;
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index a9776ba..82b41d5 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -716,3 +716,11 @@ void __init zone_sizes_init(void)
+ 	free_area_init_nodes(max_zone_pfns);
+ }
  
- 	/*
- 	 * Not on a 2M boundary?
-@@ -910,6 +917,8 @@ static int populate_pmd(struct cpa_data *cpa,
- 	if (num_pages == cur_pages)
- 		return cur_pages;
- 
-+	pmd_pgprot = pgprot_4k_2_large(pgprot);
++void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache)
++{
++	/* entry 0 MUST be WB (hardwired to speed up translations) */
++	BUG_ON(!entry && cache != _PAGE_CACHE_MODE_WB);
 +
- 	while (end - start >= PMD_SIZE) {
++	__cachemode2pte_tbl[cache] = __cm_idx2pte(entry);
++	__pte2cachemode_tbl[entry] = cache;
++}
+diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
+index 6b563a1..62474ba 100644
+--- a/arch/x86/mm/mm_internal.h
++++ b/arch/x86/mm/mm_internal.h
+@@ -16,4 +16,6 @@ void zone_sizes_init(void);
  
- 		/*
-@@ -921,7 +930,8 @@ static int populate_pmd(struct cpa_data *cpa,
+ extern int after_bootmem;
  
- 		pmd = pmd_offset(pud, start);
++void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache);
++
+ #endif	/* __X86_MM_INTERNAL_H */
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index ef75f3f..4c60127 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -31,6 +31,7 @@
+ #include <asm/io.h>
  
--		set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE | massage_pgprot(pgprot)));
-+		set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE |
-+				   massage_pgprot(pmd_pgprot)));
+ #include "pat_internal.h"
++#include "mm_internal.h"
  
- 		start	  += PMD_SIZE;
- 		cpa->pfn  += PMD_SIZE;
-@@ -949,6 +959,7 @@ static int populate_pud(struct cpa_data *cpa, unsigned long start, pgd_t *pgd,
- 	pud_t *pud;
- 	unsigned long end;
- 	int cur_pages = 0;
-+	pgprot_t pud_pgprot;
+ #ifdef CONFIG_X86_PAT
+ int __read_mostly pat_enabled = 1;
+@@ -75,6 +76,52 @@ enum {
+ 	PAT_UC_MINUS = 7,	/* UC, but can be overriden by MTRR */
+ };
  
- 	end = start + (cpa->numpages << PAGE_SHIFT);
++#define CM(c) (_PAGE_CACHE_MODE_ ## c)
++
++static enum page_cache_mode pat_get_cache_mode(unsigned pat_val, char *msg)
++{
++	enum page_cache_mode cache;
++	char *cache_mode;
++
++	switch (pat_val) {
++	case PAT_UC:       cache = CM(UC);       cache_mode = "UC  "; break;
++	case PAT_WC:       cache = CM(WC);       cache_mode = "WC  "; break;
++	case PAT_WT:       cache = CM(WT);       cache_mode = "WT  "; break;
++	case PAT_WP:       cache = CM(WP);       cache_mode = "WP  "; break;
++	case PAT_WB:       cache = CM(WB);       cache_mode = "WB  "; break;
++	case PAT_UC_MINUS: cache = CM(UC_MINUS); cache_mode = "UC- "; break;
++	default:           cache = CM(WB);       cache_mode = "WB  "; break;
++	}
++
++	memcpy(msg, cache_mode, 4);
++
++	return cache;
++}
++
++#undef CM
++
++/*
++ * Update the cache mode to pgprot translation tables according to PAT
++ * configuration.
++ * Using lower indices is preferred, so we start with highest index.
++ */
++void pat_init_cache_modes(void)
++{
++	int i;
++	enum page_cache_mode cache;
++	char pat_msg[33];
++	u64 pat;
++
++	rdmsrl(MSR_IA32_CR_PAT, pat);
++	pat_msg[32] = 0;
++	for (i = 7; i >= 0; i--) {
++		cache = pat_get_cache_mode((pat >> (i * 8)) & 7,
++					   pat_msg + 4 * i);
++		update_cache_mode_entry(i, cache);
++	}
++	pr_info("PAT configuration [0-7]: %s\n", pat_msg);
++}
++
+ #define PAT(x, y)	((u64)PAT_ ## y << ((x)*8))
  
-@@ -986,12 +997,14 @@ static int populate_pud(struct cpa_data *cpa, unsigned long start, pgd_t *pgd,
- 		return cur_pages;
+ void pat_init(void)
+@@ -124,8 +171,7 @@ void pat_init(void)
+ 	wrmsrl(MSR_IA32_CR_PAT, pat);
  
- 	pud = pud_offset(pgd, start);
-+	pud_pgprot = pgprot_4k_2_large(pgprot);
+ 	if (boot_cpu)
+-		printk(KERN_INFO "x86 PAT enabled: cpu %d, old 0x%Lx, new 0x%Lx\n",
+-		       smp_processor_id(), boot_pat_state, pat);
++		pat_init_cache_modes();
+ }
  
- 	/*
- 	 * Map everything starting from the Gb boundary, possibly with 1G pages
- 	 */
- 	while (end - start >= PUD_SIZE) {
--		set_pud(pud, __pud(cpa->pfn | _PAGE_PSE | massage_pgprot(pgprot)));
-+		set_pud(pud, __pud(cpa->pfn | _PAGE_PSE |
-+				   massage_pgprot(pud_pgprot)));
- 
- 		start	  += PUD_SIZE;
- 		cpa->pfn  += PUD_SIZE;
+ #undef PAT
 -- 
 1.8.4.5
 
