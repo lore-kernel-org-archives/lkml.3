@@ -1,75 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaKCOWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:22:50 -0500
-Received: from mailout.micron.com ([137.201.242.129]:63081 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaKCOWs convert rfc822-to-8bit (ORCPT
+	id S1752329AbaKCOXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:23:16 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:65427 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaKCOXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:22:48 -0500
-From: bpqw <bpqw@micron.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-CC: Jason Cooper <jason@lakedaemon.net>, Mark Brown <broonie@kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Thierry Reding <treding@nvidia.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Andrew Lunn <andrew@lunn.ch>, Silvio F <silvio.fricke@gmail.com>,
-        Hayato Suzuki <hytszk@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bpqw <bpqw@micron.com>
-Subject: [PATCH 1/1] devicetree: bindings: Add vendor prefix for Micron
- Technology Co., Ltd.
-Thread-Topic: [PATCH 1/1] devicetree: bindings: Add vendor prefix for Micron
- Technology Co., Ltd.
-Thread-Index: Ac/tDA2V70hMLzyhQH+xOy9U8dubsgBjfqCwACJUHlAAlaGE0AF90Tiw
-Date: Mon, 3 Nov 2014 14:21:57 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E9827@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21072.007
-X-TM-AS-Result: No--4.014400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Nov 2014 09:23:13 -0500
 MIME-Version: 1.0
+In-Reply-To: <545782AA.5080408@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+	<530A086E.8010901@users.sourceforge.net>
+	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+	<530A72AA.3000601@users.sourceforge.net>
+	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	<530B5FB6.6010207@users.sourceforge.net>
+	<alpine.DEB.2.10.1402241710370.2074@hadrien>
+	<530C5E18.1020800@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251014170.2080@hadrien>
+	<530CD2C4.4050903@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251840450.7035@hadrien>
+	<530CF8FF.8080600@users.sourceforge.net>
+	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	<530DD06F.4090703@users.sourceforge.net>
+	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	<5317A59D.4@users.sourceforge.net>
+	<54563DCB.2010103@users.sourceforge.net>
+	<CALFYKtAJG5W9-BAHrqEcC-FfqdJERCqkBADo4yTUyjzb+wCHnQ@mail.gmail.com>
+	<545782AA.5080408@users.sourceforge.net>
+Date: Mon, 3 Nov 2014 18:23:12 +0400
+Message-ID: <CALFYKtAW2q-6xgCoV53iTGrt=6o+mHzX0bB+Ltg6AShx-g1qrw@mail.gmail.com>
+Subject: Re: ceph: Deletion of unnecessary checks before two function calls
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Sage Weil <sage@inktank.com>,
+        Ceph Development <ceph-devel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>, "Yan, Zheng" <zyan@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is used to add vendor prefix 
-for Micron Technology Inc in the 
-vendor-prefixes.txt file.
+On Mon, Nov 3, 2014 at 4:27 PM, SF Markus Elfring
+<elfring@users.sourceforge.net> wrote:
+>> dput() also checks for NULL argument, but the check is wrapped into
+>> unlikely(), which is why I presume it wasn't picked up.  It would be
+>> great if you could improve your coccinelle script to handle
+>> {un,}likely() as well.
+>
+> Thanks for your suggestion.
+>
+> Should I consider any more fine-tuning for the affected script
+> "list_input_parameter_validation1.cocci" in the near future?
+> https://lkml.org/lkml/2014/3/5/362
+> http://article.gmane.org/gmane.comp.version-control.coccinelle/3514
 
-Micron Technology, Inc. is an American 
-multinational corporation based in Boise, 
-Idaho, best known for producing many forms
-of semiconductor devices. This includes DRAM,
-SDRAM, flash memory, eMMC and SSDs.
+Make sure it at least catches stuff like:
 
-Signed-off-by: bean huo <beanhuo@micron.com>
----
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 file changed, 1 insertion(+)
+{
+    if (input) {
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 723999d..a7bbf6e 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -92,6 +92,7 @@ maxim	Maxim Integrated Products
- mediatek	MediaTek Inc.
- micrel	Micrel Inc.
- microchip	Microchip Technology Inc.
-+micron	Micron Technology Inc.
- mitsubishi	Mitsubishi Electric Corporation
- mosaixtech	Mosaix Technologies, Inc.
- moxa	Moxa
---
-1.7.9.5
+    }
+}
+
+{
+    if (likely(input)) {
+
+    }
+}
+
+{
+    if (!input)
+        return;
+
+    ...
+}
+
+{
+    if (unlikely(!input))
+        return;
+
+    ...
+}
+
+And of course each match then has to be validated manually.
+
+>
+>
+>>> @@ -590,15 +589,13 @@ static void queue_realm_cap_snaps(struct ceph_snap_realm
+>>> *realm)
+>>
+>> The patch was corrupted, that should have been a single line.  I fixed
+>> it up but you may want to look into your email client settings.
+>
+> Thanks for your feedback.
+>
+> Does this example show a conflict between long comments after patch ranges and
+> line length limitation for email eventually?
+
+There is no line length limitation for email, at least one that would
+be relevant here.  Patches should be sent verbatim, no line wrapping,
+expandtab, etc or they won't apply.  I'd recommend git-send-email, but
+if you want to make thunderbird work for patches (which is what you
+seem to be using) have a look at the "Thunderbird (GUI)" section of
+Documentation/email-clients.txt in the kernel tree.
+
+Thanks,
+
+                Ilya
