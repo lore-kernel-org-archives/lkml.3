@@ -1,73 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaKCUyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 15:54:05 -0500
-Received: from mga03.intel.com ([134.134.136.65]:62097 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772AbaKCUyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 15:54:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
-   d="scan'208";a="630648475"
-Message-ID: <5457EB67.70904@intel.com>
-Date: Mon, 03 Nov 2014 12:53:59 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753899AbaKCU5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 15:57:01 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:32791 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335AbaKCU45 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 15:56:57 -0500
+Date: Mon, 3 Nov 2014 21:54:53 +0100
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Carlo Caione <carlo@caione.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Subject: Re: [PATCH 1/3] media: rc: add driver for Amlogic Meson IR remote
+ receiver
+Message-ID: <20141103205453.GA18529@gmail.com>
+References: <1413144115-23188-1-git-send-email-b.galvani@gmail.com>
+ <1413144115-23188-2-git-send-email-b.galvani@gmail.com>
+ <20141103111410.6b1147a0.m.chehab@samsung.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ren Qiaowei <qiaowei.ren@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH v9 11/12] x86, mpx: cleanup unused bound tables
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241451280.5308@nanos> <544DB873.1010207@intel.com> <alpine.DEB.2.11.1410272138540.5308@nanos>
-In-Reply-To: <alpine.DEB.2.11.1410272138540.5308@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103111410.6b1147a0.m.chehab@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 01:49 PM, Thomas Gleixner wrote:
-> Errm. Before user space can use the bounds table for the new mapping
-> it needs to add the entries, right? So:
+On Mon, Nov 03, 2014 at 11:14:10AM -0200, Mauro Carvalho Chehab wrote:
+> Em Sun, 12 Oct 2014 22:01:53 +0200
+> Beniamino Galvani <b.galvani@gmail.com> escreveu:
 > 
-> CPU 0					CPU 1
+> > Amlogic Meson SoCs include a infrared remote control receiver that can
+> > operate in two modes: in "NEC" mode the hardware can decode frames
+> > using the NEC IR protocol, while in "general" mode the receiver simply
+> > reports the duration of pulses and spaces for software decoding.
+> > 
+> > This is a driver for the IR receiver that uses software decoding of
+> > received frames.
 > 
-> down_write(mm->bd_sem);
-> mpx_pre_unmap();
->    clear bounds directory entries	
-> unmap();
-> 					map()
-> 					write_bounds_entry()
-> 					trap()
-> 					  down_read(mm->bd_sem);
-> mpx_post_unmap(); 
-> up_write(mm->bd_sem);
-> 					  allocate_bounds_table();
+> There are a few checkpatch warnings there:
 > 
-> That's the whole point of bd_sem.
+> WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
+> #71: 
+> new file mode 100644
+> 
+> WARNING: Missing a blank line after declarations
+> #151: FILE: drivers/media/rc/meson-ir.c:76:
+> +	u32 duration;
+> +	DEFINE_IR_RAW_EVENT(rawir);
 
-This does, indeed, seem to work for the normal munmap() cases.  However,
-take a look at shmdt().  We don't know the size of the segment being
-unmapped until after we acquire mmap_sem for write, so we wouldn't be
-able to do do a mpx_pre_unmap() for those.
+Here the macro is actually a variable definition and so it makes sense
+to group it with the other definitions without blank lines. I checked
+other rc drivers and many of them have a similar pattern. Could we
+consider the warning as a false positive?
 
-mremap() is similar.  We don't know if the area got expanded (and we
-don't need to modify bounds tables) or moved (and we need to free the
-old location's tables) until well after we've taken mmap_sem for write.
+> 
+> WARNING: DT compatible string "amlogic,meson6-ir" appears un-documented -- check ./Documentation/devicetree/bindings/
+> #272: FILE: drivers/media/rc/meson-ir.c:197:
+> +	{ .compatible = "amlogic,meson6-ir" },
+> 
+> total: 0 errors, 3 warnings, 238 lines checked
+> 
+> patches/lmml_26418_1_3_media_rc_add_driver_for_amlogic_meson_ir_remote_receiver.patch has style problems, please review.
+> 
+> I'm seeing that the DT patches are there, after this one. The best
+> would be to add them before in the series.
+> 
+> Please add also an entry at the MAINTAINERS file.
 
-I propose we keep mm->bd_sem.  But, I think we need to keep a list
-during each of the unmapping operations of VMAs that got unmapped, and
-then keep them on a list without freeing then.  At up_write() time, we
-look at the list, if it is empty, we just do an up_write() and we are done.
+I'll reorder the patches and add the maintainer entry.
 
-If *not* empty, downgrade_write(mm->mmap_sem), and do the work you
-spelled out in mpx_pre_unmap() above: clear the bounds directory entries
-and gather the VMAs while still holding mm->bd_sem for write.
+> 
+> 
+> > 
+> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> > ---
+> >  drivers/media/rc/Kconfig    |  11 +++
+> >  drivers/media/rc/Makefile   |   1 +
+> >  drivers/media/rc/meson-ir.c | 214 ++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 226 insertions(+)
+> >  create mode 100644 drivers/media/rc/meson-ir.c
+> > 
+> > diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+> > index 8ce0810..2d742e2 100644
+> > --- a/drivers/media/rc/Kconfig
+> > +++ b/drivers/media/rc/Kconfig
+> > @@ -223,6 +223,17 @@ config IR_FINTEK
+> >  	   To compile this driver as a module, choose M here: the
+> >  	   module will be called fintek-cir.
+> >  
+> > +config IR_MESON
+> > +	tristate "Amlogic Meson IR remote receiver"
+> > +	depends on RC_CORE
+> > +	depends on ARCH_MESON
+> 
+> Please add COMPILE_TEST too, as we want to be able to compile it on
+> x86 and other archs, in order to check if the driver builds fine and
+> to enable the static analyzers to look into this code.
 
-Here's the other wrinkle: This would invert the ->bd_sem vs. ->mmap_sem
-ordering (bd_sem nests outside mmap_sem with the above scheme).  We
-_could_ always acquire bd_sem for write whenever mmap_sem is acquired,
-although that seems a bit heavyweight.  I can't think of anything better
-at the moment, though.
+Ok.
+
+[...]
+
+> > +
+> > +	ir->rc->priv = ir;
+> > +	ir->rc->input_name = DRIVER_NAME;
+> > +	ir->rc->input_phys = DRIVER_NAME "/input0";
+> > +	ir->rc->input_id.bustype = BUS_HOST;
+> 
+> > +	ir->rc->input_id.vendor = 0x0001;
+> > +	ir->rc->input_id.product = 0x0001;
+> > +	ir->rc->input_id.version = 0x0100;
+> 
+> I don't like very much the idea of filling it like that. From where those
+> numbers came? Could you add a define for them somewhere?
+
+I've seen that other drivers as gpio-ir-recv and sunxi-cir assign
+those numbers to the fields of input_id but I couldn't find a
+documentation of the meaning. If the assignments are not needed I will
+drop them in the next version.
+
+Beniamino
