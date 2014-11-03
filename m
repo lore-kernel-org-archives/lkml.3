@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaKCK7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:59:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48127 "EHLO
+	id S1752976AbaKCLAz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:00:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48199 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132AbaKCK7f (ORCPT
+	with ESMTP id S1752255AbaKCLAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:59:35 -0500
-Date: Mon, 3 Nov 2014 02:57:31 -0800
+	Mon, 3 Nov 2014 06:00:50 -0500
+Date: Mon, 3 Nov 2014 02:59:30 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-e22ce93870deae0e9a54e1539f0088538f187780@git.kernel.org>
-Cc: rjw@rjwysocki.net, bp@alien8.de, rdunlap@infradead.org, mingo@kernel.org,
-        jiang.liu@linux.intel.com, hpa@zytor.com, bhelgaas@google.com,
-        gregkh@linuxfoundation.org, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org, tglx@linutronix.de,
-        joro@8bytes.org, tony.luck@intel.com, konrad.wilk@oracle.com
-Reply-To: jiang.liu@linux.intel.com, hpa@zytor.com, bhelgaas@google.com,
-        rjw@rjwysocki.net, bp@alien8.de, rdunlap@infradead.org,
-        mingo@kernel.org, joro@8bytes.org, tglx@linutronix.de,
-        tony.luck@intel.com, konrad.wilk@oracle.com,
-        gregkh@linuxfoundation.org, benh@kernel.crashing.org,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1414387308-27148-5-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-5-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-9999a6756f064a1b11b5e2dfdbc2dc06b790bcb6@git.kernel.org>
+Cc: benh@kernel.crashing.org, grant.likely@linaro.org,
+        gregkh@linuxfoundation.org, prarit@redhat.com, bhelgaas@google.com,
+        rdunlap@infradead.org, bp@alien8.de, mingo@kernel.org, joro@8bytes.org,
+        jiang.liu@linux.intel.com, hpa@zytor.com, yinghai@kernel.org,
+        konrad.wilk@oracle.com, rjw@rjwysocki.net, tony.luck@intel.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org
+Reply-To: rdunlap@infradead.org, bp@alien8.de, mingo@kernel.org,
+        jiang.liu@linux.intel.com, hpa@zytor.com, joro@8bytes.org,
+        konrad.wilk@oracle.com, yinghai@kernel.org, tony.luck@intel.com,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        benh@kernel.crashing.org, grant.likely@linaro.org,
+        gregkh@linuxfoundation.org, prarit@redhat.com, bhelgaas@google.com
+In-Reply-To: <1414387308-27148-12-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-12-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, PCI, ACPI:
-  Kill private function resource_to_addr() in arch/x86/pci/acpi.c
-Git-Commit-ID: e22ce93870deae0e9a54e1539f0088538f187780
+Subject: [tip:x86/apic] x86, irq:
+  Remove __init marker for functions will be used by IOAPIC hotplug
+Git-Commit-ID: 9999a6756f064a1b11b5e2dfdbc2dc06b790bcb6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,205 +40,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e22ce93870deae0e9a54e1539f0088538f187780
-Gitweb:     http://git.kernel.org/tip/e22ce93870deae0e9a54e1539f0088538f187780
+Commit-ID:  9999a6756f064a1b11b5e2dfdbc2dc06b790bcb6
+Gitweb:     http://git.kernel.org/tip/9999a6756f064a1b11b5e2dfdbc2dc06b790bcb6
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 13:21:34 +0800
+AuthorDate: Mon, 27 Oct 2014 13:21:41 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 3 Nov 2014 11:56:07 +0100
+CommitDate: Mon, 3 Nov 2014 11:56:08 +0100
 
-x86, PCI, ACPI: Kill private function resource_to_addr() in arch/x86/pci/acpi.c
+x86, irq: Remove __init marker for functions will be used by IOAPIC hotplug
 
-Private function resource_to_addr() is used to parse ACPI resources
-for PCI host bridge. There are public interfaces available for that
-purpose, so replace resource_to_addr() with public interfaces.
+Remove __init marker for functions which will be used by IOAPIC hotplug
+at runtime.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1414387308-27148-5-git-send-email-jiang.liu@linux.intel.com
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1414387308-27148-12-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/pci/acpi.c | 144 +++++++++++++++++++---------------------------------
- 1 file changed, 53 insertions(+), 91 deletions(-)
+ arch/x86/include/asm/io_apic.h |  4 ++--
+ arch/x86/kernel/apic/io_apic.c | 18 +++++++++---------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index cfd1b13..3f72d93 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -218,114 +218,76 @@ static void teardown_mcfg_map(struct pci_root_info *info)
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 1733ab4..a666dcd 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -188,8 +188,8 @@ extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ extern u32 mp_pin_to_gsi(int ioapic, int pin);
+ extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
+ extern void mp_unmap_irq(int irq);
+-extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+-				      struct ioapic_domain_cfg *cfg);
++extern void mp_register_ioapic(int id, u32 address, u32 gsi_base,
++			       struct ioapic_domain_cfg *cfg);
+ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq);
+ extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 02212fb..19501ab 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3459,7 +3459,7 @@ io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
+ 	return ret;
+ }
+ 
+-static int __init io_apic_get_redir_entries(int ioapic)
++static int io_apic_get_redir_entries(int ioapic)
+ {
+ 	union IO_APIC_reg_01	reg_01;
+ 	unsigned long flags;
+@@ -3505,7 +3505,7 @@ int __init arch_probe_nr_irqs(void)
+ }
+ 
+ #ifdef CONFIG_X86_32
+-static int __init io_apic_get_unique_id(int ioapic, int apic_id)
++static int io_apic_get_unique_id(int ioapic, int apic_id)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+ 	static physid_mask_t apic_id_map = PHYSID_MASK_NONE;
+@@ -3580,7 +3580,7 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+ 	return apic_id;
+ }
+ 
+-static u8 __init io_apic_unique_id(int idx, u8 id)
++static u8 io_apic_unique_id(int idx, u8 id)
+ {
+ 	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
+ 	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
+@@ -3589,7 +3589,7 @@ static u8 __init io_apic_unique_id(int idx, u8 id)
+ 		return id;
+ }
+ #else
+-static u8 __init io_apic_unique_id(int idx, u8 id)
++static u8 io_apic_unique_id(int idx, u8 id)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+ 	DECLARE_BITMAP(used, 256);
+@@ -3636,7 +3636,7 @@ static u8 __init io_apic_unique_id(int idx, u8 id)
  }
  #endif
  
--static acpi_status resource_to_addr(struct acpi_resource *resource,
--				    struct acpi_resource_address64 *addr)
--{
--	acpi_status status;
--	struct acpi_resource_memory24 *memory24;
--	struct acpi_resource_memory32 *memory32;
--	struct acpi_resource_fixed_memory32 *fixed_memory32;
--
--	memset(addr, 0, sizeof(*addr));
--	switch (resource->type) {
--	case ACPI_RESOURCE_TYPE_MEMORY24:
--		memory24 = &resource->data.memory24;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = memory24->minimum;
--		addr->address_length = memory24->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_MEMORY32:
--		memory32 = &resource->data.memory32;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = memory32->minimum;
--		addr->address_length = memory32->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
--		fixed_memory32 = &resource->data.fixed_memory32;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = fixed_memory32->address;
--		addr->address_length = fixed_memory32->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_ADDRESS16:
--	case ACPI_RESOURCE_TYPE_ADDRESS32:
--	case ACPI_RESOURCE_TYPE_ADDRESS64:
--		status = acpi_resource_to_address64(resource, addr);
--		if (ACPI_SUCCESS(status) &&
--		    (addr->resource_type == ACPI_MEMORY_RANGE ||
--		    addr->resource_type == ACPI_IO_RANGE) &&
--		    addr->address_length > 0) {
--			return AE_OK;
--		}
--		break;
--	}
--	return AE_ERROR;
--}
--
- static acpi_status count_resource(struct acpi_resource *acpi_res, void *data)
+-static int __init io_apic_get_version(int ioapic)
++static int io_apic_get_version(int ioapic)
  {
- 	struct pci_root_info *info = data;
--	struct acpi_resource_address64 addr;
--	acpi_status status;
-+	struct resource r = {
-+		.flags = 0
-+	};
- 
--	status = resource_to_addr(acpi_res, &addr);
--	if (ACPI_SUCCESS(status))
-+	if (!acpi_dev_resource_memory(acpi_res, &r) &&
-+	    !acpi_dev_resource_address_space(acpi_res, &r))
-+		return AE_OK;
-+
-+	if ((r.flags & (IORESOURCE_IO | IORESOURCE_MEM)) && resource_size(&r))
- 		info->res_num++;
-+
- 	return AE_OK;
+ 	union IO_APIC_reg_01	reg_01;
+ 	unsigned long flags;
+@@ -3840,7 +3840,7 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
+ 	return gsi - gsi_cfg->gsi_base;
  }
  
- static acpi_status setup_resource(struct acpi_resource *acpi_res, void *data)
+-static __init int bad_ioapic(unsigned long address)
++static int bad_ioapic(unsigned long address)
  {
- 	struct pci_root_info *info = data;
--	struct resource *res;
--	struct acpi_resource_address64 addr;
--	acpi_status status;
--	unsigned long flags;
--	u64 start, orig_end, end;
-+	u64 translation_offset = 0;
-+	struct resource r = {
-+		.flags = 0
-+	};
-+
-+	if (acpi_dev_resource_memory(acpi_res, &r)) {
-+		r.flags &= IORESOURCE_MEM | IORESOURCE_IO;
-+	} else if (acpi_dev_resource_address_space(acpi_res, &r)) {
-+		u64 orig_end;
-+		struct acpi_resource_address64 addr;
-+
-+		r.flags &= IORESOURCE_MEM | IORESOURCE_IO;
-+		if (r.flags == 0)
-+			return AE_OK;
- 
--	status = resource_to_addr(acpi_res, &addr);
--	if (!ACPI_SUCCESS(status))
--		return AE_OK;
-+		if (ACPI_FAILURE(acpi_resource_to_address64(acpi_res, &addr)))
-+			return AE_OK;
- 
--	if (addr.resource_type == ACPI_MEMORY_RANGE) {
--		flags = IORESOURCE_MEM;
--		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
--			flags |= IORESOURCE_PREFETCH;
--	} else if (addr.resource_type == ACPI_IO_RANGE) {
--		flags = IORESOURCE_IO;
--	} else
--		return AE_OK;
-+		if (addr.resource_type == ACPI_MEMORY_RANGE &&
-+		    addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
-+			r.flags |= IORESOURCE_PREFETCH;
- 
--	start = addr.minimum + addr.translation_offset;
--	orig_end = end = addr.maximum + addr.translation_offset;
-+		translation_offset = addr.translation_offset;
-+		orig_end = r.end;
-+		r.start += translation_offset;
-+		r.end += translation_offset;
- 
--	/* Exclude non-addressable range or non-addressable portion of range */
--	end = min(end, (u64)iomem_resource.end);
--	if (end <= start) {
--		dev_info(&info->bridge->dev,
--			"host bridge window [%#llx-%#llx] "
--			"(ignored, not CPU addressable)\n", start, orig_end);
--		return AE_OK;
--	} else if (orig_end != end) {
--		dev_info(&info->bridge->dev,
--			"host bridge window [%#llx-%#llx] "
--			"([%#llx-%#llx] ignored, not CPU addressable)\n", 
--			start, orig_end, end + 1, orig_end);
-+		/* Exclude non-addressable range or non-addressable portion of range */
-+		r.end = min(r.end, iomem_resource.end);
-+		if (r.end <= r.start) {
-+			dev_info(&info->bridge->dev,
-+				"host bridge window [%#llx-%#llx] (ignored, not CPU addressable)\n",
-+				 r.start, orig_end);
-+			return AE_OK;
-+		} else if (orig_end != r.end) {
-+			dev_info(&info->bridge->dev,
-+				"host bridge window [%#llx-%#llx] ([%#llx-%#llx] ignored, not CPU addressable)\n",
-+				r.start, orig_end, r.end + 1, orig_end);
-+		}
- 	}
- 
--	res = &info->res[info->res_num];
--	res->name = info->name;
--	res->flags = flags;
--	res->start = start;
--	res->end = end;
--	info->res_offset[info->res_num] = addr.translation_offset;
--	info->res_num++;
--
--	if (!pci_use_crs)
--		dev_printk(KERN_DEBUG, &info->bridge->dev,
--			   "host bridge window %pR (ignored)\n", res);
-+	if (r.flags && resource_size(&r)) {
-+		r.name = info->name;
-+		info->res[info->res_num] = r;
-+		info->res_offset[info->res_num] = translation_offset;
-+		info->res_num++;
-+		if (!pci_use_crs)
-+			dev_printk(KERN_DEBUG, &info->bridge->dev,
-+				   "host bridge window %pR (ignored)\n", &r);
-+	}
- 
- 	return AE_OK;
+ 	if (nr_ioapics >= MAX_IO_APICS) {
+ 		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
+@@ -3854,7 +3854,7 @@ static __init int bad_ioapic(unsigned long address)
+ 	return 0;
  }
+ 
+-static __init int bad_ioapic_register(int idx)
++static int bad_ioapic_register(int idx)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+ 	union IO_APIC_reg_01 reg_01;
+@@ -3873,8 +3873,8 @@ static __init int bad_ioapic_register(int idx)
+ 	return 0;
+ }
+ 
+-void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+-			       struct ioapic_domain_cfg *cfg)
++void mp_register_ioapic(int id, u32 address, u32 gsi_base,
++			struct ioapic_domain_cfg *cfg)
+ {
+ 	int idx = 0;
+ 	int entries;
