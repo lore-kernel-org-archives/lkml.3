@@ -1,282 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaKCIg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:36:57 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:52189 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175AbaKCIgv (ORCPT
+	id S1752300AbaKCIhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:37:05 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:65058 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231AbaKCIgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Nov 2014 03:36:51 -0500
-From: Dudley Du <dudley.dulixin@gmail.com>
-X-Google-Original-From: Dudley Du <dudl@cypress.com>
-To: dmitry.torokhov@gmail.com, rydberg@euromail.se
-Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v9 14/18] input: cyapa: add read firmware image debugfs interface support
-Date: Mon,  3 Nov 2014 16:33:06 +0800
-Message-Id: <1415003590-30485-15-git-send-email-dudl@cypress.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415003590-30485-1-git-send-email-dudl@cypress.com>
-References: <1415003590-30485-1-git-send-email-dudl@cypress.com>
+X-AuditID: cbfec7f5-b7f956d000005ed7-bd-54573e9f0d71
+Message-id: <1415003805.4241.6.camel@AMDC1943>
+Subject: Re: [PATCH v8 3/5] amba: Don't unprepare the clocks if device driver
+ wants IRQ safe runtime PM
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jonathan Corbet <corbet@lwn.net>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Mon, 03 Nov 2014 09:36:45 +0100
+In-reply-to: <20141101010113.GA3831@n2100.arm.linux.org.uk>
+References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
+ <1413795888-18559-4-git-send-email-k.kozlowski@samsung.com>
+ <1479283.dvHduzBoyf@vostro.rjw.lan>
+ <20141101005514.GY27405@n2100.arm.linux.org.uk>
+ <20141101010113.GA3831@n2100.arm.linux.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4Nd35duEhBj96ZS02zljPavHkQDuj
+	xfSpFxgtVk/9y2pxtukNu8WSyfNZLWZN2ctksbBtCYvF5V1z2Cw+9x5htLh9mddi7ZG77Bbv
+	XkZY3D11lM3izOlLrBYTfl9gszi+NtziZd9+Fgchj5bmHjaPxXteMnncubYHyOqbzOqx5M0h
+	Vo8tV9tZPGbf/cHo0bdlFaPHitXf2T0+b5Lz2Pv5N0sAdxSXTUpqTmZZapG+XQJXxvsfjcwF
+	O4QrbrYUNTD28XUxcnBICJhIfDti1MXICWSKSVy4t56ti5GLQ0hgKaNE57RlrBDOZ0aJP2v3
+	MYJU8QroSTRtv8QKYgsLZEp0/vkJZrMJGEtsXr6EDcQWETCVuPboGTNIM7NAI6vE+YMdYEUs
+	AqoS558eZgGxOQWsJVZMmsQEYgsJ9DFJnNsnD2IzC6hLTJq3iBniOmWJxn43iL2CEj8m32OB
+	KJGX2LzmLfMERoFZSDpmISmbhaRsASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQOPy6
+	g3HpMatDjAIcjEo8vBMuh4UIsSaWFVfmHmKU4GBWEuHt0QkPEeJNSaysSi3Kjy8qzUktPsTI
+	xMEp1cAoE3T/VclH5ZWCu4M0Pp76z+O4y6Dvzh4bGYupD89kPd5UsGvVFR63J5UnlRrO3DpW
+	s3hFfepO1oXbxWe914/K6n/1fItK+d7mhPbfZkt+CoQKbvkQeFNm773jUceDH2yccHnyq+VV
+	PYp8cl7bz9f/fGrdPkFhqtRNT9aYo6vPx0U/2cfAeEYrRImlOCPRUIu5qDgRAIbrDwmhAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add read firmware image from trackpad device interface supported in cyapa
-driver through debugfs read_fw interface.
-Through this interface user can read out, check and backup the firmware image
-of the trackpad device before any firmware update, or can use the backed image
-to do firmware image recovery.
-TEST=test on Chromebooks.
+On sob, 2014-11-01 at 01:01 +0000, Russell King - ARM Linux wrote:
+> On Sat, Nov 01, 2014 at 12:55:14AM +0000, Russell King - ARM Linux wrote:
+> > On Sat, Nov 01, 2014 at 01:45:47AM +0100, Rafael J. Wysocki wrote:
+> > > On Monday, October 20, 2014 11:04:46 AM Krzysztof Kozlowski wrote:
+> > > > @@ -198,8 +217,10 @@ static int amba_probe(struct device *dev)
+> > > >  		pm_runtime_enable(dev);
+> > > >  
+> > > >  		ret = pcdrv->probe(pcdev, id);
+> > > > -		if (ret == 0)
+> > > > +		if (ret == 0) {
+> > > > +			pcdev->irq_safe = pm_runtime_is_irq_safe(dev);
+> > > 
+> > > This looks racy.
+> > > 
+> > > Is it guaranteed that runtime PM callbacks won't be run for the device
+> > > after pcdrv->probe() has returned and before setting pcdev->irq_safe?
+> > > If not, inconsistent behavior may ensue.
+> > 
+> > You are absolutely correct.  So that knocks that idea on its head.
+> 
+> Actually, I think we shouldn't give up hope here.  Currently, we do this:
+> 
+>                 pm_runtime_get_noresume(dev);
+>                 pm_runtime_set_active(dev);
+>                 pm_runtime_enable(dev);
+> 
+>                 ret = pcdrv->probe(pcdev, id);
+> 
+> What we could do is:
+> 
+> 		pm_runtime_get_noresume(dev);
+>                 pm_runtime_get_noresume(dev);
+>                 pm_runtime_set_active(dev);
+>                 pm_runtime_enable(dev);
+> 
+>                 ret = pcdrv->probe(pcdev, id);
+> 		if (ret == 0) {
+> 			pcdev->irq_safe = pm_runtime_is_irq_safe(dev);
+> 			pm_runtime_put(dev);
+> 			break;
+> 		}
+> 
+>                 pm_runtime_disable(dev);
+>                 pm_runtime_set_suspended(dev);
+>                 pm_runtime_put_noidle(dev);
+>                 pm_runtime_put_noidle(dev);
+> 
+> which would ensure that we hold a usecount until after the probe function
+> has returned.  Would that work?
+> 
+> I'll give you that it's pretty horrid.
 
-Signed-off-by: Dudley Du <dudl@cypress.com>
----
- drivers/input/mouse/cyapa.c | 174 +++++++++++++++++++++++++++++++++++++++++++-
- drivers/input/mouse/cyapa.h |  11 +++
- 2 files changed, 184 insertions(+), 1 deletion(-)
+> Would another possible solution be to remember the irq-safeness in the
+> suspend handler, and use that in the resume handler?  Resume should
+> /always/ undo what the suspend handler previously did wrt clk API stuff.
 
-diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index 5f384ff..bc1d75a 100644
---- a/drivers/input/mouse/cyapa.c
-+++ b/drivers/input/mouse/cyapa.c
-@@ -14,6 +14,7 @@
-  * more details.
-  */
- 
-+#include <linux/debugfs.h>
- #include <linux/delay.h>
- #include <linux/i2c.h>
- #include <linux/input.h>
-@@ -38,6 +39,9 @@
- 
- const char unique_str[] = "CYTRA";
- 
-+/* Global root node of the cyapa debugfs directory. */
-+static struct dentry *cyapa_debugfs_root;
-+
- 
- ssize_t cyapa_i2c_reg_read_block(struct cyapa *cyapa, u8 reg, size_t len,
- 					u8 *values)
-@@ -475,6 +479,134 @@ int cyapa_detect(struct cyapa *cyapa)
- }
- 
- /*
-+ **************************************************************
-+ * debugfs interface
-+ **************************************************************
-+*/
-+static int cyapa_debugfs_open(struct inode *inode, struct file *file)
-+{
-+	struct cyapa *cyapa = inode->i_private;
-+	int ret;
-+
-+	if (!cyapa)
-+		return -ENODEV;
-+
-+	ret = mutex_lock_interruptible(&cyapa->debugfs_mutex);
-+	if (ret)
-+		return ret;
-+
-+	if (!get_device(&cyapa->client->dev)) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	file->private_data = cyapa;
-+
-+	if (cyapa->fw_image && cyapa->fw_image_size) {
-+		ret = 0;
-+		goto out;
-+	}
-+
-+	ret = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (ret)
-+		goto out;
-+	/*
-+	 * If firmware hasn't been read yet, read it all in one pass.
-+	 * Subsequent opens will reuse the data in this same buffer.
-+	 */
-+	if (cyapa->ops->read_fw) {
-+		ret = cyapa->ops->read_fw(cyapa);
-+
-+		/*
-+		 * Redetect trackpad device states because read_fw will
-+		 * reset trackpad device into bootloader mode.
-+		 */
-+		cyapa_detect(cyapa);
-+	} else
-+		ret = -EPERM;
-+
-+	mutex_unlock(&cyapa->state_sync_lock);
-+out:
-+	mutex_unlock(&cyapa->debugfs_mutex);
-+	return ret;
-+}
-+
-+static int cyapa_debugfs_release(struct inode *inode, struct file *file)
-+{
-+	struct cyapa *cyapa = file->private_data;
-+	int ret;
-+
-+	if (!cyapa)
-+		return 0;
-+
-+	ret = mutex_lock_interruptible(&cyapa->debugfs_mutex);
-+	if (ret)
-+		return ret;
-+	file->private_data = NULL;
-+	put_device(&cyapa->client->dev);
-+	mutex_unlock(&cyapa->debugfs_mutex);
-+
-+	return 0;
-+}
-+
-+/* Return some bytes from the buffered firmware image, starting from *ppos */
-+static ssize_t cyapa_debugfs_read_fw(struct file *file, char __user *buffer,
-+				     size_t count, loff_t *ppos)
-+{
-+	struct cyapa *cyapa = file->private_data;
-+
-+	if (!cyapa->fw_image)
-+		return -EINVAL;
-+
-+	if (*ppos >= cyapa->fw_image_size)
-+		return 0;
-+
-+	if (count + *ppos > cyapa->fw_image_size)
-+		count = cyapa->fw_image_size - *ppos;
-+
-+	if (copy_to_user(buffer, &cyapa->fw_image[*ppos], count))
-+		return -EFAULT;
-+
-+	*ppos += count;
-+	return count;
-+}
-+
-+static const struct file_operations cyapa_read_fw_fops = {
-+	.open = cyapa_debugfs_open,
-+	.release = cyapa_debugfs_release,
-+	.read = cyapa_debugfs_read_fw
-+};
-+
-+static int cyapa_debugfs_init(struct cyapa *cyapa)
-+{
-+	struct device *dev = &cyapa->client->dev;
-+
-+	if (!cyapa_debugfs_root)
-+		return -ENODEV;
-+
-+	cyapa->dentry_dev = debugfs_create_dir(kobject_name(&dev->kobj),
-+					       cyapa_debugfs_root);
-+
-+	if (!cyapa->dentry_dev)
-+		return -ENODEV;
-+
-+	mutex_init(&cyapa->debugfs_mutex);
-+
-+	debugfs_create_file(CYAPA_DEBUGFS_READ_FW, S_IRUSR, cyapa->dentry_dev,
-+			    cyapa, &cyapa_read_fw_fops);
-+
-+	return 0;
-+}
-+
-+static void cyapa_remove_debugfs(void *data)
-+{
-+	struct cyapa *cyapa = data;
-+
-+	debugfs_remove_recursive(cyapa->dentry_dev);
-+	mutex_destroy(&cyapa->debugfs_mutex);
-+}
-+
-+/*
-  * Sysfs Interface.
-  */
- 
-@@ -1012,6 +1144,20 @@ static int cyapa_probe(struct i2c_client *client,
- 		return ret;
- 	}
- 
-+	ret = cyapa_debugfs_init(cyapa);
-+	if (ret) {
-+		dev_err(dev, "failed to create debugfs entries, (%d).\n", ret);
-+		return ret;
-+	}
-+
-+	ret = devm_add_action(dev, cyapa_remove_debugfs, cyapa);
-+	if (ret) {
-+		cyapa_remove_debugfs(cyapa);
-+		dev_err(dev, "failed to add debugfs cleanup action, (%d)\n",
-+			ret);
-+		return ret;
-+	}
-+
- #ifdef CONFIG_PM_SLEEP
- 	if (device_can_wakeup(dev)) {
- 		ret = sysfs_merge_group(&client->dev.kobj,
-@@ -1192,7 +1338,33 @@ static struct i2c_driver cyapa_driver = {
- 	.id_table = cyapa_id_table,
- };
- 
--module_i2c_driver(cyapa_driver);
-+static int __init cyapa_init(void)
-+{
-+	int ret;
-+
-+	/* Create a global debugfs root for all cyapa devices */
-+	cyapa_debugfs_root = debugfs_create_dir("cyapa", NULL);
-+	if (cyapa_debugfs_root == ERR_PTR(-ENODEV))
-+		cyapa_debugfs_root = NULL;
-+
-+	ret = i2c_add_driver(&cyapa_driver);
-+	if (ret) {
-+		pr_err("cyapa driver register FAILED.\n");
-+		return ret;
-+	}
-+
-+	return ret;
-+}
-+
-+static void __exit cyapa_exit(void)
-+{
-+	debugfs_remove_recursive(cyapa_debugfs_root);
-+
-+	i2c_del_driver(&cyapa_driver);
-+}
-+
-+module_init(cyapa_init);
-+module_exit(cyapa_exit);
- 
- MODULE_DESCRIPTION("Cypress APA I2C Trackpad Driver");
- MODULE_AUTHOR("Dudley Du <dudl@cypress.com>");
-diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
-index 060ac7d..288c7de 100644
---- a/drivers/input/mouse/cyapa.h
-+++ b/drivers/input/mouse/cyapa.h
-@@ -189,6 +189,8 @@ struct cyapa_dev_ops {
- 	ssize_t (*calibrate_store)(struct device *,
- 			struct device_attribute *, const char *, size_t);
- 
-+	int (*read_fw)(struct cyapa *);
-+
- 	int (*initialize)(struct cyapa *cyapa);
- 
- 	int (*state_parse)(struct cyapa *cyapa, u8 *reg_status, int len);
-@@ -288,6 +290,15 @@ struct cyapa {
- 	 */
- 	struct mutex state_sync_lock;
- 
-+	/* Per-instance debugfs root */
-+	struct dentry *dentry_dev;
-+
-+	/* Buffer to store firmware read using debugfs */
-+	struct mutex debugfs_mutex;
-+	struct cyapa_tsg_bin_image_head fw_img_head;
-+	u8 *fw_image;
-+	size_t fw_image_size;
-+
- 	const struct cyapa_dev_ops *ops;
- 
- 	union cyapa_cmd_states cmd_states;
--- 
-1.9.1
+I think the second solution could be more readable. The WARN_ON wouldn't
+be needed. However this won't solve the two dual nature of runtime
+callbacks.
+
+I wondered also about removing runtime PM callbacks from amba/bus.c
+completely and moving this to child drivers. This way runtime PM would
+be obvious in each driver case.
+
+Best regards,
+Krzysztof
+
 
