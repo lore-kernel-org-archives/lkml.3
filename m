@@ -1,143 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862AbaKCR7D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:59:03 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:39712 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaKCR65 (ORCPT
+	id S1753085AbaKCR7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:59:24 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54548 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840AbaKCR6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:58:57 -0500
-Date: Mon, 3 Nov 2014 17:58:51 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: tc3589x: get rid of static base
-Message-ID: <20141103175851.GU12011@x1>
-References: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
+	Mon, 3 Nov 2014 12:58:54 -0500
+Message-ID: <5457C259.8030605@linutronix.de>
+Date: Mon, 03 Nov 2014 18:58:49 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Alexandre Montplaisir <alexmonthy@voxpopuli.im>,
+        Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: FW: [RFC 0/5] perf tools: Add perf data CTF conversion
+References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com> <53F4F38C.4080407@voxpopuli.im>
+In-Reply-To: <53F4F38C.4080407@voxpopuli.im>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014, Linus Walleij wrote:
-
-> The TC3589x driver is now a device tree-only driver, so we want
-> only dynamic IRQs and GPIO numbers from the tc3589x, no static
-> assignments.
+On 08/20/2014 09:14 PM, Alexandre Montplaisir wrote:
+> On 08/20/2014 05:28 AM, Jiri Olsa wrote:
+>>
+>> ok, easy enough ;-) so I'm guessing this governs the expected
+>> CTF layout for event/stream headers/contexts, right?
 > 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/gpio/gpio-tc3589x.c | 2 +-
->  drivers/mfd/tc3589x.c       | 9 +++------
->  include/linux/mfd/tc3589x.h | 8 --------
->  3 files changed, 4 insertions(+), 15 deletions(-)
+> Correct, if the domain is "kernel" we then assume that the rest of the
+> trace contains the expected elements of a kernel trace.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+So that is one thing that I had to add.
 
-How would you like me to handle this patch?
+> Of course, one could craft a CTF trace to advertize itself as "kernel"
+> or "ust", and not actually have the layout of that trace type, in which
+> case it would fail parsing later on.
+> 
+>> Also judging from the trace display, you have hardcoded specific
+>> displays/actions for specific events? That's all connected/specific
+>> under trace type?
+> 
+> Yes the trace type is the main "provider" of functionality. I could go
+> into more details, but we use Eclipse extension points to define which
+> columns to put in the event table, which views are available, etc. for
+> each supported trace type.
+> 
+>>> Once we have some views or analysis specific to perf CTF traces, we
+>>> could
+>>> definitely add a separate trace type for those too.
+>> I guess tracepoints and breakpoints should display something like
+>> the standard kernel trace. As for HW events it's usual to display
+>> profile infomation as the perf report does:
+>>   
+>> https://perf.wiki.kernel.org/index.php/Tutorial#Sampling_with_perf_record
+> 
+> Interesting, I haven't tried the perf CTF output yet, but I could see it
+> using the Statistics view (which by default just prints the % of events,
+> per event type) to print the results of the different "perf reports",
+> calculated from the CTF events. Eventually with pie charts!
 
-ib-mfd-gpio?
+I did on the linux side:
 
-> diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
-> index ae0f6466eb09..abdcf58935f5 100644
-> --- a/drivers/gpio/gpio-tc3589x.c
-> +++ b/drivers/gpio/gpio-tc3589x.c
-> @@ -262,7 +262,7 @@ static int tc3589x_gpio_probe(struct platform_device *pdev)
->  	tc3589x_gpio->chip = template_chip;
->  	tc3589x_gpio->chip.ngpio = tc3589x->num_gpio;
->  	tc3589x_gpio->chip.dev = &pdev->dev;
-> -	tc3589x_gpio->chip.base = (pdata) ? pdata->gpio_base : -1;
-> +	tc3589x_gpio->chip.base = -1;
->  
->  #ifdef CONFIG_OF_GPIO
->  	tc3589x_gpio->chip.of_node = np;
-> diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-> index 0072e668c208..aacb3720065c 100644
-> --- a/drivers/mfd/tc3589x.c
-> +++ b/drivers/mfd/tc3589x.c
-> @@ -241,10 +241,8 @@ static struct irq_domain_ops tc3589x_irq_ops = {
->  
->  static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
->  {
-> -	int base = tc3589x->irq_base;
-> -
->  	tc3589x->domain = irq_domain_add_simple(
-> -		np, TC3589x_NR_INTERNAL_IRQS, base,
-> +		np, TC3589x_NR_INTERNAL_IRQS, 0,
->  		&tc3589x_irq_ops, tc3589x);
->  
->  	if (!tc3589x->domain) {
-> @@ -298,7 +296,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
->  	if (blocks & TC3589x_BLOCK_GPIO) {
->  		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_gpio,
->  				      ARRAY_SIZE(tc3589x_dev_gpio), NULL,
-> -				      tc3589x->irq_base, tc3589x->domain);
-> +				      0, tc3589x->domain);
->  		if (ret) {
->  			dev_err(tc3589x->dev, "failed to add gpio child\n");
->  			return ret;
-> @@ -309,7 +307,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
->  	if (blocks & TC3589x_BLOCK_KEYPAD) {
->  		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_keypad,
->  				      ARRAY_SIZE(tc3589x_dev_keypad), NULL,
-> -				      tc3589x->irq_base, tc3589x->domain);
-> +				      0, tc3589x->domain);
->  		if (ret) {
->  			dev_err(tc3589x->dev, "failed to keypad child\n");
->  			return ret;
-> @@ -404,7 +402,6 @@ static int tc3589x_probe(struct i2c_client *i2c,
->  	tc3589x->dev = &i2c->dev;
->  	tc3589x->i2c = i2c;
->  	tc3589x->pdata = pdata;
-> -	tc3589x->irq_base = pdata->irq_base;
->  
->  	switch (version) {
->  	case TC3589X_TC35893:
-> diff --git a/include/linux/mfd/tc3589x.h b/include/linux/mfd/tc3589x.h
-> index e6088c2e2092..e1c12d84c26a 100644
-> --- a/include/linux/mfd/tc3589x.h
-> +++ b/include/linux/mfd/tc3589x.h
-> @@ -164,13 +164,10 @@ struct tc3589x_keypad_platform_data {
->  
->  /**
->   * struct tc3589x_gpio_platform_data - TC3589x GPIO platform data
-> - * @gpio_base: first gpio number assigned to TC3589x.  A maximum of
-> - *	       %TC3589x_NR_GPIOS GPIOs will be allocated.
->   * @setup: callback for board-specific initialization
->   * @remove: callback for board-specific teardown
->   */
->  struct tc3589x_gpio_platform_data {
-> -	int gpio_base;
->  	void (*setup)(struct tc3589x *tc3589x, unsigned gpio_base);
->  	void (*remove)(struct tc3589x *tc3589x, unsigned gpio_base);
->  };
-> @@ -178,18 +175,13 @@ struct tc3589x_gpio_platform_data {
->  /**
->   * struct tc3589x_platform_data - TC3589x platform data
->   * @block: bitmask of blocks to enable (use TC3589x_BLOCK_*)
-> - * @irq_base: base IRQ number.  %TC3589x_NR_IRQS irqs will be used.
->   * @gpio: GPIO-specific platform data
->   * @keypad: keypad-specific platform data
->   */
->  struct tc3589x_platform_data {
->  	unsigned int block;
-> -	int irq_base;
->  	struct tc3589x_gpio_platform_data *gpio;
->  	const struct tc3589x_keypad_platform_data *keypad;
->  };
->  
-> -#define TC3589x_NR_GPIOS	24
-> -#define TC3589x_NR_IRQS		TC3589x_INT_GPIO(TC3589x_NR_GPIOS)
-> -
->  #endif
+|perf record \
+| -e sched:sched_switch \
+| -a
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+This gave me perf.data trace. No with the new extension I converted it
+into CTF data stream (perf data convert -i perf.data --to-ctf ctf) and
+imported it into eclipse as a new trace. By setting 'domain = "kernel"'
+I managed to get it accepted as a kernel trace.
+
+Additionally I had to:
+- rename sched:sched_switch -> sched_switch (I dropped the other events)
+- rename "perf_cpu" to "cpu_id" and move it within "packet context"
+  (had a patch for that but we wanted to merge this later)
+- I added "prev_tid" with the content of "prev_pid" and I added
+  "next_tid" with the content of "next_pid". Now exclipse does not
+  "freeze" after loading the first entry
+- I prefixed every entry with _ (so "prev_tid" becomes "_prev_tid") and
+  now it seems to be recognized by the tracing plugin.
+
+puh. Now I have something in "cpu usage", "control flow" windows.
+The cpu_id field change will be addressed soon on our side.
+Now, the remaining things:
+The "domain = kernel" thingy (or another identifier if desired) is
+something we could add.
+What do we do on the naming convention?
+
+The converter takes basically the event names the way they come from
+perf. That is why we have a "system" prefix.
+For the member fields, we take all the specific ones as perf serves
+them. The only exception is for the generic fields which get a "perf_"
+prefix in order not to clash with the specific ones.
+And there is this _ prefix in front of every data member.
+
+Now that I identified the differences between the CTF from lttng and
+perf, any suggestions / ideas how this could be solved?
+
+> Cheers,
+> Alexandre
+
+Sebastian
