@@ -1,62 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879AbaKCVau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:30:50 -0500
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:37169 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751591AbaKCVas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:30:48 -0500
-Date: Mon, 3 Nov 2014 23:32:14 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Chad Dupuis <chad.dupuis@qlogic.com>
-cc: Joe Carnuccio <joe.carnuccio@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Christoph Hellwig <hch@lst.de>, qla2xxx-upstream@qlogic.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: bisected regression: qla2xxx endianness on sparc64
-In-Reply-To: <alpine.OSX.2.00.1411031508560.1960@administrators-macbook-pro.local>
-Message-ID: <alpine.LRH.2.11.1411032330370.19361@siim2.ut.ee>
-References: <alpine.DEB.2.03.1411022004230.3979@cyber.ee> <alpine.OSX.2.00.1411031508560.1960@administrators-macbook-pro.local>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1753754AbaKCVcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:32:10 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59277 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752468AbaKCVcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 16:32:07 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
+Date: Mon, 03 Nov 2014 22:52:50 +0100
+Message-ID: <2331586.goAnq7FsMG@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <4455568.bqAfQGqTU9@vostro.rjw.lan>
+References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <54570961.1080004@linux.intel.com> <4455568.bqAfQGqTU9@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Between 3.17 and 3.18-rc2, qla2xxx is broken on my sparc64 machines. It
-> > fails to boot (hangs in firmware rings init).
-> >
-> > This is the result of bisect:
-> >
-> > 98aee70d19a7e3203649fa2078464e4f402a0ad8 is the first bad commit
-> > commit 98aee70d19a7e3203649fa2078464e4f402a0ad8
-> > Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
-> > Date:   Thu Sep 25 05:16:38 2014 -0400
-> >
-> >    qla2xxx: Add endianizer to max_payload_size modifier.
-> >
-> >    Signed-off-by: Joe Carnuccio <joe.carnuccio@qlogic.com>
-> >    Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-> >    Signed-off-by: Christoph Hellwig <hch@lst.de>
-> >
-> > :040000 040000 041c1a26dc2a7988900acc982e3bd65d3cf7e751 
-> > 9700d09c3226fc352d44352f22b84f1be632d324 M  s
-> >
-> > This may not be the only problem - when bisecting, I also came to commits
-> > that got past this step but hang after about 165 seconds of uptime while
-> > running userspace startup scripts. But let that be another issue at the
-> > moment.
-> >
+On Monday, November 03, 2014 04:25:08 PM Rafael J. Wysocki wrote:
+> On Sunday, November 02, 2014 08:49:37 PM Darren Hart wrote:
+> > 
+> > On 11/1/14 4:11, Grant Likely wrote:
+> > > On Tue, 28 Oct 2014 22:59:57 +0100
+> > > , "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> > >  wrote:
+> > >> On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
+> > >>> acpi_dev_add_driver_gpios() makes it possible to set up mapping between
+> > >>> properties and ACPI GpioIo resources in a driver, so we can take index
+> > >>> parameter in acpi_find_gpio() into use with _DSD device properties now.
+> > >>>
+> > >>> This index can be used to select a GPIO from a property with multiple
+> > >>> GPIOs:
+> > >>>
+> > >>>   Package () {
+> > >>>   	"data-gpios",
+> > >>>   	Package () {
+> > >>>   		\_SB.GPIO, 0, 0, 0,
+> > >>>   		\_SB.GPIO, 1, 0, 0,
+> > >>>   		\_SB.GPIO, 2, 0, 1,
+> > >>>   	}
+> > >>>   }
+> > >>>
+> > >>> In order to retrieve the last GPIO from a driver we can simply do:
+> > >>>
+> > >>>   desc = devm_gpiod_get_index(dev, "data", 2);
+> > >>>
+> > >>> and so on.
+> > >>>
+> > >>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > >>
+> > >> Cool. :-)
+> > >>
+> > >> Any objections anyone?
+> > > 
+> > > Actually, I do. Not in the idea, but in the implementation. The way this gets encoded:
+> > > 
+> > > 	Package () {
+> > > 		\_SB.GPIO, 0, 0, 0,
+> > > 		\_SB.GPIO, 1, 0, 0,
+> > > 		\_SB.GPIO, 2, 0, 1,
+> > > 	}
+> > > 
+> > > Means that decoding each GPIO tuple requires the length of a tuple to be
+> > > fixed, or to implement a DT-like #gpio-cells. If it is fixed, then there
+> > > is no way to expand the binding later. Can this be done in the following
+> > > way instead?
+> > > 
+> > > 	Package () {
+> > > 		Package () { \_SB.GPIO, 0, 0, 0 },
+> > > 		Package () { \_SB.GPIO, 1, 0, 0 },
+> > > 		Package () { \_SB.GPIO, 2, 0, 1 },
+> > > 	}
+> > > 
+> > > This is one of the biggest pains in device tree. We don't have any way
+> > > to group tuples so it requires looking up stuff across the tree to
+> > > figure out how to parse each multi-item property.
+> > > 
+> > > I know that last year we talked about how bios vendors would get
+> > > complicated properties wrong, but I think there is little risk in this
+> > > case. If the property is encoded wrong, the driver simply won't work and
+> > > it is unlikely to get shipped before being fixed.
+> > 
+> > This particular nesting of Packages is expressly prohibited by the
+> > Device Properties UUID for the reasons you mention.
+> > 
+> > http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
 > 
-> We should revert that change. What were some of the other failures you were
-> seeing?
+> Also we don't use properties where single name is assigned to multiple GPIOs
+> anywhere in the current device-properties patchset, so this is not relevant at
+> the moment.
+> 
+> Moreover, even if we were to use them, we would need to ensure that this:
+> 
+> 	Package () {
+> 		\_SB.GPIO, 0, 0, 0
+> 	}
+> 
+> was equivalent to
+> 
+> 	Package () {
+>  		Package () { \_SB.GPIO, 0, 0, 0 }
+> 	}
+> 
+> This is not impossible to do and I suppose we could even explain that in the
+> implementation guide document in a sensible way, but that would require the
+> document linked above to be changed first and *then* we can think about writing
+> kernel code to it.  Not the other way around, please.
+> 
+> So Grant, do you want us to proceed with that?
 
-Yes. I took the same 3.18.0-rc1-00422-g2cc9188-dirty kernel that had 
-just this patch reverted, it started the controller fine, detected disk, 
-mounted root, started multiple tasks and then some time after startin 
-exim it just hangs. This is consisten with what I saw during bisection.
+Before you reply, one more observation that seems to be relevant.
 
--- 
-Meelis Roos (mroos@linux.ee)
+In ACPI, both this:
+
+	Package () {
+		\_SB.GPIO, 0, 0, 0,
+		\_SB.GPIO, 1, 0, 0,
+		\_SB.GPIO, 2, 0, 1,
+	}
+
+and this:
+
+	Package () {
+		Package () { \_SB.GPIO, 0, 0, 0 },
+		Package () { \_SB.GPIO, 1, 0, 0 },
+		Package () { \_SB.GPIO, 2, 0, 1 },
+	}
+
+carry the same information, because every element of a package has a type,
+so there is no danger of confusing an ACPI_TYPE_LOCAL_REFERENCE with
+ACPI_TYPE_INTEGER.  Thus one can easily count the number of GPIOs represented
+by the first package by counting the number of reference elements in it.
+The second one has more structure which in this particular case is arguably
+redundant.
+
+Of course, that's not the case for list properties where each item consists
+of a bunch of integers, like
+
+	Package () {
+		Package () { 0, 0, 0 },
+		Package () { 1, 0, 0 },
+		Package () { 2, 0, 1 },
+	}
+
+but I'm not sure if this is relevant at all.
+
+Rafael
+
