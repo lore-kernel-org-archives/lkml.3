@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbaKCSIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:08:36 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:53447 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753995AbaKCSIa (ORCPT
+	id S1753985AbaKCSI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:08:28 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:36578 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808AbaKCSIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:08:30 -0500
+	Mon, 3 Nov 2014 13:08:21 -0500
 From: mathieu.poirier@linaro.org
 To: gregkh@linuxfoundation.org
 Cc: linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
@@ -15,9 +15,9 @@ Cc: linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
         r.sengupta@samsung.com, robbelibobban@gmail.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         mathieu.poirier@linaro.org
-Subject: [PATCH v9 12/12] ARM: removing support for etb/etm in "arch/arm/kernel/"
-Date: Mon,  3 Nov 2014 11:07:46 -0700
-Message-Id: <1415038066-22423-13-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH v9 08/12] coresight: documentation for coresight framework and drivers
+Date: Mon,  3 Nov 2014 11:07:42 -0700
+Message-Id: <1415038066-22423-9-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
@@ -27,998 +27,321 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Removing minimal support for etb/etm to favour an implementation
-that is more flexible, extensible and capable of handling more
-platforms.
-
-Also removing the only client of the old driver.  That code can
-easily be replaced by entries for etb/etm in the device tree.
+Documentation containing an explanation on what the framework
+provides and the drivers working with it.  A minimal example
+on how to use the functionality is also provided.
 
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- arch/arm/Kconfig.debug                    |   8 -
- arch/arm/include/asm/hardware/coresight.h | 157 -------
- arch/arm/kernel/Makefile                  |   1 -
- arch/arm/kernel/etm.c                     | 654 ------------------------------
- arch/arm/kernel/hw_breakpoint.c           |   4 +-
- arch/arm/mach-omap2/Kconfig               |   8 -
- arch/arm/mach-omap2/Makefile              |   1 -
- arch/arm/mach-omap2/emu.c                 |  50 ---
- 8 files changed, 2 insertions(+), 881 deletions(-)
- delete mode 100644 arch/arm/include/asm/hardware/coresight.h
- delete mode 100644 arch/arm/kernel/etm.c
- delete mode 100644 arch/arm/mach-omap2/emu.c
+ Documentation/trace/coresight.txt | 299 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 299 insertions(+)
+ create mode 100644 Documentation/trace/coresight.txt
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 871404b..8226788 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1297,14 +1297,6 @@ config EARLY_PRINTK
- 	  kernel low-level debugging functions. Add earlyprintk to your
- 	  kernel parameters to enable this console.
- 
--config OC_ETM
--	bool "On-chip ETM and ETB"
--	depends on ARM_AMBA
--	help
--	  Enables the on-chip embedded trace macrocell and embedded trace
--	  buffer driver that will allow you to collect traces of the
--	  kernel code.
--
- config ARM_KPROBES_TEST
- 	tristate "Kprobes test module"
- 	depends on KPROBES && MODULES
-diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
-deleted file mode 100644
-index ad774f3..0000000
---- a/arch/arm/include/asm/hardware/coresight.h
-+++ /dev/null
-@@ -1,157 +0,0 @@
--/*
-- * linux/arch/arm/include/asm/hardware/coresight.h
-- *
-- * CoreSight components' registers
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef __ASM_HARDWARE_CORESIGHT_H
--#define __ASM_HARDWARE_CORESIGHT_H
--
--#define TRACER_ACCESSED_BIT	0
--#define TRACER_RUNNING_BIT	1
--#define TRACER_CYCLE_ACC_BIT	2
--#define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
--#define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
--#define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
--
--#define TRACER_TIMEOUT 10000
--
--#define etm_writel(t, v, x) \
--	(writel_relaxed((v), (t)->etm_regs + (x)))
--#define etm_readl(t, x) (readl_relaxed((t)->etm_regs + (x)))
--
--/* CoreSight Management Registers */
--#define CSMR_LOCKACCESS 0xfb0
--#define CSMR_LOCKSTATUS 0xfb4
--#define CSMR_AUTHSTATUS 0xfb8
--#define CSMR_DEVID	0xfc8
--#define CSMR_DEVTYPE	0xfcc
--/* CoreSight Component Registers */
--#define CSCR_CLASS	0xff4
--
--#define CS_LAR_KEY	0xc5acce55
--
--/* ETM control register, "ETM Architecture", 3.3.1 */
--#define ETMR_CTRL		0
--#define ETMCTRL_POWERDOWN	1
--#define ETMCTRL_PROGRAM		(1 << 10)
--#define ETMCTRL_PORTSEL		(1 << 11)
--#define ETMCTRL_DO_CONTEXTID	(3 << 14)
--#define ETMCTRL_PORTMASK1	(7 << 4)
--#define ETMCTRL_PORTMASK2	(1 << 21)
--#define ETMCTRL_PORTMASK	(ETMCTRL_PORTMASK1 | ETMCTRL_PORTMASK2)
--#define ETMCTRL_PORTSIZE(x) ((((x) & 7) << 4) | (!!((x) & 8)) << 21)
--#define ETMCTRL_DO_CPRT		(1 << 1)
--#define ETMCTRL_DATAMASK	(3 << 2)
--#define ETMCTRL_DATA_DO_DATA	(1 << 2)
--#define ETMCTRL_DATA_DO_ADDR	(1 << 3)
--#define ETMCTRL_DATA_DO_BOTH	(ETMCTRL_DATA_DO_DATA | ETMCTRL_DATA_DO_ADDR)
--#define ETMCTRL_BRANCH_OUTPUT	(1 << 8)
--#define ETMCTRL_CYCLEACCURATE	(1 << 12)
--
--/* ETM configuration code register */
--#define ETMR_CONFCODE		(0x04)
--
--/* ETM trace start/stop resource control register */
--#define ETMR_TRACESSCTRL	(0x18)
--
--/* ETM trigger event register */
--#define ETMR_TRIGEVT		(0x08)
--
--/* address access type register bits, "ETM architecture",
-- * table 3-27 */
--/* - access type */
--#define ETMAAT_IFETCH		0
--#define ETMAAT_IEXEC		1
--#define ETMAAT_IEXECPASS	2
--#define ETMAAT_IEXECFAIL	3
--#define ETMAAT_DLOADSTORE	4
--#define ETMAAT_DLOAD		5
--#define ETMAAT_DSTORE		6
--/* - comparison access size */
--#define ETMAAT_JAVA		(0 << 3)
--#define ETMAAT_THUMB		(1 << 3)
--#define ETMAAT_ARM		(3 << 3)
--/* - data value comparison control */
--#define ETMAAT_NOVALCMP		(0 << 5)
--#define ETMAAT_VALMATCH		(1 << 5)
--#define ETMAAT_VALNOMATCH	(3 << 5)
--/* - exact match */
--#define ETMAAT_EXACTMATCH	(1 << 7)
--/* - context id comparator control */
--#define ETMAAT_IGNCONTEXTID	(0 << 8)
--#define ETMAAT_VALUE1		(1 << 8)
--#define ETMAAT_VALUE2		(2 << 8)
--#define ETMAAT_VALUE3		(3 << 8)
--/* - security level control */
--#define ETMAAT_IGNSECURITY	(0 << 10)
--#define ETMAAT_NSONLY		(1 << 10)
--#define ETMAAT_SONLY		(2 << 10)
--
--#define ETMR_COMP_VAL(x)	(0x40 + (x) * 4)
--#define ETMR_COMP_ACC_TYPE(x)	(0x80 + (x) * 4)
--
--/* ETM status register, "ETM Architecture", 3.3.2 */
--#define ETMR_STATUS		(0x10)
--#define ETMST_OVERFLOW		BIT(0)
--#define ETMST_PROGBIT		BIT(1)
--#define ETMST_STARTSTOP		BIT(2)
--#define ETMST_TRIGGER		BIT(3)
--
--#define etm_progbit(t)		(etm_readl((t), ETMR_STATUS) & ETMST_PROGBIT)
--#define etm_started(t)		(etm_readl((t), ETMR_STATUS) & ETMST_STARTSTOP)
--#define etm_triggered(t)	(etm_readl((t), ETMR_STATUS) & ETMST_TRIGGER)
--
--#define ETMR_TRACEENCTRL2	0x1c
--#define ETMR_TRACEENCTRL	0x24
--#define ETMTE_INCLEXCL		BIT(24)
--#define ETMR_TRACEENEVT		0x20
--#define ETMCTRL_OPTS		(ETMCTRL_DO_CPRT | \
--				ETMCTRL_DATA_DO_ADDR | \
--				ETMCTRL_BRANCH_OUTPUT | \
--				ETMCTRL_DO_CONTEXTID)
--
--/* ETM management registers, "ETM Architecture", 3.5.24 */
--#define ETMMR_OSLAR	0x300
--#define ETMMR_OSLSR	0x304
--#define ETMMR_OSSRR	0x308
--#define ETMMR_PDSR	0x314
--
--/* ETB registers, "CoreSight Components TRM", 9.3 */
--#define ETBR_DEPTH		0x04
--#define ETBR_STATUS		0x0c
--#define ETBR_READMEM		0x10
--#define ETBR_READADDR		0x14
--#define ETBR_WRITEADDR		0x18
--#define ETBR_TRIGGERCOUNT	0x1c
--#define ETBR_CTRL		0x20
--#define ETBR_FORMATTERCTRL	0x304
--#define ETBFF_ENFTC		1
--#define ETBFF_ENFCONT		BIT(1)
--#define ETBFF_FONFLIN		BIT(4)
--#define ETBFF_MANUAL_FLUSH	BIT(6)
--#define ETBFF_TRIGIN		BIT(8)
--#define ETBFF_TRIGEVT		BIT(9)
--#define ETBFF_TRIGFL		BIT(10)
--
--#define etb_writel(t, v, x) \
--	(writel_relaxed((v), (t)->etb_regs + (x)))
--#define etb_readl(t, x) (readl_relaxed((t)->etb_regs + (x)))
--
--#define etm_lock(t) do { etm_writel((t), 0, CSMR_LOCKACCESS); } while (0)
--#define etm_unlock(t) \
--	do { etm_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
--
--#define etb_lock(t) do { etb_writel((t), 0, CSMR_LOCKACCESS); } while (0)
--#define etb_unlock(t) \
--	do { etb_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
--
--#endif /* __ASM_HARDWARE_CORESIGHT_H */
--
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f..9e80b98 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -30,7 +30,6 @@ else
- obj-y		+= entry-armv.o
- endif
- 
--obj-$(CONFIG_OC_ETM)		+= etm.o
- obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
- obj-$(CONFIG_ISA_DMA_API)	+= dma.o
- obj-$(CONFIG_FIQ)		+= fiq.o fiqasm.o
-diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-deleted file mode 100644
-index 131a6ab..0000000
---- a/arch/arm/kernel/etm.c
-+++ /dev/null
-@@ -1,654 +0,0 @@
--/*
-- * linux/arch/arm/kernel/etm.c
-- *
-- * Driver for ARM's Embedded Trace Macrocell and Embedded Trace Buffer.
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/types.h>
--#include <linux/io.h>
--#include <linux/sysrq.h>
--#include <linux/device.h>
--#include <linux/clk.h>
--#include <linux/amba/bus.h>
--#include <linux/fs.h>
--#include <linux/uaccess.h>
--#include <linux/miscdevice.h>
--#include <linux/vmalloc.h>
--#include <linux/mutex.h>
--#include <linux/module.h>
--#include <asm/hardware/coresight.h>
--#include <asm/sections.h>
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Alexander Shishkin");
--
--/*
-- * ETM tracer state
-- */
--struct tracectx {
--	unsigned int	etb_bufsz;
--	void __iomem	*etb_regs;
--	void __iomem	*etm_regs;
--	unsigned long	flags;
--	int		ncmppairs;
--	int		etm_portsz;
--	struct device	*dev;
--	struct clk	*emu_clk;
--	struct mutex	mutex;
--};
--
--static struct tracectx tracer;
--
--static inline bool trace_isrunning(struct tracectx *t)
--{
--	return !!(t->flags & TRACER_RUNNING);
--}
--
--static int etm_setup_address_range(struct tracectx *t, int n,
--		unsigned long start, unsigned long end, int exclude, int data)
--{
--	u32 flags = ETMAAT_ARM | ETMAAT_IGNCONTEXTID | ETMAAT_NSONLY | \
--		    ETMAAT_NOVALCMP;
--
--	if (n < 1 || n > t->ncmppairs)
--		return -EINVAL;
--
--	/* comparators and ranges are numbered starting with 1 as opposed
--	 * to bits in a word */
--	n--;
--
--	if (data)
--		flags |= ETMAAT_DLOADSTORE;
--	else
--		flags |= ETMAAT_IEXEC;
--
--	/* first comparator for the range */
--	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2));
--	etm_writel(t, start, ETMR_COMP_VAL(n * 2));
--
--	/* second comparator is right next to it */
--	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
--	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
--
--	flags = exclude ? ETMTE_INCLEXCL : 0;
--	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
--
--	return 0;
--}
--
--static int trace_start(struct tracectx *t)
--{
--	u32 v;
--	unsigned long timeout = TRACER_TIMEOUT;
--
--	etb_unlock(t);
--
--	etb_writel(t, 0, ETBR_FORMATTERCTRL);
--	etb_writel(t, 1, ETBR_CTRL);
--
--	etb_lock(t);
--
--	/* configure etm */
--	v = ETMCTRL_OPTS | ETMCTRL_PROGRAM | ETMCTRL_PORTSIZE(t->etm_portsz);
--
--	if (t->flags & TRACER_CYCLE_ACC)
--		v |= ETMCTRL_CYCLEACCURATE;
--
--	etm_unlock(t);
--
--	etm_writel(t, v, ETMR_CTRL);
--
--	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_setup_address_range(t, 1, (unsigned long)_stext,
--			(unsigned long)_etext, 0, 0);
--	etm_writel(t, 0, ETMR_TRACEENCTRL2);
--	etm_writel(t, 0, ETMR_TRACESSCTRL);
--	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
--
--	v &= ~ETMCTRL_PROGRAM;
--	v |= ETMCTRL_PORTSEL;
--
--	etm_writel(t, v, ETMR_CTRL);
--
--	timeout = TRACER_TIMEOUT;
--	while (etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to deassert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_lock(t);
--
--	t->flags |= TRACER_RUNNING;
--
--	return 0;
--}
--
--static int trace_stop(struct tracectx *t)
--{
--	unsigned long timeout = TRACER_TIMEOUT;
--
--	etm_unlock(t);
--
--	etm_writel(t, 0x440, ETMR_CTRL);
--	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_lock(t);
--
--	etb_unlock(t);
--	etb_writel(t, ETBFF_MANUAL_FLUSH, ETBR_FORMATTERCTRL);
--
--	timeout = TRACER_TIMEOUT;
--	while (etb_readl(t, ETBR_FORMATTERCTRL) &
--			ETBFF_MANUAL_FLUSH && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for formatter flush to commence "
--				"timed out\n");
--		etb_lock(t);
--		return -EFAULT;
--	}
--
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_lock(t);
--
--	t->flags &= ~TRACER_RUNNING;
--
--	return 0;
--}
--
--static int etb_getdatalen(struct tracectx *t)
--{
--	u32 v;
--	int rp, wp;
--
--	v = etb_readl(t, ETBR_STATUS);
--
--	if (v & 1)
--		return t->etb_bufsz;
--
--	rp = etb_readl(t, ETBR_READADDR);
--	wp = etb_readl(t, ETBR_WRITEADDR);
--
--	if (rp > wp) {
--		etb_writel(t, 0, ETBR_READADDR);
--		etb_writel(t, 0, ETBR_WRITEADDR);
--
--		return 0;
--	}
--
--	return wp - rp;
--}
--
--/* sysrq+v will always stop the running trace and leave it at that */
--static void etm_dump(void)
--{
--	struct tracectx *t = &tracer;
--	u32 first = 0;
--	int length;
--
--	if (!t->etb_regs) {
--		printk(KERN_INFO "No tracing hardware found\n");
--		return;
--	}
--
--	if (trace_isrunning(t))
--		trace_stop(t);
--
--	etb_unlock(t);
--
--	length = etb_getdatalen(t);
--
--	if (length == t->etb_bufsz)
--		first = etb_readl(t, ETBR_WRITEADDR);
--
--	etb_writel(t, first, ETBR_READADDR);
--
--	printk(KERN_INFO "Trace buffer contents length: %d\n", length);
--	printk(KERN_INFO "--- ETB buffer begin ---\n");
--	for (; length; length--)
--		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
--	printk(KERN_INFO "\n--- ETB buffer end ---\n");
--
--	/* deassert the overflow bit */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_WRITEADDR);
--
--	etb_lock(t);
--}
--
--static void sysrq_etm_dump(int key)
--{
--	dev_dbg(tracer.dev, "Dumping ETB buffer\n");
--	etm_dump();
--}
--
--static struct sysrq_key_op sysrq_etm_op = {
--	.handler = sysrq_etm_dump,
--	.help_msg = "etm-buffer-dump(v)",
--	.action_msg = "etm",
--};
--
--static int etb_open(struct inode *inode, struct file *file)
--{
--	if (!tracer.etb_regs)
--		return -ENODEV;
--
--	file->private_data = &tracer;
--
--	return nonseekable_open(inode, file);
--}
--
--static ssize_t etb_read(struct file *file, char __user *data,
--		size_t len, loff_t *ppos)
--{
--	int total, i;
--	long length;
--	struct tracectx *t = file->private_data;
--	u32 first = 0;
--	u32 *buf;
--
--	mutex_lock(&t->mutex);
--
--	if (trace_isrunning(t)) {
--		length = 0;
--		goto out;
--	}
--
--	etb_unlock(t);
--
--	total = etb_getdatalen(t);
--	if (total == t->etb_bufsz)
--		first = etb_readl(t, ETBR_WRITEADDR);
--
--	etb_writel(t, first, ETBR_READADDR);
--
--	length = min(total * 4, (int)len);
--	buf = vmalloc(length);
--
--	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
--	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
--	for (i = 0; i < length / 4; i++)
--		buf[i] = etb_readl(t, ETBR_READMEM);
--
--	/* the only way to deassert overflow bit in ETB status is this */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_WRITEADDR);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--
--	etb_lock(t);
--
--	length -= copy_to_user(data, buf, length);
--	vfree(buf);
--
--out:
--	mutex_unlock(&t->mutex);
--
--	return length;
--}
--
--static int etb_release(struct inode *inode, struct file *file)
--{
--	/* there's nothing to do here, actually */
--	return 0;
--}
--
--static const struct file_operations etb_fops = {
--	.owner = THIS_MODULE,
--	.read = etb_read,
--	.open = etb_open,
--	.release = etb_release,
--	.llseek = no_llseek,
--};
--
--static struct miscdevice etb_miscdev = {
--	.name = "tracebuf",
--	.minor = 0,
--	.fops = &etb_fops,
--};
--
--static int etb_probe(struct amba_device *dev, const struct amba_id *id)
--{
--	struct tracectx *t = &tracer;
--	int ret = 0;
--
--	ret = amba_request_regions(dev, NULL);
--	if (ret)
--		goto out;
--
--	t->etb_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
--	if (!t->etb_regs) {
--		ret = -ENOMEM;
--		goto out_release;
--	}
--
--	amba_set_drvdata(dev, t);
--
--	etb_miscdev.parent = &dev->dev;
--
--	ret = misc_register(&etb_miscdev);
--	if (ret)
--		goto out_unmap;
--
--	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
--	if (IS_ERR(t->emu_clk)) {
--		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
--		return -EFAULT;
--	}
--
--	clk_enable(t->emu_clk);
--
--	etb_unlock(t);
--	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
--	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
--
--	/* make sure trace capture is disabled */
--	etb_writel(t, 0, ETBR_CTRL);
--	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
--	etb_lock(t);
--
--	dev_dbg(&dev->dev, "ETB AMBA driver initialized.\n");
--
--out:
--	return ret;
--
--out_unmap:
--	iounmap(t->etb_regs);
--
--out_release:
--	amba_release_regions(dev);
--
--	return ret;
--}
--
--static int etb_remove(struct amba_device *dev)
--{
--	struct tracectx *t = amba_get_drvdata(dev);
--
--	iounmap(t->etb_regs);
--	t->etb_regs = NULL;
--
--	clk_disable(t->emu_clk);
--	clk_put(t->emu_clk);
--
--	amba_release_regions(dev);
--
--	return 0;
--}
--
--static struct amba_id etb_ids[] = {
--	{
--		.id	= 0x0003b907,
--		.mask	= 0x0007ffff,
--	},
--	{ 0, 0 },
--};
--
--static struct amba_driver etb_driver = {
--	.drv		= {
--		.name	= "etb",
--		.owner	= THIS_MODULE,
--	},
--	.probe		= etb_probe,
--	.remove		= etb_remove,
--	.id_table	= etb_ids,
--};
--
--/* use a sysfs file "trace_running" to start/stop tracing */
--static ssize_t trace_running_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	return sprintf(buf, "%x\n", trace_isrunning(&tracer));
--}
--
--static ssize_t trace_running_store(struct kobject *kobj,
--				   struct kobj_attribute *attr,
--				   const char *buf, size_t n)
--{
--	unsigned int value;
--	int ret;
--
--	if (sscanf(buf, "%u", &value) != 1)
--		return -EINVAL;
--
--	mutex_lock(&tracer.mutex);
--	ret = value ? trace_start(&tracer) : trace_stop(&tracer);
--	mutex_unlock(&tracer.mutex);
--
--	return ret ? : n;
--}
--
--static struct kobj_attribute trace_running_attr =
--	__ATTR(trace_running, 0644, trace_running_show, trace_running_store);
--
--static ssize_t trace_info_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	u32 etb_wa, etb_ra, etb_st, etb_fc, etm_ctrl, etm_st;
--	int datalen;
--
--	etb_unlock(&tracer);
--	datalen = etb_getdatalen(&tracer);
--	etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
--	etb_ra = etb_readl(&tracer, ETBR_READADDR);
--	etb_st = etb_readl(&tracer, ETBR_STATUS);
--	etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
--	etb_lock(&tracer);
--
--	etm_unlock(&tracer);
--	etm_ctrl = etm_readl(&tracer, ETMR_CTRL);
--	etm_st = etm_readl(&tracer, ETMR_STATUS);
--	etm_lock(&tracer);
--
--	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
--			"ETBR_WRITEADDR:\t%08x\n"
--			"ETBR_READADDR:\t%08x\n"
--			"ETBR_STATUS:\t%08x\n"
--			"ETBR_FORMATTERCTRL:\t%08x\n"
--			"ETMR_CTRL:\t%08x\n"
--			"ETMR_STATUS:\t%08x\n",
--			datalen,
--			tracer.ncmppairs,
--			etb_wa,
--			etb_ra,
--			etb_st,
--			etb_fc,
--			etm_ctrl,
--			etm_st
--			);
--}
--
--static struct kobj_attribute trace_info_attr =
--	__ATTR(trace_info, 0444, trace_info_show, NULL);
--
--static ssize_t trace_mode_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	return sprintf(buf, "%d %d\n",
--			!!(tracer.flags & TRACER_CYCLE_ACC),
--			tracer.etm_portsz);
--}
--
--static ssize_t trace_mode_store(struct kobject *kobj,
--				   struct kobj_attribute *attr,
--				   const char *buf, size_t n)
--{
--	unsigned int cycacc, portsz;
--
--	if (sscanf(buf, "%u %u", &cycacc, &portsz) != 2)
--		return -EINVAL;
--
--	mutex_lock(&tracer.mutex);
--	if (cycacc)
--		tracer.flags |= TRACER_CYCLE_ACC;
--	else
--		tracer.flags &= ~TRACER_CYCLE_ACC;
--
--	tracer.etm_portsz = portsz & 0x0f;
--	mutex_unlock(&tracer.mutex);
--
--	return n;
--}
--
--static struct kobj_attribute trace_mode_attr =
--	__ATTR(trace_mode, 0644, trace_mode_show, trace_mode_store);
--
--static int etm_probe(struct amba_device *dev, const struct amba_id *id)
--{
--	struct tracectx *t = &tracer;
--	int ret = 0;
--
--	if (t->etm_regs) {
--		dev_dbg(&dev->dev, "ETM already initialized\n");
--		ret = -EBUSY;
--		goto out;
--	}
--
--	ret = amba_request_regions(dev, NULL);
--	if (ret)
--		goto out;
--
--	t->etm_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
--	if (!t->etm_regs) {
--		ret = -ENOMEM;
--		goto out_release;
--	}
--
--	amba_set_drvdata(dev, t);
--
--	mutex_init(&t->mutex);
--	t->dev = &dev->dev;
--	t->flags = TRACER_CYCLE_ACC;
--	t->etm_portsz = 1;
--
--	etm_unlock(t);
--	(void)etm_readl(t, ETMMR_PDSR);
--	/* dummy first read */
--	(void)etm_readl(&tracer, ETMMR_OSSRR);
--
--	t->ncmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
--	etm_writel(t, 0x440, ETMR_CTRL);
--	etm_lock(t);
--
--	ret = sysfs_create_file(&dev->dev.kobj,
--			&trace_running_attr.attr);
--	if (ret)
--		goto out_unmap;
--
--	/* failing to create any of these two is not fatal */
--	ret = sysfs_create_file(&dev->dev.kobj, &trace_info_attr.attr);
--	if (ret)
--		dev_dbg(&dev->dev, "Failed to create trace_info in sysfs\n");
--
--	ret = sysfs_create_file(&dev->dev.kobj, &trace_mode_attr.attr);
--	if (ret)
--		dev_dbg(&dev->dev, "Failed to create trace_mode in sysfs\n");
--
--	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
--
--out:
--	return ret;
--
--out_unmap:
--	iounmap(t->etm_regs);
--
--out_release:
--	amba_release_regions(dev);
--
--	return ret;
--}
--
--static int etm_remove(struct amba_device *dev)
--{
--	struct tracectx *t = amba_get_drvdata(dev);
--
--	iounmap(t->etm_regs);
--	t->etm_regs = NULL;
--
--	amba_release_regions(dev);
--
--	sysfs_remove_file(&dev->dev.kobj, &trace_running_attr.attr);
--	sysfs_remove_file(&dev->dev.kobj, &trace_info_attr.attr);
--	sysfs_remove_file(&dev->dev.kobj, &trace_mode_attr.attr);
--
--	return 0;
--}
--
--static struct amba_id etm_ids[] = {
--	{
--		.id	= 0x0003b921,
--		.mask	= 0x0007ffff,
--	},
--	{ 0, 0 },
--};
--
--static struct amba_driver etm_driver = {
--	.drv		= {
--		.name   = "etm",
--		.owner  = THIS_MODULE,
--	},
--	.probe		= etm_probe,
--	.remove		= etm_remove,
--	.id_table	= etm_ids,
--};
--
--static int __init etm_init(void)
--{
--	int retval;
--
--	retval = amba_driver_register(&etb_driver);
--	if (retval) {
--		printk(KERN_ERR "Failed to register etb\n");
--		return retval;
--	}
--
--	retval = amba_driver_register(&etm_driver);
--	if (retval) {
--		amba_driver_unregister(&etb_driver);
--		printk(KERN_ERR "Failed to probe etm\n");
--		return retval;
--	}
--
--	/* not being able to install this handler is not fatal */
--	(void)register_sysrq_key('v', &sysrq_etm_op);
--
--	return 0;
--}
--
--device_initcall(etm_init);
--
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index b5b452f..7fc70ae 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -29,6 +29,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/smp.h>
- #include <linux/cpu_pm.h>
-+#include <linux/coresight.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/cputype.h>
-@@ -36,7 +37,6 @@
- #include <asm/hw_breakpoint.h>
- #include <asm/kdebug.h>
- #include <asm/traps.h>
--#include <asm/hardware/coresight.h>
- 
- /* Breakpoint currently in use for each BRP. */
- static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
-@@ -976,7 +976,7 @@ static void reset_ctrl_regs(void *unused)
- 	 * Unconditionally clear the OS lock by writing a value
- 	 * other than CS_LAR_KEY to the access register.
- 	 */
--	ARM_DBG_WRITE(c1, c0, 4, ~CS_LAR_KEY);
-+	ARM_DBG_WRITE(c1, c0, 4, ~CORESIGHT_UNLOCK);
- 	isb();
- 
- 	/*
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index f4d06ae..06020fe 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -292,14 +292,6 @@ config MACH_TI8148EVM
- 	depends on SOC_TI81XX
- 	default y
- 
--config OMAP3_EMU
--	bool "OMAP3 debugging peripherals"
--	depends on ARCH_OMAP3
--	select ARM_AMBA
--	select OC_ETM
--	help
--	  Say Y here to enable debugging hardware of omap3
--
- config OMAP3_SDRC_AC_TIMING
- 	bool "Enable SDRC AC timing register changes"
- 	depends on ARCH_OMAP3
-diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-index d9e9412..87255a3 100644
---- a/arch/arm/mach-omap2/Makefile
-+++ b/arch/arm/mach-omap2/Makefile
-@@ -228,7 +228,6 @@ obj-$(CONFIG_SOC_OMAP5)			+= omap_hwmod_54xx_data.o
- obj-$(CONFIG_SOC_DRA7XX)		+= omap_hwmod_7xx_data.o
- 
- # EMU peripherals
--obj-$(CONFIG_OMAP3_EMU)			+= emu.o
- obj-$(CONFIG_HW_PERF_EVENTS)		+= pmu.o
- 
- iommu-$(CONFIG_OMAP_IOMMU)		:= omap-iommu.o
-diff --git a/arch/arm/mach-omap2/emu.c b/arch/arm/mach-omap2/emu.c
-deleted file mode 100644
-index cbeaca2..0000000
---- a/arch/arm/mach-omap2/emu.c
-+++ /dev/null
-@@ -1,50 +0,0 @@
--/*
-- * emu.c
-- *
-- * ETM and ETB CoreSight components' resources as found in OMAP3xxx.
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/types.h>
--#include <linux/module.h>
--#include <linux/device.h>
--#include <linux/amba/bus.h>
--#include <linux/io.h>
--#include <linux/clk.h>
--#include <linux/err.h>
--
--#include "soc.h"
--#include "iomap.h"
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Alexander Shishkin");
--
--/* Cortex CoreSight components within omap3xxx EMU */
--#define ETM_BASE	(L4_EMU_34XX_PHYS + 0x10000)
--#define DBG_BASE	(L4_EMU_34XX_PHYS + 0x11000)
--#define ETB_BASE	(L4_EMU_34XX_PHYS + 0x1b000)
--#define DAPCTL		(L4_EMU_34XX_PHYS + 0x1d000)
--
--static AMBA_APB_DEVICE(omap3_etb, "etb", 0x000bb907, ETB_BASE, { }, NULL);
--static AMBA_APB_DEVICE(omap3_etm, "etm", 0x102bb921, ETM_BASE, { }, NULL);
--
--static int __init emu_init(void)
--{
--	if (!cpu_is_omap34xx())
--		return -ENODEV;
--
--	amba_device_register(&omap3_etb_device, &iomem_resource);
--	amba_device_register(&omap3_etm_device, &iomem_resource);
--
--	return 0;
--}
--
--omap_subsys_initcall(emu_init);
+diff --git a/Documentation/trace/coresight.txt b/Documentation/trace/coresight.txt
+new file mode 100644
+index 0000000..bba7dbf
+--- /dev/null
++++ b/Documentation/trace/coresight.txt
+@@ -0,0 +1,299 @@
++		Coresight - HW Assisted Tracing on ARM
++		======================================
++
++   Author:   Mathieu Poirier <mathieu.poirier@linaro.org>
++   Date:     September 11th, 2014
++
++Introduction
++------------
++
++Coresight is an umbrella of technologies allowing for the debugging of ARM
++based SoC.  It includes solutions for JTAG and HW assisted tracing.  This
++document is concerned with the latter.
++
++HW assisted tracing is becoming increasingly useful when dealing with systems
++that have many SoCs and other components like GPU and DMA engines.  ARM has
++developed a HW assisted tracing solution by means of different components, each
++being added to a design at systhesis time to cater to specific tracing needs.
++Compoments are generally categorised as source, link and sinks and are
++(usually) discovered using the AMBA bus.
++
++"Sources" generate a compressed stream representing the processor instruction
++path based on tracing scenarios as configured by users.  From there the stream
++flows through the coresight system (via ATB bus) using links that are connecting
++the emanating source to a sink(s).  Sinks serve as endpoints to the coresight
++implementation, either storing the compressed stream in a memory buffer or
++creating an interface to the outside world where data can be transferred to a
++host without fear of filling up the onboard coresight memory buffer.
++
++At typical coresight system would look like this:
++
++  *****************************************************************
++ **************************** AMBA AXI  ****************************===||
++  *****************************************************************    ||
++        ^                    ^                            |            ||
++        |                    |                            *            **
++     0000000    :::::     0000000    :::::    :::::    @@@@@@@    ||||||||||||
++     0 CPU 0<-->: C :     0 CPU 0<-->: C :    : C :    @ STM @    || System ||
++  |->0000000    : T :  |->0000000    : T :    : T :<--->@@@@@     || Memory ||
++  |  #######<-->: I :  |  #######<-->: I :    : I :      @@@<-|   ||||||||||||
++  |  # ETM #    :::::  |  # PTM #    :::::    :::::       @   |
++  |   #####      ^ ^   |   #####      ^ !      ^ !        .   |   |||||||||
++  | |->###       | !   | |->###       | !      | !        .   |   || DAP ||
++  | |   #        | !   | |   #        | !      | !        .   |   |||||||||
++  | |   .        | !   | |   .        | !      | !        .   |      |  |
++  | |   .        | !   | |   .        | !      | !        .   |      |  *
++  | |   .        | !   | |   .        | !      | !        .   |      | SWD/
++  | |   .        | !   | |   .        | !      | !        .   |      | JTAG
++  *****************************************************************<-|
++ *************************** AMBA Debug ABP ************************
++  *****************************************************************
++   |    .          !         .          !        !        .    |
++   |    .          *         .          *        *        .    |
++  *****************************************************************
++ ******************** Cross Trigger Matrix (CTM) *******************
++  *****************************************************************
++   |    .     ^              .                            .    |
++   |    *     !              *                            *    |
++  *****************************************************************
++ ****************** AMBA Advanced Trace Bus (ATB) ******************
++  *****************************************************************
++   |          !                        ===============         |
++   |          *                         ===== F =====<---------|
++   |   :::::::::                         ==== U ====
++   |-->:: CTI ::<!!                       === N ===
++   |   :::::::::  !                        == N ==
++   |    ^         *                        == E ==
++   |    !  &&&&&&&&&       IIIIIII         == L ==
++   |------>&& ETB &&<......II     I        =======
++   |    !  &&&&&&&&&       II     I           .
++   |    !                    I     I          .
++   |    !                    I REP I<..........
++   |    !                    I     I
++   |    !!>&&&&&&&&&       II     I           *Source: ARM ltd.
++   |------>& TPIU  &<......II    I            DAP = Debug Access Port
++           &&&&&&&&&       IIIIIII            ETM = Embedded Trace Macrocell
++               ;                              PTM = Program Trace Macrocell
++               ;                              CTI = Cross Trigger Interface
++               *                              ETB = Embedded Trace Buffer
++          To trace port                       TPIU= Trace Port Interface Unit
++                                              SWD = Serial Wire Debug
++
++While on target configuration of the components is done via the ABP bus,
++all trace data are carried out-of-band on the ATB bus.  The CTM provides
++a way to aggregate and distribute signals between CoreSight components.
++
++The coresight framework provides a central point to represent, configure and
++manage coresight devices on a platform.  This first implementation centers on
++the basic tracing functionality, enabling components such ETM/PTM, funnel,
++replicator, TMC, TPIU and ETB.  Future work will enable more
++intricate IP blocks such as STM and CTI.
++
++
++Acronyms and Classification
++---------------------------
++
++Acronyms:
++
++PTM:     Program Trace Macrocell
++ETM:     Embedded Trace Macrocell
++STM:     System trace Macrocell
++ETB:     Embedded Trace Buffer
++ITM:     Instrumentation Trace Macrocell
++TPIU:    Trace Port Interface Unit
++TMC-ETR: Trace Memory Controller, configured as Embedded Trace Router
++TMC-ETF: Trace Memory Controller, configured as Embedded Trace FIFO
++CTI:     Cross Trigger Interface
++
++Classification:
++
++Source:
++   ETMv3.x ETMv4, PTMv1.0, PTMv1.1, STM, STM500, ITM
++Link:
++   Funnel, replicator (intelligent or not), TMC-ETR
++Sinks:
++   ETBv1.0, ETB1.1, TPIU, TMC-ETF
++Misc:
++   CTI
++
++
++Device Tree Bindings
++----------------------
++
++See Documentation/devicetree/bindings/arm/coresight.txt for details.
++
++As of this writing drivers for ITM, STMs and CTIs are not provided but are
++expected to be added as the solution matures.
++
++
++Framework and implementation
++----------------------------
++
++The coresight framework provides a central point to represent, configure and
++manage coresight devices on a platform.  Any coresight compliant device can
++register with the framework for as long as they use the right APIs:
++
++struct coresight_device *coresight_register(struct coresight_desc *desc);
++void coresight_unregister(struct coresight_device *csdev);
++
++The registering function is taking a "struct coresight_device *csdev" and
++register the device with the core framework.  The unregister function takes
++a reference to a "strut coresight_device", obtained at registration time.
++
++If everything goes well during the registration process the new devices will
++show up under /sys/bus/coresight/devices, as showns here for a TC2 platform:
++
++root:~# ls /sys/bus/coresight/devices/
++replicator  20030000.tpiu    2201c000.ptm  2203c000.etm  2203e000.etm
++20010000.etb         20040000.funnel  2201d000.ptm  2203d000.etm
++root:~#
++
++The functions take a "struct coresight_device", which looks like this:
++
++struct coresight_desc {
++        enum coresight_dev_type type;
++        struct coresight_dev_subtype subtype;
++        const struct coresight_ops *ops;
++        struct coresight_platform_data *pdata;
++        struct device *dev;
++        const struct attribute_group **groups;
++};
++
++
++The "coresight_dev_type" identifies what the device is, i.e, source link or
++sink while the "coresight_dev_subtype" will characterise that type further.
++
++The "struct coresight_ops" is mandatory and will tell the framework how to
++perform base operations related to the components, each component having
++a different set of requirement.  For that "struct coresight_ops_sink",
++"struct coresight_ops_link" and "struct coresight_ops_source" have been
++provided.
++
++The next field, "struct coresight_platform_data *pdata" is acquired by calling
++"of_get_coresight_platform_data()", as part of the driver's _probe routine and
++"struct device *dev" gets the device reference embedded in the "amba_device":
++
++static int etm_probe(struct amba_device *adev, const struct amba_id *id)
++{
++ ...
++ ...
++ drvdata->dev = &adev->dev;
++ ...
++}
++
++Specific class of device (source, link, or sink) have generic operations
++that can be performed on them (see "struct coresight_ops").  The
++"**groups" is a list of sysfs entries pertaining to operations
++specific to that component only.  "Implementation defined" customisations are
++expected to be accessed and controlled using those entries.
++
++Last but not least, "struct module *owner" is expected to be set to reflect
++the information carried in "THIS_MODULE".
++
++How to use
++----------
++
++Before trace collection can start, a coresight sink needs to be identify.
++There is no limit on the amount of sinks (nor sources) that can be enabled at
++any given moment.  As a generic operation, all device pertaining to the sink
++class will have an "active" entry in sysfs:
++
++root:/sys/bus/coresight/devices# ls
++replicator  20030000.tpiu    2201c000.ptm  2203c000.etm  2203e000.etm
++20010000.etb         20040000.funnel  2201d000.ptm  2203d000.etm
++root:/sys/bus/coresight/devices# ls 20010000.etb
++enable_sink  status  trigger_cntr
++root:/sys/bus/coresight/devices# echo 1 > 20010000.etb/enable_sink
++root:/sys/bus/coresight/devices# cat 20010000.etb/enable_sink
++1
++root:/sys/bus/coresight/devices#
++
++At boot time the current etm3x driver will configure the first address
++comparator with "_stext" and "_etext", essentially tracing any instruction
++that falls within that range.  As such "enabling" a source will immediately
++trigger a trace capture:
++
++root:/sys/bus/coresight/devices# echo 1 > 2201c000.ptm/enable_source
++root:/sys/bus/coresight/devices# cat 2201c000.ptm/enable_source
++1
++root:/sys/bus/coresight/devices# cat 20010000.etb/status
++Depth:          0x2000
++Status:         0x1
++RAM read ptr:   0x0
++RAM wrt ptr:    0x19d3   <----- The write pointer is moving
++Trigger cnt:    0x0
++Control:        0x1
++Flush status:   0x0
++Flush ctrl:     0x2001
++root:/sys/bus/coresight/devices#
++
++Trace collection is stopped the same way:
++
++root:/sys/bus/coresight/devices# echo 0 > 2201c000.ptm/enable_source
++root:/sys/bus/coresight/devices#
++
++The content of the ETB buffer can be harvested directly from /dev:
++
++root:/sys/bus/coresight/devices# dd if=/dev/20010000.etb \
++of=~/cstrace.bin
++
++64+0 records in
++64+0 records out
++32768 bytes (33 kB) copied, 0.00125258 s, 26.2 MB/s
++root:/sys/bus/coresight/devices#
++
++The file cstrace.bin can be decompressed using "ptm2human", DS-5 or Trace32.
++
++Following is a DS-5 output of an experimental loop that increments a variable up
++to a certain value.  The example is simple and yet provides a glimpse of the
++wealth of possibilities that coresight provides.
++
++Info                                    Tracing enabled
++Instruction     106378866       0x8026B53C      E52DE004        false   PUSH     {lr}
++Instruction     0       0x8026B540      E24DD00C        false   SUB      sp,sp,#0xc
++Instruction     0       0x8026B544      E3A03000        false   MOV      r3,#0
++Instruction     0       0x8026B548      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Timestamp                                       Timestamp: 17106715833
++Instruction     319     0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     9       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     7       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     7       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     10      0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     6       0x8026B560      EE1D3F30        false   MRC      p15,#0x0,r3,c13,c0,#1
++Instruction     0       0x8026B564      E1A0100D        false   MOV      r1,sp
++Instruction     0       0x8026B568      E3C12D7F        false   BIC      r2,r1,#0x1fc0
++Instruction     0       0x8026B56C      E3C2203F        false   BIC      r2,r2,#0x3f
++Instruction     0       0x8026B570      E59D1004        false   LDR      r1,[sp,#4]
++Instruction     0       0x8026B574      E59F0010        false   LDR      r0,[pc,#16] ; [0x8026B58C] = 0x80550368
++Instruction     0       0x8026B578      E592200C        false   LDR      r2,[r2,#0xc]
++Instruction     0       0x8026B57C      E59221D0        false   LDR      r2,[r2,#0x1d0]
++Instruction     0       0x8026B580      EB07A4CF        true    BL       {pc}+0x1e9344 ; 0x804548c4
++Info                                    Tracing enabled
++Instruction     13570831        0x8026B584      E28DD00C        false   ADD      sp,sp,#0xc
++Instruction     0       0x8026B588      E8BD8000        true    LDM      sp!,{pc}
++Timestamp                                       Timestamp: 17107041535
 -- 
 1.9.1
 
