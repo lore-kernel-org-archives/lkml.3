@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaKCKeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:34:25 -0500
-Received: from mga14.intel.com ([192.55.52.115]:55158 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaKCKeY convert rfc822-to-8bit (ORCPT
+	id S1752001AbaKCKeb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:34:31 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:46639 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaKCKe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:34:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,307,1413270000"; 
-   d="scan'208";a="615933691"
-From: Jani Nikula <jani.nikula@intel.com>
-To: Ortwin =?utf-8?Q?Gl=C3=BCck?= <odi@odi.ch>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>
-Subject: Re: [drm] 3.18 regression: backlight dark after resume
-In-Reply-To: <5454E2F3.2060404@odi.ch>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <5454E2F3.2060404@odi.ch>
-User-Agent: Notmuch/0.18.2+151~g6d88668 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 03 Nov 2014 12:34:15 +0200
-Message-ID: <87wq7ch8t4.fsf@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Nov 2014 05:34:27 -0500
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] ALSA: echoaudio: add reference of struct echoaudio
+Date: Mon,  3 Nov 2014 16:04:12 +0530
+Message-Id: <1415010853-4334-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 01 Nov 2014, Ortwin Glück <odi@odi.ch> wrote:
-> Hi,
->
-> Since 3.18-rc1 backlight is dark after resume from suspend. This is on a Samsung 
-> laptop with i5 IvyBridge
->
-> 00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core processor 
-> Graphics Controller (rev 09)
->
->
-> I have bisected this problem to the following commit:
-> 73580fb764c4213d305c0d36bd8f856ae631eb42 is the first bad commit
-> commit 73580fb764c4213d305c0d36bd8f856ae631eb42
-> Author: Jani Nikula <jani.nikula@intel.com>
-> Date:   Tue Aug 12 17:11:41 2014 +0300
->
->      drm/i915/dp: make backlight bl_power control power sequencer backlight
->
->      This lets the userspace switch off the backlight using the backlight
->      class sysfs bl_power file. The switch is done using the power sequencer;
->      the backlight PWM, and everything else, remains enabled. The display
->      backlight won't draw power, but for maximum power savings the encoder
->      needs to be switched off.
->
->      Signed-off-by: Jani Nikula <jani.nikula@intel.com>
->      Reviewed_by: Clinton Taylor <Clinton.A.Taylor@intel.com>
->      Tested_by: Clinton Taylor <Clinton.A.Taylor@intel.com>
->      Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+added reference of struct echoaudio to free_firmware function.
+this structure will be later used to get a reference of the card
+when converting snd_printk to dev_* in the next patch of the series.
 
-See https://bugs.freedesktop.org/show_bug.cgi?id=80773 (please ignore
-comments up to #10 or so).
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
 
-Please attach dmesg with drm.debug=14 module parameter set, from boot to
-suspend/resume and the problem, running the debug patch from comment
-#18. Preferrably please attach the dmesg on the bug to keep everything
-in one place.
+same as v1.
 
-Thanks,
-Jani.
+ sound/pci/echoaudio/echoaudio.c     |  3 ++-
+ sound/pci/echoaudio/echoaudio.h     |  3 ++-
+ sound/pci/echoaudio/echoaudio_dsp.c | 10 +++++-----
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
-
+diff --git a/sound/pci/echoaudio/echoaudio.c b/sound/pci/echoaudio/echoaudio.c
+index d82321f..db1b247 100644
+--- a/sound/pci/echoaudio/echoaudio.c
++++ b/sound/pci/echoaudio/echoaudio.c
+@@ -69,7 +69,8 @@ static int get_firmware(const struct firmware **fw_entry,
+ 
+ 
+ 
+-static void free_firmware(const struct firmware *fw_entry)
++static void free_firmware(const struct firmware *fw_entry,
++			  struct echoaudio *chip)
+ {
+ #ifdef CONFIG_PM_SLEEP
+ 	DE_ACT(("firmware not released (kept in cache)\n"));
+diff --git a/sound/pci/echoaudio/echoaudio.h b/sound/pci/echoaudio/echoaudio.h
+index b86b88d..a4f112a 100644
+--- a/sound/pci/echoaudio/echoaudio.h
++++ b/sound/pci/echoaudio/echoaudio.h
+@@ -468,7 +468,8 @@ static int wait_handshake(struct echoaudio *chip);
+ static int send_vector(struct echoaudio *chip, u32 command);
+ static int get_firmware(const struct firmware **fw_entry,
+ 			struct echoaudio *chip, const short fw_index);
+-static void free_firmware(const struct firmware *fw_entry);
++static void free_firmware(const struct firmware *fw_entry,
++			  struct echoaudio *chip);
+ 
+ #ifdef ECHOCARD_HAS_MIDI
+ static int enable_midi_input(struct echoaudio *chip, char enable);
+diff --git a/sound/pci/echoaudio/echoaudio_dsp.c b/sound/pci/echoaudio/echoaudio_dsp.c
+index 5a6a217..977b2bd 100644
+--- a/sound/pci/echoaudio/echoaudio_dsp.c
++++ b/sound/pci/echoaudio/echoaudio_dsp.c
+@@ -206,12 +206,12 @@ static int load_asic_generic(struct echoaudio *chip, u32 cmd, short asic)
+ 	}
+ 
+ 	DE_INIT(("ASIC loaded\n"));
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	return 0;
+ 
+ la_error:
+ 	DE_INIT(("failed on write_dsp\n"));
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	return -EIO;
+ }
+ 
+@@ -317,11 +317,11 @@ static int install_resident_loader(struct echoaudio *chip)
+ 	}
+ 
+ 	DE_INIT(("Resident loader successfully installed\n"));
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	return 0;
+ 
+ irl_error:
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	return -EIO;
+ }
+ 
+@@ -491,7 +491,7 @@ static int load_firmware(struct echoaudio *chip)
+ 	if (err < 0)
+ 		return err;
+ 	err = load_dsp(chip, (u16 *)fw->data);
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	if (err < 0)
+ 		return err;
+ 
 -- 
-Jani Nikula, Intel Open Source Technology Center
+1.8.1.2
+
