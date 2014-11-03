@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751343AbaKCKPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:15:38 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44316 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750991AbaKCKPg (ORCPT
+	id S1751584AbaKCKQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:16:14 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:40407 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751016AbaKCKQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:15:36 -0500
-Date: Mon, 3 Nov 2014 10:15:16 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] of/irq: Drop obsolete 'interrupts' vs
- 'interrupts-extended' text
-Message-ID: <20141103101516.GA29621@leverpostej>
-References: <20141101233531.4958.96713.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+	Mon, 3 Nov 2014 05:16:10 -0500
+X-Sasl-enc: PjKBxARLy26ep0238c+M7X6rIHo7j6HVU9I9Xc+Ka4uW 1415009769
+Date: Mon, 3 Nov 2014 08:15:58 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Kweh Hock Leong <hock.leong.kweh@intel.com>
+Cc: Matt Fleming <matt.fleming@intel.com>, Ming Lei <ming.lei@canonical.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
+        Ong Boon Leong <boon.leong.ong@intel.com>
+Subject: Re: [PATCH v2 1/3] firmware loader: Introduce new API -
+ request_firmware_abort()
+Message-ID: <20141103101558.GA11739@khazad-dum.debian.net>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141101233531.4958.96713.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+In-Reply-To: <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 01, 2014 at 11:35:31PM +0000, Bjorn Helgaas wrote:
-> a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property
-> first") updated the description to say that:
+On Mon, 03 Nov 2014, Kweh Hock Leong wrote:
+> Note for people who use request_firmware_nowait():
+> You are required to do your own synchronization after you call
+> request_firmware_abort() in order to continue unloading the
+> module. The example synchronization code shows below:
 > 
->   - Both 'interrupts' and 'interrupts-extended' may be present
->   - Software should prefer 'interrupts-extended'
->   - Software that doesn't comprehend 'interrupts-extended' may use
->     'interrupts'
-> 
-> But there is still a paragraph at the end that prohibits having both and
-> says 'interrupts' should be preferred.
-> 
-> Remove the contradictory text.
-> 
-> Fixes: a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property first")
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: stable@vger.kernel.org	# v3.13+
-> ---
->  .../bindings/interrupt-controller/interrupts.txt   |    4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> index ce6a1a072028..8a3c40829899 100644
-> --- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> +++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> @@ -30,10 +30,6 @@ should only be used when a device has multiple interrupt parents.
->    Example:
->  	interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
->  
-> -A device node may contain either "interrupts" or "interrupts-extended", but not
-> -both. If both properties are present, then the operating system should log an
-> -error and use only the data in "interrupts".
+> while (THIS_MODULE && module_refcount(THIS_MODULE))
+> 	msleep(20);
 
-Why not update the binding to explain that interrupts-extended is
-typically preferred?
+This is _so_ asking for people to get it wrong, it is not funny :-(
 
-Mark.
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
