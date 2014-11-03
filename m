@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaKCP3Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:29:24 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:49612 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaKCP3V (ORCPT
+	id S1753213AbaKCP3b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:29:31 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:42354 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192AbaKCP31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:29:21 -0500
-Message-ID: <54579F4B.8050404@redhat.com>
-Date: Mon, 03 Nov 2014 16:29:15 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 3 Nov 2014 10:29:27 -0500
+Date: Mon, 3 Nov 2014 16:29:00 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, kamalesh@linux.vnet.ibm.com,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v8 07/10] sched: replace capacity_factor by usage
+Message-ID: <20141103152900.GJ12706@worktop.programming.kicks-ass.net>
+References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org>
+ <1414745252-4895-8-git-send-email-vincent.guittot@linaro.org>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Jun Nakajima <jun.nakajima@intel.com>,
-        Xinhao Xu <xinhao.xu@intel.com>, Yang Zhang <yang.z.zhang@intel.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>, "Nadav Har'El" <nyh@il.ibm.com>
-Subject: Re: [PATCH 3.2 087/102] nEPT: Nested INVEPT
-References: <lsq.1414880883.12343835@decadent.org.uk>	 <5455F35E.1040304@redhat.com> <1415022261.27313.25.camel@decadent.org.uk>
-In-Reply-To: <1415022261.27313.25.camel@decadent.org.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414745252-4895-8-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 14:44, Ben Hutchings wrote:
->> You can just use the same scheme as your patch 88/102:
-> Why is that?  Why should I not use the upstream version?
+On Fri, Oct 31, 2014 at 09:47:29AM +0100, Vincent Guittot wrote:
+> @@ -6414,11 +6399,12 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>  	 */
+>  	if (busiest->group_type == group_overloaded &&
+>  	    local->group_type   == group_overloaded) {
+> -		load_above_capacity =
+> -			(busiest->sum_nr_running - busiest->group_capacity_factor);
+> -
+> -		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_CAPACITY_SCALE);
+> -		load_above_capacity /= busiest->group_capacity;
+> +		load_above_capacity = busiest->sum_nr_running *
+> +					SCHED_LOAD_SCALE;
+> +		if (load_above_capacity > busiest->group_capacity)
+> +			load_above_capacity -= busiest->group_capacity;
+> +		else
+> +			load_above_capacity = ~0UL;
+>  	}
+>  
+>  	/*
 
-Because it makes no sense to invalidate nested EPT page tables, if the 
-kernel cannot make nested EPT page tables in the first place.
+It seems to me we no longer have need to assume each task contributes
+SCHED_LOAD_SCALE, do we?
 
-I think that this "if" in your patch should always trigger, thus making
-your large patch equivalent to my small patch:
-
-+	if (!(nested_vmx_secondary_ctls_high & SECONDARY_EXEC_ENABLE_EPT) ||
-+	    !(nested_vmx_ept_caps & VMX_EPT_INVEPT_BIT)) {
-+		kvm_queue_exception(vcpu, UD_VECTOR);
-+		return 1;
-+	}
-
-... but without looking at the entire source of vmx.c in the relatively
-old 3.2 kernel, I'd rather play it safe and avoid introducing bugs in case
-the above turns out not to be true.
-
-Paolo
+But as it stands I tihnk this patch already does too much -- it could do
+with a splitting, but let me stare at is a wee bit more.
