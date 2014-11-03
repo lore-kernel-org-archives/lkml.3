@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaKCSPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:15:20 -0500
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:17998 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaKCSPM (ORCPT
+	id S1754215AbaKCSPi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:15:38 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54727 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001AbaKCSPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:15:12 -0500
-X-AuditID: cbfec373-b7f236d000000948-e9-5457c62eddb4
-Date: Mon, 03 Nov 2014 16:15:04 -0200
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>, linux-media@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] video: add RGB444_1X12 and RGB565_1X16 bus formats
-Message-id: <20141103161504.582921ac.m.chehab@samsung.com>
-In-reply-to: <1411999363-28770-3-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411999363-28770-1-git-send-email-boris.brezillon@free-electrons.com>
- <1411999363-28770-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/hEF29Y+EhBqu2a1r0njvJZHHgxUIW
-	iytf37NZvN84j8ni8q45bBY9G7ayWvzcNY/Fgd3jyaaLjB47Z91l9/jwMc5j+7cHrB73u48z
-	eXzeJBfAFsVlk5Kak1mWWqRvl8CV8ef4a9aCJoGKS6+3MDcwbuXtYuTgkBAwkbj2IqaLkRPI
-	FJO4cG89WxcjF4eQwBJGiYXrzjKCJIQEGpkkvjS5g9gsAqoSSw/1gsXZBIwkXjW2sILYIgIW
-	Eh0Pj7KB2MwCdxkl/u5IAbGFBfwkmia8ZgPZxStgJfF7Qh1ImFMgVGLStJvMELvmMkosnreM
-	DeIeZ4n5n7NBangFBCV+TL7HAjFSS2LztiZWCFteYvOat8wTGAVmISmbhaRsFpKyBYzMqxhF
-	S4uTC4qT0nON9IoTc4tL89L1kvNzNzFCAr14B+OLDVaHGAU4GJV4eAu2h4UIsSaWFVfmHmKU
-	4GBWEuGdvzo8RIg3JbGyKrUoP76oNCe1+BAjEwenVANjdkxWlOtSgR2T+xb/tf+lcXBhoa2d
-	h2BNbIl9X7LrkrgpAinc7Hf6ZAUeyCjmPVsyYbL73PrzVs3xRXef/1nulql9XKB8gvuBGl6b
-	PW+ilNY+UnxwevrKB3EBT32kt34rdXl5VkDw+jTbzl1r10SUb6/086wzc/7N4udxRPLKrItf
-	K1dG965UYinOSDTUYi4qTgQAdE7twlICAAA=
+	Mon, 3 Nov 2014 13:15:33 -0500
+Date: Mon, 3 Nov 2014 19:15:17 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: Toshi Kani <toshi.kani@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v4 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
+In-Reply-To: <CALCETrWwEsaz8j2ajqqxS4mupO48tv0e_wbrODsmJfZeON2ptA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1411031913140.5308@nanos>
+References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com> <1414450545-14028-2-git-send-email-toshi.kani@hp.com> <alpine.DEB.2.11.1411031812390.5308@nanos> <1415036879.29109.26.camel@misato.fc.hp.com>
+ <CALCETrWwEsaz8j2ajqqxS4mupO48tv0e_wbrODsmJfZeON2ptA@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 29 Sep 2014 16:02:40 +0200
-Boris Brezillon <boris.brezillon@free-electrons.com> escreveu:
-
-> Add RGB444 format using a 12 bits bus and RGB565 using a 16 bits bus.
+On Mon, 3 Nov 2014, Andy Lutomirski wrote:
+> On Mon, Nov 3, 2014 at 9:47 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > On Mon, 2014-11-03 at 18:14 +0100, Thomas Gleixner wrote:
+> >> On Mon, 27 Oct 2014, Toshi Kani wrote:
+> >> > +   } else {
+> >> > +           /*
+> >> > +            * PAT full support. WT is set to slot 7, which minimizes
+> >> > +            * the risk of using the PAT bit as slot 3 is UC and is
+> >> > +            * currently unused. Slot 4 should remain as reserved.
+> >>
+> >> This comment makes no sense. What minimizes which risk and what has
+> >> this to do with slot 3 and slot 4?
+> >
+> > This is for precaution.  Since the patch enables the PAT bit the first
+> > time, it was suggested that we keep slot 4 reserved and set it to WB.
+> > The PAT bit still has no effect to slot 0/1/2 (WB/WC/UC-) after this
+> > patch.  Slot 7 is the safest slot since slot 3 (UC) is unused today.
+> >
+> > https://lkml.org/lkml/2014/9/4/691
+> > https://lkml.org/lkml/2014/9/5/394
+> >
 > 
-> These formats will later be used by atmel-hlcdc driver.
+> I would clarify the comment, since this really has nothing to do with
+> slot 3 being unused.  How about:
 > 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> We put WT in slot 7 to improve robustness in the presence of errata
+> that might cause the high PAT bit to be ignored.  This way a buggy
+> slot 7 access will hit slot 3, and slot 3 is UC, so at worst we lose
+> performance without causing a correctness issue.  Pentium 4 erratum
+> N46 is an example of such an erratum, although we try not to use PAT
+> at all on affected CPUs.
 
-Not sure if it is too late, but this patch were hidden somewere on my
-queue... so:
+Indeed. That makes a lot more sense.
+ 
+> >> > +            *
+> >> > +            *  PTE encoding used in Linux:
+> >> > +            *      PAT
+> >> > +            *      |PCD
+> >> > +            *      ||PWT  PAT
+> >> > +            *      |||    slot
+> >> > +            *      000    0    WB : _PAGE_CACHE_MODE_WB
+> >> > +            *      001    1    WC : _PAGE_CACHE_MODE_WC
+> >> > +            *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
+> >> > +            *      011    3    UC : _PAGE_CACHE_MODE_UC
+> >> > +            *      100    4    <reserved>
+> >> > +            *      101    5    <reserved>
+> >> > +            *      110    6    <reserved>
+> >>
+> >> Well, they are still mapped to WB/WC/UC_MINUS ....
+> >
+> > Right, the reserved slots are also initialized with their safe values.
+> > However, the macros _PAGE_CACHE_MODE_XXX only refer to the slots
+> > specified above.
 
-Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Then the table should reflect this, i.e.: reserved, but mapped to XX
 
-> ---
->  include/uapi/linux/v4l2-mediabus.h    | 2 ++
->  include/uapi/linux/video-bus-format.h | 4 +++-
->  2 files changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/uapi/linux/v4l2-mediabus.h b/include/uapi/linux/v4l2-mediabus.h
-> index 7b0a06c..05336d6 100644
-> --- a/include/uapi/linux/v4l2-mediabus.h
-> +++ b/include/uapi/linux/v4l2-mediabus.h
-> @@ -33,6 +33,8 @@ enum v4l2_mbus_pixelcode {
->  	VIDEO_BUS_TO_V4L2_MBUS(RGB888_2X12_BE),
->  	VIDEO_BUS_TO_V4L2_MBUS(RGB888_2X12_LE),
->  	VIDEO_BUS_TO_V4L2_MBUS(ARGB8888_1X32),
-> +	VIDEO_BUS_TO_V4L2_MBUS(RGB444_1X12),
-> +	VIDEO_BUS_TO_V4L2_MBUS(RGB565_1X16),
->  
->  	VIDEO_BUS_TO_V4L2_MBUS(Y8_1X8),
->  	VIDEO_BUS_TO_V4L2_MBUS(UV8_1X8),
-> diff --git a/include/uapi/linux/video-bus-format.h b/include/uapi/linux/video-bus-format.h
-> index 4abbd5d..f85f7ee 100644
-> --- a/include/uapi/linux/video-bus-format.h
-> +++ b/include/uapi/linux/video-bus-format.h
-> @@ -34,7 +34,7 @@
->  enum video_bus_format {
->  	VIDEO_BUS_FMT_FIXED = 0x0001,
->  
-> -	/* RGB - next is 0x100e */
-> +	/* RGB - next is 0x1010 */
->  	VIDEO_BUS_FMT_RGB444_2X8_PADHI_BE = 0x1001,
->  	VIDEO_BUS_FMT_RGB444_2X8_PADHI_LE = 0x1002,
->  	VIDEO_BUS_FMT_RGB555_2X8_PADHI_BE = 0x1003,
-> @@ -48,6 +48,8 @@ enum video_bus_format {
->  	VIDEO_BUS_FMT_RGB888_2X12_BE = 0x100b,
->  	VIDEO_BUS_FMT_RGB888_2X12_LE = 0x100c,
->  	VIDEO_BUS_FMT_ARGB8888_1X32 = 0x100d,
-> +	VIDEO_BUS_FMT_RGB444_1X12 = 0x100e,
-> +	VIDEO_BUS_FMT_RGB565_1X16 = 0x100f,
->  
->  	/* YUV (including grey) - next is 0x2024 */
->  	VIDEO_BUS_FMT_Y8_1X8 = 0x2001,
+And a comment below that explaining WHY we map the reserved slots.
+
+Thanks,
+
+	tglx
