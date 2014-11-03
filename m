@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaKCV26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:28:58 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:62037 "EHLO
+	id S1754108AbaKCV2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:28:44 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:52678 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754110AbaKCV2p (ORCPT
+	by vger.kernel.org with ESMTP id S1752710AbaKCV2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:28:45 -0500
-Message-Id: <20141103212841.684711364@goodmis.org>
+	Mon, 3 Nov 2014 16:28:43 -0500
+Message-Id: <20141103212841.832443898@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Mon, 03 Nov 2014 16:27:38 -0500
+Date: Mon, 03 Nov 2014 16:27:39 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH 1/4 v2] ftracetest: Add clear_trace() helper to reset the trace file
+Subject: [RFC PATCH 2/4 v2] ftracetest: Add disable/enable_tracing() helper calls
 References: <20141103212737.696365174@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0001-ftracetest-Add-clear_trace-helper-to-reset-the-trace.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0002-ftracetest-Add-disable-enable_tracing-helper-calls.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,42 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Created the file tools/testing/ftrace/test.d/functions that will
-hold helper functions.
-
-First function added was clear_trace() that is descriptive in its
-name to show that "echo > trace" is clearing the trace file.
+Add calls that disable and enable tracing respectively by echoing
+0 or 1 into tracing_on.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/selftests/ftrace/ftracetest       | 3 +++
- tools/testing/selftests/ftrace/test.d/functions | 4 ++++
- 2 files changed, 7 insertions(+)
- create mode 100644 tools/testing/selftests/ftrace/test.d/functions
+ tools/testing/selftests/ftrace/test.d/functions | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/tools/testing/selftests/ftrace/ftracetest b/tools/testing/selftests/ftrace/ftracetest
-index f15c0da07aca..c6381a9faf83 100755
---- a/tools/testing/selftests/ftrace/ftracetest
-+++ b/tools/testing/selftests/ftrace/ftracetest
-@@ -235,6 +235,9 @@ run_test() { # testfile
-   fi
- }
- 
-+# load in the helper functions
-+. $TEST_DIR/functions
-+
- # Main loop
- for t in $TEST_CASES; do
-   run_test $t
 diff --git a/tools/testing/selftests/ftrace/test.d/functions b/tools/testing/selftests/ftrace/test.d/functions
-new file mode 100644
-index 000000000000..1aa9f2e9c40b
---- /dev/null
+index 1aa9f2e9c40b..c5bf630e9be8 100644
+--- a/tools/testing/selftests/ftrace/test.d/functions
 +++ b/tools/testing/selftests/ftrace/test.d/functions
-@@ -0,0 +1,4 @@
+@@ -2,3 +2,11 @@
+ clear_trace() { # reset trace output
+     echo > trace
+ }
 +
-+clear_trace() { # reset trace output
-+    echo > trace
++disable_tracing() { # stop trace recording
++    echo 0 > tracing_on
++}
++
++enable_tracing() { # start trace recording
++    echo 1 > tracing_on
 +}
 -- 
 2.1.1
