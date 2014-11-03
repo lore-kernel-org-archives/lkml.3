@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183AbaKCH2P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:28:15 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59111 "EHLO
+	id S1751288AbaKCH2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:28:20 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59156 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaKCH2C (ORCPT
+	with ESMTP id S1750864AbaKCH2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Nov 2014 02:28:02 -0500
 X-Original-SENDERIP: 10.177.222.235
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/8] perf tools: Get rid of unused dsos__hit_all()
-Date: Mon,  3 Nov 2014 16:27:53 +0900
-Message-Id: <1414999678-31377-4-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 4/8] perf tools: Rename dsos__write_buildid_table()
+Date: Mon,  3 Nov 2014 16:27:54 +0900
+Message-Id: <1414999678-31377-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
 References: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
@@ -27,80 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dsos__hit_all() and its friends are not used anywhere.  Let's get
-rid of them.
+The dsos__write_buildid_table() is not use struct dso and it mostly
+uses perf_session struct.  So rename it to perf_session__write_buildid_
+table() so that it corresponds to other related functions such as
+perf_session__read_build_ids() and perf_session__cache_build_ids().
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/header.c | 41 -----------------------------------------
- tools/perf/util/header.h |  2 --
- 2 files changed, 43 deletions(-)
+ tools/perf/util/header.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 0ecf4a304cbc..e7c762f54bee 100644
+index e7c762f54bee..6e1ff5d64276 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -200,47 +200,6 @@ static int write_buildid(const char *name, size_t name_len, u8 *build_id,
- 	return write_padded(fd, name, name_len + 1, len);
+@@ -256,10 +256,8 @@ static int machine__write_buildid_table(struct machine *machine, int fd)
+ 	return err;
  }
  
--static int __dsos__hit_all(struct list_head *head)
--{
--	struct dso *pos;
--
--	list_for_each_entry(pos, head, node)
--		pos->hit = true;
--
--	return 0;
--}
--
--static int machine__hit_all_dsos(struct machine *machine)
--{
--	int err;
--
--	err = __dsos__hit_all(&machine->kernel_dsos.head);
--	if (err)
--		return err;
--
--	return __dsos__hit_all(&machine->user_dsos.head);
--}
--
--int dsos__hit_all(struct perf_session *session)
--{
--	struct rb_node *nd;
--	int err;
--
--	err = machine__hit_all_dsos(&session->machines.host);
--	if (err)
--		return err;
--
--	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
--		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--
--		err = machine__hit_all_dsos(pos);
--		if (err)
--			return err;
--	}
--
--	return 0;
--}
--
- static int __dsos__write_buildid_table(struct list_head *head,
- 				       struct machine *machine,
- 				       pid_t pid, u16 misc, int fd)
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 8f5cbaea64a5..d08cfe499404 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -151,8 +151,6 @@ int perf_event__process_build_id(struct perf_tool *tool,
- 				 struct perf_session *session);
- bool is_perf_magic(u64 magic);
+-static int dsos__write_buildid_table(struct perf_header *header, int fd)
++static int perf_session__write_buildid_table(struct perf_session *session, int fd)
+ {
+-	struct perf_session *session = container_of(header,
+-			struct perf_session, header);
+ 	struct rb_node *nd;
+ 	int err = machine__write_buildid_table(&session->machines.host, fd);
  
--int dsos__hit_all(struct perf_session *session);
--
- /*
-  * arch specific callback
-  */
+@@ -482,7 +480,7 @@ static int write_build_id(int fd, struct perf_header *h,
+ 	if (!perf_session__read_build_ids(session, true))
+ 		return -1;
+ 
+-	err = dsos__write_buildid_table(h, fd);
++	err = perf_session__write_buildid_table(session, fd);
+ 	if (err < 0) {
+ 		pr_debug("failed to write buildid table\n");
+ 		return err;
 -- 
 2.1.2
 
