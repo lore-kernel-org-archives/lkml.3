@@ -1,103 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaKCVKD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:10:03 -0500
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:57437 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaKCVJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:09:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdagHFAaPmQptsm7pz_JqYUCbU-0FoH45vrXo8pG6mTAxA@mail.gmail.com>
-References: <1414529835-16207-1-git-send-email-dianders@chromium.org>
-	<CACRpkdagHFAaPmQptsm7pz_JqYUCbU-0FoH45vrXo8pG6mTAxA@mail.gmail.com>
-Date: Mon, 3 Nov 2014 13:09:57 -0800
-X-Google-Sender-Auth: uWmHLjOUqAcG44V1cN9iicKwGdA
-Message-ID: <CAD=FV=VLvoNw5pu5P_iny5a-3-f1XMqGwgQLBp4QmoAM6WPWAA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] pinctrl: Add output-disable
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>, Sherman Yin <syin@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753969AbaKCVKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:10:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52679 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363AbaKCVKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 16:10:13 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] HID: logitech-hidpp: fix negated returns
+Date: Mon,  3 Nov 2014 16:09:58 -0500
+Message-Id: <1415048999-4490-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Reported by Dan Carpenter:
 
-On Fri, Oct 31, 2014 at 1:49 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Oct 28, 2014 at 9:57 PM, Doug Anderson <dianders@chromium.org> wrote:
->> The pinctrl bindings / API allow you to specify that:
->> - a pin should be an output
->> - a pin should have its input path enabled / disabled
->>
->> ...but they don't allow you to tell a pin to stop outputting.  Lets
->> add a new setting for that just in case the bootloader (or the default
->> state) left a pin as an output and we don't want it that way anymore.
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> (...)
->> + * @PIN_CONFIG_OUTPUT_DISABLE: this will configure the pin _not_ to output.
->> + *     Parameter should be 1.
->
-> This doesn't make sense. The pin is either low, high, some analog mode
-> or tristate/high impedance.
->
-> It does *not* stop existing.
->
-> Figure out the exact electronic meaning of what happens when you do
-> "output disable" in your hardware, I think it is very likely that
-> PIN_CONFIG_BIAS_HIGH_IMPEDANCE is what you are really
-> after here.
+drivers/hid/hid-logitech-hidpp.c:359 hidpp_root_get_protocol_version() warn: should this return really be negated?
+drivers/hid/hid-logitech-hidpp.c:398 hidpp_devicenametype_get_count() warn: should this return really be negated?
+drivers/hid/hid-logitech-hidpp.c:417 hidpp_devicenametype_get_device_name() warn: should this return really be negated?
+drivers/hid/hid-logitech-hidpp.c:524 hidpp_touchpad_get_raw_info() warn: should this return really be negated?
 
-OK, that seems plausible.  ...so it is OK to set both
-"bias-high-impedance" _and_ "bias-pull-up" on a pin?  That seemed
-weird to me but if that's right I can do that and try to implement
-"bias-high-impedance" on Rockchip...
+The problem lies in hidpp_send_message_sync() which can return 2 types of
+errors depending of their sign. Adding a comment there to clarify what is
+happening.
 
+To solve that, print an error in case of a protocol problem, and raise
+-EPROTO instead.
 
-Maybe better to explain the problem.  I have a pin that I wish to
-drive high weakly (using a pullup rather than actually pushing
-output-high to the pin).  The firmware has left the pin configured as
-an output with no pull.
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
 
-I can configure the pin like this:
-  rockchip,pins = <7 12 RK_FUNC_GPIO &pcfg_pull_up>;
+Changes in v2:
+- also return if the ret code is negative
 
-  pcfg_pull_up: pcfg-pull-up {
-    bias-pull-up;
-  };
+ drivers/hid/hid-logitech-hidpp.c | 36 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 32 insertions(+), 4 deletions(-)
 
-When I do this the current Rockchip pinctrl driver will _not_
-configure me as an input.  It will happily flip the "pullup" bit in
-hardware and leave the pin configured as an output.
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+index 8d2d54b..61f9e75 100644
+--- a/drivers/hid/hid-logitech-hidpp.c
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -151,6 +151,14 @@ static int __hidpp_send_report(struct hid_device *hdev,
+ 	return ret == fields_count ? 0 : -1;
+ }
+ 
++/**
++ * hidpp_send_message_sync() returns 0 in case of success, and something else
++ * in case of a failure.
++ * - If ' something else' is positive, that means that an error has been raised
++ *   by the protocol itself.
++ * - If ' something else' is negative, that means that we had a classic error
++ *   (-ENOMEM, -EPIPE, etc...)
++ */
+ static int hidpp_send_message_sync(struct hidpp_device *hidpp,
+ 	struct hidpp_report *message,
+ 	struct hidpp_report *response)
+@@ -359,8 +367,13 @@ static int hidpp_root_get_protocol_version(struct hidpp_device *hidpp)
+ 		return 0;
+ 	}
+ 
++	if (ret > 0) {
++		hid_err(hidpp->hid_dev, "%s: received protocol error 0x%02x\n",
++			__func__, ret);
++		return -EPROTO;
++	}
+ 	if (ret)
+-		return -ret;
++		return ret;
+ 
+ 	hidpp->protocol_major = response.fap.params[0];
+ 	hidpp->protocol_minor = response.fap.params[1];
+@@ -398,8 +411,13 @@ static int hidpp_devicenametype_get_count(struct hidpp_device *hidpp,
+ 	ret = hidpp_send_fap_command_sync(hidpp, feature_index,
+ 		CMD_GET_DEVICE_NAME_TYPE_GET_COUNT, NULL, 0, &response);
+ 
++	if (ret > 0) {
++		hid_err(hidpp->hid_dev, "%s: received protocol error 0x%02x\n",
++			__func__, ret);
++		return -EPROTO;
++	}
+ 	if (ret)
+-		return -ret;
++		return ret;
+ 
+ 	*nameLength = response.fap.params[0];
+ 
+@@ -417,8 +435,13 @@ static int hidpp_devicenametype_get_device_name(struct hidpp_device *hidpp,
+ 		CMD_GET_DEVICE_NAME_TYPE_GET_DEVICE_NAME, &char_index, 1,
+ 		&response);
+ 
++	if (ret > 0) {
++		hid_err(hidpp->hid_dev, "%s: received protocol error 0x%02x\n",
++			__func__, ret);
++		return -EPROTO;
++	}
+ 	if (ret)
+-		return -ret;
++		return ret;
+ 
+ 	if (response.report_id == REPORT_ID_HIDPP_LONG)
+ 		count = HIDPP_REPORT_LONG_LENGTH - 4;
+@@ -524,8 +547,13 @@ static int hidpp_touchpad_get_raw_info(struct hidpp_device *hidpp,
+ 	ret = hidpp_send_fap_command_sync(hidpp, feature_index,
+ 		CMD_TOUCHPAD_GET_RAW_INFO, NULL, 0, &response);
+ 
++	if (ret > 0) {
++		hid_err(hidpp->hid_dev, "%s: received protocol error 0x%02x\n",
++			__func__, ret);
++		return -EPROTO;
++	}
+ 	if (ret)
+-		return -ret;
++		return ret;
+ 
+ 	raw_info->x_size = get_unaligned_be16(&params[0]);
+ 	raw_info->y_size = get_unaligned_be16(&params[2]);
+-- 
+2.1.0
 
-I could certainly reach into the GPIO controller part of things
-whenever I see "bias-pull-up" and configure the pin as an input.  I
-guess that wouldn't actually hurt to do even if the pin wasn't
-configured as a GPIO...  In other words, if someone has:
-  rockchip,pins = <6 22 RK_FUNC_1 &pcfg_pull_up>;
-
-...it doesn't hurt to set the GPIO controller for this pin to be an
-input because it's not used when RK_FUNC_1 is used.
-
-
-A third option that would work in my case (and actually be sorta
-clean) would be to implement a faux open-drain output.  The hardware
-itself doesn't have a concept of open drain (unlike some SoCs) but I
-could implement it by swapping between "input pulled up" and "output
-driven low".
-
-
--Doug
