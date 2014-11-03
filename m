@@ -1,303 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaKCPYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:24:22 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:60257 "EHLO extserv.mm-sol.com"
+	id S1752922AbaKCPZa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:25:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36322 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752112AbaKCPYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:24:16 -0500
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Jonathan Cameron <jic23@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
-Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v4 1/2] DT: iio: vadc: document dt binding
-Date: Mon,  3 Nov 2014 17:24:29 +0200
-Message-Id: <1415028270-25860-2-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com>
-References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com>
+	id S1751764AbaKCPZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:25:28 -0500
+Date: Mon, 3 Nov 2014 23:24:04 +0800
+From: Amos Kong <akong@redhat.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        m@bues.ch, mb@bu3sch.de, mpm@selenic.com, amit.shah@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] hw_random: fix unregister race.
+Message-ID: <20141103152404.GA6620@air.redhat.com>
+References: <87wq91odhf.fsf@rustcorp.com.au>
+ <1411008506-28349-1-git-send-email-rusty@rustcorp.com.au>
+ <1411008506-28349-3-git-send-email-rusty@rustcorp.com.au>
+ <20141021141523.GA18345@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141021141523.GA18345@gondor.apana.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
+On Tue, Oct 21, 2014 at 10:15:23PM +0800, Herbert Xu wrote:
+> On Thu, Sep 18, 2014 at 12:18:24PM +0930, Rusty Russell wrote:
+> > The previous patch added one potential problem: we can still be
+> > reading from a hwrng when it's unregistered.  Add a wait for zero
+> > in the hwrng_unregister path.
+> > 
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> > ---
+> >  drivers/char/hw_random/core.c | 5 +++++
+> >  1 file changed, 5 insertions(+)
+> > 
+> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+> > index dc9092a1075d..b4a21e9521cf 100644
+> > --- a/drivers/char/hw_random/core.c
+> > +++ b/drivers/char/hw_random/core.c
+> > @@ -60,6 +60,7 @@ static DEFINE_MUTEX(rng_mutex);
+> >  static DEFINE_MUTEX(reading_mutex);
+> >  static int data_avail;
+> >  static u8 *rng_buffer, *rng_fillbuf;
+> > +static DECLARE_WAIT_QUEUE_HEAD(rng_done);
+> >  static unsigned short current_quality;
+> >  static unsigned short default_quality; /* = 0; default to "off" */
+> >  
+> > @@ -98,6 +99,7 @@ static inline void cleanup_rng(struct kref *kref)
+> >  
+> >  	if (rng->cleanup)
+> >  		rng->cleanup(rng);
 
-Document DT binding for Qualcomm SPMI PMIC voltage ADC
-driver.
+        rng->cleanup_done = true;
 
-Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt | 129 +++++++++++++++++++++
- include/dt-bindings/iio/qcom,spmi-vadc.h           | 119 +++++++++++++++++++
- 2 files changed, 248 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
- create mode 100644 include/dt-bindings/iio/qcom,spmi-vadc.h
+> > +	wake_up_all(&rng_done);
+> >  }
+> >  
+> >  static void set_current_rng(struct hwrng *rng)
+> > @@ -529,6 +531,9 @@ void hwrng_unregister(struct hwrng *rng)
+> >  	}
+> >  
+> >  	mutex_unlock(&rng_mutex);
+> > +
+> > +	/* Just in case rng is reading right now, wait. */
+> > +	wait_event(rng_done, atomic_read(&rng->ref.refcount) == 0);
 
-diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
-new file mode 100644
-index 0000000..2253813
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
-@@ -0,0 +1,129 @@
-+Qualcomm's SPMI PMIC voltage ADC
-+
-+SPMI PMIC voltage ADC (VADC) provides interface to clients to read
-+voltage. The VADC is a 15-bit sigma-delta ADC.
-+
-+VADC node:
-+
-+- compatible:
-+    Usage: required
-+    Value type: <string>
-+    Definition: Should contain "qcom,spmi-vadc".
-+
-+- reg:
-+    Usage: required
-+    Value type: <prop-encoded-array>
-+    Definition: VADC base address and length in the SPMI PMIC register map.
-+
-+- #address-cells:
-+    Usage: required
-+    Value type: <u32>
-+    Definition: Must be one. Child node 'reg' property should define ADC
-+            channel number.
-+
-+- #size-cells:
-+    Usage: required
-+    Value type: <u32>
-+    Definition: Must be zero.
-+
-+- #io-channel-cells:
-+    Usage: required
-+    Value type: <u32>
-+    Definition: Must be one. For details about IIO bindings see:
-+            Documentation/devicetree/bindings/iio/iio-bindings.txt
-+
-+- interrupts:
-+    Usage: optional
-+    Value type: <prop-encoded-array>
-+    Definition: End of conversion interrupt.
-+
-+Channel node properties:
-+
-+- reg:
-+    Usage: required
-+    Value type: <u32>
-+    Definition: ADC channel number.
-+            See include/dt-bindings/iio/qcom,spmi-vadc.h
-+
-+- qcom,decimation:
-+    Usage: optional
-+    Value type: <u32>
-+    Definition: This parameters is used to decrease ADC sampling rate.
-+            Quicker measurements can be made by reducing decimation ratio.
-+            Valid values are 512, 1024, 2048, 4096.
-+            If property is not found, default value of 512 will be used.
-+
-+- qcom,pre-scaling:
-+    Usage: optional
-+    Value type: <u32 array>
-+    Definition: Used for scaling the channel input signal before the signal is
-+            fed to VADC. The configuration for this node is to know the
-+            pre-determined ratio and use it for post scaling. Select one from
-+            the following options.
-+            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
-+            If property is not found default value depending of chip will be used.
-+
-+- qcom,ratiometric:
-+    Usage: optional
-+    Value type: <empty>
-+    Definition: Channel calibration type. If this property is specified
-+            VADC will use the VDD reference (1.8V) and GND for channel
-+            calibration. If property is not found, channel will be
-+            calibrated with 0.625V and 1.25V reference channels, also
-+            known as absolute calibration.
-+
-+- qcom,hw-settle-time:
-+    Usage: optional
-+    Value type: <u32>
-+    Definition: Time between AMUX getting configured and the ADC starting
-+            conversion. Delay = 100us * (value) for value < 11, and
-+            2ms * (value - 10) otherwise.
-+            Valid values are: 0, 100, 200, 300, 400, 500, 600, 700, 800,
-+            900 us and 1, 2, 4, 6, 8, 10 ms
-+            If property is not found, channel will use 0us.
-+
-+- qcom,avg-samples:
-+    Usage: optional
-+    Value type: <u32>
-+    Definition: Number of samples to be used for measurement.
-+            Averaging provides the option to obtain a single measurement
-+            from the ADC that is an average of multiple samples. The value
-+            selected is 2^(value).
-+            Valid values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
-+            If property is not found, 1 sample will be used.
-+
-+NOTE:
-+
-+Following channels, also know as reference points channels, are used for
-+result calibration and their channel configuration nodes should be defined:
-+VADC_REF_625MV and/or VADC_SPARE1, based on PMIC version, VADC_REF_1250MV,
-+VADC_GND_REF and VADC_VDD_VADC.
-+
-+Example:
-+
-+	/* VADC node */
-+	pmic_vadc: vadc@3100 {
-+		compatible = "qcom,spmi-vadc";
-+		reg = <0x3100 0x100>;
-+		interrupts = <0x0 0x31 0x0 IRQ_TYPE_EDGE_RISING>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		#io-channel-cells = <1>;
-+		io-channel-ranges;
-+
-+		/* Channel node */
-+		usb_id_nopull {
-+			reg = <VADC_LR_MUX10_USB_ID>;
-+			qcom,decimation = <512>;
-+			qcom,ratiometric;
-+			qcom,hw-settle-time = <200>;
-+			qcom,avg-samples = <1>;
-+			qcom,pre-scaling = <1 3>;
-+		};
-+	};
-+
-+	/* IIO client node */
-+	usb {
-+		io-channels = <&pmic_vadc VADC_LR_MUX10_USB_ID>;
-+		io-channel-names = "vadc";
-+	};
-diff --git a/include/dt-bindings/iio/qcom,spmi-vadc.h b/include/dt-bindings/iio/qcom,spmi-vadc.h
-new file mode 100644
-index 0000000..42121fa
---- /dev/null
-+++ b/include/dt-bindings/iio/qcom,spmi-vadc.h
-@@ -0,0 +1,119 @@
-+/*
-+ * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _DT_BINDINGS_QCOM_SPMI_VADC_H
-+#define _DT_BINDINGS_QCOM_SPMI_VADC_H
-+
-+/* Voltage ADC channels */
-+#define VADC_USBIN				0x00
-+#define VADC_DCIN				0x01
-+#define VADC_VCHG_SNS				0x02
-+#define VADC_SPARE1_03				0x03
-+#define VADC_USB_ID_MV				0x04
-+#define VADC_VCOIN				0x05
-+#define VADC_VBAT_SNS				0x06
-+#define VADC_VSYS				0x07
-+#define VADC_DIE_TEMP				0x08
-+#define VADC_REF_625MV				0x09
-+#define VADC_REF_1250MV				0x0a
-+#define VADC_CHG_TEMP				0x0b
-+#define VADC_SPARE1				0x0c
-+#define VADC_SPARE2				0x0d
-+#define VADC_GND_REF				0x0e
-+#define VADC_VDD_VADC				0x0f
-+
-+#define VADC_P_MUX1_1_1				0x10
-+#define VADC_P_MUX2_1_1				0x11
-+#define VADC_P_MUX3_1_1				0x12
-+#define VADC_P_MUX4_1_1				0x13
-+#define VADC_P_MUX5_1_1				0x14
-+#define VADC_P_MUX6_1_1				0x15
-+#define VADC_P_MUX7_1_1				0x16
-+#define VADC_P_MUX8_1_1				0x17
-+#define VADC_P_MUX9_1_1				0x18
-+#define VADC_P_MUX10_1_1			0x19
-+#define VADC_P_MUX11_1_1			0x1a
-+#define VADC_P_MUX12_1_1			0x1b
-+#define VADC_P_MUX13_1_1			0x1c
-+#define VADC_P_MUX14_1_1			0x1d
-+#define VADC_P_MUX15_1_1			0x1e
-+#define VADC_P_MUX16_1_1			0x1f
-+
-+#define VADC_P_MUX1_1_3				0x20
-+#define VADC_P_MUX2_1_3				0x21
-+#define VADC_P_MUX3_1_3				0x22
-+#define VADC_P_MUX4_1_3				0x23
-+#define VADC_P_MUX5_1_3				0x24
-+#define VADC_P_MUX6_1_3				0x25
-+#define VADC_P_MUX7_1_3				0x26
-+#define VADC_P_MUX8_1_3				0x27
-+#define VADC_P_MUX9_1_3				0x28
-+#define VADC_P_MUX10_1_3			0x29
-+#define VADC_P_MUX11_1_3			0x2a
-+#define VADC_P_MUX12_1_3			0x2b
-+#define VADC_P_MUX13_1_3			0x2c
-+#define VADC_P_MUX14_1_3			0x2d
-+#define VADC_P_MUX15_1_3			0x2e
-+#define VADC_P_MUX16_1_3			0x2f
-+
-+#define VADC_LR_MUX1_BAT_THERM			0x30
-+#define VADC_LR_MUX2_BAT_ID			0x31
-+#define VADC_LR_MUX3_XO_THERM			0x32
-+#define VADC_LR_MUX4_AMUX_THM1			0x33
-+#define VADC_LR_MUX5_AMUX_THM2			0x34
-+#define VADC_LR_MUX6_AMUX_THM3			0x35
-+#define VADC_LR_MUX7_HW_ID			0x36
-+#define VADC_LR_MUX8_AMUX_THM4			0x37
-+#define VADC_LR_MUX9_AMUX_THM5			0x38
-+#define VADC_LR_MUX10_USB_ID			0x39
-+#define VADC_AMUX_PU1				0x3a
-+#define VADC_AMUX_PU2				0x3b
-+#define VADC_LR_MUX3_BUF_XO_THERM		0x3c
-+
-+#define VADC_LR_MUX1_PU1_BAT_THERM		0x70
-+#define VADC_LR_MUX2_PU1_BAT_ID			0x71
-+#define VADC_LR_MUX3_PU1_XO_THERM		0x72
-+#define VADC_LR_MUX4_PU1_AMUX_THM1		0x73
-+#define VADC_LR_MUX5_PU1_AMUX_THM2		0x74
-+#define VADC_LR_MUX6_PU1_AMUX_THM3		0x75
-+#define VADC_LR_MUX7_PU1_AMUX_HW_ID		0x76
-+#define VADC_LR_MUX8_PU1_AMUX_THM4		0x77
-+#define VADC_LR_MUX9_PU1_AMUX_THM5		0x78
-+#define VADC_LR_MUX10_PU1_AMUX_USB_ID		0x79
-+#define VADC_LR_MUX3_BUF_PU1_XO_THERM		0x7c
-+
-+#define VADC_LR_MUX1_PU2_BAT_THERM		0xb0
-+#define VADC_LR_MUX2_PU2_BAT_ID			0xb1
-+#define VADC_LR_MUX3_PU2_XO_THERM		0xb2
-+#define VADC_LR_MUX4_PU2_AMUX_THM1		0xb3
-+#define VADC_LR_MUX5_PU2_AMUX_THM2		0xb4
-+#define VADC_LR_MUX6_PU2_AMUX_THM3		0xb5
-+#define VADC_LR_MUX7_PU2_AMUX_HW_ID		0xb6
-+#define VADC_LR_MUX8_PU2_AMUX_THM4		0xb7
-+#define VADC_LR_MUX9_PU2_AMUX_THM5		0xb8
-+#define VADC_LR_MUX10_PU2_AMUX_USB_ID		0xb9
-+#define VADC_LR_MUX3_BUF_PU2_XO_THERM		0xbc
-+
-+#define VADC_LR_MUX1_PU1_PU2_BAT_THERM		0xf0
-+#define VADC_LR_MUX2_PU1_PU2_BAT_ID		0xf1
-+#define VADC_LR_MUX3_PU1_PU2_XO_THERM		0xf2
-+#define VADC_LR_MUX4_PU1_PU2_AMUX_THM1		0xf3
-+#define VADC_LR_MUX5_PU1_PU2_AMUX_THM2		0xf4
-+#define VADC_LR_MUX6_PU1_PU2_AMUX_THM3		0xf5
-+#define VADC_LR_MUX7_PU1_PU2_AMUX_HW_ID		0xf6
-+#define VADC_LR_MUX8_PU1_PU2_AMUX_THM4		0xf7
-+#define VADC_LR_MUX9_PU1_PU2_AMUX_THM5		0xf8
-+#define VADC_LR_MUX10_PU1_PU2_AMUX_USB_ID	0xf9
-+#define VADC_LR_MUX3_BUF_PU1_PU2_XO_THERM	0xfc
-+
-+#endif /* _DT_BINDINGS_QCOM_SPMI_VADC_H */
+Hi Rusty,
+ 
+After initializing (kref_init()), the refcount is 1, so we need one
+more kref_put() after each drop_current_rng() to release last
+reference count, then cleanup function will be called.
+
+
+> While it's obviously better than what we have now, I don't believe
+> this is 100% safe as the cleanup function might still be running
+> even after the ref count hits zero.  Once we return from this function
+> the module may be unloaded so we need to ensure that nothing is
+> running at this point.
+
+I found wait_event() can still pass and finish unregister even cleanup
+function isn't called (wake_up_all() isn't called). So I added a flag
+cleanup_done to indicate that the rng device is cleaned up.
+
+
++       /* Just in case rng is reading right now, wait. */
++       wait_event(rng_done, rng->cleanup_done &&
++                  atomic_read(&rng->ref.refcount) == 0);
+
+I will post the new v4 later.
+ 
+> Cheers,
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+
 -- 
-1.9.1
-
+			Amos.
