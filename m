@@ -1,149 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaKCRv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:51:57 -0500
-Received: from mail-by2on0138.outbound.protection.outlook.com ([207.46.100.138]:49166
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752615AbaKCRvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:51:55 -0500
-X-WSS-ID: 0NEH5MB-07-HQG-02
-X-M-MSG: 
-Message-ID: <5457C0B3.30007@amd.com>
-Date: Mon, 3 Nov 2014 11:51:47 -0600
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753161AbaKCRxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:53:19 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:49893 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036AbaKCRxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 12:53:16 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Chen Yucong <slaoub@gmail.com>
-CC: <tony.luck@intel.com>, <ak@linux.intel.com>, <gong.chen@linux.intel.com>,
-        <linux-edac@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] x86, mce, amd: extend mce-inject for support threshold
- interrupt event injection on AMD platform
-References: <1414718648-7766-1-git-send-email-slaoub@gmail.com>
-	<1414718648-7766-3-git-send-email-slaoub@gmail.com>
- <CAOjmkp9Aec9Ec-93YvT5S_mMaxrOoZSYCDbjyWaxGV_dac6qog@mail.gmail.com>
-In-Reply-To: <CAOjmkp9Aec9Ec-93YvT5S_mMaxrOoZSYCDbjyWaxGV_dac6qog@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(377454003)(479174003)(51704005)(24454002)(50986999)(65816999)(54356999)(76176999)(47776003)(20776003)(4396001)(86362001)(77156002)(87936001)(36756003)(65956001)(65806001)(97736003)(23676002)(50466002)(84676001)(44976005)(83506001)(19580405001)(19580395003)(21056001)(102836001)(95666004)(106466001)(64126003)(105586002)(64706001)(107046002)(31966008)(92726001)(99396003)(120916001)(120886001)(92566001)(46102003)(33656002)(62966003)(101416001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0384275935
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <1413973797-17619-2-git-send-email-yingjoe.chen@mediatek.com>
+References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com>
+	<1413973797-17619-2-git-send-email-yingjoe.chen@mediatek.com>
+Date: Mon, 3 Nov 2014 18:53:14 +0100
+Message-ID: <CABuKBeLYMbD-dV_25FJd_NE1RgfVkgF+SoCiAx9O9jKUUAcexA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/8] ARM: mediatek: Add basic support for mt8127
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: "Joe.C" <yingjoe.chen@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>, arm@kernel.org,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        Hsien-Chun Yen <hc.yen@mediatek.com>,
+        huang eddie <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Yuhau Chen <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/3/2014 11:05 AM, Aravind Gopalakrishnan wrote:
+2014-10-22 12:29 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
+> From: "Joe.C" <yingjoe.chen@mediatek.com>
 >
-> There are three ways that have been used to report machine check event.
-> And they are MCE, CMCI/Threshold Interrupt, and POLL. On the Intel
-> platform, CMCI/Threshold Interrupt and POLL share the same event handler
-> - machine_check_poll(). However, on the AMD platform, they have a
-> separate event handler. amd_threshold_interrupt() is used for handling
-> Threshold Interrupt event. And machine_check_poll() has been used for
-> polling other events.
+> This adds a basic dtsi for MT8127 SoC.
 >
-> This patch introduces a new flag MCJ_INTERRUPT that will be used to
-> separate CMCI/Threshold Interrupt and POLL handler in mce-inject.
->
-> Signed-off-by: Chen Yucong <slaoub@gmail.com <mailto:slaoub@gmail.com>>
+> Signed-off-by: Joe.C <yingjoe.chen@mediatek.com>
 > ---
->  arch/x86/include/asm/mce.h              |    5 +++--
->  arch/x86/kernel/cpu/mcheck/mce-inject.c |   16 ++++++++++++++++
->  arch/x86/kernel/cpu/mcheck/threshold.c  |    1 +
->  3 files changed, 20 insertions(+), 2 deletions(-)
+>  arch/arm/boot/dts/mt8127.dtsi     | 93 +++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-mediatek/mediatek.c |  1 +
+>  2 files changed, 94 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/mt8127.dtsi
 >
-
-
-We currently test decoding logic on AMD by performing mce injections 
-using edac/mce_amd_inj.c,
-So instead of modifying mce-inject just for testing 
-amd_threshold_interrupt(),
-Why not put it under mce_amd_inj? (It's AMD specific code anyway)
-
-
-> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> index 3a430ad..cf25839 100644
-> --- a/arch/x86/include/asm/mce.h
-> +++ b/arch/x86/include/asm/mce.h
-> @@ -70,8 +70,9 @@
->  #define MCJ_CTX_PROCESS                0x1  /* inject context: process */
->  #define MCJ_CTX_IRQ            0x2  /* inject context: IRQ */
->  #define MCJ_NMI_BROADCAST      0x4  /* do NMI broadcasting */
-> -#define MCJ_EXCEPTION          0x8  /* raise as exception */
-> -#define MCJ_IRQ_BROADCAST      0x10 /* do IRQ broadcasting */
-> +#define MCJ_IRQ_BROADCAST      0x8  /* do IRQ broadcasting */
-> +#define MCJ_EXCEPTION          0x10  /* raise as exception */
-> +#define MCJ_INTERRUPT          0x20  /* raise as interruption */
->
->  #define MCE_OVERFLOW 0         /* bit 0 in flags means overflow */
->
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c 
-> b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> index 4cfba43..8428746 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> @@ -59,6 +59,16 @@ static void raise_poll(struct mce *m)
->         m->finished = 0;
->  }
->
-> +static void raise_interrupt(struct mce *m)
-> +{
-> +       unsigned long flags;
+> diff --git a/arch/arm/boot/dts/mt8127.dtsi b/arch/arm/boot/dts/mt8127.dtsi
+> new file mode 100644
+> index 0000000..25c9f69
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/mt8127.dtsi
+> @@ -0,0 +1,93 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Joe.C <yingjoe.chen@mediatek.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
 > +
-> +       local_irq_save(flags);
-> +       mce_threshold_vector();
-> +       local_irq_restore(flags);
-> +       m->finished = 0;
-> +}
+> +#include <dt-bindings/interrupt-controller/irq.h>
+> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> +#include "skeleton64.dtsi"
+
+Cortex a7 is 32 bits, right? So why do you use skeleton64.dtsi?
+
 > +
->  static void raise_exception(struct mce *m, struct pt_regs *pregs)
->  {
->         struct pt_regs regs;
-> @@ -89,6 +99,8 @@ static int mce_raise_notify(unsigned int cmd, struct 
-> pt_regs *regs)
->         cpumask_clear_cpu(cpu, mce_inject_cpumask);
->         if (m->inject_flags & MCJ_EXCEPTION)
->                 raise_exception(m, regs);
-> +       else if (m->inject_flags & MCJ_INTERRUPT)
-> +               raise_interrupt(m);
->         else if (m->status)
->                 raise_poll(m);
->         return NMI_HANDLED;
-> @@ -132,6 +144,10 @@ static int raise_local(void)
->                         ret = -EINVAL;
->                 }
->                 printk(KERN_INFO "MCE exception done on CPU %d\n", cpu);
-> +       } else if (m->inject_flags & MCJ_INTERRUPT) {
-> +               printk(KERN_INFO "Raising threshold interrupt on CPU 
-> %d\n", cpu);
-> +               raise_interrupt(m);
-> +               printk(KERN_INFO "Threshold interrupt done on CPU 
-> %d\n", cpu);
->         } else if (m->status) {
->                 printk(KERN_INFO "Starting machine check poll CPU 
-> %d\n", cpu);
->                 raise_poll(m);
-> diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c 
-> b/arch/x86/kernel/cpu/mcheck/threshold.c
-> index 7245980..e324bf9 100644
-> --- a/arch/x86/kernel/cpu/mcheck/threshold.c
-> +++ b/arch/x86/kernel/cpu/mcheck/threshold.c
-> @@ -17,6 +17,7 @@ static void default_threshold_interrupt(void)
->  }
+> +/ {
+> +       compatible = "mediatek,mt8127";
+> +       interrupt-parent = <&gic>;
+> +
+> +       cpus {
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               cpu@0 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x0>;
+> +               };
+> +               cpu@1 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x1>;
+> +               };
+> +               cpu@2 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x2>;
+> +               };
+> +               cpu@3 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x3>;
+> +               };
+> +
+> +       };
+> +
+> +       clocks {
+> +               #address-cells = <2>;
+> +               #size-cells = <2>;
+> +               compatible = "simple-bus";
+> +               ranges;
+> +
+> +               system_clk: dummy13m {
+> +                       compatible = "fixed-clock";
+> +                       clock-frequency = <13000000>;
+> +                       #clock-cells = <0>;
+> +               };
+> +
+> +               rtc_clk: dummy32k {
+> +                       compatible = "fixed-clock";
+> +                       clock-frequency = <32000>;
+> +                       #clock-cells = <0>;
+> +               };
+> +       };
+> +
+> +       soc {
+> +               #address-cells = <2>;
+> +               #size-cells = <2>;
+> +               compatible = "simple-bus";
+> +               ranges;
+> +
+> +               timer: timer@10008000 {
+> +                       compatible = "mediatek,mt8127-timer", "mediatek,mt6577-timer";
+> +                       reg = <0 0x10008000 0 0x80>;
+
+This should be "reg = <0x10008000 0x80>;" right?
+Same in mt8135.dtsi
+
+> +                       interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
+> +                       clocks = <&system_clk>, <&rtc_clk>;
+> +                       clock-names = "system-clk", "rtc-clk";
+> +               };
+> +
+> +               gic: interrupt-controller@10211000 {
+> +                       compatible = "arm,cortex-a7-gic";
+> +                       interrupt-controller;
+> +                       #interrupt-cells = <3>;
+> +                       reg = <0 0x10211000 0 0x1000>,
+> +                             <0 0x10212000 0 0x1000>,
+> +                             <0 0x10214000 0 0x2000>,
+> +                             <0 0x10216000 0 0x2000>;
+> +               };
+> +       };
+> +};
+> diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
+> index f2acf07..7f478ce 100644
+> --- a/arch/arm/mach-mediatek/mediatek.c
+> +++ b/arch/arm/mach-mediatek/mediatek.c
+> @@ -19,6 +19,7 @@
 >
->  void (*mce_threshold_vector)(void) = default_threshold_interrupt;
-> +EXPORT_SYMBOL_GPL(mce_threshold_vector);
+>  static const char * const mediatek_board_dt_compat[] = {
+>         "mediatek,mt6589",
+> +       "mediatek,mt8127",
+>         NULL,
+>  };
 >
->  static inline void __smp_threshold_interrupt(void)
->  {
 > --
-> 1.7.10.4
+> 1.8.1.1.dirty
 >
 
+
+
+-- 
+motzblog.wordpress.com
