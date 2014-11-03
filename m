@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaKCWSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 17:18:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52413 "EHLO mail.zytor.com"
+	id S1752260AbaKCWSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 17:18:37 -0500
+Received: from fn.samba.org ([216.83.154.106]:37648 "EHLO mail.samba.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810AbaKCWSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 17:18:05 -0500
-Message-ID: <5457FEF8.3050603@zytor.com>
-Date: Mon, 03 Nov 2014 14:17:28 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Jan Beulich <jbeulich@suse.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sebastian Lackner <sebastian@fds-team.de>,
+	id S1751113AbaKCWSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 17:18:35 -0500
+X-Greylist: delayed 699 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Nov 2014 17:18:35 EST
+Date: Mon, 3 Nov 2014 14:07:07 -0800
+From: Jeremy Allison <jra@samba.org>
+To: Eric Rannaud <e@nanocritical.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Christoph Hellwig <hch@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>, Anish Bhatt <anish@chelsio.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>
-CC: "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/asm] sched/x86_64: Don't save flags on context switch
-References: <bf6fb790787eb95b922157838f52712c25dda157.1412187233.git.luto@amacapital.net> <tip-2c7577a7583747c9b71f26dced7f696b739da745@git.kernel.org> <CALCETrWM2wVynp1rrip9AWtNYDzjC4M8JqKR82ew5dpyrTWMgA@mail.gmail.com>
-In-Reply-To: <CALCETrWM2wVynp1rrip9AWtNYDzjC4M8JqKR82ew5dpyrTWMgA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+Message-ID: <20141103220707.GJ5389@samba2>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <5452B241.5010603@amacapital.net>
+ <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
+ <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+ <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
+ <20141031084220.GA29085@infradead.org>
+ <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
+ <CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
+ <20141103083447.GA8617@infradead.org>
+ <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
+ <CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 01:11 PM, Andy Lutomirski wrote:
-> On Tue, Oct 28, 2014 at 4:14 AM, tip-bot for Andy Lutomirski
-> <tipbot@zytor.com> wrote:
->> Commit-ID:  2c7577a7583747c9b71f26dced7f696b739da745
->> Gitweb:     http://git.kernel.org/tip/2c7577a7583747c9b71f26dced7f696b739da745
->> Author:     Andy Lutomirski <luto@amacapital.net>
->> AuthorDate: Wed, 1 Oct 2014 11:28:25 -0700
->> Committer:  Ingo Molnar <mingo@kernel.org>
->> CommitDate: Tue, 28 Oct 2014 11:11:30 +0100
->>
->> sched/x86_64: Don't save flags on context switch
->>
->> Now that the kernel always runs with clean flags (in particular,
->> NT is clear), there is no need to save and restore flags on
->> every context switch.
+On Mon, Nov 03, 2014 at 10:49:24AM -0800, Eric Rannaud wrote:
+> On Mon, Nov 3, 2014 at 9:06 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >> That doesn't help because we explicitly reject O_RDONLY when combined
+> >> with O_TMPFILE.
+> >
+> > I think I'm missing something.  How is an O_RDONLY temporary file
+> > useful?  Wouldn't you want an O_RDWR tempfile with mode 0400 or
+> > something like that?
 > 
-> Just to make myself a little more comfortable with this...
+> Isn't it because they are essentially emulating an atomic open()
+> capable of creating a file with inherited ACLs, according to
+> relatively complex rules? open *can* be used with O_CREAT|O_RDONLY
+> (touch(1) might do that), which would naively translate into:
 > 
-> There is one potentially relevant flag: AC.  I think this is still OK.
-> If we schedule with STAC set, then we've already screwed up, I think.
-> Even preempt schedules from interrupt context, so if we schedule due
-> to preemption or #PF in the middle of uaccess, AC should be saved and
-> cleared by whatever interrupt caused the reschedule, right?
+>         fd = open(dir, O_TMPFILE|O_RDONLY, 0600)
+>         fsetxattr(fd, "...")
+>         fsetxattr(fd, "...")
+>         linkat(AT_FDCWD, "/proc/self/fd/...", ..., AT_SYMLINK_FOLLOW)
+>         return fd;
 > 
-> And do we ever have TF set during a context switch?  I hope not.
+> Now this would be happening on the server, and the only reason why it
+> would be important to ensure that fd is O_RDONLY, is that smbd does
+> not do its own bookkeeping of how each file handle was opened, and
+> would rather have the kernel enforce O_RDONLY?
 > 
-> Also, what's with 'jmp exit_intr' at the end of retint_kernel?  Why
-> isn't that 'jmp retint_kernel'?
-> 
+> With O_TMPFILE as implemented now, smbd would have to do open(dir,
+> O_TMPFILE|O_RDWR, 0600), but internally keep track that O_RDONLY was
+> requested by the client on that fd, and block any writes to fd itself.
 
-AC is saved by interrupts and cleared by IRET.  We execute CLAC in all
-the interrupt entry paths.
+Which we already do, actually..
 
-	-hpa
+Although the atomic open emulation is
+a very interesting idea for us. That's
+something we currently don't do correctly
+across different protocols (although we
+do it between smbd's themselves).
 
-
+Jeremy.
