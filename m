@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaKCP1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:27:49 -0500
-Received: from mga14.intel.com ([192.55.52.115]:7383 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752470AbaKCP1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:27:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="410419383"
-Date: Mon, 3 Nov 2014 17:27:43 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: David Cohen <david.a.cohen@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141103152743.GB1618@lahna.fi.intel.com>
-References: <20141013192632.GC29810@saruman>
- <20141013193618.GD29810@saruman>
- <CACRpkdYDiFvwsPwqACXS2bZU9peUyJEn-fpzVqZKYXseuEFGGA@mail.gmail.com>
- <20141028144249.GD8123@saruman>
- <CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
- <20141031132005.GB1273@saruman>
- <20141031162339.GA7136@psi-dev26.jf.intel.com>
- <20141031184509.GA2224@psi-dev26.jf.intel.com>
- <20141103092402.GA1304@lahna.fi.intel.com>
- <20141103150048.GB27425@saruman>
+	id S1752614AbaKCP2T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:28:19 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:53302 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579AbaKCP2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:28:17 -0500
+Date: Mon, 3 Nov 2014 15:27:48 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, x86@kernel.org
+Subject: Re: [PATCH v4 10/10] x86: Support compiling out userspace IO (iopl
+ and ioperm)
+Message-ID: <20141103152748.327032f8@alan.etchedpixels.co.uk>
+In-Reply-To: <20141103141357.GC21818@thin>
+References: <cover.1414870871.git.josh@joshtriplett.org>
+	<ec10c497d3a7f44f335dbc267edd6de5b4acd671.1414870871.git.josh@joshtriplett.org>
+	<20141103121049.2f0c81a9@alan.etchedpixels.co.uk>
+	<20141103141357.GC21818@thin>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103150048.GB27425@saruman>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 09:00:48AM -0600, Felipe Balbi wrote:
-> On Mon, Nov 03, 2014 at 11:24:02AM +0200, Mika Westerberg wrote:
-> > On Fri, Oct 31, 2014 at 11:45:09AM -0700, David Cohen wrote:
-> > > > I think adding the module exit + allowing this driver to be a module
-> > > > would be a good approach. Then we don't need to force generic x86 kernel
-> > > > binaries to always have this driver. Unless Mathias or Mika knows a
-> > > > constraint to force this driver to be builtin only.
-> > > 
-> > > It helps if I CC them when asking for feedback :)
-> > > 
-> > > Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
-> > > to be bool?
-> > 
-> > The only constraint that has been keeping this driver as bool is that
-> > some machines like, Asus T100, uses ACPI GPIO operation regions for
-> > toggling GPIOs to get things like sensor hub powered on. The GPIO
-> > operation region code does not yet handle -EPROBE_DEFER so only way to
-> > ensure that the operation region is there is to have the driver compiled
-> > in to the kernel.
+> > This isn't unreasonable but there are drivers with userspace helpers that
+> > use iopl/ioperm type functionality where you should be doing a SELECT of
+> > X86_IOPORT. The one that comes to mind is the uvesa driver. From a quick
+> > scan it may these days be the only mainstream one that needs the select
+> > adding.
 > 
-> But that's not enough excuse to have every single x86 in the market
-> shipping with this driver. Think about a distro kernel, most likely this
-> gets enabled and it's wrong in 80% of the cases.
+> Should kernel drivers really express dependencies that only their
+> (current instances of) corresponding userspace components need?
+> Something seems wrong about that.
 
-True, but see below.
+uvesafb will always need X86_IOPORT. It's kind of implicit in the design.
+I'm not suggesting that fbdev should select X86_IOPORT but in the uvesafb
+case at least it's completely useless to have one and not the other.
 
-> It would be nicer to add EPROBE_DEFER support, convert this into
-> tristate and have default = M if BAYTRAIL, or something.
+> IO_BITMAP_LONGS already gets defined to (0/sizeof(long)).  And as far as
+> I can tell, that would only work for init_tss_io, not anything else.
+> Even then, that would only work with a zero-size array left around in
+> tss_struct, which doesn't seem appropriate.  The remaining ifdefs wrap
+> code that GCC could not constant-fold away, and making that code
+> constant-foldable seems significantly more invasive than the ifdefs.
 
-If it were simple as that we would have done that already. Please check
-drivers/gpio/gpiolib-acpi.c:acpi_gpio_adr_space_handler() and tell me
-how we can do that.
-
-The problem is that it is *firmware* code that decides to use the GPIO
-at some random point in time and we have no way to tell it to retry
-later when the GPIO is available.
+OK
