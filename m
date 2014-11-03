@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaKCKba (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:31:30 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:47568 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaKCKbW (ORCPT
+	id S1751776AbaKCKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:31:57 -0500
+Received: from www.linutronix.de ([62.245.132.108]:50980 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681AbaKCKbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:31:22 -0500
-From: "pang.xunlei" <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [PATCH 3/3] sched/rt: Optimize select_task_rq_rt() for non-RT curr task
-Date: Mon,  3 Nov 2014 18:30:20 +0800
-Message-Id: <1415010620-6176-3-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1415010620-6176-1-git-send-email-pang.xunlei@linaro.org>
-References: <1415010620-6176-1-git-send-email-pang.xunlei@linaro.org>
+	Mon, 3 Nov 2014 05:31:51 -0500
+Date: Mon, 3 Nov 2014 11:31:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Juergen Gross <jgross@suse.com>
+cc: Borislav Petkov <bp@alien8.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, hpa@zytor.com,
+        x86@kernel.org, mingo@redhat.com, stefan.bader@canonical.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Subject: Re: [PATCH 01/17] x86: Make page cache mode a real type
+In-Reply-To: <54572256.5050707@suse.com>
+Message-ID: <alpine.DEB.2.11.1411031131190.5308@nanos>
+References: <1414764033-30011-1-git-send-email-jgross@suse.com> <1414764033-30011-2-git-send-email-jgross@suse.com> <20141031194207.GA15367@pd.tnic> <20141031202322.GB15935@laptop.dumpdata.com> <20141031203554.GA15363@pd.tnic> <54572256.5050707@suse.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When selecting the cpu for a waking RT task, if curr is a non-RT
-task which is bound only on this cpu, then we can give it a chance
-to select a different cpu(definitely an idle cpu if existing) for
-the RT task to avoid curr starving.
+On Mon, 3 Nov 2014, Juergen Gross wrote:
+> On 10/31/2014 09:35 PM, Borislav Petkov wrote:
+> > On Fri, Oct 31, 2014 at 04:23:22PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > > > Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> > > > > Signed-off-by: Juergen Gross <jgross@suse.com>
+> > > > 
+> > > > Just a clarification question: how is one to understand this attribution
+> > > > here? Is Stefan the original author, was he a reviewer, or? Because this
+> > > > SOB chain is misleading...
+> > > 
+> > > He was the first then Juergen took over. Should the SOB order be inversed?
+> > 
+> > Well, I'd say:
+> > 
+> > Originally-by: Stefan...
+> > 
+> > or
+> > 
+> > Based-on-patch-by: Stefan...
+> 
+> I think this would fit best.
+> 
+> Shall I respin another version modifying the SOB to above?
 
-Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
----
- kernel/sched/rt.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+That would be appreciated.
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index d024e6c..89202ab 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1319,6 +1319,11 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- 	 * runqueue. Otherwise simply start this RT task
- 	 * on its current runqueue.
- 	 *
-+	 * If the current task on @p's runqueue is a non-RT task,
-+	 * and this task is bound on current runqueue, then try to
-+	 * see if we can wake this RT task up on a different runqueue,
-+	 * we will definitely find an idle cpu if there is any.
-+	 *
- 	 * We want to avoid overloading runqueues. If the woken
- 	 * task is a higher priority, then it will stay on this CPU
- 	 * and the lower prio task should be moved to another CPU.
-@@ -1335,9 +1340,8 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- 	 * This test is optimistic, if we get it wrong the load-balancer
- 	 * will have to sort it out.
- 	 */
--	if (curr && unlikely(rt_task(curr)) &&
--	    (curr->nr_cpus_allowed < 2 ||
--	     curr->prio <= p->prio)) {
-+	if (curr && unlikely(curr->nr_cpus_allowed < 2 ||
-+				curr->prio <= p->prio)) {
- 		int target = find_lowest_rq(p);
- 
- 		if (target != -1)
--- 
-1.7.9.5
+Thanks,
 
+	tglx
