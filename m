@@ -1,47 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaKCIos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:44:48 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:51836 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750959AbaKCIoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 03:44:46 -0500
-Message-ID: <1415004303.407.11.camel@mm-sol.com>
-Subject: Re: [PATCH v4] iio: iadc: Qualcomm SPMI PMIC current ADC driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Mon, 03 Nov 2014 10:45:03 +0200
-In-Reply-To: <alpine.DEB.2.02.1410312128100.18476@pmeerw.net>
-References: <1413987213-22218-1-git-send-email-iivanov@mm-sol.com>
-	 <5453ED55.2000003@gmx.de> <alpine.DEB.2.02.1410312128100.18476@pmeerw.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.6-fta3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751626AbaKCIqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:46:36 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:57807 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaKCIqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 03:46:33 -0500
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ALSA: echoaudio: add reference of struct echoaudio
+Date: Mon,  3 Nov 2014 14:16:22 +0530
+Message-Id: <1415004383-1515-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+added reference of struct echoaudio to free_firmware function.
+this structure will be later used to get a reference of the card
+when converting snd_printk to dev_* in the next patch of the series.
 
-On Fri, 2014-10-31 at 21:48 +0100, Peter Meerwald wrote:
-> > Ivan T. Ivanov schrieb am 22.10.2014 16:13:
-> > > The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
-> > > 16 bits resolution and register space inside PMIC accessible across
-> > > SPMI bus.
-> > >
-> > > The driver registers itself through IIO interface.
-> > Pretty much there, just one question I would like to double-check: The CPU of these chips is 
-> Little Endian, right?
-> > Annoyingly, you introduced a small typo in this revision, but that alone doesn't qualify for a 
-> new revision. A separate patch fixing it would probably be best. See inline.
-> 
-> some minor comments below
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ sound/pci/echoaudio/echoaudio.c     |  3 ++-
+ sound/pci/echoaudio/echoaudio.h     |  3 ++-
+ sound/pci/echoaudio/echoaudio_dsp.c | 10 +++++-----
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
-Thanks, will fix them. IIO maintainers, what do you
-prefer, new version or fallow-up patch?
+diff --git a/sound/pci/echoaudio/echoaudio.c b/sound/pci/echoaudio/echoaudio.c
+index d82321f..db1b247 100644
+--- a/sound/pci/echoaudio/echoaudio.c
++++ b/sound/pci/echoaudio/echoaudio.c
+@@ -69,7 +69,8 @@ static int get_firmware(const struct firmware **fw_entry,
+ 
+ 
+ 
+-static void free_firmware(const struct firmware *fw_entry)
++static void free_firmware(const struct firmware *fw_entry,
++			  struct echoaudio *chip)
+ {
+ #ifdef CONFIG_PM_SLEEP
+ 	DE_ACT(("firmware not released (kept in cache)\n"));
+diff --git a/sound/pci/echoaudio/echoaudio.h b/sound/pci/echoaudio/echoaudio.h
+index b86b88d..a4f112a 100644
+--- a/sound/pci/echoaudio/echoaudio.h
++++ b/sound/pci/echoaudio/echoaudio.h
+@@ -468,7 +468,8 @@ static int wait_handshake(struct echoaudio *chip);
+ static int send_vector(struct echoaudio *chip, u32 command);
+ static int get_firmware(const struct firmware **fw_entry,
+ 			struct echoaudio *chip, const short fw_index);
+-static void free_firmware(const struct firmware *fw_entry);
++static void free_firmware(const struct firmware *fw_entry,
++			  struct echoaudio *chip);
+ 
+ #ifdef ECHOCARD_HAS_MIDI
+ static int enable_midi_input(struct echoaudio *chip, char enable);
+diff --git a/sound/pci/echoaudio/echoaudio_dsp.c b/sound/pci/echoaudio/echoaudio_dsp.c
+index 5a6a217..977b2bd 100644
+--- a/sound/pci/echoaudio/echoaudio_dsp.c
++++ b/sound/pci/echoaudio/echoaudio_dsp.c
+@@ -206,12 +206,12 @@ static int load_asic_generic(struct echoaudio *chip, u32 cmd, short asic)
+ 	}
+ 
+ 	DE_INIT(("ASIC loaded\n"));
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	return 0;
+ 
+ la_error:
+ 	DE_INIT(("failed on write_dsp\n"));
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	return -EIO;
+ }
+ 
+@@ -317,11 +317,11 @@ static int install_resident_loader(struct echoaudio *chip)
+ 	}
+ 
+ 	DE_INIT(("Resident loader successfully installed\n"));
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	return 0;
+ 
+ irl_error:
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	return -EIO;
+ }
+ 
+@@ -491,7 +491,7 @@ static int load_firmware(struct echoaudio *chip)
+ 	if (err < 0)
+ 		return err;
+ 	err = load_dsp(chip, (u16 *)fw->data);
+-	free_firmware(fw);
++	free_firmware(fw, chip);
+ 	if (err < 0)
+ 		return err;
+ 
+-- 
+1.8.1.2
 
-Regards,
-Ivan
