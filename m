@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284AbaKCL2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:28:25 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:63304 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032AbaKCL2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 06:28:22 -0500
-X-IronPort-AV: E=Sophos;i="5.07,307,1413244800"; 
-   d="scan'208";a="187472573"
-Date: Mon, 3 Nov 2014 11:10:18 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
-In-Reply-To: <20141103105716.GC23162@arm.com>
-Message-ID: <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com> <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com> <20141103105716.GC23162@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	id S1751554AbaKCLcp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:32:45 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:59537 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaKCLcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 06:32:42 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-02-545767d8fc57
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] CMA and DMA-mapping update for v3.18-rc4
+Date: Mon, 03 Nov 2014 12:32:37 +0100
+Message-id: <1415014357-22431-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPJMWRmVeSWpSXmKPExsVy+t/xq7o30sNDDBo+yVlc3jWHzWLtkbvs
+	Fo/63rI7MHucmPGbxaNvyypGj8+b5AKYo7hsUlJzMstSi/TtErgynnzawlKwkLti7b1JTA2M
+	kzm7GDk5JARMJFbuaWCEsMUkLtxbz9bFyMUhJLCUUeLG21vsEE4fk8S2OR1MIFVsAoYSXW+7
+	2EBsEQEjic8vrrCC2MwCvhJ3Xq1iAbGFBWwkOpbdYAexWQRUJS7cOATUy8HBK+Ah0d/FArFM
+	TuL/yxVMExi5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQI8fTXHYxLj1kdYhTgYFTi
+	4Z1wOSxEiDWxrLgy9xCjBAezkgjvv5TwECHelMTKqtSi/Pii0pzU4kOMTBycUg2Mh3au+dpQ
+	sujTWrZ/UuG7RV6uqVwyf8YyDkcfvV13a9tW9Yj7/7bnybCQf31ZNs2q8tfdu2b7QqVePc0R
+	2nK52UMq6Ly609ulj67oF9z+l2rgmVh7N+Tks7yIq3uN/55rjOlYWx55mefB18m6yg39saUr
+	nqjyzd0qLqwzh2m+odn/a9oqZlXnlFiKMxINtZiLihMBnjigJNIBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Nov 2014, Will Deacon wrote:
-> On Mon, Nov 03, 2014 at 10:46:03AM +0000, Stefano Stabellini wrote:
-> > On Mon, 27 Oct 2014, Stefano Stabellini wrote:
-> > > Introduce a boolean flag and an accessor function to check whether a
-> > > device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
-> > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > CC: will.deacon@arm.com
-> > 
-> > Will, Catalin,
-> > are you OK with this patch?
-> 
-> It would be nicer if the dma_coherent flag didn't have to be duplicated by
-> each architecture in dev_archdata. Is there any reason not to put it in the
-> core code?
+Hi Linus,
 
-Yes, there is a reason for it: if I added a boolean dma_coherent flag in
-struct device as Catalin initially suggested, what would be the default
-for each architecture? Where would I set it for arch that don't use
-device tree? It is not easy.
+I would like to ask You for pulling patches for cma and dma-mapping
+subsystems for v3.18-rc4.
 
-I thought it would be better to introduce is_device_dma_coherent only on
-the architectures where it certainly makes sense to have it. In fact I
-checked and arm and arm64 are the only architectures to define
-set_arch_dma_coherent_ops at the moment. At that point if
-is_device_dma_coherent becomes arch-specific, it makes sense to store
-the flag in dev_archdata instead of struct device.
+The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
+
+  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-v3.18
+
+for you to fetch changes up to dda02fd6278d9e995850b3c1dba484f17cbe4de4:
+
+  mm, cma: make parameters order consistent in func declaration and definition (2014-10-27 13:00:55 +0100)
+
+----------------------------------------------------------------
+Laurent Pinchart (4):
+      mm: cma: Don't crash on allocation if CMA area can't be activated
+      mm: cma: Always consider a 0 base address reservation as dynamic
+      mm: cma: Ensure that reservations never cross the low/high mem boundary
+      mm: cma: Use %pa to print physical addresses
+
+Weijie Yang (1):
+      mm, cma: make parameters order consistent in func declaration and definition
+
+ include/linux/cma.h |  8 ++++----
+ mm/cma.c            | 68 ++++++++++++++++++++++++++++++++++++++++++++------------------------
+ 2 files changed, 48 insertions(+), 28 deletions(-)
+
+
+This pull request contains important fixes for recently introduced
+highmem support for default contiguous memory region used for
+dma-mapping subsystem.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung R&D Institute Poland
