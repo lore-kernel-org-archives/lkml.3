@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaKCWgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 17:36:39 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:58219 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174AbaKCWgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 17:36:38 -0500
-Date: Mon, 3 Nov 2014 17:36:26 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Miller <davem@davemloft.net>
-Cc: kirill@shutemov.name, akpm@linux-foundation.org, mhocko@suse.cz,
-        vdavydov@parallels.com, tj@kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
-Message-ID: <20141103223626.GA12006@phnom.home.cmpxchg.org>
-References: <20141103210607.GA24091@node.dhcp.inet.fi>
- <20141103213628.GA11428@phnom.home.cmpxchg.org>
- <20141103215206.GB24091@node.dhcp.inet.fi>
- <20141103.165807.2039166055692354811.davem@davemloft.net>
+	id S1752074AbaKCWhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 17:37:07 -0500
+Received: from mail-bl2on0079.outbound.protection.outlook.com ([65.55.169.79]:20832
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751162AbaKCWhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 17:37:05 -0500
+From: <dinguyen@opensource.altera.com>
+To: <p.zabel@pengutronix.de>
+CC: <dinh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCHv2] reset: add socfpga_reset_status
+Date: Mon, 3 Nov 2014 16:33:05 -0600
+Message-ID: <1415053985-10552-1-git-send-email-dinguyen@opensource.altera.com>
+X-Mailer: git-send-email 2.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103.165807.2039166055692354811.davem@davemloft.net>
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CY1PR00CA0009.namprd00.prod.outlook.com (25.160.142.147) To
+ CY1PR0301MB1196.namprd03.prod.outlook.com (25.160.165.27)
+X-MS-Exchange-Transport-FromEntityHeader: Hosted
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1196;
+X-Forefront-PRVS: 0384275935
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(69596002)(89996001)(120916001)(87976001)(110136001)(33646002)(19580395003)(21056001)(19580405001)(99396003)(4396001)(50226001)(53416004)(107046002)(42186005)(95666004)(229853001)(81156004)(97736003)(88136002)(2351001)(86152002)(106356001)(105586002)(104166001)(122386002)(93916002)(92726001)(20776003)(47776003)(66066001)(64706001)(62966003)(77156002)(77096003)(31966008)(101416001)(102836001)(50986999)(87286001)(40100003)(48376002)(46102003)(86362001)(92566001)(50466002);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0301MB1196;H:linux-builds1.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 04:58:07PM -0500, David Miller wrote:
-> From: "Kirill A. Shutemov" <kirill@shutemov.name>
-> Date: Mon, 3 Nov 2014 23:52:06 +0200
-> 
-> > On Mon, Nov 03, 2014 at 04:36:28PM -0500, Johannes Weiner wrote:
-> >> On Mon, Nov 03, 2014 at 11:06:07PM +0200, Kirill A. Shutemov wrote:
-> >> > On Sat, Nov 01, 2014 at 11:15:54PM -0400, Johannes Weiner wrote:
-> >> > > Memory cgroups used to have 5 per-page pointers.  To allow users to
-> >> > > disable that amount of overhead during runtime, those pointers were
-> >> > > allocated in a separate array, with a translation layer between them
-> >> > > and struct page.
-> >> > > 
-> >> > > There is now only one page pointer remaining: the memcg pointer, that
-> >> > > indicates which cgroup the page is associated with when charged.  The
-> >> > > complexity of runtime allocation and the runtime translation overhead
-> >> > > is no longer justified to save that *potential* 0.19% of memory.
-> >> > 
-> >> > How much do you win by the change?
-> >> 
-> >> Heh, that would have followed right after where you cut the quote:
-> >> with CONFIG_SLUB, that pointer actually sits in already existing
-> >> struct page padding, which means that I'm saving one pointer per page
-> >> (8 bytes per 4096 byte page, 0.19% of memory), plus the pointer and
-> >> padding in each memory section.  I also save the (minor) translation
-> >> overhead going from page to page_cgroup and the maintenance burden
-> >> that stems from having these auxiliary arrays (see deleted code).
-> > 
-> > I read the description. I want to know if runtime win (any benchmark data?)
-> > from moving mem_cgroup back to the struct page is measurable.
-> > 
-> > If the win is not significant, I would prefer to not occupy the padding:
-> > I'm sure we will be able to find a better use for the space in struct page
-> > in the future.
-> 
-> I think the simplification benefits completely trump any performan
-> metric.
+From: Dinh Nguyen <dinguyen@opensource.altera.com>
 
-I agree.
+Populate the reset_status callback for SOCFPGA.
 
-Also, nobody is using that space currently, and I can save memory by
-moving the pointer in there.  Should we later add another pointer to
-struct page we are only back to the status quo - with the difference
-that booting with cgroup_disable=memory will no longer save the extra
-pointer per page, but again, if you care that much, you can disable
-memory cgroups at compile-time.
+Signed-off-by: Alan Tull <atull@opensource.altera.com>
+Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+---
+v2: Remove spin_lock around readl
+---
+ drivers/reset/reset-socfpga.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-So don't look at it as occpuying the padding, it is rather taking away
-the ability to allocate that single memcg pointer at runtime, while at
-the same time saving a bit of memory for common configurations until
-somebody else needs the struct page padding.
+diff --git a/drivers/reset/reset-socfpga.c b/drivers/reset/reset-socfpga.c
+index 79c32ca..39da5cb 100644
+--- a/drivers/reset/reset-socfpga.c
++++ b/drivers/reset/reset-socfpga.c
+@@ -76,9 +76,25 @@ static int socfpga_reset_deassert(struct reset_controller_dev *rcdev,
+ 	return 0;
+ }
+ 
++static int socfpga_reset_status(struct reset_controller_dev *rcdev,
++				unsigned long id)
++{
++	struct socfpga_reset_data *data = container_of(rcdev,
++						struct socfpga_reset_data, rcdev);
++	int bank = id / BITS_PER_LONG;
++	int offset = id % BITS_PER_LONG;
++	unsigned long flags;
++	u32 reg;
++
++	reg = readl(data->membase + OFFSET_MODRST + (bank * NR_BANKS));
++
++	return !(reg & BIT(offset));
++}
++
+ static struct reset_control_ops socfpga_reset_ops = {
+ 	.assert		= socfpga_reset_assert,
+ 	.deassert	= socfpga_reset_deassert,
++	.status		= socfpga_reset_status,
+ };
+ 
+ static int socfpga_reset_probe(struct platform_device *pdev)
+-- 
+2.0.3
+
