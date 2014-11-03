@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaKCLVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:21:52 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58564 "EHLO bear.ext.ti.com"
+	id S1751284AbaKCL2Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:28:25 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:63304 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012AbaKCLVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 06:21:50 -0500
-Message-ID: <54576545.8030300@ti.com>
-Date: Mon, 3 Nov 2014 16:51:41 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751032AbaKCL2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 06:28:22 -0500
+X-IronPort-AV: E=Sophos;i="5.07,307,1413244800"; 
+   d="scan'208";a="187472573"
+Date: Mon, 3 Nov 2014 11:10:18 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Will Deacon <will.deacon@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
+In-Reply-To: <20141103105716.GC23162@arm.com>
+Message-ID: <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com> <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com> <20141103105716.GC23162@arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Oussama Ghorbel <ghorbel@pivasoftware.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: Rabin Vincent <rabin@rab.in>, <rogerq@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] phy: omap-usb2: Enable runtime PM of omap-usb2 phy
- properly
-References: <20141006194418.GA399@debian> <1412679771-8293-1-git-send-email-ghorbel@pivasoftware.com>
-In-Reply-To: <1412679771-8293-1-git-send-email-ghorbel@pivasoftware.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Tuesday 07 October 2014 04:32 PM, Oussama Ghorbel wrote:
-> The USB OTG port does not work since v3.16 on omap platform.
-> This is a regression introduced by the commit
-> eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
->  and remove).
-> This because the call to pm_runtime_enable() function is moved after the
-> call to devm_phy_create() function, which has side effect since later in
-> the subsequent calls of devm_phy_create() there is a check with
-> pm_runtime_enabled() to configure few things.
-
-This is the only fix for this -rc cycle in the PHY susbsystem. So can you take
-this directly? Or else I can prepare a pull request. Let me know.
-
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
-
-Thanks
-Kishon
+On Mon, 3 Nov 2014, Will Deacon wrote:
+> On Mon, Nov 03, 2014 at 10:46:03AM +0000, Stefano Stabellini wrote:
+> > On Mon, 27 Oct 2014, Stefano Stabellini wrote:
+> > > Introduce a boolean flag and an accessor function to check whether a
+> > > device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
+> > > 
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> > > CC: will.deacon@arm.com
+> > 
+> > Will, Catalin,
+> > are you OK with this patch?
 > 
-> Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
-> ---
->  drivers/phy/phy-omap-usb2.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-> index 93d7835..acc13f8 100644
-> --- a/drivers/phy/phy-omap-usb2.c
-> +++ b/drivers/phy/phy-omap-usb2.c
-> @@ -262,14 +262,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
->  	otg->phy		= &phy->phy;
->  
->  	platform_set_drvdata(pdev, phy);
-> +	pm_runtime_enable(phy->dev);
->  
->  	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
-> -	if (IS_ERR(generic_phy))
-> +	if (IS_ERR(generic_phy)) {
-> +		pm_runtime_disable(phy->dev);
->  		return PTR_ERR(generic_phy);
-> +	}
->  
->  	phy_set_drvdata(generic_phy, phy);
->  
-> -	pm_runtime_enable(phy->dev);
->  	phy_provider = devm_of_phy_provider_register(phy->dev,
->  			of_phy_simple_xlate);
->  	if (IS_ERR(phy_provider)) {
-> 
+> It would be nicer if the dma_coherent flag didn't have to be duplicated by
+> each architecture in dev_archdata. Is there any reason not to put it in the
+> core code?
+
+Yes, there is a reason for it: if I added a boolean dma_coherent flag in
+struct device as Catalin initially suggested, what would be the default
+for each architecture? Where would I set it for arch that don't use
+device tree? It is not easy.
+
+I thought it would be better to introduce is_device_dma_coherent only on
+the architectures where it certainly makes sense to have it. In fact I
+checked and arm and arm64 are the only architectures to define
+set_arch_dma_coherent_ops at the moment. At that point if
+is_device_dma_coherent becomes arch-specific, it makes sense to store
+the flag in dev_archdata instead of struct device.
