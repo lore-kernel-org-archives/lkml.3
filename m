@@ -1,109 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335AbaKCNiv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 08:38:51 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41001 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869AbaKCNiu (ORCPT
+	id S1752359AbaKCNmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 08:42:00 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:54221 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496AbaKCNl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 08:38:50 -0500
-Date: Mon, 3 Nov 2014 14:38:40 +0100
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Krzysztof =?utf-8?Q?Koz=C5=82owski?= <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v2 3/4] regulator: fixed: Use gpio_is_valid
-Message-ID: <20141103133840.GF24292@pengutronix.de>
-References: <1412776028-15655-1-git-send-email-mpa@pengutronix.de>
- <1412776028-15655-4-git-send-email-mpa@pengutronix.de>
- <20141013144733.GK27755@sirena.org.uk>
+	Mon, 3 Nov 2014 08:41:57 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, m.chehab@samsung.com
+Subject: Re: [PATCH v4] media: spi: Add support for LMH0395
+Date: Mon, 03 Nov 2014 15:42:09 +0200
+Message-ID: <12414520.uxZUhSYI7c@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <545784DA.50109@xs4all.nl>
+References: <1410342234-7444-1-git-send-email-jean-michel.hautbois@vodalys.com> <1630377.tEqlt7fWO7@avalon> <545784DA.50109@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MIdTMoZhcV1D07fI"
-Content-Disposition: inline
-In-Reply-To: <20141013144733.GK27755@sirena.org.uk>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:22:32 up 19 days, 36 min, 66 users,  load average: 0.00, 0.04,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 03 November 2014 14:36:26 Hans Verkuil wrote:
+> On 11/03/2014 02:13 PM, Laurent Pinchart wrote:
+> > Hi Jean-Michel,
+> > 
+> > Thank you for the patch.
+> 
+> > On Wednesday 10 September 2014 11:43:54 Jean-Michel Hautbois wrote:
+> <snip>
+> 
+> >> +static int lmh0395_s_routing(struct v4l2_subdev *sd, u32 input, u32
+> >> output, +				u32 config)
+> >> +{
+> >> +	struct lmh0395_state *state = to_state(sd);
+> >> +	int err = 0;
+> >> +
+> >> +	if (state->output_type != output)
+> >> +		err = lmh0395_set_output_type(sd, output);
+> >> +
+> >> +	return err;
+> >> 
+> >         if (state->output_type == output)
+> >                 return 0;
+> >         
+> >         return lmh0395_set_output_type(sd, output);
+> > 
+> > You can then get rid of the err variable.
+> > 
+> > I don't really like this implementation though, the output argument is
+> > device- specific, you thus require explicit knowledge of the LMH0395 in
+> > your bridge driver.
+> 
+> Well, that's the way s_routing is defined. It's the bridge driver's job to
+> translate between V4L2 inputs/outputs and low-level routing information.
+> 
+> > I'm not sure what the config argument is used for, but naively I would
+> > have
+> 
+> config is normally not used. There are one or two drivers that need it for
+> additional routing configuration, but it's rare.
 
---MIdTMoZhcV1D07fI
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK.
 
-On Mon, Oct 13, 2014 at 04:47:33PM +0200, Mark Brown wrote:
-> On Wed, Oct 08, 2014 at 03:47:07PM +0200, Markus Pargmann wrote:
-> > Use gpio_is_valid instead of an explicit comparison with 0.
-> >=20
-> > Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-> > ---
-> >  drivers/regulator/fixed.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >=20
-> > diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-> > index 441a3e90e266..696f53cc1927 100644
-> > --- a/drivers/regulator/fixed.c
-> > +++ b/drivers/regulator/fixed.c
-> > @@ -157,7 +157,7 @@ static int reg_fixed_voltage_probe(struct platform_=
-device *pdev)
-> > =20
-> >  	drvdata->desc.fixed_uV =3D config->microvolts;
-> > =20
-> > -	if (config->gpio >=3D 0) {
-> > +	if (gpio_is_valid(config->gpio)) {
->=20
-> Have you audited all users to ensure that they don't rely on zero being
-> ignored?  Right now we're sharing the core behaviour here so the same
-> issues apply to this platform data as apply to the core.
+> > used it to tell whether to enable (1) or disable (0) the route from input
+> > to output. The input value should then always be 0, and the output value
+> > can be 1 or 2. Another option would be to use the new S_ROUTING userspace
+> > ioctl I've proposed in
+> > http://git.linuxtv.org/cgit.cgi/pinchartl/media.git/commit/?h=xilinx-wip&i
+> > d=fc094c354338861673464ed4b8fa198089fe7bf0.
+> > 
+> > Hans, could you comment on that ?
+> 
+> Well, first of all your proposed API isn't merged yet, or even posted on the
+> mailinglist, so it's a bit unfair to require someone else to use it :-)
 
-For all other drivers this should be fine (just rechecked again). But
-the fixed regulator driver patch has this problem.
+It's not a requirement, just a proposal :-) I can send a patch series if 
+there's enough interest for using that API.
 
-Thanks,
+> Also, while I do agree with your proposed new API I am a lot less
+> enthusiastic about creating yet another duplicate pad op for an existing
+> audio/video routing op.
+> 
+> The problem is that existing drivers are never updated for the new op and
+> you are stuck with competing internal APIs. Not nice at all.
 
-Markus
+Agreed, it's not nice, feel free to propose a better solution :-)
 
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> Bottom line is that this driver uses s_routing like any other driver
+> currently in the kernel, so I have no problem with that.
 
---MIdTMoZhcV1D07fI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I do :-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The bridge to subdev dependency is fine for PCI or USB devices where the 
+hardware topology is known to the driver. It isn't for composite embedded 
+devices, as we don't want to teach all bridges about all subdevs.
 
-iQIcBAEBAgAGBQJUV4VfAAoJEEpcgKtcEGQQ9EIP/1ljheZLeWTmPnKP2rgLEY64
-CTqcha2eBQoFGMRKszgxiKP6x6px3G9DofmjNZNZvPb5kLdTvcR/iw5rP5FqS4FW
-2NayBqvZFbkoZ6XXtYd4ocQw/7mPXbM2cNUnnhCuX6A94I3iHK240XKg0EUh6IDA
-k80lmwzaCmxxlicCG6CQYniBfquvfdyNm+HajUjQF4JgI1qBcsmz/gKOViSsyt5l
-f3FZy8JzcNV9BegS6TxatgFMW3MaVuRf1T0S8iqIALZZYjpFnPtKB8+rSnN+QuA9
-Iz63E2SS9KOwaN3Hw6vwcoC1xuuB8aSogUl6tgcF3KdxaZ3R75WOgzdRUfyFJF/2
-V2OjpKNGIwpu0NKsbEcJ/mOYZu9h6t/3RB04pFJR0QlF2FvKDEYWpTFCC49UOB7s
-0hpL2Ia8mOD3y1hp+5M0Y9d7x6olnXDHPS3HhQhjAep0JnRKa+JRNA97Og39mz2n
-ouj/l110ZEbeUcrhu8xc4zW248Wzlxn2+W60Uzod6yGKwKOaH+w2xGgoZgvtDGnY
-Vs4ARChuZw/Ua0rJ3kp5uPTrfy0zOEfW8Ev94J5Aay73HoPCt5l0rCaM+Mohl5Jv
-gAfooiHIAPiW2zJxNXzXK31iI+6S/3WlKh9qjaYf+rpRqmotB0E+BQ7GvhFLKKFe
-4ChXkZItEcY6mt59glum
-=MlVs
------END PGP SIGNATURE-----
+-- 
+Regards,
 
---MIdTMoZhcV1D07fI--
+Laurent Pinchart
+
