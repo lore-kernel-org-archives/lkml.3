@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaKCXBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 18:01:23 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:52700 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaKCXBW (ORCPT
+	id S1752264AbaKCXCk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 18:02:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33568 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428AbaKCXCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 18:01:22 -0500
+	Mon, 3 Nov 2014 18:02:35 -0500
+Date: Mon, 3 Nov 2014 15:02:34 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Ong Boon Leong <boon.leong.ong@intel.com>
+Subject: Re: [PATCH v2 0/3] Enable user helper interface for efi capsule
+ update
+Message-ID: <20141103230234.GA9427@kroah.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <5457D883.4050201@amacapital.net>
+ <20141103212706.GE7379@kroah.com>
+ <CALCETrUNCuFvwkzbU4dWB0GH4mJKKV1e6jCNrSLVJe+n_et3kQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1411032352161.5308@nanos>
-References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
- <1414450545-14028-5-git-send-email-toshi.kani@hp.com> <94D0CD8314A33A4D9D801C0FE68B4029593578ED@G9W0745.americas.hpqcorp.net>
- <1415052905.10958.39.camel@misato.fc.hp.com> <alpine.DEB.2.11.1411032352161.5308@nanos>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Nov 2014 15:01:00 -0800
-Message-ID: <CALCETrXs0SotEmqs0B7rbnnqkLvMV+fzOJzNbp+y2U=zB+25OQ@mail.gmail.com>
-Subject: Re: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jgross@suse.com" <jgross@suse.com>,
-        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
-        "hmh@hmh.eng.br" <hmh@hmh.eng.br>,
-        "yigal@plexistor.com" <yigal@plexistor.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUNCuFvwkzbU4dWB0GH4mJKKV1e6jCNrSLVJe+n_et3kQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 2:53 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 3 Nov 2014, Toshi Kani wrote:
->> On Mon, 2014-11-03 at 22:10 +0000, Elliott, Robert (Server Storage)
->> wrote:
->>  :
->> > > Subject: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for
->> > > WT
->> > >
->> > > This patch adds pgprot_writethrough() for setting WT to a given
->> > > pgprot_t.
->> > >
->> > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
->> > > Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> > ...
->> > > diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
->> > > index a214f5a..a0264d3 100644
->> > > --- a/arch/x86/mm/pat.c
->> > > +++ b/arch/x86/mm/pat.c
->> > > @@ -896,6 +896,16 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
->> > >  }
->> > >  EXPORT_SYMBOL_GPL(pgprot_writecombine);
->> > >
->> > > +pgprot_t pgprot_writethrough(pgprot_t prot)
->> > > +{
->> > > + if (pat_enabled)
->> > > +         return __pgprot(pgprot_val(prot) |
->> > > +                         cachemode2protval(_PAGE_CACHE_MODE_WT));
->> > > + else
->> > > +         return pgprot_noncached(prot);
->> > > +}
->> > > +EXPORT_SYMBOL_GPL(pgprot_writethrough);
->> > ...
->> >
->> > Would you be willing to use EXPORT_SYMBOL for the new
->> > pgprot_writethrough function to provide more flexibility
->> > for modules to utilize the new feature?  In x86/mm, 18 of 60
->> > current exports are GPL and 42 are not GPL.
->>
->> I simply used EXPORT_SYMBOL_GPL() since pgprot_writecombine() used
->> it. :-)  This interface is intended to be used along with
->> remap_pfn_range() and ioremap_prot(), which are both exported with
->> EXPORT_SYMBOL().  So, it seems reasonable to export it with
->> EXPORT_SYMBOL() as well.  I will make this change.
->
-> NAK.
->
-> This is new functionality and we really have no reason to give the GPL
-> circumventors access to it.
+On Mon, Nov 03, 2014 at 01:32:46PM -0800, Andy Lutomirski wrote:
+> On Mon, Nov 3, 2014 at 1:27 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Nov 03, 2014 at 11:33:23AM -0800, Andy Lutomirski wrote:
+> >> On 11/02/2014 07:07 PM, Kweh Hock Leong wrote:
+> >> > From: "Kweh, Hock Leong" <hock.leong.kweh-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+> >> >
+> >> > Hi Guys,
+> >> >
+> >> > This patchset is created on top of "efi: Capsule update support" patch:
+> >> > http://permalink.gmane.org/gmane.linux.kernel.efi/4837
+> >> >
+> >> > It leverages the request_firmware_nowait() to expose the user helper interface for user to upload the capsule binary and calling the
+> >> > efi_capsule_update() API to pass the binary to EFI firmware.
+> >>
+> >> I don't get it.  Why is the firmware interface at all reasonable for
+> >> uploading capsules?
+> >
+> > Tradition dictates that BIOS updates go through the firmware interface,
+> > that way you don't have to write a new userspace tool, which is a good
+> > thing.
+> >
+> >> The firmware interface makes sense for nonvolatile firmware where
+> >> hotplugging something or otherwise loading a driver needs a blob.
+> >
+> > Or BIOS data.  We've been doing it this way for a long time now.
+> 
+> On what system?  Dell?
 
-I have mixed feelings about this.
+Yes.
 
-On the one hand, I agree with your sentiment.
+> IMO this sucks from a UI point of view.  When I install wifi firmware,
+> I expect to stick it somewhere and have the driver find it, because
+> the driver knows exactly when it needs the firmware.  When I update my
+> BIOS, I want to click a button or type a command and update my bios.
 
-On the other hand, I thought that _GPL was supposed to be more about
-whether the thing using it is inherently a derived work of the Linux
-kernel.  Since WT is an Intel concept, not a Linux concept, then I
-think that this is a hard argument to make.
+I agree, it should be "triggered" by something, not just automagically
+loaded whenever the kernel randomly looks for it.
 
-Not that I mind encouraging HP to GPL everything.  Although my
-experiences so far with HP servers have been so uniformly negative
-that I really just want to stay far away from anything storage-related
-by HP for several years, so I'm very unlikely to own an affected piece
-of hardware any time soon.  (Sorry, HP.)
+> >> But uploading an EFI capsule is an *action*, not something that should
+> >> happen transparently.  If there's an EFI firmware update available and
+> >> the user wants to install it, then the userspace tool should install it,
+> >> and it shouldn't hang around in /lib/firmware.  In fact, you shouldn't
+> >> even need /lib to be on writable media to use this.
+> >
+> > What does /lib have to do with this?
+> 
+> Where else does the file come from, given that udev no longer supports
+> userspace firmware loading?  Is there really some pre-existing tool
+> that pokes it into the sysfs firmware class thing?
 
---Andy
+Well, you can specify other locations than /lib/firmware/ for firmware
+updates, but yes, you are right, it should be in /lib somewhere.  But
+/lib doesn't need to be writable, it's a read-only file.
+
+> Since EFI capsules are apparently on their way to becoming a
+> ubiquitous mechanism, I think it might be time to rethink
+> request_firmware for this.
+
+What do you suggest instead?  A "custom" sysfs file?  What is going to
+trigger it to be loaded?  A userspace script that someone else has to
+write?  :)
+
+thanks,
+
+greg k-h
