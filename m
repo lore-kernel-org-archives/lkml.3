@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaKCKL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:11:27 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:55444 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813AbaKCKLW (ORCPT
+	id S1751343AbaKCKPi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:15:38 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44316 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750991AbaKCKPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:11:22 -0500
-Message-ID: <545754C6.5000304@gmail.com>
-Date: Mon, 03 Nov 2014 11:11:18 +0100
-From: =?ISO-2022-JP?B?QW5kcmUnIEJhdWVy?= <monotek23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 3 Nov 2014 05:15:36 -0500
+Date: Mon, 3 Nov 2014 10:15:16 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] of/irq: Drop obsolete 'interrupts' vs
+ 'interrupts-extended' text
+Message-ID: <20141103101516.GA29621@leverpostej>
+References: <20141101233531.4958.96713.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-To: OS Engineering <osengineering@stec-inc.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-CC: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
-        =?ISO-2022-JP?B?GyRCMiY2YjE6GyhC?= <jinpuwang@gmail.com>,
-        Amit Kale <akale@stec-inc.com>
-Subject: Re: [PATCH] EnhanceIO ssd caching software
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
-In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141101233531.4958.96713.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-Hi Guys,
-
-whats the status of the inclusion of this patch?
-
-Regards
-
-Andr? Bauer
-
-Am 15.02.2013 um 07:02 schrieb OS Engineering:
-> Hi Greg, Jens,
+On Sat, Nov 01, 2014 at 11:35:31PM +0000, Bjorn Helgaas wrote:
+> a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property
+> first") updated the description to say that:
 > 
-> We are submitting EnhanceIO(TM) software driver for an inclusion in
-> linux staging tree. Present state of this driver is beta. We have
-> been posting it for a few weeks, while it was maintained at github.
-> It is still being cleaned-up and is being tested by LKML members.
-> Inclusion in linux staging tree will make testing and reviewing
-> easier and help a future integration in Linux kernel.
+>   - Both 'interrupts' and 'interrupts-extended' may be present
+>   - Software should prefer 'interrupts-extended'
+>   - Software that doesn't comprehend 'interrupts-extended' may use
+>     'interrupts'
 > 
-> Could you please include it?
+> But there is still a paragraph at the end that prohibits having both and
+> says 'interrupts' should be preferred.
 > 
-> Thanks. -- Amit Kale
+> Remove the contradictory text.
 > 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> Fixes: a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property first")
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> CC: stable@vger.kernel.org	# v3.13+
+> ---
+>  .../bindings/interrupt-controller/interrupts.txt   |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> index ce6a1a072028..8a3c40829899 100644
+> --- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> @@ -30,10 +30,6 @@ should only be used when a device has multiple interrupt parents.
+>    Example:
+>  	interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
+>  
+> -A device node may contain either "interrupts" or "interrupts-extended", but not
+> -both. If both properties are present, then the operating system should log an
+> -error and use only the data in "interrupts".
 
-iQEcBAEBAgAGBQJUV1TGAAoJEAdIc/zkolSr6kMH/3xM1yAFgLo8zH6/A9dXrEYY
-CjALUNIsA3OkpOir0aroCNxkekEarD63sVztdmp6ndtwxNcKbvz4bxK2Z/4vKzmP
-Cw9zB0XOiM9II807txofhEfq3JE5dCFm+0EEbE2Kl33Ggqt0DsH2zgEDAkmxHoFC
-5dFIHkdS1iFUYKngqhaHO/QzDB83MF0TMddhJkPdrUIaDSALrF3QZi/zbDJti4zq
-Y7yibYsDXXc1zxjdxqt7gfO4n92xcm5JI0rOtegZs35imfpuRZ+c1w4RA9NHfKAX
-o/WQ+7Snofcs5hfE/gzxMRaRQ8YSJuGPSewGWMasVy39JnOW1SpilVG20gdPLpI=
-=8QRG
------END PGP SIGNATURE-----
+Why not update the binding to explain that interrupts-extended is
+typically preferred?
+
+Mark.
