@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaKCVaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:30:03 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55620 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756AbaKCV37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:29:59 -0500
-Date: Mon, 3 Nov 2014 22:29:46 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Ren Qiaowei <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Linux-MM <linux-mm@kvack.org>, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH v9 11/12] x86, mpx: cleanup unused bound tables
-In-Reply-To: <5457EB67.70904@intel.com>
-Message-ID: <alpine.DEB.2.11.1411032205320.5308@nanos>
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241451280.5308@nanos> <544DB873.1010207@intel.com> <alpine.DEB.2.11.1410272138540.5308@nanos>
- <5457EB67.70904@intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1753879AbaKCVau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:30:50 -0500
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:37169 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751591AbaKCVas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 16:30:48 -0500
+Date: Mon, 3 Nov 2014 23:32:14 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Chad Dupuis <chad.dupuis@qlogic.com>
+cc: Joe Carnuccio <joe.carnuccio@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Christoph Hellwig <hch@lst.de>, qla2xxx-upstream@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: bisected regression: qla2xxx endianness on sparc64
+In-Reply-To: <alpine.OSX.2.00.1411031508560.1960@administrators-macbook-pro.local>
+Message-ID: <alpine.LRH.2.11.1411032330370.19361@siim2.ut.ee>
+References: <alpine.DEB.2.03.1411022004230.3979@cyber.ee> <alpine.OSX.2.00.1411031508560.1960@administrators-macbook-pro.local>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Nov 2014, Dave Hansen wrote:
-> On 10/27/2014 01:49 PM, Thomas Gleixner wrote:
-> > Errm. Before user space can use the bounds table for the new mapping
-> > it needs to add the entries, right? So:
-> > 
-> > CPU 0					CPU 1
-> > 
-> > down_write(mm->bd_sem);
-> > mpx_pre_unmap();
-> >    clear bounds directory entries	
-> > unmap();
-> > 					map()
-> > 					write_bounds_entry()
-> > 					trap()
-> > 					  down_read(mm->bd_sem);
-> > mpx_post_unmap(); 
-> > up_write(mm->bd_sem);
-> > 					  allocate_bounds_table();
-> > 
-> > That's the whole point of bd_sem.
+> > Between 3.17 and 3.18-rc2, qla2xxx is broken on my sparc64 machines. It
+> > fails to boot (hangs in firmware rings init).
+> >
+> > This is the result of bisect:
+> >
+> > 98aee70d19a7e3203649fa2078464e4f402a0ad8 is the first bad commit
+> > commit 98aee70d19a7e3203649fa2078464e4f402a0ad8
+> > Author: Joe Carnuccio <joe.carnuccio@qlogic.com>
+> > Date:   Thu Sep 25 05:16:38 2014 -0400
+> >
+> >    qla2xxx: Add endianizer to max_payload_size modifier.
+> >
+> >    Signed-off-by: Joe Carnuccio <joe.carnuccio@qlogic.com>
+> >    Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+> >    Signed-off-by: Christoph Hellwig <hch@lst.de>
+> >
+> > :040000 040000 041c1a26dc2a7988900acc982e3bd65d3cf7e751 
+> > 9700d09c3226fc352d44352f22b84f1be632d324 M  s
+> >
+> > This may not be the only problem - when bisecting, I also came to commits
+> > that got past this step but hang after about 165 seconds of uptime while
+> > running userspace startup scripts. But let that be another issue at the
+> > moment.
+> >
 > 
-> This does, indeed, seem to work for the normal munmap() cases.  However,
-> take a look at shmdt().  We don't know the size of the segment being
-> unmapped until after we acquire mmap_sem for write, so we wouldn't be
-> able to do do a mpx_pre_unmap() for those.
+> We should revert that change. What were some of the other failures you were
+> seeing?
 
-That's not really true. You can evaluate that information with
-mmap_sem held for read as well. Nothing can change the mappings until
-you drop it. So you could do:
+Yes. I took the same 3.18.0-rc1-00422-g2cc9188-dirty kernel that had 
+just this patch reverted, it started the controller fine, detected disk, 
+mounted root, started multiple tasks and then some time after startin 
+exim it just hangs. This is consisten with what I saw during bisection.
 
-   down_write(mm->bd_sem);
-   down_read(mm->mmap_sem;
-   evaluate_size_of_shm_to_unmap();
-   clear_bounds_directory_entries();
-   up_read(mm->mmap_sem);
-   do_the_real_shm_unmap();
-   up_write(mm->bd_sem);
-
-That should still be covered by the above scheme.
- 
-> mremap() is similar.  We don't know if the area got expanded (and we
-> don't need to modify bounds tables) or moved (and we need to free the
-> old location's tables) until well after we've taken mmap_sem for write.
-
-See above.
- 
-> I propose we keep mm->bd_sem.  But, I think we need to keep a list
-> during each of the unmapping operations of VMAs that got unmapped, and
-> then keep them on a list without freeing then.  At up_write() time, we
-> look at the list, if it is empty, we just do an up_write() and we are done.
-> 
-> If *not* empty, downgrade_write(mm->mmap_sem), and do the work you
-> spelled out in mpx_pre_unmap() above: clear the bounds directory entries
-> and gather the VMAs while still holding mm->bd_sem for write.
-> 
-> Here's the other wrinkle: This would invert the ->bd_sem vs. ->mmap_sem
-> ordering (bd_sem nests outside mmap_sem with the above scheme).  We
-> _could_ always acquire bd_sem for write whenever mmap_sem is acquired,
-> although that seems a bit heavyweight.  I can't think of anything better
-> at the moment, though.
-
-That works as well. If it makes stuff simpler I'm all for it. But then
-we should really replace down_write(mmap_sem) with a helper function
-and add something to checkpatch.pl and to the coccinelle scripts to
-catch new instances of open coded 'down_write(mmap_sem)'.
-
-Thanks,
-
-	tglx
-
+-- 
+Meelis Roos (mroos@linux.ee)
