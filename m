@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaKCMHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 07:07:12 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:21116 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaKCMHJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 07:07:09 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f6c6d00000120b-49-54576fe86c37
-Content-transfer-encoding: 8BIT
-Message-id: <1415016422.4241.28.camel@AMDC1943>
-Subject: Re: [PATCH 6/8] regulator: max77686: Add external GPIO control
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Mon, 03 Nov 2014 13:07:02 +0100
-In-reply-to: <20141031103217.GJ18557@sirena.org.uk>
-References: <1414422226-10948-7-git-send-email-k.kozlowski@samsung.com>
- <544EA4FA.6040704@collabora.co.uk> <1414486356.24949.19.camel@AMDC1943>
- <1414498308.24949.32.camel@AMDC1943> <1414579362.18868.11.camel@AMDC1943>
- <5450C63B.3000602@collabora.co.uk>
- <CAAVeFuLncbkNLGxEAj90yMmugRDNjtjeGoV_QYTMDZ7NVMJCmg@mail.gmail.com>
- <1414681386.26703.6.camel@AMDC1943>
- <CAAVeFuJo1wTyxOo4FEZM3=GTejuSHi+mnr=QV6HUeV5mAOCmqg@mail.gmail.com>
- <1414741898.20071.8.camel@AMDC1943> <20141031103217.GJ18557@sirena.org.uk>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e/4Fd0X+eEhBp9Ps1lsnLGe1WLSugNM
-	FlMfPmGzuP7lOavF/CPnWC3OvXrEYnH0d4FF74KrbBZnm96wW9z/epTR4tuVDiaLKX+WM1ls
-	enyN1eLyrjlsFjPO72OyuH2Z12LtkbvsFqe7WR2EPFqae9g8/j6/zuLxd9ULZo+ds+6ye2xa
-	1cnmcefaHjaPeScDPTYvqffo27KK0ePzJrkArigum5TUnMyy1CJ9uwSujG8vPAv6uCvOPu1g
-	aWD8zdHFyMkhIWAicfjLUTYIW0ziwr31QDYXh5DAUkaJWf2bWEESvAKCEj8m32PpYuTgYBaQ
-	lzhyKRskzCygLjFp3iJmiPrPjBLvJv1kh6jXl9gzpQ1sqLCAu8T9hYeYQGw2AWOJzcuXgMVF
-	BJQlrn7fywLSzCxwiE2iY8kBZpAEi4CqxK9va8FsTqCGFX9vMEFsaGaReL33KhvIFRJA3Y39
-	bhMYBWYhuW8Wwn2zkNy3gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZI5H3Zwbj4mNUh
-	RgEORiUe3gmXw0KEWBPLiitzDzFKcDArifD+SwkPEeJNSaysSi3Kjy8qzUktPsTIxMEp1cC4
-	pYHpza+5d/bJ8rnFrSnbv4jh4i2dupWSfw52eh7SUlzJcHBeQ8p65sS3N1IWJjP6xjku1vW4
-	bVRjerN28u+zttpLdWLjaldMkdiWmF1UVnrpxZy9Hxf67Vqw4LrViSNvIvfsTPJTXaWwf6r7
-	5KlXVznHvZVYmXjKvNJ6nawzX0xjIgdHWts2JZbijERDLeai4kQA6lkbzZoCAAA=
+	id S1752052AbaKCMHw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 07:07:52 -0500
+Received: from mga14.intel.com ([192.55.52.115]:49283 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751227AbaKCMHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 07:07:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,307,1413270000"; 
+   d="scan'208";a="615967022"
+Message-ID: <1415016440.7122.891.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH v2 1/3] firmware loader: Introduce new API -
+ request_firmware_abort()
+From: Matt Fleming <matt.fleming@intel.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-efi@vger.kernel.org>,
+        Ong Boon Leong <boon.leong.ong@intel.com>
+Date: Mon, 3 Nov 2014 12:07:20 +0000
+In-Reply-To: <20141103101558.GA11739@khazad-dum.debian.net>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+	 <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
+	 <20141103101558.GA11739@khazad-dum.debian.net>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [163.33.239.182]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2014-10-31 at 10:32 +0000, Mark Brown wrote:
-> On Fri, Oct 31, 2014 at 08:51:38AM +0100, Krzysztof Kozlowski wrote:
+On Mon, 2014-11-03 at 08:15 -0200, Henrique de Moraes Holschuh wrote:
+> On Mon, 03 Nov 2014, Kweh Hock Leong wrote:
+> > Note for people who use request_firmware_nowait():
+> > You are required to do your own synchronization after you call
+> > request_firmware_abort() in order to continue unloading the
+> > module. The example synchronization code shows below:
+> > 
+> > while (THIS_MODULE && module_refcount(THIS_MODULE))
+> > 	msleep(20);
 > 
-> > However new DT style parsing (regulator_of_get_init_data()) does the
-> > basic parsing stuff and this removes a lot of code from driver. The
-> > driver no longer parses all regulaotrs but the regulator core does it.
-> > Unfortunately regulator core does not parse custom bindings (like such
-> > GPIOs) so I would have to iterate once again through all regulators just
-> > to find "gpios" property.
-> 
-> We could always add a callback for the driver to handle any custom
-> properties...  one of the advantages of an OS like Linux is that we can
-> improve the core code.
+> This is _so_ asking for people to get it wrong, it is not funny :-(
 
-I thought about this - adding a callback, called on each child in
-regulator_of_get_init_data(). However the reason behind this callback is
-to parse GPIO and set config.ena_gpio. However in that context the
-regulator_config is const so the callback cannot change it. Unless it
-casts it to non-const... which isn't what we want I think.
-
-So now I wonder whether adding generic bindings for ena_gpio make sense.
-These would look like bindings for fixed-regulator (with "ena-" prefix).
-Unfortunately this would duplicate a little the ena_gpio in
-regulator_config... but to me it seems more appropriate.
-
-What do you think about adding generic bindings for ena_gpio?
-
-Best regards,
-Krzysztof
-
+Yeah. How about we make request_firmware_abort() synchronous so that
+drivers don't have to perform these reference counting games?
 
