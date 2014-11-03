@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaKCMwF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 07:52:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49039 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089AbaKCMwD (ORCPT
+	id S1751739AbaKCM5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 07:57:40 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:52142 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaKCM5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 07:52:03 -0500
-Date: Mon, 3 Nov 2014 04:51:52 -0800
-From: tip-bot for James Custer <tipbot@zytor.com>
-Message-ID: <tip-3ab0c49fd6b1e80438d0a649584d292880112262@git.kernel.org>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org, jcuster@sgi.com,
-        linux-kernel@vger.kernel.org, rja@sgi.com
-Reply-To: rja@sgi.com, linux-kernel@vger.kernel.org, jcuster@sgi.com,
-        mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de
-In-Reply-To: <1414952199-185319-1-git-send-email-jcuster@sgi.com>
-References: <1414952199-185319-1-git-send-email-jcuster@sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/uv] x86: UV BAU: Increase maximum CPUs per socket/hub
-Git-Commit-ID: 3ab0c49fd6b1e80438d0a649584d292880112262
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 3 Nov 2014 07:57:38 -0500
+Date: Mon, 3 Nov 2014 12:57:32 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mfd: stmpe: add pull up/down register offsets for
+ STMPE
+Message-ID: <20141103125732.GF4538@x1>
+References: <1413636974-3244-1-git-send-email-linus.walleij@linaro.org>
+ <20141020064605.GB25349@x1>
+ <CACRpkdbsswGBy69+EGJTbTpxD7j2FnruyGdyUZRBVtt-JaScfg@mail.gmail.com>
+ <58957675.Bh6LToE4gg@dtor-glaptop>
+ <CACRpkdYNBZdB14fjj0LnQ8GchaGLTgfpvxhe4J9nc3XF80dFgQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdYNBZdB14fjj0LnQ8GchaGLTgfpvxhe4J9nc3XF80dFgQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3ab0c49fd6b1e80438d0a649584d292880112262
-Gitweb:     http://git.kernel.org/tip/3ab0c49fd6b1e80438d0a649584d292880112262
-Author:     James Custer <jcuster@sgi.com>
-AuthorDate: Sun, 2 Nov 2014 12:16:38 -0600
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 3 Nov 2014 13:49:24 +0100
+On Mon, 03 Nov 2014, Linus Walleij wrote:
 
-x86: UV BAU: Increase maximum CPUs per socket/hub
+> On Wed, Oct 29, 2014 at 8:31 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > On Wednesday, October 29, 2014 10:55:14 AM Linus Walleij wrote:
+> >> On Mon, Oct 20, 2014 at 8:46 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> > On Sat, 18 Oct 2014, Linus Walleij wrote:
+> >> >> This adds the register offsets for pull up/down for the STMPE
+> >> >> 1601, 1801 and 24xx expanders. This is used to bias GPIO lines
+> >> >> and keypad lines.
+> >> >>
+> >> >> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> >> >> ---
+> >> >> Hi Sam, Lee: I think you should just ACK this so Dmitry can take the
+> >> >> patch series through the input tree, where the registers need to be
+> >> >> used to enable the keypad on the STMPE2401.
+> >> >> ---
+> >> >>
+> >> >>  drivers/mfd/stmpe.c       | 4 ++++
+> >> >>  drivers/mfd/stmpe.h       | 3 +++
+> >> >>  include/linux/mfd/stmpe.h | 2 ++
+> >> >>  3 files changed, 9 insertions(+)
+> >> >
+> >> > Does this need to go in with the other patches in the set?
+> >> >
+> >> > I'm _guessing_ that, as you've sent them separately, they can be
+> >> > applied separately?
+> >>
+> >> No sorry if it was unclear, the series need to go in toghether.
+> >> So this patch adds some infrastructure to the MFD device which
+> >> is then utilized by the input driver in a later patch.
+> >>
+> >> > This needs to go in via MFD, but for my own reference:
+> >> >
+> >> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> >>
+> >> Dmitry can you merge this & the rest with Lee's ACK?
+> >
+> > I'd be delighted, but it _sounded_ like Lee wanted it to go though MFD?
+> 
+> Lee, can Dmitry take these through input?
 
-We have encountered hardware with 18 cores/socket that gives 36 CPUs/socket
-with hyperthreading enabled. This exceeds the current MAX_CPUS_PER_SOCKET
-causing a failure in get_cpu_topology. Increase MAX_CPUS_PER_SOCKET to 64
-and MAX_CPUS_PER_UVHUB to 128.
+That was weird, I replied at the same as as you sent this.
 
-Signed-off-by: James Custer <jcuster@sgi.com>
-Cc: Russ Anderson <rja@sgi.com>
-Link: http://lkml.kernel.org/r/1414952199-185319-1-git-send-email-jcuster@sgi.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/uv/uv_bau.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Yes, it's fine.
 
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index 2d60a78..fc808b8 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -33,8 +33,8 @@
-  * Each of the descriptors is 64 bytes in size (8*64 = 512 bytes in a set).
-  */
- 
--#define MAX_CPUS_PER_UVHUB		64
--#define MAX_CPUS_PER_SOCKET		32
-+#define MAX_CPUS_PER_UVHUB		128
-+#define MAX_CPUS_PER_SOCKET		64
- #define ADP_SZ				64 /* hardware-provided max. */
- #define UV_CPUS_PER_AS			32 /* hardware-provided max. */
- #define ITEMS_PER_DESC			8
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
