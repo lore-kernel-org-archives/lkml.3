@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbaKCVAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:00:16 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:38981 "EHLO
+	id S1753918AbaKCVAZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:00:25 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:39173 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885AbaKCVAK (ORCPT
+	with ESMTP id S1752520AbaKCVAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:00:10 -0500
+	Mon, 3 Nov 2014 16:00:19 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
@@ -14,9 +14,9 @@ CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         David Rientjes <rientjes@google.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 3/8] memcg: decouple per memcg kmem cache from the owner memcg
-Date: Mon, 3 Nov 2014 23:59:41 +0300
-Message-ID: <b5bac77e0bcb0132d68ae3ad648c0b8cefff0fd1.1415046910.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 6/8] memcg: introduce memcg_kmem_should_charge helper
+Date: Mon, 3 Nov 2014 23:59:44 +0300
+Message-ID: <c8744df31379821d269c8e654843471545815c01.1415046910.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1415046910.git.vdavydov@parallels.com>
 References: <cover.1415046910.git.vdavydov@parallels.com>
@@ -27,176 +27,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Basically, we substitute the reference to the owner memory cgroup in
-memcg_cache_params with the index in the memcg_caches array. This
-decouples kmem cache from the memcg it was created for and will allow to
-reuse it for another cgroup after css offline.
+We use the same set of checks in both memcg_kmem_newpage_charge and
+memcg_kmem_get_cache, and I need it in yet another function, which will
+be introduced by one of the following patches. So let's introduce a
+helper function for it.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/slab.h |    7 +++----
- mm/memcontrol.c      |   18 +++++-------------
- mm/slab_common.c     |   12 +++++-------
- 3 files changed, 13 insertions(+), 24 deletions(-)
+ include/linux/memcontrol.h |   43 ++++++++++++++++++++++---------------------
+ 1 file changed, 22 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 390341d30b2d..293c04df7953 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -117,8 +117,7 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
- 			void (*)(void *));
- #ifdef CONFIG_MEMCG_KMEM
- struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *,
--					   struct kmem_cache *,
--					   const char *);
-+					   struct kmem_cache *);
- #endif
- void kmem_cache_destroy(struct kmem_cache *);
- int kmem_cache_shrink(struct kmem_cache *);
-@@ -490,7 +489,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  *
-  * Child caches will hold extra metadata needed for its operation. Fields are:
-  *
-- * @memcg: pointer to the memcg this cache belongs to
-+ * @id: the index in the root_cache's memcg_caches array.
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-  */
- struct memcg_cache_params {
-@@ -501,7 +500,7 @@ struct memcg_cache_params {
- 			struct kmem_cache *memcg_caches[0];
- 		};
- 		struct {
--			struct mem_cgroup *memcg;
-+			int id;
- 			struct kmem_cache *root_cache;
- 		};
- 	};
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8c60d7a30f4f..78d12076b01d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2603,8 +2603,6 @@ void memcg_update_array_size(int num)
- static void memcg_register_cache(struct mem_cgroup *memcg,
- 				 struct kmem_cache *root_cache)
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 617652712da8..224c045fd37f 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -416,6 +416,26 @@ void memcg_update_array_size(int num_groups);
+ struct kmem_cache *
+ __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+ 
++static __always_inline bool memcg_kmem_should_charge(gfp_t gfp)
++{
++	/*
++	 * __GFP_NOFAIL allocations will move on even if charging is not
++	 * possible. Therefore we don't even try, and have this allocation
++	 * unaccounted. We could in theory charge it forcibly, but we hope
++	 * those allocations are rare, and won't be worth the trouble.
++	 */
++	if (gfp & __GFP_NOFAIL)
++		return false;
++	if (in_interrupt())
++		return false;
++	if (!current->mm || (current->flags & PF_KTHREAD))
++		return false;
++	/* If the test is dying, just let it go. */
++	if (unlikely(fatal_signal_pending(current)))
++		return false;
++	return true;
++}
++
+ /**
+  * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
+  * @gfp: the gfp allocation flags.
+@@ -433,22 +453,8 @@ memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
  {
--	static char memcg_name_buf[NAME_MAX + 1]; /* protected by
--						     memcg_slab_mutex */
- 	struct kmem_cache *cachep;
- 	int id;
- 
-@@ -2620,8 +2618,7 @@ static void memcg_register_cache(struct mem_cgroup *memcg,
- 	if (cache_from_memcg_idx(root_cache, id))
- 		return;
- 
--	cgroup_name(memcg->css.cgroup, memcg_name_buf, NAME_MAX + 1);
--	cachep = memcg_create_kmem_cache(memcg, root_cache, memcg_name_buf);
-+	cachep = memcg_create_kmem_cache(memcg, root_cache);
- 	/*
- 	 * If we could not create a memcg cache, do not complain, because
- 	 * that's not critical at all as we can always proceed with the root
-@@ -2630,8 +2627,6 @@ static void memcg_register_cache(struct mem_cgroup *memcg,
- 	if (!cachep)
- 		return;
- 
--	css_get(&memcg->css);
+ 	if (!memcg_kmem_enabled())
+ 		return true;
 -
- 	/*
- 	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
- 	 * barrier here to ensure nobody will see the kmem_cache partially
-@@ -2646,7 +2641,6 @@ static void memcg_register_cache(struct mem_cgroup *memcg,
- static void memcg_unregister_cache(struct kmem_cache *cachep)
- {
- 	struct kmem_cache *root_cache;
--	struct mem_cgroup *memcg;
- 	int id;
- 
- 	lockdep_assert_held(&memcg_slab_mutex);
-@@ -2654,16 +2648,12 @@ static void memcg_unregister_cache(struct kmem_cache *cachep)
- 	BUG_ON(is_root_cache(cachep));
- 
- 	root_cache = cachep->memcg_params->root_cache;
--	memcg = cachep->memcg_params->memcg;
--	id = memcg_cache_id(memcg);
-+	id = cachep->memcg_params->id;
- 
- 	BUG_ON(root_cache->memcg_params->memcg_caches[id] != cachep);
- 	root_cache->memcg_params->memcg_caches[id] = NULL;
- 
- 	kmem_cache_destroy(cachep);
+-	/*
+-	 * __GFP_NOFAIL allocations will move on even if charging is not
+-	 * possible. Therefore we don't even try, and have this allocation
+-	 * unaccounted. We could in theory charge it forcibly, but we hope
+-	 * those allocations are rare, and won't be worth the trouble.
+-	 */
+-	if (gfp & __GFP_NOFAIL)
+-		return true;
+-	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
+-		return true;
 -
--	/* drop the reference taken in memcg_register_cache */
--	css_put(&memcg->css);
+-	/* If the test is dying, just let it go. */
+-	if (unlikely(fatal_signal_pending(current)))
++	if (!memcg_kmem_should_charge(gfp))
+ 		return true;
+-
+ 	return __memcg_kmem_newpage_charge(gfp, memcg, order);
  }
  
- /*
-@@ -4198,7 +4188,6 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+@@ -491,13 +497,8 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
  {
- 	int ret;
- 
--	memcg->kmemcg_id = -1;
- 	ret = memcg_propagate_kmem(memcg);
- 	if (ret)
- 		return ret;
-@@ -4743,6 +4732,9 @@ mem_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
- 	vmpressure_init(&memcg->vmpressure);
- 	INIT_LIST_HEAD(&memcg->event_list);
- 	spin_lock_init(&memcg->event_list_lock);
-+#ifdef CONFIG_MEMCG_KMEM
-+	memcg->kmemcg_id = -1;
-+#endif
- 
- 	return &memcg->css;
- 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index d5e9e050a3ec..974d77db1b39 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -125,7 +125,7 @@ static int memcg_alloc_cache_params(struct mem_cgroup *memcg,
- 		return -ENOMEM;
- 
- 	if (memcg) {
--		s->memcg_params->memcg = memcg;
-+		s->memcg_params->id = memcg_cache_id(memcg);
- 		s->memcg_params->root_cache = root_cache;
- 	} else
- 		s->memcg_params->is_root_cache = true;
-@@ -426,15 +426,13 @@ EXPORT_SYMBOL(kmem_cache_create);
-  * memcg_create_kmem_cache - Create a cache for a memory cgroup.
-  * @memcg: The memory cgroup the new cache is for.
-  * @root_cache: The parent of the new cache.
-- * @memcg_name: The name of the memory cgroup (used for naming the new cache).
-  *
-  * This function attempts to create a kmem cache that will serve allocation
-  * requests going from @memcg to @root_cache. The new cache inherits properties
-  * from its parent.
-  */
- struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
--					   struct kmem_cache *root_cache,
--					   const char *memcg_name)
-+					   struct kmem_cache *root_cache)
- {
- 	struct kmem_cache *s = NULL;
- 	char *cache_name;
-@@ -444,8 +442,8 @@ struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 
- 	mutex_lock(&slab_mutex);
- 
--	cache_name = kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
--			       memcg_cache_id(memcg), memcg_name);
-+	cache_name = kasprintf(GFP_KERNEL, "%s(%d)", root_cache->name,
-+			       memcg_cache_id(memcg));
- 	if (!cache_name)
- 		goto out_unlock;
- 
-@@ -912,7 +910,7 @@ int memcg_slab_show(struct seq_file *m, void *p)
- 
- 	if (p == slab_caches.next)
- 		print_slabinfo_header(m);
--	if (!is_root_cache(s) && s->memcg_params->memcg == memcg)
-+	if (!is_root_cache(s) && s->memcg_params->id == memcg_cache_id(memcg))
- 		cache_show(s, m);
- 	return 0;
+ 	if (!memcg_kmem_enabled())
+ 		return cachep;
+-	if (gfp & __GFP_NOFAIL)
+-		return cachep;
+-	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
+-		return cachep;
+-	if (unlikely(fatal_signal_pending(current)))
++	if (!memcg_kmem_should_charge(gfp))
+ 		return cachep;
+-
+ 	return __memcg_kmem_get_cache(cachep, gfp);
  }
+ #else
 -- 
 1.7.10.4
 
