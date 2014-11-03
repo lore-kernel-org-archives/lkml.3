@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaKCJU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:20:27 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42480 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751183AbaKCJUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:20:24 -0500
-X-Sasl-enc: zrcSKfJRbE+bCcBhwIFcLIvvJFYeAlboK4O/xH7gidG8 1415006422
-Message-ID: <1415006418.6573.6.camel@perseus.themaw.net>
-Subject: Re: [PATCH 04/13] autofs4 - change printks AUTOFS defined prints
-From: Ian Kent <raven@themaw.net>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 03 Nov 2014 17:20:18 +0800
-In-Reply-To: <1415003136.17743.9.camel@perches.com>
-References: <20141103081218.6215.85903.stgit@perseus.themaw.net>
-	 <20141103081234.6215.82821.stgit@perseus.themaw.net>
-	 <1415003136.17743.9.camel@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751365AbaKCJYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:24:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:13617 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925AbaKCJYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 04:24:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,305,1413270000"; 
+   d="scan'208";a="600976124"
+Date: Mon, 3 Nov 2014 11:24:02 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
+Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
+ Intel Baytrail
+Message-ID: <20141103092402.GA1304@lahna.fi.intel.com>
+References: <20141013191405.GB29810@saruman>
+ <20141013192404.GB4034@psi-dev26.jf.intel.com>
+ <20141013192632.GC29810@saruman>
+ <20141013193618.GD29810@saruman>
+ <CACRpkdYDiFvwsPwqACXS2bZU9peUyJEn-fpzVqZKYXseuEFGGA@mail.gmail.com>
+ <20141028144249.GD8123@saruman>
+ <CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
+ <20141031132005.GB1273@saruman>
+ <20141031162339.GA7136@psi-dev26.jf.intel.com>
+ <20141031184509.GA2224@psi-dev26.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031184509.GA2224@psi-dev26.jf.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 00:25 -0800, Joe Perches wrote:
-> On Mon, 2014-11-03 at 16:12 +0800, Ian Kent wrote:
-> > Use the AUTOFS_*() print defines instead of raw printks.
+On Fri, Oct 31, 2014 at 11:45:09AM -0700, David Cohen wrote:
+> > I think adding the module exit + allowing this driver to be a module
+> > would be a good approach. Then we don't need to force generic x86 kernel
+> > binaries to always have this driver. Unless Mathias or Mika knows a
+> > constraint to force this driver to be builtin only.
 > 
-> Please check the output of these conversions.
+> It helps if I CC them when asking for feedback :)
 > 
-> For instance:
-> 
-> > diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-> []
-> > @@ -162,7 +162,7 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
-> >  		break;
-> >  	}
-> >  	default:
-> > -		printk("autofs4_notify_daemon: bad type %d!\n", type);
-> > +		AUTOFS_WARN("autofs4_notify_daemon: bad type %d!", type);
-> >  		mutex_unlock(&sbi->wq_mutex);
-> >  		return;
-> >  	}
-> 
-> The current #define is:
-> 
-> #define AUTOFS_WARN(fmt, ...)                          \
-> 	pr_warn("pid %d: %s: " fmt "\n",        \
-> 		current->pid, __func__, ##__VA_ARGS__)
->  
-> So this duplicates the function name in the output.
+> Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
+> to be bool?
 
-Ahh, yes, I'll fix that.
-
-> 
-> It's probably better to simply use
-> 	#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> or
-> 	#define pr_fmt(fmt) KBUILD_MODNAME ":%d:%s" fmt, current->pid, __func__
-> if you _really_ want pid/func in the output
-
-I do, yes.
-
-> 
-> and just use pr_<level> instead of AUTOFS_<LEVEL> macros.
-> 
-> And it's better to use a consistent style for
-> these logging functions ideally with terminating
-> newlines so there isn't a mix of code with
-> and without those newlines.  That inconsistency
-> leads to unintended defects.
-
-The idea here was to make the logging consistent throughout.
-
-I have become used of not using the new-line terminator in logging over
-the years and tend to favour that myself. You recommend not doing that
-probably from a kernel wide consistency perspective? Maybe that is
-better ...
-
-Ian
-
+The only constraint that has been keeping this driver as bool is that
+some machines like, Asus T100, uses ACPI GPIO operation regions for
+toggling GPIOs to get things like sensor hub powered on. The GPIO
+operation region code does not yet handle -EPROBE_DEFER so only way to
+ensure that the operation region is there is to have the driver compiled
+in to the kernel.
