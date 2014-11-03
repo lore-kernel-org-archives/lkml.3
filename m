@@ -1,117 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaKCLzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:55:51 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:61599 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751820AbaKCLzs (ORCPT
+	id S1752024AbaKCL4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:56:09 -0500
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:42115 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaKCL4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 06:55:48 -0500
-Message-ID: <1415015745.20372.52.camel@x220>
-Subject: Re: [PATCH] serial: samsung: Remove checks for CONFIG_SAMSUNG_CLOCK
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 03 Nov 2014 12:55:45 +0100
-In-Reply-To: <1412590043.4054.61.camel@x220>
-References: <1412590043.4054.61.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Nov 2014 11:55:45.0884 (UTC) FILETIME=[1A1819C0:01CFF75D]
-X-RcptDomain: vger.kernel.org
+	Mon, 3 Nov 2014 06:56:03 -0500
+From: David Drysdale <drysdale@google.com>
+To: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Will Drewry <wad@chromium.org>,
+        Jorge Lucangeli Obes <jorgelo@google.com>,
+        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
+        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        David Drysdale <drysdale@google.com>
+Subject: [PATCH 1/3] fs: add O_BENEATH flag to openat(2)
+Date: Mon,  3 Nov 2014 11:48:23 +0000
+Message-Id: <1415015305-15494-2-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1415015305-15494-1-git-send-email-drysdale@google.com>
+References: <1415015305-15494-1-git-send-email-drysdale@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, Hi Jiri,
+Add a new O_BENEATH flag for openat(2) which restricts the
+provided path, rejecting (with -EACCES) paths that are not beneath
+the provided dfd.  In particular, reject:
+ - paths that contain .. components
+ - paths that begin with /
+ - symlinks that have paths as above.
 
-On Mon, 2014-10-06 at 12:07 +0200, Paul Bolle wrote:
-> Commit 32726d2d5502 ("ARM: SAMSUNG: Remove legacy clock code") removed
-> the Kconfig symbol SAMSUNG_CLOCK. Remove the last checks for its macro,
-> and the dead code they hide, too.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> This trivial fix has been discussed for some time now in the thread
-> starting at http://lkml.kernel.org/r/1405502840.4408.2.camel@x220 It
-> seems it's time to submit it.
-> 
-> Build tested on top of next-20141003, on x86_64 (!), with these horrific
-> commands:
->     make EXTRA_CFLAGS=-DCONFIG_SERIAL_SAMSUNG_UARTS=3 drivers/tty/serial/samsung.o
->     make EXTRA_CFLAGS=-DCONFIG_SERIAL_SAMSUNG_UARTS=4 drivers/tty/serial/samsung.o
-> 
-> Please note that
->     make EXTRA_CFLAGS=-DCONFIG_SERIAL_SAMSUNG_UARTS=0 drivers/tty/serial/samsung.o
-> 
-> doesn't build. Perhaps some "range" should be added to config
-> SERIAL_SAMSUNG_UARTS. And I also wonder whether SERIAL_SAMSUNG_UARTS
-> should be a dependency (somehow) of config SERIAL_SAMSUNG. I have not
-> looked into those questions.
+Signed-off-by: David Drysdale <drysdale@google.com>
+---
+ arch/alpha/include/uapi/asm/fcntl.h  |  1 +
+ arch/parisc/include/uapi/asm/fcntl.h |  1 +
+ arch/sparc/include/uapi/asm/fcntl.h  |  1 +
+ fs/fcntl.c                           |  5 +++--
+ fs/namei.c                           | 43 ++++++++++++++++++++++++------------
+ fs/open.c                            |  4 +++-
+ include/linux/namei.h                |  1 +
+ include/uapi/asm-generic/fcntl.h     |  4 ++++
+ 8 files changed, 43 insertions(+), 17 deletions(-)
 
-I noticed this still applies on top of next-20141103. Have you had time
-to look at this yet?
-
->  drivers/tty/serial/samsung.c | 27 ---------------------------
->  1 file changed, 27 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-> index c78f43a481ce..796c04c77dc1 100644
-> --- a/drivers/tty/serial/samsung.c
-> +++ b/drivers/tty/serial/samsung.c
-> @@ -1226,24 +1226,6 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
->  	return 0;
->  }
->  
-> -#ifdef CONFIG_SAMSUNG_CLOCK
-> -static ssize_t s3c24xx_serial_show_clksrc(struct device *dev,
-> -					  struct device_attribute *attr,
-> -					  char *buf)
-> -{
-> -	struct uart_port *port = s3c24xx_dev_to_port(dev);
-> -	struct s3c24xx_uart_port *ourport = to_ourport(port);
-> -
-> -	if (IS_ERR(ourport->baudclk))
-> -		return -EINVAL;
-> -
-> -	return snprintf(buf, PAGE_SIZE, "* %s\n",
-> -			ourport->baudclk->name ?: "(null)");
-> -}
-> -
-> -static DEVICE_ATTR(clock_source, S_IRUGO, s3c24xx_serial_show_clksrc, NULL);
-> -#endif
-> -
->  /* Device driver serial port probe */
->  
->  static const struct of_device_id s3c24xx_uart_dt_match[];
-> @@ -1329,12 +1311,6 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
->  	 */
->  	clk_disable_unprepare(ourport->clk);
->  
-> -#ifdef CONFIG_SAMSUNG_CLOCK
-> -	ret = device_create_file(&pdev->dev, &dev_attr_clock_source);
-> -	if (ret < 0)
-> -		dev_err(&pdev->dev, "failed to add clock source attr.\n");
-> -#endif
-> -
->  	ret = s3c24xx_serial_cpufreq_register(ourport);
->  	if (ret < 0)
->  		dev_err(&pdev->dev, "failed to add cpufreq notifier\n");
-> @@ -1348,9 +1324,6 @@ static int s3c24xx_serial_remove(struct platform_device *dev)
->  
->  	if (port) {
->  		s3c24xx_serial_cpufreq_deregister(to_ourport(port));
-> -#ifdef CONFIG_SAMSUNG_CLOCK
-> -		device_remove_file(&dev->dev, &dev_attr_clock_source);
-> -#endif
->  		uart_remove_one_port(&s3c24xx_uart_drv, port);
->  	}
->  
-
-
-Paul Bolle
+diff --git a/arch/alpha/include/uapi/asm/fcntl.h b/arch/alpha/include/uapi/asm/fcntl.h
+index 09f49a6b87d1..76a87038d2c1 100644
+--- a/arch/alpha/include/uapi/asm/fcntl.h
++++ b/arch/alpha/include/uapi/asm/fcntl.h
+@@ -33,6 +33,7 @@
+ 
+ #define O_PATH		040000000
+ #define __O_TMPFILE	0100000000
++#define O_BENEATH	0200000000	/* no / or .. in openat path */
+ 
+ #define F_GETLK		7
+ #define F_SETLK		8
+diff --git a/arch/parisc/include/uapi/asm/fcntl.h b/arch/parisc/include/uapi/asm/fcntl.h
+index 34a46cbc76ed..3adadf72f929 100644
+--- a/arch/parisc/include/uapi/asm/fcntl.h
++++ b/arch/parisc/include/uapi/asm/fcntl.h
+@@ -21,6 +21,7 @@
+ 
+ #define O_PATH		020000000
+ #define __O_TMPFILE	040000000
++#define O_BENEATH	080000000	/* no / or .. in openat path */
+ 
+ #define F_GETLK64	8
+ #define F_SETLK64	9
+diff --git a/arch/sparc/include/uapi/asm/fcntl.h b/arch/sparc/include/uapi/asm/fcntl.h
+index 7e8ace5bf760..ea38f0bd6cec 100644
+--- a/arch/sparc/include/uapi/asm/fcntl.h
++++ b/arch/sparc/include/uapi/asm/fcntl.h
+@@ -36,6 +36,7 @@
+ 
+ #define O_PATH		0x1000000
+ #define __O_TMPFILE	0x2000000
++#define O_BENEATH	0x4000000	/* no / or .. in openat path */
+ 
+ #define F_GETOWN	5	/*  for sockets. */
+ #define F_SETOWN	6	/*  for sockets. */
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 22d1c3df61ac..c07a32efc34b 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -747,14 +747,15 @@ static int __init fcntl_init(void)
+ 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
+ 	 * is defined as O_NONBLOCK on some platforms and not on others.
+ 	 */
+-	BUILD_BUG_ON(20 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
++	BUILD_BUG_ON(21 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
+ 		O_RDONLY	| O_WRONLY	| O_RDWR	|
+ 		O_CREAT		| O_EXCL	| O_NOCTTY	|
+ 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
+ 		__O_SYNC	| O_DSYNC	| FASYNC	|
+ 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
+ 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
+-		__FMODE_EXEC	| O_PATH	| __O_TMPFILE
++		__FMODE_EXEC	| O_PATH	| __O_TMPFILE	|
++		O_BENEATH
+ 		));
+ 
+ 	fasync_cache = kmem_cache_create("fasync_cache",
+diff --git a/fs/namei.c b/fs/namei.c
+index a7b05bf82d31..2fd547014b6b 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -647,7 +647,7 @@ static __always_inline void set_root(struct nameidata *nd)
+ 	get_fs_root(current->fs, &nd->root);
+ }
+ 
+-static int link_path_walk(const char *, struct nameidata *);
++static int link_path_walk(const char *, struct nameidata *, unsigned int);
+ 
+ static __always_inline unsigned set_root_rcu(struct nameidata *nd)
+ {
+@@ -819,7 +819,8 @@ static int may_linkat(struct path *link)
+ }
+ 
+ static __always_inline int
+-follow_link(struct path *link, struct nameidata *nd, void **p)
++follow_link(struct path *link, struct nameidata *nd, unsigned int flags,
++	    void **p)
+ {
+ 	struct dentry *dentry = link->dentry;
+ 	int error;
+@@ -867,7 +868,7 @@ follow_link(struct path *link, struct nameidata *nd, void **p)
+ 			nd->flags |= LOOKUP_JUMPED;
+ 		}
+ 		nd->inode = nd->path.dentry->d_inode;
+-		error = link_path_walk(s, nd);
++		error = link_path_walk(s, nd, flags);
+ 		if (unlikely(error))
+ 			put_link(nd, link, *p);
+ 	}
+@@ -1585,7 +1586,8 @@ out_err:
+  * Without that kind of total limit, nasty chains of consecutive
+  * symlinks can cause almost arbitrarily long lookups.
+  */
+-static inline int nested_symlink(struct path *path, struct nameidata *nd)
++static inline int nested_symlink(struct path *path, struct nameidata *nd,
++				 unsigned int flags)
+ {
+ 	int res;
+ 
+@@ -1603,7 +1605,7 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
+ 		struct path link = *path;
+ 		void *cookie;
+ 
+-		res = follow_link(&link, nd, &cookie);
++		res = follow_link(&link, nd, flags, &cookie);
+ 		if (res)
+ 			break;
+ 		res = walk_component(nd, path, LOOKUP_FOLLOW);
+@@ -1739,13 +1741,19 @@ static inline u64 hash_name(const char *name)
+  * Returns 0 and nd will have valid dentry and mnt on success.
+  * Returns error and drops reference to input namei data on failure.
+  */
+-static int link_path_walk(const char *name, struct nameidata *nd)
++static int link_path_walk(const char *name, struct nameidata *nd,
++			  unsigned int flags)
+ {
+ 	struct path next;
+ 	int err;
+ 	
+-	while (*name=='/')
++	while (*name == '/') {
++		if (flags & LOOKUP_BENEATH) {
++			err = -EACCES;
++			goto exit;
++		}
+ 		name++;
++	}
+ 	if (!*name)
+ 		return 0;
+ 
+@@ -1764,6 +1772,10 @@ static int link_path_walk(const char *name, struct nameidata *nd)
+ 		if (name[0] == '.') switch (hashlen_len(hash_len)) {
+ 			case 2:
+ 				if (name[1] == '.') {
++					if (flags & LOOKUP_BENEATH) {
++						err = -EACCES;
++						goto exit;
++					}
+ 					type = LAST_DOTDOT;
+ 					nd->flags |= LOOKUP_JUMPED;
+ 				}
+@@ -1806,7 +1818,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
+ 			return err;
+ 
+ 		if (err) {
+-			err = nested_symlink(&next, nd);
++			err = nested_symlink(&next, nd, flags);
+ 			if (err)
+ 				return err;
+ 		}
+@@ -1815,6 +1827,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
+ 			break;
+ 		}
+ 	}
++exit:
+ 	terminate_walk(nd);
+ 	return err;
+ }
+@@ -1853,6 +1866,8 @@ static int path_init(int dfd, const char *name, unsigned int flags,
+ 
+ 	nd->m_seq = read_seqbegin(&mount_lock);
+ 	if (*name=='/') {
++		if (flags & LOOKUP_BENEATH)
++			return -EACCES;
+ 		if (flags & LOOKUP_RCU) {
+ 			rcu_read_lock();
+ 			nd->seq = set_root_rcu(nd);
+@@ -1953,7 +1968,7 @@ static int path_lookupat(int dfd, const char *name,
+ 		return err;
+ 
+ 	current->total_link_count = 0;
+-	err = link_path_walk(name, nd);
++	err = link_path_walk(name, nd, flags);
+ 
+ 	if (!err && !(flags & LOOKUP_PARENT)) {
+ 		err = lookup_last(nd, &path);
+@@ -1964,7 +1979,7 @@ static int path_lookupat(int dfd, const char *name,
+ 			if (unlikely(err))
+ 				break;
+ 			nd->flags |= LOOKUP_PARENT;
+-			err = follow_link(&link, nd, &cookie);
++			err = follow_link(&link, nd, flags, &cookie);
+ 			if (err)
+ 				break;
+ 			err = lookup_last(nd, &path);
+@@ -2304,7 +2319,7 @@ path_mountpoint(int dfd, const char *name, struct path *path, unsigned int flags
+ 		return err;
+ 
+ 	current->total_link_count = 0;
+-	err = link_path_walk(name, &nd);
++	err = link_path_walk(name, &nd, flags);
+ 	if (err)
+ 		goto out;
+ 
+@@ -2316,7 +2331,7 @@ path_mountpoint(int dfd, const char *name, struct path *path, unsigned int flags
+ 		if (unlikely(err))
+ 			break;
+ 		nd.flags |= LOOKUP_PARENT;
+-		err = follow_link(&link, &nd, &cookie);
++		err = follow_link(&link, &nd, flags, &cookie);
+ 		if (err)
+ 			break;
+ 		err = mountpoint_last(&nd, path);
+@@ -3202,7 +3217,7 @@ static struct file *path_openat(int dfd, struct filename *pathname,
+ 		goto out;
+ 
+ 	current->total_link_count = 0;
+-	error = link_path_walk(pathname->name, nd);
++	error = link_path_walk(pathname->name, nd, flags);
+ 	if (unlikely(error))
+ 		goto out;
+ 
+@@ -3221,7 +3236,7 @@ static struct file *path_openat(int dfd, struct filename *pathname,
+ 			break;
+ 		nd->flags |= LOOKUP_PARENT;
+ 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
+-		error = follow_link(&link, nd, &cookie);
++		error = follow_link(&link, nd, flags, &cookie);
+ 		if (unlikely(error))
+ 			break;
+ 		error = do_last(nd, &path, file, op, &opened, pathname);
+diff --git a/fs/open.c b/fs/open.c
+index d6fd3acde134..8afca5b87a0b 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -874,7 +874,7 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
+ 		 * If we have O_PATH in the open flag. Then we
+ 		 * cannot have anything other than the below set of flags
+ 		 */
+-		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH;
++		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH | O_BENEATH;
+ 		acc_mode = 0;
+ 	} else {
+ 		acc_mode = MAY_OPEN | ACC_MODE(flags);
+@@ -905,6 +905,8 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
+ 		lookup_flags |= LOOKUP_DIRECTORY;
+ 	if (!(flags & O_NOFOLLOW))
+ 		lookup_flags |= LOOKUP_FOLLOW;
++	if (flags & O_BENEATH)
++		lookup_flags |= LOOKUP_BENEATH;
+ 	op->lookup_flags = lookup_flags;
+ 	return 0;
+ }
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 492de72560fa..bd0615d1143b 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -39,6 +39,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+ #define LOOKUP_FOLLOW		0x0001
+ #define LOOKUP_DIRECTORY	0x0002
+ #define LOOKUP_AUTOMOUNT	0x0004
++#define LOOKUP_BENEATH		0x0008
+ 
+ #define LOOKUP_PARENT		0x0010
+ #define LOOKUP_REVAL		0x0020
+diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+index 7543b3e51331..f63aa749a4fb 100644
+--- a/include/uapi/asm-generic/fcntl.h
++++ b/include/uapi/asm-generic/fcntl.h
+@@ -92,6 +92,10 @@
+ #define O_TMPFILE (__O_TMPFILE | O_DIRECTORY)
+ #define O_TMPFILE_MASK (__O_TMPFILE | O_DIRECTORY | O_CREAT)      
+ 
++#ifndef O_BENEATH
++#define O_BENEATH	040000000	/* no / or .. in openat path */
++#endif
++
+ #ifndef O_NDELAY
+ #define O_NDELAY	O_NONBLOCK
+ #endif
+-- 
+2.1.0.rc2.206.gedb03e5
 
