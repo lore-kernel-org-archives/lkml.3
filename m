@@ -1,637 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbaKCNM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 08:12:58 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:54196 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbaKCNMy (ORCPT
+	id S1752547AbaKCNOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 08:14:23 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:62310 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864AbaKCNOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 08:12:54 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+	Mon, 3 Nov 2014 08:14:19 -0500
+X-AuditID: cbfec372-b7f666d000001846-3d-54577faa80ce
+Date: Mon, 03 Nov 2014 11:14:10 -0200
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Beniamino Galvani <b.galvani@gmail.com>
 Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, m.chehab@samsung.com, hverkuil@xs4all.nl
-Subject: Re: [PATCH v4] media: spi: Add support for LMH0395
-Date: Mon, 03 Nov 2014 15:13:04 +0200
-Message-ID: <1630377.tEqlt7fWO7@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1410342234-7444-1-git-send-email-jean-michel.hautbois@vodalys.com>
-References: <1410342234-7444-1-git-send-email-jean-michel.hautbois@vodalys.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Carlo Caione <carlo@caione.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Subject: Re: [PATCH 1/3] media: rc: add driver for Amlogic Meson IR remote
+ receiver
+Message-id: <20141103111410.6b1147a0.m.chehab@samsung.com>
+In-reply-to: <1413144115-23188-2-git-send-email-b.galvani@gmail.com>
+References: <1413144115-23188-1-git-send-email-b.galvani@gmail.com>
+ <1413144115-23188-2-git-send-email-b.galvani@gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t/hQN1V9eEhBvsncVoc3d3LavFgzXpm
+	i/lHzrFa9L9ZyGpx7tVKRoujD16xW2x6fI3V4vKuOWwWPRu2slosvX6RyWLC9LUsFq17j7Bb
+	rP72icmB1+PImtWMHmvmrWH06DrZx+Rxua+XyWPnrLvsHiuXf2Hz2LSqk81j85J6j8+b5AI4
+	o7hsUlJzMstSi/TtErgyfky8w14w0aeif+05xgbGo7ZdjJwcEgImEjMWNbFA2GISF+6tZ+ti
+	5OIQEljCKHHtzG8WCKeBSWJ23ydWkCoWAVWJl01/2EFsNgEjiVeNLUBxDg4RAW2JzqesIPXM
+	AmuZJY6eamUDiQsLhEos2JcGUs4rYCWxY+JCZhCbU8BFYs71S2wgtpBArcT57/eYQMolBJwl
+	5n/OhigXlPgx+R7YbcwCWhKbtzWxQtjyEpvXvGWewCgwC0nZLCRls5CULWBkXsUoWlqcXFCc
+	lJ5rqFecmFtcmpeul5yfu4kREkVFOxifbbA6xCjAwajEw1u5LyxEiDWxrLgy9xCjBAezkgjv
+	v5TwECHelMTKqtSi/Pii0pzU4kOMTBycUg2MSy45LlufyN014c/MBGdRnu7StYmNDS9Djr/g
+	VFPqrumwEThx5fz2h9UXfrR/fvppxlT7Pc3znPN+Ld/FcF/8frXBtK3hTBvTl7QkL5q8bwn3
+	ktK+txuP/FaapjE5oej6Tau0SYytJVfNGGacsDPgMWJg7M9bmH5e9vOFisZdiTq1gopH0gv0
+	lViKMxINtZiLihMBAEGTf4ACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Michel,
+Em Sun, 12 Oct 2014 22:01:53 +0200
+Beniamino Galvani <b.galvani@gmail.com> escreveu:
 
-Thank you for the patch.
+> Amlogic Meson SoCs include a infrared remote control receiver that can
+> operate in two modes: in "NEC" mode the hardware can decode frames
+> using the NEC IR protocol, while in "general" mode the receiver simply
+> reports the duration of pulses and spaces for software decoding.
+> 
+> This is a driver for the IR receiver that uses software decoding of
+> received frames.
 
-On Wednesday 10 September 2014 11:43:54 Jean-Michel Hautbois wrote:
-> This device is a SPI based device from TI.
-> It is a 3 Gbps HD/SD SDI Dual Output Low Power
-> Extended Reach Adaptive Cable Equalizer.
+There are a few checkpatch warnings there:
+
+WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
+#71: 
+new file mode 100644
+
+WARNING: Missing a blank line after declarations
+#151: FILE: drivers/media/rc/meson-ir.c:76:
++	u32 duration;
++	DEFINE_IR_RAW_EVENT(rawir);
+
+WARNING: DT compatible string "amlogic,meson6-ir" appears un-documented -- check ./Documentation/devicetree/bindings/
+#272: FILE: drivers/media/rc/meson-ir.c:197:
++	{ .compatible = "amlogic,meson6-ir" },
+
+total: 0 errors, 3 warnings, 238 lines checked
+
+patches/lmml_26418_1_3_media_rc_add_driver_for_amlogic_meson_ir_remote_receiver.patch has style problems, please review.
+
+I'm seeing that the DT patches are there, after this one. The best
+would be to add them before in the series.
+
+Please add also an entry at the MAINTAINERS file.
+
+
 > 
-> LMH0395 enables the use of up to two outputs.
-> These can be configured using DT.
-> 
-> Controls should be accessible from userspace too.
-> This will have to be done later.
-> 
-> v2: Add DT support
-> v3: Change the bit set/clear in output_type as disabled means 'set the bit'
-> v4: Clearer description of endpoints usage in Doc, and some init changes.
->     Add a dependency on OF and don't test CONFIG_OF anymore.
-> 
-> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 > ---
->  .../devicetree/bindings/media/spi/lmh0395.txt      |  48 +++
->  MAINTAINERS                                        |   6 +
->  drivers/media/spi/Kconfig                          |  14 +
->  drivers/media/spi/Makefile                         |   1 +
->  drivers/media/spi/lmh0395.c                        | 354 ++++++++++++++++++
->  5 files changed, 423 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/media/spi/lmh0395.txt
->  create mode 100644 drivers/media/spi/Kconfig
->  create mode 100644 drivers/media/spi/Makefile
->  create mode 100644 drivers/media/spi/lmh0395.c
+>  drivers/media/rc/Kconfig    |  11 +++
+>  drivers/media/rc/Makefile   |   1 +
+>  drivers/media/rc/meson-ir.c | 214 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 226 insertions(+)
+>  create mode 100644 drivers/media/rc/meson-ir.c
 > 
-> diff --git a/Documentation/devicetree/bindings/media/spi/lmh0395.txt
-> b/Documentation/devicetree/bindings/media/spi/lmh0395.txt new file mode
-> 100644
-> index 0000000..7cc0026
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/media/spi/lmh0395.txt
-> @@ -0,0 +1,48 @@
-> +* Texas Instruments lmh0395 3G HD/SD SDI equalizer
-> +
-> +The LMH0395 3 Gbps HD/SD SDI Dual Output Low Power Extended Reach Adaptive
-> +Cable Equalizer is designed to equalize data transmitted over cable (or any
-> +media with similar dispersive loss characteristics).
-> +The equalizer operates over a wide range of data rates from 125 Mbps to
-> 2.97 Gbps
-> +and supports SMPTE 424M, SMPTE 292M, SMPTE344M, SMPTE 259M, and DVB-ASI
-> standards.
+> diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+> index 8ce0810..2d742e2 100644
+> --- a/drivers/media/rc/Kconfig
+> +++ b/drivers/media/rc/Kconfig
+> @@ -223,6 +223,17 @@ config IR_FINTEK
+>  	   To compile this driver as a module, choose M here: the
+>  	   module will be called fintek-cir.
+>  
+> +config IR_MESON
+> +	tristate "Amlogic Meson IR remote receiver"
+> +	depends on RC_CORE
+> +	depends on ARCH_MESON
 
-That's copied verbatim from the datasheet and not very relevant from a DT 
-bindings point of view. I would rather explain what the chip does. Something 
-like
+Please add COMPILE_TEST too, as we want to be able to compile it on
+x86 and other archs, in order to check if the driver builds fine and
+to enable the static analyzers to look into this code.
 
-"The LMH0395 is an SDI equalizer designed to extend the reach of SDI signals 
-transmitted over cable by equalizing the input signal and generating clean 
-outputs. It has one differential input and two differential output that can be 
-independently controlled."
-
-> +
-> +Required Properties :
-> +- compatible: Must be "ti,lmh0395"
-> +
-> +The device node must contain one 'port' child node per device input and
-> output
-> +port, in accordance with the video interface bindings defined in
-> +Documentation/devicetree/bindings/media/video-interfaces.txt. The port
-> nodes
-> +are numbered as follows.
-> +
-> +  Port			LMH0395
-> +------------------------------------------------------------
-> +  SDI input		0
-> +  SDI output		1,2
-
-While there shouldn't be much doubt about SDO0 corresponding to port 1 and 
-SDO1 to port 2, I'd like that to be mentioned explicitly.
-
-The device node must contain one 'port' child node per device input and output
-port, in accordance with the video interface bindings defined in 
-Documentation/devicetree/bindings/media/video-interfaces.txt.
-
-The LMH0395 has three ports numbered as follows.
-
-Description            Number
-------------------------------------------------------------
-SDI (SDI input)		0
-SDO0 (SDI output 0)	1
-SDO1 (SDI output 1)	2
-
-> +Example:
-> +
-> +ecspi@02010000 {
-> +	...
-> +	...
-> +
-> +	lmh0395@1 {
-> +		compatible = "ti,lmh0395";
-> +		reg = <1>;
-> +		spi-max-frequency = <20000000>;
-> +		ports {
-
-You need to add
-
-#address-cells = <1>;
-#size-cells = <0>;
-
-here.
-
-> +			port@0 {
-> +				reg = <0>;
-> +				sdi0_in: endpoint {};
-> +			};
-> +			port@1 {
-> +				reg = <1>;
-> +				sdi0_out0: endpoint {};
-> +			};
-> +			port@2 {
-> +				reg = <2>;
-> +				/* endpoint not specified, disable output */
-> +			};
-> +		};
-> +	};
-> +	...
-> +};
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index cf24bb5..ca42b9e 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -9141,6 +9141,12 @@ S:	Maintained
->  F:	sound/soc/codecs/lm49453*
->  F:	sound/soc/codecs/isabelle*
-> 
-> +TI LMH0395 DRIVER
-> +M:	Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-> +L:	linux-media@vger.kernel.org
-> +S:	Maintained
-> +F:	drivers/media/spi/lmh0395*
-> +
->  TI LP855x BACKLIGHT DRIVER
->  M:	Milo Kim <milo.kim@ti.com>
->  S:	Maintained
-> diff --git a/drivers/media/spi/Kconfig b/drivers/media/spi/Kconfig
-> new file mode 100644
-> index 0000000..bcb1ab1
-> --- /dev/null
-> +++ b/drivers/media/spi/Kconfig
-> @@ -0,0 +1,14 @@
-> +if VIDEO_V4L2
-> +
-> +config VIDEO_LMH0395
-> +	tristate "LMH0395 equalizer"
-> +	depends on VIDEO_V4L2 && SPI && MEDIA_CONTROLLER && OF
 > +	---help---
-> +	  Support for TI LMH0395 3G HD/SD SDI Dual Output Low Power
-> +	  Extended Reach Adaptive Cable Equalizer.
+> +	   Say Y if you want to use the IR remote receiver available
+> +	   on Amlogic Meson SoCs.
 > +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called lmh0395.
+> +	   To compile this driver as a module, choose M here: the
+> +	   module will be called meson-ir.
 > +
-> +
-> +endif
-> diff --git a/drivers/media/spi/Makefile b/drivers/media/spi/Makefile
+>  config IR_NUVOTON
+>  	tristate "Nuvoton w836x7hg Consumer Infrared Transceiver"
+>  	depends on PNP
+> diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
+> index 0989f94..06859bf 100644
+> --- a/drivers/media/rc/Makefile
+> +++ b/drivers/media/rc/Makefile
+> @@ -22,6 +22,7 @@ obj-$(CONFIG_IR_IMON) += imon.o
+>  obj-$(CONFIG_IR_ITE_CIR) += ite-cir.o
+>  obj-$(CONFIG_IR_MCEUSB) += mceusb.o
+>  obj-$(CONFIG_IR_FINTEK) += fintek-cir.o
+> +obj-$(CONFIG_IR_MESON) += meson-ir.o
+>  obj-$(CONFIG_IR_NUVOTON) += nuvoton-cir.o
+>  obj-$(CONFIG_IR_ENE) += ene_ir.o
+>  obj-$(CONFIG_IR_REDRAT3) += redrat3.o
+> diff --git a/drivers/media/rc/meson-ir.c b/drivers/media/rc/meson-ir.c
 > new file mode 100644
-> index 0000000..6c587e5
+> index 0000000..0900ece
 > --- /dev/null
-> +++ b/drivers/media/spi/Makefile
-> @@ -0,0 +1 @@
-> +obj-$(CONFIG_VIDEO_LMH0395)	+= lmh0395.o
-> diff --git a/drivers/media/spi/lmh0395.c b/drivers/media/spi/lmh0395.c
-> new file mode 100644
-> index 0000000..3eca0df
-> --- /dev/null
-> +++ b/drivers/media/spi/lmh0395.c
-> @@ -0,0 +1,354 @@
+> +++ b/drivers/media/rc/meson-ir.c
+> @@ -0,0 +1,214 @@
 > +/*
-> + * LMH0395 SPI driver.
-> + * Copyright (C) 2014  Jean-Michel Hautbois
+> + * Driver for Amlogic Meson IR remote receiver
 > + *
-> + * 3G HD/SD SDI Dual Output Low Power Extended Reach Adaptive Cable
-> Equalizer
+> + * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
 > + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
 > + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
 > + */
 > +
-> +#include <linux/ioctl.h>
+> +#include <linux/interrupt.h>
 > +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/types.h>
-> +#include <linux/slab.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/spi/spi.h>
-
-Please keep the headers alphabetically ordered.
-
-> +#include <linux/videodev2.h>
-> +#include <media/v4l2-device.h>
-> +#include <media/v4l2-of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/spinlock.h>
 > +
-> +static int debug;
-> +module_param(debug, int, 0644);
-> +MODULE_PARM_DESC(debug, "debug level (0-1)");
-
-I wonder whether this is really needed. If you follow my proposal to implement 
-the log_status handler most v4l2_dbg call will turn into info calls. Of the 
-two remaining v4l2_dbg calls one could be removed (please see below again), 
-and the other turned into a dev_dbg.
-
+> +#include <media/rc-core.h>
 > +
-> +#define	LMH0395_SPI_CMD_WRITE	0x00
-> +#define	LMH0395_SPI_CMD_READ	0x80
+> +#define DRIVER_NAME		"meson-ir"
 > +
-> +/* Registers of LMH0395 */
-> +#define LMH0395_GENERAL_CTRL		0x00
-> +#define LMH0395_OUTPUT_DRIVER		0x01
-> +#define LMH0395_LAUNCH_AMP_CTRL		0x02
-> +#define LMH0395_MUTE_REF		0x03
-> +#define LMH0395_DEVICE_ID		0x04
-> +#define	LMH0395_RATE_INDICATOR		0x05
-> +#define	LMH0395_CABLE_LENGTH_INDICATOR	0x06
-> +#define	LMH0395_LAUNCH_AMP_INDICATION	0x07
+> +#define IR_DEC_LDR_ACTIVE	0x00
+> +#define IR_DEC_LDR_IDLE		0x04
+> +#define IR_DEC_LDR_REPEAT	0x08
+> +#define IR_DEC_BIT_0		0x0c
+> +#define IR_DEC_REG0		0x10
+> +#define IR_DEC_FRAME		0x14
+> +#define IR_DEC_STATUS		0x18
+> +#define IR_DEC_REG1		0x1c
 > +
-> +/* This is a one input, dual output device */
-> +#define LMH0395_SDI_INPUT	0
-> +#define LMH0395_SDI_OUT0	1
-> +#define LMH0395_SDI_OUT1	2
+> +#define REG0_RATE_MASK		(BIT(11) - 1)
 > +
-> +#define LMH0395_PADS_NUM	3
+> +#define REG1_MODE_MASK		(BIT(7) | BIT(8))
+> +#define REG1_MODE_NEC		(0 << 7)
+> +#define REG1_MODE_GENERAL	(2 << 7)
 > +
-> +/* Register LMH0395_MUTE_REF bits [7:6] */
-> +enum lmh0395_output_type {
-> +	LMH0395_OUTPUT_TYPE_NONE,
-> +	LMH0395_OUTPUT_TYPE_SDO0,
-> +	LMH0395_OUTPUT_TYPE_SDO1,
-> +	LMH0395_OUTPUT_TYPE_BOTH
+> +#define REG1_TIME_IV_SHIFT	16
+> +#define REG1_TIME_IV_MASK	((BIT(13) - 1) << REG1_TIME_IV_SHIFT)
+> +
+> +#define REG1_IRQSEL_MASK	(BIT(2) | BIT(3))
+> +#define REG1_IRQSEL_NEC_MODE	(0 << 2)
+> +#define REG1_IRQSEL_RISE_FALL	(1 << 2)
+> +#define REG1_IRQSEL_FALL	(2 << 2)
+> +#define REG1_IRQSEL_RISE	(3 << 2)
+> +
+> +#define REG1_RESET		BIT(0)
+> +#define REG1_ENABLE		BIT(15)
+> +
+> +#define STATUS_IR_DEC_IN	BIT(8)
+> +
+> +#define MESON_TRATE		10	/* us */
+> +
+> +struct meson_ir {
+> +	void __iomem	*reg;
+> +	struct rc_dev	*rc;
+> +	int		irq;
+> +	spinlock_t	lock;
 > +};
 > +
-> +static const char * const output_strs[] = {
-> +	"No Output Driver",
-> +	"Output Driver 0",
-> +	"Output Driver 1",
-> +	"Output Driver 0+1",
-> +};
-> +
-> +
-> +/* spi implementation */
-> +
-> +static int lmh0395_spi_write(struct spi_device *spi, u8 reg, u8 data)
+> +static void meson_ir_set_mask(struct meson_ir *ir, unsigned int reg,
+> +			      u32 mask, u32 value)
 > +{
-> +	int err;
-> +	u8 cmd[2];
+> +	u32 data;
 > +
-> +	cmd[0] = LMH0395_SPI_CMD_WRITE | reg;
-> +	cmd[1] = data;
-> +
-> +	err = spi_write(spi, cmd, 2);
-> +	if (err < 0) {
-> +		dev_err(&spi->dev, "SPI failed to select reg\n");
-
-I don't think the message is really accurate. "SPI write failed" would seem a 
-better description to me. I would also print the error value, that can be 
-useful for debugging.
-
-> +		return err;
-> +	}
-> +
-> +	return err;
+> +	data = readl(ir->reg + reg);
+> +	data &= ~mask;
+> +	data |= (value & mask);
+> +	writel(data, ir->reg + reg);
 > +}
 > +
-> +static int lmh0395_spi_read(struct spi_device *spi, u8 reg, u8 *data)
+> +static irqreturn_t meson_ir_irq(int irqno, void *dev_id)
 > +{
-> +	int err;
-> +	u8 cmd[2];
-> +	u8 read_data[2];
+> +	struct meson_ir *ir = dev_id;
+> +	u32 duration;
+> +	DEFINE_IR_RAW_EVENT(rawir);
 > +
-> +	cmd[0] = LMH0395_SPI_CMD_READ | reg;
-> +	cmd[1] = 0xff;
+> +	spin_lock(&ir->lock);
 > +
-> +	err = spi_write(spi, cmd, 2);
-> +	if (err < 0) {
-> +		dev_err(&spi->dev, "SPI failed to select reg\n");
-
-Same here and below, the error value can be useful.
-
-> +		return err;
-> +	}
+> +	duration = readl(ir->reg + IR_DEC_REG1);
+> +	duration = (duration & REG1_TIME_IV_MASK) >> REG1_TIME_IV_SHIFT;
+> +	rawir.duration = US_TO_NS(duration * MESON_TRATE);
 > +
-> +	err = spi_read(spi, read_data, 2);
-> +	if (err < 0) {
-> +		dev_err(&spi->dev, "SPI failed to read reg\n");
-> +		return err;
-> +	}
-> +	/* The first 8 bits is the adress used, drop it */
-> +	*data = read_data[1];
+> +	rawir.pulse = !!(readl(ir->reg + IR_DEC_STATUS) & STATUS_IR_DEC_IN);
 > +
-> +	return err;
+> +	ir_raw_event_store_with_filter(ir->rc, &rawir);
+> +	ir_raw_event_handle(ir->rc);
+> +
+> +	spin_unlock(&ir->lock);
+> +
+> +	return IRQ_HANDLED;
 > +}
 > +
-> +struct lmh0395_state {
-> +	struct v4l2_subdev sd;
-> +	struct media_pad pads[LMH0395_PADS_NUM];
-> +	enum lmh0395_output_type output_type;
-> +};
-> +
-> +static inline struct lmh0395_state *to_state(struct v4l2_subdev *sd)
+> +static int meson_ir_probe(struct platform_device *pdev)
 > +{
-> +	return container_of(sd, struct lmh0395_state, sd);
-> +}
+> +	struct device *dev = &pdev->dev;
+> +	struct device_node *node = dev->of_node;
+> +	struct resource *res;
+> +	const char *map_name;
+> +	struct meson_ir *ir;
+> +	int ret;
 > +
-> +static int lmh0395_set_output_type(struct v4l2_subdev *sd, u32 output)
-> +{
-> +	struct lmh0395_state *state = to_state(sd);
-> +	struct spi_device *spi = v4l2_get_subdevdata(sd);
-> +	u8 muteref_reg;
-> +
-> +	switch (output) {
-> +	case LMH0395_OUTPUT_TYPE_SDO0:
-> +		lmh0395_spi_read(spi, LMH0395_MUTE_REF, &muteref_reg);
-> +		muteref_reg &= ~(1 << 6);
-> +		break;
-> +	case LMH0395_OUTPUT_TYPE_SDO1:
-> +		lmh0395_spi_read(spi, LMH0395_MUTE_REF, &muteref_reg);
-> +		muteref_reg &= (1 << 7);
-> +		break;
-> +	case LMH0395_OUTPUT_TYPE_BOTH:
-> +		lmh0395_spi_read(spi, LMH0395_MUTE_REF, &muteref_reg);
-> +		muteref_reg |= 0x00 << 6;
-
-This line does absolutely nothing.
-
-> +		break;
-> +	case LMH0395_OUTPUT_TYPE_NONE:
-> +		lmh0395_spi_read(spi, LMH0395_MUTE_REF, &muteref_reg);
-> +		muteref_reg |= 0x11 << 6;
-
-0x11 << 6, really ?
-
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	v4l2_dbg(1, debug, sd, "Selecting %s output type\n",
-> +					output_strs[output]);
-> +
-> +	/* The following settings will have to be dynamic */
-> +	muteref_reg &= ~(0x1f); /* Muteref enable */
-> +	muteref_reg |= 1 << 5; /* Digital Muteref */
-
-Just set all the bits explicitly and get rid of the various reads in the case 
-statements above, the function will be simpler.
-
-> +	lmh0395_spi_write(spi, LMH0395_MUTE_REF, muteref_reg);
-> +
-> +	state->output_type = output;
-> +	return 0;
-> +
-> +}
-> +
-> +static int lmh0395_get_rate(struct v4l2_subdev *sd, u8 *rate)
-> +{
-> +	struct spi_device *spi = v4l2_get_subdevdata(sd);
-> +	int err;
-> +	u8 ctrl;
-> +
-> +	err = lmh0395_spi_read(spi, LMH0395_RATE_INDICATOR, &ctrl);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	*rate = ctrl & 0x20;
-> +	v4l2_dbg(1, debug, sd, "Rate : %s\n", (ctrl & 0x20)?"3G/HD":"SD");
-
-You need spaces around the ? and the :.
-
-> +	return 0;
-> +}
-> +
-> +static int lmh0395_get_cable_length(struct v4l2_subdev *sd, u8 rate)
-> +{
-> +	struct spi_device *spi = v4l2_get_subdevdata(sd);
-> +	u8 length;
-> +	u8 cli;
-> +	int err;
-> +
-> +	err = lmh0395_spi_read(spi, LMH0395_CABLE_LENGTH_INDICATOR, &cli);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	/* The cable length indicator (CLI) provides an indication of the
-> +	 * length of the cable attached to input. CLI is accessible via bits
-> +	 * [7:0] of SPI register 06h.
-> +	 * The 8-bit setting ranges in decimal value from 0 to 247
-> +	 * ("00000000" to "11110111" binary), corresponding to 0 to 400m of
-> +	 * Belden 1694A cable.
-> +	 * For 3G and HD input, CLI is 1.25m per step.
-> +	 * For SD input, CLI is 1.25m per step, less 20m, from 0 to 191 decimal
-> +	 * and 3.5m per step from 192 to 247 decimal.
-> +	 */
-> +
-> +	length = cli*5/4;
-> +	if (rate == 0) {
-> +		if (cli <= 191)
-> +			length -= 20;
-> +		else
-> +			length = ((191*5/4)-20) + ((cli-191)*7/2);
-> +
-> +	}
-> +	v4l2_dbg(1, debug, sd, "Length estimated (BELDEN 1694A cables) : %dm\n",
-> +			length);
-> +	return 0;
-> +}
-> +
-> +static int lmh0395_get_control(struct v4l2_subdev *sd)
-> +{
-> +	int err;
-> +	struct spi_device *spi = v4l2_get_subdevdata(sd);
-> +	u8 ctrl;
-> +	u8 rate;
-> +
-> +	err = lmh0395_spi_read(spi, LMH0395_GENERAL_CTRL, &ctrl);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	if (ctrl & 0x80) {
-> +		v4l2_dbg(1, debug, sd, "Carrier detected\n");
-> +		lmh0395_get_rate(sd, &rate);
-> +		lmh0395_get_cable_length(sd, rate);
-> +	}
-> +	return 0;
-> +}
-
-This function is only called at probe time. Is it really useful ? If you want 
-to keep it you should turn it into a subdev log_status handler instead.
-
-> +static int lmh0395_s_routing(struct v4l2_subdev *sd, u32 input, u32 output,
-> +				u32 config)
-> +{
-> +	struct lmh0395_state *state = to_state(sd);
-> +	int err = 0;
-> +
-> +	if (state->output_type != output)
-> +		err = lmh0395_set_output_type(sd, output);
-> +
-> +	return err;
-
-        if (state->output_type == output)
-                return 0;
-
-        return lmh0395_set_output_type(sd, output);
-
-You can then get rid of the err variable.
-
-I don't really like this implementation though, the output argument is device-
-specific, you thus require explicit knowledge of the LMH0395 in your bridge 
-driver.
-
-I'm not sure what the config argument is used for, but naively I would have 
-used it to tell whether to enable (1) or disable (0) the route from input to 
-output. The input value should then always be 0, and the output value can be 1 
-or 2. Another option would be to use the new S_ROUTING userspace ioctl I've 
-proposed in 
-http://git.linuxtv.org/cgit.cgi/pinchartl/media.git/commit/?h=xilinx-wip&id=fc094c354338861673464ed4b8fa198089fe7bf0.
-
-Hans, could you comment on that ?
-
-> +}
-> +
-> +static const struct v4l2_subdev_video_ops lmh0395_video_ops = {
-> +	.s_routing = lmh0395_s_routing,
-> +};
-> +
-> +static const struct v4l2_subdev_ops lmh0395_ops = {
-> +	.video = &lmh0395_video_ops,
-> +};
-> +
-> +static const struct spi_device_id lmh0395_id[] = {
-> +	{ "lmh0395", 0 },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(spi, lmh0395_id);
-> +
-> +static const struct of_device_id lmh0395_of_match[] = {
-> +	{.compatible = "ti,lmh0395", },
-> +	{ /* sentinel */ },
-> +};
-> +MODULE_DEVICE_TABLE(of, lmh0395_of_match);
-> +
-> +static int lmh0395_probe(struct spi_device *spi)
-> +{
-> +	u8 device_id;
-> +	struct lmh0395_state *state;
-> +	struct v4l2_subdev *sd;
-> +	int err;
-> +
-> +	err = lmh0395_spi_read(spi, LMH0395_DEVICE_ID, &device_id);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	dev_dbg(&spi->dev, "device_id 0x%x\n", device_id);
-
-Shouldn't you validate the device ID value ?
-
-> +	/* Now that the device is here, let's init V4L2 */
-> +	state = devm_kzalloc(&spi->dev, sizeof(*state), GFP_KERNEL);
-> +	if (!state)
+> +	ir = devm_kzalloc(dev, sizeof(struct meson_ir), GFP_KERNEL);
+> +	if (!ir)
 > +		return -ENOMEM;
 > +
-> +	sd = &state->sd;
-> +	v4l2_spi_subdev_init(sd, spi, &lmh0395_ops);
-> +
-> +	v4l2_dbg(1, debug, sd, "Configuring equalizer\n");
-
-Is this message really useful ? It will always be printed after the device_id 
-message above, and thus adds little value. 
-
-> +	lmh0395_get_control(sd);
-> +	/* Default is no output */
-> +	lmh0395_set_output_type(sd, LMH0395_OUTPUT_TYPE_NONE);
-> +
-> +	if (spi->dev.of_node) {
-> +		struct device_node *n = NULL;
-> +		struct of_endpoint ep;
-> +
-> +		while ((n = of_graph_get_next_endpoint(spi->dev.of_node, n))
-> +								!= NULL) {
-
-Philipp Zabel has submitted a patch named "of: Add for_each_endpoint_of_node 
-helper macro" that should get merged in v3.19. The patch series modifies the 
-behaviour of of_graph_get_next_endpoint() to drop the reference to the prev 
-node. This would thus create a problem in the driver, which you should fix by 
-using the for_each_endpoint_of_node() macro.
-
-> +			of_graph_parse_endpoint(n, &ep);
-
-You should check the return value.
-
-> +			dev_dbg(&spi->dev, "endpoint %d on port %d\n",
-> +						ep.id, ep.port);
-> +			/* port 1 => SDO0 */
-> +			if (ep.port >= 1)
-> +				lmh0395_set_output_type(sd, ep.port);
-> +			of_node_put(n);
-> +		}
-> +	} else {
-> +		dev_dbg(&spi->dev, "No DT configuration\n");
-
-Is that a case you want to support ?
-
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	ir->reg = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(ir->reg)) {
+> +		dev_err(dev, "failed to map registers\n");
+> +		return PTR_ERR(ir->reg);
 > +	}
 > +
-> +	state->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-> +	state->pads[LMH0395_SDI_INPUT].flags = MEDIA_PAD_FL_SINK;
-> +	state->pads[LMH0395_SDI_OUT0].flags = MEDIA_PAD_FL_SOURCE;
-> +	state->pads[LMH0395_SDI_OUT1].flags = MEDIA_PAD_FL_SOURCE;
-> +	err = media_entity_init(&sd->entity, LMH0395_PADS_NUM, state->pads, 0);
-> +	if (err)
-> +		return err;
-> +
-> +	err = v4l2_async_register_subdev(sd);
-> +	if (err < 0) {
-> +		media_entity_cleanup(&sd->entity);
-> +		return err;
+> +	ir->irq = platform_get_irq(pdev, 0);
+> +	if (ir->irq < 0) {
+> +		dev_err(dev, "no irq resource\n");
+> +		return ir->irq;
 > +	}
 > +
-> +	dev_dbg(&spi->dev, "device probed\n");
+> +	ir->rc = rc_allocate_device();
+> +	if (!ir->rc) {
+> +		dev_err(dev, "failed to allocate rc device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	ir->rc->priv = ir;
+> +	ir->rc->input_name = DRIVER_NAME;
+> +	ir->rc->input_phys = DRIVER_NAME "/input0";
+> +	ir->rc->input_id.bustype = BUS_HOST;
+
+> +	ir->rc->input_id.vendor = 0x0001;
+> +	ir->rc->input_id.product = 0x0001;
+> +	ir->rc->input_id.version = 0x0100;
+
+I don't like very much the idea of filling it like that. From where those
+numbers came? Could you add a define for them somewhere?
+
+> +	map_name = of_get_property(node, "linux,rc-map-name", NULL);
+> +	ir->rc->map_name = map_name ? map_name : RC_MAP_EMPTY;
+> +	ir->rc->dev.parent = dev;
+> +	ir->rc->driver_type = RC_DRIVER_IR_RAW;
+> +	ir->rc->allowed_protocols = RC_BIT_ALL;
+> +	ir->rc->rx_resolution = US_TO_NS(MESON_TRATE);
+> +	ir->rc->timeout = MS_TO_NS(200);
+> +	ir->rc->driver_name = DRIVER_NAME;
+> +
+> +	spin_lock_init(&ir->lock);
+> +	platform_set_drvdata(pdev, ir);
+> +
+> +	ret = rc_register_device(ir->rc);
+> +	if (ret) {
+> +		dev_err(dev, "failed to register rc device\n");
+> +		goto out_free;
+> +	}
+> +
+> +	ret = devm_request_irq(dev, ir->irq, meson_ir_irq, 0, "ir-meson", ir);
+> +	if (ret) {
+> +		dev_err(dev, "failed to request irq\n");
+> +		goto out_unreg;
+> +	}
+> +
+> +	/* Reset the decoder */
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_RESET, REG1_RESET);
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_RESET, 0);
+> +	/* Set general operation mode */
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_MODE_MASK, REG1_MODE_GENERAL);
+> +	/* Set rate */
+> +	meson_ir_set_mask(ir, IR_DEC_REG0, REG0_RATE_MASK, MESON_TRATE - 1);
+> +	/* IRQ on rising and falling edges */
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_IRQSEL_MASK,
+> +			  REG1_IRQSEL_RISE_FALL);
+> +	/* Enable the decoder */
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_ENABLE, REG1_ENABLE);
+> +
+> +	dev_info(dev, "receiver initialized\n");
 > +
 > +	return 0;
+> +out_unreg:
+> +	rc_unregister_device(ir->rc);
+> +out_free:
+> +	rc_free_device(ir->rc);
+> +
+> +	return ret;
 > +}
 > +
-> +static int lmh0395_remove(struct spi_device *spi)
+> +static int meson_ir_remove(struct platform_device *pdev)
 > +{
-> +	struct v4l2_subdev *sd = spi_get_drvdata(spi);
+> +	struct meson_ir *ir = platform_get_drvdata(pdev);
+> +	unsigned long flags;
 > +
-> +	v4l2_async_unregister_subdev(sd);
-> +	media_entity_cleanup(&sd->entity);
+> +	/* Disable the decoder */
+> +	spin_lock_irqsave(&ir->lock, flags);
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_ENABLE, 0);
+> +	spin_unlock_irqrestore(&ir->lock, flags);
+> +
+> +	rc_unregister_device(ir->rc);
+> +
 > +	return 0;
 > +}
 > +
-> +
-
-There's an extra blank line here.
-
-> +static struct spi_driver lmh0395_driver = {
-> +	.driver = {
-> +		.of_match_table = lmh0395_of_match,
-> +		.name = "lmh0395",
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.probe = lmh0395_probe,
-> +	.remove = lmh0395_remove,
-> +	.id_table = lmh0395_id,
+> +static const struct of_device_id meson_ir_match[] = {
+> +	{ .compatible = "amlogic,meson6-ir" },
+> +	{ },
 > +};
 > +
-> +module_spi_driver(lmh0395_driver);
+> +static struct platform_driver meson_ir_driver = {
+> +	.probe		= meson_ir_probe,
+> +	.remove		= meson_ir_remove,
+> +	.driver = {
+> +		.name		= DRIVER_NAME,
+> +		.of_match_table	= meson_ir_match,
+> +	},
+> +};
 > +
-> +MODULE_DESCRIPTION("spi device driver for LMH0395 equalizer");
-> +MODULE_AUTHOR("Jean-Michel Hautbois");
-> +MODULE_LICENSE("GPL");
-
--- 
-Regards,
-
-Laurent Pinchart
-
+> +module_platform_driver(meson_ir_driver);
+> +
+> +MODULE_DESCRIPTION("Amlogic Meson IR remote receiver driver");
+> +MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
+> +MODULE_LICENSE("GPL v2");
