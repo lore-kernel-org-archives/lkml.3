@@ -1,136 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaKCQFN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:05:13 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46308 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaKCQFK (ORCPT
+	id S1752590AbaKCQGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:06:01 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:50415 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaKCQF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:05:10 -0500
-Date: Mon, 3 Nov 2014 11:04:31 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, Ian.Campbell@citrix.com,
-        david.vrabel@citrix.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 7/8] xen/arm/arm64: introduce xen_arch_need_swiotlb
-Message-ID: <20141103160431.GE1638@laptop.dumpdata.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
- <1414422568-19103-7-git-send-email-stefano.stabellini@eu.citrix.com>
- <alpine.DEB.2.02.1411031044480.22875@kaball.uk.xensource.com>
+	Mon, 3 Nov 2014 11:05:58 -0500
+Date: Mon, 3 Nov 2014 16:05:52 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] mfd: db8500-prcmu: check return of devm_ioremap for error
+Message-ID: <20141103160552.GD10544@x1>
+References: <1414660895-29255-1-git-send-email-pramod.gurav@smartplayin.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1411031044480.22875@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414660895-29255-1-git-send-email-pramod.gurav@smartplayin.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 10:45:14AM +0000, Stefano Stabellini wrote:
-> On Mon, 27 Oct 2014, Stefano Stabellini wrote:
-> > Introduce an arch specific function to find out whether a particular dma
-> > mapping operation needs to bounce on the swiotlb buffer.
-> > 
-> > On ARM and ARM64, if the page involved is a foreign page and the device
-> > is not coherent, we need to bounce because at unmap time we cannot
-> > execute any required cache maintenance operations (we don't know how to
-> > find the pfn from the mfn).
-> > 
-> > No change of behaviour for x86.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> 
-> Konrad, David, are you OK with the swiotlb-xen changes?
+On Thu, 30 Oct 2014, Pramod Gurav wrote:
 
-I am OK.
+> Error check around return value of devm_ioremap is missing. Add the same
+> to avoid NULL pointer dereference.
 > 
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/mfd/db8500-prcmu.c |    5 +++++
+>  1 file changed, 5 insertions(+)
 > 
+> diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+> index 193cf16..89ae8bf 100644
+> --- a/drivers/mfd/db8500-prcmu.c
+> +++ b/drivers/mfd/db8500-prcmu.c
+> @@ -3167,6 +3167,11 @@ static int db8500_prcmu_probe(struct platform_device *pdev)
+>  	}
+>  	tcdm_base = devm_ioremap(&pdev->dev, res->start,
+>  			resource_size(res));
+> +	if (!tcdm_base) {
+> +		dev_err(&pdev->dev,
+> +			"failed to ioremap prcmu-tcdm register memory\n");
+> +		return -ENOENT;
+
+No such file or directory?  I think not.
+
+Changed to -ENOMEM and applied with Linus' Ack.
+
+> +	}
 >  
-> > Changes in v6:
-> > - fix ts.
-> > 
-> > Changes in v5:
-> > - fix indentation.
-> > ---
-> >  arch/arm/include/asm/xen/page.h |    4 ++++
-> >  arch/arm/xen/mm.c               |    7 +++++++
-> >  arch/x86/include/asm/xen/page.h |    7 +++++++
-> >  drivers/xen/swiotlb-xen.c       |    5 ++++-
-> >  4 files changed, 22 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> > index 135c24a..68c739b 100644
-> > --- a/arch/arm/include/asm/xen/page.h
-> > +++ b/arch/arm/include/asm/xen/page.h
-> > @@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> >  #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
-> >  #define xen_unmap(cookie) iounmap((cookie))
-> >  
-> > +bool xen_arch_need_swiotlb(struct device *dev,
-> > +			   unsigned long pfn,
-> > +			   unsigned long mfn);
-> > +
-> >  #endif /* _ASM_ARM_XEN_PAGE_H */
-> > diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> > index ff413a8..28396aa 100644
-> > --- a/arch/arm/xen/mm.c
-> > +++ b/arch/arm/xen/mm.c
-> > @@ -139,6 +139,13 @@ void xen_dma_sync_single_for_device(struct device *hwdev,
-> >  	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
-> >  }
-> >  
-> > +bool xen_arch_need_swiotlb(struct device *dev,
-> > +			   unsigned long pfn,
-> > +			   unsigned long mfn)
-> > +{
-> > +	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-> > +}
-> > +
-> >  int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
-> >  				 unsigned int address_bits,
-> >  				 dma_addr_t *dma_handle)
-> > diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> > index c949923..f58ef6c 100644
-> > --- a/arch/x86/include/asm/xen/page.h
-> > +++ b/arch/x86/include/asm/xen/page.h
-> > @@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
-> >  #define xen_remap(cookie, size) ioremap((cookie), (size));
-> >  #define xen_unmap(cookie) iounmap((cookie))
-> >  
-> > +static inline bool xen_arch_need_swiotlb(struct device *dev,
-> > +					 unsigned long pfn,
-> > +					 unsigned long mfn)
-> > +{
-> > +	return false;
-> > +}
-> > +
-> >  #endif /* _ASM_X86_XEN_PAGE_H */
-> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > index ebd8f21..ac5d41b 100644
-> > --- a/drivers/xen/swiotlb-xen.c
-> > +++ b/drivers/xen/swiotlb-xen.c
-> > @@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
-> >  	 * buffering it.
-> >  	 */
-> >  	if (dma_capable(dev, dev_addr, size) &&
-> > -	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-> > +	    !range_straddles_page_boundary(phys, size) &&
-> > +		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-> > +		!swiotlb_force) {
-> >  		/* we are not interested in the dma_addr returned by
-> >  		 * xen_dma_map_page, only in the potential cache flushes executed
-> >  		 * by the function. */
-> > @@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
-> >  		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
-> >  
-> >  		if (swiotlb_force ||
-> > +		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
-> >  		    !dma_capable(hwdev, dev_addr, sg->length) ||
-> >  		    range_straddles_page_boundary(paddr, sg->length)) {
-> >  			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
-> > -- 
-> > 1.7.10.4
-> > 
+>  	/* Clean up the mailbox interrupts after pre-kernel code. */
+>  	writel(ALL_MBOX_BITS, PRCM_ARM_IT1_CLR);
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
