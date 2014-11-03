@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaKCPvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:51:39 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:39003 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272AbaKCPvg (ORCPT
+	id S1753264AbaKCPvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:51:47 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:40509 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272AbaKCPvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:51:36 -0500
-Message-ID: <5457A480.30102@collabora.co.uk>
-Date: Mon, 03 Nov 2014 16:51:28 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Mon, 3 Nov 2014 10:51:41 -0500
+Date: Mon, 3 Nov 2014 16:51:29 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, kamalesh@linux.vnet.ibm.com,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v8 10/10] sched: make scale_rt invariant with frequency
+Message-ID: <20141103155129.GK12706@worktop.programming.kicks-ass.net>
+References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org>
+ <1414745252-4895-11-git-send-email-vincent.guittot@linaro.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 05/14] regulator: max1586: zero-initialize regulator
- match table array
-References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk> <1415025649-8119-6-git-send-email-javier.martinez@collabora.co.uk> <20141103154152.GR3815@sirena.org.uk>
-In-Reply-To: <20141103154152.GR3815@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414745252-4895-11-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 04:41 PM, Mark Brown wrote:
-> On Mon, Nov 03, 2014 at 03:40:40PM +0100, Javier Martinez Canillas wrote:
->> The struct of_regulator_match rmatch[] is declared as a non-static local
->> variable so the structure members are not auto-initialized.
-> 
-> Applied, thanks.
-> 
-> This is a bug fix not *that* closely related to the rest of the series,
-> if it's being included in a series like this it should've been at the
-> start of the series not after substantial new feature additions so that
-> the fixes don't get ignored due to problems with the features and so
-> that the fixes can be sent to Linus without dependencies.
-> 
+On Fri, Oct 31, 2014 at 09:47:32AM +0100, Vincent Guittot wrote:
+> The call to arch_scale_frequency_capacity in the rt scheduling path might be
+> a concern for RT folks because I'm not sure whether we can rely on
+> arch_scale_freq_capacity to be short and efficient ?
 
-True, I added in the series since of_get_regulation_constraints() checks
-if the struct regulator_desc * pointer is not NULL and so drivers that
-don't initialize the struct of_regulator_match containing that pointer
-will make that check to fail and the pointer be wrongly dereferenced.
+Well, you put it in quite a hot path on the CFS side too, so it had
+better be blazing fast anyhow.
 
-Sorry, next time I'll post fixes separately and make the series depend on
-that instead.
 
-Best regards,
-Javier
+That said, can you move all the running + invariance bits at the
+beginning of the patch set, these appear to be the least controversial
+bits and 'desired' by quite a few people, so we'll try and get those
+agreed upon and merged first.
