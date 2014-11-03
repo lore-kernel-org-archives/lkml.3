@@ -1,401 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaKCIPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:15:09 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45070 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751762AbaKCIMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 03:12:53 -0500
-X-Sasl-enc: Jsxmw2j9xqqlu+aFVxe7l8qBUZWbAZbFieM1Ua0oI06F 1415002372
-Subject: [PATCH 07/13] autofs - merge auto_fs.h and auto_fs4.h
-From: Ian Kent <raven@themaw.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 03 Nov 2014 16:12:50 +0800
-Message-ID: <20141103081250.6215.81368.stgit@perseus.themaw.net>
-In-Reply-To: <20141103081218.6215.85903.stgit@perseus.themaw.net>
-References: <20141103081218.6215.85903.stgit@perseus.themaw.net>
-User-Agent: StGit/0.17-dirty
+	id S1751682AbaKCIMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:12:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42276 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617AbaKCIMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 03:12:38 -0500
+Message-ID: <545738F1.4010307@suse.cz>
+Date: Mon, 03 Nov 2014 09:12:33 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 5/5] mm, compaction: more focused lru and pcplists draining
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-6-git-send-email-vbabka@suse.cz> <20141027074112.GC23379@js1304-P5Q-DELUXE>
+In-Reply-To: <20141027074112.GC23379@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The autofs module has long since been removed so there's no need to have
-two separate include files for autofs.
+On 10/27/2014 08:41 AM, Joonsoo Kim wrote:
+> On Tue, Oct 07, 2014 at 05:33:39PM +0200, Vlastimil Babka wrote:
+>> The goal of memory compaction is to create high-order freepages through page
+>> migration. Page migration however puts pages on the per-cpu lru_add cache,
+>> which is later flushed to per-cpu pcplists, and only after pcplists are
+>> drained the pages can actually merge. This can happen due to the per-cpu
+>> caches becoming full through further freeing, or explicitly.
+>>
+>> During direct compaction, it is useful to do the draining explicitly so that
+>> pages merge as soon as possible and compaction can detect success immediately
+>> and keep the latency impact at minimum. However the current implementation is
+>> far from ideal. Draining is done only in  __alloc_pages_direct_compact(),
+>> after all zones were already compacted, and the decisions to continue or stop
+>> compaction in individual zones was done without the last batch of migrations
+>> being merged. It is also missing the draining of lru_add cache before the
+>> pcplists.
+>>
+>> This patch moves the draining for direct compaction into compact_zone(). It
+>> adds the missing lru_cache draining and uses the newly introduced single zone
+>> pcplists draining to reduce overhead and avoid impact on unrelated zones.
+>> Draining is only performed when it can actually lead to merging of a page of
+>> desired order (passed by cc->order). This means it is only done when migration
+>> occurred in the previously scanned cc->order aligned block(s) and the
+>> migration scanner is now pointing to the next cc->order aligned block.
+>>
+>> The patch has been tested with stress-highalloc benchmark from mmtests.
+>> Although overal allocation success rates of the benchmark were not affected,
+>> the number of detected compaction successes has doubled. This suggests that
+>> allocations were previously successful due to implicit merging caused by
+>> background activity, making a later allocation attempt succeed immediately,
+>> but not attributing the success to compaction. Since stress-highalloc always
+>> tries to allocate almost the whole memory, it cannot show the improvement in
+>> its reported success rate metric. However after this patch, compaction should
+>> detect success and terminate earlier, reducing the direct compaction latencies
+>> in a real scenario.
+>>
+>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>> Cc: Minchan Kim <minchan@kernel.org>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> Cc: Michal Nazarewicz <mina86@mina86.com>
+>> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: David Rientjes <rientjes@google.com>
+>> ---
+>>   mm/compaction.c | 41 ++++++++++++++++++++++++++++++++++++++++-
+>>   mm/page_alloc.c |  4 ----
+>>   2 files changed, 40 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index 8fa888d..41b49d7 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -1179,6 +1179,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>>   	while ((ret = compact_finished(zone, cc, migratetype)) ==
+>>   						COMPACT_CONTINUE) {
+>>   		int err;
+>> +		unsigned long last_migrated_pfn = 0;
+>
+> I think that this definition looks odd.
+> In every iteration, last_migrated_pfn is re-defined as 0.
+> Maybe, it is on outside of the loop.
 
-Signed-off-by: Ian Kent <raven@themaw.net>
----
- fs/autofs4/autofs_i.h         |    2 -
- fs/compat_ioctl.c             |    1 
- include/uapi/linux/auto_fs.h  |  147 ++++++++++++++++++++++++++++++++++++++--
- include/uapi/linux/auto_fs4.h |  149 +----------------------------------------
- 4 files changed, 143 insertions(+), 156 deletions(-)
+Oops you're right, that's a mistake and it makes the code miss some of 
+the drain points (a minority I think but anyway).
 
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index b33b939..fc33904 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -10,7 +10,7 @@
- 
- /* Internal header file for autofs */
- 
--#include <linux/auto_fs4.h>
-+#include <linux/auto_fs.h>
- #include <linux/auto_dev-ioctl.h>
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index afec645..8638407 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -38,7 +38,6 @@
- #include <linux/if_pppox.h>
- #include <linux/mtio.h>
- #include <linux/auto_fs.h>
--#include <linux/auto_fs4.h>
- #include <linux/tty.h>
- #include <linux/vt_kern.h>
- #include <linux/fb.h>
-diff --git a/include/uapi/linux/auto_fs.h b/include/uapi/linux/auto_fs.h
-index 9175a1b..b3122451 100644
---- a/include/uapi/linux/auto_fs.h
-+++ b/include/uapi/linux/auto_fs.h
-@@ -1,5 +1,7 @@
- /*
-- *   Copyright 1997 Transmeta Corporation - All Rights Reserved
-+ * Copyright 1997 Transmeta Corporation - All Rights Reserved
-+ * Copyright 1999-2000 Jeremy Fitzhardinge <jeremy@goop.org>
-+ * Copyright 2005-2006,2013 Ian Kent <raven@themaw.net>
-  *
-  * This file is part of the Linux kernel and is made available under
-  * the terms of the GNU General Public License, version 2, or at your
-@@ -7,7 +9,6 @@
-  *
-  * ----------------------------------------------------------------------- */
- 
--
- #ifndef _UAPI_LINUX_AUTO_FS_H
- #define _UAPI_LINUX_AUTO_FS_H
- 
-@@ -16,13 +17,11 @@
- #include <sys/ioctl.h>
- #endif /* __KERNEL__ */
- 
-+#define AUTOFS_PROTO_VERSION		5
-+#define AUTOFS_MIN_PROTO_VERSION	3
-+#define AUTOFS_MAX_PROTO_VERSION	5
- 
--/* This file describes autofs v3 */
--#define AUTOFS_PROTO_VERSION	3
--
--/* Range of protocol versions defined */
--#define AUTOFS_MAX_PROTO_VERSION	AUTOFS_PROTO_VERSION
--#define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
-+#define AUTOFS_PROTO_SUBVERSION		2
- 
- /*
-  * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
-@@ -68,4 +67,136 @@ struct autofs_packet_expire {
- #define AUTOFS_IOC_SETTIMEOUT _IOWR(0x93, 0x64, unsigned long)
- #define AUTOFS_IOC_EXPIRE     _IOR(0x93, 0x65, struct autofs_packet_expire)
- 
-+/* autofs version 4 and later definitions */
-+
-+/* Mask for expire behaviour */
-+#define AUTOFS_EXP_IMMEDIATE		1
-+#define AUTOFS_EXP_LEAVES		2
-+
-+#define AUTOFS_TYPE_ANY			0U
-+#define AUTOFS_TYPE_INDIRECT		1U
-+#define AUTOFS_TYPE_DIRECT		2U
-+#define AUTOFS_TYPE_OFFSET		4U
-+
-+static inline void set_autofs_type_indirect(unsigned int *type)
-+{
-+	*type = AUTOFS_TYPE_INDIRECT;
-+}
-+
-+static inline unsigned int autofs_type_indirect(unsigned int type)
-+{
-+	return (type == AUTOFS_TYPE_INDIRECT);
-+}
-+
-+static inline void set_autofs_type_direct(unsigned int *type)
-+{
-+	*type = AUTOFS_TYPE_DIRECT;
-+}
-+
-+static inline unsigned int autofs_type_direct(unsigned int type)
-+{
-+	return (type == AUTOFS_TYPE_DIRECT);
-+}
-+
-+static inline void set_autofs_type_offset(unsigned int *type)
-+{
-+	*type = AUTOFS_TYPE_OFFSET;
-+}
-+
-+static inline unsigned int autofs_type_offset(unsigned int type)
-+{
-+	return (type == AUTOFS_TYPE_OFFSET);
-+}
-+
-+static inline unsigned int autofs_type_trigger(unsigned int type)
-+{
-+	return (type == AUTOFS_TYPE_DIRECT || type == AUTOFS_TYPE_OFFSET);
-+}
-+
-+/*
-+ * This isn't really a type as we use it to say "no type set" to
-+ * indicate we want to search for "any" mount in the
-+ * autofs_dev_ioctl_ismountpoint() device ioctl function.
-+ */
-+static inline void set_autofs_type_any(unsigned int *type)
-+{
-+	*type = AUTOFS_TYPE_ANY;
-+}
-+
-+static inline unsigned int autofs_type_any(unsigned int type)
-+{
-+	return (type == AUTOFS_TYPE_ANY);
-+}
-+
-+/* Daemon notification packet types */
-+enum autofs_notify {
-+	NFY_NONE,
-+	NFY_MOUNT,
-+	NFY_EXPIRE
-+};
-+
-+/* Kernel protocol version 4 packet types */
-+
-+/* Expire entry (umount request) */
-+#define autofs_ptype_expire_multi	2
-+
-+/* Kernel protocol version 5 packet types */
-+
-+/* Indirect mount missing and expire requests. */
-+#define autofs_ptype_missing_indirect	3
-+#define autofs_ptype_expire_indirect	4
-+
-+/* Direct mount missing and expire requests */
-+#define autofs_ptype_missing_direct	5
-+#define autofs_ptype_expire_direct	6
-+
-+/* v4 multi expire (via pipe) */
-+struct autofs_packet_expire_multi {
-+	struct autofs_packet_hdr hdr;
-+	autofs_wqt_t wait_queue_token;
-+	int len;
-+	char name[NAME_MAX+1];
-+};
-+
-+union autofs_packet_union {
-+	struct autofs_packet_hdr hdr;
-+	struct autofs_packet_missing missing;
-+	struct autofs_packet_expire expire;
-+	struct autofs_packet_expire_multi expire_multi;
-+};
-+
-+/* autofs v5 common packet struct */
-+struct autofs_v5_packet {
-+	struct autofs_packet_hdr hdr;
-+	autofs_wqt_t wait_queue_token;
-+	__u32 dev;
-+	__u64 ino;
-+	__u32 uid;
-+	__u32 gid;
-+	__u32 pid;
-+	__u32 tgid;
-+	__u32 len;
-+	char name[NAME_MAX+1];
-+};
-+
-+typedef struct autofs_v5_packet autofs_packet_missing_indirect_t;
-+typedef struct autofs_v5_packet autofs_packet_expire_indirect_t;
-+typedef struct autofs_v5_packet autofs_packet_missing_direct_t;
-+typedef struct autofs_v5_packet autofs_packet_expire_direct_t;
-+
-+union autofs_v5_packet_union {
-+	struct autofs_packet_hdr hdr;
-+	struct autofs_v5_packet v5_packet;
-+	autofs_packet_missing_indirect_t missing_indirect;
-+	autofs_packet_expire_indirect_t expire_indirect;
-+	autofs_packet_missing_direct_t missing_direct;
-+	autofs_packet_expire_direct_t expire_direct;
-+};
-+
-+#define AUTOFS_IOC_EXPIRE_MULTI		_IOW(0x93, 0x66, int)
-+#define AUTOFS_IOC_EXPIRE_INDIRECT	AUTOFS_IOC_EXPIRE_MULTI
-+#define AUTOFS_IOC_EXPIRE_DIRECT	AUTOFS_IOC_EXPIRE_MULTI
-+#define AUTOFS_IOC_PROTOSUBVER		_IOR(0x93, 0x67, int)
-+#define AUTOFS_IOC_ASKUMOUNT		_IOR(0x93, 0x70, int)
-+
- #endif /* _UAPI_LINUX_AUTO_FS_H */
-diff --git a/include/uapi/linux/auto_fs4.h b/include/uapi/linux/auto_fs4.h
-index 8f8f1bd..69205a3 100644
---- a/include/uapi/linux/auto_fs4.h
-+++ b/include/uapi/linux/auto_fs4.h
-@@ -6,152 +6,9 @@
-  * option, any later version, incorporated herein by reference.
-  */
- 
--#ifndef _LINUX_AUTO_FS4_H
--#define _LINUX_AUTO_FS4_H
-+#ifndef _UAPI_LINUX_AUTO_FS4_H
-+#define _UAPI_LINUX_AUTO_FS4_H
- 
--/* Include common v3 definitions */
--#include <linux/types.h>
- #include <linux/auto_fs.h>
- 
--/* autofs v4 definitions */
--#undef AUTOFS_PROTO_VERSION
--#undef AUTOFS_MIN_PROTO_VERSION
--#undef AUTOFS_MAX_PROTO_VERSION
--
--#define AUTOFS_PROTO_VERSION		5
--#define AUTOFS_MIN_PROTO_VERSION	3
--#define AUTOFS_MAX_PROTO_VERSION	5
--
--#define AUTOFS_PROTO_SUBVERSION		2
--
--/* Mask for expire behaviour */
--#define AUTOFS_EXP_IMMEDIATE		1
--#define AUTOFS_EXP_LEAVES		2
--
--#define AUTOFS_TYPE_ANY			0U
--#define AUTOFS_TYPE_INDIRECT		1U
--#define AUTOFS_TYPE_DIRECT		2U
--#define AUTOFS_TYPE_OFFSET		4U
--
--static inline void set_autofs_type_indirect(unsigned int *type)
--{
--	*type = AUTOFS_TYPE_INDIRECT;
--}
--
--static inline unsigned int autofs_type_indirect(unsigned int type)
--{
--	return (type == AUTOFS_TYPE_INDIRECT);
--}
--
--static inline void set_autofs_type_direct(unsigned int *type)
--{
--	*type = AUTOFS_TYPE_DIRECT;
--}
--
--static inline unsigned int autofs_type_direct(unsigned int type)
--{
--	return (type == AUTOFS_TYPE_DIRECT);
--}
--
--static inline void set_autofs_type_offset(unsigned int *type)
--{
--	*type = AUTOFS_TYPE_OFFSET;
--}
--
--static inline unsigned int autofs_type_offset(unsigned int type)
--{
--	return (type == AUTOFS_TYPE_OFFSET);
--}
--
--static inline unsigned int autofs_type_trigger(unsigned int type)
--{
--	return (type == AUTOFS_TYPE_DIRECT || type == AUTOFS_TYPE_OFFSET);
--}
--
--/*
-- * This isn't really a type as we use it to say "no type set" to
-- * indicate we want to search for "any" mount in the
-- * autofs_dev_ioctl_ismountpoint() device ioctl function.
-- */
--static inline void set_autofs_type_any(unsigned int *type)
--{
--	*type = AUTOFS_TYPE_ANY;
--}
--
--static inline unsigned int autofs_type_any(unsigned int type)
--{
--	return (type == AUTOFS_TYPE_ANY);
--}
--
--/* Daemon notification packet types */
--enum autofs_notify {
--	NFY_NONE,
--	NFY_MOUNT,
--	NFY_EXPIRE
--};
--
--/* Kernel protocol version 4 packet types */
--
--/* Expire entry (umount request) */
--#define autofs_ptype_expire_multi	2
--
--/* Kernel protocol version 5 packet types */
--
--/* Indirect mount missing and expire requests. */
--#define autofs_ptype_missing_indirect	3
--#define autofs_ptype_expire_indirect	4
--
--/* Direct mount missing and expire requests */
--#define autofs_ptype_missing_direct	5
--#define autofs_ptype_expire_direct	6
--
--/* v4 multi expire (via pipe) */
--struct autofs_packet_expire_multi {
--	struct autofs_packet_hdr hdr;
--	autofs_wqt_t wait_queue_token;
--	int len;
--	char name[NAME_MAX+1];
--};
--
--union autofs_packet_union {
--	struct autofs_packet_hdr hdr;
--	struct autofs_packet_missing missing;
--	struct autofs_packet_expire expire;
--	struct autofs_packet_expire_multi expire_multi;
--};
--
--/* autofs v5 common packet struct */
--struct autofs_v5_packet {
--	struct autofs_packet_hdr hdr;
--	autofs_wqt_t wait_queue_token;
--	__u32 dev;
--	__u64 ino;
--	__u32 uid;
--	__u32 gid;
--	__u32 pid;
--	__u32 tgid;
--	__u32 len;
--	char name[NAME_MAX+1];
--};
--
--typedef struct autofs_v5_packet autofs_packet_missing_indirect_t;
--typedef struct autofs_v5_packet autofs_packet_expire_indirect_t;
--typedef struct autofs_v5_packet autofs_packet_missing_direct_t;
--typedef struct autofs_v5_packet autofs_packet_expire_direct_t;
--
--union autofs_v5_packet_union {
--	struct autofs_packet_hdr hdr;
--	struct autofs_v5_packet v5_packet;
--	autofs_packet_missing_indirect_t missing_indirect;
--	autofs_packet_expire_indirect_t expire_indirect;
--	autofs_packet_missing_direct_t missing_direct;
--	autofs_packet_expire_direct_t expire_direct;
--};
--
--#define AUTOFS_IOC_EXPIRE_MULTI		_IOW(0x93, 0x66, int)
--#define AUTOFS_IOC_EXPIRE_INDIRECT	AUTOFS_IOC_EXPIRE_MULTI
--#define AUTOFS_IOC_EXPIRE_DIRECT	AUTOFS_IOC_EXPIRE_MULTI
--#define AUTOFS_IOC_PROTOSUBVER		_IOR(0x93, 0x67, int)
--#define AUTOFS_IOC_ASKUMOUNT		_IOR(0x93, 0x70, int)
--
--#endif /* _LINUX_AUTO_FS4_H */
-+#endif /* _UAPI_LINUX_AUTO_FS4_H */
+>>
+>>   		switch (isolate_migratepages(zone, cc)) {
+>>   		case ISOLATE_ABORT:
+>> @@ -1187,7 +1188,12 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>>   			cc->nr_migratepages = 0;
+>>   			goto out;
+>>   		case ISOLATE_NONE:
+>> -			continue;
+>> +			/*
+>> +			 * We haven't isolated and migrated anything, but
+>> +			 * there might still be unflushed migrations from
+>> +			 * previous cc->order aligned block.
+>> +			 */
+>> +			goto check_drain;
+>>   		case ISOLATE_SUCCESS:
+>>   			;
+>>   		}
+>> @@ -1212,6 +1218,39 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>>   				goto out;
+>>   			}
+>>   		}
+>> +
+>> +		/*
+>> +		 * Record where we have freed pages by migration and not yet
+>> +		 * flushed them to buddy allocator. Subtract 1, because often
+>> +		 * we finish a pageblock and migrate_pfn points to the first
+>> +		 * page* of the next one. In that case we want the drain below
+>> +		 * to happen immediately.
+>> +		 */
+>> +		if (!last_migrated_pfn)
+>> +			last_migrated_pfn = cc->migrate_pfn - 1;
+>
+> And, I wonder why last_migrated_pfn is set after isolate_migratepages().
+
+Not sure I understand your question. With the mistake above, it cannot 
+currently be set at the point isolate_migratepages() is called, so you 
+might question the goto check_drain in the ISOLATE_NONE case, if that's 
+what you are wondering about.
+
+When I correct that, it might be set when COMPACT_CLUSTER_MAX pages are 
+isolated and migrated the middle of a pageblock, and then the rest of 
+the pageblock contains no pages that could be isolated, so the last 
+isolate_migratepages() attempt in the pageblock returns with 
+ISOLATE_NONE. Still there were some migrations that produced free pages 
+that should be drained at that point.
+
+>
+> Thanks.
+>
 
