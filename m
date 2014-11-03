@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaKCWgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 17:36:14 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56947 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751197AbaKCWgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 17:36:09 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH] ACPI / GPIO: Driver GPIO mappings for ACPI GPIOs
-Date: Mon, 03 Nov 2014 23:56:53 +0100
-Message-ID: <1433051.htaUTMPMBY@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CACRpkdanUC4QYbMXgMOkiGS+6oVyD1Opg_sFo95TEsyHJTM6_w@mail.gmail.com>
-References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com> <2758495.RYBbleVHkC@vostro.rjw.lan> <CACRpkdanUC4QYbMXgMOkiGS+6oVyD1Opg_sFo95TEsyHJTM6_w@mail.gmail.com>
+	id S1752024AbaKCWgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 17:36:39 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:58219 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751174AbaKCWgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 17:36:38 -0500
+Date: Mon, 3 Nov 2014 17:36:26 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Miller <davem@davemloft.net>
+Cc: kirill@shutemov.name, akpm@linux-foundation.org, mhocko@suse.cz,
+        vdavydov@parallels.com, tj@kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
+Message-ID: <20141103223626.GA12006@phnom.home.cmpxchg.org>
+References: <20141103210607.GA24091@node.dhcp.inet.fi>
+ <20141103213628.GA11428@phnom.home.cmpxchg.org>
+ <20141103215206.GB24091@node.dhcp.inet.fi>
+ <20141103.165807.2039166055692354811.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103.165807.2039166055692354811.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 03, 2014 02:22:10 PM Linus Walleij wrote:
-> On Sat, Oct 25, 2014 at 12:05 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+On Mon, Nov 03, 2014 at 04:58:07PM -0500, David Miller wrote:
+> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> Date: Mon, 3 Nov 2014 23:52:06 +0200
 > 
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > Provide a way for device drivers using GPIOs described by ACPI
-> > GpioIo resources in _CRS to tell the GPIO subsystem what names
-> > (connection IDs) to associate with specific GPIO pins defined
-> > in there.
-> >
-> > To do that, a driver needs to define a mapping table as a
-> > NULL-terminated array of struct acpi_gpio_mapping objects
-> > that each contain a name, a pointer to an array of pin data
-> > (struct acpi_gpio_params) objects and the size of that array.
-> >
-> > Each struct acpi_gpio_params object consists of three fields,
-> > crs_entry_index, pin_index, active_low, representing the index of
+> > On Mon, Nov 03, 2014 at 04:36:28PM -0500, Johannes Weiner wrote:
+> >> On Mon, Nov 03, 2014 at 11:06:07PM +0200, Kirill A. Shutemov wrote:
+> >> > On Sat, Nov 01, 2014 at 11:15:54PM -0400, Johannes Weiner wrote:
+> >> > > Memory cgroups used to have 5 per-page pointers.  To allow users to
+> >> > > disable that amount of overhead during runtime, those pointers were
+> >> > > allocated in a separate array, with a translation layer between them
+> >> > > and struct page.
+> >> > > 
+> >> > > There is now only one page pointer remaining: the memcg pointer, that
+> >> > > indicates which cgroup the page is associated with when charged.  The
+> >> > > complexity of runtime allocation and the runtime translation overhead
+> >> > > is no longer justified to save that *potential* 0.19% of memory.
+> >> > 
+> >> > How much do you win by the change?
+> >> 
+> >> Heh, that would have followed right after where you cut the quote:
+> >> with CONFIG_SLUB, that pointer actually sits in already existing
+> >> struct page padding, which means that I'm saving one pointer per page
+> >> (8 bytes per 4096 byte page, 0.19% of memory), plus the pointer and
+> >> padding in each memory section.  I also save the (minor) translation
+> >> overhead going from page to page_cgroup and the maintenance burden
+> >> that stems from having these auxiliary arrays (see deleted code).
+> > 
+> > I read the description. I want to know if runtime win (any benchmark data?)
+> > from moving mem_cgroup back to the struct page is measurable.
+> > 
+> > If the win is not significant, I would prefer to not occupy the padding:
+> > I'm sure we will be able to find a better use for the space in struct page
+> > in the future.
 > 
-> I prefer that you call the second thing "line_index" rather than
-> "pin_index". Not all GPIOs in the world are tied to physical pins.
-> Also it is easy to confuse stuff with the pin control terminology
-> if it's called "pin".
-> 
-> > the target GpioIo()/GpioInt() resource in _CRS starting from zero,
-> > the index of the target pin in that resource starting from zero,
-> > and the active-low flag for that pin, respectively.
-> >
-> > Next, the mapping table needs to be passed as the second argument to
-> > acpi_dev_add_driver_gpios() that will register it with the ACPI device
-> > object pointed to by its first argument.  That object must represent
-> > the ACPI namespace node containing the _CRS object referred to by the
-> > GPIO mapping.  That should be done in the driver's .probe() routine.
-> >
-> > On removal, the driver should unregister its GPIO mapping table
-> > by calling acpi_dev_remove_driver_gpios() on the ACPI device
-> > object where that table was previously registered.
-> >
-> > Included are fixes from Mika Westerberg.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> And "pin" is mentioned several times in the commit message.
-> I prefer that we talk about "lines".
-> 
-> (...)
-> 
-> > +struct acpi_gpio_params {
-> > +       unsigned int crs_entry_index;
-> > +       unsigned int pin_index;
-> 
-> So line_index;
-> 
-> > +       bool active_low;
-> > +};
-> 
-> With that change:
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> I think the simplification benefits completely trump any performan
+> metric.
 
-OK, made the changes and added your Reviewed-by.
+I agree.
 
-One semi-related question though.  Alexandre ACKed the patch before, so
-what did that mean from the GPIO subsystem's perspective?  Was the patch
-approved, not approved, semi-approved?
+Also, nobody is using that space currently, and I can save memory by
+moving the pointer in there.  Should we later add another pointer to
+struct page we are only back to the status quo - with the difference
+that booting with cgroup_disable=memory will no longer save the extra
+pointer per page, but again, if you care that much, you can disable
+memory cgroups at compile-time.
 
-Rafael
-
+So don't look at it as occpuying the padding, it is rather taking away
+the ability to allocate that single memcg pointer at runtime, while at
+the same time saving a bit of memory for common configurations until
+somebody else needs the struct page padding.
