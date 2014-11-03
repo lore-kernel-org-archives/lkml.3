@@ -1,72 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbaKCSJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:09:35 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:48593 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaKCSJ2 (ORCPT
+	id S1753869AbaKCSKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:10:18 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:44114 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753903AbaKCSI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:09:28 -0500
-Date: Mon, 3 Nov 2014 19:09:21 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Vignesh R <vigneshr@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        devicetree@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jan Kardell <jan.kardell@telliq.com>, linux-iio@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
-        linux-omap@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Brad Griffis <bgriffis@ti.com>
-Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
-Message-ID: <20141103180920.GA20779@localhost.localdomain>
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Nov 2014 13:08:27 -0500
+From: mathieu.poirier@linaro.org
+To: gregkh@linuxfoundation.org
+Cc: linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
+        Al.Grant@arm.com, jonas.svennebring@avagotech.com,
+        james.king@linaro.org, kaixu.xia@linaro.org, marcin.jabrzyk@gmail.com,
+        r.sengupta@samsung.com, robbelibobban@gmail.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org
+Subject: [PATCH v9 10/12] coresight: adding basic support for Vexpress TC2
+Date: Mon,  3 Nov 2014 11:07:44 -0700
+Message-Id: <1415038066-22423-11-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 04:38:27PM +0530, Vignesh R wrote:
-> This series of patches fix TSC defects related to lag in touchscreen
-> performance and cursor jump at touch release. The lag was result of
-> udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
-> The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
-> to avoid false pen-up events and remove udelay.
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-That advisory has two workarounds. You have chosen the second one?
+Support for the 2 PTMs, 3 ETMs, funnel, TPIU and replicator
+connected to the ETB are included.  Proper handling of the
+ITM and the replicator linked to it along with the CTIs
+and SWO are not included.
 
-The text of the second workaround says it only works on 4 wire setups,
-so I wonder how 5 wire designs will be affected.
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts | 199 +++++++++++++++++++++++++++++
+ 1 file changed, 199 insertions(+)
 
-> The advisory says to use
-> steps 1 to 4 for ADC and 5 to 16 for TSC (assuming 4 wire TSC and 4 channel
-> ADC).
+diff --git a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
+index 322fd15..33920df 100644
+--- a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
++++ b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
+@@ -358,6 +358,205 @@
+ 		};
+ 	};
+ 
++	etb@0,20010000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0x20010000 0 0x1000>;
++
++		coresight-default-sink;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			etb_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port0>;
++			};
++		};
++	};
++
++	tpiu@0,20030000 {
++		compatible = "arm,coresight-tpiu", "arm,primecell";
++		reg = <0 0x20030000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			tpiu_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port1>;
++			};
++		};
++	};
++
++	replicator {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator_out_port0: endpoint {
++					remote-endpoint = <&etb_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				replicator_out_port1: endpoint {
++					remote-endpoint = <&tpiu_in_port>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel_out_port0>;
++				};
++			};
++		};
++	};
++
++	funnel@0,20040000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0x20040000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel_out_port0: endpoint {
++					remote-endpoint =
++						<&replicator_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm0_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm1_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&etm0_out_port>;
++				};
++			};
++
++			/* Input port #3 is for ITM, not supported here */
++
++			port@4 {
++				reg = <4>;
++				funnel_in_port4: endpoint {
++					slave-mode;
++					remote-endpoint = <&etm1_out_port>;
++				};
++			};
++
++			port@5 {
++				reg = <5>;
++				funnel_in_port5: endpoint {
++					slave-mode;
++					remote-endpoint = <&etm2_out_port>;
++				};
++			};
++		};
++	};
++
++	ptm@0,2201c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201c000 0 0x1000>;
++
++		cpu = <&cpu0>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm0_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port0>;
++			};
++		};
++	};
++
++	ptm@0,2201d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201d000 0 0x1000>;
++
++		cpu = <&cpu1>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm1_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port1>;
++			};
++		};
++	};
++
++	etm@0,2203c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2203c000 0 0x1000>;
++
++		cpu = <&cpu2>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			etm0_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port2>;
++			};
++		};
++	};
++
++	etm@0,2203d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2203d000 0 0x1000>;
++
++		cpu = <&cpu3>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			etm1_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port4>;
++			};
++		};
++	};
++
++	etm@0,2203e000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2203e000 0 0x1000>;
++
++		cpu = <&cpu4>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			etm2_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port5>;
++			};
++		};
++	};
++
+ 	smb {
+ 		compatible = "simple-bus";
+ 
+-- 
+1.9.1
 
-No, it doesn't say that. (sprz360f.pdf)
-
-> Further the X co-ordinate must be the last one to be sampled just
-> before charge step. The first two patches implement the required changes. 
-
-FWIW, I implemented the first workaround and removed the udelay not
-too long ago. Like Sebastian, I saw the TSC unit hang after about
-50000 interrupts when running with the workaround.
-
-Did you test you patch for very long?
-
-Thanks,
-Richard
