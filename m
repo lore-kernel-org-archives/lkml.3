@@ -1,106 +1,774 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaKCSJC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:09:02 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:38395 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807AbaKCSI4 (ORCPT
+	id S1754033AbaKCSJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:09:08 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:46633 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808AbaKCSI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:08:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <1415036879.29109.26.camel@misato.fc.hp.com>
-References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
- <1414450545-14028-2-git-send-email-toshi.kani@hp.com> <alpine.DEB.2.11.1411031812390.5308@nanos>
- <1415036879.29109.26.camel@misato.fc.hp.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Nov 2014 10:08:34 -0800
-Message-ID: <CALCETrWwEsaz8j2ajqqxS4mupO48tv0e_wbrODsmJfZeON2ptA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Yigal Korman <yigal@plexistor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Nov 2014 13:08:28 -0500
+From: mathieu.poirier@linaro.org
+To: gregkh@linuxfoundation.org
+Cc: linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
+        Al.Grant@arm.com, jonas.svennebring@avagotech.com,
+        james.king@linaro.org, kaixu.xia@linaro.org, marcin.jabrzyk@gmail.com,
+        r.sengupta@samsung.com, robbelibobban@gmail.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org
+Subject: [PATCH v9 11/12] coresight: adding basic support for D01 board
+Date: Mon,  3 Nov 2014 11:07:45 -0700
+Message-Id: <1415038066-22423-12-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 9:47 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Mon, 2014-11-03 at 18:14 +0100, Thomas Gleixner wrote:
->> On Mon, 27 Oct 2014, Toshi Kani wrote:
->> > +   } else {
->> > +           /*
->> > +            * PAT full support. WT is set to slot 7, which minimizes
->> > +            * the risk of using the PAT bit as slot 3 is UC and is
->> > +            * currently unused. Slot 4 should remain as reserved.
->>
->> This comment makes no sense. What minimizes which risk and what has
->> this to do with slot 3 and slot 4?
->
-> This is for precaution.  Since the patch enables the PAT bit the first
-> time, it was suggested that we keep slot 4 reserved and set it to WB.
-> The PAT bit still has no effect to slot 0/1/2 (WB/WC/UC-) after this
-> patch.  Slot 7 is the safest slot since slot 3 (UC) is unused today.
->
-> https://lkml.org/lkml/2014/9/4/691
-> https://lkml.org/lkml/2014/9/5/394
->
+From: Xia Kaixu <kaixu.xia@linaro.org>
 
-I would clarify the comment, since this really has nothing to do with
-slot 3 being unused.  How about:
+Support for 16 PTMs, funnel, TPIU and replicator connected
+to the ETB are included.
 
-We put WT in slot 7 to improve robustness in the presence of errata
-that might cause the high PAT bit to be ignored.  This way a buggy
-slot 7 access will hit slot 3, and slot 3 is UC, so at worst we lose
-performance without causing a correctness issue.  Pentium 4 erratum
-N46 is an example of such an erratum, although we try not to use PAT
-at all on affected CPUs.
+Signed-off-by: Xia Kaixu <kaixu.xia@linaro.org>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ arch/arm/boot/dts/hip04.dtsi | 717 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 717 insertions(+)
 
---Andy
-
-
->> > +            *
->> > +            *  PTE encoding used in Linux:
->> > +            *      PAT
->> > +            *      |PCD
->> > +            *      ||PWT  PAT
->> > +            *      |||    slot
->> > +            *      000    0    WB : _PAGE_CACHE_MODE_WB
->> > +            *      001    1    WC : _PAGE_CACHE_MODE_WC
->> > +            *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
->> > +            *      011    3    UC : _PAGE_CACHE_MODE_UC
->> > +            *      100    4    <reserved>
->> > +            *      101    5    <reserved>
->> > +            *      110    6    <reserved>
->>
->> Well, they are still mapped to WB/WC/UC_MINUS ....
->
-> Right, the reserved slots are also initialized with their safe values.
-> However, the macros _PAGE_CACHE_MODE_XXX only refer to the slots
-> specified above.
->
->> > +            *      111    7    WT : _PAGE_CACHE_MODE_WT
->> > +            */
->> > +           pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
->> > +                 PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
->> > +   }
->>
->> Thanks,
->
-> Thanks for the review!
-> -Toshi
->
-
-
-
+diff --git a/arch/arm/boot/dts/hip04.dtsi b/arch/arm/boot/dts/hip04.dtsi
+index 93b6c90..2388145 100644
+--- a/arch/arm/boot/dts/hip04.dtsi
++++ b/arch/arm/boot/dts/hip04.dtsi
+@@ -190,6 +190,12 @@
+ 		clock-frequency = <168000000>;
+ 	};
+ 
++	clk_375m: clk_375m {
++		#clock-cells = <0>;
++		compatible = "fixed-clock";
++		clock-frequency = <375000000>;
++	};
++
+ 	soc {
+ 		/* It's a 32-bit SoC. */
+ 		#address-cells = <1>;
+@@ -264,4 +270,715 @@
+ 		};
+ 
+ 	};
++
++	etb@0,e3c42000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0xe3c42000 0 0x1000>;
++
++		coresight-default-sink;
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		port {
++			etb0_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator0_out_port0>;
++			};
++		};
++	};
++
++	etb@0,e3c82000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0xe3c82000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		port {
++			etb1_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator1_out_port0>;
++			};
++		};
++	};
++
++	etb@0,e3cc2000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0xe3cc2000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		port {
++			etb2_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator2_out_port0>;
++			};
++		};
++	};
++
++	etb@0,e3d02000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0xe3d02000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		port {
++			etb3_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator3_out_port0>;
++			};
++		};
++	};
++
++	tpiu@0,e3c05000 {
++		compatible = "arm,coresight-tpiu", "arm,primecell";
++		reg = <0 0xe3c05000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		port {
++			tpiu_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&funnel4_out_port0>;
++			};
++		};
++	};
++
++	replicator0 {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator0_out_port0: endpoint {
++					remote-endpoint = <&etb0_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				replicator0_out_port1: endpoint {
++					remote-endpoint = <&funnel4_in_port0>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator0_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel0_out_port0>;
++				};
++			};
++		};
++	};
++
++	replicator1 {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator1_out_port0: endpoint {
++					remote-endpoint = <&etb1_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				replicator1_out_port1: endpoint {
++					remote-endpoint = <&funnel4_in_port1>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator1_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel1_out_port0>;
++				};
++			};
++		};
++	};
++
++	replicator2 {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator2_out_port0: endpoint {
++					remote-endpoint = <&etb2_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++					replicator2_out_port1: endpoint {
++					remote-endpoint = <&funnel4_in_port2>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator2_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel2_out_port0>;
++				};
++			};
++		};
++	};
++
++	replicator3 {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator3_out_port0: endpoint {
++					remote-endpoint = <&etb3_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				replicator3_out_port1: endpoint {
++					remote-endpoint = <&funnel4_in_port3>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator3_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel3_out_port0>;
++				};
++			};
++		};
++	};
++
++	funnel@0,e3c41000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0xe3c41000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel0_out_port0: endpoint {
++					remote-endpoint =
++						<&replicator0_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel0_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm0_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel0_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm1_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel0_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm2_out_port>;
++				};
++			};
++
++			port@4 {
++				reg = <3>;
++				funnel0_in_port3: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm3_out_port>;
++				};
++			};
++		};
++	};
++
++	funnel@0,e3c81000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0xe3c81000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel1_out_port0: endpoint {
++					remote-endpoint =
++						<&replicator1_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel1_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm4_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel1_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm5_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel1_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm6_out_port>;
++				};
++			};
++
++			port@4 {
++				reg = <3>;
++				funnel1_in_port3: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm7_out_port>;
++				};
++			};
++		};
++	};
++
++	funnel@0,e3cc1000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0xe3cc1000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel2_out_port0: endpoint {
++					remote-endpoint =
++						<&replicator2_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel2_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm8_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel2_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm9_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel2_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm10_out_port>;
++				};
++			};
++
++			port@4 {
++				reg = <3>;
++				funnel2_in_port3: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm11_out_port>;
++				};
++			};
++		};
++	};
++
++	funnel@0,e3d01000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0xe3d01000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel3_out_port0: endpoint {
++					remote-endpoint =
++						<&replicator3_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel3_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm12_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel3_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm13_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel3_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm14_out_port>;
++				};
++			};
++
++			port@4 {
++				reg = <3>;
++				funnel3_in_port3: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm15_out_port>;
++				};
++			};
++		};
++	};
++
++	funnel@0,e3c04000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0xe3c04000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel4_out_port0: endpoint {
++					remote-endpoint = <&tpiu_in_port>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel4_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint =
++						<&replicator0_out_port1>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel4_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint =
++						<&replicator1_out_port1>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel4_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint =
++						<&replicator2_out_port1>;
++				};
++			};
++
++			port@4 {
++				reg = <3>;
++				funnel4_in_port3: endpoint {
++					slave-mode;
++					remote-endpoint =
++						<&replicator3_out_port1>;
++				};
++			};
++		};
++	};
++
++	ptm@0,e3c7c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3c7c000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU0>;
++		port {
++			ptm0_out_port: endpoint {
++				remote-endpoint = <&funnel0_in_port0>;
++			};
++		};
++	};
++
++	ptm@0,e3c7d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3c7d000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU1>;
++		port {
++			ptm1_out_port: endpoint {
++				remote-endpoint = <&funnel0_in_port1>;
++			};
++		};
++	};
++
++	ptm@0,e3c7e000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3c7e000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU2>;
++		port {
++			ptm2_out_port: endpoint {
++				remote-endpoint = <&funnel0_in_port2>;
++			};
++		};
++	};
++
++	ptm@0,e3c7f000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3c7f000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU3>;
++		port {
++			ptm3_out_port: endpoint {
++				remote-endpoint = <&funnel0_in_port3>;
++			};
++		};
++	};
++
++	ptm@0,e3cbc000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3cbc000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU4>;
++		port {
++			ptm4_out_port: endpoint {
++				remote-endpoint = <&funnel1_in_port0>;
++			};
++		};
++	};
++
++	ptm@0,e3cbd000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3cbd000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU5>;
++		port {
++			ptm5_out_port: endpoint {
++				remote-endpoint = <&funnel1_in_port1>;
++			};
++		};
++	};
++
++	ptm@0,e3cbe000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3cbe000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU6>;
++		port {
++			ptm6_out_port: endpoint {
++				remote-endpoint = <&funnel1_in_port2>;
++			};
++		};
++	};
++
++	ptm@0,e3cbf000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3cbf000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU7>;
++		port {
++			ptm7_out_port: endpoint {
++				remote-endpoint = <&funnel1_in_port3>;
++			};
++		};
++	};
++
++	ptm@0,e3cfc000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3cfc000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU8>;
++		port {
++			ptm8_out_port: endpoint {
++				remote-endpoint = <&funnel2_in_port0>;
++			};
++		};
++	};
++
++	ptm@0,e3cfd000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3cfd000 0 0x1000>;
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU9>;
++		port {
++			ptm9_out_port: endpoint {
++				remote-endpoint = <&funnel2_in_port1>;
++			};
++		};
++	};
++
++	ptm@0,e3cfe000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3cfe000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU10>;
++		port {
++			ptm10_out_port: endpoint {
++				remote-endpoint = <&funnel2_in_port2>;
++			};
++		};
++	};
++
++	ptm@0,e3cff000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3cff000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU11>;
++		port {
++			ptm11_out_port: endpoint {
++				remote-endpoint = <&funnel2_in_port3>;
++			};
++		};
++	};
++
++	ptm@0,e3d3c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3d3c000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU12>;
++		port {
++			ptm12_out_port: endpoint {
++				remote-endpoint = <&funnel3_in_port0>;
++			};
++		};
++	};
++
++	ptm@0,e3d3d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3d3d000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU13>;
++		port {
++			ptm13_out_port: endpoint {
++				remote-endpoint = <&funnel3_in_port1>;
++			};
++		};
++	};
++
++	ptm@0,e3d3e000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3d3e000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU14>;
++		port {
++			ptm14_out_port: endpoint {
++				remote-endpoint = <&funnel3_in_port2>;
++			};
++		};
++	};
++
++	ptm@0,e3d3f000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0xe3d3f000 0 0x1000>;
++
++		clocks = <&clk_375m>;
++		clock-names = "apb_pclk";
++		cpu = <&CPU15>;
++		port {
++			ptm15_out_port: endpoint {
++				remote-endpoint = <&funnel3_in_port3>;
++			};
++		};
++	};
+ };
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.1
+
