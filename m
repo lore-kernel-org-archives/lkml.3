@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794AbaKCP5p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:57:45 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35650 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023AbaKCP5l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:57:41 -0500
-Date: Mon, 3 Nov 2014 15:56:23 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141103155623.GW3815@sirena.org.uk>
-References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
- <1415025649-8119-10-git-send-email-javier.martinez@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V2AZ19bMCakBLong"
-Content-Disposition: inline
-In-Reply-To: <1415025649-8119-10-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 09/14] regulator: s2mpa01: zero-initialize regulator
- match table array
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1752889AbaKCP5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:57:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55082 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023AbaKCP5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:57:47 -0500
+From: Amos Kong <akong@redhat.com>
+To: virtualization@lists.linux-foundation.org
+Cc: kvm@vger.kernel.org, rusty@rustcorp.com.au, herbert@gondor.apana.org.au,
+        m@bues.ch, mb@bu3sch.de, mpm@selenic.com, amit.shah@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/6] fix hw_random stuck
+Date: Mon,  3 Nov 2014 23:56:20 +0800
+Message-Id: <1415030186-18303-1-git-send-email-akong@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When I hotunplug a busy virtio-rng device or try to access
+hwrng attributes in non-smp guest, it gets stuck.
 
---V2AZ19bMCakBLong
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+My hotplug tests:
 
-On Mon, Nov 03, 2014 at 03:40:44PM +0100, Javier Martinez Canillas wrote:
-> The struct of_regulator_match rmatch[] is declared as a non-static local
-> variable so the structure members are not auto-initialized.
+| test 0:
+|   hotunplug rng device from qemu monitor
+|
+| test 1:
+|   guest) # dd if=/dev/hwrng of=/dev/null &
+|   hotunplug rng device from qemu monitor
+|
+| test 2:
+|   guest) # dd if=/dev/random of=/dev/null &
+|   hotunplug rng device from qemu monitor
+|
+| test 4:
+|   guest) # dd if=/dev/hwrng of=/dev/null &
+|   cat /sys/devices/virtual/misc/hw_random/rng_*
+|
+| test 5:
+|   guest) # dd if=/dev/hwrng of=/dev/null
+|   cancel dd process after 10 seconds
+|   guest) # dd if=/dev/hwrng of=/dev/null &
+|   hotunplug rng device from qemu monitor
+|
+| test 6:
+|   use a fifo as rng backend, execute test 0 ~ 5 with no input of fifo
 
-Applied, thanks.
 
---V2AZ19bMCakBLong
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+V4: update patch 4 to fix corrupt, decrease last reference for triggering
+    the cleanup, fix unregister race pointed by Herbert
+V3: initialize kref to 1
+V2: added patch 2 to fix a deadlock, update current patch 3 to fix reference
+    counting issue
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Amos Kong (1):
+  hw_random: move some code out mutex_lock for avoiding underlying
+    deadlock
 
-iQEcBAEBAgAGBQJUV6WmAAoJECTWi3JdVIfQemMH/iHG4WkC7Vi3CPPaW6O9FCj7
-nKO1ac+qPyjEdyc+V/RuGdUt6UgvojJk9nXljRgbepLj6scRAItGqpElagG0T0YL
-ql2utJt8VKO4vAWRFnzPKa7DQQJBsjTAvTghk5fHi4iuRQw5V2N/gkgt0kgqHggB
-p1kojdA4+u31HDHRvrKlvtO7vhII5uR+30M/6adWVURX0VN6IphJooPdOwS1FWCa
-bz+BtqAse6nAfeW0fWO/W3/VRaBZ6WXdJzzthfEgoXGE/6zwmnjPh5Z5AGcaKPHC
-Y/IlolIQmyqvr1efhdxpmOb2ZI+gBhHfl0t9GPTzoGg6CnKfxyh8GMvCN6eMhJM=
-=SH1K
------END PGP SIGNATURE-----
+Rusty Russell (5):
+  hw_random: place mutex around read functions and buffers.
+  hw_random: use reference counts on each struct hwrng.
+  hw_random: fix unregister race.
+  hw_random: don't double-check old_rng.
+  hw_random: don't init list element we're about to add to list.
 
---V2AZ19bMCakBLong--
+ drivers/char/hw_random/core.c | 176 ++++++++++++++++++++++++++++++------------
+ include/linux/hw_random.h     |   3 +
+ 2 files changed, 129 insertions(+), 50 deletions(-)
+
+-- 
+1.9.3
+
