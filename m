@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaKCVBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:01:07 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53797 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753621AbaKCVBD (ORCPT
+	id S1753962AbaKCVBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:01:37 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:39093 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959AbaKCVAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:01:03 -0500
-Message-ID: <5457ED0C.3090705@hurleysoftware.com>
-Date: Mon, 03 Nov 2014 16:01:00 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 3 Nov 2014 16:00:15 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm 5/8] memcg: free kmem cache id on css offline
+Date: Mon, 3 Nov 2014 23:59:43 +0300
+Message-ID: <6618a87bfb6bbad5c8a72f2d1fafedcfb6e93f6e.1415046910.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1415046910.git.vdavydov@parallels.com>
+References: <cover.1415046910.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] tty: serial: men_z135_uart: Fix driver for changes
- in hardware
-References: <1415030753-26885-1-git-send-email-johannes.thumshirn@men.de>
-In-Reply-To: <1415030753-26885-1-git-send-email-johannes.thumshirn@men.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain
+X-Originating-IP: [81.5.99.36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 11:05 AM, Johannes Thumshirn wrote:
-> * Enable the handling of UART core's automatic flow control feature.
->   When AFE is active disable generation of modem status IRQs.
+This will allow new kmem active cgroups to reuse the id and therefore
+the caches used by the dead memory cgroup.
 
-So HUPCL doesn't work when CRTSCTS is set?
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/memcontrol.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-Is this because there's actually a problem with the IP core that
-MSIs trash the autoCTS state, or is the problem that the driver
-just shouldn't be calling uart_handle_cts_change() when autoCTS is
-on?
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 923fe4c29e92..755604079d8e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -605,14 +605,10 @@ int memcg_limited_groups_array_size;
+ struct static_key memcg_kmem_enabled_key;
+ EXPORT_SYMBOL(memcg_kmem_enabled_key);
+ 
+-static void memcg_free_cache_id(int id);
+-
+ static void disarm_kmem_keys(struct mem_cgroup *memcg)
+ {
+-	if (memcg_kmem_is_active(memcg)) {
++	if (memcg_kmem_is_active(memcg))
+ 		static_key_slow_dec(&memcg_kmem_enabled_key);
+-		memcg_free_cache_id(memcg->kmemcg_id);
+-	}
+ 	/*
+ 	 * This check can't live in kmem destruction function,
+ 	 * since the charges will outlive the cgroup
+@@ -4730,6 +4726,11 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 	spin_unlock(&memcg->event_list_lock);
+ 
+ 	vmpressure_cleanup(&memcg->vmpressure);
++
++#ifdef CONFIG_MEMCG_KMEM
++	if (memcg_kmem_is_active(memcg))
++		memcg_free_cache_id(memcg_cache_id(memcg));
++#endif
+ }
+ 
+ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+-- 
+1.7.10.4
 
-Regards,
-Peter Hurley
