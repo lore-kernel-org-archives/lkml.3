@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbaKCV0S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:26:18 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60047 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591AbaKCV0R (ORCPT
+	id S1754002AbaKCV0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:26:43 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44545 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752344AbaKCV0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:26:17 -0500
-Date: Mon, 3 Nov 2014 22:26:10 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: arapov@gmail.com, poros@redhat.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        matt@console-pimps.org
-Subject: FW/BIOS Bug category for oops.kernel.org
-Message-ID: <20141103212610.GA10501@worktop.programming.kicks-ass.net>
+	Mon, 3 Nov 2014 16:26:41 -0500
+Message-ID: <5457F30F.2030203@hurleysoftware.com>
+Date: Mon, 03 Nov 2014 16:26:39 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] tty: serial: men_z135_uart: Fix driver for changes
+ in hardware
+References: <1415030753-26885-1-git-send-email-johannes.thumshirn@men.de> <5457ED0C.3090705@hurleysoftware.com>
+In-Reply-To: <5457ED0C.3090705@hurleysoftware.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi oops.kernel.org folks,
+On 11/03/2014 04:01 PM, Peter Hurley wrote:
+> On 11/03/2014 11:05 AM, Johannes Thumshirn wrote:
+>> * Enable the handling of UART core's automatic flow control feature.
+>>   When AFE is active disable generation of modem status IRQs.
+> 
+> So HUPCL doesn't work when CRTSCTS is set?
 
-I'm wanting to collect information on FW/BIOS bugs, and I figured that
-we could use the oops.kernel.org infrastructure to do this.
+Sorry, I meant !CLOCAL. IOW,
 
-Now, I'd prefer to not use the regular BUG/WARN because it might confuse
-users and the stacktrace is entirely pointless -- we know were/why we
-generate the msgs.
+'So !CLOCAL doesn't work when CRTSCTS is set?'
 
-Is everything between:
+> Is this because there's actually a problem with the IP core that
+> MSIs trash the autoCTS state, or is the problem that the driver
+> just shouldn't be calling uart_handle_cts_change() when autoCTS is
+> on?
 
-        pr_warn("------------[ cut here ]------------\n");
-and:
-        pr_warn("---[ end trace %016llx ]---\n", (unsigned long long)oops_id);
-
-sucked in automagically, or do we need more magic?
-
-I was thinking of adding a body like:
-
-	FW/BIOS fail: $msg
-	Hardware name: $dump_stack_arc_desc_str
-	CPU model name: $cpuinfo_x86->x86_model_id
-
-Which would allow us to index on both CPU and Hardware.
-
-
-Can we make this happen?
