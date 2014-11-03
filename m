@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaKCPu5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:50:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47164 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365AbaKCPum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:50:42 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Boaz Harrosh <boaz@plexistor.com>, Nick Piggin <npiggin@kernel.dk>,
-        "Kani\, Toshimitsu" <toshi.kani@hp.com>,
-        "Knippers\, Linda" <linda.knippers@hp.com>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvdimm\@lists.01.org" <linux-nvdimm@ml01.01.org>
-Subject: Re: [PATCH 1/4] pmem: Initial version of persistent memory driver
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
-	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
-	<94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 03 Nov 2014 10:50:32 -0500
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net>
-	(Robert Elliott's message of "Sun, 2 Nov 2014 03:22:37 +0000")
-Message-ID: <x49d294xozb.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753202AbaKCPvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:51:39 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:39003 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272AbaKCPvg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:51:36 -0500
+Message-ID: <5457A480.30102@collabora.co.uk>
+Date: Mon, 03 Nov 2014 16:51:28 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mark Brown <broonie@kernel.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 05/14] regulator: max1586: zero-initialize regulator
+ match table array
+References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk> <1415025649-8119-6-git-send-email-javier.martinez@collabora.co.uk> <20141103154152.GR3815@sirena.org.uk>
+In-Reply-To: <20141103154152.GR3815@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Elliott, Robert (Server Storage)" <Elliott@hp.com> writes:
+On 11/03/2014 04:41 PM, Mark Brown wrote:
+> On Mon, Nov 03, 2014 at 03:40:40PM +0100, Javier Martinez Canillas wrote:
+>> The struct of_regulator_match rmatch[] is declared as a non-static local
+>> variable so the structure members are not auto-initialized.
+> 
+> Applied, thanks.
+> 
+> This is a bug fix not *that* closely related to the rest of the series,
+> if it's being included in a series like this it should've been at the
+> start of the series not after substantial new feature additions so that
+> the fixes don't get ignored due to problems with the features and so
+> that the fixes can be sent to Linus without dependencies.
+> 
 
->> +config BLK_DEV_PMEM_COUNT
->> +	int "Default number of PMEM disks"
->> +	default "4"
->
-> For real use I think a default of 1 would be better.
+True, I added in the series since of_get_regulation_constraints() checks
+if the struct regulator_desc * pointer is not NULL and so drivers that
+don't initialize the struct of_regulator_match containing that pointer
+will make that check to fail and the pointer be wrongly dereferenced.
 
-For "real" use, it will be the number of actual DIMMs, not a config
-option, I would think.  I don't take any issue with defaulting to 4.
-This will go away.
+Sorry, next time I'll post fixes separately and make the series depend on
+that instead.
 
->> +	pmem->pmem_queue = blk_alloc_queue(GFP_KERNEL);
->> +	if (!pmem->pmem_queue)
->> +		goto out_free_dev;
->> +
->
-> General comment:
-> This driver should be blk-mq based.  Not doing so loses
-> out on a number of SMP and NUMA performance improvements.
-> For example, blk_alloc_queue calls blk_alloc_queue_node
-> with NUMA_NO_NODE.  If it called blk_mq_init_queue, then
-> each CPU would get structures located on its node.
-
-No need to use blk-mq just to set the numa node, as the driver could
-just call blk_alloc_queue_node itself.  I'd chalk this up to another
-thing that could be fixed when the driver is used for actual hardware
-that describes its own proximity domain.  Further, there is no DMA
-engine, here, so what is the benefit of using blk-mq?  I/O completes in
-the submission path, and I don't see any locking that's preventing
-parallelism.
-
->
->> +	blk_queue_make_request(pmem->pmem_queue, pmem_make_request);
->> +	blk_queue_max_hw_sectors(pmem->pmem_queue, 1024);
->
-> Many storage controllers support 1 MiB IOs now, and increasing
-> amounts of software feel comfortable generating those sizes.  
-> That means this should be at least 2048.
->
->> +	blk_queue_bounce_limit(pmem->pmem_queue, BLK_BOUNCE_ANY);
->> +
->
-> It might be appropriate to call blk_queue_rq_timeout
-> and set up a very short timeout, since persistent memory is
-> very fast.  I'm not sure what the default is for non-blk-mq
-> drivers; for blk-mq, I think it is 30 seconds, which is
-> far too long for memory based storage.
-
-If you timeout on a memcpy, then we've definitely got problems. :)
-
-Cheers,
-Jeff
+Best regards,
+Javier
