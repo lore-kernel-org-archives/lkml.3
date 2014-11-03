@@ -1,97 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341AbaKCSWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:22:35 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681AbaKCSWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:22:33 -0500
-Message-ID: <5457C7E3.9000104@nod.at>
-Date: Mon, 03 Nov 2014 19:22:27 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Ming Lei <tom.leiming@gmail.com>
-CC: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@fb.com>,
-        dedekind1@gmail.com, David Woodhouse <dwmw2@infradead.org>,
-        computersforpeace@gmail.com,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] UBI: Block: Add blk-mq support
-References: <1414933255-3795-1-git-send-email-richard@nod.at> <CACVXFVP9K6t-u-sjBQ57r_9kzu-yGdLLGYyX2d+ryJBSxMkAJQ@mail.gmail.com> <545789F8.1060401@free-electrons.com>
-In-Reply-To: <545789F8.1060401@free-electrons.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="qGAgqvhehk6hdkudpXXcWivT7L51nsl8i"
+	id S1753425AbaKCSXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:23:00 -0500
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:36990 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229AbaKCSW6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 13:22:58 -0500
+Message-ID: <1415038137.10958.1.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
+From: Toshi Kani <toshi.kani@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 03 Nov 2014 11:08:57 -0700
+In-Reply-To: <alpine.DEB.2.11.1411031913140.5308@nanos>
+References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
+	 <1414450545-14028-2-git-send-email-toshi.kani@hp.com>
+	 <alpine.DEB.2.11.1411031812390.5308@nanos>
+	 <1415036879.29109.26.camel@misato.fc.hp.com>
+	 <CALCETrWwEsaz8j2ajqqxS4mupO48tv0e_wbrODsmJfZeON2ptA@mail.gmail.com>
+	 <alpine.DEB.2.11.1411031913140.5308@nanos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---qGAgqvhehk6hdkudpXXcWivT7L51nsl8i
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2014-11-03 at 19:15 +0100, Thomas Gleixner wrote:
+> On Mon, 3 Nov 2014, Andy Lutomirski wrote:
+> > On Mon, Nov 3, 2014 at 9:47 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > > On Mon, 2014-11-03 at 18:14 +0100, Thomas Gleixner wrote:
+> > >> On Mon, 27 Oct 2014, Toshi Kani wrote:
+> > >> > +   } else {
+> > >> > +           /*
+> > >> > +            * PAT full support. WT is set to slot 7, which minimizes
+> > >> > +            * the risk of using the PAT bit as slot 3 is UC and is
+> > >> > +            * currently unused. Slot 4 should remain as reserved.
+> > >>
+> > >> This comment makes no sense. What minimizes which risk and what has
+> > >> this to do with slot 3 and slot 4?
+> > >
+> > > This is for precaution.  Since the patch enables the PAT bit the first
+> > > time, it was suggested that we keep slot 4 reserved and set it to WB.
+> > > The PAT bit still has no effect to slot 0/1/2 (WB/WC/UC-) after this
+> > > patch.  Slot 7 is the safest slot since slot 3 (UC) is unused today.
+> > >
+> > > https://lkml.org/lkml/2014/9/4/691
+> > > https://lkml.org/lkml/2014/9/5/394
+> > >
+> > 
+> > I would clarify the comment, since this really has nothing to do with
+> > slot 3 being unused.  How about:
+> > 
+> > We put WT in slot 7 to improve robustness in the presence of errata
+> > that might cause the high PAT bit to be ignored.  This way a buggy
+> > slot 7 access will hit slot 3, and slot 3 is UC, so at worst we lose
+> > performance without causing a correctness issue.  Pentium 4 erratum
+> > N46 is an example of such an erratum, although we try not to use PAT
+> > at all on affected CPUs.
+> 
+> Indeed. That makes a lot more sense.
+>  
+> > >> > +            *
+> > >> > +            *  PTE encoding used in Linux:
+> > >> > +            *      PAT
+> > >> > +            *      |PCD
+> > >> > +            *      ||PWT  PAT
+> > >> > +            *      |||    slot
+> > >> > +            *      000    0    WB : _PAGE_CACHE_MODE_WB
+> > >> > +            *      001    1    WC : _PAGE_CACHE_MODE_WC
+> > >> > +            *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
+> > >> > +            *      011    3    UC : _PAGE_CACHE_MODE_UC
+> > >> > +            *      100    4    <reserved>
+> > >> > +            *      101    5    <reserved>
+> > >> > +            *      110    6    <reserved>
+> > >>
+> > >> Well, they are still mapped to WB/WC/UC_MINUS ....
+> > >
+> > > Right, the reserved slots are also initialized with their safe values.
+> > > However, the macros _PAGE_CACHE_MODE_XXX only refer to the slots
+> > > specified above.
+> 
+> Then the table should reflect this, i.e.: reserved, but mapped to XX
+> 
+> And a comment below that explaining WHY we map the reserved slots.
 
-Am 03.11.2014 um 14:58 schrieb Ezequiel Garcia:
-> On 11/03/2014 02:03 AM, Ming Lei wrote:
->> On Sun, Nov 2, 2014 at 9:00 PM, Richard Weinberger <richard@nod.at> wr=
-ote:
->>> Convert the driver to blk-mq.
->>
->> It is always helpful to include some performance comparison data(
->> randrw, rw) between blk-mq and non-mq.
->>
->=20
-> UBI block support is read-only for now so you'll be able to run read
-> tests only.
->=20
-> Richard: If at all possible, it would be interested to so some
-> performance tests on *real* devices, not only RAM-based ones.
-
-Sure. There you go:
-
-nand: device found, Manufacturer ID: 0x2c, Chip ID: 0xda
-nand: Micron NAND 256MiB 3,3V 8-bit
-nand: 256MiB, SLC, page size: 2048, OOB size: 64
-
-root@debian-armhf:~# dd if=3D/dev/ubiblock0_0 of=3D/dev/zero bs=3D1M
-243+1 records in
-243+1 records out
-255080448 bytes (255 MB) copied, 4.39295 s, 58.1 MB/s
-
-vs.
-
-root@debian-armhf:~# dd if=3D/dev/ubiblock0_0 of=3D/dev/zero bs=3D1M
-243+1 records in
-243+1 records out
-255080448 bytes (255 MB) copied, 2.87676 s, 88.7 MB/s
+Yes, I will update the table and add a comment.
 
 Thanks,
-//richard
+-Toshi
 
-
---qGAgqvhehk6hdkudpXXcWivT7L51nsl8i
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUV8fjAAoJEPmeIjfg4UaasggQAIpShvGmW0Pggfcy3T7Y/1aX
-jBaJLvzsvGdNObiXzpUoi88FMqUVWW819OIVU2OkJwzevgC852aN3ac6C9DnklBI
-+hOFI9jRjtxlnb6s8VZr/kqIUH63U8G4Zu7CzVJSUhVNHYfsfwckrr0gzz7Z4rNw
-QOJcP2gZiVfJQnfXsowFkDlDDoH16qoYcNDGFs1gSur/MKnAU4ivywk6sFq/loj+
-dt9eTNUPvyZKRxxq/Gnf/vPhSxnDMJgBOVcyvhj2zNPN8eV6gkJC5KNqN08sszLm
-jtlVK8n9JbXMRDDRg6bXWpEl3sQ8tOv8eVZ0P+BU+YSW05LT1Jwf+Ljur2lyJ6eo
-NFlMwNL0YDFi/RL9HZvmncQj4PHu4jrQIHw8vRZ0eiI/oEXsJx8a5zfnm0kgANS5
-lRvLvJsZ166NZjJaFmzrrE+cj7Cn9VzRy7Yv4Cg/4BqDYfT8VvRjkWMHdXF2jj3D
-lV2NMcKbbSDjP38D5fYVLnpxPRqNAW92ZZBqUphcuvp6ajcyXSinCuEGuI8k9YMj
-BAmgvY59Jv41p9exq0Z4Zk5GVrNlJxC9j9lXd+ii6UKUjgtTjuXaXQSKMaIbiWHY
-VxFcvTzU7OcLE7NZVkywUaLT2N0gIzcVeyh+oDLAdv133VXNc2Cav50wRjug4d4b
-/mWZbd65YN+N70vtZY98
-=0Yfo
------END PGP SIGNATURE-----
-
---qGAgqvhehk6hdkudpXXcWivT7L51nsl8i--
