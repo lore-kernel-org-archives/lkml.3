@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaKCLCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:02:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48300 "EHLO
+	id S1751376AbaKCLDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:03:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48312 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183AbaKCLCr (ORCPT
+	with ESMTP id S1751712AbaKCLDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 06:02:47 -0500
-Date: Mon, 3 Nov 2014 03:01:29 -0800
+	Mon, 3 Nov 2014 06:03:15 -0500
+Date: Mon, 3 Nov 2014 03:00:01 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-3a2f18905b31bb2c1cdb1e108c95bfd8b62b0908@git.kernel.org>
-Cc: yinghai@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        konrad.wilk@oracle.com, hpa@zytor.com, tony.luck@intel.com,
-        bp@alien8.de, mingo@kernel.org, rdunlap@infradead.org, joro@8bytes.org,
-        rjw@rjwysocki.net, jiang.liu@linux.intel.com, lenb@kernel.org,
-        benh@kernel.crashing.org, bhelgaas@google.com
-Reply-To: benh@kernel.crashing.org, bhelgaas@google.com, rdunlap@infradead.org,
-        joro@8bytes.org, jiang.liu@linux.intel.com, rjw@rjwysocki.net,
-        lenb@kernel.org, konrad.wilk@oracle.com, tony.luck@intel.com,
-        hpa@zytor.com, mingo@kernel.org, bp@alien8.de, yinghai@kernel.org,
-        gregkh@linuxfoundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1414387308-27148-19-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-19-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-36f3a2a6cec30b332035ccad32d749b2216a2168@git.kernel.org>
+Cc: jiang.liu@linux.intel.com, rdunlap@infradead.org, hpa@zytor.com,
+        konrad.wilk@oracle.com, yinghai@kernel.org, prarit@redhat.com,
+        tglx@linutronix.de, joro@8bytes.org, bhelgaas@google.com,
+        mingo@kernel.org, benh@kernel.crashing.org, grant.likely@linaro.org,
+        tony.luck@intel.com, linux-kernel@vger.kernel.org, bp@alien8.de,
+        rjw@rjwysocki.net, gregkh@linuxfoundation.org
+Reply-To: yinghai@kernel.org, prarit@redhat.com, konrad.wilk@oracle.com,
+        rdunlap@infradead.org, hpa@zytor.com, jiang.liu@linux.intel.com,
+        mingo@kernel.org, bhelgaas@google.com, joro@8bytes.org,
+        tglx@linutronix.de, tony.luck@intel.com, grant.likely@linaro.org,
+        benh@kernel.crashing.org, gregkh@linuxfoundation.org,
+        rjw@rjwysocki.net, bp@alien8.de, linux-kernel@vger.kernel.org
+In-Reply-To: <1414387308-27148-14-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-14-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq, ACPI:
-  Implement ACPI driver to support IOAPIC hotplug
-Git-Commit-ID: 3a2f18905b31bb2c1cdb1e108c95bfd8b62b0908
+Subject: [tip:x86/apic] x86, irq: Refine mp_register_ioapic()
+  to prepare for IOAPIC hotplug
+Git-Commit-ID: 36f3a2a6cec30b332035ccad32d749b2216a2168
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,21 +40,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3a2f18905b31bb2c1cdb1e108c95bfd8b62b0908
-Gitweb:     http://git.kernel.org/tip/3a2f18905b31bb2c1cdb1e108c95bfd8b62b0908
+Commit-ID:  36f3a2a6cec30b332035ccad32d749b2216a2168
+Gitweb:     http://git.kernel.org/tip/36f3a2a6cec30b332035ccad32d749b2216a2168
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 13:21:48 +0800
+AuthorDate: Mon, 27 Oct 2014 13:21:43 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 3 Nov 2014 11:56:08 +0100
 
-x86, irq, ACPI: Implement ACPI driver to support IOAPIC hotplug
+x86, irq: Refine mp_register_ioapic() to prepare for IOAPIC hotplug
 
-Enable support of IOAPIC hotplug by:
-1) reintroducing ACPI based IOAPIC driver
-2) enhance pci_root driver to hook hotplug events
-
-The ACPI IOAPIC driver is always enabled if all of ACPI, PCI and IOAPIC
-are enabled.
+Refine mp_register_ioapic() to prepare for IOAPIC hotplug by:
+1) change return value from void to int.
+2) check for gsi range conflicts
+3) check for IOAPIC physical address conflicts
+4) enhance the way to allocate IOAPIC index
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -67,323 +66,163 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Len Brown <lenb@kernel.org>
-Link: http://lkml.kernel.org/r/1414387308-27148-19-git-send-email-jiang.liu@linux.intel.com
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1414387308-27148-14-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/acpi/Kconfig    |   6 ++
- drivers/acpi/Makefile   |   1 +
- drivers/acpi/internal.h |   7 ++
- drivers/acpi/ioapic.c   | 235 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/pci_root.c |   3 +
- 5 files changed, 252 insertions(+)
+ arch/x86/include/asm/io_apic.h |  4 +-
+ arch/x86/kernel/apic/io_apic.c | 87 +++++++++++++++++++++++++++---------------
+ 2 files changed, 58 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index b23fe37..127bc2f 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -315,6 +315,12 @@ config ACPI_HOTPLUG_MEMORY
- 	  To compile this driver as a module, choose M here:
- 	  the module will be called acpi_memhotplug.
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index a666dcd..8741c1e 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -188,8 +188,8 @@ extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ extern u32 mp_pin_to_gsi(int ioapic, int pin);
+ extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
+ extern void mp_unmap_irq(int irq);
+-extern void mp_register_ioapic(int id, u32 address, u32 gsi_base,
+-			       struct ioapic_domain_cfg *cfg);
++extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
++			      struct ioapic_domain_cfg *cfg);
+ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq);
+ extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 19501ab..090d3fe 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3840,20 +3840,6 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
+ 	return gsi - gsi_cfg->gsi_base;
+ }
  
-+config ACPI_HOTPLUG_IOAPIC
-+	bool
-+	depends on PCI
-+	depends on X86_IO_APIC
-+	default y
+-static int bad_ioapic(unsigned long address)
+-{
+-	if (nr_ioapics >= MAX_IO_APICS) {
+-		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
+-			MAX_IO_APICS, nr_ioapics);
+-		return 1;
+-	}
+-	if (!address) {
+-		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
+-		return 1;
+-	}
+-	return 0;
+-}
+-
+ static int bad_ioapic_register(int idx)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+@@ -3873,29 +3859,51 @@ static int bad_ioapic_register(int idx)
+ 	return 0;
+ }
+ 
+-void mp_register_ioapic(int id, u32 address, u32 gsi_base,
+-			struct ioapic_domain_cfg *cfg)
++static int find_free_ioapic_entry(void)
++{
++	return nr_ioapics;
++}
 +
- config ACPI_SBS
- 	tristate "Smart Battery System"
- 	depends on X86
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index c3b2fcb..3b283a2 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -69,6 +69,7 @@ obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
- obj-y				+= container.o
- obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
- obj-y				+= acpi_memhotplug.o
-+obj-$(CONFIG_ACPI_HOTPLUG_IOAPIC) += ioapic.o
- obj-$(CONFIG_ACPI_BATTERY)	+= battery.o
- obj-$(CONFIG_ACPI_SBS)		+= sbshc.o
- obj-$(CONFIG_ACPI_SBS)		+= sbs.o
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 447f6d6..73efdcb 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -35,6 +35,13 @@ void acpi_int340x_thermal_init(void);
- int acpi_sysfs_init(void);
- void acpi_container_init(void);
- void acpi_memory_hotplug_init(void);
-+#ifdef	CONFIG_ACPI_HOTPLUG_IOAPIC
-+int acpi_ioapic_add(struct acpi_pci_root *root);
-+int acpi_ioapic_remove(struct acpi_pci_root *root);
-+#else
-+static inline int acpi_ioapic_add(struct acpi_pci_root *root) { return 0; }
-+static inline int acpi_ioapic_remove(struct acpi_pci_root *root) { return 0; }
-+#endif
- #ifdef CONFIG_ACPI_DOCK
- void register_dock_dependent_device(struct acpi_device *adev,
- 				    acpi_handle dshandle);
-diff --git a/drivers/acpi/ioapic.c b/drivers/acpi/ioapic.c
-new file mode 100644
-index 0000000..9a631a6
---- /dev/null
-+++ b/drivers/acpi/ioapic.c
-@@ -0,0 +1,235 @@
-+/*
-+ * IOAPIC/IOxAPIC/IOSAPIC driver
-+ *
-+ * Copyright (C) 2009 Fujitsu Limited.
-+ * (c) Copyright 2009 Hewlett-Packard Development Company, L.P.
-+ *
-+ * Copyright (C) 2014 Intel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Based on original drivers/pci/ioapic.c
-+ *	Yinghai Lu <yinghai@kernel.org>
-+ *	Jiang Liu <jiang.liu@intel.com>
++/**
++ * mp_register_ioapic - Register an IOAPIC device
++ * @id:		hardware IOAPIC ID
++ * @address:	physical address of IOAPIC register area
++ * @gsi_base:	base of GSI associated with the IOAPIC
++ * @cfg:	configuration information for the IOAPIC
 + */
-+
-+/*
-+ * This driver manages I/O APICs added by hotplug after boot.
-+ * We try to claim all I/O APIC devices, but those present at boot were
-+ * registered when we parsed the ACPI MADT.
-+ */
-+
-+#define pr_fmt(fmt) "ACPI : IOAPIC: " fmt
-+
-+#include <linux/slab.h>
-+#include <linux/acpi.h>
-+#include <linux/pci.h>
-+#include <acpi/acpi.h>
-+
-+struct acpi_pci_ioapic {
-+	acpi_handle	root_handle;
-+	acpi_handle	handle;
-+	u32		gsi_base;
-+	struct resource	res;
-+	struct pci_dev	*pdev;
-+	struct list_head list;
-+};
-+
-+static LIST_HEAD(ioapic_list);
-+static DEFINE_MUTEX(ioapic_list_lock);
-+
-+static acpi_status setup_res(struct acpi_resource *acpi_res, void *data)
-+{
-+	struct resource *res = data;
-+
-+	memset(res, 0, sizeof(*res));
-+	if (acpi_dev_resource_memory(acpi_res, res)) {
-+		res->flags &= IORESOURCE_MEM;
-+		if (res->flags)
-+			return AE_OK;
-+	} else if (acpi_dev_resource_address_space(acpi_res, res)) {
-+		struct acpi_resource_address64 addr;
-+
-+		res->flags &= IORESOURCE_MEM;
-+		if (res->flags &&
-+		    ACPI_SUCCESS(acpi_resource_to_address64(acpi_res, &addr)) &&
-+		    addr.info.mem.caching != ACPI_PREFETCHABLE_MEMORY) {
-+			res->start += addr.translation_offset;
-+			res->end += addr.translation_offset;
-+			return AE_OK;
++int mp_register_ioapic(int id, u32 address, u32 gsi_base,
++		       struct ioapic_domain_cfg *cfg)
+ {
+-	int idx = 0;
+-	int entries;
+ 	struct mp_ioapic_gsi *gsi_cfg;
++	int idx, ioapic, entries;
++	u32 gsi_end;
+ 
+-	if (bad_ioapic(address))
+-		return;
++	if (!address) {
++		pr_warn("Bogus (zero) I/O APIC address found, skipping!\n");
++		return -EINVAL;
++	}
++	for_each_ioapic(ioapic)
++		if (ioapics[ioapic].mp_config.apicaddr == address) {
++			pr_warn("address 0x%x conflicts with IOAPIC%d\n",
++				address, ioapic);
++			return -EEXIST;
 +		}
+ 
+-	idx = nr_ioapics;
++	idx = find_free_ioapic_entry();
++	if (idx >= MAX_IO_APICS) {
++		pr_warn("Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
++			MAX_IO_APICS, idx);
++		return -ENOSPC;
 +	}
-+	res->flags = 0;
-+
-+	return AE_OK;
-+}
-+
-+static bool acpi_is_ioapic(acpi_handle handle, char **type)
-+{
-+	acpi_status status;
-+	struct acpi_device_info *info;
-+	char *hid = NULL;
-+	bool match = false;
-+
-+	if (!acpi_has_method(handle, "_GSB"))
-+		return false;
-+
-+	status = acpi_get_object_info(handle, &info);
-+	if (ACPI_SUCCESS(status)) {
-+		if (info->valid & ACPI_VALID_HID)
-+			hid = info->hardware_id.string;
-+		if (hid) {
-+			if (strcmp(hid, "ACPI0009") == 0) {
-+				*type = "IOxAPIC";
-+				match = true;
-+			} else if (strcmp(hid, "ACPI000A") == 0) {
-+				*type = "IOAPIC";
-+				match = true;
-+			}
-+		}
-+		kfree(info);
-+	}
-+
-+	return match;
-+}
-+
-+static acpi_status handle_ioapic_add(acpi_handle handle, u32 lvl,
-+				     void *context, void **rv)
-+{
-+	acpi_status status;
-+	unsigned long long gsi_base;
-+	struct acpi_pci_ioapic *ioapic;
-+	struct pci_dev *dev = NULL;
-+	struct resource *res = NULL;
-+	char *type = NULL;
-+
-+	if (!acpi_is_ioapic(handle, &type))
-+		return AE_OK;
-+
-+	mutex_lock(&ioapic_list_lock);
-+	list_for_each_entry(ioapic, &ioapic_list, list)
-+		if (ioapic->handle == handle) {
-+			mutex_unlock(&ioapic_list_lock);
-+			return AE_OK;
-+		}
-+
-+	status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsi_base);
-+	if (ACPI_FAILURE(status)) {
-+		acpi_handle_warn(handle, "failed to evaluate _GSB method\n");
-+		goto exit;
-+	}
-+
-+	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
-+	if (!ioapic) {
-+		pr_err("cannot allocate memory for new IOAPIC\n");
-+		goto exit;
-+	} else {
-+		ioapic->root_handle = (acpi_handle)context;
-+		ioapic->handle = handle;
-+		ioapic->gsi_base = (u32)gsi_base;
-+		ioapic->res.flags = IORESOURCE_UNSET;
-+	}
-+
-+	if (acpi_ioapic_registered(handle, (u32)gsi_base))
-+		goto done;
-+
-+	dev = acpi_get_pci_dev(handle);
-+	if (dev && pci_resource_len(dev, 0)) {
-+		if (pci_enable_device(dev) < 0)
-+			goto exit_put;
-+		pci_set_master(dev);
-+		if (pci_request_region(dev, 0, type))
-+			goto exit_disable;
-+		res = &dev->resource[0];
-+		ioapic->pdev = dev;
-+	} else {
-+		pci_dev_put(dev);
-+		dev = NULL;
-+
-+		res = &ioapic->res;
-+		acpi_walk_resources(handle, METHOD_NAME__CRS, setup_res, res);
-+		if (res->flags == IORESOURCE_UNSET) {
-+			acpi_handle_warn(handle, "failed to get resource\n");
-+			goto exit_free;
-+		} else if (request_resource(&iomem_resource, res)) {
-+			acpi_handle_warn(handle, "failed to insert resource\n");
-+			goto exit_free;
-+		}
-+	}
-+
-+	if (acpi_register_ioapic(handle, res->start, (u32)gsi_base)) {
-+		acpi_handle_warn(handle, "failed to register IOAPIC\n");
-+		goto exit_release;
-+	}
-+done:
-+	list_add(&ioapic->list, &ioapic_list);
-+	mutex_unlock(&ioapic_list_lock);
-+
-+	if (dev)
-+		dev_info(&dev->dev, "%s at %pR, GSI %u\n",
-+			 type, res, (u32)gsi_base);
-+	else
-+		acpi_handle_info(handle, "%s at %pR, GSI %u\n",
-+				 type, res, (u32)gsi_base);
-+
-+	return AE_OK;
-+
-+exit_release:
-+	if (dev)
-+		pci_release_region(dev, 0);
-+	else
-+		release_resource(res);
-+exit_disable:
-+	if (dev)
-+		pci_disable_device(dev);
-+exit_put:
-+	if (dev)
-+		pci_dev_put(dev);
-+exit_free:
-+	kfree(ioapic);
-+exit:
-+	mutex_unlock(&ioapic_list_lock);
-+	*(acpi_status *)rv = AE_ERROR;
-+	return AE_OK;
-+}
-+
-+int acpi_ioapic_add(struct acpi_pci_root *root)
-+{
-+	acpi_status status, retval = AE_OK;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, root->device->handle,
-+				     UINT_MAX, handle_ioapic_add, NULL,
-+				     root->device->handle, (void **)&retval);
-+
-+	return ACPI_SUCCESS(status) && ACPI_SUCCESS(retval) ? 0 : -ENODEV;
-+}
-+
-+int acpi_ioapic_remove(struct acpi_pci_root *root)
-+{
-+	int retval = 0;
-+	struct acpi_pci_ioapic *ioapic, *tmp;
-+
-+	mutex_lock(&ioapic_list_lock);
-+	list_for_each_entry_safe(ioapic, tmp, &ioapic_list, list) {
-+		if (root->device->handle != ioapic->root_handle)
-+			continue;
-+
-+		if (acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base))
-+			retval = -EBUSY;
-+
-+		if (ioapic->pdev) {
-+			pci_release_region(ioapic->pdev, 0);
-+			pci_disable_device(ioapic->pdev);
-+			pci_dev_put(ioapic->pdev);
-+		} else if (ioapic->res.flags != IORESOURCE_UNSET) {
-+			release_resource(&ioapic->res);
-+		}
-+		list_del(&ioapic->list);
-+		kfree(ioapic);
-+	}
-+	mutex_unlock(&ioapic_list_lock);
-+
-+	return retval;
-+}
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index cd4de7e..f3f7768 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -614,6 +614,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
- 	if (system_state != SYSTEM_BOOTING) {
- 		pcibios_resource_survey_bus(root->bus);
- 		pci_assign_unassigned_root_bus_resources(root->bus);
-+		acpi_ioapic_add(root);
+ 
+ 	ioapics[idx].mp_config.type = MP_IOAPIC;
+ 	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
+ 	ioapics[idx].mp_config.apicaddr = address;
+-	ioapics[idx].irqdomain = NULL;
+-	ioapics[idx].irqdomain_cfg = *cfg;
+ 
+ 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
+-
+ 	if (bad_ioapic_register(idx)) {
+ 		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
+-		return;
++		return -ENODEV;
  	}
  
- 	pci_lock_rescan_remove();
-@@ -634,6 +635,8 @@ static void acpi_pci_root_remove(struct acpi_device *device)
+ 	ioapics[idx].mp_config.apicid = io_apic_unique_id(idx, id);
+@@ -3906,24 +3914,41 @@ void mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
+ 	 */
+ 	entries = io_apic_get_redir_entries(idx);
++	gsi_end = gsi_base + entries - 1;
++	for_each_ioapic(ioapic) {
++		gsi_cfg = mp_ioapic_gsi_routing(ioapic);
++		if ((gsi_base >= gsi_cfg->gsi_base &&
++		     gsi_base <= gsi_cfg->gsi_end) ||
++		    (gsi_end >= gsi_cfg->gsi_base &&
++		     gsi_end <= gsi_cfg->gsi_end)) {
++			pr_warn("GSI range [%u-%u] for new IOAPIC conflicts with GSI[%u-%u]\n",
++				gsi_base, gsi_end,
++				gsi_cfg->gsi_base, gsi_cfg->gsi_end);
++			clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
++			return -ENOSPC;
++		}
++	}
+ 	gsi_cfg = mp_ioapic_gsi_routing(idx);
+ 	gsi_cfg->gsi_base = gsi_base;
+-	gsi_cfg->gsi_end = gsi_base + entries - 1;
++	gsi_cfg->gsi_end = gsi_end;
  
- 	pci_stop_root_bus(root->bus);
+-	/*
+-	 * The number of IO-APIC IRQ registers (== #pins):
+-	 */
+-	ioapics[idx].nr_registers = entries;
++	ioapics[idx].irqdomain = NULL;
++	ioapics[idx].irqdomain_cfg = *cfg;
  
-+	WARN_ON(acpi_ioapic_remove(root));
+ 	if (gsi_cfg->gsi_end >= gsi_top)
+ 		gsi_top = gsi_cfg->gsi_end + 1;
++	if (nr_ioapics <= idx)
++		nr_ioapics = idx + 1;
 +
- 	device_set_run_wake(root->bus->bridge, false);
- 	pci_acpi_remove_bus_pm_notifier(device);
++	/* Set nr_registers to mark entry present */
++	ioapics[idx].nr_registers = entries;
  
+ 	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
+ 		idx, mpc_ioapic_id(idx),
+ 		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
+ 		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
+ 
+-	nr_ioapics++;
++	return 0;
+ }
+ 
+ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
