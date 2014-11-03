@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaKCRQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:16:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57101 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819AbaKCRQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:16:15 -0500
-Message-ID: <5457B85C.4020105@suse.de>
-Date: Mon, 03 Nov 2014 18:16:12 +0100
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753179AbaKCRRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:17:05 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35659 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaKCRRC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 12:17:02 -0500
+Date: Mon, 3 Nov 2014 20:16:25 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Ursula Braun <ursula.braun@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: s390/net: Deletion of unnecessary checks before two function
+ calls
+Message-ID: <20141103171625.GU6890@mwanda>
+References: <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <5453C98C.90105@users.sourceforge.net>
+ <20141103095059.GL6879@mwanda>
+ <5457A560.2020304@users.sourceforge.net>
+ <20141103162528.GT6890@mwanda>
+ <5457B268.3020202@users.sourceforge.net>
 MIME-Version: 1.0
-To: Kamil Debski <k.debski@samsung.com>
-CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kgene.kim@samsung.com
-Subject: Re: [PATCH] ARM: dts: Add pwm-fan node to the Odroid-U3 board
-References: <1415025804-24274-1-git-send-email-k.debski@samsung.com>
-In-Reply-To: <1415025804-24274-1-git-send-email-k.debski@samsung.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5457B268.3020202@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Am 03.11.2014 um 15:43 schrieb Kamil Debski:
-> Add pwm-fan node to the Odroid-U3 board file to enable PWM control of the
-> cooling fan.
+On Mon, Nov 03, 2014 at 05:50:48PM +0100, SF Markus Elfring wrote:
+> > After your patch then it will print warning messages.
 > 
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> ---
->  arch/arm/boot/dts/exynos4412-odroidu3.dts |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
+> To which messages do you refer to?
 > 
-> diff --git a/arch/arm/boot/dts/exynos4412-odroidu3.dts b/arch/arm/boot/dts/exynos4412-odroidu3.dts
-> index c8a64be..764bda4 100644
-> --- a/arch/arm/boot/dts/exynos4412-odroidu3.dts
-> +++ b/arch/arm/boot/dts/exynos4412-odroidu3.dts
-> @@ -31,6 +31,19 @@
->  			linux,default-trigger = "heartbeat";
->  		};
->  	};
-> +
-> +	pwm: pwm@139D0000 {
-> +		pinctrl-0 = <&pwm0_out>;
-> +		pinctrl-names = "default";
-> +		samsung,pwm-outputs = <0>;
-> +		status = "okay";
-> +	};
 
-Please add the pwm label in the .dtsi if necessary and then just do &pwm
-{...}; before &usb3503 below.
+Open your eyeballs up and read the code.
 
-> +
-> +	pwm-fan {
-> +		compatible = "pwm-fan";
-> +		status = "okay";
-> +		pwms = <&pwm 0 10000 0>;
-> +	};
->  };
->  
->  &usb3503 {
+> 
+> > The truth is I think that all these patches are bad and they make the
+> > code harder to read.
+> > 
+> > Before:  The code is clear and there is no NULL dereference.
+> 
+> Where do you stumble on a null pointer access?
+> 
 
-Regards,
-Andreas
+I'm not talking about bugs, I'm talking about code clarity.  Before is
+more clear than after.
 
--- 
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
+> 
+> >  After:  You have to remember that rtw_free_netdev() accepts NULL
+> > 	 pointers but free_netdev() does not accept NULL pointers.
+> 
+> Are any improvements needed for the corresponding documentation to make it
+> better accessible besides the source code?
+> 
+
+Documentation doesn't reduce the number of things to remember it just
+documents it.  Meanwhile if we leave the code as-is there is no need for
+documentation because the code is clear.
+
+> 
+> > The if statements are there for *human* readers to understand and you are
+> > making it harder for humans to understand the code.
+> 
+> Is there a target conflict between source code understandability
+> and software efficiency?
+
+If you can benchmark the code and the new code is faster then, yes, this
+patch is good and we will apply it.  If you have no benchmarks then do
+not send the patch.
+
+> 
+> > Even for kfree(), just removing the if statement is not really the right
+> > fix.  We do it because everyone knows kfree(), but what Julia Lawall
+> > said is the real correct way change the code and make it simpler for
+> > people to understand:
+> > 
+> > https://lkml.org/lkml/2014/10/31/452
+> 
+> You refer to another update suggestion for the software area
+> "staging: rtl8188eu".
+> Do you find adjustments for jump labels easier to accept than the simple
+> deletion of specific null pointer checks?
+
+Yes.
+
+> 
+> 
+> > I know it's fun to send automated patches but these make the code worse
+> > and they waste reviewer time.
+> 
+> I hope that small automated changes can also help to improve affected
+> source files.
+
+No.  The changes make the code less clear.
+
+regards,
+dan carpenter
+
