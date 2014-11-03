@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaKCPzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:55:22 -0500
-Received: from mout.web.de ([212.227.17.12]:53663 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619AbaKCPzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:55:20 -0500
-Message-ID: <5457A560.2020304@users.sourceforge.net>
-Date: Mon, 03 Nov 2014 16:55:12 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752424AbaKCP4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:56:21 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35616 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaKCP4S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:56:18 -0500
+Date: Mon, 3 Nov 2014 15:54:43 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20141103155443.GS3815@sirena.org.uk>
+References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Ursula Braun <ursula.braun@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: s390/net: Deletion of unnecessary checks before two function
- calls
-References: <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <5453C98C.90105@users.sourceforge.net> <20141103095059.GL6879@mwanda>
-In-Reply-To: <20141103095059.GL6879@mwanda>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ST1AWXf2yQGN7qomDDFQq+go1t9CGWdR7e1F5S+9PzwpFhtHcxJ
- S3uH5ZnfH86T2SrwdZ1REB3wXzY/+LbdK7SrVK8hOC/kUN+O7mxMi96JnfEkriqh2zuDKHd
- h+E7maYrOgN81DDUaCQ45McsYU+OmOkPhgpvQVBs9i+Z3+QNZBwzP7Ac/r2WqdAWJrPDNUs
- 8lgAzBN59haEQ4XVr88qg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wnBGVoaGQwxWUIo6"
+Content-Disposition: inline
+In-Reply-To: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 00/14] Add max77802 regulator operating mode support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This one is buggy.
 
-I am still interested to clarify this opinion a bit more.
+--wnBGVoaGQwxWUIo6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Nov 03, 2014 at 03:40:35PM +0100, Javier Martinez Canillas wrote:
+> Hello Mark,
+>=20
+> This is the fourth version of the series that adds operating modes
+> support for the regulators in the max77802 PMIC. This version uses
 
-> I'm sorry, but please stop sending these.
+No, it's not.  This is a a patch series doing a whole bunch of different
+things, there's at least bug fixes to existing drivers, new features and
+also this new driver in what I've glanced at so far.  These things
+shouldn't just be being thrown together into a single patch series, and
+the patch series shouldn't then be described as just being what is in
+the end a minor part of the collection.
 
-I am going to improve more implementation details in affected source files.
+Doing this makes things more manageable from the review side, avoids
+pointless dependencies and avoids setting off alarm bells.  My first
+thought when seeing this was "how can a regulator driver be so complex
+as to need 14 patches, there must be something seriously wrong here".
 
+The whole thing about making sure that what you're doing makes sense
+beyond just giving the correct test results also applies to sending the
+patches - think if what's being said to the people reviewing the patches
+is sensible.
 
-> But for this one:
-> 1) I don't know what the functions do so I have to look at the code.
+--wnBGVoaGQwxWUIo6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I hope that static source code analysis can help here.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUV6VCAAoJECTWi3JdVIfQQY8H/1RJ4m2DkloO8XnjbgdOTKam
+ZY+ZuD/3YaCRSFi0/CYXYw4rxg3EbhgORYIMCT2DWo/KyQx3xsbTr+WQ+8Pv6RU8
+4Zyxjf5amaX/WoNZL/gxaCOg04mzhPe/gh/bQb+rFWNoI0rw8g9Ss6sgn5PbZ1kj
+TkJglkG/fI0QXxcoslSK6Noc8f8Zz8onGZHXlrg98rsgmyeoJvxq0ozDoSQ65oLh
+N9stMbtCgCNK8Bf7LaA1GWf40G2Gq1hKe1X24Q620eUharkoBPYdqgI424KhVLtw
+fKzAaavIQ7O5WXSpSmO/d0dk91sJGNlMpZkLlCOzQyCslXpdl9U/dKgjrlq8D1k=
+=eFRu
+-----END PGP SIGNATURE-----
 
-> 2) It's in a arch that I don't compile so cscope isn't set up meaning
->    it's hard to find the functions.
-
-Do you find the Coccinelle software also useful for your area?
-
-
-> You're sending a lot of patches and they are all hard to review and some
-> of them are buggy and none of them really add any value.
-
-Thanks for your feedback.
-
-
-The suggested source code clean-up might result in a measurable effect
-depending on the call frequency for the changed functions.
-Can I help you in any ways to make corresponding review easier?
-
-
-> It's a waste of your time and it's a waste of my time.
-
-It can be your choice to reject my update suggestion.
-
-Regards,
-Markus
+--wnBGVoaGQwxWUIo6--
