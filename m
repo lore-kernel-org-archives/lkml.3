@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaKCJYL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:24:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:13617 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925AbaKCJYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:24:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,305,1413270000"; 
-   d="scan'208";a="600976124"
-Date: Mon, 3 Nov 2014 11:24:02 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141103092402.GA1304@lahna.fi.intel.com>
-References: <20141013191405.GB29810@saruman>
- <20141013192404.GB4034@psi-dev26.jf.intel.com>
- <20141013192632.GC29810@saruman>
- <20141013193618.GD29810@saruman>
- <CACRpkdYDiFvwsPwqACXS2bZU9peUyJEn-fpzVqZKYXseuEFGGA@mail.gmail.com>
- <20141028144249.GD8123@saruman>
- <CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
- <20141031132005.GB1273@saruman>
- <20141031162339.GA7136@psi-dev26.jf.intel.com>
- <20141031184509.GA2224@psi-dev26.jf.intel.com>
+	id S1751299AbaKCJ1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:27:11 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:34663 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaKCJ1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 04:27:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141031184509.GA2224@psi-dev26.jf.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <58957675.Bh6LToE4gg@dtor-glaptop>
+References: <1413636974-3244-1-git-send-email-linus.walleij@linaro.org>
+	<20141020064605.GB25349@x1>
+	<CACRpkdbsswGBy69+EGJTbTpxD7j2FnruyGdyUZRBVtt-JaScfg@mail.gmail.com>
+	<58957675.Bh6LToE4gg@dtor-glaptop>
+Date: Mon, 3 Nov 2014 10:27:08 +0100
+Message-ID: <CACRpkdYNBZdB14fjj0LnQ8GchaGLTgfpvxhe4J9nc3XF80dFgQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: stmpe: add pull up/down register offsets for STMPE
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 11:45:09AM -0700, David Cohen wrote:
-> > I think adding the module exit + allowing this driver to be a module
-> > would be a good approach. Then we don't need to force generic x86 kernel
-> > binaries to always have this driver. Unless Mathias or Mika knows a
-> > constraint to force this driver to be builtin only.
-> 
-> It helps if I CC them when asking for feedback :)
-> 
-> Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
-> to be bool?
+On Wed, Oct 29, 2014 at 8:31 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Wednesday, October 29, 2014 10:55:14 AM Linus Walleij wrote:
+>> On Mon, Oct 20, 2014 at 8:46 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > On Sat, 18 Oct 2014, Linus Walleij wrote:
+>> >> This adds the register offsets for pull up/down for the STMPE
+>> >> 1601, 1801 and 24xx expanders. This is used to bias GPIO lines
+>> >> and keypad lines.
+>> >>
+>> >> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>> >> ---
+>> >> Hi Sam, Lee: I think you should just ACK this so Dmitry can take the
+>> >> patch series through the input tree, where the registers need to be
+>> >> used to enable the keypad on the STMPE2401.
+>> >> ---
+>> >>
+>> >>  drivers/mfd/stmpe.c       | 4 ++++
+>> >>  drivers/mfd/stmpe.h       | 3 +++
+>> >>  include/linux/mfd/stmpe.h | 2 ++
+>> >>  3 files changed, 9 insertions(+)
+>> >
+>> > Does this need to go in with the other patches in the set?
+>> >
+>> > I'm _guessing_ that, as you've sent them separately, they can be
+>> > applied separately?
+>>
+>> No sorry if it was unclear, the series need to go in toghether.
+>> So this patch adds some infrastructure to the MFD device which
+>> is then utilized by the input driver in a later patch.
+>>
+>> > This needs to go in via MFD, but for my own reference:
+>> >
+>> > Acked-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> Dmitry can you merge this & the rest with Lee's ACK?
+>
+> I'd be delighted, but it _sounded_ like Lee wanted it to go though MFD?
 
-The only constraint that has been keeping this driver as bool is that
-some machines like, Asus T100, uses ACPI GPIO operation regions for
-toggling GPIOs to get things like sensor hub powered on. The GPIO
-operation region code does not yet handle -EPROBE_DEFER so only way to
-ensure that the operation region is there is to have the driver compiled
-in to the kernel.
+Lee, can Dmitry take these through input?
+
+Yours,
+Linus Walleij
