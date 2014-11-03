@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaKCRCV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:02:21 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:50846 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752272AbaKCRCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:02:19 -0500
-X-IronPort-AV: E=Sophos;i="5.07,308,1413237600"; 
-   d="scan'208";a="104479706"
-Date: Mon, 3 Nov 2014 18:02:14 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: s390/net: Deletion of unnecessary checks before two function
- calls
-In-Reply-To: <5457B268.3020202@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1411031753200.2386@hadrien>
-References: <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <5453C98C.90105@users.sourceforge.net> <20141103095059.GL6879@mwanda> <5457A560.2020304@users.sourceforge.net> <20141103162528.GT6890@mwanda>
- <5457B268.3020202@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753426AbaKCRCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:02:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56766 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753393AbaKCRCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 12:02:32 -0500
+Date: Mon, 3 Nov 2014 18:02:28 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
+        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
+Message-ID: <20141103170228.GH10156@dhcp22.suse.cz>
+References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
+ <20141103080208.GA7052@js1304-P5Q-DELUXE>
+ <20141103150942.GA32052@phnom.home.cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103150942.GA32052@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > After your patch then it will print warning messages.
-> >  After:  You have to remember that rtw_free_netdev() accepts NULL
-> > 	 pointers but free_netdev() does not accept NULL pointers.
->
-> Are any improvements needed for the corresponding documentation to make it
-> better accessible besides the source code?
+On Mon 03-11-14 10:09:42, Johannes Weiner wrote:
+> Hi Joonsoo,
+> 
+> On Mon, Nov 03, 2014 at 05:02:08PM +0900, Joonsoo Kim wrote:
+> > On Sat, Nov 01, 2014 at 11:15:54PM -0400, Johannes Weiner wrote:
+> > > Memory cgroups used to have 5 per-page pointers.  To allow users to
+> > > disable that amount of overhead during runtime, those pointers were
+> > > allocated in a separate array, with a translation layer between them
+> > > and struct page.
+> > 
+> > Hello, Johannes.
+> > 
+> > I'd like to leave this translation layer.
+> > Could you just disable that code with #ifdef until next user comes?
+> > 
+> > In our company, we uses PAGE_OWNER on mm tree which is the feature
+> > saying who allocates the page. To use PAGE_OWNER needs modifying
+> > struct page and then needs re-compile. This re-compile makes us difficult
+> > to use this feature. So, we decide to implement run-time configurable
+> > PAGE_OWNER through page_cgroup's translation layer code. Moreover, with
+> > this infrastructure, I plan to implement some other debugging feature.
+> > 
+> > Because of my laziness, it didn't submitted to LKML. But, I will
+> > submit it as soon as possible. If the code is removed, I would
+> > copy-and-paste the code, but, it would cause lose of the history on
+> > that code. So if possible, I'd like to leave that code now.
+> 
+> Please re-introduce this code when your new usecase is ready to be
+> upstreamed.  There is little reason to burden an unrelated feature
+> with a sizable chunk of dead code for a vague future user.
 
-When people are writing or reading code, they will not necessarily look at
-the documentation for every function that they use.
-
-> > The if statements are there for *human* readers to understand and you are
-> > making it harder for humans to understand the code.
->
-> Is there a target conflict between source code understandability
-> and software efficiency?
-
-Efficiency is not an issue.  This code is all in rare error handling paths
-or in service removal functions.  None of it is in a critical path.  What
-is important is to be able to easily check that what needs to be done is
-actually done.  Removing null tests makes it more obscure what needs to be
-done, because it means that the conditions under which a function needs to
-be called (which may be different than the conditions under which it can
-be called) are less apparent.
-
-julia
+Completely agreed! I would hate to have some random feature piggy back
+on memcg internal structures. For that to be acceptable the page_cgroup
+would have to be abstracted into a more generic structure which wouldn't
+be under CONFIG_MEMCG anyway.
+-- 
+Michal Hocko
+SUSE Labs
