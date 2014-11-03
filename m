@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaKCSPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:15:50 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:16630 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbaKCSPr (ORCPT
+	id S1754249AbaKCSP7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:15:59 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:43426 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542AbaKCSPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:15:47 -0500
-Message-ID: <1415037686.10749.1.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
-From: Toshi Kani <toshi.kani@hp.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Yigal Korman <yigal@plexistor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Mon, 03 Nov 2014 11:01:26 -0700
-In-Reply-To: <CALCETrWwEsaz8j2ajqqxS4mupO48tv0e_wbrODsmJfZeON2ptA@mail.gmail.com>
-References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
-	 <1414450545-14028-2-git-send-email-toshi.kani@hp.com>
-	 <alpine.DEB.2.11.1411031812390.5308@nanos>
-	 <1415036879.29109.26.camel@misato.fc.hp.com>
-	 <CALCETrWwEsaz8j2ajqqxS4mupO48tv0e_wbrODsmJfZeON2ptA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Nov 2014 13:15:55 -0500
+Message-ID: <5457C657.9020305@gmail.com>
+Date: Mon, 03 Nov 2014 19:15:51 +0100
+From: =?UTF-8?B?QW5kcsOpIEJhdWVy?= <monotek23@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
+        =?UTF-8?B?546L6YeR5rWm?= <jinpuwang@gmail.com>
+Subject: Re: [PATCH] EnhanceIO ssd caching software
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD> <545754C6.5000304@gmail.com> <5457C4D0.3090306@kernel.dk>
+In-Reply-To: <5457C4D0.3090306@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 10:08 -0800, Andy Lutomirski wrote:
-> On Mon, Nov 3, 2014 at 9:47 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > On Mon, 2014-11-03 at 18:14 +0100, Thomas Gleixner wrote:
-> >> On Mon, 27 Oct 2014, Toshi Kani wrote:
-> >> > +   } else {
-> >> > +           /*
-> >> > +            * PAT full support. WT is set to slot 7, which minimizes
-> >> > +            * the risk of using the PAT bit as slot 3 is UC and is
-> >> > +            * currently unused. Slot 4 should remain as reserved.
-> >>
-> >> This comment makes no sense. What minimizes which risk and what has
-> >> this to do with slot 3 and slot 4?
-> >
-> > This is for precaution.  Since the patch enables the PAT bit the first
-> > time, it was suggested that we keep slot 4 reserved and set it to WB.
-> > The PAT bit still has no effect to slot 0/1/2 (WB/WC/UC-) after this
-> > patch.  Slot 7 is the safest slot since slot 3 (UC) is unused today.
-> >
-> > https://lkml.org/lkml/2014/9/4/691
-> > https://lkml.org/lkml/2014/9/5/394
-> >
-> 
-> I would clarify the comment, since this really has nothing to do with
-> slot 3 being unused.  
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Right.
+Am 03.11.2014 um 19:09 schrieb Jens Axboe:
+> Is stec still maintaining it? I've heard nothing about it since,
+> and even their pci flash driver seems to be unmaintained.
 
-> How about:
-> 
-> We put WT in slot 7 to improve robustness in the presence of errata
-> that might cause the high PAT bit to be ignored.  This way a buggy
-> slot 7 access will hit slot 3, and slot 3 is UC, so at worst we lose
-> performance without causing a correctness issue.  Pentium 4 erratum
-> N46 is an example of such an erratum, although we try not to use PAT
-> at all on affected CPUs.
+I don´t think so, because stec inc. was aquired by WD. Info:
+http://www.wdc.com/en/company/pressroom/releases/?release=e7e8a0f2-b89f-4b85-8b1b-387f9a4b0818
 
-That looks much better. :-)  I will update the comment.
 
-Thanks!
--Toshi
+- --
+Regards
 
+André Bauer
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUV8ZXAAoJEAdIc/zkolSr0F0IAKVSxZOcKAoZ413FMsMmjmTJ
+Ko2vIJQ7tvEH8ZeqCb2tPiUg3yzQThPpXa6Ocv0WVZNiQe1OWbNF6AnDBBcwiu0O
+Ng4r8kNC7MJf4emu15uFDYBBynluIu1q01ZLSSRzyT70OZC6zvoIVgwe6v/Kgdat
+nTEEdZ797yNNO4/Uc1b1puZu8LUlc55jOPqaiUb9wFgiT1rHuSaGjJGzTMaFeJVk
+mr2cqFw7S8uGImlH7AwSa8cyvecmwlqO9pNbDhkzkxRc1O7u4CI7wcoXsP5/O2Kr
+54hnla9Q2L8FocaLrLO5KEeU2mH/Mlsjx6aiTFvhANpWk1umIZG7S6Hr8G4qI1o=
+=p1LA
+-----END PGP SIGNATURE-----
