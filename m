@@ -1,580 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaKCVQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:16:53 -0500
-Received: from mail-bl2on0109.outbound.protection.outlook.com ([65.55.169.109]:31232
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752538AbaKCVQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:16:48 -0500
-X-WSS-ID: 0NEHF3S-07-TZV-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <marc.zyngier@arm.com>, <mark.rutland@arm.com>, <jason@lakedaemon.net>,
-        <tglx@linutronix.de>
-CC: <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>, <liviu.dudau@arm.com>,
-        <Harish.Kasiviswanathan@amd.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        "Suravee Suthikulpanit" <Suravee.Suthikulpanit@amd.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Subject: [V10 PATCH 2/2] irqchip: gicv2m: Add supports for ARM GICv2m MSI(-X)
-Date: Mon, 3 Nov 2014 16:16:17 -0600
-Message-ID: <1415052977-26036-3-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415052977-26036-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1415052977-26036-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1754021AbaKCVRt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:17:49 -0500
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:37011 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaKCVRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 16:17:48 -0500
+Message-ID: <5457F0F3.5080008@hp.com>
+Date: Mon, 03 Nov 2014 16:17:39 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(102836001)(44976005)(33646002)(93916002)(19580405001)(19580395003)(92566001)(2201001)(229853001)(84676001)(68736004)(77156002)(36756003)(77096003)(575784001)(89996001)(97736003)(87286001)(87936001)(104166001)(88136002)(21056001)(76176999)(50986999)(46102003)(106466001)(64706001)(50466002)(31966008)(107046002)(86362001)(120916001)(99396003)(53416004)(105586002)(92726001)(50226001)(4396001)(86152002)(47776003)(101416001)(48376002)(20776003)(62966003)(95666004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB200;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0384275935
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [PATCH v13 09/11] pvqspinlock, x86: Add para-virtualization support
+References: <1414613951-32532-1-git-send-email-Waiman.Long@hp.com> <1414613951-32532-10-git-send-email-Waiman.Long@hp.com> <20141103103505.GZ23531@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141103103505.GZ23531@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+On 11/03/2014 05:35 AM, Peter Zijlstra wrote:
+> On Wed, Oct 29, 2014 at 04:19:09PM -0400, Waiman Long wrote:
+>>   arch/x86/include/asm/pvqspinlock.h    |  411 +++++++++++++++++++++++++++++++++
+> I do wonder why all this needs to live in x86..
+>
 
-ARM GICv2m specification extends GICv2 to support MSI(-X) with
-a new set of register frame. This patch introduces support for
-the non-secure GICv2m register frame. Currently, GICV2m is available
-in certain version of GIC-400.
+I haven't looked into the para-virtualization code in other 
+architectures to see if my PV code is equally applicable there. That is 
+why I put it under the x86 directory. If other architectures decide to 
+use qspinlock with paravirtualization, we may need to pull out some 
+common code, if any, back to kernel/locking.
 
-The patch introduces a new property in ARM gic binding, the v2m subnode.
-It is optional.
+>>
+>> +#ifdef CONFIG_QUEUE_SPINLOCK
+>> +
+>> +static __always_inline void pv_kick_cpu(int cpu)
+>> +{
+>> +	PVOP_VCALLEE1(pv_lock_ops.kick_cpu, cpu);
+>> +}
+>> +
+>> +static __always_inline void pv_lockwait(u8 *lockbyte)
+>> +{
+>> +	PVOP_VCALLEE1(pv_lock_ops.lockwait, lockbyte);
+>> +}
+>> +
+>> +static __always_inline void pv_lockstat(enum pv_lock_stats type)
+>> +{
+>> +	PVOP_VCALLEE1(pv_lock_ops.lockstat, type);
+>> +}
+> Why are any of these PV ops? they're only called from other pv_*()
+> functions. What's the point of pv ops you only call from pv code?
 
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mark Rutland <Mark.Rutland@arm.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Will Deacon <Will.Deacon@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
----
- Documentation/devicetree/bindings/arm/gic.txt |  53 ++++
- arch/arm64/Kconfig                            |   1 +
- drivers/irqchip/Kconfig                       |   5 +
- drivers/irqchip/Makefile                      |   1 +
- drivers/irqchip/irq-gic-v2m.c                 | 340 ++++++++++++++++++++++++++
- drivers/irqchip/irq-gic-v2m.h                 |   6 +
- drivers/irqchip/irq-gic.c                     |  23 +-
- 7 files changed, 425 insertions(+), 4 deletions(-)
+It is the same reason that you made them PV ops in your patch. Even when 
+PV is on, the code won't need to call any of the PV ops most of the 
+time. So it is just a matter of optimizing the most common case at the 
+expense of performance in the rare case that the CPU need to be halt and 
+woken up which will be bad performance-wise anyway However, if you think 
+they should be regular function pointers, I am fine with that too.
 
-diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-index c7d2fa1..ebf976a 100644
---- a/Documentation/devicetree/bindings/arm/gic.txt
-+++ b/Documentation/devicetree/bindings/arm/gic.txt
-@@ -96,3 +96,56 @@ Example:
- 		      <0x2c006000 0x2000>;
- 		interrupts = <1 9 0xf04>;
- 	};
-+
-+
-+* GICv2m extension for MSI/MSI-x support (Optional)
-+
-+Certain revisions of GIC-400 supports MSI/MSI-x via V2M register frame(s).
-+This is enabled by specifying v2m sub-node(s).
-+
-+Required properties:
-+
-+- compatible        : The value here should contain "arm,gic-v2m-frame".
-+
-+- msi-controller    : Identifies the node as an MSI controller.
-+
-+- reg               : GICv2m MSI interface register base and size
-+
-+Optional properties:
-+
-+- arm,msi-base-spi  : When the MSI_TYPER register contains an incorrect
-+                      value, this property should contain the SPI base of
-+                      the MSI frame, overriding the HW value.
-+
-+- arm,msi-num-spis  : When the MSI_TYPER register contains an incorrect
-+                      value, this property should contain the number of
-+                      SPIs assigned to the frame, overriding the HW value.
-+
-+Example:
-+
-+	interrupt-controller@e1101000 {
-+		compatible = "arm,gic-400";
-+		#interrupt-cells = <3>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		interrupt-controller;
-+		interrupts = <1 8 0xf04>;
-+		ranges = <0 0 0 0xe1100000 0 0x100000>;
-+		reg = <0x0 0xe1110000 0 0x01000>,
-+		      <0x0 0xe112f000 0 0x02000>,
-+		      <0x0 0xe1140000 0 0x10000>,
-+		      <0x0 0xe1160000 0 0x10000>;
-+		v2m0: v2m@0x8000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			reg = <0x0 0x80000 0 0x1000>;
-+		};
-+
-+		....
-+
-+		v2mN: v2m@0x9000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			reg = <0x0 0x90000 0 0x1000>;
-+		};
-+	};
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index cde2f72..cbcde2d 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -12,6 +12,7 @@ config ARM64
- 	select ARM_ARCH_TIMER
- 	select ARM_GIC
- 	select AUDIT_ARCH_COMPAT_GENERIC
-+	select ARM_GIC_V2M
- 	select ARM_GIC_V3
- 	select BUILDTIME_EXTABLE_SORT
- 	select CLONE_BACKWARDS
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index 2a48e0a..39ce065 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -8,6 +8,11 @@ config ARM_GIC
- 	select IRQ_DOMAIN_HIERARCHY
- 	select MULTI_IRQ_HANDLER
- 
-+config ARM_GIC_V2M
-+	bool
-+	depends on ARM_GIC
-+	depends on PCI && PCI_MSI
-+
- config GIC_NON_BANKED
- 	bool
- 
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 73052ba..3bda951 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
- obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi-nmi.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
- obj-$(CONFIG_ARM_GIC)			+= irq-gic.o irq-gic-common.o
-+obj-$(CONFIG_ARM_GIC_V2M)		+= irq-gic-v2m.o
- obj-$(CONFIG_ARM_GIC_V3)		+= irq-gic-v3.o irq-gic-common.o
- obj-$(CONFIG_ARM_NVIC)			+= irq-nvic.o
- obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
-diff --git a/drivers/irqchip/irq-gic-v2m.c b/drivers/irqchip/irq-gic-v2m.c
-new file mode 100644
-index 0000000..fd8d51a
---- /dev/null
-+++ b/drivers/irqchip/irq-gic-v2m.c
-@@ -0,0 +1,340 @@
-+/*
-+ * ARM GIC v2m MSI(-X) support
-+ * Support for Message Signaled Interrupts for systems that
-+ * implement ARM Generic Interrupt Controller: GICv2m.
-+ *
-+ * Copyright (C) 2014 Advanced Micro Devices, Inc.
-+ * Authors: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-+ *          Harish Kasiviswanathan <harish.kasiviswanathan@amd.com>
-+ *          Brandon Anderson <brandon.anderson@amd.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ */
-+
-+#define pr_fmt(fmt) "GICv2m: " fmt
-+
-+#include <linux/bitmap.h>
-+#include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/of_pci.h>
-+#include <linux/pci.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+#include <asm/hardirq.h>
-+#include <asm/irq.h>
-+
-+#include "irqchip.h"
-+#include "irq-gic-v2m.h"
-+
-+/*
-+* MSI_TYPER:
-+*     [31:26] Reserved
-+*     [25:16] lowest SPI assigned to MSI
-+*     [15:10] Reserved
-+*     [9:0]   Numer of SPIs assigned to MSI
-+*/
-+#define V2M_MSI_TYPER			0x008
-+#define V2M_MSI_TYPER_BASE_SHIFT	16
-+#define V2M_MSI_TYPER_BASE_MASK		0x3FF
-+#define V2M_MSI_TYPER_NUM_MASK		0x3FF
-+#define V2M_MSI_SETSPI_NS		0x040
-+#define V2M_MIN_SPI			32
-+#define V2M_MAX_SPI			1019
-+
-+#define V2M_MSI_TYPER_BASE_SPI(x)	\
-+		(((x) >> V2M_MSI_TYPER_BASE_SHIFT) & V2M_MSI_TYPER_BASE_MASK)
-+
-+#define V2M_MSI_TYPER_NUM_SPI(x)	((x) & V2M_MSI_TYPER_NUM_MASK)
-+
-+struct v2m_data {
-+	spinlock_t msi_cnt_lock;
-+	struct msi_chip msi_chip;
-+	struct resource res;      /* GICv2m resource */
-+	void __iomem *base;       /* GICv2m virt address */
-+	unsigned int spi_start;   /* The SPI number that MSIs start */
-+	unsigned int nr_spis;     /* The number of SPIs for MSIs */
-+	unsigned long *bm;        /* MSI vector bitmap */
-+	struct irq_domain *domain;
-+};
-+
-+static struct irq_chip v2m_chip;
-+
-+static void gicv2m_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
-+{
-+	int pos;
-+	struct v2m_data *v2m = container_of(chip, struct v2m_data, msi_chip);
-+
-+	spin_lock(&v2m->msi_cnt_lock);
-+
-+	pos = irq - v2m->spi_start;
-+	if (pos >= 0 && pos < v2m->nr_spis)
-+		bitmap_clear(v2m->bm, pos, 1);
-+
-+	spin_unlock(&v2m->msi_cnt_lock);
-+}
-+
-+static int gicv2m_setup_msi_irq(struct msi_chip *chip, struct pci_dev *pdev,
-+				struct msi_desc *desc)
-+{
-+	int hwirq, virq, offset;
-+	struct v2m_data *v2m = container_of(chip, struct v2m_data, msi_chip);
-+
-+	if (!desc)
-+		return -EINVAL;
-+
-+	spin_lock(&v2m->msi_cnt_lock);
-+	offset = bitmap_find_free_region(v2m->bm, v2m->nr_spis, 0);
-+	spin_unlock(&v2m->msi_cnt_lock);
-+	if (offset < 0)
-+		return offset;
-+
-+	hwirq = v2m->spi_start + offset;
-+	virq = __irq_domain_alloc_irqs(v2m->domain, hwirq,
-+				       1, NUMA_NO_NODE, v2m, true);
-+	if (virq < 0) {
-+		gicv2m_teardown_msi_irq(chip, hwirq);
-+		return virq;
-+	}
-+
-+	irq_domain_set_hwirq_and_chip(v2m->domain, virq, hwirq,
-+				&v2m_chip, v2m);
-+
-+	irq_set_msi_desc(hwirq, desc);
-+	irq_set_irq_type(hwirq, IRQ_TYPE_EDGE_RISING);
-+
-+	return 0;
-+}
-+
-+static int gicv2m_domain_activate(struct irq_domain *domain,
-+				      struct irq_data *data)
-+{
-+	struct msi_msg msg;
-+	struct v2m_data *v2m;
-+	phys_addr_t addr;
-+
-+	v2m = container_of(data->chip_data, struct v2m_data, msi_chip);
-+	addr = v2m->res.start + V2M_MSI_SETSPI_NS;
-+
-+	msg.address_hi = (u32)(addr >> 32);
-+	msg.address_lo = (u32)(addr);
-+	msg.data = data->irq;
-+	write_msi_msg(data->irq, &msg);
-+
-+	return 0;
-+}
-+
-+static int gicv2m_domain_deactivate(struct irq_domain *domain,
-+				    struct irq_data *data)
-+{
-+	struct msi_msg msg;
-+
-+	memset(&msg, 0, sizeof(msg));
-+	write_msi_msg(data->irq, &msg);
-+
-+	return 0;
-+}
-+
-+static int gicv2m_domain_alloc(struct irq_domain *d, unsigned int virq,
-+			       unsigned int nr_irqs, void *arg)
-+{
-+	int i, ret, irq;
-+
-+	for (i = 0; i < nr_irqs; i++) {
-+		irq = virq + i;
-+		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-+		irq_set_chip_and_handler_name(irq, &v2m_chip,
-+			handle_fasteoi_irq, v2m_chip.name);
-+	}
-+
-+	ret = irq_domain_alloc_irqs_parent(d, virq, nr_irqs, NULL);
-+	if (ret < 0)
-+		pr_err("Failed to allocate parent IRQ domain\n");
-+
-+	return ret;
-+}
-+
-+static void gicv2m_domain_free(struct irq_domain *d, unsigned int virq,
-+			       unsigned int nr_irqs)
-+{
-+	int i, irq;
-+
-+	for (i = 0; i < nr_irqs; i++) {
-+		irq = virq + i;
-+		irq_set_handler(irq, NULL);
-+		irq_domain_set_hwirq_and_chip(d, irq, 0, NULL, NULL);
-+	}
-+
-+	irq_domain_free_irqs_parent(d, virq, nr_irqs);
-+}
-+
-+static bool is_msi_spi_valid(u32 base, u32 num)
-+{
-+	if (base < V2M_MIN_SPI) {
-+		pr_err("Invalid MSI base SPI (base:%u)\n", base);
-+		return false;
-+	}
-+
-+	if ((num == 0) || (base + num > V2M_MAX_SPI)) {
-+		pr_err("Number of SPIs (%u) exceed maximum (%u)\n",
-+		       num, V2M_MAX_SPI - V2M_MIN_SPI + 1);
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+static void gicv2m_mask_irq(struct irq_data *d)
-+{
-+	irq_chip_mask_parent(d);
-+	if (d->msi_desc)
-+		mask_msi_irq(d);
-+}
-+
-+static void gicv2m_unmask_irq(struct irq_data *d)
-+{
-+	irq_chip_unmask_parent(d);
-+	if (d->msi_desc)
-+		unmask_msi_irq(d);
-+}
-+
-+static struct irq_chip v2m_chip = {
-+	.name             = "GICv2m",
-+	.irq_mask         = gicv2m_mask_irq,
-+	.irq_unmask       = gicv2m_unmask_irq,
-+	.irq_eoi          = irq_chip_eoi_parent,
-+	.irq_set_type     = irq_chip_set_type_parent,
-+
-+#ifdef CONFIG_SMP
-+	.irq_set_affinity = irq_chip_set_affinity_parent,
-+#endif
-+};
-+
-+static const struct irq_domain_ops gicv2m_domain_ops = {
-+	.alloc      = gicv2m_domain_alloc,
-+	.free       = gicv2m_domain_free,
-+	.activate   = gicv2m_domain_activate,
-+	.deactivate = gicv2m_domain_deactivate,
-+};
-+
-+static int __init gicv2m_init_one(struct device_node *node,
-+				  struct v2m_data **v,
-+				  struct irq_domain *parent)
-+{
-+	int ret;
-+	struct v2m_data *v2m;
-+
-+	*v = kzalloc(sizeof(struct v2m_data), GFP_KERNEL);
-+	if (!*v) {
-+		pr_err("Failed to allocate struct v2m_data.\n");
-+		return -ENOMEM;
-+	}
-+
-+	v2m = *v;
-+	v2m->msi_chip.owner = THIS_MODULE;
-+	v2m->msi_chip.of_node = node;
-+	v2m->msi_chip.setup_irq = gicv2m_setup_msi_irq;
-+	v2m->msi_chip.teardown_irq = gicv2m_teardown_msi_irq;
-+	ret = of_address_to_resource(node, 0, &v2m->res);
-+	if (ret) {
-+		pr_err("Failed to allocate v2m resource.\n");
-+		goto err_free_v2m;
-+	}
-+
-+	v2m->base = ioremap(v2m->res.start, resource_size(&v2m->res));
-+	if (!v2m->base) {
-+		pr_err("Failed to map GICv2m resource\n");
-+		ret = -EINVAL;
-+		goto err_free_v2m;
-+	}
-+
-+	ret = of_pci_msi_chip_add(&v2m->msi_chip);
-+	if (ret) {
-+		pr_info("Failed to add msi_chip.\n");
-+		goto err_iounmap;
-+	}
-+
-+	if (!of_property_read_u32(node, "arm,msi-base-spi", &v2m->spi_start) &&
-+	    !of_property_read_u32(node, "arm,msi-num-spis", &v2m->nr_spis)) {
-+		pr_info("Overriding V2M MSI_TYPER (base:%u, num:%u)\n",
-+			v2m->spi_start, v2m->nr_spis);
-+	} else {
-+		u32 typer = readl_relaxed(v2m->base + V2M_MSI_TYPER);
-+
-+		v2m->spi_start = V2M_MSI_TYPER_BASE_SPI(typer);
-+		v2m->nr_spis = V2M_MSI_TYPER_NUM_SPI(typer);
-+	}
-+
-+	if (!is_msi_spi_valid(v2m->spi_start, v2m->nr_spis)) {
-+		ret = -EINVAL;
-+		goto err_chip_rm;
-+	}
-+
-+	v2m->bm = kzalloc(sizeof(long) * BITS_TO_LONGS(v2m->nr_spis),
-+			  GFP_KERNEL);
-+	if (!v2m->bm) {
-+		ret = -ENOMEM;
-+		goto err_chip_rm;
-+	}
-+
-+	v2m->domain = irq_domain_add_simple(node, v2m->nr_spis, v2m->spi_start,
-+					    &gicv2m_domain_ops, v2m);
-+	if (!v2m->domain) {
-+		pr_err("Failed to create GICv2m domain\n");
-+		ret = -EINVAL;
-+		goto err_free_bm;
-+	}
-+
-+	v2m->domain->parent = parent;
-+
-+	spin_lock_init(&v2m->msi_cnt_lock);
-+
-+	pr_info("Node %s: range[%#lx:%#lx], SPI[%d:%d]\n", node->name,
-+		(unsigned long)v2m->res.start, (unsigned long)v2m->res.end,
-+		v2m->spi_start, (v2m->spi_start + v2m->nr_spis));
-+
-+	return 0;
-+
-+err_free_bm:
-+	kfree(v2m->bm);
-+err_chip_rm:
-+	of_pci_msi_chip_remove(&v2m->msi_chip);
-+err_iounmap:
-+	iounmap(v2m->base);
-+err_free_v2m:
-+	kfree(v2m);
-+	return ret;
-+}
-+
-+int __init gicv2m_of_init(struct device_node *node,
-+			  struct irq_domain *parent)
-+{
-+	int ret = 0;
-+	struct v2m_data *v2m;
-+	struct device_node *child = NULL;
-+
-+	for (;;) {
-+		child = of_get_next_child(node, child);
-+		if (!child)
-+			break;
-+
-+		if (!of_device_is_compatible(child, "arm,gic-v2m-frame"))
-+			continue;
-+
-+		if (!of_find_property(child, "msi-controller", NULL))
-+			continue;
-+
-+		ret = gicv2m_init_one(child, &v2m, parent);
-+		if (ret) {
-+			of_node_put(node);
-+			break;
-+		}
-+	}
-+	return ret;
-+}
-diff --git a/drivers/irqchip/irq-gic-v2m.h b/drivers/irqchip/irq-gic-v2m.h
-new file mode 100644
-index 0000000..66676a9
---- /dev/null
-+++ b/drivers/irqchip/irq-gic-v2m.h
-@@ -0,0 +1,6 @@
-+#ifndef _IRQ_GIC_V2M_H_
-+#define _IRQ_GIC_V2M_H_
-+
-+int gicv2m_of_init(struct device_node *node, struct irq_domain *parent) __init;
-+
-+#endif /* _IRQ_GIC_V2M_H_ */
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index a99c211..166bc8a 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -46,6 +46,7 @@
- #include <asm/smp_plat.h>
- 
- #include "irq-gic-common.h"
-+#include "irq-gic-v2m.h"
- #include "irqchip.h"
- 
- union gic_base {
-@@ -843,10 +844,20 @@ static int gic_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
- 	unsigned int type = IRQ_TYPE_NONE;
- 	struct of_phandle_args *irq_data = arg;
- 
--	ret = gic_irq_domain_xlate(domain, irq_data->np, irq_data->args,
--				   irq_data->args_count, &hwirq, &type);
--	if (ret)
--		return ret;
-+	if (irq_data) {
-+		ret = gic_irq_domain_xlate(domain, irq_data->np, irq_data->args,
-+					   irq_data->args_count, &hwirq, &type);
-+		if (ret)
-+			return ret;
-+	} else {
-+		/*
-+		 * When calling from the children domain (e.g. GICv2m),
-+		 * the child domain does not always have reference to
-+		 * the of_phandle_arg.  In this case, GIC domain assumes
-+		 * direct mapping between virq and hwirq.
-+		 */
-+		hwirq = virq;
-+	}
- 
- 	for (i = 0; i < nr_irqs; i++)
- 		gic_irq_domain_map(domain, virq+i, hwirq+i);
-@@ -1055,6 +1066,10 @@ gic_of_init(struct device_node *node, struct device_node *parent)
- 		irq = irq_of_parse_and_map(node, 0);
- 		gic_cascade_irq(gic_cnt, irq);
- 	}
-+
-+	if (IS_ENABLED(CONFIG_ARM_GIC_V2M))
-+		gicv2m_of_init(node, gic_data[gic_cnt].domain);
-+
- 	gic_cnt++;
- 	return 0;
- }
--- 
-1.9.3
+>> +/*
+>> + *	Queue Spinlock Para-Virtualization (PV) Support
+>> + *
+>> + * The PV support code for queue spinlock is roughly the same as that
+>> + * of the ticket spinlock.
+> Relative comments are bad, esp. since we'll make the ticket code go away
+> if this works, at which point this is a reference into a black hole.
+
+Thank for the suggestion, I will remove that when I need to revise the 
+patch.
+
+>>                              Each CPU waiting for the lock will spin until it
+>> + * reaches a threshold. When that happens, it will put itself to a halt state
+>> + * so that the hypervisor can reuse the CPU cycles in some other guests as
+>> + * well as returning other hold-up CPUs faster.
+>
+>
+>
+>> +/**
+>> + * queue_spin_lock - acquire a queue spinlock
+>> + * @lock: Pointer to queue spinlock structure
+>> + *
+>> + * N.B. INLINE_SPIN_LOCK should not be enabled when PARAVIRT_SPINLOCK is on.
+> One should write a compile time fail for that, not a comment.
+
+Will do that.
+
+>> + */
+>> +static __always_inline void queue_spin_lock(struct qspinlock *lock)
+>> +{
+>> +	u32 val;
+>> +
+>> +	val = atomic_cmpxchg(&lock->val, 0, _Q_LOCKED_VAL);
+>> +	if (likely(val == 0))
+>> +		return;
+>> +	if (static_key_false(&paravirt_spinlocks_enabled))
+>> +		pv_queue_spin_lock_slowpath(lock, val);
+>> +	else
+>> +		queue_spin_lock_slowpath(lock, val);
+>> +}
+> No, this is just vile.. _that_ is what we have PV ops for. And at that
+> point its the same function it was before the PV stuff, so that whole
+> inline thing is then gone.
+
+I did that because in all the architectures except s390, the lock 
+functions are not inlined. They live in the _raw_spin_lock* defined in 
+kernel/locking/spinlock.c. The unlock functions, on the other hand, are 
+all inlined except when PV spinlock is enabled. So adding a check for 
+the jump label won't change any of the status quo.
+
+>> +extern void queue_spin_unlock_slowpath(struct qspinlock *lock);
+>> +
+>>   /**
+>>    * queue_spin_unlock - release a queue spinlock
+>>    * @lock : Pointer to queue spinlock structure
+>>    *
+>>    * An effective smp_store_release() on the least-significant byte.
+>> + *
+>> + * Inlining of the unlock function is disabled when CONFIG_PARAVIRT_SPINLOCKS
+>> + * is defined. So _raw_spin_unlock() will be the only call site that will
+>> + * have to be patched.
+> again if you hard rely on the not inlining make a build fail not a
+> comment.
+
+Will do that.
+
+>>    */
+>>   static inline void queue_spin_unlock(struct qspinlock *lock)
+>>   {
+>>   	barrier();
+>> +	if (!static_key_false(&paravirt_spinlocks_enabled)) {
+>> +		native_spin_unlock(lock);
+>> +		return;
+>> +	}
+>>
+>> +	/*
+>> +	 * Need to atomically clear the lock byte to avoid racing with
+>> +	 * queue head waiter trying to set _QLOCK_LOCKED_SLOWPATH.
+>> +	 */
+>> +	if (unlikely(cmpxchg((u8 *)lock, _Q_LOCKED_VAL, 0) != _Q_LOCKED_VAL))
+>> +		queue_spin_unlock_slowpath(lock);
+>> +}
+> Idem, that static key stuff is wrong, use PV ops to switch between
+> unlock paths.
+
+As said in my previous emails, the PV ops call site patching code 
+doesn't work well with locking. First of all, the native_patch() 
+function was called even in a KVM PV guest. Some unlock calls happened 
+before the paravirt_spinlocks_enabled jump label was set up. It occurs 
+to me that call site patching is done the first time the call site is 
+used. At least for those early unlock calls, there is no way to figure 
+out if it should use the native fast path or the PV slow path. The only 
+possible workaround that I can think of is to use a variable (if 
+available) that signal the end of the bootup init phase, we can then 
+defer the call site patching until the init phase has passed.
+
+This is a rather complicated solution which may not worth the slight 
+benefit of a faster unlock call in the native case.
+
+>> @@ -354,7 +394,7 @@ queue:
+>>   	 * if there was a previous node; link it and wait until reaching the
+>>   	 * head of the waitqueue.
+>>   	 */
+>> -	if (old&  _Q_TAIL_MASK) {
+>> +	if (!pv_link_and_wait_node(old, node)&&  (old&  _Q_TAIL_MASK)) {
+>>   		prev = decode_tail(old);
+>>   		ACCESS_ONCE(prev->next) = node;
+>> @@ -369,9 +409,11 @@ queue:
+>>   	 *
+>>   	 * *,x,y ->  *,0,0
+>>   	 */
+>> -	while ((val = smp_load_acquire(&lock->val.counter))&
+>> -			_Q_LOCKED_PENDING_MASK)
+>> +	val = pv_wait_head(lock, node);
+>> +	while (val&  _Q_LOCKED_PENDING_MASK) {
+>>   		cpu_relax();
+>> +		val = smp_load_acquire(&lock->val.counter);
+>> +	}
+>>
+>>   	/*
+>>   	 * claim the lock:
+> Please make the pv_*() calls return void and reduce to NOPs. This keeps
+> the logic invariant of the pv stuff.
+
+In my patch, the two pv_*() calls above serve as replacements of the 
+waiting code. Making them return void and reduce to NOPs will cause what 
+Konrad said doing the same operation twice which is not ideal from a 
+performance point of view for the PV version. Is putting the pre-PV code 
+in the comment help to clarify what the code should be before the PV stuff?
+
+-Longman
 
