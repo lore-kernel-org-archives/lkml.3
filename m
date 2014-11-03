@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978AbaKCQoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:44:16 -0500
-Received: from tex.lwn.net ([70.33.254.29]:38245 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170AbaKCQoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:44:15 -0500
-Date: Mon, 3 Nov 2014 11:44:12 -0500
-From: Jonathan Corbet <corbet@lwn.net>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, Marek Vasut <marex@denx.de>,
-        Jason Cooper <cryptography@lakedaemon.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v2 01/11] crypto: Documentation - crypto API high level
- spec
-Message-ID: <20141103114412.78632304@lwn.net>
-In-Reply-To: <4303532.NGaUQ44sQJ@tachyon.chronox.de>
-References: <6375771.bx7QqLJLuR@tachyon.chronox.de>
-	<4163724.RCMDlx8dmE@tachyon.chronox.de>
-	<20141103083439.635f5cb6@lwn.net>
-	<4303532.NGaUQ44sQJ@tachyon.chronox.de>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1753107AbaKCQo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:44:56 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54068 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752786AbaKCQoz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 11:44:55 -0500
+Date: Mon, 3 Nov 2014 17:44:40 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Juergen Gross <jgross@suse.com>
+cc: hpa@zytor.com, x86@kernel.org, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Subject: Re: [PATCH V6 10/18] x86: Remove looking for setting of _PAGE_PAT_LARGE
+ in pageattr.c
+In-Reply-To: <1415019724-4317-11-git-send-email-jgross@suse.com>
+Message-ID: <alpine.DEB.2.11.1411031744280.5308@nanos>
+References: <1415019724-4317-1-git-send-email-jgross@suse.com> <1415019724-4317-11-git-send-email-jgross@suse.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Nov 2014 15:18:29 +0100
-Stephan Mueller <smueller@chronox.de> wrote:
+On Mon, 3 Nov 2014, Juergen Gross wrote:
 
-> > These are all useful.  But I wonder if it would be worth the effort to turn
-> > this inti a proper docbook document that automatically has everything
-> > together in one place?  
+> When modifying page attributes via change_page_attr_set_clr() don't
+> test for setting _PAGE_PAT_LARGE, as this is
+> - never done
+> - PAT support for large pages is not included in the kernel up to now
 > 
-> How do you suggest that is done?
+> Signed-off-by: Juergen Gross <jgross@suse.com>
 
-See Documentation/kernel-doc-nano-HOWTO.txt for an introduction to the
-process.  This documentation hasn't seen a lot of maintenance recently,
-but I don't think things have changed too much.  Should check that when I
-get a chance...
-
-Thanks,
-
-jon
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
