@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107AbaKCQo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:44:56 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54068 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaKCQoz (ORCPT
+	id S1753213AbaKCQpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:45:16 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:49393 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160AbaKCQpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:44:55 -0500
-Date: Mon, 3 Nov 2014 17:44:40 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Juergen Gross <jgross@suse.com>
-cc: hpa@zytor.com, x86@kernel.org, mingo@redhat.com,
-        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
-        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, bhelgaas@google.com
-Subject: Re: [PATCH V6 10/18] x86: Remove looking for setting of _PAGE_PAT_LARGE
- in pageattr.c
-In-Reply-To: <1415019724-4317-11-git-send-email-jgross@suse.com>
-Message-ID: <alpine.DEB.2.11.1411031744280.5308@nanos>
-References: <1415019724-4317-1-git-send-email-jgross@suse.com> <1415019724-4317-11-git-send-email-jgross@suse.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 3 Nov 2014 11:45:12 -0500
+Date: Mon, 3 Nov 2014 16:45:06 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] mfd: db8500-prcmu: check return of devm_ioremap for error
+Message-ID: <20141103164506.GA12011@x1>
+References: <1414660895-29255-1-git-send-email-pramod.gurav@smartplayin.com>
+ <20141103160552.GD10544@x1>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141103160552.GD10544@x1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Nov 2014, Juergen Gross wrote:
+On Mon, 03 Nov 2014, Lee Jones wrote:
 
-> When modifying page attributes via change_page_attr_set_clr() don't
-> test for setting _PAGE_PAT_LARGE, as this is
-> - never done
-> - PAT support for large pages is not included in the kernel up to now
+> On Thu, 30 Oct 2014, Pramod Gurav wrote:
 > 
-> Signed-off-by: Juergen Gross <jgross@suse.com>
+> > Error check around return value of devm_ioremap is missing. Add the same
+> > to avoid NULL pointer dereference.
+> > 
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Cc: Lee Jones <lee.jones@linaro.org>
+> > Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> > ---
+> >  drivers/mfd/db8500-prcmu.c |    5 +++++
+> >  1 file changed, 5 insertions(+)
+> > 
+> > diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+> > index 193cf16..89ae8bf 100644
+> > --- a/drivers/mfd/db8500-prcmu.c
+> > +++ b/drivers/mfd/db8500-prcmu.c
+> > @@ -3167,6 +3167,11 @@ static int db8500_prcmu_probe(struct platform_device *pdev)
+> >  	}
+> >  	tcdm_base = devm_ioremap(&pdev->dev, res->start,
+> >  			resource_size(res));
+> > +	if (!tcdm_base) {
+> > +		dev_err(&pdev->dev,
+> > +			"failed to ioremap prcmu-tcdm register memory\n");
+> > +		return -ENOENT;
+> 
+> No such file or directory?  I think not.
+> 
+> Changed to -ENOMEM and applied with Linus' Ack.
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Slight change of plan, as it looks like all of the return paths were
+bogus.  Patch sent instead.
+
+> > +	}
+> >  
+> >  	/* Clean up the mailbox interrupts after pre-kernel code. */
+> >  	writel(ALL_MBOX_BITS, PRCM_ARM_IT1_CLR);
+> 
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
