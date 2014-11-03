@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaKCP5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:57:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55082 "EHLO mx1.redhat.com"
+	id S1752835AbaKCP56 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:57:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60818 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023AbaKCP5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:57:47 -0500
+	id S1752895AbaKCP5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:57:53 -0500
 From: Amos Kong <akong@redhat.com>
 To: virtualization@lists.linux-foundation.org
 Cc: kvm@vger.kernel.org, rusty@rustcorp.com.au, herbert@gondor.apana.org.au,
         m@bues.ch, mb@bu3sch.de, mpm@selenic.com, amit.shah@redhat.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 0/6] fix hw_random stuck
-Date: Mon,  3 Nov 2014 23:56:20 +0800
-Message-Id: <1415030186-18303-1-git-send-email-akong@redhat.com>
+Subject: [PATCH v4 2/6] hw_random: move some code out mutex_lock for avoiding underlying deadlock
+Date: Mon,  3 Nov 2014 23:56:22 +0800
+Message-Id: <1415030186-18303-3-git-send-email-akong@redhat.com>
+In-Reply-To: <1415030186-18303-1-git-send-email-akong@redhat.com>
+References: <1415030186-18303-1-git-send-email-akong@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I hotunplug a busy virtio-rng device or try to access
-hwrng attributes in non-smp guest, it gets stuck.
+In next patch, we use reference counting for each struct hwrng,
+changing reference count also needs to take mutex_lock. Before
+releasing the lock, if we try to stop a kthread that waits to
+take the lock to reduce the referencing count, deadlock will
+occur.
 
-My hotplug tests:
+Signed-off-by: Amos Kong <akong@redhat.com>
+---
+ drivers/char/hw_random/core.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-| test 0:
-|   hotunplug rng device from qemu monitor
-|
-| test 1:
-|   guest) # dd if=/dev/hwrng of=/dev/null &
-|   hotunplug rng device from qemu monitor
-|
-| test 2:
-|   guest) # dd if=/dev/random of=/dev/null &
-|   hotunplug rng device from qemu monitor
-|
-| test 4:
-|   guest) # dd if=/dev/hwrng of=/dev/null &
-|   cat /sys/devices/virtual/misc/hw_random/rng_*
-|
-| test 5:
-|   guest) # dd if=/dev/hwrng of=/dev/null
-|   cancel dd process after 10 seconds
-|   guest) # dd if=/dev/hwrng of=/dev/null &
-|   hotunplug rng device from qemu monitor
-|
-| test 6:
-|   use a fifo as rng backend, execute test 0 ~ 5 with no input of fifo
-
-
-V4: update patch 4 to fix corrupt, decrease last reference for triggering
-    the cleanup, fix unregister race pointed by Herbert
-V3: initialize kref to 1
-V2: added patch 2 to fix a deadlock, update current patch 3 to fix reference
-    counting issue
-
-Amos Kong (1):
-  hw_random: move some code out mutex_lock for avoiding underlying
-    deadlock
-
-Rusty Russell (5):
-  hw_random: place mutex around read functions and buffers.
-  hw_random: use reference counts on each struct hwrng.
-  hw_random: fix unregister race.
-  hw_random: don't double-check old_rng.
-  hw_random: don't init list element we're about to add to list.
-
- drivers/char/hw_random/core.c | 176 ++++++++++++++++++++++++++++++------------
- include/linux/hw_random.h     |   3 +
- 2 files changed, 129 insertions(+), 50 deletions(-)
-
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index b1b6042..a0905c8 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -474,12 +474,12 @@ void hwrng_unregister(struct hwrng *rng)
+ 		}
+ 	}
+ 	if (list_empty(&rng_list)) {
++		mutex_unlock(&rng_mutex);
+ 		unregister_miscdev();
+ 		if (hwrng_fill)
+ 			kthread_stop(hwrng_fill);
+-	}
+-
+-	mutex_unlock(&rng_mutex);
++	} else
++		mutex_unlock(&rng_mutex);
+ }
+ EXPORT_SYMBOL_GPL(hwrng_unregister);
+ 
 -- 
 1.9.3
 
