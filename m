@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaKCB0O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 20:26:14 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:59755 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbaKCB0N (ORCPT
+	id S1752947AbaKCB35 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 20:29:57 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:56042 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaKCB3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 20:26:13 -0500
-Message-ID: <5456D989.8000108@atmel.com>
-Date: Mon, 3 Nov 2014 09:25:29 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sun, 2 Nov 2014 20:29:55 -0500
+From: Chen Weilong <chenweilong@huawei.com>
+To: <davem@davemloft.net>, <kuznet@ms2.inr.ac.ru>, <jmorris@namei.org>,
+        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ipv4: avoid divide 0 error in tcp_incr_quickack
+Date: Mon, 3 Nov 2014 09:29:33 +0800
+Message-ID: <1414978173-6948-1-git-send-email-chenweilong@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Peter Rosin <peda@axentia.se>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: atmel_ssc_dai: Match the CMR divider only in full
- duplex.
-References: <544A1121.6080900@atmel.com> <1414178759-7252-1-git-send-email-peda@axentia.se> <1414178759-7252-2-git-send-email-peda@axentia.se> <20141031181210.GQ18557@sirena.org.uk>
-In-Reply-To: <20141031181210.GQ18557@sirena.org.uk>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain
+X-Originating-IP: [10.177.37.162]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.5456DA87.0179,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 705713a5fb7d6524b485d12019f131e8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+From: Weilong Chen <chenweilong@huawei.com>
 
-On 11/01/2014 02:12 AM, Mark Brown wrote:
-> On Fri, Oct 24, 2014 at 09:25:59PM +0200, Peter Rosin wrote:
->> The CMR divider register is shared by playback and capture. The SSC driver
->> therefore tries to enforce rules so that the needed register content do
->> not conflict during simultaneous playback/capture. However, the
->> implementation also prevents changing the register content in
->> half-duplex scenarios, which is needed when using the OSS API.
->
-> Bo, is this OK?
+We got a problem like this:
+ [ffff8801c1a05570] machine_kexec at ffffffff81025039
+ [ffff8801c1a055d0] crash_kexec at ffffffff8109b253
+ [ffff8801c1a056a0] oops_end at ffffffff81442aed
+ [ffff8801c1a056d0] die at ffffffff81005603
+ [ffff8801c1a05700] do_trap at ffffffff81442448
+ [ffff8801c1a05760] do_divide_error at ffffffff81002c10
+ [ffff8801c1a05888] tcp_send_dupack at ffffffff81385e44
+ [ffff8801c1a058c8] tcp_validate_incoming at ffffffff813886b5
+ [ffff8801c1a05908] tcp_rcv_state_process at ffffffff8138d0b7
+ [ffff8801c1a05958] tcp_child_process at ffffffff81397255
+ [ffff8801c1a05988] tcp_v4_do_rcv at ffffffff81395a70
+ [ffff8801c1a059d8] tcp_v4_rcv at ffffffff81396fc8
+ [ffff8801c1a05a48] ip_local_deliver_finish at ffffffff813746e9
+ [ffff8801c1a05a78] ip_local_deliver at ffffffff81374a20
+ [ffff8801c1a05aa8] ip_rcv_finish at ffffffff81374389
+ [ffff8801c1a05ad8] ip_rcv at ffffffff81374c78
+There was a wrong ack packet coming during TCP handshake. The socket's state
+was TCP_SYN_RECV, its rcv_mss was not initialize yet. So
+tcp_send_dupack -> tcp_enter_quickack_mode got a divide 0 error.
+This patch add a state check before tcp_enter_quickack_mode.
 
-I have acked this patch. However Peter resend with "git send-email" 
-command while not add Acked-by tag. Anyway:
+Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+---
+ net/ipv4/tcp_input.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Acked-by: Bo Shen <voice.shen@atmel.com>
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 4e4617e..9eb56dc 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -3986,7 +3986,8 @@ static void tcp_send_dupack(struct sock *sk, const struct sk_buff *skb)
+ 	if (TCP_SKB_CB(skb)->end_seq != TCP_SKB_CB(skb)->seq &&
+ 	    before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
+ 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
+-		tcp_enter_quickack_mode(sk);
++		if (sk->sk_state != TCP_SYN_RECV)
++			tcp_enter_quickack_mode(sk);
+ 
+ 		if (tcp_is_sack(tp) && sysctl_tcp_dsack) {
+ 			u32 end_seq = TCP_SKB_CB(skb)->end_seq;
+-- 
+1.7.12
 
-Best Regards,
-Bo Shen
 
