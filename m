@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaKCRzO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:55:14 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57057 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375AbaKCRzL (ORCPT
+	id S1753515AbaKCRzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:55:39 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:45022 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545AbaKCRzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:55:11 -0500
-Date: Mon, 3 Nov 2014 17:55:05 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v3 15/47] mfd: dm355evm_msp: Register with kernel
- power-off handler
-Message-ID: <20141103175505.GN12011@x1>
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
- <1414425354-10359-16-git-send-email-linux@roeck-us.net>
+	Mon, 3 Nov 2014 12:55:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414425354-10359-16-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1413973797-17619-3-git-send-email-yingjoe.chen@mediatek.com>
+References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com>
+	<1413973797-17619-3-git-send-email-yingjoe.chen@mediatek.com>
+Date: Mon, 3 Nov 2014 18:55:34 +0100
+Message-ID: <CABuKBe+ku=vWiWbvAm8M7QgyzvVWZ5sdkRMocuUym8JTyk-okg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/8] ARM: mediatek: add dts for 8127 Moose board
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: "Joe.C" <yingjoe.chen@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>, arm@kernel.org,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        Hsien-Chun Yen <hc.yen@mediatek.com>,
+        huang eddie <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Yuhau Chen <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Guenter Roeck wrote:
-
-> Register with kernel power-off handler instead of setting pm_power_off
-> directly. Register with low priority to reflect that the original code
-> only sets pm_power_off if it was not already set.
-> 
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+2014-10-22 12:29 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
+> From: "Joe.C" <yingjoe.chen@mediatek.com>
+>
+> Moose is a tablet evalutation board based on MT8127 SoC.
+>
+> Signed-off-by: Joe.C <yingjoe.chen@mediatek.com>
 > ---
-> v3:
-> - Replace poweroff in all newly introduced variables and in text
->   with power_off or power-off as appropriate
-> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-> v2:
-> - Use define to specify poweroff handler priority
-> - Use dev_warn instead of dev_err
-> 
->  drivers/mfd/dm355evm_msp.c | 18 +++++++++++++++---
->  1 file changed, 15 insertions(+), 3 deletions(-)
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
-> diff --git a/drivers/mfd/dm355evm_msp.c b/drivers/mfd/dm355evm_msp.c
-> index 4c826f7..63a1632 100644
-> --- a/drivers/mfd/dm355evm_msp.c
-> +++ b/drivers/mfd/dm355evm_msp.c
-> @@ -14,6 +14,8 @@
->  #include <linux/platform_device.h>
->  #include <linux/clk.h>
->  #include <linux/module.h>
-> +#include <linux/notifier.h>
-> +#include <linux/pm.h>
->  #include <linux/err.h>
->  #include <linux/gpio.h>
->  #include <linux/leds.h>
-> @@ -352,14 +354,22 @@ static void dm355evm_command(unsigned command)
->  				command, status);
->  }
->  
-> -static void dm355evm_power_off(void)
-> +static int dm355evm_power_off(struct notifier_block *this,
-> +			      unsigned long unused1, void *unused2)
->  {
->  	dm355evm_command(MSP_COMMAND_POWEROFF);
+>  arch/arm/boot/dts/mt8127-moose.dts | 24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/mt8127-moose.dts
+>
+> diff --git a/arch/arm/boot/dts/mt8127-moose.dts b/arch/arm/boot/dts/mt8127-moose.dts
+> new file mode 100644
+> index 0000000..602e2f0
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/mt8127-moose.dts
+> @@ -0,0 +1,24 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Joe.C <yingjoe.chen@mediatek.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
 > +
-> +	return NOTIFY_DONE;
->  }
->  
-> +static struct notifier_block dm355evm_msp_power_off_nb = {
-> +	.notifier_call = dm355evm_power_off,
-> +	.priority = POWER_OFF_PRIORITY_LOW,
+> +/dts-v1/;
+> +#include "mt8127.dtsi"
+> +
+> +/ {
+> +       model = "mediatek,mt8127-moose", "mediatek,mt8127";
+
+The model should be a string that identifies the board, e.g. "Moose".
+Please add the compatible property.
+
+> +
+> +       memory {
+> +               reg = <0 0x80000000 0 0x40000000>;
+
+See comment on mt8127 register definitions.
+
+> +       };
 > +};
-> +
->  static int dm355evm_msp_remove(struct i2c_client *client)
->  {
-> -	pm_power_off = NULL;
-> +	unregister_power_off_handler(&dm355evm_msp_power_off_nb);
->  	msp430 = NULL;
->  	return 0;
->  }
-> @@ -398,7 +408,9 @@ dm355evm_msp_probe(struct i2c_client *client, const struct i2c_device_id *id)
->  		goto fail;
->  
->  	/* PM hookup */
-> -	pm_power_off = dm355evm_power_off;
-> +	status = register_power_off_handler(&dm355evm_msp_power_off_nb);
-> +	if (status)
-> +		dev_warn(&client->dev, "Failed to register power-off handler\n");
->  
->  	return 0;
->  
+> --
+> 1.8.1.1.dirty
+>
+
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+motzblog.wordpress.com
