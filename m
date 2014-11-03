@@ -1,77 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751110AbaKCXPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 18:15:54 -0500
-Received: from numascale.com ([213.162.240.84]:49870 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739AbaKCXPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 18:15:52 -0500
-Message-ID: <54580C9E.7070706@numascale.com>
-Date: Tue, 04 Nov 2014 07:15:42 +0800
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751439AbaKCXQP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 18:16:15 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:60650 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaKCXQM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 18:16:12 -0500
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH v3 5/5] Use 2GB memory block size on large x86-64 systems
-References: <1414915813-2462-1-git-send-email-daniel@numascale.com> <1414915813-2462-5-git-send-email-daniel@numascale.com> <alpine.DEB.2.11.1411032021331.5308@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411032021331.5308@nanos>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <CAGr1F2FuPQxLraYv7PstJ9c8H-XQsgawaAtj4AS77B+_0k2o+A@mail.gmail.com>
+References: <1414783141-6947-1-git-send-email-adityakali@google.com>
+ <1414783141-6947-8-git-send-email-adityakali@google.com> <CALCETrXTaZ3SJ_t-gnbc93BVZXg-912NqO78kFd0Tpi-5-dZoQ@mail.gmail.com>
+ <CAGr1F2FuPQxLraYv7PstJ9c8H-XQsgawaAtj4AS77B+_0k2o+A@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Nov 2014 15:15:50 -0800
+Message-ID: <CALCETrW64-6xC6psP-8k0H-1GfVnWBTeEBNSrE_sH+-DFtuZQQ@mail.gmail.com>
+Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init cgroupns
+To: Aditya Kali <adityakali@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Rohit Jnagal <jnagal@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2014 03:38 AM, Thomas Gleixner wrote:
-> On Sun, 2 Nov 2014, Daniel J Blueman wrote:
->
->> On larger x64-64 systems, use a 2GB memory block size to reduce sysfs
->> entry creation time by 16x. Large is defined as 64GB or more memory.
->
-> This changelog sucks.
->
-> It neither tells which sysfs entries are meant nor does it explain
-> what the actual effect of this change is aside of speeding up some
-> random sysfs thingy.
-
-How about this?
-
-On large-memory systems of 64GB or more with memory hot-plug enabled, 
-use a 2GB memory block size. Eg with 64GB memory, this reduces the 
-number of directories in /sys/devices/system/memory from 512 to 32, 
-making it more manageable, and reducing the creation time accordingly.
-
->> @@ -1247,9 +1246,9 @@ static unsigned long probe_memory_block_size(void)
->>   	/* start from 2g */
->>   	unsigned long bz = 1UL<<31;
+On Mon, Nov 3, 2014 at 3:12 PM, Aditya Kali <adityakali@google.com> wrote:
+> On Fri, Oct 31, 2014 at 5:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Oct 31, 2014 at 12:19 PM, Aditya Kali <adityakali@google.com> wrote:
+>>> This patch enables cgroup mounting inside userns when a process
+>>> as appropriate privileges. The cgroup filesystem mounted is
+>>> rooted at the cgroupns-root. Thus, in a container-setup, only
+>>> the hierarchy under the cgroupns-root is exposed inside the container.
+>>> This allows container management tools to run inside the containers
+>>> without depending on any global state.
+>>> In order to support this, a new kernfs api is added to lookup the
+>>> dentry for the cgroupns-root.
+>>>
+>>> Signed-off-by: Aditya Kali <adityakali@google.com>
+>>> ---
+>>>  fs/kernfs/mount.c      | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>>  include/linux/kernfs.h |  2 ++
+>>>  kernel/cgroup.c        | 47 +++++++++++++++++++++++++++++++++++++++++++++--
+>>>  3 files changed, 95 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+>>> index f973ae9..e334f45 100644
+>>> --- a/fs/kernfs/mount.c
+>>> +++ b/fs/kernfs/mount.c
+>>> @@ -62,6 +62,54 @@ struct kernfs_root *kernfs_root_from_sb(struct super_block *sb)
+>>>         return NULL;
+>>>  }
+>>>
+>>> +/**
+>>> + * kernfs_make_root - create new root dentry for the given kernfs_node.
+>>> + * @sb: the kernfs super_block
+>>> + * @kn: kernfs_node for which a dentry is needed
+>>> + *
+>>> + * This can used used by callers which want to mount only a part of the kernfs
+>>> + * as root of the filesystem.
+>>> + */
+>>> +struct dentry *kernfs_obtain_root(struct super_block *sb,
+>>> +                                 struct kernfs_node *kn)
+>>> +{
 >>
->> -#ifdef CONFIG_X86_UV
->> -	if (is_uv_system()) {
->> -		printk(KERN_INFO "UV: memory block size 2GB\n");
->> +#ifdef CONFIG_X86_64
+>> I can't usefully review this, but kernfs_make_root and
+>> kernfs_obtain_root aren't the same string...
+>>
+>>> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+>>> index 7e5d597..250aaec 100644
+>>> --- a/kernel/cgroup.c
+>>> +++ b/kernel/cgroup.c
+>>> @@ -1302,6 +1302,13 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+>>>
+>>>         memset(opts, 0, sizeof(*opts));
+>>>
+>>> +       /* Implicitly add CGRP_ROOT_SANE_BEHAVIOR if inside a non-init cgroup
+>>> +        * namespace.
+>>> +        */
+>>> +       if (current->nsproxy->cgroup_ns != &init_cgroup_ns) {
+>>> +               opts->flags |= CGRP_ROOT_SANE_BEHAVIOR;
+>>> +       }
+>>> +
+>>
+>> I don't like this implicit stuff.  Can you just return -EINVAL if sane
+>> behavior isn't requested?
+>>
 >
-> And this brainless 's/CONFIG_X86_UV/CONFIG_X86_64/' sucks even
-> more. I'm sure you can figure out the WHY yourself.
+> I think the sane-behavior flag is only temporary and will be removed
+> anyways, right? So I didn't bother asking user to supply it. But I can
+> make the change as you suggested. We just have to make sure that tasks
+> inside cgroupns cannot mount non-default hierarchies as it would be a
+> regression.
+>
+>>>         while ((token = strsep(&o, ",")) != NULL) {
+>>>                 nr_opts++;
+>>>
+>>> @@ -1391,7 +1398,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+>>>
+>>>         if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
+>>>                 pr_warn("sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
+>>> -               if (nr_opts != 1) {
+>>> +               if (nr_opts > 1) {
+>>>                         pr_err("sane_behavior: no other mount options allowed\n");
+>>>                         return -EINVAL;
+>>
+>> This looks wrong.  But, if you make the change above, then it'll be right.
+>>
+>
+> It would have been nice if simple 'mount -t cgroup cgroup <mnt>' from
+> cgroupns does the right thing automatically.
+>
 
-The benefit of this is applicable to other architectures. I'm unable to 
-test the change, but if you agree it's conservative enough, I'll drop 
-the ifdef?
+This is a debatable point, but it's not what I meant.  Won't your code
+let 'mount -t cgroup -o one_evil_flag cgroup mountpoint' through?
 
-Thanks,
-   Daniel
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
+>
+>>> @@ -1685,6 +1701,14 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+>>>         int ret;
+>>>         int i;
+>>>         bool new_sb;
+>>> +       struct cgroup_namespace *ns =
+>>> +               get_cgroup_ns(current->nsproxy->cgroup_ns);
+>>> +
+>>> +       /* Check if the caller has permission to mount. */
+>>> +       if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN)) {
+>>> +               put_cgroup_ns(ns);
+>>> +               return ERR_PTR(-EPERM);
+>>> +       }
+>>
+>> Why is this necessary?
+>>
+>
+> Without this, if I unshare userns and mntns (but no cgroupns), I will
+> be able to mount my parent's cgroupfs hierarchy. This is deviation
+> from whats allowed today (i.e., today I can't mount cgroupfs even
+> after unsharing userns & mntns). This check is there to prevent the
+> unintended effect of cgroupns feature.
+
+Oh, I get it.  I misunderstood the code.
+
+I guess this is reasonable.  If it annoys anyone, it can be reverted
+or weakened.
+
+--Andy
