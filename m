@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaKCNyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 08:54:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56887 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169AbaKCNyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 08:54:35 -0500
-Date: Mon, 3 Nov 2014 14:54:18 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/8] perf tools: Add gzip decompression support for
- kernel module
-Message-ID: <20141103135418.GD29906@krava.brq.redhat.com>
-References: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
- <1414999678-31377-3-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414999678-31377-3-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752247AbaKCNzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 08:55:11 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41361 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752161AbaKCNzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 08:55:08 -0500
+Message-ID: <1415022894.27313.28.camel@decadent.org.uk>
+Subject: Re: [PATCH 3.2 000/102] 3.2.64-rc1 review
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Guillaume Nault <g.nault@alphalink.fr>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>, Phil Jensen <pjensen@evernote.com>,
+        akpm@linux-foundation.org
+Date: Mon, 03 Nov 2014 13:54:54 +0000
+In-Reply-To: <20141103103241.GA5511@alphalink.fr>
+References: <lsq.1414880882.522510247@decadent.org.uk>
+	 <20141103103241.GA5511@alphalink.fr>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-UkqOtioBcyVf3Tc12aTh"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 04:27:52PM +0900, Namhyung Kim wrote:
 
-SNIP
+--=-UkqOtioBcyVf3Tc12aTh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->   #
->   # Overhead  Command          Shared Object                Symbol
->   # ........  ...............  ...........................  ......................................................
->   #
-> 
->        0.04%  kworker/u16:3    [ext4]                       [k] ext4_read_block_bitmap
->        0.03%  kworker/u16:0    [mac80211]                   [k] ieee80211_sta_reset_beacon_monitor
->        0.02%  irq/50-iwlwifi   [mac80211]                   [k] ieee80211_get_bssid
->        0.02%  firefox          [e1000e]                     [k] __ew32_prepare
->        0.02%  swapper          [libahci]                    [k] ahci_handle_port_interrupt
->        0.02%  emacs            libglib-2.0.so.0.4000.0      [.] g_mutex_unlock
->        0.02%  swapper          [e1000e]                     [k] e1000_clean_tx_irq
->        0.02%  dwm              [kernel.kallsyms]            [k] __schedule
->        0.02%  gnome-terminal-  [vdso]                       [.] __vdso_clock_gettime
->        0.02%  swapper          [e1000e]                     [k] e1000_alloc_rx_buffers
->        0.02%  irq/50-iwlwifi   [mac80211]                   [k] ieee80211_rx
->        0.01%  firefox          [vdso]                       [.] __vdso_gettimeofday
->        0.01%  irq/50-iwlwifi   [iwlwifi]                    [k] iwl_pcie_rxq_restock.part.13
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/Makefile.perf                     |  7 +++
->  tools/perf/config/Makefile                   | 15 +++++-
->  tools/perf/config/feature-checks/Makefile    |  6 ++-
->  tools/perf/config/feature-checks/test-zlib.c |  9 ++++
+On Mon, 2014-11-03 at 11:32 +0100, Guillaume Nault wrote:
+> On Sat, Nov 01, 2014 at 10:28:02PM +0000, Ben Hutchings wrote:
+> > This is the start of the stable review cycle for the 3.2.64 release.
+> > There are 102 patches in this series, which will be posted as responses
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >=20
+> You might want to add eed4d839 "l2tp: fix race while getting PMTU on
+> PPP pseudo-wire". It fixes f34c4a35 ("l2tp: take PMTU from tunnel UDP
+> socket") which reached linux-3.2.y under commit 109d10d1.
+>=20
+> The 3.16.y, 3.14.y, 3.12.y and 3.10.y trees already applied the fix.
+> Other stable/longterm trees which backported f34c4a35, like
+> linux-3.4.y, should condider applying this fix too.
 
-missing update for feature-checks/test-all.c
+Good point, I've now added that to the queue.
 
-thanks,
-jirka
+Ben.
+
+--=20
+Ben Hutchings
+Power corrupts.  Absolute power is kind of neat.
+                           - John Lehman, Secretary of the US Navy 1981-198=
+7
+
+--=-UkqOtioBcyVf3Tc12aTh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVFeJNOe/yOyVhhEJAQqzaxAAz+AO2q9vjAFUgsjSQhMgANvw6TFyXhPa
+aCWr2AzswKof+G2dB2vfoL5aj/KQdv3FJunk4/cL6q34SPtlB/NOoW2o/j+JjlHr
+2VF8XzYtQs0uYg+va5ocGj8tLvxunkKFL2ToxleGP5KlA5tUhowYKhdrQYLBU+n1
+2hsoWwnHOBPc62cgd0ZeBELk2iRgqNZRV6RokzZnpNO3RBPta+rjlyptq+j51vwv
+1ZLSL8WGBxRV3LO03BaKv5pnGszYKsy1a/C8Mkd7Us1jVyKOOb0daA42Qbf0aPzu
+rWTFTp6+TJ4YqLw6kTTAre5ClGwyLbjMPaRibyTUDLEbiHABKLAVb/Fm7cDUCBp0
+JUzZ0frXWknj/zkyQ/1TeISTqtrsAyN/qxrmp2qUfz3wWM7O6TECv4wQsn08AF4x
+5Sj8g6ZSE2qNLEd5POt7gREBCP3mPpD3YUPTuDYdnQLPpbvNuIUlwXvvtQtfACO5
+4dD7bskE1iyQPKh4uemouaYbFXHx9I7+2r4YCAYMj/VRQBpe1GanP1pX01kO5lBZ
+0/g/Z9mA2mGVVODhattixsWHQoXeas9JEvJPt/Gex5PXjkzZPluVhmOveT6SQf64
+WSYFaZqhU9zK9sxBJcQuyOtJDsJG1JdxgkeUM7PQXMcZ7sSFA8tpdhoH3zIs8Q7Q
+gKmpD9/mvNI=
+=ac6g
+-----END PGP SIGNATURE-----
+
+--=-UkqOtioBcyVf3Tc12aTh--
