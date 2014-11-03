@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698AbaKCRLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:11:34 -0500
-Received: from smtpauth13.mfg.siteprotect.com ([64.26.60.145]:57201 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752358AbaKCRLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:11:31 -0500
-Date: Mon, 3 Nov 2014 12:12:18 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFD] perf syscall error handling
-In-Reply-To: <20141103170059.GC18464@kernel.org>
-Message-ID: <alpine.DEB.2.10.1411031205070.16230@pianoman.cluster.toy>
-References: <20141030222814.GF15602@worktop.programming.kicks-ass.net> <alpine.DEB.2.10.1410302111150.2766@pianoman.cluster.toy> <20141031072109.GD12706@worktop.programming.kicks-ass.net> <20141031092713.GA23124@gmail.com> <20141031122824.GZ12020@console-pimps.org>
- <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com> <alpine.DEB.2.10.1411010130170.6256@pianoman.cluster.toy> <20141103162548.GB18464@kernel.org> <20141103165019.GY10501@worktop.programming.kicks-ass.net>
- <20141103170059.GC18464@kernel.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752896AbaKCRLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:11:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54167 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752082AbaKCRLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 12:11:47 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: Laszlo Ersek <lersek@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH] xen/blkfront: improve protection against issuing unsupported REQ_FUA
+References: <1414417478-20268-1-git-send-email-vkuznets@redhat.com>
+	<54577368.9060000@redhat.com> <5457A401.5040908@oracle.com>
+Date: Mon, 03 Nov 2014 18:11:34 +0100
+In-Reply-To: <5457A401.5040908@oracle.com> (Boris Ostrovsky's message of "Mon,
+	03 Nov 2014 10:49:21 -0500")
+Message-ID: <87vbmw9pkp.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020208.5457B742.01E4,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Nov 2014, Arnaldo Carvalho de Melo wrote:
+Boris Ostrovsky <boris.ostrovsky@oracle.com> writes:
 
-> Em Mon, Nov 03, 2014 at 05:50:19PM +0100, Peter Zijlstra escreveu:
-> > On Mon, Nov 03, 2014 at 02:25:48PM -0200, Arnaldo Carvalho de Melo wrote:
->  
-> > > The way that peterz suggested, i.e. returning information about which
-> > > perf_event_attr and which of the parameters was invalid/had issues could
-> > > help with fallbacking/capability querying, i.e. tooling may want to use
-> > > some features if available automagically, fallbacking to something else
-> > > when that fails.
->  
-> > > We already do that to some degree in various cases, but for some if the
-> > > only way that becomes available to disambiguate some EINVAL return is a
-> > > string, code will start having strcmps :-\
-> 
-> > OK, so how about we do both, the offset+mask for the tools and the
-> > string for the humans?
-> 
-> Yeah, tooling tries to provide the best it can with the offset+mask, and
-> if doesn't manage to do anything smart with it, just show the string and
-> hope that helps the user to figure out what is happening.
+> On 11/03/2014 07:22 AM, Laszlo Ersek wrote:
+>> On 10/27/14 14:44, Vitaly Kuznetsov wrote:
+>>> Guard against issuing unsupported REQ_FUA and REQ_FLUSH was introduced
+>>> in d11e61583 and was factored out into blkif_request_flush_valid() in
+>>> 0f1ca65ee. However:
+>>> 1) This check in incomplete. In case we negotiated to feature_flush = REQ_FLUSH
+>>>     and flush_op = BLKIF_OP_FLUSH_DISKCACHE (so FUA is unsupported) FUA request
+>>>     will still pass the check.
+>>> 2) blkif_request_flush_valid() is misnamed. It is bool but returns true when
+>>>     the request is invalid.
+>>> 3) When blkif_request_flush_valid() fails -EIO is being returned. It seems that
+>>>     -EOPNOTSUPP is more appropriate here.
+>>> Fix all of the above issues.
+>>>
+>>> This patch is based on the original patch by Laszlo Ersek and a comment by
+>>> Jeff Moyer.
+>>>
+>>> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+>>> ---
+>>>   drivers/block/xen-blkfront.c | 14 ++++++++------
+>>>   1 file changed, 8 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+>>> index 5ac312f..2e6c103 100644
+>>> --- a/drivers/block/xen-blkfront.c
+>>> +++ b/drivers/block/xen-blkfront.c
+>>> @@ -582,12 +582,14 @@ static inline void flush_requests(struct blkfront_info *info)
+>>>   		notify_remote_via_irq(info->irq);
+>>>   }
+>>>   -static inline bool blkif_request_flush_valid(struct request
+>>> *req,
+>>> -					     struct blkfront_info *info)
+>>> +static inline bool blkif_request_flush_invalid(struct request *req,
+>>> +					       struct blkfront_info *info)
+>>>   {
+>>>   	return ((req->cmd_type != REQ_TYPE_FS) ||
+>>> -		((req->cmd_flags & (REQ_FLUSH | REQ_FUA)) &&
+>>> -		!info->flush_op));
+>>> +		((req->cmd_flags & REQ_FLUSH) &&
+>>> +		 !(info->feature_flush & REQ_FLUSH)) ||
+>>> +		((req->cmd_flags & REQ_FUA) &&
+>>> +		 !(info->feature_flush & REQ_FUA)));
+>
+> Somewhat unrelated to the patch, but I am wondering whether we
+> actually need flush_op field at all as it seems that it is
+> unambiguously defined by REQ_FLUSH/REQ_FUA.
 
-I don't know if having an offset/mask helps much.  Knowing your EINVAL
-comes from ->config is nice to know, but if there's 30 different ways
-to get an EINVAL from an improper config then you still can waste a lot
-of time narrowing things down.
+I was under an impression it was added for readability sake but we
+definitely can remove it. If noone objects I'll send separate cleanup
+patch (don't want to mix these two).
 
-The string solution might be nice, but it is going to take major changes 
-to the code and increase the size a bit.  For example:
+>
+> -boris
+>
+>>>   }
+>>>     /*
+>>> @@ -612,8 +614,8 @@ static void do_blkif_request(struct request_queue *rq)
+>>>     		blk_start_request(req);
+>>>   -		if (blkif_request_flush_valid(req, info)) {
+>>> -			__blk_end_request_all(req, -EIO);
+>>> +		if (blkif_request_flush_invalid(req, info)) {
+>>> +			__blk_end_request_all(req, -EOPNOTSUPP);
+>>>   			continue;
+>>>   		}
+>>>   
+>>>
+>> Not sure if there has been some feedback yet (I can't see anything
+>> threaded with this message in my inbox).
+>>
+>> FWIW I consulted "Documentation/block/writeback_cache_control.txt" for
+>> this review. Apparently, REQ_FLUSH forces out "previously completed
+>> write requests", whereas REQ_FUA delays the IO completion signal for
+>> *this* request until "the data has been committed to non-volatile
+>> storage". So, indeed, support for REQ_FLUSH only does not guarantee that
+>> REQ_FUA can be served.
+>>
+>> Reviewed-by: Laszlo Ersek <lersek@redhat.com>
+>>
+>> Thanks
+>> Laszlo
 
-$ cat arch/x86/kernel/cpu/perf* kernel/events/* | grep EINVAL | wc -l
-100
-
-And some of the code is passing the return values back through various
-long callchains (and overloaded pointers via casts) where it's not clear 
-how you could also pass a string value.
-
-Vince
+-- 
+  Vitaly
