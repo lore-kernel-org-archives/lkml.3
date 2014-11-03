@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390AbaKCSvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:51:20 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:36334 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324AbaKCSvT (ORCPT
+	id S1753459AbaKCSvf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:51:35 -0500
+Received: from smtprelay0106.hostedemail.com ([216.40.44.106]:60964 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753393AbaKCSvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:51:19 -0500
-Date: Mon, 3 Nov 2014 10:51:08 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Felipe Balbi <balbi@ti.com>
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, nsekhar@ti.com,
-        grant.likely@linaro.org, George Cherian <george.cherian@ti.com>
-Subject: Re: [PATCH 1/4] extcon: gpio: Convert the driver to use gpio desc
- API's
-Message-ID: <20141103185101.GC10558@roeck-us.net>
-References: <1415032350-8459-1-git-send-email-balbi@ti.com>
- <1415032350-8459-2-git-send-email-balbi@ti.com>
- <20141103180150.GA10164@roeck-us.net>
- <20141103180602.GU27425@saruman>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103180602.GU27425@saruman>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020207.5457CEA6.0340,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 14
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 3 Nov 2014 13:51:31 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3872:3873:3874:4321:5007:6261:7514:7576:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21063:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: badge35_6427f7d801d39
+X-Filterd-Recvd-Size: 1470
+Message-ID: <1415040686.17743.31.camel@perches.com>
+Subject: Re: [PATCH] net: eth: realtek: atp: checkpatch errors and warnings
+ corrected
+From: Joe Perches <joe@perches.com>
+To: Roberto Medina <robertoxmed@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 03 Nov 2014 10:51:26 -0800
+In-Reply-To: <1415039073-20164-1-git-send-email-robertoxmed@gmail.com>
+References: <1415039073-20164-1-git-send-email-robertoxmed@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 12:06:02PM -0600, Felipe Balbi wrote:
-> On Mon, Nov 03, 2014 at 10:01:50AM -0800, Guenter Roeck wrote:
-> > On Mon, Nov 03, 2014 at 10:32:27AM -0600, Felipe Balbi wrote:
-> > > From: George Cherian <george.cherian@ti.com>
-> > > 
-> > > Convert the driver to use gpiod_* API's.
-> > > 
-> > > Reviewed-by: Roger Quadros <rogerq@ti.com>
-> > > Signed-off-by: George Cherian <george.cherian@ti.com>
-> > > Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > > ---
-> > 
-> > I think it might be useful and appropriate to explain that and why
-> > you remove support for active-low pins, instead of hiding it in a
-> > seemingly unrelated patch.
+On Mon, 2014-11-03 at 19:24 +0100, Roberto Medina wrote:
+> From: Roberto Medina <robertoxmed@gmail.com>
 > 
-> removed ? why removed ? gpio descs handle that for you, read the source
-> code.
+> Several warnings and errors corrected using checkpatch.
+> Some warnings like "line over 80" are still present.
 > 
-Well, it for sure looks like it. Care to explain that in the patch,
-as well as how the platform data flag is used ?
+> Before the patch:
+> 	total: 16 errors, 155 warnings, 38 checks, 883 lines checked
+> 
+> With the patch:
+> 	total: 0 errors, 64 warnings, 24 checks, 905 lines checked
+> 	
+> Compile tested.
 
-Thanks,
-Guenter
+Some ancient drivers could be regarded as neolithic
+curiosities that never need updating.  This may be one.
+
+But if you really want to change it, could you please
+make sure that objdiff shows no changes?
+
+
