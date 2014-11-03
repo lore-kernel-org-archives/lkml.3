@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237AbaKCOrP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:47:15 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38826 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164AbaKCOmQ (ORCPT
+	id S1752948AbaKCOrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:47:51 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:63785 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991AbaKCOru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:42:16 -0500
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v4 01/14] regulator: Document binding for initial and suspend modes
-Date: Mon,  3 Nov 2014 15:40:36 +0100
-Message-Id: <1415025649-8119-2-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
+	Mon, 3 Nov 2014 09:47:50 -0500
+MIME-Version: 1.0
+Date: Mon, 3 Nov 2014 15:47:49 +0100
+Message-ID: <CACRpkdb4xYmz3d6O3GVvffAx2+oWfsRwMyjQULXj5gAKe1j83g@mail.gmail.com>
+Subject: [GIT PULL] pin control fixes for v3.18
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some regulators can run on different operating modes (opmodes). This
-allows systems to choose the most efficient opmode for each regulator.
+Hi Linus,
 
-This patch builds on top of (291d761 regulator: Document binding for
-regulator suspend state for PM state) adding a regulator-initial-mode
-DT property to configure at startup the operating mode for regulators
-that support changing its mode during normal operation and a property
-regulator-mode to be used in the regulator-state-[mem/disk] nodes for
-regulators that supports changing its operating mode when the system
-enters in a suspend state.
+this kernel cycle has been calm for both pin control and GPIO
+so far but here are three pin control patches for you anyway,
+only really dealing with Baytrail.
 
-The set of possible modes that a regulator can operate depends on the
-hardware capabilities so a list of generic operating modes can't be
-provided. Instead, each hardware binding should define the list of
-valid operating modes for the regulators found on that device.
+Please pull them in!
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
+Yours,
+Linus Walleij
 
-Changes in v3:
- - Rebased on top of regulator suspend voltage series
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
 
- Documentation/devicetree/bindings/regulator/regulator.txt | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
 
-diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-index 4e7ed76..3fffa3b 100644
---- a/Documentation/devicetree/bindings/regulator/regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-@@ -30,6 +30,20 @@ Optional properties:
- 	- regulator-off-in-suspend: regulator should be off in suspend state.
- 	- regulator-suspend-microvolt: regulator should be set to this voltage
- 	  in suspend.
-+	- regulator-mode: operating mode in the given suspend state.
-+	  The set of possible operating modes depends on the capabilities of
-+	  every hardware so the valid modes are documented on each regulator
-+	  device tree binding document.
-+	  The "regulator-mode" property only takes effect if the regulator is
-+	  enabled for the given suspend state using "regulator-on-in-suspend".
-+	  If the regulator has not been explicitly disabled for the given state
-+	  with "regulator-off-in-suspend", then setting the operating mode
-+	  will also have no effect.
-+- regulator-initial-mode: initial operating mode. The set of possible operating
-+  modes is the same used for the regulator-mode property and the device binding
-+  documentation explains which property each regulator supports.
-+If no mode is defined, then the OS will not manage the modes and the hardware
-+default values will be used instead.
- 
- Deprecated properties:
- - regulator-compatible: If a regulator chip contains multiple
--- 
-2.1.0
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-v3.18-2
+
+for you to fetch changes up to d90c33818967c5e5371961604ad98b4dea4fa3f4:
+
+  pinctrl: baytrail: show output gpio state correctly on Intel
+Baytrail (2014-10-28 11:16:26 +0100)
+
+----------------------------------------------------------------
+Pin control fixes for the v3.18 series:
+- Two fixes for the Baytrail driver affecting IRQs and
+  output state in sysfs
+- Use the linux-gpio mailing list also for pinctrl patches
+
+----------------------------------------------------------------
+David Cohen (2):
+      pinctrl: use linux-gpio mailing list
+      pinctrl: baytrail: show output gpio state correctly on Intel Baytrail
+
+Loic Poulain (1):
+      pinctrl: baytrail: Clear DIRECT_IRQ bit
+
+ MAINTAINERS                        | 1 +
+ drivers/pinctrl/pinctrl-baytrail.c | 8 ++++++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
