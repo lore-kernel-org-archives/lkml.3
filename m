@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336AbaKCDJE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 22:09:04 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:56358 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274AbaKCDIi (ORCPT
+	id S1753365AbaKCDJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 22:09:28 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:57395 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264AbaKCDIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 22:08:38 -0500
+	Sun, 2 Nov 2014 22:08:36 -0500
 From: Chris Rorvick <chris@rorvick.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Chris Rorvick <chris@rorvick.com>, Alan Stern <stern@rowland.harvard.edu>,
         Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org
-Subject: [RFC RESEND 10/10] usb: Remove __init from early_dbgp_init() prototype
-Date: Sun,  2 Nov 2014 21:07:57 -0600
-Message-Id: <1414984077-9750-11-git-send-email-chris@rorvick.com>
+Subject: [RFC RESEND 09/10] fotg210: Use ehci_dbg_port struct
+Date: Sun,  2 Nov 2014 21:07:56 -0600
+Message-Id: <1414984077-9750-10-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414984077-9750-1-git-send-email-chris@rorvick.com>
 References: <1414984077-9750-1-git-send-email-chris@rorvick.com>
@@ -22,35 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specifying these attributes in both the prototype and the function
-definition is unnecessary and could cause confusion or bugs if they are
-inconsistent.  As such, __init should only be specified at the function
-definition.
-
-Keith Owens suggested this as a janitorial task on LKML several years
-ago:
-
-  https://lkml.org/lkml/2006/1/14/305
+The FUSBH200 debug port has a EHCI-compatible register layout so there
+is no need to define a custom struct.
 
 Signed-off-by: Chris Rorvick <chris@rorvick.com>
 ---
- include/linux/usb/ehci-dbgp.h | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/host/fotg210.h | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-diff --git a/include/linux/usb/ehci-dbgp.h b/include/linux/usb/ehci-dbgp.h
-index 796c1cd..7344d9e 100644
---- a/include/linux/usb/ehci-dbgp.h
-+++ b/include/linux/usb/ehci-dbgp.h
-@@ -43,8 +43,7 @@ struct ehci_dbg_port {
+diff --git a/drivers/usb/host/fotg210.h b/drivers/usb/host/fotg210.h
+index 975d9bb..3bad178 100644
+--- a/drivers/usb/host/fotg210.h
++++ b/drivers/usb/host/fotg210.h
+@@ -86,7 +86,7 @@ struct fotg210_hcd {			/* one per controller */
+ 	/* glue to PCI and HCD framework */
+ 	struct fotg210_caps __iomem *caps;
+ 	struct fotg210_regs __iomem *regs;
+-	struct fotg210_dbg_port __iomem *debug;
++	struct ehci_dbg_port __iomem *debug;
+ 
+ 	__u32			hcs_params;	/* cached register copy */
+ 	spinlock_t		lock;
+@@ -295,17 +295,6 @@ struct fotg210_regs {
+ #define GMIR_MDEV_INT	(1 << 0)
  };
  
- #ifdef CONFIG_EARLY_PRINTK_DBGP
--#include <linux/init.h>
--extern int __init early_dbgp_init(char *s);
-+extern int early_dbgp_init(char *s);
- extern struct console early_dbgp_console;
- #endif /* CONFIG_EARLY_PRINTK_DBGP */
+-/* Appendix C, Debug port ... intended for use with special "debug devices"
+- * that can help if there's no serial console.  (nonstandard enumeration.)
+- */
+-struct fotg210_dbg_port {
+-	u32	control;
+-	u32	pids;
+-	u32	data03;
+-	u32	data47;
+-	u32	address;
+-};
+-
+ /*-------------------------------------------------------------------------*/
  
+ #define	QTD_NEXT(fotg210, dma)	cpu_to_hc32(fotg210, (u32)dma)
 -- 
 1.9.3
 
