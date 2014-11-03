@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaKCTaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 14:30:39 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:45024 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaKCTaf (ORCPT
+	id S1753080AbaKCTd2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 14:33:28 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:61912 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340AbaKCTd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 14:30:35 -0500
+	Mon, 3 Nov 2014 14:33:26 -0500
+Message-ID: <5457D883.4050201@amacapital.net>
+Date: Mon, 03 Nov 2014 11:33:23 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAB=NE6UVca47FyZv54pED3C_1go+-Ra_AbSwW1+=Gj5YWP0GHw@mail.gmail.com>
-References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
- <1414570902-5675-2-git-send-email-mcgrof@do-not-panic.com>
- <1414741273.3014.3.camel@jlt4.sipsolutions.net> <20141031193408.GA12953@wotan.suse.de>
- <1414786943.3014.37.camel@jlt4.sipsolutions.net> <CAB=NE6UVca47FyZv54pED3C_1go+-Ra_AbSwW1+=Gj5YWP0GHw@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Mon, 3 Nov 2014 11:30:12 -0800
-X-Google-Sender-Auth: FD7UeuTSMvPwh_CLrSFPxyxLOf0
-Message-ID: <CAB=NE6U7-TE9Oe_aTvjr4Y1iGALMeRohmx-ekbzmRuzAbbqTTA@mail.gmail.com>
-Subject: Re: [RFC v2 1/4] backports: replace CPTCFG prefix for CONFIG_BACKPORT
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Michal Marek <mmarek@suse.cz>, Stefan Assmann <sassmann@kpanic.de>
-Content-Type: text/plain; charset=UTF-8
+To: Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Ong Boon Leong <boon.leong.ong@intel.com>
+Subject: Re: [PATCH v2 0/3] Enable user helper interface for efi capsule update
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+In-Reply-To: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 1:33 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
->> That also makes me think of something else - we currently use BACKPORT_
->> as a prefix for some of the other stuff under compat/Kconfig, and in
->> fact rename some things (like CONFIG_BACKPORT_AVERAGE) so maybe also
->> using CONFIG_BACKPORT_ here isn't a great idea? Might want to use
->> something else, say CONFIG_BPT_ or so.
->
-> That's a good point, I take it that it does not matter which one we
-> pick for each, so long as its different? If so I think CONFIG_BACKPORT
-> is pretty clear for things we carry over like device drivers, but this
-> is just subjective and so long as we pick something I think it'll be
-> fine.
+On 11/02/2014 07:07 PM, Kweh Hock Leong wrote:
+> From: "Kweh, Hock Leong" <hock.leong.kweh-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+> 
+> Hi Guys,
+> 
+> This patchset is created on top of "efi: Capsule update support" patch:
+> http://permalink.gmane.org/gmane.linux.kernel.efi/4837
+> 
+> It leverages the request_firmware_nowait() to expose the user helper interface for user to upload the capsule binary and calling the
+> efi_capsule_update() API to pass the binary to EFI firmware.
 
-Thought about this some more, the stuff under compat/ is just
-backported through a slightly different strategy -- the Kconfig
-copy-file stuff but yet its very similar to the copy-list mechanism,
-where it ends up is different but I am not sure if it makes sense to
-keep a different naming scheme for each backport strategy.
+I don't get it.  Why is the firmware interface at all reasonable for
+uploading capsules?
 
- Luis
+The firmware interface makes sense for nonvolatile firmware where
+hotplugging something or otherwise loading a driver needs a blob.  But
+uploading an EFI capsule is an *action*, not something that should
+happen transparently.  If there's an EFI firmware update available and
+the user wants to install it, then the userspace tool should install it,
+and it shouldn't hang around in /lib/firmware.  In fact, you shouldn't
+even need /lib to be on writable media to use this.
+
+And you most certainly don't want the EFI capsule hanging around so that
+it might be accidentally installed again if the hard disk is moved.
+
+ISTM there should be some file in sysfs to which you can write a
+capsule, or perhaps a chardev and an ioctl.
+
+--Andy
+
+> 
+> Besides build in kernel, the design also cater for build as kernel driver module. This patchset introduce a new API (request_firmware_abort()) at firmware_class so that the driver module could be unloaded by calling the API to properly stop user helper interface and release the device.
+> 
+> Thanks.
+> 
+> ---
+> changelog v2:
+> [PATCH 1/3]
+> * use fw_lookup_buf() instead of __fw_lookup_buf() function call
+> * move the fw_lookup_buf() function out of the CONFIG_PM_SLEEP block
+> 
+> [PATCH 2/3]
+> * no change
+> 
+> [PATCH 3/3]
+> * no change
+> 
+> 
+> Kweh, Hock Leong (3):
+>   firmware loader: Introduce new API - request_firmware_abort()
+>   firmware loader: fix hung task warning dump
+>   efi: Capsule update with user helper interface
+> 
+>  drivers/base/firmware_class.c                  |   56 ++++--
+>  drivers/firmware/efi/Kconfig                   |   13 ++
+>  drivers/firmware/efi/Makefile                  |    1 +
+>  drivers/firmware/efi/efi-capsule-user-helper.c |  246 ++++++++++++++++++++++++
+>  include/linux/firmware.h                       |    4 +
+>  5 files changed, 306 insertions(+), 14 deletions(-)
+>  create mode 100644 drivers/firmware/efi/efi-capsule-user-helper.c
+> 
+
