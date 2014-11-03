@@ -1,121 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557AbaKCJkN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:40:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40044 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaKCJkK (ORCPT
+	id S1751778AbaKCJkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:40:43 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:56747 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaKCJkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:40:10 -0500
-Message-ID: <1415007592.3060.5.camel@pengutronix.de>
-Subject: Re: [PATCH v2 2/3] dt-bindings: Add Reset Controller for MediaTek
- SoC
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Flora Fu <flora.fu@mediatek.com>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, arm@kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        srv_heupstream@mediatek.com, Sascha Hauer <kernel@pengutronix.de>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Date: Mon, 03 Nov 2014 10:39:52 +0100
-In-Reply-To: <1415005371-4323-3-git-send-email-flora.fu@mediatek.com>
-References: <1415005371-4323-1-git-send-email-flora.fu@mediatek.com>
-	 <1415005371-4323-3-git-send-email-flora.fu@mediatek.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 3 Nov 2014 04:40:39 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: opw-kernel@googlegroups.com
+Cc: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [OPW kernel] [PATCH v3] drivers: s390: net: ctcm: migrate variables to handle y2038 problem
+Date: Mon, 03 Nov 2014 10:40:30 +0100
+Message-ID: <4030959.mWGrEP99VU@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141101001614.GA9494@localhost.localdomain>
+References: <20141101001614.GA9494@localhost.localdomain>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:AALY7GSVYrYBg4+dzdggrr+B3m/Nz44YcFSLPo0bYCg
+ eomYe11Sw7roPv4RUaNi2X26PCKiMIiPnTCQQRVJ4mUeMnE7g/
+ a4a0USHxn/489Gm/jO4ZDabBGEjxEq4skNh5KOub0HFqlnNCkm
+ 1LRMwXKPFfUbvyadX5zuX+JZSPyruMXB382RebSVmIp5n0TRBv
+ WylOVbykglh4fDhbu2bAx3vdFIP6rTNQCDcosFl49IMG7TGYOf
+ Y76w+Fvih9AtgyaryGFbD6ZDwN49mPFJB1vehkOvUV2UIANpg+
+ HbXF1Qr1yifqkXap7Ouua/j9y8Fl4fuVchXTu5HiAHJkO0s0+d
+ q7vvuiJEtXSCYh2hxzok=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Flora,
-
-Am Montag, den 03.11.2014, 17:02 +0800 schrieb Flora Fu:
-> Add device tree bindings.
+On Saturday 01 November 2014 02:16:14 Aya Mahfouz wrote:
+> This patch is concerned with migrating the time variables for the s390
+> network driver. The changes handle the y2038 problem where timespec will
+> overflow in the year 2038. timespec was replaced by unsigned long and
+> all time variables get their values from the jiffies global variable.
+> This was done for the sake of speed and efficiency.
 > 
-> Signed-off-by: Flora Fu <flora.fu@mediatek.com>
+> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
 > ---
->  .../devicetree/bindings/reset/mediatek,reset.txt   | 45 ++++++++++++++++++++++
->  1 file changed, 45 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/reset/mediatek,reset.txt
+> v1: Arnd has advised me to provide you with options for time
+>     calculation. The first option: "accuracy" is used in this
+>     patch. The second option: "speed" can be done through
+>     jiffies.
 > 
-> diff --git a/Documentation/devicetree/bindings/reset/mediatek,reset.txt b/Documentation/devicetree/bindings/reset/mediatek,reset.txt
-> new file mode 100644
-> index 0000000..3c5687b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/reset/mediatek,reset.txt
-> @@ -0,0 +1,45 @@
-> +MediaTek SoC Reset Controller
-> +======================================
-> +The reset controller driver accesses registers through the syscon regmap. It
-> +is a child node of syscon.
-> +
-> +Required properties:
-> +- compatible : "mediatek,reset"
-> +- #reset-cells: 1
-> +- reg: The register region can be accessed from syscon. The first parameter is
-> +  reset base address offset. The second parameter is byte width of reset registers.
-> +
-> +example:
-> +infracfg: syscon@10001000 {
-> +	#address-cells = <1>;
-> +	#size-cells = <0>;
+> v2: Moved on to the speed option. Let me know if I explicitly
+>     need to include the jiffies header. The module compiles with
+>     no problems on my side.
+> 
+> v3: Handled the error pointed out by Ursula. The current version
+>     does not handle overflows. There are two solutions for this.
+>     The first is to use jiffies_64 since s/390 is a 64-bit
+>     architecture after all. The second is to use wrapper functions
+>     like time_before and time_after. Two files were added too. 
+>     They are: ctcm_main.c and netiucv.c. This patch could be sent
+>     as a patchset in its final version for convenience. 
 
-Since we use reg = <0x30 0x8> below, #size-cells should be set to <1>.
+Hi Aya,
 
-I have updated the syscon child support patch and fixed the binding
-documentation to allow this. Previously I had only thought about
-children that use a single register or just a bitfield in a single
-register.
+The patch looks correct to me now,
 
-With that change, feel free to consider this patch
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-> +	compatible = "mediatek,mt8135-infracfg", "syscon";
-> +	reg = <0 0x10001000 0 0x1000>;
-> +
-> +	infrarst: reset-controller@30 {
-> +		#reset-cells = <1>;
-> +		compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
-> +		reg = <0x30 0x8>;
-> +	};
-> +};
-> +
-> +Specifying reset lines connected to IP modules
-> +==============================================
-> +
-> +The reset controller(mtk-reset) manages various reset sources. Those device nodes should
-> +specify the reset line on the rstc in their resets property, containing a phandle to the
-> +rstc device node and a RESET_INDEX specifying which module to reset, as described in
-> +reset.txt.
-> +
-> +For MediaTek SoC, RESET_INDEX is reset bit defined in INFRACFG or PERICFG registers.
-> +
-> +example:
-> +pwrap: pwrap@1000f000 {
-> +	compatible = "mediatek,mt8135-pwrap";
-> +	reg = <0 0x1000f000 0 0x1000>,
-> +		<0 0x11017000 0 0x1000>;
-> +	reg-names = "pwrap-base",
-> +		"pwrap-bridge-base";
-> +	resets = <&infrarst 7>, <&perirst 34>;
+There is one small change that you could do for efficiency:
 
-Maybe it would be useful to add a header with #defines for these reset
-bit indices?
+>  
+> -	duration =
+> -	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+> -	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
+> +	duration =  jiffies_to_usecs(done_stamp - ch->prof.send_stamp);
+>  	if (duration > ch->prof.tx_time)
+>  		ch->prof.tx_time = duration;
+>  
 
-> +	reset-names = "infrarst", "perirst";
-> +};
+This means you are doing the jiffies_to_usecs conversion for every
+packet. s390 has a fast multiplication instruction, so it won't matter
+in practice, but if you do more conversions like this, a better approach
+is to store the 'jiffies' value in ch->prof.tx_time and only convert
+it to another unit when printing the number.
 
-regards
-Philipp
-
+	Arnd
