@@ -1,120 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264AbaKCHvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:51:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42058 "EHLO mx2.suse.de"
+	id S1751312AbaKCHwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:52:41 -0500
+Received: from mga01.intel.com ([192.55.52.88]:30983 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751168AbaKCHvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 02:51:14 -0500
-Message-ID: <545733ED.2080705@suse.de>
-Date: Mon, 03 Nov 2014 08:51:09 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751106AbaKCHwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 02:52:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,305,1413270000"; 
+   d="scan'208";a="615866428"
+Message-ID: <545733E7.6010105@intel.com>
+Date: Mon, 03 Nov 2014 09:51:03 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: linux-next: build failure after merge of the scsi tree
-References: <20141103135229.7916c23c@canb.auug.org.au>
-In-Reply-To: <20141103135229.7916c23c@canb.auug.org.au>
-Content-Type: multipart/mixed;
- boundary="------------070805090102030105050900"
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 3/8] perf tools: Get rid of unused dsos__hit_all()
+References: <1414999678-31377-1-git-send-email-namhyung@kernel.org> <1414999678-31377-4-git-send-email-namhyung@kernel.org> <5457305B.9080404@intel.com> <CAM9d7cjfBXrd-8JxDAfG7OM7X_XxkojFnrxpbGVVUW_xwnwkbA@mail.gmail.com>
+In-Reply-To: <CAM9d7cjfBXrd-8JxDAfG7OM7X_XxkojFnrxpbGVVUW_xwnwkbA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070805090102030105050900
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 11/03/2014 03:52 AM, Stephen Rothwell wrote:
-> Hi James,
+On 03/11/14 09:39, Namhyung Kim wrote:
+> Hi Adrian,
 > 
-> After merging the scsi tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+> On Mon, Nov 3, 2014 at 4:35 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+>> On 03/11/14 09:27, Namhyung Kim wrote:
+>>> The dsos__hit_all() and its friends are not used anywhere.  Let's get
+>>> rid of them.
+>>
+>> They were added for Intel PT preparation.  Intel PT is still on its way,
+>> so they are still needed.  Note the commit was:
+>>
+>> commit 1f625b0b3dd641b74ba21640a1fea19a3dd893a2
+>> Author: Adrian Hunter <adrian.hunter@intel.com>
+>> Date:   Tue Jul 22 16:17:23 2014 +0300
+>>
+>>     perf tools: Add dsos__hit_all()
+>>
+>>     Add ability to mark all dsos as hit.
+>>
+>>     This is needed in the case of Instruction Tracing.  It takes so long to
+>>     decode an Instruction Trace that it is not worth doing just to determine
+>>     which dsos are hit.  A later patch takes this into use.
 > 
-> drivers/scsi/scsi_lib.c: In function 'scsi_io_completion': 
-> drivers/scsi/scsi_lib.c:1048:5: error: implicit declaration of
-> function 'SCSI_LOG_LEVEL'
-> [-Werror=implicit-function-declaration] level =
-> SCSI_LOG_LEVEL(SCSI_LOG_MLCOMPLETE_SHIFT, ^
-> 
-> Caused by commit b6568e80be82 ("scsi: simplify 
-> scsi_log_(send|completion)").  SCSI_LOG_LEVEL is defined in 
-> drivers/scsi/scsi_logging.h, but only if CONFIG_SCSI_LOGGING is
-> defined.
-> 
-> I have used the version of the scsi tree from next-20141031 for
-> today.
-> 
-Ah, missed that. Here's the patch.
+> Oops, didn't notice.  Sorry for not checking the commit log.  So how
+> about moving it into util/build-id.c then?
 
-Cheers,
+OK by me.
 
-Hannes
-- -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUVzPtAAoJEGz4yi9OyKjPX/YP/2CmPtJDed4+ckb0gjJ8bdlW
-i6F532mihXN1WuFYahFujCmZczF8aPEZrViKp/6BZGaqezhqg7BdoH/dXzsYzWAh
-Slwlqu52WIj4Eo0B39dN8uuWRPJXV+jvSRE2NucVVhICYYYghR8YhK3HeY2Mw/g7
-M1G82a3Ry0g/NpJePzdLImvWj8QoLhua9p61aias0kJjf3p+JskMV3PK9QbroVp/
-QsubWkj2yaSs/j21E77JMMzLaQsRK0SIwDvN7AdGxh+h5e9r+eWJrpfdJscAZ4td
-FsPApfQR9fxtG9mDPZigf2Oy3XX++N1TPQN6Y7s1KE78d+XGJFxtXEIf1gmp07Pg
-lCQACp2WVA14mA+A5PTN7xYtYwvPgMPez63XnAjFkVVXpSMYilRqSPQs82ruN42w
-0GGX293ay2s6o1CcFNk/xJp/l7KomKlQbjdIMCkWVbKb3gpO8ivxThPzJv001SN8
-zOF7u9YxATQS5EG0Cja9/aLVrhjg0GWFjtmvs9ToSrSgsFrrLycg7zP+DtfP4uz8
-2hsAU9Ss9PlxfgbOIMoH42S0YZe4vo6RJmY25POuSfHQVsn+FTVpxqYErMUnNql6
-dPfcQq+YqcfcT4n0rBV8VtzRulU11SzNZBEwbJhML4zUs4DCLteemYCWyp/5F+hw
-hmmeOMsJfUW8EiLgoLbf
-=nK00
------END PGP SIGNATURE-----
-
---------------070805090102030105050900
-Content-Type: text/x-patch;
- name="0001-scsi-define-SCSI_LOG_LEVEL.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-scsi-define-SCSI_LOG_LEVEL.patch"
-
->From e5c943164a981e32d88c7083c84a85ff513bb0ee Mon Sep 17 00:00:00 2001
-From: Hannes Reinecke <hare@suse.de>
-Date: Mon, 3 Nov 2014 08:03:48 +0100
-Subject: [PATCH] scsi: define SCSI_LOG_LEVEL
-
-SCSI_LOG_LEVEL needs to be defined even if CONFIG_SCSI_LOGGING
-is not enabled.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
----
- drivers/scsi/scsi_logging.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/scsi/scsi_logging.h b/drivers/scsi/scsi_logging.h
-index 1f65139..7fe64a8 100644
---- a/drivers/scsi/scsi_logging.h
-+++ b/drivers/scsi/scsi_logging.h
-@@ -51,6 +51,7 @@ do {								\
- 		} while (0);					\
- } while (0)
- #else
-+#define SCSI_LOG_LEVEL(SHIFT, BITS) 0
- #define SCSI_CHECK_LOGGING(SHIFT, BITS, LEVEL, CMD)
- #endif /* CONFIG_SCSI_LOGGING */
- 
--- 
-1.8.4.5
-
-
---------------070805090102030105050900--
