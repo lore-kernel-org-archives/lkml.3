@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311AbaKCJCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:02:08 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:49547 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750826AbaKCJCF (ORCPT
+	id S1751174AbaKCJDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:03:22 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:35872 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750834AbaKCJDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:02:05 -0500
-Message-ID: <1415005321.20372.13.camel@x220>
-Subject: Re: [GIT PULL] perf fixes
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 03 Nov 2014 10:02:01 +0100
-In-Reply-To: <20141031111332.GA26137@gmail.com>
-References: <20141031111332.GA26137@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Nov 2014 09:02:01.0645 (UTC) FILETIME=[D4C375D0:01CFF744]
-X-RcptDomain: vger.kernel.org
+	Mon, 3 Nov 2014 04:03:16 -0500
+X-Listener-Flag: 11101
+From: Flora Fu <flora.fu@mediatek.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, <arm@kernel.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Flora Fu <flora.fu@mediatek.com>
+Subject: [PATCH v2 0/3] Add Reset Controller for MediaTek SoC
+Date: Mon, 3 Nov 2014 17:02:48 +0800
+Message-ID: <1415005371-4323-1-git-send-email-flora.fu@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
+MIME-Version: 1.0
+Content-Type: text/plain
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+Hi,
+The patch modification is base on https://lkml.org/lkml/2014/5/27/422
 
-On Fri, 2014-10-31 at 12:13 +0100, Ingo Molnar wrote:
-> Please pull the latest perf-urgent-for-linus git tree from:
-> 
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
-> 
->    # HEAD: d785452c9972fac2808479eb561d5c426b6e7d3b Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
-> 
->[...]
->
-> Peter Zijlstra (2):
->       [...]
->       perf/x86: Fix compile warnings for intel_uncore
+Changes since v1
+================
+(1) Patch 1/3: Update reset controller driver's implementation. 
+  - rename mt_ prefixes to the prefix mtk_
+  - use module_platform_driver() macro for driver init.
+  - clean up includes of header files.
+  - reset controll is a child of syscon. Get regamp through its parent node.
+  - rename data->size to data->num_regs. It is number of registers in syscon for reset usage. 
+(2) Patch 2/3: update bindings document according to new dts layout of reset-controller. 
+(3) Patch 3/3: change reset-controller device node as child of syscon. 
 
-This was included in v3.18-rc3.
+This driver is based on 3.18-rc1.
 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index f2327e88e07c..ded8a6774ac9 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -142,6 +142,10 @@ config INSTRUCTION_DECODER
->  	def_bool y
->  	depends on KPROBES || PERF_EVENTS || UPROBES
->  
-> +config PERF_EVENTS_INTEL_UNCORE
-> +	def_bool y
-> +	depends on PERF_EVENTS && SUP_SUP_INTEL && PCI
+Flora Fu (3):
+  ARM: mediatek: Add Reset Controller for MediaTek SoC
+  dt-bindings: Add Reset Controller for MediaTek SoC
+  ARM: dts: mt8135: Add Reset Controller for MediaTek SoC
 
-Andi spotted this typo (see https://lkml.org/lkml/2014/10/28/455 ). So
-did my local perl script when it hit next-20141029. But since this was
-already discussed I didn't bother to mention it too.
+ .../devicetree/bindings/reset/mediatek,reset.txt   |  45 +++++++
+ arch/arm/boot/dts/mt8135.dtsi                      |  26 ++++
+ drivers/reset/Makefile                             |   1 +
+ drivers/reset/reset-mtk.c                          | 131 +++++++++++++++++++++
+ 4 files changed, 203 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/reset/mediatek,reset.txt
+ create mode 100644 drivers/reset/reset-mtk.c
 
-One expects this to be fixed by s/SUP_SUP_INTEL/CPU_SUP_INTEL/. Perhaps
-the fix is more complicated, but anyhow, the typo isn't fixed in
-next-20141103 or, as far as I can tell, in tip.git. So I decided to
-remind you to make sure this doesn't fall through the cracks.
+--
+1.8.1.1.dirty
 
-> +
->  config OUTPUT_FORMAT
->  	string
->  	default "elf32-i386" if X86_32
-
-
-Paul Bolle
 
