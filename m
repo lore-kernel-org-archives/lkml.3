@@ -1,366 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaKCQM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:12:27 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.145]:62099 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751922AbaKCQMZ (ORCPT
+	id S1752932AbaKCQNY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:13:24 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:63326 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209AbaKCQNV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:12:25 -0500
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Nov 2014 11:12:25 EST
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-10.tower-179.messagelabs.com!1415030765!33413481!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.4; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Mon, 03 Nov 2014 17:06:06 +0100
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: [PATCH v4] tty: serial: men_z135_uart: Fix driver for changes in hardware
-Date: Mon, 3 Nov 2014 17:05:53 +0100
-Message-ID: <1415030753-26885-1-git-send-email-johannes.thumshirn@men.de>
-X-Mailer: git-send-email 1.9.1
+	Mon, 3 Nov 2014 11:13:21 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [RFC 1/2] PM / Domains: Power on domain early during system resume
+References: <1414072090-11293-1-git-send-email-k.kozlowski@samsung.com>
+	<1414072090-11293-2-git-send-email-k.kozlowski@samsung.com>
+	<7hk33iahvu.fsf@deeprootsystems.com>
+	<1414654594.5114.8.camel@AMDC1943> <54521A8F.5070808@samsung.com>
+Date: Mon, 03 Nov 2014 08:13:17 -0800
+In-Reply-To: <54521A8F.5070808@samsung.com> (Andrzej Hajda's message of "Thu,
+	30 Oct 2014 12:01:35 +0100")
+Message-ID: <7hbnoojm8y.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.1.1.31]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-16z135 IP Core has changed so the driver needs to be updated to respect
-these changes. The following changes have been made:
+Andrzej Hajda <a.hajda@samsung.com> writes:
 
-* Don't invert the 16z135 modem status register when reading.
-* Add module parameter to configure the (baud rate dependent) RX timeout.
-  Character timeout in seconds = (timeout_reg * baud_reg * 4)/freq_reg.
-* Enable the handling of UART core's automatic flow control feature.
-  When AFE is active disable generation of modem status IRQs.
-* Rework the handling of IRQs to be conform with newer FPGA versions and
-  take precautions not to miss an interrupt because of the destructive read
-  of the IIR register.
-* Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not
-  stat_reg[7:0]
-* Correct calling of uart_handle_{dcd,cts}_change()
-* Correct handling of hardware's automode
+> On 10/30/2014 08:36 AM, Krzysztof Kozlowski wrote:
+>> On śro, 2014-10-29 at 10:46 -0700, Kevin Hilman wrote:
+>>> Krzysztof Kozlowski <k.kozlowski@samsung.com> writes:
+>>>
+>>>> When resuming the system the power domain has to be powered on early so
+>>>> any runtime PM aware devices could resume.
+>>>>
+>>>> This fixes following scenario reproduced on Exynos DRM:
+>>>> 1. Power domain is off before suspending the system.
+>>>> 2. System is suspended to RAM.
+>>>> 3. Resuming starts. The Exynos DRM driver resume callback is called.
+>>>> 4. The Exynos DRM driver calls drm_helper_resume_force_mode which turns
+>>>>    the screen on by calling exynos_dsi_dpms with DRM_MODE_DPMS_ON.
+>>> Dumb Q: if the device (and power domain) were off before (and during)
+>>> suspend, why are they being resumed?
+>>>
+>>> Shouldn't the resume path restore things to the same state they were
+>>> before suspend?
+>> One could expect that... but the Exynos DRM driver behaves differently
+>> (and some other drivers also). In resume method it calls
+>> drm_helper_resume_force_mode() which forces restoring mode setting
+>> configuration. Apparently setting a mode needs DPMS on:
+>> static void exynos_drm_crtc_commit(struct drm_crtc *crtc)
+>> {
+>> 	...
+>> 	exynos_drm_crtc_dpms(crtc, DRM_MODE_DPMS_ON);
+>> 	...
+>>
+>> The previous DPMS status (status during suspend) is completely ignored
+>> here.
+>
+> Suspend callback switches off all connectors (thus all other devs in
+> their pipeline) by calling dpms_off,
+> in restore callback all devs are restored to their previous state by
+> calling appropriate dpms.
+> So I guess drm_helper_resume_force_mode() call at the end of resume is
+> incorrect.
 
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
-Changes to v1:
-Incorporated comments of Jiri Slaby:
+Though I'm not terribly familiar with DRM, it seems incorrect because I
+expect resume to restore the state of things when suspend happened, not
+forcibly resume everything.
 
-* Timeout value is documented in module parameter description
-* rx_timeout variable is uint
-* Changed IRQ handled variable to bool
-* Changed if statement for RDA or CTI IRQ
+> On the other side it is present in many other drivers, so I am also
+> little bit confused.
 
-Changes to v2:
-Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not stat_reg[7:0]
+Many other DRM drivers?  or other drivers too?
 
-Changes to v3:
-Correct calling of uart_handle_{dcd,cts}_change()
-Correct handling of hardware's automode
+Kevin
 
-
- drivers/tty/serial/men_z135_uart.c | 154 ++++++++++++++++++++++++++-----------
- 1 file changed, 108 insertions(+), 46 deletions(-)
-
-diff --git a/drivers/tty/serial/men_z135_uart.c b/drivers/tty/serial/men_z135_uart.c
-index 30e9e60..90104c4 100644
---- a/drivers/tty/serial/men_z135_uart.c
-+++ b/drivers/tty/serial/men_z135_uart.c
-@@ -23,7 +23,6 @@
- #define MEN_Z135_MAX_PORTS		12
- #define MEN_Z135_BASECLK		29491200
- #define MEN_Z135_FIFO_SIZE		1024
--#define MEN_Z135_NUM_MSI_VECTORS	2
- #define MEN_Z135_FIFO_WATERMARK		1020
-
- #define MEN_Z135_STAT_REG		0x0
-@@ -34,12 +33,11 @@
- #define MEN_Z135_CONF_REG		0x808
- #define MEN_Z135_UART_FREQ		0x80c
- #define MEN_Z135_BAUD_REG		0x810
--#define MENZ135_TIMEOUT			0x814
-+#define MEN_Z135_TIMEOUT		0x814
-
- #define MEN_Z135_MEM_SIZE		0x818
-
--#define IS_IRQ(x) ((x) & 1)
--#define IRQ_ID(x) (((x) >> 1) & 7)
-+#define IRQ_ID(x) ((x) & 0x1f)
-
- #define MEN_Z135_IER_RXCIEN BIT(0)		/* RX Space IRQ */
- #define MEN_Z135_IER_TXCIEN BIT(1)		/* TX Space IRQ */
-@@ -94,11 +92,11 @@
- #define MEN_Z135_LSR_TEXP BIT(6)
- #define MEN_Z135_LSR_RXFIFOERR BIT(7)
-
--#define MEN_Z135_IRQ_ID_MST 0
--#define MEN_Z135_IRQ_ID_TSA 1
--#define MEN_Z135_IRQ_ID_RDA 2
--#define MEN_Z135_IRQ_ID_RLS 3
--#define MEN_Z135_IRQ_ID_CTI 6
-+#define MEN_Z135_IRQ_ID_RLS BIT(0)
-+#define MEN_Z135_IRQ_ID_RDA BIT(1)
-+#define MEN_Z135_IRQ_ID_CTI BIT(2)
-+#define MEN_Z135_IRQ_ID_TSA BIT(3)
-+#define MEN_Z135_IRQ_ID_MST BIT(4)
-
- #define LCR(x) (((x) >> MEN_Z135_LCR_SHIFT) & 0xff)
-
-@@ -118,12 +116,18 @@ static int align;
- module_param(align, int, S_IRUGO);
- MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
-
-+static uint rx_timeout;
-+module_param(rx_timeout, uint, S_IRUGO);
-+MODULE_PARM_DESC(rx_timeout, "RX timeout. "
-+		"Timeout in seconds = (timeout_reg * baud_reg * 4) / freq_reg");
-+
- struct men_z135_port {
- 	struct uart_port port;
- 	struct mcb_device *mdev;
- 	unsigned char *rxbuf;
- 	u32 stat_reg;
- 	spinlock_t lock;
-+	bool automode;
- };
- #define to_men_z135(port) container_of((port), struct men_z135_port, port)
-
-@@ -180,12 +184,16 @@ static inline void men_z135_reg_clr(struct men_z135_port *uart,
-  */
- static void men_z135_handle_modem_status(struct men_z135_port *uart)
- {
--	if (uart->stat_reg & MEN_Z135_MSR_DDCD)
-+	u8 msr;
-+
-+	msr = (uart->stat_reg >> 8) & 0xff;
-+
-+	if (msr & MEN_Z135_MSR_DDCD)
- 		uart_handle_dcd_change(&uart->port,
--				uart->stat_reg & ~MEN_Z135_MSR_DCD);
--	if (uart->stat_reg & MEN_Z135_MSR_DCTS)
-+				msr & MEN_Z135_MSR_DCD);
-+	if (msr & MEN_Z135_MSR_DCTS)
- 		uart_handle_cts_change(&uart->port,
--				uart->stat_reg & ~MEN_Z135_MSR_CTS);
-+				msr & MEN_Z135_MSR_CTS);
- }
-
- static void men_z135_handle_lsr(struct men_z135_port *uart)
-@@ -322,7 +330,8 @@ static void men_z135_handle_tx(struct men_z135_port *uart)
-
- 	txfree = MEN_Z135_FIFO_WATERMARK - txc;
- 	if (txfree <= 0) {
--		pr_err("Not enough room in TX FIFO have %d, need %d\n",
-+		dev_err(&uart->mdev->dev,
-+			"Not enough room in TX FIFO have %d, need %d\n",
- 			txfree, qlen);
- 		goto irq_en;
- 	}
-@@ -373,43 +382,54 @@ out:
-  * @irq: The IRQ number
-  * @data: Pointer to UART port
-  *
-- * Check IIR register to see which tasklet to start.
-+ * Check IIR register to find the cause of the interrupt and handle it.
-+ * It is possible that multiple interrupts reason bits are set and reading
-+ * the IIR is a destructive read, so we always need to check for all possible
-+ * interrupts and handle them.
-  */
- static irqreturn_t men_z135_intr(int irq, void *data)
- {
- 	struct men_z135_port *uart = (struct men_z135_port *)data;
- 	struct uart_port *port = &uart->port;
-+	bool handled = false;
-+	unsigned long flags;
- 	int irq_id;
-
- 	uart->stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
--	/* IRQ pending is low active */
--	if (IS_IRQ(uart->stat_reg))
--		return IRQ_NONE;
--
- 	irq_id = IRQ_ID(uart->stat_reg);
--	switch (irq_id) {
--	case MEN_Z135_IRQ_ID_MST:
--		men_z135_handle_modem_status(uart);
--		break;
--	case MEN_Z135_IRQ_ID_TSA:
--		men_z135_handle_tx(uart);
--		break;
--	case MEN_Z135_IRQ_ID_CTI:
--		dev_dbg(&uart->mdev->dev, "Character Timeout Indication\n");
--		/* Fallthrough */
--	case MEN_Z135_IRQ_ID_RDA:
--		/* Reading data clears RX IRQ */
--		men_z135_handle_rx(uart);
--		break;
--	case MEN_Z135_IRQ_ID_RLS:
-+
-+	if (!irq_id)
-+		goto out;
-+
-+	spin_lock_irqsave(&port->lock, flags);
-+	/* It's save to write to IIR[7:6] RXC[9:8] */
-+	iowrite8(irq_id, port->membase + MEN_Z135_STAT_REG);
-+
-+	if (irq_id & MEN_Z135_IRQ_ID_RLS) {
- 		men_z135_handle_lsr(uart);
--		break;
--	default:
--		dev_warn(&uart->mdev->dev, "Unknown IRQ id %d\n", irq_id);
--		return IRQ_NONE;
-+		handled = true;
-+	}
-+
-+	if (irq_id & (MEN_Z135_IRQ_ID_RDA | MEN_Z135_IRQ_ID_CTI)) {
-+		if (irq_id & MEN_Z135_IRQ_ID_CTI)
-+			dev_dbg(&uart->mdev->dev, "Character Timeout Indication\n");
-+		men_z135_handle_rx(uart);
-+		handled = true;
-+	}
-+
-+	if (irq_id & MEN_Z135_IRQ_ID_TSA) {
-+		men_z135_handle_tx(uart);
-+		handled = true;
- 	}
-
--	return IRQ_HANDLED;
-+	if (irq_id & MEN_Z135_IRQ_ID_MST) {
-+		men_z135_handle_modem_status(uart);
-+		handled = true;
-+	}
-+
-+	spin_unlock_irqrestore(&port->lock, flags);
-+out:
-+	return IRQ_RETVAL(handled);
- }
-
- /**
-@@ -464,21 +484,37 @@ static unsigned int men_z135_tx_empty(struct uart_port *port)
-  */
- static void men_z135_set_mctrl(struct uart_port *port, unsigned int mctrl)
- {
--	struct men_z135_port *uart = to_men_z135(port);
--	u32 conf_reg = 0;
-+	u32 old;
-+	u32 conf_reg;
-
-+	conf_reg = old = ioread32(port->membase + MEN_Z135_CONF_REG);
- 	if (mctrl & TIOCM_RTS)
- 		conf_reg |= MEN_Z135_MCR_RTS;
-+	else
-+		conf_reg &= ~MEN_Z135_MCR_RTS;
-+
- 	if (mctrl & TIOCM_DTR)
- 		conf_reg |= MEN_Z135_MCR_DTR;
-+	else
-+		conf_reg &= ~MEN_Z135_MCR_DTR;
-+
- 	if (mctrl & TIOCM_OUT1)
- 		conf_reg |= MEN_Z135_MCR_OUT1;
-+	else
-+		conf_reg &= ~MEN_Z135_MCR_OUT1;
-+
- 	if (mctrl & TIOCM_OUT2)
- 		conf_reg |= MEN_Z135_MCR_OUT2;
-+	else
-+		conf_reg &= ~MEN_Z135_MCR_OUT2;
-+
- 	if (mctrl & TIOCM_LOOP)
- 		conf_reg |= MEN_Z135_MCR_LOOP;
-+	else
-+		conf_reg &= ~MEN_Z135_MCR_LOOP;
-
--	men_z135_reg_set(uart, MEN_Z135_CONF_REG, conf_reg);
-+	if (conf_reg != old)
-+		iowrite32(conf_reg, port->membase + MEN_Z135_CONF_REG);
- }
-
- /**
-@@ -490,12 +526,9 @@ static void men_z135_set_mctrl(struct uart_port *port, unsigned int mctrl)
- static unsigned int men_z135_get_mctrl(struct uart_port *port)
- {
- 	unsigned int mctrl = 0;
--	u32 stat_reg;
- 	u8 msr;
-
--	stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
--
--	msr = ~((stat_reg >> 8) & 0xff);
-+	msr = ioread8(port->membase + MEN_Z135_STAT_REG + 1);
-
- 	if (msr & MEN_Z135_MSR_CTS)
- 		mctrl |= TIOCM_CTS;
-@@ -524,6 +557,19 @@ static void men_z135_stop_tx(struct uart_port *port)
- 	men_z135_reg_clr(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_TXCIEN);
- }
-
-+/*
-+ * men_z135_disable_ms() - Disable Modem Status
-+ * port: The UART port
-+ *
-+ * Enable Modem Status IRQ.
-+ */
-+static void men_z135_disable_ms(struct uart_port *port)
-+{
-+	struct men_z135_port *uart = to_men_z135(port);
-+
-+	men_z135_reg_clr(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_MSIEN);
-+}
-+
- /**
-  * men_z135_start_tx() - Start transmitting characters
-  * @port: The UART port
-@@ -535,6 +581,9 @@ static void men_z135_start_tx(struct uart_port *port)
- {
- 	struct men_z135_port *uart = to_men_z135(port);
-
-+	if (uart->automode)
-+		men_z135_disable_ms(port);
-+
- 	men_z135_handle_tx(uart);
- }
-
-@@ -584,6 +633,9 @@ static int men_z135_startup(struct uart_port *port)
-
- 	iowrite32(conf_reg, port->membase + MEN_Z135_CONF_REG);
-
-+	if (rx_timeout)
-+		iowrite32(rx_timeout, port->membase + MEN_Z135_TIMEOUT);
-+
- 	return 0;
- }
-
-@@ -603,6 +655,7 @@ static void men_z135_set_termios(struct uart_port *port,
- 				struct ktermios *termios,
- 				struct ktermios *old)
- {
-+	struct men_z135_port *uart = to_men_z135(port);
- 	unsigned int baud;
- 	u32 conf_reg;
- 	u32 bd_reg;
-@@ -643,6 +696,15 @@ static void men_z135_set_termios(struct uart_port *port,
- 	} else
- 		lcr |= MEN_Z135_PAR_DIS << MEN_Z135_PEN_SHIFT;
-
-+	conf_reg |= MEN_Z135_IER_MSIEN;
-+	if (termios->c_cflag & CRTSCTS) {
-+		conf_reg |= MEN_Z135_MCR_RCFC;
-+		uart->automode = true;
-+	} else {
-+		conf_reg &= ~MEN_Z135_MCR_RCFC;
-+		uart->automode = false;
-+	}
-+
- 	termios->c_cflag &= ~CMSPAR; /* Mark/Space parity is not supported */
-
- 	conf_reg |= lcr << MEN_Z135_LCR_SHIFT;
---
-1.9.1
