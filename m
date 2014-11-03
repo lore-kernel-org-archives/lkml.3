@@ -1,146 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaKCK4u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:56:50 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37266 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739AbaKCKzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752809AbaKCK4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:56:54 -0500
+Received: from mail-bl2on0078.outbound.protection.outlook.com ([65.55.169.78]:43136
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751460AbaKCKzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Nov 2014 05:55:14 -0500
-Date: Mon, 3 Nov 2014 11:55:08 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tomasz Pala <gotar@polanet.pl>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd64_edac: Build module on x86-32
-Message-ID: <20141103105508.GB27384@pd.tnic>
-References: <20141102102212.GA7034@polanet.pl>
- <20141102103300.GB5229@pd.tnic>
- <20141102121139.GA7000@polanet.pl>
- <20141102123538.GE5229@pd.tnic>
- <20141102140839.GA27342@polanet.pl>
+From: Ley Foon Tan <lftan@altera.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
+        <lftan.linux@gmail.com>, <cltang@codesourcery.com>
+Subject: [PATCH v6 26/29] nios2: ptrace support
+Date: Mon, 3 Nov 2014 18:52:22 +0800
+Message-ID: <1415011945-3297-27-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
+References: <1415011945-3297-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141102140839.GA27342@polanet.pl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(22564002)(189002)(99396003)(120916001)(19580395003)(88136002)(50466002)(84676001)(86362001)(2201001)(89996001)(92566001)(92726001)(93916002)(48376002)(46102003)(44976005)(6806004)(19580405001)(21056001)(68736004)(87936001)(47776003)(87286001)(64706001)(20776003)(104166001)(50986999)(50226001)(4396001)(42186005)(102836001)(107046002)(36756003)(106466001)(31966008)(76176999)(229853001)(33646002)(97736003)(77156002)(77096003)(62966003)(95666004)(105596002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB224;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB224;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0384275935
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 02, 2014 at 03:08:39PM +0100, Tomasz Pala wrote:
-> Can't say - such error (noticed) happened to me only once, how many silent bit
-> rots I've missed is hard to say, as I haven't got data checksums before.
-> The previous modules were well tested in this motherboard, so I can't
-> blame them nor any other component - it's a 'cosmic ray' situation.
+Add ptrace support for nios2.
 
-So we still don't know. I wouldn't throw away the old DIMMs if it is a
-single failure only.
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ arch/nios2/include/asm/ptrace.h      |  33 +++++++
+ arch/nios2/include/uapi/asm/ptrace.h | 120 +++++++++++++++++++++++++
+ arch/nios2/kernel/ptrace.c           | 166 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 319 insertions(+)
+ create mode 100644 arch/nios2/include/asm/ptrace.h
+ create mode 100644 arch/nios2/include/uapi/asm/ptrace.h
+ create mode 100644 arch/nios2/kernel/ptrace.c
 
-> OK, with EDAC_DECODE_MCE I would know if I should blame RAM or not. But
-> if UCE rate is 1/year I can't randomly remove modules and wait if the
-> problem is gone. Any single UCE should result in action that narrows
-> down the possibile causes. Other than 'replace entire RAM' obviously.
-
-I think with UCE you mean uncorrectable error?
-
-If so, those normally announce themselves by a bunch of correctable
-errors prior. Which roughly means, a DIMM usually announces that it is
-going to get bad soon.
-
-So yes, enabling EDAC_DECODE_MCE should be a good first step as it will
-tell you when errors occur.
-
-Btw, I forgot to ask, why are you even running 32-bit? Do you have some
-old K8 CPU which is not 64-bit capable?
-
-As a matter of fact, can you apply your patch, enable CONFIG_EDAC_DEBUG
-and catch dmesg and send it to me, privately is fine too.
-
-> 1. Yes, I'm going to test, but no, I'm not capable of fixing it, sorry.
-> 1a. There were other reporters you said, maybe some of them are capable.
-
-Well, I haven't seen anything besides this one patch, similar to yours.
-And they've claimed that it works. But the devil is in the detail as
-always so what I'm afraid of is we enable this and then months later,
-once it trickles down to more users, bug reports start coming in. Bug
-reports which no one would have time to address and maybe fix.
-
-I guess we can add this hunk to your patch, albeit a bit controversial:
-
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 1a1d7c43a20f..17638d7cf5c2 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -3035,6 +3035,11 @@ static int __init amd64_edac_init(void)
- 		goto err_no_instances;
- 
- 	setup_pci_device();
+diff --git a/arch/nios2/include/asm/ptrace.h b/arch/nios2/include/asm/ptrace.h
+new file mode 100644
+index 0000000..20fb1cf
+--- /dev/null
++++ b/arch/nios2/include/asm/ptrace.h
+@@ -0,0 +1,33 @@
++/*
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd
++ *
++ * based on m68k asm/processor.h
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
 +
-+#ifdef CONFIG_X86_32
-+	amd64_err("%s on 32-bit is unsupported. USE AT YOUR OWN RISK!\n", EDAC_MOD_STR);
-+#endif
++#ifndef _ASM_NIOS2_PTRACE_H
++#define _ASM_NIOS2_PTRACE_H
 +
- 	return 0;
- 
- err_no_instances:
-
-> 2. Were there any op-mode specific issues in this code till now? Does
->    this differ from not having e.g. F10h hardware? If that happens, I
->    might grant remote access to such machine, but that's unfortunatelly all.
-
-
-> 3. Didn't know that lack of resources to support discrepancies that might
->    occur (but not occuring right now) is valid reason for disabling module
->    entirely. After all, there are many parts that are not maintained
->    actively at all and nobody removes them preemptively. Back then it
->    could be (X86_64 || EXPERIMENTAL), couldn't now it be just a note in
->    the description?
-
-EXPERIMENTAL is gone from the kernel.
-
-And as I explained already, I just don't have the bandwidth and am not
-really persuaded supporting 32-bit is worth the effort to do it. It is a
-conscious decision. That's why I say, if people want it, they can send
-me fixes but cannot expect me to fix stuff.
-
-> 4. To be honest I think that more people are abandoning x86-32 than
->    enabling ECC on them, so I wouldn't worry about people starting to use this
->    and report 32-bit related errors. If you got reports on this once per a few
->    months that's the order of magnitude we are talking about.
-
-Probably. And yes, people should abandon 32-bit if they haven't done so! :-D
-
-> So, if 32-bit related error are real threat, not just an excuse, ENOTIME
-> for handling them is fair enough - people determined to have this
-> running like me will find their way. But please don't say it's not
-> _worth_ it, Kconfig descriptions are not a place to make such judgements
-> (as it's YOUR time vs MY data). I'd go for something more objective,
-> like "this driver might be run on 32-bit kernel, however no complains
-> would be accepted due to lack of resources to handle 32-bit specific
-> bugs").
-
-Fair enough. How about the warning above? It will issue upon successful
-loading on 32-bit.
-
-But I'd still like to know what is the reason you're not moving to 64-bit.
-
-> Oh, and one more thing about the proposed description - I've noticed before:
-> 
-> [PATCH 01/16] amd64_edac: Remove F11h support
-> Fri, 26 Nov 2010 20:04:08 +0100
-> 
-> F11h doesn't support DRAM ECC so whack it away.
-> 
-> and I see F10h, F15h and F16h families only mentioned in amd64_edac.c.
-
-I don't understand what you mean here...
-
-The driver supports everything from K8 on which can do ECC. Family 11h
-doesn't support ECC so no need for an EDAC driver. I hope this answers
-your question.
-
++#include <uapi/asm/ptrace.h>
++
++#ifndef __ASSEMBLY__
++#define user_mode(regs)	(((regs)->estatus & ESTATUS_EU))
++
++#define instruction_pointer(regs)	((regs)->ra)
++#define profile_pc(regs)		instruction_pointer(regs)
++#define user_stack_pointer(regs)	((regs)->sp)
++extern void show_regs(struct pt_regs *);
++
++#define current_pt_regs() \
++	((struct pt_regs *)((unsigned long)current_thread_info() + THREAD_SIZE)\
++		- 1)
++
++int do_syscall_trace_enter(void);
++void do_syscall_trace_exit(void);
++#endif /* __ASSEMBLY__ */
++#endif /* _ASM_NIOS2_PTRACE_H */
+diff --git a/arch/nios2/include/uapi/asm/ptrace.h b/arch/nios2/include/uapi/asm/ptrace.h
+new file mode 100644
+index 0000000..e83a7c9
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/ptrace.h
+@@ -0,0 +1,120 @@
++/*
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd
++ *
++ * based on m68k asm/processor.h
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _UAPI_ASM_NIOS2_PTRACE_H
++#define _UAPI_ASM_NIOS2_PTRACE_H
++
++#ifndef __ASSEMBLY__
++
++/*
++ * Register numbers used by 'ptrace' system call interface.
++ */
++
++/* GP registers */
++#define PTR_R0		0
++#define PTR_R1		1
++#define PTR_R2		2
++#define PTR_R3		3
++#define PTR_R4		4
++#define PTR_R5		5
++#define PTR_R6		6
++#define PTR_R7		7
++#define PTR_R8		8
++#define PTR_R9		9
++#define PTR_R10		10
++#define PTR_R11		11
++#define PTR_R12		12
++#define PTR_R13		13
++#define PTR_R14		14
++#define PTR_R15		15
++#define PTR_R16		16
++#define PTR_R17		17
++#define PTR_R18		18
++#define PTR_R19		19
++#define PTR_R20		20
++#define PTR_R21		21
++#define PTR_R22		22
++#define PTR_R23		23
++#define PTR_R24		24
++#define PTR_R25		25
++#define PTR_GP		26
++#define PTR_SP		27
++#define PTR_FP		28
++#define PTR_EA		29
++#define PTR_BA		30
++#define PTR_RA		31
++/* Control registers */
++#define PTR_PC		32
++#define PTR_STATUS	33
++#define PTR_ESTATUS	34
++#define PTR_BSTATUS	35
++#define PTR_IENABLE	36
++#define PTR_IPENDING	37
++#define PTR_CPUID	38
++#define PTR_CTL6	39
++#define PTR_CTL7	40
++#define PTR_PTEADDR	41
++#define PTR_TLBACC	42
++#define PTR_TLBMISC	43
++
++#define NUM_PTRACE_REG (PTR_TLBMISC + 1)
++
++/* this struct defines the way the registers are stored on the
++   stack during a system call.
++
++   There is a fake_regs in setup.c that has to match pt_regs.*/
++
++struct pt_regs {
++	unsigned long  r8;		/* r8-r15 Caller-saved GP registers */
++	unsigned long  r9;
++	unsigned long  r10;
++	unsigned long  r11;
++	unsigned long  r12;
++	unsigned long  r13;
++	unsigned long  r14;
++	unsigned long  r15;
++	unsigned long  r1;		/* Assembler temporary */
++	unsigned long  r2;		/* Retval LS 32bits */
++	unsigned long  r3;		/* Retval MS 32bits */
++	unsigned long  r4;		/* r4-r7 Register arguments */
++	unsigned long  r5;
++	unsigned long  r6;
++	unsigned long  r7;
++	unsigned long  orig_r2;		/* Copy of r2 ?? */
++	unsigned long  ra;		/* Return address */
++	unsigned long  fp;		/* Frame pointer */
++	unsigned long  sp;		/* Stack pointer */
++	unsigned long  gp;		/* Global pointer */
++	unsigned long  estatus;
++	unsigned long  ea;		/* Exception return address (pc) */
++	unsigned long  orig_r7;
++};
++
++/*
++ * This is the extended stack used by signal handlers and the context
++ * switcher: it's pushed after the normal "struct pt_regs".
++ */
++struct switch_stack {
++	unsigned long  r16;		/* r16-r23 Callee-saved GP registers */
++	unsigned long  r17;
++	unsigned long  r18;
++	unsigned long  r19;
++	unsigned long  r20;
++	unsigned long  r21;
++	unsigned long  r22;
++	unsigned long  r23;
++	unsigned long  fp;
++	unsigned long  gp;
++	unsigned long  ra;
++};
++
++#endif /* __ASSEMBLY__ */
++#endif /* _UAPI_ASM_NIOS2_PTRACE_H */
+diff --git a/arch/nios2/kernel/ptrace.c b/arch/nios2/kernel/ptrace.c
+new file mode 100644
+index 0000000..681dda9
+--- /dev/null
++++ b/arch/nios2/kernel/ptrace.c
+@@ -0,0 +1,166 @@
++/*
++ * Copyright (C) 2014 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License.  See the file COPYING in the main directory of this
++ * archive for more details.
++ */
++
++#include <linux/elf.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/ptrace.h>
++#include <linux/regset.h>
++#include <linux/sched.h>
++#include <linux/tracehook.h>
++#include <linux/uaccess.h>
++#include <linux/user.h>
++
++static int genregs_get(struct task_struct *target,
++		       const struct user_regset *regset,
++		       unsigned int pos, unsigned int count,
++		       void *kbuf, void __user *ubuf)
++{
++	const struct pt_regs *regs = task_pt_regs(target);
++	const struct switch_stack *sw = (struct switch_stack *)regs - 1;
++	int ret = 0;
++
++#define REG_O_ZERO_RANGE(START, END)		\
++	if (!ret)					\
++		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf, \
++			START * 4, (END * 4) + 4);
++
++#define REG_O_ONE(PTR, LOC)	\
++	if (!ret)			\
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
++			LOC * 4, (LOC * 4) + 4);
++
++#define REG_O_RANGE(PTR, START, END)	\
++	if (!ret)				\
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, PTR, \
++			START * 4, (END * 4) + 4);
++
++	REG_O_ZERO_RANGE(PTR_R0, PTR_R0);
++	REG_O_RANGE(&regs->r1, PTR_R1, PTR_R7);
++	REG_O_RANGE(&regs->r8, PTR_R8, PTR_R15);
++	REG_O_RANGE(sw, PTR_R16, PTR_R23);
++	REG_O_ZERO_RANGE(PTR_R24, PTR_R25); /* et and bt */
++	REG_O_ONE(&regs->gp, PTR_GP);
++	REG_O_ONE(&regs->sp, PTR_SP);
++	REG_O_ONE(&regs->fp, PTR_FP);
++	REG_O_ONE(&regs->ea, PTR_EA);
++	REG_O_ZERO_RANGE(PTR_BA, PTR_BA);
++	REG_O_ONE(&regs->ra, PTR_RA);
++	REG_O_ONE(&regs->ea, PTR_PC); /* use ea for PC */
++	if (!ret)
++		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
++					 PTR_STATUS * 4, -1);
++
++	return ret;
++}
++
++/*
++ * Set the thread state from a regset passed in via ptrace
++ */
++static int genregs_set(struct task_struct *target,
++		       const struct user_regset *regset,
++		       unsigned int pos, unsigned int count,
++		       const void *kbuf, const void __user *ubuf)
++{
++	struct pt_regs *regs = task_pt_regs(target);
++	const struct switch_stack *sw = (struct switch_stack *)regs - 1;
++	int ret = 0;
++
++#define REG_IGNORE_RANGE(START, END)		\
++	if (!ret)					\
++		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf, \
++			START * 4, (END * 4) + 4);
++
++#define REG_IN_ONE(PTR, LOC)	\
++	if (!ret)			\
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
++			(void *)(PTR), LOC * 4, (LOC * 4) + 4);
++
++#define REG_IN_RANGE(PTR, START, END)	\
++	if (!ret)				\
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
++			(void *)(PTR), START * 4, (END * 4) + 4);
++
++	REG_IGNORE_RANGE(PTR_R0, PTR_R0);
++	REG_IN_RANGE(&regs->r1, PTR_R1, PTR_R7);
++	REG_IN_RANGE(&regs->r8, PTR_R8, PTR_R15);
++	REG_IN_RANGE(sw, PTR_R16, PTR_R23);
++	REG_IGNORE_RANGE(PTR_R24, PTR_R25); /* et and bt */
++	REG_IN_ONE(&regs->gp, PTR_GP);
++	REG_IN_ONE(&regs->sp, PTR_SP);
++	REG_IN_ONE(&regs->fp, PTR_FP);
++	REG_IN_ONE(&regs->ea, PTR_EA);
++	REG_IGNORE_RANGE(PTR_BA, PTR_BA);
++	REG_IN_ONE(&regs->ra, PTR_RA);
++	REG_IN_ONE(&regs->ea, PTR_PC); /* use ea for PC */
++	if (!ret)
++		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
++					 PTR_STATUS * 4, -1);
++
++	return ret;
++}
++
++/*
++ * Define the register sets available on Nios2 under Linux
++ */
++enum nios2_regset {
++	REGSET_GENERAL,
++};
++
++static const struct user_regset nios2_regsets[] = {
++	[REGSET_GENERAL] = {
++		.core_note_type = NT_PRSTATUS,
++		.n = NUM_PTRACE_REG,
++		.size = sizeof(unsigned long),
++		.align = sizeof(unsigned long),
++		.get = genregs_get,
++		.set = genregs_set,
++	}
++};
++
++static const struct user_regset_view nios2_user_view = {
++	.name = "nios2",
++	.e_machine = ELF_ARCH,
++	.ei_osabi = ELF_OSABI,
++	.regsets = nios2_regsets,
++	.n = ARRAY_SIZE(nios2_regsets)
++};
++
++const struct user_regset_view *task_user_regset_view(struct task_struct *task)
++{
++	return &nios2_user_view;
++}
++
++void ptrace_disable(struct task_struct *child)
++{
++
++}
++
++long arch_ptrace(struct task_struct *child, long request, unsigned long addr,
++		 unsigned long data)
++{
++	return ptrace_request(child, request, addr, data);
++}
++
++asmlinkage int do_syscall_trace_enter(void)
++{
++	int ret = 0;
++
++	if (test_thread_flag(TIF_SYSCALL_TRACE))
++		ret = tracehook_report_syscall_entry(task_pt_regs(current));
++
++	return ret;
++}
++
++asmlinkage void do_syscall_trace_exit(void)
++{
++	if (test_thread_flag(TIF_SYSCALL_TRACE))
++		tracehook_report_syscall_exit(task_pt_regs(current), 0);
++}
 -- 
-Regards/Gruss,
-    Boris.
+1.8.2.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
