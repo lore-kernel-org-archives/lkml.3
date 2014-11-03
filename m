@@ -1,104 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaKCJe1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:34:27 -0500
-Received: from mail-bn1on0135.outbound.protection.outlook.com ([157.56.110.135]:14256
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751541AbaKCJeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:34:25 -0500
-X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Nov 2014 04:34:25 EST
-Message-ID: <5457486C.3030205@freescale.com>
-Date: Mon, 3 Nov 2014 11:18:36 +0200
-From: Cristian Stoica <cristian.stoica@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751991AbaKCJfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:35:09 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:51910 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751574AbaKCJfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 04:35:05 -0500
+Date: Mon, 3 Nov 2014 10:34:46 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org, joe@perches.com,
+        mchehab@osg.samsung.com, crope@iki.fi, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto
+ accelerator
+Message-ID: <20141103093446.GG11263@lukather>
+References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com>
+ <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>
+ <20141021191149.GQ21108@lukather>
+ <544A9FEA.6020304@gmail.com>
+ <20141030171933.GR21251@lukather>
+ <20141031072030.GA7563@gondor.apana.org.au>
+ <20141031081323.GS21251@lukather>
+ <20141031081803.GA8012@gondor.apana.org.au>
+ <20141031095706.GA8054@lukather>
+ <20141031100522.GA8655@gondor.apana.org.au>
 MIME-Version: 1.0
-To: Kim Phillips <kim.phillips@freescale.com>
-CC: <herbert@gondor.apana.org.au>, <davem@davemloft.net>,
-        <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <horia.geanta@freescale.com>, <marex@denx.de>
-Subject: Re: [PATCH] crypto: caam: fix error reporting
-References: <1414774653-3583-1-git-send-email-cristian.stoica@freescale.com>
- <20141031132209.5abced3ca9f55649d0bd6007@freescale.com>
-In-Reply-To: <20141031132209.5abced3ca9f55649d0bd6007@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(51704005)(24454002)(377454003)(479174003)(64126003)(6806004)(19580395003)(64706001)(36756003)(4396001)(47776003)(46102003)(50466002)(62966003)(104016003)(87936001)(97736003)(20776003)(69596002)(19580405001)(107046002)(65806001)(110136001)(21056001)(83506001)(68736004)(59896002)(65956001)(106466001)(31966008)(26826002)(44976005)(80316001)(23756003)(84676001)(95666004)(81156004)(105606002)(102836001)(99136001)(65816999)(92726001)(33656002)(92566001)(54356999)(120916001)(99396003)(87266999)(76176999)(50986999)(77156002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB392;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB392;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0384275935
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=B18196@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UTZ8bGhNySVQ9LYl"
+Content-Disposition: inline
+In-Reply-To: <20141031100522.GA8655@gondor.apana.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
 
-On 10/31/2014 08:22 PM, Kim Phillips wrote:
-> On Fri, 31 Oct 2014 18:57:33 +0200
-> Cristian Stoica <cristian.stoica@freescale.com> wrote:
-> 
-> If this issue was brought up by h/w, the appropriate new error codes
-> should be being introduced.
+--UTZ8bGhNySVQ9LYl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If you have the new error codes please send them to me and I'll make an
-update.
+On Fri, Oct 31, 2014 at 06:05:22PM +0800, Herbert Xu wrote:
+> On Fri, Oct 31, 2014 at 10:57:06AM +0100, Maxime Ripard wrote:
+> >
+> > On a 3.18-rc2 kernel:
+> >=20
+> > $ git grep kmap -- crypto/
+> > crypto/ahash.c:                         walk->data =3D kmap(walk->pg);
+> > crypto/ahash.c:                         walk->data =3D kmap_atomic(walk=
+->pg);
+> > crypto/async_tx/async_memcpy.c:         dest_buf =3D kmap_atomic(dest) =
++ dest_offset;
+> > crypto/async_tx/async_memcpy.c:         src_buf =3D kmap_atomic(src) + =
+src_offset;
+> > crypto/scatterwalk.c:                   return kmap_atomic(scatterwalk_=
+page(walk)) +
+> > crypto/shash.c:                         data =3D kmap_atomic(sg_page(sg=
+));
+> > crypto/shash.c:                         data =3D kmap_atomic(sg_page(sg=
+));
+> >=20
+> > None of the drivers are.
+>=20
+> What do you mean? It's precisely because the page can be in highmem
+> that we are mapping it.  If it's not in highmem it'll be a noop.
 
-> Otherwise, I'm assuming it was brought up by a static code analyser,
-> which technically could be ignored, but...
+What I mean is that since you are saying that drivers should do the
+kmap themselves, then *all* of the drivers are broken if they are not
+using it. And all of them are missing this kmap.
 
-Actually, our static code analyzer did not see this one.
+Maxime
 
->> -	/*
->> -	 * If there is no further error handling function, just
->> -	 * print the error code, error string and exit. Otherwise
->> -	 * call the handler function.
->> -	 */
-> 
-> why remove the comment?  It's still valid.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-The comment was disagreeing with the new code, so I just removed it.
+--UTZ8bGhNySVQ9LYl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->> -	if (!status_src[ssrc].report_ssed)
->> -		dev_err(jrdev, "%08x: %s: \n", status, status_src[ssrc].error);
->> -	else
->> +	if (status_src[ssrc].report_ssed)
->>  		status_src[ssrc].report_ssed(jrdev, status, error);
->> +	else if (error)
->> +		dev_err(jrdev, "%d: %s\n", ssrc, error);
->> +	else
->> +		dev_err(jrdev, "%d: unknown error code\n", ssrc);
-> 
-> This is simpler:
-> 
-> diff --git a/drivers/crypto/caam/error.c b/drivers/crypto/caam/error.c
-> index 6531054..6f4a148 100644
-> --- a/drivers/crypto/caam/error.c
-> +++ b/drivers/crypto/caam/error.c
-> @@ -224,7 +224,12 @@ void caam_jr_strstatus(struct device *jrdev, u32 status)
->                 { report_cond_code_status, "Condition Code" },
->         };
->         u32 ssrc = status >> JRSTA_SSRC_SHIFT;
-> -       const char *error = status_src[ssrc].error;
-> +       const char *error;
-> +
-> +       if (ssrc >= ARRAY_SIZE(status_src)) {
-> +               dev_err(jrdev, "unknown error status source %d\n", ssrc);
-> +               return;
-> +       }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-It is indeed simpler but does it consider also the missing error codes
-at index 1 and 5? Just checking for an upper bound is not enough.
+iQIcBAEBAgAGBQJUV0w2AAoJEBx+YmzsjxAg/zUP/RYiTHvBw1aa+/lHomPgAEs0
+OQVMt3GAKLK72eym+H4kee7Xkx4X+dA7JhArMKSsm6w7NnTFn/SeUqcAzEhn6eKh
+GpKkjgfwDDwfBvM9ayeimQuKsPmBTHLCuQVmehcD3c9WzTTaWIMHekbN0cztRUM0
+WfKmrOiclBuBYWHyQr22ZuXptSN95RdAqpG4VNUSl47zQztaJEg1iO5Rb6JbVug9
+7FheB4BnXtlok95X1IfP58i0rAiqFzX1LaTa7nhUo14GZ1EnQH+aVRg00q2PtwBy
+kWFYn2wWY4SD4dG/TrSeJVfwt4pari2wkjDaS6iSdHK/xpDXh9yZQlsh3NSxsfUy
+010tvNr45DYPlpRFzPHrhm952AXjbHwJgKnMgrt1zDtFTBBt9jOd4xKMpsX6v3on
+0VtzSSjaZD2Ro6bFan/l4/Co0d0G/NNqqt9swxdMw80Zfy6hVs75Lr5KlOD8Oyey
+HZUi9CAhloqbM+q+4tNfTMxYufcLjpYPPLRrXSNZOE7BaZuidW8Q8qqDUElE16ys
+Lq72scAikcsveNGt2uTdfwr9Jgx15BN+TQRL2Lr4Tf/bxxp5O2TSIRf7uQrbZB5J
+Y1QWwDweprX3ry3+l/yHqu0FxGO8bFv+oqONl3GpD+xYGrgs0iakM7oQwLIOV7eM
+Zc/q99AwyNzJ0LXg2XeO
+=8cj2
+-----END PGP SIGNATURE-----
 
-On the other hand, if the error field is only three bits wide instead of
-four as stated by the documentation, a better fix means using a three
-bit mask instead of reporting an invalid error code.
-
-
-Thanks for review,
-
-Cristian S.
+--UTZ8bGhNySVQ9LYl--
