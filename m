@@ -1,183 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751343AbaKCGQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 01:16:36 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36243 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaKCGQd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 01:16:33 -0500
-Date: Mon, 3 Nov 2014 06:16:32 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
-Subject: [RFC] dupfs semantics
-Message-ID: <20141103061632.GY7996@ZenIV.linux.org.uk>
+	id S1750876AbaKCGcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 01:32:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41442 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706AbaKCGck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 01:32:40 -0500
+Message-ID: <54572182.8080005@suse.com>
+Date: Mon, 03 Nov 2014 07:32:34 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: hpa@zytor.com, x86@kernel.org, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Subject: Re: [PATCH 10/17] x86: Use new cache mode type in setting page attributes
+References: <1414764033-30011-1-git-send-email-jgross@suse.com> <1414764033-30011-11-git-send-email-jgross@suse.com> <alpine.DEB.2.11.1410311617260.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410311617260.5308@nanos>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	FWIW, now it can be done - with fairly limited changes we *can*
-implement something similar to Plan 9 dupfs (#d) and *BSD fdescfs.  I.e.
-a filesystem with one directory, with contents depending on which process
-is looking there, files corresponding to opened descriptors of the process
-in question.  So far it looks like our /proc/self/fd (or /dev/fd), but
-there's one really important difference - open("/fd/0", 0) on Plan 9 doesn't
-reopen your stdin, it is equivalent to dup(0).  In other words, you get
-an extra reference to the corresponding file, not fresh open of the same
-underlying object.
+On 10/31/2014 04:34 PM, Thomas Gleixner wrote:
+> On Fri, 31 Oct 2014, Juergen Gross wrote:
+>> --- a/arch/x86/mm/pageattr.c
+>> +++ b/arch/x86/mm/pageattr.c
+>> @@ -1304,12 +1304,6 @@ static int __change_page_attr_set_clr(struct cpa_data *cpa, int checkalias)
+>>   	return 0;
+>>   }
+>>
+>> -static inline int cache_attr(pgprot_t attr)
+>> -{
+>> -	return pgprot_val(attr) &
+>> -		(_PAGE_PAT | _PAGE_PAT_LARGE | _PAGE_PWT | _PAGE_PCD);
+>> -}
+>> -
+>>   static int change_page_attr_set_clr(unsigned long *addr, int numpages,
+>>   				    pgprot_t mask_set, pgprot_t mask_clr,
+>>   				    int force_split, int in_flag,
+>> @@ -1390,7 +1384,7 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
+>>   	 * No need to flush, when we did not set any of the caching
+>>   	 * attributes:
+>>   	 */
+>> -	cache = cache_attr(mask_set);
+>> +	cache = !!pgprot2cachemode(mask_set);
+>
+> So this loses _PAGE_PAT_LARGE, right ?
 
-	In a lot of situations it makes for better semantics.  Example:
-; cat >a.sh <<'EOF'
-read i
-diff -u "$i" /dev/stdin
-EOF
-; (echo a.sh; cat a.sh) > data
-; cat data |sh a.sh
-; <data sh a.sh
---- a.sh        2014-11-02 23:31:03.000000000 -0500
-+++ /dev/stdin  2014-11-02 23:32:41.000000000 -0500
-@@ -1,2 +1,3 @@
-+a.sh
- read i 
- diff -u "$i" /dev/stdin
-;
+change_page_attr_set_clr() is never called with _PAGE_PAT_LARGE set in
+mask, so this is no problem.
 
-... and we have a different behaviour when fed from pipe and when redirected
-from file.  Similar to that,
-; cat >a.sh <<'EOF'
-read i
-grep "$i" -
-EOF
-; cat >b.sh <<'EOF'
-read i
-grep "$i" /dev/stdin
-EOF
-; cat >data <<'EOF'
-a
-a
-b
-EOF
-; cat data | sh a.sh
-a
-; cat data | sh b.sh
+BTW: correct handling of the PAT bit for large pages is added in
+patch 15. There have been places in the kernel respecting
+_PAGE_PAT_LARGE, but handling has never been complete up to now.
 
-So far, so good - "-" in grep arguments means stdin, so we could expect to get
-the same behaviour.  Except that it breaks on redirects -
-; sh a.sh <data
-a
-; sh b.sh <data
-a
-a
-;
+>
+>>   int set_memory_uc(unsigned long addr, int numpages)
+>> @@ -1456,7 +1451,7 @@ int set_memory_uc(unsigned long addr, int numpages)
+>>   	 * for now UC MINUS. see comments in ioremap_nocache()
+>>   	 */
+>>   	ret = reserve_memtype(__pa(addr), __pa(addr) + numpages * PAGE_SIZE,
+>> -			    _PAGE_CACHE_UC_MINUS, NULL);
+>> +			      _PAGE_CACHE_UC_MINUS, NULL);
+>
+> That should be in the patch which added the _PAGE_CACHE_UC_MINUS
+>
+>>   int _set_memory_wb(unsigned long addr, int numpages)
+>>   {
+>> +	/* WB cache mode is hard wired to all cache attribute bits being 0 */
+>
+> I like the comment, but shouldn't we compile time check that
+> assumption somewhere?
 
-In other words, in situation when you have a program that expects a filename
-and want to feed it to/from a preexisting descriptor, our semantics is bloody
-inconvenient.  Worse, it simply fails when descriptor in question happens to
-be something like a socket, eventfd, etc. - regular files, devices, directories
-and pipes work, everything else is SOL.  We *can't* reopen a socket - a lot
-of logics in net/* assumes that there's only one struct file over given socket.
+There is a comment in patch 1 where the page_cache_mode enum is set up.
+The translation functions between page_cache_mode and protection values
+have a special check for "0" built in. Isn't this enough?
 
-The reason why we really couldn't do it with dup-style semantics was that
-our ->open() takes struct file and returns 0 on success and -E<something>
-on error.  There's no way to return a different file *and* we have too many
-instances of ->open() to change the method's signature.
+BTW: How would you check this assumption at compile time? The
+translation between WB cache mode and protection values is done only
+dynamically...
 
-FWIW, FreeBSD got away with a horrible hack - they stash the descriptor
-number in their equivalent of task_struct and pull off rather brittle and
-ugly trick to pick in their kern_openat().  ->open() side is
-        /*
-         * XXX Kludge: set td->td_proc->p_dupfd to contain the value of the file
-         * descriptor being sought for duplication. The error return ensures
-         * that the vnode for this device will be released by vn_open. Open
-         * will detect this special error and take the actions in dupfdopen.
-         * Other callers of vn_open or VOP_OPEN will simply report the
-         * error.
-         */
-        ap->a_td->td_dupfd = VTOFDESC(vp)->fd_fd;       /* XXX */
-        return (ENODEV);
-and the other end is
-                /*
-                 * Handle special fdopen() case. bleh.
-                 *
-                 * Don't do this for relative (capability) lookups; we don't
-                 * understand exactly what would happen, and we don't think
-                 * that it ever should.
-                 */
-                if (nd.ni_strictrelative == 0 &&
-                    (error == ENODEV || error == ENXIO) &&
-                    td->td_dupfd >= 0) {
-                        error = dupfdopen(td, fdp, td->td_dupfd, flags, error,
-                            &indx);
-                        if (error == 0)
-                                goto success;
-                }
- 
-                goto bad;
-Bleh, indeed...
 
-I hadn't looked at Solaris source.  Plan 9 probably has it the easiest way -
-their ->open() does, in our terms, take a pointer to struct file (Chan * for
-them) and return another such pointer, normally the one it had been given.
-If it decides to return a different one - no problem, just drop what you've
-got, grab an extra reference to something else and return that.  End of
-story.
+Thanks for the review,
 
-Now, changing our ->open() is obviously far too much churn.  Fortunately,
-we have ->atomic_open() with only 8 instances in the entire tree, none
-of them in drivers.  That can be changed without too much PITA.  There are
-several possible calling conventions; my preference would be
-	old	new
-	0	file it has been given
-	1	NULL
-	-E...	ERR_PTR(-E...)
-	-----	an extra reference to preexisting file
-letting the caller deal with freeing the unused one in the last case, but
-that's not particulary interesting - whichever variant ends up with the
-best code in callers (path_openat->do_last->lookup_open->atomic_open).
-
-Getting open() to hit ->atomic_open() is also pretty easy - just don't hash
-those dentries and that's it.  Considering that different processes are
-going to see different things in that directory, that's the only sane variant
-anyway.  They won't live for long anyway - the normal way to pin dentry down
-for a long time is open(), and in this case open will *not* do that.  FWIW,
-they can all share the same inode - it won't be accessed, anyway (we just
-need to supply ->getattr(), which takes a dentry).
-
-IOW, it's quite doable - I'm putting together a branch with minimal variant
-of that thing and so far it shapes out reasonably well.  The interesting
-part is what should be done in corner cases.
-
-Everyone agrees that read/write access should be a subset of what the existing
-file has been opened for; that much is obvious.  However, what about the
-other bits?  Everyone appears to agree upon ignoring O_TRUNC.  FreeBSD ignores
-O_APPEND as well (and Plan 9 doesn't have it at all); we might do the same,
-or we might fail on mismatches.  I'd rather ignore it completely - if our
-stdout is opened with O_APPEND | O_WRONLY, I would expect opening /fd/1
-(or wherever it might be mounted) with O_WRONLY to succeed.
-O_DIRECT is another one - should we ignore mismatches?
-
-Another interesting question is what to do with chmod, etc. on those suckers.
-Plan 9 EPERMs on that; FreeBSD in effect turns it into chmod of the target
-file.   Note that stat() is *not* forwarded to the target file in either
-of those, so chmod() hitting the target is inconsistent (and possibly risky
-as well).
-
-A minor twist is statfs() behaviour on that one - FreeBSD is putting rlimit
-in f_files and the number of descriptors you could open until you run afoul
-of rlimit into f_ffree.  Cute, but not too interesting, IMO...
-
-A really interesting bit is ctl files on Plan 9 - /fd/<n>ctl there is a mix
-of our readlink /proc/self/fd/<n> and /proc/self/fdinfo/<n>.  Fairly easy
-to implement, the question is what should layout of their contents be...
-
-Any permission checks ought to be skipped in case when a preexisting file gets
-returned by ->atomic_open(), IMO - all checks ought to be done in the method
-itself (and in this case they are limited to "don't ask for more than it's
-already opened for").
-
-Comments?
+Juergen
