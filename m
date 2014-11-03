@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaKCShD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:37:03 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34339 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaKCShA (ORCPT
+	id S1753198AbaKCSjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:39:24 -0500
+Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:59609 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752484AbaKCSjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:37:00 -0500
-Date: Mon, 3 Nov 2014 10:36:53 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 09/47] mfd: palmas: Register with kernel power-off
- handler
-Message-ID: <20141103183653.GA10558@roeck-us.net>
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
- <1414425354-10359-10-git-send-email-linux@roeck-us.net>
- <20141103175645.GT12011@x1>
- <20141103175954.GT27425@saruman>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103175954.GT27425@saruman>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020207.5457CB4C.0019,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 3 Nov 2014 13:39:21 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2553:2561:2564:2682:2685:2692:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6117:6261:6691:8599:8957:8985:9025:9388:10004:10400:10848:11232:11257:11658:11914:12043:12438:12517:12519:12682:12740:12776:13069:13137:13150:13230:13231:13311:13357:14039:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fear80_8b91dfea3af16
+X-Filterd-Recvd-Size: 2121
+Message-ID: <1415039957.17743.29.camel@perches.com>
+Subject: Re: [PATCH] CodingStyle: Add a chapter on conditional compilation
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 03 Nov 2014 10:39:17 -0800
+In-Reply-To: <20141103180528.GA9026@jtriplet-mobl1>
+References: <430ce084b015d22a597ef7e4f6436dadaea7b23d.1414606455.git.josh@joshtriplett.org>
+	 <20141103114656.3bf200df@lwn.net> <1415036860.17743.25.camel@perches.com>
+	 <20141103180528.GA9026@jtriplet-mobl1>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 11:59:54AM -0600, Felipe Balbi wrote:
-> On Mon, Nov 03, 2014 at 05:56:45PM +0000, Lee Jones wrote:
-> > On Mon, 27 Oct 2014, Guenter Roeck wrote:
+On Mon, 2014-11-03 at 10:05 -0800, Josh Triplett wrote:
+> On Mon, Nov 03, 2014 at 09:47:40AM -0800, Joe Perches wrote:
+[]
+> "don't put an else after an if condition
+> ending with break or return;
+
+Maybe that's a bit _too_ simple.
+Yes for a simple if, but not necessarily an else if
+
+	if (foo) {
+		...;
+	} else if (bar) {
+		more code...;
+		return;
+	} else {
+		...
+	}
+
+still needs that last else.
+
+checkpatch isn't very good at that code flow
+interpretation so it emits a warning anyway.
+
+> > Another thing that could go is the suggestion to
+> > use Lindent.
 > > 
-> > > Register with kernel power-off handler instead of setting pm_power_off
-> > > directly. Register with low priority to reflect that the original code
-> > > only sets pm_power_off if it was not already set.
-> > > 
-> > > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > > Cc: Lee Jones <lee.jones@linaro.org>
-> > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > > ---
-> > > v3:
-> > > - Replace poweroff in all newly introduced variables and in text
-> > >   with power_off or power-off as appropriate
-> > > - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-> > > v2:
-> > > - Use define to specify poweroff handler priority
-> > > - Use devm_register_power_off_handler
-> > > - Use dev_warn instead of dev_err
-> > > 
-> > >  drivers/mfd/palmas.c       | 31 +++++++++++++++++--------------
-> > >  include/linux/mfd/palmas.h |  3 +++
-> > >  2 files changed, 20 insertions(+), 14 deletions(-)
-> > 
-> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > https://lkml.org/lkml/2013/2/11/390
 > 
-> missed lakml and linux-omap.
-> 
-Felipe,
+> Agreed completely.  We might consider coming up with settings for
+> clang-format, which seems like a far more capable replacement that
+> actually understands C.
 
-unfortunately, get_maintainer.pl doesn't give a hint that this and the
-other affected patches should be sent to linux-omap. How am I supposed
-to know ?
+Never used it.
+It does seem to have a large number of options
+(including a trivial linux-kernel style) though.
 
-Note that linux-kernel@vger.kernel.org was copied on the entire series,
-if that is what you mean with lakml. linux-pm@vger.kernel.org was also
-copied on all patches. Additional mailing lists were only copied for
-affected architectures to avoid for the patches to be tagged as spam.
+http://clang.llvm.org/docs/ClangFormatStyleOptions.html
 
-If there is a list named lakml, I must have missed it, and I seem to be
-unable to find a reference to it. If that is the case, my apologies,
-and please provide a link to it.
+Dunno how much work it would be to create a proper
+linux-kernel style for clang-format.
 
-Thanks,
-Guenter
+It might work well, it might not.
+Anyone have experience with it?
+
+
