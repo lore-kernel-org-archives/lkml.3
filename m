@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaKCMpX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 07:45:23 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38692 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaKCMpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 07:45:22 -0500
-Message-ID: <545778DB.3030803@collabora.co.uk>
-Date: Mon, 03 Nov 2014 13:45:15 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Doug Anderson <dianders@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] regulator: of: Add support for parsing microvolts
- for suspend state
-References: <1414813978-32233-1-git-send-email-dianders@chromium.org> <1414813978-32233-2-git-send-email-dianders@chromium.org> <54549EA6.5060007@collabora.co.uk> <20141103122948.GI3815@sirena.org.uk>
-In-Reply-To: <20141103122948.GI3815@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1751960AbaKCMqZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 07:46:25 -0500
+Received: from ou.quest-ce.net ([195.154.187.82]:48388 "EHLO ou.quest-ce.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813AbaKCMqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 07:46:23 -0500
+Message-ID: <1415018769.5491.92.camel@localhost.localdomain>
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: "Skidanov, Alexey" <Alexey.Skidanov@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ydroneaud@opteya.com
+Date: Mon, 03 Nov 2014 13:46:09 +0100
+In-Reply-To: <20141028223435.73b3778c@alan.etchedpixels.co.uk>
+References: <AD975D71AAD7784D8D1265DF6444C2FD0C4307FC@storexdag03.amd.com>
+	 <20141028223435.73b3778c@alan.etchedpixels.co.uk>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 92.90.16.122
+X-SA-Exim-Mail-From: ydroneaud@opteya.com
+Subject: Re: 32 bit user space compatibility
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 01:29 PM, Mark Brown wrote:
+Hi,
+
+Le mardi 28 octobre 2014 à 22:34 +0000, One Thousand Gnomes a écrit :
+> On Sun, 26 Oct 2014 12:25:08 +0000
+> "Skidanov, Alexey" <Alexey.Skidanov@amd.com> wrote:
+
+>  
+> > Running 32 bit user space needs some work to be done with ioctls. I understand that there are two options to implement:
+> > 1.       Use only fixed size types. Pad IOCTLS params to multiple of 64 bits - simple; don't know if it covers all compatibility issues; 
+> > 2.       32 bit compatibility layer (through compat_ioctl, just like many drivers in kernel implement)  - just a little bit simple code with some translations; really covers all issues;
+> >  
+> > Which one is preferred by kernel community?
 > 
-> If you're reviewing something please don't quote the entire patch, the
-> same rule applies as always - just include relevant context - and
-> especially don't include your one line of content at the very end of the
-> patch.  Otherwise people have to page through the entire thing to find
-> what you've said (if they don't get fed up first).
-> 
+> You shouldn't need to pad paramters in most cases as platform alignment
+> rules are usually sane for 32 and 64bit. 
 
-Yes, I usually add my {Review,Acked,Tested}-by tags at the end of the
-commit message and remove the complete patch but since it was a 4-lines
-patch I didn't think it was that bad.
+In most case, except i386 (ia32) vs amd64 (x86_64): u64 are going to be
+aligned on 4 bytes boundaries for 32bits ABI and 8 bytes boundaries for
+64bits ABI.
 
-Sorry about that, I will do it next time no matter the patch size.
+I've tried to explained this issue in a lightning talk[1][2] I'd given
+at Kernel Recipes[3] this year.
 
-Best regards,
-Javier
+[1] http://opteya.com/talks/2014/kernel-recipes/lightning-talk-kernel-userspace-ABI/
+[2] https://gitorious.org/opteya/talk-kernel-userspace-abi
+[3] http://kernel.recipes/
+
+Regards.
+
+-- 
+Yann Droneaud
+OPTEYA
+
+
+
