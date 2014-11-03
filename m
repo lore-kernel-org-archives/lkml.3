@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475AbaKCOdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:33:42 -0500
-Received: from smtprelay0167.hostedemail.com ([216.40.44.167]:53306 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751584AbaKCOdk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:33:40 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6119:6261:6691:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13071:13161:13229:13311:13357:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: back58_1fa7cfebb2247
-X-Filterd-Recvd-Size: 2657
-Message-ID: <1415025215.17743.12.camel@perches.com>
-Subject: Re: [PATCH 04/13] autofs4 - change printks AUTOFS defined prints
-From: Joe Perches <joe@perches.com>
-To: Ian Kent <raven@themaw.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 03 Nov 2014 06:33:35 -0800
-In-Reply-To: <1415006418.6573.6.camel@perseus.themaw.net>
-References: <20141103081218.6215.85903.stgit@perseus.themaw.net>
-	 <20141103081234.6215.82821.stgit@perseus.themaw.net>
-	 <1415003136.17743.9.camel@perches.com>
-	 <1415006418.6573.6.camel@perseus.themaw.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752558AbaKCOeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:34:18 -0500
+Received: from mga03.intel.com ([134.134.136.65]:25688 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751991AbaKCOeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 09:34:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
+   d="scan'208";a="630338762"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: sparse@chrisli.org
+Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
+        linux-sparse@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] compiler: Correct macro parameter expansion problem
+Date: Mon,  3 Nov 2014 06:34:13 -0800
+Message-Id: <1415025253-15976-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 17:20 +0800, Ian Kent wrote:
-> On Mon, 2014-11-03 at 00:25 -0800, Joe Perches wrote:
-> > On Mon, 2014-11-03 at 16:12 +0800, Ian Kent wrote:
-> > > Use the AUTOFS_*() print defines instead of raw printks.
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-Hi again Ian
+The macro __compiletime_error_fallback has an error in that it
+lacks parens around the expansion of an expression. It also
+lacks a conversion to a boolean value. The first problem can
+result in a mis-evaluation. The second problem can also result
+in an error if the value comes out negative. That would thwart
+the intended error generation. That is, the error being asserted
+would not in fact generate an error. Fix both problems by adding
+!!() to the expansion.
 
-> > It's probably better to simply use
-> > 	#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> > or
-> > 	#define pr_fmt(fmt) KBUILD_MODNAME ":%d:%s" fmt, current->pid, __func__
-> > if you _really_ want pid/func in the output
-> 
-> I do, yes.
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ include/linux/compiler.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-That's fine.  I left out the trailing semicolon/space.
-The pr_fmt could be something like:
-#define pr_fmt(fmt) KBUILD_MODNAME ":%d:%s: " fmt, current->pid, __func__
-or add a "pid:" descriptor prefix if you like too:
-#define pr_fmt(fmt) KBUILD_MODNAME ":pid:%d:%s: " fmt, current->pid, __func__
-
-> > it's better to use a consistent style for
-> > these logging functions ideally with terminating
-> > newlines so there isn't a mix of code with
-> > and without those newlines.  That inconsistency
-> > leads to unintended defects.
-> 
-> The idea here was to make the logging consistent throughout.
-
-Mine too.
-
-> I have become used of not using the new-line terminator in logging over
-> the years and tend to favour that myself. You recommend not doing that
-> probably from a kernel wide consistency perspective? Maybe that is
-> better ...
-
-Yes, kernel style consistency is the rationale.
-
-Over time, people come along and add messages
-while not reading the code very closely so using
-the kernel style with newlines can help avoid
-these trivial defects.
-
-cheers, Joe
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index d5ad7b1..59dc611 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -331,7 +331,7 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+  */
+ # ifndef __CHECKER__
+ #  define __compiletime_error_fallback(condition) \
+-	do { ((void)sizeof(char[1 - 2 * condition])); } while (0)
++	do { ((void)sizeof(char[1 - 2 * !!(condition)])); } while (0)
+ # endif
+ #endif
+ #ifndef __compiletime_error_fallback
+-- 
+1.9.3
 
