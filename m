@@ -1,132 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaKCPuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:50:44 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:41540 "EHLO bear.ext.ti.com"
+	id S1753193AbaKCPu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:50:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47164 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816AbaKCPul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:50:41 -0500
-Date: Mon, 3 Nov 2014 09:50:11 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Felipe Balbi <balbi@ti.com>, David Cohen <david.a.cohen@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, <mathias.nyman@linux.intel.com>
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141103155011.GH27425@saruman>
-Reply-To: <balbi@ti.com>
-References: <CACRpkdYDiFvwsPwqACXS2bZU9peUyJEn-fpzVqZKYXseuEFGGA@mail.gmail.com>
- <20141028144249.GD8123@saruman>
- <CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
- <20141031132005.GB1273@saruman>
- <20141031162339.GA7136@psi-dev26.jf.intel.com>
- <20141031184509.GA2224@psi-dev26.jf.intel.com>
- <20141103092402.GA1304@lahna.fi.intel.com>
- <20141103150048.GB27425@saruman>
- <20141103152743.GB1618@lahna.fi.intel.com>
- <20141103154207.GC1618@lahna.fi.intel.com>
+	id S1752365AbaKCPum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 10:50:42 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Boaz Harrosh <boaz@plexistor.com>, Nick Piggin <npiggin@kernel.dk>,
+        "Kani\, Toshimitsu" <toshi.kani@hp.com>,
+        "Knippers\, Linda" <linda.knippers@hp.com>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvdimm\@lists.01.org" <linux-nvdimm@ml01.01.org>
+Subject: Re: [PATCH 1/4] pmem: Initial version of persistent memory driver
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
+	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
+	<94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 03 Nov 2014 10:50:32 -0500
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net>
+	(Robert Elliott's message of "Sun, 2 Nov 2014 03:22:37 +0000")
+Message-ID: <x49d294xozb.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tT3UgwmDxwvOMqfu"
-Content-Disposition: inline
-In-Reply-To: <20141103154207.GC1618@lahna.fi.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tT3UgwmDxwvOMqfu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+"Elliott, Robert (Server Storage)" <Elliott@hp.com> writes:
 
-Hi,
+>> +config BLK_DEV_PMEM_COUNT
+>> +	int "Default number of PMEM disks"
+>> +	default "4"
+>
+> For real use I think a default of 1 would be better.
 
-On Mon, Nov 03, 2014 at 05:42:07PM +0200, Mika Westerberg wrote:
-> On Mon, Nov 03, 2014 at 05:27:43PM +0200, Mika Westerberg wrote:
-> > On Mon, Nov 03, 2014 at 09:00:48AM -0600, Felipe Balbi wrote:
-> > > On Mon, Nov 03, 2014 at 11:24:02AM +0200, Mika Westerberg wrote:
-> > > > On Fri, Oct 31, 2014 at 11:45:09AM -0700, David Cohen wrote:
-> > > > > > I think adding the module exit + allowing this driver to be a m=
-odule
-> > > > > > would be a good approach. Then we don't need to force generic x=
-86 kernel
-> > > > > > binaries to always have this driver. Unless Mathias or Mika kno=
-ws a
-> > > > > > constraint to force this driver to be builtin only.
-> > > > >=20
-> > > > > It helps if I CC them when asking for feedback :)
-> > > > >=20
-> > > > > Mathias, Mika, do you know any constraint that forces pinctrl-bay=
-trail
-> > > > > to be bool?
-> > > >=20
-> > > > The only constraint that has been keeping this driver as bool is th=
-at
-> > > > some machines like, Asus T100, uses ACPI GPIO operation regions for
-> > > > toggling GPIOs to get things like sensor hub powered on. The GPIO
-> > > > operation region code does not yet handle -EPROBE_DEFER so only way=
- to
-> > > > ensure that the operation region is there is to have the driver com=
-piled
-> > > > in to the kernel.
-> > >=20
-> > > But that's not enough excuse to have every single x86 in the market
-> > > shipping with this driver. Think about a distro kernel, most likely t=
-his
-> > > gets enabled and it's wrong in 80% of the cases.
-> >=20
-> > True, but see below.
-> >=20
-> > > It would be nicer to add EPROBE_DEFER support, convert this into
-> > > tristate and have default =3D M if BAYTRAIL, or something.
-> >=20
-> > If it were simple as that we would have done that already. Please check
-> > drivers/gpio/gpiolib-acpi.c:acpi_gpio_adr_space_handler() and tell me
-> > how we can do that.
->=20
-> Actually the above is not the problem because we already have registered
-> the GPIO chip and hence we have the GPIO available to the firmware code.
+For "real" use, it will be the number of actual DIMMs, not a config
+option, I would think.  I don't take any issue with defaulting to 4.
+This will go away.
 
-what happens before you registered the gpio chip ? It takes some time
-=66rom head.S to gpiochip_irqchip_add(). Anywhere between that time,
-firmware could try to access gpios and the same problem would occur.
+>> +	pmem->pmem_queue = blk_alloc_queue(GFP_KERNEL);
+>> +	if (!pmem->pmem_queue)
+>> +		goto out_free_dev;
+>> +
+>
+> General comment:
+> This driver should be blk-mq based.  Not doing so loses
+> out on a number of SMP and NUMA performance improvements.
+> For example, blk_alloc_queue calls blk_alloc_queue_node
+> with NUMA_NO_NODE.  If it called blk_mq_init_queue, then
+> each CPU would get structures located on its node.
 
-> The real problem is that if the ACPI GPIO operation handler is not there
-> at the time firmware decides to do something it will just skip things
-> that depend on the operation region. So if it has a GPIO that is used to
-> turn on sensor hub or touch panel or whatever, this will not be done and
-> it results that the device in question might not work properly.
+No need to use blk-mq just to set the numa node, as the driver could
+just call blk_alloc_queue_node itself.  I'd chalk this up to another
+thing that could be fixed when the driver is used for actual hardware
+that describes its own proximity domain.  Further, there is no DMA
+engine, here, so what is the benefit of using blk-mq?  I/O completes in
+the submission path, and I don't see any locking that's preventing
+parallelism.
 
-that's an issue that needs solving, but forcing every x86 kernel to ship
-with this driver, is not a proper solution.
+>
+>> +	blk_queue_make_request(pmem->pmem_queue, pmem_make_request);
+>> +	blk_queue_max_hw_sectors(pmem->pmem_queue, 1024);
+>
+> Many storage controllers support 1 MiB IOs now, and increasing
+> amounts of software feel comfortable generating those sizes.  
+> That means this should be at least 2048.
+>
+>> +	blk_queue_bounce_limit(pmem->pmem_queue, BLK_BOUNCE_ANY);
+>> +
+>
+> It might be appropriate to call blk_queue_rq_timeout
+> and set up a very short timeout, since persistent memory is
+> very fast.  I'm not sure what the default is for non-blk-mq
+> drivers; for blk-mq, I think it is 30 seconds, which is
+> far too long for memory based storage.
 
---=20
-balbi
+If you timeout on a memcpy, then we've definitely got problems. :)
 
---tT3UgwmDxwvOMqfu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUV6QzAAoJEIaOsuA1yqRE66QP/1rC0KgtEScVJCq8+I14sHEN
-jyw6vwxXPsFpMmhJPKDoaVk6ZGkYmLgY4Xkq3R5yfy/pmg2NPh4FZzYfX58xpuT4
-HdeLE8aejAsf2DZ83vp0mHwyBVh7xBXjkiZCj+jBrPpFwlGG9WktovZjZ+E91vzA
-qD5MWVdK8cHMwS570O8WcDebEhco84KWqZpcAi+lh277ldkXdDgrWmPQgKxiw1G/
-H+WUJyUNBrZnCJQp2oKDuzD2deOnxx5aPIrQih3zRQ+7Zwozp5mHuN1bdGV4+KtN
-3eLB4KjGC3aVqmSGoNIiHCaXD+EBMvrDKWR7Q2XzP+ex8RCK9InEU0WVvL9lpmPV
-TN54ILhPPSxpr4o3l/tXQdbIq1fxi2Y+CYElAT3umjWqROmg1M/qMVlkjAt76GaK
-pyqAWKXs6GoILYCxiY89dqZhegMAdpAPxJHDwSDsmrTKMpFHHyqyROFxDT1g9i/b
-ez0LcNTR5pTtcnm1JSY2gbY+iTsaROxouFVzXlq/vWd8SqYO1AwEyHMgwg7W2AS1
-zLG9mbpR3I/r2Y7uTkEHScJJE/YmL8uYozmAyH6HN21eUgk4TIhWHnVTHGy4nqcZ
-QZgxHtooO7J6/FOrNTlfsOuhvblW83cT5+1RIDgkQmDPApKOP6Ux7/EGY6RkJuiB
-+EIS/BKkvSt8IUr1nQfy
-=l3w5
------END PGP SIGNATURE-----
-
---tT3UgwmDxwvOMqfu--
+Cheers,
+Jeff
