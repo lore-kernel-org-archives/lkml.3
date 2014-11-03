@@ -1,328 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaKCL4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:56:09 -0500
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:42115 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaKCL4D (ORCPT
+	id S1752037AbaKCL5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:57:10 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:58348 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaKCL5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 06:56:03 -0500
-From: David Drysdale <drysdale@google.com>
-To: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Will Drewry <wad@chromium.org>,
-        Jorge Lucangeli Obes <jorgelo@google.com>,
-        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
-        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, linux-api@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        David Drysdale <drysdale@google.com>
-Subject: [PATCH 1/3] fs: add O_BENEATH flag to openat(2)
-Date: Mon,  3 Nov 2014 11:48:23 +0000
-Message-Id: <1415015305-15494-2-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1415015305-15494-1-git-send-email-drysdale@google.com>
-References: <1415015305-15494-1-git-send-email-drysdale@google.com>
+	Mon, 3 Nov 2014 06:57:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
+        ralf@linux-mips.org, linux-sh@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH V3 00/14] genirq endian fixes; bcm7120/brcmstb IRQ updates
+Date: Mon, 03 Nov 2014 12:56:52 +0100
+Message-ID: <2217077.1aQXS9nJph@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414890241-9938-1-git-send-email-cernekee@gmail.com>
+References: <1414890241-9938-1-git-send-email-cernekee@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:Ya7OO2ASSLYRNEh+Et/+QbLcLu1KV/+ph8Mj/t9jHsw1vCsK/Dh
+ aGxTNLJlIhNsxOmBICV4teWkvuOHeZ6giAooI4J49IEDXM/KH4y+xuViieCc0WhgP0Bzkan
+ OTkeovMuq4sNH7KeYJ/JqbCEuhRaqi0Dig+1B4g6Dv6Fhu1FJY97syjr3yRqXnM4E6SaZ+S
+ 7jocWIFhYBhh4PqiMAmkw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new O_BENEATH flag for openat(2) which restricts the
-provided path, rejecting (with -EACCES) paths that are not beneath
-the provided dfd.  In particular, reject:
- - paths that contain .. components
- - paths that begin with /
- - symlinks that have paths as above.
+On Saturday 01 November 2014 18:03:47 Kevin Cernekee wrote:
+> V2->V3:
+> 
+>  - Move updated irq_reg_{readl,writel} functions back into <linux/irq.h>
+>    so they can be called by irqchip drivers
+> 
+>  - Add gc->reg_{readl,writel} function pointers so that irqchip
+>    drivers like arch/sh/boards/mach-se/{7343,7722}/irq.c can override them
+> 
+>  - CC: linux-sh list in lieu of Paul's defunct linux-sh.org email address
+> 
+>  - Fix handling of zero L2 status in bcm7120-l2.c
+> 
+>  - Rebase on Linus' head of tree
 
-Signed-off-by: David Drysdale <drysdale@google.com>
----
- arch/alpha/include/uapi/asm/fcntl.h  |  1 +
- arch/parisc/include/uapi/asm/fcntl.h |  1 +
- arch/sparc/include/uapi/asm/fcntl.h  |  1 +
- fs/fcntl.c                           |  5 +++--
- fs/namei.c                           | 43 ++++++++++++++++++++++++------------
- fs/open.c                            |  4 +++-
- include/linux/namei.h                |  1 +
- include/uapi/asm-generic/fcntl.h     |  4 ++++
- 8 files changed, 43 insertions(+), 17 deletions(-)
+Looks all great. I also looked at the series now and am very happy
+about how it turned out.
 
-diff --git a/arch/alpha/include/uapi/asm/fcntl.h b/arch/alpha/include/uapi/asm/fcntl.h
-index 09f49a6b87d1..76a87038d2c1 100644
---- a/arch/alpha/include/uapi/asm/fcntl.h
-+++ b/arch/alpha/include/uapi/asm/fcntl.h
-@@ -33,6 +33,7 @@
- 
- #define O_PATH		040000000
- #define __O_TMPFILE	0100000000
-+#define O_BENEATH	0200000000	/* no / or .. in openat path */
- 
- #define F_GETLK		7
- #define F_SETLK		8
-diff --git a/arch/parisc/include/uapi/asm/fcntl.h b/arch/parisc/include/uapi/asm/fcntl.h
-index 34a46cbc76ed..3adadf72f929 100644
---- a/arch/parisc/include/uapi/asm/fcntl.h
-+++ b/arch/parisc/include/uapi/asm/fcntl.h
-@@ -21,6 +21,7 @@
- 
- #define O_PATH		020000000
- #define __O_TMPFILE	040000000
-+#define O_BENEATH	080000000	/* no / or .. in openat path */
- 
- #define F_GETLK64	8
- #define F_SETLK64	9
-diff --git a/arch/sparc/include/uapi/asm/fcntl.h b/arch/sparc/include/uapi/asm/fcntl.h
-index 7e8ace5bf760..ea38f0bd6cec 100644
---- a/arch/sparc/include/uapi/asm/fcntl.h
-+++ b/arch/sparc/include/uapi/asm/fcntl.h
-@@ -36,6 +36,7 @@
- 
- #define O_PATH		0x1000000
- #define __O_TMPFILE	0x2000000
-+#define O_BENEATH	0x4000000	/* no / or .. in openat path */
- 
- #define F_GETOWN	5	/*  for sockets. */
- #define F_SETOWN	6	/*  for sockets. */
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 22d1c3df61ac..c07a32efc34b 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -747,14 +747,15 @@ static int __init fcntl_init(void)
- 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
- 	 * is defined as O_NONBLOCK on some platforms and not on others.
- 	 */
--	BUILD_BUG_ON(20 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
-+	BUILD_BUG_ON(21 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
- 		O_RDONLY	| O_WRONLY	| O_RDWR	|
- 		O_CREAT		| O_EXCL	| O_NOCTTY	|
- 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
- 		__O_SYNC	| O_DSYNC	| FASYNC	|
- 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
- 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
--		__FMODE_EXEC	| O_PATH	| __O_TMPFILE
-+		__FMODE_EXEC	| O_PATH	| __O_TMPFILE	|
-+		O_BENEATH
- 		));
- 
- 	fasync_cache = kmem_cache_create("fasync_cache",
-diff --git a/fs/namei.c b/fs/namei.c
-index a7b05bf82d31..2fd547014b6b 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -647,7 +647,7 @@ static __always_inline void set_root(struct nameidata *nd)
- 	get_fs_root(current->fs, &nd->root);
- }
- 
--static int link_path_walk(const char *, struct nameidata *);
-+static int link_path_walk(const char *, struct nameidata *, unsigned int);
- 
- static __always_inline unsigned set_root_rcu(struct nameidata *nd)
- {
-@@ -819,7 +819,8 @@ static int may_linkat(struct path *link)
- }
- 
- static __always_inline int
--follow_link(struct path *link, struct nameidata *nd, void **p)
-+follow_link(struct path *link, struct nameidata *nd, unsigned int flags,
-+	    void **p)
- {
- 	struct dentry *dentry = link->dentry;
- 	int error;
-@@ -867,7 +868,7 @@ follow_link(struct path *link, struct nameidata *nd, void **p)
- 			nd->flags |= LOOKUP_JUMPED;
- 		}
- 		nd->inode = nd->path.dentry->d_inode;
--		error = link_path_walk(s, nd);
-+		error = link_path_walk(s, nd, flags);
- 		if (unlikely(error))
- 			put_link(nd, link, *p);
- 	}
-@@ -1585,7 +1586,8 @@ out_err:
-  * Without that kind of total limit, nasty chains of consecutive
-  * symlinks can cause almost arbitrarily long lookups.
-  */
--static inline int nested_symlink(struct path *path, struct nameidata *nd)
-+static inline int nested_symlink(struct path *path, struct nameidata *nd,
-+				 unsigned int flags)
- {
- 	int res;
- 
-@@ -1603,7 +1605,7 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
- 		struct path link = *path;
- 		void *cookie;
- 
--		res = follow_link(&link, nd, &cookie);
-+		res = follow_link(&link, nd, flags, &cookie);
- 		if (res)
- 			break;
- 		res = walk_component(nd, path, LOOKUP_FOLLOW);
-@@ -1739,13 +1741,19 @@ static inline u64 hash_name(const char *name)
-  * Returns 0 and nd will have valid dentry and mnt on success.
-  * Returns error and drops reference to input namei data on failure.
-  */
--static int link_path_walk(const char *name, struct nameidata *nd)
-+static int link_path_walk(const char *name, struct nameidata *nd,
-+			  unsigned int flags)
- {
- 	struct path next;
- 	int err;
- 	
--	while (*name=='/')
-+	while (*name == '/') {
-+		if (flags & LOOKUP_BENEATH) {
-+			err = -EACCES;
-+			goto exit;
-+		}
- 		name++;
-+	}
- 	if (!*name)
- 		return 0;
- 
-@@ -1764,6 +1772,10 @@ static int link_path_walk(const char *name, struct nameidata *nd)
- 		if (name[0] == '.') switch (hashlen_len(hash_len)) {
- 			case 2:
- 				if (name[1] == '.') {
-+					if (flags & LOOKUP_BENEATH) {
-+						err = -EACCES;
-+						goto exit;
-+					}
- 					type = LAST_DOTDOT;
- 					nd->flags |= LOOKUP_JUMPED;
- 				}
-@@ -1806,7 +1818,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
- 			return err;
- 
- 		if (err) {
--			err = nested_symlink(&next, nd);
-+			err = nested_symlink(&next, nd, flags);
- 			if (err)
- 				return err;
- 		}
-@@ -1815,6 +1827,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
- 			break;
- 		}
- 	}
-+exit:
- 	terminate_walk(nd);
- 	return err;
- }
-@@ -1853,6 +1866,8 @@ static int path_init(int dfd, const char *name, unsigned int flags,
- 
- 	nd->m_seq = read_seqbegin(&mount_lock);
- 	if (*name=='/') {
-+		if (flags & LOOKUP_BENEATH)
-+			return -EACCES;
- 		if (flags & LOOKUP_RCU) {
- 			rcu_read_lock();
- 			nd->seq = set_root_rcu(nd);
-@@ -1953,7 +1968,7 @@ static int path_lookupat(int dfd, const char *name,
- 		return err;
- 
- 	current->total_link_count = 0;
--	err = link_path_walk(name, nd);
-+	err = link_path_walk(name, nd, flags);
- 
- 	if (!err && !(flags & LOOKUP_PARENT)) {
- 		err = lookup_last(nd, &path);
-@@ -1964,7 +1979,7 @@ static int path_lookupat(int dfd, const char *name,
- 			if (unlikely(err))
- 				break;
- 			nd->flags |= LOOKUP_PARENT;
--			err = follow_link(&link, nd, &cookie);
-+			err = follow_link(&link, nd, flags, &cookie);
- 			if (err)
- 				break;
- 			err = lookup_last(nd, &path);
-@@ -2304,7 +2319,7 @@ path_mountpoint(int dfd, const char *name, struct path *path, unsigned int flags
- 		return err;
- 
- 	current->total_link_count = 0;
--	err = link_path_walk(name, &nd);
-+	err = link_path_walk(name, &nd, flags);
- 	if (err)
- 		goto out;
- 
-@@ -2316,7 +2331,7 @@ path_mountpoint(int dfd, const char *name, struct path *path, unsigned int flags
- 		if (unlikely(err))
- 			break;
- 		nd.flags |= LOOKUP_PARENT;
--		err = follow_link(&link, &nd, &cookie);
-+		err = follow_link(&link, &nd, flags, &cookie);
- 		if (err)
- 			break;
- 		err = mountpoint_last(&nd, path);
-@@ -3202,7 +3217,7 @@ static struct file *path_openat(int dfd, struct filename *pathname,
- 		goto out;
- 
- 	current->total_link_count = 0;
--	error = link_path_walk(pathname->name, nd);
-+	error = link_path_walk(pathname->name, nd, flags);
- 	if (unlikely(error))
- 		goto out;
- 
-@@ -3221,7 +3236,7 @@ static struct file *path_openat(int dfd, struct filename *pathname,
- 			break;
- 		nd->flags |= LOOKUP_PARENT;
- 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
--		error = follow_link(&link, nd, &cookie);
-+		error = follow_link(&link, nd, flags, &cookie);
- 		if (unlikely(error))
- 			break;
- 		error = do_last(nd, &path, file, op, &opened, pathname);
-diff --git a/fs/open.c b/fs/open.c
-index d6fd3acde134..8afca5b87a0b 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -874,7 +874,7 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
- 		 * If we have O_PATH in the open flag. Then we
- 		 * cannot have anything other than the below set of flags
- 		 */
--		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH;
-+		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH | O_BENEATH;
- 		acc_mode = 0;
- 	} else {
- 		acc_mode = MAY_OPEN | ACC_MODE(flags);
-@@ -905,6 +905,8 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
- 		lookup_flags |= LOOKUP_DIRECTORY;
- 	if (!(flags & O_NOFOLLOW))
- 		lookup_flags |= LOOKUP_FOLLOW;
-+	if (flags & O_BENEATH)
-+		lookup_flags |= LOOKUP_BENEATH;
- 	op->lookup_flags = lookup_flags;
- 	return 0;
- }
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 492de72560fa..bd0615d1143b 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -39,6 +39,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- #define LOOKUP_FOLLOW		0x0001
- #define LOOKUP_DIRECTORY	0x0002
- #define LOOKUP_AUTOMOUNT	0x0004
-+#define LOOKUP_BENEATH		0x0008
- 
- #define LOOKUP_PARENT		0x0010
- #define LOOKUP_REVAL		0x0020
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 7543b3e51331..f63aa749a4fb 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -92,6 +92,10 @@
- #define O_TMPFILE (__O_TMPFILE | O_DIRECTORY)
- #define O_TMPFILE_MASK (__O_TMPFILE | O_DIRECTORY | O_CREAT)      
- 
-+#ifndef O_BENEATH
-+#define O_BENEATH	040000000	/* no / or .. in openat path */
-+#endif
-+
- #ifndef O_NDELAY
- #define O_NDELAY	O_NONBLOCK
- #endif
--- 
-2.1.0.rc2.206.gedb03e5
+>  - Drop GENERIC_CHIP / GENERIC_CHIP_BE compile-time optimizations
+> 
+> For the latter item, I ran a quick benchmark to see if the extra
+> indirection in irq_reg_{readl,write} had any perceptible effect on
+> register access times.  The MIPS BE case did show a small performance
+> hit from using the read wrapper, but on ARM LE the only differences
+> were attributed to the presence/absence of a barrier:
+>
+>
+> BCM3384 (UBUS architecture, MIPS BE, IRQ_GC_BE_IO):
+> 
+> irq_reg_readl       : 207 ns
+> readl               : 186 ns
+> __raw_readl         : 186 ns
+> ioread32be          : 195 ns
+> 
+> irq_reg_writel      : 177 ns
+> writel              : 177 ns
+> __raw_writel        : 177 ns
+> iowrite32be         : 177 ns
+> 
+> 
+> BCM7445 (GISB architecture, ARM LE, standard LE readl):
+> 
+> irq_reg_readl       : 519 ns
+> readl               : 519 ns
+> __raw_readl         : 482 ns
+> ioread32be          : 519 ns
+> 
+> irq_reg_writel      : 500 ns
+> writel              : 500 ns
+> __raw_writel        : 482 ns
+> iowrite32be         : 500 ns
+> 
 
+Yes, good idea to check this. 43ns is probably not significant to
+warrant optimizing this, but if we wanted to, a driver could now
+override the accessors using readl_relaxed()/writel_relaxed().
+
+Note that the cost of the barriers can depend a lot on the hardware
+setup and on the state of the system. I believe synchronizing the
+L2 cache on some Cortex-A9 machines can be particularly expensive.
+
+Anyway, the existing code doesn't do it, so we can leave that as
+a possible optimization.
+
+	Arnd
