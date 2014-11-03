@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472AbaKDARh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 19:17:37 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:45229 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278AbaKDARd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 19:17:33 -0500
+	id S1751505AbaKDASg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 19:18:36 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29466 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866AbaKDASd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 19:18:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,310,1413270000"; 
+   d="scan'208";a="630778055"
+Date: Tue, 4 Nov 2014 07:57:48 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
+ hotplug
+Message-ID: <20141103235747.GA26702@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com>
+ <20141103104111.GA23531@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <CAGr1F2EV4p_nJP_oMe3N8pBPedAZHbdB=XCMPjSEZTC9jmZoAg@mail.gmail.com>
-References: <1414783141-6947-1-git-send-email-adityakali@google.com>
- <1414783141-6947-8-git-send-email-adityakali@google.com> <CALCETrXTaZ3SJ_t-gnbc93BVZXg-912NqO78kFd0Tpi-5-dZoQ@mail.gmail.com>
- <CAGr1F2FuPQxLraYv7PstJ9c8H-XQsgawaAtj4AS77B+_0k2o+A@mail.gmail.com>
- <CALCETrW64-6xC6psP-8k0H-1GfVnWBTeEBNSrE_sH+-DFtuZQQ@mail.gmail.com>
- <CAGr1F2GX45gC-V7kEzVjp-EiYfdPDVBRs+99nASpgFVAdYX+1w@mail.gmail.com>
- <CALCETrUB_xx5zno26k5UjAFt77nZTpgyndD4AuBSZxiZBNjXSw@mail.gmail.com> <CAGr1F2EV4p_nJP_oMe3N8pBPedAZHbdB=XCMPjSEZTC9jmZoAg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Nov 2014 16:17:11 -0800
-Message-ID: <CALCETrXeG2t=fW9HbkirDZudw9pbDwoqDq5ygJBkBMbqqoDAvw@mail.gmail.com>
-Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init cgroupns
-To: Aditya Kali <adityakali@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Rohit Jnagal <jnagal@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103104111.GA23531@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 4:12 PM, Aditya Kali <adityakali@google.com> wrote:
-> On Mon, Nov 3, 2014 at 3:48 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Mon, Nov 3, 2014 at 3:23 PM, Aditya Kali <adityakali@google.com> wrote:
->>> On Mon, Nov 3, 2014 at 3:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Mon, Nov 3, 2014 at 3:12 PM, Aditya Kali <adityakali@google.com> wrote:
->>>>> On Fri, Oct 31, 2014 at 5:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>>> On Fri, Oct 31, 2014 at 12:19 PM, Aditya Kali <adityakali@google.com> wrote:
->>>>>>>         if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
->>>>>>>                 pr_warn("sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
->>>>>>> -               if (nr_opts != 1) {
->>>>>>> +               if (nr_opts > 1) {
->>>>>>>                         pr_err("sane_behavior: no other mount options allowed\n");
->>>>>>>                         return -EINVAL;
->>>>>>
->>>>>> This looks wrong.  But, if you make the change above, then it'll be right.
->>>>>>
->>>>>
->>>>> It would have been nice if simple 'mount -t cgroup cgroup <mnt>' from
->>>>> cgroupns does the right thing automatically.
->>>>>
->>>>
->>>> This is a debatable point, but it's not what I meant.  Won't your code
->>>> let 'mount -t cgroup -o one_evil_flag cgroup mountpoint' through?
->>>>
->>>
->>> I don't think so. This check "if (nr_opts > 1)" is nested under "if
->>> (opts->flags & CGRP_ROOT_SANE_BEHAVIOR)". So we know that there is
->>> atleast 1 option ('__DEVEL__sane_behavior') present (implicit or not).
->>> Addition of 'one_evil_flag' will make nr_opts = 2 and result in EINVAL
->>> here.
->>
->> But the implicit __DEVEL__sane_behavior doesn't increment nr_opts, right?
->>
+Hi Peter,
+On Mon, Nov 03, 2014 at 11:41:11AM +0100, Peter Zijlstra wrote:
+>On Fri, Oct 31, 2014 at 03:28:17PM +0800, Wanpeng Li wrote:
+>> Hi all,
+>> 
+>> I observe that dl task can't be migrated to other cpus during cpu hotplug, in 
+>> addition, task may/may not be running again if cpu is added back. The root cause 
+>> which I found is that dl task will be throtted and removed from dl rq after 
+>> comsuming all budget, which leads to stop task can't pick it up from dl rq and 
+>> migrate to other cpus during hotplug. 
+>> 
+>> So I try two methods.
+>> 
+>> - add throttled dl sched_entity to a throttled_list, the list will be traversed
+>>   during cpu hotplug, and the dl sched_entity will be picked and enqueue, then 
+>>   stop task will pick and migrate it. However, dl sched_entity is throttled again 
+>>   before stop task running since the below path. This path will set rq->online 0 
+>>   which lead to set_rq_offline() won't be called in function migration_call().
+>> 
 >
-> Yes. Hence this change makes sure that we don't return EINVAL when
-> nr_opts == 0 or nr_opts == 1 :)
-> That way, both of the following are equivalent when inside non-init cgroupns:
->
-> (1) $ mount -t cgroup -o __DEVEL__sane_behavior cgroup mountpoint
-> (2) $ mount -t cgroup cgroup mountpoint
->
-> Any other mount option will trigger the error here.
+>This seems wrong to me; this screws around with the CBS by replenishing
+>too soon.
 
-I still don't get it.  Can you walk me through why mount -o
-some_other_option -t cgroup cgroup mountpoint causes -EINVAL?
+Agreed.
 
---Andy
+>
+>> @@ -1593,9 +1602,20 @@ static void rq_online_dl(struct rq *rq)
+>>  /* Assumes rq->lock is held */
+>>  static void rq_offline_dl(struct rq *rq)
+>>  {
+>> +	struct task_struct *p, *n;
+>> +
+>>  	if (rq->dl.overloaded)
+>>  		dl_clear_overload(rq);
+>>  
+>> +	/* Make sched_dl_entity available for pick_next_task() */
+>> +	list_for_each_entry_safe(p, n, &rq->dl.throttled_list, dl.throttled_node) {
+>> +		p->dl.dl_throttled = 0;
+>> +		hrtimer_cancel(&p->dl.dl_timer);
+>> +		p->dl.dl_runtime = p->dl.dl_runtime;
+>> +		if (task_on_rq_queued(p))
+>> +			enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>> +	}
+>> +
+>>  	cpudl_set(&rq->rd->cpudl, rq->cpu, 0, 0);
+>>  }
+>
+>
+>So what is wrong with making dl_task_timer() deal with it? The timer
+>will still fire on the correct time, canceling it and or otherwise
+>messing with the CBS is wrong. Once it fires, all we need to do is
+>migrate it to another cpu (preferably one that is still online of course
+>:-).
+
+Do you mean what I need to do is push the task to another cpu in dl_task_timer() 
+if rq is offline? In addition, what will happen if dl task can't preempt on 
+another cpu?
+
+Regards,
+Wanpeng Li 
