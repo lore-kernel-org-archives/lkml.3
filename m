@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaKCRqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:46:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58824 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaKCRqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753330AbaKCRqU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:46:20 -0500
+Received: from smtp01.online.nl ([194.134.41.31]:35427 "EHLO smtp01.online.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752905AbaKCRqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Nov 2014 12:46:17 -0500
-Date: Mon, 3 Nov 2014 09:46:16 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Andre' Bauer" <monotek23@gmail.com>
-Cc: OS Engineering <osengineering@stec-inc.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
-        =?utf-8?B?546L6YeR5rWm?= <jinpuwang@gmail.com>,
-        Amit Kale <akale@stec-inc.com>
-Subject: Re: [PATCH] EnhanceIO ssd caching software
-Message-ID: <20141103174616.GB23167@kroah.com>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
- <545754C6.5000304@gmail.com>
+X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Nov 2014 12:46:17 EST
+Message-ID: <5457BD85.2070901@topic.nl>
+Date: Mon, 03 Nov 2014 18:38:13 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+Organization: Topic
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545754C6.5000304@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mark Brown <broonie@kernel.org>
+CC: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Add ltc3562 voltage regulator driver
+References: <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl> <1414668415-597-1-git-send-email-mike.looijmans@topic.nl> <20141030165133.GB18557@sirena.org.uk> <54573860.4060708@topic.nl> <20141103120919.GE3815@sirena.org.uk> <545795D8.1040600@topic.nl> <20141103151058.GP3815@sirena.org.uk>
+In-Reply-To: <20141103151058.GP3815@sirena.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Online-Scanned: by Cloudmark authority (on smtp01.online.nl)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 11:11:18AM +0100, Andre' Bauer wrote:
-> Hi Guys,
-> 
-> whats the status of the inclusion of this patch?
-> 
-> Regards
-> 
-> Andr? Bauer
-> 
-> Am 15.02.2013 um 07:02 schrieb OS Engineering:
+On 3-11-2014 16:10, Mark Brown wrote:
+> On Mon, Nov 03, 2014 at 03:48:56PM +0100, Mike Looijmans wrote:
+>> ﻿On 11/03/2014 01:09 PM, Mark Brown wrote:
+>
+>>> No function calls, just use regulators_node.  What is unclear about the
+>>> functionality?
+>
+>> I don't understand what you mean by "regulators_node".
+>
+>> "grep -R regulators_node *" in the kernel source tree returns no results,
+>> nor does http://lxr.free-electrons.com/ident?i=regulators_node
+>
+> You need to develop against current versions of the kernel, this is
+> something that was merged into Linus' tree during the merge window.
 
-Responding to an almost 2 year old email?
+Is this an absolute show-stopper for you?
 
-Heck, I have no idea what happened yesterday, let along 2 years ago,
-sorry...
+With some effort I could move from our current 3.15 to 3.17, but even 
+that wouldn't be recent enough then. I can justify spending a few days 
+on getting the driver integrated into mainline, even if the initial 
+version cost less than that; but moving everything to mainline is going 
+to take weeks and the boss is definitely going to say "no" to that.
 
-greg k-h
+-- 
+Mike Looijmans
