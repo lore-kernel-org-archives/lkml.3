@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaKCTif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 14:38:35 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55136 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbaKCTie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 14:38:34 -0500
-Date: Mon, 3 Nov 2014 20:38:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel J Blueman <daniel@numascale.com>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH v3 5/5] Use 2GB memory block size on large x86-64
- systems
-In-Reply-To: <1414915813-2462-5-git-send-email-daniel@numascale.com>
-Message-ID: <alpine.DEB.2.11.1411032021331.5308@nanos>
-References: <1414915813-2462-1-git-send-email-daniel@numascale.com> <1414915813-2462-5-git-send-email-daniel@numascale.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753308AbaKCTkV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 14:40:21 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:48363 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752329AbaKCTkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 14:40:19 -0500
+Message-ID: <1415043615.2726.4.camel@sipsolutions.net>
+Subject: Re: [RFC v2 1/4] backports: replace CPTCFG prefix for
+ CONFIG_BACKPORT
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Michal Marek <mmarek@suse.cz>, Stefan Assmann <sassmann@kpanic.de>
+Date: Mon, 03 Nov 2014 20:40:15 +0100
+In-Reply-To: <CAB=NE6U7-TE9Oe_aTvjr4Y1iGALMeRohmx-ekbzmRuzAbbqTTA@mail.gmail.com> (sfid-20141103_203035_104913_5BEC1A98)
+References: <1414570902-5675-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1414570902-5675-2-git-send-email-mcgrof@do-not-panic.com>
+	 <1414741273.3014.3.camel@jlt4.sipsolutions.net>
+	 <20141031193408.GA12953@wotan.suse.de>
+	 <1414786943.3014.37.camel@jlt4.sipsolutions.net>
+	 <CAB=NE6UVca47FyZv54pED3C_1go+-Ra_AbSwW1+=Gj5YWP0GHw@mail.gmail.com>
+	 <CAB=NE6U7-TE9Oe_aTvjr4Y1iGALMeRohmx-ekbzmRuzAbbqTTA@mail.gmail.com>
+	 (sfid-20141103_203035_104913_5BEC1A98)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Nov 2014, Daniel J Blueman wrote:
+On Mon, 2014-11-03 at 11:30 -0800, Luis R. Rodriguez wrote:
+> On Fri, Oct 31, 2014 at 1:33 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> >> That also makes me think of something else - we currently use BACKPORT_
+> >> as a prefix for some of the other stuff under compat/Kconfig, and in
+> >> fact rename some things (like CONFIG_BACKPORT_AVERAGE) so maybe also
+> >> using CONFIG_BACKPORT_ here isn't a great idea? Might want to use
+> >> something else, say CONFIG_BPT_ or so.
+> >
+> > That's a good point, I take it that it does not matter which one we
+> > pick for each, so long as its different? If so I think CONFIG_BACKPORT
+> > is pretty clear for things we carry over like device drivers, but this
+> > is just subjective and so long as we pick something I think it'll be
+> > fine.
+> 
+> Thought about this some more, the stuff under compat/ is just
+> backported through a slightly different strategy -- the Kconfig
+> copy-file stuff but yet its very similar to the copy-list mechanism,
+> where it ends up is different but I am not sure if it makes sense to
+> keep a different naming scheme for each backport strategy.
 
-> On larger x64-64 systems, use a 2GB memory block size to reduce sysfs
-> entry creation time by 16x. Large is defined as 64GB or more memory.
+Yes, but the stuff under compat/ is also treated specially by the
+scripting - config symbols there automatically replace the ones in the
+rest of the tree for example (see "config AVERAGE" for example, you get
+"depends on BACKPORT_AVERAGE" and some BUILD_PACKPORT_AVERAGE magic)
 
-This changelog sucks.
+johannes
 
-It neither tells which sysfs entries are meant nor does it explain
-what the actual effect of this change is aside of speeding up some
-random sysfs thingy.
-
-> @@ -1247,9 +1246,9 @@ static unsigned long probe_memory_block_size(void)
->  	/* start from 2g */
->  	unsigned long bz = 1UL<<31;
->  
-> -#ifdef CONFIG_X86_UV
-> -	if (is_uv_system()) {
-> -		printk(KERN_INFO "UV: memory block size 2GB\n");
-> +#ifdef CONFIG_X86_64
-
-And this brainless 's/CONFIG_X86_UV/CONFIG_X86_64/' sucks even
-more. I'm sure you can figure out the WHY yourself.
-
-> +	if (totalram_pages >= (64ULL << (30 - PAGE_SHIFT))) {
-> +		pr_info("Using 2GB memory block size for large-memory system\n");
->  		return 2UL * 1024 * 1024 * 1024;
->  	}
->  #endif
-
-Thanks,
-
-	tglx
-
- 
