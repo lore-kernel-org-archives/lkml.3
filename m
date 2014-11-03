@@ -1,240 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaKCJdB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:33:01 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:47985 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaKCJc6 (ORCPT
+	id S1751713AbaKCJd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:33:29 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:47663 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451AbaKCJd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:32:58 -0500
-Message-ID: <1415007176.18669.3.camel@BR9GV9YG.de.ibm.com>
-Subject: Re: [PATCH v3] drivers: s390: net: ctcm: migrate variables to
- handle y2038 problem
-From: Ursula Braun <ubraun@linux.vnet.ibm.com>
-To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-Cc: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, opw-kernel@googlegroups.com
-Date: Mon, 03 Nov 2014 10:32:56 +0100
-In-Reply-To: <20141101001614.GA9494@localhost.localdomain>
-References: <20141101001614.GA9494@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110309-0005-0000-0000-000001EA8A29
+	Mon, 3 Nov 2014 04:33:26 -0500
+From: Rostislav Lisovy <lisovy@gmail.com>
+X-Google-Original-From: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+To: Johannes Berg <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de, burak.simsek@volkswagen.de,
+        Emmanuel Thierry <emmanuel.thierry@yogoko.fr>,
+        laszlo.virag@commsignia.com, lisovy@gmail.com,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Subject: [PATCH 0/2 v3] cfg80211: mac80211: 802.11p OCB mode support
+Date: Mon,  3 Nov 2014 10:33:17 +0100
+Message-Id: <1415007199-31506-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+X-Mailer: git-send-email 2.0.0.rc4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thx, Aya. Now I will add your patch to our collection for our next
-upstream posting on net_next.
-The only thing I want to change is removing your
-	#include <linux/jiffies.h>
-lines. All affected routines use already
-	#include <linux/timer.h>
-Thus these lines are not needed.
+The IEEE 802.11p amendment (already part of IEEE 802.11-2012)
+specifies usage of 5 and 10 MHz wide channels in 5.9GHz band for
+vehicular environment. All the 802.11p compliant devices should
+be set to the newly added operation mode -- OCB (Outside the
+Context of a BSS). No authentication/association is necessary to
+communicate. The only parameter to be configured is the channel
+(central frequency and bandwidth) to communicate on. The channel
+has to be known a priori. It is set during the 'ocb join'
+operation (sent via netlink message from user-space).
 
-Regards, Ursula Braun
+This patchset adds the OCB mode, OCB join and leave handling
+(nl80211, cfg80211, mac80211), 802.11p EDCA parameters
+modification, RX and TX path (for unicast/broadcast messages).
 
-On Sat, 2014-11-01 at 02:16 +0200, Aya Mahfouz wrote:
-> This patch is concerned with migrating the time variables for the s390
-> network driver. The changes handle the y2038 problem where timespec will
-> overflow in the year 2038. timespec was replaced by unsigned long and
-> all time variables get their values from the jiffies global variable.
-> This was done for the sake of speed and efficiency.
-> 
-> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-> ---
-> v1: Arnd has advised me to provide you with options for time
->     calculation. The first option: "accuracy" is used in this
->     patch. The second option: "speed" can be done through
->     jiffies.
-> 
-> v2: Moved on to the speed option. Let me know if I explicitly
->     need to include the jiffies header. The module compiles with
->     no problems on my side.
-> 
-> v3: Handled the error pointed out by Ursula. The current version
->     does not handle overflows. There are two solutions for this.
->     The first is to use jiffies_64 since s/390 is a 64-bit
->     architecture after all. The second is to use wrapper functions
->     like time_before and time_after. Two files were added too. 
->     They are: ctcm_main.c and netiucv.c. This patch could be sent
->     as a patchset in its final version for convenience. 
-> 
->  drivers/s390/net/ctcm_fsms.c | 19 ++++++++-----------
->  drivers/s390/net/ctcm_main.c |  5 +++--
->  drivers/s390/net/ctcm_main.h |  4 +++-
->  drivers/s390/net/netiucv.c   |  8 +++++---
->  4 files changed, 19 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
-> index fb92524..86ed7bf 100644
-> --- a/drivers/s390/net/ctcm_fsms.c
-> +++ b/drivers/s390/net/ctcm_fsms.c
-> @@ -23,6 +23,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/timer.h>
->  #include <linux/bitops.h>
-> +#include <linux/jiffies.h>
-> 
->  #include <linux/signal.h>
->  #include <linux/string.h>
-> @@ -251,13 +252,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
->  	int first = 1;
->  	int i;
->  	unsigned long duration;
-> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
-> +	unsigned long done_stamp = jiffies;
-> 
->  	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
-> 
-> -	duration =
-> -	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
-> -	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-> +	duration =  jiffies_to_usecs(done_stamp - ch->prof.send_stamp);
->  	if (duration > ch->prof.tx_time)
->  		ch->prof.tx_time = duration;
-> 
-> @@ -307,7 +306,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
->  		spin_unlock(&ch->collect_lock);
->  		ch->ccw[1].count = ch->trans_skb->len;
->  		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
-> -		ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +		ch->prof.send_stamp = jiffies;
->  		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
->  						(unsigned long)ch, 0xff, 0);
->  		ch->prof.doios_multi++;
-> @@ -1229,14 +1228,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
->  	int		rc;
->  	struct th_header *header;
->  	struct pdu	*p_header;
-> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
-> +	unsigned long done_stamp = jiffies;
-> 
->  	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
->  			__func__, dev->name, smp_processor_id());
-> 
-> -	duration =
-> -		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
-> -		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-> +	duration =  jiffies_to_usecs(done_stamp - ch->prof.send_stamp);
->  	if (duration > ch->prof.tx_time)
->  		ch->prof.tx_time = duration;
-> 
-> @@ -1361,7 +1358,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
-> 
->  	ch->ccw[1].count = ch->trans_skb->len;
->  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
-> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	ch->prof.send_stamp = jiffies;
->  	if (do_debug_ccw)
->  		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
->  	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
-> @@ -1827,7 +1824,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
->  	fsm_newstate(wch->fsm, CTC_STATE_TX);
-> 
->  	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
-> -	wch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	wch->prof.send_stamp = jiffies;
->  	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
->  					(unsigned long) wch, 0xff, 0);
->  	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
-> diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
-> index e056dd4..5dd68d9 100644
-> --- a/drivers/s390/net/ctcm_main.c
-> +++ b/drivers/s390/net/ctcm_main.c
-> @@ -31,6 +31,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/timer.h>
->  #include <linux/bitops.h>
-> +#include <linux/jiffies.h>
-> 
->  #include <linux/signal.h>
->  #include <linux/string.h>
-> @@ -567,7 +568,7 @@ static int ctcm_transmit_skb(struct channel *ch, struct sk_buff *skb)
->  	fsm_newstate(ch->fsm, CTC_STATE_TX);
->  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
->  	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
-> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	ch->prof.send_stamp = jiffies;
->  	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
->  					(unsigned long)ch, 0xff, 0);
->  	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
-> @@ -831,7 +832,7 @@ static int ctcmpc_transmit_skb(struct channel *ch, struct sk_buff *skb)
->  					sizeof(struct ccw1) * 3);
-> 
->  	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
-> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	ch->prof.send_stamp = jiffies;
->  	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
->  					(unsigned long)ch, 0xff, 0);
->  	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
-> diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
-> index 477c933..c036e43 100644
-> --- a/drivers/s390/net/ctcm_main.h
-> +++ b/drivers/s390/net/ctcm_main.h
-> @@ -10,6 +10,8 @@
->  #include <asm/ccwdev.h>
->  #include <asm/ccwgroup.h>
-> 
-> +#include <linux/jiffies.h>
-> +
->  #include <linux/skbuff.h>
->  #include <linux/netdevice.h>
-> 
-> @@ -121,7 +123,7 @@ struct ctcm_profile {
->  	unsigned long doios_multi;
->  	unsigned long txlen;
->  	unsigned long tx_time;
-> -	struct timespec send_stamp;
-> +	unsigned long send_stamp;
->  };
-> 
->  /*
-> diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
-> index 0a87809..5ea43fb 100644
-> --- a/drivers/s390/net/netiucv.c
-> +++ b/drivers/s390/net/netiucv.c
-> @@ -49,6 +49,8 @@
->  #include <linux/interrupt.h>
->  #include <linux/timer.h>
->  #include <linux/bitops.h>
-> +#include <linux/jiffies.h>
-> +
-> 
->  #include <linux/signal.h>
->  #include <linux/string.h>
-> @@ -178,7 +180,7 @@ struct connection_profile {
->  	unsigned long doios_multi;
->  	unsigned long txlen;
->  	unsigned long tx_time;
-> -	struct timespec send_stamp;
-> +	unsigned long send_stamp;
->  	unsigned long tx_pending;
->  	unsigned long tx_max_pending;
->  };
-> @@ -786,7 +788,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
-> 
->  	header.next = 0;
->  	memcpy(skb_put(conn->tx_buff, NETIUCV_HDRLEN), &header, NETIUCV_HDRLEN);
-> -	conn->prof.send_stamp = current_kernel_time();
-> +	conn->prof.send_stamp = jiffies;
->  	txmsg.class = 0;
->  	txmsg.tag = 0;
->  	rc = iucv_message_send(conn->path, &txmsg, 0, 0,
-> @@ -1220,7 +1222,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
->  		memcpy(skb_put(nskb, NETIUCV_HDRLEN), &header,  NETIUCV_HDRLEN);
-> 
->  		fsm_newstate(conn->fsm, CONN_STATE_TX);
-> -		conn->prof.send_stamp = current_kernel_time();
-> +		conn->prof.send_stamp = jiffies;
-> 
->  		msg.tag = 1;
->  		msg.class = 0;
+What aspects are ignored for now:
+* Rate control -- We limit the supported datarates to the .11a
+  mandatory rates and use the Minstrel as usual
+* Actually restricting the OCB mode to the 5.9GHz band
 
+Tested with the ath9k card with slightly modified driver.
+User-space configuration utilities are not part of this patch.
+
+
+Changes since v2:
+* Make each separate patch warning-free (define dummy "case
+  NL80211_IFTYPE_OCB" statements to mac80211 for the "cfg80211
+  patch") (JBerg)
+* Remove unnecessary check in nl80211_join_ocb() (JBerg)
+* Do not forget to call __cfg80211_leave_ocb() in __cfg80211_leave()
+  (JBerg)
+
+Changes since v1:
+* Do not define bssid_wildcard in a header file, define it as
+  'static const' in ieee80211_setup_sdata only (JBerg)
+* Use GFP_ATOMIC memory allocation in ieee80211_ocb_rx_no_sta
+  so it can be called in the RX path (JBerg)
+* IEEE80211_CHANCTX_EXCLUSIVE -> IEEE80211_CHANCTX_SHARED (JBerg)
+* Fix the situation when the housekeeping timer might be called
+  during ocb_leave() (JBerg)
+* Remove NL80211_CHAN_WIDTH_5/10 from 'old channels' handling
+  functions cfg80211_get_chandef_type() and nl80211_send_chandef()
+  (JBerg)
+* Do not break ABI by adding new fields in the middle of the enum
+  nl80211_commands (JBerg)
+* Add a flag denoting whether we are joined to the network or not
+* Handle multiple consecutive calls to ocb_join
+* Many minor fixes
+
+
+Rostislav Lisovy (2):
+  cfg80211: mac80211: 802.11p OCB mode handling
+  mac80211: 802.11p OCB mode support
+
+ include/net/cfg80211.h       |  14 +++
+ include/net/mac80211.h       |   2 +
+ include/uapi/linux/nl80211.h |  11 ++
+ net/mac80211/Kconfig         |  11 ++
+ net/mac80211/Makefile        |   3 +-
+ net/mac80211/cfg.c           |  14 +++
+ net/mac80211/chan.c          |   3 +
+ net/mac80211/debug.h         |  10 ++
+ net/mac80211/driver-ops.h    |   3 +-
+ net/mac80211/ieee80211_i.h   |  29 +++++
+ net/mac80211/iface.c         |  23 ++++
+ net/mac80211/ocb.c           | 250 +++++++++++++++++++++++++++++++++++++++++++
+ net/mac80211/rx.c            |  35 ++++++
+ net/mac80211/tx.c            |  15 +++
+ net/mac80211/util.c          |  31 +++++-
+ net/mac80211/wme.c           |   4 +
+ net/wireless/Makefile        |   2 +-
+ net/wireless/chan.c          |   8 ++
+ net/wireless/core.c          |   3 +
+ net/wireless/core.h          |  12 +++
+ net/wireless/nl80211.c       |  39 +++++++
+ net/wireless/ocb.c           |  88 +++++++++++++++
+ net/wireless/rdev-ops.h      |  21 ++++
+ net/wireless/trace.h         |  21 ++++
+ net/wireless/util.c          |   5 +-
+ 25 files changed, 648 insertions(+), 9 deletions(-)
+ create mode 100644 net/mac80211/ocb.c
+ create mode 100644 net/wireless/ocb.c
+
+-- 
+2.0.0.rc4
 
