@@ -1,154 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaKCKTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:19:17 -0500
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:58820 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaKCKTP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:19:15 -0500
-X-AuditID: cbfec372-b7f666d000001846-b1-545756a2b757
-Date: Mon, 03 Nov 2014 08:19:07 -0200
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de
-Subject: Re: [PATCH v5 1/6] of: Decrement refcount of previous endpoint in
- of_graph_get_next_endpoint
-Message-id: <20141103081907.46326b87.m.chehab@samsung.com>
-In-reply-to: <1412013819-29181-2-git-send-email-p.zabel@pengutronix.de>
-References: <1412013819-29181-1-git-send-email-p.zabel@pengutronix.de>
- <1412013819-29181-2-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/hIN1FYeEhBsv/iljsOfOL3eL9xnlM
-	Fgf+7GC0aF68ns1i1dSdLBadE5ewW1zeNYfNomfDVlaLu/dOsFhs/vCSzYHLo6W5h83j3r7D
-	LB4fPsZ5zO6Yyepx59oeNo/9c9ewe/T/NfD4vEkugCOKyyYlNSezLLVI3y6BK6PxnH3BJ9mK
-	y3POMTYwPhbvYuTkkBAwkTh/Zw0ThC0mceHeerYuRi4OIYEljBJflu5nhHAamCS+zr3EDlLF
-	IqAq8WHmCTCbTcBI4lVjCyuILSKgJfH0yj2wbmaBJ0wSJzc2gI0VFkiXeLJiJ5jNK2AlMfH7
-	IjYQm1PAXeLwj052iA3NjBJbn54EmsQBdIezxPzP2RD1ghI/Jt9jAbGZgRZs3tbECmHLS2xe
-	85Z5AqPALCRls5CUzUJStoCReRWjaGlxckFxUnquoV5xYm5xaV66XnJ+7iZGSHwU7WB8tsHq
-	EKMAB6MSD2/lvrAQIdbEsuLK3EOMEhzMSiK8cf7hIUK8KYmVValF+fFFpTmpxYcYmTg4pRoY
-	eTxPHTD44hqwIvr+3y0ft4rlhMR9unJsctoXHd5tc/Wbdy3NNr3t77h9/p81f9cJWIYtEGp/
-	YaB2WY3PQ+Ko2MxslvuPciZ/PXOpfPnvA+YbCqIuabzpcnn4cf3Lv63r2e8u1y9658rEmf3i
-	VmPTNL2dPhFvJmz9WfvE3LdU6sMlNfumpLqOU0osxRmJhlrMRcWJAI87n5ttAgAA
+	id S1751880AbaKCKVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:21:00 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:49998 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994AbaKCKU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:20:58 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Addy Ke <addy.ke@rock-chips.com>, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, tgih.jun@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        olof@lixom.net, dianders@chromium.org, sonnyrao@chromium.org,
+        huangtao@rock-chips.com, devicetree@vger.kernel.org, hl@rock-chips.com,
+        linux-doc@vger.kernel.org, yzq@rock-chips.com, zyw@rock-chips.com,
+        zhangqing@rock-chips.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kever.yang@rock-chips.com,
+        lintao@rock-chips.com, linux-rockchip@lists.infradead.org,
+        xjq@rock-chips.com, zhenfu.fang@rock-chips.com, chenfen@rock-chips.com,
+        cf@rock-chips.com, hj@rock-chips.com,
+        linux-arm-kernel@lists.infradead.org, zyf@rock-chips.com
+Subject: Re: [PATCH v3] mmc: dw_mmc: add support for the other bit of sdio interrupt
+Date: Mon, 03 Nov 2014 11:23:52 +0100
+Message-ID: <3540679.aQ4QUeBEJd@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <5457440E.3070002@samsung.com>
+References: <1414666240-16782-1-git-send-email-addy.ke@rock-chips.com> <1414977633-3196-1-git-send-email-addy.ke@rock-chips.com> <5457440E.3070002@samsung.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 29 Sep 2014 20:03:34 +0200
-Philipp Zabel <p.zabel@pengutronix.de> escreveu:
+Hi Jaehoon,
 
-> Decrementing the reference count of the previous endpoint node allows to
-> use the of_graph_get_next_endpoint function in a for_each_... style macro.
-> All current users of this function that pass a non-NULL prev parameter
-> (that is, soc_camera and imx-drm) are changed to not decrement the passed
-> prev argument's refcount themselves.
+Am Montag, 3. November 2014, 17:59:58 schrieb Jaehoon Chung:
+> Hi, Addy.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-
-Feel free to merge it via Grant's tree.
-
-Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-
-> ---
-> Changes since v4:
->  - Folded patches 1-3 into this one
-> ---
->  drivers/media/platform/soc_camera/soc_camera.c |  3 ++-
->  drivers/of/base.c                              |  9 +--------
->  drivers/staging/imx-drm/imx-drm-core.c         | 12 ++----------
->  3 files changed, 5 insertions(+), 19 deletions(-)
+> On 11/03/2014 10:20 AM, Addy Ke wrote:
+> > The bit of sdio interrupt is 16 in designware implementation,
+> > but it is 24 on Rockchip SoCs.This patch add sdio_id0 for the
+> > number of slot0 in the SDIO interrupt registers.
+> > 
+> > Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> > ---
+> > Changes in v2:
+> > - rebase on http://git.linaro.org/git/people/ulf.hansson/mmc.git, next
+> > branch Changes in v3:
+> > - Remove dts for sdio_id0, just replace this with 8, suggested by Doug
+> > - Change to support all Rockchip Socs, suggested by Heiko
+> > 
+> >  drivers/mmc/host/dw_mmc-rockchip.c | 10 ++++++++++
+> >  drivers/mmc/host/dw_mmc.c          | 12 +++++++-----
+> >  drivers/mmc/host/dw_mmc.h          |  2 ++
+> >  include/linux/mmc/dw_mmc.h         |  3 +++
+> >  4 files changed, 22 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/mmc/host/dw_mmc-rockchip.c
+> > b/drivers/mmc/host/dw_mmc-rockchip.c index bbb4ec3..b997c8f 100644
+> > --- a/drivers/mmc/host/dw_mmc-rockchip.c
+> > +++ b/drivers/mmc/host/dw_mmc-rockchip.c
+> > @@ -68,14 +68,24 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host,
+> > struct mmc_ios *ios)> 
+> >  	}
+> >  
+> >  }
+> > 
+> > +static int dw_mci_rockchip_parse_dt(struct dw_mci *host)
+> > +{
+> > +	/* It is slot 8 on Rockchip SoCs */
+> > +	host->sdio_id0 = 8;
+> > +
+> > +	return 0;
+> > +}
 > 
-> diff --git a/drivers/media/platform/soc_camera/soc_camera.c b/drivers/media/platform/soc_camera/soc_camera.c
-> index f4308fe..619b2d4 100644
-> --- a/drivers/media/platform/soc_camera/soc_camera.c
-> +++ b/drivers/media/platform/soc_camera/soc_camera.c
-> @@ -1696,7 +1696,6 @@ static void scan_of_host(struct soc_camera_host *ici)
->  		if (!i)
->  			soc_of_bind(ici, epn, ren->parent);
->  
-> -		of_node_put(epn);
->  		of_node_put(ren);
->  
->  		if (i) {
-> @@ -1704,6 +1703,8 @@ static void scan_of_host(struct soc_camera_host *ici)
->  			break;
->  		}
->  	}
-> +
-> +	of_node_put(epn);
->  }
->  
->  #else
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 293ed4b..f7a9aa8 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -2070,8 +2070,7 @@ EXPORT_SYMBOL(of_graph_parse_endpoint);
->   * @prev: previous endpoint node, or NULL to get first
->   *
->   * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-> - * of the passed @prev node is not decremented, the caller have to use
-> - * of_node_put() on it when done.
-> + * of the passed @prev node is decremented.
->   */
->  struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  					struct device_node *prev)
-> @@ -2107,12 +2106,6 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
->  			      __func__, prev->full_name))
->  			return NULL;
-> -
-> -		/*
-> -		 * Avoid dropping prev node refcount to 0 when getting the next
-> -		 * child below.
-> -		 */
-> -		of_node_get(prev);
->  	}
->  
->  	while (1) {
-> diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-> index 6b22106..12303b3 100644
-> --- a/drivers/staging/imx-drm/imx-drm-core.c
-> +++ b/drivers/staging/imx-drm/imx-drm-core.c
-> @@ -434,14 +434,6 @@ static uint32_t imx_drm_find_crtc_mask(struct imx_drm_device *imxdrm,
->  	return 0;
->  }
->  
-> -static struct device_node *imx_drm_of_get_next_endpoint(
-> -		const struct device_node *parent, struct device_node *prev)
-> -{
-> -	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
-> -	of_node_put(prev);
-> -	return node;
-> -}
-> -
->  int imx_drm_encoder_parse_of(struct drm_device *drm,
->  	struct drm_encoder *encoder, struct device_node *np)
->  {
-> @@ -453,7 +445,7 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
->  	for (i = 0; ; i++) {
->  		u32 mask;
->  
-> -		ep = imx_drm_of_get_next_endpoint(np, ep);
-> +		ep = of_graph_get_next_endpoint(np, ep);
->  		if (!ep)
->  			break;
->  
-> @@ -502,7 +494,7 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
->  		return -EINVAL;
->  
->  	do {
-> -		ep = imx_drm_of_get_next_endpoint(node, ep);
-> +		ep = of_graph_get_next_endpoint(node, ep);
->  		if (!ep)
->  			break;
->  
+> Well, function is "__parse_dt__", but this function don't parse anything.
+> If All rockchip soc is supported, i think that it can be located to other
+> place.
+
+do you have a suggestion for a location?
+
+The only alternative I can see right now would be using the init-hook in 
+dw_mci_drv_data or adding a new field to it holding the slot-offset.
+[with using the init-hook being my personal preference of the two]
+
+
+Heiko
