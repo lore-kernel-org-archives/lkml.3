@@ -1,467 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaKCKyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:54:55 -0500
-Received: from mail-by2on0078.outbound.protection.outlook.com ([207.46.100.78]:42528
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1752612AbaKCKzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:55:10 -0500
+Received: from mail-bn1bon0080.outbound.protection.outlook.com ([157.56.111.80]:34040
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752491AbaKCKyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:54:46 -0500
+	id S1751460AbaKCKzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:55:00 -0500
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v6 20/29] nios2: Device tree support
-Date: Mon, 3 Nov 2014 18:52:16 +0800
-Message-ID: <1415011945-3297-21-git-send-email-lftan@altera.com>
+Subject: [PATCH v6 23/29] nios2: Miscellaneous header files
+Date: Mon, 3 Nov 2014 18:52:19 +0800
+Message-ID: <1415011945-3297-24-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
 References: <1415011945-3297-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(102836001)(31966008)(87936001)(42186005)(87286001)(88136002)(105596002)(4396001)(50226001)(89996001)(50986999)(106466001)(33646002)(229853001)(77096003)(62966003)(21056001)(107046002)(77156002)(36756003)(104166001)(97736003)(76176999)(95666004)(15202345003)(46102003)(50466002)(6806004)(19580405001)(48376002)(84676001)(68736004)(15975445006)(44976005)(92566001)(19580395003)(47776003)(86362001)(2201001)(575784001)(93916002)(92726001)(20776003)(99396003)(120916001)(64706001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB212;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB212;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(50986999)(42186005)(76176999)(102836001)(46102003)(120916001)(31966008)(229853001)(104166001)(4396001)(50226001)(48376002)(107046002)(21056001)(68736004)(105596002)(106466001)(95666004)(89996001)(77096003)(77156002)(84676001)(87936001)(92566001)(62966003)(2201001)(92726001)(50466002)(99396003)(88136002)(575784001)(36756003)(19580405001)(64706001)(20776003)(47776003)(33646002)(93916002)(87286001)(86362001)(97736003)(44976005)(6806004)(19580395003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB211;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB211;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0384275935
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB388;
 X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support to arch/nios2.
+This patch introduces a few nios2-specific header files.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- Documentation/devicetree/bindings/nios2/nios2.txt |  62 ++++++++
- Documentation/devicetree/bindings/nios2/timer.txt |  19 +++
- arch/nios2/boot/dts/3c120_devboard.dts            | 164 ++++++++++++++++++++++
- arch/nios2/boot/linked_dtb.S                      |  19 +++
- arch/nios2/kernel/prom.c                          |  65 +++++++++
- arch/nios2/platform/platform.c                    |  46 ++++++
- 6 files changed, 375 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/nios2/nios2.txt
- create mode 100644 Documentation/devicetree/bindings/nios2/timer.txt
- create mode 100644 arch/nios2/boot/dts/3c120_devboard.dts
- create mode 100644 arch/nios2/boot/linked_dtb.S
- create mode 100644 arch/nios2/kernel/prom.c
- create mode 100644 arch/nios2/platform/platform.c
+ arch/nios2/include/asm/cmpxchg.h        | 61 +++++++++++++++++++++++++++++++++
+ arch/nios2/include/asm/linkage.h        | 25 ++++++++++++++
+ arch/nios2/include/asm/mutex.h          |  1 +
+ arch/nios2/include/uapi/asm/byteorder.h | 22 ++++++++++++
+ arch/nios2/include/uapi/asm/swab.h      | 37 ++++++++++++++++++++
+ 5 files changed, 146 insertions(+)
+ create mode 100644 arch/nios2/include/asm/cmpxchg.h
+ create mode 100644 arch/nios2/include/asm/linkage.h
+ create mode 100644 arch/nios2/include/asm/mutex.h
+ create mode 100644 arch/nios2/include/uapi/asm/byteorder.h
+ create mode 100644 arch/nios2/include/uapi/asm/swab.h
 
-diff --git a/Documentation/devicetree/bindings/nios2/nios2.txt b/Documentation/devicetree/bindings/nios2/nios2.txt
+diff --git a/arch/nios2/include/asm/cmpxchg.h b/arch/nios2/include/asm/cmpxchg.h
 new file mode 100644
-index 0000000..d6d0a94
+index 0000000..8593871
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/nios2/nios2.txt
-@@ -0,0 +1,62 @@
-+* Nios II Processor Binding
-+
-+This binding specifies what properties available in the device tree
-+representation of a Nios II Processor Core.
-+
-+Users can use sopc2dts tool for generating device tree sources (dts) from a
-+Qsys system. See more detail in: http://www.alterawiki.com/wiki/Sopc2dts
-+
-+Required properties:
-+
-+- compatible: Compatible property value should be "altr,nios2-1.0".
-+- reg: Contains CPU index.
-+- interrupt-controller: Specifies that the node is an interrupt controller
-+- #interrupt-cells: Specifies the number of cells needed to encode an
-+		interrupt source, should be 1.
-+- clock-frequency: Contains the clock frequency for CPU, in Hz.
-+- dcache-line-size: Contains data cache line size.
-+- icache-line-size: Contains instruction line size.
-+- dcache-size: Contains data cache size.
-+- icache-size: Contains instruction cache size.
-+- altr,pid-num-bits: Specifies the number of bits to use to represent the process
-+		identifier (PID).
-+- altr,tlb-num-ways: Specifies the number of set-associativity ways in the TLB.
-+- altr,tlb-num-entries: Specifies the number of entries in the TLB.
-+- altr,tlb-ptr-sz: Specifies size of TLB pointer.
-+- altr,has-mul: Specifies CPU hardware multipy support, should be 1.
-+- altr,has-mmu: Specifies CPU support MMU support, should be 1.
-+- altr,has-initda: Specifies CPU support initda instruction, should be 1.
-+- altr,reset-addr: Specifies CPU reset address
-+- altr,fast-tlb-miss-addr: Specifies CPU fast TLB miss exception address
-+- altr,exception-addr: Specifies CPU exception address
-+
-+Optional properties:
-+- altr,has-div: Specifies CPU hardware divide support
-+- altr,implementation: Nios II core implementation, this should be "fast";
-+
-+Example:
-+
-+cpu@0x0 {
-+	device_type = "cpu";
-+	compatible = "altr,nios2-1.0";
-+	reg = <0>;
-+	interrupt-controller;
-+	#interrupt-cells = <1>;
-+	clock-frequency = <125000000>;
-+	dcache-line-size = <32>;
-+	icache-line-size = <32>;
-+	dcache-size = <32768>;
-+	icache-size = <32768>;
-+	altr,implementation = "fast";
-+	altr,pid-num-bits = <8>;
-+	altr,tlb-num-ways = <16>;
-+	altr,tlb-num-entries = <128>;
-+	altr,tlb-ptr-sz = <7>;
-+	altr,has-div = <1>;
-+	altr,has-mul = <1>;
-+	altr,reset-addr = <0xc2800000>;
-+	altr,fast-tlb-miss-addr = <0xc7fff400>;
-+	altr,exception-addr = <0xd0000020>;
-+	altr,has-initda = <1>;
-+	altr,has-mmu = <1>;
-+};
-diff --git a/Documentation/devicetree/bindings/nios2/timer.txt b/Documentation/devicetree/bindings/nios2/timer.txt
-new file mode 100644
-index 0000000..904a584
---- /dev/null
-+++ b/Documentation/devicetree/bindings/nios2/timer.txt
-@@ -0,0 +1,19 @@
-+Altera Timer
-+
-+Required properties:
-+
-+- compatible : should be "altr,timer-1.0"
-+- reg : Specifies base physical address and size of the registers.
-+- interrupt-parent: phandle of the interrupt controller
-+- interrupts : Should contain the timer interrupt number
-+- clock-frequency : The frequency of the clock that drives the counter, in Hz.
-+
-+Example:
-+
-+timer {
-+	compatible = "altr,timer-1.0";
-+	reg = <0x00400000 0x00000020>;
-+	interrupt-parent = <&cpu>;
-+	interrupts = <11>;
-+	clock-frequency = <125000000>;
-+};
-diff --git a/arch/nios2/boot/dts/3c120_devboard.dts b/arch/nios2/boot/dts/3c120_devboard.dts
-new file mode 100644
-index 0000000..31c51f9
---- /dev/null
-+++ b/arch/nios2/boot/dts/3c120_devboard.dts
-@@ -0,0 +1,164 @@
++++ b/arch/nios2/include/asm/cmpxchg.h
+@@ -0,0 +1,61 @@
 +/*
-+ *  Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * This file is generated by sopc2dts.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
-+/dts-v1/;
++#ifndef _ASM_NIOS2_CMPXCHG_H
++#define _ASM_NIOS2_CMPXCHG_H
 +
-+/ {
-+	model = "altr,qsys_ghrd_3c120";
-+	compatible = "altr,qsys_ghrd_3c120";
-+	#address-cells = <1>;
-+	#size-cells = <1>;
++#include <linux/irqflags.h>
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
++#define xchg(ptr, x)	\
++	((__typeof__(*(ptr)))__xchg((unsigned long)(x), (ptr), sizeof(*(ptr))))
 +
-+		cpu: cpu@0x0 {
-+			device_type = "cpu";
-+			compatible = "altr,nios2-1.0";
-+			reg = <0x00000000>;
-+			interrupt-controller;
-+			#interrupt-cells = <1>;
-+			clock-frequency = <125000000>;
-+			dcache-line-size = <32>;
-+			icache-line-size = <32>;
-+			dcache-size = <32768>;
-+			icache-size = <32768>;
-+			altr,implementation = "fast";
-+			altr,pid-num-bits = <8>;
-+			altr,tlb-num-ways = <16>;
-+			altr,tlb-num-entries = <128>;
-+			altr,tlb-ptr-sz = <7>;
-+			altr,has-div = <1>;
-+			altr,has-mul = <1>;
-+			altr,reset-addr = <0xc2800000>;
-+			altr,fast-tlb-miss-addr = <0xc7fff400>;
-+			altr,exception-addr = <0xd0000020>;
-+			altr,has-initda = <1>;
-+			altr,has-mmu = <1>;
-+		};
-+	};
++struct __xchg_dummy { unsigned long a[100]; };
++#define __xg(x)		((volatile struct __xchg_dummy *)(x))
 +
-+	memory@0 {
-+		device_type = "memory";
-+		reg = <0x10000000 0x08000000>,
-+			<0x07fff400 0x00000400>;
-+	};
-+
-+	sopc@0 {
-+		device_type = "soc";
-+		ranges;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "altr,avalon", "simple-bus";
-+		bus-frequency = <125000000>;
-+
-+		pb_cpu_to_io: bridge@0x8000000 {
-+			compatible = "simple-bus";
-+			reg = <0x08000000 0x00800000>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges = <0x00002000 0x08002000 0x00002000>,
-+				<0x00004000 0x08004000 0x00000400>,
-+				<0x00004400 0x08004400 0x00000040>,
-+				<0x00004800 0x08004800 0x00000040>,
-+				<0x00004c80 0x08004c80 0x00000020>,
-+				<0x00004d50 0x08004d50 0x00000008>,
-+				<0x00008000 0x08008000 0x00000020>,
-+				<0x00400000 0x08400000 0x00000020>;
-+
-+			timer_1ms: timer@0x400000 {
-+				compatible = "altr,timer-1.0";
-+				reg = <0x00400000 0x00000020>;
-+				interrupt-parent = <&cpu>;
-+				interrupts = <11>;
-+				clock-frequency = <125000000>;
-+			};
-+
-+			timer_0: timer@0x8000 {
-+				compatible = "altr,timer-1.0";
-+				reg = < 0x00008000 0x00000020 >;
-+				interrupt-parent = < &cpu >;
-+				interrupts = < 5 >;
-+				clock-frequency = < 125000000 >;
-+			};
-+
-+			jtag_uart: serial@0x4d50 {
-+				compatible = "altr,juart-1.0";
-+				reg = <0x00004d50 0x00000008>;
-+				interrupt-parent = <&cpu>;
-+				interrupts = <1>;
-+			};
-+
-+			tse_mac: ethernet@0x4000 {
-+				compatible = "altr,tse-1.0";
-+				reg = <0x00004000 0x00000400>,
-+					<0x00004400 0x00000040>,
-+					<0x00004800 0x00000040>,
-+					<0x00002000 0x00002000>;
-+				reg-names = "control_port", "rx_csr", "tx_csr", "s1";
-+				interrupt-parent = <&cpu>;
-+				interrupts = <2 3>;
-+				interrupt-names = "rx_irq", "tx_irq";
-+				rx-fifo-depth = <8192>;
-+				tx-fifo-depth = <8192>;
-+				max-frame-size = <1518>;
-+				local-mac-address = [ 00 00 00 00 00 00 ];
-+				phy-mode = "rgmii-id";
-+				phy-handle = <&phy0>;
-+				tse_mac_mdio: mdio {
-+					compatible = "altr,tse-mdio";
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+					phy0: ethernet-phy@18 {
-+						reg = <18>;
-+						device_type = "ethernet-phy";
-+					};
-+				};
-+			};
-+
-+			uart: serial@0x4c80 {
-+				compatible = "altr,uart-1.0";
-+				reg = <0x00004c80 0x00000020>;
-+				interrupt-parent = <&cpu>;
-+				interrupts = <10>;
-+				current-speed = <115200>;
-+				clock-frequency = <62500000>;
-+			};
-+		};
-+
-+		cfi_flash_64m: flash@0x0 {
-+			compatible = "cfi-flash";
-+			reg = <0x00000000 0x04000000>;
-+			bank-width = <2>;
-+			device-width = <1>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			partition@800000 {
-+				reg = <0x00800000 0x01e00000>;
-+				label = "JFFS2 Filesystem";
-+			};
-+		};
-+	};
-+
-+	chosen {
-+		bootargs = "debug console=ttyJ0,115200";
-+	};
-+};
-diff --git a/arch/nios2/boot/linked_dtb.S b/arch/nios2/boot/linked_dtb.S
-new file mode 100644
-index 0000000..071f922
---- /dev/null
-+++ b/arch/nios2/boot/linked_dtb.S
-@@ -0,0 +1,19 @@
-+/*
-+ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+.section .dtb.init.rodata,"a"
-+.incbin "arch/nios2/boot/system.dtb"
-diff --git a/arch/nios2/kernel/prom.c b/arch/nios2/kernel/prom.c
-new file mode 100644
-index 0000000..0522d33
---- /dev/null
-+++ b/arch/nios2/kernel/prom.c
-@@ -0,0 +1,65 @@
-+/*
-+ * Device tree support
-+ *
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * Based on MIPS support for CONFIG_OF device tree support
-+ *
-+ * Copyright (C) 2010 Cisco Systems Inc. <dediao@cisco.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/bootmem.h>
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
-+#include <linux/io.h>
-+
-+#include <asm/sections.h>
-+
-+void __init early_init_dt_add_memory_arch(u64 base, u64 size)
++static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
++					int size)
 +{
-+	u64 kernel_start = (u64)virt_to_phys(_text);
++	unsigned long tmp, flags;
 +
-+	if (!memory_size &&
-+	    (kernel_start >= base) && (kernel_start < (base + size)))
-+		memory_size = size;
++	local_irq_save(flags);
 +
-+}
-+
-+void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-+{
-+	return alloc_bootmem_align(size, align);
-+}
-+
-+void __init early_init_devtree(void *params)
-+{
-+	__be32 *dtb = (u32 *)__dtb_start;
-+#if defined(CONFIG_NIOS2_DTB_AT_PHYS_ADDR)
-+	if (be32_to_cpup((__be32 *)CONFIG_NIOS2_DTB_PHYS_ADDR) ==
-+		 OF_DT_HEADER) {
-+		params = (void *)CONFIG_NIOS2_DTB_PHYS_ADDR;
-+		early_init_dt_scan(params);
-+		return;
++	switch (size) {
++	case 1:
++		__asm__ __volatile__(
++			"ldb	%0, %2\n"
++			"stb	%1, %2\n"
++			: "=&r" (tmp)
++			: "r" (x), "m" (*__xg(ptr))
++			: "memory");
++		break;
++	case 2:
++		__asm__ __volatile__(
++			"ldh	%0, %2\n"
++			"sth	%1, %2\n"
++			: "=&r" (tmp)
++			: "r" (x), "m" (*__xg(ptr))
++			: "memory");
++		break;
++	case 4:
++		__asm__ __volatile__(
++			"ldw	%0, %2\n"
++			"stw	%1, %2\n"
++			: "=&r" (tmp)
++			: "r" (x), "m" (*__xg(ptr))
++			: "memory");
++		break;
 +	}
-+#endif
-+	if (be32_to_cpu((__be32) *dtb) == OF_DT_HEADER)
-+		params = (void *)__dtb_start;
 +
-+	early_init_dt_scan(params);
++	local_irq_restore(flags);
++	return tmp;
 +}
-diff --git a/arch/nios2/platform/platform.c b/arch/nios2/platform/platform.c
++
++#include <asm-generic/cmpxchg.h>
++#include <asm-generic/cmpxchg-local.h>
++
++#endif /* _ASM_NIOS2_CMPXCHG_H */
+diff --git a/arch/nios2/include/asm/linkage.h b/arch/nios2/include/asm/linkage.h
 new file mode 100644
-index 0000000..d478773
+index 0000000..e0c6dec
 --- /dev/null
-+++ b/arch/nios2/platform/platform.c
-@@ -0,0 +1,46 @@
++++ b/arch/nios2/include/asm/linkage.h
+@@ -0,0 +1,25 @@
 +/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011 Thomas Chou
-+ * Copyright (C) 2011 Walter Goossens
++ * Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ */
++
++#ifndef _ASM_NIOS2_LINKAGE_H
++#define _ASM_NIOS2_LINKAGE_H
++
++/* This file is required by include/linux/linkage.h */
++#define __ALIGN .align 4
++#define __ALIGN_STR ".align 4"
++
++#endif
+diff --git a/arch/nios2/include/asm/mutex.h b/arch/nios2/include/asm/mutex.h
+new file mode 100644
+index 0000000..ff6101a
+--- /dev/null
++++ b/arch/nios2/include/asm/mutex.h
+@@ -0,0 +1 @@
++#include <asm-generic/mutex-dec.h>
+diff --git a/arch/nios2/include/uapi/asm/byteorder.h b/arch/nios2/include/uapi/asm/byteorder.h
+new file mode 100644
+index 0000000..3ab5dc2
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/byteorder.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright (C) 2009   Thomas Chou <thomas@wytron.com.tw>
++ * Copyright (C) 2004   Microtronix Datacom Ltd
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _ASM_NIOS2_BYTEORDER_H
++#define _ASM_NIOS2_BYTEORDER_H
++
++#include <linux/byteorder/little_endian.h>
++
++#endif
+diff --git a/arch/nios2/include/uapi/asm/swab.h b/arch/nios2/include/uapi/asm/swab.h
+new file mode 100644
+index 0000000..b4e22eb
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/swab.h
+@@ -0,0 +1,37 @@
++/*
++ * Copyright (C) 2012 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2011 Pyramid Technical Consultants, Inc.
 + *
 + * This file is subject to the terms and conditions of the GNU General
 + * Public License. See the file COPYING in the main directory of this
 + * archive for more details.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_address.h>
-+#include <linux/of_fdt.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/sys_soc.h>
-+#include <linux/io.h>
++#ifndef _ASM_NIOS2_SWAB_H
++#define _ASM_NIOS2_SWAB_H
 +
-+static int __init nios2_soc_device_init(void)
++#include <linux/types.h>
++#include <asm-generic/swab.h>
++
++#ifdef CONFIG_NIOS2_CI_SWAB_SUPPORT
++#ifdef __GNUC__
++
++#define __nios2_swab(x)		\
++	__builtin_custom_ini(CONFIG_NIOS2_CI_SWAB_NO, (x))
++
++static inline __attribute__((const)) __u16 __arch_swab16(__u16 x)
 +{
-+	struct soc_device *soc_dev;
-+	struct soc_device_attribute *soc_dev_attr;
-+	const char *machine;
-+
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (soc_dev_attr) {
-+		machine = of_flat_dt_get_machine_name();
-+		if (machine)
-+			soc_dev_attr->machine = kasprintf(GFP_KERNEL, "%s",
-+						machine);
-+
-+		soc_dev_attr->family = "Nios II";
-+
-+		soc_dev = soc_device_register(soc_dev_attr);
-+		if (IS_ERR(soc_dev)) {
-+			kfree(soc_dev_attr->machine);
-+			kfree(soc_dev_attr);
-+		}
-+	}
-+
-+	return of_platform_populate(NULL, of_default_bus_match_table,
-+		NULL, NULL);
++	return (__u16) __nios2_swab(((__u32) x) << 16);
 +}
++#define __arch_swab16 __arch_swab16
 +
-+device_initcall(nios2_soc_device_init);
++static inline __attribute__((const)) __u32 __arch_swab32(__u32 x)
++{
++	return (__u32) __nios2_swab(x);
++}
++#define __arch_swab32 __arch_swab32
++
++#endif /* __GNUC__ */
++#endif /* CONFIG_NIOS2_CI_SWAB_SUPPORT */
++
++#endif /* _ASM_NIOS2_SWAB_H */
 -- 
 1.8.2.1
 
