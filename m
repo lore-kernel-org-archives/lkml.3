@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaKCIgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:36:00 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:45099 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaKCIfx (ORCPT
+	id S1752133AbaKCIgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:36:16 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64601 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaKCIgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 03:35:53 -0500
+	Mon, 3 Nov 2014 03:36:12 -0500
 From: Dudley Du <dudley.dulixin@gmail.com>
 X-Google-Original-From: Dudley Du <dudl@cypress.com>
 To: dmitry.torokhov@gmail.com, rydberg@euromail.se
 Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v9 08/18] input: cyapa: add gen3 trackpad device firmware update function support
-Date: Mon,  3 Nov 2014 16:33:00 +0800
-Message-Id: <1415003590-30485-9-git-send-email-dudl@cypress.com>
+Subject: [PATCH v9 10/18] input: cyapa: add gen3 trackpad device force re-calibrate function support
+Date: Mon,  3 Nov 2014 16:33:02 +0800
+Message-Id: <1415003590-30485-11-git-send-email-dudl@cypress.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415003590-30485-1-git-send-email-dudl@cypress.com>
 References: <1415003590-30485-1-git-send-email-dudl@cypress.com>
@@ -22,330 +22,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add firmware image update function supported for gen3 trackpad device,
-it can be used through sysfs update_fw interface.
+Add force re-calibrate function supported for gen3 trackpad device,
+it can be used through sysfs calibrate interface.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudl@cypress.com>
 ---
- drivers/input/mouse/cyapa_gen3.c | 290 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 290 insertions(+)
+ drivers/input/mouse/cyapa_gen3.c | 61 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
 
 diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
-index bd00c6e..7caa93f 100644
+index 406b5db..b477d67 100644
 --- a/drivers/input/mouse/cyapa_gen3.c
 +++ b/drivers/input/mouse/cyapa_gen3.c
-@@ -412,6 +412,78 @@ static int cyapa_gen3_state_parse(struct cyapa *cyapa, u8 *reg_data, int len)
- 	return -EAGAIN;
- }
- 
-+/*
-+ * Enter bootloader by soft resetting the device.
-+ *
-+ * If device is already in the bootloader, the function just returns.
-+ * Otherwise, reset the device; after reset, device enters bootloader idle
-+ * state immediately.
-+ *
-+ * Also, if device was unregister device from input core.  Device will
-+ * re-register after it is detected following resumption of operational mode.
-+ *
-+ * Returns:
-+ *   0 on success
-+ *   -EAGAIN  device was reset, but is not now in bootloader idle state
-+ *   < 0 if the device never responds within the timeout
-+ */
-+static int cyapa_gen3_bl_enter(struct cyapa *cyapa)
-+{
-+	int ret;
-+
-+	if (cyapa->input) {
-+		data_reporting_started = false;
-+		input_unregister_device(cyapa->input);
-+		cyapa->input = NULL;
-+	}
-+
-+	ret = cyapa_poll_state(cyapa, 500);
-+	if (ret < 0)
-+		return ret;
-+	if (cyapa->state == CYAPA_STATE_BL_IDLE) {
-+		/* Already in BL_IDLE. Skipping reset. */
-+		return 0;
-+	}
-+
-+	if (cyapa->state != CYAPA_STATE_OP)
-+		return -EAGAIN;
-+
-+	cyapa->state = CYAPA_STATE_NO_DEVICE;
-+	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET, 0x01);
-+	if (ret < 0)
-+		return -EIO;
-+
-+	usleep_range(25000, 50000);
-+	ret = cyapa_poll_state(cyapa, 500);
-+	if (ret < 0)
-+		return ret;
-+	if ((cyapa->state != CYAPA_STATE_BL_IDLE) ||
-+		(cyapa->status[REG_BL_STATUS] & BL_STATUS_WATCHDOG))
-+		return -EAGAIN;
-+
-+	return 0;
-+}
-+
-+static int cyapa_gen3_bl_activate(struct cyapa *cyapa)
-+{
-+	int ret;
-+
-+	ret = cyapa_i2c_reg_write_block(cyapa, 0, sizeof(bl_activate),
-+					bl_activate);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Wait for bootloader to activate; takes between 2 and 12 seconds */
-+	msleep(2000);
-+	ret = cyapa_poll_state(cyapa, 11000);
-+	if (ret < 0)
-+		return ret;
-+	if (cyapa->state != CYAPA_STATE_BL_ACTIVE)
-+		return -EAGAIN;
-+
-+	return 0;
-+}
-+
- static int cyapa_gen3_bl_deactivate(struct cyapa *cyapa)
- {
- 	int ret;
-@@ -472,6 +544,218 @@ static int cyapa_gen3_bl_exit(struct cyapa *cyapa)
+@@ -756,6 +756,66 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
  	return 0;
  }
  
-+/* Used in gen3 bootloader commands. */
-+static u16 cyapa_gen3_csum(const u8 *buf, size_t count)
++static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
 +{
-+	int i;
-+	u16 csum = 0;
-+
-+	for (i = 0; i < count; i++)
-+		csum += buf[i];
-+
-+	return csum;
-+}
-+
-+/*
-+ * Verify the integrity of a CYAPA firmware image file.
-+ *
-+ * The firmware image file is 30848 bytes, composed of 482 64-byte blocks.
-+ *
-+ * The first 2 blocks are the firmware header.
-+ * The next 480 blocks are the firmware image.
-+ *
-+ * The first two bytes of the header hold the header checksum, computed by
-+ * summing the other 126 bytes of the header.
-+ * The last two bytes of the header hold the firmware image checksum, computed
-+ * by summing the 30720 bytes of the image modulo 0xffff.
-+ *
-+ * Both checksums are stored little-endian.
-+ */
-+static int cyapa_gen3_check_fw(struct cyapa *cyapa, const struct firmware *fw)
-+{
-+	struct device *dev = &cyapa->client->dev;
-+	u16 csum;
-+	u16 csum_expected;
-+
-+	/* Firmware must match exact 30848 bytes = 482 64-byte blocks. */
-+	if (fw->size != CYAPA_FW_SIZE) {
-+		dev_err(dev, "invalid firmware size = %zu, expected %u.\n",
-+			fw->size, CYAPA_FW_SIZE);
-+		return -EINVAL;
-+	}
-+
-+	/* Verify header block */
-+	csum_expected = (fw->data[0] << 8) | fw->data[1];
-+	csum = cyapa_gen3_csum(&fw->data[2], CYAPA_FW_HDR_SIZE - 2);
-+	if (csum != csum_expected) {
-+		dev_err(dev, "%s %04x, expected: %04x\n",
-+			"invalid firmware header checksum = ",
-+			csum, csum_expected);
-+		return -EINVAL;
-+	}
-+
-+	/* Verify firmware image */
-+	csum_expected = (fw->data[CYAPA_FW_HDR_SIZE - 2] << 8) |
-+			 fw->data[CYAPA_FW_HDR_SIZE - 1];
-+	csum = cyapa_gen3_csum(&fw->data[CYAPA_FW_HDR_SIZE],
-+			CYAPA_FW_DATA_SIZE);
-+	if (csum != csum_expected) {
-+		dev_err(dev, "%s %04x, expected: %04x\n",
-+			"invalid firmware header checksum = ",
-+			csum, csum_expected);
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * Write a |len| byte long buffer |buf| to the device, by chopping it up into a
-+ * sequence of smaller |CYAPA_CMD_LEN|-length write commands.
-+ *
-+ * The data bytes for a write command are prepended with the 1-byte offset
-+ * of the data relative to the start of |buf|.
-+ */
-+static int cyapa_gen3_write_buffer(struct cyapa *cyapa,
-+		const u8 *buf, size_t len)
-+{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int tries = 20;  /* max recalibration timeout 2s. */
 +	int ret;
-+	size_t i;
-+	unsigned char cmd[CYAPA_CMD_LEN + 1];
-+	size_t cmd_len;
 +
-+	for (i = 0; i < len; i += CYAPA_CMD_LEN) {
-+		const u8 *payload = &buf[i];
++	data_reporting_started = false;
 +
-+		cmd_len = (len - i >= CYAPA_CMD_LEN) ? CYAPA_CMD_LEN : len - i;
-+		cmd[0] = i;
-+		memcpy(&cmd[1], payload, cmd_len);
-+
-+		ret = cyapa_i2c_reg_write_block(cyapa, 0, cmd_len + 1, cmd);
-+		if (ret < 0)
-+			return ret;
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++	if (ret < 0) {
++		dev_err(dev, "Error reading dev status. err = %d\n", ret);
++		goto out;
 +	}
-+	return 0;
-+}
++	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
++		dev_warn(dev, "Trackpad device is busy. device state = 0x%x\n",
++			 ret);
++		ret = -EAGAIN;
++		goto out;
++	}
 +
-+/*
-+ * A firmware block write command writes 64 bytes of data to a single flash
-+ * page in the device.  The 78-byte block write command has the format:
-+ *   <0xff> <CMD> <Key> <Start> <Data> <Data-Checksum> <CMD Checksum>
-+ *
-+ *  <0xff>  - every command starts with 0xff
-+ *  <CMD>   - the write command value is 0x39
-+ *  <Key>   - write commands include an 8-byte key: { 00 01 02 03 04 05 06 07 }
-+ *  <Block> - Memory Block number (address / 64) (16-bit, big-endian)
-+ *  <Data>  - 64 bytes of firmware image data
-+ *  <Data Checksum> - sum of 64 <Data> bytes, modulo 0xff
-+ *  <CMD Checksum> - sum of 77 bytes, from 0xff to <Data Checksum>
-+ *
-+ * Each write command is split into 5 i2c write transactions of up to 16 bytes.
-+ * Each transaction starts with an i2c register offset: (00, 10, 20, 30, 40).
-+ */
-+static int cyapa_gen3_write_fw_block(struct cyapa *cyapa,
-+		u16 block, const u8 *data)
-+{
-+	int ret;
-+	u8 cmd[78];
-+	u8 status[BL_STATUS_SIZE];
-+	/* Programming for one block can take about 100ms. */
-+	int tries = 11;
-+	u8 bl_status, bl_error;
++	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
++			       OP_RECALIBRATION_MASK);
++	if (ret < 0) {
++		dev_err(dev, "Failed to send calibrate command. ret = %d\n",
++			ret);
++		goto out;
++	}
 +
-+	/* Set write command and security key bytes. */
-+	cmd[0] = 0xff;
-+	cmd[1] = 0x39;
-+	cmd[2] = 0x00;
-+	cmd[3] = 0x01;
-+	cmd[4] = 0x02;
-+	cmd[5] = 0x03;
-+	cmd[6] = 0x04;
-+	cmd[7] = 0x05;
-+	cmd[8] = 0x06;
-+	cmd[9] = 0x07;
-+	cmd[10] = block >> 8;
-+	cmd[11] = block;
-+	memcpy(&cmd[12], data, CYAPA_FW_BLOCK_SIZE);
-+	cmd[76] = cyapa_gen3_csum(data, CYAPA_FW_BLOCK_SIZE);
-+	cmd[77] = cyapa_gen3_csum(cmd, sizeof(cmd) - 1);
-+
-+	ret = cyapa_gen3_write_buffer(cyapa, cmd, sizeof(cmd));
-+	if (ret)
-+		return ret;
-+
-+	/* Wait for write to finish */
 +	do {
-+		usleep_range(10000, 20000);
++		/*
++		 * For this recalibration, the max time will not exceed 2s.
++		 * The average time is approximately 500 - 700 ms, and we
++		 * will check the status every 100 - 200ms.
++		 */
++		usleep_range(100000, 200000);
 +
-+		/* Check block write command result status. */
-+		ret = cyapa_i2c_reg_read_block(cyapa, BL_HEAD_OFFSET,
-+					       BL_STATUS_SIZE, status);
-+		if (ret != BL_STATUS_SIZE)
-+			return (ret < 0) ? ret : -EIO;
-+	} while ((status[REG_BL_STATUS] & BL_STATUS_BUSY) && --tries);
++		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++		if (ret < 0) {
++			dev_err(dev, "Error reading dev status. err = %d\n",
++				ret);
++			goto out;
++		}
++		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
++			break;
++	} while (--tries);
 +
-+	/* Ignore WATCHDOG bit and reserved bits. */
-+	bl_status = status[REG_BL_STATUS] & ~BL_STATUS_REV_MASK;
-+	bl_error = status[REG_BL_ERROR] & ~BL_ERROR_RESERVED;
-+
-+	if (bl_status & BL_STATUS_BUSY)
++	if (tries == 0) {
++		dev_err(dev, "Failed to calibrate. Timeout.\n");
 +		ret = -ETIMEDOUT;
-+	else if (bl_status != BL_STATUS_RUNNING ||
-+		bl_error != BL_ERROR_BOOTLOADING)
-+		ret = -EIO;
-+	else
-+		ret = 0;
++		goto out;
++	}
++	dev_dbg(dev, "Calibration successful.\n");
 +
-+	return ret;
++out:
++	data_reporting_started = true;
++	return ret < 0 ? ret : count;
 +}
 +
-+static int cyapa_gen3_write_blocks(struct cyapa *cyapa,
-+		size_t start_block, size_t block_count,
-+		const u8 *image_data)
-+{
-+	int ret;
-+	int i;
-+
-+	for (i = 0; i < block_count; i++) {
-+		size_t block = start_block + i;
-+		size_t addr = i * CYAPA_FW_BLOCK_SIZE;
-+		const u8 *data = &image_data[addr];
-+
-+		ret = cyapa_gen3_write_fw_block(cyapa, block, data);
-+		if (ret)
-+			return ret;
-+	}
-+	return 0;
-+}
-+
-+static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
-+		const struct firmware *fw)
-+{
-+	struct device *dev = &cyapa->client->dev;
-+	int ret;
-+
-+	/* First write data, starting at byte 128  of fw->data */
-+	ret = cyapa_gen3_write_blocks(cyapa,
-+		CYAPA_FW_DATA_BLOCK_START, CYAPA_FW_DATA_BLOCK_COUNT,
-+		&fw->data[CYAPA_FW_HDR_BLOCK_COUNT * CYAPA_FW_BLOCK_SIZE]);
-+	if (ret) {
-+		dev_err(dev, "FW update aborted, write image, %d\n", ret);
-+		return ret;
-+	}
-+
-+	/* Then write checksum */
-+	ret = cyapa_gen3_write_blocks(cyapa,
-+		CYAPA_FW_HDR_BLOCK_START, CYAPA_FW_HDR_BLOCK_COUNT,
-+		&fw->data[0]);
-+	if (ret) {
-+		dev_err(dev, "FW update aborted, write checksum, %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  * cyapa_get_wait_time_for_pwr_cmd
-  *
-@@ -778,6 +1062,12 @@ static int cyapa_gen3_irq_handler(struct cyapa *cyapa)
- }
+ static ssize_t cyapa_gen3_show_baseline(struct device *dev,
+ 				   struct device_attribute *attr, char *buf)
+ {
+@@ -1141,6 +1201,7 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
+ 	.bl_deactivate = cyapa_gen3_bl_deactivate,
  
- const struct cyapa_dev_ops cyapa_gen3_ops = {
-+	.check_fw = cyapa_gen3_check_fw,
-+	.bl_enter = cyapa_gen3_bl_enter,
-+	.bl_activate = cyapa_gen3_bl_activate,
-+	.update_fw = cyapa_gen3_do_fw_update,
-+	.bl_deactivate = cyapa_gen3_bl_deactivate,
-+
+ 	.show_baseline = cyapa_gen3_show_baseline,
++	.calibrate_store = cyapa_gen3_do_calibrate,
+ 
  	.state_parse = cyapa_gen3_state_parse,
  	.operational_check = cyapa_gen3_do_operational_check,
- 
 -- 
 1.9.1
 
