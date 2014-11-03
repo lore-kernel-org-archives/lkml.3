@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaKCV6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:58:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752954AbaKCV6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:58:38 -0500
-Date: Mon, 3 Nov 2014 22:58:37 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jan Beulich <jbeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Sebastian Lackner <sebastian@fds-team.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>, Anish Bhatt <anish@chelsio.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/asm] sched/x86_64: Don't save flags on context switch
-Message-ID: <20141103215837.GB8711@redhat.com>
-References: <bf6fb790787eb95b922157838f52712c25dda157.1412187233.git.luto@amacapital.net> <tip-2c7577a7583747c9b71f26dced7f696b739da745@git.kernel.org> <CALCETrWM2wVynp1rrip9AWtNYDzjC4M8JqKR82ew5dpyrTWMgA@mail.gmail.com> <20141103214712.GA8711@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103214712.GA8711@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753929AbaKCV7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:59:46 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:35996 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544AbaKCV7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 16:59:44 -0500
+From: Marek Belisko <marek@goldelico.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        bcousson@baylibre.com, tony@atomide.com, linux@arm.linux.org.uk,
+        tomi.valkeinen@ti.com, plagnioj@jcrosoft.com, grant.likely@linaro.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-fbdev@vger.kernel.org, hns@goldelico.com,
+        Marek Belisko <marek@goldelico.com>
+Subject: [PATCH 0/4] omapdss: Add video output support for gta04 board
+Date: Mon,  3 Nov 2014 22:59:24 +0100
+Message-Id: <1415051968-4878-1-git-send-email-marek@goldelico.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03, Oleg Nesterov wrote:
->
-> On 11/03, Andy Lutomirski wrote:
-> >
-> > And do we ever have TF set during a context switch?  I hope not.
->
-> I too hope.
->
-> > Also, what's with 'jmp exit_intr' at the end of retint_kernel?  Why
-> > isn't that 'jmp retint_kernel'?
->
-> Even better, why not "jmp retint_restore_args" ?
->
-> preempt_schedule_irq() checks need_resched() and returns with irqs
-> disabled, not need to to recheck test_preempt_need_resched() ?
+This patch series add support for video output on gta04 board. It consist
+from opa362 video amplifier driver + DT bindings, adding venc -> opa362 -> svideo-connecor
+setup in DT and finally static setup for tvbypass anc acbias bin in devconf1 register
+via pinctrl subsystem.
 
-Btw, why retint_kernel() checks "interrupts on" ? It seems to me that
-that "interrupts off" is not possible, no? And this will be more clear
-when we remove the "exit_intr" label.
+Marek Belisko (4):
+  video: omapdss: Add opa362 driver
+  Documentation: DT: Add documentation for ti,opa362 bindings
+  arm: dts: omap3-gta04: Add handling for tv output
+  arm: dts: omap3-gta04: Add static configuration for devconf1 register
 
-Oleg.
+ .../devicetree/bindings/video/ti,opa362.txt        |  38 +++
+ arch/arm/boot/dts/omap3-gta04.dtsi                 |  70 +++++
+ drivers/video/fbdev/omap2/displays-new/Kconfig     |   6 +
+ drivers/video/fbdev/omap2/displays-new/Makefile    |   1 +
+ .../fbdev/omap2/displays-new/amplifier-opa362.c    | 347 +++++++++++++++++++++
+ 5 files changed, 462 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/ti,opa362.txt
+ create mode 100644 drivers/video/fbdev/omap2/displays-new/amplifier-opa362.c
+
+-- 
+1.9.1
 
