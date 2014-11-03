@@ -1,151 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaKCAvI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 19:51:08 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:60370 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbaKCAvC (ORCPT
+	id S1752840AbaKCAzL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 19:55:11 -0500
+Received: from regular1.263xmail.com ([211.150.99.137]:48498 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466AbaKCAzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 19:51:02 -0500
-X-Original-SENDERIP: 10.177.222.33
-X-Original-MAILFROM: byungchul.park@lge.com
-Date: Mon, 3 Nov 2014 09:50:49 +0900
-From: Byungchul Park <byungchul.park@lge.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: mingo@redhat.com, jolsa@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] tracing, function_graph: add additional marks to
- signal very large function execution time
-Message-ID: <20141103005049.GB3393@byungchulpark-X58A-UD3R>
-References: <1414052242-9828-1-git-send-email-byungchul.park@lge.com>
- <1414052242-9828-3-git-send-email-byungchul.park@lge.com>
- <20141031130129.022b0bf3@gandalf.local.home>
+	Sun, 2 Nov 2014 19:55:07 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <d5263e11d496b14aa980d466bbd2dec4>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <5456D256.1030009@rock-chips.com>
+Date: Mon, 03 Nov 2014 08:54:46 +0800
+From: addy ke <addy.ke@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141031130129.022b0bf3@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: heiko@sntech.de
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        olof@lixom.net, dianders@chromium.org, sonnyrao@chromium.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
+        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
+        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
+        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
+        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com
+Subject: Re: [PATCH v2] mmc: dw_mmc: add support for the other bit of sdio
+ interrupt
+References: <1414666240-16782-1-git-send-email-addy.ke@rock-chips.com> <1414727409-6765-1-git-send-email-addy.ke@rock-chips.com> <13873303.38xWyoP4kJ@diego>
+In-Reply-To: <13873303.38xWyoP4kJ@diego>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Oct 31, 2014 at 01:01:29PM -0400, Steven Rostedt wrote:
-> On Thu, 23 Oct 2014 17:17:22 +0900
-> byungchul.park@lge.com wrote:
+On 2014/10/31 18:43, Heiko Stübner wrote:
+> Am Freitag, 31. Oktober 2014, 11:50:09 schrieb Addy Ke:
+>> The bit of sdio interrupt is 16 in designware implementation,
+>> but it is 24 in RK3288. This patch add sdio_id0 for the number
+>> of slot0 in the SDIO interrupt registers, which can be set in
+>> platform DT table, such as:
+>> - rockchip,sdio-interrupt-slot0 = <8>;
 > 
-> > From: Byungchul Park <byungchul.park@lge.com>
-> > 
-> > Currently, function graph tracer prints "!" or "+" just before
-> > function execution time to signal a function overhead, depending
-> > on the time. Even it is usually enough to do that, we sometimes
-> > need to be signaled for bigger execution time than 100 micro seconds.
-> > 
-> > For example, I used function graph tracer to detect if there is
-> > any case that exit_mm() takes too much time. I did following steps
-> > in /sys/kernel/debug/tracing. It was easier to detect very big
-> > excution time with patched kernel than with original kernel.
-> > 
-> > $ echo exit_mm > set_graph_function
-> > $ echo function_graph > current_tracer
-> > $ echo > trace
-> > $ cat trace_pipe > $LOGFILE
-> >  ... (do something and terminate logging)
-> > $ grep "!s" $LOGFILE
-> >  3) !s22082032 us |                      } /* kernel_map_pages */
-> >  3) !s22082040 us |                    } /* free_pages_prepare */
-> >  3) !s22082113 us |                  } /* free_hot_cold_page */
-> >  3) !s22083455 us |                } /* free_hot_cold_page_list */
-> >  3) !s22083895 us |              } /* release_pages */
-> >  3) !s22177873 us |            } /* free_pages_and_swap_cache */
-> >  3) !s22178929 us |          } /* unmap_single_vma */
-> >  3) !s22198885 us |        } /* unmap_vmas */
-> >  3) !s22206949 us |      } /* exit_mmap */
-> >  3) !s22207659 us |    } /* mmput */
-> >  3) !s22207793 us |  } /* exit_mm */
+> I just checked the manuals of rk3066 and rk3188 - and it seems the sdio 
+> interrupt is in bit 24 on all of them.
 > 
-> Hmm, I wonder if a "s!" is better. Having the 's' next to the number
-> seems to make it look like some strange number.
-
-Yes, what you suggest looks better.
-
+> Addy, could you check this and maybe enable this for all two variants we 
+> currently support?
+OK, I will do so in my next patch. thank you!
 > 
-> Maybe we should still keep this cryptic. We can update the
-> debugfs/tracing/README to add the meanings as well.
-
-I missed updating document, it should be done, and I will add it.
-
 > 
-> But perhaps have:
+> Thanks
+> Heiko
 > 
->  + == > 10usec
->  ! == > 100usec
->  * == > 1msec
->  $ == > 1sec
+> 
+>>
+>> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+>> ---
+>> Changes in v2:
+>> - rebase on http://git.linaro.org/git/people/ulf.hansson/mmc.git, next
+>> branch
+>>
+>>  drivers/mmc/host/dw_mmc-rockchip.c | 13 +++++++++++++
+>>  drivers/mmc/host/dw_mmc.c          | 12 +++++++-----
+>>  drivers/mmc/host/dw_mmc.h          |  2 ++
+>>  include/linux/mmc/dw_mmc.h         |  3 +++
+>>  4 files changed, 25 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/dw_mmc-rockchip.c
+>> b/drivers/mmc/host/dw_mmc-rockchip.c index bbb4ec3..1cb3bc6 100644
+>> --- a/drivers/mmc/host/dw_mmc-rockchip.c
+>> +++ b/drivers/mmc/host/dw_mmc-rockchip.c
+>> @@ -68,6 +68,18 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host,
+>> struct mmc_ios *ios) }
+>>  }
+>>
+>> +static int dw_mci_rk3288_parse_dt(struct dw_mci *host)
+>> +{
+>> +	struct device_node *np = host->dev->of_node;
+>> +	int sdio_id0;
+>> +
+>> +	if (!of_property_read_u32(np, "rockchip,sdio-interrupt-slot0",
+>> +				  &sdio_id0))
+>> +		host->sdio_id0 = sdio_id0;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>>  static const struct dw_mci_drv_data rk2928_drv_data = {
+>>  	.prepare_command        = dw_mci_rockchip_prepare_command,
+>>  };
+>> @@ -76,6 +88,7 @@ static const struct dw_mci_drv_data rk3288_drv_data = {
+>>  	.prepare_command        = dw_mci_rockchip_prepare_command,
+>>  	.set_ios		= dw_mci_rk3288_set_ios,
+>>  	.setup_clock    = dw_mci_rk3288_setup_clock,
+>> +	.parse_dt	= dw_mci_rk3288_parse_dt,
+>>  };
+>>
+>>  static const struct of_device_id dw_mci_rockchip_match[] = {
+>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>> index bb46b1b..a633b58 100644
+>> --- a/drivers/mmc/host/dw_mmc.c
+>> +++ b/drivers/mmc/host/dw_mmc.c
+>> @@ -823,7 +823,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot,
+>> bool force_clkinit)
+>>
+>>  		/* enable clock; only low power if no SDIO */
+>>  		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
+>> -		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
+>> +		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->sdio_id)))
+>>  			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
+>>  		mci_writel(host, CLKENA, clk_en_a);
+>>
+>> @@ -1184,10 +1184,10 @@ static void dw_mci_enable_sdio_irq(struct mmc_host
+>> *mmc, int enb) dw_mci_disable_low_power(slot);
+>>
+>>  		mci_writel(host, INTMASK,
+>> -			   (int_mask | SDMMC_INT_SDIO(slot->id)));
+>> +			   (int_mask | SDMMC_INT_SDIO(slot->sdio_id)));
+>>  	} else {
+>>  		mci_writel(host, INTMASK,
+>> -			   (int_mask & ~SDMMC_INT_SDIO(slot->id)));
+>> +			   (int_mask & ~SDMMC_INT_SDIO(slot->sdio_id)));
+>>  	}
+>>  }
+>>
+>> @@ -2056,8 +2056,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void
+>> *dev_id) /* Handle SDIO Interrupts */
+>>  		for (i = 0; i < host->num_slots; i++) {
+>>  			struct dw_mci_slot *slot = host->slot[i];
+>> -			if (pending & SDMMC_INT_SDIO(i)) {
+>> -				mci_writel(host, RINTSTS, SDMMC_INT_SDIO(i));
+>> +			if (pending & SDMMC_INT_SDIO(slot->sdio_id)) {
+>> +				mci_writel(host, RINTSTS,
+>> +					   SDMMC_INT_SDIO(slot->sdio_id));
+>>  				mmc_signal_sdio_irq(slot->mmc);
+>>  			}
+>>  		}
+>> @@ -2145,6 +2146,7 @@ static int dw_mci_init_slot(struct dw_mci *host,
+>> unsigned int id)
+>>
+>>  	slot = mmc_priv(mmc);
+>>  	slot->id = id;
+>> +	slot->sdio_id = host->sdio_id0 + id;
+>>  	slot->mmc = mmc;
+>>  	slot->host = host;
+>>  	host->slot[id] = slot;
+>> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+>> index 71d4995..0562f10 100644
+>> --- a/drivers/mmc/host/dw_mmc.h
+>> +++ b/drivers/mmc/host/dw_mmc.h
+>> @@ -214,6 +214,7 @@ extern int dw_mci_resume(struct dw_mci *host);
+>>   *	with CONFIG_MMC_CLKGATE.
+>>   * @flags: Random state bits associated with the slot.
+>>   * @id: Number of this slot.
+>> + * @sdio_id: Number of this slot in the SDIO interrupt registers.
+>>   */
+>>  struct dw_mci_slot {
+>>  	struct mmc_host		*mmc;
+>> @@ -233,6 +234,7 @@ struct dw_mci_slot {
+>>  #define DW_MMC_CARD_PRESENT	0
+>>  #define DW_MMC_CARD_NEED_INIT	1
+>>  	int			id;
+>> +	int			sdio_id;
+>>  };
+>>
+>>  struct dw_mci_tuning_data {
+>> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+>> index 69d0814..72c319f 100644
+>> --- a/include/linux/mmc/dw_mmc.h
+>> +++ b/include/linux/mmc/dw_mmc.h
+>> @@ -96,6 +96,7 @@ struct mmc_data;
+>>   * @quirks: Set of quirks that apply to specific versions of the IP.
+>>   * @irq_flags: The flags to be passed to request_irq.
+>>   * @irq: The irq value to be passed to request_irq.
+>> + * @sdio_id0: Number of slot0 in the SDIO interrupt registers.
+>>   *
+>>   * Locking
+>>   * =======
+>> @@ -191,6 +192,8 @@ struct dw_mci {
+>>  	bool			vqmmc_enabled;
+>>  	unsigned long		irq_flags; /* IRQ flags */
+>>  	int			irq;
+>> +
+>> +	int			sdio_id0;
+>>  };
+>>
+>>  /* DMA ops for Internal/External DMAC interface */
+> 
+> 
+> 
 > 
 
-To be honest, this is what I did at first implementation and I changed it
-to inform the scale like s(=second) or like m(=millisecond). Do you think
-'+' '!' '*' '$' notation is better? :)
-
-> 
-> > 
-> > And then, it was easy to find out that a schedule-out occured by
-> > sub_preempt_count() within kernel_map_pages().
-> > 
-> > To detect very large function exection time either by problematic
-> > function implementation or by scheduling issues, this patch can be
-> > useful.
-> > 
-> > Signed-off-by: Byungchul Park <byungchul.park@lge.com>
-> > ---
-> >  kernel/trace/trace_functions_graph.c |    8 +++++++-
-> >  1 file changed, 7 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> > index c18a1e3..ea8b7e7 100644
-> > --- a/kernel/trace/trace_functions_graph.c
-> > +++ b/kernel/trace/trace_functions_graph.c
-> > @@ -822,8 +822,14 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
-> >  
-> >  	/* Signal a overhead of time execution to the output */
-> >  	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
-> > +		/* Duration exceeded 1 secs */
-> > +		if (duration > 1000000000ULL)
-> > +			ret = trace_seq_puts(s, "!s");
-> > +		/* Duration exceeded 1 msecs */
-> > +		else if (duration > 1000000ULL)
-> > +			ret = trace_seq_puts(s, "!m");
-> >  		/* Duration exceeded 100 usecs */
-> > -		if (duration > 100000ULL)
-> > +		else if (duration > 100000ULL)
-> >  			ret = trace_seq_puts(s, "! ");
-> >  		/* Duration exceeded 10 usecs */
-> >  		else if (duration > 10000ULL)
-> 
-> also, the documentation in Documentation/trace/ftrace.txt must be
-> updated with this patch. Make sure you update the function graph part
-> and not the "time:" and "delay:" section.
-
-OK. I will do it.
-
-> 
-> Come to think of it. Could you make another patch that adds this to the
-> normal delay as well? And we should make the "normal" '+' mean 10usecs
-> instead of 1usec. 1 is rather meaningless and inconsistent with the
-> graph tracer.
-
-Why not? I will try it.
-
-Thanks,
-Byungchul.
-
-> 
-> Thanks!
-> 
-> -- Steve
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
