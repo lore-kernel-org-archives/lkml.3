@@ -1,108 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230AbaKCSmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:42:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:24248 "EHLO mga11.intel.com"
+	id S1753256AbaKCSoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:44:12 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:36622 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752340AbaKCSmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:42:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
-   d="scan'208";a="625678605"
-Date: Mon, 3 Nov 2014 20:42:47 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: David Cohen <david.a.cohen@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141103184247.GD1618@lahna.fi.intel.com>
-References: <20141028144249.GD8123@saruman>
- <CACRpkdaN5hNWFUOFbHLm8HgZEKVSETUgVF4Cn4UbMQxNEg46Vw@mail.gmail.com>
- <20141031132005.GB1273@saruman>
- <20141031162339.GA7136@psi-dev26.jf.intel.com>
- <20141031184509.GA2224@psi-dev26.jf.intel.com>
- <20141103092402.GA1304@lahna.fi.intel.com>
- <20141103150048.GB27425@saruman>
- <20141103152743.GB1618@lahna.fi.intel.com>
- <20141103154207.GC1618@lahna.fi.intel.com>
- <20141103155011.GH27425@saruman>
+	id S1752144AbaKCSoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 13:44:09 -0500
+Date: Mon, 3 Nov 2014 12:43:12 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Felipe Balbi <balbi@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 09/47] mfd: palmas: Register with kernel power-off
+ handler
+Message-ID: <20141103184312.GW27425@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+ <1414425354-10359-10-git-send-email-linux@roeck-us.net>
+ <20141103175645.GT12011@x1>
+ <20141103175954.GT27425@saruman>
+ <20141103183653.GA10558@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i/VKSWANvDZSIhsB"
 Content-Disposition: inline
-In-Reply-To: <20141103155011.GH27425@saruman>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <20141103183653.GA10558@roeck-us.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 09:50:11AM -0600, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Nov 03, 2014 at 05:42:07PM +0200, Mika Westerberg wrote:
-> > On Mon, Nov 03, 2014 at 05:27:43PM +0200, Mika Westerberg wrote:
-> > > On Mon, Nov 03, 2014 at 09:00:48AM -0600, Felipe Balbi wrote:
-> > > > On Mon, Nov 03, 2014 at 11:24:02AM +0200, Mika Westerberg wrote:
-> > > > > On Fri, Oct 31, 2014 at 11:45:09AM -0700, David Cohen wrote:
-> > > > > > > I think adding the module exit + allowing this driver to be a module
-> > > > > > > would be a good approach. Then we don't need to force generic x86 kernel
-> > > > > > > binaries to always have this driver. Unless Mathias or Mika knows a
-> > > > > > > constraint to force this driver to be builtin only.
-> > > > > > 
-> > > > > > It helps if I CC them when asking for feedback :)
-> > > > > > 
-> > > > > > Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
-> > > > > > to be bool?
-> > > > > 
-> > > > > The only constraint that has been keeping this driver as bool is that
-> > > > > some machines like, Asus T100, uses ACPI GPIO operation regions for
-> > > > > toggling GPIOs to get things like sensor hub powered on. The GPIO
-> > > > > operation region code does not yet handle -EPROBE_DEFER so only way to
-> > > > > ensure that the operation region is there is to have the driver compiled
-> > > > > in to the kernel.
-> > > > 
-> > > > But that's not enough excuse to have every single x86 in the market
-> > > > shipping with this driver. Think about a distro kernel, most likely this
-> > > > gets enabled and it's wrong in 80% of the cases.
-> > > 
-> > > True, but see below.
-> > > 
-> > > > It would be nicer to add EPROBE_DEFER support, convert this into
-> > > > tristate and have default = M if BAYTRAIL, or something.
-> > > 
-> > > If it were simple as that we would have done that already. Please check
-> > > drivers/gpio/gpiolib-acpi.c:acpi_gpio_adr_space_handler() and tell me
-> > > how we can do that.
-> > 
-> > Actually the above is not the problem because we already have registered
-> > the GPIO chip and hence we have the GPIO available to the firmware code.
-> 
-> what happens before you registered the gpio chip ? It takes some time
-> from head.S to gpiochip_irqchip_add(). Anywhere between that time,
-> firmware could try to access gpios and the same problem would occur.
+--i/VKSWANvDZSIhsB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The operation region is not ready and the firmware does not try to use
-it. However, the subsys_initcall() is there just to be sure that the
-GPIO driver gets loaded before anything that is going to use GPIOs from
-firmware.
+On Mon, Nov 03, 2014 at 10:36:53AM -0800, Guenter Roeck wrote:
+> On Mon, Nov 03, 2014 at 11:59:54AM -0600, Felipe Balbi wrote:
+> > On Mon, Nov 03, 2014 at 05:56:45PM +0000, Lee Jones wrote:
+> > > On Mon, 27 Oct 2014, Guenter Roeck wrote:
+> > >=20
+> > > > Register with kernel power-off handler instead of setting pm_power_=
+off
+> > > > directly. Register with low priority to reflect that the original c=
+ode
+> > > > only sets pm_power_off if it was not already set.
+> > > >=20
+> > > > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > > > Cc: Lee Jones <lee.jones@linaro.org>
+> > > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > > > ---
+> > > > v3:
+> > > > - Replace poweroff in all newly introduced variables and in text
+> > > >   with power_off or power-off as appropriate
+> > > > - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+> > > > v2:
+> > > > - Use define to specify poweroff handler priority
+> > > > - Use devm_register_power_off_handler
+> > > > - Use dev_warn instead of dev_err
+> > > >=20
+> > > >  drivers/mfd/palmas.c       | 31 +++++++++++++++++--------------
+> > > >  include/linux/mfd/palmas.h |  3 +++
+> > > >  2 files changed, 20 insertions(+), 14 deletions(-)
+> > >=20
+> > > Acked-by: Lee Jones <lee.jones@linaro.org>
+> >=20
+> > missed lakml and linux-omap.
+> >=20
+> Felipe,
+>=20
+> unfortunately, get_maintainer.pl doesn't give a hint that this and the
+> other affected patches should be sent to linux-omap. How am I supposed
+> to know ?
 
-> > The real problem is that if the ACPI GPIO operation handler is not there
-> > at the time firmware decides to do something it will just skip things
-> > that depend on the operation region. So if it has a GPIO that is used to
-> > turn on sensor hub or touch panel or whatever, this will not be done and
-> > it results that the device in question might not work properly.
-> 
-> that's an issue that needs solving, but forcing every x86 kernel to ship
-> with this driver, is not a proper solution.
+yeah, just looked and nobody bothered to patch MAINTAINERS when those
+files were added. I just sent a patch adding them under OMAP SUPPORT.
 
-I would rather have the driver build in to the kernel now (and btw it
-has been already in mainline quite some time so I suspect many distros
-have already enabled it), than turning it module and render some devices
-that have been working previously, fail suddenly.
+> Note that linux-kernel@vger.kernel.org was copied on the entire series,
+> if that is what you mean with lakml. linux-pm@vger.kernel.org was also
+> copied on all patches. Additional mailing lists were only copied for
+> affected architectures to avoid for the patches to be tagged as spam.
+>=20
+> If there is a list named lakml, I must have missed it, and I seem to be
+> unable to find a reference to it. If that is the case, my apologies,
+> and please provide a link to it.
 
-There is a mechanism in ACPI to solve these issues, called _DEP, but it
-is still very much work in progress.
+here it is:
+
+Linux ARM Kernel Mailing List <linux-arm-kernel@lists.infradead.org>
+
+--=20
+balbi
+
+--i/VKSWANvDZSIhsB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUV8zAAAoJEIaOsuA1yqREZlkP/AgEmVSiTPhI6LRmdH8SB64/
+4NJqbmyyL+f4wVzx+7TUkqv1PFeZbdE6d07cpllXWjuevM0qNF/zmSffQW/oohKU
+UGJ5o+G2i8+ukvdyRkRVquqIt2psoPHFbKW/xnRF2Oe2/ES1D28t6ovf07+0896I
+3HiPBbKVPIuvpuTw8+6aE0o5+jnz4oN8n+M+OOmhvNfkVu89+zPaBZ8wtSs1en66
+Fg/gv6ROCYpsgqqeJdNJZ6yanYO7vZcadT5A6WqzVUFsbg8YfX2Ed5zsyP1t6WZT
+wPszuMc1jWhjldUemRg4QlAdkKNZP0zRhEiwhpqaHWkcVaxGQJR1GPyfLTLnaFWt
+F63xvS8QhqVBtX5zFQm//lWnivUekrFc7FUseQzBjKzs+WqTVk0+fXHQ4f9CRQG1
+pFo0oHu20qyEF6hXpDbYKcnTXjG3uBPILbSWdx+w5jYpfXQkhhdDKT4cNWDZl/Sf
+jQZdk1ipGng+tq+mHZELGAM8ilg3epvKoS7VAfskBNONd/cyHB8nr0+YZnawz4ub
+Xt42yZKyBntFpWTEddrRf1/Ycle7R23QJ0xb0MD0OlOo3UhelbSx2ivc++WdjkN1
+7ksHRZ3c2zAS/xEh17ycmBggG/109gIJoI9/a3vhGk2qYaKb+J2EXjq2LNfn9RqO
+rXB1540hY/Qu5RctDHu+
+=qoUc
+-----END PGP SIGNATURE-----
+
+--i/VKSWANvDZSIhsB--
