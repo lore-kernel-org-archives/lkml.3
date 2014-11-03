@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbaKCH27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:28:59 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59157 "EHLO
+	id S1751547AbaKCH3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:29:08 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59168 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873AbaKCH2D (ORCPT
+	with ESMTP id S1750931AbaKCH2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 02:28:03 -0500
+	Mon, 3 Nov 2014 02:28:02 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 5/8] perf build-id: Move build-id related functions to util/build-id.c
-Date: Mon,  3 Nov 2014 16:27:55 +0900
-Message-Id: <1414999678-31377-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 6/8] perf record: Do not save pathname in ./debug/.build-id directory for vmlinux
+Date: Mon,  3 Nov 2014 16:27:56 +0900
+Message-Id: <1414999678-31377-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
 References: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
@@ -27,674 +27,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It'd be better managing those functions in a separate place as
-util/header.c file is already big.
+When perf record finishes a session recording, it then pre-process
+samples in order to write build-id info from actually used DSOs.
+During this process it'll call map__load() for kernel map, and it ends
+up calling dso__load_vmlinux_path() which replaces dso->long_name.
 
-It now exports following 3 functions to others:
+But this function checks kernel's build-id before searching vmlinux
+path so it'll have the cryptic name which can be confusing to users IMHO.
 
-  bool perf_session__read_build_ids(struct perf_session *session, bool with_hits);
-  int perf_session__write_buildid_table(struct perf_session *session, int fd);
-  int perf_session__cache_build_ids(struct perf_session *session);
+This patch adds a flag to skip the build-id check during record, so
+it'll have a vmlinux path for the kernel dso->long_name.
 
+Before:
+  # perf record -va sleep 3
+  mmap size 528384B
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.196 MB perf.data (~8545 samples) ]
+  Looking at the vmlinux_path (7 entries long)
+  Using /home/namhyung/.debug/.build-id/f0/6e17aa50adf4d00b88925e03775de107611551 for symbols
+
+After:
+  # perf record -va sleep 3
+  mmap size 528384B
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.193 MB perf.data (~8432 samples) ]
+  Looking at the vmlinux_path (7 entries long)
+  Using /lib/modules/3.16.4-1-ARCH/build/vmlinux for symbols
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/build-id.c | 293 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/build-id.h |   5 +
- tools/perf/util/header.c   | 296 +--------------------------------------------
- tools/perf/util/header.h   |   4 +
- 4 files changed, 303 insertions(+), 295 deletions(-)
+ tools/perf/builtin-record.c | 11 +++++++++++
+ tools/perf/util/symbol.c    | 11 ++++++-----
+ tools/perf/util/symbol.h    |  1 +
+ 3 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index 2e7c68e39330..acc50509f1d5 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -15,6 +15,8 @@
- #include "debug.h"
- #include "session.h"
- #include "tool.h"
-+#include "header.h"
-+#include "vdso.h"
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 5091a27e6d28..582c4da155ea 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -200,6 +200,17 @@ static int process_buildids(struct record *rec)
+ 	if (size == 0)
+ 		return 0;
  
- int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 			   union perf_event *event,
-@@ -105,3 +107,294 @@ char *dso__build_id_filename(const struct dso *dso, char *bf, size_t size)
- 			 build_id_hex, build_id_hex + 2);
- 	return bf;
- }
-+
-+#define dsos__for_each_with_build_id(pos, head)	\
-+	list_for_each_entry(pos, head, node)	\
-+		if (!pos->has_build_id)		\
-+			continue;		\
-+		else
-+
-+static int write_buildid(const char *name, size_t name_len, u8 *build_id,
-+			 pid_t pid, u16 misc, int fd)
-+{
-+	int err;
-+	struct build_id_event b;
-+	size_t len;
-+
-+	len = name_len + 1;
-+	len = PERF_ALIGN(len, NAME_ALIGN);
-+
-+	memset(&b, 0, sizeof(b));
-+	memcpy(&b.build_id, build_id, BUILD_ID_SIZE);
-+	b.pid = pid;
-+	b.header.misc = misc;
-+	b.header.size = sizeof(b) + len;
-+
-+	err = writen(fd, &b, sizeof(b));
-+	if (err < 0)
-+		return err;
-+
-+	return write_padded(fd, name, name_len + 1, len);
-+}
-+
-+static int __dsos__write_buildid_table(struct list_head *head,
-+				       struct machine *machine,
-+				       pid_t pid, u16 misc, int fd)
-+{
-+	char nm[PATH_MAX];
-+	struct dso *pos;
-+
-+	dsos__for_each_with_build_id(pos, head) {
-+		int err;
-+		const char *name;
-+		size_t name_len;
-+
-+		if (!pos->hit)
-+			continue;
-+
-+		if (dso__is_vdso(pos)) {
-+			name = pos->short_name;
-+			name_len = pos->short_name_len + 1;
-+		} else if (dso__is_kcore(pos)) {
-+			machine__mmap_name(machine, nm, sizeof(nm));
-+			name = nm;
-+			name_len = strlen(nm) + 1;
-+		} else {
-+			name = pos->long_name;
-+			name_len = pos->long_name_len + 1;
-+		}
-+
-+		err = write_buildid(name, name_len, pos->build_id,
-+				    pid, misc, fd);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static int machine__write_buildid_table(struct machine *machine, int fd)
-+{
-+	int err;
-+	u16 kmisc = PERF_RECORD_MISC_KERNEL,
-+	    umisc = PERF_RECORD_MISC_USER;
-+
-+	if (!machine__is_host(machine)) {
-+		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
-+		umisc = PERF_RECORD_MISC_GUEST_USER;
-+	}
-+
-+	err = __dsos__write_buildid_table(&machine->kernel_dsos.head, machine,
-+					  machine->pid, kmisc, fd);
-+	if (err == 0)
-+		err = __dsos__write_buildid_table(&machine->user_dsos.head,
-+						  machine, machine->pid, umisc,
-+						  fd);
-+	return err;
-+}
-+
-+int perf_session__write_buildid_table(struct perf_session *session, int fd)
-+{
-+	struct rb_node *nd;
-+	int err = machine__write_buildid_table(&session->machines.host, fd);
-+
-+	if (err)
-+		return err;
-+
-+	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+		err = machine__write_buildid_table(pos, fd);
-+		if (err)
-+			break;
-+	}
-+	return err;
-+}
-+
-+int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
-+			  const char *name, bool is_kallsyms, bool is_vdso)
-+{
-+	const size_t size = PATH_MAX;
-+	char *realname, *filename = zalloc(size),
-+	     *linkname = zalloc(size), *targetname;
-+	int len, err = -1;
-+	bool slash = is_kallsyms || is_vdso;
-+
-+	if (is_kallsyms) {
-+		if (symbol_conf.kptr_restrict) {
-+			pr_debug("Not caching a kptr_restrict'ed /proc/kallsyms\n");
-+			err = 0;
-+			goto out_free;
-+		}
-+		realname = (char *) name;
-+	} else
-+		realname = realpath(name, NULL);
-+
-+	if (realname == NULL || filename == NULL || linkname == NULL)
-+		goto out_free;
-+
-+	len = scnprintf(filename, size, "%s%s%s",
-+		       debugdir, slash ? "/" : "",
-+		       is_vdso ? DSO__NAME_VDSO : realname);
-+	if (mkdir_p(filename, 0755))
-+		goto out_free;
-+
-+	snprintf(filename + len, size - len, "/%s", sbuild_id);
-+
-+	if (access(filename, F_OK)) {
-+		if (is_kallsyms) {
-+			 if (copyfile("/proc/kallsyms", filename))
-+				goto out_free;
-+		} else if (link(realname, filename) && copyfile(name, filename))
-+			goto out_free;
-+	}
-+
-+	len = scnprintf(linkname, size, "%s/.build-id/%.2s",
-+		       debugdir, sbuild_id);
-+
-+	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
-+		goto out_free;
-+
-+	snprintf(linkname + len, size - len, "/%s", sbuild_id + 2);
-+	targetname = filename + strlen(debugdir) - 5;
-+	memcpy(targetname, "../..", 5);
-+
-+	if (symlink(targetname, linkname) == 0)
-+		err = 0;
-+out_free:
-+	if (!is_kallsyms)
-+		free(realname);
-+	free(filename);
-+	free(linkname);
-+	return err;
-+}
-+
-+static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
-+				 const char *name, const char *debugdir,
-+				 bool is_kallsyms, bool is_vdso)
-+{
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+
-+	build_id__sprintf(build_id, build_id_size, sbuild_id);
-+
-+	return build_id_cache__add_s(sbuild_id, debugdir, name,
-+				     is_kallsyms, is_vdso);
-+}
-+
-+int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
-+{
-+	const size_t size = PATH_MAX;
-+	char *filename = zalloc(size),
-+	     *linkname = zalloc(size);
-+	int err = -1;
-+
-+	if (filename == NULL || linkname == NULL)
-+		goto out_free;
-+
-+	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
-+		 debugdir, sbuild_id, sbuild_id + 2);
-+
-+	if (access(linkname, F_OK))
-+		goto out_free;
-+
-+	if (readlink(linkname, filename, size - 1) < 0)
-+		goto out_free;
-+
-+	if (unlink(linkname))
-+		goto out_free;
-+
 +	/*
-+	 * Since the link is relative, we must make it absolute:
++	 * During this process, it'll load kernel map and replace the
++	 * dso->long_name to a real pathname it found.  In this case
++	 * we prefer the vmlinux path like
++	 *   /lib/modules/3.16.4/build/vmlinux
++	 *
++	 * rather than build-id path (in debug directory).
++	 *   $HOME/.debug/.build-id/f0/6e17aa50adf4d00b88925e03775de107611551
 +	 */
-+	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
-+		 debugdir, sbuild_id, filename);
++	symbol_conf.ignore_vmlinux_buildid = true;
 +
-+	if (unlink(linkname))
-+		goto out_free;
-+
-+	err = 0;
-+out_free:
-+	free(filename);
-+	free(linkname);
-+	return err;
-+}
-+
-+static int dso__cache_build_id(struct dso *dso, struct machine *machine,
-+			       const char *debugdir)
-+{
-+	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
-+	bool is_vdso = dso__is_vdso(dso);
-+	const char *name = dso->long_name;
-+	char nm[PATH_MAX];
-+
-+	if (dso__is_kcore(dso)) {
-+		is_kallsyms = true;
-+		machine__mmap_name(machine, nm, sizeof(nm));
-+		name = nm;
-+	}
-+	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id), name,
-+				     debugdir, is_kallsyms, is_vdso);
-+}
-+
-+static int __dsos__cache_build_ids(struct list_head *head,
-+				   struct machine *machine, const char *debugdir)
-+{
-+	struct dso *pos;
-+	int err = 0;
-+
-+	dsos__for_each_with_build_id(pos, head)
-+		if (dso__cache_build_id(pos, machine, debugdir))
-+			err = -1;
-+
-+	return err;
-+}
-+
-+static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
-+{
-+	int ret = __dsos__cache_build_ids(&machine->kernel_dsos.head, machine,
-+					  debugdir);
-+	ret |= __dsos__cache_build_ids(&machine->user_dsos.head, machine,
-+				       debugdir);
-+	return ret;
-+}
-+
-+int perf_session__cache_build_ids(struct perf_session *session)
-+{
-+	struct rb_node *nd;
-+	int ret;
-+	char debugdir[PATH_MAX];
-+
-+	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
-+
-+	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
-+		return -1;
-+
-+	ret = machine__cache_build_ids(&session->machines.host, debugdir);
-+
-+	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+		ret |= machine__cache_build_ids(pos, debugdir);
-+	}
-+	return ret ? -1 : 0;
-+}
-+
-+static bool machine__read_build_ids(struct machine *machine, bool with_hits)
-+{
-+	bool ret;
-+
-+	ret  = __dsos__read_build_ids(&machine->kernel_dsos.head, with_hits);
-+	ret |= __dsos__read_build_ids(&machine->user_dsos.head, with_hits);
-+	return ret;
-+}
-+
-+bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
-+{
-+	struct rb_node *nd;
-+	bool ret = machine__read_build_ids(&session->machines.host, with_hits);
-+
-+	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+		ret |= machine__read_build_ids(pos, with_hits);
-+	}
-+
-+	return ret;
-+}
-diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
-index ae392561470b..e24477cc92f2 100644
---- a/tools/perf/util/build-id.h
-+++ b/tools/perf/util/build-id.h
-@@ -15,4 +15,9 @@ char *dso__build_id_filename(const struct dso *dso, char *bf, size_t size);
- int build_id__mark_dso_hit(struct perf_tool *tool, union perf_event *event,
- 			   struct perf_sample *sample, struct perf_evsel *evsel,
- 			   struct machine *machine);
-+
-+bool perf_session__read_build_ids(struct perf_session *session, bool with_hits);
-+int perf_session__write_buildid_table(struct perf_session *session, int fd);
-+int perf_session__cache_build_ids(struct perf_session *session);
-+
- #endif
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 6e1ff5d64276..3e2c156d9c64 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -79,10 +79,7 @@ static int do_write(int fd, const void *buf, size_t size)
- 	return 0;
- }
- 
--#define NAME_ALIGN 64
--
--static int write_padded(int fd, const void *bf, size_t count,
--			size_t count_aligned)
-+int write_padded(int fd, const void *bf, size_t count, size_t count_aligned)
+ 	return __perf_session__process_events(session, start,
+ 					      size - start,
+ 					      size, &build_id__mark_dso_hit_ops);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index c69915c9d5bc..c24c5b83156c 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1511,12 +1511,10 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 			   symbol_filter_t filter)
  {
- 	static const char zero_buf[NAME_ALIGN];
- 	int err = do_write(fd, bf, count);
-@@ -171,297 +168,6 @@ perf_header__set_cmdline(int argc, const char **argv)
- 	return 0;
- }
+ 	int i, err = 0;
+-	char *filename;
++	char *filename = NULL;
  
--#define dsos__for_each_with_build_id(pos, head)	\
--	list_for_each_entry(pos, head, node)	\
--		if (!pos->has_build_id)		\
--			continue;		\
--		else
+-	pr_debug("Looking at the vmlinux_path (%d entries long)\n",
+-		 vmlinux_path__nr_entries + 1);
 -
--static int write_buildid(const char *name, size_t name_len, u8 *build_id,
--			 pid_t pid, u16 misc, int fd)
--{
--	int err;
--	struct build_id_event b;
--	size_t len;
--
--	len = name_len + 1;
--	len = PERF_ALIGN(len, NAME_ALIGN);
--
--	memset(&b, 0, sizeof(b));
--	memcpy(&b.build_id, build_id, BUILD_ID_SIZE);
--	b.pid = pid;
--	b.header.misc = misc;
--	b.header.size = sizeof(b) + len;
--
--	err = do_write(fd, &b, sizeof(b));
--	if (err < 0)
--		return err;
--
--	return write_padded(fd, name, name_len + 1, len);
--}
--
--static int __dsos__write_buildid_table(struct list_head *head,
--				       struct machine *machine,
--				       pid_t pid, u16 misc, int fd)
--{
--	char nm[PATH_MAX];
--	struct dso *pos;
--
--	dsos__for_each_with_build_id(pos, head) {
--		int err;
--		const char *name;
--		size_t name_len;
--
--		if (!pos->hit)
--			continue;
--
--		if (dso__is_vdso(pos)) {
--			name = pos->short_name;
--			name_len = pos->short_name_len + 1;
--		} else if (dso__is_kcore(pos)) {
--			machine__mmap_name(machine, nm, sizeof(nm));
--			name = nm;
--			name_len = strlen(nm) + 1;
--		} else {
--			name = pos->long_name;
--			name_len = pos->long_name_len + 1;
--		}
--
--		err = write_buildid(name, name_len, pos->build_id,
--				    pid, misc, fd);
--		if (err)
--			return err;
--	}
--
--	return 0;
--}
--
--static int machine__write_buildid_table(struct machine *machine, int fd)
--{
--	int err;
--	u16 kmisc = PERF_RECORD_MISC_KERNEL,
--	    umisc = PERF_RECORD_MISC_USER;
--
--	if (!machine__is_host(machine)) {
--		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
--		umisc = PERF_RECORD_MISC_GUEST_USER;
--	}
--
--	err = __dsos__write_buildid_table(&machine->kernel_dsos.head, machine,
--					  machine->pid, kmisc, fd);
--	if (err == 0)
--		err = __dsos__write_buildid_table(&machine->user_dsos.head,
--						  machine, machine->pid, umisc,
--						  fd);
--	return err;
--}
--
--static int perf_session__write_buildid_table(struct perf_session *session, int fd)
--{
--	struct rb_node *nd;
--	int err = machine__write_buildid_table(&session->machines.host, fd);
--
--	if (err)
--		return err;
--
--	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
--		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		err = machine__write_buildid_table(pos, fd);
--		if (err)
--			break;
--	}
--	return err;
--}
--
--int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
--			  const char *name, bool is_kallsyms, bool is_vdso)
--{
--	const size_t size = PATH_MAX;
--	char *realname, *filename = zalloc(size),
--	     *linkname = zalloc(size), *targetname;
--	int len, err = -1;
--	bool slash = is_kallsyms || is_vdso;
--
--	if (is_kallsyms) {
--		if (symbol_conf.kptr_restrict) {
--			pr_debug("Not caching a kptr_restrict'ed /proc/kallsyms\n");
--			err = 0;
--			goto out_free;
--		}
--		realname = (char *) name;
--	} else
--		realname = realpath(name, NULL);
--
--	if (realname == NULL || filename == NULL || linkname == NULL)
--		goto out_free;
--
--	len = scnprintf(filename, size, "%s%s%s",
--		       debugdir, slash ? "/" : "",
--		       is_vdso ? DSO__NAME_VDSO : realname);
--	if (mkdir_p(filename, 0755))
--		goto out_free;
--
--	snprintf(filename + len, size - len, "/%s", sbuild_id);
--
--	if (access(filename, F_OK)) {
--		if (is_kallsyms) {
--			 if (copyfile("/proc/kallsyms", filename))
--				goto out_free;
--		} else if (link(realname, filename) && copyfile(name, filename))
--			goto out_free;
--	}
--
--	len = scnprintf(linkname, size, "%s/.build-id/%.2s",
--		       debugdir, sbuild_id);
--
--	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
--		goto out_free;
--
--	snprintf(linkname + len, size - len, "/%s", sbuild_id + 2);
--	targetname = filename + strlen(debugdir) - 5;
--	memcpy(targetname, "../..", 5);
--
--	if (symlink(targetname, linkname) == 0)
--		err = 0;
--out_free:
--	if (!is_kallsyms)
--		free(realname);
--	free(filename);
--	free(linkname);
--	return err;
--}
--
--static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
--				 const char *name, const char *debugdir,
--				 bool is_kallsyms, bool is_vdso)
--{
--	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--	build_id__sprintf(build_id, build_id_size, sbuild_id);
--
--	return build_id_cache__add_s(sbuild_id, debugdir, name,
--				     is_kallsyms, is_vdso);
--}
--
--int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
--{
--	const size_t size = PATH_MAX;
--	char *filename = zalloc(size),
--	     *linkname = zalloc(size);
--	int err = -1;
--
--	if (filename == NULL || linkname == NULL)
--		goto out_free;
--
--	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
--		 debugdir, sbuild_id, sbuild_id + 2);
--
--	if (access(linkname, F_OK))
--		goto out_free;
--
--	if (readlink(linkname, filename, size - 1) < 0)
--		goto out_free;
--
--	if (unlink(linkname))
--		goto out_free;
--
--	/*
--	 * Since the link is relative, we must make it absolute:
--	 */
--	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
--		 debugdir, sbuild_id, filename);
--
--	if (unlink(linkname))
--		goto out_free;
--
--	err = 0;
--out_free:
--	free(filename);
--	free(linkname);
--	return err;
--}
--
--static int dso__cache_build_id(struct dso *dso, struct machine *machine,
--			       const char *debugdir)
--{
--	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
--	bool is_vdso = dso__is_vdso(dso);
--	const char *name = dso->long_name;
--	char nm[PATH_MAX];
--
--	if (dso__is_kcore(dso)) {
--		is_kallsyms = true;
--		machine__mmap_name(machine, nm, sizeof(nm));
--		name = nm;
--	}
--	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id), name,
--				     debugdir, is_kallsyms, is_vdso);
--}
--
--static int __dsos__cache_build_ids(struct list_head *head,
--				   struct machine *machine, const char *debugdir)
--{
--	struct dso *pos;
--	int err = 0;
--
--	dsos__for_each_with_build_id(pos, head)
--		if (dso__cache_build_id(pos, machine, debugdir))
--			err = -1;
--
--	return err;
--}
--
--static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
--{
--	int ret = __dsos__cache_build_ids(&machine->kernel_dsos.head, machine,
--					  debugdir);
--	ret |= __dsos__cache_build_ids(&machine->user_dsos.head, machine,
--				       debugdir);
--	return ret;
--}
--
--static int perf_session__cache_build_ids(struct perf_session *session)
--{
--	struct rb_node *nd;
--	int ret;
--	char debugdir[PATH_MAX];
--
--	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
--
--	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
--		return -1;
--
--	ret = machine__cache_build_ids(&session->machines.host, debugdir);
--
--	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
--		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret |= machine__cache_build_ids(pos, debugdir);
--	}
--	return ret ? -1 : 0;
--}
--
--static bool machine__read_build_ids(struct machine *machine, bool with_hits)
--{
--	bool ret;
--
--	ret  = __dsos__read_build_ids(&machine->kernel_dsos.head, with_hits);
--	ret |= __dsos__read_build_ids(&machine->user_dsos.head, with_hits);
--	return ret;
--}
--
--static bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
--{
--	struct rb_node *nd;
--	bool ret = machine__read_build_ids(&session->machines.host, with_hits);
--
--	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
--		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret |= machine__read_build_ids(pos, with_hits);
--	}
--
--	return ret;
--}
--
- static int write_tracing_data(int fd, struct perf_header *h __maybe_unused,
- 			    struct perf_evlist *evlist)
- {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index d08cfe499404..785be448ca37 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -151,6 +151,10 @@ int perf_event__process_build_id(struct perf_tool *tool,
- 				 struct perf_session *session);
- bool is_perf_magic(u64 magic);
+-	filename = dso__build_id_filename(dso, NULL, 0);
++	if (!symbol_conf.ignore_vmlinux_buildid)
++		filename = dso__build_id_filename(dso, NULL, 0);
+ 	if (filename != NULL) {
+ 		err = dso__load_vmlinux(dso, map, filename, true, filter);
+ 		if (err > 0)
+@@ -1524,6 +1522,9 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 		free(filename);
+ 	}
  
-+#define NAME_ALIGN 64
++	pr_debug("Looking at the vmlinux_path (%d entries long)\n",
++		 vmlinux_path__nr_entries + 1);
 +
-+int write_padded(int fd, const void *bf, size_t count, size_t count_aligned);
-+
- /*
-  * arch specific callback
-  */
+ 	for (i = 0; i < vmlinux_path__nr_entries; ++i) {
+ 		err = dso__load_vmlinux(dso, map, vmlinux_path[i], false, filter);
+ 		if (err > 0)
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index eb2c19bf8d90..ded3ca7266de 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -105,6 +105,7 @@ struct symbol_conf {
+ 	unsigned short	nr_events;
+ 	bool		try_vmlinux_path,
+ 			ignore_vmlinux,
++			ignore_vmlinux_buildid,
+ 			show_kernel_path,
+ 			use_modules,
+ 			sort_by_name,
 -- 
 2.1.2
 
