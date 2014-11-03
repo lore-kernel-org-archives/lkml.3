@@ -1,415 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaKCJLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:11:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39252 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081AbaKCJLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:11:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,305,1413270000"; 
-   d="scan'208";a="625345789"
-Message-ID: <1415005892.2396.82.camel@linux.intel.com>
-Subject: Re: [PATCH 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
- I2C-GPIO MFD Driver
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Raymond Tan <raymond.tan@intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Alvin Chen <alvin.chen@intel.com>
-Date: Mon, 03 Nov 2014 11:11:32 +0200
-In-Reply-To: <1415000344-23575-2-git-send-email-raymond.tan@intel.com>
-References: <1415000344-23575-1-git-send-email-raymond.tan@intel.com>
-	 <1415000344-23575-2-git-send-email-raymond.tan@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751155AbaKCJRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:17:06 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44339 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaKCJRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 04:17:03 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Rob Herring <robh+dt@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Flora Fu <flora.fu@mediatek.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v2] mfd: syscon: add child device support
+Date: Mon,  3 Nov 2014 10:16:48 +0100
+Message-Id: <1415006209-1312-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.1.1
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 15:39 +0800, Raymond Tan wrote:
-> In Quark X1000, there's a single PCI device that provides both
-> an I2C controller and a GPIO controller. This MFD driver will
-> split the 2 devices for their respective drivers.
-> 
-> This patch is based on Josef Ahmad's initial work for Quark enabling.
+For devices which have a complete register for themselves, it is possible to
+place them next to the syscon device with overlapping reg ranges. The same is
+not possible for devices which only occupy bitfields in registers shared with
+other users.
+For devices that are completely controlled by bitfields in the syscon address
+range, such as multiplexers or voltage regulators, allow to put child devices
+into the syscon device node.
 
-Few comments below.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+Changes since v1:
+ - Reworded binding documentation to allow #size-cells = <1>, which is useful
+   for syscon children that are controlled through a (possibly shared) register
+   range.
+---
+ Documentation/devicetree/bindings/mfd/syscon.txt | 13 +++++++++++++
+ drivers/mfd/syscon.c                             |  3 +++
+ 2 files changed, 16 insertions(+)
 
-After addressing take my
-Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-
-> 
-> Signed-off-by: Weike Chen <alvin.chen@intel.com>
-> Signed-off-by: Raymond Tan <raymond.tan@intel.com>
-> ---
->  drivers/mfd/Kconfig                |   11 ++
->  drivers/mfd/Makefile               |    1 +
->  drivers/mfd/intel_quark_i2c_gpio.c |  298 ++++++++++++++++++++++++++++++++++++
->  3 files changed, 310 insertions(+)
->  create mode 100644 drivers/mfd/intel_quark_i2c_gpio.c
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index b7c74a7..d01d042 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -219,6 +219,17 @@ config HTC_I2CPLD
->  	  This device provides input and output GPIOs through an I2C
->  	  interface to one or more sub-chips.
->  
-> +config MFD_INTEL_QUARK_I2C_GPIO
-> +	tristate "Intel Quark MFD I2C GPIO"
-> +	depends on PCI && X86
-> +	depends on COMMON_CLK
-> +	select MFD_CORE
-> +	help
-> +	  This MFD provides support for I2C and GPIO that exist only
-> +	  in a single PCI device. It splits the 2 IO devices to
-> +	  their respective IO driver.
-> +	  The GPIO exports a total amount of 8 interrupt-capable GPIOs.
-> +
->  config LPC_ICH
->  	tristate "Intel ICH LPC"
->  	depends on PCI
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 8a28dc9..d42652d 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -133,6 +133,7 @@ obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
->  obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
->  obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
->  obj-$(CONFIG_MFD_KEMPLD)	+= kempld-core.o
-> +obj-$(CONFIG_MFD_INTEL_QUARK_I2C_GPIO)	+= intel_quark_i2c_gpio.o
->  obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
->  obj-$(CONFIG_LPC_ICH)		+= lpc_ich.o
->  obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
-> diff --git a/drivers/mfd/intel_quark_i2c_gpio.c b/drivers/mfd/intel_quark_i2c_gpio.c
-> new file mode 100644
-> index 0000000..e3cd6fb
-> --- /dev/null
-> +++ b/drivers/mfd/intel_quark_i2c_gpio.c
-> @@ -0,0 +1,298 @@
-> +/*
-> + * Intel Quark MFD PCI driver for I2C & GPIO
-> + *
-> + * Copyright(c) 2014 Intel Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * Intel Quark PCI device for I2C and GPIO controller sharing the same
-> + * PCI function. This PCI driver will split the 2 devices into their
-> + * respective drivers.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/pci.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/dmi.h>
-> +#include <linux/platform_data/gpio-dwapb.h>
-> +#include <linux/platform_data/i2c-designware.h>
-> +
-> +/* PCI BAR for register base address */
-> +#define MFD_I2C_BAR		0
-> +#define MFD_GPIO_BAR		1
-> +
-> +/* The base GPIO number under GPIOLIB framework */
-> +#define INTEL_QUARK_MFD_GPIO_BASE	8
-> +
-> +/* The default number of South-Cluster GPIO on Quark. */
-> +#define INTEL_QUARK_MFD_NGPIO		8
-> +
-> +/* The DesignWare GPIO ports on Quark. */
-> +#define INTEL_QUARK_GPIO_NPORTS	1
-> +
-> +#define INTEL_QUARK_IORES_MEM	0
-> +#define INTEL_QUARK_IORES_IRQ	1
-> +
-> +#define INTEL_QUARK_I2C_CONTROLLER_CLK "i2c_designware.0"
-> +
-> +/* The Quark I2C controller source clock */
-> +#define INTEL_QUARK_I2C_CLK_HZ	33000000
-> +
-> +#define INTEL_QUARK_I2C_NCLK	1
-> +
-> +struct clk *intel_quark_i2c_clk;
-> +struct clk_lookup *intel_quark_i2c_clk_lookups;
-> +
-> +struct i2c_mode_info {
-> +	const char *name;
-> +	unsigned int i2c_scl_freq;
-> +};
-> +
-> +static const struct i2c_mode_info platform_i2c_mode_info[] = {
-> +	{
-> +		.name = "Galileo",
-> +		.i2c_scl_freq = 100000,
-> +	},
-> +	{
-> +		.name = "GalileoGen2",
-> +		.i2c_scl_freq = 400000,
-> +	},
-
-You can decrease indentation level if you want to by using
-
-= {{
-}, {
-}};
-
-Though I don't know if Lee likes it :-)
-
-At least you may use }, { at one line I think.
-
-> +};
-> +
-> +static struct resource intel_quark_i2c_res[] = {
-> +	[INTEL_QUARK_IORES_MEM] = {
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +	[INTEL_QUARK_IORES_IRQ] = {
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct resource intel_quark_gpio_res[] = {
-> +	[INTEL_QUARK_IORES_MEM] = {
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +};
-> +
-> +static struct mfd_cell intel_quark_mfd_cells[] = {
-> +	{
-> +		.id = MFD_I2C_BAR,
-> +		.name = "i2c_designware",
-> +		.num_resources = ARRAY_SIZE(intel_quark_i2c_res),
-> +		.resources = intel_quark_i2c_res,
-> +		.ignore_resource_conflicts = true,
-> +	},
-> +	{
-> +		.id = MFD_GPIO_BAR,
-> +		.name = "gpio-dwapb",
-> +		.num_resources = ARRAY_SIZE(intel_quark_gpio_res),
-> +		.resources = intel_quark_gpio_res,
-> +		.ignore_resource_conflicts = true,
-> +	},
-
-Ditto.
-
-> +};
-> +
-> +static const struct pci_device_id intel_quark_mfd_ids[] = {
-> +	{ PCI_VDEVICE(INTEL, 0x0934), },
-> +	{ 0,}
-> +};
-> +MODULE_DEVICE_TABLE(pci, intel_quark_mfd_ids);
-> +
-> +static struct dwapb_platform_data *
-> +intel_quark_prepare_pdata(struct pci_dev *pdev)
-> +{
-> +	struct dwapb_platform_data *pdata;
-> +	struct device *dev = &pdev->dev;
-> +
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	/* For intel quark x1000, it has only one port: portA */
-> +	pdata->nports = INTEL_QUARK_GPIO_NPORTS;
-> +	pdata->properties = devm_kcalloc(dev, pdata->nports,
-> +					 sizeof(*pdata->properties),
-> +					 GFP_KERNEL);
-> +	if (!pdata->properties)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	/* Set the properties for portA */
-> +	pdata->properties->node	= NULL;
-> +	pdata->properties->name	= "intel-quark-x1000-gpio-portA";
-> +	pdata->properties->idx	= 0;
-> +	pdata->properties->ngpio	= INTEL_QUARK_MFD_NGPIO;
-> +	pdata->properties->gpio_base	= INTEL_QUARK_MFD_GPIO_BASE;
-> +	pdata->properties->irq	= pdev->irq;
-> +	pdata->properties->irq_shared	= true;
-> +
-> +	return pdata;
-> +}
-> +
-> +static struct dw_i2c_platform_data *
-> +intel_quark_get_i2c_mode(struct pci_dev *pdev)
-> +{
-> +	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
-> +	struct dw_i2c_platform_data *pdata;
-> +	struct device *dev = &pdev->dev;
-> +	unsigned int i;
-> +
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	/* Fast mode by default */
-> +	pdata->i2c_scl_freq = 400000;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(platform_i2c_mode_info); i++)
-> +		if (!strcmp(board_name, platform_i2c_mode_info[i].name))
-> +			pdata->i2c_scl_freq
-> +				= platform_i2c_mode_info[i].i2c_scl_freq;
-> +
-> +	return pdata;
-> +}
-> +
-> +static int intel_quark_register_i2c_clk(struct pci_dev *pdev)
-> +{
-> +	intel_quark_i2c_clk = clk_register_fixed_rate(
-> +		&pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK, NULL,
-> +		CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
-> +
-> +	intel_quark_i2c_clk_lookups = devm_kcalloc(
-> +		&pdev->dev, INTEL_QUARK_I2C_NCLK,
-> +		sizeof(*intel_quark_i2c_clk_lookups), GFP_KERNEL);
-> +
-> +	if (!intel_quark_i2c_clk_lookups)
-
-Potential leak here since you didn't call clk_unregister().
-Maybe you move the memory allocation upper?
-
-> +		return -ENOMEM;
-> +
-> +	intel_quark_i2c_clk_lookups[0].dev_id = INTEL_QUARK_I2C_CONTROLLER_CLK;
-> +
-> +	return clk_register_clkdevs(intel_quark_i2c_clk,
-> +		intel_quark_i2c_clk_lookups, INTEL_QUARK_I2C_NCLK);
-> +}
-> +
-> +static void intel_quark_unregister_i2c_clk(void)
-> +{
-> +	if (!intel_quark_i2c_clk || !intel_quark_i2c_clk_lookups)
-> +		return;
-> +
-> +	clkdev_drop(intel_quark_i2c_clk_lookups);
-> +	clk_unregister(intel_quark_i2c_clk);
-> +}
-> +
-> +static int intel_quark_i2c_setup(struct pci_dev *pdev, struct mfd_cell *cell)
-> +{
-> +	struct dw_i2c_platform_data *pdata;
-> +	struct resource *res = (struct resource *)cell->resources;
-> +	int retval;
-> +
-> +	res[INTEL_QUARK_IORES_MEM].start =
-> +		pci_resource_start(pdev, MFD_I2C_BAR);
-> +	res[INTEL_QUARK_IORES_MEM].end =
-> +		pci_resource_end(pdev, MFD_I2C_BAR);
-> +
-> +	res[INTEL_QUARK_IORES_IRQ].start = pdev->irq;
-> +	res[INTEL_QUARK_IORES_IRQ].end = pdev->irq;
-> +
-> +	retval = intel_quark_register_i2c_clk(pdev);
-> +	if (retval) {
-> +		dev_err(&pdev->dev, "Fixed clk register failed: %d\n", retval);
-> +		return retval;
-> +	}
-> +
-> +	pdata = intel_quark_get_i2c_mode(pdev);
-> +	if (IS_ERR(pdata))
-> +		return PTR_ERR(pdata);
-> +
-> +	cell->platform_data = pdata;
-> +	cell->pdata_size = sizeof(*pdata);
-> +
-> +	return 0;
-> +}
-> +
-> +static int intel_quark_gpio_setup(struct pci_dev *pdev, struct mfd_cell *cell)
-> +{
-> +	struct dwapb_platform_data *pdata;
-> +	struct resource *res = (struct resource *)cell->resources;
-> +
-> +	res[INTEL_QUARK_IORES_MEM].start =
-> +		pci_resource_start(pdev, MFD_GPIO_BAR);
-> +	res[INTEL_QUARK_IORES_MEM].end =
-> +		pci_resource_end(pdev, MFD_GPIO_BAR);
-> +
-> +	pdata = intel_quark_prepare_pdata(pdev);
-> +	if (IS_ERR(pdata))
-> +		return PTR_ERR(pdata);
-> +
-> +	cell->platform_data = pdata;
-> +	cell->pdata_size = sizeof(*pdata);
-> +
-> +	return 0;
-> +}
-> +
-> +struct intel_quark_mfd_dev {
-> +	int (*setup)(struct pci_dev *pdev, struct mfd_cell *cell);
-> +	struct mfd_cell *cell;
-> +};
-> +
-> +static struct intel_quark_mfd_dev intel_quark_mfd_devs[] = {
-> +	{
-> +		.cell = &intel_quark_mfd_cells[MFD_I2C_BAR],
-> +		.setup = intel_quark_i2c_setup,
-> +	},
-> +	{
-> +		.cell = &intel_quark_mfd_cells[MFD_GPIO_BAR],
-> +		.setup = intel_quark_gpio_setup,
-> +	},
-> +	{
-> +		/* terminator */
-> +	},
-> +};
-> +
-> +static int intel_quark_mfd_probe(struct pci_dev *pdev,
-> +				 const struct pci_device_id *id)
-> +{
-> +	struct intel_quark_mfd_dev *mfd_dev;
-> +	int retval;
-> +
-> +	retval = pcim_enable_device(pdev);
-> +	if (retval)
-> +		return retval;
-> +
-> +	for (mfd_dev = intel_quark_mfd_devs; mfd_dev->cell; mfd_dev++)
-> +		if (mfd_dev->setup) {
-> +			retval = mfd_dev->setup(pdev, mfd_dev->cell);
-> +			if (retval)
-> +				return retval;
-> +		}
-> +
-> +	return mfd_add_devices(&pdev->dev, 0, intel_quark_mfd_cells,
-> +		ARRAY_SIZE(intel_quark_mfd_cells), NULL, 0, NULL);
-> +}
-> +
-> +static void intel_quark_mfd_remove(struct pci_dev *pdev)
-> +{
-> +	intel_quark_unregister_i2c_clk();
-> +	mfd_remove_devices(&pdev->dev);
-> +}
-> +
-> +static struct pci_driver intel_quark_mfd_driver = {
-> +	.name		= "intel_quark_mfd_i2c_gpio",
-> +	.id_table	= intel_quark_mfd_ids,
-> +	.probe		= intel_quark_mfd_probe,
-> +	.remove		= intel_quark_mfd_remove,
-> +};
-> +
-> +module_pci_driver(intel_quark_mfd_driver);
-> +
-> +MODULE_AUTHOR("Raymond Tan <raymond.tan@intel.com>");
-> +MODULE_DESCRIPTION("Intel Quark MFD PCI driver for I2C & GPIO");
-> +MODULE_LICENSE("GPL v2");
-
-
+diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
+index fe8150b..0c6b497 100644
+--- a/Documentation/devicetree/bindings/mfd/syscon.txt
++++ b/Documentation/devicetree/bindings/mfd/syscon.txt
+@@ -9,12 +9,25 @@ using a specific compatible value), interrogate the node (or associated
+ OS driver) to determine the location of the registers, and access the
+ registers directly.
+ 
++Optionally, devices that are controlled exclusively through syscon registers,
++or even bitfields in shared syscon registers, can also be added as child nodes
++to the syscon device node. These devices can implicitly assume their parent
++node is a syscon provider without referencing it explicitly via phandle.
++In this case, the syscon node should have #address-cells = <1> and
++#size-cells = <0> or <1> and no ranges property.
++
+ Required properties:
+ - compatible: Should contain "syscon".
+ - reg: the register region can be accessed from syscon
+ 
++Optional properties:
++- #address-cells: Should be 1.
++- #size-cells: Should be 0 or 1.
++
+ Examples:
+ gpr: iomuxc-gpr@020e0000 {
++	#address-cells = <1>;
++	#size-cells = <0>;
+ 	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+ 	reg = <0x020e0000 0x38>;
+ };
+diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+index ca15878..38da178 100644
+--- a/drivers/mfd/syscon.c
++++ b/drivers/mfd/syscon.c
+@@ -155,6 +155,9 @@ static int syscon_probe(struct platform_device *pdev)
+ 
+ 	dev_dbg(dev, "regmap %pR registered\n", res);
+ 
++	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
++		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
++
+ 	return 0;
+ }
+ 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+2.1.1
 
