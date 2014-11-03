@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaKCWhH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 17:37:07 -0500
-Received: from mail-bl2on0079.outbound.protection.outlook.com ([65.55.169.79]:20832
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751162AbaKCWhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 17:37:05 -0500
-From: <dinguyen@opensource.altera.com>
-To: <p.zabel@pengutronix.de>
-CC: <dinh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Alan Tull <atull@opensource.altera.com>
-Subject: [PATCHv2] reset: add socfpga_reset_status
-Date: Mon, 3 Nov 2014 16:33:05 -0600
-Message-ID: <1415053985-10552-1-git-send-email-dinguyen@opensource.altera.com>
-X-Mailer: git-send-email 2.0.3
+	id S1752207AbaKCWhd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 17:37:33 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:46356 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaKCWha (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 17:37:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: CY1PR00CA0009.namprd00.prod.outlook.com (25.160.142.147) To
- CY1PR0301MB1196.namprd03.prod.outlook.com (25.160.165.27)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1196;
-X-Forefront-PRVS: 0384275935
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(69596002)(89996001)(120916001)(87976001)(110136001)(33646002)(19580395003)(21056001)(19580405001)(99396003)(4396001)(50226001)(53416004)(107046002)(42186005)(95666004)(229853001)(81156004)(97736003)(88136002)(2351001)(86152002)(106356001)(105586002)(104166001)(122386002)(93916002)(92726001)(20776003)(47776003)(66066001)(64706001)(62966003)(77156002)(77096003)(31966008)(101416001)(102836001)(50986999)(87286001)(40100003)(48376002)(46102003)(86362001)(92566001)(50466002);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0301MB1196;H:linux-builds1.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+In-Reply-To: <20141103215837.GB8711@redhat.com>
+References: <bf6fb790787eb95b922157838f52712c25dda157.1412187233.git.luto@amacapital.net>
+ <tip-2c7577a7583747c9b71f26dced7f696b739da745@git.kernel.org>
+ <CALCETrWM2wVynp1rrip9AWtNYDzjC4M8JqKR82ew5dpyrTWMgA@mail.gmail.com>
+ <20141103214712.GA8711@redhat.com> <20141103215837.GB8711@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Nov 2014 14:37:07 -0800
+Message-ID: <CALCETrUMLaz_McO=f-v6JmPY7pJSU4M4g1+p1un1UiVcNf+4XQ@mail.gmail.com>
+Subject: Re: [tip:x86/asm] sched/x86_64: Don't save flags on context switch
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jan Beulich <jbeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Sebastian Lackner <sebastian@fds-team.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, Anish Bhatt <anish@chelsio.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
+On Mon, Nov 3, 2014 at 1:58 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 11/03, Oleg Nesterov wrote:
+>>
+>> On 11/03, Andy Lutomirski wrote:
+>> >
+>> > And do we ever have TF set during a context switch?  I hope not.
+>>
+>> I too hope.
+>>
+>> > Also, what's with 'jmp exit_intr' at the end of retint_kernel?  Why
+>> > isn't that 'jmp retint_kernel'?
+>>
+>> Even better, why not "jmp retint_restore_args" ?
+>>
+>> preempt_schedule_irq() checks need_resched() and returns with irqs
+>> disabled, not need to to recheck test_preempt_need_resched() ?
 
-Populate the reset_status callback for SOCFPGA.
+Seems reasonable to me.  Want to write the patch?
 
-Signed-off-by: Alan Tull <atull@opensource.altera.com>
-Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
----
-v2: Remove spin_lock around readl
----
- drivers/reset/reset-socfpga.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+>
+> Btw, why retint_kernel() checks "interrupts on" ? It seems to me that
+> that "interrupts off" is not possible, no? And this will be more clear
+> when we remove the "exit_intr" label.
 
-diff --git a/drivers/reset/reset-socfpga.c b/drivers/reset/reset-socfpga.c
-index 79c32ca..39da5cb 100644
---- a/drivers/reset/reset-socfpga.c
-+++ b/drivers/reset/reset-socfpga.c
-@@ -76,9 +76,25 @@ static int socfpga_reset_deassert(struct reset_controller_dev *rcdev,
- 	return 0;
- }
- 
-+static int socfpga_reset_status(struct reset_controller_dev *rcdev,
-+				unsigned long id)
-+{
-+	struct socfpga_reset_data *data = container_of(rcdev,
-+						struct socfpga_reset_data, rcdev);
-+	int bank = id / BITS_PER_LONG;
-+	int offset = id % BITS_PER_LONG;
-+	unsigned long flags;
-+	u32 reg;
-+
-+	reg = readl(data->membase + OFFSET_MODRST + (bank * NR_BANKS));
-+
-+	return !(reg & BIT(offset));
-+}
-+
- static struct reset_control_ops socfpga_reset_ops = {
- 	.assert		= socfpga_reset_assert,
- 	.deassert	= socfpga_reset_deassert,
-+	.status		= socfpga_reset_status,
- };
- 
- static int socfpga_reset_probe(struct platform_device *pdev)
+We might get there from #MC or from any of a number of synchronous
+errors (#GP from xyz_safe, #PF from some atomic uaccess thing or a
+vmap fault, etc), and all of those have interrupts off.
+
+--Andy
+
+>
+> Oleg.
+>
+
+
+
 -- 
-2.0.3
-
+Andy Lutomirski
+AMA Capital Management, LLC
