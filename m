@@ -1,44 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaKCJnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:43:52 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:46893 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaKCJnr convert rfc822-to-8bit (ORCPT
+	id S1752062AbaKCJot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:44:49 -0500
+Received: from dehamd003.servertools24.de ([31.47.254.18]:51836 "EHLO
+	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751104AbaKCJoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:43:47 -0500
+	Mon, 3 Nov 2014 04:44:44 -0500
+Message-ID: <54574E88.8080509@ladisch.de>
+Date: Mon, 03 Nov 2014 10:44:40 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64;
+	rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <3D00ADB3-00B3-40A8-8263-444BCADDAC33@gmail.com>
-References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
-	<3D00ADB3-00B3-40A8-8263-444BCADDAC33@gmail.com>
-Date: Mon, 3 Nov 2014 10:43:46 +0100
-Message-ID: <CACRpkda-HbKmN_RisHpWRV4bquwpBsd4RgaA5pW0qXrhYChRYA@mail.gmail.com>
-Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-Cc: Benoit Parrot <bparrot@ti.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: David Miller <davem@davemloft.net>
+CC: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc64: Add preprocessor symbols for PAGE_* pgprot_t
+	values.
+References: <545690D0.5040904@ladisch.de>
+	<20141102.182430.2172669108987505623.davem@davemloft.net>
+In-Reply-To: <20141102.182430.2172669108987505623.davem@davemloft.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-PPP-Message-ID: <20141103094329.821732.53561@dehamd003.servertools24.de>
+X-PPP-Vhost: ladisch.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 9:53 AM, Pantelis Antoniou
-<pantelis.antoniou@gmail.com> wrote:
+David Miller wrote:
+>> Kernel code assumes that the PAGE_* values are preprocessor symbols, and
+>> that therefore arch support can be checked for with #ifdef.
+>>
+>> At the moment, sparc64 does not implement any of the symbols checked
+>> for, so these checks happen to work.
+>>
+>> To prevent potential breakage when another #ifdef check is added or when
+>> sparc64 implements another PAGE_ value, make such #ifdef checks work by
+>> adding preprocessor symbols on top of the PAGE_* variables.
+>>
+>> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+>
+> "This change actually doesn't have any effect, and doesn't matter,
+>  so let's make this change."
+>
+> I really don't buy this.
 
-> 3) I’m not very fond of having this being part of the gpio controller. This
-> configuration conceptually has little to do with the gpio controller per se,
-> it is more of a board specific thing. Why not come up with a gpio-hog driver that
-> references GPIOs? That way with a single gpio-hog driver instance you could setup
-> all the GPIO-hogging configuration for all GPIOs on the board, even one that
-> lie on different GPIO controllers.
+At the moment, sparc64 does not support symbols such as PAGE_KERNEL_RO,
+and has no mechanism for arch-independent code to detect this.
+Some code tries anyway:
 
-You have a point. But it's vital that we set up hogs at the same time as the
-gpio_chip is probed, not later, or there may be a race as to who
-gets the GPIO line, and that should be avoided at any cost.
+$ git grep '#ifn\?def PAGE_KERNEL_'
+drivers/base/firmware_class.c:#ifndef PAGE_KERNEL_RO
+drivers/staging/comedi/comedi_buf.c:#ifdef PAGE_KERNEL_NOCACHE
+mm/nommu.c:#ifndef PAGE_KERNEL_EXEC
+mm/vmalloc.c:#ifndef PAGE_KERNEL_EXEC
 
-Yours,
-Linus Walleij
+I don't want to add more such code to the kernel without a guarantee
+that it actually works, or without replacing it with some other kind
+of check that does work.
+
+> I'd also rather the kernel use Kconfig based symbols to detect for
+> arch availability of feature X or Y, assuming things are CPP symbols
+> is very fragile at best.
+
+It is certainly possible to use Kconfig-based symbols.  However, this
+would have its own fragility: adding, e.g., PAGE_KERNEL_SO to an arch
+requires that one remembers to update Kconfig, and if one forgets,
+a check like this:
+
+#ifndef CONFIG_ARCH_HAS_PAGE_KERNEL_RO
+#define PAGE_KERNEL_RO PAGE_KERNEL /* fallback for this code */
+#endif
+
+will not detect the error on sparc64 (if PAGE_KERNEL_RO were a CPP
+symbol, the compiler would complain about the redefinition).
+
+So even if PAGE_KERNEL_RO is a variable, making it into a CPP symbol
+is beneficial.  And once it is a CPP symbol, introducing a separate
+Kconfig-based symbol is not necessary and just increases the chances
+of an error.
+
+
+Regards,
+Clemens
