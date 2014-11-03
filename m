@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802AbaKCR60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:58:26 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47405 "EHLO arroyo.ext.ti.com"
+	id S1753820AbaKCR6g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:58:36 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47433 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144AbaKCR6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:58:22 -0500
-Date: Mon, 3 Nov 2014 11:57:27 -0600
+	id S1752144AbaKCR6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 12:58:32 -0500
+Date: Mon, 3 Nov 2014 11:57:09 -0600
 From: Felipe Balbi <balbi@ti.com>
 To: Guenter Roeck <linux@roeck-us.net>
 CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
@@ -15,28 +15,28 @@ CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
         Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel Mailing List 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 17/47] mfd: tps65910: Register with kernel power-off
+Subject: Re: [PATCH v3 16/47] mfd: tps6586x: Register with kernel power-off
  handler
-Message-ID: <20141103175727.GR27425@saruman>
+Message-ID: <20141103175709.GQ27425@saruman>
 Reply-To: <balbi@ti.com>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
- <1414425354-10359-18-git-send-email-linux@roeck-us.net>
+ <1414425354-10359-17-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="19HmC3QOnaNVzKTI"
+	protocol="application/pgp-signature"; boundary="3wfpuDtTLg8/Vq6g"
 Content-Disposition: inline
-In-Reply-To: <1414425354-10359-18-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1414425354-10359-17-git-send-email-linux@roeck-us.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---19HmC3QOnaNVzKTI
+--3wfpuDtTLg8/Vq6g
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Oct 27, 2014 at 08:55:24AM -0700, Guenter Roeck wrote:
+On Mon, Oct 27, 2014 at 08:55:23AM -0700, Guenter Roeck wrote:
 > Register with kernel power-off handler instead of setting pm_power_off
 > directly. Register with low priority to reflect that the original code
 > only sets pm_power_off if it was not already set.
@@ -45,7 +45,7 @@ On Mon, Oct 27, 2014 at 08:55:24AM -0700, Guenter Roeck wrote:
 > Cc: Lee Jones <lee.jones@linaro.org>
 > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-missed lakml and linux-omap here too
+should be sent to linux-omap and lakml too
 
 > ---
 > v3:
@@ -56,91 +56,89 @@ missed lakml and linux-omap here too
 > - Use define to specify poweroff handler priority
 > - Use dev_warn instead of dev_err
 >=20
->  drivers/mfd/tps65910.c       | 27 ++++++++++++++++++---------
->  include/linux/mfd/tps65910.h |  3 +++
->  2 files changed, 21 insertions(+), 9 deletions(-)
+>  drivers/mfd/tps6586x.c | 31 +++++++++++++++++++++++--------
+>  1 file changed, 23 insertions(+), 8 deletions(-)
 >=20
-> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-> index 7612d89..3c94dbf 100644
-> --- a/drivers/mfd/tps65910.c
-> +++ b/drivers/mfd/tps65910.c
-> @@ -23,6 +23,8 @@
->  #include <linux/irq.h>
->  #include <linux/irqdomain.h>
->  #include <linux/mfd/core.h>
+> diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+> index 8e1dbc4..1e97478 100644
+> --- a/drivers/mfd/tps6586x.c
+> +++ b/drivers/mfd/tps6586x.c
+> @@ -21,10 +21,12 @@
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
 > +#include <linux/notifier.h>
+>  #include <linux/slab.h>
+>  #include <linux/err.h>
+>  #include <linux/i2c.h>
+>  #include <linux/platform_device.h>
 > +#include <linux/pm.h>
 >  #include <linux/regmap.h>
->  #include <linux/mfd/tps65910.h>
 >  #include <linux/of.h>
-> @@ -437,19 +439,20 @@ struct tps65910_board *tps65910_parse_dt(struct i2c=
-_client *client,
->  }
->  #endif
 > =20
-> -static struct i2c_client *tps65910_i2c_client;
-> -static void tps65910_power_off(void)
-> +static int tps65910_power_off(struct notifier_block *this,
+> @@ -133,6 +135,8 @@ struct tps6586x {
+>  	u32			irq_en;
+>  	u8			mask_reg[5];
+>  	struct irq_domain	*irq_domain;
+> +
+> +	struct notifier_block	power_off_nb;
+>  };
+> =20
+>  static inline struct tps6586x *dev_to_tps6586x(struct device *dev)
+> @@ -472,13 +476,18 @@ static const struct regmap_config tps6586x_regmap_c=
+onfig =3D {
+>  	.cache_type =3D REGCACHE_RBTREE,
+>  };
+> =20
+> -static struct device *tps6586x_dev;
+> -static void tps6586x_power_off(void)
+> +static int tps6586x_power_off(struct notifier_block *this,
 > +			      unsigned long unused1, void *unused2)
 >  {
-> -	struct tps65910 *tps65910;
-> -
-> -	tps65910 =3D dev_get_drvdata(&tps65910_i2c_client->dev);
-> +	struct tps65910 *tps65910 =3D container_of(this, struct tps65910,
-> +						 power_off_nb);
-> =20
->  	if (tps65910_reg_set_bits(tps65910, TPS65910_DEVCTRL,
->  			DEVCTRL_PWR_OFF_MASK) < 0)
+> -	if (tps6586x_clr_bits(tps6586x_dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT))
 > -		return;
+> +	struct tps6586x *tps6586x =3D container_of(this, struct tps6586x,
+> +						 power_off_nb);
+> +
+> +	if (tps6586x_clr_bits(tps6586x->dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT))
 > +		return NOTIFY_DONE;
 > =20
->  	tps65910_reg_clear_bits(tps65910, TPS65910_DEVCTRL,
->  			DEVCTRL_DEV_ON_MASK);
+> -	tps6586x_set_bits(tps6586x_dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
+> +	tps6586x_set_bits(tps6586x->dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
 > +
 > +	return NOTIFY_DONE;
 >  }
 > =20
->  static int tps65910_i2c_probe(struct i2c_client *i2c,
-> @@ -505,9 +508,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
->  	tps65910_ck32k_init(tps65910, pmic_plat_data);
->  	tps65910_sleepinit(tps65910, pmic_plat_data);
+>  static void tps6586x_print_version(struct i2c_client *client, int versio=
+n)
+> @@ -575,9 +584,13 @@ static int tps6586x_i2c_probe(struct i2c_client *cli=
+ent,
+>  		goto err_add_devs;
+>  	}
 > =20
-> -	if (pmic_plat_data->pm_off && !pm_power_off) {
-> -		tps65910_i2c_client =3D i2c;
-> -		pm_power_off =3D tps65910_power_off;
-> +	if (pmic_plat_data->pm_off) {
-> +		tps65910->power_off_nb.notifier_call =3D tps65910_power_off;
-> +		tps65910->power_off_nb.priority =3D POWER_OFF_PRIORITY_LOW;
-> +		ret =3D register_power_off_handler(&tps65910->power_off_nb);
+> -	if (pdata->pm_off && !pm_power_off) {
+> -		tps6586x_dev =3D &client->dev;
+> -		pm_power_off =3D tps6586x_power_off;
+> +	if (pdata->pm_off) {
+> +		tps6586x->power_off_nb.notifier_call =3D tps6586x_power_off;
+> +		tps6586x->power_off_nb.priority =3D POWER_OFF_PRIORITY_LOW;
+> +		ret =3D register_power_off_handler(&tps6586x->power_off_nb);
 > +		if (ret)
-> +			dev_warn(&i2c->dev,
+> +			dev_warn(&client->dev,
 > +				 "failed to register power-off handler\n");
 >  	}
 > =20
->  	ret =3D mfd_add_devices(tps65910->dev, -1,
-> @@ -527,6 +534,8 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
+>  	return 0;
+> @@ -594,6 +607,8 @@ static int tps6586x_i2c_remove(struct i2c_client *cli=
+ent)
 >  {
->  	struct tps65910 *tps65910 =3D i2c_get_clientdata(i2c);
+>  	struct tps6586x *tps6586x =3D i2c_get_clientdata(client);
 > =20
-> +	unregister_power_off_handler(&tps65910->power_off_nb);
+> +	unregister_power_off_handler(&tps6586x->power_off_nb);
 > +
->  	tps65910_irq_exit(tps65910);
->  	mfd_remove_devices(tps65910->dev);
-> =20
-> diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-> index 6483a6f..94876c4 100644
-> --- a/include/linux/mfd/tps65910.h
-> +++ b/include/linux/mfd/tps65910.h
-> @@ -905,6 +905,9 @@ struct tps65910 {
->  	/* IRQ Handling */
->  	int chip_irq;
->  	struct regmap_irq_chip_data *irq_data;
-> +
-> +	/* Power-off handling */
-> +	struct notifier_block power_off_nb;
->  };
-> =20
->  struct tps65910_platform_data {
+>  	tps6586x_remove_subdevs(tps6586x);
+>  	mfd_remove_devices(tps6586x->dev);
+>  	if (client->irq)
 > --=20
 > 1.9.1
 >=20
@@ -153,26 +151,26 @@ _client *client,
 --=20
 balbi
 
---19HmC3QOnaNVzKTI
+--3wfpuDtTLg8/Vq6g
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUV8IHAAoJEIaOsuA1yqRE6DQQAJfZmeYQX2oBzWdgs4gDi19r
-3kdBZ8+HFTeszmKLZvlSe0rcWw+/UM6YmZAq/hXWFgw4vW90DffqpjsmvRXtU/XA
-8/V/Pauh5Os83nLY4AITjiFyWykqplepDn5c9daiSPmijTIPyxr461pckJBYx2Zl
-G9NKI/3X86Bc9ELEZG2dHnJohrpbcauJNkfmBZwyFlmcRsjsXo8mG7ptJkXaIpbZ
-dFij/RtHoDoL2TV57Nqqs1V041c6FAOjcZK1j+ayCtjkk4RcDbfQbYEFhNhFFtg7
-gXxKzFavxIW/xaMLeuJ4mWnJLniDIZK2frrm10yXBzDb70WmAR87qQS/URZxDmYi
-mDSyPbWU4/T3YvMGtFDRwdOAip4k1DCxSOcTTqV1xfl00YdIO5a+/jI7S1iEDW20
-RSSq5nzZ8/HRUkz1Wa6o3bIfEuOe1bDCYAEsP2XHKsSe0nSAooXM3T07tHKQT4Fd
-kyPIq1VDekTiE3XBX3bdbfXKw4DsPbsMnacZ3Pzq+T8RZ53bPEdCAEWbnb0cjhVO
-jvzvtGDzTHWzM+svqXdDIbnkJQ4NGMcYViiXQURJZp5qq2hbq8QJWr95wVGK2YSi
-wTl+3wFOsi1H+t+ykiLn+fMdw61d86mGWUTcxCPIbCkkEQopRA0el5RZ7fhSqLV+
-gCP6f5S8sw0a3toAPxdy
-=TyJs
+iQIcBAEBAgAGBQJUV8H1AAoJEIaOsuA1yqREg40P/i2+qmArZQt9UZ+LpyN7XZID
+6Q2Gjpg2UmjRQvEN99idDqmlkb1uWSBBl6zsjqt2wJVkv16R/3OIM+shO1+aNMo8
+5tciWHIB2VoU4yebPpT8tv4z7TFlNIOScq9IV9fTSZu8vs2hlzSXSJ7pRSw7PsYh
+szWhGnG+FlmfAJRztyvr/a3a75Xi2feHA072vTxd5xxBFNsn48pOt3PEZH07l3YN
+jNJLoMMESpXEG7w5fysMfVvuOqM7w+ZOxDrG8cU8lUM2POkmCcIxcWJkA7lblji5
+bg+0UurmBD9uaFzLC2N+spuvfg8UkVUhnXDOhRQux7d2LK92FGJB+S/ddobTM+Od
+2UZXEzv47XXV2DEvvZaF79u7WGdz/cq+jrujr2ilqJTJ76kGmzjwbMYhnHIJ1nCM
+34ZJwnApB7h2t5XMEp+zqM++YGMPL8WqkR6eGbhl9rRunf49wwtUO3eK4YmFo9ZG
+VR2Euymlr4dHxEniLGbZ7zyYcON1TAorLovXEGyA1BOzpPWqL5MSKucj2onnZwRi
+SjZVd9CpF1lKWpxFGxY5dGxcj5Dxod450rNf5CoZV2hlrWQt+ReuWk+lIpBLdBL+
+QeHB6/0/OxbF3YNROqJgrQ5hy81PEogrSdsU7g2rKIg07vUnDN+wlGiCkAl99M7Y
+RAqyl3aJIx3RiMqepeaB
+=nHqS
 -----END PGP SIGNATURE-----
 
---19HmC3QOnaNVzKTI--
+--3wfpuDtTLg8/Vq6g--
