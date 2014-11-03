@@ -1,115 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaKCLKd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:10:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48379 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478AbaKCLK2 (ORCPT
+	id S1751764AbaKCLMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:12:52 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:14209 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaKCLMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 06:10:28 -0500
-Date: Mon, 3 Nov 2014 02:58:55 -0800
-From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-8cda974ab278dd8d4a9024085535f71175ddf38d@git.kernel.org>
-Cc: rdunlap@infradead.org, sebastian@breakpoint.cc, benh@kernel.crashing.org,
-        konrad.wilk@oracle.com, jiang.liu@linux.intel.com, mingo@kernel.org,
-        bhelgaas@google.com, hpa@zytor.com, prarit@redhat.com,
-        linux-kernel@vger.kernel.org, bp@alien8.de, rjw@rjwysocki.net,
-        yinghai@kernel.org, joro@8bytes.org, tony.luck@intel.com,
-        gregkh@linuxfoundation.org, tglx@linutronix.de,
-        grant.likely@linaro.org
-Reply-To: tglx@linutronix.de, grant.likely@linaro.org, yinghai@kernel.org,
-        joro@8bytes.org, rjw@rjwysocki.net, gregkh@linuxfoundation.org,
-        tony.luck@intel.com, hpa@zytor.com, prarit@redhat.com,
-        linux-kernel@vger.kernel.org, bp@alien8.de, rdunlap@infradead.org,
-        sebastian@breakpoint.cc, konrad.wilk@oracle.com,
-        jiang.liu@linux.intel.com, benh@kernel.crashing.org,
-        bhelgaas@google.com, mingo@kernel.org
-In-Reply-To: <1414387308-27148-10-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-10-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Split out alloc_ioapic_save_registers()
-Git-Commit-ID: 8cda974ab278dd8d4a9024085535f71175ddf38d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 3 Nov 2014 06:12:49 -0500
+Message-ID: <5457632C.5020002@atmel.com>
+Date: Mon, 3 Nov 2014 12:12:44 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Vinod Koul <vinod.koul@intel.com>, <dmaengine@vger.kernel.org>
+CC: <lars@metafoo.de>, Russell King <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= <antoine@free-electrons.com>
+Subject: Re: [PATCH v4 02/58] serial: at91: Use dmaengine_slave_config API
+References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com> <1414531573-18807-3-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1414531573-18807-3-git-send-email-maxime.ripard@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8cda974ab278dd8d4a9024085535f71175ddf38d
-Gitweb:     http://git.kernel.org/tip/8cda974ab278dd8d4a9024085535f71175ddf38d
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Mon, 27 Oct 2014 13:21:39 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 3 Nov 2014 11:56:07 +0100
+On 28/10/2014 22:25, Maxime Ripard :
+> We are removing the dmaengine_device_control API, that shouldn't even have been
+> exposed in the first place. Change the callers to use the proper API.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-x86, irq: Split out alloc_ioapic_save_registers()
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Split out alloc_ioapic_save_registers() from early_irq_init(),
-so it could be used for ioapic hotplug later.
+Thanks, Maxime. Do I have to carry the patch myself or is it part of a
+series?
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1414387308-27148-10-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/apic/io_apic.c | 22 +++++++++++++++-------
- 1 file changed, 15 insertions(+), 7 deletions(-)
+Bye,
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 1183d54..acaee90 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -237,6 +237,19 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
- 	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
- }
- 
-+static void alloc_ioapic_saved_registers(int idx)
-+{
-+	size_t size;
-+
-+	if (ioapics[idx].saved_registers)
-+		return;
-+
-+	size = sizeof(struct IO_APIC_route_entry) * ioapics[idx].nr_registers;
-+	ioapics[idx].saved_registers = kzalloc(size, GFP_KERNEL);
-+	if (!ioapics[idx].saved_registers)
-+		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
-+}
-+
- int __init arch_early_irq_init(void)
- {
- 	struct irq_cfg *cfg;
-@@ -245,13 +258,8 @@ int __init arch_early_irq_init(void)
- 	if (!nr_legacy_irqs())
- 		io_apic_irqs = ~0UL;
- 
--	for_each_ioapic(i) {
--		ioapics[i].saved_registers =
--			kzalloc(sizeof(struct IO_APIC_route_entry) *
--				ioapics[i].nr_registers, GFP_KERNEL);
--		if (!ioapics[i].saved_registers)
--			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
--	}
-+	for_each_ioapic(i)
-+		alloc_ioapic_saved_registers(i);
- 
- 	/*
- 	 * For legacy IRQ's, start with assigning irq0 to irq15 to
+> ---
+>  drivers/tty/serial/atmel_serial.c | 10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index edde3eca055d..10e6b382d68f 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -862,9 +862,8 @@ static int atmel_prepare_tx_dma(struct uart_port *port)
+>  	config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+>  	config.dst_addr = port->mapbase + ATMEL_US_THR;
+>  
+> -	ret = dmaengine_device_control(atmel_port->chan_tx,
+> -					DMA_SLAVE_CONFIG,
+> -					(unsigned long)&config);
+> +	ret = dmaengine_slave_config(atmel_port->chan_tx,
+> +				     &config);
+>  	if (ret) {
+>  		dev_err(port->dev, "DMA tx slave configuration failed\n");
+>  		goto chan_err;
+> @@ -1026,9 +1025,8 @@ static int atmel_prepare_rx_dma(struct uart_port *port)
+>  	config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+>  	config.src_addr = port->mapbase + ATMEL_US_RHR;
+>  
+> -	ret = dmaengine_device_control(atmel_port->chan_rx,
+> -					DMA_SLAVE_CONFIG,
+> -					(unsigned long)&config);
+> +	ret = dmaengine_slave_config(atmel_port->chan_rx,
+> +				     &config);
+>  	if (ret) {
+>  		dev_err(port->dev, "DMA rx slave configuration failed\n");
+>  		goto chan_err;
+> 
+
+
+-- 
+Nicolas Ferre
