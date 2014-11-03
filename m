@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaKCUsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 15:48:08 -0500
+	id S1754059AbaKCUsS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 15:48:18 -0500
 Received: from mga14.intel.com ([192.55.52.115]:55524 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753760AbaKCUr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 15:47:57 -0500
+	id S1753847AbaKCUsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 15:48:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
-   d="scan'208";a="616331439"
+   d="scan'208";a="616331448"
 From: Stephanie Wallick <stephanie.s.wallick@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         "Sean O. Stalley" <sean.stalley@intel.com>
-Subject: [PATCH 05/10] added media specific (MS) TCP drivers
-Date: Mon,  3 Nov 2014 12:42:52 -0800
-Message-Id: <1415047377-3139-6-git-send-email-stephanie.s.wallick@intel.com>
+Subject: [PATCH 08/10] added media agnostic (MA) USB data packet handling
+Date: Mon,  3 Nov 2014 12:42:55 -0800
+Message-Id: <1415047377-3139-9-git-send-email-stephanie.s.wallick@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415047377-3139-1-git-send-email-stephanie.s.wallick@intel.com>
 References: <MA USB drivers>
@@ -24,54 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where we handle media specific packets and transport. The MS driver
-interfaces with a media agnostic (MA) driver via a series of transfer pairs.
-Transfer pairs consist of a set of functions to pass MA USB packets back
-and forth between MA and MS drivers. There is one transfer pair per device
-endpoint and one transfer pair for control/management traffic. When the MA
-driver needs to send an MA USB packet, it hands the packet off to the MS
-layer where the packet is converted into an MS form and sent via TCP over
-the underlying ethernet or wireless medium. When the MS driver receives a
-packet, it converts it into an MA USB packet and hands it off the the MA
-driver for handling.
-
-In addition, the MS driver provides an interface to inititate connection events.
-Because there are no physical MA USB ports in an MA USB host, the host must be
-notified via software when a device is connected.
-
-Lastly, the MS driver contains a number of ioctl functions that are used by a
-utility to adjust medium-related driver parameters and connect or disconnect the
-MA USB host and device drivers.
+The MA USB Specification outlines packet types and a protocol for
+bulk and interrupt transfers. This is where we implement that protocol.
+MA USB transfers are initiated by the host via a TransferRequest packet.
+The host then either sends data to the device via subsequent
+TransferRequest packets (OUT transfer) or receives data from the device
+via TransferResponse packets (IN transfer). Each data transfer is
+identified by a Request ID number that increments up for each new transfer.
+One URB maps to one MA USB transfer. A transfer can consist of one or
+more MA USB packets depending on total transfer size. Each MA USB packet
+is assigned a Sequence Number with sequence numbers incrementing up for
+each new packet. The host sends a TransferAck packet to acknowledge the
+end of a transfer or when requested to do so by the device.
 
 Signed-off-by: Sean O. Stalley <sean.stalley@intel.com>
 Signed-off-by: Stephanie Wallick <stephanie.s.wallick@intel.com>
 ---
- drivers/staging/mausb/drivers/mausb_ioctl.c      | 373 +++++++++++++++++++
- drivers/staging/mausb/drivers/mausb_ioctl.h      |  99 +++++
- drivers/staging/mausb/drivers/mausb_msapi.c      | 110 ++++++
- drivers/staging/mausb/drivers/mausb_msapi.h      | 232 ++++++++++++
- drivers/staging/mausb/drivers/mausb_tcp-device.c | 147 ++++++++
- drivers/staging/mausb/drivers/mausb_tcp-host.c   | 144 ++++++++
- drivers/staging/mausb/drivers/mausb_tcp.c        | 446 +++++++++++++++++++++++
- drivers/staging/mausb/drivers/mausb_tcp.h        | 129 +++++++
- 8 files changed, 1680 insertions(+)
- create mode 100644 drivers/staging/mausb/drivers/mausb_ioctl.c
- create mode 100644 drivers/staging/mausb/drivers/mausb_ioctl.h
- create mode 100644 drivers/staging/mausb/drivers/mausb_msapi.c
- create mode 100644 drivers/staging/mausb/drivers/mausb_msapi.h
- create mode 100644 drivers/staging/mausb/drivers/mausb_tcp-device.c
- create mode 100644 drivers/staging/mausb/drivers/mausb_tcp-host.c
- create mode 100644 drivers/staging/mausb/drivers/mausb_tcp.c
- create mode 100644 drivers/staging/mausb/drivers/mausb_tcp.h
+ drivers/staging/mausb/drivers/mausb_tx-device.c |  847 ++++++++++++++++
+ drivers/staging/mausb/drivers/mausb_tx-host.c   | 1211 +++++++++++++++++++++++
+ drivers/staging/mausb/drivers/mausb_tx.c        |  318 ++++++
+ drivers/staging/mausb/drivers/mausb_tx.h        |  129 +++
+ 4 files changed, 2505 insertions(+)
+ create mode 100644 drivers/staging/mausb/drivers/mausb_tx-device.c
+ create mode 100644 drivers/staging/mausb/drivers/mausb_tx-host.c
+ create mode 100644 drivers/staging/mausb/drivers/mausb_tx.c
+ create mode 100644 drivers/staging/mausb/drivers/mausb_tx.h
 
-diff --git a/drivers/staging/mausb/drivers/mausb_ioctl.c b/drivers/staging/mausb/drivers/mausb_ioctl.c
+diff --git a/drivers/staging/mausb/drivers/mausb_tx-device.c b/drivers/staging/mausb/drivers/mausb_tx-device.c
 new file mode 100644
-index 0000000..0c6c6bd
+index 0000000..a14df54
 --- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_ioctl.c
-@@ -0,0 +1,373 @@
-+/* Name:         mausb_ioctl.c
-+ * Description:  ioctl functions for MA USB media specific driver
++++ b/drivers/staging/mausb/drivers/mausb_tx-device.c
+@@ -0,0 +1,847 @@
++/* Name:        mausb_tx_device.c
++ * Description: implements MA USB transfers on device side
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -103,7 +89,7 @@ index 0000000..0c6c6bd
 + * modification, are permitted provided that the following conditions
 + * are met:
 + *
-+    * Redistributions of source code must retain the above copyright
++   * Redistributions of source code must retain the above copyright
 +      notice, this list of conditions and the following disclaimer.
 +    * Redistributions in binary form must reproduce the above copyright
 +      notice, this list of conditions and the following disclaimer in
@@ -126,553 +112,805 @@ index 0000000..0c6c6bd
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
 +
-+#include <linux/ioctl.h>
-+#include <linux/kernel.h>
-+#include <linux/fs.h>
-+#include <linux/kernel.h>
-+#include <linux/fs.h>
-+#include <linux/usb/gadget.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <asm/uaccess.h>
++#define DEBUG
++
 +#include "mausb_hcd.h"
 +#include "mausb_udc.h"
-+#include "mausb_ioctl.h"
++#include "mausb_pkt.h"
++#include "mausb_tx.h"
 +
-+/* #define MAUSB_PRINT_IOCTL_MAGIC */
++#include <linux/kthread.h>
 +
-+static int ma_open;
-+static char message[BUFFER];
-+static char *message_point;
-+
-+/**
-+ * This function is used to send a message to the user, in other words, the
-+ * calling process. It basically copies the message one byte at a time.
-+ *
-+ * @msg:	The message to be sent to the user.
-+ * @buffer:	The buffer in which to put the message. This buffer was given to
-+ *	    	us to fill.
-+ */
-+void to_user(char *msg, long unsigned int buffer)
++int device_transfer_timeout(void *data)
 +{
-+	int length = (int)strlen(msg);
-+	int bytes = 0;
++	struct mausb_host_ep		*ep = (struct mausb_host_ep *) data;
++	struct mausb_udc		*udc = mausb_host_ep_to_maudc(ep);
 +
-+	while (length && *msg) {
-+		put_user(*(msg++), (char *)buffer++);
-+		length--;
-+		bytes++;
++	while (!kthread_should_stop()) {
++		/*
++		 * make sure actual transfer timeout (i.e. not thread
++		 * setup)
++		 */
++		if (ep->tx_timed_out) {
++			if (ep->state.retry_counter > 0) {
++				maudc_dbg(udc, "%s: device timed out,"
++				      "  resending packet %i\n",
++				       __func__, ep->state.seq_number);
++
++				device_OUT_send_txResp(
++					&ep->active_transfer->state,
++					&ep->state,
++					ep->state.active_request_id,
++					ep->state.seq_number,
++					SUCCESS,
++					false, false, false);
++
++				ep->state.retry_counter--;
++			} else {
++				/*
++				 * TODO: start ping protocol per 5.2.2, if
++				 * successful reset timer and retries. For now
++				 * we just treat as if failed.
++				 */
++				ep->active_transfer->state.transfer_error =
++					true;
++				return -ETIMEDOUT;
++			}
++
++			ep->tx_timed_out = false;
++		}
++
++		/* put thread to sleep to wait for next timeout event */
++		wait_event_interruptible(ep->host_ep_wq,
++			kthread_should_stop() || ep->tx_timed_out);
 +	}
 +
-+	put_user('\0', (char *)buffer + bytes);
++	return 0;
 +}
 +
++
++/*-------------------------IN transfer ------------------------*/
++
 +/**
-+ * This function is used to open the device file in order to read/write
-+ * from/to it.
++ * Device-side IN transfer initialization process.
 + *
-+ * @inode:	Struct with various information that is passed in when this
-+ *		function is called. We don't need to use it for our purposes.
-+ * @file:	The file to be opened.
++ * @ tx_state:	Transfer state to be initialized.
++ * @ ep_state:	Endpoint state to be initialized.
++ * @ tx_req:	TransferReq packet from host that intiated transfer.
++ *
++ * Called every time a transferReq packet is received. Initializes transfer
++ * management variables.
 + */
-+static int mausb_open(struct inode *inode, struct file *file)
++void device_init_IN_transfer(struct mausb_transfer_state *tx_state,
++		struct mausb_ep_state *ep_state, struct mausb_pkt *tx_req)
 +{
-+	if (ma_open)
-+		return -EBUSY;
-+	ma_open++;
-+	message_point = message;
-+	try_module_get(THIS_MODULE);
++	struct mausb_host_ep *ep = mausb_state_to_ep(ep_state);
++
++	tx_state->transfer_error = false;
++	tx_state->transfer_complete = false;
++	tx_state->rem_size = le32_to_cpu(tx_req->data->remaining_size_credit);
++
++	ep_state->keep_alive_timer = MAUSB_TRANSFER_KEEP_ALIVE;
++	ep_state->retry_counter = MAUSB_BULK_TRANSFER_RETRIES;
++	ep_state->earliest_unacked = le32_to_cpu(tx_req->data->seq_num);
++	ep_state->active_request_id = tx_req->data->req_id;
++	ep_state->request_id++;
++
++	ep->actual_length = 0;
++
++	/* free old buffer if not previously freed */
++	if (ep->buffer)
++		kfree(ep->buffer);
++
++	/* alocate new buffer for this transfer */
++	ep->buffer = kzalloc(tx_state->rem_size, GFP_ATOMIC);
++}
++
++/* Determines if packet request id or sequence number is outside of the
++ * acceptable range
++ *
++ * Returns true if the packet sequence number or request id is invalid,
++ * otherwise returns false.
++ */
++bool is_invalid_IN_request(struct mausb_ep_state *ep_state,
++		struct mausb_pkt *tx_req)
++{
++	u8			r = tx_req->data->req_id;
++	u32			SN = le32_to_cpu(tx_req->data->seq_num);
++	bool			invalid = false;
++	struct mausb_udc	*udc = mausb_host_ep_to_maudc(
++					mausb_state_to_ep(ep_state));
++
++	if ((ep_state->earliest_request_id - MAUSB_HALF_REQ_ID) <= r) {
++		if (r < ep_state->earliest_request_id) {
++			maudc_err(udc, "%s: too many outstanding requests\n",
++				__func__);
++			invalid = true;
++		}
++	}
++
++	if ((ep_state->earliest_unacked - MAUSB_HALF_SEQ_NUM) <= SN) {
++		if (SN < ep_state->earliest_unacked) {
++			maudc_err(udc, "%s: too many unacknowledged packets\n",
++				__func__);
++			invalid = true;
++		}
++	}
++
++	if (ep_state->seq_number < SN) {
++		if (SN < (ep_state->seq_number + MAUSB_HALF_SEQ_NUM)) {
++			maudc_err(udc, "%s: too many outstanding sequence"
++			       " numbers\n", __func__);
++			invalid = true;
++		}
++
++	}
++
++	return invalid;
++}
++
++/*
++ * transferReq reception process outlined in MA USB spec.
++ */
++int device_IN_rcvd_txReq(struct mausb_ep_state *ep_state,
++		struct mausb_transfer_state *tx_state,
++		struct mausb_pkt *tx_req)
++{
++	u8			r = tx_req->data->req_id;
++	u32			SN  = le32_to_cpu(tx_req->data->seq_num);
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_udc	*udc = mausb_host_ep_to_maudc(ep);
++
++	if (is_invalid_IN_request(ep_state, tx_req)) {
++		mausb_drop_packet(ep, tx_req);
++		device_IN_send_null_txResp(ep, ep_state->request_id,
++					   INVALID_REQUEST);
++	}
++
++	ep_state->earliest_unacked = SN;
++
++	if (tx_state->eot_detected && !tx_state->transfer_error) {
++		if (tx_state->last_transfer_sn < SN)
++			tx_state->transfer_complete = true;
++		else
++		ep_state->earliest_request_id = r;
++	}
++
++	if (r == ep_state->active_request_id && ep_state->delayed) {
++		maudc_dbg(udc, "%s: transfer %i is delayed, sending txResp with"
++		      " status = TRANSFER_PENDING\n", __func__, r);
++		device_IN_send_null_txResp(ep, r, TRANSFER_PENDING);
++	}
++
++	if (r == ep_state->request_id)
++		device_init_IN_transfer(tx_state, ep_state, tx_req);
++
++	return 0;
++}
++
++/* transferAck packet reception process for device side.
++ *
++ * @tx_state:	Transfer state variables for associated transfer.
++ * @ep_state:	Endpoint state variables for associated transfer.
++ * @tx_ack:	TransferAck packet being received.
++ *
++ * Called when device side driver receives a transferAck packet. Caller should
++ * verify that the request_id in the transferAck packet is valid before
++ * calling this function.
++ */
++int device_IN_ack_rcvd(struct mausb_transfer_state *tx_state,
++		struct mausb_ep_state *ep_state, struct mausb_pkt *tx_ack)
++{
++	int			ret = 0;
++	u8			r = tx_ack->data->req_id;
++	u8			u = ep_state->active_request_id;
++	u32			SN = le32_to_cpu(tx_ack->data->seq_num);
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_udc	*udc = mausb_host_ep_to_maudc(ep);
++	bool			tx_complete = (!tx_state->transfer_error)
++					&& (tx_state->last_transfer_sn < SN);
++	bool			tx_complete_with_error =
++					(tx_state->transfer_error) && (u == r);
++	unsigned long		irq_flags = 0;
++
++	if (is_invalid_IN_request(ep_state, tx_ack))
++		tx_ack->data->common.pkt_status = DROPPED_PACKET;
++
++	switch (tx_ack->data->common.pkt_status) {
++	case DROPPED_PACKET:
++		maudc_dbg(udc, "%s: status = DROPPED_PACKET\n", __func__);
++		mausb_drop_packet(ep, tx_ack);
++		break;
++	case TRANSFER_PENDING:
++		maudc_dbg(udc, "%s: status = TRANSFER_PENDING\n", __func__);
++		if (r != ep_state->active_request_id)
++			mausb_drop_packet(ep, tx_ack);
++		/* else can start power saving measures */
++		break;
++	case MISSING_SEQUENCE_NUMBER:
++		maudc_dbg(udc, "%s: status = MISSING_SEQUENCE_NUMBER\n",
++			__func__);
++		mausb_resend_multi_packets(ep, &ep->resp_list,
++			le32_to_cpu(tx_ack->data->seq_num), irq_flags);
++		break;
++	case SUCCESS:
++		maudc_dbg(udc, "%s: status = SUCCESS\n", __func__);
++		ep_state->earliest_unacked = SN + 1;
++
++		if (tx_state->eot_detected) {
++			if (tx_complete || tx_complete_with_error)
++				tx_state->transfer_complete = true;
++			else
++				ep_state->earliest_request_id = u;
++
++			mausb_cleanup_ma_packets(ep,
++				le32_to_cpu(tx_ack->data->seq_num),
++				tx_ack->data->req_id);
++			kfree(ep->buffer);
++		}
++		break;
++	default:
++		break;
++	}
++
++	return ret;
++}
++
++/* Submit a transferResp packet to host with no payload (used for errors).
++ *
++ * Per spec, sequence number field in a null transferResp packet is always
++ * reserved and set to 0
++ */
++int device_IN_send_null_txResp(struct mausb_host_ep *ep, u8 req_id, int status)
++{
++	struct mausb_pkt		*tx_resp;
++	struct mausb_transfer_state	*tx_state = &ep->active_transfer->state;
++
++	tx_resp = mausb_create_dp(NULL, ep->active_transfer, MAUSB_IN,
++		MAUSB_DEV, GFP_ATOMIC);
++
++	if (!tx_resp)
++		return -ENOMEM;
++
++	list_add_tail(&tx_resp->pkt_list, &ep->resp_list);
++
++	mausb_fill_pkt_ep(tx_resp, ep);
++
++	tx_resp->data->common.pkt_type = TransferResp;
++	tx_resp->data->req_id = req_id;
++	tx_resp->data->seq_num = 0;
++	tx_resp->buffer_length = 0;
++	tx_resp->data->remaining_size_credit = cpu_to_le32(tx_state->rem_size);
++	tx_resp->data->common.pkt_status = status;
++	tx_resp->common->length = cpu_to_le32(mausb_pkt_length(tx_resp));
++
++	mausb_transfer_data_pkt(tx_resp, ep, GFP_ATOMIC);
 +
 +	return 0;
 +}
 +
 +/**
-+ * This function is used to close the device file.
-+ *
-+ * @inode:	Struct with various information that is passed in when this
-+ *		function is called. We don't need to use it for our purposes.
-+ * @file:	The file to be closed.
++ * Submit a transferResp packet with payload to host (normal data transfer).
 + */
-+static int mausb_release(struct inode *inode, struct file *file)
++int device_IN_send_txResp_with_payload(struct mausb_host_ep *ep)
 +{
-+	ma_open--;
-+	module_put(THIS_MODULE);
++	int				payload = 0;
++	int				max_buffer_length = 0;
++	int				ep_rem_size = ep->actual_length;
++	struct mausb_ep_state		*ep_state = &ep->state;
++	struct mausb_transfer_state	*tx_state = &ep->active_transfer->state;
++	struct mausb_pkt		*tx_resp;
++	struct mausb_udc		*udc = mausb_host_ep_to_maudc(ep);
++
++	while (ep_rem_size > 0 || ep_state->seq_number == 0)  {
++
++		tx_resp = mausb_create_dp(NULL, ep->active_transfer, MAUSB_IN,
++					  MAUSB_DEV, GFP_ATOMIC);
++
++		if (!tx_resp)
++			return -ENOMEM;
++
++		list_add_tail(&tx_resp->pkt_list, &ep->resp_list);
++
++		mausb_fill_pkt_ep(tx_resp, ep);
++
++		tx_resp->data->common.pkt_type = TransferResp;
++		tx_resp->data->req_id = ep_state->active_request_id;
++		tx_resp->data->seq_num = cpu_to_le32(ep_state->seq_number);
++		tx_resp->data->remaining_size_credit =
++			cpu_to_le32(tx_state->rem_size);
++
++		max_buffer_length =
++			MAUSB_MAX_PACKET_SIZE - sizeof(tx_resp->data);
++
++		if (max_buffer_length <= 0) {
++			maudc_err(udc, "%s: packet buffer error: length"
++			       " = %i\n", __func__, max_buffer_length);
++		} else if (tx_state->rem_size <= 0) {
++			maudc_err(udc, "%s: packet buffer error: rem_size"
++			       " = %i\n", __func__, tx_state->rem_size);
++			ep->buffer = NULL;
++		} else {
++			payload = min_t(int, max_buffer_length,
++					ep_rem_size);
++		}
++
++		tx_resp->buffer = ep->buffer;
++		tx_resp->buffer_length = payload;
++		tx_resp->common->length = cpu_to_le16(mausb_pkt_length(tx_resp));
++
++		/* note: setting ARQ flag for error is optional */
++		if (tx_state->transfer_error) {
++			maudc_err(udc, "%s: transfer error with %i bytes "
++			       "remaining\n", __func__, tx_state->rem_size);
++
++			tx_resp->data->eps_tflags |= MAUSB_PKT_TFLAG_EOT;
++			tx_resp->data->eps_tflags |= MAUSB_PKT_TFLAG_ARQ;
++			tx_resp->data->common.pkt_status = UNSUCCESSFUL;
++
++			/*
++			 * TODO: take corrective action - e.g. clear all
++			 * transfers and restart endpoint
++			 */
++		}
++
++		tx_state->rem_size -= payload;
++		ep_rem_size -= payload;
++		/* note: setting ARQ flag for completion is optional */
++		if (tx_state->rem_size == 0 || ep_rem_size == 0) {
++			tx_resp->data->eps_tflags |= MAUSB_PKT_TFLAG_EOT;
++			tx_resp->data->eps_tflags |= MAUSB_PKT_TFLAG_ARQ;
++			tx_resp->data->common.pkt_status = SUCCESS;
++
++			ep_state->active_request_id++;
++		}
++
++		maudc_dbg(udc, "%s: sending transferResp packet with sequence"
++			" number %i for tranfer %i with %i bytes\n", __func__,
++			le32_to_cpu(tx_resp->data->seq_num),
++			le32_to_cpu(tx_resp->data->req_id), payload);
++
++		mausb_transfer_data_pkt(tx_resp, ep, GFP_ATOMIC);
++
++		ep_state->seq_number++;
++
++	}
 +
 +	return 0;
 +}
 +
-+/**
-+ * This function is used to read from the device file. From the perspective of
-+ * the device, the user is reading information from us. This is one of the
-+ * entry points to this module.
-+ *
-+ * @file:	The device file. We don't use it directly, but it's passed in.
-+ * @buffer:	The buffer to put the message into.
-+ * @length:	The max length to be read.
-+ * @offset:	File offset, which we don't use but it is passed in nontheless.
-+ */
-+static ssize_t mausb_read(struct file *file, char __user *buffer,
-+		size_t length, loff_t *offset)
-+{
-+	int bytes_read = 0;
++/*------------------ protocol-managed OUT transfer --------------------*/
 +
-+	if (*message_point == 0)
++bool should_drop_OUT_txReq(struct mausb_ep_state *ep_state,
++		struct mausb_transfer_state *tx_state, struct mausb_pkt *tx_req)
++{
++	u8			r = tx_req->data->req_id;
++	u32			SN = le32_to_cpu(tx_req->data->seq_num);
++	int			payload_size = tx_req->buffer_length;
++	int			status = SUCCESS;
++	bool			drop = false;
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_udc	*udc = mausb_host_ep_to_maudc(ep);
++
++	if (SN > ep_state->seq_number) {
++		maudc_err(udc, "%s: sequence number %i is too large "
++			"(expected < %i)\n", __func__, SN,
++			ep_state->seq_number);
++		drop = true;
++		status = MISSING_SEQUENCE_NUMBER;
++	} else if (SN < ep_state->seq_number) {
++		/* per spec, don't have to send response for this case */
++		maudc_err(udc, "%s: sequence number %i is too small "
++			"(expected >= %i)\n", __func__, SN,
++			ep_state->seq_number);
++		drop = true;
++	} else if (r < ep_state->earliest_request_id) {
++		maudc_err(udc, "%s: request ID %i is too small "
++			"(expected > %i)\n", __func__, r,
++			ep_state->earliest_request_id);
++		drop = true;
++		status = INVALID_REQUEST;
++	} else if (r > ep_state->request_id) {
++		/* account for wraparound */
++		if (ep_state->request_id != 0 && r != MAUSB_MAX_REQ_ID) {
++			maudc_err(udc, "%s: request ID %i is too large "
++				"(expected < %i)\n", __func__, r,
++				ep_state->request_id);
++			drop = true;
++			status = INVALID_REQUEST;
++		}
++	} else if ((payload_size + ep_state->occupancy)
++			> ep_state->rx_buf_size) {
++		maudc_err(udc, "%s: payload (%i bytes) is too large for buffer"
++			" (%i bytes)\n", __func__, payload_size,
++			ep_state->occupancy);
++		drop = true;
++		status = TRANSFER_DATA_BUFFER_ERROR;
++	}
++
++	/*
++	 * send txResp to host with appropriate status if txReq is going to
++	 * get dropped
++	 */
++	if (status) {
++		device_OUT_send_txResp(tx_state, ep_state,
++			ep_state->request_id, ep_state->seq_number, status,
++			false, false, false);
++	}
++
++	return drop;
++}
++
++/**
++ * Handles receipt of a transferRequest packet.
++ *
++ * @tx_state: State variables for associated transfer.
++ * @ep_state: State variables for associated device endpoint.
++ * @tx_req:   TransferRequest packet being received.
++ */
++int device_OUT_txReq_rcvd(struct mausb_transfer_state *tx_state,
++		struct mausb_ep_state *ep_state, struct mausb_pkt *tx_req)
++{
++	u8			req_id = tx_req->data->req_id;
++	u32			SN = le32_to_cpu(tx_req->data->seq_num);
++	int			ret = 0;
++	int			payload_size = tx_req->buffer_length;
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_udc	*udc = mausb_host_ep_to_maudc(ep);
++
++	maudc_dbg(udc, "%s: received transferReq packet %i for transfer %i\n",
++		__func__, SN, req_id);
++
++	if (should_drop_OUT_txReq(ep_state, tx_state, tx_req)) {
++		maudc_err(udc, "%s: dropping packet %i\n", __func__, SN);
++		mausb_drop_packet(ep, tx_req);
 +		return 0;
-+	while (length && *message_point) {
-+		put_user(*(message_point++), buffer++);
-+		length--;
-+		bytes_read++;
 +	}
 +
-+	return bytes_read;
++	/* start new transfer */
++	if (req_id == (ep_state->request_id)) {
++		tx_state->transfer_error = false;
++		tx_state->transfer_complete = false;
++		tx_state->eot_detected = false;
++		tx_state->rem_size =
++			le32_to_cpu(tx_req->data->remaining_size_credit);
++		tx_state->payload_size = 0;
++		ep->active_transfer->transfer_size = tx_state->rem_size;
++		ep_state->active_request_id = req_id;
++		INIT_LIST_HEAD(&ep->req_list);
++		INIT_LIST_HEAD(&ep->resp_list);
++
++		ep->actual_length = 0;
++
++		ep_state->request_id =
++			mausb_req_id_add(ep_state->request_id, 1);
++	}
++
++	ep->buffer = tx_req->buffer;
++	ep_state->occupancy += payload_size;
++	ret = device_OUT_deliver_payload(tx_req, ep_state, tx_state);
++	ep_state->occupancy -= payload_size;
++
++	ep_state->seq_number++;
++
++	return 0;
 +}
 +
 +/**
-+ * This function is used to write to the device file. From the perspective of
-+ * the device, the user is writing information to us. This is one of the
-+ * entry points to this module.
-+ *
-+ * @file:	The device file. We don't use it directly, but it's passed in.
-+ * @buffer:	The buffer that holds the message.
-+ * @length:	The length of the message to be written.
-+ * @offset:	File offset, which we don't use but it is passed in nontheless.
++ * Transmits a transferReq or transferAck packet.
 + */
-+static ssize_t mausb_write(struct file *file, const char __user *buffer,
-+		size_t length, loff_t *offset)
++int device_OUT_send_txResp(struct mausb_transfer_state *tx_state,
++		struct mausb_ep_state *ep_state, u32 req_id, u32 seq_num,
++		int status, bool retry, bool eot, bool arq)
 +{
-+	int i;
++	struct mausb_host_ep *ep = mausb_state_to_ep(ep_state);
++	struct mausb_pkt *tx_resp = mausb_create_dp(NULL, ep->active_transfer,
++				     MAUSB_OUT, MAUSB_DEV, GFP_ATOMIC);
++	struct mausb_udc *udc = mausb_host_ep_to_maudc(ep);
 +
-+	for (i = 0; i < length && i < BUFFER; i++)
-+		get_user(message[i], buffer + i);
-+	message_point = message;
++	if (!tx_resp)
++		return -ENOMEM;
 +
-+	return i;
++	mausb_fill_pkt_ep(tx_resp, ep);
++
++	tx_resp->data->common.pkt_type = TransferResp;
++	tx_resp->data->req_id = req_id;
++	tx_resp->data->seq_num = cpu_to_le32(seq_num);
++	tx_resp->data->common.pkt_status = status;
++	tx_resp->data->remaining_size_credit =
++		cpu_to_le32(ep_state->rx_buf_size - ep_state->occupancy);
++
++	list_add_tail(&tx_resp->pkt_list, &ep->resp_list);
++
++
++	tx_resp->common->length = cpu_to_le16(mausb_pkt_length(tx_resp));
++
++	if (retry)
++		tx_resp->common->ver_flags |= MAUSB_PKT_FLAG_RETRY;
++
++	if (eot)
++		tx_resp->data->eps_tflags |= MAUSB_PKT_TFLAG_EOT;
++
++	if (arq)
++		tx_resp->data->eps_tflags |= MAUSB_PKT_TFLAG_ARQ;
++
++	maudc_dbg(udc, "%s: sending transferResp packet %i for transfer %i\n",
++		__func__, le32_to_cpu(tx_resp->data->seq_num),
++		tx_resp->data->req_id);
++
++	/* send transferResp packet to host */
++	mausb_transfer_data_pkt(tx_resp, ep, GFP_ATOMIC);
++
++	return 0;
 +}
 +
 +/**
-+ * This function is used to execute ioctl commands, determined by ioctl_func.
++ * Handles receipt of a transferAck packet.
 + *
-+ * @file:	  The device file. We don't use it directly, but it's passed in.
-+ * @ioctl_func:	  This value determines which ioctl function will be used.
-+ * @ioctl_buffer: This buffer is used to transfer data to/from the device.
++ * Caller should ensure that transfer complete and error flags are not set.
++ * Note that what to do isn't defined in spec - we are on our own for this one!
 + */
-+long mausb_ioctl(struct file *file, unsigned int ioctl_func,
-+		unsigned long ioctl_buffer)
++void device_OUT_ack_rcvd(struct mausb_transfer_state *tx_state,
++		struct mausb_ep_state *ep_state,
++		struct mausb_pkt *tx_ack)
 +{
-+	int bytes = 0;
-+	char *msg, *ip_addr;
-+	char chr;
-+	int ret, value;
-+	unsigned long int  long_ret;
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_udc	*udc = mausb_host_ep_to_maudc(ep);
 +
-+	switch (ioctl_func) {
-+	case IOCTL_SET_MSG:
-+		msg = (char *)ioctl_buffer;
-+		get_user(chr, msg);
-+		for (bytes = 0; chr && bytes < BUFFER; bytes++, msg++)
-+			get_user(chr, msg);
-+		mausb_write(file, (char *)ioctl_buffer, bytes, 0);
-+		break;
-+	case IOCTL_GET_MSG:
-+		bytes = mausb_read(file, (char *)ioctl_buffer, 99, 0);
-+		put_user('\0', (char *)ioctl_buffer + bytes);
-+		break;
-+	case IOCTL_GET_VRSN:
-+		to_user(DRIVER_VERSION, ioctl_buffer);
-+		break;
-+	case IOCTL_GET_NAME:
-+		to_user(MAUSB_NAME, ioctl_buffer);
-+		break;
-+	case IOCTL_GADGET_C:
-+		ret = gadget_connection(1);
-+		if (ret >= 0)
-+			to_user("g_zero connect process complete", ioctl_buffer);
-+		else
-+			to_user("g_zero connect process failed", ioctl_buffer);
-+		break;
-+	case IOCTL_GADGET_D:
-+		ret = gadget_connection(0);
-+		if (ret >= 0)
-+			to_user("g_zero disconnect process complete",
-+				ioctl_buffer);
-+		else
-+			to_user("g_zero disconnect process failed",
-+				ioctl_buffer);
-+		break;
-+	case IOCTL_MED_DELAY:
-+		msg = (char *)ioctl_buffer;
-+		get_user(chr, msg);
-+		for (bytes = 0; chr && bytes < BUFFER; bytes++, msg++)
-+			get_user(chr, msg);
-+		mausb_write(file, (char *)ioctl_buffer, bytes, 0);
-+		if (kstrtoint((const char *)message_point, 0, &value) != 0) {
-+			/* TODO: handle error */
-+		}
-+		ret = set_medium_delay(value);
-+		sprintf(message_point, "DELAY VALUE: ms: %d, jiffies: %d\n",
-+			value, ret);
-+		to_user(message_point, ioctl_buffer);
-+		break;
-+	case IOCTL_SET_IP:
-+		msg = (char *)ioctl_buffer;
-+		get_user(chr, msg);
-+		for (bytes = 0; chr && bytes < BUFFER; bytes++, msg++)
-+			get_user(chr, msg);
-+		mausb_write(file, (char *)ioctl_buffer, bytes, 0);
-+		ip_addr = kmalloc(strlen(message_point)+1, GFP_KERNEL);
-+		if (!ip_addr) {
-+			printk(KERN_ALERT "Memory allocation failed!\n");
-+			break;
-+		}
-+		strcpy(ip_addr, message_point);
-+		sprintf(message_point, "Connecting to ...\nIP Address: %s\n",
-+			ip_addr);
-+		to_user(message_point, ioctl_buffer);
-+		kfree(ip_addr);
-+		break;
-+	case IOCTL_SET_PORT:
-+		msg = (char *)ioctl_buffer;
-+		get_user(chr, msg);
-+		for (bytes = 0; chr && bytes < BUFFER; bytes++, msg++)
-+			get_user(chr, msg);
-+		mausb_write(file, (char *)ioctl_buffer, bytes, 0);
-+		if (kstrtoint((const char *)message_point, 0, &value) != 0) {
-+			/* TODO: handle error */
-+		}
-+		ret = set_port_no(value);
-+		sprintf(message_point, "PORT NUMBER:%d, Returned %i\n", value,
-+			ret);
-+		to_user(message_point, ioctl_buffer);
-+		break;
-+	case IOCTL_SET_IP_DECIMAL:
-+		msg = (char *)ioctl_buffer;
-+		get_user(chr, msg);
-+		for (bytes = 0; chr && bytes < BUFFER; bytes++, msg++)
-+			get_user(chr, msg);
-+		mausb_write(file, (char *)ioctl_buffer, bytes, 0);
-+		if (kstrtoul((const char *)message_point, 0, &long_ret) != 0) {
-+			/* TODO: handle error */
-+		}
++	maudc_dbg(udc, "%s: received transferAck packet for transfer %i\n",
++		__func__, tx_ack->data->req_id);
 +
-+		ret = set_ip_addr(long_ret);
-+		sprintf(message_point, "\nDecimal Value:%lx returned %i\n",
-+			long_ret, ret);
-+		to_user(message_point, ioctl_buffer);
-+		break;
-+	case IOCTL_SET_MAC:
-+		{
-+			u8 *mac = kmalloc(6, GFP_KERNEL);
-+			u8 *buf = (u8 __user *)ioctl_buffer;
-+			int i, ret;
-+			if (!mac) {
-+				pr_err("Memory allocation failed!\n");
-+				break;
-+			}
-+			ret = copy_from_user(mac, buf, 6);
-+			if (ret) {
-+				pr_err("copy_from_user failed\n");
-+				kfree(mac);
-+				break;
-+			}
-+			for (i = 0; i < ETH_ALEN; i++)
-+				pr_info("mac[%d]=0x%x\n", i, mac[i]);
-+			ret = set_mac_addr(mac);
-+			if (ret)
-+				pr_err("unable to set MAC addr\n");
-+			kfree(mac);
-+			break;
++	ep_state->occupancy = 0;
++	mausb_cleanup_ma_packets(ep, le32_to_cpu(tx_ack->data->seq_num),
++		tx_ack->data->req_id);
++}
++
++/*
++ * Copy payload from transferRequest into device buffer.
++ *
++ * @tx_req:   TransferRequest with payload to be delivered.
++ * @ep_state: State variables for associated device endpoint.
++ * @tx_state: State variables for associated transfer.
++ *
++ * Caller should ensure that transfer complete and error flags are not set.
++ * This function also includes payload delivery process outlined in spec.
++ */
++int device_OUT_deliver_payload(struct mausb_pkt *tx_req,
++		struct mausb_ep_state *ep_state,
++		struct mausb_transfer_state *tx_state)
++{
++	u32			req_sn = le32_to_cpu(tx_req->data->seq_num);
++	int			payload_size;
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_udc	*udc = mausb_host_ep_to_maudc(ep);
++
++	/* payload delivery process */
++	payload_size = do_ma_transfer(ep, tx_req, MAUSB_OUT);
++
++	/* payload delivery confirmation process */
++	if (payload_size < 0) {
++		maudc_err(udc, "%s: transfer error %i\n", __func__,
++			payload_size);
++
++		device_OUT_send_txResp(tx_state, ep_state, tx_req->data->req_id,
++			le32_to_cpu(tx_req->data->seq_num), UNSUCCESSFUL,
++				       false, true, false);
++	}
++
++	else {
++		ep_state->earliest_unacked = req_sn + 1;
++		tx_state->payload_size = payload_size - tx_state->payload_size;
++		tx_state->rem_size =
++			le32_to_cpu(tx_req->data->remaining_size_credit);
++		tx_state->payload_size = payload_size;
++
++		maudc_dbg(udc, "%s: delivered %i bytes with %i remaining\n",
++		       __func__, payload_size, tx_state->rem_size);
++
++		/* control response packet */
++		if (tx_req->setup) {
++			device_OUT_send_txResp(tx_state, ep_state,
++				tx_req->data->req_id,
++				le32_to_cpu(tx_req->data->seq_num),
++				SUCCESS, false, true, true);
++
++		/* end of transfer response packet */
++		} else if (tx_state->rem_size == 0) {
++			tx_state->last_transfer_sn = req_sn;
++
++			device_OUT_send_txResp(tx_state, ep_state,
++				tx_req->data->req_id,
++				le32_to_cpu(tx_req->data->seq_num),
++				SUCCESS, false, true, true);
++		} else if (tx_req->data->eps_tflags & MAUSB_PKT_TFLAG_ARQ) {
++			device_OUT_send_txResp(tx_state, ep_state,
++				tx_req->data->req_id,
++				le32_to_cpu(tx_req->data->seq_num),
++				SUCCESS, false, false, true);
 +		}
 +	}
 +
 +	return 0;
 +}
 +
-+/**
-+ * This struct creates links with our implementations of various entry point
-+ * functions.
-+ */
-+const struct file_operations fops = {
-+	.open = mausb_open,
-+	.release = mausb_release,
-+	.read = mausb_read,
-+	.write = mausb_write,
-+	.unlocked_ioctl = mausb_ioctl
-+};
++/*------------------ transfer interfaces ----------------------------*/
 +
 +/**
-+ * Registers a character device using our device file. This function is called
-+ * in the mausb_hcd_init function.
++ * Called to receive both transferRequest and transferAck packets.
++ * For transferRequests, a new transfer is initiated - transfer state values
++ * are initialized and a request is send to the device to get data. For
++ * transferAcks, a transfer is ended (either successfully or with error,
++ * depending on transferAck packet status).
 + */
-+int reg_chrdev()
++int receive_ma_packet_IN(struct ms_pkt *ms_pkt, void *context)
 +{
-+	int ret;
++	int				ret = 0;
++	struct mausb_host_ep		*ep;
++	struct mausb_pkt		*pkt;
++	struct mausb_udc		*udc;
 +
-+#ifdef MAUSB_PRINT_IOCTL_MAGIC
++	if ((NULL == context) || (NULL == ms_pkt)) {
++		printk(KERN_ERR "%s: received NULL %s\n", __func__,
++			context ? "packet" : "context");
++		return -EFAULT;
++	}
 +
-+	printk(KERN_DEBUG "Printing IOCTL magic numbers:\n");
-+	printk(KERN_DEBUG "IOCTL_SET_MSG        = %u\n", IOCTL_SET_MSG);
-+	printk(KERN_DEBUG "IOCTL_GET_MSG        = %u\n", IOCTL_GET_MSG);
-+	printk(KERN_DEBUG "IOCTL_GET_VRSN       = %u\n", IOCTL_GET_VRSN);
-+	printk(KERN_DEBUG "IOCTL_GET_NAME       = %u\n", IOCTL_GET_NAME);
-+	printk(KERN_DEBUG "IOCTL_GADGET_C       = %u\n", IOCTL_GADGET_C);
-+	printk(KERN_DEBUG "IOCTL_GADGET_D       = %u\n", IOCTL_GADGET_D);
-+	printk(KERN_DEBUG "IOCTL_MED_DELAY      = %u\n", IOCTL_MED_DELAY);
-+	printk(KERN_DEBUG "IOCTL_SET_IP         = %u\n", IOCTL_SET_IP);
-+	printk(KERN_DEBUG "IOCTL_SET_PORT       = %u\n", IOCTL_SET_PORT);
-+	printk(KERN_DEBUG "IOCTL_SET_IP_DECIMAL = %u\n", IOCTL_SET_IP_DECIMAL);
-+	printk(KERN_DEBUG "IOCTL_SET_MAC        = %u\n", IOCTL_SET_MAC);
++	ep = (struct mausb_host_ep *) context;
++	del_timer(&ep->timer);
 +
-+#endif
++	pkt = mausb_pkt_from_ms_pkt_ep(ms_pkt, ep, GFP_ATOMIC);
++	list_add_tail(&pkt->pkt_list, &ep->req_list);
 +
-+	ret = register_chrdev(MAJOR_NUM, MAUSB_NAME, &fops);
++	udc = mausb_host_ep_to_maudc(ep);
 +
-+	if (ret < 0)
-+		printk(KERN_ALERT "Registering mausb failed with %d\n", ret);
-+	else
-+		printk(KERN_INFO "%s registeration complete. Major device"
-+			" number %d.\n", MAUSB_NAME, MAJOR_NUM);
++	if (mausb_is_a_retry(ep, &ep->resp_list, pkt))
++		return 0;
++
++	switch (pkt->data->common.pkt_type) {
++	case TransferReq:
++		maudc_dbg(udc, "%s: received transferReq %i for transfer %i\n",
++			__func__, le32_to_cpu(pkt->data->seq_num),
++			pkt->data->req_id);
++		device_IN_rcvd_txReq(&ep->state, &ep->active_transfer->state,
++			pkt);
++		ret = do_ma_transfer(ep, pkt, MAUSB_IN);
++		ret = device_IN_send_txResp_with_payload(ep);
++		break;
++	case TransferAck:
++		maudc_dbg(udc, "%s: received transferAck for transfer %i\n",
++			__func__, pkt->data->req_id);
++		ret = device_IN_ack_rcvd(&ep->active_transfer->state,
++			&ep->state, pkt);
++		break;
++	default:
++		maudc_err(udc, "%s: invalid packet type/subtype %i\n",
++			__func__, pkt->data->common.pkt_type);
++		ret = -EINVAL;
++	}
 +
 +	return ret;
 +}
 +
 +/**
-+ * Unregisters the character device when the hcd is unregistered. As hinted,
-+ * this function is called in the mausb_hcd_exit function.
++ * Receives both transferReq and transferAck packets for OUT transfers. When a
++ * packet is received, it is put on a list for handling. If the endpoint is not
++ * already handling a packet, it starts iterating through the list of received
++ * packets.
 + */
-+void unreg_chrdev()
++int receive_ma_packet_OUT(struct ms_pkt *ms_pkt, void *context)
 +{
-+	unregister_chrdev(MAJOR_NUM, MAUSB_NAME);
++	int				ret = 0;
++	struct mausb_host_ep		*ep;
++	struct mausb_pkt		*pkt;
++	struct mausb_udc		*udc;
++
++	if ((NULL == context) || (NULL == ms_pkt)) {
++		printk(KERN_ERR "%s: received NULL %s\n", __func__,
++			context ? "packet" : "context");
++		return -EFAULT;
++	}
++
++	ep = (struct mausb_host_ep *) context;
++	del_timer(&ep->timer);
++
++	pkt = mausb_pkt_from_ms_pkt_ep(ms_pkt, ep, GFP_ATOMIC);
++	list_add_tail(&pkt->pkt_list, &ep->req_list);
++
++	udc = mausb_host_ep_to_maudc(ep);
++
++	if (mausb_is_a_retry(ep, &ep->resp_list, pkt))
++		return 0;
++
++	/* determine if packet is a transferRequest */
++	if (pkt->data->common.pkt_type == TransferReq) {
++		maudc_dbg(udc, "%s: received transferReq %i for transfer %i\n",
++			__func__, le32_to_cpu(pkt->data->seq_num),
++			pkt->data->req_id);
++		ret = device_OUT_txReq_rcvd(&ep->active_transfer->state,
++			&ep->state, pkt);
++
++	/* if not a transferReq, it should be a transferAck */
++	} else if (pkt->data->common.pkt_type == TransferAck) {
++		maudc_dbg(udc, "%s: received transferAck for transfer %i\n",
++			__func__, pkt->data->req_id);
++		device_OUT_ack_rcvd(&ep->active_transfer->state, &ep->state,
++			pkt);
++	} else {
++		/* TODO: deal with invalid packet type */
++	}
++
++	return ret;
 +}
-diff --git a/drivers/staging/mausb/drivers/mausb_ioctl.h b/drivers/staging/mausb/drivers/mausb_ioctl.h
-new file mode 100644
-index 0000000..0f26988
---- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_ioctl.h
-@@ -0,0 +1,99 @@
-+/* Name:         mausb_ioctl.h
-+ * Description:  header file for MA USB ioctl functions
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of version 2 of the GNU General Public License as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * Contact Information:
-+ * Sean Stalley, sean.stalley@intel.com
-+ * Stephanie Wallick, stephanie.s.wallick@intel.com
-+ * 2111 NE 25th Avenue
-+ * Hillsboro, Oregon 97124
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+#ifndef MAUSB_IOCTL_H
-+#define MAUSB_IOCTL_H
-+
-+#define BUFFER 80
-+#define DRIVER_VERSION "Alpha 0.0.25"
-+#define MAJOR_NUM 100
-+
-+/* These define the ioctl functions that can be used. */
-+#define IOCTL_SET_MSG _IOR(MAJOR_NUM, 0, char *)
-+#define IOCTL_GET_MSG _IOR(MAJOR_NUM, 1, char *)
-+#define IOCTL_GET_VRSN _IOR(MAJOR_NUM, 2, char *)
-+#define IOCTL_GET_NAME _IOR(MAJOR_NUM, 3, char *)
-+#define IOCTL_GADGET_C _IOR(MAJOR_NUM, 4, char *)
-+#define IOCTL_GADGET_D _IOR(MAJOR_NUM, 5, char *)
-+#define IOCTL_MED_DELAY _IOR(MAJOR_NUM, 6, char *)
-+#define IOCTL_SET_IP _IOR(MAJOR_NUM, 7, char *)
-+#define IOCTL_SET_PORT _IOR(MAJOR_NUM, 8, char *)
-+#define IOCTL_SET_IP_DECIMAL _IOR(MAJOR_NUM, 9, char *)
-+#define IOCTL_SET_MAC _IOR(MAJOR_NUM, 10, char *)
-+
-+/* This is the location where the device file will be created. It is used to
-+ * read/write to in order to communicate to and from the device. */
-+#define DEVICE_FILE_NAME "/dev/mausb"
-+
-+/* MAC address length */
-+#define ETH_ALEN 6
-+
-+/* forward declarations */
-+struct mausb_udc;
-+struct mausb_hcd;
-+
-+/* Functions for register/unregistering the character device */
-+int reg_chrdev(void);
-+void unreg_chrdev(void);
-+
-+/* Medium-defined functions */
-+int set_medium_delay(int delay);
-+int set_ip_addr(unsigned long in_addr);
-+int set_port_no(int port_no);
-+int set_mac_addr(unsigned char mac_addr[ETH_ALEN]);
-+int gadget_connection(int on);
-+
-+#endif
-diff --git a/drivers/staging/mausb/drivers/mausb_msapi.c b/drivers/staging/mausb/drivers/mausb_msapi.c
-new file mode 100644
-index 0000000..9dd8fa5
---- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_msapi.c
-@@ -0,0 +1,110 @@
-+/* Name:	mausb_msapi.c
-+ * Description: This file contains helper functions for using the msapi.
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of version 2 of the GNU General Public License as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * Contact Information:
-+ * Sean Stalley, sean.stalley@intel.com
-+ * Stephanie Wallick, stephanie.s.wallick@intel.com
-+ * 2111 NE 25th Avenue
-+ * Hillsboro, Oregon 97124
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/uio.h>
-+#include "mausb_msapi.h"
-+
-+int mausb_transfer_packet(struct ms_pkt *pkt,
-+	struct mausb_pkt_transfer *transfer)
-+{
-+	return transfer->transfer_packet(pkt, transfer->context);
-+}
-+EXPORT_SYMBOL(mausb_transfer_packet);
 +
 +/**
-+ * Frees the given ms_pkt and associated buffers. This function is not
-+ * necessary to use the API, but could be useful on both sides of the interface.
++ * Called when a transferReq is received on a control endpoint.
++ *
++ * @ms_pkt:	Packet being received.
++ * @context:	Device endpoint associated with transfer (this should always
++ *		be ep0).
 + */
-+void mausb_free_ms_pkt(struct ms_pkt *pkt)
++int receive_ma_packet_control(struct ms_pkt *ms_pkt, void *context)
 +{
-+	int i;
-+	void *current_buf;
++	int				ret = 0;
++	struct mausb_host_ep		*ep;
++	struct mausb_pkt		*pkt;
++	struct mausb_udc		*udc;
 +
-+	for (i = 0; i < pkt->nents; ++i) {
-+		current_buf = pkt[i].kvec->iov_base;
-+		if (NULL != current_buf) {
-+			kfree(current_buf);
-+		} else {
-+			printk(KERN_DEBUG "%s: cannot find buffer for "
-+				"kvec #%i in ms_pkt at %p\n",
-+				__func__, i, pkt->kvec);
-+		}
++	if ((NULL == context) || (NULL == ms_pkt)) {
++		printk(KERN_ERR "%s: received NULL %s\n", __func__,
++			context ? "packet" : "context");
++		return -EFAULT;
++	}
++
++	ep = (struct mausb_host_ep *) context;
++	del_timer(&ep->timer);
++
++	pkt = mausb_pkt_from_ms_pkt_ep(ms_pkt, ep, GFP_ATOMIC);
++	udc = mausb_host_ep_to_maudc(ep);
++
++	/*
++	 * A new control transfer begins with a transfer request carrying setup
++	 * data and sequence number 0.
++	 */
++	if (pkt->setup) {
++		ep->state.seq_number = 0;
++		ep->actual_length = 0;
++		ep->active_transfer->state.rem_size =
++			le32_to_cpu(pkt->data->remaining_size_credit);
++
++		/*
++		 * Determine if this is a control IN or OUT - if there is data
++		 * in the packet, or the host is requesting no data, we are
++		 * an OUT.
++		 */
++		if (0 != pkt->buffer_length ||
++		    0 == le32_to_cpu(pkt->data->remaining_size_credit)) {
++
++			ep->control_dir = MAUSB_OUT;
++
++		} else
++			ep->control_dir = MAUSB_IN;
 +	}
 +
 +	kfree(pkt);
++	pkt = NULL;
 +
-+	return;
++	if (MAUSB_IN == ep->control_dir)
++		ret = receive_ma_packet_IN(ms_pkt, context);
++	else
++		ret = receive_ma_packet_OUT(ms_pkt, context);
++
++	return ret;
 +}
-+EXPORT_SYMBOL(mausb_free_ms_pkt);
 +
-+/**
-+ * Calculates the total length of the data in a ms_pkt. Returns the total
-+ * length of the data in the ms_pkt, or a negative errno.
-+ */
-+int mausb_ms_pkt_length(struct ms_pkt *pkt)
-+{
-+	int i;
-+	int total_length = 0;
-+
-+	for (i = 0; i < pkt->nents; ++i)
-+		total_length += pkt[i].kvec->iov_len;
-+
-+	printk(KERN_DEBUG "%s: total *kvec length: %i\n", __func__,
-+		total_length);
-+
-+	return total_length;
-+}
-diff --git a/drivers/staging/mausb/drivers/mausb_msapi.h b/drivers/staging/mausb/drivers/mausb_msapi.h
+diff --git a/drivers/staging/mausb/drivers/mausb_tx-host.c b/drivers/staging/mausb/drivers/mausb_tx-host.c
 new file mode 100644
-index 0000000..7a9c30c
+index 0000000..7f495e9
 --- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_msapi.h
-@@ -0,0 +1,232 @@
-+/* Name:	mausb_msapi.h
-+ * Description: This header describes how the media agnostic driver
-+ *              interfaces with a media specific driver.
++++ b/drivers/staging/mausb/drivers/mausb_tx-host.c
+@@ -0,0 +1,1211 @@
++/* Name:        mausb_tx-host.c
++ * Description: implement host-side Ma USB transfers
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -704,7 +942,7 @@ index 0000000..7a9c30c
 + * modification, are permitted provided that the following conditions
 + * are met:
 + *
-+    * Redistributions of source code must retain the above copyright
++   * Redistributions of source code must retain the above copyright
 +      notice, this list of conditions and the following disclaimer.
 +    * Redistributions in binary form must reproduce the above copyright
 +      notice, this list of conditions and the following disclaimer in
@@ -727,944 +965,1170 @@ index 0000000..7a9c30c
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
 +
-+/********************** Initial MS Registration **********************/
++#define DEBUG
 +
-+/* The MS driver must initially register with the MA driver to make the
-+ * inital connection. this is done via a call to mausb_register_ms_driver
-+ * (see mausb_hcd.c for details)
-+ */
++#include <linux/kthread.h>
 +
-+/************************ Packet Send/Recieve ************************/
-+
-+/* Packets are transferred between the MS and the MA driver via function
-+ * calls into each other. When the MA driver has a packet to send out, it
-+ * makes a function call into the MS driver with the packet it wishes to
-+ * send. Likewise, the MS driver calls into the MA driver if it needs to
-+ * pass it a packet.
-+ */
-+
-+/********************** Transfer Pair Add/Remove *********************/
-+
-+/*
-+ * The MA driver establishes a new transfer pair for every independant
-+ * connection (ie: one for every independant endpoint, as well as one
-+ * for every device). To establish a new connection, the MA driver
-+ * calls into the MS driver with an incomplete mausb_transfer_pair.
-+ * this incomplete pair includes only the data needed to call into
-+ * the MA driver.
-+ */
-+
-+#ifndef __MAUSB_MSAPI_H
-+#define __MAUSB_MSAPI_H
-+
-+#include <linux/uio.h>
++#include "mausb_hcd.h"
++#include "mausb_pkt.h"
++#include "mausb_tx.h"
 +
 +/**
-+ * Offset in Bytes of location of length field - streaming mediums need to
-+ * know where the length field is in a packet so they can determine where
-+ * packets begin and end in the stream.
++ * Handles a data transfer timeout event, then sleeps until the next
++ * timeout event. Timeout events that wish to use this thread should
++ * set the ep->tx_timed_out flag to true to ensure that the thread
++ * is woken.
 + */
-+#define MAUSB_PKT_LENGTH_OFFSET 2
-+ 
-+/* the largest number of segments that will ever be in a mausb packet */
-+#define MAUSB_PKT_MAX_NR_SEGS 3
-+
-+/* This is a convenience structure for keeping the number of entries in
-+ * the kvec with its pointer.
-+ *
-+ * @kvec:	The pointer to the ma_pkt kvec or iovec.
-+ * @nents:	The number of entires in the ma_pkt kvec or iovec.
-+ */
-+struct ms_pkt {
-+	union {
-+		struct kvec kvec[MAUSB_PKT_MAX_NR_SEGS];
-+		struct iovec iovec[MAUSB_PKT_MAX_NR_SEGS];
-+	};
-+	int nents;
-+};
-+
-+
-+/**
-+ * This struct defines a one way connection for passing packets from one
-+ * driver to the other.
-+ *
-+ * @transfer_packet:	The function call to use when you want to transmit
-+ *                   	a packet.
-+ * @context:		The context to use in the function when calling the
-+ *           		transfer packet.
-+ */
-+struct mausb_pkt_transfer {
-+	int (*transfer_packet)(struct ms_pkt *pkt, void *context);
-+	void *context;
-+};
-+
-+int mausb_transfer_packet(struct ms_pkt *pkt,
-+	struct mausb_pkt_transfer *transfer);
-+
-+/**
-+ * This struct defines a pair of connections to and from an independant
-+ * endpoint or device.
-+ *
-+ * @to_ma:	The transfer to use when passing a packet to the MA driver
-+ *         	from the MS driver.
-+ * @to_ms:	The transfer to use when passing a packet to the MS driver
-+ *         	from the MA driver.
-+ * @pkt_sent: 	Packet completion routine. Called by the MS driver into
-+ *            	the MA driver after the packet has been put onto the medium.
-+ * @handle: 	A unique identifier for this particualar transfer pair.
-+ *          	In our implementation, we use the EP/Device Handle.
-+ *		For the management channel, set handle to MAUSB_MGMT_HANDLE.
-+ */
-+
-+#define MAUSB_MGMT_HANDLE 0
-+
-+struct mausb_transfer_pair {
-+	struct mausb_pkt_transfer to_ma;
-+	struct mausb_pkt_transfer to_ms;
-+	void                    (*pkt_sent)(struct ms_pkt *pkt);
-+	unsigned int              handle;
-+};
-+
-+struct urb;
-+
-+/**
-+ * This struct defines all the calls the MA USB-HCD Driver can make
-+ * to a media specific driver.
-+ *
-+ * @add_transfer_pair:	Used to establish a new transfer pair.
-+ *       @tx_pair [IN/OUT]:	An incomplete transfer pair. The MA driver
-+ *                          	completes the to_ma field and passes it to
-+ *				the MA driver. The MS driver fills the
-+ *				to_ma field and returns the pointer.
-+ * @drop_transfer_pair: Used to remove an existing transfer pair.
-+ *       @handle  [IN]:		The unique identifier of the transfer pair
-+ *				to remove.
-+ * @pkt_destructor: 	Used to destroy a packet that was received from
-+ *			the medium. Acts as a hook to allow the medium to
-+ *			free any media specific data for a packet.
-+ *       @pkt [IN]		The packet the MA driver wishes to free.
-+ */
-+struct mausb_ms_ops {
-+	int  (*add_transfer_pair)(struct mausb_transfer_pair *tx_pair);
-+	int  (*drop_transfer_pair)(unsigned long handle, void *context);
-+	void (*pkt_destructor)(struct ms_pkt *pkt);
-+};
-+
-+/**
-+ * This struct defines all of the media-specific parameters needed by
-+ * the MA driver.
-+ *
-+ * TODO: add spec-defined and implementation-specific variables
-+ */
-+struct mausb_ms_params {
-+
-+
-+};
-+
-+/**
-+ * This structure includes all of the data needed by the MA driver to
-+ * communicate with the Media Specific Driver.
-+ *
-+ * @ops:	Contains function pointers to all of the functions the
-+ *		MA driver will ever need to call.
-+ * @params:	Contains all of the media-specific paramaters that the
-+ *		MA driver needs.
-+ */
-+struct mausb_ms_drv {
-+	struct mausb_ms_ops *ops;
-+	struct mausb_ms_params *params;
-+};
-+
-+/**
-+ * This structure includes all of the ways the Media Specific Driver
-+ * is capable of calling to the Media Agnostic Driver.
-+ *
-+ * @device_connect:	Called to indicate that a device has been connected
-+ *			and is ready to receive MA packets.
-+ * @pkt_dmux:		Used for passing packets into the driver. It will
-+ *			parse the packet to determine what endpoint/device
-+ *			it belongs to. Used when the medium cannot keep
-+ *			data channels seperate.
-+ * @pkt_sent:		Used as a notification that a packet has been sent
-+ *			out.
-+ */
-+struct mausb_ma_drv {
-+	int (*device_connect)(int);
-+	struct mausb_pkt_transfer pkt_dmux;
-+	/* TODO: implement pkt_sent indicator */
-+	/* void (*pkt_sent)(struct ms_pkt *pkt); */
-+};
-+
-+/* function declarations */
-+struct mausb_ma_drv *mausb_register_ms_driver(struct mausb_ms_drv *drv);
-+struct mausb_ma_drv *maudc_register_ms_driver(struct mausb_ms_drv *drv);
-+void mausb_free_ms_pkt(struct ms_pkt *pkt);
-+int mausb_ms_pkt_length(struct ms_pkt *pkt);
-+
-+#endif
-diff --git a/drivers/staging/mausb/drivers/mausb_tcp-device.c b/drivers/staging/mausb/drivers/mausb_tcp-device.c
-new file mode 100644
-index 0000000..28978a0
---- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_tcp-device.c
-@@ -0,0 +1,147 @@
-+/* Name:	mausb_tcp-device.c
-+ * Description: The device side media specific driver to allow media agnostic
-+ *               packets over tcp/ip.
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of version 2 of the GNU General Public License as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * Contact Information:
-+ * Sean Stalley, sean.stalley@intel.com
-+ * Stephanie Wallick, stephanie.s.wallick@intel.com
-+ * 2111 NE 25th Avenue
-+ * Hillsboro, Oregon 97124
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+
-+#include "mausb_tcp.h"
-+#include "mausb_ioctl.h"
-+
-+struct mausb_tcp_medium *dev_tcp_medium;
-+
-+int mausb_tcp_device_thread(void *data)
++int host_transfer_timeout(void *data)
 +{
-+	return mausb_tcp_receive_loop(dev_tcp_medium);
-+}
-+
-+int mausb_tcp_device_add_tx_pair(struct mausb_transfer_pair *ma_pair)
-+{
-+	return mausb_tcp_add_tx_pair(ma_pair, dev_tcp_medium);
-+}
-+
-+static struct mausb_ms_ops ms_ops = {
-+	.add_transfer_pair = &mausb_tcp_device_add_tx_pair,
-+	.drop_transfer_pair = &mausb_tcp_drop_tx_pair,
-+	.pkt_destructor = &mausb_free_ms_pkt
-+};
-+
-+static struct mausb_ms_drv ms_driver = {
-+	.ops =  &ms_ops
-+};
-+
-+static int mausb_tcp_device_connect(int on)
-+{
-+	int ret;
-+
-+	if (on && dev_tcp_medium->socket == NULL) {
-+		ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP,
-+			&dev_tcp_medium->socket);
-+
-+		if (0 > ret) /* TODO: real errorchecking */
-+			return ret;
-+
-+		do {
-+			ret = kernel_connect(dev_tcp_medium->socket,
-+				&dev_tcp_medium->addr,
-+				sizeof(dev_tcp_medium->addr_in), O_RDWR);
-+			printk(KERN_DEBUG "%s:kernel_connect returned %i\n",
-+				__func__, ret);
-+
-+			if (0 > ret) {
-+				/* poll until we can connect sucessfully */
-+				msleep(MAUSB_TCP_DEV_CONNECT_POLL_MS);
-+			}
-+
-+
-+		} while (0 > ret);
-+
-+		/*spawn off a listening thread */
-+		dev_tcp_medium->recv_task = kthread_run(mausb_tcp_device_thread,
-+			NULL, "mausb_tcp_device_thread");
-+	}
-+
-+	ret = dev_tcp_medium->ma_driver->device_connect(on);
-+
-+	return ret;
-+}
-+
-+int mausb_tcp_device_init(void)
-+{
-+	dev_tcp_medium = alloc_init_mausb_tcp_medium(MAUSB_TCP_DEV);
-+	if (NULL == dev_tcp_medium)
-+		return -ENOMEM;
-+
-+	dev_tcp_medium->addr_in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-+
-+	dev_tcp_medium->connect = &mausb_tcp_device_connect;
-+
-+	dev_tcp_medium->ma_driver = maudc_register_ms_driver(&ms_driver);
-+
-+
-+	return 0;
-+}
-+module_init(mausb_tcp_device_init);
-+
-+void mausb_tcp_device_exit(void)
-+{
-+	free_mausb_tcp_medium(dev_tcp_medium, MAUSB_TCP_DEV);
-+}
-+module_exit(mausb_tcp_device_exit);
-+
-+MODULE_LICENSE("Dual BSD/GPL");
-+MODULE_AUTHOR("Intel");
-+MODULE_DESCRIPTION("mausb_tcp_device");
-diff --git a/drivers/staging/mausb/drivers/mausb_tcp-host.c b/drivers/staging/mausb/drivers/mausb_tcp-host.c
-new file mode 100644
-index 0000000..0302031
---- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_tcp-host.c
-@@ -0,0 +1,144 @@
-+/* Name:	mausb_tcp-host.c
-+ * Description: The host side media specific driver to allow media agnostic
-+ *              packets over tcp/ip.
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of version 2 of the GNU General Public License as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * Contact Information:
-+ * Sean Stalley, sean.stalley@intel.com
-+ * Stephanie Wallick, stephanie.s.wallick@intel.com
-+ * 2111 NE 25th Avenue
-+ * Hillsboro, Oregon 97124
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+
-+#include "mausb_tcp.h"
-+
-+struct mausb_tcp_medium *host_tcp_medium;
-+
-+int mausb_tcp_host_thread(void *data)
-+{
-+	return mausb_tcp_receive_loop(host_tcp_medium);
-+}
-+
-+int mausb_tcp_host_add_tx_pair(struct mausb_transfer_pair *ma_pair)
-+{
-+	return mausb_tcp_add_tx_pair(ma_pair, host_tcp_medium);
-+}
-+
-+static struct mausb_ms_ops ms_ops = {
-+	.add_transfer_pair = &mausb_tcp_host_add_tx_pair,
-+	.drop_transfer_pair = &mausb_tcp_drop_tx_pair,
-+	.pkt_destructor = &mausb_free_ms_pkt
-+};
-+
-+static struct mausb_ms_drv ms_driver = {
-+	.ops =  &ms_ops
-+};
-+
-+static int mausb_tcp_host_connect(int on)
-+{
-+	int ret;
-+
-+	if (on) {
-+		ret = kernel_bind(host_tcp_medium->setup_socket,
-+			&host_tcp_medium->addr,
-+			sizeof(host_tcp_medium->addr_in));
-+
-+		ret = kernel_listen(host_tcp_medium->setup_socket,
-+			MAUSB_TCP_MAX_NUM_CHANNELS);
-+		printk(KERN_DEBUG "%s: kernel_listen returned %i\n",
-+			__func__, ret);
-+
-+		ret = kernel_accept(host_tcp_medium->setup_socket,
-+				    &host_tcp_medium->socket, 0);
-+		printk(KERN_DEBUG "%s:kernel_accept returned %i\n",
-+			__func__, ret);
-+
-+		if (0 > ret)
-+			return ret;
-+
-+		if (NULL == host_tcp_medium->recv_task) {
-+			host_tcp_medium->recv_task = kthread_run(
-+				mausb_tcp_host_thread, NULL,
-+				"mausb_tcp_host_thread");
-+		}
-+	}
-+
-+	ret = host_tcp_medium->ma_driver->device_connect(on);
-+
-+	return ret;
-+}
-+
-+int mausb_tcp_host_init(void)
-+{
-+	host_tcp_medium = alloc_init_mausb_tcp_medium(MAUSB_TCP_HOST);
-+	if (NULL == host_tcp_medium)
-+		return -ENOMEM;
-+
-+	host_tcp_medium->addr_in.sin_addr.s_addr = htonl(0);
-+
-+	host_tcp_medium->connect = &mausb_tcp_host_connect;
-+
-+	host_tcp_medium->ma_driver = mausb_register_ms_driver(&ms_driver);
-+
-+	return 0;
-+
-+}
-+module_init(mausb_tcp_host_init);
-+
-+void mausb_tcp_host_exit(void)
-+{
-+	free_mausb_tcp_medium(host_tcp_medium, MAUSB_TCP_HOST);
-+}
-+module_exit(mausb_tcp_host_exit);
-+
-+MODULE_LICENSE("Dual BSD/GPL");
-+MODULE_AUTHOR("Intel");
-+MODULE_DESCRIPTION("mausb_tcp_host");
-diff --git a/drivers/staging/mausb/drivers/mausb_tcp.c b/drivers/staging/mausb/drivers/mausb_tcp.c
-new file mode 100644
-index 0000000..291139e
---- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_tcp.c
-@@ -0,0 +1,446 @@
-+/* Name:	mausb_tcp.c
-+ * Description: This is a driver used to connect an MA USB driver to a tcp
-+ *              socket.
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of version 2 of the GNU General Public License as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * Contact Information:
-+ * Sean Stalley, sean.stalley@intel.com
-+ * Stephanie Wallick, stephanie.s.wallick@intel.com
-+ * 2111 NE 25th Avenue
-+ * Hillsboro, Oregon 97124
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/uio.h>
-+#include <linux/delay.h>
-+
-+#include "mausb_ioctl.h"
-+#include "mausb_tcp.h"
-+
-+struct mausb_tcp_medium *tcp_medium[MAUSB_TCP_NUM_MODS];
-+
-+static int gadget_connect_thread(void *data_p)
-+{
-+	struct mausb_connect_data *data = data_p;
-+	int ret;
-+
-+	printk(KERN_DEBUG "%s: Running thread #%i\n", __func__, data->i);
-+
-+	ret = tcp_medium[data->i]->connect(data->on);
-+
-+	printk(KERN_DEBUG "%s: Thread #%i complete, returing with value %i\n",
-+		__func__, data->i, ret);
-+
-+	kfree(data);
-+
-+	return ret;
-+}
-+
-+/* for IOCTL */
-+int gadget_connection(int on)
-+{
-+	int i;
-+
-+	struct mausb_connect_data *data;
-+
-+	/* make all the calls */
-+	for (i = 0; i < MAUSB_TCP_NUM_MODS; ++i) {
-+
-+		if (NULL != tcp_medium[i] &&
-+			NULL != tcp_medium[i]->ma_driver) {
-+
-+			data = kzalloc(sizeof(*data), GFP_KERNEL);
-+			if (NULL == data)
-+				return -ENOMEM;
-+
-+			data->task = NULL;
-+			data->on = on;
-+			data->i = i;
-+
-+			printk(KERN_DEBUG "%s: spawning thread #%i\n",
-+				__func__, i);
-+
-+			data->task = kthread_run(gadget_connect_thread,
-+				data, "mausb_connect_thread_%i", i);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/* for IOCTL */
-+int set_medium_delay(int delay)
-+{
-+	printk(KERN_DEBUG "%s: ERROR: cannot set latency of real medium\n",
-+		__func__);
-+	return -EINVAL;
-+}
-+
-+int set_port_no(int port)
-+{
-+	int ret = -EINVAL;
-+	int i;
-+
-+	for (i = 0; i < MAUSB_TCP_NUM_MODS; ++i) {
-+		if (NULL != tcp_medium[i]) {
-+			tcp_medium[i]->addr_in.sin_port = htons(port);
-+			ret = port;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+int set_ip_addr(unsigned long in_addr)
-+{
-+	int ret = -EINVAL;
-+	int i;
-+	struct in_addr addr;
-+
-+	addr.s_addr = htonl(in_addr);
-+
-+	for (i = 0; i < MAUSB_TCP_NUM_MODS; ++i) {
-+		if (NULL != tcp_medium[i]) {
-+			tcp_medium[i]->addr_in.sin_addr = addr;
-+			ret = 0;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+int set_mac_addr(unsigned char mac_addr[ETH_ALEN])
-+{
-+	printk(KERN_DEBUG "%s: ERROR: cannot set mac address for TCP\n",
-+		__func__);
-+	return -EINVAL;
-+}
-+
-+inline void *mausb_tcp_to_context(struct mausb_tcp_medium *medium)
-+{
-+	return (void *) medium;
-+}
-+EXPORT_SYMBOL(mausb_tcp_to_context);
-+
-+inline struct mausb_tcp_medium *mausb_context_to_tcp(void *context)
-+{
-+	return (struct mausb_tcp_medium *) context;
-+}
-+EXPORT_SYMBOL(mausb_context_to_tcp);
-+
-+static void mausb_tcp_init_msg(struct msghdr *msg)
-+{
-+	msg->msg_name = NULL;
-+	msg->msg_namelen = 0;
-+	msg->msg_control = NULL;
-+	msg->msg_controllen = 0;
-+	msg->msg_flags = 0;
-+}
-+
-+static int mausb_tcp_enqueue(struct ms_pkt *pkt, void *context)
-+{
-+	struct msghdr msg;
-+	struct mausb_tcp_medium *tcp_medium;
-+	int total_length = 0;
-+	int ret = 0;
-+	int i;
-+
-+	mausb_tcp_init_msg(&msg);
-+
-+	if (NULL == context) {
-+		printk(KERN_DEBUG "%s: ERROR: null context\n", __func__);
-+		return -EINVAL;
-+	}
-+	tcp_medium = mausb_context_to_tcp(context);
-+
-+	if (NULL == tcp_medium->socket) {
-+		printk(KERN_DEBUG "%s: ERROR: no socket for packet\n",
-+			__func__);
-+		return -ENOTCONN;
-+	}
-+
-+	for (i = 0; i < pkt->nents; ++i) {
-+		total_length += pkt->kvec[i].iov_len;
-+	}
-+
-+	ret = kernel_sendmsg(tcp_medium->socket, &msg, pkt->kvec, pkt->nents,
-+		total_length);
-+
-+	printk(KERN_DEBUG "%s: sent %i bytes\n", __func__, ret);
-+
-+	/*
-+	 * TODO: implement completion (pkt_sent) callback
-+	 * if (NULL != tcp_medium->tx_pair.pkt_sent && 0 < ret)
-+	 * tcp_pair->tx_pair.pkt_sent(pkt);
-+	 */
-+
-+	return ret;
-+}
-+
-+static int mausb_tcp_receive_packet(struct mausb_tcp_medium *tcp_medium,
-+		struct msghdr *msg, struct ms_pkt *pkt)
-+{
-+	struct kvec kvec;
-+	int data_rcvd;
-+	int total_rcvd = 0;
-+	__u16 length;
-+	void *buf;
-+
-+	buf = kmalloc(MAUSB_TCP_BUF_SIZE, GFP_KERNEL);
-+	if (NULL == buf)
-+		return -ENOMEM;
-+
-+	kvec.iov_base = buf;
-+	kvec.iov_len = MAUSB_TCP_BUF_SIZE;
-+
-+	/* receive the first DWORD to determine length */
-+	data_rcvd = kernel_recvmsg(tcp_medium->socket, msg, &kvec, 1,
-+					sizeof(__u32), MSG_DONTWAIT);
-+
-+	while (data_rcvd == -EAGAIN && !kthread_should_stop()) {
-+		/* sleep to prevent excessive polling */
-+		msleep(10);
-+
-+		/* receive the first DWORD to determine length */
-+		data_rcvd = kernel_recvmsg(tcp_medium->socket, msg, &kvec,
-+				1, sizeof(__u32), MSG_DONTWAIT);
-+	}
-+
-+	if (0 > data_rcvd) {
-+		printk(KERN_DEBUG "%s: ERROR: Could not read packet length"
-+			" (error #%i)\n", __func__, data_rcvd);
-+		kfree(buf);
-+		return data_rcvd;
-+	}
-+
-+	/* the data is invalid */
-+	if (sizeof(__u32) > data_rcvd) {
-+		printk(KERN_DEBUG "%s: ERROR: did not read enough data"
-+			" to get length (received %i bytes)\n", __func__,
-+			data_rcvd);
-+		kfree(buf);
-+		return -EINVAL;
-+	}
-+
-+	length = le16_to_cpu(*((__le16 *)(buf + MAUSB_PKT_LENGTH_OFFSET)));
-+	total_rcvd += data_rcvd;
-+
-+	/* make sure length is valid */
-+	if (length < sizeof(__u32)) {
-+		printk(KERN_DEBUG "%s: ERROR: length field too small (%u)\n",
-+			 __func__, length);
-+		kfree(buf);
-+		return -EINVAL;
-+	}
-+
-+	/* receive the remainder of the packet */
-+	while (total_rcvd < length && total_rcvd >= 0 &&
-+		!kthread_should_stop()) {
-+
-+		data_rcvd = kernel_recvmsg(tcp_medium->socket, msg, &kvec,
-+			1, length - total_rcvd, 0);
-+
-+		if (0 < data_rcvd) {
-+			total_rcvd += data_rcvd;
-+
-+		} else if (0 > data_rcvd) {
-+			printk(KERN_DEBUG "%s: ERROR: while receiving packet "
-+			"(err #%i)\n", __func__, data_rcvd);
-+			kfree(buf);
-+			return data_rcvd;
-+		}
-+	}
-+
-+	if (total_rcvd != length) {
-+		printk(KERN_DEBUG "%s: Warning: did not receive enough data "
-+			"(length:%u, received:%i)\n", __func__,
-+			length, total_rcvd);
-+	}
-+
-+
-+	pkt->nents = 1;
-+	pkt->kvec[0].iov_base = buf;
-+	pkt->kvec[0].iov_len = total_rcvd;
-+
-+	return total_rcvd;
-+}
-+
-+int mausb_tcp_receive_loop(struct mausb_tcp_medium *tcp_medium)
-+{
-+	struct msghdr msg;
-+	struct ms_pkt *pkt;
-+	int data_rcvd = 0;
-+
-+	mausb_tcp_init_msg(&msg);
++	int				err = 0;
++	int				dir_in = 0;
++	int				seq_num = 0;
++	struct mausb_host_ep		*ep = (struct mausb_host_ep *) data;
++	struct mausb_ep_state		*ep_state = &ep->state;
++	struct mausb_transfer_state	*tx_state;
++	struct mausb_pkt		*tx_req;
++	unsigned long			irq_flags;
++	struct mausb_hcd		*mhcd = mausb_host_ep_to_mahcd(ep);
 +
 +	while (!kthread_should_stop()) {
 +
-+		pkt = kzalloc(sizeof(struct ms_pkt), GFP_KERNEL);
++		spin_lock_irqsave(&ep->ep_lock, irq_flags);
++		/*
++		 * make sure there is an active transfer for timeout
++		 * to handle (i.e. not thread creation/initialization)
++		 */
++		if (ep->active_transfer && ep->active_transfer->urb) {
++			tx_state = &ep->active_transfer->state;
++			dir_in = usb_pipein(ep->active_transfer->urb->pipe);
 +
-+		printk(KERN_DEBUG "%s: preparing to receive data\n",
++			seq_num = ep_state->earliest_unacked;
++
++			if (ep_state->retry_counter >  0) {
++				mausb_dbg(mhcd, "%s: host timed out waiting"
++					" for pkt %i\n", __func__, seq_num);
++
++				/* see if we have corresponding request */
++				err = mausb_resend_multi_packets(ep,
++					&ep->req_list, seq_num, irq_flags);
++
++				/* if not, send new req */
++				if (err != 0) {
++					spin_unlock_irqrestore(&ep->ep_lock,
++								irq_flags);
++
++					tx_req = mausb_create_dp(NULL,
++						 ep->active_transfer,
++						 MAUSB_IN, MAUSB_HOST,
++						 GFP_ATOMIC);
++
++					tx_req->data->common.pkt_type =
++						TransferReq;
++					tx_req->data->seq_num = seq_num;
++					tx_req->data->common.pkt_status =
++						SUCCESS;
++					tx_req->data->req_id =
++						ep_state->active_request_id;
++					tx_req->common->ver_flags
++						|= MAUSB_PKT_FLAG_RETRY;
++					tx_req->common->length =
++						mausb_pkt_length(tx_req);
++
++					/* submit packet for transport */
++					mausb_transfer_data_pkt(tx_req, ep,
++								GFP_ATOMIC);
++
++					spin_lock_irqsave(&ep->ep_lock,
++								irq_flags);
++
++					list_add_tail(&tx_req->pkt_list,
++						      &ep->req_list);
++				}
++
++				ep_state->retry_counter--;
++			} else {
++				/*
++				 * Can optionally initiate ping process in sec
++				 * 5.2.3 of spec. For now we just treat as if
++				 * ping protocol failed. */
++				tx_state->transfer_error = true;
++
++				spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++				mausb_unlink_giveback_urb(ep->active_transfer,
++							  -ETIMEDOUT);
++				spin_lock_irqsave(&ep->ep_lock, irq_flags);
++			}
++		}
++
++		ep->tx_timed_out = false;
++
++		spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++		/* put thread to sleep to wait for next timeout event */
++		wait_event_interruptible(ep->host_ep_wq,
++			kthread_should_stop() || ep->tx_timed_out);
++	}
++
++	return 0;
++}
++
++/* Initialize transfer state, for beginning a new transfer */
++static void mausb_host_init_tx_state(struct mausb_transfer_state *tx_state,
++		u32 tx_size)
++{
++	tx_state->transfer_error = false;
++	tx_state->transfer_complete = false;
++	tx_state->eot_detected = false;
++	tx_state->transfer_acked = false;
++	tx_state->rem_size = tx_size;
++	tx_state->payload_size = 0;
++}
++
++/*--------------------- IN transfers ------------------------------*/
++
++/**
++ * Host-side IN transfer initialization process.
++ *
++ * @tx_state: Transfer state to be initialized.
++ * @ep_state: Endpoint state to be initialized.
++ * @maurb:    maurb associated with transfer.
++ *
++ * Called whenever a new IN transfer is initiated by the host.
++ * Initializes transfer state variables, resets timers, then submits a
++ * transferReq packet to the device side driver. After successful submission
++ * of a transferReq packet, the transfer request id is incremented by one
++ * for the next transfer. When transfer request id reaches its max value,
++ * it wraps back around to zero (per mausb spec requirements).
++ */
++void host_init_IN_transfer(struct mausb_transfer_state *tx_state,
++		struct mausb_host_ep *ep, struct mausb_urb *maurb)
++{
++	int			status = SUCCESS;
++	u32			tx_size = maurb->urb->transfer_buffer_length;
++	unsigned long		irq_flags;
++	struct mausb_ep_state	*ep_state = &ep->state;
++	struct mausb_pkt	*tx_req = mausb_create_dp(&status, maurb,
++					MAUSB_IN, MAUSB_HOST, GFP_ATOMIC);
++
++	if (!tx_req)
++		return;
++
++	mausb_fill_pkt_ep(tx_req, ep);
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++	/* fill the transfer request */
++	tx_req->data->common.pkt_type = TransferReq;
++	tx_req->data->remaining_size_credit =
++		maurb->urb->transfer_buffer_length;
++	tx_req->data->req_id = ep_state->request_id;
++	tx_req->data->seq_num = cpu_to_le32(ep_state->seq_number);
++
++	if (mausb_pkt_has_setup_data(tx_req->data)) {
++		tx_req->setup =
++			(struct usb_ctrlrequest *) maurb->urb->setup_packet;
++	}
++
++	tx_req->common->length = mausb_pkt_length(tx_req);
++
++	/* set the transfer state */
++	mausb_host_init_tx_state(tx_state, tx_size);
++
++	/* set the endpoint state */
++	ep->tx_timed_out = false;
++	ep_state->active_request_id = ep_state->request_id;
++	ep_state->keep_alive_timer = MAUSB_TRANSFER_TIMEOUT;
++	ep_state->retry_counter = MAUSB_BULK_TRANSFER_RETRIES;
++	ep_state->request_id = mausb_req_id_add(ep_state->request_id, 1);
++
++	/* send the packet */
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++	host_IN_txReq_transmit(tx_req, ep, tx_state);
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++	/* start timeout timer */
++	mod_timer(&ep->timer,
++	jiffies + msecs_to_jiffies(ep_state->keep_alive_timer));
++
++	/* add the packet to the endpoint */
++	list_add_tail(&tx_req->pkt_list, &ep->req_list);
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++}
++
++/**
++* Releases an MA USB packet to the data channel and updates state.
++*/
++void host_IN_txReq_transmit(struct mausb_pkt *tx_req, struct mausb_host_ep *ep,
++		struct mausb_transfer_state *tx_state)
++{
++	int			ret;
++	struct mausb_hcd	*mhcd = mausb_host_ep_to_mahcd(ep);
++
++	mausb_dbg(mhcd, "%s: sending pkt %i for request %i\n", __func__,
++		  le32_to_cpu(tx_req->data->seq_num), tx_req->data->req_id);
++
++	/* submit packet for transport */
++	ret = mausb_transfer_data_pkt(tx_req, ep, GFP_ATOMIC);
++
++	if (tx_state->eot_detected && !tx_state->transfer_error)
++		if (tx_state->last_transfer_sn
++			< le32_to_cpu(tx_req->data->seq_num)) {
++			tx_state->transfer_acked = true;
++		/* TODO:transfer_completion_timer = aMaxTransferLifetime */
++		}
++}
++
++/**
++ * Transmits a TransferAck packet.
++ *
++ * @tx_state: State information associated with this transfer.
++ * @in:	      Set to true for an IN transfer.
++ * @ep_state: State information associated with transfer endpoint.
++ * @status:   Status to fill transferAck packet status field.
++ *	      Note: unless otherwise specified in spec, should be SUCCESS.
++ * @seq_num:  Sequence number to fill transferAck packet sequence number field.
++ *	      Note: should be the greatest sequence number of the packets to
++ *	      be acked.
++ *
++ * Called to acknowledge end of transfer or when a packet that otherwise
++ * requires acknowledgement (i.e. ARQ flag is set) is received.
++ */
++int host_send_ack(struct mausb_transfer_state *tx_state, bool in,
++		struct mausb_ep_state *ep_state, int status, u32 seq_num)
++{
++	struct mausb_urb	*maurb = container_of(tx_state,
++					struct mausb_urb, state);
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_pkt	*tx_ack = mausb_create_dp(NULL, maurb, in,
++					MAUSB_HOST, GFP_ATOMIC);
++	struct mausb_hcd	*mhcd = mausb_host_ep_to_mahcd(ep);
++	unsigned long		irq_flags;
++
++	if (tx_ack == NULL)
++		return -ENOMEM;
++
++	mausb_fill_pkt_ep(tx_ack, ep);
++
++	tx_ack->data->common.pkt_type = TransferAck;
++	tx_ack->data->seq_num = cpu_to_le32(seq_num);
++	tx_ack->data->common.pkt_status = status;
++	tx_ack->data->req_id = ep_state->active_request_id;
++	tx_ack->common->length = cpu_to_le16(mausb_pkt_length(tx_ack));
++
++	mausb_dbg(mhcd, "%s: sending ack for transfer %i\n",
++	       __func__, ep_state->active_request_id);
++
++	if (in && tx_state->eot_detected) {
++		if (mausb_transfer_is_complete(tx_state, seq_num)) {
++			tx_state->transfer_acked = true;
++			/* TODO: set completion timer */
++		}
++
++		/* since we're done, clear out packet lists and free memory */
++		mausb_cleanup_ma_packets(ep, seq_num,
++			 ep_state->earliest_request_id);
++
++	} else if (!in) {
++		tx_state->transfer_acked = true;
++		/* TODO: set transfer completion timer = aMaxTransferLifetime */
++	}
++
++	/* submit packet for transport */
++	mausb_transfer_data_pkt(tx_ack, ep, GFP_ATOMIC);
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++	list_add_tail(&tx_ack->pkt_list, &ep->req_list);
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++	return 0;
++}
++
++/**
++ * Deliver payload from transferResp to target urb.
++ *
++ * @tx_resp:	transferResponse packet with data to be transfered.
++ * @maurb:	urb associated with transfer.
++ *
++ * Must ensure that transfer has not been completed (transfer_complete is
++ * false) and there are no transfer errors (transfer_error is false) before
++ * calling.
++ *
++ * Returns length in bytes of data delivered.
++ */
++int host_IN_deliver_payload(struct mausb_pkt *tx_resp, struct mausb_urb *maurb)
++{
++	int			offset;
++	int			length = tx_resp->buffer_length;
++	struct mausb_hcd	*mhcd = mausb_host_ep_to_mahcd(maurb->ep);
++
++	if (length == 0) {
++		mausb_err(mhcd, "%s: no payload (length = 0)\n", __func__);
++		return length;
++	}
++
++	if (!maurb || !maurb->urb || !maurb->urb->transfer_buffer) {
++		mausb_err(mhcd, "%s: urb not found\n", __func__);
++		return -EINVAL;
++	}
++
++	if (!tx_resp || !tx_resp->buffer) {
++		mausb_err(mhcd, "%s: no transferResponse buffer\n", __func__);
++		return -EINVAL;
++	}
++
++	offset = maurb->urb->transfer_buffer_length - maurb->state.rem_size;
++
++	memcpy(maurb->urb->transfer_buffer + offset, tx_resp->buffer, length);
++
++	maurb->urb->actual_length += length;
++
++	return length;
++}
++
++/**
++ * Determines if a received transfer response should be dropped
++ * due to invalid request or sequence number. Note: this fuction does not
++ * actually drop any packets.
++ *
++ * The caller should be holding the endpoints spinlock.
++ *
++ * Returns true if packet should be dropped, otherwise returns false.
++ */
++bool should_drop_txResp(struct mausb_ep_state *ep_state,
++		struct mausb_transfer_state *tx_state,
++		struct mausb_pkt *tx_resp, bool in)
++{
++	bool			drop = false;
++	u8			r = tx_resp->data->req_id;
++	u32			SN = le32_to_cpu(tx_resp->data->seq_num);
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_hcd	*mhcd = mausb_host_ep_to_mahcd(ep);
++
++	/* transfer is complete or error flag is set */
++	if (tx_state->transfer_complete || tx_state->transfer_error) {
++		mausb_err(mhcd, "%s: transfer %i already completed %s error\n",
++			__func__, r,
++			(tx_state->transfer_error ? "with" : "without:"));
++		drop = true;
++	}
++
++	/* request id is invalid */
++	if (mausb_req_id_lt(r, ep_state->earliest_request_id) ||
++		(mausb_req_id_gt_eq(r, ep_state->request_id))) {
++
++		mausb_err(mhcd, "%s: request ID %i is invalid\n", __func__, r);
++
++		host_send_ack(tx_state, MAUSB_IN, ep_state,
++			INVALID_REQUEST, SN);
++		drop = true;
++	}
++
++	/*
++	 * Sequence number is reserved for TRANSFER_PENDING,
++	 * so skip sequence number checks.
++	 */
++	if (TRANSFER_PENDING == tx_resp->common->pkt_status)
++		return drop;
++
++	/* sequence number is larger than expected */
++	if (mausb_seq_num_gt(SN, ep_state->seq_number)) {
++
++		mausb_err(mhcd, "%s: missing sequence number - expected %i but"
++			" received %i\n", __func__, ep_state->seq_number, SN);
++
++		drop = true;
++		host_send_ack(tx_state, MAUSB_IN, ep_state,
++			MISSING_SEQUENCE_NUMBER, ep_state->seq_number);
++	}
++
++	/* sequence number is invalid */
++	if ((!in && mausb_seq_num_lt(SN, ep_state->earliest_unacked)) ||
++		(in && mausb_seq_num_lt(SN, ep_state->seq_number))) {
++
++		mausb_err(mhcd, "%s: invalid sequence number %i for %s"
++			" transfer\n", __func__, SN, (in ? "IN" : "OUT"));
++		drop = true;
++	}
++
++	return drop;
++}
++
++/**
++ * Handles receipt of transferResp.
++ *
++ * @ep_state: State information associated with transfer endpoint.
++ * @tx_state: State information associated with transfer.
++ * @tx_resp:  transferResponse packet being received.
++ *
++ * Called when host receives a transferResp packet from a device during an IN
++ * transfer. Updates host-side transfer and endpoint states and checks for
++ * packet errors.
++ *
++ * Returns length of payload copied into host buffer. If nothing was copied
++ * returns 0 or errno if error.
++ */
++int host_IN_txResp_rcvd(struct mausb_ep_state *ep_state,
++		struct mausb_transfer_state *tx_state,
++		struct mausb_pkt *tx_resp)
++{
++	int			length = 0;
++	u8			r = tx_resp->data->req_id;
++	u8			eps_flags = tx_resp->data->eps_tflags;
++	u32			payload_size = tx_resp->buffer_length;
++	u32			SN = le32_to_cpu(tx_resp->data->seq_num);
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_hcd	*mhcd = mausb_host_ep_to_mahcd(ep);
++
++	/* look for sequence number and request ID errors */
++	if (should_drop_txResp(ep_state, tx_state, tx_resp, MAUSB_IN)) {
++		mausb_drop_packet(ep, tx_resp);
++		return length;
++	}
++
++	switch (tx_resp->data->common.pkt_status) {
++	case DROPPED_PACKET:
++		mausb_err(mhcd, "%s: status = DROPPED_PACKET\n", __func__);
++		mausb_drop_packet(ep, tx_resp);
++		break;
++	case INVALID_REQUEST: /* same as MISSING_REQUEST_ID in spec */
++		mausb_err(mhcd, "%s: status = INVALID_REQUEST\n", __func__);
++		/*
++		 * TODO: invalidate all outstanding transferReqs with req id
++		 * from r to ep_state->request_id - 1
++		 */
++		ep_state->request_id = r;
++		break;
++	case TRANSFER_PENDING:
++		mausb_err(mhcd, "%s: status = TRANSFER_PENDING\n", __func__);
++		ep_state->keep_alive_timer =
++			(tx_state->k * MAUSB_TRANSFER_KEEP_ALIVE);
++		ep_state->retry_counter = ep_state->transfer_retries;
++		if (eps_flags & MAUSB_PKT_TFLAG_ARQ) {
++			/*
++			 * NOTE: per spec, the sequence number in the ack packet
++			 * is reserved and set to 0.
++			 */
++			host_send_ack(tx_state, MAUSB_IN, ep_state,
++				TRANSFER_PENDING, 0);
++		}
++		break;
++	case TRANSFER_EP_STALL:
++		printk(KERN_DEBUG "%s: status = TRANSFER_EP_STALL\n", __func__);
++		if (eps_flags & MAUSB_PKT_TFLAG_EOT) {
++			host_send_ack(tx_state, MAUSB_IN, ep_state,
++				      TRANSFER_EP_STALL, SN);
++
++			tx_state->eot_detected = true;
++		}
++		break;
++	case SUCCESS:
++		ep_state->keep_alive_timer = MAUSB_TRANSFER_KEEP_ALIVE;
++		ep_state->transfer_retries = MAUSB_BULK_TRANSFER_RETRIES;
++
++		if (SN == ep_state->seq_number) {
++			if (tx_state->rem_size >= payload_size) {
++				length = host_IN_deliver_payload(tx_resp,
++					 container_of(tx_state,
++						struct mausb_urb, state));
++
++				ep_state->seq_number++;
++				tx_state->rem_size -= length;
++
++				if (eps_flags & MAUSB_PKT_TFLAG_ARQ ||
++					eps_flags & MAUSB_PKT_TFLAG_EOT) {
++					host_send_ack(tx_state, MAUSB_IN,
++						ep_state, SUCCESS, SN);
++				}
++
++				if (eps_flags & MAUSB_PKT_TFLAG_EOT) {
++					tx_state->eot_detected = true;
++					tx_state->last_transfer_sn = SN;
++					ep_state->earliest_request_id =
++						mausb_req_id_add(
++						ep_state->earliest_request_id,
++						1);
++					ep_state->active_request_id =
++						mausb_req_id_add(
++						ep_state->active_request_id, 1);
++
++					/*
++					 * Can optionally send ack here.
++					 * If don't send ack, next txReq
++					 * serves as ack.
++					 */
++
++					if (tx_state->rem_size > 0) {
++						tx_state->transfer_error = true;
++						mausb_dbg(mhcd, "%s: end of "
++						"transfer with %i bytes left\n",
++						__func__, tx_state->rem_size);
++					}
++				}
++			} else {
++				/*
++				 * For now just drop packet, but can also
++				 * optionally admit up to rem_size of payload
++				 * into buffer.
++				 */
++				tx_state->transfer_error = true;
++				mausb_drop_packet(ep, tx_resp);
++				host_send_ack(tx_state, MAUSB_IN, ep_state,
++						 TRANSFER_SIZE_ERROR, SN);
++			}
++		}
++		break;
++	default:
++		mausb_dbg(mhcd, "%s: status = %i, dropping packet\n",
++		       __func__, tx_resp->data->common.pkt_status);
++		mausb_drop_packet(ep, tx_resp);
++		break;
++	}
++
++	return length;
++}
++
++
++/*------------------ protocol-managed OUT transfers -----------------*/
++
++/**
++ * @ tx_state: Transfer state to be initialized.
++ * @ ep:       Endpoint associated with transfer.
++ * @ tx_size:  Transfer size in bytes.
++ *
++ * Called every time a new OUT transfer is initiated. Initializes transfer
++ * state variables.
++ */
++void host_init_OUT_transfer(struct mausb_transfer_state *tx_state,
++	struct mausb_host_ep *ep, u32 tx_size)
++{
++	unsigned long irq_flags;
++
++	mausb_host_init_tx_state(tx_state, tx_size);
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++	ep->tx_timed_out = false;
++
++	ep->state.active_request_id = ep->state.request_id;
++
++	/*
++	 * Increment request id for new transfer (or go back to zero
++	 * if max sequence number is reached.
++	 */
++	ep->state.request_id = mausb_req_id_add(ep->state.request_id, 1);
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++}
++
++/**
++ * Send a transferReq packet to a device.
++ *
++ * @tx_state:     State variables for transfer.
++ * @ep_state:     State variables for endpoint associated with transfer.
++ * @tx_req;	  MA USB transferReq packet to be sent out.
++ */
++int host_OUT_send_txReq(struct mausb_transfer_state *tx_state,
++		struct mausb_ep_state *ep_state, struct mausb_pkt *tx_req)
++{
++	int			i = 0;
++	int			payload_size = tx_req->buffer_length;
++	int			mausb_pkt_head_size;
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_hcd	*mhcd = mausb_host_ep_to_mahcd(ep);
++	unsigned long		irq_flags;
++
++	mausb_pkt_head_size = mausb_pkt_header_length(tx_req->common);
++
++	if (payload_size > ep_state->rx_buf_size) {
++		mausb_dbg(mhcd, "%s: payload of %i bytes is too big - device "
++		       "can only receive %i bytes\n", __func__, payload_size,
++		       ep_state->rx_buf_size);
++		while (payload_size > ep_state->rx_buf_size &&
++		       i <= MAUSB_WAIT_GADGET_BUFFER_FREE_TIMEOUT) {
++			msleep(1);
++			i++;
++		}
++		if (i > MAUSB_WAIT_GADGET_BUFFER_FREE_TIMEOUT) {
++			mausb_dbg(mhcd,
++				"wait gadget receive buffer free time out\n");
++			return -ETIMEDOUT;
++		}
++	}
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++	if (mausb_seq_num_lt(ep_state->seq_number,
++				ep_state->earliest_unacked)) {
++
++		mausb_err(mhcd, "%s: too many outstanding packets\n",
++		       __func__);
++		/* TODO: transmit packet at later time (flow control) */
++	}
++
++	if (payload_size <= ep_state->rx_buf_size) {
++		/*
++		 * Credit remains less than 1 max_packet_payload,
++		 * and there are more than 1 max_packet_payload data to
++		 * transfer. Ask device to update credit.
++		 */
++		if (ep_state->rx_buf_size - payload_size <
++		    MAUSB_MAX_PACKET_SIZE - mausb_pkt_head_size  &&
++		    tx_state->rem_size > ep_state->rx_buf_size - payload_size) {
++			mausb_dbg(mhcd, "request ARQ, payload_size: %d,"
++				" rx_buf_size: %d\n", payload_size,
++				ep_state->rx_buf_size);
++			tx_req->data->eps_tflags |= MAUSB_PKT_TFLAG_ARQ;
++		}
++		/* look for end of transfer */
++		if (tx_state->rem_size == 0) {
++			tx_req->data->eps_tflags |= MAUSB_PKT_TFLAG_EOT;
++			tx_req->data->eps_tflags |= MAUSB_PKT_TFLAG_ARQ;
++		}
++
++		/* set timer if expecting a response */
++		if (tx_req->data->eps_tflags & MAUSB_PKT_TFLAG_ARQ &&
++		    le32_to_cpu(tx_req->data->seq_num) != 0) {
++			tx_state->ack_transfer_sn =
++				le32_to_cpu(tx_req->data->seq_num);
++			mod_timer(&ep->timer, jiffies +
++				msecs_to_jiffies(MAUSB_TRANSFER_TIMEOUT));
++		}
++
++		spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++		tx_req->common->length = cpu_to_le16(mausb_pkt_length(tx_req));
++
++		mausb_dbg(mhcd, "%s: sending transferRequest with sequence"
++			" number %i for request %i with %i bytes of payload\n",
++			__func__, le32_to_cpu(tx_req->data->seq_num),
++			le32_to_cpu(tx_req->data->req_id),
++			tx_req->buffer_length);
++
++		tx_state->payload_size += payload_size;
++
++		/* submit packet for transport */
++		mausb_transfer_data_pkt(tx_req, ep, GFP_ATOMIC);
++
++		spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++		ep_state->rx_buf_size -= payload_size;
++	}
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++	return 0;
++}
++
++/**
++ * Determines if this urb is a for a control transfer. For host side only
++ * (device doesn't have urbs).
++ */
++static bool mausb_control_xfer(struct mausb_urb *maurb)
++{
++	return (usb_endpoint_type(&maurb->urb->ep->desc) ==
++		USB_ENDPOINT_XFER_CONTROL && maurb->urb->setup_packet);
++}
++
++/**
++ * Create and send OUT transferRequest packets for a given transfer.
++ *
++ * @tx_state:	State associated with transfer.
++ * @ep_state:	State associated with transfer endpoint.
++ * @maurb:	MA USB urb associated with transfer.
++ */
++int host_OUT_generate_txReqs(struct mausb_transfer_state *tx_state,
++		struct mausb_ep_state *ep_state, struct mausb_urb *maurb)
++{
++	int				offset = 0;
++	int				pkt_length = 0;
++	int				payload_size = 0;
++	int				max_buffer_length = 0;
++	struct				mausb_pkt *tx_req;
++	struct mausb_host_ep		*ep = mausb_state_to_ep(ep_state);
++	struct mausb_hcd		*mhcd = mausb_host_ep_to_mahcd(ep);
++	unsigned long irq_flags;
++
++	/*
++	 * Always generate at least one OUT transferReq (OUT control
++	 * transfers may only contain setup data).
++	 */
++	do {
++		/* create transferReq and set packet field values */
++		tx_req = mausb_create_dp(SUCCESS, maurb, MAUSB_OUT,
++					 MAUSB_HOST, GFP_ATOMIC);
++
++		if (!tx_req)
++			return -ENOMEM;
++
++		mausb_fill_pkt_ep(tx_req, ep);
++		tx_req->data->common.pkt_type = TransferReq;
++		tx_req->data->req_id = ep_state->active_request_id;
++		tx_req->data->seq_num = cpu_to_le32(ep_state->seq_number);
++		tx_req->data->remaining_size_credit =
++			cpu_to_le32(tx_state->rem_size);
++		tx_req->buffer_length = 0;
++		tx_req->nents = 0;
++
++		/* add setup data (If necessary) */
++		if (mausb_pkt_has_setup_data(tx_req->data)) {
++			tx_req->setup = (struct usb_ctrlrequest *)
++						maurb->urb->setup_packet;
++		}
++
++		/* calculate max packet buffer size */
++		pkt_length = mausb_pkt_length(tx_req);
++		max_buffer_length = MAUSB_MAX_PACKET_SIZE - pkt_length;
++		payload_size = min_t(int, max_buffer_length,
++				     tx_state->rem_size);
++
++		/* a control transfer can be empty, but nothing else */
++		if (payload_size <= 0 &&
++				!mausb_pkt_has_setup_data(tx_req->data)) {
++			mausb_err(mhcd, "%s: packet error - no room for "
++			       "payload (buffer size is %i)\n", __func__,
++			       payload_size);
++			return -ENOBUFS;
++		} else if (payload_size > 0) {
++
++			if (!maurb->urb->transfer_buffer) {
++				mausb_err(mhcd, "%s: no transfer buffer\n",
++				__func__);
++			}
++
++			/* create packet buffer and fill */
++			tx_req->buffer = maurb->urb->transfer_buffer + offset;
++			if (!tx_req->buffer) {
++				mausb_free_pkt(tx_req);
++				return -ENOMEM;
++			}
++
++			tx_req->buffer_length = payload_size;
++		}
++
++		/* update state variables */
++		offset += payload_size;
++		tx_state->rem_size -= payload_size;
++		tx_req->data->remaining_size_credit = tx_state->rem_size;
++
++		/* send transferReq packet to device */
++		host_OUT_send_txReq(tx_state, ep_state, tx_req);
++
++		spin_lock_irqsave(&ep->ep_lock, irq_flags);
++		ep_state->seq_number =
++				mausb_seq_num_add(ep_state->seq_number, 1);
++		list_add_tail(&tx_req->pkt_list, &ep->req_list);
++
++		spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++	} while (tx_state->rem_size > 0);
++
++	return 0;
++}
++
++/**
++ * Updates transfer and endpoint states after a transferResp is received.
++ *
++ * @ep_state: State information for enpoint associated with transfer.
++ * @tx_state: State information for transfer in progress.
++ * @tx_resp:  transferResponse packet that has been received.
++ *
++ * Called whenever a transferResp packet is received. Returns size in bytes
++ * of payload transferred.
++ */
++int host_OUT_txResp_rcvd(struct mausb_ep_state *ep_state,
++		struct mausb_transfer_state *tx_state,
++		struct mausb_pkt *tx_resp)
++{
++	int			payload_size = 0;
++	u8			status = tx_resp->common->pkt_status;
++	u8			ep_flags = tx_resp->data->eps_tflags;
++	u32			SN = le32_to_cpu(tx_resp->data->seq_num);
++	u32			credit = le32_to_cpu(
++					tx_resp->data->remaining_size_credit);
++	struct mausb_host_ep	*ep = mausb_state_to_ep(ep_state);
++	struct mausb_urb	*maurb = container_of(tx_state,
++					struct mausb_urb, state);
++	struct mausb_hcd	*mhcd = mausb_host_ep_to_mahcd(ep);
++	unsigned long		irq_flags;
++
++	mausb_dbg(mhcd, "%s: received transferResponse with sequence number %i"
++		" for transfer %i\n", __func__, SN, tx_resp->data->req_id);
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++	/* look for sequence number and/or request ID errors */
++	if (should_drop_txResp(ep_state, tx_state, tx_resp, MAUSB_OUT)) {
++		mausb_drop_packet(ep, tx_resp);
++		spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++		return payload_size;
++	}
++
++	switch (status) {
++	case SUCCESS:
++		/*  look for and acknowledge end of transfer */
++		if (ep_flags & MAUSB_PKT_TFLAG_EOT) {
++
++			spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++			host_send_ack(tx_state, MAUSB_OUT, ep_state,
++				 SUCCESS, SN);
++			spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++			ep_state->earliest_request_id =
++				mausb_req_id_add(
++					ep_state->earliest_request_id, 1);
++			ep_state->active_request_id =
++				mausb_req_id_add(
++					ep_state->active_request_id, 1);
++
++			tx_state->eot_detected = true;
++			tx_state->last_transfer_sn = SN;
++			maurb->urb->actual_length += tx_state->payload_size;
++		}
++
++		ep_state->earliest_unacked = SN + 1;
++		ep_state->rx_buf_size = credit - payload_size;
++		break;
++	case INVALID_REQUEST:
++		mausb_err(mhcd, "%s: status = INVALID_REQUEST\n", __func__);
++		/* TODO: start over with request number in packet */
++		break;
++	case DROPPED_PACKET:
++		mausb_err(mhcd, "%s: status = DROPPED_PACKET\n", __func__);
++		/* fallthrough, same as MISSING_SEQUENCE_NUMBER */
++	case MISSING_SEQUENCE_NUMBER:
++		mausb_err(mhcd, "%s: status = MISSING_SEQUENCE_NUMBER\n",
++		       __func__);
++		mausb_resend_multi_packets(ep, &ep->req_list,
++			le32_to_cpu(tx_resp->data->seq_num), irq_flags);
++		break;
++	case TRANSFER_PENDING:
++		mausb_err(mhcd, "%s: status = TRANSFER_PENDING\n", __func__);
++		/* TODO: reset transmission counter */
++		break;
++	case TRANSFER_EP_STALL:
++		printk(KERN_DEBUG "%s: status = TRANSFER_EP_STALL\n", __func__);
++		if (ep_flags & MAUSB_PKT_TFLAG_EOT) {
++			spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++			host_send_ack(tx_state, MAUSB_OUT, ep_state,
++				      TRANSFER_EP_STALL, SN);
++			spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++			tx_state->eot_detected = true;
++		}
++		break;
++	case TRANSFER_CANCELLED:
++		mausb_err(mhcd, "%s: status = TRANSFER_CANCELLED\n",
 +			__func__);
++		break;
++	case TRANSFER_DATA_BUFFER_ERROR:
++		mausb_err(mhcd, "%s: status = TRANSFER_DATA_BUFFER_ERROR\n",
++		       __func__);
++		break;
++	default:
++		tx_state->transfer_error = true;
++		mausb_drop_packet(ep, tx_resp);
++		break;
++	}
 +
-+		data_rcvd = mausb_tcp_receive_packet(tcp_medium, &msg, pkt);
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
 +
-+		if (0 >= data_rcvd) {
-+			printk(KERN_DEBUG "%s: received no data (err %i)\n",
-+				__func__, data_rcvd);
++	return payload_size;
++}
 +
-+			sock_release(tcp_medium->socket);
-+			return data_rcvd;
++
++/* --------------------- Transfer interfaces ----------------------*/
++
++/**
++ * Interface called to initiate an IN or OUT transfer.
++ *
++ * @ep:     Host endpoint associated with transfer.
++ * @maurb:  maurb with payload to transfer.
++ *	    NOTE: one maurb maps to one transfer.
++ * @dir_in: Transfer direction. Set to one if IN (to host) or zero if OUT.
++ *
++ * Only one transfer can be in progress at a time for a particular endpoint.
++ * When a transfer is in progress, the tx_pending flag for that endpoint is set
++ * indicating that the endpoint is busy.
++ */
++int start_ma_transfer(struct mausb_host_ep *ep, struct mausb_urb *maurb,
++		int dir_in)
++{
++	int				     tx_size;
++	unsigned long			     irq_flags;
++	char				     *tx_type;
++	struct mausb_hcd		     *mhcd = mausb_host_ep_to_mahcd(ep);
++	const struct usb_endpoint_descriptor *ep_desc;
++
++	ep_desc = mausb_get_ep_des(ep);
++
++	switch (usb_endpoint_type(ep_desc)) {
++	case USB_ENDPOINT_XFER_CONTROL:
++		tx_type = "control";
++		break;
++	case USB_ENDPOINT_XFER_ISOC:
++		tx_type = "isochronous";
++		break;
++	case USB_ENDPOINT_XFER_BULK:
++		tx_type = "bulk";
++		break;
++	case USB_ENDPOINT_XFER_INT:
++		tx_type = "interrupt";
++		break;
++	default:
++		tx_type = "unknown";
++	}
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++	/* start a new transfer if there isn't one already in progress. */
++	if (ep->state.tx_pending == 0) {
++
++		ep->state.tx_pending = 1;
++		tx_size = maurb->urb->transfer_buffer_length;
++
++		/*
++		 * Set this transfer as active transfer for endpoint - this
++		 * is how we will get active transfer info when we receive
++		 * transferRequests.
++		 */
++		ep->active_transfer = maurb;
++
++		/* check to see if setup phase of control transfer */
++		if (mausb_control_xfer(maurb)) {
++			ep->state.seq_number = 0;
++			ep->state.earliest_unacked = 0;
++		}
++
++		spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++		/* initiate transfer by direction */
++		if (dir_in) {
++			mausb_dbg(mhcd, "%s: starting %s IN transfer for"
++				" endpoint %u\n", __func__, tx_type,
++				ep->ep_handle.ep_num);
++
++			host_init_IN_transfer(&maurb->state, ep, maurb);
 +
 +		} else {
-+			printk(KERN_DEBUG "%s: received %i bytes\n",
-+				__func__, data_rcvd);
-+		}
++			mausb_dbg(mhcd, "%s: starting %s OUT transfer for"
++				" endpoint %u\n", __func__, tx_type,
++				ep->ep_handle.ep_num);
 +
-+		if (data_rcvd > 0) {
-+			mausb_transfer_packet(pkt,
-+				&tcp_medium->ma_driver->pkt_dmux);
++			host_init_OUT_transfer(&maurb->state, ep, tx_size);
++			host_OUT_generate_txReqs(&maurb->state, &ep->state,
++				maurb);
 +		}
-+
-+		data_rcvd = 0;
++		spin_lock_irqsave(&ep->ep_lock, irq_flags);
 +	}
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
 +
-+	sock_release(tcp_medium->socket);
-+
-+	return 0;
++	return -EINPROGRESS;
 +}
-+EXPORT_SYMBOL(mausb_tcp_receive_loop);
-+
-+int mausb_tcp_add_tx_pair(struct mausb_transfer_pair *ma_pair,
-+	struct mausb_tcp_medium *medium)
-+{
-+	ma_pair->to_ms.transfer_packet = &mausb_tcp_enqueue;
-+	ma_pair->to_ms.context = mausb_tcp_to_context(medium);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mausb_tcp_add_tx_pair);
-+
-+int mausb_tcp_drop_tx_pair(unsigned long handle, void *context)
-+{
-+	/* TODO: something here */
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mausb_tcp_drop_tx_pair);
 +
 +/**
-+ * initialization function
++ * Interface called to give a transferResp to the host for IN transfers.
++ *
++ * @pkt:      transferResponse packet being received.
++ * @context:  Host endpoint associated with transfer.
++ *
++ * After an IN transfer is initiated, the host waits to receive transferResponse
++ * packets from the device-side endpoint. When a transferResponse is received,
++ * the host updates its transfer and endpoint states and copies the packet
++ * payload into the maurb buffer associated with the tranfer. If the device
++ * requests a transferAck packet, one is sent.
 + */
-+struct mausb_tcp_medium *alloc_init_mausb_tcp_medium(
-+	enum mausb_tcp_module_type type)
++int complete_IN_transferRequest(struct ms_pkt *pkt, void *context)
 +{
-+	struct mausb_tcp_medium *medium;
-+	int ret;
++	int				urb_stat;
++	int				length = 0;
++	struct mausb_host_ep		*ep;
++	struct mausb_pkt		*tx_resp;
++	struct mausb_urb		*maurb;
++	struct mausb_transfer_state	*tx_state;
++	struct mausb_hcd		*mhcd;
 +
-+	printk(KERN_DEBUG "%s\n", __func__);
-+
-+	medium = kzalloc(sizeof(struct mausb_tcp_medium), GFP_KERNEL);
-+	if (NULL == medium) {
-+		printk(KERN_DEBUG "%s: memory allocation failed\n", __func__);
-+		return NULL;
++	if ((NULL == context) || (NULL == pkt)) {
++		printk(KERN_ERR "%s: received NULL %s\n", __func__,
++			context ? "packet" : "context");
++		return -EFAULT;
 +	}
 +
-+	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP,
-+		&medium->setup_socket);
++	ep = (struct mausb_host_ep *) context;
 +
-+	medium->addr_in.sin_family = AF_INET;
-+	medium->addr_in.sin_port = htons(MAUSB_TCP_PORT_HOST);
++	/* stop timeout timer */
++	del_timer(&ep->timer);
 +
-+	spin_lock_init(&medium->lock);
++	tx_resp = mausb_pkt_from_ms_pkt_ep(pkt, ep, GFP_ATOMIC);
++	list_add_tail(&tx_resp->pkt_list, &ep->resp_list);
 +
-+	tcp_medium[type] = medium;
++	mhcd = mausb_host_ep_to_mahcd(ep);
++	maurb = ep->active_transfer;
 +
-+	return medium;
++	if (NULL == maurb) {
++		mausb_err(mhcd, "%s: no active transfer for endpoint at %p\n",
++			__func__, ep);
++		return -EINVAL;
++	}
++
++	tx_state = &maurb->state;
++	length = host_IN_txResp_rcvd(&ep->state, tx_state, tx_resp);
++
++	/* something went wrong in receiving the transferResp packet */
++	if (length < 0) {
++		mausb_err(mhcd, "%s: returning error %i\n", __func__, length);
++		return length;
++	}
++
++	/* look for end of transfer */
++	if (tx_state->eot_detected) {
++		ep->state.tx_pending = 0;
++
++		urb_stat = mausb_to_urb_status(tx_resp->data->common.pkt_status);
++		if (NULL != maurb)
++			mausb_unlink_giveback_urb(maurb, urb_stat);
++	}
++
++	/* if not end of transfer, set timer between packets */
++	else {
++		mod_timer(&ep->timer,
++			jiffies + msecs_to_jiffies(MAUSB_TRANSFER_KEEP_ALIVE));
++	}
++
++	return length;
 +}
-+EXPORT_SYMBOL(alloc_init_mausb_tcp_medium);
 +
 +/**
-+ * exit function
++ * Interface called to give the host a transferResp packet.
++ *
++ * @pkt:     transferResponse packet being received.
++ * @context: Host endpoint associated with transfer.
++ *
++ * For OUT transfers the host sends a series of transferRequest packets. A
++ * transferResponse packet is only sent by the device when a transferAck packet
++ * is requested by the host or the end of the transfer is reached.
 + */
-+void free_mausb_tcp_medium(struct mausb_tcp_medium *medium,
-+	enum mausb_tcp_module_type type)
++int complete_OUT_transferRequest(struct ms_pkt *pkt, void *context)
 +{
-+	if (medium->recv_task)
-+		kthread_stop(medium->recv_task);
++	int				urb_stat;
++	int				ret = 0;
++	struct mausb_host_ep		*ep;
++	struct mausb_pkt		*tx_resp;
++	struct mausb_urb		*maurb;
++	struct mausb_transfer_state	*tx_state;
++	struct mausb_hcd		*mhcd;
 +
-+	if (medium->setup_socket)
-+		sock_release(medium->setup_socket);
++	if ((NULL == context) || (NULL == pkt)) {
++		printk(KERN_ERR "%s: received NULL %s\n", __func__,
++			context ? "packet" : "context");
++		return -EFAULT;
++	}
 +
-+	tcp_medium[type] = NULL;
++	ep = (struct mausb_host_ep *) context;
 +
-+	kfree(medium);
-+}
-+EXPORT_SYMBOL(free_mausb_tcp_medium);
++	/* stop timeout timer */
++	del_timer(&ep->timer);
 +
-+int mausb_tcp_core_init(void)
-+{
-+	int ret;
++	tx_resp = mausb_pkt_from_ms_pkt_ep(pkt, ep, GFP_ATOMIC);
++	list_add_tail(&tx_resp->pkt_list, &ep->resp_list);
 +
-+	ret = reg_chrdev();
-+	if (0 > ret) {
-+		printk(KERN_DEBUG "%s: reg_chrdev() failed\n",
-+			__func__);
++	mhcd = mausb_host_ep_to_mahcd(ep);
++	maurb = ep->active_transfer;
++
++	if (NULL == maurb) {
++		mausb_err(mhcd, "%s: no active transfer for endpoint at %p\n",
++			__func__, ep);
++		return -EFAULT;
++	}
++
++	tx_state = &maurb->state;
++
++	/*
++	 * Look for Retry flag in packet and resend requested packets
++	 * if we have them. Otherwise, pass packet on to receiving process.
++	 */
++	if (mausb_is_a_retry(ep, &ep->req_list, tx_resp) == false)
++		ret = host_OUT_txResp_rcvd(&ep->state, tx_state, tx_resp);
++
++	/* make sure we still have an active transfer */
++	if (!ep->active_transfer) {
++		mausb_cleanup_ma_packets(ep,
++			le32_to_cpu(tx_resp->data->seq_num),
++			tx_resp->data->req_id);
++		mausb_unlink_giveback_urb(maurb, -EINVAL);
++		return ret;
++	}
++
++	/* handle end of transfer */
++	if (tx_state->eot_detected) {
++		ep->state.tx_pending = 0;
++		mausb_cleanup_ma_packets(ep,
++			le32_to_cpu(tx_resp->data->seq_num),
++			tx_resp->data->req_id);
++		urb_stat = mausb_to_urb_status(
++			tx_resp->data->common.pkt_status);
++		mausb_unlink_giveback_urb(maurb, urb_stat);
 +	}
 +
 +	return ret;
-+
 +}
-+module_init(mausb_tcp_core_init);
 +
-+void mausb_tcp_core_exit(void)
++/*
++ * Receives transferRequest packets for control endpoint (ep0).
++ *
++ * @pkt:     transferResponse packet being received.
++ * @context: Host endpoint associated with transfer. This should always be
++ *	     control endpoint (ep0).
++ *
++ * Control transfers can be either IN or OUT. Transfer direction is parsed
++ * from the urb associated with the transfer, then the appropriate completion
++ * function is called.
++ */
++int complete_control_transferRequest(struct ms_pkt *pkt, void *context)
 +{
-+	unreg_chrdev();
-+}
-+module_exit(mausb_tcp_core_exit);
++	int			dir_in = 0;
++	struct mausb_host_ep	*ep;
++	struct mausb_hcd	*mhcd;
 +
-+MODULE_LICENSE("Dual BSD/GPL");
-+MODULE_AUTHOR("Intel");
-+MODULE_DESCRIPTION("mausb_tcp_core");
-diff --git a/drivers/staging/mausb/drivers/mausb_tcp.h b/drivers/staging/mausb/drivers/mausb_tcp.h
++	if ((NULL == context) || (NULL == pkt)) {
++		printk(KERN_ERR "%s: received NULL %s\n", __func__,
++			context ? "packet" : "context");
++		return -EFAULT;
++	}
++
++	ep = (struct mausb_host_ep *) context;
++	mhcd = mausb_host_ep_to_mahcd(ep);
++
++	if (NULL == mhcd) {
++		printk(KERN_ERR "%s: could not find MA USB HCD for endpoint"
++			" at 0x%p\n", __func__, ep);
++		return -EFAULT;
++	}
++
++	if (NULL == ep->active_transfer || NULL == ep->active_transfer->urb) {
++		mausb_err(mhcd, "%s: no active transfer for endpoint at %p\n",
++			__func__, ep);
++		return -EFAULT;
++	}
++
++	/* stop timeout timer */
++	del_timer(&ep->timer);
++
++	dir_in = usb_pipein(ep->active_transfer->urb->pipe);
++
++	if (dir_in)
++		complete_IN_transferRequest(pkt, context);
++	else
++		complete_OUT_transferRequest(pkt, context);
++
++	return 0;
++}
++
+diff --git a/drivers/staging/mausb/drivers/mausb_tx.c b/drivers/staging/mausb/drivers/mausb_tx.c
 new file mode 100644
-index 0000000..879a7fa
+index 0000000..fb52ad1
 --- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_tcp.h
-@@ -0,0 +1,129 @@
-+/* Name: mausb_tcp.h
-+ * Description: header file for mausb_tcp.c
++++ b/drivers/staging/mausb/drivers/mausb_tx.c
+@@ -0,0 +1,318 @@
++/* Name:        mausb_tx.c
++ * Description: Common functions for both host and device media agnostic
++ *              transfers.
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -1696,7 +2160,330 @@ index 0000000..879a7fa
 + * modification, are permitted provided that the following conditions
 + * are met:
 + *
-+    * Redistributions of source code must retain the above copyright
++   * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++#include "mausb_pkt.h"
++#include "mausb_tx.h"
++#include "mausb_const.h"
++
++int mausb_transfer_data_pkt(struct mausb_pkt *pkt, struct mausb_host_ep *ep,
++		gfp_t mem_flags)
++{
++	int ret;
++
++	ret = mausb_pkt_fill_ms_pkt(pkt, mem_flags);
++	if (0 > ret)
++		return ret;
++
++	return mausb_transfer_packet(&pkt->pkt, &ep->tx_pair.to_ms);
++
++}
++EXPORT_SYMBOL(mausb_transfer_data_pkt);
++
++/**
++ * Opens an endpoint-specific connection between the media specific and media
++ * agnostic drivers in order to send and receive MA USB data packets.
++ *
++ * @drv:	  Media specific driver to establish connection with.
++ * @ep:  	  Host endpoint to be associated with this channel.
++ * @transfer_pkt: The call the MS driver should make when a packet is received.
++ */
++int mausb_add_data_channel(struct mausb_ms_drv *drv, struct mausb_host_ep *ep,
++		int (*transfer_pkt)(struct ms_pkt *pkt, void *context))
++{
++	int				ret = 0;
++	struct mausb_transfer_pair	tx_pair;
++
++	matx_dbg("%s: adding channel for ep with handle %x\n", __func__,
++		ep->ep_handle.handle);
++
++	tx_pair.to_ma.transfer_packet = transfer_pkt;
++	tx_pair.to_ma.context = ep;
++	tx_pair.pkt_sent = NULL;
++	tx_pair.handle = ep->ep_handle.handle;
++
++	ret = drv->ops->add_transfer_pair(&tx_pair);
++
++	if (ret >= 0)
++		ep->tx_pair = tx_pair;
++
++	return ret;
++}
++EXPORT_SYMBOL(mausb_add_data_channel);
++
++/**
++ * Determines if conditions are met to complete a data transfer.
++ *
++ * @tx_state: State of transfer to be checked.
++ * @seq_num:  Sequence number to be compared to last sequence number in the
++ *	      transfer.
++ *
++ * Returns true if a transfer can be considered complete or false otherwise.
++ * Note that this does not differentiate between transfers that complete
++ * with and without an error.
++ */
++bool mausb_transfer_is_complete(struct mausb_transfer_state *tx_state,
++		u8 seq_num)
++{
++	bool complete = false;
++
++	if (!tx_state->transfer_error && tx_state->last_transfer_sn <= seq_num)
++		complete = true;
++
++	if (tx_state->transfer_error) {
++		matx_err("%s: transfer ending with error\n", __func__);
++		complete = true;
++	}
++
++	return complete;
++}
++EXPORT_SYMBOL(mausb_transfer_is_complete);
++
++/**
++ * Deletes packet from endpoint list and frees memory.
++ *
++ * @ep:	 Endpoint associated with packet to be dropped.
++ * @pkt: Packet to be dropped.
++ */
++void mausb_drop_packet(struct mausb_host_ep *ep, struct mausb_pkt *pkt)
++{
++	if (ep == NULL || pkt == NULL)
++		return;
++
++	list_del(&pkt->pkt_list);
++	mausb_free_pkt(pkt);
++
++	if (list_empty(&ep->req_list))
++		INIT_LIST_HEAD(&ep->req_list);
++
++	if (list_empty(&ep->resp_list))
++		INIT_LIST_HEAD(&ep->resp_list);
++}
++EXPORT_SYMBOL(mausb_drop_packet);
++
++/**
++ * Deletes all of the packets based on the sequence number.
++ *
++ * @ep:      Endpoint associated with transfer.
++ * @seq_num: The sequence number of the packets to delete. This will
++ *           delete all the packets with sequence numbers up to
++ *           (but not including) seq_num.
++ * @req_id:  The request ID of the packets to delete. This will
++ *           delete all the packets with request IDs up to
++ *           (but not including) req_id.
++ */
++void mausb_cleanup_ma_packets(struct mausb_host_ep *ep, u32 seq_num, u8 req_id)
++{
++	struct mausb_pkt *active, *next;
++
++	list_for_each_entry_safe(active, next, &ep->req_list, pkt_list) {
++		if (mausb_seq_num_lt(active->data->seq_num, seq_num) ||
++			mausb_req_id_lt(active->data->req_id, req_id))
++			mausb_drop_packet(ep, active);
++	}
++
++	list_for_each_entry_safe(active, next, &ep->resp_list, pkt_list) {
++		if (mausb_seq_num_lt(active->data->seq_num, seq_num) ||
++			mausb_req_id_lt(active->data->req_id, req_id))
++
++			mausb_drop_packet(ep, active);
++	}
++}
++EXPORT_SYMBOL(mausb_cleanup_ma_packets);
++
++/**
++ * Resend all packets starting from a given sequence number.
++ *
++ * @ep:		Endpoint associated with packets.
++ * @pkt_list: 	Head of list of packets to search.
++ * @seq_num: 	Sequence number of first packet to be sent.
++ *
++ * Returns 0 if at least one packet is sent, otherwise returns non-zero value.
++ * Note: the caller should be holding the endpoint's spinlock.
++ */
++int mausb_resend_multi_packets(struct mausb_host_ep *ep,
++		struct list_head *pkt_list,
++		u32 seq_num, unsigned long irq_flags)
++{
++	int			ret = -EINVAL;
++	struct mausb_pkt	*pkt;
++	int			i = 0;
++
++	list_for_each_entry(pkt, pkt_list, pkt_list) {
++
++		i++;
++		if (mausb_seq_num_gt_eq(pkt->data->seq_num, seq_num)) {
++			matx_dbg("%s: resending pkt %i\n", __func__,
++				pkt->data->seq_num);
++			pkt->common->ver_flags |= MAUSB_PKT_FLAG_RETRY;
++			ret = 0;
++			mausb_transfer_data_pkt(pkt, ep, GFP_ATOMIC);
++		}
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL(mausb_resend_multi_packets);
++
++/**
++ * Checks to see if a received packet is a retry and resends response packets
++ * (if found).
++ *
++ * @ep:		Endpoint associated with transfer.
++ * @pkt_list:	List of packets previously sent.
++ * @pkt:	Received packet.
++ *
++ * Returns true if received packet has the Retry flag set AND at least one
++ * response packet was found and sent. Returns false if the Retry flag not
++ * set or the Retry flag is set but no corresponding packets have been found.
++ */
++bool mausb_is_a_retry(struct mausb_host_ep *ep, struct list_head *pkt_list,
++		struct mausb_pkt *pkt)
++{
++	int			err	= 0;
++	unsigned long		irq_flags;
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++	if (pkt->common->ver_flags & MAUSB_PKT_FLAG_RETRY) {
++		matx_dbg("%s: packet is a retry\n", __func__);
++
++		/*
++		 * If received packet is a retry, look to see if we've
++		 * already generated the corresponding packets.
++		 */
++		err = mausb_resend_multi_packets(ep, pkt_list,
++			pkt->data->seq_num,
++				irq_flags);
++
++		/*
++		 * Only return true if packet is found, otherwise we might
++		 * miss responding to a packet we never received.
++		 */
++		if (err == 0)
++			return true;
++	}
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++	return false;
++}
++EXPORT_SYMBOL(mausb_is_a_retry);
++
++/**
++ * Called by timeout timer to start thread that handles error handling and
++ * packet resends.
++ *
++ * Used to avoid passing packets to a medium while in an interrupt context,
++ * which can be problematic for some mediums.
++ */
++void wake_timeout_thread(unsigned long _ep)
++{
++	struct mausb_host_ep	*ep = (struct mausb_host_ep *) _ep;
++	unsigned long		irq_flags;
++
++	matx_dbg("%s: timeout occurred!!!\n", __func__);
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++	ep->tx_timed_out = true;
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++	wake_up_interruptible(&ep->host_ep_wq);
++}
++
++/**
++ * Fills packet fields based on the given EP. Also fills device fields.
++ */
++void mausb_fill_pkt_ep(struct mausb_pkt *pkt, struct mausb_host_ep *ma_ep)
++{
++	struct mausb_dev	*mausb_dev;
++	struct ma_dev		*ma_dev;
++	unsigned long		irq_flags;
++
++	spin_lock_irqsave(&ma_ep->ep_lock, irq_flags);
++
++	if (MAUSB_EP_HANDLE_ACTIVE != ma_ep->ep_handle_state) {
++		matx_warn("%s: endpoint handle not active\n", __func__);
++	}
++
++	pkt->common->ep_handle = ma_ep->ep_handle;
++	pkt->data->eps_tflags |= ma_ep->ep_handle_state;
++	/* TODO: set transfer Type */
++
++	mausb_dev = ma_ep->mausb_dev;
++	spin_unlock_irqrestore(&ma_ep->ep_lock, irq_flags);
++
++
++	spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++	ma_dev = mausb_dev->ma_dev;
++	spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++
++
++	spin_lock_irqsave(&ma_dev->ma_dev_lock, irq_flags);
++	pkt->common->ma_dev_addr = ma_dev->ma_dev_addr;
++	pkt->common->mass_id = ma_dev->mass_id;
++	spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags);
++}
++EXPORT_SYMBOL(mausb_fill_pkt_ep);
++
++
+diff --git a/drivers/staging/mausb/drivers/mausb_tx.h b/drivers/staging/mausb/drivers/mausb_tx.h
+new file mode 100644
+index 0000000..c876afc
+--- /dev/null
++++ b/drivers/staging/mausb/drivers/mausb_tx.h
+@@ -0,0 +1,129 @@
++/* Name:        mausb_tx.h
++ * Description:	header file for mausb_tx-device.c and mausb_tx-host.c
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * Contact Information:
++ * Sean Stalley, sean.stalley@intel.com
++ * Stephanie Wallick, stephanie.s.wallick@intel.com
++ * 2111 NE 25th Avenue
++ * Hillsboro, Oregon 97124
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++   * Redistributions of source code must retain the above copyright
 +      notice, this list of conditions and the following disclaimer.
 +    * Redistributions in binary form must reproduce the above copyright
 +      notice, this list of conditions and the following disclaimer in
@@ -1719,77 +2506,77 @@ index 0000000..879a7fa
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
 +
-+#ifndef __MAUSB_TCP_H
-+#define __MAUSB_TCP_H
++#define DEBUG
 +
-+#include <linux/net.h>
-+#include <linux/kthread.h>
-+#include <linux/tcp.h>
-+#include <linux/in.h>
++#ifndef __MAUSB_TX_H
++#define __MAUSB_TX_H
 +
-+#include "mausb_msapi.h"
++#include "mausb_mem.h"
++#include "mausb_pkt.h"
 +
-+#define MAUSB_TCP_PORT_HOST 9001
++#ifdef DEBUG
++#define matx_dbg(format, arg...) \
++	printk(KERN_DEBUG format, ##arg)
++#else
++#define matx_dbg(format, arg...)
++#endif
 +
-+/* used to determine how many times we have to listen */
-+#define MAUSB_TCP_MAX_NUM_CHANNELS 1
++#define matx_warn(format, arg...) \
++	printk(KERN_WARNING format, ##arg)
 +
-+/* how often the device should poll while connecting */
-+#define MAUSB_TCP_DEV_CONNECT_POLL_MS 100
++#define matx_err(format, arg...) \
++	printk(KERN_ERR format, ##arg)
 +
-+/* how often to poll the port to check for a new message */
-+#define MAUSB_TCP_POLL_PORT_MS 5
++/* TODO: for now this is set to match gadget zero's buffer size, but
++ * eventually we need to get this value from the device instead of
++ * predefining it. */
++# define DEVICE_RX_BUF_SIZE 4096
 +
-+#define MAUSB_TCP_BUF_SIZE PAGE_SIZE
++#define MAUSB_WAIT_GADGET_BUFFER_FREE_TIMEOUT 3000
 +
-+#define MAUSB_MAX_NAME_LEN 50
++/* functions common to both host and device */
++int mausb_add_data_channel(struct mausb_ms_drv *drv, struct mausb_host_ep *ep,
++		int (*transfer_pkt)(struct ms_pkt *pkt, void *context));
 +
-+#define MAUSB_TCP_RECV_POLL 1 /* in ms */
++int mausb_transfer_data_pkt(struct mausb_pkt *pkt, struct mausb_host_ep *ep,
++		gfp_t mem_flags);
++bool mausb_transfer_is_complete(struct mausb_transfer_state *tx_state,
++		u8 seq_num);
++void mausb_drop_packet(struct mausb_host_ep *ep, struct mausb_pkt *pkt);
++void mausb_cleanup_ma_packets(struct mausb_host_ep *ep, u32 seq_num,
++		u8 req_id);
++bool mausb_is_a_retry(struct mausb_host_ep *ep, struct list_head *pkt_list,
++		struct mausb_pkt *pkt);
++int mausb_resend_multi_packets(struct mausb_host_ep *ep,
++		struct list_head *pkt_list, u32 seq_num,
++		unsigned long irq_flags);
++void mausb_fill_pkt_ep(struct mausb_pkt *pkt, struct mausb_host_ep *ma_ep);
 +
-+#define MAUSB_DWORD_LENGTH 4 /* DWORD = 4 bytes */
++/* transfer interface function declarations */
++int complete_control_transferRequest(struct ms_pkt *pkt, void *context);
++int complete_IN_transferRequest(struct ms_pkt *pkt, void *context);
++int complete_OUT_transferRequest(struct ms_pkt *pkt, void *context);
++int receive_ma_packet_control(struct ms_pkt *ms_pkt, void *context);
++int receive_ma_packet_IN(struct ms_pkt *ms_pkt, void *context);
++int receive_ma_packet_OUT(struct ms_pkt *ms_pkt, void *context);
++int start_ma_transfer(struct mausb_host_ep *ep, struct mausb_urb *maurb,
++		int dir_in);
 +
-+enum mausb_tcp_module_type {
-+	MAUSB_TCP_DEV = 0,
-+	MAUSB_TCP_HOST,
-+	MAUSB_TCP_NUM_MODS
-+};
++/* transfer state fucntion declarations */
++int device_OUT_deliver_payload(struct mausb_pkt *tx_req,
++		struct mausb_ep_state *ep_state,
++		struct mausb_transfer_state *tx_state);
++int device_OUT_send_txResp(struct mausb_transfer_state *tx_state,
++		struct mausb_ep_state *ep_state, u32 req_id,
++		u32 seq_num, int status, bool retry, bool eot, bool arq);
++void host_IN_txReq_transmit(struct mausb_pkt *tx_req, struct mausb_host_ep *ep,
++		struct mausb_transfer_state *tx_state);
++int device_IN_send_null_txResp(struct mausb_host_ep *ep, u8 req_id, int status);
 +
-+struct mausb_tcp_medium {
-+	struct socket *setup_socket;
-+	union {
-+		struct sockaddr_in addr_in;
-+		struct sockaddr addr;
-+	};
-+	spinlock_t lock;
-+	struct mausb_ma_drv *ma_driver;
-+
-+	struct socket *socket;
-+	struct task_struct *recv_task;
-+
-+	/* function call for when a device connect/disconnect is made */
-+	int (*connect)(int on);
-+};
-+
-+/* Used so that host and device side connect functions can run simultaniously.
-+ * See gadget_connection() & gadget_connect_thread() for details. */
-+struct mausb_connect_data {
-+	struct task_struct *task;
-+	int i;
-+	int on;
-+};
-+
-+/* function declarations */
-+struct mausb_tcp_medium *mausb_tcp_get_medium(void);
-+void *mausb_tcp_to_context(struct mausb_tcp_medium *medium);
-+struct mausb_tcp_medium *mausb_context_to_tcp(void *context);
-+int mausb_tcp_receive_loop(struct mausb_tcp_medium *medium);
-+int mausb_tcp_add_tx_pair(struct mausb_transfer_pair *ma_pair,
-+		struct mausb_tcp_medium *medium);
-+int mausb_tcp_drop_tx_pair(unsigned long handle, void *context);
-+struct mausb_tcp_medium *alloc_init_mausb_tcp_medium(
-+		enum mausb_tcp_module_type type);
-+void free_mausb_tcp_medium(struct mausb_tcp_medium *medium,
-+		enum mausb_tcp_module_type type);
++/* transfer timeout function declarations */
++void wake_timeout_thread(unsigned long _ep);
++int host_transfer_timeout(void *data);
++int device_transfer_timeout(void *data);
 +
 +#endif
 -- 
