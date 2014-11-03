@@ -1,123 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284AbaKCQgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:36:09 -0500
-Received: from mga03.intel.com ([134.134.136.65]:29229 "EHLO mga03.intel.com"
+	id S1752432AbaKCQkM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:40:12 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:59102 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753246AbaKCQgG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:36:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
-   d="scan'208";a="630418084"
-From: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <boaz@plexistor.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        "Kani, Toshimitsu" <toshi.kani@hp.com>,
-        "Knippers, Linda" <linda.knippers@hp.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvdimm@lists.01.org" <linux-nvdimm@ml01.01.org>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: RE: [PATCH 2/4] pmem: Add support for getgeo()
-Thread-Topic: [PATCH 2/4] pmem: Add support for getgeo()
-Thread-Index: AQHPwju85IA6QfiPMU+ItV/iaiOGm5xNFC1wgAJvjnA=
-Date: Mon, 3 Nov 2014 16:36:02 +0000
-Message-ID: <100D68C7BA14664A8938383216E40DE0408298B7@FMSMSX114.amr.corp.intel.com>
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
- <1409173922-7484-3-git-send-email-ross.zwisler@linux.intel.com>
- <94D0CD8314A33A4D9D801C0FE68B4029593548D4@G9W0745.americas.hpqcorp.net>
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B4029593548D4@G9W0745.americas.hpqcorp.net>
-Accept-Language: en-CA, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.106]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751908AbaKCQkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 11:40:09 -0500
+Date: Mon, 3 Nov 2014 10:39:36 -0600
+From: Felipe Balbi <balbi@TI.COM>
+To: Felipe Balbi <balbi@TI.COM>
+CC: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, <nsekhar@TI.COM>,
+        <grant.likely@linaro.org>, George Cherian <george.cherian@TI.COM>
+Subject: Re: [PATCH 4/4] extcon: gpio: Add support for using cable names
+Message-ID: <20141103163936.GO27425@saruman>
+Reply-To: <balbi@TI.COM>
+References: <1415032350-8459-1-git-send-email-balbi@ti.com>
+ <1415032350-8459-5-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="da9oBGf5DLtF9ehv"
+Content-Disposition: inline
+In-Reply-To: <1415032350-8459-5-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I agree that there should be a generic fake getgeo routine; but fixing that is a topic for a different patchset and it doesn't need to get folded into this driver submission process.
+--da9oBGf5DLtF9ehv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
------Original Message-----
-From: Elliott, Robert (Server Storage) [mailto:Elliott@hp.com] 
-Sent: Saturday, November 01, 2014 8:28 PM
-To: Ross Zwisler; Jens Axboe; Wilcox, Matthew R; Boaz Harrosh; Nick Piggin; Kani, Toshimitsu; Knippers, Linda; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-nvdimm@lists.01.org
-Subject: RE: [PATCH 2/4] pmem: Add support for getgeo()
+On Mon, Nov 03, 2014 at 10:32:30AM -0600, Felipe Balbi wrote:
+> From: George Cherian <george.cherian@ti.com>
+>=20
+> Add support for using cable names. Enables other drivers to register inte=
+rest
+> and get notified using extcon provided notifier call backs.
+>=20
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 
-
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Ross Zwisler
-> Sent: Wednesday, 27 August, 2014 4:12 PM
-> To: Jens Axboe; Matthew Wilcox; Boaz Harrosh; Nick Piggin; linux-
-> fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
-> nvdimm@lists.01.org
-> Cc: Ross Zwisler
-> Subject: [PATCH 2/4] pmem: Add support for getgeo()
-> 
-> Some programs require HDIO_GETGEO work, which requires we implement
-> getgeo.  Based off of the work done to the NVMe driver in this
-> commit:
-> 
-> commit 4cc09e2dc4cb ("NVMe: Add getgeo to block ops")
-> 
-> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
 > ---
->  drivers/block/pmem.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/drivers/block/pmem.c b/drivers/block/pmem.c
-> index d366b9b..60bbe0d 100644
-> --- a/drivers/block/pmem.c
-> +++ b/drivers/block/pmem.c
-> @@ -50,6 +50,15 @@ struct pmem_device {
->  	size_t			size;
+>  Documentation/devicetree/bindings/extcon/extcon-gpio.txt | 2 ++
+>  drivers/extcon/extcon-gpio.c                             | 4 ++++
+>  2 files changed, 6 insertions(+)
+>=20
+> diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt b/D=
+ocumentation/devicetree/bindings/extcon/extcon-gpio.txt
+> index 5fe6846..f19aeb4 100644
+> --- a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
+> +++ b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
+> @@ -7,6 +7,7 @@ Required Properties:
+>   - compatible: should be:
+>     * "linux,extcon-gpio"
+>   - gpios: specifies the gpio pin used.
+> + - cable-name: Name of the cable used.
+> =20
+>  Optional Properties:
+>   - debounce: Debounce time for GPIO IRQ in ms
+> @@ -18,4 +19,5 @@ Eg:
+>  		compatible =3D "linux,extcon-gpio";
+>  		gpios =3D <&gpio3 12 GPIO_ACTIVE_HIGH>;
+>  		debounce =3D <20>;
+> +		cable-name =3D "USB-HOST";
+>  	};
+> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+> index 7191d28..cbe35af 100644
+> --- a/drivers/extcon/extcon-gpio.c
+> +++ b/drivers/extcon/extcon-gpio.c
+> @@ -42,6 +42,7 @@ struct gpio_extcon_data {
+>  	struct delayed_work work;
+>  	unsigned long debounce_jiffies;
+>  	bool check_on_resume;
+> +	const char *cable_name[1];
 >  };
-> 
-> +static int pmem_getgeo(struct block_device *bd, struct hd_geometry
-> *geo)
-> +{
-> +	/* some standard values */
-> +	geo->heads = 1 << 6;
-> +	geo->sectors = 1 << 5;
-> +	geo->cylinders = get_capacity(bd->bd_disk) >> 11;
-
-Just stuffing the result of get_capacity into the 16-bit 
-cylinders field will overflow/wrap on large capacities.
-0xFFFF << 11 = 0x7FF_F800 = 64 GiB (68.7 GB)
-
-How many programs still need these meaningless fields?
-Could the bogus information be created elsewhere so
-each block driver doesn't need to do this?
-
-
-> +	return 0;
-> +}
-> +
->  /*
->   * direct translation from (pmem,sector) => void*
->   * We do not require that sector be page aligned.
-> @@ -176,6 +185,7 @@ out:
-> 
->  static const struct block_device_operations pmem_fops = {
->  	.owner =		THIS_MODULE,
-> +	.getgeo =		pmem_getgeo,
->  };
-> 
->  /* Kernel module stuff */
+> =20
+>  static void gpio_extcon_work(struct work_struct *work)
+> @@ -112,6 +113,9 @@ static int gpio_extcon_probe(struct platform_device *=
+pdev)
+>  		of_property_read_u32(np, "debounce", &debounce);
+>  		irq =3D gpiod_to_irq(extcon_data->gpiod);
+>  		irq_flags =3D irq_get_trigger_type(irq);
+> +		of_property_read_string_index(np, "cable-name", 0,
+> +					      extcon_data->cable_name);
+> +		extcon_data->edev->supported_cable =3D extcon_data->cable_name;
+>  	} else {
+>  		if (!pdata)
+>  			return -EBUSY;
+> --=20
+> 2.1.0.GIT
+>=20
 > --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+--=20
+balbi
 
----
-Rob Elliott    HP Server Storage
+--da9oBGf5DLtF9ehv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJUV6/IAAoJEIaOsuA1yqRExQsP/jJZzqn3jEF83alziM5V2qGr
+tJEEq3oHlFgm6goPX4A+T9sEE7tj0L9N6UWD0dpj0ik87NsmWGmT9QIyLte9W9xE
+Ep0RFqmveLigNqDNhY2OfB9BgmQGxBkIMDDlS9x39FV5kVugOc0cCTifpXU4deZ3
+DMMq3x1pKVZqHT332lRDCK8ZYVxpGMJee8dWfUA4rL0Vne1X6KZ+jS1vKjCAEpCz
+G2R6Yc0K3BIoLVvnRt/UJAsjDCMNLLBJHGoB5cwwJpGC7tefKNWBMi+TVU3uSolN
+bkebLA6YT+dqg4ErOgUt92UzJTMITEwzPPQoqxsRRL+rfCvkPVn+A/4rUIBtEwZm
+c+o3mhOaC1E1BWzFHqcSjxa3ce43SaWaOEecGTMMNYtSGlYz99C/57OVdwCwb/PZ
+hm3aF2PuRSYIUJWA6J9OR+xM7u/wTyIbV1fDu/DzbfpRFQlHcnlLcQQEpNn41jyh
+/79dp8bry/gznD+viKSAucZMUkWu95Xis6dzAkT0XgtCdrynmjnVBI1Gi4RDuFSZ
+XBQQnFDUrWCTzbD0ioJKAeMF+7fxuxerRhoLK2renjqGSsxWkOWp0KKZ6Vr/4WvR
+BCCDbZ+NwzIAnRzhHgoa+5RrQT8LX9+yACa+pJ18zDhqOyxXu05AVOMuDh+yFUyq
+IyuXRwyhg8D+h4VJLdDO
+=JYLr
+-----END PGP SIGNATURE-----
 
-
+--da9oBGf5DLtF9ehv--
