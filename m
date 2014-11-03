@@ -1,52 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259AbaKCHTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:19:10 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:60361 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaKCHTI (ORCPT
+	id S1751124AbaKCH2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:28:07 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59097 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaKCH2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 02:19:08 -0500
-Date: Mon, 3 Nov 2014 15:18:56 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Evan Gilman <evan@pagerduty.com>
-Cc: steffen.klassert@secunet.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, mwoodson@redhat.com
-Subject: Re: Sporadic ESP payload corruption when using IPSec in NAT-T
- Transport Mode
-Message-ID: <20141103071856.GA28745@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALEwOppDfAHV2rghk_nO2Xbjqxd=cbUeW7oWOkAgZtcmjPdHuQ@mail.gmail.com>
-Organization: Core
-X-Newsgroups: apana.lists.os.linux.kernel,apana.lists.os.linux.netdev
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Nov 2014 02:28:02 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCHSET 0/8] perf tools: Fix build-id matching on vmlinux (v5)
+Date: Mon,  3 Nov 2014 16:27:50 +0900
+Message-Id: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Evan Gilman <evan@pagerduty.com> wrote:
->
-> I tried to find a reference to the previous report of aesni-intel
-> causing IPSec corruption under Xen - I'd be interested to read it if
-> anyone here has it on hand. For now, we are looking to blacklist
-> aesni-intel as we have no other suitable solution, and when combined
-> with our other bug, has a detrimental effect on our infrastructure.
+Hello,
 
-Unfortunately the bug is marked as private but it's
+This patchset addresses possible problem on kernel symbol matching.
+Since commit 5b7ba82a7591 ("perf symbols: Load kernel maps before
+using"), when perf record process samples to construct build-id table,
+it loads kernel map and it replaces dso->long_name.  But perf report
+doesn't know about name other than [kernel.kallsyms] it failed to find
+existing kernel dso and falls back to running kernel's kallsyms.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1085025
+So it's possible to report incorrect symbols for kernel functions if
+it runs on a different kernel:
 
-FWIW it was also observed on AWS.  There is speculation that
-switching to HVM may fix it.  If that were the case, then it's
-highly likely that this is a bug in the Xen paravirt code.
+Before:
 
-It would also mean that if you cannot switch over to HVM then
-the most appropriate fix would be to not use aesni-intel.
+  $ perf report
+  # Children      Self  Command  Shared Object      Symbol
+  # ........  ........  .......  .................  ...............................
+  #
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
+      71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
+   ...
 
-Cheers,
+After (for the same perf.data):
+
+      72.15%     0.00%  swapper  [kernel.vmlinux]  [k] cpu_startup_entry
+      72.15%     0.00%  swapper  [kernel.vmlinux]  [k] arch_cpu_idle
+      72.15%     0.00%  swapper  [kernel.vmlinux]  [k] default_idle
+      71.87%    71.87%  swapper  [kernel.vmlinux]  [k] native_safe_halt
+
+
+In this patch, it's now changed to try to search a kernel dso in the
+existing dso list which was constructed during build-id table parsing
+so it'll always have a build-id.  If not found, search "[kernel.kallsyms]".
+
+The patch 1-2 are to support module compression as some distro
+(e.g. Arch) already does it.  The patch 3-5 are cleanup of build-id
+handling functions.  The patch 6-7 are the main change of this series
+and finally patch 8 is just for suggestion which can be squashed into
+the previous patch or simply dropped.
+
+You can get it on 'perf/vmlinux-v5' branch in my tree:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks
+Namhyung
+
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+
+
+Namhyung Kim (8):
+  perf tools: Preparation for compressed kernel module support
+  perf tools: Add gzip decompression support for kernel module
+  perf tools: Get rid of unused dsos__hit_all()
+  perf tools: Rename dsos__write_buildid_table()
+  perf build-id: Move build-id related functions to util/build-id.c
+  perf record: Do not save pathname in ./debug/.build-id directory for
+    vmlinux
+  perf tools: Fix build-id matching on vmlinux
+  perf tools: Make vmlinux short name more like kallsyms short name
+
+ tools/perf/Makefile.perf                     |   7 +
+ tools/perf/builtin-record.c                  |  11 +
+ tools/perf/config/Makefile                   |  15 +-
+ tools/perf/config/feature-checks/Makefile    |   6 +-
+ tools/perf/config/feature-checks/test-zlib.c |   9 +
+ tools/perf/util/build-id.c                   | 293 +++++++++++++++++++++++
+ tools/perf/util/build-id.h                   |   5 +
+ tools/perf/util/dso.c                        |  71 ++++++
+ tools/perf/util/dso.h                        |   7 +
+ tools/perf/util/header.c                     | 343 +--------------------------
+ tools/perf/util/header.h                     |   4 +-
+ tools/perf/util/machine.c                    |  38 ++-
+ tools/perf/util/symbol-elf.c                 |  35 ++-
+ tools/perf/util/symbol.c                     |  19 +-
+ tools/perf/util/symbol.h                     |   1 +
+ tools/perf/util/util.h                       |   5 +
+ tools/perf/util/zlib.c                       |  78 ++++++
+ 17 files changed, 593 insertions(+), 354 deletions(-)
+ create mode 100644 tools/perf/config/feature-checks/test-zlib.c
+ create mode 100644 tools/perf/util/zlib.c
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+2.1.2
+
