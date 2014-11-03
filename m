@@ -1,226 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751127AbaKCGOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 01:14:25 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:46882 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805AbaKCGOW (ORCPT
+	id S1751343AbaKCGQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 01:16:36 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36243 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaKCGQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 01:14:22 -0500
-Date: Mon, 3 Nov 2014 14:14:13 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-Cc: shawn.guo@freescale.com, kernel@pengutronix.de, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, lgirdwood@gmail.com, broonie@kernel.org,
-        perex@perex.cz, tiwai@suse.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH v5 2/3] ARM: dts: pbab01: enable I2S audio on
- phyFLEX-i.MX6 boards
-Message-ID: <20141103061408.GA21210@tiger>
-References: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
- <1414590424-25585-3-git-send-email-d.lavnikevich@sam-solutions.com>
+	Mon, 3 Nov 2014 01:16:33 -0500
+Date: Mon, 3 Nov 2014 06:16:32 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Subject: [RFC] dupfs semantics
+Message-ID: <20141103061632.GY7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414590424-25585-3-git-send-email-d.lavnikevich@sam-solutions.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 04:47:03PM +0300, Dmitry Lavnikevich wrote:
-> Audio on phyFLEX boards is presented by tlv320aic3007 codec connected
-> over SSI interface.
-> 
-> Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-> ---
->  arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi | 100 ++++++++++++++++++++++++++-
->  arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi |  15 ++++
->  2 files changed, 113 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
-> index f1bdcae5b97d..cb8f1b6ec083 100644
-> --- a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
-> +++ b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
-> @@ -9,10 +9,73 @@
->   * http://www.gnu.org/copyleft/gpl.html
->   */
->  
-> +#include <dt-bindings/sound/fsl-imx-audmux.h>
-> +
->  / {
->  	chosen {
->  		linux,stdout-path = &uart4;
->  	};
-> +
-> +	regulators {
-> +		sound_1v8: regulator@2 {
-> +			compatible = "regulator-fixed";
-> +			reg = <2>;
-> +			regulator-name = "i2s-audio-1v8";
-> +			regulator-min-microvolt = <1800000>;
-> +			regulator-max-microvolt = <1800000>;
-> +		};
-> +
-> +		sound_3v3: regulator@3 {
-> +			compatible = "regulator-fixed";
-> +			reg = <3>;
-> +			regulator-name = "i2s-audio-3v3";
-> +			regulator-min-microvolt = <3300000>;
-> +			regulator-max-microvolt = <3300000>;
-> +		};
-> +	};
-> +
-> +	tlv320_mclk: oscillator {
-> +		compatible = "fixed-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <19200000>;
-> +		clock-output-names = "tlv320-mclk";
-> +	};
-> +
-> +	sound {
-> +		compatible = "simple-audio-card";
-> +		simple-audio-card,name = "OnboardTLV320AIC3007";
-> +		simple-audio-card,format = "i2s";
-> +		simple-audio-card,bitclock-master = <&dailink_master>;
-> +		simple-audio-card,frame-master = <&dailink_master>;
-> +		simple-audio-card,widgets =
-> +			"Microphone", "Mic Jack",
-> +			"Line", "Line In",
-> +			"Line", "Line Out",
-> +			"Speaker", "Speaker",
-> +			"Headphone", "Headphone Jack";
-> +		simple-audio-card,routing =
-> +			"Line Out", "LLOUT",
-> +			"Line Out", "RLOUT",
-> +			"Speaker", "SPOP",
-> +			"Speaker", "SPOM",
-> +			"Headphone Jack", "HPLOUT",
-> +			"Headphone Jack", "HPROUT",
-> +			"MIC3L", "Mic Jack",
-> +			"MIC3R", "Mic Jack",
-> +			"Mic Jack", "Mic Bias",
-> +			"LINE1L", "Line In",
-> +			"LINE1R", "Line In";
-> +
-> +		simple-audio-card,cpu {
-> +			sound-dai = <&ssi2>;
-> +		};
-> +
-> +		dailink_master: simple-audio-card,codec {
-> +			sound-dai = <&codec>;
-> +			clocks = <&tlv320_mclk>;
-> +		};
-> +	};
-> +
->  };
->  
->  &fec {
-> @@ -27,12 +90,45 @@
->  	status = "okay";
->  };
->  
-> +&ssi2 {
-> +	status = "okay";
-> +};
-> +
-> +&audmux {
+	FWIW, now it can be done - with fairly limited changes we *can*
+implement something similar to Plan 9 dupfs (#d) and *BSD fdescfs.  I.e.
+a filesystem with one directory, with contents depending on which process
+is looking there, files corresponding to opened descriptors of the process
+in question.  So far it looks like our /proc/self/fd (or /dev/fd), but
+there's one really important difference - open("/fd/0", 0) on Plan 9 doesn't
+reopen your stdin, it is equivalent to dup(0).  In other words, you get
+an extra reference to the corresponding file, not fresh open of the same
+underlying object.
 
-Please sort the nodes alphabetically in label name.
+	In a lot of situations it makes for better semantics.  Example:
+; cat >a.sh <<'EOF'
+read i
+diff -u "$i" /dev/stdin
+EOF
+; (echo a.sh; cat a.sh) > data
+; cat data |sh a.sh
+; <data sh a.sh
+--- a.sh        2014-11-02 23:31:03.000000000 -0500
++++ /dev/stdin  2014-11-02 23:32:41.000000000 -0500
+@@ -1,2 +1,3 @@
++a.sh
+ read i 
+ diff -u "$i" /dev/stdin
+;
 
-> +	status = "okay";
-> +
-> +	ssi2 {
-> +		fsl,audmux-port = <1>;
-> +		fsl,port-config = <
-> +			(IMX_AUDMUX_V2_PTCR_TFSDIR |
-> +			IMX_AUDMUX_V2_PTCR_TFSEL(4) |
-> +			IMX_AUDMUX_V2_PTCR_TCLKDIR |
-> +			IMX_AUDMUX_V2_PTCR_TCSEL(4))
-> +	                IMX_AUDMUX_V2_PDCR_RXDSEL(4)
-> +		>;
-> +	};
-> +	pins5 {
+... and we have a different behaviour when fed from pipe and when redirected
+from file.  Similar to that,
+; cat >a.sh <<'EOF'
+read i
+grep "$i" -
+EOF
+; cat >b.sh <<'EOF'
+read i
+grep "$i" /dev/stdin
+EOF
+; cat >data <<'EOF'
+a
+a
+b
+EOF
+; cat data | sh a.sh
+a
+; cat data | sh b.sh
 
-Have a new line between nodes.
+So far, so good - "-" in grep arguments means stdin, so we could expect to get
+the same behaviour.  Except that it breaks on redirects -
+; sh a.sh <data
+a
+; sh b.sh <data
+a
+a
+;
 
-> +		fsl,audmux-port = <4>;
-> +		fsl,port-config = <
-> +			0x00000000
-> +			IMX_AUDMUX_V2_PDCR_RXDSEL(1)
-> +		>;
-> +	};
-> +};
-> +
->  &i2c2 {
->  	status = "okay";
->  
-> -	tlv320@18 {
-> -		compatible = "ti,tlv320aic3x";
-> +	codec: tlv320@18 {
-> +		compatible = "ti,tlv320aic3007";
+In other words, in situation when you have a program that expects a filename
+and want to feed it to/from a preexisting descriptor, our semantics is bloody
+inconvenient.  Worse, it simply fails when descriptor in question happens to
+be something like a socket, eventfd, etc. - regular files, devices, directories
+and pipes work, everything else is SOL.  We *can't* reopen a socket - a lot
+of logics in net/* assumes that there's only one struct file over given socket.
 
-Both compatible strings are documented in
-Documentation/devicetree/bindings/sound/tlv320aic3x.txt.  But I hope
-this change will not cause any DT compatible issues.
+The reason why we really couldn't do it with dup-style semantics was that
+our ->open() takes struct file and returns 0 on success and -E<something>
+on error.  There's no way to return a different file *and* we have too many
+instances of ->open() to change the method's signature.
 
-> +		#sound-dai-cells = <0>;
->  		reg = <0x18>;
-> +		ai3x-micbias-vg = <2>;
-> +
-> +		AVDD-supply = <&sound_3v3>;
-> +		IOVDD-supply = <&sound_3v3>;
-> +		DRVDD-supply = <&sound_3v3>;
-> +		DVDD-supply = <&sound_1v8>;
->  	};
->  
->  	stmpe@41 {
-> diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
-> index aa2275671d2c..d7f34664e008 100644
-> --- a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
-> +++ b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
-> @@ -58,6 +58,12 @@
->  	};
->  };
->  
-> +&audmux {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_audmux>;
-> +	status = "disabled";
-> +};
-> +
->  &ecspi3 {
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&pinctrl_ecspi3>;
-> @@ -319,6 +325,15 @@
->  				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000
->  			>;
->  		};
-> +
-> +		pinctrl_audmux: audmuxgrp {
+FWIW, FreeBSD got away with a horrible hack - they stash the descriptor
+number in their equivalent of task_struct and pull off rather brittle and
+ugly trick to pick in their kern_openat().  ->open() side is
+        /*
+         * XXX Kludge: set td->td_proc->p_dupfd to contain the value of the file
+         * descriptor being sought for duplication. The error return ensures
+         * that the vnode for this device will be released by vn_open. Open
+         * will detect this special error and take the actions in dupfdopen.
+         * Other callers of vn_open or VOP_OPEN will simply report the
+         * error.
+         */
+        ap->a_td->td_dupfd = VTOFDESC(vp)->fd_fd;       /* XXX */
+        return (ENODEV);
+and the other end is
+                /*
+                 * Handle special fdopen() case. bleh.
+                 *
+                 * Don't do this for relative (capability) lookups; we don't
+                 * understand exactly what would happen, and we don't think
+                 * that it ever should.
+                 */
+                if (nd.ni_strictrelative == 0 &&
+                    (error == ENODEV || error == ENXIO) &&
+                    td->td_dupfd >= 0) {
+                        error = dupfdopen(td, fdp, td->td_dupfd, flags, error,
+                            &indx);
+                        if (error == 0)
+                                goto success;
+                }
+ 
+                goto bad;
+Bleh, indeed...
 
-Please sort the pinctrl entries alphabetically.
+I hadn't looked at Solaris source.  Plan 9 probably has it the easiest way -
+their ->open() does, in our terms, take a pointer to struct file (Chan * for
+them) and return another such pointer, normally the one it had been given.
+If it decides to return a different one - no problem, just drop what you've
+got, grab an extra reference to something else and return that.  End of
+story.
 
-Shawn
+Now, changing our ->open() is obviously far too much churn.  Fortunately,
+we have ->atomic_open() with only 8 instances in the entire tree, none
+of them in drivers.  That can be changed without too much PITA.  There are
+several possible calling conventions; my preference would be
+	old	new
+	0	file it has been given
+	1	NULL
+	-E...	ERR_PTR(-E...)
+	-----	an extra reference to preexisting file
+letting the caller deal with freeing the unused one in the last case, but
+that's not particulary interesting - whichever variant ends up with the
+best code in callers (path_openat->do_last->lookup_open->atomic_open).
 
-> +			fsl,pins = <
-> +				MX6QDL_PAD_DISP0_DAT16__AUD5_TXC	0x130b0
-> +				MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS	0x130b0
-> +				MX6QDL_PAD_DISP0_DAT17__AUD5_TXD	0x110b0
-> +				MX6QDL_PAD_DISP0_DAT19__AUD5_RXD	0x130b0
-> +			>;
-> +		};
->  	};
->  };
->  
-> -- 
-> 2.1.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Getting open() to hit ->atomic_open() is also pretty easy - just don't hash
+those dentries and that's it.  Considering that different processes are
+going to see different things in that directory, that's the only sane variant
+anyway.  They won't live for long anyway - the normal way to pin dentry down
+for a long time is open(), and in this case open will *not* do that.  FWIW,
+they can all share the same inode - it won't be accessed, anyway (we just
+need to supply ->getattr(), which takes a dentry).
+
+IOW, it's quite doable - I'm putting together a branch with minimal variant
+of that thing and so far it shapes out reasonably well.  The interesting
+part is what should be done in corner cases.
+
+Everyone agrees that read/write access should be a subset of what the existing
+file has been opened for; that much is obvious.  However, what about the
+other bits?  Everyone appears to agree upon ignoring O_TRUNC.  FreeBSD ignores
+O_APPEND as well (and Plan 9 doesn't have it at all); we might do the same,
+or we might fail on mismatches.  I'd rather ignore it completely - if our
+stdout is opened with O_APPEND | O_WRONLY, I would expect opening /fd/1
+(or wherever it might be mounted) with O_WRONLY to succeed.
+O_DIRECT is another one - should we ignore mismatches?
+
+Another interesting question is what to do with chmod, etc. on those suckers.
+Plan 9 EPERMs on that; FreeBSD in effect turns it into chmod of the target
+file.   Note that stat() is *not* forwarded to the target file in either
+of those, so chmod() hitting the target is inconsistent (and possibly risky
+as well).
+
+A minor twist is statfs() behaviour on that one - FreeBSD is putting rlimit
+in f_files and the number of descriptors you could open until you run afoul
+of rlimit into f_ffree.  Cute, but not too interesting, IMO...
+
+A really interesting bit is ctl files on Plan 9 - /fd/<n>ctl there is a mix
+of our readlink /proc/self/fd/<n> and /proc/self/fdinfo/<n>.  Fairly easy
+to implement, the question is what should layout of their contents be...
+
+Any permission checks ought to be skipped in case when a preexisting file gets
+returned by ->atomic_open(), IMO - all checks ought to be done in the method
+itself (and in this case they are limited to "don't ask for more than it's
+already opened for").
+
+Comments?
