@@ -1,160 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754AbaKCVcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:32:10 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59277 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752468AbaKCVcH (ORCPT
+	id S1754009AbaKCVdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:33:11 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:47469 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428AbaKCVdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:32:07 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
-Date: Mon, 03 Nov 2014 22:52:50 +0100
-Message-ID: <2331586.goAnq7FsMG@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4455568.bqAfQGqTU9@vostro.rjw.lan>
-References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <54570961.1080004@linux.intel.com> <4455568.bqAfQGqTU9@vostro.rjw.lan>
+	Mon, 3 Nov 2014 16:33:08 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20141103212706.GE7379@kroah.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <5457D883.4050201@amacapital.net> <20141103212706.GE7379@kroah.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Nov 2014 13:32:46 -0800
+Message-ID: <CALCETrUNCuFvwkzbU4dWB0GH4mJKKV1e6jCNrSLVJe+n_et3kQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] Enable user helper interface for efi capsule update
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Ong Boon Leong <boon.leong.ong@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 03, 2014 04:25:08 PM Rafael J. Wysocki wrote:
-> On Sunday, November 02, 2014 08:49:37 PM Darren Hart wrote:
-> > 
-> > On 11/1/14 4:11, Grant Likely wrote:
-> > > On Tue, 28 Oct 2014 22:59:57 +0100
-> > > , "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> > >  wrote:
-> > >> On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
-> > >>> acpi_dev_add_driver_gpios() makes it possible to set up mapping between
-> > >>> properties and ACPI GpioIo resources in a driver, so we can take index
-> > >>> parameter in acpi_find_gpio() into use with _DSD device properties now.
-> > >>>
-> > >>> This index can be used to select a GPIO from a property with multiple
-> > >>> GPIOs:
-> > >>>
-> > >>>   Package () {
-> > >>>   	"data-gpios",
-> > >>>   	Package () {
-> > >>>   		\_SB.GPIO, 0, 0, 0,
-> > >>>   		\_SB.GPIO, 1, 0, 0,
-> > >>>   		\_SB.GPIO, 2, 0, 1,
-> > >>>   	}
-> > >>>   }
-> > >>>
-> > >>> In order to retrieve the last GPIO from a driver we can simply do:
-> > >>>
-> > >>>   desc = devm_gpiod_get_index(dev, "data", 2);
-> > >>>
-> > >>> and so on.
-> > >>>
-> > >>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > >>
-> > >> Cool. :-)
-> > >>
-> > >> Any objections anyone?
-> > > 
-> > > Actually, I do. Not in the idea, but in the implementation. The way this gets encoded:
-> > > 
-> > > 	Package () {
-> > > 		\_SB.GPIO, 0, 0, 0,
-> > > 		\_SB.GPIO, 1, 0, 0,
-> > > 		\_SB.GPIO, 2, 0, 1,
-> > > 	}
-> > > 
-> > > Means that decoding each GPIO tuple requires the length of a tuple to be
-> > > fixed, or to implement a DT-like #gpio-cells. If it is fixed, then there
-> > > is no way to expand the binding later. Can this be done in the following
-> > > way instead?
-> > > 
-> > > 	Package () {
-> > > 		Package () { \_SB.GPIO, 0, 0, 0 },
-> > > 		Package () { \_SB.GPIO, 1, 0, 0 },
-> > > 		Package () { \_SB.GPIO, 2, 0, 1 },
-> > > 	}
-> > > 
-> > > This is one of the biggest pains in device tree. We don't have any way
-> > > to group tuples so it requires looking up stuff across the tree to
-> > > figure out how to parse each multi-item property.
-> > > 
-> > > I know that last year we talked about how bios vendors would get
-> > > complicated properties wrong, but I think there is little risk in this
-> > > case. If the property is encoded wrong, the driver simply won't work and
-> > > it is unlikely to get shipped before being fixed.
-> > 
-> > This particular nesting of Packages is expressly prohibited by the
-> > Device Properties UUID for the reasons you mention.
-> > 
-> > http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-> 
-> Also we don't use properties where single name is assigned to multiple GPIOs
-> anywhere in the current device-properties patchset, so this is not relevant at
-> the moment.
-> 
-> Moreover, even if we were to use them, we would need to ensure that this:
-> 
-> 	Package () {
-> 		\_SB.GPIO, 0, 0, 0
-> 	}
-> 
-> was equivalent to
-> 
-> 	Package () {
->  		Package () { \_SB.GPIO, 0, 0, 0 }
-> 	}
-> 
-> This is not impossible to do and I suppose we could even explain that in the
-> implementation guide document in a sensible way, but that would require the
-> document linked above to be changed first and *then* we can think about writing
-> kernel code to it.  Not the other way around, please.
-> 
-> So Grant, do you want us to proceed with that?
+On Mon, Nov 3, 2014 at 1:27 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Nov 03, 2014 at 11:33:23AM -0800, Andy Lutomirski wrote:
+>> On 11/02/2014 07:07 PM, Kweh Hock Leong wrote:
+>> > From: "Kweh, Hock Leong" <hock.leong.kweh-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+>> >
+>> > Hi Guys,
+>> >
+>> > This patchset is created on top of "efi: Capsule update support" patch:
+>> > http://permalink.gmane.org/gmane.linux.kernel.efi/4837
+>> >
+>> > It leverages the request_firmware_nowait() to expose the user helper interface for user to upload the capsule binary and calling the
+>> > efi_capsule_update() API to pass the binary to EFI firmware.
+>>
+>> I don't get it.  Why is the firmware interface at all reasonable for
+>> uploading capsules?
+>
+> Tradition dictates that BIOS updates go through the firmware interface,
+> that way you don't have to write a new userspace tool, which is a good
+> thing.
+>
+>> The firmware interface makes sense for nonvolatile firmware where
+>> hotplugging something or otherwise loading a driver needs a blob.
+>
+> Or BIOS data.  We've been doing it this way for a long time now.
 
-Before you reply, one more observation that seems to be relevant.
+On what system?  Dell?
 
-In ACPI, both this:
+IMO this sucks from a UI point of view.  When I install wifi firmware,
+I expect to stick it somewhere and have the driver find it, because
+the driver knows exactly when it needs the firmware.  When I update my
+BIOS, I want to click a button or type a command and update my bios.
 
-	Package () {
-		\_SB.GPIO, 0, 0, 0,
-		\_SB.GPIO, 1, 0, 0,
-		\_SB.GPIO, 2, 0, 1,
-	}
+>
+>> But uploading an EFI capsule is an *action*, not something that should
+>> happen transparently.  If there's an EFI firmware update available and
+>> the user wants to install it, then the userspace tool should install it,
+>> and it shouldn't hang around in /lib/firmware.  In fact, you shouldn't
+>> even need /lib to be on writable media to use this.
+>
+> What does /lib have to do with this?
 
-and this:
+Where else does the file come from, given that udev no longer supports
+userspace firmware loading?  Is there really some pre-existing tool
+that pokes it into the sysfs firmware class thing?
 
-	Package () {
-		Package () { \_SB.GPIO, 0, 0, 0 },
-		Package () { \_SB.GPIO, 1, 0, 0 },
-		Package () { \_SB.GPIO, 2, 0, 1 },
-	}
+Since EFI capsules are apparently on their way to becoming a
+ubiquitous mechanism, I think it might be time to rethink
+request_firmware for this.
 
-carry the same information, because every element of a package has a type,
-so there is no danger of confusing an ACPI_TYPE_LOCAL_REFERENCE with
-ACPI_TYPE_INTEGER.  Thus one can easily count the number of GPIOs represented
-by the first package by counting the number of reference elements in it.
-The second one has more structure which in this particular case is arguably
-redundant.
-
-Of course, that's not the case for list properties where each item consists
-of a bunch of integers, like
-
-	Package () {
-		Package () { 0, 0, 0 },
-		Package () { 1, 0, 0 },
-		Package () { 2, 0, 1 },
-	}
-
-but I'm not sure if this is relevant at all.
-
-Rafael
-
+--Andy
