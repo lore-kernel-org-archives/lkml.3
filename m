@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135AbaKCUts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 15:49:48 -0500
-Received: from mga01.intel.com ([192.55.52.88]:31760 "EHLO mga01.intel.com"
+	id S1754182AbaKCUt5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 15:49:57 -0500
+Received: from mga01.intel.com ([192.55.52.88]:65374 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753446AbaKCUtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 15:49:13 -0500
+	id S1754078AbaKCUtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 15:49:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
-   d="scan'208";a="616331431"
+   d="scan'208";a="616331429"
 From: Stephanie Wallick <stephanie.s.wallick@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         "Sean O. Stalley" <sean.stalley@intel.com>
-Subject: [PATCH 02/10] added media agnostic (MA) USB HCD roothubs
-Date: Mon,  3 Nov 2014 12:42:49 -0800
-Message-Id: <1415047377-3139-3-git-send-email-stephanie.s.wallick@intel.com>
+Subject: [PATCH 01/10] added media agnostic (MA) USB HCD driver
+Date: Mon,  3 Nov 2014 12:42:48 -0800
+Message-Id: <1415047377-3139-2-git-send-email-stephanie.s.wallick@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415047377-3139-1-git-send-email-stephanie.s.wallick@intel.com>
 References: <MA USB drivers>
@@ -24,27 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where we implement USB 2.0 and 3.0 roothubs. From the host's perspective,
-hub state is set and tracked just like any other USB roothub. Likewise, requests
-to the roothub appear to be handled like any other wired USB request.
+This is where we interface with the existing USB stack and implement the
+functionality of a USB host controller driver. From the host's perspective,
+we appear as just another USB host controller. However, instead of passing
+traffic along a wired USB bus, the driver hands USB packets off for transport
+per Media Agnostic USB protocol.
 
 Signed-off-by: Sean O. Stalley <sean.stalley@intel.com>
 Signed-off-by: Stephanie Wallick <stephanie.s.wallick@intel.com>
 ---
- drivers/staging/mausb/drivers/mausb_hub.c | 851 ++++++++++++++++++++++++++++++
- drivers/staging/mausb/drivers/mausb_hub.h | 128 +++++
- 2 files changed, 979 insertions(+)
- create mode 100644 drivers/staging/mausb/drivers/mausb_hub.c
- create mode 100644 drivers/staging/mausb/drivers/mausb_hub.h
+ drivers/staging/mausb/drivers/mausb_hcd.c | 970 ++++++++++++++++++++++++++++++
+ drivers/staging/mausb/drivers/mausb_hcd.h | 171 ++++++
+ 2 files changed, 1141 insertions(+)
+ create mode 100755 drivers/staging/mausb/drivers/mausb_hcd.c
+ create mode 100644 drivers/staging/mausb/drivers/mausb_hcd.h
 
-diff --git a/drivers/staging/mausb/drivers/mausb_hub.c b/drivers/staging/mausb/drivers/mausb_hub.c
-new file mode 100644
-index 0000000..aebca54
+diff --git a/drivers/staging/mausb/drivers/mausb_hcd.c b/drivers/staging/mausb/drivers/mausb_hcd.c
+new file mode 100755
+index 0000000..03e8f0f
 --- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_hub.c
-@@ -0,0 +1,851 @@
-+/* Name:         mausb_hub.c
-+ * Description:  mausb hub structures and functions
++++ b/drivers/staging/mausb/drivers/mausb_hcd.c
+@@ -0,0 +1,970 @@
++/* Name:	mausb_hcd.c
++ * Description: Creates and initializes a virtual USB host controller driver
++ *	        for the Media Agnostic USB host driver.
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -102,707 +105,581 @@ index 0000000..aebca54
 +#define DEBUG
 +
 +#include <linux/init.h>
++#include <linux/wait.h>
 +#include <linux/module.h>
 +#include <linux/usb.h>
 +#include <linux/usb/hcd.h>
 +#include <linux/platform_device.h>
 +#include <linux/usb/ch11.h>
-+#include <linux/usb/ch9.h>
++#include <linux/pm_runtime.h>
++#include <linux/usb/gadget.h>
++#include <linux/kthread.h>
++#include <linux/random.h>
 +
-+#include "mausb_hub.h"
 +#include "mausb_hcd.h"
++#include "mausb_hub.h"
++#include "mausb_pkt.h"
++#include "mausb_mem-host.h"
++#include "mausb_msapi.h"
++#include "mausb_mgmt.h"
++#include "mausb_state.h"
++#include "mausb_tx.h"
 +
-+/**
-+ * Returns MA USB roothub data structure for a USB HCD.
++static struct platform_device mausb_pdev;
++
++struct api_context {
++	struct completion	done;
++	int			status;
++};
++
++/*
++ * pointer conversion functions
 + */
-+struct mausb_root_hub *usb_hcd_to_roothub(struct usb_hcd *hcd)
++inline struct mausb_hcd *usb_hcd_to_mausb_hcd(struct usb_hcd *hcd)
 +{
-+	struct mausb_hcd *mhcd = usb_hcd_to_mausb_hcd(hcd);
-+
 +	if (usb_hcd_is_primary_hcd(hcd))
-+		return &mhcd->root_hub;
++		return *((struct mausb_hcd **) (hcd->hcd_priv));
 +	else
-+		return &mhcd->shared_root_hub;
++		return *((struct mausb_hcd **) (hcd->primary_hcd->hcd_priv));
 +}
 +
-+/**
-+ * Returns true if the given is the superspeed HCD. Note: The primary HCD is
-+ * High Speed and the shared HCD is SuperSpeed.
-+ */
-+bool mausb_is_ss_hcd(struct usb_hcd *hcd)
++inline struct usb_hcd *mausb_hcd_to_usb_hcd(struct mausb_hcd *mhcd)
 +{
-+	if (usb_hcd_is_primary_hcd(hcd))
-+		return false;
++	if (mhcd->shared_hcd && !usb_hcd_is_primary_hcd(mhcd->shared_hcd))
++		return mhcd->shared_hcd;
 +	else
-+		return true;
++		return mhcd->usb_hcd;
++}
++
++inline struct device *mausb_hcd_to_dev(struct mausb_hcd *mhcd)
++{
++	return mausb_hcd_to_usb_hcd(mhcd)->self.controller;
++}
++
++inline struct mausb_urb *usb_urb_to_mausb_urb(struct urb *urb)
++{
++	return (struct mausb_urb *) urb->hcpriv;
++}
++/* ----------------------------------------------------------------- */
++
++/**
++ * @maurb:	Media agnostic structure with URB to release.
++ * @status:	Status for URB that is getting released.
++ *
++ * Removes an URB from the queue, deletes the media agnostic information in
++ * the urb, and gives the URB back to the HCD. Caller must be holding the
++ * driver's spinlock.
++ */
++void mausb_unlink_giveback_urb(struct mausb_urb *maurb, int status)
++{
++	struct urb		*urb;
++	struct usb_hcd		*hcd;
++	struct api_context	*ctx = NULL;
++	struct mausb_hcd	*mhcd = platform_get_drvdata(&mausb_pdev);
++	unsigned long		irq_flags;
++
++	if (!mhcd) {
++		printk(KERN_ERR "%s: No MA USB HCD\n", __func__);
++		return;
++	}
++
++	hcd = mausb_hcd_to_usb_hcd(mhcd);
++
++	spin_lock_irqsave(&mhcd->giveback_lock, irq_flags);
++
++	if (!maurb) {
++		mausb_err(mhcd, "%s: no maurb\n", __func__);
++		spin_unlock_irqrestore(&mhcd->giveback_lock, irq_flags);
++		return;
++	} else {
++		urb = maurb->urb;
++		ctx = urb->context;
++	}
++
++	if (!urb) {
++		mausb_err(mhcd, "%s: no urb\n", __func__);
++		mausb_internal_drop_maurb(maurb, mhcd);
++		spin_unlock_irqrestore(&mhcd->giveback_lock, irq_flags);
++		return;
++	}
++
++	mausb_dbg(mhcd, "%s: returning urb with status %i\n", __func__, status);
++
++	usb_hcd_unlink_urb_from_ep(hcd, urb);
++	usb_hcd_giveback_urb(hcd, urb, status);
++
++	/* remove the mausb-specific data */
++	mausb_internal_drop_maurb(maurb, mhcd);
++
++	spin_unlock_irqrestore(&mhcd->giveback_lock, irq_flags);
 +}
 +
 +/**
-+ * Sets downstream port link state.
-+ *
-+ * @mhcd:	MA USB hcd that owns port.
-+ * @state:	Link state to be set (see USB 3.0 spec for link state values).
-+ * @portnum:	Port number of link state to be set.
++ * Adds an URB to the endpoint queue then calls the URB handler. URB is wrapped
++ * in media agnostic structure before being enqueued.
 + */
-+void set_link_state(struct mausb_root_hub *roothub, int state, int portnum)
++static int mausb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
++		gfp_t memflags)
 +{
-+	struct usb_port_status   *port_stat;
++	int			ret = 0;
++	struct mausb_urb	*maurb;
++	struct mausb_hcd	*mhcd;
++	struct mausb_host_ep	*ep;
++	unsigned long		irq_flags;
 +
-+	port_stat = &roothub->port_status[portnum];
++	if (!hcd || !urb) {
++		printk(KERN_ERR "%s: no %s\n", __func__,
++			(hcd ? "urb" : "USB hcd"));
++	}
 +
-+		port_stat->wPortStatus &= LINK_STATE_MASK;
-+		port_stat->wPortStatus |= state;
++	mhcd = usb_hcd_to_mausb_hcd(hcd);
++	ep   = usb_to_ma_endpoint(urb->ep);
++
++	if (!ep || !mhcd) {
++		mausb_err(mhcd, "%s: no %s\n", __func__,
++			(ep ? "MA USB HCD" : "endpoint"));
++		return -EINVAL;
++	}
++
++	if (urb->status != -EINPROGRESS) {
++		mausb_err(mhcd, "%s: urb already unlinked, status is %i\n",
++			__func__, urb->status);
++		return urb->status;
++	}
++
++	/* If the endpoint isn't activated, we can't enqueue anything. */
++	if (MAUSB_EP_HANDLE_UNASSIGNED == ep->ep_handle_state) {
++		mausb_err(mhcd, "%s: endpoint handle unassigned\n", __func__);
++		return -EPIPE;
++	}
++
++	if (USB_SPEED_FULL != urb->dev->speed) /* suppress checks */
++		ep->max_pkt = usb_endpoint_maxp(&urb->ep->desc);
++
++	/* initialize the maurb */
++	maurb = mausb_alloc_maurb(ep, memflags);
++	if (!maurb) {
++		mausb_err(mhcd, "could not allocate memory for MA USB urb\n");
++		return -ENOMEM;
++	}
++
++	/* set maurb member values */
++	maurb->urb = urb;
++	urb->hcpriv = maurb;
++
++	/* submit urb to hcd and add to endpoint queue */
++	ret = usb_hcd_link_urb_to_ep(hcd, urb);
++	if (ret < 0) {
++		mausb_err(mhcd, "urb enqueue failed: error %d\n", ret);
++		usb_hcd_unlink_urb_from_ep(hcd, urb);
++		return ret;
++	}
++
++	/* get usb device and increment reference counter */
++	if (!mhcd->udev) {
++		mhcd->udev = urb->dev;
++		usb_get_dev(mhcd->udev);
++	}
++
++	/* add urb to queue list */
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++	list_add_tail(&maurb->urb_list, &ep->urb_list);
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++	/* add urb to ma hcd urb list */
++	spin_lock_irqsave(&mhcd->urb_list_lock, irq_flags);
++	list_add_tail(&maurb->ma_hcd_urb_list, &mhcd->enqueue_urb_list);
++	spin_unlock_irqrestore(&mhcd->urb_list_lock, irq_flags);
++
++	/* send to MA transfer process */
++	wake_up(&mhcd->waitq);
++
++	return ret;
 +}
 +
 +/**
-+ * Generates connect or disconnect event for a roothub.
-+ *
-+ * @hcd:	HCD associated with roothub.
-+ * @do_connect: 1 for connect, 0 for disconnect.
-+ * @_portnum:	Port number of connected device.
-+ * @is_SS:	True if roothub is SuperSpeed or higher, otherwise false.
++ * Dequeues an URB.
 + */
-+int port_connect(struct usb_hcd *hcd, int do_connect, int _portnum, bool is_SS)
++static int mausb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 +{
-+	int			portnum = _portnum;
-+	struct usb_port_status	*port_stat;
++	int			ret	= 0;
 +	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++	struct mausb_host_ep	*ep = usb_to_ma_endpoint(urb->ep);
++	struct mausb_urb	*maurb = usb_urb_to_mausb_urb(urb);
++	unsigned long		irq_flags;
++
++	/* For debugging - we want to know who initiated URB dequeue. */
++	dump_stack();
++
++	if (ep->active_transfer == maurb) {
++		ret = mausb_tx_dev_mgmt_req_ep(CancelTransferReq,
++			&mhcd->ma_dev.mgmt, maurb->dev, true, ep);
++
++		spin_lock_irqsave(&ep->ep_lock, irq_flags);
++		ep->active_transfer = NULL;
++		ep->state.tx_pending = 0;
++		spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++	}
++
++	/*
++	 * Make sure urb hasn't been unlinked or already completed.
++	 * Dequeue must fail if usb_hcd_check_unlink_urb() fails.
++	 */
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++	ret = usb_hcd_check_unlink_urb(hcd, urb, status);
++
++	if (ret < 0) {
++		spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++		mausb_err(mhcd, "%s: urb already unlinked or completed, %d\n",
++			__func__, ret);
++		return ret;
++	}
++
++	/* check to make sure our urb queue is not empty */
++	if (list_empty(&ep->urb_list)) {
++		spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++		mausb_err(mhcd, "%s: urb queue is empty\n", __func__);
++		return -ENXIO;
++	}
++
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++	/* now we can give back URB */
++	spin_lock_irqsave(&mhcd->hcd_lock, irq_flags);
++	mausb_unlink_giveback_urb(maurb, -EINPROGRESS);
++	spin_unlock_irqrestore(&mhcd->hcd_lock, irq_flags);
++
++	return ret;
++}
++
++/**
++ * Called by usb core to suspend the bus. Once suspended, hcd waits in
++ * that state until it is resumed by mausb_bus_resume().
++ *
++ * Note: sections are commented out to accomidate devices that don't yet
++ * support SleepReq packets.
++ *
++ * Always returns zero.
++ */
++static int mausb_bus_suspend(struct usb_hcd *hcd)
++{
++/*	int			ret = 0; */
++	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++/*	struct mausb_dev	*top_dev = mhcd->ma_dev.top_dev; */
 +	struct mausb_root_hub	*roothub = usb_hcd_to_roothub(hcd);
 +
-+	if (portnum >= MAUSB_ROOTHUB_NUM_PORTS) {
-+		mausb_err(mhcd, "%s: port number %i is too large (max = %i)\n",
-+			__func__, portnum, MAUSB_ROOTHUB_NUM_PORTS);
-+		return -EINVAL;
++/*	if (NULL != top_dev) {
++		ret = mausb_tx_dev_mgmt_req(SleepReq,
++			&mhcd->ma_dev.mgmt, top_dev, true);
++		if (ret < 0)
++			return ret;
 +	}
-+
-+	/* if new connection, assign first empty port */
-+	if (do_connect > 0) {
-+		portnum = 0;
-+		while (roothub->port_status[portnum].wPortStatus
-+			& USB_PORT_STAT_CONNECTION) {
-+			portnum++;
-+		}
-+
-+		mausb_dbg(mhcd, "%s: assigned MA USB port number %d\n",
-+		__func__, portnum);
-+	}
++*/
++	/* stop polling */
++	clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
 +
 +	/*
-+	 * If new connection, we assigned portnum above, otherwise use portnum
-+	 * passed in.
++	 * Avoid suspend/resume race condition by making sure there aren't any
++	 * devices in the middle of resuming. If a connected device is
++	 * resuming, suspend should fail.
 +	 */
-+	port_stat = &roothub->port_status[portnum];
-+
-+	/*
-+	 * Make sure port is powered. If not, clear status and disable.
-+	 * Note that POWER bit is different for USB 2.0 and 3.0 hubs.
-+	 */
-+	if (is_SS) {
-+		if ((port_stat->wPortStatus & USB_SS_PORT_STAT_POWER) == 0) {
-+			port_stat->wPortStatus = 0;
-+			port_stat->wPortChange = 0;
-+			set_link_state(roothub, USB_SS_PORT_LS_SS_DISABLED,
-+				portnum);
-+
-+			goto update;
-+		}
-+	} else {
-+		if ((port_stat->wPortStatus & USB_PORT_STAT_POWER) == 0) {
-+			port_stat->wPortStatus = 0;
-+			port_stat->wPortChange = 0;
-+
-+			goto update;
-+		}
++	if (mhcd->resuming) {
++		mausb_err(mhcd, "%s: suspend failed, device is resuming\n",
++			 __func__);
++		return -EBUSY;
 +	}
 +
-+	/* disconnect if previously connected */
-+	if (do_connect == 0 || mhcd->disabled) {
-+		if ((port_stat->wPortStatus & USB_PORT_STAT_CONNECTION) == 1) {
-+			port_stat->wPortStatus &= ~(USB_PORT_STAT_CONNECTION);
-+			port_stat->wPortStatus &= ~(USB_PORT_STAT_ENABLE);
-+			port_stat->wPortChange |= USB_PORT_STAT_C_CONNECTION;
-+			if (is_SS)
-+				set_link_state(roothub,
-+					USB_SS_PORT_LS_RX_DETECT, portnum);
-+		}
-+	}
-+	/* set bits for a new connection */
-+	else if ((port_stat->wPortStatus & USB_PORT_STAT_CONNECTION) == 0) {
-+		port_stat->wPortStatus |= USB_PORT_STAT_ENABLE;
-+		port_stat->wPortStatus |= USB_PORT_STAT_CONNECTION;
-+		port_stat->wPortChange |= USB_PORT_STAT_C_CONNECTION;
-+	}
++	mausb_dbg(mhcd, "%s: suspending mausb driver\n", __func__);
 +
-+update:
-+	mausb_dbg(mhcd, "%s: port status is 0x%x port change is 0x%x\n",
-+		__func__, port_stat->wPortStatus, port_stat->wPortChange);
++	roothub->rh_state = MAUSB_RH_SUSPEND;
++	hcd->state = HC_STATE_SUSPENDED;
 +
-+	/* let core know if there is a change in port status */
-+	if (port_stat->wPortChange) {
-+		set_bit(HCD_FLAG_POLL_RH, &hcd->flags);
-+		usb_hcd_poll_rh_status(hcd);
-+	}
-+
-+	return portnum;
++	return 0;
 +}
 +
 +/**
-+ * @mhcd:       MA USB hcd with connect/disconnect event.
-+ * @portnum:	MA USB port number with event.
-+ * @do_connect: Determines whether or not a connection is set or removed.
++ * Called by usb core to resume hcd after bus suspension.
 + *
-+ * Called to initiate either a device connect or disconnect event. A do_connect
-+ * value of 0 clears a connection. A do_connect value greater than 0 sets a
-+ * connection. A do_connect value less than 0 produces an error.
-+ *
-+ * Returns port number. If connection, port number is newly assigned port
-+ * number, otherwise it is the port number passed in as an argument.
++ * Returns 0 if resume was successful, otherwise returns negative error
++ * value.
 + */
-+int mausb_connect(struct mausb_hcd *mhcd, int portnum, int do_connect)
++static int mausb_bus_resume(struct usb_hcd *hcd)
 +{
-+	struct usb_hcd		*hcd = container_of((void *)mhcd,
-+					struct usb_hcd, hcd_priv);
-+	struct usb_hcd		*ss_hcd = mhcd->shared_hcd;
++	int ret = 0;
++	struct mausb_hcd *mhcd = usb_hcd_to_mausb_hcd(hcd);
++	struct mausb_dev *top_dev = mhcd->ma_dev.top_dev;
++	struct mausb_root_hub	 *roothub = usb_hcd_to_roothub(hcd);
 +
-+	if (!mhcd->ma_dev.ms_driver) {
-+		mausb_err(mhcd, "%s: no media specific driver\n", __func__);
-+		return -ENODEV;
++	if (!HCD_HW_ACCESSIBLE(hcd)) {
++		mausb_err(mhcd, "%s: hcd not fully powered\n", __func__);
++		return -ESHUTDOWN;
 +	}
 +
-+	if (do_connect < 0) {
-+		mausb_err(mhcd, "%s: invalid connection request %d\n", __func__,
-+			do_connect);
-+		return -EINVAL;
-+	}
++	mausb_dbg(mhcd, "%s: resuming mausb driver\n", __func__);
 +
-+	if (mhcd->ma_dev.ma_cap.dev_type > MAUSB_DEV_TYPE_SS_HUB) {
-+		mausb_err(mhcd, "%s: invalid MA USB device type %i\n", __func__,
-+			mhcd->ma_dev.ma_cap.dev_type);
-+		return -EINVAL;
-+	}
++	hcd->state = HC_STATE_RUNNING;
++	roothub->rh_state = MAUSB_RH_RUNNING;
 +
-+	/*
-+	 * One connection event for MA devices. Connect SS and SS+ devices to
-+	 * 3.0 root hub and non-SS devices to 2.0 root hub.
-+	 */
-+	else if (mhcd->ma_dev.ma_cap.dev_type == MAUSB_DEV_TYPE_INTEGRATED) {
-+		if (!mhcd->ma_dev.speed) {
-+			mausb_err(mhcd, "%s: Speed Capability Descriptor not"
-+				" found - non-hub MA USB devices require"
-+				" a Speed Capability Descriptor\n", __func__);
-+			return -EPROTO;
++	if (NULL != top_dev) {
++		ret = mausb_tx_dev_mgmt_req(WakeReq, &mhcd->ma_dev.mgmt,
++			top_dev, true);
++
++		if (ret < 0) {
++			mausb_err(mhcd, "%s: WakeReq was unsuccessful"
++				" (error %i)\n", __func__, ret);
++			return ret;
 +		}
-+
-+		mausb_dbg(mhcd, "%s: %s MA USB device\n", __func__,
-+			do_connect ? "connecting" : "disconnecting");
-+
-+		if (mhcd->ma_dev.speed->speed == MAUSB_DEV_CAP_SPEED_SUPER ||
-+		    mhcd->ma_dev.speed->speed == MAUSB_DEV_CAP_SPEED_SS_PLUS) {
-+			portnum = port_connect(ss_hcd, do_connect, portnum,
-+					       true);
-+		} else {
-+			portnum = port_connect(hcd, do_connect, portnum, false);
-+		}
-+	}
-+
-+	/*
-+	 * Hubs require two connection events - one for the integrated
-+	 * USB 3.0 hub and one for the integrated USB 2.0 hub.
-+	 */
-+	else {
-+		mausb_dbg(mhcd, "%s: %s MA USB hub\n", __func__,
-+			do_connect ? "connecting" : "disconnecting");
-+
-+		portnum = port_connect(hcd, do_connect, portnum, false);
-+		portnum = port_connect(ss_hcd, do_connect, portnum, true);
 +	}
 +
 +	return 0;
 +}
 +
 +/**
-+ * Called by usb core when polling for a port status change.
-+ *
-+ * @hcd:	USB HCD being polled.
-+ * @buf:	Holds port status changes (if any).
-+ *
-+ * Returns zero if there is no status change, otherwise returns number of
-+ * bytes in buf. When there is a status change on a port, the bit indexed
-+ * at the port number + 1 (e.g. bit 2 for port 1) is set in the buffer.
++ * Returns the hardware-chosen device address.
 + */
-+int mausb_hub_status_data(struct usb_hcd *hcd, char *buf)
++static int mausb_address_device(struct usb_hcd *hcd, struct usb_device *udev)
 +{
-+	int                      i;
-+	u16                      port_change = 0;
-+	u32                      status = 0;
-+	int                      ret = 1;
++	int			ret = 0;
++	struct ma_dev		*ma_dev;
++	struct mausb_dev	*mausb_dev;
++	struct mausb_host_ep	*ma_ep;
++	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++
++	if (NULL == mhcd)
++		return -EINVAL;
++
++	ma_dev = &mhcd->ma_dev;
++	if (NULL == ma_dev)
++		return -EINVAL;
++
++	mausb_dev = mausb_find_dev_host(ma_dev, udev);
++	if (NULL == mausb_dev)
++		return -ENODEV;
++
++	ret = mausb_tx_dev_mgmt_req(USBDevHandleReq, &ma_dev->mgmt,
++		mausb_dev, true);
++
++	if (-ETIMEDOUT == ret) {
++		mausb_err(mhcd, "USBDevHandleReq timed out\n");
++	} else if (0 > ret) {
++		mausb_err(mhcd, "USBDevHandleReq failed with error %i\n", ret);
++	} else {
++		ret = mausb_tx_dev_mgmt_req(EPHandleReq, &ma_dev->mgmt,
++			mausb_dev, true);
++
++		if (-ETIMEDOUT == ret) {
++			mausb_err(mhcd, "EPHandleReq timed out\n");
++		} else if (0 > ret) {
++			mausb_err(mhcd, "EPHandleReq failed with error %i\n",
++					ret);
++		} else {
++			ret = mausb_tx_dev_mgmt_req(SetUSBDevAddrReq,
++				&ma_dev->mgmt, mausb_dev, true);
++
++			if (-ETIMEDOUT == ret) {
++				mausb_err(mhcd, "SetUSBDevAddrReq timed out\n");
++			} else if (0 > ret) {
++				mausb_err(mhcd, "SetUSBDevAddrReq failed with"
++					" error %i\n", ret);
++			} else {
++				ma_ep = mausb_find_ep_host(&udev->ep0,
++					mausb_dev);
++				ret = mausb_tx_dev_mgmt_req_ep(ModifyEP0Req,
++					&ma_dev->mgmt, mausb_dev, true, ma_ep);
++			}
++		}
++	}
++
++	/* TODO: handle failed enumeration */
++
++	return 0;
++}
++
++/**
++ * Resets everything to default values. Always returns zero.
++ */
++static int mausb_reset(struct usb_hcd *hcd)
++{
 +	struct mausb_hcd	 *mhcd = usb_hcd_to_mausb_hcd(hcd);
 +	struct mausb_root_hub	 *roothub = usb_hcd_to_roothub(hcd);
 +
-+	/*
-+	 * Buf should never be more that 2 bytes. USB 3.0 hubs cannot have
-+	 * more than 15 downstream ports.
-+	 */
-+	buf[0] = 0;
-+	if (MAUSB_ROOTHUB_NUM_PORTS > 7) {
-+		buf[1] = 0;
-+		ret++;
++	mausb_dbg(mhcd, "%s: resetting MA USB host driver . . .\n", __func__);
++
++	roothub->rh_state = MAUSB_RH_RESETTING;
++
++	if (mausb_is_ss_hcd(hcd)) {
++		hcd->speed = HCD_USB3;
++		hcd->self.root_hub->speed = USB_SPEED_SUPER;
++	} else {
++		hcd->speed = HCD_USB2;
++		hcd->self.root_hub->speed = USB_SPEED_HIGH;
++		hcd->has_tt = 1;
 +	}
 +
-+	for (i = 0; i < MAUSB_ROOTHUB_NUM_PORTS; i++) {
-+		port_change = roothub->port_status[i].wPortChange;
-+		if (port_change)
-+			status |= (1 << (i + 1));
-+	}
++	hcd->uses_new_polling = 1;
++	hcd->self.sg_tablesize = 0;
 +
-+	mausb_dbg(mhcd, "%s: hub status is 0x%x\n", __func__, status);
-+
-+	/* hcd might be suspended, resume if there is a status change */
-+	if (mhcd->disabled == 0) {
-+		if ((hcd->state == HC_STATE_SUSPENDED) && status)
-+			usb_hcd_resume_root_hub(hcd);
-+	}
-+
-+	memcpy(buf, (char *)&status, ret);
-+
-+	return status ? ret : 0;
-+}
-+
-+/**
-+ * Sets the bitfields in the hub descriptor of the 2.0 root hub. Always
-+ * returns zero.
-+ */
-+int mausb_set_hub_descriptor(struct usb_hub_descriptor *hub_des)
-+{
-+	/* set the values to the default */
-+	hub_des->bDescLength          = sizeof(struct usb_hub_descriptor);
-+	hub_des->bDescriptorType      = USB_DT_HUB;
-+	hub_des->bNbrPorts            = MAUSB_ROOTHUB_NUM_PORTS;
-+	hub_des->wHubCharacteristics  = MAUSB_ROOTHUB_CHAR;
-+	hub_des->bPwrOn2PwrGood       = MAUSB_ROOTHUB_PWR_ON_2_PWR_GOOD;
-+	hub_des->bHubContrCurrent     = MAUSB_ROOTHUB_CONTR_CURRENT;
++	mausb_init_port_status(&mhcd->root_hub);
++	mausb_init_port_status(&mhcd->shared_root_hub);
 +
 +	return 0;
 +}
 +
-+/**
-+ * Sets the bitfields in the hub descriptor of the 3.0 root hub. Always
-+ * returns zero.
-+ */
-+int mausb_set_ss_hub_descriptor(struct usb_hub_descriptor *hub_des)
++int mausb_hcd_thread(void *data)
 +{
-+	/* set the values to the default */
-+	hub_des->bDescLength          = sizeof(struct usb_hub_descriptor);
-+	hub_des->bDescriptorType      = USB_DT_SS_HUB;
-+	hub_des->bNbrPorts            = MAUSB_ROOTHUB_NUM_PORTS;
-+	hub_des->wHubCharacteristics  = MAUSB_ROOTHUB_CHAR;
-+	hub_des->bPwrOn2PwrGood       = MAUSB_ROOTHUB_PWR_ON_2_PWR_GOOD;
-+	hub_des->bHubContrCurrent     = MAUSB_ROOTHUB_CONTR_CURRENT;
++	struct mausb_hcd *mhcd = (struct mausb_hcd *)data;
++	struct mausb_urb *ma_urb, *next_ma_urb;
++	struct mausb_host_ep *ma_ep;
++	unsigned long irq_flags;
 +
-+	/* USB3-specific parameters */
-+	hub_des->u.ss.bHubHdrDecLat   = MAUSB_ROOTHUB_HDR_DEC_LAT;
-+	hub_des->u.ss.wHubDelay       = MAUSB_ROOTHUB_DELAY;
-+	hub_des->u.ss.DeviceRemovable = MAUSB_ALL_DEV_REMOVABLE;
++	while (!kthread_should_stop()) {
++		spin_lock_irqsave(&mhcd->urb_list_lock, irq_flags);
++		list_for_each_entry_safe(ma_urb, next_ma_urb,
++			&mhcd->enqueue_urb_list, ma_hcd_urb_list) {
 +
-+	return 0;
-+}
++			list_move(&ma_urb->ma_hcd_urb_list,
++				&mhcd->transfer_urb_list);
 +
-+/**
-+ * handles GetHubDescriptor requests to the root hub.
-+ *
-+ * @hcd:	USB HCD that owns root hub.
-+ * @hub_des:    Hub descriptor to be copied.
-+ * @wLength:    Maximum length that can be copied without overflowing
-+ *		the buffer.
-+ *
-+ * Returns length of what was actually copied into the mausb hcd root hub
-+ * descriptor. Note that this may be less than the total size of hub_des due
-+ * to buffer size contraints.
-+ */
-+static int mausb_get_hub_descriptor(struct usb_hcd *hcd,
-+		struct usb_hub_descriptor *hub_des, u16 wLength)
-+{
-+	struct mausb_hcd *mhcd = usb_hcd_to_mausb_hcd(hcd);
++			spin_unlock_irqrestore(&mhcd->urb_list_lock, irq_flags);
 +
-+	/* Don't overflow the buffer, and don't read more than you have. */
-+	unsigned int cpyLength = min_t(u16, wLength,
-+				       sizeof(struct usb_hub_descriptor));
++			ma_ep = ma_urb->ep;
++			start_ma_transfer(ma_ep, ma_urb,
++				usb_pipein(ma_urb->urb->pipe));
 +
-+	if (mausb_is_ss_hcd(hcd))
-+		memcpy(hub_des, &(mhcd->shared_root_hub.descriptor), cpyLength);
-+	else
-+		memcpy(hub_des, &(mhcd->root_hub.descriptor), cpyLength);
-+
-+	return cpyLength;
-+}
-+
-+/**
-+ * Handles requests to hub for the BOS.
-+ *
-+ * @ma_hcd:	MA USB HCD that owns hub.
-+ * @bos:	MA USB BOS descriptor.
-+ * @wLength:	Maximum length that can be copied without overflowing
-+ *		the buffer.
-+ *
-+ * Returns length of what was actually copied into the MA USB hcd BOS
-+ * descriptor. Note that this may be less than the total size of the BOS due
-+ * to buffer size contraints.
-+ */
-+static int mausb_get_bos(struct mausb_hcd *ma_hcd,
-+		struct mausb_host_bos *bos, u16 wLength)
-+{
-+	/* Don't overflow the buffer, and don't read more than you have. */
-+	unsigned int cpyLength = min_t(u16, wLength,
-+				       sizeof(struct mausb_host_bos));
-+
-+	memcpy(bos, &(ma_hcd->host_bos), cpyLength);
-+
-+	return cpyLength;
-+}
-+
-+/**
-+ * Initializes FS root hub port status values for a given MA USB roothub.
-+ *
-+ * All ports are initally powered and put in link state rx.detect to wait for
-+ * a connection (or other event that changes link state). All other bits are
-+ * cleared.
-+ */
-+int mausb_init_port_status(struct mausb_root_hub *mausb_rh)
-+{
-+	int	portnum = 0;
-+
-+	while (portnum < MAUSB_ROOTHUB_NUM_PORTS) {
-+
-+		/* set port power bit only */
-+		mausb_rh->port_status[portnum].wPortStatus = 0x0;
-+		mausb_rh->port_status[portnum].wPortStatus |=
-+			USB_PORT_STAT_POWER;
-+
-+		/* make sure to start with no status changes */
-+		mausb_rh->port_status[portnum].wPortChange = 0x0;
-+		portnum++;
-+	}
-+
-+	mausb_rh->rh_state = MAUSB_RH_RUNNING;
-+
-+	return 0;
-+}
-+
-+/**
-+ * Initializes SS root hub port status values for a given MA USb roothub.
-+ *
-+ * All ports are initally powered and put in link state rx.detect to wait for
-+ * a connection (or other event that changes link state). All other bits are
-+ * cleared.
-+ */
-+int mausb_init_ss_port_status(struct mausb_root_hub *mausb_rh)
-+{
-+	int	portnum = 0;
-+
-+	while (portnum < MAUSB_ROOTHUB_NUM_PORTS) {
-+
-+		/* set port power bit and put in link state rx.detect */
-+		mausb_rh->port_status[portnum].wPortStatus = 0x0;
-+		mausb_rh->port_status[portnum].wPortStatus |=
-+			USB_SS_PORT_STAT_POWER;
-+		mausb_rh->port_status[portnum].wPortStatus |=
-+			USB_SS_PORT_LS_RX_DETECT;
-+
-+		/* make sure to start with no status changes */
-+		mausb_rh->port_status[portnum].wPortChange = 0x0;
-+		portnum++;
-+	}
-+
-+	mausb_rh->rh_state = MAUSB_RH_RUNNING;
-+
-+	return 0;
-+}
-+
-+/**
-+ * Handles GetHubStatus request to root hub.
-+ *
-+ * @mhcd:	MA USB hcd that owns hub.
-+ * @data:	Holds hub status to return to caller.
-+ *
-+ * Reads hub status from mhcd and gives it back to the caller via data.
-+ * Returns the number of bytes copied into data.
-+ */
-+static int mausb_get_hub_status(struct usb_hcd *hcd, char *data)
-+{
-+	struct usb_hub_status   *hub_stat;
-+	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
-+	struct mausb_root_hub	*roothub = usb_hcd_to_roothub(hcd);
-+
-+	hub_stat = &roothub->status;
-+	mausb_dbg(mhcd, "%s: hub status is 0x%x hub change is 0x%x\n",
-+		__func__, hub_stat->wHubStatus, hub_stat->wHubChange);
-+
-+	((u16 *)data)[0] = cpu_to_le16(hub_stat->wHubStatus);
-+	((u16 *)data)[1] = cpu_to_le16(hub_stat->wHubChange);
-+
-+	 return sizeof(hub_stat->wHubStatus) + sizeof(hub_stat->wHubChange);
-+}
-+
-+/**
-+ * Handles ClearHubFeature request to the root hub.
-+ *
-+ * @mhcd:	MA USB hcd that owns hub.
-+ * @wValue:	Value that determines which feature is being cleared (see USB
-+ *		3.0 spec for supported values).
-+ *
-+ * Returns 0 if sucessful, otherwise returns error to indicate invalid request.
-+ */
-+static int mausb_clear_hub_feature(struct usb_hcd *hcd, u16 wValue)
-+{
-+	int			err = 0;
-+	struct usb_hub_status	*hub_stat;
-+	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
-+	struct mausb_root_hub	*roothub = usb_hcd_to_roothub(hcd);
-+
-+	hub_stat = &roothub->status;
-+
-+	switch (wValue) {
-+	case C_HUB_LOCAL_POWER:
-+		mausb_dbg(mhcd, "clearing HUB_LOCAL_POWER\n");
-+		hub_stat->wHubChange &= ~(HUB_STATUS_LOCAL_POWER);
-+		break;
-+	case C_HUB_OVER_CURRENT:
-+		mausb_dbg(mhcd, "clearing HUB_OVER_CURRENT\n");
-+		hub_stat->wHubChange &= ~(HUB_STATUS_OVERCURRENT);
-+		break;
-+	default:
-+		err = -EINVAL;
-+		break;
-+	}
-+
-+	return err;
-+}
-+
-+/**
-+ * Handles GetPortStatus request to root hub.
-+ *
-+ * @mhcd:    	MA USB hcd that owns hub.
-+ * @portnum:	Port number for which status is requested.
-+ * @data:    	Holds port status to return to caller.
-+ *
-+ * Reads port status from mhcd and returns it to caller via data. Also
-+ * completes a port reset.
-+ *
-+ * Returns the number of bytes copied into data.
-+ */
-+static int mausb_get_port_status(struct usb_hcd *hcd, int portnum, char *data)
-+{
-+	struct usb_port_status	*port_stat;
-+	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
-+	struct mausb_root_hub	*roothub = usb_hcd_to_roothub(hcd);
-+
-+	/*
-+	 * Note: from USB core perspective ports are 1-indexed, mhcd uses
-+	 * zero-indexing.
-+	 */
-+	port_stat = &roothub->port_status[portnum - 1];
-+
-+	/*
-+	 * USB core sends a GetPortStatus request to complete a port reset.
-+	 * After reset, port is enabled and link state is U0 (3.0 only).
-+	 */
-+	if (port_stat->wPortStatus & USB_PORT_STAT_RESET) {
-+		port_stat->wPortStatus &= ~(USB_PORT_STAT_RESET);
-+		port_stat->wPortStatus |= USB_PORT_STAT_ENABLE;
-+
-+		if (mausb_is_ss_hcd(hcd))
-+			set_link_state(roothub, USB_SS_PORT_LS_U0, portnum - 1);
-+	}
-+
-+	((u16 *)data)[0] = cpu_to_le16(port_stat->wPortStatus);
-+	((u16 *)data)[1] = cpu_to_le16(port_stat->wPortChange);
-+
-+	mausb_dbg(mhcd, "%s: Port status is 0x%x Port change is 0x%x\n",
-+		__func__, ((u16 *)data)[0], port_stat->wPortChange);
-+
-+	return sizeof(port_stat->wPortStatus) + sizeof(port_stat->wPortChange);
-+}
-+
-+/**
-+ * Handles SetPortFeature request to root hub.
-+ *
-+ * @mhcd:    	MA USB hcd that owns hub.
-+ * @portnum:	Port number for which feature set is requested (port
-+ *		number is from usb core perspective, i.e. not zero-indexed).
-+ * @wValue:	Feature to be set (see USB 3.0 spec for supported values).
-+ * @wIndex:	Contains link state to be set (ignored for requests other
-+ *              than set link state).
-+ *
-+ * Sets the bit associated with a particular feature in the status bit field
-+ * of the port specified by portnum. Note that ports are zero indexed in the
-+ * hub, but indexed starting with one in the usb core (e.g. port 2 from the
-+ * core's perspective is port 1 to the hub).
-+ *
-+ * Returns zero for all supported requests. Returns an error value if a feature
-+ * is not supported.
-+ */
-+static int mausb_set_port_feature(struct usb_hcd *hcd, int portnum, u16 wValue,
-+		u16 wIndex)
-+{
-+	int			err = 0;
-+	u8			link_state = 0;
-+	struct usb_port_status	*port_stat;
-+	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
-+	struct mausb_root_hub	*roothub = usb_hcd_to_roothub(hcd);
-+
-+	port_stat = &roothub->port_status[portnum - 1];
-+
-+	switch (wValue) {
-+	case USB_PORT_FEAT_RESET:
-+		mausb_dbg(mhcd, "setting PORT_RESET feature\n");
-+		port_stat->wPortStatus |= USB_PORT_STAT_RESET;
-+		port_stat->wPortChange |= USB_PORT_STAT_C_RESET;
-+		break;
-+	case USB_PORT_FEAT_BH_PORT_RESET:
-+		mausb_dbg(mhcd, "setting BH_PORT_RESET\n");
-+		break;
-+	case USB_PORT_FEAT_POWER:
-+		mausb_dbg(mhcd, "setting PORT_POWER feature\n");
-+		port_stat->wPortStatus |= USB_SS_PORT_STAT_POWER;
-+		set_link_state(roothub, USB_SS_PORT_LS_RX_DETECT, portnum - 1);
-+		break;
-+	case USB_PORT_FEAT_U1_TIMEOUT:
-+		mausb_dbg(mhcd, "setting PORT_U1_TIMEOUT\n");
-+		break;
-+	case USB_PORT_FEAT_U2_TIMEOUT:
-+		mausb_dbg(mhcd, "setting PORT_U2_TIMEOUT\n");
-+		break;
-+	case USB_PORT_FEAT_LINK_STATE:
-+		link_state = wIndex >> 8;
-+		if (link_state == SS_DISABLED) {
-+			mausb_dbg(mhcd, "setting link state to ss.disabled\n");
-+			mhcd->disabled = 1;
-+			clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
-+			set_link_state(roothub, USB_SS_PORT_LS_SS_DISABLED,
-+				portnum - 1);
-+			mausb_connect(mhcd, portnum - 1, 0);
++			spin_lock_irqsave(&mhcd->urb_list_lock, irq_flags);
 +		}
++		spin_unlock_irqrestore(&mhcd->urb_list_lock, irq_flags);
 +
-+		else if (link_state == RX_DETECT) {
-+			mausb_dbg(mhcd, "setting link state to rx.detect\n");
-+			mhcd->disabled = 0;
-+			set_link_state(roothub, USB_SS_PORT_LS_RX_DETECT,
-+				portnum - 1);
-+		}
-+	break;
-+	case USB_PORT_FEAT_REMOTE_WAKE_MASK:
-+		mausb_dbg(mhcd, "setting PORT_REMOTE_WAKE_MASK\n");
-+	break;
-+	case USB_PORT_FEAT_FORCE_LINKPM_ACCEPT:
-+		mausb_dbg(mhcd, "setting FORCE_LINKPM_ACCEPT\n");
-+	break;
-+	default:
-+		 err = -EINVAL;
-+	break;
++		wait_event_interruptible(mhcd->waitq,
++			!list_empty(&mhcd->enqueue_urb_list) ||
++			kthread_should_stop());
 +	}
 +
-+	return err;
++	do_exit(0);
++	return 0;
 +}
 +
 +/**
-+ * Handles ClearPortFeature request to the root hub.
-+ *
-+ * @mhcd:     	MA USB hcd that owns hub.
-+ * @portnum:	Port number for which feature clear is requested (port
-+ *              number is from usb core perspective, i.e. not zero-indexed).
-+ * @wValue:	Feature to clear (see USB 3.0 spec for supported values).
-+ *
-+ * Clears the bit associated with a particular feature in the status bit field
-+ * of the port specified by portnum. Note that ports are zero indexed in the
-+ * hub, but indexed starting with one in the usb core (e.g. port 2 from the
-+ * core's perspective is port 1 to the hub).
-+ *
-+ * Returns zero for all supported requests. Returns an error value if a feature
-+ * is not supported.
++ * Tells the hcd to start running. Always returns zero.
 + */
-+static int mausb_clear_port_feature(struct usb_hcd *hcd, int portnum,
-+		u16 wValue)
++static int mausb_start(struct usb_hcd *hcd)
 +{
-+	int			 err = 0;
-+	struct usb_port_status	*port_stat;
-+	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++	struct mausb_hcd	 *mhcd = usb_hcd_to_mausb_hcd(hcd);
 +	struct mausb_root_hub	 *roothub = usb_hcd_to_roothub(hcd);
 +
-+	port_stat = &roothub->port_status[portnum - 1];
++	mausb_dbg(mhcd, "%s: starting MA USB driver . . .\n", __func__);
 +
-+	switch (wValue) {
-+	case USB_PORT_FEAT_POWER:
-+		mausb_dbg(mhcd, "clearing PORT_POWER feature\n");
-+		port_stat->wPortStatus &= ~(USB_SS_PORT_STAT_POWER);
-+		break;
-+	case USB_PORT_FEAT_C_CONNECTION:
-+		mausb_dbg(mhcd, "clearing PORT_C_CONNECTION feature\n");
-+		port_stat->wPortChange &= ~(USB_PORT_STAT_C_CONNECTION);
-+		break;
-+	case USB_PORT_FEAT_C_RESET:
-+		mausb_dbg(mhcd, "clearing PORT_RESET feature\n");
-+		port_stat->wPortStatus &= ~(USB_PORT_STAT_RESET);
-+		port_stat->wPortChange &= ~(USB_PORT_STAT_C_RESET);
-+		/* prevent excessive polling after reset */
-+		clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
-+		break;
-+	case USB_PORT_FEAT_C_OVER_CURRENT:
-+		mausb_dbg(mhcd, "clearing PORT_OVER_CURRENT feature\n");
-+		port_stat->wPortChange &= ~(USB_PORT_STAT_C_OVERCURRENT);
-+	case USB_PORT_FEAT_C_PORT_LINK_STATE:
-+	case USB_PORT_FEAT_C_PORT_CONFIG_ERROR:
-+	case USB_PORT_FEAT_C_BH_PORT_RESET:
-+		break;
-+	default:
-+		err = -EINVAL;
-+		break;
-+	}
++	hcd->state = HC_STATE_RUNNING;
++	roothub->rh_state = MAUSB_RH_RUNNING;
 +
-+	return err;
++	spin_lock_init(&mhcd->hcd_lock);
++	INIT_LIST_HEAD(&mhcd->ma_dev.dev_list);
++	INIT_LIST_HEAD(&mhcd->enqueue_urb_list);
++	spin_lock_init(&mhcd->urb_list_lock);
++	INIT_LIST_HEAD(&mhcd->transfer_urb_list);
++	spin_lock_init(&mhcd->giveback_lock);
++	init_waitqueue_head(&mhcd->waitq);
++	mhcd->ma_hcd_task_data = (void *)mhcd;
++	mhcd->ma_hcd_task = kthread_run(mausb_hcd_thread,
++		mhcd->ma_hcd_task_data, "mausb_hcd_thread");
++
++	return 0;
 +}
 +
 +/**
-+ * Handles getDescriptor requests to the roothub.
-+ *
-+ * @ma_hcd:	MA USB hcd that owns hub.
-+ * @wValue:	Contains descriptor type in upper byte (see USB 3.0 spec for
-+ *              descriptor types).
-+ * @buf:	Holds descriptor to return to caller.
-+ * @wLength:	Expected descriptor length.
-+ *
-+ * If successful, returns actual length of descriptor in buf. Otherwise returns
-+ * error value.
++ * Called when driver is removed (specifically during usb_remove_hcd). This is
++ * where we tell the hcd to stop writing memory and doing I/O.
 + */
-+static int mausb_get_descriptor(struct mausb_hcd *ma_hcd, u16 wValue,
-+		char *buf, u16 wLength)
++static void mausb_stop(struct usb_hcd *hcd)
 +{
-+	int	ret;
++	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
 +
-+	/*
-+	 * per USB spec, section 9.4.3, the DT is contained in the upper byte
-+	 * of wValue
-+	 */
-+	u8  bDesType = (wValue >> 8);
++	if (mhcd->ma_hcd_task != NULL) {
++		kthread_stop(mhcd->ma_hcd_task);
++		mhcd->ma_hcd_task = NULL;
++	}
 +
-+	switch (bDesType) {
-+	case USB_DT_DEVICE:
-+		mausb_err(ma_hcd, "USB_DT_DEVICE not supported\n");
-+		ret = -EPIPE;
++	mausb_dbg(mhcd, "%s: stopping mausb driver . . .\n", __func__);
++}
++
++static const struct hc_driver mausb_hc_driver = {
++	.description = "mausb-hcd",
++	.product_desc = "mausb pseudo-host controller",
++	.hcd_priv_size = sizeof(struct mausb_hcd),
++	.irq = NULL,
++	.flags = HCD_USB3,
++	.reset = &mausb_reset,
++	.start = &mausb_start,
++	.stop = &mausb_stop,
++	.urb_enqueue = &mausb_urb_enqueue,
++	.urb_dequeue = &mausb_urb_dequeue,
++	.hub_status_data = &mausb_hub_status_data,
++	.hub_control = &mausb_hub_control,
++	.bus_suspend = &mausb_bus_suspend,
++	.bus_resume = &mausb_bus_resume,
++	.alloc_dev = &mausb_alloc_dev,
++	.free_dev =  &mausb_free_dev,
++	.add_endpoint =    &mausb_add_endpoint,
++	.drop_endpoint =   &mausb_drop_endpoint,
++	.check_bandwidth = &mausb_check_bandwidth,
++	.reset_bandwidth = &mausb_reset_bandwidth,
++	.address_device =  &mausb_address_device,
++};
++
++/**
++ * Sets the host_bos fields to the proper initial values per USB3 spec,
++ * section 10.13.1.
++ */
++static int mausb_set_host_bos(struct mausb_host_bos *host_bos)
++{
++	/* BOS Descriptor */
++	host_bos->bos_des.bLength         = USB_DT_BOS_SIZE;
++	host_bos->bos_des.bDescriptorType = USB_DT_BOS;
++	host_bos->bos_des.wTotalLength    = sizeof(struct mausb_host_bos);
++	host_bos->bos_des.bNumDeviceCaps  = MAUSB_HOST_NUM_DEV_CAPS;
++
++	/* SuperSpeed USB Device Capability */
++	host_bos->ss_cap_des.bLength               = USB_DT_USB_SS_CAP_SIZE;
++	host_bos->ss_cap_des.bDescriptorType       = USB_DT_DEVICE_CAPABILITY;
++	host_bos->ss_cap_des.bDevCapabilityType    = USB_SS_CAP_TYPE;
++	host_bos->ss_cap_des.bmAttributes          = USB_LTM_SUPPORT;
++	host_bos->ss_cap_des.wSpeedSupported       = USB_5GBPS_OPERATION;
++	host_bos->ss_cap_des.bFunctionalitySupport = MAUSB_SUPER_SPEED;
++	host_bos->ss_cap_des.bU1devExitLat         = MAUSB_HOST_U1_DEV_EXIT_LAT;
++	host_bos->ss_cap_des.bU2DevExitLat         = MAUSB_HOST_U2_DEV_EXIT_LAT;
++
++	return 0;
++}
++
++/**
++ * @req:	The incoming MA USB management request packet to handle.
++ * @resp:	The MA USB management response packet to send out.
++ * @mgmt:	The MA USB HCD's management structure.
++ *
++ * This function handles management requests to the HCD. It parses the packet
++ * and makes the necessary function calls into the system.
++ *
++ * Note: this function only completes the packet type, status and
++ * request-specific data-fields. the remainder of the fields are set
++ * by mausb_rx_mgmt_req
++ */
++static int hcd_mgmt_req_switch(struct mausb_mgmt_pkt *req,
++		struct mausb_mgmt_pkt *resp, struct mausb_mgmt *mgmt)
++{
++	int ret = 0;
++
++	switch (req->common.pkt_type) {
++
++	/* TODO: handle unimplemented request types */
++	case RemoteWakeReq:
++	case DevInitDisconnectReq:
 +		break;
-+	case USB_DT_CONFIG:
-+		ret = 0;
++	case PingReq:
++		resp->common.pkt_type   = PingResp;
++		resp->common.pkt_status = NO_ERROR;
 +		break;
-+	case USB_DT_BOS:
-+		ret = mausb_get_bos(ma_hcd, (struct mausb_host_bos *) buf,
-+			wLength);
-+		mausb_dbg(ma_hcd, "%s: bos copied to buffer, wTotalLength %x\n",
-+			__func__,
-+			((struct mausb_host_bos *) buf)->bos_des.wTotalLength);
-+		break;
-+	case USB_DT_STRING:
-+		ret = 0;
-+		break;
-+	default: /* invalid request */
++	/* invalid packet type */
++	default:
 +		ret = -EINVAL;
 +		break;
 +	}
@@ -810,98 +687,342 @@ index 0000000..aebca54
 +	return ret;
 +}
 +
++static int mausb_transfer_mgmt_packet(struct ms_pkt *ms_pkt, void *context);
++
 +/**
-+ * Handles requests from usb core to hub.
++ * Generates the mass_id used to initialize an MA USB device. Uses a random
++ * number generator to choose a random id between 1 and 254.
 + *
-+ * @hcd:	USB hcd that owns hub.
-+ * @typeReq:	Request type (see USB 3.0 spec for request types).
-+ * @wValue:	Feature selector for hub/port feature requests,
-+ *		descriptor type and index for hub descriptor requests,
-+ *		hub depth for hub depth requests,zero for all other requests.
-+ * @wIndex:	Port number for port requests, zero or language id for hub
-+ *		descriptor requests, zero for all other requests.
-+ * @buf:	Buffer for requested descriptor or status (if applicable).
-+ * @wLength:	Descriptor length for descriptor requests, otherwise zero.
-+ *
-+ * Called by the USB core to make a request to the root hub. mausb_hub_control
-+ * parses the request and routes it to the appropriate mausb helper function.
-+ *
-+ * If successful, returns descriptor length for descriptor request or zero for
-+ * other requests. Otherwise returns error value.
++ * Returns the random id chosen.
 + */
-+int mausb_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
-+		u16 wIndex, char *buf, u16 wLength)
++static __u8 get_mass_id(void)
 +{
-+	int		err = 0;
-+	int		portnum = (wIndex & 0xFF);
-+	struct		mausb_hcd *mhcd = usb_hcd_to_mausb_hcd(hcd);
++       __u8 id;
 +
-+	if (portnum > MAUSB_ROOTHUB_NUM_PORTS) {
-+		mausb_err(mhcd, "port number %d is invalid\n", portnum);
-+		return -EINVAL;
-+	}
++       get_random_bytes(&id, sizeof(id));
 +
-+	switch (typeReq) {
-+	case MAUSB_REQ_GET_DES:
-+		err = mausb_get_descriptor(usb_hcd_to_mausb_hcd(hcd),
-+			wValue, buf, wLength);
-+		err = sizeof(struct mausb_host_bos);
-+		break;
-+	case ClearHubFeature:
-+		mausb_dbg(mhcd, "clearing hub feature %d\n", wValue);
-+		err = mausb_clear_hub_feature(hcd, wValue);
-+		break;
-+	case ClearPortFeature:
-+		mausb_dbg(mhcd, "clearing port %d feature %d\n", portnum,
-+			wValue);
-+		err = mausb_clear_port_feature(hcd, portnum, wValue);
-+		break;
-+	case GetHubDescriptor:
-+		err = mausb_get_hub_descriptor(hcd,
-+			(struct usb_hub_descriptor *) buf, wLength);
-+		break;
-+	case GetHubStatus:
-+		mausb_dbg(mhcd, "getting hub status\n");
-+		err = mausb_get_hub_status(hcd, buf);
-+		break;
-+	case GetPortStatus:
-+		mausb_dbg(mhcd, "getting port %d status\n", portnum);
-+		err = mausb_get_port_status(hcd, portnum, buf);
-+		break;
-+	/* SetHubFeature support is optional (only used for diagnostics) */
-+	case SetHubFeature:
-+		err = 0;
-+		break;
-+	case SetPortFeature:
-+		mausb_dbg(mhcd, "setting port %d feature %d\n", portnum,
-+			wValue);
-+		mausb_set_port_feature(hcd, portnum, wValue, wIndex);
-+		break;
-+	case SetHubDepth:
-+		err = 0;
-+		break;
-+	case GetPortErrorCount:
-+		err = 0;
-+		break;
-+	default:
-+		err = -EINVAL;
-+		break;
-+	}
++       /* Note: this function is twice as likely to pick 1 or 2 */
++       id = (id % (MASS_ID_MAX - MASS_ID_MIN + 1) + MASS_ID_MIN);
 +
-+	return err;
++       return id;
 +}
++
++/**
++ * Initializes MA USB hcd roothub descriptors and ports.
++ *
++ * Always returns zero.
++ */
++static int create_mausb_hcd(struct mausb_hcd *mausb_hcd)
++{
++	if (mausb_hcd == NULL)
++		return -ENOMEM;
++
++	/* set the roothub descriptor to the proper initial values */
++	mausb_set_hub_descriptor(&mausb_hcd->root_hub.descriptor);
++	mausb_set_ss_hub_descriptor(&mausb_hcd->shared_root_hub.descriptor);
++
++	/* set the host_bos to the proper values */
++	mausb_set_host_bos(&mausb_hcd->host_bos);
++
++	/* initialize port status values */
++	mausb_init_port_status(&mausb_hcd->root_hub);
++	mausb_init_ss_port_status(&mausb_hcd->shared_root_hub);
++
++	/* initialize the MA USB device structure */
++	mausb_init_ma_device(&mausb_hcd->ma_dev, MAUSB_DEV_ADDR, get_mass_id(),
++		mausb_hcd, NULL, &hcd_mgmt_req_switch, &mausb_device_connect);
++
++	return 0;
++}
++
++/**
++ * probe function
++ */
++static int mausb_probe(struct platform_device *mausb_pdev)
++{
++	int			ret = 0;
++	const char		*bus_name = "MAUSB";
++	unsigned int		mausb_irqnum = 0;
++	struct usb_hcd		*usb_hcd;
++	struct mausb_hcd	*mhcd;
++
++	/* create our USB 2.0 roothub */
++	usb_hcd = usb_create_hcd(&mausb_hc_driver, &mausb_pdev->dev, bus_name);
++	if (usb_hcd == NULL) {
++		dev_err(&mausb_pdev->dev, "%s: could not create USB HCD\n",
++			__func__);
++		return -ENOMEM;
++	}
++
++	/* create our data structure that holds MA USB data */
++	mhcd = kzalloc(sizeof(struct mausb_hcd), GFP_KERNEL);
++	ret = create_mausb_hcd(mhcd);
++	if (ret < 0) {
++		dev_err(&mausb_pdev->dev, "%s: could not create MA USB HCD"
++			" (error %i)\n", __func__, ret);
++
++		if (ret != -ENOMEM)
++			kfree(mhcd);
++
++		return ret;
++	}
++
++	/*
++	 * Everyone exchanges pointers so we can move between data types with
++	 * minimal pointer juju.
++	 */
++	platform_set_drvdata(mausb_pdev, mhcd);
++	*((struct mausb_hcd **) usb_hcd->hcd_priv) = mhcd;
++	mhcd->usb_hcd = usb_hcd;
++
++	/*
++	 * Finish initializing generic members of USB 2.0 HCD, register the bus,
++	 * request IRQ line, call driver's reset() and start() routines.
++	 */
++	ret = usb_add_hcd(usb_hcd, mausb_irqnum, IRQF_SHARED);
++	if (ret) {
++		dev_err(&mausb_pdev->dev, "%s: could not add USB HCD"
++			" (error %i)\n", __func__, ret);
++
++		usb_remove_hcd(usb_hcd);
++		kfree(mhcd);
++
++		return ret;
++	}
++
++	/* add our USB 3.0 roothub */
++	mhcd->shared_hcd = usb_create_shared_hcd(&mausb_hc_driver,
++		&mausb_pdev->dev, bus_name, usb_hcd);
++
++	if (mhcd->shared_hcd == NULL) {
++		dev_dbg(&mausb_pdev->dev,
++			"%s: could not create shared USB HCD\n", __func__);
++
++		usb_remove_hcd(usb_hcd);
++		kfree(mhcd);
++
++		return -ENOMEM;
++	}
++
++	ret = usb_add_hcd(mhcd->shared_hcd, mausb_irqnum, IRQF_SHARED);
++
++	if (ret) {
++		dev_err(&mausb_pdev->dev, "%s: could not add shared"
++			" USB HCD (error %i)\n", __func__, ret);
++
++		usb_remove_hcd(usb_hcd);
++		kfree(mhcd);
++	}
++
++	return ret;
++}
++
++/**
++ * remove function
++ */
++static int mausb_remove(struct platform_device *mausb_pdev)
++{
++	int			ret = 0;
++	struct usb_hcd		*hcd, *shared_hcd;
++	struct mausb_hcd	*mhcd = platform_get_drvdata(mausb_pdev);
++
++	if (mhcd == NULL) {
++		dev_err(&mausb_pdev->dev,
++			"%s:MA USB HCD not found\n", __func__);
++		return 0;
++	}
++
++	hcd = mhcd->usb_hcd;
++	shared_hcd = mhcd->shared_hcd;
++
++	if (mhcd->shared_hcd) {
++		usb_remove_hcd(mhcd->shared_hcd);
++		usb_put_hcd(mhcd->shared_hcd);
++		mhcd->shared_hcd = NULL;
++	}
++
++	usb_remove_hcd(hcd);
++	usb_put_hcd(hcd);
++
++	kfree(mhcd);
++
++	return ret;
++}
++
++/**
++ * Release function.
++ */
++static void mausb_dev_release(struct device *dev)
++{
++	/* TODO: if we dynamically allocate anything, free it here */
++}
++
++static struct platform_driver mausb_driver = {
++	.probe = mausb_probe,
++	.remove = mausb_remove,
++	.driver = {
++		.name = MAUSB_NAME,
++		.owner = THIS_MODULE,
++	},
++};
++
++static struct platform_device mausb_pdev = {
++	.name = MAUSB_NAME,
++	.id = 0,
++};
++
++/**
++ * @pkt		The incoming MA USB packet to parse.
++ * @context	The MA USB HCD's management structure.
++ *
++ * Used to transfer MA USB management packets to and from an MA USB device.
++ */
++static int mausb_transfer_mgmt_packet(struct ms_pkt *ms_pkt, void *context)
++{
++	int			ret;
++	struct mausb_mgmt	*mgmt;
++	struct mausb_hcd	*mhcd = platform_get_drvdata(&mausb_pdev);
++	struct mausb_pkt	*pkt = mausb_pkt_from_ms_pkt_ma_dev(ms_pkt,
++					&mhcd->ma_dev, GFP_ATOMIC);
++
++	if ((NULL == context) || (NULL == pkt)) {
++		mausb_err(mhcd, "%s: received NULL input\n", __func__);
++		return -EFAULT;
++	}
++
++	mgmt = (struct mausb_mgmt *) context;
++
++	ret = mausb_rx_mgmt(pkt, mgmt);
++
++	return ret;
++}
++
++/**
++ * @drv:	The media specific driver structure that provides an interface
++ *		for the media agnostic driver.
++ *
++ * Registers a media specific driver with the MA USB HCD.
++ */
++struct mausb_ma_drv *mausb_register_ms_driver(struct mausb_ms_drv *drv)
++{
++	struct mausb_hcd	*mhcd = platform_get_drvdata(&mausb_pdev);
++	unsigned long		irq_flags;
++
++	spin_lock_irqsave(&mhcd->hcd_lock, irq_flags);
++	mhcd->ma_dev.ms_driver = drv;
++	spin_unlock_irqrestore(&mhcd->hcd_lock, irq_flags);
++
++	/* Open the management channel */
++	mausb_add_mgmt_channel(&mhcd->ma_dev.mgmt, drv,
++			 &mausb_transfer_mgmt_packet, &mausb_mgmt_pkt_sent);
++
++	return &mhcd->ma_dev.ma_drv;
++}
++EXPORT_SYMBOL(mausb_register_ms_driver);
++
++/**
++ * Called by a media specific driver to indicate that an MA USB device has been
++ * connected and is ready to receive MA USB packets.
++ */
++int mausb_device_connect(int on)
++{
++	int status = 0;
++	/* TODO: don't want portnum hard coded when we add more ports */
++	int portnum = 0;
++	struct mausb_hcd	*mhcd = platform_get_drvdata(&mausb_pdev);
++
++	/*  connection event */
++	if (on) {
++		/* reset MA USB device */
++		status = mausb_tx_dev_mgmt_req(DevResetReq, &mhcd->ma_dev.mgmt,
++			NULL, true);
++
++		if (status < 0) {
++			mausb_err(mhcd, "%s: cannot reset MA device,"
++				" error %i\n", __func__, status);
++			return status;
++		}
++
++		/* send CapResp packet */
++		if (0 <= status) {
++			status = mausb_tx_dev_mgmt_req(CapReq,
++				&mhcd->ma_dev.mgmt, NULL, true);
++		}
++
++		if (status < 0) {
++			mausb_err(mhcd, "%s: cannot get device capabilities,"
++				" error %i\n", __func__, status);
++			return status;
++		}
++	}
++
++	status = mausb_connect(mhcd, portnum, on);
++
++	return status;
++}
++
++/**
++ * initialization function
++ */
++static int mausb_hcd_init(void)
++{
++	int ret;
++
++	/* register HCD driver */
++	ret = platform_driver_register(&mausb_driver);
++	if (ret < 0) {
++		printk(KERN_DEBUG "%s: failed to register HC driver: "
++			" error number %d\n", __func__, ret);
++
++	} else {
++		/* register HCD device */
++		ret = platform_device_register(&mausb_pdev);
++
++		if (ret < 0) {
++			printk(KERN_DEBUG "%s: failed to register HC device:"
++				"error number %d\n", __func__, ret);
++			platform_driver_unregister(&mausb_driver);
++		} else {
++			/* direct the release function (for exiting) */
++			mausb_pdev.dev.release = &mausb_dev_release;
++
++			if (ret < 0) {
++				printk(KERN_DEBUG "failed to register HC"
++					" chardev: error number %d\n", ret);
++				platform_driver_unregister(&mausb_driver);
++				platform_device_unregister(&mausb_pdev);
++			}
++		}
++	}
++
++	return ret;
++}
++module_init(mausb_hcd_init);
++
++/**
++ * Exit function.
++ */
++static void mausb_hcd_exit(void)
++{
++	/* deregister HC device */
++	platform_device_unregister(&mausb_pdev);
++
++	/* deregister HC driver */
++	platform_driver_unregister(&mausb_driver);
++}
++module_exit(mausb_hcd_exit);
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 +MODULE_AUTHOR("Intel");
-+MODULE_DESCRIPTION("mausb driver");
-diff --git a/drivers/staging/mausb/drivers/mausb_hub.h b/drivers/staging/mausb/drivers/mausb_hub.h
++MODULE_DESCRIPTION("MA USB driver");
+diff --git a/drivers/staging/mausb/drivers/mausb_hcd.h b/drivers/staging/mausb/drivers/mausb_hcd.h
 new file mode 100644
-index 0000000..7670c1b
+index 0000000..29c431a
 --- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_hub.h
-@@ -0,0 +1,128 @@
-+/* name:	 mausb_hub.h
-+ * description:  header file for mausb hub
++++ b/drivers/staging/mausb/drivers/mausb_hcd.h
+@@ -0,0 +1,171 @@
++/* Name:         mausb_hcd.h
++ * Description:  header file for mausb_hcd.c
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -956,76 +1077,119 @@ index 0000000..7670c1b
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
 +
-+#ifndef __MAUSB_HUB_H
-+#define __MAUSB_HUB_H
++#ifndef __MAUSB_HCD_H
++#define __MAUSB_HCD_H
 +
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+#include <linux/platform_device.h>
-+#include <linux/usb/ch11.h>
++#include <linux/spinlock.h>
 +
-+/* root hub Parameters */
-+#define MAUSB_ROOTHUB_CHAR (HUB_CHAR_LPSM | HUB_CHAR_INDV_PORT_OCPM)
-+#define MAUSB_ROOTHUB_NUM_PORTS		1
-+#define MAUSB_ROOTHUB_PWR_ON_2_PWR_GOOD 0
-+#define MAUSB_ROOTHUB_CONTR_CURRENT     0
-+#define MAUSB_ROOTHUB_HDR_DEC_LAT       0	/* < 0 uS */
-+#define MAUSB_ROOTHUB_DELAY             0	/* 0 nS */
-+#define MAUSB_ALL_DEV_REMOVABLE		0x0000  /* All devices are removable */
++#include "mausb_hub.h"
++#include "mausb_pkt.h"
++#include "mausb_mem.h"
++#include "mausb_const.h"
 +
-+/* per USB3 spec, section 9.4.3 */
-+#define MAUSB_REQ_GET_DES (0x8000 | USB_REQ_GET_DESCRIPTOR)
++#define MAUSB_NAME "mausb"
 +
-+/* link state selectors for set_port_feature request to root hub */
-+#define SS_DISABLED	4
-+#define RX_DETECT	5
++#define mausb_info(mhcd, fmt, args...) \
++	dev_info(mausb_hcd_to_usb_hcd(mhcd)->self.controller , fmt , ## args)
++#define mausb_dbg(mhcd, fmt, args...) \
++	dev_dbg(mausb_hcd_to_usb_hcd(mhcd)->self.controller , fmt , ## args)
++#define mausb_warn(mhcd, fmt, args...) \
++	dev_warn(mausb_hcd_to_usb_hcd(mhcd)->self.controller , fmt , ## args)
++#define mausb_err(mhcd, fmt, args...) \
++	dev_err(mausb_hcd_to_usb_hcd(mhcd)->self.controller , fmt , ## args)
 +
-+/* mask used to clear port link state bits (bits 5-8) in wPortStatus */
-+#define	LINK_STATE_MASK			0xFE1F
++/* Transfer directions */
++#define PIPE_DIR_OUT 0
++#define PIPE_DIR_IN 1
 +
-+/* forward declarations */
-+struct mausb_root_hub;
-+struct mausb_hcd;
++/* Host BOS parameters */
++#define MAUSB_HOST_NUM_DEV_CAPS 1
++#define MAUSB_HOST_U1_DEV_EXIT_LAT 0
++#define MAUSB_HOST_U2_DEV_EXIT_LAT 0
 +
-+/* root hub states */
-+enum mausb_rh_state {
-+	MAUSB_RH_RESETTING,
-+	MAUSB_RH_SUSPEND,
-+	MAUSB_RH_RUNNING
++/* TEMPORARY: the mausb device will have this handle */
++#define MAUSB_DEV_ADDR 0x54
++#define MAUSB_MASS_ID  0x25
++
++struct mausb_ms_drv;
++
++/**
++ * This structure holds the information set in a get bos descriptor request.
++ *
++ * @bos_des:     Binary Object Store Descriptor, per USB2.0 Spec
++ * @ss_cap_des:  SuperSpeed Capability Descriptor, per USB3.0 Spec
++ */
++struct __attribute__((__packed__)) mausb_host_bos {
++	struct usb_bos_descriptor             bos_des;
++	struct usb_ss_cap_descriptor          ss_cap_des;
 +};
 +
 +/**
-+ * Contains all the structures required to emulate a root hub. One instance
-+ * exists per root hub.
++ * This structure holds all of the MA USB-specific data.
++ *
++ * All data listed in this structure is protected by the hcd_lock.
++ * if you want to use any of this data, you need to be in possession
++ * of this lock.
++ *
++ * @root_hub:		Contains all of the data for the USB 2.0 roothub.
++ *			This includes status, state and descriptors.
++ * @shared_root_hub:	Contains all of the data for the USB 3.0 roothub.
++ *			This includes status, state and descriptors
++ * @host_bos:		Stores the host's BOS descriptor
++ * @udev:		Pointer to the usb device we are currently sending
++ *			a packet to.
++ * @shared_hcd:		The second host controller structure for the MAUSB
++ *			driver. We need this because we do SuperSpeed, which
++ *			requires 2 root hubs.
++ * @ma_dev:		The connected MA USB device
++ * @ma_hcd_task:	Task for handling urb queue
++ * @ma_hcd_task_data:	Context for ma_hcd_task
++ * @waitq:		Event trigger for dequeue
++ * @enqueue_urb_list:	List of enqueued urbs from core
++ * @transfer_urb_list:	List of urbs awaiting ma transfer
++ * @urb_list_lock:	Lock for accessing urb lists
++ * @hcd_lock:		Lock for accessing data in this structure. note that
++ *			endpoints have their own locks. When accessing
++ *			endpoint data, this lock should NOT be held
++ * @giveback_lock:	spin lock to prevent preemption when give back an urb
++ * @resuming:		Set to 1 when HCD is resuming
++ * @disabled:		Set to 1 when hcd is disabled
 + */
-+struct __attribute__((__packed__)) mausb_root_hub {
++struct __attribute__((__packed__)) mausb_hcd  {
++	struct mausb_root_hub	root_hub;
++	struct mausb_root_hub	shared_root_hub;
 +
-+	/* hub parameters */
-+	struct usb_hub_descriptor descriptor;
-+	struct usb_hub_status     status;
++	struct mausb_host_bos	host_bos;
 +
-+	/* port parameters*/
-+	struct usb_port_status    port_status[MAUSB_ROOTHUB_NUM_PORTS];
++	struct usb_device	*udev;
 +
-+	/* root hub state */
-+	enum   mausb_rh_state     rh_state;
++	struct usb_hcd		*usb_hcd;
++	struct usb_hcd		*shared_hcd;
 +
++	struct ma_dev		ma_dev;
++	struct task_struct	*ma_hcd_task;
++	void			*ma_hcd_task_data;
++	wait_queue_head_t	waitq;
++	struct list_head	enqueue_urb_list;
++	struct list_head	transfer_urb_list;
++	spinlock_t		urb_list_lock;
++	spinlock_t		hcd_lock;
++	spinlock_t		giveback_lock;
++	unsigned int		resuming:1;
++	unsigned int		disabled:1;
 +};
 +
-+/* function declarations */
-+bool    mausb_is_ss_hcd(struct usb_hcd *hcd);
-+int	mausb_hub_status_data(struct usb_hcd *hcd, char *buf);
-+int	mausb_set_hub_descriptor(struct usb_hub_descriptor *hub_des);
-+int	mausb_set_ss_hub_descriptor(struct usb_hub_descriptor *hub_des);
-+int	mausb_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
-+		u16 wIndex, char *buf, u16 wLength);
-+int	mausb_init_port_status(struct mausb_root_hub *mausb_rh);
-+int	mausb_init_ss_port_status(struct mausb_root_hub *mausb_rh);
-+int	mausb_connect(struct mausb_hcd *hcd, int portnum, int do_connect);
-+struct  mausb_root_hub *usb_hcd_to_roothub(struct usb_hcd *hcd);
++/* Pointer conversion functions */
++inline struct mausb_hcd *usb_hcd_to_mausb_hcd(struct usb_hcd *hcd);
++inline struct usb_hcd *mausb_hcd_to_usb_hcd(struct mausb_hcd *mhcd);
++inline struct device *mausb_hcd_to_dev(struct mausb_hcd *mhcd);
++inline struct mausb_urb *usb_urb_to_mausb_urb(struct urb *urb);
 +
++/* URB handling functions */
++void mausb_unlink_giveback_urb(struct mausb_urb *maurb, int status);
++
++/* Connection event function */
++int mausb_device_connect(int);
 +
 +#endif
 -- 
