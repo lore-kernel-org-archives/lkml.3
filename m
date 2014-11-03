@@ -1,107 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbaKCH3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:29:23 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:59890 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613AbaKCH3T (ORCPT
+	id S1751506AbaKCH3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:29:06 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59183 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbaKCH2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 02:29:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141024052553.GE15243@js1304-P5Q-DELUXE>
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com> <20141024052553.GE15243@js1304-P5Q-DELUXE>
-From: Hui Zhu <teawater@gmail.com>
-Date: Mon, 3 Nov 2014 15:28:38 +0800
-Message-ID: <CANFwon1JUmxP5S_jrEg=k7VRBhrD9DC0cH3ve4FioSVRYK0n4A@mail.gmail.com>
-Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
- about allocation
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Hui Zhu <zhuhui@xiaomi.com>, rjw@rjwysocki.net, len.brown@intel.com,
-        pavel@ucw.cz, m.szyprowski@samsung.com,
-        Andrew Morton <akpm@linux-foundation.org>, mina86@mina86.com,
-        aneesh.kumar@linux.vnet.ibm.com, hannes@cmpxchg.org,
-        Rik van Riel <riel@redhat.com>, mgorman@suse.de, minchan@kernel.org,
-        nasa4836@gmail.com, ddstreet@ieee.org, Hugh Dickins <hughd@google.com>,
-        mingo@kernel.org, rientjes@google.com,
-        Peter Zijlstra <peterz@infradead.org>, keescook@chromium.org,
-        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        kirill.shutemov@linux.intel.com, n-horiguchi@ah.jp.nec.com,
-        k.khlebnikov@samsung.com, msalter@redhat.com, deller@gmx.de,
-        tangchen@cn.fujitsu.com, ben@decadent.org.uk, akinobu.mita@gmail.com,
-        lauraa@codeaurora.org, vbabka@suse.cz, sasha.levin@oracle.com,
-        vdavydov@parallels.com, suleiman@google.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Nov 2014 02:28:03 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCH 7/8] perf tools: Fix build-id matching on vmlinux
+Date: Mon,  3 Nov 2014 16:27:57 +0900
+Message-Id: <1414999678-31377-8-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
+References: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 1:25 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> On Thu, Oct 16, 2014 at 11:35:47AM +0800, Hui Zhu wrote:
->> In fallbacks of page_alloc.c, MIGRATE_CMA is the fallback of
->> MIGRATE_MOVABLE.
->> MIGRATE_MOVABLE will use MIGRATE_CMA when it doesn't have a page in
->> order that Linux kernel want.
->>
->> If a system that has a lot of user space program is running, for
->> instance, an Android board, most of memory is in MIGRATE_MOVABLE and
->> allocated.  Before function __rmqueue_fallback get memory from
->> MIGRATE_CMA, the oom_killer will kill a task to release memory when
->> kernel want get MIGRATE_UNMOVABLE memory because fallbacks of
->> MIGRATE_UNMOVABLE are MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE.
->> This status is odd.  The MIGRATE_CMA has a lot free memory but Linux
->> kernel kill some tasks to release memory.
->>
->> This patch series adds a new function CMA_AGGRESSIVE to make CMA memory
->> be more aggressive about allocation.
->> If function CMA_AGGRESSIVE is available, when Linux kernel call function
->> __rmqueue try to get pages from MIGRATE_MOVABLE and conditions allow,
->> MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.  If MIGRATE_CMA
->> doesn't have enough pages for allocation, go back to allocate memory from
->> MIGRATE_MOVABLE.
->> Then the memory of MIGRATE_MOVABLE can be kept for MIGRATE_UNMOVABLE and
->> MIGRATE_RECLAIMABLE which doesn't have fallback MIGRATE_CMA.
->
-> Hello,
->
-> I did some work similar to this.
-> Please reference following links.
->
-> https://lkml.org/lkml/2014/5/28/64
-> https://lkml.org/lkml/2014/5/28/57
+There's a problem on finding correct kernel symbols when perf report
+runs on a different kernel.  Although a part of the problem was solved
+by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+version when finding vmlinux"), there's a remaining problem still.
 
-> I tested #1 approach and found the problem. Although free memory on
-> meminfo can move around low watermark, there is large fluctuation on free
-> memory, because too many pages are reclaimed when kswapd is invoked.
-> Reason for this behaviour is that successive allocated CMA pages are
-> on the LRU list in that order and kswapd reclaim them in same order.
-> These memory doesn't help watermark checking from kwapd, so too many
-> pages are reclaimed, I guess.
+When perf records samples, it synthesizes the kernel map using
+machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+You can easily see it using 'perf report -D' command.
 
-This issue can be handle with some change around shrink code.  I am
-trying to integrate  a patch for them.
-But I am not sure we met the same issue.  Do you mind give me more
-info about this part?
+After finishing record, it goes through the recorded events to find
+maps/dsos actually used.  And then record build-id info of them.
 
->
-> And, aggressive allocation should be postponed until freepage counting
-> bug is fixed, because aggressive allocation enlarge the possiblity
-> of problem occurence. I tried to fix that bug, too. See following link.
->
-> https://lkml.org/lkml/2014/10/23/90
+During this process, it needs to load symbols in a dso and it'd call
+dso__load_vmlinux_path() since the default value of the symbol_conf.
+try_vmlinux_path is true.  However it changes dso->long_name to a real
+path of the vmlinux file (e.g. /lib/modules/3.16.4/build/vmlinux)
+if one is running on a custom kernel.
 
-I am following these patches.  They are great!  Thanks for your work.
+It resulted in that perf report reads the build-id of the vmlinux, but
+cannot use it since it only knows about the [kernel.kallsyms] map.  It
+then falls back to possible vmlinux paths by using the recorded kernel
+version (in case of a recent version) or a running kernel silently.
 
-Best,
-Hui
+Even with the recent tools, this still has a possibility of breaking
+the result.  As the build directory is a symbolic link, if one built a
+new kernel in the same directory with different source/config, the old
+link to vmlinux will point the new file.  So it's absolutely needed to
+use build-id when finding a kernel image.
 
->
-> Thanks.
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+In this patch, it's now changed to try to search a kernel dso in the
+existing dso list which was constructed during build-id table parsing
+so it'll always have a build-id.  If not found, search "[kernel.kallsyms]".
+
+Before:
+
+  $ perf report
+  # Children      Self  Command  Shared Object      Symbol
+  # ........  ........  .......  .................  ...............................
+  #
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
+      71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
+   ...
+
+After (for the same perf.data):
+
+      72.15%     0.00%  swapper  vmlinux  [k] cpu_startup_entry
+      72.15%     0.00%  swapper  vmlinux  [k] arch_cpu_idle
+      72.15%     0.00%  swapper  vmlinux  [k] default_idle
+      71.87%    71.87%  swapper  vmlinux  [k] native_safe_halt
+   ...
+
+Cc: Adrian Huner <adrian.hunter@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/header.c  |  2 +-
+ tools/perf/util/machine.c | 16 ++++++++++++++--
+ 2 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 3e2c156d9c64..76442caca37e 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1269,7 +1269,7 @@ static int __event_process_build_id(struct build_id_event *bev,
+ 
+ 		dso__set_build_id(dso, &bev->build_id);
+ 
+-		if (filename[0] == '[')
++		if (!is_kernel_module(filename, NULL))
+ 			dso->kernel = dso_type;
+ 
+ 		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 946c7d62cb6e..53f90e9c65fe 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1085,8 +1085,20 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+ 		 * Should be there already, from the build-id table in
+ 		 * the header.
+ 		 */
+-		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+-						     kmmap_prefix);
++		struct dso *kernel = NULL;
++		struct dso *dso;
++
++		list_for_each_entry(dso, &machine->kernel_dsos.head, node) {
++			if (is_kernel_module(dso->long_name, NULL))
++				continue;
++
++			kernel = dso;
++			break;
++		}
++
++		if (kernel == NULL)
++			kernel = __dsos__findnew(&machine->kernel_dsos,
++						 kmmap_prefix);
+ 		if (kernel == NULL)
+ 			goto out_problem;
+ 
+-- 
+2.1.2
+
