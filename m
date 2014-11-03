@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011AbaKCQdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:33:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43448 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922AbaKCQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:33:04 -0500
+	id S1753239AbaKCQdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:33:14 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57965 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082AbaKCQdK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 11:33:10 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
 CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux OMAP Mailing List <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
         <grant.likely@linaro.org>, George Cherian <george.cherian@ti.com>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 1/4] extcon: gpio: Convert the driver to use gpio desc API's
-Date: Mon, 3 Nov 2014 10:32:27 -0600
-Message-ID: <1415032350-8459-2-git-send-email-balbi@ti.com>
+Subject: [PATCH 3/4] extcon: gpio: Always use gpio_get_value_cansleep
+Date: Mon, 3 Nov 2014 10:32:29 -0600
+Message-ID: <1415032350-8459-4-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 2.1.0.GIT
 In-Reply-To: <1415032350-8459-1-git-send-email-balbi@ti.com>
 References: <1415032350-8459-1-git-send-email-balbi@ti.com>
@@ -26,74 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: George Cherian <george.cherian@ti.com>
 
-Convert the driver to use gpiod_* API's.
+Some gpio's can sleep while reading, so always use gpio_get_value_cansleep
+to get data. This fixes warning from gpiolib due to wrong API usage.
 
 Reviewed-by: Roger Quadros <rogerq@ti.com>
 Signed-off-by: George Cherian <george.cherian@ti.com>
 Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/extcon/extcon-gpio.c | 16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ drivers/extcon/extcon-gpio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 72f19a3..70e3fc7 100644
+index 9571e1f..7191d28 100644
 --- a/drivers/extcon/extcon-gpio.c
 +++ b/drivers/extcon/extcon-gpio.c
-@@ -33,8 +33,7 @@
- 
- struct gpio_extcon_data {
- 	struct extcon_dev *edev;
--	unsigned gpio;
--	bool gpio_active_low;
-+	struct gpio_desc *gpiod;
- 	const char *state_on;
- 	const char *state_off;
- 	int irq;
-@@ -50,9 +49,7 @@ static void gpio_extcon_work(struct work_struct *work)
+@@ -51,7 +51,7 @@ static void gpio_extcon_work(struct work_struct *work)
  		container_of(to_delayed_work(work), struct gpio_extcon_data,
  			     work);
  
--	state = gpio_get_value(data->gpio);
--	if (data->gpio_active_low)
--		state = !state;
-+	state = gpiod_get_value(data->gpiod);
+-	state = gpiod_get_value(data->gpiod);
++	state = gpiod_get_value_cansleep(data->gpiod);
  	extcon_set_state(data->edev, state);
  }
- 
-@@ -106,21 +103,20 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 	}
- 	extcon_data->edev->name = pdata->name;
- 
--	extcon_data->gpio = pdata->gpio;
--	extcon_data->gpio_active_low = pdata->gpio_active_low;
-+	extcon_data->gpiod = gpio_to_desc(pdata->gpio);
- 	extcon_data->state_on = pdata->state_on;
- 	extcon_data->state_off = pdata->state_off;
- 	extcon_data->check_on_resume = pdata->check_on_resume;
- 	if (pdata->state_on && pdata->state_off)
- 		extcon_data->edev->print_state = extcon_gpio_print_state;
- 
--	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
-+	ret = devm_gpio_request_one(&pdev->dev, pdata->gpio, GPIOF_DIR_IN,
- 				    pdev->name);
- 	if (ret < 0)
- 		return ret;
- 
- 	if (pdata->debounce) {
--		ret = gpio_set_debounce(extcon_data->gpio,
-+		ret = gpiod_set_debounce(extcon_data->gpiod,
- 					pdata->debounce * 1000);
- 		if (ret < 0)
- 			extcon_data->debounce_jiffies =
-@@ -133,7 +129,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 
- 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
- 
--	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
-+	extcon_data->irq = gpiod_to_irq(extcon_data->gpiod);
- 	if (extcon_data->irq < 0)
- 		return extcon_data->irq;
  
 -- 
 2.1.0.GIT
