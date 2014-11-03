@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbaKCRRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:17:39 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:53809 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413AbaKCRRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:17:38 -0500
-Date: Mon, 3 Nov 2014 17:17:31 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] backlight: use of_find_backlight_by_node stub when
- backlight class disabled
-Message-ID: <20141103171731.GH12011@x1>
-References: <50522512.UJWUZtqLop@diego>
+	id S1753326AbaKCRRx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:17:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57129 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752197AbaKCRRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 12:17:50 -0500
+Date: Mon, 3 Nov 2014 18:17:48 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
+        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
+Message-ID: <20141103171748.GI10156@dhcp22.suse.cz>
+References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50522512.UJWUZtqLop@diego>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014, Heiko Stübner wrote:
-
-> Drivers may want to search for an optional backlight even when the backlight
-> class is disabled. In this case the linker would miss the function referenced
-> in the backlight header.
-> 
-> Therefore use the stub function also when the backlight class is disabled.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> ---
->  include/linux/backlight.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-
-Applied to Backlight -next with Jingoo's Ack.
-
-> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-> index adb14a8..d9cb644 100644
-> --- a/include/linux/backlight.h
-> +++ b/include/linux/backlight.h
-> @@ -157,7 +157,7 @@ struct generic_bl_info {
->  	void (*kick_battery)(void);
->  };
->  
-> -#ifdef CONFIG_OF
-> +#if defined(CONFIG_OF) && defined(CONFIG_BACKLIGHT_CLASS_DEVICE)
->  struct backlight_device *of_find_backlight_by_node(struct device_node *node);
->  #else
->  static inline struct backlight_device *
-
+Documentation/cgroups/memory.txt is outdate even more hopelessly than
+before. It deserves a complete rewrite but I guess something like the
+following should be added in the meantime to prepare potential readers
+about the trap.
+---
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 67613ff0270c..46b2b5080317 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -1,5 +1,10 @@
+ Memory Resource Controller
+ 
++NOTE: This document is hopelessly outdated and it asks for a complete
++      rewrite. It still contains a useful information so we are keeping it
++      here but make sure to check the current code if you need a deeper
++      understanding.
++
+ NOTE: The Memory Resource Controller has generically been referred to as the
+       memory controller in this document. Do not confuse memory controller
+       used here with the memory controller that is used in hardware.
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
