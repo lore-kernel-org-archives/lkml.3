@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750994AbaKCF3F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 00:29:05 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60104 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733AbaKCF3B (ORCPT
+	id S1751169AbaKCFby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 00:31:54 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:18594 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKCFbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 00:29:01 -0500
-X-Original-SENDERIP: 10.168.96.235
-X-Original-MAILFROM: matia.kim@lge.com
-From: "HaesungKim" <matia.kim@lge.com>
-To: <akpm@linux-foundation.org>, <dan@danweeks.net>, <yinghai@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: "Chan Jeong" <chan.jeong@lge.com>, "'Hyojun Im'" <hyojun.im@lge.com>,
-        <stellarmatia@gmail.com>
-Subject: [PATCH] lib: consistency of compress formats for kernel image
-Date: Mon, 3 Nov 2014 14:28:56 +0900
-Message-ID: <001e01cff727$10a4ba50$31ee2ef0$@lge.com>
+	Mon, 3 Nov 2014 00:31:51 -0500
+Message-ID: <54571335.2060709@huawei.com>
+Date: Mon, 3 Nov 2014 13:31:33 +0800
+From: chenweilong <chenweilong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <davem@davemloft.net>, <kuznet@ms2.inr.ac.ru>, <jmorris@namei.org>,
+        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ipv4: avoid divide 0 error in tcp_incr_quickack
+References: <1414978173-6948-1-git-send-email-chenweilong@huawei.com> <1414986126.31792.43.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1414986126.31792.43.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac/3JrjawhgIBLZZT+6Et7Z0E/kzVQ==
-Content-Language: ko
+X-Originating-IP: [10.177.37.162]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haesung Kim <matia.kim@lge.com>
+On 2014/11/3 11:42, Eric Dumazet wrote:
+> On Mon, 2014-11-03 at 09:29 +0800, Chen Weilong wrote:
+>> From: Weilong Chen <chenweilong@huawei.com>
+>>
+>> We got a problem like this:
+> 
+>> There was a wrong ack packet coming during TCP handshake. The socket's state
+>> was TCP_SYN_RECV, its rcv_mss was not initialize yet. So
+>> tcp_send_dupack -> tcp_enter_quickack_mode got a divide 0 error.
+>> This patch add a state check before tcp_enter_quickack_mode.
+>>
+>> Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+>> ---
+>>  net/ipv4/tcp_input.c | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+>> index 4e4617e..9eb56dc 100644
+>> --- a/net/ipv4/tcp_input.c
+>> +++ b/net/ipv4/tcp_input.c
+>> @@ -3986,7 +3986,8 @@ static void tcp_send_dupack(struct sock *sk, const struct sk_buff *skb)
+>>  	if (TCP_SKB_CB(skb)->end_seq != TCP_SKB_CB(skb)->seq &&
+>>  	    before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
+>>  		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
+>> -		tcp_enter_quickack_mode(sk);
+>> +		if (sk->sk_state != TCP_SYN_RECV)
+>> +			tcp_enter_quickack_mode(sk);
+>>  
+>>  		if (tcp_is_sack(tp) && sysctl_tcp_dsack) {
+>>  			u32 end_seq = TCP_SKB_CB(skb)->end_seq;
+> 
+> 
+> Sorry I do not think this is the right fix.
+> 
+> We have to not simply avoid the divide, but fix this issue by
+> understanding the missing steps.
+> 
+Hi Eric,
 
-Magic number of compress formats for kernel image is defined by two bytes.
-These numbers are written in hexadecimal number, nevertheless magic number
-for 
-only gunzip is written in octal number. The formats should be consistent for
+I check the code and find that:
 
-readability. Therefore, magic numbers for gunzip are also defined by
-hexadecimal
-number.
+1.In function "tcp_rcv_state_process",
+the "tcp_initialize_rcv_mss" is called at "step 5: check the ACK field" when the sk->sk_state is TCP_SYN_RECV
+and there is a "tcp_validate_incoming" just before it.
+So when we call "tcp_validate_incoming", the rcv_mss may not been initialized.
 
-Signed-off-by: Haesung Kim <matia.kim@lge.com>
----
-diff --git a/lib/decompress.c b/lib/decompress.c
-index 37f3c78..528ff93 100644
---- a/lib/decompress.c
-+++ b/lib/decompress.c
-@@ -44,8 +44,8 @@ struct compress_format {
- };
- 
- static const struct compress_format compressed_formats[] __initconst = { 
--       { {037, 0213}, "gzip", gunzip },
--       { {037, 0236}, "gzip", gunzip },
-+       { {0x1f, 0x8b}, "gzip", gunzip },
-+       { {0x1f, 0x9e}, "gzip", gunzip },
-        { {0x42, 0x5a}, "bzip2", bunzip2 },
-        { {0x5d, 0x00}, "lzma", unlzma },
-        { {0xfd, 0x37}, "xz", unxz },
+2.In function "tcp_validate_incoming",
+the "Step 1: check sequence number", according to RFC793 page 69,
+If an incoming segment is not acceptable,an acknowledgment should be sent in reply (unless the RST
+bit is set, if so drop the segment and return).
+So we may call "tcp_send_dupack" while the rcv_mss hasn't been initialized.
 
+3.In function "tcp_send_dupack",
+when the condition is suitable, it'll enter quick ack mode. Notice it only check the seq !
+So I think add another state check should be OK.
+
+Any suggestion ?
+
+Thanks,
+Weilong
+> 
+> 
+> 
+> .
+> 
 
