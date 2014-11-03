@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbaKCSP7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:15:59 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:43426 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542AbaKCSPz (ORCPT
+	id S1754046AbaKCSRK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:17:10 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:53489 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583AbaKCSRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:15:55 -0500
-Message-ID: <5457C657.9020305@gmail.com>
-Date: Mon, 03 Nov 2014 19:15:51 +0100
-From: =?UTF-8?B?QW5kcsOpIEJhdWVy?= <monotek23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 3 Nov 2014 13:17:07 -0500
+Date: Mon, 3 Nov 2014 10:16:51 -0800
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Sunil Kovvuri <sunil.kovvuri@gmail.com>
+Cc: Robert Richter <rric@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Sunil Goutham <sgoutham@cavium.com>,
+        Robert Richter <rrichter@cavium.com>,
+        Stefan Assmann <sassmann@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>, netdev@vger.kernel.org
+Subject: Re: [PATCH] VNIC: Adding support for Cavium ThunderX network
+ controller
+Message-ID: <20141103101651.1d664cc3@urahara>
+In-Reply-To: <CA+sq2CfV-90CRvo-FCizkzoxHq-AsfOEDW2Z5pXtnNLNXCfTUg@mail.gmail.com>
+References: <20141030165434.GW20170@rric.localhost>
+	<20141030195458.2958d88a@urahara>
+	<CA+sq2CfV-90CRvo-FCizkzoxHq-AsfOEDW2Z5pXtnNLNXCfTUg@mail.gmail.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
-        =?UTF-8?B?546L6YeR5rWm?= <jinpuwang@gmail.com>
-Subject: Re: [PATCH] EnhanceIO ssd caching software
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD> <545754C6.5000304@gmail.com> <5457C4D0.3090306@kernel.dk>
-In-Reply-To: <5457C4D0.3090306@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Fri, 31 Oct 2014 22:44:11 +0530
+Sunil Kovvuri <sunil.kovvuri@gmail.com> wrote:
 
-Am 03.11.2014 um 19:09 schrieb Jens Axboe:
-> Is stec still maintaining it? I've heard nothing about it since,
-> and even their pci flash driver seems to be unmaintained.
+> On Fri, Oct 31, 2014 at 8:24 AM, Stephen Hemminger
+> <stephen@networkplumber.org> wrote:
+> > On Thu, 30 Oct 2014 17:54:34 +0100
+> > Robert Richter <rric@kernel.org> wrote:
+> >
+> >> +#ifdef       VNIC_RSS_SUPPORT
+> >> +static int rss_config = RSS_IP_HASH_ENA | RSS_TCP_HASH_ENA | RSS_UDP_HASH_ENA;
+> >> +module_param(rss_config, int, S_IRUGO);
+> >> +MODULE_PARM_DESC(rss_config,
+> >> +              "RSS hash config [bits 8:0] (Bit0:L2 extended, 1:IP, 2:TCP, 3:TCP SYN, 4:UDP, 5:L4 extended, 6:ROCE 7:L3 bi-directional, 8:L4 bi-directional)");
+> >> +#endif
+> >
+> > This should managed  be via ethtool ETHTOOL_GRXFH rather than a module parameter.
+> Thanks, i will add setting hash options via ETHTOOL_SRXFH as well.
+> The idea here is to have a choice of hash while module load (through
+> module params) and if it needs to be changed runtime then
+> via Ethtool.
+> 
+> Sunil.
 
-I don´t think so, because stec inc. was aquired by WD. Info:
-http://www.wdc.com/en/company/pressroom/releases/?release=e7e8a0f2-b89f-4b85-8b1b-387f9a4b0818
-
-
-- --
-Regards
-
-André Bauer
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUV8ZXAAoJEAdIc/zkolSr0F0IAKVSxZOcKAoZ413FMsMmjmTJ
-Ko2vIJQ7tvEH8ZeqCb2tPiUg3yzQThPpXa6Ocv0WVZNiQe1OWbNF6AnDBBcwiu0O
-Ng4r8kNC7MJf4emu15uFDYBBynluIu1q01ZLSSRzyT70OZC6zvoIVgwe6v/Kgdat
-nTEEdZ797yNNO4/Uc1b1puZu8LUlc55jOPqaiUb9wFgiT1rHuSaGjJGzTMaFeJVk
-mr2cqFw7S8uGImlH7AwSa8cyvecmwlqO9pNbDhkzkxRc1O7u4CI7wcoXsP5/O2Kr
-54hnla9Q2L8FocaLrLO5KEeU2mH/Mlsjx6aiTFvhANpWk1umIZG7S6Hr8G4qI1o=
-=p1LA
------END PGP SIGNATURE-----
+Network developers do not like vendor unique module parameters.
+Anything device specific doesn't work in a generic distro environment.
