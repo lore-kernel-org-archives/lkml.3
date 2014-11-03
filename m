@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaKCHwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:52:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:30983 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106AbaKCHwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 02:52:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,305,1413270000"; 
-   d="scan'208";a="615866428"
-Message-ID: <545733E7.6010105@intel.com>
-Date: Mon, 03 Nov 2014 09:51:03 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1751193AbaKCH5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:57:12 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:57014 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaKCH5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 02:57:11 -0500
+Date: Mon, 3 Nov 2014 08:56:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peter@hurleysoftware.com,
+        rjw@rjwysocki.net, torvalds@linux-foundation.org, tglx@linutronix.de,
+        eparis@redhat.com, umgwanakikbuti@gmail.com, marcel@holtmann.org,
+        ebiederm@xmission.com, davem@davemloft.net, fengguang.wu@intel.com
+Subject: Re: [PATCH 7/7] sched: Use WARN_ONCE for the might_sleep()
+ TASK_RUNNING test
+Message-ID: <20141103075657.GU10501@worktop.programming.kicks-ass.net>
+References: <20141031111037.936236584@infradead.org>
+ <20141031111549.857381983@infradead.org>
+ <20141031224237.GA29704@redhat.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/8] perf tools: Get rid of unused dsos__hit_all()
-References: <1414999678-31377-1-git-send-email-namhyung@kernel.org> <1414999678-31377-4-git-send-email-namhyung@kernel.org> <5457305B.9080404@intel.com> <CAM9d7cjfBXrd-8JxDAfG7OM7X_XxkojFnrxpbGVVUW_xwnwkbA@mail.gmail.com>
-In-Reply-To: <CAM9d7cjfBXrd-8JxDAfG7OM7X_XxkojFnrxpbGVVUW_xwnwkbA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141031224237.GA29704@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/14 09:39, Namhyung Kim wrote:
-> Hi Adrian,
+On Fri, Oct 31, 2014 at 11:42:37PM +0100, Oleg Nesterov wrote:
+> On 10/31, Peter Zijlstra wrote:
+> >
+> > In some cases this can trigger a true flood of output.
+> >
+> > Requested-by: Ingo Molnar <mingo@kernel.org>
+> > Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+> > ---
+> >  kernel/sched/core.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -7301,7 +7301,7 @@ void __might_sleep(const char *file, int
+> >  	 * since we will exit with TASK_RUNNING make sure we enter with it,
+> >  	 * otherwise we will destroy state.
+> >  	 */
+> > -	if (WARN(current->state != TASK_RUNNING,
+> > +	if (WARN_ONCE(current->state != TASK_RUNNING,
 > 
-> On Mon, Nov 3, 2014 at 4:35 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
->> On 03/11/14 09:27, Namhyung Kim wrote:
->>> The dsos__hit_all() and its friends are not used anywhere.  Let's get
->>> rid of them.
->>
->> They were added for Intel PT preparation.  Intel PT is still on its way,
->> so they are still needed.  Note the commit was:
->>
->> commit 1f625b0b3dd641b74ba21640a1fea19a3dd893a2
->> Author: Adrian Hunter <adrian.hunter@intel.com>
->> Date:   Tue Jul 22 16:17:23 2014 +0300
->>
->>     perf tools: Add dsos__hit_all()
->>
->>     Add ability to mark all dsos as hit.
->>
->>     This is needed in the case of Instruction Tracing.  It takes so long to
->>     decode an Instruction Trace that it is not worth doing just to determine
->>     which dsos are hit.  A later patch takes this into use.
+> Agreed, but sorry for off-topic, can't resist.
 > 
-> Oops, didn't notice.  Sorry for not checking the commit log.  So how
-> about moving it into util/build-id.c then?
+> Sometimes I hate WARN_ONCE() because you can't reproduce the problem
+> once again without reboot.
 
-OK by me.
+Yes, and the fact that you can only see the first fail, even if more are
+present.
 
+> Perhaps WARN_ON_RATELIMIT() should be used more often (not sure about
+> this particular case). Or, perhaps, we can add a special section for
+> these "__warned" variables and add, say, sysctl which clears that
+> section ?
+
+Yeah, maybe, /debug/warn_once/file/line/enable or whatnot. For now I'll
+continue removing ONCEs whenever I feel like it though ;-)
