@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaKCRSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:18:24 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:53194 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509AbaKCRSV (ORCPT
+	id S1752690AbaKCRUH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:20:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:55087 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751041AbaKCRUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:18:21 -0500
+	Mon, 3 Nov 2014 12:20:03 -0500
+Message-ID: <5457B940.2030105@free-electrons.com>
+Date: Mon, 03 Nov 2014 18:20:00 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141103171515.GB7554@ubuntu-hedt>
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com> <20141103171515.GB7554@ubuntu-hedt>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Nov 2014 09:17:58 -0800
-Message-ID: <CALCETrUtCsv4MgZ6+U94PO6RLMCWe5S=Y5aVnqFapYnK7YTVRg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] fuse: Add support for mounts from pid/user namespaces
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Lior Amsalem <alior@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/17] irqchip: irq-armada-370-xp: use proper return value
+ for ->set_affinity()
+References: <1414151970-6626-1-git-send-email-thomas.petazzoni@free-electrons.com> <1414151970-6626-4-git-send-email-thomas.petazzoni@free-electrons.com>
+In-Reply-To: <1414151970-6626-4-git-send-email-thomas.petazzoni@free-electrons.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 9:15 AM, Seth Forshee <seth.forshee@canonical.com> wrote:
-> On Wed, Oct 22, 2014 at 04:24:16PM -0500, Seth Forshee wrote:
->> Here's another update to the patches to enable userns mounts in fuse.
->> The changes this time around center on xattrs and allow_other. I'm
->> considering the following patch to be a prerequisite for this series:
->>
->> http://lkml.kernel.org/g/252a4d87d99fc2b5fe4411c838f65b312c4e13cd.1413330857.git.luto@amacapital.net
->>
->> With this patch I'm dropping the xattr restrictions from the v4 patches.
->> This leaves the situation with xattrs unchanged in init_user_ns. A fuse
->> userns mount could still supply xattrs which the user would normally be
->> unable to set, but since the mount will be inaccessible outside of that
->> userns or its descendants those xattrs will never be seen by the host.
->>
->> I'm also in agreement with Andy that some decision regarding this patch
->> should be made before merging the fuse userns support as well:
->>
->> http://lkml.kernel.org/g/2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net
->>
->> Changes since v4:
->>  - Drop patch to restrict xattrs
->>  - Update allow_other to restrict based on userns of current rather than
->>    uid/gid
->
-> Miklos, Eric - Any feedback from either of you on these patches?
->
+Hi Thomas,
 
-[off-list to avoid further clutter]
+On 24/10/2014 13:59, Thomas Petazzoni wrote:
+> The ->set_affinity() hook of 'struct irq_chip' is supposed to return
+> one of IRQ_SET_MASK_OK or IRQ_SET_MASK_OK_NOCOPY. However, the code
+> currently simply returns 0. This patch fixes that by using
+> IRQ_SET_MASK_OK, which tells the IRQ core that it is responsible for
+> updating irq_data.affinity.
 
-Eric's moving, I think, and will be mostly unavailable for a week or two.
-
---Andy
-
-> Thanks,
-> Seth
+It seems that this driver is not the only one to return 0 instead of
+IRQ_SET_MASK_OK in the >set_affinity(). I found also irq-xtensa-mx.c,
+irq-metag.c and irq-metag-ext.c.
 
 
+> 
+> Note that this patch does not cause any change to the compiled code,
+> as IRQ_SET_MASK_OK has the value 0. This is therefore just a simple
+> cleanup.
+> 
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/irqchip/irq-armada-370-xp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+
+Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+
+
+Thanks,
+
+Gregory
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
