@@ -1,150 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaKCIho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:37:44 -0500
-Received: from domu-toccata.ens-lyon.fr ([140.77.166.138]:54175 "EHLO
-	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413AbaKCIhk (ORCPT
+	id S1752496AbaKCIi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:38:28 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:33343 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268AbaKCIhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 03:37:40 -0500
-X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Nov 2014 03:37:40 EST
-Date: Mon, 3 Nov 2014 09:30:47 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, John Crispin <blogic@openwrt.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] next: input: Fix build error seen if input-core is built
- as module
-Message-ID: <20141103083046.GA10653@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Guenter Roeck <linux@roeck-us.net>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-	John Crispin <blogic@openwrt.org>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <1414993997-19179-1-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414993997-19179-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+	Mon, 3 Nov 2014 03:37:01 -0500
+From: Dudley Du <dudley.dulixin@gmail.com>
+X-Google-Original-From: Dudley Du <dudl@cypress.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v9 15/18] input: cyapa: add gen3 trackpad device read firmware image function support
+Date: Mon,  3 Nov 2014 16:33:07 +0800
+Message-Id: <1415003590-30485-16-git-send-email-dudl@cypress.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415003590-30485-1-git-send-email-dudl@cypress.com>
+References: <1415003590-30485-1-git-send-email-dudl@cypress.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Add read firmware image function supported for gen3 trackpad device,
+it can be used through debugfs read_fw interface.
+TEST=test on Chromebooks.
 
-Guenter Roeck, le Sun 02 Nov 2014 21:53:17 -0800, a écrit :
-> The following build error may be seen if input-core is built as module:
-> 
-> drivers/input/leds.o: In function `init_module':
-> leds.c:(.init.text+0x0): multiple definition of `init_module'
-> drivers/input/input.o:input.c:(.init.text+0x0): first defined here
-> drivers/input/leds.o: In function `cleanup_module':
-> leds.c:(.exit.text+0x0): multiple definition of `cleanup_module'
-> drivers/input/input.o:input.c:(.exit.text+0x0): first defined here
-> make[2]: *** [drivers/input/input-core.o] Error 1
-
-I have already submitted a patch to fix it, here it is again:
-
-
-
-Now that input/leds.c is compiled into the input.ko module in the mm
-tree, its init and exit function must be called by input.ko's init and
-exit functions, instead of duplicating the module init/exit hooks, which
-leads to the following build error when input is built as a module:
-
-leds.c:(.init.text+0x0): multiple definition of `init_module'
-leds.c:(.exit.text+0x0): multiple definition of `cleanup_module'
-
-This also adds a proper clean of the vt_led_work queues in the exit
-function.
-
-Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Signed-off-by: Dudley Du <dudl@cypress.com>
 ---
+ drivers/input/mouse/cyapa_gen3.c | 67 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
 
-This is a follow-up to the following reports:
-
-Re: [next:master 9776/10302] leds.c:(.init.text+0x0): multiple definition of `init_module'
-Re: [next:master 9391/10970] leds.c:(.exit.text+0x0): multiple definition of `cleanup_module'
-
-and to be applied over the existing
-input-route-kbd-leds-through-the-generic-leds-layer-fix-2
-please.
-
-Thanks!
-Samuel
-
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -2427,6 +2427,8 @@ static int __init input_init(void)
- 		goto fail2;
- 	}
+diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
+index b477d67..f8aeb58 100644
+--- a/drivers/input/mouse/cyapa_gen3.c
++++ b/drivers/input/mouse/cyapa_gen3.c
+@@ -710,6 +710,36 @@ static int cyapa_gen3_write_fw_block(struct cyapa *cyapa,
+ 	return ret;
+ }
  
-+	input_led_init();
++/*
++ * A firmware block read command reads 16 bytes of data from flash starting
++ * from a given address.  The 12-byte block read command has the format:
++ *   <0xff> <CMD> <Key> <Addr>
++ *
++ *  <0xff>  - every command starts with 0xff
++ *  <CMD>   - the read command value is 0x3c
++ *  <Key>   - read commands include an 8-byte key: { 00 01 02 03 04 05 06 07 }
++ *  <Addr>  - Memory address (16-bit, big-endian)
++ *
++ * The command is followed by an i2c block read to read the 16 bytes of data.
++ */
++static int cyapa_gen3_read_fw_bytes(struct cyapa *cyapa, u16 addr, u8 *data)
++{
++	int ret;
++	u8 cmd[] = { 0xff, 0x3c, 0x00, 0x01, 0x02, 0x03, 0x04,
++		0x05, 0x06, 0x07, addr >> 8, addr };
 +
- 	return 0;
- 
-  fail2:	input_proc_exit();
-@@ -2436,6 +2438,7 @@ static int __init input_init(void)
- 
- static void __exit input_exit(void)
- {
-+	input_led_exit();
- 	input_proc_exit();
- 	unregister_chrdev_region(MKDEV(INPUT_MAJOR, 0),
- 				 INPUT_MAX_CHAR_DEVICES);
---- a/drivers/input/leds.c
-+++ b/drivers/input/leds.c
-@@ -255,22 +255,18 @@ void input_led_disconnect(struct input_d
- 	mutex_unlock(&vt_led_registered_lock);
- }
- 
--static int __init input_led_init(void)
-+void __init input_led_init(void)
- {
- 	unsigned i;
- 
- 	for (i = 0; i < LED_CNT; i++)
- 		INIT_WORK(&vt_led_work[i], vt_led_cb);
--
--	return 0;
- }
- 
--static void __exit input_led_exit(void)
-+void __exit input_led_exit(void)
- {
--}
-+	unsigned i;
- 
--MODULE_LICENSE("GPL");
--MODULE_DESCRIPTION("User LED support for input layer");
--MODULE_AUTHOR("Samuel Thibault <samuel.thibault@ens-lyon.org>");
--module_init(input_led_init);
--module_exit(input_led_exit);
-+	for (i = 0; i < LED_CNT; i++)
-+		cancel_work_sync(&vt_led_work[i]);
++	ret = cyapa_gen3_write_buffer(cyapa, cmd, sizeof(cmd));
++	if (ret)
++		return ret;
++
++	/* Read data buffer starting from offset 16 */
++	ret = cyapa_i2c_reg_read_block(cyapa, 16, CYAPA_FW_READ_SIZE, data);
++	if (ret != CYAPA_FW_READ_SIZE)
++		return (ret < 0) ? ret : -EIO;
++
++	return 0;
 +}
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -536,11 +536,18 @@ int input_ff_create_memless(struct input
- 
- #ifdef CONFIG_INPUT_LEDS
- 
-+void input_led_init(void);
-+void input_led_exit(void);
 +
- int input_led_connect(struct input_dev *dev);
- void input_led_disconnect(struct input_dev *dev);
- 
- #else
- 
-+static inline void input_led_init(void) { }
-+
-+static inline void input_led_exit(void) { }
-+
- static inline int input_led_connect(struct input_dev *dev)
- {
+ static int cyapa_gen3_write_blocks(struct cyapa *cyapa,
+ 		size_t start_block, size_t block_count,
+ 		const u8 *image_data)
+@@ -756,6 +786,41 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
  	return 0;
+ }
+ 
++/*
++ * Read the entire firmware image into ->fw_image.
++ * If the ->fw_image has already been allocated, then this function
++ * doesn't do anything and just returns 0.
++ * If an error occurs while reading the image, ->fw_image is freed, and
++ * the error is returned.
++ *
++ * The firmware is a fixed size (CYAPA_FW_SIZE), and is read out in
++ * fixed length (CYAPA_FW_READ_SIZE) chunks.
++ */
++static int cyapa_gen3_read_fw(struct cyapa *cyapa)
++{
++	int ret;
++	int addr;
++
++	ret = cyapa_gen3_bl_enter(cyapa);
++	if (ret)
++		return ret;
++
++	cyapa->fw_image = cyapa->fw_image ? cyapa->fw_image :
++		devm_kzalloc(&cyapa->client->dev, CYAPA_FW_SIZE, GFP_KERNEL);
++	if (!cyapa->fw_image)
++		return -ENOMEM;
++
++	for (addr = 0; addr < CYAPA_FW_SIZE; addr += CYAPA_FW_READ_SIZE) {
++		ret = cyapa_gen3_read_fw_bytes(cyapa, CYAPA_FW_HDR_START + addr,
++					  &cyapa->fw_image[addr]);
++		if (ret)
++			return ret;
++	}
++
++	cyapa->fw_image_size = CYAPA_FW_SIZE;
++	return 0;
++}
++
+ static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
+ 				     struct device_attribute *attr,
+ 				     const char *buf, size_t count)
+@@ -1203,6 +1268,8 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
+ 	.show_baseline = cyapa_gen3_show_baseline,
+ 	.calibrate_store = cyapa_gen3_do_calibrate,
+ 
++	.read_fw = cyapa_gen3_read_fw,
++
+ 	.state_parse = cyapa_gen3_state_parse,
+ 	.operational_check = cyapa_gen3_do_operational_check,
+ 
+-- 
+1.9.1
+
