@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751269AbaKCXsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 18:48:35 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:39487 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaKCXsc (ORCPT
+	id S1750913AbaKCXym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 18:54:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34845 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733AbaKCXyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 18:48:32 -0500
+	Mon, 3 Nov 2014 18:54:39 -0500
+Date: Mon, 3 Nov 2014 15:54:39 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next V3] mei: add reference counting for me clients
+Message-ID: <20141103235439.GA26158@kroah.com>
+References: <1415004125-5467-1-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGr1F2GX45gC-V7kEzVjp-EiYfdPDVBRs+99nASpgFVAdYX+1w@mail.gmail.com>
-References: <1414783141-6947-1-git-send-email-adityakali@google.com>
- <1414783141-6947-8-git-send-email-adityakali@google.com> <CALCETrXTaZ3SJ_t-gnbc93BVZXg-912NqO78kFd0Tpi-5-dZoQ@mail.gmail.com>
- <CAGr1F2FuPQxLraYv7PstJ9c8H-XQsgawaAtj4AS77B+_0k2o+A@mail.gmail.com>
- <CALCETrW64-6xC6psP-8k0H-1GfVnWBTeEBNSrE_sH+-DFtuZQQ@mail.gmail.com> <CAGr1F2GX45gC-V7kEzVjp-EiYfdPDVBRs+99nASpgFVAdYX+1w@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Nov 2014 15:48:10 -0800
-Message-ID: <CALCETrUB_xx5zno26k5UjAFt77nZTpgyndD4AuBSZxiZBNjXSw@mail.gmail.com>
-Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init cgroupns
-To: Aditya Kali <adityakali@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Rohit Jnagal <jnagal@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415004125-5467-1-git-send-email-tomas.winkler@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 3:23 PM, Aditya Kali <adityakali@google.com> wrote:
-> On Mon, Nov 3, 2014 at 3:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Mon, Nov 3, 2014 at 3:12 PM, Aditya Kali <adityakali@google.com> wrote:
->>> On Fri, Oct 31, 2014 at 5:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Fri, Oct 31, 2014 at 12:19 PM, Aditya Kali <adityakali@google.com> wrote:
->>>>>         if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
->>>>>                 pr_warn("sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
->>>>> -               if (nr_opts != 1) {
->>>>> +               if (nr_opts > 1) {
->>>>>                         pr_err("sane_behavior: no other mount options allowed\n");
->>>>>                         return -EINVAL;
->>>>
->>>> This looks wrong.  But, if you make the change above, then it'll be right.
->>>>
->>>
->>> It would have been nice if simple 'mount -t cgroup cgroup <mnt>' from
->>> cgroupns does the right thing automatically.
->>>
->>
->> This is a debatable point, but it's not what I meant.  Won't your code
->> let 'mount -t cgroup -o one_evil_flag cgroup mountpoint' through?
->>
->
-> I don't think so. This check "if (nr_opts > 1)" is nested under "if
-> (opts->flags & CGRP_ROOT_SANE_BEHAVIOR)". So we know that there is
-> atleast 1 option ('__DEVEL__sane_behavior') present (implicit or not).
-> Addition of 'one_evil_flag' will make nr_opts = 2 and result in EINVAL
-> here.
+On Mon, Nov 03, 2014 at 10:42:05AM +0200, Tomas Winkler wrote:
+> To support dynamic addition/remove we add reference
+> counter.
 
-But the implicit __DEVEL__sane_behavior doesn't increment nr_opts, right?
+What is keeping two different threads / cpus from grabbing a reference
+at the same time the other one is dropping it?
 
---Andy
+You have a list here, with no locking, right?  You also don't have any
+locking for your kref, which isn't good at all...
+
+Please audit and fix up.
+
+thanks,
+
+greg k-h
