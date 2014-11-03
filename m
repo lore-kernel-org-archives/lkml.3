@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaKCKup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:50:45 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55700 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097AbaKCKum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:50:42 -0500
-Date: Mon, 3 Nov 2014 11:50:40 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "pang.xunlei" <pang.xunlei@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH 1/3] sched/cpupri: Deal with
- cpupri.pri_to_cpu[CPUPRI_IDLE] for idle cases
-Message-ID: <20141103105040.GI12706@worktop.programming.kicks-ass.net>
-References: <1415010620-6176-1-git-send-email-pang.xunlei@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415010620-6176-1-git-send-email-pang.xunlei@linaro.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1751852AbaKCKvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:51:45 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:34148 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134AbaKCKvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:51:42 -0500
+Message-ID: <1415011919.407.15.camel@mm-sol.com>
+Subject: Re: [PATCH v2] iio: inkern: Add of_xlate function to struct iio_info
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Mon, 03 Nov 2014 12:51:59 +0200
+In-Reply-To: <5457598B.1050408@metafoo.de>
+References: <1413991783-24562-1-git-send-email-iivanov@mm-sol.com>
+		 <5447CDFA.5030407@metafoo.de> <544B75B8.1010505@kernel.org>
+	 <1415009224.407.13.camel@mm-sol.com> <5457598B.1050408@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.6-fta3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 06:30:18PM +0800, pang.xunlei wrote:
 
->  kernel/sched/idle_task.c |   21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
+On Mon, 2014-11-03 at 11:31 +0100, Lars-Peter Clausen wrote:
+> On 11/03/2014 11:07 AM, Ivan T. Ivanov wrote:
+> > On Sat, 2014-10-25 at 11:04 +0100, Jonathan Cameron wrote:
+> > > On 22/10/14 16:32, Lars-Peter Clausen wrote:
+> > > > On 10/22/2014 05:29 PM, Ivan T. Ivanov wrote:
+> > > > > When #iio-cells is greater than '0', the driver could provide
+> > > > > a custom of_xlate function that reads the *args* and returns
+> > > > > the appropriate index in registered IIO channels array.
+> > > > > 
+> > > > > Add simple translation function, suitable for the most 1:1
+> > > > > mapped channels in IIO chips, and use it when driver did not
+> > > > > provide custom implementation.
+> > > > > 
+> > > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > > 
+> > > > Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+> > > > 
+> > > Applied to the togreg branch of iio.git - initially pushed out as testing
+> > > for the autobuilders to play with it.
+> > 
+> > Thank you. Probably my git skills failed me, but I can not
+> > find it in aforementioned branches. Is it publicly pushed?
 > 
-> diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-> index 67ad4e7..3dc372e 100644
-> --- a/kernel/sched/idle_task.c
-> +++ b/kernel/sched/idle_task.c
-> @@ -26,6 +26,15 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
->  static struct task_struct *
->  pick_next_task_idle(struct rq *rq, struct task_struct *prev)
->  {
-> +#ifdef CONFIG_SMP
-> +	struct cpupri *cp = &rq->rd->cpupri;
-> +	int currpri = cp->cpu_to_pri[rq->cpu];
-> +
-> +	BUG_ON(currpri != CPUPRI_NORMAL);
-> +	/* Set CPUPRI_IDLE bitmap for this cpu */
-> +	cpupri_set(cp, rq->cpu, MAX_PRIO);
-> +#endif
-> +
+> It's in the testing branch.
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/jic23/iio.git/log/?h=testing
+> 
 
-This should really be idle_enter_rt() and implemented in
-kernel/sched/rt.c.
-
->  	put_prev_task(rq, prev);
->  
->  	schedstat_inc(rq, sched_goidle);
-> @@ -47,6 +56,18 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
->  
->  static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
->  {
-> +#ifdef CONFIG_SMP
-> +	struct cpupri *cp = &rq->rd->cpupri;
-> +	int currpri = cp->cpu_to_pri[rq->cpu];
-> +
-> +	/*
-> +	 * Set CPUPRI_NORMAL bitmap for this cpu when exiting from idle.
-> +	 * RT tasks may be queued beforehand, so the judgement is needed.
-> +	 */
-> +	if (currpri == CPUPRI_IDLE)
-> +		cpupri_set(cp, rq->cpu, MAX_RT_PRIO);
-> +#endif
-
-idle_exit_rt() and the same.
-
->  	idle_exit_fair(rq);
->  	rq_last_tick_reset(rq);
->  }
-
-Also, try and keep the deadline bits in sync with the rt semantics.
+Thank you. Ivan
