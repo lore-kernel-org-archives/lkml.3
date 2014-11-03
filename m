@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaKCIrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:47:37 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:48624 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaKCIre (ORCPT
+	id S1751739AbaKCItE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:49:04 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:59651 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187AbaKCIs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 03:47:34 -0500
+	Mon, 3 Nov 2014 03:48:58 -0500
+Message-ID: <54574177.5030906@linaro.org>
+Date: Mon, 03 Nov 2014 08:48:55 +0000
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18287@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E010D18260@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103E010D18261@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103E010D18264@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
-	<20141030120127.GC32589@arm.com>
-	<CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
-	<20141030135749.GE32589@arm.com>
-	<35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103E010D18274@CNBJMBX05.corpusers.net>
-	<20141031104305.GC6731@arm.com>
-	<35FD53F367049845BC99AC72306C23D103E010D18287@CNBJMBX05.corpusers.net>
-Date: Mon, 3 Nov 2014 09:47:32 +0100
-Message-ID: <CAKv+Gu-+fe9Hj-uGQHq8KR_6WjrQL-1q=xVBSXVXg2EJO=MW2w@mail.gmail.com>
-Subject: Re: [RFC V6 3/3] arm64:add bitrev.h file to support rbit instruction
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Bjorn Andersson <bjorn@kryo.se>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2/6] pinctrl: Introduce pinctrl driver for Qualcomm
+ SSBI PMIC's
+References: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com>	<1407771634-14946-3-git-send-email-iivanov@mm-sol.com>	<53F456F3.3000309@linaro.org>	<20140820212843.GB16274@sonymobile.com> <CAJAp7Ojt=PCCDhoR+nhEtQbPHzsp+=uTLx-XMM7-W78bfnQytA@mail.gmail.com>
+In-Reply-To: <CAJAp7Ojt=PCCDhoR+nhEtQbPHzsp+=uTLx-XMM7-W78bfnQytA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 November 2014 03:17, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
->> From: Will Deacon [mailto:will.deacon@arm.com]
->> > +#ifndef __ASM_ARM64_BITREV_H
->> > +#define __ASM_ARM64_BITREV_H
->>
->> Really minor nit, but we don't tend to include 'ARM64' in our header guards,
->> so this should just be __ASM_BITREV_H.
->>
->> With that change,
->>
->>   Acked-by: Will Deacon <will.deacon@arm.com>
->>
-> I have send the patch to the patch system:
-> http://www.arm.linux.org.uk/developer/patches/search.php?uid=4025
->
-> 8187/1 8188/1 8189/1
->
-> Just remind you that , should also cherry-pick Joe Perches's
-> 2 patches:
-> [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
-> [PATCH] carl9170: Convert byte_rev_table uses to bitrev8
->
-> To make sure there is no build error when build these 2 drivers.
->
+Hi Bjorn,
 
-If this is the case, I suggest you update patch 8187/1 to retain the
-byte_rev_table symbol, even in the accelerated case, and remove it
-with a followup patch once Joe's patches have landed upstream. Also, a
-link to the patches would be nice, and perhaps a bit of explanation
-how/when they are expected to be merged.
+On 20/08/14 23:13, Bjorn Andersson wrote:
+> On Wed, Aug 20, 2014 at 2:28 PM, Bjorn Andersson
+> <bjorn.andersson@sonymobile.com> wrote:
+>> On Wed 20 Aug 01:06 PDT 2014, Srinivas Kandagatla wrote:
+>>> 2> Looking back at v3.4 kernel, for gpio modes, BIT(0) of bank 0 is set
+>>> to enable gpio mode. without this bit driver does not work for output pins.
+>>>
+>>
+>> Thanks, I missed that.
+>>
+>> Unfortunately, setting that bit results in input not working - the interrupt
+>> bits are never set for gpios that have that bit set. I'm trying to figure out
+>> why this is the case before sending out the new version...
+>
+> With help from Andy Gross this is now corrected as well, turned out
+> that BIT(0) in bank0 controls if the "direction" is considered. As I
+> was tricked by the multiple levels of indirection in the codeaurora
+> version I got these wrong.
+>
+> Will send out an updated version shortly.
+Did you get a chance to spin a new version of this patcheset?
 
--- 
-Ard.
+--srini
+>
+> Regards,
+> Bjorn
+>
