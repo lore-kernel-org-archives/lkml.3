@@ -1,104 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaKCVrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:47:40 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:37682 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325AbaKCVrj (ORCPT
+	id S1753756AbaKCVuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:50:14 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:57398 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342AbaKCVuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:47:39 -0500
+	Mon, 3 Nov 2014 16:50:12 -0500
+Date: Mon, 3 Nov 2014 13:50:01 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Nov 3
+Message-ID: <20141103214943.GA20210@roeck-us.net>
+References: <20141103161403.79bde878@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20141030190841.GI23531@worktop.programming.kicks-ass.net>
-References: <1413991731-20628-1-git-send-email-robert@sixbynine.org> <20141030190841.GI23531@worktop.programming.kicks-ass.net>
-From: Robert Bragg <robert@sixbynine.org>
-Date: Mon, 3 Nov 2014 21:47:17 +0000
-X-Google-Sender-Auth: DxDYEjJKD_T7XtD1jtvizRXiWEI
-Message-ID: <CAMou1-12ggxAuaPQ8VG7Gf5BZM6CVj6773HRB1QJXagB-okuGg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Expose gpu counters via perf pmu driver
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Rob Clark <robdclark@gmail.com>,
-        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103161403.79bde878@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.5457F894.008D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 7:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Oct 22, 2014 at 04:28:48PM +0100, Robert Bragg wrote:
->> Our desired permission model seems consistent with perf's current model
->> whereby you would need privileges if you want to profile across all gpu
->> contexts but not need special permissions to profile your own context.
->>
->> The awkward part is that it doesn't make sense for us to have userspace
->> open a perf event with a specific pid as the way to avoid needing root
->> permissions because a side effect of doing this is that the events will
->> be dynamically added/deleted so as to only monitor while that process is
->> scheduled and that's not really meaningful when we're monitoring the
->> gpu.
->
-> There is precedent in PERF_FLAG_PID_CGROUP to replace the pid argument
-> with a fd to your object.
+On Mon, Nov 03, 2014 at 04:14:03PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20141031:
+> 
+> Linus' tree gained a build failure for which I applied a patch.
+> 
+> The staging tree gained conflicts against the vfs tree.
+> 
+> The scsi tree gained a build failure so I used the version from
+> next-20141031.
+> 
+> The akpm-current tree lost its build failure.
+> 
+> Non-merge commits (relative to Linus' tree): 3017
+>  2504 files changed, 81573 insertions(+), 104833 deletions(-)
+> 
+> ----------------------------------------------------------------------------
+> 
 
-Ah ok, interesting.
+Something is fishy with this tree. I get either warnings or complete failures
+with qemu runs on all platforms.
 
->
-> And do I take it right that if you're able/allowed/etc.. to open/have
-> the fd to the GPU/DRM/DRI whatever context you have the right
-> credentials to also observe these counters?
+x86_64:
 
-Right and in particular since we want to allow OpenGL clients to be
-able the profile their own gpu context with out any special privileges
-my current pmu driver accepts a device file descriptor via config1 + a
-context id via attr->config, both for checking credentials and
-uniquely identifying which context should be profiled. (A single
-client can open multiple contexts via one drm fd)
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 1 at fs/dcache.c:255 __d_free+0x43/0x50()
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+3.18.0-rc3-next-20141103-yocto-standard #1
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS
+rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+ 0000000000000009 ffff880007c03e38 ffffffff81731601 0000000000000101
+ 0000000000000000 ffff880007c03e78 ffffffff810484dc ffff880007c03e68
+ ffff880006930600 ffff880006930830 000000000000000a 0000000000000000
+Call Trace:
+ <IRQ>  [<ffffffff81731601>] dump_stack+0x4f/0x7c
+ [<ffffffff810484dc>] warn_slowpath_common+0x8c/0xc0
+ [<ffffffff8104852a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff81180073>] __d_free+0x43/0x50
+ [<ffffffff81098cd1>] rcu_process_callbacks+0x211/0x5c0
+ [<ffffffff8104be14>] __do_softirq+0xf4/0x2c0
+ [<ffffffff810393d0>] ? rodata_test+0xa0/0xa0
+ [<ffffffff8104c1fe>] irq_exit+0x7e/0xa0
+ [<ffffffff8173a20a>] smp_apic_timer_interrupt+0x4a/0x60
+ [<ffffffff8173898a>] apic_timer_interrupt+0x6a/0x70
+ <EOI>  [<ffffffff810393df>] ? start_periodic_check_for_corruption+0xf/0x60
+ [<ffffffff810002dc>] ? do_one_initcall+0x8c/0x1c0
+ [<ffffffff81080f23>] ? __wake_up+0x53/0x70
+ [<ffffffff81ce4126>] kernel_init_freeable+0x14d/0x1e1
+ [<ffffffff81ce38fe>] ? do_early_param+0x8d/0x8d
+ [<ffffffff8172b240>] ? rest_init+0x90/0x90
+ [<ffffffff8172b24e>] kernel_init+0xe/0xf0
+ [<ffffffff81737aec>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8172b240>] ? rest_init+0x90/0x90
 
-That said though; when running as root it is not currently a
-requirement to pass any fd when configuring an event to profile across
-all gpu contexts. I'm just mentioning this because although I think it
-should be ok for us to use an fd to determine credentials and help
-specify a gpu context, an fd might not be necessary for system wide
-profiling cases.
+Common theme seems to be the call to rcu_process_callbacks followed by __d_free.
 
->
->> Conceptually I suppose we want to be able to open an event that's not
->> associated with any cpu or process, but to keep things simple and fit
->> with perf's current design, the pmu I have a.t.m expects an event to be
->> opened for a specific cpu and unspecified process.
->
-> There are no actual scheduling ramifications right? Let me ponder his
-> for a little while more..
+See the qemu logs at http://server.roeck-us.net:8010/builders for more details.
 
-Ok, I can't say I'm familiar enough with the core perf infrastructure
-to entirely sure about this.
+There are also several new build errors.
 
-I recall looking at how some of the uncore perf drivers were working
-and it looked like they had a similar issue where conceptually the pmu
-doesn't belong to a specific cpu and so the id would internally get
-mapped to some package state, shared by multiple cpus.
+Error log:
+fs/open.c: In function 'SYSC_fchmod':
+fs/open.c:530:3: error: implicit declaration of function 'audit_file'
+[-Werror=implicit-function-declaration]
+   audit_file(f.file);
 
-My understanding had been that being associated with a specific cpu
-did have the side effect that most of the pmu methods for that event
-would then be invoked on that cpu through inter-process interrupts. At
-one point that had seemed slightly problematic because there weren't
-many places within my pmu driver where I could assume I was in process
-context and could sleep. This was a problem with an earlier version
-because the way I read registers had a slim chance of needing to sleep
-waiting for the gpu to come out of RC6, but isn't a problem any more.
-
-One thing that does come to mind here though is that I am overloading
-pmu->read() as a mechanism for userspace to trigger a flush of all
-counter snapshots currently in the gpu circular buffer to userspace as
-perf events. Perhaps it would be best if that work (which might be
-relatively costly at times) were done in the context of the process
-issuing the flush(), instead of under an IPI (assuming that has some
-effect on scheduler accounting).
-
-Regards,
-- Robert
+Guenter
