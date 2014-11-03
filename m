@@ -1,133 +1,381 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaKCJ6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:58:24 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41321 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133AbaKCJ6U (ORCPT
+	id S1751741AbaKCJ75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:59:57 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:33610 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaKCJ7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:58:20 -0500
-From: Mugunthan V N <mugunthanvnm@ti.com>
-To: <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <nm@ti.com>, <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
-Subject: [PATCH 1/1] ARM: dts: dra72x-evm: Enable CPSW and MDIO
-Date: Mon, 3 Nov 2014 15:28:13 +0530
-Message-ID: <1415008693-28552-1-git-send-email-mugunthanvnm@ti.com>
-X-Mailer: git-send-email 2.1.2.484.g13da0fc
+	Mon, 3 Nov 2014 04:59:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1413922198-29373-1-git-send-email-bparrot@ti.com>
+References: <1413922198-29373-1-git-send-email-bparrot@ti.com>
+Date: Mon, 3 Nov 2014 10:59:53 +0100
+Message-ID: <CACRpkdak3EACNpgEznN85d7gPHsMOBW+Ondwx23XhLaVEdjo8Q@mail.gmail.com>
+Subject: Re: [RFC Patch] gpio: add GPIO hogging mechanism
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Benoit Parrot <bparrot@ti.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding CPSW phy-id, CPSW and MDIO pinmux configuration for active and
-sleep states and enable them in board evm dts file.
+On Tue, Oct 21, 2014 at 10:09 PM, Benoit Parrot <bparrot@ti.com> wrote:
 
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
----
+> Based on Boris Brezillion work this is a reworked patch
+> of his initial GPIO hogging mechanism.
+> This patch provides a way to initally configure specific GPIO
+> when the gpio controller is probe.
+>
+> The actual DT scanning to collect the GPIO specific data is performed
+> as part of the gpiochip_add().
+>
+> The purpose of this is to allows specific GPIOs to be configured
+> without any driver specific code.
+> This particularly usueful because board design are getting
+> increassingly complex and given SoC pins can now have upward
+> of 10 mux values a lot of connections are now dependent on
+> external IO muxes to switch various modes and combination.
+>
+> Specific drivers should not necessarily need to be aware of
+> what accounts to a specific board implementation. This board level
+> "description" should be best kept as part of the dts file.
+>
+> Signed-off-by: Benoit Parrot <bparrot@ti.com>
 
-Adding device tree entry for CPSW to make it work in Switch mode.
-Patches are tested on top of Nishanth's PM tree for v3.17 [1] and pushed
-my tree to [2].
+Thanks for working on this.
 
-Did a boot test with CPSW and ping test with suspend/resume, the boot logs
-on DRA72x EVM are posted at [3]
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+> index 3fb8f53..a9700d8 100644
+> --- a/Documentation/devicetree/bindings/gpio/gpio.txt
+> +++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+> @@ -103,6 +103,26 @@ Every GPIO controller node must contain both an empty "gpio-controller"
+>  property, and a #gpio-cells integer property, which indicates the number of
+>  cells in a gpio-specifier.
+>
+> +It might contain GPIO hog definitions. GPIO hogging is a mechanism providing
+> +automatic GPIO request and configuration as part of the gpio-controller's
+> +driver probe function.
 
-This patch depends on the DRA7xx CPSW support patch series [4] and one driver
-patch (47276fc drivers: net:cpsw: fix probe_dt when only slave 1 is pinned out)
-which is already present in linux-next
+The GPIO chip may contain... you cannot start a sentence with "It"
 
-[1] git://github.com/nmenon/linux-2.6-playground.git testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
-[2] git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git for-v3.19/dra72-evm-cpsw
-[3] http://pastebin.ubuntu.com/8800549/
-[4] http://comments.gmane.org/gmane.linux.kernel/1810171
+> +Each GPIO hog definition is represented as a child node of the GPIO controller.
+> +Required properties:
+> +- gpios: store the gpio information (id, flags, ...). Shall contain the
+> +  number of cells specified in its parent node (GPIO controller node).
+> +- input: a property specifying to set the GPIO direction as input.
+> +- output-high: a property specifying to set the GPIO direction to output with
+> +  the value high.
+> +- output-low: a property specifying to set the GPIO direction to output with
+> +  the value low.
+> +
+> +Optional properties:
+> +- line-name: the GPIO label name. If not present the node name is used.
+> +
+> +A GPIO controller can request GPIO hogs using the "gpio-hogs" property, which
+> +encodes a list of requested GPIO hogs.
+> +
+>  Example of two SOC GPIO banks defined as gpio-controller nodes:
+>
+>         qe_pio_a: gpio-controller@1400 {
+> @@ -110,6 +130,19 @@ Example of two SOC GPIO banks defined as gpio-controller nodes:
+>                 reg = <0x1400 0x18>;
+>                 gpio-controller;
+>                 #gpio-cells = <2>;
+> +               gpio-hogs = <&line_b>;
+> +
+> +               /* line_a hog is defined but not enabled in this example*/
+> +               line_a: line_a {
+> +                       gpios = <5 0>;
+> +                       input;
+> +               };
+> +
+> +               line_b: line_b {
+> +                       gpios = <6 0>;
+> +                       output-low;
+> +                       line-name = "foo-bar-gpio";
+> +               };
 
----
- arch/arm/boot/dts/dra72-evm.dts | 73 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra72-evm.dts b/arch/arm/boot/dts/dra72-evm.dts
-index 5147023..b8ebf89 100644
---- a/arch/arm/boot/dts/dra72-evm.dts
-+++ b/arch/arm/boot/dts/dra72-evm.dts
-@@ -22,3 +22,76 @@
- &uart1 {
- 	status = "okay";
- };
-+
-+&dra7_pmx_core {
-+	cpsw_default: cpsw_default {
-+		pinctrl-single,pins = <
-+			/* Slave 2 */
-+			0x198 (PIN_OUTPUT | MUX_MODE3)	/* vin2a_d12.rgmii1_txc */
-+			0x19c (PIN_OUTPUT | MUX_MODE3)	/* vin2a_d13.rgmii1_tctl */
-+			0x1a0 (PIN_OUTPUT | MUX_MODE3)	/* vin2a_d14.rgmii1_td3 */
-+			0x1a4 (PIN_OUTPUT | MUX_MODE3)	/* vin2a_d15.rgmii1_td2 */
-+			0x1a8 (PIN_OUTPUT | MUX_MODE3)	/* vin2a_d16.rgmii1_td1 */
-+			0x1ac (PIN_OUTPUT | MUX_MODE3)	/* vin2a_d17.rgmii1_td0 */
-+			0x1b0 (PIN_INPUT | MUX_MODE3)	/* vin2a_d18.rgmii1_rclk */
-+			0x1b4 (PIN_INPUT | MUX_MODE3)	/* vin2a_d19.rgmii1_rctl */
-+			0x1b8 (PIN_INPUT | MUX_MODE3)	/* vin2a_d20.rgmii1_rd3 */
-+			0x1bc (PIN_INPUT | MUX_MODE3)	/* vin2a_d21.rgmii1_rd2 */
-+			0x1c0 (PIN_INPUT | MUX_MODE3)	/* vin2a_d22.rgmii1_rd1 */
-+			0x1c4 (PIN_INPUT | MUX_MODE3)	/* vin2a_d23.rgmii1_rd0 */
-+		>;
-+
-+	};
-+
-+	cpsw_sleep: cpsw_sleep {
-+		pinctrl-single,pins = <
-+			/* Slave 2 */
-+			0x198 (MUX_MODE15)
-+			0x19c (MUX_MODE15)
-+			0x1a0 (MUX_MODE15)
-+			0x1a4 (MUX_MODE15)
-+			0x1a8 (MUX_MODE15)
-+			0x1ac (MUX_MODE15)
-+			0x1b0 (MUX_MODE15)
-+			0x1b4 (MUX_MODE15)
-+			0x1b8 (MUX_MODE15)
-+			0x1bc (MUX_MODE15)
-+			0x1c0 (MUX_MODE15)
-+			0x1c4 (MUX_MODE15)
-+		>;
-+	};
-+
-+	davinci_mdio_default: davinci_mdio_default {
-+		pinctrl-single,pins = <
-+			/* MDIO */
-+			0x23c (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* mdio_d.mdio_d */
-+			0x240 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mdio_clk.mdio_clk */
-+		>;
-+	};
-+
-+	davinci_mdio_sleep: davinci_mdio_sleep {
-+		pinctrl-single,pins = <
-+			0x23c (MUX_MODE15)
-+			0x240 (MUX_MODE15)
-+		>;
-+	};
-+};
-+
-+&mac {
-+	status = "okay";
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&cpsw_default>;
-+	pinctrl-1 = <&cpsw_sleep>;
-+};
-+
-+&cpsw_emac1 {
-+	phy_id = <&davinci_mdio>, <3>;
-+	phy-mode = "rgmii";
-+};
-+
-+&davinci_mdio {
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&davinci_mdio_default>;
-+	pinctrl-1 = <&davinci_mdio_sleep>;
-+	active_slave = <1>;
-+};
--- 
-2.1.2.484.g13da0fc
+I don't see the point of having unused hogs and enabling them using
+phandles.
 
+Just let the core walk over all children nodes of a GPIO controller
+and hog them. Put in a bool property saying it's a hog.
+
++               line_b: line_b {
++                       gpio-hog;
++                       gpios = <6 0>;
++                       output-low;
++                       line-name = "foo-bar-gpio";
++               };
+
+I don't quite see the point with input hogs that noone can use
+but whatever.
+
+I am thinking that maybe the line name should be compulsory
+so as to improbe readability. I mean there is always a reason
+why you're hogging a pin and the name should say it.
+
+>  /**
+> + * of_get_gpio_hog() - Get a GPIO hog descriptor, names and flags for GPIO API
+> + * @np:                device node to get GPIO from
+> + * @index:     index of the GPIO
+> + * @name:      GPIO line name
+> + * @flags:     a flags pointer to fill in
+> + *
+> + * Returns GPIO descriptor to use with Linux GPIO API, or one of the errno
+> + * value on the error condition.
+> + */
+> +struct gpio_desc *of_get_gpio_hog(struct device_node *np, int index,
+> +                                 const char **name, unsigned long *flags)
+> +{
+> +       struct device_node *cfg_np, *chip_np;
+> +       enum of_gpio_flags xlate_flags;
+> +       unsigned long req_flags = 0;
+> +       struct gpio_desc *desc;
+> +       struct gg_data gg_data = {
+> +               .flags = &xlate_flags,
+> +               .out_gpio = NULL,
+> +       };
+> +       u32 tmp;
+> +       int i;
+> +       int ret;
+> +
+> +       cfg_np = of_parse_phandle(np, "gpio-hogs", index);
+> +       if (!cfg_np)
+> +               return ERR_PTR(-EINVAL);
+
+So no phandles please.
+
+> +       chip_np = cfg_np->parent;
+> +       if (!chip_np) {
+> +               desc = ERR_PTR(-EINVAL);
+> +               goto out;
+> +       }
+> +
+> +       ret = of_property_read_u32(chip_np, "#gpio-cells", &tmp);
+> +       if (ret) {
+> +               desc = ERR_PTR(ret);
+> +               goto out;
+> +       }
+> +
+> +       if (tmp > MAX_PHANDLE_ARGS) {
+> +               desc = ERR_PTR(-EINVAL);
+> +               goto out;
+> +       }
+> +
+> +       gg_data.gpiospec.args_count = tmp;
+> +       gg_data.gpiospec.np = chip_np;
+> +       for (i = 0; i < tmp; i++) {
+> +               ret = of_property_read_u32(cfg_np, "gpios",
+> +                                          &gg_data.gpiospec.args[i]);
+> +               if (ret) {
+> +                       desc = ERR_PTR(ret);
+> +                       goto out;
+> +               }
+> +       }
+> +
+> +       gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+> +       if (!gg_data.out_gpio) {
+> +               if (cfg_np->parent == np)
+> +                       desc = ERR_PTR(-ENXIO);
+> +               else
+> +                       desc = ERR_PTR(-EPROBE_DEFER);
+> +
+> +               goto out;
+> +       }
+> +
+> +       if (xlate_flags & OF_GPIO_ACTIVE_LOW)
+> +               req_flags |= GPIOF_ACTIVE_LOW;
+> +
+> +       if (of_property_read_bool(cfg_np, "input")) {
+> +               req_flags |= GPIOF_DIR_IN;
+> +       } else if (of_property_read_bool(cfg_np, "output-high")) {
+> +               req_flags |= GPIOF_INIT_HIGH;
+> +       } else if (!of_property_read_bool(cfg_np, "output-low")) {
+> +               desc = ERR_PTR(-EINVAL);
+> +               goto out;
+> +       }
+> +
+> +       if (of_property_read_bool(cfg_np, "open-drain-line"))
+> +               req_flags |= GPIOF_OPEN_DRAIN;
+> +
+> +       if (of_property_read_bool(cfg_np, "open-source-line"))
+> +               req_flags |= GPIOF_OPEN_DRAIN;
+> +
+> +       if (name && of_property_read_string(cfg_np, "line-name", name))
+> +               *name = cfg_np->name;
+> +
+> +       if (flags)
+> +               *flags = req_flags;
+> +
+> +       desc = gg_data.out_gpio;
+> +
+> +out:
+> +       of_node_put(cfg_np);
+> +
+> +       return desc;
+> +}
+> +
+> +/**
+>   * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
+>   * @gc:                pointer to the gpio_chip structure
+>   * @np:                device node of the GPIO chip
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index e8e98ca..b6f5bdb 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -55,6 +55,9 @@ static DEFINE_MUTEX(gpio_lookup_lock);
+>  static LIST_HEAD(gpio_lookup_list);
+>  LIST_HEAD(gpio_chips);
+>
+> +struct gpio_desc *__must_check gpiod_get_hog_index(struct device *dev,
+> +                                                  unsigned int idx);
+> +
+>  static inline void desc_set_label(struct gpio_desc *d, const char *label)
+>  {
+>         d->label = label;
+> @@ -226,6 +229,8 @@ int gpiochip_add(struct gpio_chip *chip)
+>         int             status = 0;
+>         unsigned        id;
+>         int             base = chip->base;
+> +       struct gpio_desc        *desc;
+> +       int             i;
+>
+>         if ((!gpio_is_valid(base) || !gpio_is_valid(base + chip->ngpio - 1))
+>                         && base >= 0) {
+> @@ -275,6 +280,16 @@ int gpiochip_add(struct gpio_chip *chip)
+>         of_gpiochip_add(chip);
+
+Alter the body of of_gpiochip_add() instead of adding more code here
+in the core gpiolib. You need not patch a single line of this code.
+
+>         acpi_gpiochip_add(chip);
+>
+> +       /*
+> +        * Instantiate GPIO hogs
+> +        * There shouldn't be mores hogs then gpio available on this chip
+> +        */
+> +       for (i = 0; i < chip->ngpio; i++) {
+> +               desc = gpiod_get_hog_index(chip->dev, i);
+> +               if (IS_ERR(desc))
+> +                       break;
+> +       }
+
+Ick that is not elegant.
+
+Instead use
+
+struct device_node *child;
+
+for_each_child_of_node(chip->dev.of_node, np) {
+    if (!of_property_read_bool(np, "gpio-hog"))
+       continue;
+    /* Do the hogging */
+}
+
+> @@ -1742,6 +1757,72 @@ struct gpio_desc *__must_check __gpiod_get_index_optional(struct device *dev,
+>  EXPORT_SYMBOL_GPL(__gpiod_get_index_optional);
+>
+>  /**
+> + * gpiod_get_hog_index - obtain a GPIO from a multi-index GPIO hog
+> + * @dev:       GPIO consumer
+> + * @idx:       index of the GPIO to obtain
+> + *
+> + * This should only be used by the gpiochip_add to request/set GPIO initial
+> + * configuration.
+> + *
+> + * Return a valid GPIO descriptor, or an IS_ERR() condition in case of error.
+> + */
+> +struct gpio_desc *__must_check gpiod_get_hog_index(struct device *dev,
+> +                                                  unsigned int idx)
+> +{
+> +       struct gpio_desc *desc = NULL;
+> +       int err;
+> +       unsigned long flags;
+> +       const char *name;
+> +
+> +       /* Using device tree? */
+> +       if (IS_ENABLED(CONFIG_OF) && dev && dev->of_node)
+> +               desc = of_get_gpio_hog(dev->of_node, idx, &name, &flags);
+> +
+> +       if (!desc)
+> +               return ERR_PTR(-ENOTSUPP);
+> +       else if (IS_ERR(desc))
+> +               return desc;
+> +
+> +       dev_dbg(dev, "gpio-hog: GPIO:%d (%s) as %s%s\n",
+> +               desc_to_gpio(desc), name, (flags&GPIOF_DIR_IN)?"input":"output",
+> +               (flags&GPIOF_DIR_IN)?"":(flags&GPIOF_INIT_HIGH)?"/high":"/low");
+> +
+> +       err = gpiod_request(desc, name);
+> +       if (err)
+> +               return ERR_PTR(err);
+> +
+> +       if (flags & GPIOF_OPEN_DRAIN)
+> +               set_bit(FLAG_OPEN_DRAIN, &desc->flags);
+> +
+> +       if (flags & GPIOF_OPEN_SOURCE)
+> +               set_bit(FLAG_OPEN_SOURCE, &desc->flags);
+> +
+> +       if (flags & GPIOF_ACTIVE_LOW)
+> +               set_bit(FLAG_ACTIVE_LOW, &desc->flags);
+> +
+> +       if (flags & GPIOF_DIR_IN)
+> +               err = gpiod_direction_input(desc);
+> +       else
+> +               err = gpiod_direction_output_raw(desc,
+> +                               (flags & GPIOF_INIT_HIGH) ? 1 : 0);
+> +
+> +       if (err)
+> +               goto free_gpio;
+> +
+> +       if (flags & GPIOF_EXPORT) {
+> +               err = gpiod_export(desc, flags & GPIOF_EXPORT_CHANGEABLE);
+> +               if (err)
+> +                       goto free_gpio;
+> +       }
+> +
+> +       return desc;
+> +
+> +free_gpio:
+> +       gpiod_free(desc);
+> +       return ERR_PTR(err);
+> +}
+
+I don't see the point of the device tree code calling into the core to
+set up the hog if currently only device tree can do this.
+
+Keep all the code in gpiolib-of.c and make it a static call for now.
+
+If ACPI needs the same we can refactor it later.
+
+> +
+> +/**
+>   * gpiod_put - dispose of a GPIO descriptor
+>   * @desc:      GPIO descriptor to dispose of
+>   *
+> diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+> index 38fc050..52d154c 100644
+> --- a/include/linux/of_gpio.h
+> +++ b/include/linux/of_gpio.h
+> @@ -59,6 +59,9 @@ extern int of_gpio_simple_xlate(struct gpio_chip *gc,
+>                                 const struct of_phandle_args *gpiospec,
+>                                 u32 *flags);
+>
+> +extern struct gpio_desc *of_get_gpio_hog(struct device_node *np, int index,
+> +                                        const char **name,
+> +                                        unsigned long *flags);
+
+
+No, if this is a gpiolib-internal call it should not be in the public
+header at all.
+
+Move to drivers/gpio/gpiolib.h, stubs and all.
+
+Yours,
+Linus Walleij
