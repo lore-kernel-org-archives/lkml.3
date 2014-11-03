@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbaKCSvf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:51:35 -0500
-Received: from smtprelay0106.hostedemail.com ([216.40.44.106]:60964 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753393AbaKCSvb (ORCPT
+	id S1753477AbaKCSwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:52:08 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:33725 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaKCSwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:51:31 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3872:3873:3874:4321:5007:6261:7514:7576:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21063:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: badge35_6427f7d801d39
-X-Filterd-Recvd-Size: 1470
-Message-ID: <1415040686.17743.31.camel@perches.com>
-Subject: Re: [PATCH] net: eth: realtek: atp: checkpatch errors and warnings
- corrected
-From: Joe Perches <joe@perches.com>
-To: Roberto Medina <robertoxmed@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 03 Nov 2014 10:51:26 -0800
-In-Reply-To: <1415039073-20164-1-git-send-email-robertoxmed@gmail.com>
-References: <1415039073-20164-1-git-send-email-robertoxmed@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Nov 2014 13:52:04 -0500
+Message-ID: <5457CEB4.9020700@gmail.com>
+Date: Mon, 03 Nov 2014 10:51:32 -0800
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Michal Nazarewicz <mina86@mina86.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: linux-arm-kernel@lists.infradead.org,
+        Brian Norris <computersforpeace@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, lauraa@codeaurora.org, gioh.kim@lge.com,
+        aneesh.kumar@linux.vnet.ibm.com, m.szyprowski@samsung.com,
+        akpm@linux-foundation.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: DMA allocations from CMA and fatal_signal_pending check
+References: <544FE9BE.6040503@gmail.com> <20141031082818.GB14642@js1304-P5Q-DELUXE> <5453F80C.4090006@gmail.com> <xa1tlhnsw7v8.fsf@mina86.com>
+In-Reply-To: <xa1tlhnsw7v8.fsf@mina86.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 19:24 +0100, Roberto Medina wrote:
-> From: Roberto Medina <robertoxmed@gmail.com>
+On 11/03/2014 08:45 AM, Michal Nazarewicz wrote:
+> On Fri, Oct 31 2014, Florian Fainelli wrote:
+>> I agree that the CMA allocation should not be allowed to succeed, but
+>> the dma_alloc_coherent() allocation should succeed. If we look at the
+>> sysport driver, there are kmalloc() calls to initialize private
+>> structures, those will succeed (except under high memory pressure), so
+>> by the same token, a driver expects DMA allocations to succeed (unless
+>> we are under high memory pressure)
+>>
+>> What are we trying to solve exactly with the fatal_signal_pending()
+>> check here? Are we just optimizing for the case where a process has
+>> allocated from a CMA region to allow this region to be returned to the
+>> pool of free pages when it gets killed? Could there be another mechanism
+>> used to reclaim those pages if we know the process is getting killed
+>> anyway?
 > 
-> Several warnings and errors corrected using checkpatch.
-> Some warnings like "line over 80" are still present.
+> We're guarding against situations where process may hang around
+> arbitrarily long time after receiving SIGKILL.  If user does “kill -9
+> $pid” the usual expectation is that the $pid process will die within
+> seconds and anything longer is perceived by user as a bug.
 > 
-> Before the patch:
-> 	total: 16 errors, 155 warnings, 38 checks, 883 lines checked
+> What problem are *you* trying to solve?  If user sent SIGKILL to
+> a process that imitated device initialisation, what is the point of
+> continuing initialising the device?  Just recover and return -EINTR.
+
+I have two problems with the current approach:
+
+- behavior of a dma_alloc_coherent() call is not consistent between a
+CONFIG_CMA=y vs. CONFIG_CMA=n build, which is probably fine as long as
+we document that properly
+
+- there is currently no way for a caller of dma_alloc_coherent to tell
+whether the allocation failed because it was interrupted by a signal, a
+genuine OOM or something else, this is largely made worse by problem 1
+
 > 
-> With the patch:
-> 	total: 0 errors, 64 warnings, 24 checks, 905 lines checked
-> 	
-> Compile tested.
+>> Well, not really. This driver is not an isolated case, there are tons of
+>> other networking drivers that do exactly the same thing, and we do
+>> expect these dma_alloc_* calls to succeed.
+> 
+> Again, why do you expect them to succeed?  The code must handle failures
+> correctly anyway so why do you wish to ignore fatal signal?
 
-Some ancient drivers could be regarded as neolithic
-curiosities that never need updating.  This may be one.
+I guess expecting them to succeed is probably not good, but at we should
+at least be able to report an accurate error code to the caller and down
+to user-space.
 
-But if you really want to change it, could you please
-make sure that objdiff shows no changes?
-
+Thanks
+--
+Florian
 
