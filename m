@@ -1,102 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaKCVA7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:00:59 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:39210 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753621AbaKCVAW (ORCPT
+	id S1754088AbaKCVBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:01:07 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53797 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753621AbaKCVBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:00:22 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 7/8] slab: introduce slab_free helper
-Date: Mon, 3 Nov 2014 23:59:45 +0300
-Message-ID: <439ae0a228e18af4ba909dce471a7e3d21005ef6.1415046910.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1415046910.git.vdavydov@parallels.com>
-References: <cover.1415046910.git.vdavydov@parallels.com>
+	Mon, 3 Nov 2014 16:01:03 -0500
+Message-ID: <5457ED0C.3090705@hurleysoftware.com>
+Date: Mon, 03 Nov 2014 16:01:00 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [81.5.99.36]
+To: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] tty: serial: men_z135_uart: Fix driver for changes
+ in hardware
+References: <1415030753-26885-1-git-send-email-johannes.thumshirn@men.de>
+In-Reply-To: <1415030753-26885-1-git-send-email-johannes.thumshirn@men.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slab.c |   30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
+On 11/03/2014 11:05 AM, Johannes Thumshirn wrote:
+> * Enable the handling of UART core's automatic flow control feature.
+>   When AFE is active disable generation of modem status IRQs.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index a9eb49f40c0a..178a3b733a50 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3521,6 +3521,18 @@ void *__kmalloc_track_caller(size_t size, gfp_t flags, unsigned long caller)
- }
- EXPORT_SYMBOL(__kmalloc_track_caller);
- 
-+static __always_inline void slab_free(struct kmem_cache *cachep, void *objp)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	debug_check_no_locks_freed(objp, cachep->object_size);
-+	if (!(cachep->flags & SLAB_DEBUG_OBJECTS))
-+		debug_check_no_obj_freed(objp, cachep->object_size);
-+	__cache_free(cachep, objp, _RET_IP_);
-+	local_irq_restore(flags);
-+}
-+
- /**
-  * kmem_cache_free - Deallocate an object
-  * @cachep: The cache the allocation was from.
-@@ -3531,18 +3543,10 @@ EXPORT_SYMBOL(__kmalloc_track_caller);
-  */
- void kmem_cache_free(struct kmem_cache *cachep, void *objp)
- {
--	unsigned long flags;
- 	cachep = cache_from_obj(cachep, objp);
- 	if (!cachep)
- 		return;
--
--	local_irq_save(flags);
--	debug_check_no_locks_freed(objp, cachep->object_size);
--	if (!(cachep->flags & SLAB_DEBUG_OBJECTS))
--		debug_check_no_obj_freed(objp, cachep->object_size);
--	__cache_free(cachep, objp, _RET_IP_);
--	local_irq_restore(flags);
--
-+	slab_free(cachep, objp);
- 	trace_kmem_cache_free(_RET_IP_, objp);
- }
- EXPORT_SYMBOL(kmem_cache_free);
-@@ -3559,20 +3563,14 @@ EXPORT_SYMBOL(kmem_cache_free);
- void kfree(const void *objp)
- {
- 	struct kmem_cache *c;
--	unsigned long flags;
- 
- 	trace_kfree(_RET_IP_, objp);
- 
- 	if (unlikely(ZERO_OR_NULL_PTR(objp)))
- 		return;
--	local_irq_save(flags);
- 	kfree_debugcheck(objp);
- 	c = virt_to_cache(objp);
--	debug_check_no_locks_freed(objp, c->object_size);
--
--	debug_check_no_obj_freed(objp, c->object_size);
--	__cache_free(c, (void *)objp, _RET_IP_);
--	local_irq_restore(flags);
-+	slab_free(c, (void *)objp);
- }
- EXPORT_SYMBOL(kfree);
- 
--- 
-1.7.10.4
+So HUPCL doesn't work when CRTSCTS is set?
 
+Is this because there's actually a problem with the IP core that
+MSIs trash the autoCTS state, or is the problem that the driver
+just shouldn't be calling uart_handle_cts_change() when autoCTS is
+on?
+
+Regards,
+Peter Hurley
