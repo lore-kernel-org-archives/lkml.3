@@ -1,99 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaKCORy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:17:54 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:53166 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972AbaKCORw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:17:52 -0500
-Date: Mon, 3 Nov 2014 14:17:40 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141103141740.2d913583@alan.etchedpixels.co.uk>
-In-Reply-To: <1414764218.2406.76.camel@hadess.net>
-References: <1413881397.30379.7.camel@hadess.net>
-	<CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	<1413911644.30379.12.camel@hadess.net>
-	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	<1413914978.30379.14.camel@hadess.net>
-	<CALAqxLX2Q-2RBF1zY6JAWrqNiqBFG3vxUwUSLVS3qXpgSOb9xA@mail.gmail.com>
-	<1414419579.30379.49.camel@hadess.net>
-	<CALAqxLXyaL55JuDuHAcWX0PEdem-jpVxK0rbJaNrBbBJ3rQY5Q@mail.gmail.com>
-	<20141028225740.2cd0ea5f@alan.etchedpixels.co.uk>
-	<1414680060.2406.51.camel@hadess.net>
-	<20141030233906.6647d005@alan.etchedpixels.co.uk>
-	<1414764218.2406.76.camel@hadess.net>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1752570AbaKCOSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:18:37 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54275 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752352AbaKCOSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 09:18:35 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, Marek Vasut <marex@denx.de>,
+        Jason Cooper <cryptography@lakedaemon.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH v2 01/11] crypto: Documentation - crypto API high level spec
+Date: Mon, 03 Nov 2014 15:18:29 +0100
+Message-ID: <4303532.NGaUQ44sQJ@tachyon.chronox.de>
+User-Agent: KMail/4.14.1 (Linux/3.17.1-302.fc21.x86_64; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <20141103083439.635f5cb6@lwn.net>
+References: <6375771.bx7QqLJLuR@tachyon.chronox.de> <4163724.RCMDlx8dmE@tachyon.chronox.de> <20141103083439.635f5cb6@lwn.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It's a reasonable ask but answers even if available are likely
-> > to be things like "because GPE36" and GPE36 will just be some connection
-> > to something that could be anything from a lid switch to a light sensor
-> > or even a smart wifi chip deciding it wants the CPU to help out because
-> > you are out of range of the base station. We may not even know what it
-> > relates to.
+Am Montag, 3. November 2014, 08:34:39 schrieb Jonathan Corbet:
+
+Hi Jonathan,
+
+> On Sun, 02 Nov 2014 21:35:11 +0100
 > 
-> But the device or platform driver would know that, presumably.
-
-Quite often it has no idea - maybe the firmware knows but it isn't
-telling us. It's an internal detail.
+> Stephan Mueller <smueller@chronox.de> wrote:
+> > The design of the kernel crypto API as well as hints to program with
+> > the kernel crypto API are given.
 > 
-> > A non suspend system will exit deep idle type status because they got
-> > an IRQ or perhaps some DMA needed the cache coherency. That doesn't mean
-> > they've got the foggiest which IRQ kicked them out if idle, just that hey
-> > I'm awake and there are four pending interrupts. That of course is
-> > assuming it even noticed it entered a deep idle state - you don't want to
-> > wake an idle CPU to tell it that its more idle than it was before.
+> Cool to see this, thanks.  Please forgive me if I go into full grumpy
+> editor mode here.  There's a lot of good information here, but I think it
+> could be made better with a bit of effort...
+
+Thanks for your comments.
+
+I will include your suggestions into a new patch set. Once you staring at that 
+documentation for too long, you will not find errors any more :-)
+
+[...]
+
+> > +
+> > + * CRYPTO_ALG_TYPE_CIPHER	Raw block cipher
+> > + * CRYPTO_ALG_TYPE_COMPRESS	Compression
+> > + * CRYPTO_ALG_TYPE_AEAD		Authenticated Encryption with 
+Associated Data
+> > (MAC) + * CRYPTO_ALG_TYPE_BLKCIPHER	Synchronous multi-block cipher
+> > + * CRYPTO_ALG_TYPE_ABLKCIPHER	Asynchronous multi-block cipher
+> > + * CRYPTO_ALG_TYPE_GIVCIPHER
 > 
-> Sure, the CPU might not be the best example of a device for which we
-> need to track the wakeup reason. The device drivers however...
+> What's this one?
 
-You keep assuming a wakeup is "special" - it's quite possibly not. The
-RTC driver knows whether an alarm went off, it's got no idea if that
-cause a wakeup or even what a wake up is or if the platform has wakeups
-or just deep sleeps.
+I would like to ask Herbert what that is -- I looked around in the code and I 
+am not sure what that flag shall indicate.
+> 
+> > + * CRYPTO_ALG_TYPE_DIGEST	Raw message digest
+> > + * CRYPTO_ALG_TYPE_HASH		Alias for CRYPTO_ALG_TYPE_DIGEST
+> > + * CRYPTO_ALG_TYPE_SHASH	Synchronous multi-block hash
+> > + * CRYPTO_ALG_TYPE_AHASH	Asynchronous multi-block hash
+> > + * CRYPTO_ALG_TYPE_RNG		Random Number Generation
+> > + * CRYPTO_ALG_TYPE_PCOMPRESS
+> 
+> What's that last one?
 
-Same for most other stuff - plugging in a display may well bump a machine
-out of deep sleep but the graphics driver isn't going to know anything
-other than "I'm handling a cable change".
+Same here.
 
-Events can also be processed entirely by firmware so we just wake up, look
-round, scratch out head and go back to sleep.
+[...]
 
-So I really think "why did I wake up" is actually the wrong question to
-be asking.
+> > +Specifics of asynchronous multi-block cipher
+> > +............................................
+> > +
+> > +There are a couple of specifics to the [ABLKCIPHER] interface.
+> > +
+> > +First of all, some of the drivers will want to use the Generic
+> > ScatterWalk
+> > +in case the hardware needs to be fed separate chunks of the scatterlist
+> > +which contains the plaintext and will contain the ciphertext. Please
+> > refer
+> > +below for a description and usage of the Generic ScatterWalk interface.
+> > +
+> > +It is recommended to enqueue cryptographic transformation requests into
+> > +generic crypto queues. This allows for these requests to be processed in
+> > +sequence as the cryptographic hardware becomes free.
+> 
+> What's a generic crypto queue?  That's a new concept.
 
-What you probably should be asking (and what the kernel effectively asks)
-is "Why am I not idle ?". That plus "what state changes have occurred
-that I care about". Both of those are questions you can ask at any time
-without caring how sleeping may or may not happen.
+Right. I do not claim to have all completed right from the start. If so, there 
+is much more: the AEAD and RNG implementation details are missing here too.
 
-ie you don't care if a lid event woke you, you care if the lid is open or
-shut. You don't care whether a wireless event woke you, you care that the
-wireless has been lost etc..
+Therefore, I thought I could leave it open for the moment to add in later.
 
-Ie instead of doing
+[..]
+> 
+> These are all useful.  But I wonder if it would be worth the effort to turn
+> this inti a proper docbook document that automatically has everything
+> together in one place?
 
-	if (woken && cause == BATTERY_LOW)
-		suspend_to_disk()
+How do you suggest that is done? The API comments in the header file follow 
+the Doxygen style. Note, Jason Cooper raised the concern that an API 
+documentation separate from the code will surely deviate from the code 
+relatively fast (although I do not really fear that as the kernel crypto API 
+seems to be quite stable over the last years).
 
-you want to be doing (as part of the normal flow)
+Can you point me to an example about what you have in mind? I see the 
+Documentation/DocBook/ files, but I do not see how they integrate Doxygen-like 
+source code comments added to functions.
+> 
+> > +
+> > +Authors
+> > +=======
+> > +
+> > +Stephan Mueller <smueller@chronox.de>
+> > +Marek Vasut <marex@denx.de>
+> 
+> jon
 
-	if (battery < BATTERY_LOW && battery_prev >= BATTERY_LOW +
-						HYSTERISIS)
-		suspend_to_disk();
 
-because it's kind of irrelevant whether it woke you for this, you need to
-do it anyway.
-
-Alan
+-- 
+Ciao
+Stephan
