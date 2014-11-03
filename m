@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751169AbaKCKbR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:31:17 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:44719 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaKCKbP (ORCPT
+	id S1751299AbaKCKbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:31:22 -0500
+Received: from www.linutronix.de ([62.245.132.108]:50956 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179AbaKCKbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:31:15 -0500
-From: "pang.xunlei" <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [PATCH 1/3] sched/cpupri: Deal with cpupri.pri_to_cpu[CPUPRI_IDLE] for idle cases
-Date: Mon,  3 Nov 2014 18:30:18 +0800
-Message-Id: <1415010620-6176-1-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 3 Nov 2014 05:31:20 -0500
+Date: Mon, 3 Nov 2014 11:31:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Juergen Gross <jgross@suse.com>
+cc: hpa@zytor.com, x86@kernel.org, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, bhelgaas@google.com
+Subject: Re: [PATCH 10/17] x86: Use new cache mode type in setting page
+ attributes
+In-Reply-To: <54572182.8080005@suse.com>
+Message-ID: <alpine.DEB.2.11.1411031122150.5308@nanos>
+References: <1414764033-30011-1-git-send-email-jgross@suse.com> <1414764033-30011-11-git-send-email-jgross@suse.com> <alpine.DEB.2.11.1410311617260.5308@nanos> <54572182.8080005@suse.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a runqueue runs out of RT tasks, it may have non-RT tasks or
-none tasks(idle). Currently, RT balance treats the two cases equally
-and manipulates cpupri.pri_to_cpu[CPUPRI_NORMAL] only which may cause
-problems.
+On Mon, 3 Nov 2014, Juergen Gross wrote:
+> On 10/31/2014 04:34 PM, Thomas Gleixner wrote:
+> > On Fri, 31 Oct 2014, Juergen Gross wrote:
+> > > --- a/arch/x86/mm/pageattr.c
+> > > +++ b/arch/x86/mm/pageattr.c
+> > > @@ -1304,12 +1304,6 @@ static int __change_page_attr_set_clr(struct
+> > > cpa_data *cpa, int checkalias)
+> > >   	return 0;
+> > >   }
+> > > 
+> > > -static inline int cache_attr(pgprot_t attr)
+> > > -{
+> > > -	return pgprot_val(attr) &
+> > > -		(_PAGE_PAT | _PAGE_PAT_LARGE | _PAGE_PWT | _PAGE_PCD);
+> > > -}
+> > > -
+> > >   static int change_page_attr_set_clr(unsigned long *addr, int numpages,
+> > >   				    pgprot_t mask_set, pgprot_t mask_clr,
+> > >   				    int force_split, int in_flag,
+> > > @@ -1390,7 +1384,7 @@ static int change_page_attr_set_clr(unsigned long
+> > > *addr, int numpages,
+> > >   	 * No need to flush, when we did not set any of the caching
+> > >   	 * attributes:
+> > >   	 */
+> > > -	cache = cache_attr(mask_set);
+> > > +	cache = !!pgprot2cachemode(mask_set);
+> > 
+> > So this loses _PAGE_PAT_LARGE, right ?
+> 
+> change_page_attr_set_clr() is never called with _PAGE_PAT_LARGE set in
+> mask, so this is no problem.
 
-For instance, 4 cpus system, non-RT task1 is running on cpu0, RT
-task2 is running on cpu3, cpu1/cpu2 both are idle. Then RT task3
-(usually CPU-intensive) is waken up or created on cpu3, it will
-be placed to cpu0 (see find_lowest_rq()) causing task1 starving
-until cfs load balance places task1 to another cpu, or even worse
-if task1 is bound on cpu0. So, it would be reasonable to put task3
-to cpu1 or cpu2 which is idle(even though doing this may break the
-energy-saving idle state).
+Ok. The we should have a separate patch which removes it first with a
+proper explanation and then the one which uses pgprot2cachemode().
 
-This patch tackles the problem by operating pri_to_cpu[CPUPRI_IDLE]
-of cpupri according to the stages of idle task, so that when pushing
-or selecting RT tasks through find_lowest_rq(), it will try to find
-one idle cpu as the goal.
+> BTW: correct handling of the PAT bit for large pages is added in
+> patch 15. There have been places in the kernel respecting
+> _PAGE_PAT_LARGE, but handling has never been complete up to now.
 
-Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
----
- kernel/sched/idle_task.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
-
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index 67ad4e7..3dc372e 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -26,6 +26,15 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
- static struct task_struct *
- pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- {
-+#ifdef CONFIG_SMP
-+	struct cpupri *cp = &rq->rd->cpupri;
-+	int currpri = cp->cpu_to_pri[rq->cpu];
-+
-+	BUG_ON(currpri != CPUPRI_NORMAL);
-+	/* Set CPUPRI_IDLE bitmap for this cpu */
-+	cpupri_set(cp, rq->cpu, MAX_PRIO);
-+#endif
-+
- 	put_prev_task(rq, prev);
+Yes. I've seen that.
  
- 	schedstat_inc(rq, sched_goidle);
-@@ -47,6 +56,18 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
- 
- static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
- {
-+#ifdef CONFIG_SMP
-+	struct cpupri *cp = &rq->rd->cpupri;
-+	int currpri = cp->cpu_to_pri[rq->cpu];
-+
-+	/*
-+	 * Set CPUPRI_NORMAL bitmap for this cpu when exiting from idle.
-+	 * RT tasks may be queued beforehand, so the judgement is needed.
-+	 */
-+	if (currpri == CPUPRI_IDLE)
-+		cpupri_set(cp, rq->cpu, MAX_RT_PRIO);
-+#endif
-+
- 	idle_exit_fair(rq);
- 	rq_last_tick_reset(rq);
- }
--- 
-1.7.9.5
+> > >   int _set_memory_wb(unsigned long addr, int numpages)
+> > >   {
+> > > +	/* WB cache mode is hard wired to all cache attribute bits being 0 */
+> > 
+> > I like the comment, but shouldn't we compile time check that
+> > assumption somewhere?
+> 
+> There is a comment in patch 1 where the page_cache_mode enum is set up.
+> The translation functions between page_cache_mode and protection values
+> have a special check for "0" built in. Isn't this enough?
+> 
+> BTW: How would you check this assumption at compile time? The
+> translation between WB cache mode and protection values is done only
+> dynamically...
 
+Indeed.
+
+Thanks,
+
+	tglx
