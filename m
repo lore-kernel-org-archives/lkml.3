@@ -1,65 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaKCRO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:14:56 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54321 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbaKCROv (ORCPT
+	id S1752826AbaKCRPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:15:08 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:61695 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaKCRPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:14:51 -0500
-Date: Mon, 3 Nov 2014 18:14:37 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Toshi Kani <toshi.kani@hp.com>
-cc: hpa@zytor.com, mingo@redhat.com, akpm@linux-foundation.org, arnd@arndb.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
-        yigal@plexistor.com, konrad.wilk@oracle.com
-Subject: Re: [PATCH v4 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
-In-Reply-To: <1414450545-14028-2-git-send-email-toshi.kani@hp.com>
-Message-ID: <alpine.DEB.2.11.1411031812390.5308@nanos>
-References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com> <1414450545-14028-2-git-send-email-toshi.kani@hp.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 3 Nov 2014 12:15:03 -0500
+Date: Mon, 3 Nov 2014 17:14:51 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: gyungoh@gmail.com
+Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
+        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: Re: [RESUBMIT PATCH v6 1/8] mfd: Add support for Skyworks SKY81452
+ driver
+Message-ID: <20141103171451.GG12011@x1>
+References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-2-git-send-email-jack.yoo@skyworksinc.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414739322-12487-2-git-send-email-jack.yoo@skyworksinc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Toshi Kani wrote:
-> +	} else {
-> +		/*
-> +		 * PAT full support. WT is set to slot 7, which minimizes
-> +		 * the risk of using the PAT bit as slot 3 is UC and is
-> +		 * currently unused. Slot 4 should remain as reserved.
+On Fri, 31 Oct 2014, gyungoh@gmail.com wrote:
 
-This comment makes no sense. What minimizes which risk and what has
-this to do with slot 3 and slot 4?
+> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> 
+> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> ---
+> Changes v6:
+> Added new line character at the end of line of dev_err()
+> 
+> Changes v5:
+> Move sky81452-backlight.h to include/linux/platform_data
+> 
+> Changes v4:
+> Removed MODULE_VERSION()
+> Modified license to GPLv2
+> 
+> Changes v3:
+> Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+> Assigned mfd_cell.of_compatible for binding device node
+> Modified error messages
+> 
+> Changes v2:
+> Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+> Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+> Added message for exception or errors
+> 
+>  drivers/mfd/Kconfig          |  12 +++++
+>  drivers/mfd/Makefile         |   1 +
+>  drivers/mfd/sky81452.c       | 109 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/sky81452.h |  32 +++++++++++++
+>  4 files changed, 154 insertions(+)
+>  create mode 100644 drivers/mfd/sky81452.c
+>  create mode 100644 include/linux/mfd/sky81452.h
 
-> +		 *
-> +		 *  PTE encoding used in Linux:
-> +		 *      PAT
-> +		 *      |PCD
-> +		 *      ||PWT  PAT
-> +		 *      |||    slot
-> +		 *      000    0    WB : _PAGE_CACHE_MODE_WB
-> +		 *      001    1    WC : _PAGE_CACHE_MODE_WC
-> +		 *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
-> +		 *      011    3    UC : _PAGE_CACHE_MODE_UC
-> +		 *      100    4    <reserved>
-> +		 *      101    5    <reserved>
-> +		 *      110    6    <reserved>
+Code looks fine, but what are its dependencies.  I'm assuming nothing;
+however, did Mark say that something depends on it?  If so, what and
+what are you going to do about it?
 
-Well, they are still mapped to WB/WC/UC_MINUS ....
-
-> +		 *      111    7    WT : _PAGE_CACHE_MODE_WT
-> +		 */
-> +		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
-> +		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 1456ea7..a54244c 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -693,6 +693,18 @@ config MFD_SM501_GPIO
+>  	 lines on the SM501. The platform data is used to supply the
+>  	 base number for the first GPIO line to register.
+>  
+> +config MFD_SKY81452
+> +	tristate "Skyworks Solutions SKY81452"
+> +	select MFD_CORE
+> +	select REGMAP_I2C
+> +	depends on I2C
+> +	help
+> +	  This is the core driver for the Skyworks SKY81452 backlight and
+> +	  voltage regulator device.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called sky81452.
+> +
+>  config MFD_SMSC
+>         bool "SMSC ECE1099 series chips"
+>         depends on I2C=y
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 8bd54b1..d9683ea 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -174,6 +174,7 @@ obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+>  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+>  obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+>  obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
+> +obj-$(CONFIG_MFD_SKY81452)		+= sky81452.o
+>  
+>  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
+>  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
+> diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
+> new file mode 100644
+> index 0000000..ae1b584
+> --- /dev/null
+> +++ b/drivers/mfd/sky81452.c
+> @@ -0,0 +1,109 @@
+> +/*
+> + * sky81452.c	SKY81452 MFD driver
+> + *
+> + * Copyright 2014 Skyworks Solutions Inc.
+> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2, or (at your option) any
+> + * later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/err.h>
+> +#include <linux/slab.h>
+> +#include <linux/i2c.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/mfd/sky81452.h>
+> +
+> +static const struct regmap_config sky81452_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +};
+> +
+> +static int sky81452_probe(struct i2c_client *client,
+> +				const struct i2c_device_id *id)
+> +{
+> +	struct device *dev = &client->dev;
+> +	const struct sky81452_platform_data *pdata = dev_get_platdata(dev);
+> +	struct mfd_cell cells[2];
+> +	struct regmap *regmap;
+> +	int ret;
+> +
+> +	if (!pdata) {
+> +		pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +		if (!pdata)
+> +			return -ENOMEM;
 > +	}
+> +
+> +	regmap = devm_regmap_init_i2c(client, &sky81452_config);
+> +	if (IS_ERR(regmap)) {
+> +		dev_err(dev, "failed to initialize.err=%ld\n", PTR_ERR(regmap));
+> +		return PTR_ERR(regmap);
+> +	}
+> +
+> +	i2c_set_clientdata(client, regmap);
+> +
+> +	memset(cells, 0, sizeof(cells));
+> +	cells[0].name = "sky81452-backlight";
+> +	cells[0].of_compatible = "skyworks,sky81452-backlight";
+> +	cells[0].platform_data = pdata->bl_pdata;
+> +	cells[0].pdata_size = sizeof(*pdata->bl_pdata);
+> +	cells[1].name = "sky81452-regulator";
+> +	cells[1].platform_data = pdata->regulator_init_data;
+> +	cells[1].pdata_size = sizeof(*pdata->regulator_init_data);
+> +
+> +	ret = mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells), NULL, 0, NULL);
+> +	if (ret)
+> +		dev_err(dev, "failed to add child devices. err=%d\n", ret);
+> +
+> +	return ret;
+> +}
+> +
+> +static int sky81452_remove(struct i2c_client *client)
+> +{
+> +	mfd_remove_devices(&client->dev);
+> +	return 0;
+> +}
+> +
+> +static const struct i2c_device_id sky81452_ids[] = {
+> +	{ "sky81452" },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, sky81452_ids);
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id sky81452_of_match[] = {
+> +	{ .compatible = "skyworks,sky81452", },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, sky81452_of_match);
+> +#endif
+> +
+> +static struct i2c_driver sky81452_driver = {
+> +	.driver = {
+> +		.name = "sky81452",
+> +		.of_match_table = of_match_ptr(sky81452_of_match),
+> +	},
+> +	.probe = sky81452_probe,
+> +	.remove = sky81452_remove,
+> +	.id_table = sky81452_ids,
+> +};
+> +
+> +module_i2c_driver(sky81452_driver);
+> +
+> +MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
+> +MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/mfd/sky81452.h b/include/linux/mfd/sky81452.h
+> new file mode 100644
+> index 0000000..9d84872
+> --- /dev/null
+> +++ b/include/linux/mfd/sky81452.h
+> @@ -0,0 +1,32 @@
+> +/*
+> + * sky81452.h	SKY81452 MFD driver
+> + *
+> + * Copyright 2014 Skyworks Solutions Inc.
+> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2, or (at your option) any
+> + * later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#ifndef _SKY81452_H
+> +#define _SKY81452_H
+> +
+> +#include <linux/platform_data/sky81452-backlight.h>
+> +#include <linux/regulator/machine.h>
+> +
+> +struct sky81452_platform_data {
+> +	struct sky81452_bl_platform_data *bl_pdata;
+> +	struct regulator_init_data *regulator_init_data;
+> +};
+> +
+> +#endif
 
-Thanks,
-
-	tglx
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
