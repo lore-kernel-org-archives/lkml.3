@@ -1,92 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbaKCR6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:58:55 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:43759 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528AbaKCR6s (ORCPT
+	id S1753862AbaKCR7D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:59:03 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:39712 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570AbaKCR65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:58:48 -0500
+	Mon, 3 Nov 2014 12:58:57 -0500
+Date: Mon, 3 Nov 2014 17:58:51 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: tc3589x: get rid of static base
+Message-ID: <20141103175851.GU12011@x1>
+References: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1413973797-17619-5-git-send-email-yingjoe.chen@mediatek.com>
-References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com>
-	<1413973797-17619-5-git-send-email-yingjoe.chen@mediatek.com>
-Date: Mon, 3 Nov 2014 18:58:46 +0100
-Message-ID: <CABuKBeJR+iCw_gZeq_SbZB2CtESJ5FX3jOZ1OwzELRcBH+jn9A@mail.gmail.com>
-Subject: Re: [PATCH v4 4/8] ARM: mediatek: add dts for MT8135 evaluation board.
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: "Joe.C" <yingjoe.chen@mediatek.com>
-Cc: Rob Herring <robh+dt@kernel.org>, arm@kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        Hsien-Chun Yen <hc.yen@mediatek.com>,
-        huang eddie <eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        Yuhau Chen <yh.chen@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-22 12:29 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
-> From: "Joe.C" <yingjoe.chen@mediatek.com>
->
-> Evbp1 is a tablet evaluation board based on MT8135 SoC.
->
-> Signed-off-by: Joe.C <yingjoe.chen@mediatek.com>
+On Tue, 28 Oct 2014, Linus Walleij wrote:
+
+> The TC3589x driver is now a device tree-only driver, so we want
+> only dynamic IRQs and GPIO numbers from the tc3589x, no static
+> assignments.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
->  arch/arm/boot/dts/mt8135-evbp1.dts | 24 ++++++++++++++++++++++++
->  1 file changed, 24 insertions(+)
->  create mode 100644 arch/arm/boot/dts/mt8135-evbp1.dts
->
-> diff --git a/arch/arm/boot/dts/mt8135-evbp1.dts b/arch/arm/boot/dts/mt8135-evbp1.dts
-> new file mode 100644
-> index 0000000..cba80b8
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/mt8135-evbp1.dts
-> @@ -0,0 +1,24 @@
-> +/*
-> + * Copyright (c) 2014 MediaTek Inc.
-> + * Author: Joe.C <yingjoe.chen@mediatek.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +/dts-v1/;
-> +#include "mt8135.dtsi"
-> +
-> +/ {
-> +       model = "mediatek,mt8135-evbp1", "mediatek,mt8135";
+>  drivers/gpio/gpio-tc3589x.c | 2 +-
+>  drivers/mfd/tc3589x.c       | 9 +++------
+>  include/linux/mfd/tc3589x.h | 8 --------
+>  3 files changed, 4 insertions(+), 15 deletions(-)
 
-Same here, you switched model and compatible property. Please provide
-both of them.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-> +
-> +       memory {
-> +               reg = <0 0x80000000 0 0x40000000>;
-> +       };
-> +};
-> --
-> 1.8.1.1.dirty
->
+How would you like me to handle this patch?
 
+ib-mfd-gpio?
 
+> diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
+> index ae0f6466eb09..abdcf58935f5 100644
+> --- a/drivers/gpio/gpio-tc3589x.c
+> +++ b/drivers/gpio/gpio-tc3589x.c
+> @@ -262,7 +262,7 @@ static int tc3589x_gpio_probe(struct platform_device *pdev)
+>  	tc3589x_gpio->chip = template_chip;
+>  	tc3589x_gpio->chip.ngpio = tc3589x->num_gpio;
+>  	tc3589x_gpio->chip.dev = &pdev->dev;
+> -	tc3589x_gpio->chip.base = (pdata) ? pdata->gpio_base : -1;
+> +	tc3589x_gpio->chip.base = -1;
+>  
+>  #ifdef CONFIG_OF_GPIO
+>  	tc3589x_gpio->chip.of_node = np;
+> diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+> index 0072e668c208..aacb3720065c 100644
+> --- a/drivers/mfd/tc3589x.c
+> +++ b/drivers/mfd/tc3589x.c
+> @@ -241,10 +241,8 @@ static struct irq_domain_ops tc3589x_irq_ops = {
+>  
+>  static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
+>  {
+> -	int base = tc3589x->irq_base;
+> -
+>  	tc3589x->domain = irq_domain_add_simple(
+> -		np, TC3589x_NR_INTERNAL_IRQS, base,
+> +		np, TC3589x_NR_INTERNAL_IRQS, 0,
+>  		&tc3589x_irq_ops, tc3589x);
+>  
+>  	if (!tc3589x->domain) {
+> @@ -298,7 +296,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
+>  	if (blocks & TC3589x_BLOCK_GPIO) {
+>  		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_gpio,
+>  				      ARRAY_SIZE(tc3589x_dev_gpio), NULL,
+> -				      tc3589x->irq_base, tc3589x->domain);
+> +				      0, tc3589x->domain);
+>  		if (ret) {
+>  			dev_err(tc3589x->dev, "failed to add gpio child\n");
+>  			return ret;
+> @@ -309,7 +307,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
+>  	if (blocks & TC3589x_BLOCK_KEYPAD) {
+>  		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_keypad,
+>  				      ARRAY_SIZE(tc3589x_dev_keypad), NULL,
+> -				      tc3589x->irq_base, tc3589x->domain);
+> +				      0, tc3589x->domain);
+>  		if (ret) {
+>  			dev_err(tc3589x->dev, "failed to keypad child\n");
+>  			return ret;
+> @@ -404,7 +402,6 @@ static int tc3589x_probe(struct i2c_client *i2c,
+>  	tc3589x->dev = &i2c->dev;
+>  	tc3589x->i2c = i2c;
+>  	tc3589x->pdata = pdata;
+> -	tc3589x->irq_base = pdata->irq_base;
+>  
+>  	switch (version) {
+>  	case TC3589X_TC35893:
+> diff --git a/include/linux/mfd/tc3589x.h b/include/linux/mfd/tc3589x.h
+> index e6088c2e2092..e1c12d84c26a 100644
+> --- a/include/linux/mfd/tc3589x.h
+> +++ b/include/linux/mfd/tc3589x.h
+> @@ -164,13 +164,10 @@ struct tc3589x_keypad_platform_data {
+>  
+>  /**
+>   * struct tc3589x_gpio_platform_data - TC3589x GPIO platform data
+> - * @gpio_base: first gpio number assigned to TC3589x.  A maximum of
+> - *	       %TC3589x_NR_GPIOS GPIOs will be allocated.
+>   * @setup: callback for board-specific initialization
+>   * @remove: callback for board-specific teardown
+>   */
+>  struct tc3589x_gpio_platform_data {
+> -	int gpio_base;
+>  	void (*setup)(struct tc3589x *tc3589x, unsigned gpio_base);
+>  	void (*remove)(struct tc3589x *tc3589x, unsigned gpio_base);
+>  };
+> @@ -178,18 +175,13 @@ struct tc3589x_gpio_platform_data {
+>  /**
+>   * struct tc3589x_platform_data - TC3589x platform data
+>   * @block: bitmask of blocks to enable (use TC3589x_BLOCK_*)
+> - * @irq_base: base IRQ number.  %TC3589x_NR_IRQS irqs will be used.
+>   * @gpio: GPIO-specific platform data
+>   * @keypad: keypad-specific platform data
+>   */
+>  struct tc3589x_platform_data {
+>  	unsigned int block;
+> -	int irq_base;
+>  	struct tc3589x_gpio_platform_data *gpio;
+>  	const struct tc3589x_keypad_platform_data *keypad;
+>  };
+>  
+> -#define TC3589x_NR_GPIOS	24
+> -#define TC3589x_NR_IRQS		TC3589x_INT_GPIO(TC3589x_NR_GPIOS)
+> -
+>  #endif
 
 -- 
-motzblog.wordpress.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
