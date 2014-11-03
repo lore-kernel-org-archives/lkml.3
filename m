@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbaKCRPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:15:25 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:60155 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464AbaKCRPT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:15:19 -0500
-Date: Mon, 3 Nov 2014 11:15:15 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] fuse: Add support for mounts from pid/user
- namespaces
-Message-ID: <20141103171515.GB7554@ubuntu-hedt>
-Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Michael j Theall <mtheall@us.ibm.com>,
-	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
+	id S1753082AbaKCRQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:16:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57101 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750819AbaKCRQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 12:16:15 -0500
+Message-ID: <5457B85C.4020105@suse.de>
+Date: Mon, 03 Nov 2014 18:16:12 +0100
+From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kamil Debski <k.debski@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com
+Subject: Re: [PATCH] ARM: dts: Add pwm-fan node to the Odroid-U3 board
+References: <1415025804-24274-1-git-send-email-k.debski@samsung.com>
+In-Reply-To: <1415025804-24274-1-git-send-email-k.debski@samsung.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 04:24:16PM -0500, Seth Forshee wrote:
-> Here's another update to the patches to enable userns mounts in fuse.
-> The changes this time around center on xattrs and allow_other. I'm
-> considering the following patch to be a prerequisite for this series:
-> 
-> http://lkml.kernel.org/g/252a4d87d99fc2b5fe4411c838f65b312c4e13cd.1413330857.git.luto@amacapital.net
-> 
-> With this patch I'm dropping the xattr restrictions from the v4 patches.
-> This leaves the situation with xattrs unchanged in init_user_ns. A fuse
-> userns mount could still supply xattrs which the user would normally be
-> unable to set, but since the mount will be inaccessible outside of that
-> userns or its descendants those xattrs will never be seen by the host.
-> 
-> I'm also in agreement with Andy that some decision regarding this patch
-> should be made before merging the fuse userns support as well:
-> 
-> http://lkml.kernel.org/g/2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net
-> 
-> Changes since v4:
->  - Drop patch to restrict xattrs
->  - Update allow_other to restrict based on userns of current rather than
->    uid/gid
+Hi,
 
-Miklos, Eric - Any feedback from either of you on these patches?
+Am 03.11.2014 um 15:43 schrieb Kamil Debski:
+> Add pwm-fan node to the Odroid-U3 board file to enable PWM control of the
+> cooling fan.
+> 
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> ---
+>  arch/arm/boot/dts/exynos4412-odroidu3.dts |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos4412-odroidu3.dts b/arch/arm/boot/dts/exynos4412-odroidu3.dts
+> index c8a64be..764bda4 100644
+> --- a/arch/arm/boot/dts/exynos4412-odroidu3.dts
+> +++ b/arch/arm/boot/dts/exynos4412-odroidu3.dts
+> @@ -31,6 +31,19 @@
+>  			linux,default-trigger = "heartbeat";
+>  		};
+>  	};
+> +
+> +	pwm: pwm@139D0000 {
+> +		pinctrl-0 = <&pwm0_out>;
+> +		pinctrl-names = "default";
+> +		samsung,pwm-outputs = <0>;
+> +		status = "okay";
+> +	};
 
-Thanks,
-Seth
+Please add the pwm label in the .dtsi if necessary and then just do &pwm
+{...}; before &usb3503 below.
+
+> +
+> +	pwm-fan {
+> +		compatible = "pwm-fan";
+> +		status = "okay";
+> +		pwms = <&pwm 0 10000 0>;
+> +	};
+>  };
+>  
+>  &usb3503 {
+
+Regards,
+Andreas
+
+-- 
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
