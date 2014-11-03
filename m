@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaKCPeq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:34:46 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35583 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117AbaKCPeo (ORCPT
+	id S1752142AbaKCPfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 10:35:07 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:42081 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870AbaKCPfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:34:44 -0500
-Date: Mon, 3 Nov 2014 15:33:03 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141103153303.GQ3815@sirena.org.uk>
-References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
- <1415025649-8119-4-git-send-email-javier.martinez@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qnK4RqISe3HuYx1/"
-Content-Disposition: inline
-In-Reply-To: <1415025649-8119-4-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 03/14] regulator: of: Add regulator desc param to
- of_get_regulator_init_data()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 3 Nov 2014 10:35:02 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Kevin Hilman <khilman@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH v4 1/9] PM / Domains: Change prototype for the ->attach_dev() callback
+Date: Mon,  3 Nov 2014 16:34:48 +0100
+Message-Id: <1415028896-9005-2-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
+References: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ulf Hansson <ulf.hansson@linaro.org>
 
---qnK4RqISe3HuYx1/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Convert the prototype to return and int. This is just an initial step,
+needed to support error handling.
 
-On Mon, Nov 03, 2014 at 03:40:38PM +0100, Javier Martinez Canillas wrote:
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Acked-by: Pavel Machek <pavel@ucw.cz>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+Prerequisite
 
->  	for_each_child_of_node(nproot, np) {
->  		if (!of_node_cmp(np->name, info->desc.name)) {
->  			config->init_data =
-> -				of_get_regulator_init_data(&pdev->dev, np);
-> +				of_get_regulator_init_data(&pdev->dev, np,
-> +							   NULL);
+Ulf wrote:
 
-This looks buggy, we're not passing in a descriptor.
+This patch is intended as fix for 3.18 rc[n]. Why?
 
---qnK4RqISe3HuYx1/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+There are other SOC specific patches around that adds genpd support and which
+implements the ->attach_dev() callback. To prevent having an "atomic" patch
+during the next release cycle, let's change the prototype now instead.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Further patches will add the actual error handling in genpd and these can then
+be reviewed and tested thoroughly.
+---
+ include/linux/pm_domain.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-iQEcBAEBAgAGBQJUV6AuAAoJECTWi3JdVIfQCmwH/AgbbttynX5wQL+PwQy7+ikW
-5eBVFddcX9UMx/+3NuqH314aI1nXfReiYr7kh2WXDDtNjs+JImV9FInSwmOdZUcL
-IkDPt3PmEy4L671HAKaLm9V1kN1hIE04zny1NPfEz3r/i0f1jfRaDo2AXMwSRvE4
-mPR39+td+dzytss0AhrlAAgMYRsH4FjavyqbyLYtO9lJnJIHQfhCRaXy6rhEXdc4
-G6Dy5ecQ/HXDcimu8aL3bYFu6ptlkeiZS8b82P22K+U5gBduAMBwpTFTw0JzDVwd
-G+a27pEXvNzu52L1erBsLRM6Ujm630yz6jyQlhKnBV9Xxaq6D+CP9X39PZkAkVk=
-=yNTJ
------END PGP SIGNATURE-----
+diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
+index 73e938b7e9374c68..d44f071988a861ff 100644
+--- a/include/linux/pm_domain.h
++++ b/include/linux/pm_domain.h
+@@ -72,7 +72,7 @@ struct generic_pm_domain {
+ 	bool max_off_time_changed;
+ 	bool cached_power_down_ok;
+ 	struct gpd_cpuidle_data *cpuidle_data;
+-	void (*attach_dev)(struct device *dev);
++	int (*attach_dev)(struct device *dev);
+ 	void (*detach_dev)(struct device *dev);
+ };
+ 
+-- 
+1.9.1
 
---qnK4RqISe3HuYx1/--
