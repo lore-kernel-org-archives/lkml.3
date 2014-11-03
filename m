@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937AbaKCVKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:10:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691AbaKCVKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:10:11 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>, Dan Carpenter <dan.carpenter@oracle.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] HID: logitech-hidpp: 2 fixes in hidpp_root_get_protocol_version()
-Date: Mon,  3 Nov 2014 16:09:59 -0500
-Message-Id: <1415048999-4490-2-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1415048999-4490-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1415048999-4490-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1753856AbaKCVMS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:12:18 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:48710 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635AbaKCVMO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 16:12:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <tip-2c7577a7583747c9b71f26dced7f696b739da745@git.kernel.org>
+References: <bf6fb790787eb95b922157838f52712c25dda157.1412187233.git.luto@amacapital.net>
+ <tip-2c7577a7583747c9b71f26dced7f696b739da745@git.kernel.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Nov 2014 13:11:51 -0800
+Message-ID: <CALCETrWM2wVynp1rrip9AWtNYDzjC4M8JqKR82ew5dpyrTWMgA@mail.gmail.com>
+Subject: Re: [tip:x86/asm] sched/x86_64: Don't save flags on context switch
+To: Andy Lutomirski <luto@amacapital.net>, Jan Beulich <jbeulich@suse.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Sebastian Lackner <sebastian@fds-team.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, Anish Bhatt <anish@chelsio.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>
+Cc: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- remove the constant '1'
-- when the device is not connected, the protocol error
-  HIDPP_ERROR_RESOURCE_ERROR is raised. We should not warn the user about
-  it because it is somewhat expected as an answer when we check if the
-  device is connected.
+On Tue, Oct 28, 2014 at 4:14 AM, tip-bot for Andy Lutomirski
+<tipbot@zytor.com> wrote:
+> Commit-ID:  2c7577a7583747c9b71f26dced7f696b739da745
+> Gitweb:     http://git.kernel.org/tip/2c7577a7583747c9b71f26dced7f696b739da745
+> Author:     Andy Lutomirski <luto@amacapital.net>
+> AuthorDate: Wed, 1 Oct 2014 11:28:25 -0700
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Tue, 28 Oct 2014 11:11:30 +0100
+>
+> sched/x86_64: Don't save flags on context switch
+>
+> Now that the kernel always runs with clean flags (in particular,
+> NT is clear), there is no need to save and restore flags on
+> every context switch.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
+Just to make myself a little more comfortable with this...
 
-Changes in v2:
- none
+There is one potentially relevant flag: AC.  I think this is still OK.
+If we schedule with STAC set, then we've already screwed up, I think.
+Even preempt schedules from interrupt context, so if we schedule due
+to preemption or #PF in the middle of uaccess, AC should be saved and
+cleared by whatever interrupt caused the reschedule, right?
 
- drivers/hid/hid-logitech-hidpp.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+And do we ever have TF set during a context switch?  I hope not.
 
-diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-index 61f9e75..1a6395d 100644
---- a/drivers/hid/hid-logitech-hidpp.c
-+++ b/drivers/hid/hid-logitech-hidpp.c
-@@ -361,12 +361,16 @@ static int hidpp_root_get_protocol_version(struct hidpp_device *hidpp)
- 			CMD_ROOT_GET_PROTOCOL_VERSION,
- 			NULL, 0, &response);
- 
--	if (ret == 1) {
-+	if (ret == HIDPP_ERROR_INVALID_SUBID) {
- 		hidpp->protocol_major = 1;
- 		hidpp->protocol_minor = 0;
- 		return 0;
- 	}
- 
-+	/* the device might not be connected */
-+	if (ret == HIDPP_ERROR_RESOURCE_ERROR)
-+		return -EIO;
-+
- 	if (ret > 0) {
- 		hid_err(hidpp->hid_dev, "%s: received protocol error 0x%02x\n",
- 			__func__, ret);
--- 
-2.1.0
+Also, what's with 'jmp exit_intr' at the end of retint_kernel?  Why
+isn't that 'jmp retint_kernel'?
 
+--Andy
