@@ -1,177 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161AbaKCRxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:53:19 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:49893 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036AbaKCRxQ (ORCPT
+	id S1753237AbaKCRxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:53:55 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:65054 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484AbaKCRxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:53:16 -0500
+	Mon, 3 Nov 2014 12:53:53 -0500
+Date: Mon, 3 Nov 2014 17:53:46 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Chris Zhong <zyw@rock-chips.com>,
+        Zhang Qing <zhangqing@rock-chips.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH v3 19/47] mfd: rk808: Register power-off handler with
+ kernel power-off handler
+Message-ID: <20141103175346.GI12011@x1>
+References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+ <1414425354-10359-20-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <1413973797-17619-2-git-send-email-yingjoe.chen@mediatek.com>
-References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com>
-	<1413973797-17619-2-git-send-email-yingjoe.chen@mediatek.com>
-Date: Mon, 3 Nov 2014 18:53:14 +0100
-Message-ID: <CABuKBeLYMbD-dV_25FJd_NE1RgfVkgF+SoCiAx9O9jKUUAcexA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/8] ARM: mediatek: Add basic support for mt8127
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: "Joe.C" <yingjoe.chen@mediatek.com>
-Cc: Rob Herring <robh+dt@kernel.org>, arm@kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        Hsien-Chun Yen <hc.yen@mediatek.com>,
-        huang eddie <eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        Yuhau Chen <yh.chen@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414425354-10359-20-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-22 12:29 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
-> From: "Joe.C" <yingjoe.chen@mediatek.com>
->
-> This adds a basic dtsi for MT8127 SoC.
->
-> Signed-off-by: Joe.C <yingjoe.chen@mediatek.com>
+On Mon, 27 Oct 2014, Guenter Roeck wrote:
+
+> Register with kernel power-off handler instead of setting pm_power_off
+> directly. Register with low priority to reflect that the original code
+> only sets pm_power_off if it was not already set.
+> 
+> Cc: Chris Zhong <zyw@rock-chips.com>
+> Cc: Zhang Qing <zhangqing@rock-chips.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
->  arch/arm/boot/dts/mt8127.dtsi     | 93 +++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-mediatek/mediatek.c |  1 +
->  2 files changed, 94 insertions(+)
->  create mode 100644 arch/arm/boot/dts/mt8127.dtsi
->
-> diff --git a/arch/arm/boot/dts/mt8127.dtsi b/arch/arm/boot/dts/mt8127.dtsi
-> new file mode 100644
-> index 0000000..25c9f69
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/mt8127.dtsi
-> @@ -0,0 +1,93 @@
-> +/*
-> + * Copyright (c) 2014 MediaTek Inc.
-> + * Author: Joe.C <yingjoe.chen@mediatek.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <dt-bindings/interrupt-controller/irq.h>
-> +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> +#include "skeleton64.dtsi"
+> v3:
+> - Replace poweroff in all newly introduced variables and in text
+>   with power_off or power-off as appropriate
+> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+> v2:
+> - New patch
+> 
+>  drivers/mfd/rk808.c       | 30 ++++++++++++++++--------------
+>  include/linux/mfd/rk808.h |  2 ++
+>  2 files changed, 18 insertions(+), 14 deletions(-)
 
-Cortex a7 is 32 bits, right? So why do you use skeleton64.dtsi?
+Code looks okay:
 
-> +
-> +/ {
-> +       compatible = "mediatek,mt8127";
-> +       interrupt-parent = <&gic>;
-> +
-> +       cpus {
-> +               #address-cells = <1>;
-> +               #size-cells = <0>;
-> +
-> +               cpu@0 {
-> +                       device_type = "cpu";
-> +                       compatible = "arm,cortex-a7";
-> +                       reg = <0x0>;
-> +               };
-> +               cpu@1 {
-> +                       device_type = "cpu";
-> +                       compatible = "arm,cortex-a7";
-> +                       reg = <0x1>;
-> +               };
-> +               cpu@2 {
-> +                       device_type = "cpu";
-> +                       compatible = "arm,cortex-a7";
-> +                       reg = <0x2>;
-> +               };
-> +               cpu@3 {
-> +                       device_type = "cpu";
-> +                       compatible = "arm,cortex-a7";
-> +                       reg = <0x3>;
-> +               };
-> +
-> +       };
-> +
-> +       clocks {
-> +               #address-cells = <2>;
-> +               #size-cells = <2>;
-> +               compatible = "simple-bus";
-> +               ranges;
-> +
-> +               system_clk: dummy13m {
-> +                       compatible = "fixed-clock";
-> +                       clock-frequency = <13000000>;
-> +                       #clock-cells = <0>;
-> +               };
-> +
-> +               rtc_clk: dummy32k {
-> +                       compatible = "fixed-clock";
-> +                       clock-frequency = <32000>;
-> +                       #clock-cells = <0>;
-> +               };
-> +       };
-> +
-> +       soc {
-> +               #address-cells = <2>;
-> +               #size-cells = <2>;
-> +               compatible = "simple-bus";
-> +               ranges;
-> +
-> +               timer: timer@10008000 {
-> +                       compatible = "mediatek,mt8127-timer", "mediatek,mt6577-timer";
-> +                       reg = <0 0x10008000 0 0x80>;
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-This should be "reg = <0x10008000 0x80>;" right?
-Same in mt8135.dtsi
+... but how are you thinking about handling this set?
 
-> +                       interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
-> +                       clocks = <&system_clk>, <&rtc_clk>;
-> +                       clock-names = "system-clk", "rtc-clk";
-> +               };
-> +
-> +               gic: interrupt-controller@10211000 {
-> +                       compatible = "arm,cortex-a7-gic";
-> +                       interrupt-controller;
-> +                       #interrupt-cells = <3>;
-> +                       reg = <0 0x10211000 0 0x1000>,
-> +                             <0 0x10212000 0 0x1000>,
-> +                             <0 0x10214000 0 0x2000>,
-> +                             <0 0x10216000 0 0x2000>;
-> +               };
-> +       };
-> +};
-> diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
-> index f2acf07..7f478ce 100644
-> --- a/arch/arm/mach-mediatek/mediatek.c
-> +++ b/arch/arm/mach-mediatek/mediatek.c
-> @@ -19,6 +19,7 @@
->
->  static const char * const mediatek_board_dt_compat[] = {
->         "mediatek,mt6589",
-> +       "mediatek,mt8127",
->         NULL,
+> diff --git a/drivers/mfd/rk808.c b/drivers/mfd/rk808.c
+> index bd02150..5d5257d 100644
+> --- a/drivers/mfd/rk808.c
+> +++ b/drivers/mfd/rk808.c
+> @@ -21,6 +21,8 @@
+>  #include <linux/mfd/rk808.h>
+>  #include <linux/mfd/core.h>
+>  #include <linux/module.h>
+> +#include <linux/notifier.h>
+> +#include <linux/pm.h>
+>  #include <linux/regmap.h>
+>  
+>  struct rk808_reg_data {
+> @@ -147,23 +149,19 @@ static struct regmap_irq_chip rk808_irq_chip = {
+>  	.init_ack_masked = true,
 >  };
->
-> --
-> 1.8.1.1.dirty
->
-
-
+>  
+> -static struct i2c_client *rk808_i2c_client;
+> -static void rk808_device_shutdown(void)
+> +static int rk808_device_shutdown(struct notifier_block *this,
+> +				 unsigned long unused1, void *unused2)
+>  {
+> +	struct rk808 *rk808 = container_of(this, struct rk808, power_off_nb);
+>  	int ret;
+> -	struct rk808 *rk808 = i2c_get_clientdata(rk808_i2c_client);
+> -
+> -	if (!rk808) {
+> -		dev_warn(&rk808_i2c_client->dev,
+> -			 "have no rk808, so do nothing here\n");
+> -		return;
+> -	}
+>  
+>  	ret = regmap_update_bits(rk808->regmap,
+>  				 RK808_DEVCTRL_REG,
+>  				 DEV_OFF_RST, DEV_OFF_RST);
+>  	if (ret)
+> -		dev_err(&rk808_i2c_client->dev, "power off error!\n");
+> +		dev_err(&rk808->i2c->dev, "power off error!\n");
+> +
+> +	return NOTIFY_DONE;
+>  }
+>  
+>  static int rk808_probe(struct i2c_client *client,
+> @@ -222,9 +220,14 @@ static int rk808_probe(struct i2c_client *client,
+>  
+>  	pm_off = of_property_read_bool(np,
+>  				"rockchip,system-power-controller");
+> -	if (pm_off && !pm_power_off) {
+> -		rk808_i2c_client = client;
+> -		pm_power_off = rk808_device_shutdown;
+> +	if (pm_off) {
+> +		rk808->power_off_nb.notifier_call = rk808_device_shutdown;
+> +		rk808->power_off_nb.priority = POWER_OFF_PRIORITY_LOW;
+> +		ret = devm_register_power_off_handler(&client->dev,
+> +						      &rk808->power_off_nb);
+> +		if (ret)
+> +			dev_warn(&client->dev,
+> +				 "Failed to register power-off handler\n");
+>  	}
+>  
+>  	return 0;
+> @@ -240,7 +243,6 @@ static int rk808_remove(struct i2c_client *client)
+>  
+>  	regmap_del_irq_chip(client->irq, rk808->irq_data);
+>  	mfd_remove_devices(&client->dev);
+> -	pm_power_off = NULL;
+>  
+>  	return 0;
+>  }
+> diff --git a/include/linux/mfd/rk808.h b/include/linux/mfd/rk808.h
+> index fb09312..6308fd4 100644
+> --- a/include/linux/mfd/rk808.h
+> +++ b/include/linux/mfd/rk808.h
+> @@ -19,6 +19,7 @@
+>  #ifndef __LINUX_REGULATOR_rk808_H
+>  #define __LINUX_REGULATOR_rk808_H
+>  
+> +#include <linux/notifier.h>
+>  #include <linux/regulator/machine.h>
+>  #include <linux/regmap.h>
+>  
+> @@ -192,5 +193,6 @@ struct rk808 {
+>  	struct i2c_client *i2c;
+>  	struct regmap_irq_chip_data *irq_data;
+>  	struct regmap *regmap;
+> +	struct notifier_block power_off_nb;
+>  };
+>  #endif /* __LINUX_REGULATOR_rk808_H */
 
 -- 
-motzblog.wordpress.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
