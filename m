@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083AbaKCIQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 03:16:27 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42164 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751535AbaKCIMc (ORCPT
+	id S1751415AbaKCIRp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:17:45 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54686 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaKCIRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 03:12:32 -0500
-X-Sasl-enc: oVMoWobqz3M5kbjqEB6rOToqRudq+57WYjnAcfSIs4Wy 1415002351
-Subject: [PATCH 03/13] autofs4 - use pr print in AUTOFS prints
-From: Ian Kent <raven@themaw.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 03 Nov 2014 16:12:29 +0800
-Message-ID: <20141103081229.6215.69137.stgit@perseus.themaw.net>
-In-Reply-To: <20141103081218.6215.85903.stgit@perseus.themaw.net>
-References: <20141103081218.6215.85903.stgit@perseus.themaw.net>
-User-Agent: StGit/0.17-dirty
+	Mon, 3 Nov 2014 03:17:44 -0500
+Date: Mon, 3 Nov 2014 09:17:39 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: akpm@linux-foundation.org, hughd@google.com, riel@redhat.com,
+        mgorman@suse.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        dbueso@suse.de, linux-mm@kvack.org
+Subject: Re: [PATCH v2 -next 00/10] mm: improve usage of the i_mmap lock
+Message-ID: <20141103081739.GY23531@worktop.programming.kicks-ass.net>
+References: <1414697657-1678-1-git-send-email-dave@stgolabs.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414697657-1678-1-git-send-email-dave@stgolabs.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the pr_*() print in AUTOFS_*() defines instead of printks.
+On Thu, Oct 30, 2014 at 12:34:07PM -0700, Davidlohr Bueso wrote:
+> 
+> Davidlohr Bueso (10):
+>   mm,fs: introduce helpers around the i_mmap_mutex
+>   mm: use new helper functions around the i_mmap_mutex
+>   mm: convert i_mmap_mutex to rwsem
+>   mm/rmap: share the i_mmap_rwsem
+>   uprobes: share the i_mmap_rwsem
+>   mm/xip: share the i_mmap_rwsem
+>   mm/memory-failure: share the i_mmap_rwsem
+>   mm/mremap: share the i_mmap_rwsem
+>   mm/nommu: share the i_mmap_rwsem
+>   mm/hugetlb: share the i_mmap_rwsem
+> 
 
-Signed-off-by: Ian Kent <raven@themaw.net>
----
- fs/autofs4/autofs_i.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index 0a1fcdc..b33b939 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -41,11 +41,11 @@
- 		current->pid, __func__, ##__VA_ARGS__)
- 
- #define AUTOFS_WARN(fmt, ...)				\
--	printk(KERN_WARNING "pid %d: %s: " fmt "\n",	\
-+	pr_warn("pid %d: %s: " fmt "\n",	\
- 		current->pid, __func__, ##__VA_ARGS__)
- 
- #define AUTOFS_ERROR(fmt, ...)				\
--	printk(KERN_ERR "pid %d: %s: " fmt "\n",	\
-+	pr_err("pid %d: %s: " fmt "\n",	\
- 		current->pid, __func__, ##__VA_ARGS__)
- 
- /*
-
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
