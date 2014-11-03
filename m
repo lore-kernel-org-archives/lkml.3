@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaKCQ3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 11:29:54 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:47196 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaKCQ3w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 11:29:52 -0500
-Date: Mon, 03 Nov 2014 11:29:47 -0500 (EST)
-Message-Id: <20141103.112947.963725164144191898.davem@davemloft.net>
-To: clemens@ladisch.de
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sparc64: Add preprocessor symbols for PAGE_* pgprot_t
- values.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <54574E88.8080509@ladisch.de>
-References: <545690D0.5040904@ladisch.de>
-	<20141102.182430.2172669108987505623.davem@davemloft.net>
-	<54574E88.8080509@ladisch.de>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 03 Nov 2014 08:29:52 -0800 (PST)
+	id S1753011AbaKCQdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:33:09 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43448 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922AbaKCQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 11:33:04 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
+        <grant.likely@linaro.org>, George Cherian <george.cherian@ti.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 1/4] extcon: gpio: Convert the driver to use gpio desc API's
+Date: Mon, 3 Nov 2014 10:32:27 -0600
+Message-ID: <1415032350-8459-2-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.1.0.GIT
+In-Reply-To: <1415032350-8459-1-git-send-email-balbi@ti.com>
+References: <1415032350-8459-1-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Clemens Ladisch <clemens@ladisch.de>
-Date: Mon, 03 Nov 2014 10:44:40 +0100
+From: George Cherian <george.cherian@ti.com>
 
-> David Miller wrote:
->> I'd also rather the kernel use Kconfig based symbols to detect for
->> arch availability of feature X or Y, assuming things are CPP symbols
->> is very fragile at best.
-> 
-> It is certainly possible to use Kconfig-based symbols.  However, this
-> would have its own fragility: adding, e.g., PAGE_KERNEL_SO to an arch
-> requires that one remembers to update Kconfig, and if one forgets,
-> a check like this:
-> 
-> #ifndef CONFIG_ARCH_HAS_PAGE_KERNEL_RO
-> #define PAGE_KERNEL_RO PAGE_KERNEL /* fallback for this code */
-> #endif
-> 
-> will not detect the error on sparc64 (if PAGE_KERNEL_RO were a CPP
-> symbol, the compiler would complain about the redefinition).
-> 
-> So even if PAGE_KERNEL_RO is a variable, making it into a CPP symbol
-> is beneficial.  And once it is a CPP symbol, introducing a separate
-> Kconfig-based symbol is not necessary and just increases the chances
-> of an error.
+Convert the driver to use gpiod_* API's.
 
-I'd rather code then use the symbol unconditionally, and we declare that
-it's something every architecture must provide in some shape or form.
+Reviewed-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/extcon/extcon-gpio.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-This CPP check business is fragile as hell and I'm not going to promote
-it in the architectures I maintainer by applying patches like your's.
+diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+index 72f19a3..70e3fc7 100644
+--- a/drivers/extcon/extcon-gpio.c
++++ b/drivers/extcon/extcon-gpio.c
+@@ -33,8 +33,7 @@
+ 
+ struct gpio_extcon_data {
+ 	struct extcon_dev *edev;
+-	unsigned gpio;
+-	bool gpio_active_low;
++	struct gpio_desc *gpiod;
+ 	const char *state_on;
+ 	const char *state_off;
+ 	int irq;
+@@ -50,9 +49,7 @@ static void gpio_extcon_work(struct work_struct *work)
+ 		container_of(to_delayed_work(work), struct gpio_extcon_data,
+ 			     work);
+ 
+-	state = gpio_get_value(data->gpio);
+-	if (data->gpio_active_low)
+-		state = !state;
++	state = gpiod_get_value(data->gpiod);
+ 	extcon_set_state(data->edev, state);
+ }
+ 
+@@ -106,21 +103,20 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ 	}
+ 	extcon_data->edev->name = pdata->name;
+ 
+-	extcon_data->gpio = pdata->gpio;
+-	extcon_data->gpio_active_low = pdata->gpio_active_low;
++	extcon_data->gpiod = gpio_to_desc(pdata->gpio);
+ 	extcon_data->state_on = pdata->state_on;
+ 	extcon_data->state_off = pdata->state_off;
+ 	extcon_data->check_on_resume = pdata->check_on_resume;
+ 	if (pdata->state_on && pdata->state_off)
+ 		extcon_data->edev->print_state = extcon_gpio_print_state;
+ 
+-	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
++	ret = devm_gpio_request_one(&pdev->dev, pdata->gpio, GPIOF_DIR_IN,
+ 				    pdev->name);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	if (pdata->debounce) {
+-		ret = gpio_set_debounce(extcon_data->gpio,
++		ret = gpiod_set_debounce(extcon_data->gpiod,
+ 					pdata->debounce * 1000);
+ 		if (ret < 0)
+ 			extcon_data->debounce_jiffies =
+@@ -133,7 +129,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ 
+ 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
+ 
+-	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
++	extcon_data->irq = gpiod_to_irq(extcon_data->gpiod);
+ 	if (extcon_data->irq < 0)
+ 		return extcon_data->irq;
+ 
+-- 
+2.1.0.GIT
 
-Sorry.
