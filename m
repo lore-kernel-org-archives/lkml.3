@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559AbaKCULA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 15:11:00 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:49065 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaKCUK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 15:10:59 -0500
-Date: Mon, 03 Nov 2014 15:10:56 -0500 (EST)
-Message-Id: <20141103.151056.1825096971313944324.davem@davemloft.net>
-To: hannes@cmpxchg.org
-Cc: akpm@linux-foundation.org, mhocko@suse.cz, vdavydov@parallels.com,
-        tj@kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+	id S1753627AbaKCUMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 15:12:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752509AbaKCUMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 15:12:48 -0500
+Date: Mon, 3 Nov 2014 21:12:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Evan Teran <eteran@alum.rit.edu>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Pedro Alves <palves@redhat.com>, Roland McGrath <roland@hack.frob.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: move page->mem_cgroup bad page handling into
- generic code fix
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141103182740.GA10816@phnom.home.cmpxchg.org>
-References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
-	<1414898156-4741-3-git-send-email-hannes@cmpxchg.org>
-	<20141103182740.GA10816@phnom.home.cmpxchg.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 03 Nov 2014 12:10:58 -0800 (PST)
+Subject: [PATCH 0/1] ptrace/x86: fix the TIF_FORCED_TF logic in
+	handle_signal()
+Message-ID: <20141103201256.GA5213@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Mon, 3 Nov 2014 13:27:40 -0500
+Hello,
 
-> Remove unneeded !CONFIG_MEMCG memcg bad_page() dummies as well.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+This is the very old bug initially reported by Evan in 2010, see
+https://bugzilla.kernel.org/show_bug.cgi?id=16061
+Somehow we forgot to fix it and now Pedro reports it again.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+>From the changelog:
+
+    Note: in the longer term we should probably change setup_sigcontext()
+    to use get_flags() and then just remove this user_disable_single_step().
+
+Yes, but this needs more changes. Lets start with more simple and
+backportable fix. Also because I think that enable_single_step() and
+the whole TIF_SINGLESTEP/TIF_FORCED_TF logic need some cleanups, but
+I am not sure what we can do.
+
+Oleg.
+
+ arch/x86/kernel/signal.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
+
