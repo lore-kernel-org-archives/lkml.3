@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaKCSjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:39:24 -0500
-Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:59609 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752484AbaKCSjV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:39:21 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2553:2561:2564:2682:2685:2692:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6117:6261:6691:8599:8957:8985:9025:9388:10004:10400:10848:11232:11257:11658:11914:12043:12438:12517:12519:12682:12740:12776:13069:13137:13150:13230:13231:13311:13357:14039:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fear80_8b91dfea3af16
-X-Filterd-Recvd-Size: 2121
-Message-ID: <1415039957.17743.29.camel@perches.com>
-Subject: Re: [PATCH] CodingStyle: Add a chapter on conditional compilation
-From: Joe Perches <joe@perches.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 03 Nov 2014 10:39:17 -0800
-In-Reply-To: <20141103180528.GA9026@jtriplet-mobl1>
-References: <430ce084b015d22a597ef7e4f6436dadaea7b23d.1414606455.git.josh@joshtriplett.org>
-	 <20141103114656.3bf200df@lwn.net> <1415036860.17743.25.camel@perches.com>
-	 <20141103180528.GA9026@jtriplet-mobl1>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	id S1753329AbaKCSlC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:41:02 -0500
+Received: from mout.web.de ([212.227.17.11]:58773 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908AbaKCSk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 13:40:57 -0500
+Message-ID: <5457CC33.4050906@users.sourceforge.net>
+Date: Mon, 03 Nov 2014 19:40:51 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: [PATCH v2] kconfig: Deletion of unnecessary checks before the function
+ call "sym_calc_value"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54568924.5010008@users.sourceforge.net>
+In-Reply-To: <54568924.5010008@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:27Q0biP67eP/oA4RCNV1g1dHghemruYzNzskSxKkil6YBl64DrU
+ ys7aZsNRBBtUgKkKGTvk1MoNlavVE7vpVf+XiVAEO6tV2eJ7HOsdqQkHsdT9/C5ebay/scY
+ qCLpSRTvpj/WjjCx7RUpYlL2gtleX52ZFhxJVr18qSExA7zVHfLqinJM1TnCtE0UdjWJJov
+ 2zEYz72JR46O+peTYo+FQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 10:05 -0800, Josh Triplett wrote:
-> On Mon, Nov 03, 2014 at 09:47:40AM -0800, Joe Perches wrote:
-[]
-> "don't put an else after an if condition
-> ending with break or return;
+From: Markus Elfring <elfring@users.sourceforge.net>
 
-Maybe that's a bit _too_ simple.
-Yes for a simple if, but not necessarily an else if
+The sym_calc_value() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-	if (foo) {
-		...;
-	} else if (bar) {
-		more code...;
-		return;
-	} else {
-		...
-	}
+This issue was detected by using the Coccinelle software.
 
-still needs that last else.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Acked-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ scripts/kconfig/confdata.c | 6 ++----
+ scripts/kconfig/symbol.c   | 3 +--
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
-checkpatch isn't very good at that code flow
-interpretation so it emits a warning anyway.
-
-> > Another thing that could go is the suggestion to
-> > use Lindent.
-> > 
-> > https://lkml.org/lkml/2013/2/11/390
-> 
-> Agreed completely.  We might consider coming up with settings for
-> clang-format, which seems like a far more capable replacement that
-> actually understands C.
-
-Never used it.
-It does seem to have a large number of options
-(including a trivial linux-kernel style) though.
-
-http://clang.llvm.org/docs/ClangFormatStyleOptions.html
-
-Dunno how much work it would be to create a proper
-linux-kernel style for clang-format.
-
-It might work well, it might not.
-Anyone have experience with it?
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index f88d90f..3073cb6 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -262,8 +262,7 @@ int conf_read_simple(const char *name, int def)
+ 			goto load;
+ 		sym_add_change_count(1);
+ 		if (!sym_defconfig_list) {
+-			if (modules_sym)
+-				sym_calc_value(modules_sym);
++			sym_calc_value(modules_sym);
+ 			return 1;
+ 		}
+ 
+@@ -399,8 +398,7 @@ setsym:
+ 	free(line);
+ 	fclose(in);
+ 
+-	if (modules_sym)
+-		sym_calc_value(modules_sym);
++	sym_calc_value(modules_sym);
+ 	return 0;
+ }
+ 
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index 7caabdb..3f7797b 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -447,8 +447,7 @@ void sym_clear_all_valid(void)
+ 	for_all_symbols(i, sym)
+ 		sym->flags &= ~SYMBOL_VALID;
+ 	sym_add_change_count(1);
+-	if (modules_sym)
+-		sym_calc_value(modules_sym);
++	sym_calc_value(modules_sym);
+ }
+ 
+ void sym_set_changed(struct symbol *sym)
+-- 
+2.1.3
 
 
