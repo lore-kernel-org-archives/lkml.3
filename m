@@ -1,114 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaKCOMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:12:16 -0500
-Received: from lb2-smtp-cloud6.xs4all.net ([194.109.24.28]:55499 "EHLO
-	lb2-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751523AbaKCOMN (ORCPT
+	id S1752482AbaKCOOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:14:12 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47227 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaKCOOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:12:13 -0500
-Message-ID: <54578D38.4000004@xs4all.nl>
-Date: Mon, 03 Nov 2014 15:12:08 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 3 Nov 2014 09:14:08 -0500
+X-Originating-IP: 50.43.41.112
+Date: Mon, 3 Nov 2014 06:13:58 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, x86@kernel.org
+Subject: Re: [PATCH v4 10/10] x86: Support compiling out userspace IO (iopl
+ and ioperm)
+Message-ID: <20141103141357.GC21818@thin>
+References: <cover.1414870871.git.josh@joshtriplett.org>
+ <ec10c497d3a7f44f335dbc267edd6de5b4acd671.1414870871.git.josh@joshtriplett.org>
+ <20141103121049.2f0c81a9@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, m.chehab@samsung.com
-Subject: Re: [PATCH v4] media: spi: Add support for LMH0395
-References: <1410342234-7444-1-git-send-email-jean-michel.hautbois@vodalys.com> <1630377.tEqlt7fWO7@avalon> <545784DA.50109@xs4all.nl> <12414520.uxZUhSYI7c@avalon>
-In-Reply-To: <12414520.uxZUhSYI7c@avalon>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103121049.2f0c81a9@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 02:42 PM, Laurent Pinchart wrote:
-> On Monday 03 November 2014 14:36:26 Hans Verkuil wrote:
->> On 11/03/2014 02:13 PM, Laurent Pinchart wrote:
->>> Hi Jean-Michel,
->>>
->>> Thank you for the patch.
->>
->>> On Wednesday 10 September 2014 11:43:54 Jean-Michel Hautbois wrote:
->> <snip>
->>
->>>> +static int lmh0395_s_routing(struct v4l2_subdev *sd, u32 input, u32
->>>> output, +				u32 config)
->>>> +{
->>>> +	struct lmh0395_state *state = to_state(sd);
->>>> +	int err = 0;
->>>> +
->>>> +	if (state->output_type != output)
->>>> +		err = lmh0395_set_output_type(sd, output);
->>>> +
->>>> +	return err;
->>>>
->>>         if (state->output_type == output)
->>>                 return 0;
->>>         
->>>         return lmh0395_set_output_type(sd, output);
->>>
->>> You can then get rid of the err variable.
->>>
->>> I don't really like this implementation though, the output argument is
->>> device- specific, you thus require explicit knowledge of the LMH0395 in
->>> your bridge driver.
->>
->> Well, that's the way s_routing is defined. It's the bridge driver's job to
->> translate between V4L2 inputs/outputs and low-level routing information.
->>
->>> I'm not sure what the config argument is used for, but naively I would
->>> have
->>
->> config is normally not used. There are one or two drivers that need it for
->> additional routing configuration, but it's rare.
+On Mon, Nov 03, 2014 at 12:10:49PM +0000, One Thousand Gnomes wrote:
+> On Sun, 2 Nov 2014 09:33:01 -0800
+> Josh Triplett <josh@joshtriplett.org> wrote:
 > 
-> OK.
+> > On the vast majority of modern systems, no processes will use the
+> > userspsace IO syscalls, iopl and ioperm.  Add a new config option,
+> > CONFIG_X86_IOPORT, to support configuring them out of the kernel
+> > entirely.  Most current systems do not run programs using these
+> > syscalls, so X86_IOPORT does not depend on EXPERT, though it does still
+> > default to y.
 > 
->>> used it to tell whether to enable (1) or disable (0) the route from input
->>> to output. The input value should then always be 0, and the output value
->>> can be 1 or 2. Another option would be to use the new S_ROUTING userspace
->>> ioctl I've proposed in
->>> http://git.linuxtv.org/cgit.cgi/pinchartl/media.git/commit/?h=xilinx-wip&i
->>> d=fc094c354338861673464ed4b8fa198089fe7bf0.
->>>
->>> Hans, could you comment on that ?
->>
->> Well, first of all your proposed API isn't merged yet, or even posted on the
->> mailinglist, so it's a bit unfair to require someone else to use it :-)
-> 
-> It's not a requirement, just a proposal :-) I can send a patch series if 
-> there's enough interest for using that API.
-> 
->> Also, while I do agree with your proposed new API I am a lot less
->> enthusiastic about creating yet another duplicate pad op for an existing
->> audio/video routing op.
->>
->> The problem is that existing drivers are never updated for the new op and
->> you are stuck with competing internal APIs. Not nice at all.
-> 
-> Agreed, it's not nice, feel free to propose a better solution :-)
-> 
->> Bottom line is that this driver uses s_routing like any other driver
->> currently in the kernel, so I have no problem with that.
-> 
-> I do :-)
-> 
-> The bridge to subdev dependency is fine for PCI or USB devices where the 
-> hardware topology is known to the driver. It isn't for composite embedded 
-> devices, as we don't want to teach all bridges about all subdevs.
-> 
+> This isn't unreasonable but there are drivers with userspace helpers that
+> use iopl/ioperm type functionality where you should be doing a SELECT of
+> X86_IOPORT. The one that comes to mind is the uvesa driver. From a quick
+> scan it may these days be the only mainstream one that needs the select
+> adding.
 
-I agree, and your proposal is a nice solution. But whoever want to get this
-merged *will* have to take a good look at the existing g/s_routing ops and
-how they can be converted to the new one. I didn't block that when similar
-duplicate ops were added in the past and I am increasingly sorry I didn't do
-that. It's creating incompatible subdevs, where the whole point of the subdev
-API was to avoid that.
+Should kernel drivers really express dependencies that only their
+(current instances of) corresponding userspace components need?
+Something seems wrong about that.
 
-Regards,
+> Some X servers for legacy cards still use io port access.
 
-	Hans
+Sure, X servers using UMS rather than KMS seem like a common reason to
+need this.
+
+> There are also
+> a couple of other highly non-obvious userspace users that hang on for
+> some systems - eg some older servers DMI and error records can only by
+> read via a real mode BIOS call so management tools have no choice but to
+> go the lrmi/io path.
+
+As with any userspace interface, some callers may potentially still
+exist.  And this still has "default y", too, to avoid user surprises.
+
+> Still makes sense IMHO.
+> 
+> From a code perspective however you could define IO_BITMAP_LONGS to 0,
+> add an IO_BITMAP_SIZE (defined as LONGS + 1 or 0) and as far as I can see
+> gcc would then optimise out a lot of the code you are ifdeffing
+
+IO_BITMAP_LONGS already gets defined to (0/sizeof(long)).  And as far as
+I can tell, that would only work for init_tss_io, not anything else.
+Even then, that would only work with a zero-size array left around in
+tss_struct, which doesn't seem appropriate.  The remaining ifdefs wrap
+code that GCC could not constant-fold away, and making that code
+constant-foldable seems significantly more invasive than the ifdefs.
+
+- Josh Triplett
