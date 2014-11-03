@@ -1,114 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681AbaKCEuH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 23:50:07 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35066 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974AbaKCEuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 23:50:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,305,1413270000"; 
-   d="scan'208";a="625249110"
-Message-ID: <54570961.1080004@linux.intel.com>
-Date: Sun, 02 Nov 2014 20:49:37 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751758AbaKCEz5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 23:55:57 -0500
+Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:52615 "EHLO
+	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751128AbaKCEz4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 23:55:56 -0500
+From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>
+CC: Dept-Eng QLA2xxx Upstream <qla2xxx-upstream@qlogic.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: scsi: qla2xxx: Remove redundant declaration in
+ 'qla_gbl.h'
+Thread-Topic: [PATCH] drivers: scsi: qla2xxx: Remove redundant declaration
+ in 'qla_gbl.h'
+Thread-Index: AQHP9ciXzDxSSqDZGE6k65TOWg0d85xPO1iA
+Date: Mon, 3 Nov 2014 04:54:57 +0000
+Message-ID: <F5D084D6342F9B479C34599BB0A03E4D0128570B02@AVMB1.qlogic.org>
+References: <5454C804.50407@gmail.com>
+In-Reply-To: <5454C804.50407@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.4.5.141003
+x-originating-ip: [10.1.4.10]
+disclaimer: bypass
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <54655209CFD35D45977A89E2DECE266B@qlogic.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index()
- when using properties
-References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com>	<2740724.5yjNTKs1RY@vostro.rjw.lan> <20141101111143.86AC1C409FE@trevor.secretlab.ca>
-In-Reply-To: <20141101111143.86AC1C409FE@trevor.secretlab.ca>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7610 signatures=670571
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1411030053
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
 
 
-On 11/1/14 4:11, Grant Likely wrote:
-> On Tue, 28 Oct 2014 22:59:57 +0100
-> , "Rafael J. Wysocki" <rjw@rjwysocki.net>
->  wrote:
->> On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
->>> acpi_dev_add_driver_gpios() makes it possible to set up mapping between
->>> properties and ACPI GpioIo resources in a driver, so we can take index
->>> parameter in acpi_find_gpio() into use with _DSD device properties now.
->>>
->>> This index can be used to select a GPIO from a property with multiple
->>> GPIOs:
->>>
->>>   Package () {
->>>   	"data-gpios",
->>>   	Package () {
->>>   		\_SB.GPIO, 0, 0, 0,
->>>   		\_SB.GPIO, 1, 0, 0,
->>>   		\_SB.GPIO, 2, 0, 1,
->>>   	}
->>>   }
->>>
->>> In order to retrieve the last GPIO from a driver we can simply do:
->>>
->>>   desc = devm_gpiod_get_index(dev, "data", 2);
->>>
->>> and so on.
->>>
->>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>
->> Cool. :-)
->>
->> Any objections anyone?
+>Remove 2 redundant extern inline functions: qla8044_set_qsnt_ready() and
+>qla8044_need_reset_handler(). At present, within upstream next kernel
+>source code, they are only used within "drivers/scsi/qla2xxx/qla_nx2.c".
+>
+>The related error and warnings (with allmodconfig under tile):
+>
+>    CC [M]  drivers/scsi/qla2xxx/qla_nx2.o
+>  drivers/scsi/qla2xxx/qla_nx2.c:1633:1: error: static declaration of
+>'qla8044_need_reset_handler' follows non-static declaration
+>   qla8044_need_reset_handler(struct scsi_qla_host *vha)
+>   ^
+>  In file included from drivers/scsi/qla2xxx/qla_def.h:3706:0,
+>                   from drivers/scsi/qla2xxx/qla_nx2.c:11:
+>  drivers/scsi/qla2xxx/qla_gbl.h:756:20: note: previous declaration of
+>'qla8044_need_reset_handler' was here
+>   extern inline void qla8044_need_reset_handler(struct scsi_qla_host
+>*vha);
+>                      ^
+>  drivers/scsi/qla2xxx/qla_gbl.h:756:20: warning: inline function
+>'qla8044_need_reset_handler' declared but never defined
+>  make[3]: *** [drivers/scsi/qla2xxx/qla_nx2.o] Error 1
+>  make[2]: *** [drivers/scsi/qla2xxx] Error 2
+>  make[1]: *** [drivers/scsi] Error 2
+>  make: *** [drivers] Error 2
+>
+>    CC [M]  drivers/scsi/qla2xxx/qla_tmpl.o
+>  In file included from drivers/scsi/qla2xxx/qla_def.h:3706:0,
+>                   from drivers/scsi/qla2xxx/qla_tmpl.c:7:
+>  drivers/scsi/qla2xxx/qla_gbl.h:755:20: warning: inline function
+>'qla8044_set_qsnt_ready' declared but never defined
+>   extern inline void qla8044_set_qsnt_ready(struct scsi_qla_host *vha);
+>                    ^
+>
+>Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>---
+> drivers/scsi/qla2xxx/qla_gbl.h | 2 --
+> drivers/scsi/qla2xxx/qla_nx2.c | 2 +-
+> 2 files changed, 1 insertion(+), 3 deletions(-)
+>
+>diff --git a/drivers/scsi/qla2xxx/qla_gbl.h
+>b/drivers/scsi/qla2xxx/qla_gbl.h
+>index b1865a7..7686bfe 100644
+>--- a/drivers/scsi/qla2xxx/qla_gbl.h
+>+++ b/drivers/scsi/qla2xxx/qla_gbl.h
+>@@ -752,8 +752,6 @@ extern void qla8044_set_idc_dontreset(struct
+>scsi_qla_host *ha);
+> extern int qla8044_rd_direct(struct scsi_qla_host *vha, const uint32_t
+>crb_reg);
+> extern void qla8044_wr_direct(struct scsi_qla_host *vha,
+> 			      const uint32_t crb_reg, const uint32_t value);
+>-extern inline void qla8044_set_qsnt_ready(struct scsi_qla_host *vha);
+>-extern inline void qla8044_need_reset_handler(struct scsi_qla_host *vha);
+> extern int qla8044_device_state_handler(struct scsi_qla_host *vha);
+> extern void qla8044_clear_qsnt_ready(struct scsi_qla_host *vha);
+> extern void qla8044_clear_drv_active(struct qla_hw_data *);
+>diff --git a/drivers/scsi/qla2xxx/qla_nx2.c
+>b/drivers/scsi/qla2xxx/qla_nx2.c
+>index 24a8528..ed4d6b6 100644
+>--- a/drivers/scsi/qla2xxx/qla_nx2.c
+>+++ b/drivers/scsi/qla2xxx/qla_nx2.c
+>@@ -238,7 +238,7 @@ qla8044_rmw_crb_reg(struct scsi_qla_host *vha,
+> 	return;
+> }
 > 
-> Actually, I do. Not in the idea, but in the implementation. The way this gets encoded:
-> 
-> 	Package () {
-> 		\_SB.GPIO, 0, 0, 0,
-> 		\_SB.GPIO, 1, 0, 0,
-> 		\_SB.GPIO, 2, 0, 1,
-> 	}
-> 
-> Means that decoding each GPIO tuple requires the length of a tuple to be
-> fixed, or to implement a DT-like #gpio-cells. If it is fixed, then there
-> is no way to expand the binding later. Can this be done in the following
-> way instead?
-> 
-> 	Package () {
-> 		Package () { \_SB.GPIO, 0, 0, 0 },
-> 		Package () { \_SB.GPIO, 1, 0, 0 },
-> 		Package () { \_SB.GPIO, 2, 0, 1 },
-> 	}
-> 
-> This is one of the biggest pains in device tree. We don't have any way
-> to group tuples so it requires looking up stuff across the tree to
-> figure out how to parse each multi-item property.
-> 
-> I know that last year we talked about how bios vendors would get
-> complicated properties wrong, but I think there is little risk in this
-> case. If the property is encoded wrong, the driver simply won't work and
-> it is unlikely to get shipped before being fixed.
+>-inline void
+>+static inline void
+> qla8044_set_qsnt_ready(struct scsi_qla_host *vha)
+> {
+> 	uint32_t qsnt_state;
+>-- 
+>1.9.3
 
-This particular nesting of Packages is expressly prohibited by the
-Device Properties UUID for the reasons you mention.
-
-http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-
-2.1 Data Format Definition
-...
-" a Package consisting entirely of Integer, String, or Reference objects
-(and
-specifically not containing a nested Package)."
-
-That said, I am not fond of the many properties mixed in as a single
-Package. We discussed this at some length while this was being proposed,
-and this was deemed the lesser evil.
-
--- 
-Darren Hart
-Intel Open Source Technology Center
