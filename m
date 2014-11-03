@@ -1,161 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaKCLEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:04:51 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:40259 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657AbaKCLEk (ORCPT
+	id S1753256AbaKCLFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:05:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48322 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278AbaKCLE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 06:04:40 -0500
-Message-ID: <1415012678.18669.6.camel@BR9GV9YG.de.ibm.com>
-Subject: Re: [PATCH 1/1] s390/net: Deletion of unnecessary checks before two
- function calls
-From: Ursula Braun <ubraun@linux.vnet.ibm.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Ursula Braun <ursula.braun@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Date: Mon, 03 Nov 2014 12:04:38 +0100
-In-Reply-To: <5453C98C.90105@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
-	 <530A086E.8010901@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	 <530A72AA.3000601@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	 <530B5FB6.6010207@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402241710370.2074@hadrien>
-	 <530C5E18.1020800@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402251014170.2080@hadrien>
-	 <530CD2C4.4050903@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402251840450.7035@hadrien>
-	 <530CF8FF.8080600@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	 <530DD06F.4090703@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	 <5317A59D.4@users.sourceforge.net> <5453C98C.90105@users.sourceforge.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110311-0017-0000-0000-000001B0EBDE
+	Mon, 3 Nov 2014 06:04:56 -0500
+Date: Mon, 3 Nov 2014 02:58:40 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-e07cfbfaeec96c2e2f7ab81e8125891089e3065c@git.kernel.org>
+Cc: yinghai@kernel.org, tony.luck@intel.com, jiang.liu@linux.intel.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, bp@alien8.de,
+        benh@kernel.crashing.org, mingo@kernel.org, tglx@linutronix.de,
+        rjw@rjwysocki.net, gregkh@linuxfoundation.org, bhelgaas@google.com,
+        konrad.wilk@oracle.com, rdunlap@infradead.org, joro@8bytes.org
+Reply-To: hpa@zytor.com, jiang.liu@linux.intel.com, tony.luck@intel.com,
+        yinghai@kernel.org, rdunlap@infradead.org, joro@8bytes.org,
+        konrad.wilk@oracle.com, gregkh@linuxfoundation.org, rjw@rjwysocki.net,
+        bhelgaas@google.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, bp@alien8.de, tglx@linutronix.de
+In-Reply-To: <1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] PCI: Remove PCI ioapic driver
+Git-Commit-ID: e07cfbfaeec96c2e2f7ab81e8125891089e3065c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I agree with your proposed debug_unregister() changes, but not with your
-kfree_fsm() change.
+Commit-ID:  e07cfbfaeec96c2e2f7ab81e8125891089e3065c
+Gitweb:     http://git.kernel.org/tip/e07cfbfaeec96c2e2f7ab81e8125891089e3065c
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 13:21:38 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 3 Nov 2014 11:56:07 +0100
 
-Regards, Ursula Braun
+PCI: Remove PCI ioapic driver
 
-On Fri, 2014-10-31 at 18:40 +0100, SF Markus Elfring wrote:
-> The functions debug_unregister() and kfree_fsm() test whether their argument
-> is NULL and then return immediately. Thus the test around the call
-> is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->  drivers/s390/net/claw.c      |  6 ++----
->  drivers/s390/net/ctcm_main.c |  6 ++----
->  drivers/s390/net/lcs.c       |  6 ++----
->  drivers/s390/net/netiucv.c   | 12 ++++--------
->  4 files changed, 10 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/s390/net/claw.c b/drivers/s390/net/claw.c
-> index 213e54e..d609ca0 100644
-> --- a/drivers/s390/net/claw.c
-> +++ b/drivers/s390/net/claw.c
-> @@ -109,10 +109,8 @@ static debug_info_t *claw_dbf_trace;
->  static void
->  claw_unregister_debug_facility(void)
->  {
-> -	if (claw_dbf_setup)
-> -		debug_unregister(claw_dbf_setup);
-> -	if (claw_dbf_trace)
-> -		debug_unregister(claw_dbf_trace);
-> +	debug_unregister(claw_dbf_setup);
-> +	debug_unregister(claw_dbf_trace);
->  }
-> 
->  static int
-> diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
-> index e056dd4..34dc0f3 100644
-> --- a/drivers/s390/net/ctcm_main.c
-> +++ b/drivers/s390/net/ctcm_main.c
-> @@ -1074,8 +1074,7 @@ static void ctcm_free_netdevice(struct net_device *dev)
->  	if (priv) {
->  		grp = priv->mpcg;
->  		if (grp) {
-> -			if (grp->fsm)
-> -				kfree_fsm(grp->fsm);
-> +			kfree_fsm(grp->fsm);
->  			if (grp->xid_skb)
->  				dev_kfree_skb(grp->xid_skb);
->  			if (grp->rcvd_xid_skb)
-> @@ -1672,8 +1671,7 @@ static int ctcm_shutdown_device(struct ccwgroup_device *cgdev)
->  		ctcm_free_netdevice(dev);
->  	}
-> 
-> -	if (priv->fsm)
-> -		kfree_fsm(priv->fsm);
-> +	kfree_fsm(priv->fsm);
-> 
->  	ccw_device_set_offline(cgdev->cdev[1]);
->  	ccw_device_set_offline(cgdev->cdev[0]);
-> diff --git a/drivers/s390/net/lcs.c b/drivers/s390/net/lcs.c
-> index 0a7d87c..5dfa7dd 100644
-> --- a/drivers/s390/net/lcs.c
-> +++ b/drivers/s390/net/lcs.c
-> @@ -88,10 +88,8 @@ static debug_info_t *lcs_dbf_trace;
->  static void
->  lcs_unregister_debug_facility(void)
->  {
-> -	if (lcs_dbf_setup)
-> -		debug_unregister(lcs_dbf_setup);
-> -	if (lcs_dbf_trace)
-> -		debug_unregister(lcs_dbf_trace);
-> +	debug_unregister(lcs_dbf_setup);
-> +	debug_unregister(lcs_dbf_trace);
->  }
-> 
->  static int
-> diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
-> index 0a87809..bdcc3fe 100644
-> --- a/drivers/s390/net/netiucv.c
-> +++ b/drivers/s390/net/netiucv.c
-> @@ -487,12 +487,9 @@ DEFINE_PER_CPU(char[256], iucv_dbf_txt_buf);
-> 
->  static void iucv_unregister_dbf_views(void)
->  {
-> -	if (iucv_dbf_setup)
-> -		debug_unregister(iucv_dbf_setup);
-> -	if (iucv_dbf_data)
-> -		debug_unregister(iucv_dbf_data);
-> -	if (iucv_dbf_trace)
-> -		debug_unregister(iucv_dbf_trace);
-> +	debug_unregister(iucv_dbf_setup);
-> +	debug_unregister(iucv_dbf_data);
-> +	debug_unregister(iucv_dbf_trace);
->  }
->  static int iucv_register_dbf_views(void)
->  {
-> @@ -1975,8 +1972,7 @@ static void netiucv_free_netdevice(struct net_device *dev)
->  	if (privptr) {
->  		if (privptr->conn)
->  			netiucv_remove_connection(privptr->conn);
-> -		if (privptr->fsm)
-> -			kfree_fsm(privptr->fsm);
-> +		kfree_fsm(privptr->fsm);
->  		privptr->conn = NULL; privptr->fsm = NULL;
->  		/* privptr gets freed by free_netdev() */
->  	}
+To support IOAPIC hotplug on x86 and IA64 platforms, OS needs to figure
+out global interrupt source number(GSI) and IOAPIC enumeration ID
+through ACPI interfaces. So BIOS must implement an ACPI IOAPIC device
+with _GSB/_UID or _MAT method to support IOAPIC hotplug. OS also needs
+to figure out base physical address to access IOAPIC registers. OS may
+get the base physical address through PCI BARs if IOAPIC device is
+visible in PCI domain, otherwise OS may get the address by ACPI _CRS
+method if IOAPIC device is hidden from PCI domain by BIOS.
 
+When adding a PCI subtree, we need to add IOAPIC devices before enabling
+all other PCI devices because other PCI devices may use the IOAPIC to
+allocate PCI interrupts.
 
+So we plan to reimplement IOAPIC driver as an ACPI instead of PCI driver
+due to:
+1) hot-pluggable IOAPIC devices are always visible in ACPI domain,
+   but may or may not be visible in PCI domain.
+2) we could explicitly control the order between IOAPIC and other PCI
+   devices.
+
+We also have another choice to use a PCI driver to manage IOAPIC device
+if it's visible in PCI domain and use an ACPI driver if it's only
+visible in ACPI domain. But this solution is a little complex.
+
+It shouldn't cause serious backward compatibility issues because:
+1) IOAPIC hotplug is never supported on x86 yet because it hasn't
+   implemented the required acpi_register_ioapic() and
+   acpi_unregister_ioapic().
+2) Currently only ACPI based IOAPIC hotplug is possible on x86 and
+   IA64, we don't know other specifications and interfaces to support
+   IOAPIC hotplug yet.
+3) We will reimplement an ACPI IOAPIC driver to support IOAPIC hotplug.
+
+This change also helps to get rid of the false alarm on all current
+Linux distributions:
+[    6.952497] ioapic: probe of 0000:00:05.4 failed with error -22
+[    6.959542] ioapic: probe of 0000:80:05.4 failed with error -22
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/pci/Kconfig  |   7 ---
+ drivers/pci/Makefile |   2 -
+ drivers/pci/ioapic.c | 121 ---------------------------------------------------
+ 3 files changed, 130 deletions(-)
+
+diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+index 893503f..39866d1 100644
+--- a/drivers/pci/Kconfig
++++ b/drivers/pci/Kconfig
+@@ -104,13 +104,6 @@ config PCI_PASID
+ 
+ 	  If unsure, say N.
+ 
+-config PCI_IOAPIC
+-	bool "PCI IO-APIC hotplug support" if X86
+-	depends on PCI
+-	depends on ACPI
+-	depends on X86_IO_APIC
+-	default !X86
+-
+ config PCI_LABEL
+ 	def_bool y if (DMI || ACPI)
+ 	select NLS
+diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+index e04fe2d..73e4af4 100644
+--- a/drivers/pci/Makefile
++++ b/drivers/pci/Makefile
+@@ -13,8 +13,6 @@ obj-$(CONFIG_PCI_QUIRKS) += quirks.o
+ # Build PCI Express stuff if needed
+ obj-$(CONFIG_PCIEPORTBUS) += pcie/
+ 
+-obj-$(CONFIG_PCI_IOAPIC) += ioapic.o
+-
+ # Build the PCI Hotplug drivers if we were asked to
+ obj-$(CONFIG_HOTPLUG_PCI) += hotplug/
+ ifdef CONFIG_HOTPLUG_PCI
+diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+deleted file mode 100644
+index f6219d3..0000000
+--- a/drivers/pci/ioapic.c
++++ /dev/null
+@@ -1,121 +0,0 @@
+-/*
+- * IOAPIC/IOxAPIC/IOSAPIC driver
+- *
+- * Copyright (C) 2009 Fujitsu Limited.
+- * (c) Copyright 2009 Hewlett-Packard Development Company, L.P.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-/*
+- * This driver manages PCI I/O APICs added by hotplug after boot.  We try to
+- * claim all I/O APIC PCI devices, but those present at boot were registered
+- * when we parsed the ACPI MADT, so we'll fail when we try to re-register
+- * them.
+- */
+-
+-#include <linux/pci.h>
+-#include <linux/module.h>
+-#include <linux/acpi.h>
+-#include <linux/slab.h>
+-
+-struct ioapic {
+-	acpi_handle	handle;
+-	u32		gsi_base;
+-};
+-
+-static int ioapic_probe(struct pci_dev *dev, const struct pci_device_id *ent)
+-{
+-	acpi_handle handle;
+-	acpi_status status;
+-	unsigned long long gsb;
+-	struct ioapic *ioapic;
+-	int ret;
+-	char *type;
+-	struct resource *res;
+-
+-	handle = ACPI_HANDLE(&dev->dev);
+-	if (!handle)
+-		return -EINVAL;
+-
+-	status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsb);
+-	if (ACPI_FAILURE(status))
+-		return -EINVAL;
+-
+-	/*
+-	 * The previous code in acpiphp evaluated _MAT if _GSB failed, but
+-	 * ACPI spec 4.0 sec 6.2.2 requires _GSB for hot-pluggable I/O APICs.
+-	 */
+-
+-	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
+-	if (!ioapic)
+-		return -ENOMEM;
+-
+-	ioapic->handle = handle;
+-	ioapic->gsi_base = (u32) gsb;
+-
+-	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
+-		type = "IOAPIC";
+-	else
+-		type = "IOxAPIC";
+-
+-	ret = pci_enable_device(dev);
+-	if (ret < 0)
+-		goto exit_free;
+-
+-	pci_set_master(dev);
+-
+-	if (pci_request_region(dev, 0, type))
+-		goto exit_disable;
+-
+-	res = &dev->resource[0];
+-	if (acpi_register_ioapic(ioapic->handle, res->start, ioapic->gsi_base))
+-		goto exit_release;
+-
+-	pci_set_drvdata(dev, ioapic);
+-	dev_info(&dev->dev, "%s at %pR, GSI %u\n", type, res, ioapic->gsi_base);
+-	return 0;
+-
+-exit_release:
+-	pci_release_region(dev, 0);
+-exit_disable:
+-	pci_disable_device(dev);
+-exit_free:
+-	kfree(ioapic);
+-	return -ENODEV;
+-}
+-
+-static void ioapic_remove(struct pci_dev *dev)
+-{
+-	struct ioapic *ioapic = pci_get_drvdata(dev);
+-
+-	acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
+-	pci_release_region(dev, 0);
+-	pci_disable_device(dev);
+-	kfree(ioapic);
+-}
+-
+-
+-static const struct pci_device_id ioapic_devices[] = {
+-	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOAPIC, ~0) },
+-	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOXAPIC, ~0) },
+-	{ }
+-};
+-MODULE_DEVICE_TABLE(pci, ioapic_devices);
+-
+-static struct pci_driver ioapic_driver = {
+-	.name		= "ioapic",
+-	.id_table	= ioapic_devices,
+-	.probe		= ioapic_probe,
+-	.remove		= ioapic_remove,
+-};
+-
+-static int __init ioapic_init(void)
+-{
+-	return pci_register_driver(&ioapic_driver);
+-}
+-module_init(ioapic_init);
+-
+-MODULE_LICENSE("GPL");
