@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582AbaKCFpD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 00:45:03 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:40676 "EHLO
+	id S1751650AbaKCFpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 00:45:07 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:59319 "EHLO
 	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaKCFop (ORCPT
+	with ESMTP id S1750905AbaKCFop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Nov 2014 00:44:45 -0500
-Subject: [PATCH 1/3] tun: Modify const aio_read iovec per do_sock_read
+Subject: [PATCH 2/3] macvtap: Modify const aio_read iovec per do_sock_read
 References: <20141103053751.GA27845@gondor.apana.org.au>
 To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
         netdev@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Benjamin LaHaise <bcrl@kvack.org>
-Message-Id: <E1XlARR-0007K9-MK@gondolin.me.apana.org.au>
+Message-Id: <E1XlARS-0007KK-2J@gondolin.me.apana.org.au>
 From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Mon, 03 Nov 2014 13:44:37 +0800
+Date: Mon, 03 Nov 2014 13:44:38 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -43,67 +43,43 @@ least allow us to kill skb_copy_datagram_const_iovec.
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 ---
 
- drivers/net/tun.c |   28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
+ drivers/net/macvtap.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 9dd3746..657f811 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1230,11 +1230,11 @@ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
- static ssize_t tun_put_user(struct tun_struct *tun,
- 			    struct tun_file *tfile,
- 			    struct sk_buff *skb,
--			    const struct iovec *iv, int len)
-+			    struct iovec *iv, int len)
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 6f226de..d830e25 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -776,12 +776,12 @@ static ssize_t macvtap_aio_write(struct kiocb *iocb, const struct iovec *iv,
+ /* Put packet to the user space buffer */
+ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 				const struct sk_buff *skb,
+-				const struct iovec *iv, int len)
++				struct iovec *iv, int len)
  {
- 	struct tun_pi pi = { 0, skb->protocol };
- 	ssize_t total = 0;
--	int vlan_offset = 0, copied;
-+	int vlan_offset = 0;
- 	int vlan_hlen = 0;
- 	int vnet_hdr_sz = 0;
+ 	int ret;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+-	int copied, total;
++	int total;
  
-@@ -1244,16 +1244,18 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 	if (tun->flags & TUN_VNET_HDR)
- 		vnet_hdr_sz = tun->vnet_hdr_sz;
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		struct virtio_net_hdr vnet_hdr;
+@@ -791,10 +791,10 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
  
-+	total = skb->len + vlan_hlen + vnet_hdr_sz;
-+
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) < 0)
- 			return -EINVAL;
+ 		macvtap_skb_to_vnet_hdr(skb, &vnet_hdr);
  
--		if (len < skb->len + vlan_hlen + vnet_hdr_sz) {
-+		if (len < total) {
- 			/* Packet will be striped */
- 			pi.flags |= TUN_PKT_STRIP;
- 		}
- 
--		if (memcpy_toiovecend(iv, (void *) &pi, 0, sizeof(pi)))
-+		if (memcpy_toiovec(iv, (void *)&pi, sizeof(pi)))
+-		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
++		if (memcpy_toiovec(iv, (void *)&vnet_hdr, sizeof(vnet_hdr)))
  			return -EFAULT;
- 		total += sizeof(pi);
  	}
-@@ -1299,15 +1301,11 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
- 		} /* else everything is zero */
+-	total = copied = vnet_hdr_len;
++	total = vnet_hdr_len;
+ 	total += skb->len;
  
--		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
--					       sizeof(gso))))
-+		if (unlikely(memcpy_toiovec(iv, (void *)&gso, sizeof(gso))))
- 			return -EFAULT;
--		total += vnet_hdr_sz;
- 	}
- 
--	copied = total;
- 	len = min_t(int, skb->len + vlan_hlen, len);
--	total += skb->len + vlan_hlen;
- 	if (vlan_hlen) {
- 		int copy, ret;
- 		struct {
-@@ -1321,21 +1319,19 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+ 	if (!vlan_tx_tag_present(skb))
+@@ -813,28 +813,26 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		total += VLAN_HLEN;
  
  		copy = min_t(int, vlan_offset, len);
 -		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
@@ -122,26 +98,26 @@ index 9dd3746..657f811 100644
  			goto done;
  	}
  
--	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
-+	skb_copy_datagram_iovec(skb, vlan_offset, iv, len);
+-	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
++	ret = skb_copy_datagram_iovec(skb, vlan_offset, iv, len);
  
  done:
- 	tun->dev->stats.tx_packets++;
-@@ -1345,7 +1341,7 @@ done:
+ 	return ret ? ret : total;
  }
  
- static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
--			   const struct iovec *iv, ssize_t len, int noblock)
-+			   struct iovec *iv, ssize_t len, int noblock)
+ static ssize_t macvtap_do_read(struct macvtap_queue *q,
+-			       const struct iovec *iv, unsigned long len,
++			       struct iovec *iv, unsigned long len,
+ 			       int noblock)
  {
- 	struct sk_buff *skb;
- 	ssize_t ret = 0;
-@@ -1387,7 +1383,7 @@ static ssize_t tun_chr_aio_read(struct kiocb *iocb, const struct iovec *iv,
+ 	DEFINE_WAIT(wait);
+@@ -884,7 +882,8 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
  		goto out;
  	}
  
--	ret = tun_do_read(tun, tfile, iv, len,
-+	ret = tun_do_read(tun, tfile, (struct iovec *)iv, len,
- 			  file->f_flags & O_NONBLOCK);
+-	ret = macvtap_do_read(q, iv, len, file->f_flags & O_NONBLOCK);
++	ret = macvtap_do_read(q, (struct iovec *)iv, len,
++			      file->f_flags & O_NONBLOCK);
  	ret = min_t(ssize_t, ret, len);
  	if (ret > 0)
+ 		iocb->ki_pos = ret;
