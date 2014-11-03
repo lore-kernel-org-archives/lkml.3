@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028AbaKCWMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 17:12:07 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:33553 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591AbaKCWME convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 17:12:04 -0500
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: "Kani, Toshimitsu" <toshi.kani@hp.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jgross@suse.com" <jgross@suse.com>,
-        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
-        "luto@amacapital.net" <luto@amacapital.net>,
-        "hmh@hmh.eng.br" <hmh@hmh.eng.br>,
-        "yigal@plexistor.com" <yigal@plexistor.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: RE: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
-Thread-Topic: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
-Thread-Index: AQHP8juoXLRxtX3zhkeUJSzf2kRDYZxPgA5Q
-Date: Mon, 3 Nov 2014 22:10:39 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B4029593578ED@G9W0745.americas.hpqcorp.net>
-References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
- <1414450545-14028-5-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1414450545-14028-5-git-send-email-toshi.kani@hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752082AbaKCWSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 17:18:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52413 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810AbaKCWSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 17:18:05 -0500
+Message-ID: <5457FEF8.3050603@zytor.com>
+Date: Mon, 03 Nov 2014 14:17:28 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>, Jan Beulich <jbeulich@suse.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sebastian Lackner <sebastian@fds-team.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, Anish Bhatt <anish@chelsio.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>
+CC: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/asm] sched/x86_64: Don't save flags on context switch
+References: <bf6fb790787eb95b922157838f52712c25dda157.1412187233.git.luto@amacapital.net> <tip-2c7577a7583747c9b71f26dced7f696b739da745@git.kernel.org> <CALCETrWM2wVynp1rrip9AWtNYDzjC4M8JqKR82ew5dpyrTWMgA@mail.gmail.com>
+In-Reply-To: <CALCETrWM2wVynp1rrip9AWtNYDzjC4M8JqKR82ew5dpyrTWMgA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Kani, Toshimitsu
-> Sent: Monday, 27 October, 2014 5:56 PM
-> To: hpa@zytor.com; tglx@linutronix.de; mingo@redhat.com; akpm@linux-
-> foundation.org; arnd@arndb.de
-> Cc: linux-mm@kvack.org; linux-kernel@vger.kernel.org;
-> jgross@suse.com; stefan.bader@canonical.com; luto@amacapital.net;
-> hmh@hmh.eng.br; yigal@plexistor.com; konrad.wilk@oracle.com; Kani,
-> Toshimitsu
-> Subject: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for
-> WT
+On 11/03/2014 01:11 PM, Andy Lutomirski wrote:
+> On Tue, Oct 28, 2014 at 4:14 AM, tip-bot for Andy Lutomirski
+> <tipbot@zytor.com> wrote:
+>> Commit-ID:  2c7577a7583747c9b71f26dced7f696b739da745
+>> Gitweb:     http://git.kernel.org/tip/2c7577a7583747c9b71f26dced7f696b739da745
+>> Author:     Andy Lutomirski <luto@amacapital.net>
+>> AuthorDate: Wed, 1 Oct 2014 11:28:25 -0700
+>> Committer:  Ingo Molnar <mingo@kernel.org>
+>> CommitDate: Tue, 28 Oct 2014 11:11:30 +0100
+>>
+>> sched/x86_64: Don't save flags on context switch
+>>
+>> Now that the kernel always runs with clean flags (in particular,
+>> NT is clear), there is no need to save and restore flags on
+>> every context switch.
 > 
-> This patch adds pgprot_writethrough() for setting WT to a given
-> pgprot_t.
+> Just to make myself a little more comfortable with this...
 > 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-...
-> diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-> index a214f5a..a0264d3 100644
-> --- a/arch/x86/mm/pat.c
-> +++ b/arch/x86/mm/pat.c
-> @@ -896,6 +896,16 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
->  }
->  EXPORT_SYMBOL_GPL(pgprot_writecombine);
+> There is one potentially relevant flag: AC.  I think this is still OK.
+> If we schedule with STAC set, then we've already screwed up, I think.
+> Even preempt schedules from interrupt context, so if we schedule due
+> to preemption or #PF in the middle of uaccess, AC should be saved and
+> cleared by whatever interrupt caused the reschedule, right?
 > 
-> +pgprot_t pgprot_writethrough(pgprot_t prot)
-> +{
-> +	if (pat_enabled)
-> +		return __pgprot(pgprot_val(prot) |
-> +				cachemode2protval(_PAGE_CACHE_MODE_WT));
-> +	else
-> +		return pgprot_noncached(prot);
-> +}
-> +EXPORT_SYMBOL_GPL(pgprot_writethrough);
-...
+> And do we ever have TF set during a context switch?  I hope not.
+> 
+> Also, what's with 'jmp exit_intr' at the end of retint_kernel?  Why
+> isn't that 'jmp retint_kernel'?
+> 
 
-Would you be willing to use EXPORT_SYMBOL for the new 
-pgprot_writethrough function to provide more flexibility
-for modules to utilize the new feature?  In x86/mm, 18 of 60
-current exports are GPL and 42 are not GPL.
+AC is saved by interrupts and cleared by IRET.  We execute CLAC in all
+the interrupt entry paths.
 
----
-Rob Elliott    HP Server Storage
+	-hpa
 
 
