@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657AbaKCSCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:02:22 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58909 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678AbaKCSCO (ORCPT
+	id S1753954AbaKCSC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:02:27 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:34370 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678AbaKCSCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:02:14 -0500
-Date: Mon, 3 Nov 2014 10:01:50 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Felipe Balbi <balbi@ti.com>
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, nsekhar@ti.com,
-        grant.likely@linaro.org, George Cherian <george.cherian@ti.com>
-Subject: Re: [PATCH 1/4] extcon: gpio: Convert the driver to use gpio desc
- API's
-Message-ID: <20141103180150.GA10164@roeck-us.net>
-References: <1415032350-8459-1-git-send-email-balbi@ti.com>
- <1415032350-8459-2-git-send-email-balbi@ti.com>
+	Mon, 3 Nov 2014 13:02:23 -0500
+Date: Mon, 3 Nov 2014 18:02:18 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 06/11] wm8350-core: Fix probable mask then right shift
+ defect
+Message-ID: <20141103180218.GB13359@x1>
+References: <cover.1414387334.git.joe@perches.com>
+ <9151d02031748dbc1637c1cc9110214617d9bcf1.1414387334.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1415032350-8459-2-git-send-email-balbi@ti.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <9151d02031748dbc1637c1cc9110214617d9bcf1.1414387334.git.joe@perches.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.5457C325.01AA,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 10:32:27AM -0600, Felipe Balbi wrote:
-> From: George Cherian <george.cherian@ti.com>
+On Sun, 26 Oct 2014, Joe Perches wrote:
+
+> Precedence of & and >> is not the same and is not left to right.
+> shift has higher precedence and should be done after the mask.
 > 
-> Convert the driver to use gpiod_* API's.
+> Add parentheses around the mask.
 > 
-> Reviewed-by: Roger Quadros <rogerq@ti.com>
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
+>  drivers/mfd/wm8350-core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-I think it might be useful and appropriate to explain that and why
-you remove support for active-low pins, instead of hiding it in a
-seemingly unrelated patch.
+Applied with Charles' Ack.
 
-Also, since you don't use the platform data flag anymore, you might
-as well remove it to give out-of-tree users a fair warning. Overall,
-it might be easier to just revert the patch introducing it (5bfbdc9caa7)
-before converting extcon to gpiod.
+> diff --git a/drivers/mfd/wm8350-core.c b/drivers/mfd/wm8350-core.c
+> index 4ab527f..f5124a8 100644
+> --- a/drivers/mfd/wm8350-core.c
+> +++ b/drivers/mfd/wm8350-core.c
+> @@ -308,7 +308,7 @@ int wm8350_device_init(struct wm8350 *wm8350, int irq,
+>  		goto err;
+>  	}
+>  
+> -	mode = id2 & WM8350_CONF_STS_MASK >> 10;
+> +	mode = (id2 & WM8350_CONF_STS_MASK) >> 10;
+>  	cust_id = id2 & WM8350_CUST_ID_MASK;
+>  	chip_rev = (id2 & WM8350_CHIP_REV_MASK) >> 12;
+>  	dev_info(wm8350->dev,
 
-I am just glad that we stopped using extcon for other reasons ;-)
-
-Guenter
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
