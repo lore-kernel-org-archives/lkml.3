@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaKCJde (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:33:34 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:37120 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaKCJd3 (ORCPT
+	id S1751895AbaKCJd6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:33:58 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:56944 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484AbaKCJd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:33:29 -0500
+	Mon, 3 Nov 2014 04:33:27 -0500
 From: Rostislav Lisovy <lisovy@gmail.com>
 X-Google-Original-From: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
 To: Johannes Berg <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
         Emmanuel Thierry <emmanuel.thierry@yogoko.fr>,
         laszlo.virag@commsignia.com, lisovy@gmail.com,
         Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: [PATCH 2/2] mac80211: 802.11p OCB mode support
-Date: Mon,  3 Nov 2014 10:33:19 +0100
-Message-Id: <1415007199-31506-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
+Subject: [PATCH 1/2] cfg80211: mac80211: 802.11p OCB mode handling
+Date: Mon,  3 Nov 2014 10:33:18 +0100
+Message-Id: <1415007199-31506-2-git-send-email-rostislav.lisovy@fel.cvut.cz>
 X-Mailer: git-send-email 2.0.0.rc4
 In-Reply-To: <1415007199-31506-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
 References: <1415007199-31506-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
@@ -26,309 +26,335 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds 802.11p OCB (Outside the Context of a BSS) mode
-support.
+This patch adds new iface type (NL80211_IFTYPE_OCB) representing
+the OCB (Outside the Context of a BSS) mode.
+When establishing a connection to the network a cfg80211_join_ocb
+function is called (particular nl80211_command is added as well).
+A mandatory parameters during the ocb_join operation are 'center
+frequency' and 'channel width (5/10 MHz)'.
 
-When communicating in OCB mode a mandatory wildcard BSSID
-(48 '1' bits) is used.
-
-The EDCA parameters handling function was changed to support
-802.11p specific values.
-
-The insertion of a newly discovered STAs is done in the similar way
-as in the IBSS mode -- through the deferred insertion.
-
-The OCB mode uses a periodic 'housekeeping task' for expiration of
-disconnected STAs (in the similar manner as in the MESH mode).
-
-New Kconfig option for verbose OCB debugging outputs is added.
+Changes done in mac80211 are minimal possible required to avoid
+many warnings (warning: enumeration value 'NL80211_IFTYPE_OCB'
+not handled in switch) during compilation. Full functionality
+(where needed) is added in the following patch.
 
 Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
 ---
- include/net/mac80211.h     |   2 +
- net/mac80211/Kconfig       |  11 ++
- net/mac80211/Makefile      |   3 +-
- net/mac80211/cfg.c         |  13 +++
- net/mac80211/chan.c        |   1 +
- net/mac80211/debug.h       |  10 ++
- net/mac80211/driver-ops.h  |   3 +-
- net/mac80211/ieee80211_i.h |  29 ++++++
- net/mac80211/iface.c       |  20 +++-
- net/mac80211/ocb.c         | 250 +++++++++++++++++++++++++++++++++++++++++++++
- net/mac80211/rx.c          |  35 +++++++
- net/mac80211/tx.c          |  15 +++
- net/mac80211/util.c        |  30 ++++--
- net/mac80211/wme.c         |   4 +
- 14 files changed, 417 insertions(+), 9 deletions(-)
- create mode 100644 net/mac80211/ocb.c
+ include/net/cfg80211.h       | 14 +++++++
+ include/uapi/linux/nl80211.h | 11 ++++++
+ net/mac80211/cfg.c           |  1 +
+ net/mac80211/chan.c          |  2 +
+ net/mac80211/iface.c         |  5 +++
+ net/mac80211/util.c          |  3 ++
+ net/wireless/Makefile        |  2 +-
+ net/wireless/chan.c          |  8 ++++
+ net/wireless/core.c          |  3 ++
+ net/wireless/core.h          | 12 ++++++
+ net/wireless/nl80211.c       | 39 ++++++++++++++++++++
+ net/wireless/ocb.c           | 88 ++++++++++++++++++++++++++++++++++++++++++++
+ net/wireless/rdev-ops.h      | 21 +++++++++++
+ net/wireless/trace.h         | 21 +++++++++++
+ net/wireless/util.c          |  5 ++-
+ 15 files changed, 233 insertions(+), 2 deletions(-)
+ create mode 100644 net/wireless/ocb.c
 
-diff --git a/include/net/mac80211.h b/include/net/mac80211.h
-index 1614b2f..34ab261 100644
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -263,6 +263,7 @@ struct ieee80211_vif_chanctx_switch {
-  * @BSS_CHANGED_BANDWIDTH: The bandwidth used by this interface changed,
-  *	note that this is only called when it changes after the channel
-  *	context had been assigned.
-+ * @BSS_CHANGED_OCB: OCB join status changed
-  */
- enum ieee80211_bss_change {
- 	BSS_CHANGED_ASSOC		= 1<<0,
-@@ -287,6 +288,7 @@ enum ieee80211_bss_change {
- 	BSS_CHANGED_P2P_PS		= 1<<19,
- 	BSS_CHANGED_BEACON_INFO		= 1<<20,
- 	BSS_CHANGED_BANDWIDTH		= 1<<21,
-+	BSS_CHANGED_OCB                 = 1<<22,
- 
- 	/* when adding here, make sure to change ieee80211_reconfig */
+diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
+index f67948e..490b3d8 100644
+--- a/include/net/cfg80211.h
++++ b/include/net/cfg80211.h
+@@ -1359,6 +1359,16 @@ struct mesh_setup {
  };
-diff --git a/net/mac80211/Kconfig b/net/mac80211/Kconfig
-index 67cf812..75cc680 100644
---- a/net/mac80211/Kconfig
-+++ b/net/mac80211/Kconfig
-@@ -176,6 +176,17 @@ config MAC80211_HT_DEBUG
  
- 	  Do not select this option.
- 
-+config MAC80211_OCB_DEBUG
-+	bool "Verbose OCB debugging"
-+	depends on MAC80211_DEBUG_MENU
-+	---help---
-+	  Selecting this option causes mac80211 to print out
-+	  very verbose OCB debugging messages. It should not
-+	  be selected on production systems as those messages
-+	  are remotely triggerable.
+ /**
++ * struct ocb_setup - 802.11p OCB mode setup configuration
++ * @chandef: defines the channel to use
++ *
++ * These parameters are fixed when connecting to the network
++ */
++struct ocb_setup {
++	struct cfg80211_chan_def chandef;
++};
 +
-+	  Do not select this option.
-+
- config MAC80211_IBSS_DEBUG
- 	bool "Verbose IBSS debugging"
- 	depends on MAC80211_DEBUG_MENU
-diff --git a/net/mac80211/Makefile b/net/mac80211/Makefile
-index 7273d27..e53671b 100644
---- a/net/mac80211/Makefile
-+++ b/net/mac80211/Makefile
-@@ -27,7 +27,8 @@ mac80211-y := \
- 	event.o \
- 	chan.o \
- 	trace.o mlme.o \
--	tdls.o
-+	tdls.o \
-+	ocb.o
++/**
+  * struct ieee80211_txq_params - TX queue parameters
+  * @ac: AC identifier
+  * @txop: Maximum burst time in units of 32 usecs, 0 meaning disabled
+@@ -2433,6 +2443,10 @@ struct cfg80211_ops {
+ 			     const struct mesh_setup *setup);
+ 	int	(*leave_mesh)(struct wiphy *wiphy, struct net_device *dev);
  
- mac80211-$(CONFIG_MAC80211_LEDS) += led.o
- mac80211-$(CONFIG_MAC80211_DEBUGFS) += \
++	int	(*join_ocb)(struct wiphy *wiphy, struct net_device *dev,
++			    struct ocb_setup *setup);
++	int	(*leave_ocb)(struct wiphy *wiphy, struct net_device *dev);
++
+ 	int	(*change_bss)(struct wiphy *wiphy, struct net_device *dev,
+ 			      struct bss_parameters *params);
+ 
+diff --git a/include/uapi/linux/nl80211.h b/include/uapi/linux/nl80211.h
+index f7daae5..9b3025e 100644
+--- a/include/uapi/linux/nl80211.h
++++ b/include/uapi/linux/nl80211.h
+@@ -746,6 +746,11 @@
+  *	destination %NL80211_ATTR_MAC on the interface identified by
+  *	%NL80211_ATTR_IFINDEX.
+  *
++ * @NL80211_CMD_JOIN_OCB: Join the OCB network. The center frequency and
++ *	bandwidth of a channel must be given.
++ * @NL80211_CMD_LEAVE_OCB: Leave the OCB network -- no special arguments, the
++ *	network is determined by the network interface.
++ *
+  * @NL80211_CMD_MAX: highest used command number
+  * @__NL80211_CMD_AFTER_LAST: internal use
+  */
+@@ -922,6 +927,9 @@ enum nl80211_commands {
+ 
+ 	NL80211_CMD_GET_MPP,
+ 
++	NL80211_CMD_JOIN_OCB,
++	NL80211_CMD_LEAVE_OCB,
++
+ 	/* add new commands above here */
+ 
+ 	/* used to define NL80211_CMD_MAX below */
+@@ -2074,6 +2082,8 @@ enum nl80211_attrs {
+  *	and therefore can't be created in the normal ways, use the
+  *	%NL80211_CMD_START_P2P_DEVICE and %NL80211_CMD_STOP_P2P_DEVICE
+  *	commands to create and destroy one
++ * @NL80211_IF_TYPE_OCB: Outside Context of a BSS
++ *	This mode corresponds to the MIB variable dot11OCBActivated=true
+  * @NL80211_IFTYPE_MAX: highest interface type number currently defined
+  * @NUM_NL80211_IFTYPES: number of defined interface types
+  *
+@@ -2093,6 +2103,7 @@ enum nl80211_iftype {
+ 	NL80211_IFTYPE_P2P_CLIENT,
+ 	NL80211_IFTYPE_P2P_GO,
+ 	NL80211_IFTYPE_P2P_DEVICE,
++	NL80211_IFTYPE_OCB,
+ 
+ 	/* keep last */
+ 	NUM_NL80211_IFTYPES,
 diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-index 643a10a..57a38fc 100644
+index fbcc209..643a10a 100644
 --- a/net/mac80211/cfg.c
 +++ b/net/mac80211/cfg.c
-@@ -2019,6 +2019,17 @@ static int ieee80211_leave_ibss(struct wiphy *wiphy, struct net_device *dev)
- 	return ieee80211_ibss_leave(IEEE80211_DEV_TO_SUB_IF(dev));
- }
- 
-+static int ieee80211_join_ocb(struct wiphy *wiphy, struct net_device *dev,
-+			      struct ocb_setup *setup)
-+{
-+	return ieee80211_ocb_join(IEEE80211_DEV_TO_SUB_IF(dev), setup);
-+}
-+
-+static int ieee80211_leave_ocb(struct wiphy *wiphy, struct net_device *dev)
-+{
-+	return ieee80211_ocb_leave(IEEE80211_DEV_TO_SUB_IF(dev));
-+}
-+
- static int ieee80211_set_mcast_rate(struct wiphy *wiphy, struct net_device *dev,
- 				    int rate[IEEE80211_NUM_BANDS])
- {
-@@ -3690,6 +3701,8 @@ const struct cfg80211_ops mac80211_config_ops = {
- 	.join_mesh = ieee80211_join_mesh,
- 	.leave_mesh = ieee80211_leave_mesh,
- #endif
-+	.join_ocb = ieee80211_join_ocb,
-+	.leave_ocb = ieee80211_leave_ocb,
- 	.change_bss = ieee80211_change_bss,
- 	.set_txq_params = ieee80211_set_txq_params,
- 	.set_monitor_channel = ieee80211_set_monitor_channel,
+@@ -230,6 +230,7 @@ static int ieee80211_add_key(struct wiphy *wiphy, struct net_device *dev,
+ 	case NUM_NL80211_IFTYPES:
+ 	case NL80211_IFTYPE_P2P_CLIENT:
+ 	case NL80211_IFTYPE_P2P_GO:
++	case NL80211_IFTYPE_OCB:
+ 		/* shouldn't happen */
+ 		WARN_ON_ONCE(1);
+ 		break;
 diff --git a/net/mac80211/chan.c b/net/mac80211/chan.c
-index ff1f877..c7c5142 100644
+index ee71bb6..ff1f877 100644
 --- a/net/mac80211/chan.c
 +++ b/net/mac80211/chan.c
-@@ -675,6 +675,7 @@ void ieee80211_recalc_smps_chanctx(struct ieee80211_local *local,
+@@ -270,6 +270,7 @@ ieee80211_get_chanctx_max_required_bw(struct ieee80211_local *local,
  		case NL80211_IFTYPE_ADHOC:
  		case NL80211_IFTYPE_WDS:
  		case NL80211_IFTYPE_MESH_POINT:
 +		case NL80211_IFTYPE_OCB:
+ 			width = vif->bss_conf.chandef.width;
  			break;
- 		default:
- 			WARN_ON_ONCE(1);
-diff --git a/net/mac80211/debug.h b/net/mac80211/debug.h
-index 493d680..1956b31 100644
---- a/net/mac80211/debug.h
-+++ b/net/mac80211/debug.h
-@@ -2,6 +2,12 @@
- #define __MAC80211_DEBUG_H
- #include <net/cfg80211.h>
- 
-+#ifdef CONFIG_MAC80211_OCB_DEBUG
-+#define MAC80211_OCB_DEBUG 1
-+#else
-+#define MAC80211_OCB_DEBUG 0
-+#endif
-+
- #ifdef CONFIG_MAC80211_IBSS_DEBUG
- #define MAC80211_IBSS_DEBUG 1
- #else
-@@ -131,6 +137,10 @@ do {									\
- 	_sdata_dbg(MAC80211_HT_DEBUG && net_ratelimit(),		\
- 		   sdata, fmt, ##__VA_ARGS__)
- 
-+#define ocb_dbg(sdata, fmt, ...)					\
-+	_sdata_dbg(MAC80211_OCB_DEBUG,					\
-+		   sdata, fmt, ##__VA_ARGS__)
-+
- #define ibss_dbg(sdata, fmt, ...)					\
- 	_sdata_dbg(MAC80211_IBSS_DEBUG,					\
- 		   sdata, fmt, ##__VA_ARGS__)
-diff --git a/net/mac80211/driver-ops.h b/net/mac80211/driver-ops.h
-index 3df28e0..4bb96bb 100644
---- a/net/mac80211/driver-ops.h
-+++ b/net/mac80211/driver-ops.h
-@@ -214,7 +214,8 @@ static inline void drv_bss_info_changed(struct ieee80211_local *local,
- 				    BSS_CHANGED_BEACON_ENABLED) &&
- 			 sdata->vif.type != NL80211_IFTYPE_AP &&
- 			 sdata->vif.type != NL80211_IFTYPE_ADHOC &&
--			 sdata->vif.type != NL80211_IFTYPE_MESH_POINT))
-+			 sdata->vif.type != NL80211_IFTYPE_MESH_POINT &&
-+			 sdata->vif.type != NL80211_IFTYPE_OCB))
- 		return;
- 
- 	if (WARN_ON_ONCE(sdata->vif.type == NL80211_IFTYPE_P2P_DEVICE ||
-diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
-index eb42529..fbd6bee 100644
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -577,6 +577,25 @@ struct ieee80211_if_ibss {
- };
- 
- /**
-+ * struct ieee80211_if_ocb - OCB mode state
-+ *
-+ * @housekeeping_timer: timer for periodic invocation of a housekeeping task
-+ * @wrkq_flags: OCB deferred task action
-+ * @incomplete_lock: delayed STA insertion lock
-+ * @incomplete_stations: list of STAs waiting for delayed insertion
-+ * @joined: indication if the interface is connected to an OCB network
-+ */
-+struct ieee80211_if_ocb {
-+	struct timer_list housekeeping_timer;
-+	unsigned long wrkq_flags;
-+
-+	spinlock_t incomplete_lock;
-+	struct list_head incomplete_stations;
-+
-+	bool joined;
-+};
-+
-+/**
-  * struct ieee80211_mesh_sync_ops - Extensible synchronization framework interface
-  *
-  * these declarations define the interface, which enables
-@@ -869,6 +888,7 @@ struct ieee80211_sub_if_data {
- 		struct ieee80211_if_managed mgd;
- 		struct ieee80211_if_ibss ibss;
- 		struct ieee80211_if_mesh mesh;
-+		struct ieee80211_if_ocb ocb;
- 		u32 mntr_flags;
- 	} u;
- 
-@@ -1505,6 +1525,15 @@ int ieee80211_ibss_csa_beacon(struct ieee80211_sub_if_data *sdata,
- int ieee80211_ibss_finish_csa(struct ieee80211_sub_if_data *sdata);
- void ieee80211_ibss_stop(struct ieee80211_sub_if_data *sdata);
- 
-+/* OCB code */
-+void ieee80211_ocb_work(struct ieee80211_sub_if_data *sdata);
-+void ieee80211_ocb_rx_no_sta(struct ieee80211_sub_if_data *sdata,
-+			     const u8 *bssid, const u8 *addr, u32 supp_rates);
-+void ieee80211_ocb_setup_sdata(struct ieee80211_sub_if_data *sdata);
-+int ieee80211_ocb_join(struct ieee80211_sub_if_data *sdata,
-+		       struct ocb_setup *setup);
-+int ieee80211_ocb_leave(struct ieee80211_sub_if_data *sdata);
-+
- /* mesh code */
- void ieee80211_mesh_work(struct ieee80211_sub_if_data *sdata);
- void ieee80211_mesh_rx_queued_mgmt(struct ieee80211_sub_if_data *sdata,
+ 		case NL80211_IFTYPE_UNSPECIFIED:
+@@ -909,6 +910,7 @@ ieee80211_vif_chanctx_reservation_complete(struct ieee80211_sub_if_data *sdata)
+ 	case NL80211_IFTYPE_ADHOC:
+ 	case NL80211_IFTYPE_AP:
+ 	case NL80211_IFTYPE_MESH_POINT:
++	case NL80211_IFTYPE_OCB:
+ 		ieee80211_queue_work(&sdata->local->hw,
+ 				     &sdata->csa_finalize_work);
+ 		break;
 diff --git a/net/mac80211/iface.c b/net/mac80211/iface.c
-index d69e753..6b631c0 100644
+index 1ffcc07..d69e753 100644
 --- a/net/mac80211/iface.c
 +++ b/net/mac80211/iface.c
-@@ -259,6 +259,15 @@ static int ieee80211_check_concurrent_iface(struct ieee80211_sub_if_data *sdata,
- 	list_for_each_entry(nsdata, &local->interfaces, list) {
- 		if (nsdata != sdata && ieee80211_sdata_running(nsdata)) {
- 			/*
-+			 * Only OCB and monitor mode may coexist
-+			 */
-+			if ((sdata->vif.type == NL80211_IFTYPE_OCB &&
-+			     nsdata->vif.type != NL80211_IFTYPE_MONITOR) ||
-+			    (sdata->vif.type != NL80211_IFTYPE_MONITOR &&
-+			     nsdata->vif.type == NL80211_IFTYPE_OCB))
-+				return -EBUSY;
-+
-+			/*
- 			 * Allow only a single IBSS interface to be up at any
- 			 * time. This is restricted because beacon distribution
- 			 * cannot work properly if both are in the same IBSS.
-@@ -1283,6 +1292,9 @@ static void ieee80211_iface_work(struct work_struct *work)
- 			break;
- 		ieee80211_mesh_work(sdata);
- 		break;
+@@ -521,6 +521,7 @@ int ieee80211_do_open(struct wireless_dev *wdev, bool coming_up)
+ 	case NL80211_IFTYPE_MONITOR:
+ 	case NL80211_IFTYPE_ADHOC:
+ 	case NL80211_IFTYPE_P2P_DEVICE:
 +	case NL80211_IFTYPE_OCB:
-+		ieee80211_ocb_work(sdata);
-+		break;
- 	default:
+ 		/* no special treatment */
  		break;
- 	}
-@@ -1302,6 +1314,9 @@ static void ieee80211_recalc_smps_work(struct work_struct *work)
- static void ieee80211_setup_sdata(struct ieee80211_sub_if_data *sdata,
- 				  enum nl80211_iftype type)
- {
-+	static const u8 bssid_wildcard[ETH_ALEN] = {0xff, 0xff, 0xff,
-+						    0xff, 0xff, 0xff};
-+
- 	/* clear type-dependent union */
- 	memset(&sdata->u, 0, sizeof(sdata->u));
- 
-@@ -1354,7 +1369,8 @@ static void ieee80211_setup_sdata(struct ieee80211_sub_if_data *sdata,
+ 	case NL80211_IFTYPE_UNSPECIFIED:
+@@ -631,6 +632,7 @@ int ieee80211_do_open(struct wireless_dev *wdev, bool coming_up)
+ 		case NL80211_IFTYPE_ADHOC:
+ 		case NL80211_IFTYPE_AP:
+ 		case NL80211_IFTYPE_MESH_POINT:
++		case NL80211_IFTYPE_OCB:
+ 			netif_carrier_off(dev);
+ 			break;
+ 		case NL80211_IFTYPE_WDS:
+@@ -1351,6 +1353,9 @@ static void ieee80211_setup_sdata(struct ieee80211_sub_if_data *sdata,
+ 		sdata->vif.bss_conf.bssid = sdata->u.mgd.bssid;
  		ieee80211_sta_setup_sdata(sdata);
  		break;
- 	case NL80211_IFTYPE_OCB:
--		/* to be implemented in the future */
-+		sdata->vif.bss_conf.bssid = bssid_wildcard;
-+		ieee80211_ocb_setup_sdata(sdata);
- 		break;
++	case NL80211_IFTYPE_OCB:
++		/* to be implemented in the future */
++		break;
  	case NL80211_IFTYPE_ADHOC:
  		sdata->vif.bss_conf.bssid = sdata->u.ibss.bssid;
-@@ -1403,6 +1419,7 @@ static int ieee80211_runtime_change_iftype(struct ieee80211_sub_if_data *sdata,
- 	case NL80211_IFTYPE_AP:
+ 		ieee80211_ibss_setup_sdata(sdata);
+diff --git a/net/mac80211/util.c b/net/mac80211/util.c
+index 666aa13..d7d69c8 100644
+--- a/net/mac80211/util.c
++++ b/net/mac80211/util.c
+@@ -1841,6 +1841,9 @@ int ieee80211_reconfig(struct ieee80211_local *local)
+ 			ieee80211_bss_info_change_notify(sdata, changed);
+ 			sdata_unlock(sdata);
+ 			break;
++		case NL80211_IFTYPE_OCB:
++			/* to be implemented in the future */
++			break;
+ 		case NL80211_IFTYPE_ADHOC:
+ 			changed |= BSS_CHANGED_IBSS;
+ 			/* fall through */
+diff --git a/net/wireless/Makefile b/net/wireless/Makefile
+index a761670..4c9e39f 100644
+--- a/net/wireless/Makefile
++++ b/net/wireless/Makefile
+@@ -10,7 +10,7 @@ obj-$(CONFIG_WEXT_SPY) += wext-spy.o
+ obj-$(CONFIG_WEXT_PRIV) += wext-priv.o
+ 
+ cfg80211-y += core.o sysfs.o radiotap.o util.o reg.o scan.o nl80211.o
+-cfg80211-y += mlme.o ibss.o sme.o chan.o ethtool.o mesh.o ap.o trace.o
++cfg80211-y += mlme.o ibss.o sme.o chan.o ethtool.o mesh.o ap.o trace.o ocb.o
+ cfg80211-$(CONFIG_CFG80211_DEBUGFS) += debugfs.o
+ cfg80211-$(CONFIG_CFG80211_WEXT) += wext-compat.o wext-sme.o
+ cfg80211-$(CONFIG_CFG80211_INTERNAL_REGDB) += regdb.o
+diff --git a/net/wireless/chan.c b/net/wireless/chan.c
+index 8f39e33..85506f1d 100644
+--- a/net/wireless/chan.c
++++ b/net/wireless/chan.c
+@@ -366,6 +366,7 @@ int cfg80211_chandef_dfs_required(struct wiphy *wiphy,
+ 
+ 		break;
  	case NL80211_IFTYPE_STATION:
- 	case NL80211_IFTYPE_ADHOC:
 +	case NL80211_IFTYPE_OCB:
- 		/*
- 		 * Could maybe also all others here?
- 		 * Just not sure how that interacts
-@@ -1418,6 +1435,7 @@ static int ieee80211_runtime_change_iftype(struct ieee80211_sub_if_data *sdata,
- 	case NL80211_IFTYPE_AP:
- 	case NL80211_IFTYPE_STATION:
- 	case NL80211_IFTYPE_ADHOC:
+ 	case NL80211_IFTYPE_P2P_CLIENT:
+ 	case NL80211_IFTYPE_MONITOR:
+ 	case NL80211_IFTYPE_AP_VLAN:
+@@ -892,6 +893,13 @@ cfg80211_get_chan_state(struct wireless_dev *wdev,
+ 				*radar_detect |= BIT(wdev->chandef.width);
+ 		}
+ 		return;
 +	case NL80211_IFTYPE_OCB:
- 		/*
- 		 * Could probably support everything
- 		 * but WDS here (WDS do_open can fail
-diff --git a/net/mac80211/ocb.c b/net/mac80211/ocb.c
++		if (wdev->chandef.chan) {
++			*chan = wdev->chandef.chan;
++			*chanmode = CHAN_MODE_SHARED;
++			return;
++		}
++		break;
+ 	case NL80211_IFTYPE_MONITOR:
+ 	case NL80211_IFTYPE_AP_VLAN:
+ 	case NL80211_IFTYPE_WDS:
+diff --git a/net/wireless/core.c b/net/wireless/core.c
+index da4dcb6..a4d2792 100644
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -869,6 +869,9 @@ void __cfg80211_leave(struct cfg80211_registered_device *rdev,
+ 	case NL80211_IFTYPE_P2P_GO:
+ 		__cfg80211_stop_ap(rdev, dev, true);
+ 		break;
++	case NL80211_IFTYPE_OCB:
++		__cfg80211_leave_ocb(rdev, dev);
++		break;
+ 	case NL80211_IFTYPE_WDS:
+ 		/* must be handled by mac80211/driver, has no APIs */
+ 		break;
+diff --git a/net/wireless/core.h b/net/wireless/core.h
+index 7e3a3ce..61ee664 100644
+--- a/net/wireless/core.h
++++ b/net/wireless/core.h
+@@ -290,6 +290,18 @@ int cfg80211_set_mesh_channel(struct cfg80211_registered_device *rdev,
+ 			      struct wireless_dev *wdev,
+ 			      struct cfg80211_chan_def *chandef);
+ 
++/* OCB */
++int __cfg80211_join_ocb(struct cfg80211_registered_device *rdev,
++			struct net_device *dev,
++			struct ocb_setup *setup);
++int cfg80211_join_ocb(struct cfg80211_registered_device *rdev,
++		      struct net_device *dev,
++		      struct ocb_setup *setup);
++int __cfg80211_leave_ocb(struct cfg80211_registered_device *rdev,
++			 struct net_device *dev);
++int cfg80211_leave_ocb(struct cfg80211_registered_device *rdev,
++		       struct net_device *dev);
++
+ /* AP */
+ int __cfg80211_stop_ap(struct cfg80211_registered_device *rdev,
+ 		       struct net_device *dev, bool notify);
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index f7d9188..1a31736 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -885,6 +885,7 @@ static int nl80211_key_allowed(struct wireless_dev *wdev)
+ 			return -ENOLINK;
+ 		break;
+ 	case NL80211_IFTYPE_UNSPECIFIED:
++	case NL80211_IFTYPE_OCB:
+ 	case NL80211_IFTYPE_MONITOR:
+ 	case NL80211_IFTYPE_P2P_DEVICE:
+ 	case NL80211_IFTYPE_WDS:
+@@ -8275,6 +8276,28 @@ static int nl80211_set_cqm(struct sk_buff *skb, struct genl_info *info)
+ 	return -EINVAL;
+ }
+ 
++static int nl80211_join_ocb(struct sk_buff *skb, struct genl_info *info)
++{
++	struct cfg80211_registered_device *rdev = info->user_ptr[0];
++	struct net_device *dev = info->user_ptr[1];
++	struct ocb_setup setup = {};
++	int err;
++
++	err = nl80211_parse_chandef(rdev, info, &setup.chandef);
++	if (err)
++		return err;
++
++	return cfg80211_join_ocb(rdev, dev, &setup);
++}
++
++static int nl80211_leave_ocb(struct sk_buff *skb, struct genl_info *info)
++{
++	struct cfg80211_registered_device *rdev = info->user_ptr[0];
++	struct net_device *dev = info->user_ptr[1];
++
++	return cfg80211_leave_ocb(rdev, dev);
++}
++
+ static int nl80211_join_mesh(struct sk_buff *skb, struct genl_info *info)
+ {
+ 	struct cfg80211_registered_device *rdev = info->user_ptr[0];
+@@ -10218,6 +10241,22 @@ static const struct genl_ops nl80211_ops[] = {
+ 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
+ 				  NL80211_FLAG_NEED_RTNL,
+ 	},
++	{
++		.cmd = NL80211_CMD_JOIN_OCB,
++		.doit = nl80211_join_ocb,
++		.policy = nl80211_policy,
++		.flags = GENL_ADMIN_PERM,
++		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
++				  NL80211_FLAG_NEED_RTNL,
++	},
++	{
++		.cmd = NL80211_CMD_LEAVE_OCB,
++		.doit = nl80211_leave_ocb,
++		.policy = nl80211_policy,
++		.flags = GENL_ADMIN_PERM,
++		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
++				  NL80211_FLAG_NEED_RTNL,
++	},
+ #ifdef CONFIG_PM
+ 	{
+ 		.cmd = NL80211_CMD_GET_WOWLAN,
+diff --git a/net/wireless/ocb.c b/net/wireless/ocb.c
 new file mode 100644
-index 0000000..358d5f9
+index 0000000..c00d4a7
 --- /dev/null
-+++ b/net/mac80211/ocb.c
-@@ -0,0 +1,250 @@
++++ b/net/wireless/ocb.c
+@@ -0,0 +1,88 @@
 +/*
 + * OCB mode implementation
 + *
@@ -342,445 +368,182 @@ index 0000000..358d5f9
 + * published by the Free Software Foundation.
 + */
 +
-+#include <linux/delay.h>
-+#include <linux/if_ether.h>
-+#include <linux/skbuff.h>
-+#include <linux/if_arp.h>
-+#include <linux/etherdevice.h>
-+#include <linux/rtnetlink.h>
-+#include <net/mac80211.h>
-+#include <asm/unaligned.h>
++#include <linux/ieee80211.h>
++#include <net/cfg80211.h>
++#include "nl80211.h"
++#include "core.h"
++#include "rdev-ops.h"
 +
-+#include "ieee80211_i.h"
-+#include "driver-ops.h"
-+#include "rate.h"
-+
-+#define IEEE80211_OCB_HOUSEKEEPING_INTERVAL		(60 * HZ)
-+#define IEEE80211_OCB_PEER_INACTIVITY_LIMIT		(240 * HZ)
-+#define IEEE80211_OCB_MAX_STA_ENTRIES			128
-+
-+/**
-+ * enum ocb_deferred_task_flags - mac80211 OCB deferred tasks
-+ * @OCB_WORK_HOUSEKEEPING: run the periodic OCB housekeeping tasks
-+ *
-+ * These flags are used in @wrkq_flags field of &struct ieee80211_if_ocb
-+ */
-+enum ocb_deferred_task_flags {
-+	OCB_WORK_HOUSEKEEPING,
-+};
-+
-+void ieee80211_ocb_rx_no_sta(struct ieee80211_sub_if_data *sdata,
-+			     const u8 *bssid, const u8 *addr,
-+			     u32 supp_rates)
++int __cfg80211_join_ocb(struct cfg80211_registered_device *rdev,
++			struct net_device *dev,
++			struct ocb_setup *setup)
 +{
-+	struct ieee80211_if_ocb *ifocb = &sdata->u.ocb;
-+	struct ieee80211_local *local = sdata->local;
-+	struct ieee80211_chanctx_conf *chanctx_conf;
-+	struct ieee80211_supported_band *sband;
-+	enum nl80211_bss_scan_width scan_width;
-+	struct sta_info *sta;
-+	int band;
-+
-+	/* XXX: Consider removing the least recently used entry and
-+	 *      allow new one to be added.
-+	 */
-+	if (local->num_sta >= IEEE80211_OCB_MAX_STA_ENTRIES) {
-+		net_info_ratelimited("%s: No room for a new OCB STA entry %pM\n",
-+				     sdata->name, addr);
-+		return;
-+	}
-+
-+	ocb_dbg(sdata, "Adding new OCB station %pM\n", addr);
-+
-+	rcu_read_lock();
-+	chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-+	if (WARN_ON_ONCE(!chanctx_conf)) {
-+		rcu_read_unlock();
-+		return;
-+	}
-+	band = chanctx_conf->def.chan->band;
-+	scan_width = cfg80211_chandef_to_scan_width(&chanctx_conf->def);
-+	rcu_read_unlock();
-+
-+	sta = sta_info_alloc(sdata, addr, GFP_ATOMIC);
-+	if (!sta)
-+		return;
-+
-+	sta->last_rx = jiffies;
-+
-+	/* Add only mandatory rates for now */
-+	sband = local->hw.wiphy->bands[band];
-+	sta->sta.supp_rates[band] =
-+		ieee80211_mandatory_rates(sband, scan_width);
-+
-+	spin_lock(&ifocb->incomplete_lock);
-+	list_add(&sta->list, &ifocb->incomplete_stations);
-+	spin_unlock(&ifocb->incomplete_lock);
-+	ieee80211_queue_work(&local->hw, &sdata->work);
-+}
-+
-+static struct sta_info *ieee80211_ocb_finish_sta(struct sta_info *sta)
-+	__acquires(RCU)
-+{
-+	struct ieee80211_sub_if_data *sdata = sta->sdata;
-+	u8 addr[ETH_ALEN];
-+
-+	memcpy(addr, sta->sta.addr, ETH_ALEN);
-+
-+	ocb_dbg(sdata, "Adding new IBSS station %pM (dev=%s)\n",
-+		addr, sdata->name);
-+
-+	sta_info_move_state(sta, IEEE80211_STA_AUTH);
-+	sta_info_move_state(sta, IEEE80211_STA_ASSOC);
-+	sta_info_move_state(sta, IEEE80211_STA_AUTHORIZED);
-+
-+	rate_control_rate_init(sta);
-+
-+	/* If it fails, maybe we raced another insertion? */
-+	if (sta_info_insert_rcu(sta))
-+		return sta_info_get(sdata, addr);
-+	return sta;
-+}
-+
-+static void ieee80211_ocb_housekeeping(struct ieee80211_sub_if_data *sdata)
-+{
-+	struct ieee80211_if_ocb *ifocb = &sdata->u.ocb;
-+
-+	ocb_dbg(sdata, "Running ocb housekeeping\n");
-+
-+	ieee80211_sta_expire(sdata, IEEE80211_OCB_PEER_INACTIVITY_LIMIT);
-+
-+	mod_timer(&ifocb->housekeeping_timer,
-+		  round_jiffies(jiffies + IEEE80211_OCB_HOUSEKEEPING_INTERVAL));
-+}
-+
-+void ieee80211_ocb_work(struct ieee80211_sub_if_data *sdata)
-+{
-+	struct ieee80211_if_ocb *ifocb = &sdata->u.ocb;
-+	struct sta_info *sta;
-+
-+	if (ifocb->joined != true)
-+		return;
-+
-+	sdata_lock(sdata);
-+
-+	spin_lock_bh(&ifocb->incomplete_lock);
-+	while (!list_empty(&ifocb->incomplete_stations)) {
-+		sta = list_first_entry(&ifocb->incomplete_stations,
-+				       struct sta_info, list);
-+		list_del(&sta->list);
-+		spin_unlock_bh(&ifocb->incomplete_lock);
-+
-+		ieee80211_ocb_finish_sta(sta);
-+		rcu_read_unlock();
-+		spin_lock_bh(&ifocb->incomplete_lock);
-+	}
-+	spin_unlock_bh(&ifocb->incomplete_lock);
-+
-+	if (test_and_clear_bit(OCB_WORK_HOUSEKEEPING, &ifocb->wrkq_flags))
-+		ieee80211_ocb_housekeeping(sdata);
-+
-+	sdata_unlock(sdata);
-+}
-+
-+static void ieee80211_ocb_housekeeping_timer(unsigned long data)
-+{
-+	struct ieee80211_sub_if_data *sdata = (void *)data;
-+	struct ieee80211_local *local = sdata->local;
-+	struct ieee80211_if_ocb *ifocb = &sdata->u.ocb;
-+
-+	set_bit(OCB_WORK_HOUSEKEEPING, &ifocb->wrkq_flags);
-+
-+	ieee80211_queue_work(&local->hw, &sdata->work);
-+}
-+
-+void ieee80211_ocb_setup_sdata(struct ieee80211_sub_if_data *sdata)
-+{
-+	struct ieee80211_if_ocb *ifocb = &sdata->u.ocb;
-+
-+	setup_timer(&ifocb->housekeeping_timer,
-+		    ieee80211_ocb_housekeeping_timer,
-+		    (unsigned long)sdata);
-+	INIT_LIST_HEAD(&ifocb->incomplete_stations);
-+	spin_lock_init(&ifocb->incomplete_lock);
-+}
-+
-+int ieee80211_ocb_join(struct ieee80211_sub_if_data *sdata,
-+		       struct ocb_setup *setup)
-+{
-+	struct ieee80211_local *local = sdata->local;
-+	struct ieee80211_if_ocb *ifocb = &sdata->u.ocb;
-+	u32 changed = BSS_CHANGED_OCB;
++	struct wireless_dev *wdev = dev->ieee80211_ptr;
 +	int err;
 +
-+	if (ifocb->joined == true)
++	ASSERT_WDEV_LOCK(wdev);
++
++	if (dev->ieee80211_ptr->iftype != NL80211_IFTYPE_OCB)
++		return -EOPNOTSUPP;
++
++	if (WARN_ON(!setup->chandef.chan))
 +		return -EINVAL;
 +
-+	sdata->flags |= IEEE80211_SDATA_OPERATING_GMODE;
-+	sdata->smps_mode = IEEE80211_SMPS_OFF;
-+	sdata->needed_rx_chains = sdata->local->rx_chains;
++	err = rdev_join_ocb(rdev, dev, setup);
++	if (!err)
++		wdev->chandef = setup->chandef;
 +
-+	mutex_lock(&sdata->local->mtx);
-+	err = ieee80211_vif_use_channel(sdata, &setup->chandef,
-+					IEEE80211_CHANCTX_SHARED);
-+	mutex_unlock(&sdata->local->mtx);
-+	if (err)
-+		return err;
-+
-+	ieee80211_bss_info_change_notify(sdata, changed);
-+
-+	ifocb->joined = true;
-+
-+	set_bit(OCB_WORK_HOUSEKEEPING, &ifocb->wrkq_flags);
-+	ieee80211_queue_work(&local->hw, &sdata->work);
-+
-+	netif_carrier_on(sdata->dev);
-+	return 0;
++	return err;
 +}
 +
-+int ieee80211_ocb_leave(struct ieee80211_sub_if_data *sdata)
++int cfg80211_join_ocb(struct cfg80211_registered_device *rdev,
++		      struct net_device *dev,
++		      struct ocb_setup *setup)
 +{
-+	struct ieee80211_if_ocb *ifocb = &sdata->u.ocb;
-+	struct ieee80211_local *local = sdata->local;
-+	struct sta_info *sta;
++	struct wireless_dev *wdev = dev->ieee80211_ptr;
++	int err;
 +
-+	ifocb->joined = false;
-+	sta_info_flush(sdata);
++	wdev_lock(wdev);
++	err = __cfg80211_join_ocb(rdev, dev, setup);
++	wdev_unlock(wdev);
 +
-+	spin_lock_bh(&ifocb->incomplete_lock);
-+	while (!list_empty(&ifocb->incomplete_stations)) {
-+		sta = list_first_entry(&ifocb->incomplete_stations,
-+				       struct sta_info, list);
-+		list_del(&sta->list);
-+		spin_unlock_bh(&ifocb->incomplete_lock);
-+
-+		sta_info_free(local, sta);
-+		spin_lock_bh(&ifocb->incomplete_lock);
-+	}
-+	spin_unlock_bh(&ifocb->incomplete_lock);
-+
-+	netif_carrier_off(sdata->dev);
-+	clear_bit(SDATA_STATE_OFFCHANNEL, &sdata->state);
-+	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_OCB);
-+
-+	mutex_lock(&sdata->local->mtx);
-+	ieee80211_vif_release_channel(sdata);
-+	mutex_unlock(&sdata->local->mtx);
-+
-+	skb_queue_purge(&sdata->skb_queue);
-+
-+	del_timer_sync(&sdata->u.ocb.housekeeping_timer);
-+	/* If the timer fired while we waited for it, it will have
-+	 * requeued the work. Now the work will be running again
-+	 * but will not rearm the timer again because it checks
-+	 * whether we are connected to the network or not -- at this
-+	 * point we shouldn't be anymore.
-+	 */
-+
-+	return 0;
++	return err;
 +}
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index b04ca40..bc63aa0 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1032,6 +1032,7 @@ ieee80211_rx_h_check(struct ieee80211_rx_data *rx)
- 		      ieee80211_is_pspoll(hdr->frame_control)) &&
- 		     rx->sdata->vif.type != NL80211_IFTYPE_ADHOC &&
- 		     rx->sdata->vif.type != NL80211_IFTYPE_WDS &&
-+		     rx->sdata->vif.type != NL80211_IFTYPE_OCB &&
- 		     (!rx->sta || !test_sta_flag(rx->sta, WLAN_STA_ASSOC)))) {
- 		/*
- 		 * accept port control frames from the AP even when it's not
-@@ -1272,6 +1273,12 @@ ieee80211_rx_h_sta_process(struct ieee80211_rx_data *rx)
- 				sta->last_rx_rate_vht_nss = status->vht_nss;
- 			}
- 		}
-+	} else if (rx->sdata->vif.type == NL80211_IFTYPE_OCB) {
-+		u8 *bssid = ieee80211_get_bssid(hdr, rx->skb->len,
-+						NL80211_IFTYPE_OCB);
-+		/* OCB uses wild-card BSSID */
-+		if (is_broadcast_ether_addr(bssid))
-+			sta->last_rx = jiffies;
- 	} else if (!is_multicast_ether_addr(hdr->addr1)) {
- 		/*
- 		 * Mesh beacons will update last_rx when if they are found to
-@@ -2820,6 +2827,7 @@ ieee80211_rx_h_mgmt(struct ieee80211_rx_data *rx)
- 
- 	if (!ieee80211_vif_is_mesh(&sdata->vif) &&
- 	    sdata->vif.type != NL80211_IFTYPE_ADHOC &&
-+	    sdata->vif.type != NL80211_IFTYPE_OCB &&
- 	    sdata->vif.type != NL80211_IFTYPE_STATION)
- 		return RX_DROP_MONITOR;
- 
-@@ -3130,6 +3138,33 @@ static bool prepare_for_handlers(struct ieee80211_rx_data *rx,
- 						 BIT(rate_idx));
- 		}
- 		break;
-+	case NL80211_IFTYPE_OCB:
-+		if (!bssid)
-+			return false;
-+		if (ieee80211_is_beacon(hdr->frame_control)) {
-+			return false;
-+		} else if (!is_broadcast_ether_addr(bssid)) {
-+			ocb_dbg(sdata, "BSSID mismatch in OCB mode!\n");
-+			return false;
-+		} else if (!multicast &&
-+			   !ether_addr_equal(sdata->dev->dev_addr,
-+					     hdr->addr1)) {
-+			/* if we are in promisc mode we also accept
-+			 * packets not destined for us
-+			 */
-+			if (!(sdata->dev->flags & IFF_PROMISC))
-+				return false;
-+			rx->flags &= ~IEEE80211_RX_RA_MATCH;
-+		} else if (!rx->sta) {
-+			int rate_idx;
-+			if (status->flag & RX_FLAG_HT)
-+				rate_idx = 0; /* TODO: HT rates */
-+			else
-+				rate_idx = status->rate_idx;
-+			ieee80211_ocb_rx_no_sta(sdata, bssid, hdr->addr2,
-+						BIT(rate_idx));
-+		}
-+		break;
- 	case NL80211_IFTYPE_MESH_POINT:
- 		if (!multicast &&
- 		    !ether_addr_equal(sdata->vif.addr, hdr->addr1)) {
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index 900632a2..3ffd91f 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -296,6 +296,9 @@ ieee80211_tx_h_check_assoc(struct ieee80211_tx_data *tx)
- 		 */
- 		return TX_DROP;
- 
-+	if (tx->sdata->vif.type == NL80211_IFTYPE_OCB)
-+		return TX_CONTINUE;
 +
- 	if (tx->sdata->vif.type == NL80211_IFTYPE_WDS)
- 		return TX_CONTINUE;
++int __cfg80211_leave_ocb(struct cfg80211_registered_device *rdev,
++			 struct net_device *dev)
++{
++	struct wireless_dev *wdev = dev->ieee80211_ptr;
++	int err;
++
++	ASSERT_WDEV_LOCK(wdev);
++
++	if (dev->ieee80211_ptr->iftype != NL80211_IFTYPE_OCB)
++		return -EOPNOTSUPP;
++
++	if (!rdev->ops->leave_ocb)
++		return -EOPNOTSUPP;
++
++	err = rdev_leave_ocb(rdev, dev);
++	if (!err)
++		memset(&wdev->chandef, 0, sizeof(wdev->chandef));
++
++	return err;
++}
++
++int cfg80211_leave_ocb(struct cfg80211_registered_device *rdev,
++		       struct net_device *dev)
++{
++	struct wireless_dev *wdev = dev->ieee80211_ptr;
++	int err;
++
++	wdev_lock(wdev);
++	err = __cfg80211_leave_ocb(rdev, dev);
++	wdev_unlock(wdev);
++
++	return err;
++}
+diff --git a/net/wireless/rdev-ops.h b/net/wireless/rdev-ops.h
+index 71b1db3..1b3864c 100644
+--- a/net/wireless/rdev-ops.h
++++ b/net/wireless/rdev-ops.h
+@@ -348,6 +348,27 @@ static inline int rdev_leave_mesh(struct cfg80211_registered_device *rdev,
+ 	return ret;
+ }
  
-@@ -2013,6 +2016,17 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
- 			goto fail_rcu;
- 		band = chanctx_conf->def.chan->band;
++static inline int rdev_join_ocb(struct cfg80211_registered_device *rdev,
++				struct net_device *dev,
++				struct ocb_setup *setup)
++{
++	int ret;
++	trace_rdev_join_ocb(&rdev->wiphy, dev, setup);
++	ret = rdev->ops->join_ocb(&rdev->wiphy, dev, setup);
++	trace_rdev_return_int(&rdev->wiphy, ret);
++	return ret;
++}
++
++static inline int rdev_leave_ocb(struct cfg80211_registered_device *rdev,
++				 struct net_device *dev)
++{
++	int ret;
++	trace_rdev_leave_ocb(&rdev->wiphy, dev);
++	ret = rdev->ops->leave_ocb(&rdev->wiphy, dev);
++	trace_rdev_return_int(&rdev->wiphy, ret);
++	return ret;
++}
++
+ static inline int rdev_change_bss(struct cfg80211_registered_device *rdev,
+ 				  struct net_device *dev,
+ 				  struct bss_parameters *params)
+diff --git a/net/wireless/trace.h b/net/wireless/trace.h
+index cdb2c2e..277a85d 100644
+--- a/net/wireless/trace.h
++++ b/net/wireless/trace.h
+@@ -600,6 +600,11 @@ DEFINE_EVENT(wiphy_netdev_evt, rdev_leave_ibss,
+ 	TP_ARGS(wiphy, netdev)
+ );
+ 
++DEFINE_EVENT(wiphy_netdev_evt, rdev_leave_ocb,
++	TP_PROTO(struct wiphy *wiphy, struct net_device *netdev),
++	TP_ARGS(wiphy, netdev)
++);
++
+ DEFINE_EVENT(wiphy_netdev_evt, rdev_flush_pmksa,
+ 	TP_PROTO(struct wiphy *wiphy, struct net_device *netdev),
+ 	TP_ARGS(wiphy, netdev)
+@@ -1316,6 +1321,22 @@ TRACE_EVENT(rdev_join_ibss,
+ 		  WIPHY_PR_ARG, NETDEV_PR_ARG, MAC_PR_ARG(bssid), __entry->ssid)
+ );
+ 
++TRACE_EVENT(rdev_join_ocb,
++	TP_PROTO(struct wiphy *wiphy, struct net_device *netdev,
++		 const struct ocb_setup *setup),
++	TP_ARGS(wiphy, netdev, setup),
++	TP_STRUCT__entry(
++		WIPHY_ENTRY
++		NETDEV_ENTRY
++	),
++	TP_fast_assign(
++		WIPHY_ASSIGN;
++		NETDEV_ASSIGN;
++	),
++	TP_printk(WIPHY_PR_FMT ", " NETDEV_PR_FMT,
++		  WIPHY_PR_ARG, NETDEV_PR_ARG)
++);
++
+ TRACE_EVENT(rdev_set_wiphy_params,
+ 	TP_PROTO(struct wiphy *wiphy, u32 changed),
+ 	TP_ARGS(wiphy, changed),
+diff --git a/net/wireless/util.c b/net/wireless/util.c
+index 5e233a5..d0ac795 100644
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -442,7 +442,8 @@ int ieee80211_data_to_8023(struct sk_buff *skb, const u8 *addr,
+ 		break;
+ 	case cpu_to_le16(0):
+ 		if (iftype != NL80211_IFTYPE_ADHOC &&
+-		    iftype != NL80211_IFTYPE_STATION)
++		    iftype != NL80211_IFTYPE_STATION &&
++		    iftype != NL80211_IFTYPE_OCB)
+ 				return -1;
+ 		break;
+ 	}
+@@ -519,6 +520,7 @@ int ieee80211_data_from_8023(struct sk_buff *skb, const u8 *addr,
+ 		memcpy(hdr.addr3, skb->data, ETH_ALEN);
+ 		hdrlen = 24;
  		break;
 +	case NL80211_IFTYPE_OCB:
-+		/* DA SA BSSID */
-+		memcpy(hdr.addr1, skb->data, ETH_ALEN);
-+		memcpy(hdr.addr2, skb->data + ETH_ALEN, ETH_ALEN);
-+		eth_broadcast_addr(hdr.addr3);
-+		hdrlen = 24;
-+		chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
-+		if (!chanctx_conf)
-+			goto fail_rcu;
-+		band = chanctx_conf->def.chan->band;
-+		break;
  	case NL80211_IFTYPE_ADHOC:
  		/* DA SA BSSID */
  		memcpy(hdr.addr1, skb->data, ETH_ALEN);
-@@ -2057,6 +2071,7 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
- 	 * EAPOL frames from the local station.
- 	 */
- 	if (unlikely(!ieee80211_vif_is_mesh(&sdata->vif) &&
-+		     (sdata->vif.type != NL80211_IFTYPE_OCB) &&
- 		     !multicast && !authorized &&
- 		     (cpu_to_be16(ethertype) != sdata->control_port_protocol ||
- 		      !ether_addr_equal(sdata->vif.addr, skb->data + ETH_ALEN)))) {
-diff --git a/net/mac80211/util.c b/net/mac80211/util.c
-index d7d69c8..91e16b4 100644
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@ -1101,6 +1101,7 @@ void ieee80211_set_wmm_default(struct ieee80211_sub_if_data *sdata,
- 	struct ieee80211_chanctx_conf *chanctx_conf;
- 	int ac;
- 	bool use_11b, enable_qos;
-+	bool is_ocb; /* Use another EDCA parameters if dot11OCBActivated=true */
- 	int aCWmin, aCWmax;
- 
- 	if (!local->ops->conf_tx)
-@@ -1125,6 +1126,8 @@ void ieee80211_set_wmm_default(struct ieee80211_sub_if_data *sdata,
- 	 */
- 	enable_qos = (sdata->vif.type != NL80211_IFTYPE_STATION);
- 
-+	is_ocb = (sdata->vif.type == NL80211_IFTYPE_OCB);
-+
- 	/* Set defaults according to 802.11-2007 Table 7-37 */
- 	aCWmax = 1023;
- 	if (use_11b)
-@@ -1146,7 +1149,10 @@ void ieee80211_set_wmm_default(struct ieee80211_sub_if_data *sdata,
- 				qparam.cw_max = aCWmax;
- 				qparam.cw_min = aCWmin;
- 				qparam.txop = 0;
--				qparam.aifs = 7;
-+				if (is_ocb)
-+					qparam.aifs = 9;
-+				else
-+					qparam.aifs = 7;
+@@ -937,6 +939,7 @@ int cfg80211_change_iface(struct cfg80211_registered_device *rdev,
+ 			if (dev->ieee80211_ptr->use_4addr)
  				break;
- 			/* never happens but let's not leave undefined */
- 			default:
-@@ -1154,21 +1160,32 @@ void ieee80211_set_wmm_default(struct ieee80211_sub_if_data *sdata,
- 				qparam.cw_max = aCWmax;
- 				qparam.cw_min = aCWmin;
- 				qparam.txop = 0;
--				qparam.aifs = 3;
-+				if (is_ocb)
-+					qparam.aifs = 6;
-+				else
-+					qparam.aifs = 3;
- 				break;
- 			case IEEE80211_AC_VI:
- 				qparam.cw_max = aCWmin;
- 				qparam.cw_min = (aCWmin + 1) / 2 - 1;
--				if (use_11b)
-+				if (is_ocb)
-+					qparam.txop = 0;
-+				else if (use_11b)
- 					qparam.txop = 6016/32;
- 				else
- 					qparam.txop = 3008/32;
--				qparam.aifs = 2;
-+
-+				if (is_ocb)
-+					qparam.aifs = 3;
-+				else
-+					qparam.aifs = 2;
- 				break;
- 			case IEEE80211_AC_VO:
- 				qparam.cw_max = (aCWmin + 1) / 2 - 1;
- 				qparam.cw_min = (aCWmin + 1) / 4 - 1;
--				if (use_11b)
-+				if (is_ocb)
-+					qparam.txop = 0;
-+				else if (use_11b)
- 					qparam.txop = 3264/32;
- 				else
- 					qparam.txop = 1504/32;
-@@ -1842,7 +1859,8 @@ int ieee80211_reconfig(struct ieee80211_local *local)
- 			sdata_unlock(sdata);
- 			break;
- 		case NL80211_IFTYPE_OCB:
--			/* to be implemented in the future */
-+			changed |= BSS_CHANGED_OCB;
-+			ieee80211_bss_info_change_notify(sdata, changed);
- 			break;
+ 			/* fall through */
++		case NL80211_IFTYPE_OCB:
+ 		case NL80211_IFTYPE_P2P_CLIENT:
  		case NL80211_IFTYPE_ADHOC:
- 			changed |= BSS_CHANGED_IBSS;
-diff --git a/net/mac80211/wme.c b/net/mac80211/wme.c
-index d3c5672..fdf52db 100644
---- a/net/mac80211/wme.c
-+++ b/net/mac80211/wme.c
-@@ -148,6 +148,10 @@ u16 ieee80211_select_queue(struct ieee80211_sub_if_data *sdata,
- 	case NL80211_IFTYPE_ADHOC:
- 		ra = skb->data;
- 		break;
-+	case NL80211_IFTYPE_OCB:
-+		/* all stations are required to support WME */
-+		qos = true;
-+		break;
- 	default:
- 		break;
- 	}
+ 			dev->priv_flags |= IFF_DONT_BRIDGE;
 -- 
 2.0.0.rc4
 
