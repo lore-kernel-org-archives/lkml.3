@@ -1,347 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaKCSI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:08:28 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:36578 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808AbaKCSIV (ORCPT
+	id S1754022AbaKCSJC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:09:02 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:38395 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807AbaKCSI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:08:21 -0500
-From: mathieu.poirier@linaro.org
-To: gregkh@linuxfoundation.org
-Cc: linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
-        Al.Grant@arm.com, jonas.svennebring@avagotech.com,
-        james.king@linaro.org, kaixu.xia@linaro.org, marcin.jabrzyk@gmail.com,
-        r.sengupta@samsung.com, robbelibobban@gmail.com, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mathieu.poirier@linaro.org
-Subject: [PATCH v9 08/12] coresight: documentation for coresight framework and drivers
-Date: Mon,  3 Nov 2014 11:07:42 -0700
-Message-Id: <1415038066-22423-9-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
+	Mon, 3 Nov 2014 13:08:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <1415036879.29109.26.camel@misato.fc.hp.com>
+References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
+ <1414450545-14028-2-git-send-email-toshi.kani@hp.com> <alpine.DEB.2.11.1411031812390.5308@nanos>
+ <1415036879.29109.26.camel@misato.fc.hp.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Nov 2014 10:08:34 -0800
+Message-ID: <CALCETrWwEsaz8j2ajqqxS4mupO48tv0e_wbrODsmJfZeON2ptA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+On Mon, Nov 3, 2014 at 9:47 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Mon, 2014-11-03 at 18:14 +0100, Thomas Gleixner wrote:
+>> On Mon, 27 Oct 2014, Toshi Kani wrote:
+>> > +   } else {
+>> > +           /*
+>> > +            * PAT full support. WT is set to slot 7, which minimizes
+>> > +            * the risk of using the PAT bit as slot 3 is UC and is
+>> > +            * currently unused. Slot 4 should remain as reserved.
+>>
+>> This comment makes no sense. What minimizes which risk and what has
+>> this to do with slot 3 and slot 4?
+>
+> This is for precaution.  Since the patch enables the PAT bit the first
+> time, it was suggested that we keep slot 4 reserved and set it to WB.
+> The PAT bit still has no effect to slot 0/1/2 (WB/WC/UC-) after this
+> patch.  Slot 7 is the safest slot since slot 3 (UC) is unused today.
+>
+> https://lkml.org/lkml/2014/9/4/691
+> https://lkml.org/lkml/2014/9/5/394
+>
 
-Documentation containing an explanation on what the framework
-provides and the drivers working with it.  A minimal example
-on how to use the functionality is also provided.
+I would clarify the comment, since this really has nothing to do with
+slot 3 being unused.  How about:
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- Documentation/trace/coresight.txt | 299 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 299 insertions(+)
- create mode 100644 Documentation/trace/coresight.txt
+We put WT in slot 7 to improve robustness in the presence of errata
+that might cause the high PAT bit to be ignored.  This way a buggy
+slot 7 access will hit slot 3, and slot 3 is UC, so at worst we lose
+performance without causing a correctness issue.  Pentium 4 erratum
+N46 is an example of such an erratum, although we try not to use PAT
+at all on affected CPUs.
 
-diff --git a/Documentation/trace/coresight.txt b/Documentation/trace/coresight.txt
-new file mode 100644
-index 0000000..bba7dbf
---- /dev/null
-+++ b/Documentation/trace/coresight.txt
-@@ -0,0 +1,299 @@
-+		Coresight - HW Assisted Tracing on ARM
-+		======================================
-+
-+   Author:   Mathieu Poirier <mathieu.poirier@linaro.org>
-+   Date:     September 11th, 2014
-+
-+Introduction
-+------------
-+
-+Coresight is an umbrella of technologies allowing for the debugging of ARM
-+based SoC.  It includes solutions for JTAG and HW assisted tracing.  This
-+document is concerned with the latter.
-+
-+HW assisted tracing is becoming increasingly useful when dealing with systems
-+that have many SoCs and other components like GPU and DMA engines.  ARM has
-+developed a HW assisted tracing solution by means of different components, each
-+being added to a design at systhesis time to cater to specific tracing needs.
-+Compoments are generally categorised as source, link and sinks and are
-+(usually) discovered using the AMBA bus.
-+
-+"Sources" generate a compressed stream representing the processor instruction
-+path based on tracing scenarios as configured by users.  From there the stream
-+flows through the coresight system (via ATB bus) using links that are connecting
-+the emanating source to a sink(s).  Sinks serve as endpoints to the coresight
-+implementation, either storing the compressed stream in a memory buffer or
-+creating an interface to the outside world where data can be transferred to a
-+host without fear of filling up the onboard coresight memory buffer.
-+
-+At typical coresight system would look like this:
-+
-+  *****************************************************************
-+ **************************** AMBA AXI  ****************************===||
-+  *****************************************************************    ||
-+        ^                    ^                            |            ||
-+        |                    |                            *            **
-+     0000000    :::::     0000000    :::::    :::::    @@@@@@@    ||||||||||||
-+     0 CPU 0<-->: C :     0 CPU 0<-->: C :    : C :    @ STM @    || System ||
-+  |->0000000    : T :  |->0000000    : T :    : T :<--->@@@@@     || Memory ||
-+  |  #######<-->: I :  |  #######<-->: I :    : I :      @@@<-|   ||||||||||||
-+  |  # ETM #    :::::  |  # PTM #    :::::    :::::       @   |
-+  |   #####      ^ ^   |   #####      ^ !      ^ !        .   |   |||||||||
-+  | |->###       | !   | |->###       | !      | !        .   |   || DAP ||
-+  | |   #        | !   | |   #        | !      | !        .   |   |||||||||
-+  | |   .        | !   | |   .        | !      | !        .   |      |  |
-+  | |   .        | !   | |   .        | !      | !        .   |      |  *
-+  | |   .        | !   | |   .        | !      | !        .   |      | SWD/
-+  | |   .        | !   | |   .        | !      | !        .   |      | JTAG
-+  *****************************************************************<-|
-+ *************************** AMBA Debug ABP ************************
-+  *****************************************************************
-+   |    .          !         .          !        !        .    |
-+   |    .          *         .          *        *        .    |
-+  *****************************************************************
-+ ******************** Cross Trigger Matrix (CTM) *******************
-+  *****************************************************************
-+   |    .     ^              .                            .    |
-+   |    *     !              *                            *    |
-+  *****************************************************************
-+ ****************** AMBA Advanced Trace Bus (ATB) ******************
-+  *****************************************************************
-+   |          !                        ===============         |
-+   |          *                         ===== F =====<---------|
-+   |   :::::::::                         ==== U ====
-+   |-->:: CTI ::<!!                       === N ===
-+   |   :::::::::  !                        == N ==
-+   |    ^         *                        == E ==
-+   |    !  &&&&&&&&&       IIIIIII         == L ==
-+   |------>&& ETB &&<......II     I        =======
-+   |    !  &&&&&&&&&       II     I           .
-+   |    !                    I     I          .
-+   |    !                    I REP I<..........
-+   |    !                    I     I
-+   |    !!>&&&&&&&&&       II     I           *Source: ARM ltd.
-+   |------>& TPIU  &<......II    I            DAP = Debug Access Port
-+           &&&&&&&&&       IIIIIII            ETM = Embedded Trace Macrocell
-+               ;                              PTM = Program Trace Macrocell
-+               ;                              CTI = Cross Trigger Interface
-+               *                              ETB = Embedded Trace Buffer
-+          To trace port                       TPIU= Trace Port Interface Unit
-+                                              SWD = Serial Wire Debug
-+
-+While on target configuration of the components is done via the ABP bus,
-+all trace data are carried out-of-band on the ATB bus.  The CTM provides
-+a way to aggregate and distribute signals between CoreSight components.
-+
-+The coresight framework provides a central point to represent, configure and
-+manage coresight devices on a platform.  This first implementation centers on
-+the basic tracing functionality, enabling components such ETM/PTM, funnel,
-+replicator, TMC, TPIU and ETB.  Future work will enable more
-+intricate IP blocks such as STM and CTI.
-+
-+
-+Acronyms and Classification
-+---------------------------
-+
-+Acronyms:
-+
-+PTM:     Program Trace Macrocell
-+ETM:     Embedded Trace Macrocell
-+STM:     System trace Macrocell
-+ETB:     Embedded Trace Buffer
-+ITM:     Instrumentation Trace Macrocell
-+TPIU:    Trace Port Interface Unit
-+TMC-ETR: Trace Memory Controller, configured as Embedded Trace Router
-+TMC-ETF: Trace Memory Controller, configured as Embedded Trace FIFO
-+CTI:     Cross Trigger Interface
-+
-+Classification:
-+
-+Source:
-+   ETMv3.x ETMv4, PTMv1.0, PTMv1.1, STM, STM500, ITM
-+Link:
-+   Funnel, replicator (intelligent or not), TMC-ETR
-+Sinks:
-+   ETBv1.0, ETB1.1, TPIU, TMC-ETF
-+Misc:
-+   CTI
-+
-+
-+Device Tree Bindings
-+----------------------
-+
-+See Documentation/devicetree/bindings/arm/coresight.txt for details.
-+
-+As of this writing drivers for ITM, STMs and CTIs are not provided but are
-+expected to be added as the solution matures.
-+
-+
-+Framework and implementation
-+----------------------------
-+
-+The coresight framework provides a central point to represent, configure and
-+manage coresight devices on a platform.  Any coresight compliant device can
-+register with the framework for as long as they use the right APIs:
-+
-+struct coresight_device *coresight_register(struct coresight_desc *desc);
-+void coresight_unregister(struct coresight_device *csdev);
-+
-+The registering function is taking a "struct coresight_device *csdev" and
-+register the device with the core framework.  The unregister function takes
-+a reference to a "strut coresight_device", obtained at registration time.
-+
-+If everything goes well during the registration process the new devices will
-+show up under /sys/bus/coresight/devices, as showns here for a TC2 platform:
-+
-+root:~# ls /sys/bus/coresight/devices/
-+replicator  20030000.tpiu    2201c000.ptm  2203c000.etm  2203e000.etm
-+20010000.etb         20040000.funnel  2201d000.ptm  2203d000.etm
-+root:~#
-+
-+The functions take a "struct coresight_device", which looks like this:
-+
-+struct coresight_desc {
-+        enum coresight_dev_type type;
-+        struct coresight_dev_subtype subtype;
-+        const struct coresight_ops *ops;
-+        struct coresight_platform_data *pdata;
-+        struct device *dev;
-+        const struct attribute_group **groups;
-+};
-+
-+
-+The "coresight_dev_type" identifies what the device is, i.e, source link or
-+sink while the "coresight_dev_subtype" will characterise that type further.
-+
-+The "struct coresight_ops" is mandatory and will tell the framework how to
-+perform base operations related to the components, each component having
-+a different set of requirement.  For that "struct coresight_ops_sink",
-+"struct coresight_ops_link" and "struct coresight_ops_source" have been
-+provided.
-+
-+The next field, "struct coresight_platform_data *pdata" is acquired by calling
-+"of_get_coresight_platform_data()", as part of the driver's _probe routine and
-+"struct device *dev" gets the device reference embedded in the "amba_device":
-+
-+static int etm_probe(struct amba_device *adev, const struct amba_id *id)
-+{
-+ ...
-+ ...
-+ drvdata->dev = &adev->dev;
-+ ...
-+}
-+
-+Specific class of device (source, link, or sink) have generic operations
-+that can be performed on them (see "struct coresight_ops").  The
-+"**groups" is a list of sysfs entries pertaining to operations
-+specific to that component only.  "Implementation defined" customisations are
-+expected to be accessed and controlled using those entries.
-+
-+Last but not least, "struct module *owner" is expected to be set to reflect
-+the information carried in "THIS_MODULE".
-+
-+How to use
-+----------
-+
-+Before trace collection can start, a coresight sink needs to be identify.
-+There is no limit on the amount of sinks (nor sources) that can be enabled at
-+any given moment.  As a generic operation, all device pertaining to the sink
-+class will have an "active" entry in sysfs:
-+
-+root:/sys/bus/coresight/devices# ls
-+replicator  20030000.tpiu    2201c000.ptm  2203c000.etm  2203e000.etm
-+20010000.etb         20040000.funnel  2201d000.ptm  2203d000.etm
-+root:/sys/bus/coresight/devices# ls 20010000.etb
-+enable_sink  status  trigger_cntr
-+root:/sys/bus/coresight/devices# echo 1 > 20010000.etb/enable_sink
-+root:/sys/bus/coresight/devices# cat 20010000.etb/enable_sink
-+1
-+root:/sys/bus/coresight/devices#
-+
-+At boot time the current etm3x driver will configure the first address
-+comparator with "_stext" and "_etext", essentially tracing any instruction
-+that falls within that range.  As such "enabling" a source will immediately
-+trigger a trace capture:
-+
-+root:/sys/bus/coresight/devices# echo 1 > 2201c000.ptm/enable_source
-+root:/sys/bus/coresight/devices# cat 2201c000.ptm/enable_source
-+1
-+root:/sys/bus/coresight/devices# cat 20010000.etb/status
-+Depth:          0x2000
-+Status:         0x1
-+RAM read ptr:   0x0
-+RAM wrt ptr:    0x19d3   <----- The write pointer is moving
-+Trigger cnt:    0x0
-+Control:        0x1
-+Flush status:   0x0
-+Flush ctrl:     0x2001
-+root:/sys/bus/coresight/devices#
-+
-+Trace collection is stopped the same way:
-+
-+root:/sys/bus/coresight/devices# echo 0 > 2201c000.ptm/enable_source
-+root:/sys/bus/coresight/devices#
-+
-+The content of the ETB buffer can be harvested directly from /dev:
-+
-+root:/sys/bus/coresight/devices# dd if=/dev/20010000.etb \
-+of=~/cstrace.bin
-+
-+64+0 records in
-+64+0 records out
-+32768 bytes (33 kB) copied, 0.00125258 s, 26.2 MB/s
-+root:/sys/bus/coresight/devices#
-+
-+The file cstrace.bin can be decompressed using "ptm2human", DS-5 or Trace32.
-+
-+Following is a DS-5 output of an experimental loop that increments a variable up
-+to a certain value.  The example is simple and yet provides a glimpse of the
-+wealth of possibilities that coresight provides.
-+
-+Info                                    Tracing enabled
-+Instruction     106378866       0x8026B53C      E52DE004        false   PUSH     {lr}
-+Instruction     0       0x8026B540      E24DD00C        false   SUB      sp,sp,#0xc
-+Instruction     0       0x8026B544      E3A03000        false   MOV      r3,#0
-+Instruction     0       0x8026B548      E58D3004        false   STR      r3,[sp,#4]
-+Instruction     0       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
-+Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
-+Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
-+Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
-+Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
-+Timestamp                                       Timestamp: 17106715833
-+Instruction     319     0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
-+Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
-+Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
-+Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
-+Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
-+Instruction     9       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
-+Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
-+Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
-+Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
-+Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
-+Instruction     7       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
-+Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
-+Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
-+Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
-+Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
-+Instruction     7       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
-+Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
-+Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
-+Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
-+Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
-+Instruction     10      0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
-+Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
-+Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
-+Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
-+Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
-+Instruction     6       0x8026B560      EE1D3F30        false   MRC      p15,#0x0,r3,c13,c0,#1
-+Instruction     0       0x8026B564      E1A0100D        false   MOV      r1,sp
-+Instruction     0       0x8026B568      E3C12D7F        false   BIC      r2,r1,#0x1fc0
-+Instruction     0       0x8026B56C      E3C2203F        false   BIC      r2,r2,#0x3f
-+Instruction     0       0x8026B570      E59D1004        false   LDR      r1,[sp,#4]
-+Instruction     0       0x8026B574      E59F0010        false   LDR      r0,[pc,#16] ; [0x8026B58C] = 0x80550368
-+Instruction     0       0x8026B578      E592200C        false   LDR      r2,[r2,#0xc]
-+Instruction     0       0x8026B57C      E59221D0        false   LDR      r2,[r2,#0x1d0]
-+Instruction     0       0x8026B580      EB07A4CF        true    BL       {pc}+0x1e9344 ; 0x804548c4
-+Info                                    Tracing enabled
-+Instruction     13570831        0x8026B584      E28DD00C        false   ADD      sp,sp,#0xc
-+Instruction     0       0x8026B588      E8BD8000        true    LDM      sp!,{pc}
-+Timestamp                                       Timestamp: 17107041535
+--Andy
+
+
+>> > +            *
+>> > +            *  PTE encoding used in Linux:
+>> > +            *      PAT
+>> > +            *      |PCD
+>> > +            *      ||PWT  PAT
+>> > +            *      |||    slot
+>> > +            *      000    0    WB : _PAGE_CACHE_MODE_WB
+>> > +            *      001    1    WC : _PAGE_CACHE_MODE_WC
+>> > +            *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
+>> > +            *      011    3    UC : _PAGE_CACHE_MODE_UC
+>> > +            *      100    4    <reserved>
+>> > +            *      101    5    <reserved>
+>> > +            *      110    6    <reserved>
+>>
+>> Well, they are still mapped to WB/WC/UC_MINUS ....
+>
+> Right, the reserved slots are also initialized with their safe values.
+> However, the macros _PAGE_CACHE_MODE_XXX only refer to the slots
+> specified above.
+>
+>> > +            *      111    7    WT : _PAGE_CACHE_MODE_WT
+>> > +            */
+>> > +           pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
+>> > +                 PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
+>> > +   }
+>>
+>> Thanks,
+>
+> Thanks for the review!
+> -Toshi
+>
+
+
+
 -- 
-1.9.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
