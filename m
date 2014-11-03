@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaKCOoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:44:16 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:48736 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaKCOoI (ORCPT
+	id S1753199AbaKCOpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:45:01 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38877 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaKCOmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:44:08 -0500
-Date: Mon, 3 Nov 2014 22:43:37 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Jonathan Corbet <corbet@lwn.net>, "David S. Miller" <davem@davemloft.net>,
-        Marek Vasut <marex@denx.de>,
-        Jason Cooper <cryptography@lakedaemon.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v2 01/11] crypto: Documentation - crypto API high level
- spec
-Message-ID: <20141103144337.GA31659@gondor.apana.org.au>
-References: <6375771.bx7QqLJLuR@tachyon.chronox.de>
- <4163724.RCMDlx8dmE@tachyon.chronox.de>
- <20141103083439.635f5cb6@lwn.net>
- <4303532.NGaUQ44sQJ@tachyon.chronox.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4303532.NGaUQ44sQJ@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Nov 2014 09:42:45 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v4 11/14] regulator: max77802: Document binding for regulator operating modes
+Date: Mon,  3 Nov 2014 15:40:46 +0100
+Message-Id: <1415025649-8119-12-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 03:18:29PM +0100, Stephan Mueller wrote:
->
-> > > + * CRYPTO_ALG_TYPE_CIPHER	Raw block cipher
-> > > + * CRYPTO_ALG_TYPE_COMPRESS	Compression
-> > > + * CRYPTO_ALG_TYPE_AEAD		Authenticated Encryption with 
-> Associated Data
-> > > (MAC) + * CRYPTO_ALG_TYPE_BLKCIPHER	Synchronous multi-block cipher
-> > > + * CRYPTO_ALG_TYPE_ABLKCIPHER	Asynchronous multi-block cipher
-> > > + * CRYPTO_ALG_TYPE_GIVCIPHER
-> > 
-> > What's this one?
-> 
-> I would like to ask Herbert what that is -- I looked around in the code and I 
-> am not sure what that flag shall indicate.
+Some regulators from the max77802 PMIC support to be configured in one
+of two operating mode: Output ON (normal) and Output On Low Power Mode.
+Not all regulators support these two modes and for some of them, the
+mode can be changed while the system is running in normal operation
+while others only support their mode to be changed on system suspend.
 
-givcipher is an ablkcipher packed together with an IV generator.
+Extend the max77802 PMIC bindin by documenting the possible operating
+modes values so the regulators modes can be correctly configured.
 
-Cheers,
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+
+Changes in v4: None
+
+Changes in v3:
+ - Use the standard suspend states bindings as suggested by Mark Brown.
+
+ .../devicetree/bindings/regulator/max77802.txt     | 33 ++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/regulator/max77802.txt b/Documentation/devicetree/bindings/regulator/max77802.txt
+index 5aeaffc..1a78ec2 100644
+--- a/Documentation/devicetree/bindings/regulator/max77802.txt
++++ b/Documentation/devicetree/bindings/regulator/max77802.txt
+@@ -25,6 +25,27 @@ with their hardware counterparts as follow. The valid names are:
+ 			example: LDO1, LDO2, LDO35.
+ 	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
+ 			example: BUCK1, BUCK5, BUCK10.
++
++The max77802 regulator supports two different operating modes: Normal and Low
++Power Mode. Some regulators support the modes to be changed at startup or by
++the consumers during normal operation while others only support to change the
++mode during system suspend. The standard regulator suspend states binding can
++be used to configure the regulator operating mode.
++
++The regulators that support the standard "regulator-initial-mode" property,
++changing their mode during normal operation are: LDOs 1, 3, 20 and 21.
++
++The possible values for "regulator-initial-mode" and "regulator-mode" are:
++	1: Normal regulator voltage output mode.
++	3: Low Power which reduces the quiescent current down to only 1uA
++
++The list of valid modes are defined in the dt-bindings/regulator/regulator.h
++header and can be included by device tree source files.
++
++The standard "regulator-mode" property can only be used for regulators that
++support changing their mode to Low Power Mode during suspend. These regulators
++are: BUCKs 2-4 and LDOs 1-35.
++
+ Example:
+ 
+ 	max77802@09 {
+@@ -36,11 +57,23 @@ Example:
+ 		#size-cells = <0>;
+ 
+ 		regulators {
++			ldo1_reg: LDO1 {
++				regulator-name = "vdd_1v0";
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <1000000>;
++				regulator-always-on;
++				regulator-initial-mode = <MAX77802_OPMODE_LP>;
++			};
++
+ 			ldo11_reg: LDO11 {
+ 				regulator-name = "vdd_ldo11";
+ 				regulator-min-microvolt = <1900000>;
+ 				regulator-max-microvolt = <1900000>;
+ 				regulator-always-on;
++				regulator-state-mem {
++					regulator-on-in-suspend;
++					regulator-mode = <MAX77802_OPMODE_LP>;
++				};
+ 			};
+ 
+ 			buck1_reg: BUCK1 {
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+2.1.0
+
