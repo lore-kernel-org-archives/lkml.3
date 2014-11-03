@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaKCVdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:33:11 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:47469 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaKCVdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:33:08 -0500
+	id S1754016AbaKCVew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:34:52 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54042 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752229AbaKCVeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 16:34:50 -0500
+Date: Mon, 3 Nov 2014 22:34:43 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: arapov@gmail.com, poros@redhat.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, matt@console-pimps.org
+Subject: Re: FW/BIOS Bug category for oops.kernel.org
+Message-ID: <20141103213442.GB27387@pd.tnic>
+References: <20141103212610.GA10501@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20141103212706.GE7379@kroah.com>
-References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
- <5457D883.4050201@amacapital.net> <20141103212706.GE7379@kroah.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Nov 2014 13:32:46 -0800
-Message-ID: <CALCETrUNCuFvwkzbU4dWB0GH4mJKKV1e6jCNrSLVJe+n_et3kQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] Enable user helper interface for efi capsule update
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kweh Hock Leong <hock.leong.kweh@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Sam Protsenko <semen.protsenko@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Ong Boon Leong <boon.leong.ong@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141103212610.GA10501@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 1:27 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Nov 03, 2014 at 11:33:23AM -0800, Andy Lutomirski wrote:
->> On 11/02/2014 07:07 PM, Kweh Hock Leong wrote:
->> > From: "Kweh, Hock Leong" <hock.leong.kweh-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
->> >
->> > Hi Guys,
->> >
->> > This patchset is created on top of "efi: Capsule update support" patch:
->> > http://permalink.gmane.org/gmane.linux.kernel.efi/4837
->> >
->> > It leverages the request_firmware_nowait() to expose the user helper interface for user to upload the capsule binary and calling the
->> > efi_capsule_update() API to pass the binary to EFI firmware.
->>
->> I don't get it.  Why is the firmware interface at all reasonable for
->> uploading capsules?
->
-> Tradition dictates that BIOS updates go through the firmware interface,
-> that way you don't have to write a new userspace tool, which is a good
-> thing.
->
->> The firmware interface makes sense for nonvolatile firmware where
->> hotplugging something or otherwise loading a driver needs a blob.
->
-> Or BIOS data.  We've been doing it this way for a long time now.
+On Mon, Nov 03, 2014 at 10:26:10PM +0100, Peter Zijlstra wrote:
+> Hi oops.kernel.org folks,
+> 
+> I'm wanting to collect information on FW/BIOS bugs, and I figured that
+> we could use the oops.kernel.org infrastructure to do this.
+> 
+> Now, I'd prefer to not use the regular BUG/WARN because it might confuse
+> users and the stacktrace is entirely pointless -- we know were/why we
+> generate the msgs.
+> 
+> Is everything between:
+> 
+>         pr_warn("------------[ cut here ]------------\n");
+> and:
+>         pr_warn("---[ end trace %016llx ]---\n", (unsigned long long)oops_id);
+> 
+> sucked in automagically, or do we need more magic?
 
-On what system?  Dell?
+Btw, we have FW_{BUG,WARN,INFO} macros for exactly firmware issues.
 
-IMO this sucks from a UI point of view.  When I install wifi firmware,
-I expect to stick it somewhere and have the driver find it, because
-the driver knows exactly when it needs the firmware.  When I update my
-BIOS, I want to click a button or type a command and update my bios.
+-- 
+Regards/Gruss,
+    Boris.
 
->
->> But uploading an EFI capsule is an *action*, not something that should
->> happen transparently.  If there's an EFI firmware update available and
->> the user wants to install it, then the userspace tool should install it,
->> and it shouldn't hang around in /lib/firmware.  In fact, you shouldn't
->> even need /lib to be on writable media to use this.
->
-> What does /lib have to do with this?
-
-Where else does the file come from, given that udev no longer supports
-userspace firmware loading?  Is there really some pre-existing tool
-that pokes it into the sysfs firmware class thing?
-
-Since EFI capsules are apparently on their way to becoming a
-ubiquitous mechanism, I think it might be time to rethink
-request_firmware for this.
-
---Andy
+Sent from a fat crate under my desk. Formatting is fine.
+--
