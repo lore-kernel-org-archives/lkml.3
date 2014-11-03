@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785AbaKCUdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 15:33:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43874 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772AbaKCUdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 15:33:41 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Andrew de los Reyes <andrew-vger@gizmolabs.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: core: cleanup .claimed field on disconnect
-Date: Mon,  3 Nov 2014 15:33:32 -0500
-Message-Id: <1415046812-3263-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1753831AbaKCUem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 15:34:42 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:56849 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771AbaKCUej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 15:34:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.11.1411032124350.5308@nanos>
+References: <cover.1414618407.git.luto@amacapital.net> <9c448d5643d0fdb618f8cde9a54c21d2bcd486ce.1414618407.git.luto@amacapital.net>
+ <alpine.DEB.2.11.1411032124350.5308@nanos>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Nov 2014 12:34:17 -0800
+Message-ID: <CALCETrVHdk2izoGonfjPU5dTVcvAtycyia088FHMedDA4t-WAQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] x86_64,vsyscall: Rewrite comment and clean up
+ headers in vsyscall code
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>, Ingo Molnar <mingo@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a subdriver is rmmod-ed then re-insmod-ed, the hid device is not
-destroyed as it is owned by the transport layer.
-So when we re-probed the device, the hid device is assumed to be already
-claimed, and can lead to page faults if hid-core tries to forward the
-emitted data to the to-be-created claimed node.
+On Mon, Nov 3, 2014 at 12:31 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Wed, 29 Oct 2014, Andy Lutomirski wrote:
+>
+>> vsyscall_64.c is just vsyscall emulation.  Tidy it up accordingly.
+>>
+>> If my comment editing offends anyone, let me know and I can fix it.
+>>
+>> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>  arch/x86/kernel/vsyscall_64.c | 51 +++++++++++++++----------------------------
+>>  1 file changed, 18 insertions(+), 33 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+>> index 2d912629c96e..ee622f8183f3 100644
+>> --- a/arch/x86/kernel/vsyscall_64.c
+>> +++ b/arch/x86/kernel/vsyscall_64.c
+>> @@ -1,52 +1,37 @@
+>>  /*
+>> - *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
+>> - *  Copyright 2003 Andi Kleen, SuSE Labs.
+>> + * Mostly copyright (c) 2012-2014 Andy Lutomirski <luto@amacapital.net>
+>
+> We usualy leave the old copyright notices around even if the code
+> which is related to them has been removed more or less completely.
+>
+> So I change this to:
+>
+> /*
+>  * Copyright (c) 2012-2014 Andy Lutomirski <luto@amacapital.net>
+>  *
+>  * Based on the original implementation:
+>  *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
+>  *  Copyright 2003 Andi Kleen, SuSE Labs.
+>
+> and apply the whole lot.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
+Would it make more sense to move those copyright notices to
+arch/x86/vdso/vma.c?  That's where most of the code ended up.
 
-Hi Jiri,
-
-[keeping the people involved in the logitech-hidpp driver in CC]
-
-this one was particularly nasty. I had several page faults when just
-rmmod && insmod the hid-logitech-hidpp driver. The page fault was occuring
-in hidraw :/
-I was not able to get a stacktrace which I could include here. The laptop was
-completely unresponsive and I could take only a picture to debug it.
-
-Cheers,
-Benjamin
-
- drivers/hid/hid-core.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 1e2d512..bbb138d 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1656,6 +1656,7 @@ void hid_disconnect(struct hid_device *hdev)
- 		hdev->hiddev_disconnect(hdev);
- 	if (hdev->claimed & HID_CLAIMED_HIDRAW)
- 		hidraw_disconnect(hdev);
-+	hdev->claimed = 0;
- }
- EXPORT_SYMBOL_GPL(hid_disconnect);
- 
--- 
-2.1.0
-
+--Andy
