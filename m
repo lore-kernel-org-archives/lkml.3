@@ -1,143 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253AbaKCP71 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 10:59:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863AbaKCP5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 10:57:50 -0500
-From: Amos Kong <akong@redhat.com>
-To: virtualization@lists.linux-foundation.org
-Cc: kvm@vger.kernel.org, rusty@rustcorp.com.au, herbert@gondor.apana.org.au,
-        m@bues.ch, mb@bu3sch.de, mpm@selenic.com, amit.shah@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 1/6] hw_random: place mutex around read functions and buffers.
-Date: Mon,  3 Nov 2014 23:56:21 +0800
-Message-Id: <1415030186-18303-2-git-send-email-akong@redhat.com>
-In-Reply-To: <1415030186-18303-1-git-send-email-akong@redhat.com>
-References: <1415030186-18303-1-git-send-email-akong@redhat.com>
+	id S1753279AbaKCQAd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 11:00:33 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35661 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127AbaKCQAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 11:00:30 -0500
+Date: Mon, 3 Nov 2014 15:59:09 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20141103155909.GX3815@sirena.org.uk>
+References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1415025649-8119-4-git-send-email-javier.martinez@collabora.co.uk>
+ <20141103153303.GQ3815@sirena.org.uk>
+ <5457A3D2.1090602@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wwU9tsYnHnYeRAKj"
+Content-Disposition: inline
+In-Reply-To: <5457A3D2.1090602@collabora.co.uk>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 03/14] regulator: of: Add regulator desc param to
+ of_get_regulator_init_data()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
 
-There's currently a big lock around everything, and it means that we
-can't query sysfs (eg /sys/devices/virtual/misc/hw_random/rng_current)
-while the rng is reading.  This is a real problem when the rng is slow,
-or blocked (eg. virtio_rng with qemu's default /dev/random backend)
+--wwU9tsYnHnYeRAKj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This doesn't help (it leaves the current lock untouched), just adds a
-lock to protect the read function and the static buffers, in preparation
-for transition.
+On Mon, Nov 03, 2014 at 04:48:34PM +0100, Javier Martinez Canillas wrote:
+> On 11/03/2014 04:33 PM, Mark Brown wrote:
+> > On Mon, Nov 03, 2014 at 03:40:38PM +0100, Javier Martinez Canillas wrote:
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- drivers/char/hw_random/core.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+> >>  		if (!of_node_cmp(np->name, info->desc.name)) {
+> >>  			config->init_data =
+> >> -				of_get_regulator_init_data(&pdev->dev, np);
+> >> +				of_get_regulator_init_data(&pdev->dev, np,
+> >> +							   NULL);
 
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index aa30a25..b1b6042 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -53,7 +53,10 @@
- static struct hwrng *current_rng;
- static struct task_struct *hwrng_fill;
- static LIST_HEAD(rng_list);
-+/* Protects rng_list and current_rng */
- static DEFINE_MUTEX(rng_mutex);
-+/* Protects rng read functions, data_avail, rng_buffer and rng_fillbuf */
-+static DEFINE_MUTEX(reading_mutex);
- static int data_avail;
- static u8 *rng_buffer, *rng_fillbuf;
- static unsigned short current_quality;
-@@ -81,7 +84,9 @@ static void add_early_randomness(struct hwrng *rng)
- 	unsigned char bytes[16];
- 	int bytes_read;
- 
-+	mutex_lock(&reading_mutex);
- 	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-+	mutex_unlock(&reading_mutex);
- 	if (bytes_read > 0)
- 		add_device_randomness(bytes, bytes_read);
- }
-@@ -128,6 +133,7 @@ static inline int rng_get_data(struct hwrng *rng, u8 *buffer, size_t size,
- 			int wait) {
- 	int present;
- 
-+	BUG_ON(!mutex_is_locked(&reading_mutex));
- 	if (rng->read)
- 		return rng->read(rng, (void *)buffer, size, wait);
- 
-@@ -160,13 +166,14 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
- 			goto out_unlock;
- 		}
- 
-+		mutex_lock(&reading_mutex);
- 		if (!data_avail) {
- 			bytes_read = rng_get_data(current_rng, rng_buffer,
- 				rng_buffer_size(),
- 				!(filp->f_flags & O_NONBLOCK));
- 			if (bytes_read < 0) {
- 				err = bytes_read;
--				goto out_unlock;
-+				goto out_unlock_reading;
- 			}
- 			data_avail = bytes_read;
- 		}
-@@ -174,7 +181,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
- 		if (!data_avail) {
- 			if (filp->f_flags & O_NONBLOCK) {
- 				err = -EAGAIN;
--				goto out_unlock;
-+				goto out_unlock_reading;
- 			}
- 		} else {
- 			len = data_avail;
-@@ -186,7 +193,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
- 			if (copy_to_user(buf + ret, rng_buffer + data_avail,
- 								len)) {
- 				err = -EFAULT;
--				goto out_unlock;
-+				goto out_unlock_reading;
- 			}
- 
- 			size -= len;
-@@ -194,6 +201,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
- 		}
- 
- 		mutex_unlock(&rng_mutex);
-+		mutex_unlock(&reading_mutex);
- 
- 		if (need_resched())
- 			schedule_timeout_interruptible(1);
-@@ -208,6 +216,9 @@ out:
- out_unlock:
- 	mutex_unlock(&rng_mutex);
- 	goto out;
-+out_unlock_reading:
-+	mutex_unlock(&reading_mutex);
-+	goto out_unlock;
- }
- 
- 
-@@ -348,13 +359,16 @@ static int hwrng_fillfn(void *unused)
- 	while (!kthread_should_stop()) {
- 		if (!current_rng)
- 			break;
-+		mutex_lock(&reading_mutex);
- 		rc = rng_get_data(current_rng, rng_fillbuf,
- 				  rng_buffer_size(), 1);
-+		mutex_unlock(&reading_mutex);
- 		if (rc <= 0) {
- 			pr_warn("hwrng: no data available\n");
- 			msleep_interruptible(10000);
- 			continue;
- 		}
-+		/* Outside lock, sure, but y'know: randomness. */
- 		add_hwgenerator_randomness((void *)rng_fillbuf, rc,
- 					   rc * current_quality * 8 >> 10);
- 	}
--- 
-1.9.3
+> > This looks buggy, we're not passing in a descriptor.
 
+> The descriptor is only used when extracting the init_data to map the
+> modes and since it was not a parameter before, some drivers needs to
+> be refactored to pass that information.
+
+No, it's only *currently* used for that.  If we don't bother passing the
+descriptor in then future additions which make use of it (including
+adding mode operations to existing drivers) won't work and it might not
+be obvious why.
+
+> I thought that instead of adding intrusive changes in drivers that I
+> don't have hw to test, that parameter could be optional so the patch
+> that use that information check if the descriptor and the map_modes
+> function pointer are not NULL.
+
+You're already going through and modifying every single driver and all
+of those I looked at already had references to the descriptor in
+adjacent code or a global descriptor for the one regulator supported by
+the driver.
+
+--wwU9tsYnHnYeRAKj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUV6ZMAAoJECTWi3JdVIfQpnIH/2ELsHglxNemBdNBvlYIZRR8
+krsswG75WFonKz0pkm+7w6O44sMk015dhbuHAGY/CLV1Q/sfsbkdKhwGKhFX92NY
+uEf7t50VihcjZ4InzluW4zbvaMJtmuJRAWC5EfxWarTNR+z+mxZJRUCZ2D4YhTPI
+5suvjRGCPSR2GsrMPGTgoQDOmfGkIY4KLbYKtDFTZlzB24TNKfvW82fEWgznoB/x
+alS+NuGfgWoVFc/oqZLyqCiHkczEyIHysh+zJGjQE4nvWI0EfvhZBMoIOFf+whfR
+926L/NPwtNpB0wITHd6SynndeZAfa5elgsTX5nVoAM1KsyPl7wgCpAK+4o0skXo=
+=elGm
+-----END PGP SIGNATURE-----
+
+--wwU9tsYnHnYeRAKj--
