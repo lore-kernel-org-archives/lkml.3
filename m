@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670AbaKCKbr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:31:47 -0500
-Received: from smtp-out-246.synserver.de ([212.40.185.246]:1053 "EHLO
-	smtp-out-246.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaKCKbn (ORCPT
+	id S1751533AbaKCKba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:31:30 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:47568 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228AbaKCKbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:31:43 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 25928
-Message-ID: <5457598B.1050408@metafoo.de>
-Date: Mon, 03 Nov 2014 11:31:39 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Jonathan Cameron <jic23@kernel.org>
-CC: Hartmut Knaack <knaack.h@gmx.de>, Peter Meerwald <pmeerw@pmeerw.net>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2] iio: inkern: Add of_xlate function to struct iio_info
-References: <1413991783-24562-1-git-send-email-iivanov@mm-sol.com>	 <5447CDFA.5030407@metafoo.de> <544B75B8.1010505@kernel.org> <1415009224.407.13.camel@mm-sol.com>
-In-Reply-To: <1415009224.407.13.camel@mm-sol.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Nov 2014 05:31:22 -0500
+From: "pang.xunlei" <pang.xunlei@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "pang.xunlei" <pang.xunlei@linaro.org>
+Subject: [PATCH 3/3] sched/rt: Optimize select_task_rq_rt() for non-RT curr task
+Date: Mon,  3 Nov 2014 18:30:20 +0800
+Message-Id: <1415010620-6176-3-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1415010620-6176-1-git-send-email-pang.xunlei@linaro.org>
+References: <1415010620-6176-1-git-send-email-pang.xunlei@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 11:07 AM, Ivan T. Ivanov wrote:
->
-> On Sat, 2014-10-25 at 11:04 +0100, Jonathan Cameron wrote:
->> On 22/10/14 16:32, Lars-Peter Clausen wrote:
->>> On 10/22/2014 05:29 PM, Ivan T. Ivanov wrote:
->>>> When #iio-cells is greater than '0', the driver could provide
->>>> a custom of_xlate function that reads the *args* and returns
->>>> the appropriate index in registered IIO channels array.
->>>>
->>>> Add simple translation function, suitable for the most 1:1
->>>> mapped channels in IIO chips, and use it when driver did not
->>>> provide custom implementation.
->>>>
->>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->>>
->>> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
->>>
->> Applied to the togreg branch of iio.git - initially pushed out as testing
->> for the autobuilders to play with it.
->
-> Thank you. Probably my git skills failed me, but I can not
-> find it in aforementioned branches. Is it publicly pushed?
+When selecting the cpu for a waking RT task, if curr is a non-RT
+task which is bound only on this cpu, then we can give it a chance
+to select a different cpu(definitely an idle cpu if existing) for
+the RT task to avoid curr starving.
 
-It's in the testing branch.
+Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+---
+ kernel/sched/rt.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-http://git.kernel.org/cgit/linux/kernel/git/jic23/iio.git/log/?h=testing
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index d024e6c..89202ab 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1319,6 +1319,11 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+ 	 * runqueue. Otherwise simply start this RT task
+ 	 * on its current runqueue.
+ 	 *
++	 * If the current task on @p's runqueue is a non-RT task,
++	 * and this task is bound on current runqueue, then try to
++	 * see if we can wake this RT task up on a different runqueue,
++	 * we will definitely find an idle cpu if there is any.
++	 *
+ 	 * We want to avoid overloading runqueues. If the woken
+ 	 * task is a higher priority, then it will stay on this CPU
+ 	 * and the lower prio task should be moved to another CPU.
+@@ -1335,9 +1340,8 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+ 	 * This test is optimistic, if we get it wrong the load-balancer
+ 	 * will have to sort it out.
+ 	 */
+-	if (curr && unlikely(rt_task(curr)) &&
+-	    (curr->nr_cpus_allowed < 2 ||
+-	     curr->prio <= p->prio)) {
++	if (curr && unlikely(curr->nr_cpus_allowed < 2 ||
++				curr->prio <= p->prio)) {
+ 		int target = find_lowest_rq(p);
+ 
+ 		if (target != -1)
+-- 
+1.7.9.5
 
