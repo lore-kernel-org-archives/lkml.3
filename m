@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaKCKQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 05:16:14 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:40407 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751016AbaKCKQK (ORCPT
+	id S1751761AbaKCKSQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 05:18:16 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:41164 "EHLO
+	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751006AbaKCKSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:16:10 -0500
-X-Sasl-enc: PjKBxARLy26ep0238c+M7X6rIHo7j6HVU9I9Xc+Ka4uW 1415009769
-Date: Mon, 3 Nov 2014 08:15:58 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Kweh Hock Leong <hock.leong.kweh@intel.com>
-Cc: Matt Fleming <matt.fleming@intel.com>, Ming Lei <ming.lei@canonical.com>,
-        Sam Protsenko <semen.protsenko@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
-        Ong Boon Leong <boon.leong.ong@intel.com>
-Subject: Re: [PATCH v2 1/3] firmware loader: Introduce new API -
- request_firmware_abort()
-Message-ID: <20141103101558.GA11739@khazad-dum.debian.net>
-References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
- <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
+	Mon, 3 Nov 2014 05:18:14 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54575662.7030403@mev.co.uk>
+Date: Mon, 03 Nov 2014 10:18:10 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chase Southwood <chase.southwood@yahoo.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: drivers: comedi_bond.c:  Remove unneeded
+ #define
+References: <1414966324-18285-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1414966324-18285-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Nov 2014, Kweh Hock Leong wrote:
-> Note for people who use request_firmware_nowait():
-> You are required to do your own synchronization after you call
-> request_firmware_abort() in order to continue unloading the
-> module. The example synchronization code shows below:
-> 
-> while (THIS_MODULE && module_refcount(THIS_MODULE))
-> 	msleep(20);
+On 02/11/14 22:12, Rickard Strandqvist wrote:
+> Remove unneeded #define. This was previously included in a patch set
+> two but patchset one was taken by mistake.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/staging/comedi/drivers/comedi_bond.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/comedi_bond.c b/drivers/staging/comedi/drivers/comedi_bond.c
+> index 5d19861..85b2f4a 100644
+> --- a/drivers/staging/comedi/drivers/comedi_bond.c
+> +++ b/drivers/staging/comedi/drivers/comedi_bond.c
+> @@ -61,8 +61,7 @@ struct bonded_device {
+>   };
+>
+>   struct comedi_bond_private {
+> -# define MAX_BOARD_NAME 256
+> -	char name[MAX_BOARD_NAME];
+> +	char name[256];
+>   	struct bonded_device **devs;
+>   	unsigned ndevs;
+>   	unsigned nchans;
+>
 
-This is _so_ asking for people to get it wrong, it is not funny :-(
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
