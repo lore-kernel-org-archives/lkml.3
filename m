@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318AbaKCLHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:07:18 -0500
-Received: from mail-bl2on0061.outbound.protection.outlook.com ([65.55.169.61]:63824
+	id S1752886AbaKCLHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:07:44 -0500
+Received: from mail-bl2on0068.outbound.protection.outlook.com ([65.55.169.68]:55943
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751230AbaKCKxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:53:54 -0500
+	id S1751281AbaKCKxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:53:47 -0500
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v6 08/29] nios2: MMU Fault handling
-Date: Mon, 3 Nov 2014 18:52:04 +0800
-Message-ID: <1415011945-3297-9-git-send-email-lftan@altera.com>
+Subject: [PATCH v6 06/29] nios2: Memory management
+Date: Mon, 3 Nov 2014 18:52:02 +0800
+Message-ID: <1415011945-3297-7-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
 References: <1415011945-3297-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(104166001)(21056001)(99396003)(88136002)(46102003)(105596002)(20776003)(77096003)(77156002)(62966003)(102836001)(68736004)(31966008)(87286001)(44976005)(19580395003)(95666004)(19580405001)(106466001)(6806004)(89996001)(47776003)(64706001)(87936001)(48376002)(120916001)(92566001)(42186005)(2201001)(50226001)(50986999)(93916002)(575784001)(76176999)(86362001)(92726001)(4396001)(33646002)(84676001)(229853001)(50466002)(107046002)(36756003)(97736003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB218;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(36756003)(4396001)(50226001)(97736003)(48376002)(107046002)(95666004)(105596002)(50466002)(229853001)(77156002)(6806004)(575784001)(2201001)(19580395003)(44976005)(99396003)(19580405001)(86362001)(93916002)(102836001)(120916001)(92566001)(92726001)(68736004)(106466001)(88136002)(42186005)(87286001)(104166001)(87936001)(20776003)(47776003)(31966008)(21056001)(89996001)(33646002)(84676001)(46102003)(64706001)(76176999)(50986999)(77096003)(62966003)(21314002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB223;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB218;
-X-Exchange-Antispam-Report-Test: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB223;
 X-Forefront-PRVS: 0384275935
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
@@ -33,25 +32,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the handling of the MMU faults (exception
-entry code introduced by a previous patch, kernel/entry.S).
+This patch contains the initialisation of the memory blocks, MMU
+attributes and the memory map.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/mm/extable.c |  25 +++++
- arch/nios2/mm/fault.c   | 251 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 276 insertions(+)
- create mode 100644 arch/nios2/mm/extable.c
- create mode 100644 arch/nios2/mm/fault.c
+ arch/nios2/include/asm/mmu.h     |  16 +++
+ arch/nios2/include/asm/page.h    | 111 +++++++++++++++++++
+ arch/nios2/include/asm/uaccess.h | 231 +++++++++++++++++++++++++++++++++++++++
+ arch/nios2/mm/init.c             | 142 ++++++++++++++++++++++++
+ arch/nios2/mm/uaccess.c          | 163 +++++++++++++++++++++++++++
+ 5 files changed, 663 insertions(+)
+ create mode 100644 arch/nios2/include/asm/mmu.h
+ create mode 100644 arch/nios2/include/asm/page.h
+ create mode 100644 arch/nios2/include/asm/uaccess.h
+ create mode 100644 arch/nios2/mm/init.c
+ create mode 100644 arch/nios2/mm/uaccess.c
 
-diff --git a/arch/nios2/mm/extable.c b/arch/nios2/mm/extable.c
+diff --git a/arch/nios2/include/asm/mmu.h b/arch/nios2/include/asm/mmu.h
 new file mode 100644
-index 0000000..4d2fc5a
+index 0000000..d9c0b10
 --- /dev/null
-+++ b/arch/nios2/mm/extable.c
-@@ -0,0 +1,25 @@
++++ b/arch/nios2/include/asm/mmu.h
+@@ -0,0 +1,16 @@
 +/*
-+ * Copyright (C) 2010, Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_MMU_H
++#define _ASM_NIOS2_MMU_H
++
++/* Default "unsigned long" context */
++typedef unsigned long mm_context_t;
++
++#endif /* _ASM_NIOS2_MMU_H */
+diff --git a/arch/nios2/include/asm/page.h b/arch/nios2/include/asm/page.h
+new file mode 100644
+index 0000000..7a0d9bd
+--- /dev/null
++++ b/arch/nios2/include/asm/page.h
+@@ -0,0 +1,111 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * MMU support based on asm/page.h from mips which is:
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03 Ralf Baechle
++ * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_PAGE_H
++#define _ASM_NIOS2_PAGE_H
++
++#include <linux/pfn.h>
++#include <linux/const.h>
++
++/*
++ * PAGE_SHIFT determines the page size
++ */
++#define PAGE_SHIFT	12
++#define PAGE_SIZE	(_AC(1, UL) << PAGE_SHIFT)
++#define PAGE_MASK	(~(PAGE_SIZE - 1))
++
++/*
++ * PAGE_OFFSET -- the first address of the first page of memory.
++ */
++#define PAGE_OFFSET	\
++	(CONFIG_NIOS2_MEM_BASE + CONFIG_NIOS2_KERNEL_REGION_BASE)
++
++#ifndef __ASSEMBLY__
++
++/*
++ * This gives the physical RAM offset.
++ */
++#define PHYS_OFFSET		CONFIG_NIOS2_MEM_BASE
++
++/*
++ * It's normally defined only for FLATMEM config but it's
++ * used in our early mem init code for all memory models.
++ * So always define it.
++ */
++#define ARCH_PFN_OFFSET		PFN_UP(PHYS_OFFSET)
++
++#define clear_page(page)	memset((page), 0, PAGE_SIZE)
++#define copy_page(to, from)	memcpy((to), (from), PAGE_SIZE)
++
++struct page;
++
++extern void clear_user_page(void *addr, unsigned long vaddr, struct page *page);
++extern void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
++				struct page *to);
++
++extern unsigned long shm_align_mask;
++
++/*
++ * These are used to make use of C type-checking.
++ */
++typedef struct page *pgtable_t;
++typedef struct { unsigned long pte; } pte_t;
++typedef struct { unsigned long pgd; } pgd_t;
++typedef struct { unsigned long pgprot; } pgprot_t;
++
++#define pte_val(x)	((x).pte)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)	((x).pgprot)
++
++#define __pte(x)	((pte_t) { (x) })
++#define __pgd(x)	((pgd_t) { (x) })
++#define __pgprot(x)	((pgprot_t) { (x) })
++
++extern unsigned long memory_start;
++extern unsigned long memory_end;
++extern unsigned long memory_size;
++
++extern struct page *mem_map;
++
++#endif /* !__ASSEMBLY__ */
++
++# define __pa(x)		\
++	((unsigned long)(x) - PAGE_OFFSET + PHYS_OFFSET)
++# define __va(x)		\
++	((void *)((unsigned long)(x) + PAGE_OFFSET - PHYS_OFFSET))
++
++#define page_to_virt(page)	\
++	((((page) - mem_map) << PAGE_SHIFT) + PAGE_OFFSET)
++
++# define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
++# define pfn_valid(pfn)		((pfn) >= ARCH_PFN_OFFSET &&	\
++					(pfn) < max_mapnr)
++
++# define virt_to_page(vaddr)	pfn_to_page(PFN_DOWN(virt_to_phys(vaddr)))
++# define virt_addr_valid(vaddr)	pfn_valid(PFN_DOWN(virt_to_phys(vaddr)))
++
++# define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
++				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++
++# define UNCAC_ADDR(addr)	\
++	((void *)((unsigned)(addr) | CONFIG_NIOS2_IO_REGION_BASE))
++# define CAC_ADDR(addr)		\
++	((void *)(((unsigned)(addr) & ~CONFIG_NIOS2_IO_REGION_BASE) |	\
++		CONFIG_NIOS2_KERNEL_REGION_BASE))
++
++#include <asm-generic/memory_model.h>
++
++#include <asm-generic/getorder.h>
++
++#endif /* _ASM_NIOS2_PAGE_H */
+diff --git a/arch/nios2/include/asm/uaccess.h b/arch/nios2/include/asm/uaccess.h
+new file mode 100644
+index 0000000..acedc0a
+--- /dev/null
++++ b/arch/nios2/include/asm/uaccess.h
+@@ -0,0 +1,231 @@
++/*
++ * User space memory access functions for Nios II
++ *
++ * Copyright (C) 2010-2011, Tobias Klauser <tklauser@distanz.ch>
 + * Copyright (C) 2009, Wind River Systems Inc
 + *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + *
@@ -60,43 +206,247 @@ index 0000000..4d2fc5a
 + * for more details.
 + */
 +
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
++#ifndef _ASM_NIOS2_UACCESS_H
++#define _ASM_NIOS2_UACCESS_H
 +
-+int fixup_exception(struct pt_regs *regs)
-+{
-+	const struct exception_table_entry *fixup;
++#include <linux/errno.h>
++#include <linux/thread_info.h>
++#include <linux/string.h>
 +
-+	fixup = search_exception_tables(regs->ea);
-+	if (fixup) {
-+		regs->ea = fixup->fixup;
-+		return 1;
-+	}
++#include <asm/page.h>
 +
-+	return 0;
-+}
-diff --git a/arch/nios2/mm/fault.c b/arch/nios2/mm/fault.c
-new file mode 100644
-index 0000000..15a0bb5
---- /dev/null
-+++ b/arch/nios2/mm/fault.c
-@@ -0,0 +1,251 @@
++#define VERIFY_READ	0
++#define VERIFY_WRITE	1
++
 +/*
++ * The exception table consists of pairs of addresses: the first is the
++ * address of an instruction that is allowed to fault, and the second is
++ * the address at which the program should continue.  No registers are
++ * modified, so it is entirely up to the continuation code to figure out
++ * what to do.
++ *
++ * All the routines below use bits of fixup code that are out of line
++ * with the main instruction path.  This means when everything is well,
++ * we don't even have to jump over them.  Further, they do not intrude
++ * on our cache or tlb entries.
++ */
++struct exception_table_entry {
++	unsigned long insn;
++	unsigned long fixup;
++};
++
++extern int fixup_exception(struct pt_regs *regs);
++
++/*
++ * Segment stuff
++ */
++#define MAKE_MM_SEG(s)		((mm_segment_t) { (s) })
++#define USER_DS			MAKE_MM_SEG(0x80000000UL)
++#define KERNEL_DS		MAKE_MM_SEG(0)
++
++#define get_ds()		(KERNEL_DS)
++
++#define get_fs()		(current_thread_info()->addr_limit)
++#define set_fs(seg)		(current_thread_info()->addr_limit = (seg))
++
++#define segment_eq(a, b)	((a).seg == (b).seg)
++
++#define __access_ok(addr, len)			\
++	(((signed long)(((long)get_fs().seg) &	\
++		((long)(addr) | (((long)(addr)) + (len)) | (len)))) == 0)
++
++#define access_ok(type, addr, len)		\
++	likely(__access_ok((unsigned long)(addr), (unsigned long)(len)))
++
++# define __EX_TABLE_SECTION	".section __ex_table,\"a\"\n"
++
++/*
++ * Zero Userspace
++ */
++
++static inline unsigned long __must_check __clear_user(void __user *to,
++						      unsigned long n)
++{
++	__asm__ __volatile__ (
++		"1:     stb     zero, 0(%1)\n"
++		"       addi    %0, %0, -1\n"
++		"       addi    %1, %1, 1\n"
++		"       bne     %0, zero, 1b\n"
++		"2:\n"
++		__EX_TABLE_SECTION
++		".word  1b, 2b\n"
++		".previous\n"
++		: "=r" (n), "=r" (to)
++		: "0" (n), "1" (to)
++	);
++
++	return n;
++}
++
++static inline unsigned long __must_check clear_user(void __user *to,
++						    unsigned long n)
++{
++	if (!access_ok(VERIFY_WRITE, to, n))
++		return n;
++	return __clear_user(to, n);
++}
++
++extern long __copy_from_user(void *to, const void __user *from,
++				unsigned long n);
++extern long __copy_to_user(void __user *to, const void *from, unsigned long n);
++
++static inline long copy_from_user(void *to, const void __user *from,
++				unsigned long n)
++{
++	if (!access_ok(VERIFY_READ, from, n))
++		return n;
++	return __copy_from_user(to, from, n);
++}
++
++static inline long copy_to_user(void __user *to, const void *from,
++				unsigned long n)
++{
++	if (!access_ok(VERIFY_WRITE, to, n))
++		return n;
++	return __copy_to_user(to, from, n);
++}
++
++extern long strncpy_from_user(char *__to, const char __user *__from,
++				long __len);
++extern long strnlen_user(const char __user *s, long n);
++
++#define __copy_from_user_inatomic	__copy_from_user
++#define __copy_to_user_inatomic		__copy_to_user
++
++/* Optimized macros */
++#define __get_user_asm(val, insn, addr, err)				\
++{									\
++	__asm__ __volatile__(						\
++	"       movi    %0, %3\n"					\
++	"1:   " insn " %1, 0(%2)\n"					\
++	"       movi     %0, 0\n"					\
++	"2:\n"								\
++	"       .section __ex_table,\"a\"\n"				\
++	"       .word 1b, 2b\n"						\
++	"       .previous"						\
++	: "=&r" (err), "=r" (val)					\
++	: "r" (addr), "i" (-EFAULT));					\
++}
++
++#define __get_user_unknown(val, size, ptr, err) do {			\
++	err = 0;							\
++	if (copy_from_user(&(val), ptr, size)) {			\
++		err = -EFAULT;						\
++	}								\
++	} while (0)
++
++#define __get_user_common(val, size, ptr, err)				\
++do {									\
++	switch (size) {							\
++	case 1:								\
++		__get_user_asm(val, "ldbu", ptr, err);			\
++		break;							\
++	case 2:								\
++		__get_user_asm(val, "ldhu", ptr, err);			\
++		break;							\
++	case 4:								\
++		__get_user_asm(val, "ldw", ptr, err);			\
++		break;							\
++	default:							\
++		__get_user_unknown(val, size, ptr, err);		\
++		break;							\
++	}								\
++} while (0)
++
++#define __get_user(x, ptr)						\
++	({								\
++	long __gu_err = -EFAULT;					\
++	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
++	unsigned long __gu_val;						\
++	__get_user_common(__gu_val, sizeof(*(ptr)), __gu_ptr, __gu_err);\
++	(x) = (__typeof__(x))__gu_val;					\
++	__gu_err;							\
++	})
++
++#define get_user(x, ptr)						\
++({									\
++	long __gu_err = -EFAULT;					\
++	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
++	unsigned long __gu_val = 0;					\
++	if (access_ok(VERIFY_READ,  __gu_ptr, sizeof(*__gu_ptr)))	\
++		__get_user_common(__gu_val, sizeof(*__gu_ptr),		\
++			__gu_ptr, __gu_err);				\
++	(x) = (__typeof__(x))__gu_val;					\
++	__gu_err;							\
++})
++
++#define __put_user_asm(val, insn, ptr, err)				\
++{									\
++	__asm__ __volatile__(						\
++	"       movi    %0, %3\n"					\
++	"1:   " insn " %1, 0(%2)\n"					\
++	"       movi     %0, 0\n"					\
++	"2:\n"								\
++	"       .section __ex_table,\"a\"\n"				\
++	"       .word 1b, 2b\n"						\
++	"       .previous\n"						\
++	: "=&r" (err)							\
++	: "r" (val), "r" (ptr), "i" (-EFAULT));				\
++}
++
++#define put_user(x, ptr)						\
++({									\
++	long __pu_err = -EFAULT;					\
++	__typeof__(*(ptr)) __user *__pu_ptr = (ptr);			\
++	__typeof__(*(ptr)) __pu_val = (__typeof(*ptr))(x);		\
++	if (access_ok(VERIFY_WRITE, __pu_ptr, sizeof(*__pu_ptr))) {	\
++		switch (sizeof(*__pu_ptr)) {				\
++		case 1:							\
++			__put_user_asm(__pu_val, "stb", __pu_ptr, __pu_err); \
++			break;						\
++		case 2:							\
++			__put_user_asm(__pu_val, "sth", __pu_ptr, __pu_err); \
++			break;						\
++		case 4:							\
++			__put_user_asm(__pu_val, "stw", __pu_ptr, __pu_err); \
++			break;						\
++		default:						\
++			/* XXX: This looks wrong... */			\
++			__pu_err = 0;					\
++			if (copy_to_user(__pu_ptr, &(__pu_val),		\
++				sizeof(*__pu_ptr)))			\
++				__pu_err = -EFAULT;			\
++			break;						\
++		}							\
++	}								\
++	__pu_err;							\
++})
++
++#define __put_user(x, ptr) put_user(x, ptr)
++
++#endif /* _ASM_NIOS2_UACCESS_H */
+diff --git a/arch/nios2/mm/init.c b/arch/nios2/mm/init.c
+new file mode 100644
+index 0000000..e75c75d
+--- /dev/null
++++ b/arch/nios2/mm/init.c
+@@ -0,0 +1,142 @@
++/*
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
 + * Copyright (C) 2009 Wind River Systems Inc
 + *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * Copyright (C) 2004 Microtronix Datacom Ltd
 + *
-+ * based on arch/mips/mm/fault.c which is:
-+ *
-+ * Copyright (C) 1995-2000 Ralf Baechle
++ * based on arch/m68k/mm/init.c
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
++ * License. See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
 +#include <linux/signal.h>
 +#include <linux/sched.h>
-+#include <linux/interrupt.h>
 +#include <linux/kernel.h>
 +#include <linux/errno.h>
 +#include <linux/string.h>
@@ -104,233 +454,293 @@ index 0000000..15a0bb5
 +#include <linux/ptrace.h>
 +#include <linux/mman.h>
 +#include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+#include <linux/ptrace.h>
++#include <linux/init.h>
++#include <linux/pagemap.h>
++#include <linux/bootmem.h>
++#include <linux/slab.h>
++#include <linux/binfmts.h>
 +
++#include <asm/setup.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
++#include <asm/sections.h>
++#include <asm/tlb.h>
 +#include <asm/mmu_context.h>
-+#include <asm/traps.h>
++#include <asm/cpuinfo.h>
++#include <asm/processor.h>
 +
-+#define EXC_SUPERV_INSN_ACCESS	9  /* Supervisor only instruction address */
-+#define EXC_SUPERV_DATA_ACCESS	11 /* Supervisor only data address */
-+#define EXC_X_PROTECTION_FAULT	13 /* TLB permission violation (x) */
-+#define EXC_R_PROTECTION_FAULT	14 /* TLB permission violation (r) */
-+#define EXC_W_PROTECTION_FAULT	15 /* TLB permission violation (w) */
++pgd_t *pgd_current;
 +
 +/*
-+ * This routine handles page faults.  It determines the address,
-+ * and the problem, and then passes it off to one of the appropriate
-+ * routines.
++ * paging_init() continues the virtual memory environment setup which
++ * was begun by the code in arch/head.S.
++ * The parameters are pointers to where to stick the starting and ending
++ * addresses of available kernel virtual memory.
 + */
-+asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long cause,
-+				unsigned long address)
++void __init paging_init(void)
 +{
-+	struct vm_area_struct *vma = NULL;
-+	struct task_struct *tsk = current;
-+	struct mm_struct *mm = tsk->mm;
-+	int code = SEGV_MAPERR;
-+	int fault;
-+	unsigned int flags = 0;
++	unsigned long zones_size[MAX_NR_ZONES];
 +
-+	cause >>= 2;
++	memset(zones_size, 0, sizeof(zones_size));
 +
-+	/* Restart the instruction */
-+	regs->ea -= 4;
++	pagetable_init();
++	pgd_current = swapper_pg_dir;
 +
-+	/*
-+	 * We fault-in kernel-space virtual memory on-demand. The
-+	 * 'reference' page table is init_mm.pgd.
-+	 *
-+	 * NOTE! We MUST NOT take any locks for this case. We may
-+	 * be in an interrupt or a critical region, and should
-+	 * only copy the information from the master page table,
-+	 * nothing more.
-+	 */
-+	if (unlikely(address >= VMALLOC_START && address <= VMALLOC_END)) {
-+		if (user_mode(regs))
-+			goto bad_area_nosemaphore;
-+		else
-+			goto vmalloc_fault;
-+	}
++	zones_size[ZONE_NORMAL] = max_mapnr;
 +
-+	if (unlikely(address >= TASK_SIZE))
-+		goto bad_area_nosemaphore;
++	/* pass the memory from the bootmem allocator to the main allocator */
++	free_area_init(zones_size);
 +
-+	/*
-+	 * If we're in an interrupt or have no user
-+	 * context, we must not take the fault..
-+	 */
-+	if (in_atomic() || !mm)
-+		goto bad_area_nosemaphore;
++	flush_dcache_range((unsigned long)empty_zero_page,
++			(unsigned long)empty_zero_page + PAGE_SIZE);
++}
 +
-+	if (user_mode(regs))
-+		flags |= FAULT_FLAG_USER;
++void __init mem_init(void)
++{
++	unsigned long end_mem   = memory_end; /* this must not include
++						kernel stack at top */
 +
-+	if (!down_read_trylock(&mm->mmap_sem)) {
-+		if (!user_mode(regs) && !search_exception_tables(regs->ea))
-+			goto bad_area_nosemaphore;
-+		down_read(&mm->mmap_sem);
-+	}
++	pr_debug("mem_init: start=%lx, end=%lx\n", memory_start, memory_end);
 +
-+	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto bad_area;
-+	if (vma->vm_start <= address)
-+		goto good_area;
-+	if (!(vma->vm_flags & VM_GROWSDOWN))
-+		goto bad_area;
-+	if (expand_stack(vma, address))
-+		goto bad_area;
++	end_mem &= PAGE_MASK;
++	high_memory = __va(end_mem);
++
++	/* this will put all memory onto the freelists */
++	free_all_bootmem();
++	mem_init_print_info(NULL);
++}
++
++void __init mmu_init(void)
++{
++	flush_tlb_all();
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++void __init free_initrd_mem(unsigned long start, unsigned long end)
++{
++	free_reserved_area((void *)start, (void *)end, -1, "initrd");
++}
++#endif
++
++void __init_refok free_initmem(void)
++{
++	free_initmem_default(-1);
++}
++
++#define __page_aligned(order) __aligned(PAGE_SIZE << (order))
++pgd_t swapper_pg_dir[PTRS_PER_PGD] __page_aligned(PGD_ORDER);
++pte_t invalid_pte_table[PTRS_PER_PTE] __page_aligned(PTE_ORDER);
++static struct page *kuser_page[1];
++
++static int alloc_kuser_page(void)
++{
++	extern char __kuser_helper_start[], __kuser_helper_end[];
++	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
++	unsigned long vpage;
++
++	vpage = get_zeroed_page(GFP_ATOMIC);
++	if (!vpage)
++		return -ENOMEM;
++
++	/* Copy kuser helpers */
++	memcpy((void *)vpage, __kuser_helper_start, kuser_sz);
++
++	flush_icache_range(vpage, vpage + KUSER_SIZE);
++	kuser_page[0] = virt_to_page(vpage);
++
++	return 0;
++}
++arch_initcall(alloc_kuser_page);
++
++int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++{
++	struct mm_struct *mm = current->mm;
++	int ret;
++
++	down_write(&mm->mmap_sem);
++
++	/* Map kuser helpers to user space address */
++	ret = install_special_mapping(mm, KUSER_BASE, KUSER_SIZE,
++				      VM_READ | VM_EXEC | VM_MAYREAD |
++				      VM_MAYEXEC, kuser_page);
++
++	up_write(&mm->mmap_sem);
++
++	return ret;
++}
++
++const char *arch_vma_name(struct vm_area_struct *vma)
++{
++	return (vma->vm_start == KUSER_BASE) ? "[kuser]" : NULL;
++}
+diff --git a/arch/nios2/mm/uaccess.c b/arch/nios2/mm/uaccess.c
+new file mode 100644
+index 0000000..7663e15
+--- /dev/null
++++ b/arch/nios2/mm/uaccess.c
+@@ -0,0 +1,163 @@
 +/*
-+ * Ok, we have a good vm_area for this memory access, so
-+ * we can handle it..
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2009, Wind River Systems Inc
++ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + */
-+good_area:
-+	code = SEGV_ACCERR;
 +
-+	switch (cause) {
-+	case EXC_SUPERV_INSN_ACCESS:
-+		goto bad_area;
-+	case EXC_SUPERV_DATA_ACCESS:
-+		goto bad_area;
-+	case EXC_X_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_EXEC))
-+			goto bad_area;
-+		break;
-+	case EXC_R_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_READ))
-+			goto bad_area;
-+		break;
-+	case EXC_W_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_WRITE))
-+			goto bad_area;
-+		flags = FAULT_FLAG_WRITE;
-+		break;
++#include <linux/export.h>
++#include <linux/uaccess.h>
++
++asm(".global	__copy_from_user\n"
++	"   .type __copy_from_user, @function\n"
++	"__copy_from_user:\n"
++	"   movi  r2,7\n"
++	"   mov   r3,r4\n"
++	"   bge   r2,r6,1f\n"
++	"   xor   r2,r4,r5\n"
++	"   andi  r2,r2,3\n"
++	"   movi  r7,3\n"
++	"   beq   r2,zero,4f\n"
++	"1: addi  r6,r6,-1\n"
++	"   movi  r2,-1\n"
++	"   beq   r6,r2,3f\n"
++	"   mov   r7,r2\n"
++	"2: ldbu  r2,0(r5)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r5,r5,1\n"
++	"   stb   r2,0(r3)\n"
++	"   addi  r3,r3,1\n"
++	"   bne   r6,r7,2b\n"
++	"3:\n"
++	"   addi  r2,r6,1\n"
++	"   ret\n"
++	"13:mov   r2,r6\n"
++	"   ret\n"
++	"4: andi  r2,r4,1\n"
++	"   cmpeq r2,r2,zero\n"
++	"   beq   r2,zero,7f\n"
++	"5: andi  r2,r3,2\n"
++	"   beq   r2,zero,6f\n"
++	"9: ldhu  r2,0(r5)\n"
++	"   addi  r6,r6,-2\n"
++	"   addi  r5,r5,2\n"
++	"   sth   r2,0(r3)\n"
++	"   addi  r3,r3,2\n"
++	"6: bge   r7,r6,1b\n"
++	"10:ldw   r2,0(r5)\n"
++	"   addi  r6,r6,-4\n"
++	"   addi  r5,r5,4\n"
++	"   stw   r2,0(r3)\n"
++	"   addi  r3,r3,4\n"
++	"   br    6b\n"
++	"7: ldbu  r2,0(r5)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r5,r5,1\n"
++	"   addi  r3,r4,1\n"
++	"   stb   r2,0(r4)\n"
++	"   br    5b\n"
++	".section __ex_table,\"a\"\n"
++	".word 2b,3b\n"
++	".word 9b,13b\n"
++	".word 10b,13b\n"
++	".word 7b,13b\n"
++	".previous\n"
++	);
++EXPORT_SYMBOL(__copy_from_user);
++
++asm(
++	"   .global __copy_to_user\n"
++	"   .type __copy_to_user, @function\n"
++	"__copy_to_user:\n"
++	"   movi  r2,7\n"
++	"   mov   r3,r4\n"
++	"   bge   r2,r6,1f\n"
++	"   xor   r2,r4,r5\n"
++	"   andi  r2,r2,3\n"
++	"   movi  r7,3\n"
++	"   beq   r2,zero,4f\n"
++	/* Bail if we try to copy zero bytes  */
++	"1: addi  r6,r6,-1\n"
++	"   movi  r2,-1\n"
++	"   beq   r6,r2,3f\n"
++	/* Copy byte by byte for small copies and if src^dst != 0 */
++	"   mov   r7,r2\n"
++	"2: ldbu  r2,0(r5)\n"
++	"   addi  r5,r5,1\n"
++	"9: stb   r2,0(r3)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r3,r3,1\n"
++	"   bne   r6,r7,2b\n"
++	"3: addi  r2,r6,1\n"
++	"   ret\n"
++	"13:mov   r2,r6\n"
++	"   ret\n"
++	/*  If 'to' is an odd address byte copy */
++	"4: andi  r2,r4,1\n"
++	"   cmpeq r2,r2,zero\n"
++	"   beq   r2,zero,7f\n"
++	/* If 'to' is not divideable by four copy halfwords */
++	"5: andi  r2,r3,2\n"
++	"   beq   r2,zero,6f\n"
++	"   ldhu  r2,0(r5)\n"
++	"   addi  r5,r5,2\n"
++	"10:sth   r2,0(r3)\n"
++	"   addi  r6,r6,-2\n"
++	"   addi  r3,r3,2\n"
++	/* Copy words */
++	"6: bge   r7,r6,1b\n"
++	"   ldw   r2,0(r5)\n"
++	"   addi  r5,r5,4\n"
++	"11:stw   r2,0(r3)\n"
++	"   addi  r6,r6,-4\n"
++	"   addi  r3,r3,4\n"
++	"   br    6b\n"
++	/* Copy remaining bytes */
++	"7: ldbu  r2,0(r5)\n"
++	"   addi  r5,r5,1\n"
++	"   addi  r3,r4,1\n"
++	"12: stb  r2,0(r4)\n"
++	"   addi  r6,r6,-1\n"
++	"   br    5b\n"
++	".section __ex_table,\"a\"\n"
++	".word 9b,3b\n"
++	".word 10b,13b\n"
++	".word 11b,13b\n"
++	".word 12b,13b\n"
++	".previous\n");
++EXPORT_SYMBOL(__copy_to_user);
++
++long strncpy_from_user(char *__to, const char __user *__from, long __len)
++{
++	int l = strnlen_user(__from, __len);
++	int is_zt = 1;
++
++	if (l > __len) {
++		is_zt = 0;
++		l = __len;
 +	}
 +
-+survive:
-+	/*
-+	 * If for any reason at all we couldn't handle the fault,
-+	 * make sure we exit gracefully rather than endlessly redo
-+	 * the fault.
-+	 */
-+	fault = handle_mm_fault(mm, vma, address, flags);
-+	if (unlikely(fault & VM_FAULT_ERROR)) {
-+		if (fault & VM_FAULT_OOM)
-+			goto out_of_memory;
-+		else if (fault & VM_FAULT_SIGBUS)
-+			goto do_sigbus;
-+		BUG();
++	if (l == 0 || copy_from_user(__to, __from, l))
++		return -EFAULT;
++
++	if (is_zt)
++		l--;
++	return l;
++}
++
++long strnlen_user(const char __user *s, long n)
++{
++	long i;
++
++	for (i = 0; i < n; i++) {
++		char c;
++
++		if (get_user(c, s + i) == -EFAULT)
++			return 0;
++		if (c == 0)
++			return i + 1;
 +	}
-+	if (fault & VM_FAULT_MAJOR)
-+		tsk->maj_flt++;
-+	else
-+		tsk->min_flt++;
-+
-+	up_read(&mm->mmap_sem);
-+	return;
-+
-+/*
-+ * Something tried to access memory that isn't in our memory map..
-+ * Fix it, but check if it's kernel or user first..
-+ */
-+bad_area:
-+	up_read(&mm->mmap_sem);
-+
-+bad_area_nosemaphore:
-+	/* User mode accesses just cause a SIGSEGV */
-+	if (user_mode(regs)) {
-+		pr_alert("%s: unhandled page fault (%d) at 0x%08lx, "
-+			"cause %ld\n", current->comm, SIGSEGV, address, cause);
-+		show_regs(regs);
-+		_exception(SIGSEGV, regs, code, address);
-+		return;
-+	}
-+
-+no_context:
-+	/* Are we prepared to handle this kernel fault? */
-+	if (fixup_exception(regs))
-+		return;
-+
-+	/*
-+	 * Oops. The kernel tried to access some bad page. We'll have to
-+	 * terminate things with extreme prejudice.
-+	 */
-+	bust_spinlocks(1);
-+
-+	pr_alert("Unable to handle kernel %s at virtual address %08lx",
-+		address < PAGE_SIZE ? "NULL pointer dereference" :
-+		"paging request", address);
-+	pr_alert("ea = %08lx, ra = %08lx, cause = %ld\n", regs->ea, regs->ra,
-+		cause);
-+	panic("Oops");
-+	return;
-+
-+/*
-+ * We ran out of memory, or some other thing happened to us that made
-+ * us unable to handle the page fault gracefully.
-+ */
-+out_of_memory:
-+	up_read(&mm->mmap_sem);
-+	if (is_global_init(tsk)) {
-+		yield();
-+		down_read(&mm->mmap_sem);
-+		goto survive;
-+	}
-+	if (!user_mode(regs))
-+		goto no_context;
-+	pagefault_out_of_memory();
-+	return;
-+
-+do_sigbus:
-+	up_read(&mm->mmap_sem);
-+
-+	/* Kernel mode? Handle exceptions or die */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
-+	_exception(SIGBUS, regs, BUS_ADRERR, address);
-+	return;
-+
-+vmalloc_fault:
-+	{
-+		/*
-+		 * Synchronize this task's top level page-table
-+		 * with the 'reference' page table.
-+		 *
-+		 * Do _not_ use "tsk" here. We might be inside
-+		 * an interrupt in the middle of a task switch..
-+		 */
-+		int offset = pgd_index(address);
-+		pgd_t *pgd, *pgd_k;
-+		pud_t *pud, *pud_k;
-+		pmd_t *pmd, *pmd_k;
-+		pte_t *pte_k;
-+
-+		pgd = pgd_current + offset;
-+		pgd_k = init_mm.pgd + offset;
-+
-+		if (!pgd_present(*pgd_k))
-+			goto no_context;
-+		set_pgd(pgd, *pgd_k);
-+
-+		pud = pud_offset(pgd, address);
-+		pud_k = pud_offset(pgd_k, address);
-+		if (!pud_present(*pud_k))
-+			goto no_context;
-+		pmd = pmd_offset(pud, address);
-+		pmd_k = pmd_offset(pud_k, address);
-+		if (!pmd_present(*pmd_k))
-+			goto no_context;
-+		set_pmd(pmd, *pmd_k);
-+
-+		pte_k = pte_offset_kernel(pmd_k, address);
-+		if (!pte_present(*pte_k))
-+			goto no_context;
-+
-+		flush_tlb_one(address);
-+		return;
-+	}
++	return n + 1;
 +}
 -- 
 1.8.2.1
