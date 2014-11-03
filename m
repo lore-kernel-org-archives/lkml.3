@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859AbaKCSSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:18:35 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2000 "EHLO mga02.intel.com"
+	id S1752840AbaKCSWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:22:12 -0500
+Received: from mout.gmx.net ([212.227.17.20]:55985 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752415AbaKCSSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:18:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,308,1413270000"; 
-   d="scan'208";a="630534235"
-Message-ID: <5457C6EA.3080809@intel.com>
-Date: Mon, 03 Nov 2014 10:18:18 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751159AbaKCSWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 13:22:06 -0500
+Message-ID: <5457C7B7.7050302@gmx.de>
+Date: Mon, 03 Nov 2014 19:21:43 +0100
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, corbet@lwn.net,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        lcapitulino@redhat.com
-Subject: Re: [PATCH] Documentation: vm: Add 1GB large page support information
-References: <1414771317-5721-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1414771317-5721-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=windows-1252
+To: Jan Kara <jack@suse.cz>,
+        "Sergey \"Shnatsel\" Davidoff" <sergey@elementaryos.org>
+CC: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
+Subject: Re: A desktop environment[1] kernel wishlist
+References: <1413881397.30379.7.camel@hadess.net> <loom.20141021T140216-28@post.gmane.org> <20141027092311.GA9807@amd> <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com> <20141031093618.GB30321@quack.suse.cz>
+In-Reply-To: <20141031093618.GB30321@quack.suse.cz>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:QWshZTAKkyo8PT9YnzIfYSyCdq325Mv+RLYzFl8ju3iLMWlnIzr
+ vkIqDkGxx2Jje3M3ilSUYF0Vhi/Vg/u3lHTBmhaChQdwfMtazTC9k/bCMPKPmnyw3btVYnD
+ 6z2Ddo7crPhZ/lfAuRK4UWLhbdUrp4HxOTDD5zXgUHyvxPh3536Wws8WRTqUQbPYEfN/jqw
+ 9vA8Ns5ukykBEjfqXJMEg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 09:01 AM, Masanari Iida wrote:
-> --- a/Documentation/vm/hugetlbpage.txt
-> +++ b/Documentation/vm/hugetlbpage.txt
-> @@ -2,7 +2,8 @@
->  The intent of this file is to give a brief summary of hugetlbpage support in
->  the Linux kernel.  This support is built on top of multiple page size support
->  that is provided by most modern architectures.  For example, i386
-> -architecture supports 4K and 4M (2M in PAE mode) page sizes, ia64
-> +architecture supports 4K and 4M (2M in PAE mode) page sizes, x86_64
-> +architecture supports 4K, 2M and 1G (SandyBridge or later) page sizes. ia64
->  architecture supports multiple page sizes 4K, 8K, 64K, 256K, 1M, 4M, 16M,
->  256M and ppc64 supports 4K and 16M.  A TLB is a cache of virtual-to-physical
->  translations.  Typically this is a very scarce resource on processor.
+On 31.10.2014 10:36, Jan Kara wrote:
+> On Mon 27-10-14 20:02:51, Sergey "Shnatsel" Davidoff wrote:
+>>> If "recursive mtime" was available, would that work for you?
+>>
+>> It would work for detecting "offline" changes. I suppose recursive
+>> mtime not viable for online monitoring, mostly because detecting file
+>> renaming would be a massive PITA (and we already have fanotify with
+>> exactly this problem).
+>    Yes, you'll get only "something has changed in a subtree" information for
+> each directory. You'd then have to rescan the directory to find out what
+> has changed. But there's no simple solution for this - either you have to
+> process tons of events for busy directory tree or you have to somehow
+> reduce the amount of information provided to userspace...
 
-I wouldn't mention SandyBridge.  Not all x86 CPUs are Intel. :)
+If inotify_add_watch() would allow to mark a complete mount (like 
+fanotify_mark() called with FAN_MOUNT) events for all files on this 
+mount could be detected. If furthermore inotify_read() would return the 
+complete relative path of the changed file relative to the mount in 
+inotify_event->name, it would be obvious what the meaning of the event is.
 
-Also, what of the Intel CPUs like the Xeon Phi or the Atom cores?  I
-have an IvyBridge (>= Sandybridge) mobile CPU in this laptop which does
-not support 1G pages.
+Best regards
 
-I would axe the i386-specific reference and just say something generic like:
-
-       For example, x86 CPUs normally support 4K and 2M (1G sometimes).
-
+Heinrich Schuchardt
 
