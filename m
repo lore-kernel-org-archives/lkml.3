@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869AbaKCSKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 13:10:18 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44114 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903AbaKCSI1 (ORCPT
+	id S1753868AbaKCSIU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 13:08:20 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:57530 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808AbaKCSIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 13:08:27 -0500
+	Mon, 3 Nov 2014 13:08:09 -0500
 From: mathieu.poirier@linaro.org
 To: gregkh@linuxfoundation.org
 Cc: linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
@@ -15,9 +15,9 @@ Cc: linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
         r.sengupta@samsung.com, robbelibobban@gmail.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         mathieu.poirier@linaro.org
-Subject: [PATCH v9 10/12] coresight: adding basic support for Vexpress TC2
-Date: Mon,  3 Nov 2014 11:07:44 -0700
-Message-Id: <1415038066-22423-11-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH v9 03/12] coresight-tpiu: add CoreSight TPIU driver
+Date: Mon,  3 Nov 2014 11:07:37 -0700
+Message-Id: <1415038066-22423-4-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
@@ -25,228 +25,272 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+From: Pratik Patel <pratikp@codeaurora.org>
 
-Support for the 2 PTMs, 3 ETMs, funnel, TPIU and replicator
-connected to the ETB are included.  Proper handling of the
-ITM and the replicator linked to it along with the CTIs
-and SWO are not included.
+This driver manages CoreSight TPIU (Trace Port Interface Unit)
+which acts as a sink. TPIU is typically connected to some offchip
+hardware hosting a storage buffer.
 
+Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts | 199 +++++++++++++++++++++++++++++
- 1 file changed, 199 insertions(+)
+ arch/arm/Kconfig.debug             |   9 ++
+ drivers/coresight/Makefile         |   1 +
+ drivers/coresight/coresight-tpiu.c | 217 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 227 insertions(+)
+ create mode 100644 drivers/coresight/coresight-tpiu.c
 
-diff --git a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-index 322fd15..33920df 100644
---- a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-+++ b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-@@ -358,6 +358,205 @@
- 		};
- 	};
- 
-+	etb@0,20010000 {
-+		compatible = "arm,coresight-etb10", "arm,primecell";
-+		reg = <0 0x20010000 0 0x1000>;
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 092b672..4815efb 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -1359,5 +1359,14 @@ config CORESIGHT_LINK_AND_SINK_TMC
+ 	  - ETR) or sink (embedded trace FIFO).  The driver complies with the
+ 	  generic implementation of the component without special enhancement or
+ 	  added features.
 +
-+		coresight-default-sink;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			etb_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port0>;
-+			};
-+		};
-+	};
++config CORESIGHT_SINK_TPIU
++	bool "Coresight generic TPIU driver"
++	depends on CORESIGHT_LINKS_AND_SINKS
++	help
++	  This enables support for the Trace Port Interface Unit driver, responsible
++	  for bridging the gap between the on-chip coresight components and a trace
++	  port collection engine, typically connected to an external host for use
++	  case capturing more traces than the on-board coresight memory can handle.
+ endif
+ endmenu
+diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+index d26bd0e..41ab769 100644
+--- a/drivers/coresight/Makefile
++++ b/drivers/coresight/Makefile
+@@ -4,3 +4,4 @@
+ obj-$(CONFIG_CORESIGHT) += coresight.o
+ obj-$(CONFIG_OF) += of_coresight.o
+ obj-$(CONFIG_CORESIGHT_LINK_AND_SINK_TMC) += coresight-tmc.o
++obj-$(CONFIG_CORESIGHT_SINK_TPIU) += coresight-tpiu.o
+diff --git a/drivers/coresight/coresight-tpiu.c b/drivers/coresight/coresight-tpiu.c
+new file mode 100644
+index 0000000..ae10108
+--- /dev/null
++++ b/drivers/coresight/coresight-tpiu.c
+@@ -0,0 +1,217 @@
++/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+	tpiu@0,20030000 {
-+		compatible = "arm,coresight-tpiu", "arm,primecell";
-+		reg = <0 0x20030000 0 0x1000>;
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/clk.h>
++#include <linux/coresight.h>
++#include <linux/amba/bus.h>
 +
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			tpiu_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port1>;
-+			};
-+		};
-+	};
++#include "coresight-priv.h"
 +
-+	replicator {
-+		/* non-configurable replicators don't show up on the
-+		 * AMBA bus.  As such no need to add "arm,primecell".
-+		 */
-+		compatible = "arm,coresight-replicator";
++#define TPIU_SUPP_PORTSZ	0x000
++#define TPIU_CURR_PORTSZ	0x004
++#define TPIU_SUPP_TRIGMODES	0x100
++#define TPIU_TRIG_CNTRVAL	0x104
++#define TPIU_TRIG_MULT		0x108
++#define TPIU_SUPP_TESTPATM	0x200
++#define TPIU_CURR_TESTPATM	0x204
++#define TPIU_TEST_PATREPCNTR	0x208
++#define TPIU_FFSR		0x300
++#define TPIU_FFCR		0x304
++#define TPIU_FSYNC_CNTR		0x308
++#define TPIU_EXTCTL_INPORT	0x400
++#define TPIU_EXTCTL_OUTPORT	0x404
++#define TPIU_ITTRFLINACK	0xee4
++#define TPIU_ITTRFLIN		0xee8
++#define TPIU_ITATBDATA0		0xeec
++#define TPIU_ITATBCTR2		0xef0
++#define TPIU_ITATBCTR1		0xef4
++#define TPIU_ITATBCTR0		0xef8
 +
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
++/** register definition **/
++/* FFCR - 0x304 */
++#define FFCR_FON_MAN		BIT(6)
 +
-+			/* replicator output ports */
-+			port@0 {
-+				reg = <0>;
-+				replicator_out_port0: endpoint {
-+					remote-endpoint = <&etb_in_port>;
-+				};
-+			};
++/**
++ * @base:	memory mapped base address for this component.
++ * @dev:	the device entity associated to this component.
++ * @csdev:	component vitals needed by the framework.
++ * @clk:	the clock this component is associated to.
++ */
++struct tpiu_drvdata {
++	void __iomem		*base;
++	struct device		*dev;
++	struct coresight_device	*csdev;
++	struct clk		*clk;
++};
 +
-+			port@1 {
-+				reg = <1>;
-+				replicator_out_port1: endpoint {
-+					remote-endpoint = <&tpiu_in_port>;
-+				};
-+			};
++static void tpiu_enable_hw(struct tpiu_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
 +
-+			/* replicator input port */
-+			port@2 {
-+				reg = <0>;
-+				replicator_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&funnel_out_port0>;
-+				};
-+			};
-+		};
-+	};
++	/* TODO: fill this up */
 +
-+	funnel@0,20040000 {
-+		compatible = "arm,coresight-funnel", "arm,primecell";
-+		reg = <0 0x20040000 0 0x1000>;
++	CS_LOCK(drvdata->base);
++}
 +
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
++static int tpiu_enable(struct coresight_device *csdev)
++{
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	int ret;
 +
-+			/* funnel output port */
-+			port@0 {
-+				reg = <0>;
-+				funnel_out_port0: endpoint {
-+					remote-endpoint =
-+						<&replicator_in_port0>;
-+				};
-+			};
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
 +
-+			/* funnel input ports */
-+			port@1 {
-+				reg = <0>;
-+				funnel_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm0_out_port>;
-+				};
-+			};
++	tpiu_enable_hw(drvdata);
 +
-+			port@2 {
-+				reg = <1>;
-+				funnel_in_port1: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm1_out_port>;
-+				};
-+			};
++	dev_info(drvdata->dev, "TPIU enabled\n");
++	return 0;
++}
 +
-+			port@3 {
-+				reg = <2>;
-+				funnel_in_port2: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&etm0_out_port>;
-+				};
-+			};
++static void tpiu_disable_hw(struct tpiu_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
 +
-+			/* Input port #3 is for ITM, not supported here */
++	/* Clear formatter controle reg. */
++	writel_relaxed(0x0, drvdata->base + TPIU_FFCR);
++	/* Generate manual flush */
++	writel_relaxed(FFCR_FON_MAN, drvdata->base + TPIU_FFCR);
 +
-+			port@4 {
-+				reg = <4>;
-+				funnel_in_port4: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&etm1_out_port>;
-+				};
-+			};
++	CS_LOCK(drvdata->base);
++}
 +
-+			port@5 {
-+				reg = <5>;
-+				funnel_in_port5: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&etm2_out_port>;
-+				};
-+			};
-+		};
-+	};
++static void tpiu_disable(struct coresight_device *csdev)
++{
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +
-+	ptm@0,2201c000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201c000 0 0x1000>;
++	tpiu_disable_hw(drvdata);
 +
-+		cpu = <&cpu0>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm0_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port0>;
-+			};
-+		};
-+	};
++	clk_disable_unprepare(drvdata->clk);
 +
-+	ptm@0,2201d000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201d000 0 0x1000>;
++	dev_info(drvdata->dev, "TPIU disabled\n");
++}
 +
-+		cpu = <&cpu1>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm1_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port1>;
-+			};
-+		};
-+	};
++static const struct coresight_ops_sink tpiu_sink_ops = {
++	.enable		= tpiu_enable,
++	.disable	= tpiu_disable,
++};
 +
-+	etm@0,2203c000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2203c000 0 0x1000>;
++static const struct coresight_ops tpiu_cs_ops = {
++	.sink_ops	= &tpiu_sink_ops,
++};
 +
-+		cpu = <&cpu2>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			etm0_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port2>;
-+			};
-+		};
-+	};
++static int tpiu_probe(struct amba_device *adev, const struct amba_id *id)
++{
++	int ret;
++	void __iomem *base;
++	struct device *dev = &adev->dev;
++	struct coresight_platform_data *pdata = NULL;
++	struct tpiu_drvdata *drvdata;
++	struct resource *res = &adev->res;
++	struct coresight_desc *desc;
++	struct device_node *np = adev->dev.of_node;
 +
-+	etm@0,2203d000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2203d000 0 0x1000>;
++	if (np) {
++		pdata = of_get_coresight_platform_data(dev, np);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++		adev->dev.platform_data = pdata;
++	}
 +
-+		cpu = <&cpu3>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			etm1_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port4>;
-+			};
-+		};
-+	};
++	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
++	if (!drvdata)
++		return -ENOMEM;
 +
-+	etm@0,2203e000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2203e000 0 0x1000>;
++	drvdata->dev = &adev->dev;
++	dev_set_drvdata(dev, drvdata);
 +
-+		cpu = <&cpu4>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			etm2_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port5>;
-+			};
-+		};
-+	};
++	/* Validity for the resource is already checked by the AMBA core */
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
 +
- 	smb {
- 		compatible = "simple-bus";
- 
++	drvdata->base = base;
++
++	drvdata->clk = adev->pclk;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	/* Disable tpiu to support older devices */
++	tpiu_disable_hw(drvdata);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
++	if (!desc)
++		return -ENOMEM;
++
++	desc->type = CORESIGHT_DEV_TYPE_SINK;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_PORT;
++	desc->ops = &tpiu_cs_ops;
++	desc->pdata = pdata;
++	desc->dev = dev;
++	drvdata->csdev = coresight_register(desc);
++	if (IS_ERR(drvdata->csdev))
++		return PTR_ERR(drvdata->csdev);
++
++	dev_info(dev, "TPIU initialized\n");
++	return 0;
++}
++
++static int tpiu_remove(struct amba_device *adev)
++{
++	struct tpiu_drvdata *drvdata = amba_get_drvdata(adev);
++
++	coresight_unregister(drvdata->csdev);
++	return 0;
++}
++
++static struct amba_id tpiu_ids[] = {
++	{
++		.id	= 0x0003b912,
++		.mask	= 0x0003ffff,
++	},
++	{ 0, 0},
++};
++
++static struct amba_driver tpiu_driver = {
++	.drv = {
++		.name	= "coresight-tpiu",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= tpiu_probe,
++	.remove		= tpiu_remove,
++	.id_table	= tpiu_ids,
++};
++
++static int __init tpiu_init(void)
++{
++	return amba_driver_register(&tpiu_driver);
++}
++module_init(tpiu_init);
++
++static void __exit tpiu_exit(void)
++{
++	amba_driver_unregister(&tpiu_driver);
++}
++module_exit(tpiu_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("CoreSight Trace Port Interface Unit driver");
 -- 
 1.9.1
 
