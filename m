@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284AbaKCLGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:06:04 -0500
-Received: from mail-by2on0074.outbound.protection.outlook.com ([207.46.100.74]:10862
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1753295AbaKCLGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:06:38 -0500
+Received: from mail-bn1bon0067.outbound.protection.outlook.com ([157.56.111.67]:50407
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752355AbaKCKyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 05:54:23 -0500
+	id S1752319AbaKCKyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:54:14 -0500
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v6 14/29] nios2: DMA mapping API
-Date: Mon, 3 Nov 2014 18:52:10 +0800
-Message-ID: <1415011945-3297-15-git-send-email-lftan@altera.com>
+Subject: [PATCH v6 12/29] nios2: TLB handling
+Date: Mon, 3 Nov 2014 18:52:08 +0800
+Message-ID: <1415011945-3297-13-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
 References: <1415011945-3297-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(22564002)(87286001)(31966008)(33646002)(84676001)(102836001)(42186005)(19580405001)(6806004)(62966003)(44976005)(68736004)(92566001)(2201001)(4396001)(97736003)(93916002)(50226001)(92726001)(86362001)(19580395003)(46102003)(88136002)(50466002)(89996001)(87936001)(105596002)(50986999)(76176999)(64706001)(120916001)(47776003)(99396003)(20776003)(21056001)(48376002)(104166001)(229853001)(107046002)(106466001)(36756003)(77156002)(95666004)(77096003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB595;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(22564002)(199003)(189002)(36756003)(95666004)(120916001)(46102003)(105596002)(50986999)(76176999)(87936001)(88136002)(86362001)(104166001)(89996001)(33646002)(77096003)(77156002)(62966003)(2201001)(92566001)(92726001)(107046002)(229853001)(31966008)(93916002)(48376002)(50466002)(106466001)(6806004)(64706001)(20776003)(44976005)(47776003)(15202345003)(97736003)(102836001)(4396001)(50226001)(99396003)(42186005)(21056001)(87286001)(68736004)(19580395003)(19580405001)(84676001)(15975445006);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB209;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB595;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB209;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0384275935
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -33,354 +33,391 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the DMA mapping API.
+This patch adds the TLB maintenance functions.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/dma-mapping.h | 140 ++++++++++++++++++++++++++
- arch/nios2/mm/dma-mapping.c          | 186 +++++++++++++++++++++++++++++++++++
- 2 files changed, 326 insertions(+)
- create mode 100644 arch/nios2/include/asm/dma-mapping.h
- create mode 100644 arch/nios2/mm/dma-mapping.c
+ arch/nios2/include/asm/tlb.h      |  34 +++++
+ arch/nios2/include/asm/tlbflush.h |  46 +++++++
+ arch/nios2/mm/tlb.c               | 275 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 355 insertions(+)
+ create mode 100644 arch/nios2/include/asm/tlb.h
+ create mode 100644 arch/nios2/include/asm/tlbflush.h
+ create mode 100644 arch/nios2/mm/tlb.c
 
-diff --git a/arch/nios2/include/asm/dma-mapping.h b/arch/nios2/include/asm/dma-mapping.h
+diff --git a/arch/nios2/include/asm/tlb.h b/arch/nios2/include/asm/tlb.h
 new file mode 100644
-index 0000000..b556723
+index 0000000..d3bc648
 --- /dev/null
-+++ b/arch/nios2/include/asm/dma-mapping.h
-@@ -0,0 +1,140 @@
++++ b/arch/nios2/include/asm/tlb.h
+@@ -0,0 +1,34 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
 + * Copyright (C) 2009 Wind River Systems Inc
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License.  See the file COPYING in the main directory of this
-+ * archive for more details.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_DMA_MAPPING_H
-+#define _ASM_NIOS2_DMA_MAPPING_H
++#ifndef _ASM_NIOS2_TLB_H
++#define _ASM_NIOS2_TLB_H
 +
-+#include <linux/scatterlist.h>
-+#include <linux/cache.h>
-+#include <asm/cacheflush.h>
++#define tlb_flush(tlb)	flush_tlb_mm((tlb)->mm)
 +
-+static inline void __dma_sync_for_device(void *vaddr, size_t size,
-+			      enum dma_data_direction direction)
-+{
-+	switch (direction) {
-+	case DMA_FROM_DEVICE:
-+		invalidate_dcache_range((unsigned long)vaddr,
-+			(unsigned long)(vaddr + size));
-+		break;
-+	case DMA_TO_DEVICE:
-+		/*
-+		 * We just need to flush the caches here , but Nios2 flush
-+		 * instruction will do both writeback and invalidate.
-+		 */
-+	case DMA_BIDIRECTIONAL: /* flush and invalidate */
-+		flush_dcache_range((unsigned long)vaddr,
-+			(unsigned long)(vaddr + size));
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
-+
-+static inline void __dma_sync_for_cpu(void *vaddr, size_t size,
-+			      enum dma_data_direction direction)
-+{
-+	switch (direction) {
-+	case DMA_BIDIRECTIONAL:
-+	case DMA_FROM_DEVICE:
-+		invalidate_dcache_range((unsigned long)vaddr,
-+			(unsigned long)(vaddr + size));
-+		break;
-+	case DMA_TO_DEVICE:
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
-+
-+#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
-+#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
-+
-+void *dma_alloc_coherent(struct device *dev, size_t size,
-+			   dma_addr_t *dma_handle, gfp_t flag);
-+
-+void dma_free_coherent(struct device *dev, size_t size,
-+			 void *vaddr, dma_addr_t dma_handle);
-+
-+static inline dma_addr_t dma_map_single(struct device *dev, void *ptr,
-+					size_t size,
-+					enum dma_data_direction direction)
-+{
-+	BUG_ON(!valid_dma_direction(direction));
-+	__dma_sync_for_device(ptr, size, direction);
-+	return virt_to_phys(ptr);
-+}
-+
-+static inline void dma_unmap_single(struct device *dev, dma_addr_t dma_addr,
-+				size_t size, enum dma_data_direction direction)
-+{
-+}
-+
-+extern int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
-+	enum dma_data_direction direction);
-+extern dma_addr_t dma_map_page(struct device *dev, struct page *page,
-+	unsigned long offset, size_t size, enum dma_data_direction direction);
-+extern void dma_unmap_page(struct device *dev, dma_addr_t dma_address,
-+	size_t size, enum dma_data_direction direction);
-+extern void dma_unmap_sg(struct device *dev, struct scatterlist *sg,
-+	int nhwentries, enum dma_data_direction direction);
-+extern void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
-+	size_t size, enum dma_data_direction direction);
-+extern void dma_sync_single_for_device(struct device *dev,
-+	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction);
-+extern void dma_sync_single_range_for_cpu(struct device *dev,
-+	dma_addr_t dma_handle, unsigned long offset, size_t size,
-+	enum dma_data_direction direction);
-+extern void dma_sync_single_range_for_device(struct device *dev,
-+	dma_addr_t dma_handle, unsigned long offset, size_t size,
-+	enum dma_data_direction direction);
-+extern void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg,
-+	int nelems, enum dma_data_direction direction);
-+extern void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
-+	int nelems, enum dma_data_direction direction);
-+
-+static inline int dma_supported(struct device *dev, u64 mask)
-+{
-+	return 1;
-+}
-+
-+static inline int dma_set_mask(struct device *dev, u64 mask)
-+{
-+	if (!dev->dma_mask || !dma_supported(dev, mask))
-+		return -EIO;
-+
-+	*dev->dma_mask = mask;
-+
-+	return 0;
-+}
-+
-+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-+{
-+	return 0;
-+}
++extern void set_mmu_pid(unsigned long pid);
 +
 +/*
-+* dma_alloc_noncoherent() returns non-cacheable memory, so there's no need to
-+* do any flushing here.
-+*/
-+static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
-+				  enum dma_data_direction direction)
-+{
-+}
++ * NiosII doesn't need any special per-pte or per-vma handling, except
++ * we need to flush cache for the area to be unmapped.
++ */
++#define tlb_start_vma(tlb, vma)					\
++	do {							\
++		if (!tlb->fullmm)				\
++			flush_cache_range(vma, vma->vm_start, vma->vm_end); \
++	}  while (0)
 +
-+/* drivers/base/dma-mapping.c */
-+extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
-+		void *cpu_addr, dma_addr_t dma_addr, size_t size);
-+extern int dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
-+		void *cpu_addr, dma_addr_t dma_addr,
-+		size_t size);
++#define tlb_end_vma(tlb, vma)	do { } while (0)
++#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
 +
-+#define dma_mmap_coherent(d, v, c, h, s) dma_common_mmap(d, v, c, h, s)
-+#define dma_get_sgtable(d, t, v, h, s) dma_common_get_sgtable(d, t, v, h, s)
++#include <linux/pagemap.h>
++#include <asm-generic/tlb.h>
 +
-+#endif /* _ASM_NIOS2_DMA_MAPPING_H */
-diff --git a/arch/nios2/mm/dma-mapping.c b/arch/nios2/mm/dma-mapping.c
++#endif /* _ASM_NIOS2_TLB_H */
+diff --git a/arch/nios2/include/asm/tlbflush.h b/arch/nios2/include/asm/tlbflush.h
 new file mode 100644
-index 0000000..ac5da75
+index 0000000..e19652f
 --- /dev/null
-+++ b/arch/nios2/mm/dma-mapping.c
-@@ -0,0 +1,186 @@
++++ b/arch/nios2/include/asm/tlbflush.h
+@@ -0,0 +1,46 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *  Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
 + *
-+ * Based on DMA code from MIPS.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#ifndef _ASM_NIOS2_TLBFLUSH_H
++#define _ASM_NIOS2_TLBFLUSH_H
++
++struct mm_struct;
++
++/*
++ * TLB flushing:
++ *
++ *  - flush_tlb_all() flushes all processes TLB entries
++ *  - flush_tlb_mm(mm) flushes the specified mm context TLB entries
++ *  - flush_tlb_page(vma, vmaddr) flushes one page
++ *  - flush_tlb_range(vma, start, end) flushes a range of pages
++ *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
++ */
++extern void flush_tlb_all(void);
++extern void flush_tlb_mm(struct mm_struct *mm);
++extern void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
++			    unsigned long end);
++extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
++extern void flush_tlb_one(unsigned long vaddr);
++
++static inline void flush_tlb_page(struct vm_area_struct *vma,
++				unsigned long addr)
++{
++	flush_tlb_one(addr);
++}
++
++#endif /* _ASM_NIOS2_TLBFLUSH_H */
+diff --git a/arch/nios2/mm/tlb.c b/arch/nios2/mm/tlb.c
+new file mode 100644
+index 0000000..cf10326
+--- /dev/null
++++ b/arch/nios2/mm/tlb.c
+@@ -0,0 +1,275 @@
++/*
++ * Nios2 TLB handling
++ *
++ * Copyright (C) 2009, Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/sched.h>
 +#include <linux/mm.h>
-+#include <linux/export.h>
-+#include <linux/string.h>
-+#include <linux/scatterlist.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/io.h>
-+#include <linux/cache.h>
-+#include <asm/cacheflush.h>
++#include <linux/pagemap.h>
 +
++#include <asm/tlb.h>
++#include <asm/mmu_context.h>
++#include <asm/pgtable.h>
++#include <asm/cpuinfo.h>
 +
-+void *dma_alloc_coherent(struct device *dev, size_t size,
-+			    dma_addr_t *dma_handle, gfp_t gfp)
++#define TLB_INDEX_MASK		\
++	((((1UL << (cpuinfo.tlb_ptr_sz - cpuinfo.tlb_num_ways_log2))) - 1) \
++		<< PAGE_SHIFT)
++
++/* Used as illegal PHYS_ADDR for TLB mappings
++ */
++#define MAX_PHYS_ADDR 0
++
++static void get_misc_and_pid(unsigned long *misc, unsigned long *pid)
 +{
-+	void *ret;
-+
-+	/* ignore region specifiers */
-+	gfp &= ~(__GFP_DMA | __GFP_HIGHMEM);
-+
-+	/* optimized page clearing */
-+	gfp |= __GFP_ZERO;
-+
-+	if (dev == NULL || (dev->coherent_dma_mask < 0xffffffff))
-+		gfp |= GFP_DMA;
-+
-+	ret = (void *) __get_free_pages(gfp, get_order(size));
-+	if (ret != NULL) {
-+		*dma_handle = virt_to_phys(ret);
-+		flush_dcache_range((unsigned long) ret,
-+			(unsigned long) ret + size);
-+		ret = UNCAC_ADDR(ret);
-+	}
-+
-+	return ret;
++	*misc  = RDCTL(CTL_TLBMISC);
++	*misc &= (TLBMISC_PID | TLBMISC_WAY);
++	*pid  = *misc & TLBMISC_PID;
 +}
-+EXPORT_SYMBOL(dma_alloc_coherent);
 +
-+void dma_free_coherent(struct device *dev, size_t size, void *vaddr,
-+			dma_addr_t dma_handle)
++/*
++ * All entries common to a mm share an asid.  To effectively flush these
++ * entries, we just bump the asid.
++ */
++void flush_tlb_mm(struct mm_struct *mm)
 +{
-+	unsigned long addr = (unsigned long) CAC_ADDR((unsigned long) vaddr);
-+
-+	free_pages(addr, get_order(size));
++	if (current->mm == mm)
++		flush_tlb_all();
++	else
++		memset(&mm->context, 0, sizeof(mm_context_t));
 +}
-+EXPORT_SYMBOL(dma_free_coherent);
 +
-+int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
-+		enum dma_data_direction direction)
++/*
++ * This one is only used for pages with the global bit set so we don't care
++ * much about the ASID.
++ */
++void flush_tlb_one_pid(unsigned long addr, unsigned long mmu_pid)
 +{
-+	int i;
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
 +
-+	BUG_ON(!valid_dma_direction(direction));
++	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
 +
-+	for_each_sg(sg, sg, nents, i) {
-+		void *addr;
++	/* remember pid/way until we return. */
++	get_misc_and_pid(&org_misc, &pid_misc);
 +
-+		addr = sg_virt(sg);
-+		if (addr) {
-+			__dma_sync_for_device(addr, sg->length, direction);
-+			sg->dma_address = sg_phys(sg);
++	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++		unsigned long pid;
++
++		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
++		WRCTL(CTL_TLBMISC, tlbmisc);
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++		pid = (tlbmisc >> TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK;
++		if (((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) &&
++				pid == mmu_pid) {
++			unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE +
++				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
++				(addr & TLB_INDEX_MASK);
++			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
++				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
++
++			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
++			tlbmisc = pid_misc | TLBMISC_WE |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
 +		}
 +	}
 +
-+	return nents;
++	WRCTL(CTL_TLBMISC, org_misc);
 +}
-+EXPORT_SYMBOL(dma_map_sg);
 +
-+dma_addr_t dma_map_page(struct device *dev, struct page *page,
-+			unsigned long offset, size_t size,
-+			enum dma_data_direction direction)
++void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
++			unsigned long end)
 +{
-+	void *addr;
++	unsigned long mmu_pid = get_pid_from_context(&vma->vm_mm->context);
 +
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	addr = page_address(page) + offset;
-+	__dma_sync_for_device(addr, size, direction);
-+
-+	return page_to_phys(page) + offset;
-+}
-+EXPORT_SYMBOL(dma_map_page);
-+
-+void dma_unmap_page(struct device *dev, dma_addr_t dma_address, size_t size,
-+		    enum dma_data_direction direction)
-+{
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	__dma_sync_for_cpu(phys_to_virt(dma_address), size, direction);
-+}
-+EXPORT_SYMBOL(dma_unmap_page);
-+
-+void dma_unmap_sg(struct device *dev, struct scatterlist *sg, int nhwentries,
-+		  enum dma_data_direction direction)
-+{
-+	void *addr;
-+	int i;
-+
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	if (direction == DMA_TO_DEVICE)
-+		return;
-+
-+	for_each_sg(sg, sg, nhwentries, i) {
-+		addr = sg_virt(sg);
-+		if (addr)
-+			__dma_sync_for_cpu(addr, sg->length, direction);
++	while (start < end) {
++		flush_tlb_one_pid(start, mmu_pid);
++		start += PAGE_SIZE;
 +	}
 +}
-+EXPORT_SYMBOL(dma_unmap_sg);
 +
-+void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
-+			     size_t size, enum dma_data_direction direction)
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	__dma_sync_for_cpu(phys_to_virt(dma_handle), size, direction);
++	while (start < end) {
++		flush_tlb_one(start);
++		start += PAGE_SIZE;
++	}
 +}
-+EXPORT_SYMBOL(dma_sync_single_for_cpu);
 +
-+void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
-+				size_t size, enum dma_data_direction direction)
++/*
++ * This one is only used for pages with the global bit set so we don't care
++ * much about the ASID.
++ */
++void flush_tlb_one(unsigned long addr)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
 +
-+	__dma_sync_for_device(phys_to_virt(dma_handle), size, direction);
++	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
++
++	/* remember pid/way until we return. */
++	get_misc_and_pid(&org_misc, &pid_misc);
++
++	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++
++		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
++		WRCTL(CTL_TLBMISC, tlbmisc);
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++
++		if ((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) {
++			unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE +
++				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
++				(addr & TLB_INDEX_MASK);
++
++			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
++				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
++
++			tlbmisc = pid_misc | TLBMISC_WE |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
++		}
++	}
++
++	WRCTL(CTL_TLBMISC, org_misc);
 +}
-+EXPORT_SYMBOL(dma_sync_single_for_device);
 +
-+void dma_sync_single_range_for_cpu(struct device *dev, dma_addr_t dma_handle,
-+					unsigned long offset, size_t size,
-+					enum dma_data_direction direction)
++void dump_tlb_line(unsigned long line)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
++	unsigned int way;
++	unsigned long org_misc;
 +
-+	__dma_sync_for_cpu(phys_to_virt(dma_handle), size, direction);
++	pr_debug("dump tlb-entries for line=%#lx (addr %08lx)\n", line,
++		line << (PAGE_SHIFT + cpuinfo.tlb_num_ways_log2));
++
++	/* remember pid/way until we return */
++	org_misc = (RDCTL(CTL_TLBMISC) & (TLBMISC_PID | TLBMISC_WAY));
++
++	WRCTL(CTL_PTEADDR, line << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++		unsigned long tlbacc;
++
++		WRCTL(CTL_TLBMISC, TLBMISC_RD | (way << TLBMISC_WAY_SHIFT));
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++		tlbacc = RDCTL(CTL_TLBACC);
++
++		if ((tlbacc << PAGE_SHIFT) != (MAX_PHYS_ADDR & PAGE_MASK)) {
++			pr_debug("-- way:%02x vpn:0x%08lx phys:0x%08lx pid:0x%02lx flags:%c%c%c%c%c\n",
++				way,
++				(pteaddr << (PAGE_SHIFT-2)),
++				(tlbacc << PAGE_SHIFT),
++				((tlbmisc >> TLBMISC_PID_SHIFT) &
++				TLBMISC_PID_MASK),
++				(tlbacc & _PAGE_READ ? 'r' : '-'),
++				(tlbacc & _PAGE_WRITE ? 'w' : '-'),
++				(tlbacc & _PAGE_EXEC ? 'x' : '-'),
++				(tlbacc & _PAGE_GLOBAL ? 'g' : '-'),
++				(tlbacc & _PAGE_CACHED ? 'c' : '-'));
++		}
++	}
++
++	WRCTL(CTL_TLBMISC, org_misc);
 +}
-+EXPORT_SYMBOL(dma_sync_single_range_for_cpu);
 +
-+void dma_sync_single_range_for_device(struct device *dev, dma_addr_t dma_handle,
-+					unsigned long offset, size_t size,
-+					enum dma_data_direction direction)
++void dump_tlb(void)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
++	unsigned int i;
 +
-+	__dma_sync_for_device(phys_to_virt(dma_handle), size, direction);
++	for (i = 0; i < cpuinfo.tlb_num_lines; i++)
++		dump_tlb_line(i);
 +}
-+EXPORT_SYMBOL(dma_sync_single_range_for_device);
 +
-+void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nelems,
-+			 enum dma_data_direction direction)
++void flush_tlb_pid(unsigned long pid)
++{
++	unsigned int line;
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
++
++	/* remember pid/way until we return */
++	get_misc_and_pid(&org_misc, &pid_misc);
++
++	for (line = 0; line < cpuinfo.tlb_num_lines; line++) {
++		WRCTL(CTL_PTEADDR, line << 2);
++
++		for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++			unsigned long pteaddr;
++			unsigned long tlbmisc;
++			unsigned long tlbacc;
++
++			tlbmisc = pid_misc | TLBMISC_RD |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			pteaddr = RDCTL(CTL_PTEADDR);
++			tlbmisc = RDCTL(CTL_TLBMISC);
++			tlbacc = RDCTL(CTL_TLBACC);
++
++			if (((tlbmisc>>TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK)
++				== pid) {
++				tlbmisc = pid_misc | TLBMISC_WE |
++					(way << TLBMISC_WAY_SHIFT);
++				WRCTL(CTL_TLBMISC, tlbmisc);
++				WRCTL(CTL_TLBACC,
++					(MAX_PHYS_ADDR >> PAGE_SHIFT));
++			}
++		}
++
++		WRCTL(CTL_TLBMISC, org_misc);
++	}
++}
++
++void flush_tlb_all(void)
 +{
 +	int i;
++	unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE;
++	unsigned int way;
++	unsigned long org_misc, pid_misc, tlbmisc;
 +
-+	BUG_ON(!valid_dma_direction(direction));
++	/* remember pid/way until we return */
++	get_misc_and_pid(&org_misc, &pid_misc);
++	pid_misc |= TLBMISC_WE;
 +
-+	/* Make sure that gcc doesn't leave the empty loop body.  */
-+	for_each_sg(sg, sg, nelems, i)
-+		__dma_sync_for_cpu(sg_virt(sg), sg->length, direction);
++	/* Map each TLB entry to physcal address 0 with no-access and a
++	   bad ptbase */
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		tlbmisc = pid_misc | (way << TLBMISC_WAY_SHIFT);
++		for (i = 0; i < cpuinfo.tlb_num_lines; i++) {
++			WRCTL(CTL_PTEADDR, ((vaddr) >> PAGE_SHIFT) << 2);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
++			vaddr += 1UL << 12;
++		}
++	}
++
++	/* restore pid/way */
++	WRCTL(CTL_TLBMISC, org_misc);
 +}
-+EXPORT_SYMBOL(dma_sync_sg_for_cpu);
 +
-+void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
-+				int nelems, enum dma_data_direction direction)
++void set_mmu_pid(unsigned long pid)
 +{
-+	int i;
-+
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	/* Make sure that gcc doesn't leave the empty loop body.  */
-+	for_each_sg(sg, sg, nelems, i)
-+		__dma_sync_for_device(sg_virt(sg), sg->length, direction);
-+
++	WRCTL(CTL_TLBMISC, (RDCTL(CTL_TLBMISC) & TLBMISC_WAY) |
++		((pid & TLBMISC_PID_MASK) << TLBMISC_PID_SHIFT));
 +}
-+EXPORT_SYMBOL(dma_sync_sg_for_device);
 -- 
 1.8.2.1
 
