@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaKCH3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:29:08 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59168 "EHLO
+	id S1751584AbaKCH3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:29:10 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59103 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaKCH2C (ORCPT
+	with ESMTP id S1750824AbaKCH2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Nov 2014 02:28:02 -0500
 X-Original-SENDERIP: 10.177.222.235
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 6/8] perf record: Do not save pathname in ./debug/.build-id directory for vmlinux
-Date: Mon,  3 Nov 2014 16:27:56 +0900
-Message-Id: <1414999678-31377-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 2/8] perf tools: Add gzip decompression support for kernel module
+Date: Mon,  3 Nov 2014 16:27:52 +0900
+Message-Id: <1414999678-31377-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
 References: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
@@ -27,105 +27,332 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When perf record finishes a session recording, it then pre-process
-samples in order to write build-id info from actually used DSOs.
-During this process it'll call map__load() for kernel map, and it ends
-up calling dso__load_vmlinux_path() which replaces dso->long_name.
-
-But this function checks kernel's build-id before searching vmlinux
-path so it'll have the cryptic name which can be confusing to users IMHO.
-
-This patch adds a flag to skip the build-id check during record, so
-it'll have a vmlinux path for the kernel dso->long_name.
+Now my Archlinux box shows module symbols correctly.
 
 Before:
-  # perf record -va sleep 3
-  mmap size 528384B
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.196 MB perf.data (~8545 samples) ]
-  Looking at the vmlinux_path (7 entries long)
-  Using /home/namhyung/.debug/.build-id/f0/6e17aa50adf4d00b88925e03775de107611551 for symbols
+  $ perf report --stdio
+  Failed to open /tmp/perf-3477.map, continuing without symbols
+  no symbols found in /usr/bin/date, maybe install a debug package?
+  No kallsyms or vmlinux with build-id 7b4ea0a49ae2111925857099aaf05c3246ff33e0 was found
+  [drm] with build id 7b4ea0a49ae2111925857099aaf05c3246ff33e0 not found, continuing without symbols
+  No kallsyms or vmlinux with build-id edd931629094b660ca9dec09a1b635c8d87aa2ee was found
+  [jbd2] with build id edd931629094b660ca9dec09a1b635c8d87aa2ee not found, continuing without symbols
+  No kallsyms or vmlinux with build-id a7b1eada671c34933e5610bb920b2ca4945a82c3 was found
+  [ext4] with build id a7b1eada671c34933e5610bb920b2ca4945a82c3 not found, continuing without symbols
+  No kallsyms or vmlinux with build-id d69511fa3e5840e770336ef45b06c83fef8d74e3 was found
+  [scsi_mod] with build id d69511fa3e5840e770336ef45b06c83fef8d74e3 not found, continuing without symbols
+  No kallsyms or vmlinux with build-id af0430af13461af058770ee9b87afc07922c2e77 was found
+  [libata] with build id af0430af13461af058770ee9b87afc07922c2e77 not found, continuing without symbols
+  No kallsyms or vmlinux with build-id aaeedff8160ce631a5f0333591c6ff291201d29f was found
+  [libahci] with build id aaeedff8160ce631a5f0333591c6ff291201d29f not found, continuing without symbols
+  No kallsyms or vmlinux with build-id c57907712becaf662dc4981824bb372c0441d605 was found
+  [mac80211] with build id c57907712becaf662dc4981824bb372c0441d605 not found, continuing without symbols
+  No kallsyms or vmlinux with build-id e0589077cc0ec8c3e4c40eb9f2d9e69d236bee8f was found
+  [iwldvm] with build id e0589077cc0ec8c3e4c40eb9f2d9e69d236bee8f not found, continuing without symbols
+  No kallsyms or vmlinux with build-id 2d86086bf136bf374a2f029cf85a48194f9b950b was found
+  [cfg80211] with build id 2d86086bf136bf374a2f029cf85a48194f9b950b not found, continuing without symbols
+  No kallsyms or vmlinux with build-id 4493c48599bdb3d91d0f8db5150e0be33fdd9221 was found
+  [iwlwifi] with build id 4493c48599bdb3d91d0f8db5150e0be33fdd9221 not found, continuing without symbols
+  ...
+  #
+  # Overhead  Command          Shared Object            Symbol
+  # ........  ...............  .......................  ........................................................
+  #
+       0.03%  swapper          [ext4]                   [k] 0x000000000000fe2e
+       0.03%  swapper          [kernel.kallsyms]        [k] account_entity_enqueue
+       0.03%  swapper          [ext4]                   [k] 0x000000000000fc2b
+       0.03%  irq/50-iwlwifi   [iwlwifi]                [k] 0x000000000000200b
+       0.03%  swapper          [kernel.kallsyms]        [k] ktime_add_safe
+       0.03%  swapper          [kernel.kallsyms]        [k] elv_completed_request
+       0.03%  swapper          [libata]                 [k] 0x0000000000003997
+       0.03%  swapper          [libahci]                [k] 0x0000000000001f25
+       0.03%  swapper          [kernel.kallsyms]        [k] rb_next
+       0.03%  swapper          [kernel.kallsyms]        [k] blk_finish_request
+       0.03%  swapper          [ext4]                   [k] 0x0000000000010248
+       0.00%  perf             [kernel.kallsyms]        [k] native_write_msr_safe
 
 After:
-  # perf record -va sleep 3
-  mmap size 528384B
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.193 MB perf.data (~8432 samples) ]
-  Looking at the vmlinux_path (7 entries long)
-  Using /lib/modules/3.16.4-1-ARCH/build/vmlinux for symbols
+  $ perf report --stdio
+  Failed to open /tmp/perf-3477.map, continuing without symbols
+  no symbols found in /usr/bin/tr, maybe install a debug package?
+  ...
+  #
+  # Overhead  Command          Shared Object                Symbol
+  # ........  ...............  ...........................  ......................................................
+  #
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+       0.04%  kworker/u16:3    [ext4]                       [k] ext4_read_block_bitmap
+       0.03%  kworker/u16:0    [mac80211]                   [k] ieee80211_sta_reset_beacon_monitor
+       0.02%  irq/50-iwlwifi   [mac80211]                   [k] ieee80211_get_bssid
+       0.02%  firefox          [e1000e]                     [k] __ew32_prepare
+       0.02%  swapper          [libahci]                    [k] ahci_handle_port_interrupt
+       0.02%  emacs            libglib-2.0.so.0.4000.0      [.] g_mutex_unlock
+       0.02%  swapper          [e1000e]                     [k] e1000_clean_tx_irq
+       0.02%  dwm              [kernel.kallsyms]            [k] __schedule
+       0.02%  gnome-terminal-  [vdso]                       [.] __vdso_clock_gettime
+       0.02%  swapper          [e1000e]                     [k] e1000_alloc_rx_buffers
+       0.02%  irq/50-iwlwifi   [mac80211]                   [k] ieee80211_rx
+       0.01%  firefox          [vdso]                       [.] __vdso_gettimeofday
+       0.01%  irq/50-iwlwifi   [iwlwifi]                    [k] iwl_pcie_rxq_restock.part.13
+
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-record.c | 11 +++++++++++
- tools/perf/util/symbol.c    | 11 ++++++-----
- tools/perf/util/symbol.h    |  1 +
- 3 files changed, 18 insertions(+), 5 deletions(-)
+ tools/perf/Makefile.perf                     |  7 +++
+ tools/perf/config/Makefile                   | 15 +++++-
+ tools/perf/config/feature-checks/Makefile    |  6 ++-
+ tools/perf/config/feature-checks/test-zlib.c |  9 ++++
+ tools/perf/util/dso.c                        | 15 +++---
+ tools/perf/util/util.h                       |  5 ++
+ tools/perf/util/zlib.c                       | 78 ++++++++++++++++++++++++++++
+ 7 files changed, 123 insertions(+), 12 deletions(-)
+ create mode 100644 tools/perf/config/feature-checks/test-zlib.c
+ create mode 100644 tools/perf/util/zlib.c
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 5091a27e6d28..582c4da155ea 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -200,6 +200,17 @@ static int process_buildids(struct record *rec)
- 	if (size == 0)
- 		return 0;
- 
-+	/*
-+	 * During this process, it'll load kernel map and replace the
-+	 * dso->long_name to a real pathname it found.  In this case
-+	 * we prefer the vmlinux path like
-+	 *   /lib/modules/3.16.4/build/vmlinux
-+	 *
-+	 * rather than build-id path (in debug directory).
-+	 *   $HOME/.debug/.build-id/f0/6e17aa50adf4d00b88925e03775de107611551
-+	 */
-+	symbol_conf.ignore_vmlinux_buildid = true;
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 3caf7dab50e8..31a76ee92c93 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -66,6 +66,9 @@ include config/utilities.mak
+ #
+ # Define NO_PERF_READ_VDSOX32 if you do not want to build perf-read-vdsox32
+ # for reading the x32 mode 32-bit compatibility VDSO in 64-bit mode
++#
++# Define NO_ZLIB if you do not want to support compressed kernel modules
 +
- 	return __perf_session__process_events(session, start,
- 					      size - start,
- 					      size, &build_id__mark_dso_hit_ops);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index c69915c9d5bc..c24c5b83156c 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1511,12 +1511,10 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
- 			   symbol_filter_t filter)
- {
- 	int i, err = 0;
--	char *filename;
-+	char *filename = NULL;
  
--	pr_debug("Looking at the vmlinux_path (%d entries long)\n",
--		 vmlinux_path__nr_entries + 1);
+ ifeq ($(srctree),)
+ srctree := $(patsubst %/,%,$(dir $(shell pwd)))
+@@ -582,6 +585,10 @@ ifndef NO_LIBNUMA
+   BUILTIN_OBJS += $(OUTPUT)bench/numa.o
+ endif
+ 
++ifndef NO_ZLIB
++  LIB_OBJS += $(OUTPUT)util/zlib.o
++endif
++
+ ifdef ASCIIDOC8
+   export ASCIIDOC8
+ endif
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 71264e41fa85..79f906c7124e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -200,7 +200,8 @@ CORE_FEATURE_TESTS =			\
+ 	libunwind			\
+ 	stackprotector-all		\
+ 	timerfd				\
+-	libdw-dwarf-unwind
++	libdw-dwarf-unwind		\
++	zlib
+ 
+ LIB_FEATURE_TESTS =			\
+ 	dwarf				\
+@@ -214,7 +215,8 @@ LIB_FEATURE_TESTS =			\
+ 	libpython			\
+ 	libslang			\
+ 	libunwind			\
+-	libdw-dwarf-unwind
++	libdw-dwarf-unwind		\
++	zlib
+ 
+ VF_FEATURE_TESTS =			\
+ 	backtrace			\
+@@ -604,6 +606,15 @@ ifneq ($(filter -lbfd,$(EXTLIBS)),)
+   CFLAGS += -DHAVE_LIBBFD_SUPPORT
+ endif
+ 
++ifndef NO_ZLIB
++  ifeq ($(feature-zlib), 1)
++    CFLAGS += -DHAVE_ZLIB_SUPPORT
++    EXTLIBS += -lz
++  else
++    NO_ZLIB := 1
++  endif
++endif
++
+ ifndef NO_BACKTRACE
+   ifeq ($(feature-backtrace), 1)
+     CFLAGS += -DHAVE_BACKTRACE_SUPPORT
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 7c68ec74a808..9ced746a139a 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -29,7 +29,8 @@ FILES=					\
+ 	test-timerfd.bin		\
+ 	test-libdw-dwarf-unwind.bin	\
+ 	test-compile-32.bin		\
+-	test-compile-x32.bin
++	test-compile-x32.bin		\
++	test-zlib.bin
+ 
+ CC := $(CROSS_COMPILE)gcc -MD
+ PKG_CONFIG := $(CROSS_COMPILE)pkg-config
+@@ -139,6 +140,9 @@ FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+ test-compile-x32.bin:
+ 	$(CC) -mx32 -o $(OUTPUT)$@ test-compile.c
+ 
++test-zlib.bin:
++	$(BUILD) -lz
++
+ -include *.d
+ 
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-zlib.c b/tools/perf/config/feature-checks/test-zlib.c
+new file mode 100644
+index 000000000000..e111fff6240e
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-zlib.c
+@@ -0,0 +1,9 @@
++#include <zlib.h>
++
++int main(void)
++{
++	z_stream zs;
++
++	inflateInit(&zs);
++	return 0;
++}
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 3293e2e21814..43bb3a7ccd81 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -141,24 +141,21 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ 	return ret;
+ }
+ 
+-static int decompress_dummy(const char *input __maybe_unused,
+-			    int output __maybe_unused)
+-{
+-	return -1;
+-}
 -
--	filename = dso__build_id_filename(dso, NULL, 0);
-+	if (!symbol_conf.ignore_vmlinux_buildid)
-+		filename = dso__build_id_filename(dso, NULL, 0);
- 	if (filename != NULL) {
- 		err = dso__load_vmlinux(dso, map, filename, true, filter);
- 		if (err > 0)
-@@ -1524,6 +1522,9 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
- 		free(filename);
- 	}
+ static const struct {
+ 	const char *fmt;
+ 	int (*decompress)(const char *input, int output);
+ } compressions[] = {
+-	{ "gz", decompress_dummy },
++#ifdef HAVE_ZLIB_SUPPORT
++	{ "gz", gzip_decompress_to_file },
++#endif
++	{ NULL, },
+ };
  
-+	pr_debug("Looking at the vmlinux_path (%d entries long)\n",
-+		 vmlinux_path__nr_entries + 1);
+ bool is_supported_compression(const char *ext)
+ {
+ 	unsigned i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(compressions); i++) {
++	for (i = 0; compressions[i].fmt; i++) {
+ 		if (!strcmp(ext, compressions[i].fmt))
+ 			return true;
+ 	}
+@@ -197,7 +194,7 @@ bool decompress_to_file(const char *ext, const char *filename, int output_fd)
+ {
+ 	unsigned i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(compressions); i++) {
++	for (i = 0; compressions[i].fmt; i++) {
+ 		if (!strcmp(ext, compressions[i].fmt))
+ 			return !compressions[i].decompress(filename,
+ 							   output_fd);
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 80bfdaa0e2a4..7dc44cfe25b3 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -351,4 +351,9 @@ void mem_bswap_32(void *src, int byte_size);
+ 
+ const char *get_filename_for_perf_kvm(void);
+ bool find_process(const char *name);
 +
- 	for (i = 0; i < vmlinux_path__nr_entries; ++i) {
- 		err = dso__load_vmlinux(dso, map, vmlinux_path[i], false, filter);
- 		if (err > 0)
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index eb2c19bf8d90..ded3ca7266de 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -105,6 +105,7 @@ struct symbol_conf {
- 	unsigned short	nr_events;
- 	bool		try_vmlinux_path,
- 			ignore_vmlinux,
-+			ignore_vmlinux_buildid,
- 			show_kernel_path,
- 			use_modules,
- 			sort_by_name,
++#ifdef HAVE_ZLIB_SUPPORT
++int gzip_decompress_to_file(const char *input, int output_fd);
++#endif
++
+ #endif /* GIT_COMPAT_UTIL_H */
+diff --git a/tools/perf/util/zlib.c b/tools/perf/util/zlib.c
+new file mode 100644
+index 000000000000..495a449fc25c
+--- /dev/null
++++ b/tools/perf/util/zlib.c
+@@ -0,0 +1,78 @@
++#include <stdio.h>
++#include <unistd.h>
++#include <sys/stat.h>
++#include <sys/mman.h>
++#include <zlib.h>
++
++#include "util/util.h"
++#include "util/debug.h"
++
++
++#define CHUNK_SIZE  16384
++
++int gzip_decompress_to_file(const char *input, int output_fd)
++{
++	int ret = Z_STREAM_ERROR;
++	int input_fd;
++	void *ptr;
++	int len;
++	struct stat stbuf;
++	unsigned char buf[CHUNK_SIZE];
++	z_stream zs = {
++		.zalloc		= Z_NULL,
++		.zfree		= Z_NULL,
++		.opaque		= Z_NULL,
++		.avail_in	= 0,
++		.next_in	= Z_NULL,
++	};
++
++	input_fd = open(input, O_RDONLY);
++	if (input_fd < 0)
++		return -1;
++
++	if (fstat(input_fd, &stbuf) < 0)
++		goto out_close;
++
++	ptr = mmap(NULL, stbuf.st_size, PROT_READ, MAP_PRIVATE, input_fd, 0);
++	if (ptr == MAP_FAILED)
++		goto out_close;
++
++	if (inflateInit2(&zs, 16 + MAX_WBITS) != Z_OK)
++		goto out_unmap;
++
++	zs.next_in = ptr;
++	zs.avail_in = stbuf.st_size;
++
++	do {
++		zs.next_out = buf;
++		zs.avail_out = CHUNK_SIZE;
++
++		ret = inflate(&zs, Z_NO_FLUSH);
++		switch (ret) {
++		case Z_NEED_DICT:
++			ret = Z_DATA_ERROR;
++			/* fall through */
++		case Z_DATA_ERROR:
++		case Z_MEM_ERROR:
++			goto out;
++		default:
++			break;
++		}
++
++		len = CHUNK_SIZE - zs.avail_out;
++		if (writen(output_fd, buf, len) != len) {
++			ret = Z_DATA_ERROR;
++			goto out;
++		}
++
++	} while (ret != Z_STREAM_END);
++
++out:
++	inflateEnd(&zs);
++out_unmap:
++	munmap(ptr, stbuf.st_size);
++out_close:
++	close(input_fd);
++
++	return ret == Z_STREAM_END ? 0 : -1;
++}
 -- 
 2.1.2
 
