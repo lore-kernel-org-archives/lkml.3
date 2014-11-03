@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381AbaKCH6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:58:36 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:52336 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaKCH6f (ORCPT
+	id S1751431AbaKCIAa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 03:00:30 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:47335 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207AbaKCIA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 02:58:35 -0500
-Message-ID: <545735A4.6060107@dev.mellanox.co.il>
-Date: Mon, 03 Nov 2014 09:58:28 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 3 Nov 2014 03:00:28 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 3 Nov 2014 17:02:08 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
+        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
+Message-ID: <20141103080208.GA7052@js1304-P5Q-DELUXE>
+References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>, Roland Dreier <roland@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, linux-rdma@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] please pull infiniband.git
-References: <1413499938-2378-1-git-send-email-roland@kernel.org> <CAPM=9tx+Zau+2EhVouEAM0XKxKhgOpEHSUgWhBuWDC8vA7wvig@mail.gmail.com>
-In-Reply-To: <CAPM=9tx+Zau+2EhVouEAM0XKxKhgOpEHSUgWhBuWDC8vA7wvig@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/2/2014 10:06 PM, Dave Airlie wrote:
-> On 17 October 2014 08:52, Roland Dreier <roland@kernel.org> wrote:
->> Hi Linus,
->>
->> Please pull from
->>
->>      git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
->>
->> ----------------------------------------------------------------
->> Main set of InfiniBand/RDMA updates for 3.18 merge window:
->>
->>   - Large set of iSER initiator improvements
->>   - Hardware driver fixes for cxgb4, mlx5 and ocrdma
->>   - Small fixes to core midlayer
->>
->
-> building on 32-bit x86.
->
->   CC [M]  drivers/infiniband/ulp/iser/iser_verbs.o
-> /home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:
-> In function ‘iser_handle_comp_error’:
-> /home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:1171:33:
-> warning: cast to pointer from integer of different size
-> [-Wint-to-pointer-cast]
->    if (is_iser_tx_desc(iser_conn, (void *)wc->wr_id)) {
->                                   ^
-> /home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:1172:31:
-> warning: cast to pointer from integer of different size
-> [-Wint-to-pointer-cast]
->     struct iser_tx_desc *desc = (struct iser_tx_desc *)wc->wr_id;
->                                 ^
-> /home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:
-> In function ‘iser_handle_wc’:
-> /home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:1198:14:
-> warning: cast to pointer from integer of different size
-> [-Wint-to-pointer-cast]
->      rx_desc = (struct iser_rx_desc *)wc->wr_id;
->                ^
-> /home/airlied/devel/kernel/linux-2.6/drivers/infiniband/ulp/iser/iser_verbs.c:1203:14:
-> warning: cast to pointer from integer of different size
-> [-Wint-to-pointer-cast]
->      tx_desc = (struct iser_tx_desc *)wc->wr_id;
->                ^
->
-> Not sure anyone would ever want to run this code on 32-bit boxes, but
-> I'm a bit worried if wr_id is a 64-bit value, and we encode it into a
-> 32-bit pointer, you'd always lose the top 32-bits.
->
+On Sat, Nov 01, 2014 at 11:15:54PM -0400, Johannes Weiner wrote:
+> Memory cgroups used to have 5 per-page pointers.  To allow users to
+> disable that amount of overhead during runtime, those pointers were
+> allocated in a separate array, with a translation layer between them
+> and struct page.
 
-Hey Dave,
+Hello, Johannes.
 
-This was addressed in: 
-http://marc.info/?l=linux-rdma&m=141448978030924&w=2 (part of iser fixes 
-for 3.18-rc).
+I'd like to leave this translation layer.
+Could you just disable that code with #ifdef until next user comes?
 
-Thanks!
+In our company, we uses PAGE_OWNER on mm tree which is the feature
+saying who allocates the page. To use PAGE_OWNER needs modifying
+struct page and then needs re-compile. This re-compile makes us difficult
+to use this feature. So, we decide to implement run-time configurable
+PAGE_OWNER through page_cgroup's translation layer code. Moreover, with
+this infrastructure, I plan to implement some other debugging feature.
 
-Sagi.
+Because of my laziness, it didn't submitted to LKML. But, I will
+submit it as soon as possible. If the code is removed, I would
+copy-and-paste the code, but, it would cause lose of the history on
+that code. So if possible, I'd like to leave that code now.
+
+Thanks.
