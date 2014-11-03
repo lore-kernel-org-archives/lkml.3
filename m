@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537AbaKCRzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:55:44 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:37181 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509AbaKCRzj (ORCPT
+	id S1753562AbaKCR4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:56:00 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:50082 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969AbaKCRz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:55:39 -0500
-Date: Mon, 3 Nov 2014 17:55:29 +0000
+	Mon, 3 Nov 2014 12:55:56 -0500
+Date: Mon, 3 Nov 2014 17:55:46 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v3 14/47] mfd: tps80031: Register with kernel power-off
- handler
-Message-ID: <20141103175529.GO12011@x1>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 12/47] mfd: ab8500-sysctrl: Register with kernel
+ power-off handler
+Message-ID: <20141103175546.GP12011@x1>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
- <1414425354-10359-15-git-send-email-linux@roeck-us.net>
+ <1414425354-10359-13-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414425354-10359-15-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1414425354-10359-13-git-send-email-linux@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,8 +35,18 @@ On Mon, 27 Oct 2014, Guenter Roeck wrote:
 > directly. Register with low priority to reflect that the original code
 > only sets pm_power_off if it was not already set.
 > 
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> sysctrl_dev is set prior to power-off handler registration, and the
+> power-off handler is unregistered prior to clearing sysrctrl_dev.
+> It is therefore not necessary to check if sysctrl_dev is NULL in the
+> power-off handler, and the check was removed. Setting sysctrl_dev to NULL
+> in the remove function was also removed as unnecessary. With those changes,
+> devm_register_power_off_handler can be used to register the poeroff handler.
+> The now empty remove function was retained since the ab8500_restart function,
+> which is currently unused, would likely need some cleanup if it was ever used.
+> 
+> Cc: Linus Walleij <linus.walleij@linaro.org>
 > Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
 > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
 > v3:
@@ -43,97 +55,95 @@ On Mon, 27 Oct 2014, Guenter Roeck wrote:
 > - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 > v2:
 > - Use define to specify poweroff handler priority
+> - Use devm_register_power_off_handler
 > - Use dev_warn instead of dev_err
+> - Since we use devm_register_power_off_handler,
+>   we need to check if sysctrl_dev in the poweroff handler to avoid
+>   a race condition on unload, so this check is no longer removed
 > 
->  drivers/mfd/tps80031.c       | 30 ++++++++++++++++++------------
->  include/linux/mfd/tps80031.h |  2 ++
->  2 files changed, 20 insertions(+), 12 deletions(-)
+>  drivers/mfd/ab8500-sysctrl.c | 23 ++++++++++++++++-------
+>  1 file changed, 16 insertions(+), 7 deletions(-)
 
 Acked-by: Lee Jones <lee.jones@linaro.org>
 
-> diff --git a/drivers/mfd/tps80031.c b/drivers/mfd/tps80031.c
-> index ed6c5b0..6504959 100644
-> --- a/drivers/mfd/tps80031.c
-> +++ b/drivers/mfd/tps80031.c
-> @@ -147,7 +147,6 @@ static const struct tps80031_pupd_data tps80031_pupds[] = {
->  	[TPS80031_CTLI2C_SCL]		= PUPD_DATA(4, 0,	BIT(2)),
->  	[TPS80031_CTLI2C_SDA]		= PUPD_DATA(4, 0,	BIT(3)),
->  };
-> -static struct tps80031 *tps80031_power_off_dev;
+> diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
+> index 8e0dae5..c49ecaf 100644
+> --- a/drivers/mfd/ab8500-sysctrl.c
+> +++ b/drivers/mfd/ab8500-sysctrl.c
+> @@ -6,6 +6,7 @@
 >  
->  int tps80031_ext_power_req_config(struct device *dev,
->  		unsigned long ext_ctrl_flag, int preq_bit,
-> @@ -209,11 +208,17 @@ int tps80031_ext_power_req_config(struct device *dev,
->  }
->  EXPORT_SYMBOL_GPL(tps80031_ext_power_req_config);
+>  #include <linux/err.h>
+>  #include <linux/module.h>
+> +#include <linux/notifier.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/pm.h>
+>  #include <linux/reboot.h>
+> @@ -23,7 +24,8 @@
 >  
-> -static void tps80031_power_off(void)
-> +static int tps80031_power_off(struct notifier_block *this,
-> +			      unsigned long unused1, void *unused2)
+>  static struct device *sysctrl_dev;
+>  
+> -static void ab8500_power_off(void)
+> +static int ab8500_power_off(struct notifier_block *this, unsigned long unused1,
+> +			    void *unused2)
 >  {
-> -	dev_info(tps80031_power_off_dev->dev, "switching off PMU\n");
-> -	tps80031_write(tps80031_power_off_dev->dev, TPS80031_SLAVE_ID1,
-> -				TPS80031_PHOENIX_DEV_ON, TPS80031_DEVOFF);
-> +	struct tps80031 *tps80031 = container_of(this, struct tps80031,
-> +						 power_off_nb);
-> +
-> +	dev_info(tps80031->dev, "switching off PMU\n");
-> +	tps80031_write(tps80031->dev, TPS80031_SLAVE_ID1,
-> +		       TPS80031_PHOENIX_DEV_ON, TPS80031_DEVOFF);
+>  	sigset_t old;
+>  	sigset_t all;
+> @@ -36,7 +38,7 @@ static void ab8500_power_off(void)
+>  
+>  	if (sysctrl_dev == NULL) {
+>  		pr_err("%s: sysctrl not initialized\n", __func__);
+> -		return;
+> +		return NOTIFY_DONE;
+>  	}
+>  
+>  	/*
+> @@ -83,8 +85,15 @@ shutdown:
+>  					 AB8500_STW4500CTRL1_SWRESET4500N);
+>  		(void)sigprocmask(SIG_SETMASK, &old, NULL);
+>  	}
 > +
 > +	return NOTIFY_DONE;
 >  }
 >  
->  static void tps80031_pupd_init(struct tps80031 *tps80031,
-> @@ -501,9 +506,13 @@ static int tps80031_probe(struct i2c_client *client,
->  		goto fail_mfd_add;
->  	}
+> +static struct notifier_block ab8500_power_off_nb = {
+> +	.notifier_call = ab8500_power_off,
+> +	.priority = POWER_OFF_PRIORITY_LOW,
+> +};
+> +
+>  /*
+>   * Use the AB WD to reset the platform. It will perform a hard
+>   * reset instead of a soft reset. Write the reset reason to
+> @@ -185,6 +194,7 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
+>  	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+>  	struct ab8500_platform_data *plat;
+>  	struct ab8500_sysctrl_platform_data *pdata;
+> +	int err;
 >  
-> -	if (pdata->use_power_off && !pm_power_off) {
-> -		tps80031_power_off_dev = tps80031;
-> -		pm_power_off = tps80031_power_off;
-> +	if (pdata->use_power_off) {
-> +		tps80031->power_off_nb.notifier_call = tps80031_power_off;
-> +		tps80031->power_off_nb.priority = POWER_OFF_PRIORITY_LOW;
-> +		ret = register_power_off_handler(&tps80031->power_off_nb);
-> +		if (ret)
-> +			dev_warn(&client->dev,
-> +				 "Failed to register power-off handler\n");
->  	}
->  	return 0;
+>  	plat = dev_get_platdata(pdev->dev.parent);
 >  
-> @@ -523,10 +532,7 @@ static int tps80031_remove(struct i2c_client *client)
->  	struct tps80031 *tps80031 = i2c_get_clientdata(client);
->  	int i;
+> @@ -193,8 +203,10 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
 >  
-> -	if (tps80031_power_off_dev == tps80031) {
-> -		tps80031_power_off_dev = NULL;
+>  	sysctrl_dev = &pdev->dev;
+>  
+> -	if (!pm_power_off)
+> -		pm_power_off = ab8500_power_off;
+> +	err = devm_register_power_off_handler(sysctrl_dev,
+> +					      &ab8500_power_off_nb);
+> +	if (err)
+> +		dev_warn(&pdev->dev, "Failed to register power-off handler\n");
+>  
+>  	pdata = plat->sysctrl;
+>  	if (pdata) {
+> @@ -228,9 +240,6 @@ static int ab8500_sysctrl_remove(struct platform_device *pdev)
+>  {
+>  	sysctrl_dev = NULL;
+>  
+> -	if (pm_power_off == ab8500_power_off)
 > -		pm_power_off = NULL;
-> -	}
-> +	unregister_power_off_handler(&tps80031->power_off_nb);
+> -
+>  	return 0;
+>  }
 >  
->  	mfd_remove_devices(tps80031->dev);
->  
-> diff --git a/include/linux/mfd/tps80031.h b/include/linux/mfd/tps80031.h
-> index 2c75c9c..2c6afc2 100644
-> --- a/include/linux/mfd/tps80031.h
-> +++ b/include/linux/mfd/tps80031.h
-> @@ -24,6 +24,7 @@
->  #define __LINUX_MFD_TPS80031_H
->  
->  #include <linux/device.h>
-> +#include <linux/notifier.h>
->  #include <linux/regmap.h>
->  
->  /* Pull-ups/Pull-downs */
-> @@ -513,6 +514,7 @@ struct tps80031 {
->  	struct i2c_client	*clients[TPS80031_NUM_SLAVES];
->  	struct regmap		*regmap[TPS80031_NUM_SLAVES];
->  	struct regmap_irq_chip_data *irq_data;
-> +	struct notifier_block	power_off_nb;
->  };
->  
->  struct tps80031_pupd_init_data {
 
 -- 
 Lee Jones
