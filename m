@@ -1,40 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaKCORO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 09:17:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52437 "EHLO mx2.suse.de"
+	id S1752531AbaKCOR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 09:17:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52443 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506AbaKCORL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 09:17:11 -0500
-Date: Mon, 03 Nov 2014 15:17:08 +0100
-Message-ID: <s5hy4rs1i8r.wl-tiwai@suse.de>
+	id S1752352AbaKCORw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 09:17:52 -0500
+Date: Mon, 03 Nov 2014 15:17:51 +0100
+Message-ID: <s5hwq7c1i7k.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH resent] ALSA: emu10k1: Deletion of unnecessary checks before three function calls
-In-Reply-To: <54578CE0.1090201@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net>
-	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
-	<530A086E.8010901@users.sourceforge.net>
-	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	<530A72AA.3000601@users.sourceforge.net>
-	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	<530B5FB6.6010207@users.sourceforge.net>
-	<alpine.DEB.2.10.1402241710370.2074@hadrien>
-	<530C5E18.1020800@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251014170.2080@hadrien>
-	<530CD2C4.4050903@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251840450.7035@hadrien>
-	<530CF8FF.8080600@users.sourceforge.net>
-	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	<530DD06F.4090703@users.sourceforge.net>
-	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<54567788.9060008@users.sourceforge.net>
-	<s5ha94839dx.wl-tiwai@suse.de>
-	<54578CE0.1090201@users.sourceforge.net>
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] ALSA: echoaudio: add reference of struct echoaudio
+In-Reply-To: <1415010853-4334-1-git-send-email-sudipm.mukherjee@gmail.com>
+References: <1415010853-4334-1-git-send-email-sudipm.mukherjee@gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -44,33 +24,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon, 03 Nov 2014 15:10:40 +0100,
-SF Markus Elfring wrote:
+At Mon,  3 Nov 2014 16:04:12 +0530,
+Sudip Mukherjee wrote:
 > 
-> > Your patch can't be applied cleanly due to your MUA breaking the
-> > lines.  Please fix your MUA setup, or use an attachment if it's
-> > impossible, and resend the patch.
+> added reference of struct echoaudio to free_firmware function.
+> this structure will be later used to get a reference of the card
+> when converting snd_printk to dev_* in the next patch of the series.
 > 
-> Thanks for your feedback.
-> 
-> Does this example show a conflict between long comments like
-> "snd_emu10k1_ctl_private_free( ... *kctl)" after patch ranges and line length
-> limitation for email eventually?
+> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
 
-Conflict?  It's your MUA that is broken.
-
-> > Also, try to align the subject line with the relevant commits.  See
-> > "git log sound/pci/emu10k1"
-> 
-> I have attached my update suggestion with a slightly different commit title as
-> before. Is this variant acceptable?
-
-So, you couldn't fix your MUA?  That's bad for you.  Many maintainers
-dislike attachments and won't accept such patches.
-
-Couldn't you simply send a patch via git-send-email?
-
-In anyway, I applied the patch now.  Thanks.
+Thanks, now applied both.  Though, I noticed that there is also a
+dev_notice() usage that should be also dev_dbg().  Corrected such
+lines in my side.
 
 
 Takashi
