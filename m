@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234AbaKCH2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:28:17 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59096 "EHLO
+	id S1751410AbaKCH27 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:28:59 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59157 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849AbaKCH2C (ORCPT
+	with ESMTP id S1750873AbaKCH2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 02:28:02 -0500
+	Mon, 3 Nov 2014 02:28:03 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/8] perf tools: Preparation for compressed kernel module support
-Date: Mon,  3 Nov 2014 16:27:51 +0900
-Message-Id: <1414999678-31377-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 5/8] perf build-id: Move build-id related functions to util/build-id.c
+Date: Mon,  3 Nov 2014 16:27:55 +0900
+Message-Id: <1414999678-31377-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
 References: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
@@ -27,291 +27,674 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic support to handle compressed kernel module as
-some distro (such as Archlinux) carries on it now.  The actual work
-using compression library will be added later.
+It'd be better managing those functions in a separate place as
+util/header.c file is already big.
+
+It now exports following 3 functions to others:
+
+  bool perf_session__read_build_ids(struct perf_session *session, bool with_hits);
+  int perf_session__write_buildid_table(struct perf_session *session, int fd);
+  int perf_session__cache_build_ids(struct perf_session *session);
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/dso.c        | 74 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/dso.h        |  7 +++++
- tools/perf/util/machine.c    | 19 +++++++++++-
- tools/perf/util/symbol-elf.c | 35 ++++++++++++++++++++-
- tools/perf/util/symbol.c     |  8 ++++-
- 5 files changed, 140 insertions(+), 3 deletions(-)
+ tools/perf/util/build-id.c | 293 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/build-id.h |   5 +
+ tools/perf/util/header.c   | 296 +--------------------------------------------
+ tools/perf/util/header.h   |   4 +
+ 4 files changed, 303 insertions(+), 295 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 0247acfdfaca..3293e2e21814 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -21,8 +21,10 @@ char dso__symtab_origin(const struct dso *dso)
- 		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]		= 'b',
- 		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]		= 'd',
- 		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]		= 'K',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP]	= 'm',
- 		[DSO_BINARY_TYPE__GUEST_KALLSYMS]		= 'g',
- 		[DSO_BINARY_TYPE__GUEST_KMODULE]		= 'G',
-+		[DSO_BINARY_TYPE__GUEST_KMODULE_COMP]		= 'M',
- 		[DSO_BINARY_TYPE__GUEST_VMLINUX]		= 'V',
- 	};
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index 2e7c68e39330..acc50509f1d5 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -15,6 +15,8 @@
+ #include "debug.h"
+ #include "session.h"
+ #include "tool.h"
++#include "header.h"
++#include "vdso.h"
  
-@@ -112,11 +114,13 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 		break;
- 
- 	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+	case DSO_BINARY_TYPE__GUEST_KMODULE_COMP:
- 		path__join3(filename, size, symbol_conf.symfs,
- 			    root_dir, dso->long_name);
- 		break;
- 
- 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP:
- 		__symbol__join_symfs(filename, size, dso->long_name);
- 		break;
- 
-@@ -137,6 +141,76 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 	return ret;
+ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+ 			   union perf_event *event,
+@@ -105,3 +107,294 @@ char *dso__build_id_filename(const struct dso *dso, char *bf, size_t size)
+ 			 build_id_hex, build_id_hex + 2);
+ 	return bf;
  }
- 
-+static int decompress_dummy(const char *input __maybe_unused,
-+			    int output __maybe_unused)
++
++#define dsos__for_each_with_build_id(pos, head)	\
++	list_for_each_entry(pos, head, node)	\
++		if (!pos->has_build_id)		\
++			continue;		\
++		else
++
++static int write_buildid(const char *name, size_t name_len, u8 *build_id,
++			 pid_t pid, u16 misc, int fd)
 +{
-+	return -1;
++	int err;
++	struct build_id_event b;
++	size_t len;
++
++	len = name_len + 1;
++	len = PERF_ALIGN(len, NAME_ALIGN);
++
++	memset(&b, 0, sizeof(b));
++	memcpy(&b.build_id, build_id, BUILD_ID_SIZE);
++	b.pid = pid;
++	b.header.misc = misc;
++	b.header.size = sizeof(b) + len;
++
++	err = writen(fd, &b, sizeof(b));
++	if (err < 0)
++		return err;
++
++	return write_padded(fd, name, name_len + 1, len);
 +}
 +
-+static const struct {
-+	const char *fmt;
-+	int (*decompress)(const char *input, int output);
-+} compressions[] = {
-+	{ "gz", decompress_dummy },
-+};
-+
-+bool is_supported_compression(const char *ext)
++static int __dsos__write_buildid_table(struct list_head *head,
++				       struct machine *machine,
++				       pid_t pid, u16 misc, int fd)
 +{
-+	unsigned i;
++	char nm[PATH_MAX];
++	struct dso *pos;
 +
-+	for (i = 0; i < ARRAY_SIZE(compressions); i++) {
-+		if (!strcmp(ext, compressions[i].fmt))
-+			return true;
++	dsos__for_each_with_build_id(pos, head) {
++		int err;
++		const char *name;
++		size_t name_len;
++
++		if (!pos->hit)
++			continue;
++
++		if (dso__is_vdso(pos)) {
++			name = pos->short_name;
++			name_len = pos->short_name_len + 1;
++		} else if (dso__is_kcore(pos)) {
++			machine__mmap_name(machine, nm, sizeof(nm));
++			name = nm;
++			name_len = strlen(nm) + 1;
++		} else {
++			name = pos->long_name;
++			name_len = pos->long_name_len + 1;
++		}
++
++		err = write_buildid(name, name_len, pos->build_id,
++				    pid, misc, fd);
++		if (err)
++			return err;
 +	}
-+	return false;
++
++	return 0;
 +}
 +
-+bool is_kmodule_extension(const char *ext)
++static int machine__write_buildid_table(struct machine *machine, int fd)
 +{
-+	if (!strcmp(ext, "ko"))
-+		return true;
++	int err;
++	u16 kmisc = PERF_RECORD_MISC_KERNEL,
++	    umisc = PERF_RECORD_MISC_USER;
 +
-+	if (ext[2] == '\0' || (ext[2] == '.' && is_supported_compression(ext+3)))
-+		return true;
-+
-+	return false;
-+}
-+
-+bool is_kernel_module(const char *pathname, bool *compressed)
-+{
-+	const char *ext = strrchr(pathname, '.');
-+
-+	if (ext == NULL)
-+		return false;
-+
-+	if (is_supported_compression(ext + 1)) {
-+		if (compressed)
-+			*compressed = true;
-+		ext -= 3;
-+	} else if (compressed)
-+		*compressed = false;
-+
-+	return is_kmodule_extension(ext + 1);
-+}
-+
-+bool decompress_to_file(const char *ext, const char *filename, int output_fd)
-+{
-+	unsigned i;
-+
-+	for (i = 0; i < ARRAY_SIZE(compressions); i++) {
-+		if (!strcmp(ext, compressions[i].fmt))
-+			return !compressions[i].decompress(filename,
-+							   output_fd);
++	if (!machine__is_host(machine)) {
++		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
++		umisc = PERF_RECORD_MISC_GUEST_USER;
 +	}
-+	return false;
++
++	err = __dsos__write_buildid_table(&machine->kernel_dsos.head, machine,
++					  machine->pid, kmisc, fd);
++	if (err == 0)
++		err = __dsos__write_buildid_table(&machine->user_dsos.head,
++						  machine, machine->pid, umisc,
++						  fd);
++	return err;
 +}
 +
-+bool dso__needs_decompress(struct dso *dso)
++int perf_session__write_buildid_table(struct perf_session *session, int fd)
 +{
-+	return dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE_COMP;
++	struct rb_node *nd;
++	int err = machine__write_buildid_table(&session->machines.host, fd);
++
++	if (err)
++		return err;
++
++	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		err = machine__write_buildid_table(pos, fd);
++		if (err)
++			break;
++	}
++	return err;
 +}
 +
- /*
-  * Global list of open DSOs and the counter.
-  */
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index a316e4af321f..3782c82c6e44 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -22,7 +22,9 @@ enum dso_binary_type {
- 	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
- 	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__GUEST_KMODULE_COMP,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP,
- 	DSO_BINARY_TYPE__KCORE,
- 	DSO_BINARY_TYPE__GUEST_KCORE,
- 	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
-@@ -185,6 +187,11 @@ int dso__kernel_module_get_build_id(struct dso *dso, const char *root_dir);
- char dso__symtab_origin(const struct dso *dso);
- int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type type,
- 				   char *root_dir, char *filename, size_t size);
-+bool is_supported_compression(const char *ext);
-+bool is_kmodule_extension(const char *ext);
-+bool is_kernel_module(const char *pathname, bool *compressed);
-+bool decompress_to_file(const char *ext, const char *filename, int output_fd);
-+bool dso__needs_decompress(struct dso *dso);
- 
- /*
-  * The dso__data_* external interface provides following functions:
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 51a630301afa..946c7d62cb6e 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -464,6 +464,7 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- {
- 	struct map *map;
- 	struct dso *dso = __dsos__findnew(&machine->kernel_dsos, filename);
-+	bool compressed;
- 
- 	if (dso == NULL)
- 		return NULL;
-@@ -476,6 +477,11 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- 		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
- 	else
- 		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
++int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
++			  const char *name, bool is_kallsyms, bool is_vdso)
++{
++	const size_t size = PATH_MAX;
++	char *realname, *filename = zalloc(size),
++	     *linkname = zalloc(size), *targetname;
++	int len, err = -1;
++	bool slash = is_kallsyms || is_vdso;
 +
-+	/* _KMODULE_COMP should be next to _KMODULE */
-+	if (is_kernel_module(filename, &compressed) && compressed)
-+		dso->symtab_type++;
++	if (is_kallsyms) {
++		if (symbol_conf.kptr_restrict) {
++			pr_debug("Not caching a kptr_restrict'ed /proc/kallsyms\n");
++			err = 0;
++			goto out_free;
++		}
++		realname = (char *) name;
++	} else
++		realname = realpath(name, NULL);
 +
- 	map_groups__insert(&machine->kmaps, map);
- 	return map;
- }
-@@ -861,8 +867,14 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
- 			struct map *map;
- 			char *long_name;
- 
--			if (dot == NULL || strcmp(dot, ".ko"))
-+			if (dot == NULL)
- 				continue;
++	if (realname == NULL || filename == NULL || linkname == NULL)
++		goto out_free;
 +
-+			/* On some system, modules are compressed like .ko.gz */
-+			if (is_supported_compression(dot + 1) &&
-+			    is_kmodule_extension(dot - 2))
-+				dot -= 3;
++	len = scnprintf(filename, size, "%s%s%s",
++		       debugdir, slash ? "/" : "",
++		       is_vdso ? DSO__NAME_VDSO : realname);
++	if (mkdir_p(filename, 0755))
++		goto out_free;
 +
- 			snprintf(dso_name, sizeof(dso_name), "[%.*s]",
- 				 (int)(dot - dent->d_name), dent->d_name);
- 
-@@ -1044,6 +1056,11 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
- 			dot = strrchr(name, '.');
- 			if (dot == NULL)
- 				goto out_problem;
-+			/* On some system, modules are compressed like .ko.gz */
-+			if (is_supported_compression(dot + 1))
-+				dot -= 3;
-+			if (!is_kmodule_extension(dot + 1))
-+				goto out_problem;
- 			snprintf(short_module_name, sizeof(short_module_name),
- 					"[%.*s]", (int)(dot - name), name);
- 			strxfrchar(short_module_name, '-', '_');
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 1e23a5bfb044..efc7eb6b8f0f 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -546,6 +546,35 @@ static int dso__swap_init(struct dso *dso, unsigned char eidata)
++	snprintf(filename + len, size - len, "/%s", sbuild_id);
++
++	if (access(filename, F_OK)) {
++		if (is_kallsyms) {
++			 if (copyfile("/proc/kallsyms", filename))
++				goto out_free;
++		} else if (link(realname, filename) && copyfile(name, filename))
++			goto out_free;
++	}
++
++	len = scnprintf(linkname, size, "%s/.build-id/%.2s",
++		       debugdir, sbuild_id);
++
++	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
++		goto out_free;
++
++	snprintf(linkname + len, size - len, "/%s", sbuild_id + 2);
++	targetname = filename + strlen(debugdir) - 5;
++	memcpy(targetname, "../..", 5);
++
++	if (symlink(targetname, linkname) == 0)
++		err = 0;
++out_free:
++	if (!is_kallsyms)
++		free(realname);
++	free(filename);
++	free(linkname);
++	return err;
++}
++
++static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
++				 const char *name, const char *debugdir,
++				 bool is_kallsyms, bool is_vdso)
++{
++	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
++
++	build_id__sprintf(build_id, build_id_size, sbuild_id);
++
++	return build_id_cache__add_s(sbuild_id, debugdir, name,
++				     is_kallsyms, is_vdso);
++}
++
++int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
++{
++	const size_t size = PATH_MAX;
++	char *filename = zalloc(size),
++	     *linkname = zalloc(size);
++	int err = -1;
++
++	if (filename == NULL || linkname == NULL)
++		goto out_free;
++
++	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
++		 debugdir, sbuild_id, sbuild_id + 2);
++
++	if (access(linkname, F_OK))
++		goto out_free;
++
++	if (readlink(linkname, filename, size - 1) < 0)
++		goto out_free;
++
++	if (unlink(linkname))
++		goto out_free;
++
++	/*
++	 * Since the link is relative, we must make it absolute:
++	 */
++	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
++		 debugdir, sbuild_id, filename);
++
++	if (unlink(linkname))
++		goto out_free;
++
++	err = 0;
++out_free:
++	free(filename);
++	free(linkname);
++	return err;
++}
++
++static int dso__cache_build_id(struct dso *dso, struct machine *machine,
++			       const char *debugdir)
++{
++	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
++	bool is_vdso = dso__is_vdso(dso);
++	const char *name = dso->long_name;
++	char nm[PATH_MAX];
++
++	if (dso__is_kcore(dso)) {
++		is_kallsyms = true;
++		machine__mmap_name(machine, nm, sizeof(nm));
++		name = nm;
++	}
++	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id), name,
++				     debugdir, is_kallsyms, is_vdso);
++}
++
++static int __dsos__cache_build_ids(struct list_head *head,
++				   struct machine *machine, const char *debugdir)
++{
++	struct dso *pos;
++	int err = 0;
++
++	dsos__for_each_with_build_id(pos, head)
++		if (dso__cache_build_id(pos, machine, debugdir))
++			err = -1;
++
++	return err;
++}
++
++static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
++{
++	int ret = __dsos__cache_build_ids(&machine->kernel_dsos.head, machine,
++					  debugdir);
++	ret |= __dsos__cache_build_ids(&machine->user_dsos.head, machine,
++				       debugdir);
++	return ret;
++}
++
++int perf_session__cache_build_ids(struct perf_session *session)
++{
++	struct rb_node *nd;
++	int ret;
++	char debugdir[PATH_MAX];
++
++	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
++
++	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
++		return -1;
++
++	ret = machine__cache_build_ids(&session->machines.host, debugdir);
++
++	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		ret |= machine__cache_build_ids(pos, debugdir);
++	}
++	return ret ? -1 : 0;
++}
++
++static bool machine__read_build_ids(struct machine *machine, bool with_hits)
++{
++	bool ret;
++
++	ret  = __dsos__read_build_ids(&machine->kernel_dsos.head, with_hits);
++	ret |= __dsos__read_build_ids(&machine->user_dsos.head, with_hits);
++	return ret;
++}
++
++bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
++{
++	struct rb_node *nd;
++	bool ret = machine__read_build_ids(&session->machines.host, with_hits);
++
++	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		ret |= machine__read_build_ids(pos, with_hits);
++	}
++
++	return ret;
++}
+diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
+index ae392561470b..e24477cc92f2 100644
+--- a/tools/perf/util/build-id.h
++++ b/tools/perf/util/build-id.h
+@@ -15,4 +15,9 @@ char *dso__build_id_filename(const struct dso *dso, char *bf, size_t size);
+ int build_id__mark_dso_hit(struct perf_tool *tool, union perf_event *event,
+ 			   struct perf_sample *sample, struct perf_evsel *evsel,
+ 			   struct machine *machine);
++
++bool perf_session__read_build_ids(struct perf_session *session, bool with_hits);
++int perf_session__write_buildid_table(struct perf_session *session, int fd);
++int perf_session__cache_build_ids(struct perf_session *session);
++
+ #endif
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 6e1ff5d64276..3e2c156d9c64 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -79,10 +79,7 @@ static int do_write(int fd, const void *buf, size_t size)
  	return 0;
  }
  
-+static int decompress_kmodule(struct dso *dso, const char *name,
-+			      enum dso_binary_type type)
-+{
-+	int fd;
-+	const char *ext = strrchr(name, '.');
-+	char tmpbuf[] = "/tmp/perf-kmod-XXXXXX";
-+
-+	if ((type != DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP &&
-+	     type != DSO_BINARY_TYPE__GUEST_KMODULE_COMP) ||
-+	    type != dso->symtab_type)
-+		return -1;
-+
-+	if (!ext || !is_supported_compression(ext + 1))
-+		return -1;
-+
-+	fd = mkstemp(tmpbuf);
-+	if (fd < 0)
-+		return -1;
-+
-+	if (!decompress_to_file(ext + 1, name, fd)) {
-+		close(fd);
-+		fd = -1;
-+	}
-+
-+	unlink(tmpbuf);
-+
-+	return fd;
-+}
-+
- bool symsrc__possibly_runtime(struct symsrc *ss)
+-#define NAME_ALIGN 64
+-
+-static int write_padded(int fd, const void *bf, size_t count,
+-			size_t count_aligned)
++int write_padded(int fd, const void *bf, size_t count, size_t count_aligned)
  {
- 	return ss->dynsym || ss->opdsec;
-@@ -571,7 +600,11 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 	Elf *elf;
- 	int fd;
+ 	static const char zero_buf[NAME_ALIGN];
+ 	int err = do_write(fd, bf, count);
+@@ -171,297 +168,6 @@ perf_header__set_cmdline(int argc, const char **argv)
+ 	return 0;
+ }
  
--	fd = open(name, O_RDONLY);
-+	if (dso__needs_decompress(dso))
-+		fd = decompress_kmodule(dso, name, type);
-+	else
-+		fd = open(name, O_RDONLY);
+-#define dsos__for_each_with_build_id(pos, head)	\
+-	list_for_each_entry(pos, head, node)	\
+-		if (!pos->has_build_id)		\
+-			continue;		\
+-		else
+-
+-static int write_buildid(const char *name, size_t name_len, u8 *build_id,
+-			 pid_t pid, u16 misc, int fd)
+-{
+-	int err;
+-	struct build_id_event b;
+-	size_t len;
+-
+-	len = name_len + 1;
+-	len = PERF_ALIGN(len, NAME_ALIGN);
+-
+-	memset(&b, 0, sizeof(b));
+-	memcpy(&b.build_id, build_id, BUILD_ID_SIZE);
+-	b.pid = pid;
+-	b.header.misc = misc;
+-	b.header.size = sizeof(b) + len;
+-
+-	err = do_write(fd, &b, sizeof(b));
+-	if (err < 0)
+-		return err;
+-
+-	return write_padded(fd, name, name_len + 1, len);
+-}
+-
+-static int __dsos__write_buildid_table(struct list_head *head,
+-				       struct machine *machine,
+-				       pid_t pid, u16 misc, int fd)
+-{
+-	char nm[PATH_MAX];
+-	struct dso *pos;
+-
+-	dsos__for_each_with_build_id(pos, head) {
+-		int err;
+-		const char *name;
+-		size_t name_len;
+-
+-		if (!pos->hit)
+-			continue;
+-
+-		if (dso__is_vdso(pos)) {
+-			name = pos->short_name;
+-			name_len = pos->short_name_len + 1;
+-		} else if (dso__is_kcore(pos)) {
+-			machine__mmap_name(machine, nm, sizeof(nm));
+-			name = nm;
+-			name_len = strlen(nm) + 1;
+-		} else {
+-			name = pos->long_name;
+-			name_len = pos->long_name_len + 1;
+-		}
+-
+-		err = write_buildid(name, name_len, pos->build_id,
+-				    pid, misc, fd);
+-		if (err)
+-			return err;
+-	}
+-
+-	return 0;
+-}
+-
+-static int machine__write_buildid_table(struct machine *machine, int fd)
+-{
+-	int err;
+-	u16 kmisc = PERF_RECORD_MISC_KERNEL,
+-	    umisc = PERF_RECORD_MISC_USER;
+-
+-	if (!machine__is_host(machine)) {
+-		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
+-		umisc = PERF_RECORD_MISC_GUEST_USER;
+-	}
+-
+-	err = __dsos__write_buildid_table(&machine->kernel_dsos.head, machine,
+-					  machine->pid, kmisc, fd);
+-	if (err == 0)
+-		err = __dsos__write_buildid_table(&machine->user_dsos.head,
+-						  machine, machine->pid, umisc,
+-						  fd);
+-	return err;
+-}
+-
+-static int perf_session__write_buildid_table(struct perf_session *session, int fd)
+-{
+-	struct rb_node *nd;
+-	int err = machine__write_buildid_table(&session->machines.host, fd);
+-
+-	if (err)
+-		return err;
+-
+-	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
+-		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+-		err = machine__write_buildid_table(pos, fd);
+-		if (err)
+-			break;
+-	}
+-	return err;
+-}
+-
+-int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+-			  const char *name, bool is_kallsyms, bool is_vdso)
+-{
+-	const size_t size = PATH_MAX;
+-	char *realname, *filename = zalloc(size),
+-	     *linkname = zalloc(size), *targetname;
+-	int len, err = -1;
+-	bool slash = is_kallsyms || is_vdso;
+-
+-	if (is_kallsyms) {
+-		if (symbol_conf.kptr_restrict) {
+-			pr_debug("Not caching a kptr_restrict'ed /proc/kallsyms\n");
+-			err = 0;
+-			goto out_free;
+-		}
+-		realname = (char *) name;
+-	} else
+-		realname = realpath(name, NULL);
+-
+-	if (realname == NULL || filename == NULL || linkname == NULL)
+-		goto out_free;
+-
+-	len = scnprintf(filename, size, "%s%s%s",
+-		       debugdir, slash ? "/" : "",
+-		       is_vdso ? DSO__NAME_VDSO : realname);
+-	if (mkdir_p(filename, 0755))
+-		goto out_free;
+-
+-	snprintf(filename + len, size - len, "/%s", sbuild_id);
+-
+-	if (access(filename, F_OK)) {
+-		if (is_kallsyms) {
+-			 if (copyfile("/proc/kallsyms", filename))
+-				goto out_free;
+-		} else if (link(realname, filename) && copyfile(name, filename))
+-			goto out_free;
+-	}
+-
+-	len = scnprintf(linkname, size, "%s/.build-id/%.2s",
+-		       debugdir, sbuild_id);
+-
+-	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
+-		goto out_free;
+-
+-	snprintf(linkname + len, size - len, "/%s", sbuild_id + 2);
+-	targetname = filename + strlen(debugdir) - 5;
+-	memcpy(targetname, "../..", 5);
+-
+-	if (symlink(targetname, linkname) == 0)
+-		err = 0;
+-out_free:
+-	if (!is_kallsyms)
+-		free(realname);
+-	free(filename);
+-	free(linkname);
+-	return err;
+-}
+-
+-static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
+-				 const char *name, const char *debugdir,
+-				 bool is_kallsyms, bool is_vdso)
+-{
+-	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
+-
+-	build_id__sprintf(build_id, build_id_size, sbuild_id);
+-
+-	return build_id_cache__add_s(sbuild_id, debugdir, name,
+-				     is_kallsyms, is_vdso);
+-}
+-
+-int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
+-{
+-	const size_t size = PATH_MAX;
+-	char *filename = zalloc(size),
+-	     *linkname = zalloc(size);
+-	int err = -1;
+-
+-	if (filename == NULL || linkname == NULL)
+-		goto out_free;
+-
+-	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
+-		 debugdir, sbuild_id, sbuild_id + 2);
+-
+-	if (access(linkname, F_OK))
+-		goto out_free;
+-
+-	if (readlink(linkname, filename, size - 1) < 0)
+-		goto out_free;
+-
+-	if (unlink(linkname))
+-		goto out_free;
+-
+-	/*
+-	 * Since the link is relative, we must make it absolute:
+-	 */
+-	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
+-		 debugdir, sbuild_id, filename);
+-
+-	if (unlink(linkname))
+-		goto out_free;
+-
+-	err = 0;
+-out_free:
+-	free(filename);
+-	free(linkname);
+-	return err;
+-}
+-
+-static int dso__cache_build_id(struct dso *dso, struct machine *machine,
+-			       const char *debugdir)
+-{
+-	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
+-	bool is_vdso = dso__is_vdso(dso);
+-	const char *name = dso->long_name;
+-	char nm[PATH_MAX];
+-
+-	if (dso__is_kcore(dso)) {
+-		is_kallsyms = true;
+-		machine__mmap_name(machine, nm, sizeof(nm));
+-		name = nm;
+-	}
+-	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id), name,
+-				     debugdir, is_kallsyms, is_vdso);
+-}
+-
+-static int __dsos__cache_build_ids(struct list_head *head,
+-				   struct machine *machine, const char *debugdir)
+-{
+-	struct dso *pos;
+-	int err = 0;
+-
+-	dsos__for_each_with_build_id(pos, head)
+-		if (dso__cache_build_id(pos, machine, debugdir))
+-			err = -1;
+-
+-	return err;
+-}
+-
+-static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
+-{
+-	int ret = __dsos__cache_build_ids(&machine->kernel_dsos.head, machine,
+-					  debugdir);
+-	ret |= __dsos__cache_build_ids(&machine->user_dsos.head, machine,
+-				       debugdir);
+-	return ret;
+-}
+-
+-static int perf_session__cache_build_ids(struct perf_session *session)
+-{
+-	struct rb_node *nd;
+-	int ret;
+-	char debugdir[PATH_MAX];
+-
+-	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
+-
+-	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
+-		return -1;
+-
+-	ret = machine__cache_build_ids(&session->machines.host, debugdir);
+-
+-	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
+-		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+-		ret |= machine__cache_build_ids(pos, debugdir);
+-	}
+-	return ret ? -1 : 0;
+-}
+-
+-static bool machine__read_build_ids(struct machine *machine, bool with_hits)
+-{
+-	bool ret;
+-
+-	ret  = __dsos__read_build_ids(&machine->kernel_dsos.head, with_hits);
+-	ret |= __dsos__read_build_ids(&machine->user_dsos.head, with_hits);
+-	return ret;
+-}
+-
+-static bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
+-{
+-	struct rb_node *nd;
+-	bool ret = machine__read_build_ids(&session->machines.host, with_hits);
+-
+-	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
+-		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+-		ret |= machine__read_build_ids(pos, with_hits);
+-	}
+-
+-	return ret;
+-}
+-
+ static int write_tracing_data(int fd, struct perf_header *h __maybe_unused,
+ 			    struct perf_evlist *evlist)
+ {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index d08cfe499404..785be448ca37 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -151,6 +151,10 @@ int perf_event__process_build_id(struct perf_tool *tool,
+ 				 struct perf_session *session);
+ bool is_perf_magic(u64 magic);
+ 
++#define NAME_ALIGN 64
 +
- 	if (fd < 0)
- 		return -1;
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 078331140d8c..c69915c9d5bc 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -51,7 +51,9 @@ static enum dso_binary_type binary_type_symtab[] = {
- 	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
- 	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__GUEST_KMODULE_COMP,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP,
- 	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
- 	DSO_BINARY_TYPE__NOT_FOUND,
- };
-@@ -1300,7 +1302,9 @@ static bool dso__is_compatible_symtab_type(struct dso *dso, bool kmod,
- 		return dso->kernel == DSO_TYPE_GUEST_KERNEL;
- 
- 	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+	case DSO_BINARY_TYPE__GUEST_KMODULE_COMP:
- 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP:
- 		/*
- 		 * kernel modules know their symtab type - it's set when
- 		 * creating a module dso in machine__new_module().
-@@ -1368,7 +1372,9 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		return -1;
- 
- 	kmod = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
--		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE;
-+		dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE_COMP;
- 
- 	/*
- 	 * Iterate over candidate debug images.
++int write_padded(int fd, const void *bf, size_t count, size_t count_aligned);
++
+ /*
+  * arch specific callback
+  */
 -- 
 2.1.2
 
