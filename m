@@ -1,38 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaKCJpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 04:45:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44482 "EHLO mx2.suse.de"
+	id S1751826AbaKCJuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 04:50:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44591 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006AbaKCJpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 04:45:32 -0500
-Date: Mon, 03 Nov 2014 10:45:30 +0100
-Message-ID: <s5ha94839dx.wl-tiwai@suse.de>
+	id S1751623AbaKCJuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 04:50:06 -0500
+Date: Mon, 03 Nov 2014 10:50:05 +0100
+Message-ID: <s5h8ujs396a.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] PCI: EMU10K1: Deletion of unnecessary checks before three function calls
-In-Reply-To: <54567788.9060008@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net>
-	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
-	<530A086E.8010901@users.sourceforge.net>
-	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	<530A72AA.3000601@users.sourceforge.net>
-	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	<530B5FB6.6010207@users.sourceforge.net>
-	<alpine.DEB.2.10.1402241710370.2074@hadrien>
-	<530C5E18.1020800@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251014170.2080@hadrien>
-	<530CD2C4.4050903@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251840450.7035@hadrien>
-	<530CF8FF.8080600@users.sourceforge.net>
-	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	<530DD06F.4090703@users.sourceforge.net>
-	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<54567788.9060008@users.sourceforge.net>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: alsa-devel@alsa-project.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] [RESEND] snd-es18xx: Add GPO controls
+In-Reply-To: <1414966729-4978-1-git-send-email-linux@rainbow-software.org>
+References: <1414966729-4978-1-git-send-email-linux@rainbow-software.org>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -42,78 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 02 Nov 2014 19:27:20 +0100,
-SF Markus Elfring wrote:
+At Sun,  2 Nov 2014 23:18:49 +0100,
+Ondrej Zary wrote:
 > 
-> The functions kfree(), release_firmware() and snd_util_memhdr_free() test
-> whether their argument is NULL and then return immediately. Thus the test
-> around the call is not needed.
+> Add GPO0 and GPO1 (General Purpose Outputs) controls to mixer.
+> These can be used on some cards to control amplifier mute (seen in ES1868
+> datasheet) or additional onboard chips such as QX2130 QXpander processor.
 > 
-> This issue was detected by using the Coccinelle software.
+> These GPOs are present on ES1868, ES1869, ES1887 and ES1888 chips.
 > 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> Tested on ES1868 with QX2130.
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> ---
+>  sound/isa/es18xx.c |   49 +++++++++++++++++++++++++++++++++++++++----------
+>  1 file changed, 39 insertions(+), 10 deletions(-)
+> 
+> diff --git a/sound/isa/es18xx.c b/sound/isa/es18xx.c
+> index 6faaac6..8966ed2 100644
+> --- a/sound/isa/es18xx.c
+> +++ b/sound/isa/es18xx.c
+> @@ -156,6 +156,7 @@ struct snd_es18xx {
+>  #define ES18XX_I2S	0x0200	/* I2S mixer control */
+>  #define ES18XX_MUTEREC	0x0400	/* Record source can be muted */
+>  #define ES18XX_CONTROL	0x0800	/* Has control ports */
+> +#define ES18XX_GPO_2BIT	0x1000	/* GPO0,1 controlled by PM port */
+>  
+>  /* Power Management */
+>  #define ES18XX_PM	0x07
+> @@ -1136,11 +1137,14 @@ static int snd_es18xx_reg_read(struct snd_es18xx *chip, unsigned char reg)
+>  		return snd_es18xx_read(chip, reg);
+>  }
+>  
+> -#define ES18XX_SINGLE(xname, xindex, reg, shift, mask, invert) \
+> +#define ES18XX_SINGLE(xname, xindex, reg, shift, mask, flags) \
+>  { .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .index = xindex, \
+>    .info = snd_es18xx_info_single, \
+>    .get = snd_es18xx_get_single, .put = snd_es18xx_put_single, \
+> -  .private_value = reg | (shift << 8) | (mask << 16) | (invert << 24) }
+> +  .private_value = reg | (shift << 8) | (mask << 16) | (flags << 24) }
+> +
+> +#define ES18XX_FL_INVERT	(1 << 0)
+> +#define ES18XX_FL_PMPORT	(1 << 1)
+>  
+>  static int snd_es18xx_info_single(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
+>  {
+> @@ -1159,10 +1163,14 @@ static int snd_es18xx_get_single(struct snd_kcontrol *kcontrol, struct snd_ctl_e
+>  	int reg = kcontrol->private_value & 0xff;
+>  	int shift = (kcontrol->private_value >> 8) & 0xff;
+>  	int mask = (kcontrol->private_value >> 16) & 0xff;
+> -	int invert = (kcontrol->private_value >> 24) & 0xff;
+> +	int invert = (kcontrol->private_value >> 24) & ES18XX_FL_INVERT;
+> +	int pm_port = (kcontrol->private_value >> 24) & ES18XX_FL_PMPORT;
+>  	int val;
+> -	
+> -	val = snd_es18xx_reg_read(chip, reg);
+> +
+> +	if (pm_port)
+> +		val = inb(chip->port + ES18XX_PM);
+> +	else
+> +		val = snd_es18xx_reg_read(chip, reg);
+>  	ucontrol->value.integer.value[0] = (val >> shift) & mask;
+>  	if (invert)
+>  		ucontrol->value.integer.value[0] = mask - ucontrol->value.integer.value[0];
+> @@ -1175,7 +1183,8 @@ static int snd_es18xx_put_single(struct snd_kcontrol *kcontrol, struct snd_ctl_e
+>  	int reg = kcontrol->private_value & 0xff;
+>  	int shift = (kcontrol->private_value >> 8) & 0xff;
+>  	int mask = (kcontrol->private_value >> 16) & 0xff;
+> -	int invert = (kcontrol->private_value >> 24) & 0xff;
+> +	int invert = (kcontrol->private_value >> 24) & ES18XX_FL_INVERT;
+> +	int pm_port = (kcontrol->private_value >> 24) & ES18XX_FL_PMPORT;
+>  	unsigned char val;
+>  	
+>  	val = (ucontrol->value.integer.value[0] & mask);
+> @@ -1183,6 +1192,12 @@ static int snd_es18xx_put_single(struct snd_kcontrol *kcontrol, struct snd_ctl_e
+>  		val = mask - val;
+>  	mask <<= shift;
+>  	val <<= shift;
+> +	if (pm_port) {
+> +		val = (inb(chip->port + ES18XX_PM) & ~mask) | val;
+> +		outb(val, chip->port + ES18XX_PM);
+> +		return 0;
 
-Your patch can't be applied cleanly due to your MUA breaking the
-lines.  Please fix your MUA setup, or use an attachment if it's
-impossible, and resend the patch.
-
-Also, try to align the subject line with the relevant commits.  See
-"git log sound/pci/emu10k1" 
+A put callback is supposed to return 1 if the hardware is updated to
+the given value, or return 0 if the hardware value was same.
 
 
 thanks,
 
 Takashi
-
-
-> ---
->  sound/pci/emu10k1/emu10k1_main.c | 9 +++------
->  sound/pci/emu10k1/emufx.c        | 3 +--
->  2 files changed, 4 insertions(+), 8 deletions(-)
-> 
-> diff --git a/sound/pci/emu10k1/emu10k1_main.c b/sound/pci/emu10k1/emu10k1_main.c
-> index 2292697..b4458a6 100644
-> --- a/sound/pci/emu10k1/emu10k1_main.c
-> +++ b/sound/pci/emu10k1/emu10k1_main.c
-> @@ -1289,10 +1289,8 @@ static int snd_emu10k1_free(struct snd_emu10k1 *emu)
->  	}
->  	if (emu->emu1010.firmware_thread)
->  		kthread_stop(emu->emu1010.firmware_thread);
-> -	if (emu->firmware)
-> -		release_firmware(emu->firmware);
-> -	if (emu->dock_fw)
-> -		release_firmware(emu->dock_fw);
-> +	release_firmware(emu->firmware);
-> +	release_firmware(emu->dock_fw);
->  	if (emu->irq >= 0)
->  		free_irq(emu->irq, emu);
->  	/* remove reserved page */
-> @@ -1301,8 +1299,7 @@ static int snd_emu10k1_free(struct snd_emu10k1 *emu)
->  			(struct snd_util_memblk *)emu->reserved_page);
->  		emu->reserved_page = NULL;
->  	}
-> -	if (emu->memhdr)
-> -		snd_util_memhdr_free(emu->memhdr);
-> +	snd_util_memhdr_free(emu->memhdr);
->  	if (emu->silent_page.area)
->  		snd_dma_free_pages(&emu->silent_page);
->  	if (emu->ptb_pages.area)
-> diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
-> index 745f062..eb5c0ab 100644
-> --- a/sound/pci/emu10k1/emufx.c
-> +++ b/sound/pci/emu10k1/emufx.c
-> @@ -777,8 +777,7 @@ static void snd_emu10k1_ctl_private_free(struct snd_kcontrol
-> *kctl)
->  	kctl->private_value = 0;
->  	list_del(&ctl->list);
->  	kfree(ctl);
-> -	if (kctl->tlv.p)
-> -		kfree(kctl->tlv.p);
-> +	kfree(kctl->tlv.p);
->  }
-> 
->  static int snd_emu10k1_add_controls(struct snd_emu10k1 *emu,
-> -- 
-> 2.1.3
-> 
-> 
