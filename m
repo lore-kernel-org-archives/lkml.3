@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaKCBJz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 20:09:55 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:61792 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250AbaKCBJx (ORCPT
+	id S1752766AbaKCBTp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 20:19:45 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:15511 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751648AbaKCBTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 20:09:53 -0500
-Message-ID: <5456D5C7.9040104@huawei.com>
-Date: Mon, 3 Nov 2014 09:09:27 +0800
-From: chenweilong <chenweilong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sun, 2 Nov 2014 20:19:43 -0500
+Message-ID: <5456D7F5.10308@fb.com>
+Date: Sun, 2 Nov 2014 18:18:45 -0700
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <kuznet@ms2.inr.ac.ru>, <jmorris@namei.org>, <yoshfuji@linux-ipv6.org>,
-        <kaber@trash.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ipv4: avoid divide 0 error in tcp_incr_quickack
-References: <1414767047-8972-1-git-send-email-chenweilong@huawei.com> <20141101.170605.1353817217163030327.davem@davemloft.net>
-In-Reply-To: <20141101.170605.1353817217163030327.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Richard Weinberger <richard@nod.at>, <hch@infradead.org>,
+        <dedekind1@gmail.com>
+CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] UBI: Block: Add blk-mq support
+References: <1414933255-3795-1-git-send-email-richard@nod.at> <5456A787.5060104@free-electrons.com>
+In-Reply-To: <5456A787.5060104@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.37.162]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-03_01:2014-10-31,2014-11-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.160988131301636 urlsuspect_oldscore=0.160988131301636
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.160988131301636 spamscore=0
+ recipient_to_sender_domain_totalscore=4 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1411030012
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sure,
-Thanks
+On 2014-11-02 14:52, Ezequiel Garcia wrote:
+> Hi Richard,
+>
+> On 11/02/2014 10:00 AM, Richard Weinberger wrote:
+>> Convert the driver to blk-mq.
+>>
+>
+> Maybe you can explain a bit better what's this all about?
+>
+> Both the commit that introduces blk-mq and the paper on it talk about
+> high IOPS devices, multi-core, NUMA systems. I'm not sure this is the
+> case for UBI-based devices.
 
-On 2014/11/2 5:06, David Miller wrote:
-> From: Chen Weilong <chenweilong@huawei.com>
-> Date: Fri, 31 Oct 2014 22:50:47 +0800
-> 
->> From: Weilong Chen <chenweilong@huawei.com>
->>
->> We got a problem like this:
->>  [ffff8801c1a05570] machine_kexec at ffffffff81025039
->>  [ffff8801c1a055d0] crash_kexec at ffffffff8109b253
->>  [ffff8801c1a056a0] oops_end at ffffffff81442aed
->>  [ffff8801c1a056d0] die at ffffffff81005603
->>  [ffff8801c1a05700] do_trap at ffffffff81442448
->>  [ffff8801c1a05760] do_divide_error at ffffffff81002c10
->>  [ffff8801c1a05888] tcp_send_dupack at ffffffff81385e44
->>  [ffff8801c1a058c8] tcp_validate_incoming at ffffffff813886b5
->>  [ffff8801c1a05908] tcp_rcv_state_process at ffffffff8138d0b7
->>  [ffff8801c1a05958] tcp_child_process at ffffffff81397255
->>  [ffff8801c1a05988] tcp_v4_do_rcv at ffffffff81395a70
->>  [ffff8801c1a059d8] tcp_v4_rcv at ffffffff81396fc8
->>  [ffff8801c1a05a48] ip_local_deliver_finish at ffffffff813746e9
->>  [ffff8801c1a05a78] ip_local_deliver at ffffffff81374a20
->>  [ffff8801c1a05aa8] ip_rcv_finish at ffffffff81374389
->>  [ffff8801c1a05ad8] ip_rcv at ffffffff81374c78
->> There was a wrong ack packet coming during TCP handshake. The socket's state
->> was TCP_SYN_RECV, its rcv_mss was not initialize yet. So
->> tcp_send_dupack -> tcp_enter_quickack_mode got a divide 0 error.
->> This patch add a state check before tcp_enter_quickack_mode.
->>
->> Signed-off-by: Weilong Chen <chenweilong@huawei.com>
-> 
-> Can you please resubmit this, properly CC:'ing netdev@vger.kernel.org this
-> time?
-> 
-> Thank you.
-> 
-> .
-> 
+The goal of blk-mq was to solve the issues around those systems, while 
+at the same time provide a more modern infrastructure in general. It was 
+never the intent to make blk-mq exclusive to higher end systems or 
+devices, in fact quite the opposite. The goal is to slowly deprecate the 
+old IO stack and switch everything (as far as we can) to blk-mq.
+
+-- 
+Jens Axboe
 
