@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751124AbaKCH2H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 02:28:07 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59097 "EHLO
+	id S1751183AbaKCH2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 02:28:15 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59111 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaKCH2C (ORCPT
+	with ESMTP id S1750834AbaKCH2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Nov 2014 02:28:02 -0500
 X-Original-SENDERIP: 10.177.222.235
@@ -17,100 +17,90 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCHSET 0/8] perf tools: Fix build-id matching on vmlinux (v5)
-Date: Mon,  3 Nov 2014 16:27:50 +0900
-Message-Id: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 3/8] perf tools: Get rid of unused dsos__hit_all()
+Date: Mon,  3 Nov 2014 16:27:53 +0900
+Message-Id: <1414999678-31377-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
+References: <1414999678-31377-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The dsos__hit_all() and its friends are not used anywhere.  Let's get
+rid of them.
 
-This patchset addresses possible problem on kernel symbol matching.
-Since commit 5b7ba82a7591 ("perf symbols: Load kernel maps before
-using"), when perf record process samples to construct build-id table,
-it loads kernel map and it replaces dso->long_name.  But perf report
-doesn't know about name other than [kernel.kallsyms] it failed to find
-existing kernel dso and falls back to running kernel's kallsyms.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/header.c | 41 -----------------------------------------
+ tools/perf/util/header.h |  2 --
+ 2 files changed, 43 deletions(-)
 
-So it's possible to report incorrect symbols for kernel functions if
-it runs on a different kernel:
-
-Before:
-
-  $ perf report
-  # Children      Self  Command  Shared Object      Symbol
-  # ........  ........  .......  .................  ...............................
-  #
-      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
-      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
-      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
-      71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
-   ...
-
-After (for the same perf.data):
-
-      72.15%     0.00%  swapper  [kernel.vmlinux]  [k] cpu_startup_entry
-      72.15%     0.00%  swapper  [kernel.vmlinux]  [k] arch_cpu_idle
-      72.15%     0.00%  swapper  [kernel.vmlinux]  [k] default_idle
-      71.87%    71.87%  swapper  [kernel.vmlinux]  [k] native_safe_halt
-
-
-In this patch, it's now changed to try to search a kernel dso in the
-existing dso list which was constructed during build-id table parsing
-so it'll always have a build-id.  If not found, search "[kernel.kallsyms]".
-
-The patch 1-2 are to support module compression as some distro
-(e.g. Arch) already does it.  The patch 3-5 are cleanup of build-id
-handling functions.  The patch 6-7 are the main change of this series
-and finally patch 8 is just for suggestion which can be squashed into
-the previous patch or simply dropped.
-
-You can get it on 'perf/vmlinux-v5' branch in my tree:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Any comments are welcome, thanks
-Namhyung
-
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-
-
-Namhyung Kim (8):
-  perf tools: Preparation for compressed kernel module support
-  perf tools: Add gzip decompression support for kernel module
-  perf tools: Get rid of unused dsos__hit_all()
-  perf tools: Rename dsos__write_buildid_table()
-  perf build-id: Move build-id related functions to util/build-id.c
-  perf record: Do not save pathname in ./debug/.build-id directory for
-    vmlinux
-  perf tools: Fix build-id matching on vmlinux
-  perf tools: Make vmlinux short name more like kallsyms short name
-
- tools/perf/Makefile.perf                     |   7 +
- tools/perf/builtin-record.c                  |  11 +
- tools/perf/config/Makefile                   |  15 +-
- tools/perf/config/feature-checks/Makefile    |   6 +-
- tools/perf/config/feature-checks/test-zlib.c |   9 +
- tools/perf/util/build-id.c                   | 293 +++++++++++++++++++++++
- tools/perf/util/build-id.h                   |   5 +
- tools/perf/util/dso.c                        |  71 ++++++
- tools/perf/util/dso.h                        |   7 +
- tools/perf/util/header.c                     | 343 +--------------------------
- tools/perf/util/header.h                     |   4 +-
- tools/perf/util/machine.c                    |  38 ++-
- tools/perf/util/symbol-elf.c                 |  35 ++-
- tools/perf/util/symbol.c                     |  19 +-
- tools/perf/util/symbol.h                     |   1 +
- tools/perf/util/util.h                       |   5 +
- tools/perf/util/zlib.c                       |  78 ++++++
- 17 files changed, 593 insertions(+), 354 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-zlib.c
- create mode 100644 tools/perf/util/zlib.c
-
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 0ecf4a304cbc..e7c762f54bee 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -200,47 +200,6 @@ static int write_buildid(const char *name, size_t name_len, u8 *build_id,
+ 	return write_padded(fd, name, name_len + 1, len);
+ }
+ 
+-static int __dsos__hit_all(struct list_head *head)
+-{
+-	struct dso *pos;
+-
+-	list_for_each_entry(pos, head, node)
+-		pos->hit = true;
+-
+-	return 0;
+-}
+-
+-static int machine__hit_all_dsos(struct machine *machine)
+-{
+-	int err;
+-
+-	err = __dsos__hit_all(&machine->kernel_dsos.head);
+-	if (err)
+-		return err;
+-
+-	return __dsos__hit_all(&machine->user_dsos.head);
+-}
+-
+-int dsos__hit_all(struct perf_session *session)
+-{
+-	struct rb_node *nd;
+-	int err;
+-
+-	err = machine__hit_all_dsos(&session->machines.host);
+-	if (err)
+-		return err;
+-
+-	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
+-		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+-
+-		err = machine__hit_all_dsos(pos);
+-		if (err)
+-			return err;
+-	}
+-
+-	return 0;
+-}
+-
+ static int __dsos__write_buildid_table(struct list_head *head,
+ 				       struct machine *machine,
+ 				       pid_t pid, u16 misc, int fd)
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 8f5cbaea64a5..d08cfe499404 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -151,8 +151,6 @@ int perf_event__process_build_id(struct perf_tool *tool,
+ 				 struct perf_session *session);
+ bool is_perf_magic(u64 magic);
+ 
+-int dsos__hit_all(struct perf_session *session);
+-
+ /*
+  * arch specific callback
+  */
 -- 
 2.1.2
 
