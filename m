@@ -1,58 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830AbaKCVYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 16:24:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60832 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934AbaKCVYF (ORCPT
+	id S1753927AbaKCVYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 16:24:49 -0500
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:59497 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857AbaKCVYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 16:24:05 -0500
-Date: Mon, 3 Nov 2014 13:24:04 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stephanie Wallick <stephanie.s.wallick@intel.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        "Sean O. Stalley" <sean.stalley@intel.com>
-Subject: Re: [PATCH 10/10] added kernel build, configuration, and TODO files
-Message-ID: <20141103212404.GD7379@kroah.com>
-References: <1415047377-3139-1-git-send-email-stephanie.s.wallick@intel.com>
- <1415047377-3139-11-git-send-email-stephanie.s.wallick@intel.com>
+	Mon, 3 Nov 2014 16:24:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415047377-3139-11-git-send-email-stephanie.s.wallick@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415028896-9005-9-git-send-email-geert+renesas@glider.be>
+References: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
+	<1415028896-9005-9-git-send-email-geert+renesas@glider.be>
+Date: Mon, 3 Nov 2014 14:24:46 -0700
+Message-ID: <CANLsYkxQCcMCiDiLrda_vbHNcgMZYpvF-Scd58vcX6Ln1t2B4Q@mail.gmail.com>
+Subject: Re: [PATCH v4 8/9] ARM: shmobile: r8a7740 dtsi: Add PM domain support
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        linux-pm@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 12:42:57PM -0800, Stephanie Wallick wrote:
-> --- /dev/null
-> +++ b/drivers/staging/mausb/TODO
-> @@ -0,0 +1,14 @@
-> +TODO:
-> +	- checkpatch.pl cleanups
+On 3 November 2014 08:34, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+> Add a device node for the System Controller, with subnodes that
+> represent the hardware power area hierarchy.
+> Hook up all devices to their respective PM domains.
+>
+> Add a minimal device node for the Coresight-ETM hardware block, and hook
+> it up to the D4 PM domain, so the R-Mobile System Controller driver can
+> keep the domain powered, until the new Coresight code handles runtime
+> PM.
+>
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+> v4:
+>   - Remove power-domains properties from clocks, as these will not be
+>     instantiated as platform devices,
+>   - Fix indentation of power-domains property in pfc node,
+>   - Add minimal node for Coresight-ETM,
+>   - Add power-domains properties to the recently added TMU nodes,
+> v3:
+>   - Move power-on/off latencies to a separate patch,
+>   - Add dependencies,
+> v2:
+>   - Insert power-domains property after clock-names property in the cmt1
+>     node.
+> ---
+>  arch/arm/boot/dts/r8a7740.dtsi | 99 ++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 99 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
+> index aec8da89ef9ac766..20d2b56773fbf069 100644
+> --- a/arch/arm/boot/dts/r8a7740.dtsi
+> +++ b/arch/arm/boot/dts/r8a7740.dtsi
+> @@ -25,6 +25,7 @@
+>                         device_type = "cpu";
+>                         reg = <0x0>;
+>                         clock-frequency = <800000000>;
+> +                       power-domains = <&pd_a3sm>;
 
-Is this still true?
+Perfect - I'm taking the same approach on TC2 for coresight.  That way
+the system doesn't crash when accessing the coresight registers of an
+ETM/PTM belonging to a CPU in a powered down cluster.
 
-And why does this need to be a staging driver?  What's wrong with making
-it a "real" driver now?
-
-
-> +	- address miscellaneous "TODO" statements in code
-> +	- add support for multiple media agnostic (MA) devices
-> +	- add/improve support for unimplemented packet types
-> +	- handle errors and failure with more grace and less crash
+>                 };
+>         };
+>
+> @@ -41,12 +42,18 @@
+>                 interrupts = <0 83 IRQ_TYPE_LEVEL_HIGH>;
+>         };
+>
+> +       ptm {
+> +               compatible = "arm,coresight-etm3x";
+> +               power-domains = <&pd_d4>;
+> +       };
 > +
-> +Please send patches to Greg Kroah-Hartman <greg@kroah.com> and cc:
-
-You didn't use this email address...
-
-> +	Sean Stalley <sean.stalley@intel.com>
-> +	Stephanie Wallick <stephanie.s.wallick@intel.com>
+>         cmt1: timer@e6138000 {
+>                 compatible = "renesas,cmt-48-r8a7740", "renesas,cmt-48";
+>                 reg = <0xe6138000 0x170>;
+>                 interrupts = <0 58 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp3_clks R8A7740_CLK_CMT1>;
+>                 clock-names = "fck";
+> +               power-domains = <&pd_c5>;
+>
+>                 renesas,channels-mask = <0x3f>;
+>
+> @@ -72,6 +79,7 @@
+>                               0 149 IRQ_TYPE_LEVEL_HIGH
+>                               0 149 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_INTCA>;
+> +               power-domains = <&pd_a4s>;
+>         };
+>
+>         /* irqpin1: IRQ8 - IRQ15 */
+> @@ -93,6 +101,7 @@
+>                               0 149 IRQ_TYPE_LEVEL_HIGH
+>                               0 149 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_INTCA>;
+> +               power-domains = <&pd_a4s>;
+>         };
+>
+>         /* irqpin2: IRQ16 - IRQ23 */
+> @@ -114,6 +123,7 @@
+>                               0 149 IRQ_TYPE_LEVEL_HIGH
+>                               0 149 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_INTCA>;
+> +               power-domains = <&pd_a4s>;
+>         };
+>
+>         /* irqpin3: IRQ24 - IRQ31 */
+> @@ -135,6 +145,7 @@
+>                               0 149 IRQ_TYPE_LEVEL_HIGH
+>                               0 149 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_INTCA>;
+> +               power-domains = <&pd_a4s>;
+>         };
+>
+>         ether: ethernet@e9a00000 {
+> @@ -143,6 +154,7 @@
+>                       <0xe9a01800 0x800>;
+>                 interrupts = <0 110 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp3_clks R8A7740_CLK_GETHER>;
+> +               power-domains = <&pd_a4s>;
+>                 phy-mode = "mii";
+>                 #address-cells = <1>;
+>                 #size-cells = <0>;
+> @@ -159,6 +171,7 @@
+>                               0 203 IRQ_TYPE_LEVEL_HIGH
+>                               0 204 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp1_clks R8A7740_CLK_IIC0>;
+> +               power-domains = <&pd_a4r>;
+>                 status = "disabled";
+>         };
+>
+> @@ -172,6 +185,7 @@
+>                               0 72 IRQ_TYPE_LEVEL_HIGH
+>                               0 73 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp3_clks R8A7740_CLK_IIC1>;
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -181,6 +195,7 @@
+>                 interrupts = <0 100 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFA0>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -190,6 +205,7 @@
+>                 interrupts = <0 101 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFA1>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -199,6 +215,7 @@
+>                 interrupts = <0 102 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFA2>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -208,6 +225,7 @@
+>                 interrupts = <0 103 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFA3>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -217,6 +235,7 @@
+>                 interrupts = <0 104 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFA4>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -226,6 +245,7 @@
+>                 interrupts = <0 105 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFA5>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -235,6 +255,7 @@
+>                 interrupts = <0 106 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFA6>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -244,6 +265,7 @@
+>                 interrupts = <0 107 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFA7>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -253,6 +275,7 @@
+>                 interrupts = <0 108 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp2_clks R8A7740_CLK_SCIFB>;
+>                 clock-names = "sci_ick";
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -271,12 +294,14 @@
+>                         <&irqpin2 4 0>, <&irqpin2 5 0>, <&irqpin2 6 0>, <&irqpin2 7 0>,
+>                         <&irqpin3 0 0>, <&irqpin3 1 0>, <&irqpin3 2 0>, <&irqpin3 3 0>,
+>                         <&irqpin3 4 0>, <&irqpin3 5 0>, <&irqpin3 6 0>, <&irqpin3 7 0>;
+> +               power-domains = <&pd_c5>;
+>         };
+>
+>         tpu: pwm@e6600000 {
+>                 compatible = "renesas,tpu-r8a7740", "renesas,tpu";
+>                 reg = <0xe6600000 0x100>;
+>                 clocks = <&mstp3_clks R8A7740_CLK_TPU0>;
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>                 #pwm-cells = <3>;
+>         };
+> @@ -287,6 +312,7 @@
+>                 interrupts = <0 56 IRQ_TYPE_LEVEL_HIGH
+>                               0 57 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp3_clks R8A7740_CLK_MMC>;
+> +               power-domains = <&pd_a3sp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -297,6 +323,7 @@
+>                               0 118 IRQ_TYPE_LEVEL_HIGH
+>                               0 119 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp3_clks R8A7740_CLK_SDHI0>;
+> +               power-domains = <&pd_a3sp>;
+>                 cap-sd-highspeed;
+>                 cap-sdio-irq;
+>                 status = "disabled";
+> @@ -309,6 +336,7 @@
+>                               0 122 IRQ_TYPE_LEVEL_HIGH
+>                               0 123 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp3_clks R8A7740_CLK_SDHI1>;
+> +               power-domains = <&pd_a3sp>;
+>                 cap-sd-highspeed;
+>                 cap-sdio-irq;
+>                 status = "disabled";
+> @@ -321,6 +349,7 @@
+>                               0 126 IRQ_TYPE_LEVEL_HIGH
+>                               0 127 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp4_clks R8A7740_CLK_SDHI2>;
+> +               power-domains = <&pd_a3sp>;
+>                 cap-sd-highspeed;
+>                 cap-sdio-irq;
+>                 status = "disabled";
+> @@ -332,6 +361,7 @@
+>                 reg = <0xfe1f0000 0x400>;
+>                 interrupts = <0 9 0x4>;
+>                 clocks = <&mstp3_clks R8A7740_CLK_FSI>;
+> +               power-domains = <&pd_a4mp>;
+>                 status = "disabled";
+>         };
+>
+> @@ -343,6 +373,7 @@
+>                              <0 200 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp1_clks R8A7740_CLK_TMU0>;
+>                 clock-names = "fck";
+> +               power-domains = <&pd_a4r>;
+>
+>                 #renesas,channels = <3>;
+>
+> @@ -357,6 +388,7 @@
+>                              <0 172 IRQ_TYPE_LEVEL_HIGH>;
+>                 clocks = <&mstp1_clks R8A7740_CLK_TMU1>;
+>                 clock-names = "fck";
+> +               power-domains = <&pd_a4r>;
+>
+>                 #renesas,channels = <3>;
+>
+> @@ -543,4 +575,71 @@
+>                                 "usbhost", "sdhi2", "usbfunc", "usphy";
+>                 };
+>         };
 > +
-
-Just make a MAINTAINERS entry please for this info.
-
-thanks,
-
-greg k-h
+> +       sysc: system-controller@e6180000 {
+> +               compatible = "renesas,sysc-r8a7740", "renesas,sysc-rmobile";
+> +               reg = <0xe6180000 8000>, <0xe6188000 8000>;
+> +
+> +               pm-domains {
+> +                       pd_c5: c5 {
+> +                               #address-cells = <1>;
+> +                               #size-cells = <0>;
+> +                               #power-domain-cells = <0>;
+> +
+> +                               pd_a4lc: a4lc@1 {
+> +                                       reg = <1>;
+> +                                       #power-domain-cells = <0>;
+> +                               };
+> +
+> +                               pd_a4mp: a4mp@2 {
+> +                                       reg = <2>;
+> +                                       #power-domain-cells = <0>;
+> +                               };
+> +
+> +                               pd_d4: d4@3 {
+> +                                       reg = <3>;
+> +                                       #power-domain-cells = <0>;
+> +                               };
+> +
+> +                               pd_a4r: a4r@5 {
+> +                                       reg = <5>;
+> +                                       #address-cells = <1>;
+> +                                       #size-cells = <0>;
+> +                                       #power-domain-cells = <0>;
+> +
+> +                                       pd_a3rv: a3rv@6 {
+> +                                               reg = <6>;
+> +                                               #power-domain-cells = <0>;
+> +                                       };
+> +                               };
+> +
+> +                               pd_a4s: a4s@10 {
+> +                                       reg = <10>;
+> +                                       #address-cells = <1>;
+> +                                       #size-cells = <0>;
+> +                                       #power-domain-cells = <0>;
+> +
+> +                                       pd_a3sp: a3sp@11 {
+> +                                               reg = <11>;
+> +                                               #power-domain-cells = <0>;
+> +                                       };
+> +
+> +                                       pd_a3sm: a3sm@12 {
+> +                                               reg = <12>;
+> +                                               #power-domain-cells = <0>;
+> +                                       };
+> +
+> +                                       pd_a3sg: a3sg@13 {
+> +                                               reg = <13>;
+> +                                               #power-domain-cells = <0>;
+> +                                       };
+> +                               };
+> +
+> +                               pd_a4su: a4su@20 {
+> +                                       reg = <20>;
+> +                                       #power-domain-cells = <0>;
+> +                               };
+> +                       };
+> +               };
+> +       };
+>  };
+> --
+> 1.9.1
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
