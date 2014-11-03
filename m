@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbaKCRjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 12:39:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58465 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaKCRjS (ORCPT
+	id S1753157AbaKCRkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 12:40:51 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:39791 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752340AbaKCRkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 12:39:18 -0500
-Date: Mon, 3 Nov 2014 18:39:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFD] perf syscall error handling
-Message-ID: <20141103173914.GZ10501@worktop.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1410302111150.2766@pianoman.cluster.toy>
- <20141031072109.GD12706@worktop.programming.kicks-ass.net>
- <20141031092713.GA23124@gmail.com>
- <20141031122824.GZ12020@console-pimps.org>
- <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
- <alpine.DEB.2.10.1411010130170.6256@pianoman.cluster.toy>
- <20141103162548.GB18464@kernel.org>
- <20141103165019.GY10501@worktop.programming.kicks-ass.net>
- <20141103170059.GC18464@kernel.org>
- <alpine.DEB.2.10.1411031205070.16230@pianoman.cluster.toy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1411031205070.16230@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Mon, 3 Nov 2014 12:40:49 -0500
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: gong.chen@linux.intel.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        " Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: kernel@stlinux.com, maxime.coquelin@st.com, eric.paire@st.com
+Subject: [PATCH] bitops: Fix shift overflow in GENMASK macros
+Date: Mon,  3 Nov 2014 18:39:58 +0100
+Message-Id: <1415036398-26984-1-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.9.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-03_02:2014-11-03,2014-11-03,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 12:12:18PM -0500, Vince Weaver wrote:
-> I don't know if having an offset/mask helps much.  Knowing your EINVAL
-> comes from ->config is nice to know, but if there's 30 different ways
-> to get an EINVAL from an improper config then you still can waste a lot
-> of time narrowing things down.
-> 
-> The string solution might be nice, but it is going to take major changes 
-> to the code and increase the size a bit.  For example:
-> 
-> $ cat arch/x86/kernel/cpu/perf* kernel/events/* | grep EINVAL | wc -l
-> 100
-> 
-> And some of the code is passing the return values back through various
-> long callchains (and overloaded pointers via casts) where it's not clear 
-> how you could also pass a string value.
+On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
+instead of the expected ~0UL.
 
-Yes, nobody said this would be a quick and easy exercise. But I figure
-something needs to happen.
+This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
+
+This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
+1 << 64 for GENMASK_ULL.
+
+Fixes: 10ef6b0dffe404bcc54e94cb2ca1a5b18445a66b
+Cc: <stable@vger.kernel.org> #v3.13+
+Reported-by: Eric Paire <eric.paire@st.com>
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ include/linux/bitops.h | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index be5fd38..81f9725 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -18,8 +18,12 @@
+  * position @h. For example
+  * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
+  */
+-#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
+-#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
++#define GENMASK(h, l) \
++	((~0UL >> ((BITS_PER_LONG - 1) - (h))) & ~((1UL << (l)) - 1))
++
++#define GENMASK_ULL(h, l) \
++	((~0ULL >> ((BITS_PER_LONG_LONG - 1) - (h))) & ~((1ULL << (l)) - 1))
++
+ 
+ extern unsigned int __sw_hweight8(unsigned int w);
+ extern unsigned int __sw_hweight16(unsigned int w);
+-- 
+1.9.1
+
