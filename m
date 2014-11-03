@@ -1,263 +1,386 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaKCLFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 06:05:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48322 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278AbaKCLE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 06:04:56 -0500
-Date: Mon, 3 Nov 2014 02:58:40 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-e07cfbfaeec96c2e2f7ab81e8125891089e3065c@git.kernel.org>
-Cc: yinghai@kernel.org, tony.luck@intel.com, jiang.liu@linux.intel.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, bp@alien8.de,
-        benh@kernel.crashing.org, mingo@kernel.org, tglx@linutronix.de,
-        rjw@rjwysocki.net, gregkh@linuxfoundation.org, bhelgaas@google.com,
-        konrad.wilk@oracle.com, rdunlap@infradead.org, joro@8bytes.org
-Reply-To: hpa@zytor.com, jiang.liu@linux.intel.com, tony.luck@intel.com,
-        yinghai@kernel.org, rdunlap@infradead.org, joro@8bytes.org,
-        konrad.wilk@oracle.com, gregkh@linuxfoundation.org, rjw@rjwysocki.net,
-        bhelgaas@google.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, bp@alien8.de, tglx@linutronix.de
-In-Reply-To: <1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] PCI: Remove PCI ioapic driver
-Git-Commit-ID: e07cfbfaeec96c2e2f7ab81e8125891089e3065c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753284AbaKCLGE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 06:06:04 -0500
+Received: from mail-by2on0074.outbound.protection.outlook.com ([207.46.100.74]:10862
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752355AbaKCKyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 05:54:23 -0500
+From: Ley Foon Tan <lftan@altera.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
+        <lftan.linux@gmail.com>, <cltang@codesourcery.com>
+Subject: [PATCH v6 14/29] nios2: DMA mapping API
+Date: Mon, 3 Nov 2014 18:52:10 +0800
+Message-ID: <1415011945-3297-15-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1415011945-3297-1-git-send-email-lftan@altera.com>
+References: <1415011945-3297-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(22564002)(87286001)(31966008)(33646002)(84676001)(102836001)(42186005)(19580405001)(6806004)(62966003)(44976005)(68736004)(92566001)(2201001)(4396001)(97736003)(93916002)(50226001)(92726001)(86362001)(19580395003)(46102003)(88136002)(50466002)(89996001)(87936001)(105596002)(50986999)(76176999)(64706001)(120916001)(47776003)(99396003)(20776003)(21056001)(48376002)(104166001)(229853001)(107046002)(106466001)(36756003)(77156002)(95666004)(77096003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB595;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB595;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0384275935
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e07cfbfaeec96c2e2f7ab81e8125891089e3065c
-Gitweb:     http://git.kernel.org/tip/e07cfbfaeec96c2e2f7ab81e8125891089e3065c
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 13:21:38 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 3 Nov 2014 11:56:07 +0100
+This patch adds support for the DMA mapping API.
 
-PCI: Remove PCI ioapic driver
-
-To support IOAPIC hotplug on x86 and IA64 platforms, OS needs to figure
-out global interrupt source number(GSI) and IOAPIC enumeration ID
-through ACPI interfaces. So BIOS must implement an ACPI IOAPIC device
-with _GSB/_UID or _MAT method to support IOAPIC hotplug. OS also needs
-to figure out base physical address to access IOAPIC registers. OS may
-get the base physical address through PCI BARs if IOAPIC device is
-visible in PCI domain, otherwise OS may get the address by ACPI _CRS
-method if IOAPIC device is hidden from PCI domain by BIOS.
-
-When adding a PCI subtree, we need to add IOAPIC devices before enabling
-all other PCI devices because other PCI devices may use the IOAPIC to
-allocate PCI interrupts.
-
-So we plan to reimplement IOAPIC driver as an ACPI instead of PCI driver
-due to:
-1) hot-pluggable IOAPIC devices are always visible in ACPI domain,
-   but may or may not be visible in PCI domain.
-2) we could explicitly control the order between IOAPIC and other PCI
-   devices.
-
-We also have another choice to use a PCI driver to manage IOAPIC device
-if it's visible in PCI domain and use an ACPI driver if it's only
-visible in ACPI domain. But this solution is a little complex.
-
-It shouldn't cause serious backward compatibility issues because:
-1) IOAPIC hotplug is never supported on x86 yet because it hasn't
-   implemented the required acpi_register_ioapic() and
-   acpi_unregister_ioapic().
-2) Currently only ACPI based IOAPIC hotplug is possible on x86 and
-   IA64, we don't know other specifications and interfaces to support
-   IOAPIC hotplug yet.
-3) We will reimplement an ACPI IOAPIC driver to support IOAPIC hotplug.
-
-This change also helps to get rid of the false alarm on all current
-Linux distributions:
-[    6.952497] ioapic: probe of 0000:00:05.4 failed with error -22
-[    6.959542] ioapic: probe of 0000:80:05.4 failed with error -22
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- drivers/pci/Kconfig  |   7 ---
- drivers/pci/Makefile |   2 -
- drivers/pci/ioapic.c | 121 ---------------------------------------------------
- 3 files changed, 130 deletions(-)
+ arch/nios2/include/asm/dma-mapping.h | 140 ++++++++++++++++++++++++++
+ arch/nios2/mm/dma-mapping.c          | 186 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 326 insertions(+)
+ create mode 100644 arch/nios2/include/asm/dma-mapping.h
+ create mode 100644 arch/nios2/mm/dma-mapping.c
 
-diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 893503f..39866d1 100644
---- a/drivers/pci/Kconfig
-+++ b/drivers/pci/Kconfig
-@@ -104,13 +104,6 @@ config PCI_PASID
- 
- 	  If unsure, say N.
- 
--config PCI_IOAPIC
--	bool "PCI IO-APIC hotplug support" if X86
--	depends on PCI
--	depends on ACPI
--	depends on X86_IO_APIC
--	default !X86
--
- config PCI_LABEL
- 	def_bool y if (DMI || ACPI)
- 	select NLS
-diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-index e04fe2d..73e4af4 100644
---- a/drivers/pci/Makefile
-+++ b/drivers/pci/Makefile
-@@ -13,8 +13,6 @@ obj-$(CONFIG_PCI_QUIRKS) += quirks.o
- # Build PCI Express stuff if needed
- obj-$(CONFIG_PCIEPORTBUS) += pcie/
- 
--obj-$(CONFIG_PCI_IOAPIC) += ioapic.o
--
- # Build the PCI Hotplug drivers if we were asked to
- obj-$(CONFIG_HOTPLUG_PCI) += hotplug/
- ifdef CONFIG_HOTPLUG_PCI
-diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-deleted file mode 100644
-index f6219d3..0000000
---- a/drivers/pci/ioapic.c
-+++ /dev/null
-@@ -1,121 +0,0 @@
--/*
-- * IOAPIC/IOxAPIC/IOSAPIC driver
-- *
-- * Copyright (C) 2009 Fujitsu Limited.
-- * (c) Copyright 2009 Hewlett-Packard Development Company, L.P.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--/*
-- * This driver manages PCI I/O APICs added by hotplug after boot.  We try to
-- * claim all I/O APIC PCI devices, but those present at boot were registered
-- * when we parsed the ACPI MADT, so we'll fail when we try to re-register
-- * them.
-- */
--
--#include <linux/pci.h>
--#include <linux/module.h>
--#include <linux/acpi.h>
--#include <linux/slab.h>
--
--struct ioapic {
--	acpi_handle	handle;
--	u32		gsi_base;
--};
--
--static int ioapic_probe(struct pci_dev *dev, const struct pci_device_id *ent)
--{
--	acpi_handle handle;
--	acpi_status status;
--	unsigned long long gsb;
--	struct ioapic *ioapic;
--	int ret;
--	char *type;
--	struct resource *res;
--
--	handle = ACPI_HANDLE(&dev->dev);
--	if (!handle)
--		return -EINVAL;
--
--	status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsb);
--	if (ACPI_FAILURE(status))
--		return -EINVAL;
--
--	/*
--	 * The previous code in acpiphp evaluated _MAT if _GSB failed, but
--	 * ACPI spec 4.0 sec 6.2.2 requires _GSB for hot-pluggable I/O APICs.
--	 */
--
--	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
--	if (!ioapic)
--		return -ENOMEM;
--
--	ioapic->handle = handle;
--	ioapic->gsi_base = (u32) gsb;
--
--	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
--		type = "IOAPIC";
--	else
--		type = "IOxAPIC";
--
--	ret = pci_enable_device(dev);
--	if (ret < 0)
--		goto exit_free;
--
--	pci_set_master(dev);
--
--	if (pci_request_region(dev, 0, type))
--		goto exit_disable;
--
--	res = &dev->resource[0];
--	if (acpi_register_ioapic(ioapic->handle, res->start, ioapic->gsi_base))
--		goto exit_release;
--
--	pci_set_drvdata(dev, ioapic);
--	dev_info(&dev->dev, "%s at %pR, GSI %u\n", type, res, ioapic->gsi_base);
--	return 0;
--
--exit_release:
--	pci_release_region(dev, 0);
--exit_disable:
--	pci_disable_device(dev);
--exit_free:
--	kfree(ioapic);
--	return -ENODEV;
--}
--
--static void ioapic_remove(struct pci_dev *dev)
--{
--	struct ioapic *ioapic = pci_get_drvdata(dev);
--
--	acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
--	pci_release_region(dev, 0);
--	pci_disable_device(dev);
--	kfree(ioapic);
--}
--
--
--static const struct pci_device_id ioapic_devices[] = {
--	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOAPIC, ~0) },
--	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOXAPIC, ~0) },
--	{ }
--};
--MODULE_DEVICE_TABLE(pci, ioapic_devices);
--
--static struct pci_driver ioapic_driver = {
--	.name		= "ioapic",
--	.id_table	= ioapic_devices,
--	.probe		= ioapic_probe,
--	.remove		= ioapic_remove,
--};
--
--static int __init ioapic_init(void)
--{
--	return pci_register_driver(&ioapic_driver);
--}
--module_init(ioapic_init);
--
--MODULE_LICENSE("GPL");
+diff --git a/arch/nios2/include/asm/dma-mapping.h b/arch/nios2/include/asm/dma-mapping.h
+new file mode 100644
+index 0000000..b556723
+--- /dev/null
++++ b/arch/nios2/include/asm/dma-mapping.h
+@@ -0,0 +1,140 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License.  See the file COPYING in the main directory of this
++ * archive for more details.
++ */
++
++#ifndef _ASM_NIOS2_DMA_MAPPING_H
++#define _ASM_NIOS2_DMA_MAPPING_H
++
++#include <linux/scatterlist.h>
++#include <linux/cache.h>
++#include <asm/cacheflush.h>
++
++static inline void __dma_sync_for_device(void *vaddr, size_t size,
++			      enum dma_data_direction direction)
++{
++	switch (direction) {
++	case DMA_FROM_DEVICE:
++		invalidate_dcache_range((unsigned long)vaddr,
++			(unsigned long)(vaddr + size));
++		break;
++	case DMA_TO_DEVICE:
++		/*
++		 * We just need to flush the caches here , but Nios2 flush
++		 * instruction will do both writeback and invalidate.
++		 */
++	case DMA_BIDIRECTIONAL: /* flush and invalidate */
++		flush_dcache_range((unsigned long)vaddr,
++			(unsigned long)(vaddr + size));
++		break;
++	default:
++		BUG();
++	}
++}
++
++static inline void __dma_sync_for_cpu(void *vaddr, size_t size,
++			      enum dma_data_direction direction)
++{
++	switch (direction) {
++	case DMA_BIDIRECTIONAL:
++	case DMA_FROM_DEVICE:
++		invalidate_dcache_range((unsigned long)vaddr,
++			(unsigned long)(vaddr + size));
++		break;
++	case DMA_TO_DEVICE:
++		break;
++	default:
++		BUG();
++	}
++}
++
++#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
++#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
++
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			   dma_addr_t *dma_handle, gfp_t flag);
++
++void dma_free_coherent(struct device *dev, size_t size,
++			 void *vaddr, dma_addr_t dma_handle);
++
++static inline dma_addr_t dma_map_single(struct device *dev, void *ptr,
++					size_t size,
++					enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++	__dma_sync_for_device(ptr, size, direction);
++	return virt_to_phys(ptr);
++}
++
++static inline void dma_unmap_single(struct device *dev, dma_addr_t dma_addr,
++				size_t size, enum dma_data_direction direction)
++{
++}
++
++extern int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
++	enum dma_data_direction direction);
++extern dma_addr_t dma_map_page(struct device *dev, struct page *page,
++	unsigned long offset, size_t size, enum dma_data_direction direction);
++extern void dma_unmap_page(struct device *dev, dma_addr_t dma_address,
++	size_t size, enum dma_data_direction direction);
++extern void dma_unmap_sg(struct device *dev, struct scatterlist *sg,
++	int nhwentries, enum dma_data_direction direction);
++extern void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
++	size_t size, enum dma_data_direction direction);
++extern void dma_sync_single_for_device(struct device *dev,
++	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction);
++extern void dma_sync_single_range_for_cpu(struct device *dev,
++	dma_addr_t dma_handle, unsigned long offset, size_t size,
++	enum dma_data_direction direction);
++extern void dma_sync_single_range_for_device(struct device *dev,
++	dma_addr_t dma_handle, unsigned long offset, size_t size,
++	enum dma_data_direction direction);
++extern void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg,
++	int nelems, enum dma_data_direction direction);
++extern void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
++	int nelems, enum dma_data_direction direction);
++
++static inline int dma_supported(struct device *dev, u64 mask)
++{
++	return 1;
++}
++
++static inline int dma_set_mask(struct device *dev, u64 mask)
++{
++	if (!dev->dma_mask || !dma_supported(dev, mask))
++		return -EIO;
++
++	*dev->dma_mask = mask;
++
++	return 0;
++}
++
++static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	return 0;
++}
++
++/*
++* dma_alloc_noncoherent() returns non-cacheable memory, so there's no need to
++* do any flushing here.
++*/
++static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
++				  enum dma_data_direction direction)
++{
++}
++
++/* drivers/base/dma-mapping.c */
++extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
++		void *cpu_addr, dma_addr_t dma_addr, size_t size);
++extern int dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
++		void *cpu_addr, dma_addr_t dma_addr,
++		size_t size);
++
++#define dma_mmap_coherent(d, v, c, h, s) dma_common_mmap(d, v, c, h, s)
++#define dma_get_sgtable(d, t, v, h, s) dma_common_get_sgtable(d, t, v, h, s)
++
++#endif /* _ASM_NIOS2_DMA_MAPPING_H */
+diff --git a/arch/nios2/mm/dma-mapping.c b/arch/nios2/mm/dma-mapping.c
+new file mode 100644
+index 0000000..ac5da75
+--- /dev/null
++++ b/arch/nios2/mm/dma-mapping.c
+@@ -0,0 +1,186 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *  Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * Based on DMA code from MIPS.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/types.h>
++#include <linux/mm.h>
++#include <linux/export.h>
++#include <linux/string.h>
++#include <linux/scatterlist.h>
++#include <linux/dma-mapping.h>
++#include <linux/io.h>
++#include <linux/cache.h>
++#include <asm/cacheflush.h>
++
++
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			    dma_addr_t *dma_handle, gfp_t gfp)
++{
++	void *ret;
++
++	/* ignore region specifiers */
++	gfp &= ~(__GFP_DMA | __GFP_HIGHMEM);
++
++	/* optimized page clearing */
++	gfp |= __GFP_ZERO;
++
++	if (dev == NULL || (dev->coherent_dma_mask < 0xffffffff))
++		gfp |= GFP_DMA;
++
++	ret = (void *) __get_free_pages(gfp, get_order(size));
++	if (ret != NULL) {
++		*dma_handle = virt_to_phys(ret);
++		flush_dcache_range((unsigned long) ret,
++			(unsigned long) ret + size);
++		ret = UNCAC_ADDR(ret);
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL(dma_alloc_coherent);
++
++void dma_free_coherent(struct device *dev, size_t size, void *vaddr,
++			dma_addr_t dma_handle)
++{
++	unsigned long addr = (unsigned long) CAC_ADDR((unsigned long) vaddr);
++
++	free_pages(addr, get_order(size));
++}
++EXPORT_SYMBOL(dma_free_coherent);
++
++int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
++		enum dma_data_direction direction)
++{
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	for_each_sg(sg, sg, nents, i) {
++		void *addr;
++
++		addr = sg_virt(sg);
++		if (addr) {
++			__dma_sync_for_device(addr, sg->length, direction);
++			sg->dma_address = sg_phys(sg);
++		}
++	}
++
++	return nents;
++}
++EXPORT_SYMBOL(dma_map_sg);
++
++dma_addr_t dma_map_page(struct device *dev, struct page *page,
++			unsigned long offset, size_t size,
++			enum dma_data_direction direction)
++{
++	void *addr;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	addr = page_address(page) + offset;
++	__dma_sync_for_device(addr, size, direction);
++
++	return page_to_phys(page) + offset;
++}
++EXPORT_SYMBOL(dma_map_page);
++
++void dma_unmap_page(struct device *dev, dma_addr_t dma_address, size_t size,
++		    enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync_for_cpu(phys_to_virt(dma_address), size, direction);
++}
++EXPORT_SYMBOL(dma_unmap_page);
++
++void dma_unmap_sg(struct device *dev, struct scatterlist *sg, int nhwentries,
++		  enum dma_data_direction direction)
++{
++	void *addr;
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	if (direction == DMA_TO_DEVICE)
++		return;
++
++	for_each_sg(sg, sg, nhwentries, i) {
++		addr = sg_virt(sg);
++		if (addr)
++			__dma_sync_for_cpu(addr, sg->length, direction);
++	}
++}
++EXPORT_SYMBOL(dma_unmap_sg);
++
++void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
++			     size_t size, enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync_for_cpu(phys_to_virt(dma_handle), size, direction);
++}
++EXPORT_SYMBOL(dma_sync_single_for_cpu);
++
++void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
++				size_t size, enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync_for_device(phys_to_virt(dma_handle), size, direction);
++}
++EXPORT_SYMBOL(dma_sync_single_for_device);
++
++void dma_sync_single_range_for_cpu(struct device *dev, dma_addr_t dma_handle,
++					unsigned long offset, size_t size,
++					enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync_for_cpu(phys_to_virt(dma_handle), size, direction);
++}
++EXPORT_SYMBOL(dma_sync_single_range_for_cpu);
++
++void dma_sync_single_range_for_device(struct device *dev, dma_addr_t dma_handle,
++					unsigned long offset, size_t size,
++					enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++
++	__dma_sync_for_device(phys_to_virt(dma_handle), size, direction);
++}
++EXPORT_SYMBOL(dma_sync_single_range_for_device);
++
++void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nelems,
++			 enum dma_data_direction direction)
++{
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	/* Make sure that gcc doesn't leave the empty loop body.  */
++	for_each_sg(sg, sg, nelems, i)
++		__dma_sync_for_cpu(sg_virt(sg), sg->length, direction);
++}
++EXPORT_SYMBOL(dma_sync_sg_for_cpu);
++
++void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
++				int nelems, enum dma_data_direction direction)
++{
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++
++	/* Make sure that gcc doesn't leave the empty loop body.  */
++	for_each_sg(sg, sg, nelems, i)
++		__dma_sync_for_device(sg_virt(sg), sg->length, direction);
++
++}
++EXPORT_SYMBOL(dma_sync_sg_for_device);
+-- 
+1.8.2.1
+
