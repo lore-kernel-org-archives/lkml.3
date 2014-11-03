@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaKCB35 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 20:29:57 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:56042 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752AbaKCB3z (ORCPT
+	id S1753052AbaKCBaz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 20:30:55 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51026 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627AbaKCBav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 20:29:55 -0500
-From: Chen Weilong <chenweilong@huawei.com>
-To: <davem@davemloft.net>, <kuznet@ms2.inr.ac.ru>, <jmorris@namei.org>,
-        <yoshfuji@linux-ipv6.org>, <kaber@trash.net>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ipv4: avoid divide 0 error in tcp_incr_quickack
-Date: Mon, 3 Nov 2014 09:29:33 +0800
-Message-ID: <1414978173-6948-1-git-send-email-chenweilong@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.177.37.162]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.5456DA87.0179,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 705713a5fb7d6524b485d12019f131e8
+	Sun, 2 Nov 2014 20:30:51 -0500
+X-Original-SENDERIP: 165.186.175.61
+X-Original-MAILFROM: hugh.kang@lge.com
+From: Hugh Kang <hugh.kang@lge.com>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        jonghoon.park@lge.com, hugh.kang@lge.com
+Subject: [PATCH] regulator: adding disable options for regulator-always-on and regulator-boots-on
+Date: Mon,  3 Nov 2014 10:26:43 +0900
+Message-Id: <1414978003-20437-1-git-send-email-hugh.kang@lge.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Weilong Chen <chenweilong@huawei.com>
+From: "hugh.kang" <hugh.kang@lge.com>
 
-We got a problem like this:
- [ffff8801c1a05570] machine_kexec at ffffffff81025039
- [ffff8801c1a055d0] crash_kexec at ffffffff8109b253
- [ffff8801c1a056a0] oops_end at ffffffff81442aed
- [ffff8801c1a056d0] die at ffffffff81005603
- [ffff8801c1a05700] do_trap at ffffffff81442448
- [ffff8801c1a05760] do_divide_error at ffffffff81002c10
- [ffff8801c1a05888] tcp_send_dupack at ffffffff81385e44
- [ffff8801c1a058c8] tcp_validate_incoming at ffffffff813886b5
- [ffff8801c1a05908] tcp_rcv_state_process at ffffffff8138d0b7
- [ffff8801c1a05958] tcp_child_process at ffffffff81397255
- [ffff8801c1a05988] tcp_v4_do_rcv at ffffffff81395a70
- [ffff8801c1a059d8] tcp_v4_rcv at ffffffff81396fc8
- [ffff8801c1a05a48] ip_local_deliver_finish at ffffffff813746e9
- [ffff8801c1a05a78] ip_local_deliver at ffffffff81374a20
- [ffff8801c1a05aa8] ip_rcv_finish at ffffffff81374389
- [ffff8801c1a05ad8] ip_rcv at ffffffff81374c78
-There was a wrong ack packet coming during TCP handshake. The socket's state
-was TCP_SYN_RECV, its rcv_mss was not initialize yet. So
-tcp_send_dupack -> tcp_enter_quickack_mode got a divide 0 error.
-This patch add a state check before tcp_enter_quickack_mode.
+If a regulator is set by always-on option, the regulator will be set forever.
+For example, suppose LDO1 is set to always-on at RevA.dts with including of a.dtsi. After that
+RevB.dts may wants to include the same a.dtsi but override the LDO1 always-on option. However,
+currently there is no way to delete the always-on option, even when we change the LDO1 option value,
+the always-on setting is still remains.
 
-Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+Signed-off-by: hugh.kang <hugh.kang@lge.com>
 ---
- net/ipv4/tcp_input.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/regulator/of_regulator.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 4e4617e..9eb56dc 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3986,7 +3986,8 @@ static void tcp_send_dupack(struct sock *sk, const struct sk_buff *skb)
- 	if (TCP_SKB_CB(skb)->end_seq != TCP_SKB_CB(skb)->seq &&
- 	    before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
- 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
--		tcp_enter_quickack_mode(sk);
-+		if (sk->sk_state != TCP_SYN_RECV)
-+			tcp_enter_quickack_mode(sk);
+diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+index ee5e67b..4178dbd 100644
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -52,7 +52,13 @@ static void of_get_regulation_constraints(struct device_node *np,
+ 		constraints->valid_ops_mask |= REGULATOR_CHANGE_CURRENT;
  
- 		if (tcp_is_sack(tp) && sysctl_tcp_dsack) {
- 			u32 end_seq = TCP_SKB_CB(skb)->end_seq;
+ 	constraints->boot_on = of_property_read_bool(np, "regulator-boot-on");
++	if (of_property_read_bool(np, "regulator-disable-boot-on"))
++		constraints->boot_on = false;
++
+ 	constraints->always_on = of_property_read_bool(np, "regulator-always-on");
++	if (of_property_read_bool(np, "regulator-disable-always-on"))
++		constraints->always_on = false;
++
+ 	if (!constraints->always_on) /* status change should be possible. */
+ 		constraints->valid_ops_mask |= REGULATOR_CHANGE_STATUS;
+ 
 -- 
-1.7.12
-
+1.8.3.2
 
