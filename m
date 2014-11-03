@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392AbaKCEJl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Nov 2014 23:09:41 -0500
-Received: from ozlabs.org ([103.22.144.67]:36333 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706AbaKCEJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Nov 2014 23:09:39 -0500
-Date: Mon, 3 Nov 2014 15:09:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: linux-next: build failure in Linus' tree
-Message-ID: <20141103150930.70a260c7@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/2JL2.b9m2WlRSXIw=EzYmG7"; protocol="application/pgp-signature"
+	id S1751299AbaKCEQn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Nov 2014 23:16:43 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:42495 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbaKCEQl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Nov 2014 23:16:41 -0500
+Date: Sun, 02 Nov 2014 23:16:37 -0500 (EST)
+Message-Id: <20141102.231637.506197393349958573.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: torvalds@linux-foundation.org, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pablo@netfilter.org
+Subject: Re: linux-next: build failure in Linus' tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141103150930.70a260c7@canb.auug.org.au>
+References: <20141103150930.70a260c7@canb.auug.org.au>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 02 Nov 2014 20:16:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/2JL2.b9m2WlRSXIw=EzYmG7
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi Linus,
-
-With Linus' tree, today's linux-next build (powerpc allyesconfig)
-failed like this:
-
-net/bridge/netfilter/nft_reject_bridge.c: In function 'nft_reject_br_send_v=
-6_unreach':
-net/bridge/netfilter/nft_reject_bridge.c:240:3: error: implicit declaration=
- of function 'csum_ipv6_magic' [-Werror=3Dimplicit-function-declaration]
-   csum_ipv6_magic(&nip6h->saddr, &nip6h->daddr,
-   ^
-
-Caused by commit 523b929d5446 ("netfilter: nft_reject_bridge: don't use
-IP stack to reject traffic") from Linus' tree.
-
-I applied the following patch for today:
-
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 3 Nov 2014 15:01:16 +1100
-Subject: [PATCH] netfilter: nft_reject_bridge: include ip6_checksum.h for c=
-sum_ipv6_magic
+Date: Mon, 3 Nov 2014 15:09:30 +1100
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/bridge/netfilter/nft_reject_bridge.c | 1 +
- 1 file changed, 1 insertion(+)
+> Hi Linus,
+> 
+> With Linus' tree, today's linux-next build (powerpc allyesconfig)
+> failed like this:
+> 
+> net/bridge/netfilter/nft_reject_bridge.c: In function 'nft_reject_br_send_v6_unreach':
+> net/bridge/netfilter/nft_reject_bridge.c:240:3: error: implicit declaration of function 'csum_ipv6_magic' [-Werror=implicit-function-declaration]
+>    csum_ipv6_magic(&nip6h->saddr, &nip6h->daddr,
+>    ^
+> 
+> Caused by commit 523b929d5446 ("netfilter: nft_reject_bridge: don't use
+> IP stack to reject traffic") from Linus' tree.
+> 
+> I applied the following patch for today:
 
-diff --git a/net/bridge/netfilter/nft_reject_bridge.c b/net/bridge/netfilte=
-r/nft_reject_bridge.c
-index 654c9018e3e7..1123f2b4a1b1 100644
---- a/net/bridge/netfilter/nft_reject_bridge.c
-+++ b/net/bridge/netfilter/nft_reject_bridge.c
-@@ -16,6 +16,7 @@
- #include <net/netfilter/nft_reject.h>
- #include <net/netfilter/ipv4/nf_reject.h>
- #include <net/netfilter/ipv6/nf_reject.h>
-+#include <net/ip6_checksum.h>
- #include <linux/ip.h>
- #include <net/ip.h>
- #include <linux/netfilter_bridge.h>
---=20
-2.1.1
+Yep, another person hit this today and submitted a patch too:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+http://patchwork.ozlabs.org/patch/406003/
 
---Sig_/2JL2.b9m2WlRSXIw=EzYmG7
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUVv//AAoJEMDTa8Ir7ZwVnnwQAIgjU76KXvI9j2HrNkuchbxp
-6k/F06HD6+rsEoZUxOAeS5JwDVfHBfbByMAmPcOJW57rOtvACBBU3nJBfZFvlJ9K
-N2/AZyrBCIwKh2vb1uEjgEfTWNiqKtky8J7noZFqizrZGS/B4dXqHlTwz3/1Xr3n
-mkuAs+aduEuxSbA2SXChyOLoUuiKS2zkFtGUw8Rwouf43LSZHPynVhLqDFJG9Rsl
-W2Eb2DnU9h1sBjAx4AtLy9THxOFS6hYHk8t6E6dstuA1967OQwOtqDZhvhP3A0jZ
-Lk6H4IJgtIPi+/LXl6P990qfAldnWYVdNQvXVmQOfCbHTu/znhHq5rt4t+PFuZwV
-cdpcmJx+sa9jEFGATWLgpE9To7sexW3iR5Y+enOeVoSSmP+WO529Y3KUv3bfSVjW
-BWLsDZfzIDR92YcTOlmqkfbicu+IL1SWAVVmNfRFlAZdvYgNqP5zXKA4kD44STO/
-uEtMQoHHr+JzixWCXDFm7hq6kugiibD9ALrRs82UWfi/E9peBeJyYG7VZZSAQJ15
-FRnYhP9wiHoiVZLI1uPkuJJpWKIQFBFoGOyio3ylSh2xfKSUl8FewJ3WVtgmSuq/
-ShNqdf2K4bmbvKyWAGBIj+qwb3FIdms1sBOaVIja+B9FTDyruDLjZI0rRpkjsf7/
-Vo/KRkZ+VLNFLbe5iASa
-=2KqR
------END PGP SIGNATURE-----
-
---Sig_/2JL2.b9m2WlRSXIw=EzYmG7--
+I'll get this into the net tree ASAP.
