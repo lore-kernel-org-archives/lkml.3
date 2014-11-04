@@ -1,134 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaKDHwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:52:21 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42455 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989AbaKDHwT (ORCPT
+	id S1752273AbaKDHxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:53:20 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:32209 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205AbaKDHxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:52:19 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 4 Nov 2014 16:53:30 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Laura Abbott <lauraa@codeaurora.org>, Hui Zhu <zhuhui@xiaomi.com>,
-        rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz,
-        m.szyprowski@samsung.com, akpm@linux-foundation.org, mina86@mina86.com,
-        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
-        hannes@cmpxchg.org, riel@redhat.com, mgorman@suse.de,
-        nasa4836@gmail.com, ddstreet@ieee.org, hughd@google.com,
-        mingo@kernel.org, rientjes@google.com, peterz@infradead.org,
-        keescook@chromium.org, atomlin@redhat.com, raistlin@linux.it,
-        axboe@fb.com, paulmck@linux.vnet.ibm.com,
-        kirill.shutemov@linux.intel.com, n-horiguchi@ah.jp.nec.com,
-        k.khlebnikov@samsung.com, msalter@redhat.com, deller@gmx.de,
-        tangchen@cn.fujitsu.com, ben@decadent.org.uk, akinobu.mita@gmail.com,
-        sasha.levin@oracle.com, vdavydov@parallels.com, suleiman@google.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
- about allocation
-Message-ID: <20141104075330.GB23102@bbox>
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
- <543F8812.2020002@codeaurora.org>
- <5450FD15.4000708@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5450FD15.4000708@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Nov 2014 02:53:16 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-6c-545885ebe092
+Message-id: <1415087593.2389.6.camel@AMDC1943>
+Subject: Re: [PATCH v3 02/14] mfd/regulator: dt-bindings: max77686: Document
+ of_compatible for regulator
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Date: Tue, 04 Nov 2014 08:53:13 +0100
+In-reply-to: <20141103170042.GC12011@x1>
+References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
+ <1414668053-31370-3-git-send-email-k.kozlowski@samsung.com>
+ <20141103170042.GC12011@x1>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t/xy7qvWyNCDO5NYrLYOGM9q8WkdQeY
+	LKY+fMJmcf3Lc1aL+UfOsVoc/V1g0bvgKpvF2aY37Bb3vx5ltPh2pYPJYtPja6wWl3fNYbOY
+	cX4fk8Xty7wWa4/cZbc43c3qIODR0tzD5vH3+XUWj7+rXjB77Jx1l91j06pONo871/awecw7
+	GeixeUm9R9+WVYwenzfJBXBFcdmkpOZklqUW6dslcGWsW3+DqeAdb8XaH41MDYzd3F2MnBwS
+	AiYSX/pOs0HYYhIX7q0Hsrk4hASWMkrM276EHcL5zCix8c5fRpAqXgE9iQm7XrKD2MICWRJz
+	lixhBrHZBIwlNi9fAtTNwSEioCJx7o05SC+zwH0Wie3r/4JtYBFQlVi97BUriM0poCGxcsUe
+	MFtIYDGjxNZZNSA2s4C6xKR5i5hB5kgIKEs09rtBrBWU+DH5HgtEibzE5jVvmScwCsxC0jEL
+	SdksJGULGJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoTE2ZcdjIuPWR1iFOBgVOLhzVCP
+	CBFiTSwrrsw9xCjBwawkwru6CijEm5JYWZValB9fVJqTWnyIkYmDU6qBsfmx32PvlGu9F2dt
+	vMogrOYUuvBsTJrTk5jKxxt8JvckBzRt5X299dn3Oxf5N5/w3mWy87XWH82ZSzx8kuo1Wbc+
+	eq93fPbdjKZTpz6Ezlyedle/Nk3qxE+7bYcfhRpHSq+ZIxdard/iFMtTtMs/l/FcqJreOQaW
+	zgTmhd7Xs6Vj9v65x3qkRYmlOCPRUIu5qDgRAK/whEmRAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Oct 29, 2014 at 03:43:33PM +0100, Vlastimil Babka wrote:
-> On 10/16/2014 10:55 AM, Laura Abbott wrote:
-> >On 10/15/2014 8:35 PM, Hui Zhu wrote:
-> >
-> >It's good to see another proposal to fix CMA utilization. Do you have
-> >any data about the success rate of CMA contiguous allocation after
-> >this patch series? I played around with a similar approach of using
-> >CMA for MIGRATE_MOVABLE allocations and found that although utilization
-> >did increase, contiguous allocations failed at a higher rate and were
-> >much slower. I see what this series is trying to do with avoiding
-> >allocation from CMA pages when a contiguous allocation is progress.
-> >My concern is that there would still be problems with contiguous
-> >allocation after all the MIGRATE_MOVABLE fallback has happened.
+On pon, 2014-11-03 at 17:00 +0000, Lee Jones wrote:
+> On Thu, 30 Oct 2014, Krzysztof Kozlowski wrote:
 > 
-> Hi,
+> > Document new required property for regulator driver: of_compatible. The
+> > property allows MFD core to bind the driver to node with regulators and
+> > this simplifies parsing regulators init data from DTS
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  Documentation/devicetree/bindings/mfd/max77686.txt | 7 ++++++-
+> >  1 file changed, 6 insertions(+), 1 deletion(-)
 > 
-> did anyone try/suggest the following idea?
-> 
-> - keep CMA as fallback to MOVABLE as is is now, i.e. non-agressive
-> - when UNMOVABLE (RECLAIMABLE also?) allocation fails and CMA
-> pageblocks have space, don't OOM immediately, but first try to
-> migrate some MOVABLE pages to CMA pageblocks, to make space for the
-> UNMOVABLE allocation in non-CMA pageblocks
-> - this should keep CMA pageblocks free as long as possible and
-> useful for CMA allocations, but without restricting the non-MOVABLE
-> allocations even though there is free memory (but in CMA pageblocks)
-> - the fact that a MOVABLE page could be successfully migrated to CMA
-> pageblock, means it was not pinned or otherwise non-migratable, so
-> there's a good chance it can be migrated back again if CMA
-> pageblocks need to be used by CMA allocation
+> I want a thumbs-up from Mark on this before applying.
 
-I suggested exactly same idea long time ago.
+I'll be resending new version, without the compatible property.
 
-> - it's more complex, but I guess we have most of the necessary
-> infrastructure in compaction already :)
-
-I agree but still, it doesn't solve reclaim problem(ie, VM doesn't
-need to reclaim CMA pages when memory pressure of unmovable pages
-happens). Of course, we could make VM be aware of that via introducing
-new flag of __isolate_lru_page.
-
-However, I'd like to think CMA design from the beginning.
-It made page allocation logic complicated, even very fragile as we
-had recently and now we need to add new logics to migrate like you said.
-As well, we need to fix reclaim path, too.
-
-It makes mm complicated day by day even though it doesn't do the role
-enough well(ie, big latency and frequent allocation failure) so I really
-want to stop making the mess bloated.
-
-Long time ago, when I saw Joonsoo's CMA agressive allocation patchset
-(ie, roundrobin allocation between CMA and normal movable pages)
-it was good to me at a first glance but it needs tweak of allocation
-path and doesn't solve reclaim path, either. Yes, reclaim path could
-be solved by another patch but I want to solve it altogether.
-
-At that time, I suggested big surgery to Joonsoo in offline that
-let's move CMA allocation with movable zone allocation. With it,
-we could make allocation/reclaim path simple but thing is we should
-make VM be aware of overlapping MOVABLE zone which means some of pages
-in the zone could be part of another zones but I think we already have
-logics to handle it when I read comment in isolate_freepages so I think
-the design should work.
-
-A thing you guys might worry is bigger CMA latency because it makes
-CMA memory usage ratio higher than the approach you mentioned but
-anyone couldn't guarantee it once memory is fully utilized.
-In addition, we have used fair zone allocator policy so it makes
-round robin allocation automatically so I believe it should be way
-to go.
+Best regards,
+Krzysztof
 
 > 
-> Thoughts?
-> Vlastimil
+> > diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+> > index 75fdfaf41831..f4010a9f66eb 100644
+> > --- a/Documentation/devicetree/bindings/mfd/max77686.txt
+> > +++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+> > @@ -18,8 +18,11 @@ Required properties:
+> >  
+> >  Optional node:
+> >  - voltage-regulators : The regulators of max77686 have to be instantiated
+> > -  under subnode named "voltage-regulators" using the following format.
+> > +  under subnode named "voltage-regulators".
+> > +  Required property:
+> > +  - compatible : Must be "maxim,max77686-pmic"
+> >  
+> > +  Optional properties: For each regulator use following format:
+> >  	regulator_name {
+> >  		regulator-compatible = LDOn/BUCKn
+> >  		standard regulator constraints....
+> > @@ -49,6 +52,8 @@ Example:
+> >  		reg = <0x09>;
+> >  
+> >  		voltage-regulators {
+> > +			compatible = "maxim,max77686-pmic";
+> > +
+> >  			ldo11_reg {
+> >  				regulator-compatible = "LDO11";
+> >  				regulator-name = "vdd_ldo11";
 > 
-> >Thanks,
-> >Laura
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
--- 
-Kind regards,
-Minchan Kim
