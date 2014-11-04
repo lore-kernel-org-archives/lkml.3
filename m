@@ -1,158 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbaKDJAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:00:11 -0500
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:35795 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247AbaKDJAF (ORCPT
+	id S1752721AbaKDJAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:00:42 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:4430 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247AbaKDJAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:00:05 -0500
+	Tue, 4 Nov 2014 04:00:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 04 Nov 2014 00:59:51 -0800
+Message-ID: <545895B2.2000101@nvidia.com>
+Date: Tue, 4 Nov 2014 18:00:34 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141104075330.GB23102@bbox>
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
- <543F8812.2020002@codeaurora.org> <5450FD15.4000708@suse.cz> <20141104075330.GB23102@bbox>
-From: Hui Zhu <teawater@gmail.com>
-Date: Tue, 4 Nov 2014 16:59:24 +0800
-Message-ID: <CANFwon3rM+2pA_hiQ=cnv53kHkC+hAbVi3pvhVDNytr20qC=ww@mail.gmail.com>
-Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
- about allocation
-To: Minchan Kim <minchan@kernel.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>, Laura Abbott <lauraa@codeaurora.org>,
-        Hui Zhu <zhuhui@xiaomi.com>, rjw@rjwysocki.net, len.brown@intel.com,
-        pavel@ucw.cz, m.szyprowski@samsung.com,
-        Andrew Morton <akpm@linux-foundation.org>, mina86@mina86.com,
-        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
-        hannes@cmpxchg.org, Rik van Riel <riel@redhat.com>, mgorman@suse.de,
-        nasa4836@gmail.com, ddstreet@ieee.org, Hugh Dickins <hughd@google.com>,
-        mingo@kernel.org, rientjes@google.com,
-        Peter Zijlstra <peterz@infradead.org>, keescook@chromium.org,
-        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        kirill.shutemov@linux.intel.com, n-horiguchi@ah.jp.nec.com,
-        k.khlebnikov@samsung.com, msalter@redhat.com, deller@gmx.de,
-        tangchen@cn.fujitsu.com, ben@decadent.org.uk, akinobu.mita@gmail.com,
-        sasha.levin@oracle.com, vdavydov@parallels.com, suleiman@google.com,
+To: Tim Kryger <tim.kryger@gmail.com>
+CC: Sachin Kamat <spk.linux@gmail.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: Possible regression with commit 52221610d
+References: <54584260.8030602@nvidia.com> <CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
+In-Reply-To: <CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: DRBGMAIL103.nvidia.com (10.18.16.22) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 3:53 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Hello,
->
-> On Wed, Oct 29, 2014 at 03:43:33PM +0100, Vlastimil Babka wrote:
->> On 10/16/2014 10:55 AM, Laura Abbott wrote:
->> >On 10/15/2014 8:35 PM, Hui Zhu wrote:
->> >
->> >It's good to see another proposal to fix CMA utilization. Do you have
->> >any data about the success rate of CMA contiguous allocation after
->> >this patch series? I played around with a similar approach of using
->> >CMA for MIGRATE_MOVABLE allocations and found that although utilization
->> >did increase, contiguous allocations failed at a higher rate and were
->> >much slower. I see what this series is trying to do with avoiding
->> >allocation from CMA pages when a contiguous allocation is progress.
->> >My concern is that there would still be problems with contiguous
->> >allocation after all the MIGRATE_MOVABLE fallback has happened.
->>
->> Hi,
->>
->> did anyone try/suggest the following idea?
->>
->> - keep CMA as fallback to MOVABLE as is is now, i.e. non-agressive
->> - when UNMOVABLE (RECLAIMABLE also?) allocation fails and CMA
->> pageblocks have space, don't OOM immediately, but first try to
->> migrate some MOVABLE pages to CMA pageblocks, to make space for the
->> UNMOVABLE allocation in non-CMA pageblocks
->> - this should keep CMA pageblocks free as long as possible and
->> useful for CMA allocations, but without restricting the non-MOVABLE
->> allocations even though there is free memory (but in CMA pageblocks)
->> - the fact that a MOVABLE page could be successfully migrated to CMA
->> pageblock, means it was not pinned or otherwise non-migratable, so
->> there's a good chance it can be migrated back again if CMA
->> pageblocks need to be used by CMA allocation
->
-> I suggested exactly same idea long time ago.
->
->> - it's more complex, but I guess we have most of the necessary
->> infrastructure in compaction already :)
->
-> I agree but still, it doesn't solve reclaim problem(ie, VM doesn't
-> need to reclaim CMA pages when memory pressure of unmovable pages
-> happens). Of course, we could make VM be aware of that via introducing
-> new flag of __isolate_lru_page.
->
-> However, I'd like to think CMA design from the beginning.
-> It made page allocation logic complicated, even very fragile as we
-> had recently and now we need to add new logics to migrate like you said.
-> As well, we need to fix reclaim path, too.
->
-> It makes mm complicated day by day even though it doesn't do the role
-> enough well(ie, big latency and frequent allocation failure) so I really
-> want to stop making the mess bloated.
->
-> Long time ago, when I saw Joonsoo's CMA agressive allocation patchset
-> (ie, roundrobin allocation between CMA and normal movable pages)
-> it was good to me at a first glance but it needs tweak of allocation
-> path and doesn't solve reclaim path, either. Yes, reclaim path could
-> be solved by another patch but I want to solve it altogether.
->
-> At that time, I suggested big surgery to Joonsoo in offline that
-> let's move CMA allocation with movable zone allocation. With it,
-> we could make allocation/reclaim path simple but thing is we should
-> make VM be aware of overlapping MOVABLE zone which means some of pages
-> in the zone could be part of another zones but I think we already have
-> logics to handle it when I read comment in isolate_freepages so I think
-> the design should work.
+Hi Tim, thanks for your reply!
 
-Thanks.
+On 11/04/2014 02:28 PM, Tim Kryger wrote:
+> On Mon, Nov 3, 2014 at 7:05 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> Hi guys,
+>>
+>> On the NVIDIA shield (tegra114-roth) platform, I have noticed that MMC
+>> stopped working completely on recent kernels. MMC devices will not show up
+>> and the message "mmc1: Controller never released inhibit bit(s)." shows up
+>> repeatedly in the console.
+>>
+>> After bisecting I tracked commit 52221610dd84dc3e9196554f0292ca9e8ab3541d
+>> ("mmc: sdhci: Improve external VDD regulator support") as the one that
+>> introduced this issue, which seems somehow surprising to me since it has
+>> been around for a while and nobody else complained about this AFAICT.
+>
+> I'm not too familiar with the Nvidia Shield so can you please confirm
+> the following?
+>
+> The controller in the Tegra114 is SDHCI compliant and as such
+> sdhci_tegra_probe calls sdhci_add_host.  External regulators are
+> sought in sdhci_add_host with a call to mmc_regulator_get_supply.
+
+This is correct.
+
+> Since no external regulators are specified in tegra114.dtsi or
+> tegra114-roth.dts, mmc->supply.vmmc and mmc->supply.vqmmc are set to
+> -ENODEV.
+
+Actually 2 of the MMC nodes in tegra114-roth.dts (for SD card and eMMC) 
+have a vmmc-supply property, so for two of them at least 
+mmc->supply.vmmc is a valid pointer.
 
 >
-> A thing you guys might worry is bigger CMA latency because it makes
-> CMA memory usage ratio higher than the approach you mentioned but
-> anyone couldn't guarantee it once memory is fully utilized.
-> In addition, we have used fair zone allocator policy so it makes
-> round robin allocation automatically so I believe it should be way
-> to go.
+>> The following diff solves the issue for me, however I don't know whether it
+>> also reverts the intended purpose of the initial patch:
+>>
+>> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+>> index ada1a3ea3a87..615701bb8ea3 100644
+>> --- a/drivers/mmc/host/sdhci.c
+>> +++ b/drivers/mmc/host/sdhci.c
+>> @@ -1235,13 +1235,6 @@ static void sdhci_set_power(struct sdhci_host *host,
+>> unsigned char mode,
+>>          struct mmc_host *mmc = host->mmc;
+>>          u8 pwr = 0;
+>>
+>> -       if (!IS_ERR(mmc->supply.vmmc)) {
+>> -               spin_unlock_irq(&host->lock);
+>> -               mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
+>> -               spin_lock_irq(&host->lock);
+>> -               return;
+>> -       }
+>> -
+>>          if (mode != MMC_POWER_OFF) {
+>>                  switch (1 << vdd) {
+>>                  case MMC_VDD_165_195:
+>> @@ -1300,6 +1293,12 @@ static void sdhci_set_power(struct sdhci_host *host,
+>> unsigned char mode,
+>>                  if (host->quirks & SDHCI_QUIRK_DELAY_AFTER_POWER)
+>>                          mdelay(10);
+>>          }
+>> +
+>> +       if (!IS_ERR(mmc->supply.vmmc)) {
+>> +               spin_unlock_irq(&host->lock);
+>> +               mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
+>> +               spin_lock_irq(&host->lock);
+>> +       }
+>>   }
+>>
+>> Does this look like the right approach? If not, would you have any
+>> suggestion as to how to solve this problem?
+>
+> The patch you proposed would break Exynos4210 so I don't think it is
+> appropriate.
+>
+> Do you understand why this code block is executed on your hardware?  I
+> wouldn't expect it.
 
-Even if kernel use it to allocate the CMA memory, CMA alloc latency
-will happen if most of memory is allocated and driver try to get CMA
-memory.
-https://lkml.org/lkml/2014/10/17/129
-https://lkml.org/lkml/2014/10/17/130
-These patches let cma_alloc do a shrink with function
-shrink_all_memory_for_cma if need.  It handle a lot of latency issue
-in my part.
-And I think it can be more configurable for example some device use it
-and others not.
+As explained above, vmmc is a valid pointer for 2 instances of the MMC 
+controller. Interestingly, if I just remove the "return" line in the 
+IS_ERR() block (without moving it around), the issue also seems to be fixed.
+
+>
+> Can you provide the relevant parts of the log before the problem occurs?
+
+There is not much unfortunately ; the only relevant log I have is this:
+
+[   12.246022] mmc2: Timeout waiting for hardware interrupt.
+[   12.264990] mmc2: Controller never released inhibit bit(s).
+
+Some hardware interrupt timed out. I don't know much about the MMC 
+subsystem. but could it be because initially the controller is not in a 
+powered-on state, and that return statement causes the function to leave 
+it unpowered?
 
 Thanks,
-Hui
+Alex.
 
-
-
->
->>
->> Thoughts?
->> Vlastimil
->>
->> >Thanks,
->> >Laura
->> >
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
