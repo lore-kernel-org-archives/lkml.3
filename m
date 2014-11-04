@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaKDQ1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:27:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961AbaKDQ1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:27:35 -0500
-Message-ID: <5458FE64.3090309@redhat.com>
-Date: Tue, 04 Nov 2014 17:27:16 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754871AbaKDQ1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:27:50 -0500
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:9887 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591AbaKDQ1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 11:27:42 -0500
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Boaz Harrosh <boaz@plexistor.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>, Nick Piggin <npiggin@kernel.dk>,
+        "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "Knippers, Linda" <linda.knippers@hp.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvdimm@lists.01.org" <linux-nvdimm@ml01.01.org>,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: RE: [PATCH 1/4] pmem: Initial version of persistent memory driver
+Thread-Topic: [PATCH 1/4] pmem: Initial version of persistent memory driver
+Thread-Index: AQHPwju+CJyN7gLloE2kV10Saf5ghpxNAAewgAJw1ICAAUFlgIAAYEuQ
+Date: Tue, 4 Nov 2014 16:26:32 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B40295936C4B1@G4W3202.americas.hpqcorp.net>
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
+ <94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net>
+ <100D68C7BA14664A8938383216E40DE04082985D@FMSMSX114.amr.corp.intel.com>
+ <5458AC75.3030207@plexistor.com>
+In-Reply-To: <5458AC75.3030207@plexistor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: Re: [RFC][PATCH 01/12 v3] x86/kvm/tracing: Use helper function trace_seq_buffer_ptr()
-References: <20141104155237.228431433@goodmis.org> <20141104160221.585025609@goodmis.org>
-In-Reply-To: <20141104160221.585025609@goodmis.org>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sA4GRrA2018753
 
-On 04/11/2014 16:52, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> To allow for the restructiong of the trace_seq code, we need users
-> of it to use the helper functions instead of accessing the internals
-> of the trace_seq structure itself.
-> 
-> Cc: Mark Rustad <mark.d.rustad@intel.com>
-> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/kvm/mmutrace.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-> index 5aaf35641768..ce463a9cc8fb 100644
-> --- a/arch/x86/kvm/mmutrace.h
-> +++ b/arch/x86/kvm/mmutrace.h
-> @@ -22,7 +22,7 @@
->  	__entry->unsync = sp->unsync;
->  
->  #define KVM_MMU_PAGE_PRINTK() ({				        \
-> -	const u32 saved_len = p->len;					\
-> +	const char *saved_ptr = trace_seq_buffer_ptr(p);		\
->  	static const char *access_str[] = {			        \
->  		"---", "--x", "w--", "w-x", "-u-", "-ux", "wu-", "wux"  \
->  	};							        \
-> @@ -41,7 +41,7 @@
->  			 role.nxe ? "" : "!",				\
->  			 __entry->root_count,				\
->  			 __entry->unsync ? "unsync" : "sync", 0);	\
-> -	p->buffer + saved_len;						\
-> +	saved_ptr;							\
->  		})
->  
->  #define kvm_mmu_trace_pferr_flags       \
-> -- 2.1.1
-> 
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+
+> -----Original Message-----
+> From: Boaz Harrosh [mailto:boaz@plexistor.com]
+> Sent: Tuesday, 04 November, 2014 4:38 AM
+> To: Wilcox, Matthew R; Elliott, Robert (Server Storage); Ross
+> Zwisler; Jens Axboe; Nick Piggin; Kani, Toshimitsu; Knippers, Linda;
+> linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
+> nvdimm@lists.01.org; Matthew Wilcox
+> Subject: Re: [PATCH 1/4] pmem: Initial version of persistent memory
+> driver
+> 
+> On 11/03/2014 06:19 PM, Wilcox, Matthew R wrote:
+...
+> 
+> I wish you guys would actually review the correct code.
+> 
+> In the actual good driver that has any shape of proper code all these
+> issue are gone.
+> 
+> * config defaults gone, multiple-devices multiple-memory ranges fully
+>    supported hot plug style.
+> * above shifts cruft completely gone it is left overs from brd.c and
+>   its page usage.
+> * getgeo fixed to do what we realy want by the only application on earth
+>   that still uses it, fdisk. All other partitioners do not call it at
+>   all.
+> 
+> Why are we reviewing dead code ?
+> 
+> Cheers
+> Boaz
+
+Ross, what's the status of Boaz' patches (available in
+git://git.open-osd.org/pmem.git)?
+
+https://github.com/01org/prd.git doesn't include any of 
+them yet.
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
