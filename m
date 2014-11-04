@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaKDKBH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:01:07 -0500
-Received: from mail-ee0-f73.google.com ([74.125.83.73]:56204 "EHLO
-	mail-ee0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628AbaKDKBA (ORCPT
+	id S1753451AbaKDKB2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:01:28 -0500
+Received: from mail-wg0-f73.google.com ([74.125.82.73]:52790 "EHLO
+	mail-wg0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413AbaKDKBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:01:00 -0500
-X-Greylist: delayed 358 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Nov 2014 05:00:59 EST
+	Tue, 4 Nov 2014 05:01:05 -0500
 From: David Drysdale <drysdale@google.com>
 To: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
         Kees Cook <keescook@chromium.org>,
@@ -24,71 +23,64 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
         linux-security-module@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [PATCHv2 man-pages 3/3] open.2: describe O_BENEATH flag
-Date: Tue,  4 Nov 2014 09:54:44 +0000
-Message-Id: <1415094884-18349-4-git-send-email-drysdale@google.com>
+Subject: [PATCHv2 0/3] fs: add O_BENEATH flag to openat(2)
+Date: Tue,  4 Nov 2014 09:54:41 +0000
+Message-Id: <1415094884-18349-1-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1415094884-18349-1-git-send-email-drysdale@google.com>
-References: <1415094884-18349-1-git-send-email-drysdale@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Drysdale <drysdale@google.com>
----
- man2/open.2 | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+This change adds a new O_BENEATH flag for openat(2) which restricts the
+provided path, rejecting (with -EACCES) paths that are not beneath
+the provided dfd.
 
-diff --git a/man2/open.2 b/man2/open.2
-index abc3c35b8b3a..f06edc4aa843 100644
---- a/man2/open.2
-+++ b/man2/open.2
-@@ -716,6 +716,31 @@ XFS support was added
- .\" commit ab29743117f9f4c22ac44c13c1647fb24fb2bafe
- in Linux 3.15.
- .TP
-+.B O_BENEATH " (since Linux 3.??)"
-+Ensure that the
-+.I pathname
-+is beneath the current working directory (for
-+.BR open (2))
-+or the
-+.I dirfd
-+(for
-+.BR openat (2)).
-+If the
-+.I pathname
-+is absolute or contains a path component of "..", the
-+.BR open ()
-+fails with the error
-+.BR EPERM.
-+This occurs even if ".." path component would not actually
-+escape the original directory; for example, a
-+.I pathname
-+of "subdir/../filename" would be rejected.
-+Path components that are symbolic links to absolute paths, or that are
-+relative paths containing a ".." component, will also cause the
-+.BR open ()
-+operation to fail with the error
-+.BR EPERM.
-+.TP
- .B O_TRUNC
- If the file already exists and is a regular file and the access mode allows
- writing (i.e., is
-@@ -976,6 +1001,13 @@ flag was specified, but the effective user ID of the caller
- did not match the owner of the file and the caller was not privileged
- .RB ( CAP_FOWNER ).
- .TP
-+.B EPERM
-+The
-+.B O_BENEATH
-+flag was specified and the
-+.I pathname
-+was not beneath the relevant directory.
-+.TP
- .B EROFS
- .I pathname
- refers to a file on a read-only filesystem and write access was
+This change was previously included as part of a larger patchset
+(https://lkml.org/lkml/2014/7/25/426) for Capsicum support; however, it
+is potentially useful as an independent change so I've pulled it out
+separately here.
+
+In particular, various folks from Chrome[OS] have indicated an interest
+in having this functionality -- when combined with a seccomp filter it
+allows a directory to be accessed by a sandboxed process.
+
+
+Changes since v1:
+ - Don't needlessly duplicate flags [Al Viro]
+ - Use EPERM rather than EACCES as error code [Paolo Bonzini]
+ - Disallow nd_jump_link for O_BENEATH [Al Viro/Andy Lutomirski]
+ - Add test of a jumped symlink (/proc/self/root)
+
+Changes since the version included in the Capsicum v2 patchset:
+ - Add tests of normal symlinks
+ - Fix man-page typo
+ - Update patch to 3.17
+
+Changes from v1 to v2 of Capsicum patchset:
+ - renamed O_BENEATH_ONLY to O_BENEATH [Christoph Hellwig]
+
+
+David Drysdale (2):
+  fs: add O_BENEATH flag to openat(2)
+  selftests: Add test of O_BENEATH & openat(2)
+
+ arch/alpha/include/uapi/asm/fcntl.h       |   1 +
+ arch/parisc/include/uapi/asm/fcntl.h      |   1 +
+ arch/sparc/include/uapi/asm/fcntl.h       |   1 +
+ fs/fcntl.c                                |   5 +-
+ fs/namei.c                                |  43 ++++++---
+ fs/open.c                                 |   4 +-
+ include/linux/namei.h                     |   1 +
+ include/uapi/asm-generic/fcntl.h          |   4 +
+ tools/testing/selftests/Makefile          |   1 +
+ tools/testing/selftests/openat/.gitignore |   3 +
+ tools/testing/selftests/openat/Makefile   |  24 +++++
+ tools/testing/selftests/openat/openat.c   | 149 ++++++++++++++++++++++++++++++
+ 12 files changed, 220 insertions(+), 17 deletions(-)
+ create mode 100644 tools/testing/selftests/openat/.gitignore
+ create mode 100644 tools/testing/selftests/openat/Makefile
+ create mode 100644 tools/testing/selftests/openat/openat.c
+
 --
 2.1.0.rc2.206.gedb03e5
 
