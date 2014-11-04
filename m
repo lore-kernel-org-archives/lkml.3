@@ -1,124 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaKDNEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:04:44 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:45158 "EHLO
+	id S1753679AbaKDNFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:05:41 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:45760 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751228AbaKDNEm (ORCPT
+	by vger.kernel.org with ESMTP id S1753335AbaKDNFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:04:42 -0500
-Date: Tue, 4 Nov 2014 08:04:36 -0500
+	Tue, 4 Nov 2014 08:05:37 -0500
+Date: Tue, 4 Nov 2014 08:05:35 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [RFA][PATCH 0/8] seq_file: Remove return checks of seq_printf()
-Message-ID: <20141104080436.10904a7a@gandalf.local.home>
-In-Reply-To: <20141029215602.535533597@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        <netfilter-devel@vger.kernel.org>, <coreteam@netfilter.org>
+Subject: Re: [RFA][PATCH 2/8] netfilter: Remove return values for
+ print_conntrack callbacks
+Message-ID: <20141104080535.5f651713@gandalf.local.home>
+In-Reply-To: <20141029220107.465008329@goodmis.org>
 References: <20141029215602.535533597@goodmis.org>
+	<20141029220107.465008329@goodmis.org>
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014 17:56:02 -0400
+On Wed, 29 Oct 2014 17:56:04 -0400
 Steven Rostedt <rostedt@goodmis.org> wrote:
 
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
 > [ REQUEST FOR ACKS ]
 
-Al,
+Can any of the netfilter folks give me an Acked-by for this?
 
-Can you take a look at these, and give me an Acked-by if they are OK
-with you?
-
-Thanks,
+Thanks!
 
 -- Steve
 
 > 
-> I'm looking to clean up the seq_file code and to eventually merge the
-> trace_seq code with seq_file as well, since they basically do the same thing.
+> The seq_printf() and friends are having their return values removed.
+> The print_conntrack() returns the result of seq_printf(), which is
+> meaningless when seq_printf() returns void. Might as well remove the
+> return values of print_conntrack() as well.
 > 
-> Part of this process is to remove the return code of seq_printf() and friends
-> as they are rather inconsistent. It is better to use the new function
-> seq_has_overflowed() if you want to stop processing when the buffer
-> is full. Note, if the buffer is full, the seq_file code will throw away
-> the contents, allocate a bigger buffer, and then call your code again
-> to fill in the data. The only thing that breaking out of the function
-> early does is to save a little time which is probably never noticed.
+> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+> Cc: netfilter-devel@vger.kernel.org
+> Cc: coreteam@netfilter.org
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/net/netfilter/nf_conntrack_l4proto.h          | 2 +-
+>  net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c | 5 ++++-
+>  net/netfilter/nf_conntrack_proto_dccp.c               | 4 ++--
+>  net/netfilter/nf_conntrack_proto_gre.c                | 8 ++++----
+>  net/netfilter/nf_conntrack_proto_sctp.c               | 4 ++--
+>  net/netfilter/nf_conntrack_proto_tcp.c                | 4 ++--
+>  net/netfilter/nf_conntrack_standalone.c               | 4 ++--
+>  7 files changed, 17 insertions(+), 14 deletions(-)
 > 
-> But anyway, I'm asking for Acked-bys for code that touches the subsystems
-> that have been modified.
-> 
-> I started with patches from Joe Perches and modified them as well.
-> There's many more places that need to be updated before we can convert
-> seq_printf() and friends to return void. But this patch set introduces
-> the seq_has_overflowed() and does some initial updates.
-> 
-> Please ack!
-> 
-> Thanks!
-> 
-> -- Steve
-> 
-> 
-> 
-> Joe Perches (6):
->       seq_file: Rename seq_overflow() to seq_has_overflowed() and make public
->       netfilter: Convert print_tuple functions to return void
->       dlm: Remove seq_printf() return checks and use seq_has_overflowed()
->       dlm: Use seq_puts() instead of seq_printf() for constant strings
->       fs: Convert show_fdinfo functions to void
->       debugfs: Have debugfs_print_regs32() return void
-> 
-> Steven Rostedt (Red Hat) (2):
->       netfilter: Remove return values for print_conntrack callbacks
->       netfilter: Remove checks of seq_printf() return values
-> 
-> ----
->  Documentation/filesystems/debugfs.txt              |   2 +-
->  Documentation/filesystems/seq_file.txt             |  22 +-
->  Documentation/filesystems/vfs.txt                  |   2 +-
->  drivers/net/tun.c                                  |   4 +-
->  fs/debugfs/file.c                                  |  15 +-
->  fs/dlm/debug_fs.c                                  | 263 ++++++++++-----------
->  fs/eventfd.c                                       |   9 +-
->  fs/eventpoll.c                                     |  13 +-
->  fs/notify/fdinfo.c                                 |  78 +++---
->  fs/notify/fdinfo.h                                 |   4 +-
->  fs/proc/fd.c                                       |   3 +-
->  fs/seq_file.c                                      |  15 +-
->  fs/signalfd.c                                      |   4 +-
->  fs/timerfd.c                                       |  27 ++-
->  include/linux/debugfs.h                            |   7 +-
->  include/linux/fs.h                                 |   2 +-
->  include/linux/seq_file.h                           |  15 ++
->  include/net/netfilter/nf_conntrack_core.h          |   2 +-
->  include/net/netfilter/nf_conntrack_l3proto.h       |   4 +-
->  include/net/netfilter/nf_conntrack_l4proto.h       |   6 +-
->  net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c     |   6 +-
->  .../netfilter/nf_conntrack_l3proto_ipv4_compat.c   |  53 +++--
->  net/ipv4/netfilter/nf_conntrack_proto_icmp.c       |  10 +-
->  net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c     |   6 +-
->  net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c     |  10 +-
->  net/netfilter/nf_conntrack_l3proto_generic.c       |   5 +-
->  net/netfilter/nf_conntrack_proto_dccp.c            |  14 +-
->  net/netfilter/nf_conntrack_proto_generic.c         |   5 +-
->  net/netfilter/nf_conntrack_proto_gre.c             |  18 +-
->  net/netfilter/nf_conntrack_proto_sctp.c            |  14 +-
->  net/netfilter/nf_conntrack_proto_tcp.c             |  14 +-
->  net/netfilter/nf_conntrack_proto_udp.c             |  10 +-
->  net/netfilter/nf_conntrack_proto_udplite.c         |  10 +-
->  net/netfilter/nf_conntrack_standalone.c            |  77 +++---
->  net/netfilter/nf_log.c                             |  30 +--
->  net/netfilter/nfnetlink_queue_core.c               |  13 +-
->  net/netfilter/x_tables.c                           |  19 +-
->  net/netfilter/xt_hashlimit.c                       |  36 ++-
->  38 files changed, 410 insertions(+), 437 deletions(-)
+> diff --git a/include/net/netfilter/nf_conntrack_l4proto.h b/include/net/netfilter/nf_conntrack_l4proto.h
+> index 4c8d573830b7..82e4ec002a39 100644
+> --- a/include/net/netfilter/nf_conntrack_l4proto.h
+> +++ b/include/net/netfilter/nf_conntrack_l4proto.h
+> @@ -60,7 +60,7 @@ struct nf_conntrack_l4proto {
+>  			   const struct nf_conntrack_tuple *);
+>  
+>  	/* Print out the private part of the conntrack. */
+> -	int (*print_conntrack)(struct seq_file *s, struct nf_conn *);
+> +	void (*print_conntrack)(struct seq_file *s, struct nf_conn *);
+>  
+>  	/* Return the array of timeouts for this protocol. */
+>  	unsigned int *(*get_timeouts)(struct net *net);
+> diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+> index 4c48e434bb1f..91f207c2cb69 100644
+> --- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+> +++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+> @@ -147,7 +147,10 @@ static int ct_seq_show(struct seq_file *s, void *v)
+>  		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
+>  		goto release;
+>  
+> -	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
+> +	if (l4proto->print_conntrack)
+> +		l4proto->print_conntrack(s, ct);
+> +
+> +	if (seq_has_overflowed(s))
+>  		goto release;
+>  
+>  	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+> diff --git a/net/netfilter/nf_conntrack_proto_dccp.c b/net/netfilter/nf_conntrack_proto_dccp.c
+> index cb372f96f10d..15971177470a 100644
+> --- a/net/netfilter/nf_conntrack_proto_dccp.c
+> +++ b/net/netfilter/nf_conntrack_proto_dccp.c
+> @@ -626,9 +626,9 @@ static int dccp_print_tuple(struct seq_file *s,
+>  			  ntohs(tuple->dst.u.dccp.port));
+>  }
+>  
+> -static int dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+> +static void dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+>  {
+> -	return seq_printf(s, "%s ", dccp_state_names[ct->proto.dccp.state]);
+> +	seq_printf(s, "%s ", dccp_state_names[ct->proto.dccp.state]);
+>  }
+>  
+>  #if IS_ENABLED(CONFIG_NF_CT_NETLINK)
+> diff --git a/net/netfilter/nf_conntrack_proto_gre.c b/net/netfilter/nf_conntrack_proto_gre.c
+> index d5665739e3b1..cba607ada069 100644
+> --- a/net/netfilter/nf_conntrack_proto_gre.c
+> +++ b/net/netfilter/nf_conntrack_proto_gre.c
+> @@ -235,11 +235,11 @@ static int gre_print_tuple(struct seq_file *s,
+>  }
+>  
+>  /* print private data for conntrack */
+> -static int gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+> +static void gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+>  {
+> -	return seq_printf(s, "timeout=%u, stream_timeout=%u ",
+> -			  (ct->proto.gre.timeout / HZ),
+> -			  (ct->proto.gre.stream_timeout / HZ));
+> +	seq_printf(s, "timeout=%u, stream_timeout=%u ",
+> +		   (ct->proto.gre.timeout / HZ),
+> +		   (ct->proto.gre.stream_timeout / HZ));
+>  }
+>  
+>  static unsigned int *gre_get_timeouts(struct net *net)
+> diff --git a/net/netfilter/nf_conntrack_proto_sctp.c b/net/netfilter/nf_conntrack_proto_sctp.c
+> index 1314d33f6bcf..c61f4cd6407d 100644
+> --- a/net/netfilter/nf_conntrack_proto_sctp.c
+> +++ b/net/netfilter/nf_conntrack_proto_sctp.c
+> @@ -175,7 +175,7 @@ static int sctp_print_tuple(struct seq_file *s,
+>  }
+>  
+>  /* Print out the private part of the conntrack. */
+> -static int sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+> +static void sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+>  {
+>  	enum sctp_conntrack state;
+>  
+> @@ -183,7 +183,7 @@ static int sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+>  	state = ct->proto.sctp.state;
+>  	spin_unlock_bh(&ct->lock);
+>  
+> -	return seq_printf(s, "%s ", sctp_conntrack_names[state]);
+> +	seq_printf(s, "%s ", sctp_conntrack_names[state]);
+>  }
+>  
+>  #define for_each_sctp_chunk(skb, sch, _sch, offset, dataoff, count)	\
+> diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
+> index 44d1ea32570a..79668fd3db96 100644
+> --- a/net/netfilter/nf_conntrack_proto_tcp.c
+> +++ b/net/netfilter/nf_conntrack_proto_tcp.c
+> @@ -311,7 +311,7 @@ static int tcp_print_tuple(struct seq_file *s,
+>  }
+>  
+>  /* Print out the private part of the conntrack. */
+> -static int tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+> +static void tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+>  {
+>  	enum tcp_conntrack state;
+>  
+> @@ -319,7 +319,7 @@ static int tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+>  	state = ct->proto.tcp.state;
+>  	spin_unlock_bh(&ct->lock);
+>  
+> -	return seq_printf(s, "%s ", tcp_conntrack_names[state]);
+> +	seq_printf(s, "%s ", tcp_conntrack_names[state]);
+>  }
+>  
+>  static unsigned int get_conntrack_index(const struct tcphdr *tcph)
+> diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+> index cf65a1e040dd..348aa3602787 100644
+> --- a/net/netfilter/nf_conntrack_standalone.c
+> +++ b/net/netfilter/nf_conntrack_standalone.c
+> @@ -199,8 +199,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
+>  		       ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
+>  		goto release;
+>  
+> -	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
+> -		goto release;
+> +	if (l4proto->print_conntrack)
+> +		l4proto->print_conntrack(s, ct);
+>  
+>  	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+>  			l3proto, l4proto))
 
