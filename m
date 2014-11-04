@@ -1,53 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaKDIcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:32:33 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35069 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144AbaKDIc2 (ORCPT
+	id S1752745AbaKDIcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:32:22 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:34229 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaKDIbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:32:28 -0500
-Date: Tue, 4 Nov 2014 09:32:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
-        Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
- hotplug
-Message-ID: <20141104083225.GG10501@worktop.programming.kicks-ass.net>
-References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com>
- <20141103104111.GA23531@worktop.programming.kicks-ass.net>
- <20141103235747.GA26702@kernel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103235747.GA26702@kernel>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Tue, 4 Nov 2014 03:31:44 -0500
+Subject: [PATCH 2/4] tun: Use iovec iterators
+References: <20141104033818.GA11149@gondor.apana.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Message-Id: <E1XlZWY-0003Hk-Qu@gondolin.me.apana.org.au>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Tue, 04 Nov 2014 16:31:34 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 07:57:48AM +0800, Wanpeng Li wrote:
-> On Mon, Nov 03, 2014 at 11:41:11AM +0100, Peter Zijlstra wrote:
+This patch removes the use of skb_copy_datagram_const_iovec in
+favour of the iovec iterator-based skb_copy_datagram_iter.
 
-> >On Fri, Oct 31, 2014 at 03:28:17PM +0800, Wanpeng Li wrote:
-> >So what is wrong with making dl_task_timer() deal with it? The timer
-> >will still fire on the correct time, canceling it and or otherwise
-> >messing with the CBS is wrong. Once it fires, all we need to do is
-> >migrate it to another cpu (preferably one that is still online of course
-> >:-).
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+---
 
-> Do you mean what I need to do is push the task to another cpu in dl_task_timer() 
-> if rq is offline?
+ drivers/net/tun.c |   65 +++++++++++++++++++++++++-----------------------------
+ 1 file changed, 31 insertions(+), 34 deletions(-)
 
-That does indeed appear to be the sensible fix to me.
-
-> In addition, what will happen if dl task can't preempt on 
-> another cpu?
-
-So if we find that the rq the task was on is no longer available, we
-need to select a new rq, the 'right' rq would be the one running the
-latest deadline.
-
-If it cannot preempt the latest (running) deadline, it was not eligible
-for running in the first place so no worries, right?
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 9dd3746..cfb81ca 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -71,6 +71,7 @@
+ #include <net/rtnetlink.h>
+ #include <net/sock.h>
+ #include <linux/seq_file.h>
++#include <linux/uio.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -1230,11 +1231,11 @@ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
+ static ssize_t tun_put_user(struct tun_struct *tun,
+ 			    struct tun_file *tfile,
+ 			    struct sk_buff *skb,
+-			    const struct iovec *iv, int len)
++			    struct iov_iter *iter)
+ {
+ 	struct tun_pi pi = { 0, skb->protocol };
+-	ssize_t total = 0;
+-	int vlan_offset = 0, copied;
++	ssize_t total;
++	int vlan_offset;
+ 	int vlan_hlen = 0;
+ 	int vnet_hdr_sz = 0;
+ 
+@@ -1244,23 +1245,25 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 	if (tun->flags & TUN_VNET_HDR)
+ 		vnet_hdr_sz = tun->vnet_hdr_sz;
+ 
++	total = skb->len + vlan_hlen + vnet_hdr_sz;
++
+ 	if (!(tun->flags & TUN_NO_PI)) {
+-		if ((len -= sizeof(pi)) < 0)
++		if (iov_iter_count(iter) < sizeof(pi))
+ 			return -EINVAL;
+ 
+-		if (len < skb->len + vlan_hlen + vnet_hdr_sz) {
++		if (iov_iter_count(iter) < total) {
+ 			/* Packet will be striped */
+ 			pi.flags |= TUN_PKT_STRIP;
+ 		}
+ 
+-		if (memcpy_toiovecend(iv, (void *) &pi, 0, sizeof(pi)))
++		if (copy_to_iter(&pi, sizeof(pi), iter))
+ 			return -EFAULT;
+ 		total += sizeof(pi);
+ 	}
+ 
+ 	if (vnet_hdr_sz) {
+ 		struct virtio_net_hdr gso = { 0 }; /* no info leak */
+-		if ((len -= vnet_hdr_sz) < 0)
++		if (iov_iter_count(iter) < vnet_hdr_sz)
+ 			return -EINVAL;
+ 
+ 		if (skb_is_gso(skb)) {
+@@ -1299,17 +1302,12 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
+ 		} /* else everything is zero */
+ 
+-		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
+-					       sizeof(gso))))
++		if (copy_to_iter(&gso, sizeof(gso), iter))
+ 			return -EFAULT;
+-		total += vnet_hdr_sz;
+ 	}
+ 
+-	copied = total;
+-	len = min_t(int, skb->len + vlan_hlen, len);
+-	total += skb->len + vlan_hlen;
+ 	if (vlan_hlen) {
+-		int copy, ret;
++		int ret;
+ 		struct {
+ 			__be16 h_vlan_proto;
+ 			__be16 h_vlan_TCI;
+@@ -1320,36 +1318,34 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 
+ 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+ 
+-		copy = min_t(int, vlan_offset, len);
+-		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+-		len -= copy;
+-		copied += copy;
+-		if (ret || !len)
++		ret = skb_copy_datagram_iter(skb, 0, iter, vlan_offset);
++		if (ret || !iov_iter_count(iter))
+ 			goto done;
+ 
+-		copy = min_t(int, sizeof(veth), len);
+-		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
+-		len -= copy;
+-		copied += copy;
+-		if (ret || !len)
++		ret = copy_to_iter(&veth, sizeof(veth), iter);
++		if (ret || !iov_iter_count(iter))
+ 			goto done;
++
++		__skb_pull(skb, vlan_offset);
+ 	}
+ 
+-	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
++	skb_copy_datagram_iter(skb, vlan_offset, iter, skb->len - vlan_offset);
+ 
+ done:
+ 	tun->dev->stats.tx_packets++;
+-	tun->dev->stats.tx_bytes += len;
++	tun->dev->stats.tx_bytes += skb->len + vlan_hlen;
+ 
+ 	return total;
+ }
+ 
+ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+-			   const struct iovec *iv, ssize_t len, int noblock)
++			   const struct iovec *iv, unsigned long segs,
++			   ssize_t len, int noblock)
+ {
+ 	struct sk_buff *skb;
+ 	ssize_t ret = 0;
+ 	int peeked, err, off = 0;
++	struct iov_iter iter;
+ 
+ 	tun_debug(KERN_INFO, tun, "tun_do_read\n");
+ 
+@@ -1362,11 +1358,12 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+ 	/* Read frames from queue */
+ 	skb = __skb_recv_datagram(tfile->socket.sk, noblock ? MSG_DONTWAIT : 0,
+ 				  &peeked, &off, &err);
+-	if (skb) {
+-		ret = tun_put_user(tun, tfile, skb, iv, len);
+-		kfree_skb(skb);
+-	} else
+-		ret = err;
++	if (!skb)
++		return ret;
++
++	iov_iter_init(&iter, READ, iv, segs, len);
++	ret = tun_put_user(tun, tfile, skb, &iter);
++	kfree_skb(skb);
+ 
+ 	return ret;
+ }
+@@ -1387,7 +1384,7 @@ static ssize_t tun_chr_aio_read(struct kiocb *iocb, const struct iovec *iv,
+ 		goto out;
+ 	}
+ 
+-	ret = tun_do_read(tun, tfile, iv, len,
++	ret = tun_do_read(tun, tfile, iv, count, len,
+ 			  file->f_flags & O_NONBLOCK);
+ 	ret = min_t(ssize_t, ret, len);
+ 	if (ret > 0)
+@@ -1488,7 +1485,7 @@ static int tun_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 					 SOL_PACKET, TUN_TX_TIMESTAMP);
+ 		goto out;
+ 	}
+-	ret = tun_do_read(tun, tfile, m->msg_iov, total_len,
++	ret = tun_do_read(tun, tfile, m->msg_iov, m->msg_iovlen, total_len,
+ 			  flags & MSG_DONTWAIT);
+ 	if (ret > total_len) {
+ 		m->msg_flags |= MSG_TRUNC;
