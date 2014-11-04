@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbaKDKbV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:31:21 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:38674 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaKDKbQ (ORCPT
+	id S1751702AbaKDKhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:37:50 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:38722 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaKDKhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:31:16 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-3b-5458aaf133e5
-Message-id: <1415097072.7941.5.camel@AMDC1943>
-Subject: Re: [PATCH v4 02/14] regulator: Add function to map modes to struct
- regulator_desc
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Mark Brown <broonie@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Tue, 04 Nov 2014 11:31:12 +0100
-In-reply-to: <1415025649-8119-3-git-send-email-javier.martinez@collabora.co.uk>
-References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
- <1415025649-8119-3-git-send-email-javier.martinez@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xy7qfVkWEGCzfwmgx9eETNovrX56z
-	Wsw/co7V4ujvAos1f5UsehdcZbO4vGsOm8WM8/uYLE5d/8xmMf/BDmYHLo+/z6+zeOycdZfd
-	Y9OqTjaPKyeaWD3+ztrP4tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZ/xeuZSmYxl+xZvEm
-	lgbGBTxdjJwcEgImEhfn3GGDsMUkLtxbD2RzcQgJLGWU6J47mwnC+cwo8efPbrAqXgE9ia6j
-	DawgtrBArMSCiyvZQWw2AWOJzcuXgNWICNhJ3Fj9kBmkmVngGJPEzFXrWEASLAKqEq+vz2UC
-	sTkF/CX23dzDDLFhMqPE3TsvwSYxC6hLTJq3CCjBAXSTskRjvxvEYkGJH5PvsUCUyEtsXvOW
-	eQKjwCwkHbOQlM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhcfN3BuPSY1SFG
-	AQ5GJR7eFfERIUKsiWXFlbmHGCU4mJVEeFdXAYV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwdva3
-	HSqekeV47j9Tb5ZZDaf8Dzt3YbVLj5R7FvX/sN1suuPr/boWYf8tviHHI6JMpf5N0dYQsp9s
-	mpT0dWeLehhn3jHeqa+Pc3qZ/M4+1N++tv2Ge2sG1+vZhwoW7A7v+XZDlbF+cuyjU+/k/mxi
-	2lJZc2XLvM7L6xbplIk58PfKvf4ntDpaiaU4I9FQi7moOBEAkV3O8GkCAAA=
+	Tue, 4 Nov 2014 05:37:45 -0500
+Message-ID: <5458AC75.3030207@plexistor.com>
+Date: Tue, 04 Nov 2014 12:37:41 +0200
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>, Nick Piggin <npiggin@kernel.dk>,
+        "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "Knippers, Linda" <linda.knippers@hp.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvdimm@lists.01.org" <linux-nvdimm@ml01.01.org>,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [PATCH 1/4] pmem: Initial version of persistent memory driver
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com> <1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com> <94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net> <100D68C7BA14664A8938383216E40DE04082985D@FMSMSX114.amr.corp.intel.com>
+In-Reply-To: <100D68C7BA14664A8938383216E40DE04082985D@FMSMSX114.amr.corp.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-11-03 at 15:40 +0100, Javier Martinez Canillas wrote:
-> The regulator-initial-mode and regulator-mode DT properties allows to
-> configure the regulator operating modes at startup or when a system
-> enters into a susend state.
+On 11/03/2014 06:19 PM, Wilcox, Matthew R wrote:
+<>
+>>> +config BLK_DEV_PMEM_COUNT
+>>> +	int "Default number of PMEM disks"
+>>> +	default "4"
+>>
+>> For real use I think a default of 1 would be better.
 > 
-> But these properties use as valid values the operating modes supported
-> by each device while the core deals with the standard operating modes.
-> So a mapping function is needed to translate from the hardware specific
-> modes to the standard ones.
+> For real use, you need at least two to run xfstests.  This whole configuration mechanism is going away soon anyway.
 > 
-> This mapping is a non-varying configuration for each regulator, so add
-> a function pointer to struct regulator_desc that will allow drivers to
-> define their callback to do the modes translation.
+>>> +	size_t page_offset = sector >> PAGE_SECTORS_SHIFT;
+>>> +	size_t offset = page_offset << PAGE_SHIFT;
+>>> +
+>>
+>> Since page_offset is only used to calculate offset, they
+>> could be joined to avoid relying on the compiler to
+>> optimize it away:
+>> 	size_t offset = sector >> PAGE_SECTORS_SHIFT << PAGE_SHIFT;
 > 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  include/linux/regulator/driver.h | 4 ++++
->  1 file changed, 4 insertions(+)
+> If you insist on doing the compiler's job for it, why not:
 > 
-> diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-> index 28da08e..b54d037 100644
-> --- a/include/linux/regulator/driver.h
-> +++ b/include/linux/regulator/driver.h
-> @@ -243,6 +243,8 @@ enum regulator_type {
->   *
->   * @enable_time: Time taken for initial enable of regulator (in uS).
->   * @off_on_delay: guard time (in uS), before re-enabling a regulator
-> + *
-> + * @map_modes: Callback invoked to translate between hardware to standard modes.
+> 	size_t offset = sector >> (PAGE_SECTORS_SHIFT - PAGE_SHIFT);
+> 
+> I actually think the original is clearer.
+> 
 
-Initially I thought it should map from standard to hardware. But then I
-looked at max77802 implementation and it maps from hardware to standard.
-Anyway I got confused (both are "modes" and both unsigned ints).
+I wish you guys would actually review the correct code.
 
-Could you describe which should be returned?
+In the actual good driver that has any shape of proper code all these issue
+are gone.
 
+* config defaults gone, multiple-devices multiple-memory ranges fully supported
+  hot plug style.
+* above shifts cruft completely gone it is left overs from brd.c and
+  its page usage.
+* getgeo fixed to do what we realy want by the only application on earth
+  that still uses it, fdisk. All other partitioners do not call it at all.
 
->   */
->  struct regulator_desc {
->  	const char *name;
-> @@ -285,6 +287,8 @@ struct regulator_desc {
->  	unsigned int enable_time;
->  
->  	unsigned int off_on_delay;
-> +
-> +	unsigned int (*map_modes)(unsigned int mode);
+Why are we reviewing dead code ?
 
-Shouldn't this be in regulator ops?
-
-Best regards,
-Krzysztof
-
-
+Cheers
+Boaz
 
