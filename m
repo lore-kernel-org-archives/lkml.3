@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbaKDDVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 22:21:43 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:63339 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaKDDVl (ORCPT
+	id S1751717AbaKDDga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 22:36:30 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:23973 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079AbaKDDg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 22:21:41 -0500
-Message-ID: <5458462F.6000704@gmail.com>
-Date: Tue, 04 Nov 2014 11:21:19 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 3 Nov 2014 22:36:29 -0500
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: "Kani, Toshimitsu" <toshi.kani@hp.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgross@suse.com" <jgross@suse.com>,
+        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
+        "hmh@hmh.eng.br" <hmh@hmh.eng.br>,
+        "yigal@plexistor.com" <yigal@plexistor.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: RE: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
+Thread-Topic: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
+Thread-Index: AQHP8juoXLRxtX3zhkeUJSzf2kRDYZxPgA5QgAACt4CAAArfgIAAAfYAgABFedA=
+Date: Tue, 4 Nov 2014 03:34:35 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B40295936556E@G4W3202.americas.hpqcorp.net>
+References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
+ <1414450545-14028-5-git-send-email-toshi.kani@hp.com>
+ <94D0CD8314A33A4D9D801C0FE68B4029593578ED@G9W0745.americas.hpqcorp.net>
+ <1415052905.10958.39.camel@misato.fc.hp.com>
+ <alpine.DEB.2.11.1411032352161.5308@nanos>
+ <CALCETrXs0SotEmqs0B7rbnnqkLvMV+fzOJzNbp+y2U=zB+25OQ@mail.gmail.com>
+In-Reply-To: <CALCETrXs0SotEmqs0B7rbnnqkLvMV+fzOJzNbp+y2U=zB+25OQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.193.97]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
-        kamalesh@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org
-CC: riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v8 08/10] sched: add SD_PREFER_SIBLING for SMT level
-References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org> <1414745252-4895-9-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1414745252-4895-9-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sA43aiiS013016
 
-Hi Vincent,
-On 14/10/31 ä¸‹åˆ4:47, Vincent Guittot wrote:
-> Add the SD_PREFER_SIBLING flag for SMT level in order to ensure that
-> the scheduler will put at least 1 task per core.
 
-What's the behavior before this patch?
 
-Regards,
-Wanpeng Li
+> -----Original Message-----
+> From: Andy Lutomirski [mailto:luto@amacapital.net]
+> Sent: Monday, November 03, 2014 5:01 PM
+> To: Thomas Gleixner
+> Cc: Kani, Toshimitsu; Elliott, Robert (Server Storage); hpa@zytor.com;
+> mingo@redhat.com; akpm@linux-foundation.org; arnd@arndb.de; linux-
+> mm@kvack.org; linux-kernel@vger.kernel.org; jgross@suse.com;
+> stefan.bader@canonical.com; hmh@hmh.eng.br; yigal@plexistor.com;
+> konrad.wilk@oracle.com
+> Subject: Re: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for
+> WT
+> 
+> On Mon, Nov 3, 2014 at 2:53 PM, Thomas Gleixner <tglx@linutronix.de>
+> wrote:
+...
+> On the other hand, I thought that _GPL was supposed to be more about
+> whether the thing using it is inherently a derived work of the Linux
+> kernel.  Since WT is an Intel concept, not a Linux concept, then I
+> think that this is a hard argument to make.
 
->
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> Reviewed-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
-> ---
->   kernel/sched/core.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 37fb92c..731f2ad 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6165,6 +6165,7 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
->   	 */
->   
->   	if (sd->flags & SD_SHARE_CPUCAPACITY) {
-> +		sd->flags |= SD_PREFER_SIBLING;
->   		sd->imbalance_pct = 110;
->   		sd->smt_gain = 1178; /* ~15% */
->   
+IBM System/360 Model 85 (1968) had write-through (i.e., store-through)
+caching.  Intel might claim Write Combining, though.
 
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
