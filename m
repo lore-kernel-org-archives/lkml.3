@@ -1,97 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaKDFas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 00:30:48 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:34472 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751081AbaKDFao (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 00:30:44 -0500
-X-Listener-Flag: 11101
-From: Xudong Chen <xudong.chen@mediatek.com>
-To: Mark Rutland <mark.rutland@arm.com>, <arm@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-CC: <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Xudong Chen <xudong.chen@mediatek.com>,
-        Jean Delvare <jdelvare@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-i2c@vger.kernel.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        YH Chen <yh.chen@mediatek.com>
-Subject: [PATCH v2 1/3] dt-bindings: Add I2C bindings for mt65xx/mt81xx.
-Date: Tue, 4 Nov 2014 13:29:35 +0800
-Message-ID: <1415078977-18374-2-git-send-email-xudong.chen@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
-In-Reply-To: <1415078977-18374-1-git-send-email-xudong.chen@mediatek.com>
-References: <1415078977-18374-1-git-send-email-xudong.chen@mediatek.com>
+	id S1751217AbaKDFkc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 00:40:32 -0500
+Received: from ozlabs.org ([103.22.144.67]:37981 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750989AbaKDFk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 00:40:28 -0500
+Date: Tue, 4 Nov 2014 16:40:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: linux-next: build failure after merge of the mfd tree
+Message-ID: <20141104164005.1a45ad46@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/TWnCtqxca2B7h=6Z0t2nb3/"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devicetree bindings for Mediatek Soc I2C driver.
+--Sig_/TWnCtqxca2B7h=6Z0t2nb3/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Xudong Chen <xudong.chen@mediatek.com>
----
- .../devicetree/bindings/i2c/i2c-mt6577.txt         | 39 ++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-mt6577.txt
+Hi all,
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-mt6577.txt b/Documentation/devicetree/bindings/i2c/i2c-mt6577.txt
-new file mode 100644
-index 0000000..733e65e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/i2c-mt6577.txt
-@@ -0,0 +1,39 @@
-+* Mediatek's I2C controller
-+
-+The Mediatek's I2C controller is used to interface with I2C devices.
-+
-+Required properties:
-+  - compatible: value should be either of the following.
-+      (a) "mediatek,mt6577-i2c", for i2c compatible with mt6577 i2c.
-+      (b) "mediatek,mt6589-i2c", for i2c compatible with mt6589 i2c.
-+      (c) "mediatek,mt8127-i2c", for i2c compatible with mt8127 i2c.
-+      (d) "mediatek,mt8135-i2c", for i2c compatible with mt8135 i2c.
-+  - reg: physical base address of the controller and dma base, length of memory mapped
-+    region.
-+  - interrupts: interrupt number to the cpu.
-+  - clock-div: the fixed value for frequency divider of clock source in i2c module.
-+    Each IC may be different.
-+  - clocks: clock name from clock manager
-+  - clock-names: clock name used in i2c driver probe
-+
-+Optional properties:
-+  - clock-frequency: Frequency in Hz of the bus when transfer, the default value is 100000.
-+  - mediatek,have-pmic: platform can control i2c form special pmic side.
-+    Only mt6589 and mt8135 support this feature.
-+  - mediatek,have-dcm: platform has DCM(hardware digital clock manager) property.
-+  - mediatek,use-push-pull: IO use push-pull mode.
-+
-+Example:
-+
-+	i2c0: i2c@1100d000 {
-+			compatible = "mediatek,mt6577-i2c";
-+			reg = <0x1100d000 0x70>,
-+			      <0x11000300 0x80>;
-+			interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_LOW>;
-+			clock-frequency = <100000>;
-+			mediatek,have-pmic;
-+			clock-div = <16>;
-+			clocks = <&i2c0_ck>, <&ap_dma_ck>;
-+			clock-names = "main", "dma";
-+	};
-+
--- 
-1.8.1.1.dirty
+After merging the mfd tree, today's linux-next build (powerpc allyesconfig)
+failed like this:
 
+drivers/regulator/max77686.c:432:13: warning: 'struct max77686_platform_dat=
+a' declared inside parameter list
+      struct max77686_platform_data *pdata)
+             ^
+drivers/regulator/max77686.c:432:13: warning: its scope is only this defini=
+tion or declaration, which is probably not what you want
+drivers/regulator/max77686.c: In function 'max77686_pmic_dt_parse_pdata':
+drivers/regulator/max77686.c:447:7: error: dereferencing pointer to incompl=
+ete type
+  pdata->num_regulators =3D ARRAY_SIZE(regulators);
+       ^
+drivers/regulator/max77686.c:448:42: error: dereferencing pointer to incomp=
+lete type
+  rdata =3D devm_kzalloc(&pdev->dev, sizeof(*rdata) *
+                                          ^
+drivers/regulator/max77686.c:449:14: error: dereferencing pointer to incomp=
+lete type
+         pdata->num_regulators, GFP_KERNEL);
+              ^
+drivers/regulator/max77686.c:455:23: error: dereferencing pointer to incomp=
+lete type
+  for (i =3D 0; i < pdata->num_regulators; i++) {
+                       ^
+drivers/regulator/max77686.c:460:3: error: invalid use of undefined type 's=
+truct max77686_regulator_data'
+   rdata[i].initdata =3D rmatch.init_data;
+   ^
+drivers/regulator/max77686.c:460:8: error: dereferencing pointer to incompl=
+ete type
+   rdata[i].initdata =3D rmatch.init_data;
+        ^
+drivers/regulator/max77686.c:461:3: error: invalid use of undefined type 's=
+truct max77686_regulator_data'
+   rdata[i].of_node =3D rmatch.of_node;
+   ^
+drivers/regulator/max77686.c:461:8: error: dereferencing pointer to incompl=
+ete type
+   rdata[i].of_node =3D rmatch.of_node;
+        ^
+drivers/regulator/max77686.c:464:7: error: dereferencing pointer to incompl=
+ete type
+  pdata->regulators =3D rdata;
+       ^
+
+And so on ...
+
+Caused by commit 9d5f4c2c748e ("mfd: max77686/802: Remove support for
+board files") from the mfd tree.
+
+I reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/TWnCtqxca2B7h=6Z0t2nb3/
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUWGa7AAoJEMDTa8Ir7ZwVcY0P/RXPwiFBeVlgRdBBqSatw85v
+PyFkHIRgdo0aI9y7F6xd3UKO2y9F7GNQni9ge8oIZRB5JRjiFUuGzGDMfwaficI6
+ri7/I2aK+WHHwRh34nT1Rpa47i9kOES88z0JKfN0gd3BvRqloIXrgpRVc1MYWLkS
+MQ92k3CxndswDO5cU5BRlds1vujcv2umNWMtpQa124jMBp/iFYH8BDlwWN60FNiQ
+mEy3GLHrTu2rP7NU4V93ZFJL+l+CDbxLPyuyhwEXiSIiZWGoOuJJSpib0l1mNOnc
+TcMKAl+vHb8CQlRyBJXIHPA5Uc6JANEavNDR6xRJk0xpKul4vcZg19rlJFTFudcc
+ySXRqc8vwuBMBNPyH1dNJqB+b9BtiPwQP6Ax44QuImX0mfcqMbQFPDGlD2jMrgYC
+haP6FFl2T40h8duZX5pUHTi3e6a8KKr1i8lWHMYoOG6QFMj/Q5fLQXCduV4+FTkK
+QDFddAAA3kfF6/DlHcGU7RytCrm/qN6fLZUesoMA18eaEhhcxnalACQq2CmWMyZr
+tvIt3bgiIY6rVL8yPUy4QdEkPugAQQwy1z2oObBXHCeQsLNb72WTJvyksCvGfJls
+cECYv0TlEEao7zqXDx3XOwJdLUX2sukVRUJ/0iGHqnbg+JNjQYUSdHMIXiUNYDVZ
+jdBB8YThQqTmGtWjuQxX
+=JUus
+-----END PGP SIGNATURE-----
+
+--Sig_/TWnCtqxca2B7h=6Z0t2nb3/--
