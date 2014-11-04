@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaKDJnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:43:42 -0500
-Received: from afflict.kos.to ([92.243.29.197]:54348 "EHLO afflict.kos.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaKDJnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:43:39 -0500
-Date: Tue, 4 Nov 2014 11:43:36 +0200
-From: Riku Voipio <riku.voipio@iki.fi>
-To: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
-Cc: Riku Voipio <riku.voipio@iki.fi>, davem@davemloft.net,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        ckeepax@opensource.wolfsonmicro.com
-Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
- arndale platform
-Message-ID: <20141104094336.GA3145@afflict.kos.to>
-References: <20141104072236.GA559@afflict.kos.to>
- <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local>
+	id S1752319AbaKDJqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:46:36 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:52281 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaKDJqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 04:46:32 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: HC Yen <hc.yen@mediatek.com>, "Joe. C" <yingjoe.chen@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>, arm@kernel.org,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        huang eddie <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Yuhau Chen <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH v4 1/8] ARM: mediatek: Add basic support for mt8127
+Date: Tue, 04 Nov 2014 10:45:40 +0100
+Message-ID: <4360790.RbZnni9y9f@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CABuKBeL1JX88BBK7uXqpmaGzwCe5D6inB_n-NV6ajUt59V1swA@mail.gmail.com>
+References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com> <13477264.GuOdydWub7@wuerfel> <CABuKBeL1JX88BBK7uXqpmaGzwCe5D6inB_n-NV6ajUt59V1swA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local>
-X-message-flag: Warning: message not sent with a DRM-Certified client
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:V2BuAKw1Cx5DHa7wx70a3IMhGUY4xl62L/1QSvu5lzN
+ Mye+5h3REgVQZkuZMYItBl8jXJONzctWd7mSMkxYvcT2c+iX4u
+ 74wWHuXACpfc57433hYBaUpF2HGXl26AgNm5ADrTuf+H4yKJz0
+ 0Wpj1idEkDLwYisRrPV+E6tqsxbkHD3olj9ecbRTufroY4wgG5
+ R2RSsB6o47nskU6BSHX9dkO2HE6Kzq1CH7oTW+lqxfQGQ7/MZU
+ tYOCoMjwwv7zLf1YuCGrDWeC5coqMQrN7/EzwGJq+68QGPyP7F
+ /kijdqJh2emvynCmbh6CP+GeFbrJsW45XJn4cZpmr35u1Qxa82
+ a9AMIfgv+QOl2EfMkKQ4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 09:19:26AM +0100, Stam, Michel [FINT] wrote:
-> Interesting, as the commit itself is a revert from a kernel back to 2.6
-> somewhere. The problem I had is related to the PHY being reset on
-> interface-up, can you confirm that you require this?
+On Tuesday 04 November 2014 09:36:39 Matthias Brugger wrote:
+> 2014-11-04 8:39 GMT+01:00 Arnd Bergmann <arnd@arndb.de>:
+> > On Tuesday 04 November 2014 14:36:45 HC Yen wrote:
+> >> > > +
+> >> > > +#include <dt-bindings/interrupt-controller/irq.h>
+> >> > > +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> >> > > +#include "skeleton64.dtsi"
+> >> >
+> >> > Cortex a7 is 32 bits, right? So why do you use skeleton64.dtsi?
+> >>
+> >> Cortex-A7 is 32-bit, but that doesn't mean it can only have 32-bit
+> >> physical address.  With LPAE enabled, we can have physical address more
+> >> than 32 bits.
+> >>
+> >> The main difference between "skeleton64.dtsi" and "skeleton.dtsi" is
+> >> "#address-cells" property set to 2.  Although there are few sources
+> >> using "skeleton64.dtsi", some of them write "#address-cells = <2>"
+> >> directly in order to have 64-bit address space.  ARM's TC2 reference
+> >> platform (vexpress-v2p-ca15_a7.dts) is an example.
+> >>
+> >> Some of MediaTek ARMv7 SoCs support address space larger than 4GB. It
+> >> will be convenient to share the sources if we all use 64-bit device
+> >> tree.
+> >
+> > Right, in general, I'd use #address-cells=<2> for Cortex-A7/A15/A17.
+> 
+> Alright, thanks for clarification. So we should use skeleton64.dtsi
+> for mt6589 as well, right?
 
-I can't confirm what exactly is needed on arndale. I'm neither expert in 
-USB or ethernet. However, I can confirm that without the PHY reset,
-networking doesn't work on arndale.
+If the chip is capable of accessing memory or registers higher than 4GB
+physical address, then you should, yes.
 
-I now see someone else has the same problem, adding Charles to CC.
+If the SoC has limitations that mean you can't have higher addresses
+anyway, then either way is fine, no need to change it.
 
-http://www.spinics.net/lists/linux-usb/msg116656.html
-
-> Reverting this
-> breaks ethtool support in turn.
-
-Fixing a bug (ethtool support) must not cause breakage elsewhere (in
-this case on arndale). This is now a regression of functionality from
-3.17.
-
-I think it would better to revert the change now and with less hurry
-introduce a ethtool fix that doesn't break arndale.
- 
-> Kind regards,
-> 
-> Michel Stam
-> 
-> -----Original Message-----
-> From: Riku Voipio [mailto:riku.voipio@iki.fi] 
-> Sent: Tuesday, November 04, 2014 8:23 AM
-> To: davem@davemloft.net; Stam, Michel [FINT]
-> Cc: linux-usb@vger.kernel.org; netdev@vger.kernel.org;
-> linux-kernel@vger.kernel.org; linux-samsung-soc@vger.kernel.org
-> Subject: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
-> arndale platform
-> 
-> Hi,
-> 
-> With 3.18-rc3, asix on arndale (samsung exynos 5250 based board), fails
-> to work. Interface is initialized but network traffic seem not to pass
-> through. With kernel IP config the result looks like:
-> 
-> [    3.323275] usb 3-3.2.4: new high-speed USB device number 4 using
-> exynos-ehci
-> [    3.419151] usb 3-3.2.4: New USB device found, idVendor=0b95,
-> idProduct=772a
-> [    3.424735] usb 3-3.2.4: New USB device strings: Mfr=1, Product=2,
-> SerialNumber=3
-> [    3.432196] usb 3-3.2.4: Product: AX88772 
-> [    3.436279] usb 3-3.2.4: Manufacturer: ASIX Elec. Corp.
-> [    3.441486] usb 3-3.2.4: SerialNumber: 000001
-> [    3.447530] asix 3-3.2.4:1.0 (unnamed net_device) (uninitialized):
-> invalid hw address, using random
-> [    3.764352] asix 3-3.2.4:1.0 eth0: register 'asix' at
-> usb-12110000.usb-3.2.4, ASIX AX88772 USB 2.0 Ethernet, de:a2:66:bf:ca:4f
-> [    4.488773] asix 3-3.2.4:1.0 eth0: link down
-> [    5.690025] asix 3-3.2.4:1.0 eth0: link up, 100Mbps, full-duplex, lpa
-> 0xC5E1
-> [    5.712947] Sending DHCP requests ...... timed out!
-> [   83.165303] IP-Config: Retrying forever (NFS root)...
-> [   83.170397] asix 3-3.2.4:1.0 eth0: link up, 100Mbps, full-duplex, lpa
-> 0xC5E1
-> [   83.192944] Sending DHCP requests .....
-> 
-> Similar results also with dhclient. Git bisect identified the breaking
-> commit as:
-> 
-> commit 3cc81d85ee01e5a0b7ea2f4190e2ed1165f53c31
-> Author: Michel Stam <m.stam@fugro.nl>
-> Date:   Thu Oct 2 10:22:02 2014 +0200
-> 
->     asix: Don't reset PHY on if_up for ASIX 88772
-> 
-> Taking 3.18-rc3 and that commit reverted, network works again:
-> 
-> [    3.303500] usb 3-3.2.4: new high-speed USB device number 4 using
-> exynos-ehci
-> [    3.399375] usb 3-3.2.4: New USB device found, idVendor=0b95,
-> idProduct=772a
-> [    3.404963] usb 3-3.2.4: New USB device strings: Mfr=1, Product=2,
-> SerialNumber=3
-> [    3.412424] usb 3-3.2.4: Product: AX88772 
-> [    3.416508] usb 3-3.2.4: Manufacturer: ASIX Elec. Corp.
-> [    3.421715] usb 3-3.2.4: SerialNumber: 000001
-> [    3.427755] asix 3-3.2.4:1.0 (unnamed net_device) (uninitialized):
-> invalid hw address, using random
-> [    3.744837] asix 3-3.2.4:1.0 eth0: register 'asix' at
-> usb-12110000.usb-3.2.4, ASIX AX88772 USB 2.0 Ethernet, 12:59:f1:a8:43:90
-> [    7.098998] asix 3-3.2.4:1.0 eth0: link up, 100Mbps, full-duplex, lpa
-> 0xC5E1
-> [    7.118258] Sending DHCP requests ., OK
-> [    9.753259] IP-Config: Got DHCP answer from 192.168.1.1, my address
-> is 192.168.1.111
-> 
-> There might something wrong on the samsung platform code (I understand
-> the USB on arndale is "funny"), but this is still an regression from
-> 3.17.
-> 
-> Riku
+	Arnd
