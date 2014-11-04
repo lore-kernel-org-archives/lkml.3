@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaKDXrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:47:18 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:62530 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986AbaKDXrR convert rfc822-to-8bit (ORCPT
+	id S1752232AbaKDXtT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:49:19 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:58140 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaKDXtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:47:17 -0500
-X-IronPort-AV: E=Sophos;i="5.07,316,1413270000"; 
-   d="scan'208";a="49744016"
-From: "Charley (Hao Chuan) Chu" <charley.chu@broadcom.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Kernel Oops in __inet_twsk_kill()
-Thread-Topic: Kernel Oops in __inet_twsk_kill()
-Thread-Index: Ac/4g+N3Z2wE9sbVRYiMvitea8436AABTaFAAAAZ6/A=
-Date: Tue, 4 Nov 2014 23:47:18 +0000
-Message-ID: <FB8A4655DFD2B34DB16AE06DDDD6C0E231A6F030@SJEXCHMB12.corp.ad.broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Nov 2014 18:49:17 -0500
 MIME-Version: 1.0
+In-Reply-To: <20141029175142.GC26471@leverpostej>
+References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
+	<1414541562-10076-5-git-send-email-abrestic@chromium.org>
+	<20141029175142.GC26471@leverpostej>
+Date: Tue, 4 Nov 2014 15:49:16 -0800
+X-Google-Sender-Auth: 3ZIhdXobjDyVckOe5k3bldYwIYA
+Message-ID: <CAL1qeaG0EpxdbV+QxAsdYgAWc19yWf8eLW0mfVxevQaJDxER6w@mail.gmail.com>
+Subject: Re: [PATCH V3 4/4] clocksource: mips-gic: Add device-tree support
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have situation on our system. It brings the network interface up and down every a few seconds. Eventually, it brings down the system - the kernel crashed due to BUG on in __inet_twsk_kill(). The debug message show following call flow. 
+Hi Mark,
 
+>> +static void __init gic_clocksource_of_init(struct device_node *node)
+>> +{
+>> +     if (of_property_read_u32(node, "clock-frequency", &gic_frequency)) {
+>> +             pr_err("GIC frequency not specified.\n");
+>> +             return;
+>> +     }
+>> +     gic_timer_irq = irq_of_parse_and_map(node, 0);
+>> +     if (!gic_timer_irq) {
+>> +             pr_err("GIC timer IRQ not specified.\n");
+>> +             return;
+>> +     }
+>> +
+>> +     __gic_clocksource_init();
+>> +}
+>> +CLOCKSOURCE_OF_DECLARE(mips_gic_timer, "mti,interaptiv-gic-timer",
+>> +                    gic_clocksource_of_init);
+>
+> Your binding document expected the timer node under the GIC node, and it
+> looks like this relies on GIC internals. Hwoever, this allows for people
+> to put the timer node anywhere (and it turns out people are _really_ bad
+> at putting things together as the binding author expected).
+>
+> It might be better if the GIC driver detected the sub node and probed
+> the clocksource driver (or registered a platform device that the
+> clocksource driver gets registered from). that could prevent some
+> horrible issues with probe ordering and/or bad dts.
 
-1) time-wait socket is created by tcp_time_wait() when the socket gets into "TIME_WAIT" state. 
-    inet_twsk_alloc()               - refcnt= 0
-    inet_twsk_hashdance()  - refcnt = 3
-    inet_twsk_schedule()      - refcnt = 4
-    inet_twsk_put()                 - refcnt = 3
-2) tcp_v4_timewait_ack() is called when sync is received 
-    inet_twsk_put()                  - refcnt= 2      <== where we thing the problem is
-    occasionally, second sync is received, so the inet_twsk_put is called twice - refcnt = 1 
-3) twdr_do_twkill_work() is called when timed out
-    call __inet_twsk_kill - BUG_ON!!! as refcnt=2 (supposed to be 3).
-    call inet_twsk_put()
+Probing the clocksource during probe of the irqchip doesn't work
+because time-keeping isn't set up at the time.  Registering a platform
+device for the timer pushes back GIC timer registration to later in
+the boot process (assuming it now becomes a module_platform_driver)
+and makes it rather non-parallel to how it's done in the non-DT case
+(this could be changed, though IMO it's a lot of churn just to thwart
+bad DT authors).
 
-In a normal case, the callflow only has step 1 and step 3.  Our understanding is the time-wait socket has three references - ehash, bhash and timer death row. In step 2, none of them are touched. Can anyone here explain to us why the inet_twsk_put() is called in tcp_v4_timewait_ack()?
+Probe ordering shouldn't be an issue because irqchips are probed
+before clocksources.  Perhaps checking for the presence of GIC
+(there's the global gic_present) and node->parent (to enforce the
+parent-child relationship) would be sufficient?
 
-our system has 3.14 kernel.
-
-Any help would be highly appreciated.
-
-Charley Chu
-
+Thanks,
+Andrew
