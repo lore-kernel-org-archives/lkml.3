@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaKDXFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:05:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35296 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752575AbaKDXFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:05:14 -0500
-Date: Wed, 5 Nov 2014 00:05:12 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Petr Mladek <pmladek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 12/12 v3] x86/nmi: Perform a safe NMI stack trace
- on all CPUs
-In-Reply-To: <20141104160223.310714394@goodmis.org>
-Message-ID: <alpine.LNX.2.00.1411042343130.29198@pobox.suse.cz>
-References: <20141104155237.228431433@goodmis.org> <20141104160223.310714394@goodmis.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752281AbaKDXIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:08:06 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:52622 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaKDXIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 18:08:04 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5458A17B.7030904@redhat.com>
+References: <1415069656-14138-1-git-send-email-ast@plumgrid.com>
+	<1415069656-14138-7-git-send-email-ast@plumgrid.com>
+	<5458A17B.7030904@redhat.com>
+Date: Tue, 4 Nov 2014 15:08:03 -0800
+Message-ID: <CAMEtUuwgSDdMPeRSWGiVAXb4DfwxoBVvd2TgHdruczq2mVbM=A@mail.gmail.com>
+Subject: Re: [PATCH net-next 6/7] bpf: allow eBPF programs to use maps
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Nov 2014, Steven Rostedt wrote:
+On Tue, Nov 4, 2014 at 1:50 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> These WARN_ON_ONCE(!rcu_read_lock_held()) seem odd. While I see the point
+> that
+> you're holding RCU read lock on the lookup, can you elaborate on your RCU
+> usage
+> here and why it's necessary for delete/update?
+>
+> I suspect due to the synchronize_rcu() you're using and not using any RCU
+> accessors but plain memcpy() e.g. in case of the array ...?
 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> When trigger_all_cpu_backtrace() is called on x86, it will trigger an
-> NMI on each CPU and call show_regs(). But this can lead to a hard lock
-> up if the NMI comes in on another printk().
-> 
-> In order to avoid this, when the NMI triggers, it switches the printk
-> routine for that CPU to call a NMI safe printk function that records the
-> printk in a per_cpu seq_buf descriptor. After all NMIs have finished
-> recording its data, the trace_seqs are printed in a safe context.
-> 
-> Link: http://lkml.kernel.org/p/20140619213952.360076309@goodmis.org
-> 
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Correct in case of array.
+Also hash delete/update() call into lookup() internally
+that is using _rcu() helpers...
+Future map types might have much more
+complex implementations (like LPM), so it helps
+to state the rules early.
 
-I've been running the whole machinery that used to trigger very quickly 
-the complete hardlock of the machine (*) for the whole evening/night, and 
-it's still running flawlessly.
+Another reason is more complex to explain:
+A program that intends to access maps has to be one
+rcu critical section. So all lookup/update/delete calls
+are under rcu_lock_held.
+Since programs by themselves cannot have WARN_ON
+inside them, I've added WARN_ON in these three
+functions that will be called from the programs to make
+sure that kernel subsystems don't do (*prog->bpf_func)(...)
+without taking rcu_lock if they intend to let programs
+access maps.
 
-Plus, as I said previously, I agree with the whole idea (given the 
-general nastiness of the problem and given the fact this simply has to be 
-fixed without pointless delays).
+Having said that in the future we might have a case
+for programs that don't call into these functions at all
+and execute instructions only. Those won't need
+rcu_lock() wrap. I experimented with that for the
+patch where I replaced pred-tree walker with eBPF
+program. There is no rcu there. And no calls
+to map accessors.
 
-I.e FWIW
-
-	Tested-by: Jiri Kosina <jkosina@suse.cz>
-	Acked-by: Jiri Kosina <jkosina@suse.cz>
-
-for the whole series.
-
-(*) heavy printk() workload (**) + sysrq-l in parallel
-(**) iptables logging every incoming packet + flood ping from another 
-     machine
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Has to be noted, that socket filters use rcu to
+protect sk_filter pointer and program itself. So for that
+use case we'll keep using rcu for foreseeable future.
+For tracing filters I had to add rcu_lock() around
+BPF_PROG_RUN() invocation and these WARN_ON
+checks saved me a lot of headache, so I prefer to
+keep them since they cost nothing when lockdep is off.
