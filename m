@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135AbaKDKpN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:45:13 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:33301 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753071AbaKDKpH (ORCPT
+	id S1753194AbaKDKp4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:45:56 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:62341 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174AbaKDKpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:45:07 -0500
-Date: Tue, 4 Nov 2014 11:45:03 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Hans Verkuil <hansverk@cisco.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-api@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH 01/15] [media] Move mediabus format definition to a more
- standard place
-Message-ID: <20141104114503.309cb54f@bbrezillon>
-In-Reply-To: <5458A878.3010809@cisco.com>
-References: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1415094910-15899-2-git-send-email-boris.brezillon@free-electrons.com>
-	<5458A878.3010809@cisco.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Nov 2014 05:45:51 -0500
+From: Grant Likely <grant.likely@linaro.org>
+To: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH] of/platform: Move platform devices under /sys/devices/platform
+Date: Tue,  4 Nov 2014 10:45:20 +0000
+Message-Id: <1415097920-30014-1-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+Currently the devices created by drivers/of/platform.c get created at
+the root of /sys/devices. This goes against the typical pattern for
+sysfs where the top level /sys/devices structure contains categories of
+devices, and the structure of devices is placed below that. To fix this,
+make the code in drivers/of/platform.c follow the drivers/base/platform.c
+behaviour, and use &platform_bus as the default parent for all new
+platform_devices and amba_devices.
 
-On Tue, 04 Nov 2014 11:20:40 +0100
-Hans Verkuil <hansverk@cisco.com> wrote:
+This change has been discussed for a long time, but nobody has actually
+acted on it. Userspace code that expects to find devices under a fixed
+/sys/devices/... path will be affected. It isn't /supposed/ to do that,
+but if anyone complains then I'll add a default-off workaround option to
+put them back into the root.
 
-> Hi Boris,
-> 
-> On 11/04/14 10:54, Boris Brezillon wrote:
-> > Rename mediabus formats and move the enum into a separate header file so
-> > that it can be used by DRM/KMS subsystem without any reference to the V4L2
-> > subsystem.
-> > 
-> > Old V4L2_MBUS_FMT_ definitions are now referencing MEDIA_BUS_FMT_ value.
-> 
-> I missed earlier that v4l2-mediabus.h contained a struct as well, so it can't be
-> deprecated and neither can a #warning be added.
-> 
-> The best approach, I think, is to use a macro in media-bus-format.h
-> that will either define just the MEDIA_BUS value when compiled in the kernel, or
-> define both MEDIA_BUS and V4L2_MBUS values when compiled for userspace.
-> 
-> E.g. something like this:
-> 
-> #ifdef __KERNEL__
-> #define MEDIA_BUS_FMT_ENTRY(name, val) MEDIA_BUS_FMT_ # name = val
-> #else
-> /* Keep V4L2_MBUS_FMT for backwards compatibility */
-> #define MEDIA_BUS_FMT_ENTRY(name, val) \
-> 	MEDIA_BUS_FMT_ # name = val, \
-> 	V4L2_MBUS_FMT_ # name = val
-> #endif
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ drivers/of/platform.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Okay, but this means we keep adding V4L2_MBUS_FMT_ definitions even for
-new formats (which definitely doesn't encourage people to move on).
-Moreover, we add a V4L2 prefix in what was supposed to be a subsystem
-neutral header.
-
-Anyway, these are just nitpicks, and if you prefer this approach
-I'll rework my series :-).
-
-> 
-> An alternative approach is to have v4l2-mediabus.h include media-bus-format.h,
-> put #ifndef __KERNEL__ around the enum v4l2_mbus_pixelcode and add a big comment
-> there that applications should use the defines from media-bus-format.h and that
-> this enum is frozen (i.e. new values are only added to media-bus-format.h).
-> 
-> But I think I like the macro idea best.
-
-As you wish, my only intent is to use those bus format definitions in a
-DRM driver :-).
-
-Thanks,
-
-Boris
-
-
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 3b64d0bf5bba..7c6771986c06 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -138,7 +138,7 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 	}
+ 
+ 	dev->dev.of_node = of_node_get(np);
+-	dev->dev.parent = parent;
++	dev->dev.parent = parent ? : &platform_bus;
+ 
+ 	if (bus_id)
+ 		dev_set_name(&dev->dev, "%s", bus_id);
+@@ -291,7 +291,7 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
+ 
+ 	/* setup generic device info */
+ 	dev->dev.of_node = of_node_get(node);
+-	dev->dev.parent = parent;
++	dev->dev.parent = parent ? : &platform_bus;
+ 	dev->dev.platform_data = platform_data;
+ 	if (bus_id)
+ 		dev_set_name(&dev->dev, "%s", bus_id);
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.9.1
+
