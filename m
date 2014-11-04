@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaKDWUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 17:20:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48370 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173AbaKDWU1 (ORCPT
+	id S1753337AbaKDWVG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 17:21:06 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:37003 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355AbaKDWSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 17:20:27 -0500
-Date: Tue, 4 Nov 2014 14:20:27 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        dave.hansen@linux.intel.com
-Subject: Re: [PATCH] mm: fix overly aggressive shmdt() when calls span
- multiple segments
-Message-Id: <20141104142027.a7a0d010772d84560b445f59@linux-foundation.org>
-In-Reply-To: <20141104000633.F35632C6@viggo.jf.intel.com>
-References: <20141104000633.F35632C6@viggo.jf.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Nov 2014 17:18:48 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
+        yigal@plexistor.com, konrad.wilk@oracle.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v5 3/8] x86, mm, pat: Change reserve_memtype() to handle WT
+Date: Tue,  4 Nov 2014 15:04:33 -0700
+Message-Id: <1415138678-22958-4-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415138678-22958-1-git-send-email-toshi.kani@hp.com>
+References: <1415138678-22958-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Nov 2014 16:06:33 -0800 Dave Hansen <dave@sr71.net> wrote:
+This patch changes reserve_memtype() to handle the WT cache mode
+with PAT.  When PAT is not enabled, WB and UC- are the only types
+supported.
 
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> This is a highly-contrived scenario.  But, a single shmdt() call
-> can be induced in to unmapping memory from mulitple shm segments.
-> Example code is here:
-> 
-> 	http://www.sr71.net/~dave/intel/shmfun.c
+When a target range is RAM, reserve_ram_pages_type() verifies the
+requested type.  WT and WP requests fail with -EINVAL and UC gets
+redirected to UC- since set_page_memtype() is limited to handle
+three types, WB, WC and UC-.
 
-Could be preserved in tools/testing/selftests/ipc/
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/mm/pat.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-> The fix is pretty simple:  Record the 'struct file' for the first
-> VMA we encounter and then stick to it.  Decline to unmap anything
-> not from the same file and thus the same segment.
-> 
-> I found this by inspection and the odds of anyone hitting this in
-> practice are pretty darn small.
-> 
-> Lightly tested, but it's a pretty small patch.
-> 
-> ...
->
-> --- a/ipc/shm.c~mm-shmdt-fix-over-aggressive-unmap	2014-11-03 14:32:09.479595152 -0800
-> +++ b/ipc/shm.c	2014-11-03 16:04:28.340225666 -0800
-> @@ -1229,6 +1229,7 @@ SYSCALL_DEFINE1(shmdt, char __user *, sh
->  	int retval = -EINVAL;
->  #ifdef CONFIG_MMU
->  	loff_t size = 0;
-> +	struct file *file;
->  	struct vm_area_struct *next;
->  #endif
->  
-> @@ -1245,7 +1246,8 @@ SYSCALL_DEFINE1(shmdt, char __user *, sh
->  	 *   started at address shmaddr. It records it's size and then unmaps
->  	 *   it.
->  	 * - Then it unmaps all shm vmas that started at shmaddr and that
-> -	 *   are within the initially determined size.
-> +	 *   are within the initially determined size and that are from the
-> +	 *   same shm segment from which we determined the size.
->  	 * Errors from do_munmap are ignored: the function only fails if
->  	 * it's called with invalid parameters or if it's called to unmap
->  	 * a part of a vma. Both calls in this function are for full vmas,
-> @@ -1271,8 +1273,14 @@ SYSCALL_DEFINE1(shmdt, char __user *, sh
->  		if ((vma->vm_ops == &shm_vm_ops) &&
->  			(vma->vm_start - addr)/PAGE_SIZE == vma->vm_pgoff) {
->  
-> -
-> -			size = file_inode(vma->vm_file)->i_size;
-> +			/*
-> +			 * Record the file of the shm segment being
-> +			 * unmapped.  With mremap(), someone could place
-> +			 * page from another segment but with equal offsets
-> +			 * in the range we are unmapping.
-> +			 */
-> +			file = vma->vm_file;
-> +			size = file_inode(file)->i_size;
-
-Maybe we should have used i_size_read() here.  I don't think i_mutex is
-held?
-
->  			do_munmap(mm, vma->vm_start, vma->vm_end - vma->vm_start);
->  			/*
->  			 * We discovered the size of the shm segment, so
-
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index 91c01b9..2b69db8 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -349,6 +349,8 @@ static inline void set_page_memtype(struct page *pg,
+ 
+ /*
+  * For RAM pages, we use page flags to mark the pages with appropriate type.
++ * The page flags are limited to three types, WB, WC and UC-.
++ * WT and WP requests fail with -EINVAL, and UC gets redirected to UC-.
+  * Here we do two pass:
+  * - Find the memtype of all the pages in the range, look for any conflicts
+  * - In case of no conflicts, set the new memtype for pages in the range
+@@ -360,6 +362,13 @@ static int reserve_ram_pages_type(u64 start, u64 end,
+ 	struct page *page;
+ 	u64 pfn;
+ 
++	if ((req_type == _PAGE_CACHE_MODE_WT) ||
++	    (req_type == _PAGE_CACHE_MODE_WP)) {
++		if (new_type)
++			*new_type = _PAGE_CACHE_MODE_UC_MINUS;
++		return -EINVAL;
++	}
++
+ 	if (req_type == _PAGE_CACHE_MODE_UC) {
+ 		/* We do not support strong UC */
+ 		WARN_ON_ONCE(1);
+@@ -409,6 +418,7 @@ static int free_ram_pages_type(u64 start, u64 end)
+  * - _PAGE_CACHE_MODE_WC
+  * - _PAGE_CACHE_MODE_UC_MINUS
+  * - _PAGE_CACHE_MODE_UC
++ * - _PAGE_CACHE_MODE_WT
+  *
+  * If new_type is NULL, function will return an error if it cannot reserve the
+  * region with req_type. If new_type is non-NULL, function will return
+@@ -426,12 +436,12 @@ int reserve_memtype(u64 start, u64 end, enum page_cache_mode req_type,
+ 	BUG_ON(start >= end); /* end is exclusive */
+ 
+ 	if (!pat_enabled) {
+-		/* This is identical to page table setting without PAT */
++		/* WB and UC- are the only types supported without PAT */
+ 		if (new_type) {
+-			if (req_type == _PAGE_CACHE_MODE_WC)
+-				*new_type = _PAGE_CACHE_MODE_UC_MINUS;
++			if (req_type == _PAGE_CACHE_MODE_WB)
++				*new_type = _PAGE_CACHE_MODE_WB;
+ 			else
+-				*new_type = req_type;
++				*new_type = _PAGE_CACHE_MODE_UC_MINUS;
+ 		}
+ 		return 0;
+ 	}
