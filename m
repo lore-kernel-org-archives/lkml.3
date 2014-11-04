@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaKDWcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 17:32:47 -0500
-Received: from mout.gmx.com ([74.208.4.201]:63441 "EHLO mout.gmx.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325AbaKDWcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 17:32:46 -0500
+	id S1752336AbaKDWc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 17:32:59 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47238 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaKDWc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 17:32:57 -0500
+Message-ID: <54595416.1020205@codeaurora.org>
+Date: Tue, 04 Nov 2014 16:32:54 -0600
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Message-ID: <trinity-0d6c9e77-b6e1-41ba-b8f5-61399c917209-1415140364767@3capp-mailcom-lxa13>
-From: "John Garret" <johngarret2014@mail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Eventual lament: What systemD lock-in leads to. (on nylon guitar)
-Content-Type: text/plain; charset=UTF-8
-Date: Tue, 4 Nov 2014 23:32:45 +0100
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:wliaTmi5bNtSx3uwtdTqbm3A8Hgun+b03gD/Se7wNjA
- u71utRMPFtSxQOa6a2Y/Tu0aEueQVXTC+SxNDCFS9PvTS7wQlM
- 7PuPls9rUdGuXIMdDHZdDyOSuM91+ZYMgonUyudWNWbOoUKHKy
- UbGTZCO3qozBc3oFBwz3OmyJlqEEtBlhB0G6+uat6kDxuHu4Kz
- Ol9Xc0v8o+jvleLLoKoJZcfqs0rD2wDhcQGkkOsc0/dWMEWLK5
- 6Rzl3AtzZyKKXw0ADBl7FW0tcHt3dnU9Hp+/jgzwCSbIKXuiWr
- pYigwJDXqPbQM0izusOqSfjS+1b
-X-UI-Out-Filterresults: notjunk:1;
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
+References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <4832015.R1NooRni06@vostro.rjw.lan> <54594A4B.1030207@codeaurora.org> <4886671.cQ44SiRoEW@vostro.rjw.lan>
+In-Reply-To: <4886671.cQ44SiRoEW@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eventual lament (nylon string guitar):
+On 11/04/2014 04:47 PM, Rafael J. Wysocki wrote:
+> What exactly do you need the size of the property alone for?
 
-http://youtu.be/PCJ-CWYoY9s 
+There are lots of situations where you don't know the size of the 
+property in advance (e.g. strings), and drivers use of_find_property() 
+or of_get_property() to pre-allocate a buffer or to verify that the 
+property is correctly formed in the device tree.
 
-Because that's how you'll eventually be if you let this systemD thing take over.
-(When you are LOCKED in.)
-
-(C) Gnu GPL v2
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, a Linux Foundation Collaborative Project.
