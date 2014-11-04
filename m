@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361AbaKDXUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:20:30 -0500
-Received: from dovecot.logic.tuwien.ac.at ([128.130.175.61]:50589 "EHLO
-	mail.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaKDXU3 (ORCPT
+	id S1752080AbaKDXas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:30:48 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:34514 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaKDXar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:20:29 -0500
-Date: Wed, 5 Nov 2014 08:20:27 +0900
-To: linux-kernel@vger.kernel.org
-Subject: khugepaged / firefox going wild in 3.18-rc
-Message-ID: <20141104232027.GO13232@auth.logic.tuwien.ac.at>
+	Tue, 4 Nov 2014 18:30:47 -0500
+Message-ID: <545961A0.8010000@gmail.com>
+Date: Wed, 05 Nov 2014 07:30:40 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: Norbert Preining <preining@logic.at>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH v2 5/6] sched/dl: Optimize select_task_rq_dl() for non-DL
+ curr task
+References: <1415099585-31174-1-git-send-email-pang.xunlei@linaro.org>	<1415099585-31174-5-git-send-email-pang.xunlei@linaro.org>	<5458B77F.9060007@gmail.com> <CADcy93XJB_DtZzBR3YmxRmj4qTuf0EvupjbcfosPimGFOmx3bA@mail.gmail.com>
+In-Reply-To: <CADcy93XJB_DtZzBR3YmxRmj4qTuf0EvupjbcfosPimGFOmx3bA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+Hi Xunlei,
 
-(please Cc)
+On 14/11/4 下午10:19, pang.xunlei wrote:
+> On 4 November 2014 19:24, Wanpeng Li <kernellwp@gmail.com> wrote:
+>> On 14/11/4 下午7:13, pang.xunlei wrote:
+>>> When selecting the cpu for a waking DL task, if curr is a non-DL
+>>> task which is bound only on this cpu, then we can give it a chance
+>>> to select a different cpu for this DL task to avoid curr starving.
+>>>
+>>> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+>>> ---
+>>>    kernel/sched/deadline.c |   14 ++++++++++----
+>>>    1 file changed, 10 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>>> index 7b0b2d2..1f64d4a 100644
+>>> --- a/kernel/sched/deadline.c
+>>> +++ b/kernel/sched/deadline.c
+>>> @@ -954,6 +954,9 @@ select_task_rq_dl(struct task_struct *p, int cpu, int
+>>> sd_flag, int flags)
+>>>          struct task_struct *curr;
+>>>          struct rq *rq;
+>>>    +     if (p->nr_cpus_allowed == 1)
+>>> +               goto out;
+>>> +
+>>>          if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
+>>>                  goto out;
+>>
+>> I don't think you use right branch of tip tree.
+> Hi Wanpeng, I'm using linux-3.18-rc3 as the base, does this have
+> something wrong? please point me out if any.
 
-since 3.18-rc started, regularly, but unpredictably, firefox
-(Debian iceweasel) goes completely boom to 100% CPU, and there
-is also a kernel task khugepaged doing the same.
+I have already do this, my patch merged in tip tree, you can check it.
 
-I need to kill firefox, or better the X session to get it back to normal.
+Regards,
+Wanpeng Li
 
-THe logs don't show any strange output
+> Thanks!
+>> Regards,
+>> Wanpeng Li
+>>
+>>>    @@ -970,11 +973,14 @@ select_task_rq_dl(struct task_struct *p, int cpu,
+>>> int sd_flag, int flags)
+>>>           * can!) we prefer to send it somewhere else. On the
+>>>           * other hand, if it has a shorter deadline, we
+>>>           * try to make it stay here, it might be important.
+>>> +        *
+>>> +        * If the current task on @p's runqueue is a non-DL task,
+>>> +        * and this task is bound on current runqueue, then try to
+>>> +        * see if we can wake this DL task up on a different runqueue,
+>>>           */
+>>> -       if (unlikely(dl_task(curr)) &&
+>>> -           (curr->nr_cpus_allowed < 2 ||
+>>> -            !dl_entity_preempt(&p->dl, &curr->dl)) &&
+>>> -           (p->nr_cpus_allowed > 1)) {
+>>> +       if (unlikely(curr->nr_cpus_allowed < 2) ||
+>>> +               unlikely(dl_task(curr) &&
+>>> +                               !dl_entity_preempt(&p->dl, &curr->dl))) {
+>>>                  int target = find_later_rq(p);
+>>>                  if (target != -1)
+>>
 
-top's top process:
-
-27021 norbert   20   0 1351536 449868  88788 R 100.4  5.6   4:46.16 iceweasel   
-   35 root      39  19       0      0      0 R 100.0  0.0   2:41.10 khugepaged  
-
-Switching back to 3.17 does Not* exhibit the same behaviour.
-
-Is this a bug in Firefox/Iceweasel, or is there something luring in the
-kernel.
-
-
-All the best
-
-Norbert
-
-------------------------------------------------------------------------
-PREINING, Norbert                               http://www.preining.info
-JAIST, Japan                                 TeX Live & Debian Developer
-GPG: 0x860CDC13   fp: F7D8 A928 26E3 16A1 9FA0  ACF0 6CAC A448 860C DC13
-------------------------------------------------------------------------
