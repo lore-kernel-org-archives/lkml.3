@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503AbaKDVzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:55:38 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:50246 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042AbaKDVzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:55:35 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Mike Turquette <mturquette@linaro.org>, dianders@chromium.org,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        xjq@rock-chips.com, hj@rock-chips.com, dkl@rock-chips.com,
-        huangtao@rock-chips.com, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] clk: rockchip: disable unused clocks
-Date: Tue, 04 Nov 2014 22:58:45 +0100
-Message-ID: <14899684.S24jkIkXzQ@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1415092270-24932-1-git-send-email-kever.yang@rock-chips.com>
-References: <1415092270-24932-1-git-send-email-kever.yang@rock-chips.com>
+	id S1752690AbaKDV4n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:56:43 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:65298 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaKDV4m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 16:56:42 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20141104173624.67dd3286@canb.auug.org.au>
+References: <20141104173624.67dd3286@canb.auug.org.au>
+Date: Tue, 4 Nov 2014 22:56:40 +0100
+X-Google-Sender-Auth: RLRkVXfRm0F4_l2IGQzHHTl1ff8
+Message-ID: <CAMuHMdVfTK4xEu33YMay9naTThvhRLdCpVCQLHW1FSW643mSAw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Nov 4
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Michael Ellerman <michael@ellerman.id.au>
+Cc: Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kever,
+Hi Stephen, Michael,
 
-Am Dienstag, 4. November 2014, 17:11:10 schrieb Kever Yang:
-> The rockchip clock driver use CLK_IGNORE_UNUSED flag to make sure
-> all the clocks are available like default power on state.
-> We have implement the clock manage in most of rockchip drivers,
-> it is time to remove it for power save.
-> Instead we add CLK_IGNORE_UNUSED for some clock nodes which should
-> be on during boot or no module driver in kernel will initialize it.
-> 
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Doug Anderson <dianders@chromium.org>
+On Tue, Nov 4, 2014 at 7:36 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Status of my local build tests will be at
+> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+> advice about cross compilers/configs that work, we are always open to add
+> more builds.
 
-I applied this with some slight modifications.
-- it seemed to be based on your dclk_ops series - fixed that
-- remove the flag from the uart2 on the cortex-a9 too
-- let DCLK_VOPx and HCLK_VOPx be autodisabled on rk3288
-  [tested by Doug]
+Looks like the build results got stuck on Nov 3? There are also no
+results for v3.18-rc3 yet.
 
+Gr{oetje,eeting}s,
 
-Heiko
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
