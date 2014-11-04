@@ -1,110 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaKDB3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:29:01 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:37856 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079AbaKDB26 (ORCPT
+	id S1751407AbaKDBaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:30:07 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:7337 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750856AbaKDBaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:28:58 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-sh\@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        linux-pm@vger.kernel.org,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/9] ARM: shmobile: R-Mobile: DT PM domain support
-References: <1415028896-9005-1-git-send-email-geert+renesas@glider.be>
-	<CANLsYkzVw_fQQuK9pEomMp6A_z2Qg9L-Hj1f+8b_1o7cFjMiDw@mail.gmail.com>
-Date: Mon, 03 Nov 2014 17:28:54 -0800
-In-Reply-To: <CANLsYkzVw_fQQuK9pEomMp6A_z2Qg9L-Hj1f+8b_1o7cFjMiDw@mail.gmail.com>
-	(Mathieu Poirier's message of "Mon, 3 Nov 2014 14:02:31 -0700")
-Message-ID: <7hegtj69ex.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 3 Nov 2014 20:30:00 -0500
+X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Nov 2014 20:30:00 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvENAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2WGflQCgRwXAQF8hAIBAQEBAgEjBBEeIgEFCwsYAgIFFAILAgIJAwIBAgEnFQkGAQwBBwEBiDQJDbZvlHYBAQEBAQEBAwEBAQEBAQEBGoEshQiEPIN7gh0HgneBVAEElk+CQ4Y8hX+HaIRrgW+DeTwvAQEBAYJHAQEB
+X-IPAS-Result: AvENAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2WGflQCgRwXAQF8hAIBAQEBAgEjBBEeIgEFCwsYAgIFFAILAgIJAwIBAgEnFQkGAQwBBwEBiDQJDbZvlHYBAQEBAQEBAwEBAQEBAQEBGoEshQiEPIN7gh0HgneBVAEElk+CQ4Y8hX+HaIRrgW+DeTwvAQEBAYJHAQEB
+X-IronPort-AV: E=Sophos;i="5.04,797,1406606400"; 
+   d="scan'208";a="95892338"
+Message-ID: <545829CA.7040900@voxpopuli.im>
+Date: Tue, 04 Nov 2014 02:20:10 +0100
+From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: FW: [RFC 0/5] perf tools: Add perf data CTF conversion
+References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com> <53F4F38C.4080407@voxpopuli.im> <5457C259.8030605@linutronix.de>
+In-Reply-To: <5457C259.8030605@linutronix.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu Poirier <mathieu.poirier@linaro.org> writes:
+Hi Sebastian,
 
-> On 3 November 2014 08:34, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
->>         Hi Rafael, Simon, Magnus,
->>
->> This patch series enables DT support for PM domains on Renesas R-Mobile SoCs.
->>
->> Currently it's limited to R-Mobile A1 (r8a7740), but given the similarity of
->> the SYSC System-Controller on the various SH-Mobile/R-Mobile SoCs, and the
->> abstraction of PM domains in DT, it should be sufficiently generic to handle
->> other SoCs in the future (e.g. SH-Mobile AP4 (sh7372), SH-Mobile AG5 (sh73a0),
->> R-Mobile APE6 (r8a73a4)).
->>
->> Functionality-wise, this behaves the same as the legacy (non-DT) version
->> (modulo missing DT support in some device drivers).
->>
->> Dependencies:
->>   - This is based on Simon Horman's renesas-devel-20141030-v3.18-rc2, and
->>     Rafael J. Wysocki's linux-pm.git#linux-next,
->>   - This depends on "PM / Domains: Change prototype for the ->attach_dev()
->>     callback" from Ulf hanson, which is intended to still enter v3.18-rcX
->>     through the linux-pm tree.
->>     As this is a one-line change, I included this patch as the first patch of
->>     this series.  Perhaps it's even acceptable for Simon to (also) apply it, so
->>     we don't have to wait for the v3.18-rcX that will include it?
->>
->> For your convenience, I've also pushed this to
->> git://git.kernel.org/pub/scm/linux/kernel/git/geert/renesas-drivers.git#rmobile-genpd
->>
->> Changes compared to v3 (more detailed changelogs in the individual patches):
->>   - I dropped the patch to add preliminary PM domain latencies, as I want to do
->>     more measurements for PM domains that are currently never powered off.
->>     Values seem to range between 8.5 and 26 us, depending on the PM domain.
->>   - I dropped all patches related to QoS device latencies, as these need more
->>     discussion,
->>   - The power-{on,off}-latency properties have been changed from a single value
->>     to a list,
->>   - Device save/restore state latencies have been dropped, as they're Linux
->>     driver-specific, and thus don't belong in DT,
->>   - Use proper pm_clk_create()/pm_clk_destroy(), and update for attach_dev()
->>     returning an error code again,
->>   - New patch to enable module clocks if !CONFIG_PM_RUNTIME,
->>   - Always keep D4 powered, until the new Coresight code handles runtime
->>     PM,
+On 11/03/2014 06:58 PM, Sebastian Andrzej Siewior wrote:
+> [...]
+> I did on the linux side:
 >
-> I took the time to really look at the problems you are experiencing
-> with pm runtime in hw_breackpoint.c this weekend.  The coresight
-> patchset, when supplemented with PM runtime awareness, will fix that
-> problem *only* when traces are activated.  The other obvious condition
-> is that other component using the same power domain are also converted
-> to using runtime PM.
+> |perf record \
+> | -e sched:sched_switch \
+> | -a
 >
-> That being said, the coresight framework and breakpoint handler code
-> are two different subsystem.  Their only commonality is that they make
-> use of the debug registers (and not even the same ones).  As such (and
-> in my opinion) the code in hw_breakpoint should be getting its own pm
-> runtime reference without relying on the coresight subsystem.  As
-> indicated above, that would only work in some cases.
+> This gave me perf.data trace. No with the new extension I converted it
+> into CTF data stream (perf data convert -i perf.data --to-ctf ctf) and
+> imported it into eclipse as a new trace. By setting 'domain = "kernel"'
+> I managed to get it accepted as a kernel trace.
 >
-> Supplementing hw_breakpoint to interact with the runtime PM may prove
-> trickier than it seems... I'm especially worried about the
-> non-blocking requirement inherent to using "smp_call_function()".  I'm
-> stepping forward to look into that problem but before doing so I need
-> to finish runtime PM on coresight.
+> Additionally I had to:
+> - rename sched:sched_switch -> sched_switch (I dropped the other events)
+> - rename "perf_cpu" to "cpu_id" and move it within "packet context"
+>    (had a patch for that but we wanted to merge this later)
+> - I added "prev_tid" with the content of "prev_pid" and I added
+>    "next_tid" with the content of "next_pid". Now exclipse does not
+>    "freeze" after loading the first entry
+> - I prefixed every entry with _ (so "prev_tid" becomes "_prev_tid") and
+>    now it seems to be recognized by the tracing plugin.
+>
+> puh. Now I have something in "cpu usage", "control flow" windows.
 
-Matthieu, without looking more deeply myself, I'm not sure this is what
-you need, but have a look at the "IRQ safe" mode of runtime PM.  If you
-know your devices runtime PM callbacks are IRQ safe, you can call
-pm_runtime_irq_safe(), and your callbacks will be called with IRQs
-disabled.
+This is really great! Initially, I had believed that we would have 
+needed to add a separate parser plugin, and to consider "perf traces" as 
+a completely different beast from LTTng traces. However if you can get 
+this close to they way LTTng presents its data, then we can probably 
+re-use most of the existing code. In which case we could rename the 
+"LTTng Kernel Trace" type in the UI to simply "Linux Kernel Trace". And 
+that would cover both LTTng kernel traces and CTF-perf traces.
 
-Kevin
+> The cpu_id field change will be addressed soon on our side.
+> Now, the remaining things:
+> The "domain = kernel" thingy (or another identifier if desired) is
+> something we could add.
+
+Unless the event data is exactly the same, it would be easier to use a 
+different name. Like "kernel-perf" for instance?
+ From the user's point of view, both would still be Linux Kernel Traces, 
+but we could use the domain internally to determine which event/field 
+layout to use.
+
+Mathieu, any thoughts on how CTF domains should be namespaced?
+
+> What do we do on the naming convention?
+>
+> The converter takes basically the event names the way they come from
+> perf. That is why we have a "system" prefix.
+> For the member fields, we take all the specific ones as perf serves
+> them. The only exception is for the generic fields which get a "perf_"
+> prefix in order not to clash with the specific ones.
+> And there is this _ prefix in front of every data member.
+>
+> Now that I identified the differences between the CTF from lttng and
+> perf, any suggestions / ideas how this could be solved?
+
+I suppose it would be better/cleaner if the event and field names would 
+remain the same, or at least be similar, in the perf.data and perf-CTF 
+formats.
+
+If the trace events from both LTTng and perf represent the same thing 
+(and I assume they should, since they come from the same tracepoints, 
+right?), then we could just add a wrapper on the viewer side to decide 
+which event/field names to use, depending on the trace type.
+
+Right now, we only define LTTng event and field names:
+http://git.eclipse.org/c/tracecompass/org.eclipse.tracecompass.git/tree/org.eclipse.tracecompass.lttng2.kernel.core/src/org/eclipse/tracecompass/internal/lttng2/kernel/core/LttngStrings.java
+
+But if you could for example tell me the perf equivalents of all the 
+strings in that file, I could hack together such wrapper. With that, in 
+theory, perf traces should behave exactly the same as LTTng traces in 
+the viewer!
+
+
+Cheers,
+Alexandre
+
+ps.  fyi, we have recently moved the trace viewer code to its own 
+project, now called "Trace Compass". We will still support the Linux 
+Tools plugins for the time being, but all new developments are done in 
+Trace Compass. If you want to check it out: http://eclipse.org/tracecompass
+
