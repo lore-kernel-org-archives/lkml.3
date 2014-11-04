@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287AbaKDOgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:36:14 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:50698 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262AbaKDOgJ (ORCPT
+	id S1754316AbaKDOhL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:37:11 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:41044 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaKDOhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:36:09 -0500
-Date: Tue, 4 Nov 2014 14:35:59 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>, gyungoh@gmail.com, sameo@linux.intel.com,
-        jg1.han@samsung.com, cooloney@gmail.com, lgirdwood@gmail.com,
-        jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v6 1/8] mfd: Add support for Skyworks SKY81452
- driver
-Message-ID: <20141104143559.GQ17577@x1>
-References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
- <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
- <1414739322-12487-2-git-send-email-jack.yoo@skyworksinc.com>
- <20141103171451.GG12011@x1>
- <1415050088.20372.72.camel@x220>
- <20141103223022.GE13359@x1>
- <1415091946.20372.136.camel@x220>
- <20141104091609.GI17577@x1>
- <20141104113833.GI3815@sirena.org.uk>
+	Tue, 4 Nov 2014 09:37:08 -0500
+Message-ID: <5458E605.6070801@gmail.com>
+Date: Tue, 04 Nov 2014 22:43:17 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: michal.simek@xilinx.com, soren.brinkmann@xilinx.com, davem@davemloft.net,
+        sthokal@xilinx.com, manuel.schoelling@gmx.de, f.fainelli@gmail.com,
+        paul.gortmaker@windriver.com, ebiederm@xmission.com
+CC: netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers: net: ethernet: xilinx: xilinx_emaclite: revert the
+ original commit "1db3ddff1602edf2390b7667dcbaa0f71512e3ea"
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141104113833.GI3815@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Nov 2014, Mark Brown wrote:
+Microblaze is a fpga soft core, it can be customized easily, which may
+cause many various hardware version strings.
 
-> On Tue, Nov 04, 2014 at 09:16:09AM +0000, Lee Jones wrote:
-> > On Tue, 04 Nov 2014, Paul Bolle wrote:
-> 
-> > > Nothing will break. But I think Mark prefers the dependency rename, now
-> > > done in 7/8, to be done as part of this patch.
-> 
-> > I don't agree.  The rename should be taken independantly by Mark.
-> > The regulator driver won't build until they match anyway, so there's
-> > no hard dependency.  Unless someone can give me a really good reason
-> > to revert it, I'm applying this driver now.
-> 
-> The important thing is that the dependency rename isn't silently thrown
-> into an unrelated patch.
+So the original fix patch based on hard-coded compatible version strings
+is not a good idea (although it is correct for current issue). For it,
+there will be a new solving way soon (which based on the device tree).
 
-That I agree with.
+The original issue is related with qemu, so can only change the hardware
+version string in qemu for it, then keep the original driver no touch (
+qemu is for virtualization which has much easier life than real world).
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index 298fad3..28dbbdc 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -1236,7 +1236,6 @@ static struct of_device_id xemaclite_of_match[] = {
+ 	{ .compatible = "xlnx,opb-ethernetlite-1.01.b", },
+ 	{ .compatible = "xlnx,xps-ethernetlite-1.00.a", },
+ 	{ .compatible = "xlnx,xps-ethernetlite-2.00.a", },
+-	{ .compatible = "xlnx,xps-ethernetlite-2.00.b", },
+ 	{ .compatible = "xlnx,xps-ethernetlite-2.01.a", },
+ 	{ .compatible = "xlnx,xps-ethernetlite-3.00.a", },
+ 	{ /* end of list */ },
+-- davem@davemloft.net
+1.9.3
