@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbaKDRYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:24:41 -0500
-Received: from mailout.easymail.ca ([64.68.201.169]:50545 "EHLO
-	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaKDRST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:18:19 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -4.399
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
-        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        ebiederm@xmission.com, serge.hallyn@ubuntu.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 00/20] kselftest install target feature 
-Date: Tue,  4 Nov 2014 10:10:56 -0700
-Message-Id: <cover.1415117102.git.shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753664AbaKDRZQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:25:16 -0500
+Received: from mail-bn1bbn0109.outbound.protection.outlook.com ([157.56.111.109]:35364
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752751AbaKDRZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 12:25:10 -0500
+X-WSS-ID: 0NEIZ1H-07-CFE-02
+X-M-MSG: 
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+To: <dougthompson@xmission.com>, <bp@alien8.de>, <m.chehab@samsung.com>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Subject: [PATCH] edac, mce_amd: Add decoding table for MC6 xec
+Date: Tue, 4 Nov 2014 11:41:08 -0600
+Message-ID: <1415122868-10969-1-git-send-email-aravind.gopalakrishnan@amd.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(31966008)(53416004)(86362001)(107046002)(46102003)(64706001)(50466002)(106466001)(20776003)(95666004)(99396003)(47776003)(62966003)(120916001)(92726001)(4396001)(50226001)(48376002)(19580405001)(19580395003)(68736004)(84676001)(102836001)(93916002)(44976005)(33646002)(104166001)(97736003)(88136002)(89996001)(77156002)(2201001)(50986999)(21056001)(229853001)(92566001)(36756003)(87286001)(77096003)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB200;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03853D523D
+Authentication-Results: spf=temperror (sender IP is 165.204.84.221)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds a new kselftest_install make target
-to enable selftest install. When make kselftest_install is
-run, selftests are installed on the system. A new install
-target is added to selftests Makefile which will install
-targets for the tests that are specified in INSTALL_TARGETS.
-During install, a script is generated to run tests that are
-installed. This script will be installed in the selftest install
-directory. Individual test Makefiles are changed to add to the
-script. This will allow new tests to add install and run test
-commands to the generated kselftest script.
+From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 
-Approach:
+Extended error code meanings are tabulated for other banks.
+Extending that tradition for MC6 in this patch.
 
-make kselftest_target:
--- exports kselftest INSTALL_KSFT_PATH
-   default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
--- exports path for ksefltest.sh
--- runs selftests make install target:
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+---
+ drivers/edac/mce_amd.c | 41 +++++++++++------------------------------
+ 1 file changed, 11 insertions(+), 30 deletions(-)
 
-selftests make install target
--- creates kselftest.sh script in install install dir
--- runs install targets for all INSTALL_TARGETS
-
-Individual test make install targets:
--- install test programs and/or scripts in install dir
--- append to the ksefltest.sh file to add commands to run test
-
-Shuah Khan (20):
-  selftests/user: move test out of Makefile into a shell script
-  selftests/net: move test out of Makefile into a shell script
-  kbuild: kselftest_install - add a new make target to install selftests
-  selftests: add install target to enable installing selftests
-  selftests/breakpoints: add install target to enable installing test
-  selftests/cpu-hotplug: add install target to enable installing test
-  selftests/efivarfs: add install target to enable installing test
-  selftests/firmware: add install target to enable installing test
-  selftests/ipc: add install target to enable installing test
-  selftests/kcmp: add install target to enable installing test
-  selftests/memfd: add install target to enable installing test
-  selftests/memory-hotplug: add install target to enable installing test
-  selftests/mount: add install target to enable installing test
-  selftests/mqueue: add install target to enable installing test
-  selftests/net: add install target to enable installing test
-  selftests/ptrace: add install target to enable installing test
-  selftests/sysctl: add install target to enable installing test
-  selftests/timers: add install target to enable installing test
-  selftests/vm: add install target to enable installing test
-  selftests/user: add install target to enable installing test
-
- Makefile                                        | 17 +++++++++++++++++
- tools/testing/selftests/Makefile                | 14 ++++++++++++++
- tools/testing/selftests/breakpoints/Makefile    | 12 ++++++++++++
- tools/testing/selftests/cpu-hotplug/Makefile    |  9 +++++++++
- tools/testing/selftests/efivarfs/Makefile       | 13 ++++++++++++-
- tools/testing/selftests/firmware/Makefile       | 20 ++++++++++++++++++++
- tools/testing/selftests/ipc/Makefile            | 11 +++++++++++
- tools/testing/selftests/kcmp/Makefile           | 12 ++++++++++++
- tools/testing/selftests/memfd/Makefile          | 10 ++++++++++
- tools/testing/selftests/memory-hotplug/Makefile |  9 +++++++++
- tools/testing/selftests/mount/Makefile          |  7 +++++++
- tools/testing/selftests/mqueue/Makefile         |  8 ++++++++
- tools/testing/selftests/net/Makefile            | 18 +++++++++++-------
- tools/testing/selftests/net/test_bpf.sh         | 10 ++++++++++
- tools/testing/selftests/ptrace/Makefile         | 11 +++++++++--
- tools/testing/selftests/sysctl/Makefile         | 10 ++++++++++
- tools/testing/selftests/timers/Makefile         |  7 +++++++
- tools/testing/selftests/user/Makefile           | 15 ++++++++-------
- tools/testing/selftests/user/test_user_copy.sh  | 10 ++++++++++
- tools/testing/selftests/vm/Makefile             |  7 +++++++
- 20 files changed, 213 insertions(+), 17 deletions(-)
- create mode 100755 tools/testing/selftests/net/test_bpf.sh
- create mode 100755 tools/testing/selftests/user/test_user_copy.sh
-
+diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
+index f78c1c5..5d4efae 100644
+--- a/drivers/edac/mce_amd.c
++++ b/drivers/edac/mce_amd.c
+@@ -138,6 +138,15 @@ static const char * const mc5_mce_desc[] = {
+ 	"Retire status queue"
+ };
+ 
++static const char * const mc6_mce_desc[] = {
++	"Hardware Assertion",
++	"Free List",
++	"Physical Register File",
++	"Retire Queue",
++	"Scheduler table",
++	"Status Register File",
++};
++
+ static bool f12h_mc0_mce(u16 ec, u8 xec)
+ {
+ 	bool ret = false;
+@@ -672,38 +681,10 @@ static void decode_mc6_mce(struct mce *m)
+ 
+ 	pr_emerg(HW_ERR "MC6 Error: ");
+ 
+-	switch (xec) {
+-	case 0x0:
+-		pr_cont("Hardware Assertion");
+-		break;
+-
+-	case 0x1:
+-		pr_cont("Free List");
+-		break;
+-
+-	case 0x2:
+-		pr_cont("Physical Register File");
+-		break;
+-
+-	case 0x3:
+-		pr_cont("Retire Queue");
+-		break;
+-
+-	case 0x4:
+-		pr_cont("Scheduler table");
+-		break;
+-
+-	case 0x5:
+-		pr_cont("Status Register File");
+-		break;
+-
+-	default:
++	if (xec > 0x5)
+ 		goto wrong_mc6_mce;
+-		break;
+-	}
+-
+-	pr_cont(" parity error.\n");
+ 
++	pr_cont("%s parity error.\n", mc6_mce_desc[xec]);
+ 	return;
+ 
+  wrong_mc6_mce:
 -- 
-1.9.1
+2.0.1
 
