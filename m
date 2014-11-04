@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaKDOrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:47:36 -0500
-Received: from 8bytes.org ([81.169.241.247]:34331 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754128AbaKDOrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:47:33 -0500
-Date: Tue, 4 Nov 2014 15:47:30 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	id S1754165AbaKDOs6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:48:58 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:27173 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751228AbaKDOs4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 09:48:56 -0500
+Date: Tue, 4 Nov 2014 09:48:54 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Patch Part2 v4 00/31] Enable hierarchy irqdomian on x86
- platforms
-Message-ID: <20141104144730.GE14512@8bytes.org>
-References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
+        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
+Subject: Re: [RFA][PATCH 2/8] netfilter: Remove return values for
+ print_conntrack callbacks
+Message-ID: <20141104094854.29de09d2@gandalf.local.home>
+In-Reply-To: <20141104144632.GA11096@salvia>
+References: <20141029215602.535533597@goodmis.org>
+	<20141029220107.465008329@goodmis.org>
+	<20141104080535.5f651713@gandalf.local.home>
+	<20141104142236.GA10239@salvia>
+	<20141104093150.7410f6d0@gandalf.local.home>
+	<20141104144632.GA11096@salvia>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiang,
-
-On Tue, Nov 04, 2014 at 08:01:34PM +0800, Jiang Liu wrote:
-> This is the second patch set to enable support of hierarchy irqdomain
-> on x86 platforms. It depends on the first part at:
-> https://lkml.org/lkml/2014/10/27/122
-> And you may access it at:
-> https://github.com/jiangliu/linux.git irqdomain/p2v4
-
-I gave this some testing on a couple of machines. Unfortunatly it panics
-on my AMD Kaveri system with IOMMU enabled in drivers/pci/msi.c:
-
-static void msi_set_mask_bit(struct irq_data *data, u32 flag)
-{
-        struct msi_desc *desc = irq_data_get_msi(data);
-
-        if (desc->msi_attrib.is_msix) {		<-- at this line something goes wrong
-                msix_mask_irq(desc, flag);
-                readl(desc->mask_base);         /* Flush write to device */
-        } else {
-                unsigned offset = data->irq - desc->irq;
-                msi_mask_irq(desc, 1 << offset, flag << offset);
-        }
-}
-
-I am further investigating to find out what went wrong, but maybe you
-also have an idea?
+On Tue, 4 Nov 2014 15:46:32 +0100
+Pablo Neira Ayuso <pablo@netfilter.org> wrote:
 
 
-	Joerg
+> > Can I get someone to ack 3/8?
+> 
+> I don't see any 3/8 in my inbox, only 2/8 and 4/8.
+> 
+> Let me know, thanks.
 
+Strange, you were on the Cc of that patch.
+
+Let me go back and check to make sure that didn't bounce too.
+
+-- Steve
