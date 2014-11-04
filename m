@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaKDK2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:28:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42344 "EHLO mx2.suse.de"
+	id S1752076AbaKDK2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:28:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42345 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229AbaKDK16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750914AbaKDK16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Nov 2014 05:27:58 -0500
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
         linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: [PATCH 4/4] fs: Remove i_devices list head
-Date: Tue,  4 Nov 2014 11:27:31 +0100
-Message-Id: <1415096851-17209-5-git-send-email-jack@suse.cz>
+Subject: [PATCH 2/4] chardev: Increment cdev reference count when i_cdev references it
+Date: Tue,  4 Nov 2014 11:27:29 +0100
+Message-Id: <1415096851-17209-3-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1415096851-17209-1-git-send-email-jack@suse.cz>
 References: <1415096851-17209-1-git-send-email-jack@suse.cz>
@@ -20,40 +20,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Noone uses i_devices anymore. Remove it (thus saving two pointers in
-every inode).
+Currently i_cdev reference to a character device isn't accounted in the
+reference count of the character device. This then requires us to track
+all references through a list of all inodes referencing a character
+device which is somewhat clumsy and requires list_head in each inode in
+the system.
+
+So make i_cdev a reference like any other.
 
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/inode.c         | 1 -
- include/linux/fs.h | 1 -
- 2 files changed, 2 deletions(-)
+ fs/char_dev.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 26753ba7b6d6..cb7acd45dce5 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -366,7 +366,6 @@ void inode_init_once(struct inode *inode)
+diff --git a/fs/char_dev.c b/fs/char_dev.c
+index f77f7702fabe..518b3016ab92 100644
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -388,12 +388,13 @@ static int chrdev_open(struct inode *inode, struct file *filp)
+ 		   we dropped the lock. */
+ 		p = inode->i_cdev;
+ 		if (!p) {
++			/* Use reference from kobj_lookup for i_cdev ref */
+ 			inode->i_cdev = p = new;
+ 			list_add(&inode->i_devices, &p->list);
+ 			new = NULL;
+-		} else if (!cdev_get(p))
+-			ret = -ENXIO;
+-	} else if (!cdev_get(p))
++		}
++	}
++	if (!cdev_get(p))
+ 		ret = -ENXIO;
+ 	spin_unlock(&cdev_lock);
+ 	cdev_put(new);
+@@ -421,10 +422,15 @@ static int chrdev_open(struct inode *inode, struct file *filp)
+ 
+ void cd_forget(struct inode *inode)
  {
- 	memset(inode, 0, sizeof(*inode));
- 	INIT_HLIST_NODE(&inode->i_hash);
--	INIT_LIST_HEAD(&inode->i_devices);
- 	INIT_LIST_HEAD(&inode->i_wb_list);
- 	INIT_LIST_HEAD(&inode->i_lru);
- 	address_space_init_once(&inode->i_data);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index d7fd7959a933..8c4f5678e75e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -595,7 +595,6 @@ struct inode {
- #ifdef CONFIG_QUOTA
- 	struct dquot		*i_dquot[MAXQUOTAS];
- #endif
--	struct list_head	i_devices;
- 	union {
- 		struct pipe_inode_info	*i_pipe;
- 		struct block_device	*i_bdev;
++	struct cdev *to_put;
++
+ 	spin_lock(&cdev_lock);
+ 	list_del_init(&inode->i_devices);
++	to_put = inode->i_cdev;
+ 	inode->i_cdev = NULL;
+ 	spin_unlock(&cdev_lock);
++	if (to_put)
++		cdev_put(to_put);
+ }
+ 
+ static void cdev_purge(struct cdev *cdev)
 -- 
 1.8.1.4
 
