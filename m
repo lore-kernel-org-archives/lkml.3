@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567AbaKDNww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:52:52 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:53526 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaKDNwu (ORCPT
+	id S1753288AbaKDNzp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:55:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52469 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750866AbaKDNzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:52:50 -0500
-Message-ID: <5458D9B9.5030606@imgtec.com>
-Date: Tue, 4 Nov 2014 13:50:49 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 4 Nov 2014 08:55:44 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
+Date: Tue, 04 Nov 2014 15:16:28 +0100
+Message-ID: <1905537.TSPKRBptT4@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CACRpkdaZYubzEKVKiG4vCnh2kDr7CfRvaXcJNHSFtSUaRdXW4A@mail.gmail.com>
+References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <4832015.R1NooRni06@vostro.rjw.lan> <CACRpkdaZYubzEKVKiG4vCnh2kDr7CfRvaXcJNHSFtSUaRdXW4A@mail.gmail.com>
 MIME-Version: 1.0
-To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
-        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
-        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
-        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>
-Subject: Re: [PATCH 2/2] move imx-hdmi to bridge/dw-hdmi
-References: <1415108398-34376-1-git-send-email-andy.yan@rock-chips.com>
-In-Reply-To: <1415108398-34376-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.89]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 04/11/14 13:39, Andy Yan wrote:
-> From: Andy yan <andy.yan@rock-chips.com>
+On Tuesday, November 04, 2014 02:48:27 PM Linus Walleij wrote:
+> On Tue, Nov 4, 2014 at 2:31 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Tuesday, November 04, 2014 11:39:07 AM Mika Westerberg wrote:
 > 
-> the original imx hdmi driver is under staging/imx-drm,
-> which depends on imx-drm, so move the imx hdmi drvier out
-> to drm/bridge and rename imx-hdmi to dw-hdmi
+> >> For reference the latest ACPI _DSD patches can be found here
+> >>
+> >> https://lkml.org/lkml/2014/10/21/762
+> >
+> > Actually, it's better to pull the device-properties branch:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git device-properties
+> >
+> > because that contains the lastest changes.  It will be rebased in the future,
+> > though, so don't merge it into your "immutable" branches.
 > 
-> Change-Id: I5f417372f256aa26cd00a3cd0160741680afd39d
-> ---
->  drivers/gpu/drm/bridge/Kconfig        |    5 +
->  drivers/gpu/drm/bridge/Makefile       |    1 +
->  drivers/gpu/drm/bridge/dw_hdmi.c      | 1651 +++++++++++++++++++++++++++++++++
->  drivers/gpu/drm/bridge/dw_hdmi.h      | 1032 +++++++++++++++++++++
->  drivers/staging/imx-drm/Kconfig       |    1 +
->  drivers/staging/imx-drm/Makefile      |    2 +-
->  drivers/staging/imx-drm/dw_hdmi-imx.c |   66 +-
->  drivers/staging/imx-drm/imx-hdmi.c    | 1651 ---------------------------------
->  drivers/staging/imx-drm/imx-hdmi.h    | 1032 ---------------------
->  include/drm/bridge/dw_hdmi.h          |   26 +-
->  10 files changed, 2737 insertions(+), 2730 deletions(-)
->  create mode 100644 drivers/gpu/drm/bridge/dw_hdmi.c
->  create mode 100644 drivers/gpu/drm/bridge/dw_hdmi.h
->  delete mode 100644 drivers/staging/imx-drm/imx-hdmi.c
->  delete mode 100644 drivers/staging/imx-drm/imx-hdmi.h
-> 
+> I've landed these two patches for v3.19, I guess we can wait for the
+> device properties to land properly upstream before proceeding
+> with ACPI support ...?
 
+That would be reasonable IMO.
 
-Could you try generating this patch with the -M option?
+> Or are you guys working with one finger constantly on the fast-forward button? :D
 
-git format-patch should then understand its a rename.
-Then it should generate a smaller patch that is possible to review easily.
+We hoped we'd be able to get the device properties patchset in earlier.
+Unfortunately, that didn't happen and is kind of blocking stuff as you can see.
 
-Thanks
-ZubairLK
+Rafael
+
