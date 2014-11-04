@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaKDBHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:07:42 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:12866 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaKDBHj convert rfc822-to-8bit (ORCPT
+	id S1751255AbaKDBKV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:10:21 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:5278 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750894AbaKDBKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:07:39 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-04-545826d9ca8c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "=?iso-8859-1?Q?'Heiko_St=FCbner'?=" <heiko@sntech.de>
-Cc: "'Bryan Wu'" <cooloney@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <16457372.FsSJIFmsla@diego>
-In-reply-to: <16457372.FsSJIFmsla@diego>
-Subject: Re: [PATCH] backlight: extend of_find_backlight_by_node stub-check to
- modules
-Date: Tue, 04 Nov 2014 10:08:08 +0900
-Message-id: <002401cff7cb$cbee5650$63cb02f0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=iso-8859-1
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/3yh2n0LdyhMGKSpiT/LWf7MLEqAAAXpxA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zQ92bahEhBrvPS1oc3TmRyeL/o9es
-	FpcXXmK1uP/1KKPF5V1z2BxYPXbOusvucefaHjaPvi2rGD22X5vH7PF5k1wAaxSXTUpqTmZZ
-	apG+XQJXRs/1C6wFJ7gq5t/4y9TAeIeji5GTQ0LAROLb+V/sELaYxIV769lAbCGBZYwSl5vs
-	uxg5wGpW/BHuYuQCCk9nlHjw8DAbhPMLqGb5NRaQBjYBNYkvXw6DDRIRsJC4/6MPbBCzQDej
-	xI0bYRBD1SVm3J0BVs8poCHx+ckOsBphgQiJfXcbGEFsFgFViYOdj5lAbF4BW4mu54vYIWxB
-	iR+T77FAzNSR6P3+jRnC1pZ48u4CK8Sh6hKP/upCnGAkcbpvFlSJiMS+F+8YQW6WELjGLjHh
-	y18miF0CEt8mH2KB6JWV2HSAGRIOkhIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlWMYqmFiQX
-	FCelFxnpFSfmFpfmpesl5+duYoTEad8OxpsHrA8xCnAwKvHwRkhGhAixJpYVV+YeYjQFumgi
-	s5Rocj4wGeSVxBsamxlZmJqYGhuZW5opifMmSP0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp
-	1cDY6RTwbXkGg+6lbXG3Np15P0sv3cT0yOtPXw9sZ3/H9Xz/te7u0nPXlUIfNdiyiuXvuqDS
-	f2afmX7Z1oeLrLZzH7zrv2UZkxqnVFzNVGuT6jPRVpZfOd3YXNombczNFZxWnHXjgs72HYln
-	WGPFTj6+bphRpO7rvDx3WU9HxDd9mU3Zdoyi51YpsRRnJBpqMRcVJwIAkYszQM4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+xoO5NtYgQg3OnRS2O7pzIZPH/0WtW
-	i8sLL7Fa3P96lNHi8q45bA6sHjtn3WX3uHNtD5tH35ZVjB7br81j9vi8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMaPn+gXWghNcFfNv/GVqYLzD0cXIwSEhYCKx
-	4o9wFyMnkCkmceHeerYuRi4OIYHpjBIPHh6Gcn4xSlxefo0FpIpNQE3iy5fD7CC2iICFxP0f
-	fWwgNrNAN6PEjRthILaQgLrEjLszwOo5BTQkPj/ZAVYjLBAhse9uAyOIzSKgKnGw8zETiM0r
-	YCvR9XwRO4QtKPFj8j0WiJk6Er3fvzFD2NoST95dYIU4Wl3i0V9diBOMJE73zYIqEZHY9+Id
-	4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcBp5J7WBc
-	2WBxiFGAg1GJhzdCMiJEiDWxrLgy9xCjBAezkgjvrN/hIUK8KYmVValF+fFFpTmpxYcYTYEe
-	ncgsJZqcD0xReSXxhsYmZkaWRmYWRibm5krivAdarQOFBNITS1KzU1MLUotg+pg4OKUaGEOW
-	xV9pfd2yoFtp7gLr9a88kj0M3/aeSg4NnNXaKx95zTPviol7uo2pN592dCGDk9ElLpNFz5+q
-	+VdMb8iY+KJsFc9PK3abbC/7J/ufzQ4JynBT2F977Rf3r9mqUcrrxD78DYk7s0NM88tBjluq
-	EivXn12z2fVOcU2S9JyX70I8FoUFh5ydpMRSnJFoqMVcVJwIAOJn0V4ZAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 3 Nov 2014 20:10:17 -0500
+X-IronPort-AV: E=Sophos;i="5.04,843,1406563200"; 
+   d="scan'208";a="42793815"
+Message-ID: <54582796.7030700@cn.fujitsu.com>
+Date: Tue, 4 Nov 2014 09:10:46 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
+        <grygorii.strashko@ti.com>, <yinghai@kernel.org>,
+        <isimatu.yasuaki@jp.fujitsu.co>, <fabf@skynet.be>, <nzimmer@sgi.com>,
+        <wangnan0@huawei.com>, <vdavydov@parallels.com>, <toshi.kani@hp.com>,
+        <phacht@linux.vnet.ibm.com>, <tj@kernel.org>,
+        <kirill.shutemov@linux.intel.com>, <riel@redhat.com>,
+        <luto@amacapital.net>, <hpa@linux.intel.com>, <aarcange@redhat.com>,
+        <qiuxishi@huawei.com>, <mgorman@suse.de>, <rientjes@google.com>,
+        <hannes@cmpxchg.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH 0/2] Fix node meminfo corruption.
+References: <1414748812-22610-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1414748812-22610-1-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 04, 2014 9:59 AM, Heiko Stübner wrote:
-> 
-> Commit de3d75dc2311 ("backlight: Use of_find_backlight_by_node stub when
-> backlight class disabled") did not take into account that the backlight
-> class can also be compiled as module. Extend the check to prevent
-> redefinition warnings when the backlight device class is compiled as module.
-> 
-> Reported-by: kbuild test robot
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Hi all,
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+I thinks these two problems are very important and should be merged ASAP.
+Would you please help to have a look at it ?
 
-If there is no objection, I hope that this patch is merged.
-Thank you.
+Thanks.
 
-Best regards,
-Jingoo Han
-
-> ---
->  include/linux/backlight.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-> index d9cb644..92b9817 100644
-> --- a/include/linux/backlight.h
-> +++ b/include/linux/backlight.h
-> @@ -157,7 +157,8 @@ struct generic_bl_info {
->  	void (*kick_battery)(void);
->  };
-> 
-> -#if defined(CONFIG_OF) && defined(CONFIG_BACKLIGHT_CLASS_DEVICE)
-> +#if defined(CONFIG_OF) && (defined(CONFIG_BACKLIGHT_CLASS_DEVICE) || \
-> +			   defined(CONFIG_BACKLIGHT_CLASS_DEVICE_MODULE))
->  struct backlight_device *of_find_backlight_by_node(struct device_node *node);
->  #else
->  static inline struct backlight_device *
-> --
-> 2.0.1
-
+On 10/31/2014 05:46 PM, Tang Chen wrote:
+> There are two problems when calculating node meminfo:
+>
+> 1. When hot-adding a node without onlining any page, MemTotal corrupted.
+>
+> # hot-add node2 (memory not onlined)
+> # cat /sys/device/system/node/node2/meminfo
+> Node 2 MemTotal:       33554432 kB			/* corrupted */
+> Node 2 MemFree:               0 kB
+> Node 2 MemUsed:        33554432 kB
+> Node 2 Active:                0 kB
+> ......
+>
+>
+> 2. When onlining memory on node2, MemFree of node3 corrupted.
+>
+> # for ((i = 2048; i < 2064; i++)); do echo online_movable > /sys/devices/system/node/node2/memory$i/state; done
+> # cat /sys/devices/system/node/node2/meminfo
+> Node 2 MemTotal:       33554432 kB
+> Node 2 MemFree:        33549092 kB
+> Node 2 MemUsed:            5340 kB
+> ......
+> # cat /sys/devices/system/node/node3/meminfo
+> Node 3 MemTotal:              0 kB
+> Node 3 MemFree:               248 kB                    /* corrupted */
+> Node 3 MemUsed:               0 kB
+> ......
+>
+> This patch-set fixes them.
+>
+> Tang Chen (2):
+>    mem-hotplug: Reset node managed pages when hot-adding a new pgdat.
+>    mem-hotplug: Fix wrong check for zone->pageset initialization in
+>      online_pages().
+>
+>   include/linux/bootmem.h |  1 +
+>   include/linux/mm.h      |  1 +
+>   mm/bootmem.c            |  9 +++++----
+>   mm/memory_hotplug.c     | 15 ++++++++++++++-
+>   mm/nobootmem.c          |  8 +++++---
+>   mm/page_alloc.c         |  5 +++++
+>   6 files changed, 31 insertions(+), 8 deletions(-)
+>
 
