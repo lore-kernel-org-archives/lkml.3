@@ -1,122 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaKDPuA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:50:00 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63375 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412AbaKDPt5 (ORCPT
+	id S1754558AbaKDPu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:50:29 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:46118 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538AbaKDPuY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:49:57 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v6 00/12] Add ACPI _DSD and unified device properties
- support
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <darren.hart@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>
-In-Reply-To: <2453849.ZcbreFmRlO@vostro.rjw.lan>
-References: <13750506.S2yVlRRDa2@vostro.rjw.lan>
-	<2453849.ZcbreFmRlO@vostro.rjw.lan>
-Date: Tue, 04 Nov 2014 15:49:50 +0000
-Message-Id: <20141104154950.3175EC423D0@trevor.secretlab.ca>
+	Tue, 4 Nov 2014 10:50:24 -0500
+Message-ID: <5458F5C8.1030405@arm.com>
+Date: Tue, 04 Nov 2014 15:50:32 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>, Wanpeng Li <kernellwp@gmail.com>
+CC: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
+ hotplug
+References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com> <20141103104111.GA23531@worktop.programming.kicks-ass.net> <20141103235747.GA26702@kernel> <20141104083225.GG10501@worktop.programming.kicks-ass.net> <20141104082345.GA22062@kernel> <20141104101022.GH10501@worktop.programming.kicks-ass.net> <5458D506.4080702@gmail.com> <20141104154623.GK10501@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141104154623.GK10501@worktop.programming.kicks-ass.net>
+X-OriginalArrivalTime: 04 Nov 2014 15:50:19.0760 (UTC) FILETIME=[0930E700:01CFF847]
+X-MC-Unique: 114110415502201501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Oct 2014 00:10:20 +0200
-, "Rafael J. Wysocki" <rjw@rjwysocki.net>
- wrote:
-> On Tuesday, October 21, 2014 11:08:59 PM Rafael J. Wysocki wrote:
-> > Hi Everyone,
-> > 
-> > This is version 6 of the unified device properties interface patchset.
-> > 
-> > The original cover letter from Mika is here:
-> > 
-> > http://marc.info/?l=devicetree&m=141087052200600&w=4
-> > 
-> > and my cover letters for previous iterations are at:
-> > 
-> > http://marc.info/?l=linux-acpi&m=141212903816560&w=4
-> > http://marc.info/?l=linux-kernel&m=141354745011569&w=4
-> > 
-> > There are a few changes with respect to v5 and the affected patches are
-> > [02-03/12] and [09-12/12].  The remaining ones have not been modified.
-> > 
-> > Most importantly, requesting the first element of a list (package) property
-> > from _DSD is now equivalent to accessing a single-value property of the
-> > same type, so device_property_read_u8(dev, pname, val) will now be equivalent
-> > to device_property_read_u8_array(dev, pname, val, 1), for example.
-> > Consequently, this _DSD definition:
-> > 
-> > Name (_DSD, Package () {
-> >     ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-> >     Package () {
-> >         Package () {"blah", "A string"},
-> >     }
-> > })
-> > 
-> > can be used instead of
-> > 
-> > Name (_DSD, Package () {
-> >     ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-> >     Package () {
-> >         Package () {"blah", Package () {"A string"}},
-> >     }
-> > })
-> > 
-> > and the code will be able to retrieve the property value from the both of
-> > them just fine.
-> > 
-> > This means, among other things, that accessors for single-value properties
-> > can be implemented in terms of the analogous "array" property accessors
-> > which allows the code size to be reduced somewhat.
-> > 
-> > Patches [02/12] and [09/12] have been modified to achieve that and patch
-> > [03/12] have been modified accordingly for the "compatible" property in
-> > _DSD to behave in an analogous way.  Additionally, the bodies of the
-> > numerical property accessors in patches [02/12] and [09/12] are now
-> > generated using macros (string property accessors have slightly different
-> > rules and are simply open coded for that reason).
-> > 
-> > Patch [10/12] has been modified to drop function arguments that happened to
-> > have the same values for both of the current users of those functions and
-> > patches [11-12/12] have been modified to take that change into account.  If
-> > the code in question needs to be made more complex in the future, there
-> > should not be any problems with that.
-> > 
-> > Due to the nature of the changes I have retained all ACKs except for the
-> > Grant's Reviewed-by on patch [03/12] (if that had been Acked-by, I would have
-> > retained it too, but that didn't feel appropriate for the "reviewed by" thing
-> > to me).  If any of you think that the ACKs are not applicable any more, please
-> > let me know and I'll drop them.
-> > 
-> > Finally, many thanks to Mika for testing the series on MinnowBoard 1 and
-> > MinnowBoard Max.  In case anybody else would like to test it, it is available
-> > from the device-properties branch of the linux-pm.git tree:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git device-properties
-> > 
-> > Thanks!
-> 
-> Crickets ...
-> 
-> OK, so I'm taking the lack of comments as the lack of objections and I'm already
-> getting merge conflicts for this series.  Moreover, we already have done some
-> work on top of it.
-> 
-> So, if there still are no comments by Sunday evening, I'll add this series to
-> my linux-next branch with 3.19-rc1 as the target.
+Hi,
 
-Aside from the comments I've made elsewhere, you can add my acked by for the whole series.
+On 04/11/14 15:46, Peter Zijlstra wrote:
+> On Tue, Nov 04, 2014 at 09:30:46PM +0800, Wanpeng Li wrote:
+> 
+> 
+>> + if (!rq->online) {
+>> + struct rq *latest_rq = NULL;
+>> + int cpu;
+>> + u64 dmin = LONG_MAX;
+>> +
+>> + for_each_cpu(cpu, &p->cpus_allowed)
+>> + if (cpu_online(cpu) &&
+>> + cpu_rq(cpu)->dl.earliest_dl.curr < dmin) {
+>> + latest_rq = cpu_rq(cpu);
+>> + dmin = latest_rq->dl.earliest_dl.curr;
+>> + }
+> 
+> I would have expected something using find_later_rq(), but I might be
+> mistaken, I'll let Juri suggest something.
+> 
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
+Yeah, we should be able to reuse something that we already have. I'm
+actually sorry that I'm not responsive on this, but I'm really busy on
+other things this week. I hope to be able to find some time soon to test
+this all.
 
-g.
+Thanks,
+
+- Juri
+
+>> +
+>> + if (!latest_rq)
+>> + goto unlock;
+>> +
+>> + raw_spin_lock(&latest_rq->lock);
+>> +
+>> + deactivate_task(rq, p, 0);
+>> + set_task_cpu(p, latest_rq->cpu);
+>> + activate_task(latest_rq, p, 0);
+>> +
+>> + raw_spin_unlock(&latest_rq->lock);
+>> + }
+>> +
+>> unlock:
+>> raw_spin_unlock(&rq->lock);
+> 
+
