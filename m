@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419AbaKDJUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:20:39 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:34848 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaKDJUg (ORCPT
+	id S1752523AbaKDJUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:20:53 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:49148 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459AbaKDJUs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:20:36 -0500
-Date: Tue, 4 Nov 2014 09:20:31 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] mfd: tc6393xb fail ohci suspend if full state restore is
- required
-Message-ID: <20141104092031.GL17577@x1>
-References: <1414171197-18620-1-git-send-email-dbaryshkov@gmail.com>
- <20141103145623.GH4538@x1>
- <CALT56yNqnK-Xj3exPrgeXY_1ExcE2hbixZVS9e9ferE-gMxEig@mail.gmail.com>
+	Tue, 4 Nov 2014 04:20:48 -0500
+Message-ID: <54589A78.1060406@arm.com>
+Date: Tue, 04 Nov 2014 09:20:56 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALT56yNqnK-Xj3exPrgeXY_1ExcE2hbixZVS9e9ferE-gMxEig@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
+ hotplug
+References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com> <20141103104111.GA23531@worktop.programming.kicks-ass.net> <20141103235747.GA26702@kernel> <20141104083225.GG10501@worktop.programming.kicks-ass.net> <20141104082345.GA22062@kernel>
+In-Reply-To: <20141104082345.GA22062@kernel>
+X-OriginalArrivalTime: 04 Nov 2014 09:20:44.0181 (UTC) FILETIME=[9C429C50:01CFF810]
+X-MC-Unique: 114110409204600701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Nov 2014, Dmitry Eremin-Solenikov wrote:
+Hi,
 
-> Hello.
+On 04/11/14 08:23, Wanpeng Li wrote:
+> Hi Peter,
+> On Tue, Nov 04, 2014 at 09:32:25AM +0100, Peter Zijlstra wrote:
+>> On Tue, Nov 04, 2014 at 07:57:48AM +0800, Wanpeng Li wrote:
+>>> On Mon, Nov 03, 2014 at 11:41:11AM +0100, Peter Zijlstra wrote:
+>>
+>>>> On Fri, Oct 31, 2014 at 03:28:17PM +0800, Wanpeng Li wrote:
+>>>> So what is wrong with making dl_task_timer() deal with it? The timer
+>>>> will still fire on the correct time, canceling it and or otherwise
+>>>> messing with the CBS is wrong. Once it fires, all we need to do is
+>>>> migrate it to another cpu (preferably one that is still online of course
+>>>> :-).
+>>
+>>> Do you mean what I need to do is push the task to another cpu in dl_task_timer() 
+>>> if rq is offline?
+>>
+>> That does indeed appear to be the sensible fix to me.
+>>
+>>> In addition, what will happen if dl task can't preempt on 
+>>> another cpu?
+>>
+>> So if we find that the rq the task was on is no longer available, we
+>> need to select a new rq, the 'right' rq would be the one running the
+>> latest deadline.
+>>
+>> If it cannot preempt the latest (running) deadline, it was not eligible
+>> for running in the first place so no worries, right?
 > 
-> 2014-11-03 17:56 GMT+03:00 Lee Jones <lee.jones@linaro.org>:
-> > On Fri, 24 Oct 2014, Dmitry Eremin-Solenikov wrote:
-> >
-> >> Some boards with TC6393XB chip require full state restore during system
-> >> resume thanks to chip's VCC being cut off during suspend (Sharp SL-6000
-> >> tosa is one of them). Failing to do so would result in ohci Oops on
-> >> resume due to internal memory contentes being changed. Fail ohci suspend
-> >> on tc6393xb is full state restore is required.
-> >>
-> >> Recommended workaround is to unbind tmio-ohci driver before suspend and
-> >> rebind it after resume.
-> >>
-> >> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> >> Cc: stable@vger.kernel.org
-> >> ---
-> >>  drivers/mfd/tc6393xb.c | 13 ++++++++++++-
-> >>  1 file changed, 12 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
-> >> index 11c19e5..48579e5 100644
-> >> --- a/drivers/mfd/tc6393xb.c
-> >> +++ b/drivers/mfd/tc6393xb.c
-> >> @@ -263,6 +263,17 @@ static int tc6393xb_ohci_disable(struct platform_device *dev)
-> >>       return 0;
-> >>  }
-> >>
-> >> +static int tc6393xb_ohci_suspend(struct platform_device *dev)
-> >> +{
-> >> +     struct tc6393xb_platform_data *tcpd = dev_get_platdata(dev->dev.parent);
-> >> +
-> >> +     /* We can't properly store/restore OHCI state, so fail here */
-> >> +     if (tcpd->resume_restore)
-> >> +             return -EBUSY;
-> >
-> > Wouldn't it be easier to just put these three lines into
-> > tc6393xb_ohci_disable() instead off adding 7 superfluous lines and
-> > making the Ops names inconsistent?
-> 
-> No. The problem only exists on suspend/resume path. tc6393xb_ohci_disable
-> is also used on driver removal and can (should?) be used on device shutdown.
-> Using the tc6393xb_ohci_disable() function in that paths is not a problem.
-> 
-> Also with this patch the Oops name will not be inconsistent - returning -EBUSY
-> from this disable callback will cancel the device suspension with
-> clearly stating
-> that OHCI is busy in dmesg.
-
-Understood.  Thanks for the explanation.
-
-> >> +     return tc6393xb_ohci_disable(dev);
-> >> +}
-> >> +
-> >>  static int tc6393xb_fb_enable(struct platform_device *dev)
-> >>  {
-> >>       struct tc6393xb *tc6393xb = dev_get_drvdata(dev->dev.parent);
-> >> @@ -403,7 +414,7 @@ static struct mfd_cell tc6393xb_cells[] = {
-> >>               .num_resources = ARRAY_SIZE(tc6393xb_ohci_resources),
-> >>               .resources = tc6393xb_ohci_resources,
-> >>               .enable = tc6393xb_ohci_enable,
-> >> -             .suspend = tc6393xb_ohci_disable,
-> >> +             .suspend = tc6393xb_ohci_suspend,
-> >>               .resume = tc6393xb_ohci_enable,
-> >>               .disable = tc6393xb_ohci_disable,
-> >>       },
-> 
+> I think this will lead to this deadline task cannot running on any rqs any more.
+> If my understanding is not right, when it will be picked?
 > 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I think you can just pick one random rq and move the task there. The
+push/pull mechanism should then move it around properly.
+
+Thanks,
+
+- Juri
+
