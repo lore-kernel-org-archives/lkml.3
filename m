@@ -1,95 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145AbaKDLpX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:45:23 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49222 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaKDLpU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:45:20 -0500
-Message-ID: <5458BC0B.1040803@ti.com>
-Date: Tue, 4 Nov 2014 17:14:11 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Griffis, Brad" <bgriffis@ti.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "Balbi, Felipe" <balbi@ti.com>, Jan Kardell <jan.kardell@telliq.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com> <544E821D.5040004@linutronix.de> <912A29987EAE174BA6CF187D7CDFA9CE26F46B2B@DLEE08.ent.ti.com> <54577258.9080508@linutronix.de>
-In-Reply-To: <54577258.9080508@linutronix.de>
-Content-Type: text/plain; charset="windows-1252"
+	id S1753167AbaKDLrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:47:53 -0500
+Received: from mga03.intel.com ([134.134.136.65]:58648 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751179AbaKDLru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 06:47:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,312,1413270000"; 
+   d="scan'208";a="631069202"
+Message-ID: <1415101654.4115.22.camel@linux.intel.com>
+Subject: Re: [PATCH v5 7/7] tpm: create TPM 2.0 devices using own device
+ class
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com
+Date: Tue, 04 Nov 2014 13:47:34 +0200
+In-Reply-To: <20141103213826.GG8303@obsidianresearch.com>
+References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	 <1414832495-23609-8-git-send-email-jarkko.sakkinen@linux.intel.com>
+	 <20141102213305.GB28519@obsidianresearch.com>
+	 <20141103054101.GA4795@intel.com>
+	 <20141103213826.GG8303@obsidianresearch.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-11-03 at 14:38 -0700, Jason Gunthorpe wrote:
+> On Mon, Nov 03, 2014 at 07:41:01AM +0200, Jarkko Sakkinen wrote:
+> 
+> > I used the class 'tpm' only for TPM 2.x because I didn't want to
+> > break the binary compatibility for TPM 1.x anyway. In ideal situtation
+> > both would be character devices inside the class 'tpm' and there would
+> > be sysfs attribute such as 'family' to mark the protocol to be used.
+> 
+> You can create the class without moving away from miscdev...
+> 
+> Not having the device creates way to much difference that has to be
+> supported, way too messy.
+
+I have to admit that I'm not quite following here but I assume that
+you restated this below in more verbose way and this is basically the
+same argument :)
+
+> > > And considering the volume of changes it might be better to leave
+> > > 'dev' as a pointer to the tpm class rather than try and tackle that in
+> > > this giant patch..
+> > 
+> > Maybe, or maybe I could make the rename a separate patch?
+> 
+> Pointer then rename?
+> 
+> > It's fairly mechanical, just a matter of replacing string
+> > "chip->dev" with "chip->pdev".
+> 
+> Not everyone should be replaced :|
+
+I think the current variable name "dev" is miss-leading. The
+use of "pdev" would document better the appropriate use for that
+field (i.e. for the most cases DON'T use it).
+
+> > > > +	chip->cdev.owner = chip->pdev->driver->owner;
+> > > 
+> > > Is that right? the cdev fops is in this module, not the driver's
+> > > module..
+> > 
+> > tpm.ko defines the interface but TPM device driver module owns the
+> > character device. I think this is right and similar logic is also
+> > for example rtc_device_register().
+> 
+> Hmm, yes, I see that in rtc_dev_prepare - but I don't have time to
+> figure out why that might be :)
+> 
+> On the surface, it doesn't seem to make sense: The cdev layer never
+> calls into a function that goes to the chip module - all functions go
+> to the fops in tpm.ko, and tmp.ko is (eventually) responsible for
+> ensuring that ops never points to an unloaded module.
+> 
+> So why should it care what the driver module is??
+
+Fully agreed, I think you got a point here. I think it makes sense
+as a guideline to kind of "centralize" robustness to tpm.ko and
+leave as little responsibility as possible to device drivers.
+
+> > I could understand in the context of a misc device but don't really
+> > when TPM 2.0 devices have their own device class. Using a 'tpm' class
+> > would in all cases break non-udev systems because major number is no
+> > longer 10 (misc).
+> 
+> I'm just saying it would be nice to force the major/minor to misc.tpm
+> for tmp0.
+> 
+> No idea if that is OK or not.
+
+I think that would be a mess. The way things are done in this v5
+patch set is actually quite coherent and it does not break backwards
+compatibility because the "proper" device hierarchy is only used for
+TPM 2.0 devices.
+
+I think the improvement for v6 would be to add a sysctl attribute
+to disable legacy device hierarchy and sysfs attributes. If that
+attribute is unset, the old misc hierarchy would be used for any
+TPM version and TPM 1.0 devices would use existing sysfs attributes.
+
+If the flag is set, then the new proper device hierarchy would be
+used for any TPM device and we would have also chance to redefine
+sysfs attributes.
+
+This would add some legacy clutter to the stack but would be a
+piss-off-free and non-ABI-breaking solution.
+
+> Jason
+
+PS. I feel that drivers/char/tpm is a like a desolated town. How 
+many of the people currently marked as maintainers are actually
+participating to the subsystem development let alone driving it?
+
+This subsystem is increasingly important to us given that major
+software platforms like Chrome OS make extensive use of it and
+I've heard that even bug fixes have taken some times over a year
+to get through. Does not look good at all.
+
+/Jarkko
 
 
-On Monday 03 November 2014 05:47 PM, Sebastian Andrzej Siewior wrote:
-> On 10/27/2014 08:02 PM, Griffis, Brad wrote:
->> On 10/27/2014 12:34 PM, Sebastian Andrzej Siewior wrote:
->>> Do we really need #3 (and then #4)? Given the complexity we have already, is there any benefit by decreasing this value? 
->>
->> I specifically requested we add ti,charge-delay to the device tree because it is THE critical value to tune for a given design.  Although I think the current value of 0xB000 will be suitable for a great many designs, I expect that many users will need to adjust this value for their hardware.  Details such as which touchscreen vendor is being used and how the touchscreen is connected (header vs cable) have an effect on what's appropriate here.
-> 
-> Oh. That is one knob I hoped we could avoid since I haven't seen it
-> before on other TSCs. But okay. Please make sure that there is a
-> message printed if the default value is used. And lets hope the user
-> will do something about his.
-> 
->>> Would  someone want to increase it? Can we safely determine a value which works for everyone?
->>
->> This value represents a hardware delay before checking for the pen-up event.  So in the scenario where someone is seeing excessive false pen-up events they will want to increase this parameter.  The downsize of making this larger is that it decreases the overall sampling speed of both the touchscreen as well as the standalone ADC samples.  At one point I tried making it huge, but that made the touchscreen overly sluggish because the sampling became too slow.  So there is a definite trade-off that if you make it too large the touchscreen becomes sluggish, and if you make it too small then you may see false pen-up events.  The optimal value will need to be tuned for a given design.
-> 
-> I applied the patches from this series and did the following test on my
-> am335x-evm: A mug on the touchscreen (to make sure the events are
-> coming), evtest on the event node to see that the events and loop of
-> 
-> 	cat /sys/bus/iio/devices/iio\:device0/in_voltage4_raw
-> 
-> In the past I was able lock up the TSC/ADC HW that way (see commit
-> 7ca6740cd1 ("mfd: input: iio: ti_amm335x: Rework TSC/ADC
-> synchronization")) for details.
-> With this patches applied I don't seen any TSC events once the IIO
-> interface is (heavily) used. Can this be fixed?
-
-I ran following commands
-$ evtest /dev/input/touchscreen0 &
-(with heavy item on touchscreen)
- and
-$ cat /sys/bus/iio/devices/iio\:device0/scan_elements/in_voltage4_en
-(in a busy loop)
-I tried above experiment on my board but I didn't hit any problem even
-after running for close to 30 minutes. I was unable to reproduce failure
-
-The problem may be in configuring correct charge-delay value. Please run:
-$ ts_test > /dev/null
-and let me know if pen events are being detected properly.
-
-> 
-> Sebastian
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
