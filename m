@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaKDRGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:06:16 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:63071 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaKDRGO (ORCPT
+	id S1752288AbaKDRGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:06:45 -0500
+Received: from www.linutronix.de ([62.245.132.108]:33036 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaKDRGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:06:14 -0500
-Message-ID: <54590781.9070500@plexistor.com>
-Date: Tue, 04 Nov 2014 19:06:09 +0200
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 4 Nov 2014 12:06:42 -0500
+Message-ID: <5459079D.7080703@linutronix.de>
+Date: Tue, 04 Nov 2014 18:06:37 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-CC: Boaz Harrosh <boaz@plexistor.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, Nick Piggin <npiggin@kernel.dk>,
-        "Kani, Toshimitsu" <toshi.kani@hp.com>,
-        "Knippers, Linda" <linda.knippers@hp.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvdimm@lists.01.org" <linux-nvdimm@ml01.01.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>
-Subject: Re: [PATCH 1/4] pmem: Initial version of persistent memory driver
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>	 <1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>	 <94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net>	 <100D68C7BA14664A8938383216E40DE04082985D@FMSMSX114.amr.corp.intel.com>	 <5458AC75.3030207@plexistor.com>	 <94D0CD8314A33A4D9D801C0FE68B40295936C4B1@G4W3202.americas.hpqcorp.net> <1415119296.26199.12.camel@theros.lm.intel.com>
-In-Reply-To: <1415119296.26199.12.camel@theros.lm.intel.com>
-Content-Type: text/plain; charset=utf-8
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 11/13] arm: dts: dra7: add DMA properties for UART
+References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de> <1412014009-13315-12-git-send-email-bigeasy@linutronix.de> <20141104170233.GB24112@csclub.uwaterloo.ca>
+In-Reply-To: <20141104170233.GB24112@csclub.uwaterloo.ca>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2014 06:41 PM, Ross Zwisler wrote:
-<>
+On 11/04/2014 06:02 PM, Lennart Sorensen wrote:
 > 
-> The UEFI organization is in the process of defining a generic specification
-> for platform non-volatile memory resources.  Essentially the thought was to
-> wait until that was publicly available before adding any new device discovery
-> capabilities to pmem.
+> According to the manual the DMA channels for UART7 to 10 are:
 > 
-> What Boaz has suggested and coded up is certainly useful, but the worry is
-> that it will end up being incompatible with what comes out of UEFI.  If we
-> stay with the dead-simple module parameter method, we will have less code to
-> unwind later.
+> uart7:  144 145
+> uart8:  146 147
+> uart9:  148 149
+> uart10: 150 151
 > 
+> Might as well add those too.  We have uart 7 and 8 in use on our board
+> so I am about to go test it.
 
-What ??
-What I coded up is a exactly "dead-simple module parameter method"
-that will not need to be changed in future, that is actually sane.
+Mind sharing the manual with me? Mine does not mention DMA channels for
+UART7-10. If you are able to test 7+8 (and it works) could you please
+make patch which with for the remaining four devices?
 
-Actually your version of the code needs changing with the global parameters,
-one range support, and same size devices.
-
-My version of the code is specifically made very probe() ready and dynamic
-ready. It was the point of it all. Including bugs and ugliness fixed.
-(I have a small patch that dynamically addes/removes devices on the fly
- through the same module-param interface)
-
-There is not a line in all of my patches that might be affected by
-that UEFI comity. (Again actually fixing what needed changing). And in
-addition to that comity and the new HW they will define, my system
-also supports all the current NvDIMMs in the market.
-
-I really can not understand what you guys are saying? Have you actually
-looked at the code and used it, compared to the unusable thing you guys
-have now ??
-[Like you are saying "before adding any new device discovery capabilities"
- But I have not added any? All I did was fix and simplify the module-param
- interface. Which makes me think that you might not have looked at any of
- my fixes?
-]
-
-> Thanks,
-> - Ross
-
-Cheers
-Boaz
-
+Sebastian
