@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212AbaKDMFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:05:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60165 "EHLO mga11.intel.com"
+	id S1754216AbaKDMFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:05:34 -0500
+Received: from mga01.intel.com ([192.55.52.88]:3881 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189AbaKDMDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:03:12 -0500
+	id S1753671AbaKDMF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 07:05:28 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,313,1413270000"; 
-   d="scan'208";a="616767193"
+   d="scan'208";a="616767982"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -19,19 +19,19 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
         Marc Zyngier <marc.zyngier@arm.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
         Matthias Brugger <matthias.bgg@gmail.com>,
         Jiang Liu <jiang.liu@linux.intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [Patch Part2 v4 17/31] x86, hpet: Enhance HPET IRQ to support hierarchy irqdomain
-Date: Tue,  4 Nov 2014 20:01:51 +0800
-Message-Id: <1415102525-9898-18-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        iommu@lists.linux-foundation.org
+Subject: [Patch Part2 v4 26/31] x86: irq_remapping: Clean up unused MSI related code
+Date: Tue,  4 Nov 2014 20:02:00 +0800
+Message-Id: <1415102525-9898-27-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
@@ -39,375 +39,293 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance HPET code to support hierarchy irqdomain, it helps to make
-the architecture more clear.
+Now MSI interrupt has been converted to new hierarchy irqdomain
+interfaces, so kill legacy MSI related code and interfaces.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/hpet.h |    7 +-
- arch/x86/kernel/apic/msi.c  |  172 ++++++++++++++++++++++++++++++++++++++-----
- arch/x86/kernel/hpet.c      |   57 ++++----------
- 3 files changed, 175 insertions(+), 61 deletions(-)
+ arch/x86/include/asm/irq_remapping.h |   13 ---
+ arch/x86/include/asm/pci.h           |    5 --
+ arch/x86/kernel/x86_init.c           |    2 -
+ drivers/iommu/irq_remapping.c        |  151 ----------------------------------
+ drivers/iommu/irq_remapping.h        |   14 ----
+ 5 files changed, 185 deletions(-)
 
-diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
-index 36f7125945e3..e87e9faf87a9 100644
---- a/arch/x86/include/asm/hpet.h
-+++ b/arch/x86/include/asm/hpet.h
-@@ -74,11 +74,16 @@ extern unsigned int hpet_readl(unsigned int a);
- extern void force_hpet_resume(void);
- 
- struct irq_data;
-+struct hpet_dev;
-+struct irq_domain;
-+
- extern void hpet_msi_unmask(struct irq_data *data);
- extern void hpet_msi_mask(struct irq_data *data);
--struct hpet_dev;
- extern void hpet_msi_write(struct hpet_dev *hdev, struct msi_msg *msg);
- extern void hpet_msi_read(struct hpet_dev *hdev, struct msi_msg *msg);
-+extern struct irq_domain *hpet_create_irq_domain(int hpet_id);
-+extern int hpet_assign_irq(struct irq_domain *domain,
-+			   struct hpet_dev *dev, int dev_num);
- 
- #ifdef CONFIG_PCI_MSI
- extern int default_setup_hpet_msi(unsigned int irq, unsigned int id);
-diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index 4bb2b583be7f..f2f8c999bdcc 100644
---- a/arch/x86/kernel/apic/msi.c
-+++ b/arch/x86/kernel/apic/msi.c
-@@ -51,6 +51,44 @@ void native_compose_msi_msg(struct pci_dev *pdev,
- 		MSI_DATA_VECTOR(cfg->vector);
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index c4fa0d2291b8..61c50e6e28c8 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -50,10 +50,6 @@ extern int setup_ioapic_remapped_entry(int irq,
+ 				       int vector,
+ 				       struct io_apic_irq_attr *attr);
+ extern void free_remapped_irq(int irq);
+-extern void compose_remapped_msi_msg(struct pci_dev *pdev,
+-				     unsigned int irq, unsigned int dest,
+-				     struct msi_msg *msg, u8 hpet_id);
+-extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
+ extern void panic_if_irq_remap(const char *msg);
+ extern bool setup_remapped_irq(int irq,
+ 			       struct irq_cfg *cfg,
+@@ -98,15 +94,6 @@ static inline int setup_ioapic_remapped_entry(int irq,
+ 	return -ENODEV;
  }
- 
-+static void irq_msi_compose_msg(struct irq_data *data, struct msi_msg *msg)
-+{
-+	struct irq_cfg *cfg = irqd_cfg(data);
-+
-+	msg->address_hi = MSI_ADDR_BASE_HI;
-+
-+	if (x2apic_enabled())
-+		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(cfg->dest_apicid);
-+
-+	msg->address_lo =
-+		MSI_ADDR_BASE_LO |
-+		((apic->irq_dest_mode == 0) ?
-+			MSI_ADDR_DEST_MODE_PHYSICAL :
-+			MSI_ADDR_DEST_MODE_LOGICAL) |
-+		((apic->irq_delivery_mode != dest_LowestPrio) ?
-+			MSI_ADDR_REDIRECTION_CPU :
-+			MSI_ADDR_REDIRECTION_LOWPRI) |
-+		MSI_ADDR_DEST_ID(cfg->dest_apicid);
-+
-+	msg->data =
-+		MSI_DATA_TRIGGER_EDGE |
-+		MSI_DATA_LEVEL_ASSERT |
-+		((apic->irq_delivery_mode != dest_LowestPrio) ?
-+			MSI_DATA_DELIVERY_FIXED :
-+			MSI_DATA_DELIVERY_LOWPRI) |
-+		MSI_DATA_VECTOR(cfg->vector);
-+}
-+
-+static void msi_update_msg(struct msi_msg *msg, struct irq_data *irq_data)
-+{
-+	struct irq_cfg *cfg = irqd_cfg(irq_data);
-+
-+	msg->data &= ~MSI_DATA_VECTOR_MASK;
-+	msg->data |= MSI_DATA_VECTOR(cfg->vector);
-+	msg->address_lo &= ~MSI_ADDR_DEST_ID_MASK;
-+	msg->address_lo |= MSI_ADDR_DEST_ID(cfg->dest_apicid);
-+}
-+
- static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
- 			   struct msi_msg *msg, u8 hpet_id)
- {
-@@ -239,38 +277,37 @@ void dmar_free_hwirq(int irq)
-  * MSI message composition
-  */
- #ifdef CONFIG_HPET_TIMER
-+static inline int hpet_dev_id(struct irq_domain *domain)
-+{
-+	return (int)(long)domain->host_data;
-+}
- 
- static int hpet_msi_set_affinity(struct irq_data *data,
- 				 const struct cpumask *mask, bool force)
- {
--	struct irq_cfg *cfg = irqd_cfg(data);
-+	struct irq_data *parent = data->parent_data;
- 	struct msi_msg msg;
--	unsigned int dest;
- 	int ret;
- 
--	ret = apic_set_affinity(data, mask, &dest);
--	if (ret)
--		return ret;
--
--	hpet_msi_read(data->handler_data, &msg);
--
--	msg.data &= ~MSI_DATA_VECTOR_MASK;
--	msg.data |= MSI_DATA_VECTOR(cfg->vector);
--	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
--	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
--
--	hpet_msi_write(data->handler_data, &msg);
-+	ret = parent->chip->irq_set_affinity(parent, mask, force);
-+	if (ret >= 0 && ret != IRQ_SET_MASK_OK_DONE) {
-+		hpet_msi_read(data->handler_data, &msg);
-+		msi_update_msg(&msg, data);
-+		hpet_msi_write(data->handler_data, &msg);
-+	}
- 
--	return IRQ_SET_MASK_OK_NOCOPY;
-+	return ret;
- }
- 
- static struct irq_chip hpet_msi_type = {
- 	.name = "HPET_MSI",
- 	.irq_unmask = hpet_msi_unmask,
- 	.irq_mask = hpet_msi_mask,
--	.irq_ack = apic_ack_edge,
-+	.irq_ack = irq_chip_ack_parent,
- 	.irq_set_affinity = hpet_msi_set_affinity,
--	.irq_retrigger = apic_retrigger_irq,
-+	.irq_retrigger = irq_chip_retrigger_hierarchy,
-+	.irq_print_chip = irq_remapping_print_chip,
-+	.irq_compose_msi_msg = irq_msi_compose_msg,
-  	.flags = IRQCHIP_SKIP_SET_WAKE,
- };
- 
-@@ -291,4 +328,105 @@ int default_setup_hpet_msi(unsigned int irq, unsigned int id)
- 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
- 	return 0;
- }
-+
-+static int hpet_domain_alloc(struct irq_domain *domain, unsigned int virq,
-+			     unsigned int nr_irqs, void *arg)
-+{
-+	struct irq_alloc_info *info = arg;
-+	int ret;
-+
-+	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_HPET)
-+		return -EINVAL;
-+	if (irq_find_mapping(domain, info->hpet_index)) {
-+		pr_warn("IRQ for HPET%d already exists.\n", info->hpet_index);
-+		return -EEXIST;
-+	}
-+
-+	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
-+	if (ret >= 0) {
-+		irq_set_status_flags(virq, IRQ_MOVE_PCNTXT);
-+		irq_domain_set_hwirq_and_chip(domain, virq, info->hpet_index,
-+					      &hpet_msi_type, NULL);
-+		irq_set_handler_data(virq, info->hpet_data);
-+		__irq_set_handler(virq, handle_edge_irq, 0, "edge");
-+	}
-+
-+	return ret;
-+}
-+
-+static void hpet_domain_free(struct irq_domain *domain, unsigned int virq,
-+			     unsigned int nr_irqs)
-+{
-+	BUG_ON(nr_irqs > 1);
-+	irq_clear_status_flags(virq, IRQ_MOVE_PCNTXT);
-+	irq_domain_free_irqs_top(domain, virq, nr_irqs);
-+}
-+
-+static int hpet_domain_activate(struct irq_domain *domain,
-+				struct irq_data *irq_data)
-+{
-+	int ret;
-+	struct msi_msg msg;
-+
-+	ret = irq_chip_compose_msi_msg(irq_data, &msg);
-+	if (ret == 0)
-+		hpet_msi_write(irq_get_handler_data(irq_data->irq), &msg);
-+
-+	return ret;
-+}
-+
-+static int hpet_domain_deactivate(struct irq_domain *domain,
-+				  struct irq_data *irq_data)
-+{
-+	struct msi_msg msg;
-+
-+	memset(&msg, 0, sizeof(msg));
-+	hpet_msi_write(irq_get_handler_data(irq_data->irq), &msg);
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops hpet_domain_ops = {
-+	.alloc = hpet_domain_alloc,
-+	.free = hpet_domain_free,
-+	.activate = hpet_domain_activate,
-+	.deactivate = hpet_domain_deactivate,
-+};
-+
-+struct irq_domain *hpet_create_irq_domain(int hpet_id)
-+{
-+	struct irq_domain *domain;
-+	struct irq_alloc_info info;
-+
-+	if (x86_vector_domain == NULL)
-+		return NULL;
-+
-+	init_irq_alloc_info(&info, NULL);
-+	info.type = X86_IRQ_ALLOC_TYPE_HPET;
-+	info.hpet_id = hpet_id;
-+
-+	domain = irq_domain_add_tree(NULL, &hpet_domain_ops,
-+				     (void *)(long)hpet_id);
-+	if (domain) {
-+		domain->parent = irq_remapping_get_ir_irq_domain(&info);
-+		if (!domain->parent)
-+			domain->parent = x86_vector_domain;
-+	}
-+
-+	return domain;
-+}
-+
-+int hpet_assign_irq(struct irq_domain *domain, struct hpet_dev *dev,
-+		    int dev_num)
-+{
-+	struct irq_alloc_info info;
-+
-+	init_irq_alloc_info(&info, NULL);
-+	info.type = X86_IRQ_ALLOC_TYPE_HPET;
-+	info.hpet_data = dev;
-+	info.hpet_id = hpet_dev_id(domain);
-+	info.hpet_index = dev_num;
-+
-+	return irq_domain_alloc_irqs(domain, 1, NUMA_NO_NODE, NULL);
-+}
- #endif
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 24db2d33fab7..a22d7288202b 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -306,8 +306,6 @@ static void hpet_legacy_clockevent_register(void)
- 	printk(KERN_DEBUG "hpet clockevent registered\n");
- }
- 
--static int hpet_setup_msi_irq(unsigned int irq);
--
- static void hpet_set_mode(enum clock_event_mode mode,
- 			  struct clock_event_device *evt, int timer)
- {
-@@ -358,7 +356,7 @@ static void hpet_set_mode(enum clock_event_mode mode,
- 			hpet_enable_legacy_int();
- 		} else {
- 			struct hpet_dev *hdev = EVT_TO_HPET_DEV(evt);
--			hpet_setup_msi_irq(hdev->irq);
-+			irq_domain_activate_irq(irq_get_irq_data(hdev->irq));
- 			disable_irq(hdev->irq);
- 			irq_set_affinity(hdev->irq, cpumask_of(hdev->cpu));
- 			enable_irq(hdev->irq);
-@@ -424,6 +422,7 @@ static int hpet_legacy_next_event(unsigned long delta,
- 
- static DEFINE_PER_CPU(struct hpet_dev *, cpu_hpet_dev);
- static struct hpet_dev	*hpet_devs;
-+static struct irq_domain *hpet_domain;
- 
- void hpet_msi_unmask(struct irq_data *data)
- {
-@@ -474,32 +473,6 @@ static int hpet_msi_next_event(unsigned long delta,
- 	return hpet_next_event(delta, evt, hdev->num);
- }
- 
--static int hpet_setup_msi_irq(unsigned int irq)
+ static inline void free_remapped_irq(int irq) { }
+-static inline void compose_remapped_msi_msg(struct pci_dev *pdev,
+-					    unsigned int irq, unsigned int dest,
+-					    struct msi_msg *msg, u8 hpet_id)
 -{
--	if (x86_msi.setup_hpet_msi(irq, hpet_blockid)) {
--		irq_domain_free_irqs(irq, 1);
--		return -EINVAL;
+-}
+-static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+-{
+-	return -ENODEV;
+-}
+ 
+ static inline void panic_if_irq_remap(const char *msg)
+ {
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index 4e370a5d8117..d8c80ff32e8c 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -96,15 +96,10 @@ extern void pci_iommu_alloc(void);
+ #ifdef CONFIG_PCI_MSI
+ /* implemented in arch/x86/kernel/apic/io_apic. */
+ struct msi_desc;
+-void native_compose_msi_msg(struct pci_dev *pdev, unsigned int irq,
+-			    unsigned int dest, struct msi_msg *msg, u8 hpet_id);
+ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
+ void native_teardown_msi_irq(unsigned int irq);
+ void native_restore_msi_irqs(struct pci_dev *dev);
+-int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+-		  unsigned int irq_base, unsigned int irq_offset);
+ #else
+-#define native_compose_msi_msg		NULL
+ #define native_setup_msi_irqs		NULL
+ #define native_teardown_msi_irq		NULL
+ #endif
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index e48b674639cc..814fcbadaad1 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -111,11 +111,9 @@ EXPORT_SYMBOL_GPL(x86_platform);
+ #if defined(CONFIG_PCI_MSI)
+ struct x86_msi_ops x86_msi = {
+ 	.setup_msi_irqs		= native_setup_msi_irqs,
+-	.compose_msi_msg	= native_compose_msi_msg,
+ 	.teardown_msi_irq	= native_teardown_msi_irq,
+ 	.teardown_msi_irqs	= default_teardown_msi_irqs,
+ 	.restore_msi_irqs	= default_restore_msi_irqs,
+-	.setup_hpet_msi		= default_setup_hpet_msi,
+ 	.msi_mask_irq		= default_msi_mask_irq,
+ 	.msix_mask_irq		= default_msix_mask_irq,
+ };
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 414ab0cddbbc..782dea5e4233 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -26,9 +26,6 @@ int no_x2apic_optout;
+ 
+ static struct irq_remap_ops *remap_ops;
+ 
+-static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec);
+-static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-				  int index, int sub_handle);
+ static int set_remapped_irq_affinity(struct irq_data *data,
+ 				     const struct cpumask *mask,
+ 				     bool force);
+@@ -51,109 +48,6 @@ static void irq_remapping_disable_io_apic(void)
+ 		disconnect_bsp_APIC(0);
+ }
+ 
+-#ifndef CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+-static unsigned int irq_alloc_hwirqs(int cnt, int node)
+-{
+-	return irq_domain_alloc_irqs(NULL, -1, cnt, node, NULL);
+-}
+-
+-static void irq_free_hwirqs(unsigned int from, int cnt)
+-{
+-	irq_domain_free_irqs(from, cnt);
+-}
+-#endif
+-
+-static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
+-{
+-	int ret, sub_handle, nvec_pow2, index = 0;
+-	unsigned int irq;
+-	struct msi_desc *msidesc;
+-
+-	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
+-
+-	irq = irq_alloc_hwirqs(nvec, dev_to_node(&dev->dev));
+-	if (irq == 0)
+-		return -ENOSPC;
+-
+-	nvec_pow2 = __roundup_pow_of_two(nvec);
+-	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
+-		if (!sub_handle) {
+-			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
+-			if (index < 0) {
+-				ret = index;
+-				goto error;
+-			}
+-		} else {
+-			ret = msi_setup_remapped_irq(dev, irq + sub_handle,
+-						     index, sub_handle);
+-			if (ret < 0)
+-				goto error;
+-		}
+-		ret = setup_msi_irq(dev, msidesc, irq, sub_handle);
+-		if (ret < 0)
+-			goto error;
 -	}
 -	return 0;
+-
+-error:
+-	irq_free_hwirqs(irq, nvec);
+-
+-	/*
+-	 * Restore altered MSI descriptor fields and prevent just destroyed
+-	 * IRQs from tearing down again in default_teardown_msi_irqs()
+-	 */
+-	msidesc->irq = 0;
+-
+-	return ret;
 -}
 -
--static int hpet_assign_irq(struct hpet_dev *dev)
+-static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
 -{
--	int irq;
+-	int node, ret, sub_handle, index = 0;
+-	struct msi_desc *msidesc;
+-	unsigned int irq;
 -
--	irq = irq_domain_alloc_irqs(NULL, 1, NUMA_NO_NODE, NULL);
--	if (irq <= 0)
--		return -EINVAL;
+-	node		= dev_to_node(&dev->dev);
+-	sub_handle	= 0;
 -
--	irq_set_handler_data(irq, dev);
+-	list_for_each_entry(msidesc, &dev->msi_list, list) {
 -
--	if (hpet_setup_msi_irq(irq))
--		return -EINVAL;
+-		irq = irq_alloc_hwirqs(1, node);
+-		if (irq == 0)
+-			return -1;
 -
--	dev->irq = irq;
+-		if (sub_handle == 0)
+-			ret = index = msi_alloc_remapped_irq(dev, irq, nvec);
+-		else
+-			ret = msi_setup_remapped_irq(dev, irq, index, sub_handle);
+-
+-		if (ret < 0)
+-			goto error;
+-
+-		ret = setup_msi_irq(dev, msidesc, irq, 0);
+-		if (ret < 0)
+-			goto error;
+-
+-		sub_handle += 1;
+-		irq        += 1;
+-	}
+-
 -	return 0;
+-
+-error:
+-	irq_free_hwirqs(irq, 1);
+-	return ret;
 -}
 -
- static irqreturn_t hpet_interrupt_handler(int irq, void *data)
+-static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
+-					int nvec, int type)
+-{
+-	if (type == PCI_CAP_ID_MSI)
+-		return do_setup_msi_irqs(dev, nvec);
+-	else
+-		return do_setup_msix_irqs(dev, nvec);
+-}
+-
+ static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
  {
- 	struct hpet_dev *dev = (struct hpet_dev *)data;
-@@ -542,9 +515,6 @@ static void init_one_hpet_msi_clockevent(struct hpet_dev *hdev, int cpu)
- 	if (!(hdev->flags & HPET_DEV_VALID))
- 		return;
- 
--	if (hpet_setup_msi_irq(hdev->irq))
--		return;
--
- 	hdev->cpu = cpu;
- 	per_cpu(cpu_hpet_dev, cpu) = hdev;
- 	evt->name = hdev->name;
-@@ -576,7 +546,7 @@ static void hpet_msi_capability_lookup(unsigned int start_timer)
- 	unsigned int id;
- 	unsigned int num_timers;
- 	unsigned int num_timers_used = 0;
--	int i;
-+	int i, irq;
- 
- 	if (hpet_msi_disable)
- 		return;
-@@ -589,6 +559,10 @@ static void hpet_msi_capability_lookup(unsigned int start_timer)
- 	num_timers++; /* Value read out starts from 0 */
- 	hpet_print_config();
- 
-+	hpet_domain = hpet_create_irq_domain(hpet_blockid);
-+	if (!hpet_domain)
-+		return;
-+
- 	hpet_devs = kzalloc(sizeof(struct hpet_dev) * num_timers, GFP_KERNEL);
- 	if (!hpet_devs)
- 		return;
-@@ -603,15 +577,16 @@ static void hpet_msi_capability_lookup(unsigned int start_timer)
- 		if (!(cfg & HPET_TN_FSB_CAP))
- 			continue;
- 
-+		irq = hpet_assign_irq(hpet_domain, hdev, hdev->num);
-+		if (irq < 0)
-+			continue;
-+
-+		sprintf(hdev->name, "hpet%d", i);
-+		hdev->num = i;
-+		hdev->irq = irq;
- 		hdev->flags = 0;
- 		if (cfg & HPET_TN_PERIODIC_CAP)
- 			hdev->flags |= HPET_DEV_PERI_CAP;
--		hdev->num = i;
--
--		sprintf(hdev->name, "hpet%d", i);
--		if (hpet_assign_irq(hdev))
--			continue;
--
- 		hdev->flags |= HPET_DEV_FSB_CAP;
- 		hdev->flags |= HPET_DEV_VALID;
- 		num_timers_used++;
-@@ -711,10 +686,6 @@ static int hpet_cpuhp_notify(struct notifier_block *n,
+ 	/*
+@@ -171,8 +65,6 @@ static void __init irq_remapping_modify_x86_ops(void)
+ 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
+ 	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
+ 	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
+-	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+-	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
  }
- #else
  
--static int hpet_setup_msi_irq(unsigned int irq)
+ static __init int setup_nointremap(char *str)
+@@ -319,49 +211,6 @@ void free_remapped_irq(int irq)
+ 		remap_ops->free_irq(irq);
+ }
+ 
+-void compose_remapped_msi_msg(struct pci_dev *pdev,
+-			      unsigned int irq, unsigned int dest,
+-			      struct msi_msg *msg, u8 hpet_id)
 -{
--	return 0;
+-	struct irq_cfg *cfg = irq_cfg(irq);
+-
+-	if (!irq_remapped(cfg))
+-		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+-	else if (remap_ops && remap_ops->compose_msi_msg)
+-		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
 -}
- static void hpet_msi_capability_lookup(unsigned int start_timer)
+-
+-static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+-{
+-	if (!remap_ops || !remap_ops->msi_alloc_irq)
+-		return -ENODEV;
+-
+-	return remap_ops->msi_alloc_irq(pdev, irq, nvec);
+-}
+-
+-static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-				  int index, int sub_handle)
+-{
+-	if (!remap_ops || !remap_ops->msi_setup_irq)
+-		return -ENODEV;
+-
+-	return remap_ops->msi_setup_irq(pdev, irq, index, sub_handle);
+-}
+-
+-int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+-{
+-	int ret;
+-
+-	if (!remap_ops || !remap_ops->alloc_hpet_msi)
+-		return -ENODEV;
+-
+-	ret = remap_ops->alloc_hpet_msi(irq, id);
+-	if (ret)
+-		return -EINVAL;
+-
+-	return default_setup_hpet_msi(irq, id);
+-}
+-
+ void panic_if_irq_remap(const char *msg)
  {
- 	return;
+ 	if (irq_remapping_enabled)
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index 8c159d6fac46..95b19a6ef16a 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -70,20 +70,6 @@ struct irq_remap_ops {
+ 	/* Free an IRQ */
+ 	int (*free_irq)(int);
+ 
+-	/* Create MSI msg to use for interrupt remapping */
+-	void (*compose_msi_msg)(struct pci_dev *,
+-				unsigned int, unsigned int,
+-				struct msi_msg *, u8);
+-
+-	/* Allocate remapping resources for MSI */
+-	int (*msi_alloc_irq)(struct pci_dev *, int, int);
+-
+-	/* Setup the remapped MSI irq */
+-	int (*msi_setup_irq)(struct pci_dev *, unsigned int, int, int);
+-
+-	/* Setup interrupt remapping for an HPET MSI */
+-	int (*alloc_hpet_msi)(unsigned int, unsigned int);
+-
+ 	/* Get the irqdomain associated the IOMMU device */
+ 	struct irq_domain *(*get_ir_irq_domain)(struct irq_alloc_info *);
+ 
 -- 
 1.7.10.4
 
