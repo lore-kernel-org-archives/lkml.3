@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaKDTzV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 14:55:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32817 "EHLO mx2.suse.de"
+	id S1752995AbaKDTzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 14:55:51 -0500
+Received: from mout.gmx.net ([212.227.17.21]:59525 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241AbaKDTzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 14:55:20 -0500
-Date: Tue, 4 Nov 2014 20:55:14 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/4 v3] fs: Remove i_devices from struct inode
-Message-ID: <20141104195514.GA28531@quack.suse.cz>
-References: <1415096851-17209-1-git-send-email-jack@suse.cz>
- <20141104153940.GH7996@ZenIV.linux.org.uk>
- <54592D49.4070704@amacapital.net>
+	id S1752560AbaKDTzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 14:55:49 -0500
+Message-ID: <54592F23.9000102@gmx.de>
+Date: Tue, 04 Nov 2014 20:55:15 +0100
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54592D49.4070704@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kara <jack@suse.cz>
+CC: "Sergey \"Shnatsel\" Davidoff" <sergey@elementaryos.org>,
+        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
+Subject: Re: A desktop environment[1] kernel wishlist
+References: <1413881397.30379.7.camel@hadess.net> <loom.20141021T140216-28@post.gmane.org> <20141027092311.GA9807@amd> <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com> <20141031093618.GB30321@quack.suse.cz> <5457C7B7.7050302@gmx.de> <20141104092809.GB2953@quack.suse.cz>
+In-Reply-To: <20141104092809.GB2953@quack.suse.cz>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:nNFhUFCVhUZqgSkTiJ3pfHSe7ThzPIIssZErEsFeqOT5jxjbes/
+ e3LLC1aBGfraAKAWT0LPsPVAqcaBoYDl2QeEOEHW/A49ZjcSOg10pe+f0ZAuXftZK/De+Mo
+ N3+L5c7wIJWXPWXpRAl7AzncobkskHvm4qT5uzRWza6aWcjudwAeQWQ85i+V+Q+Jyd0d5MX
+ 1LJykxdjwkwhCLBFZza5g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-11-14 11:47:21, Andy Lutomirski wrote:
-> On 11/04/2014 07:39 AM, Al Viro wrote:
-> > On Tue, Nov 04, 2014 at 11:27:27AM +0100, Jan Kara wrote:
-> >>   Hello,
-> >>
-> >>   this patch set removes use of i_devices from block and character device
-> >> code and thus we can remove the list head from struct inode thus saving two
-> >> pointers in it. As Christoph has reviewed the series, can you please merge
-> >> it Al? Thanks!
-> >>
-> >> Since v2 I've added reviewed-by tags from Christoph and changed one variable
-> >> name in cdev_forget().
-> >>
-> >> Since v1 I have split the patches and properly handled character devices (I
-> >> broke them last time as Christoph pointed out).
-> > 
-> > My problem with that is in buggered module refcounts (which was the reason
-> > for doing those non-counting references back then).  Suppose you open
-> > /dev/some_char_device and close it; having the module pinned down until
-> > the inode of that sucker gets evicted by dcache/icache memory pressure
-> > would be wrong - it _isn't_ in use, and there's no way short of forcing
-> > the full eviction of VFS caches to get it possible to unload...
-> > 
-> 
-> At the risk of asking what may be a rather dumb question...
-> 
-> Why do device node inodes need to be cached at all?  In other words,
-> when you try open a device node, can't the kernel materialize the inode
-> from just information that's in the dentry without touching the
-> filesystem at all?  If that's true, couldn't all device inodes be
-> dropped from icache as soon as they're unreferenced?
-> 
-> (Yes, there's mtime, but I never understood why tracking mtime on device
-> nodes made any sense in the first place.)
-  I can see a few reasons:
-1) positive dentry without inode - no-no for dcache.
-2) how would you get the information which device the dentry references?
-3) what would you gain to outweight the complications and special code
-   paths?
+On 04.11.2014 10:28, Jan Kara wrote:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>> If inotify_add_watch() would allow to mark a complete mount (like
+>> fanotify_mark() called with FAN_MOUNT) events for all files on this
+>> mount could be detected. If furthermore inotify_read() would return
+>> the complete relative path of the changed file relative to the mount
+>> in inotify_event->name, it would be obvious what the meaning of the
+>> event is.
+>    There are two catches though:
+> 1) Getting of the path itself is unreliable due to presence of other fs
+> changes happening in parallel to you traversing the directory tree.
+>
+> 2) The name you get from inotify_event->name is unreliable because by the
+> time you read the event, directory tree may be completely different.
+>
+>    These are the reasons why fanotify passes file descriptors with the
+> events instead of names.
+>
+>    Also for mountpoint wide notification your app has to be much faster
+> processing events so that the event queue doesn't overflow (and thus forces
+> you to do full rescan). fanotify deals with this by not limiting event
+> queue length at all but that's one of the reason why it's restricted to
+> CAP_SYS_ADMIN users.
+
+This is reflected in fanotify_init already by explicitly checking 
+CAP_SYS_ADMIN when using flag FAN_UNLIMITED_QUEUE.
+
+>
+>    So all in all I would find it better to extend fanotify to provide
+> directory events (that was originally planned but the support was dropped
+> due to technical issues),
+
+I had a brief look at the systemd coding. They use at least:
+IN_ATTRIB
+IN_CLOSE_WRITE
+IN_CLOSE_NOWRITE
+IN_CREATE
+IN_DELETE
+IN_DELETE_SELF
+IN_MODIFY
+IN_MOVE_SELF
+IN_MOVED_FROM
+IN_MOVED_TO
+
+Most of the sources of these events are passed as dentry and not as 
+path. Bug 86781 describes that fanotify does not create events for 
+double mounted file systems. It suggest to use the mount list of the 
+superblock (which the dentry points to) instead of the mount indicated 
+by a path. https://bugzilla.kernel.org/show_bug.cgi?id=86781
+
+Using dentries would allow to minimize code changes outside the core of 
+the notification framework. Hence this is a central design decision to 
+take before implementing the additional fanotify events.
+
+ > solve problems with unlimited event queues,
+
+Isn't this already solved by
+group->max_events = FANOTIFY_DEFAULT_MAX_EVENTS?
+
+ > add some permission checking for passed file descriptors
+
+This brings us back to
+https://lkml.org/lkml/2014/4/19/151
+(fanotify: check permissions when creating file descriptor)
+
+> and audit fanotify to
+> verify it's otherwise safe for regular users.
+
+Best regards
+
+Heinrich Schuchardt
+
