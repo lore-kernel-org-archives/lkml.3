@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaKDQJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:09:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59415 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493AbaKDQJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:09:44 -0500
-Date: Tue, 4 Nov 2014 08:08:47 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-6b55fc63f46ba299f3d84013e9232be4bd259eab@git.kernel.org>
-Cc: hpa@zytor.com, torvalds@linux-foundation.org, eparis@redhat.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org,
-        umgwanakikbuti@gmail.com, tglx@linutronix.de, peterz@infradead.org
-Reply-To: tglx@linutronix.de, peterz@infradead.org, eparis@redhat.com,
-        hpa@zytor.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, umgwanakikbuti@gmail.com,
-        mingo@kernel.org
-In-Reply-To: <20141002102251.GA6324@worktop.programming.kicks-ass.net>
-References: <20141002102251.GA6324@worktop.programming.kicks-ass.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] audit, sched/wait: Fixup kauditd_thread()
-  wait loop
-Git-Commit-ID: 6b55fc63f46ba299f3d84013e9232be4bd259eab
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754879AbaKDQKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:10:44 -0500
+Received: from mail.efficios.com ([78.47.125.74]:59011 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754566AbaKDQKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 11:10:40 -0500
+Date: Tue, 4 Nov 2014 16:10:35 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
+        rp@svcs.cs.pdx.edu
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Message-ID: <2125074956.7393.1415117435081.JavaMail.zimbra@efficios.com>
+In-Reply-To: <2018499994.7387.1415117259378.JavaMail.zimbra@efficios.com>
+Subject: [RELEASE] Userspace RCU 0.8.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.246.22.116]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
+Thread-Topic: Userspace RCU 0.8.6
+Thread-Index: Jls2FVSb8MiF1grSZxQVV5xjfylssQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6b55fc63f46ba299f3d84013e9232be4bd259eab
-Gitweb:     http://git.kernel.org/tip/6b55fc63f46ba299f3d84013e9232be4bd259eab
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 2 Oct 2014 12:22:51 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 4 Nov 2014 07:17:47 +0100
+liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
+data synchronization library provides read-side access which scales
+linearly with the number of cores. It does so by allowing multiples
+copies of a given data structure to live at the same time, and by
+monitoring the data structure accesses to detect grace periods after
+which memory reclamation is possible.
 
-audit, sched/wait: Fixup kauditd_thread() wait loop
+liburcu-cds provides efficient data structures based on RCU and
+lock-free algorithms. Those structures include hash tables, queues,
+stacks, and doubly-linked lists.
 
-The kauditd_thread wait loop is a bit iffy; it has a number of problems:
+This is a bugfix release. There is one noteworthy fix that has an
+impact on the lfstack API: the return value of cds_lfs_push(), which
+indicates whether the stack content was empty prior to the push,
+was logically reversed compared to the API documentation (and compared
+to its queue counterpart). This bug was introduced in the Userspace RCU
+0.8.0 release.
 
- - calls try_to_freeze() before schedule(); you typically want the
-   thread to re-evaluate the sleep condition when unfreezing, also
-   freeze_task() issues a wakeup.
+Changelog:
+2014-11-04 Userspace RCU 0.8.6
+        * Fix: silence gcc -Wextra warning
+        * compiler: use __GNUC__ instead of the undefined __GNUC_MAJOR__
+        * Fix: lfstack reversed empty/non-empty return value
+        * lfstack: fix: add missing __cds_lfs_init
 
- - it unconditionally does the {add,remove}_wait_queue(), even when the
-   sleep condition is false.
+Project website: http://urcu.so
+Git repository: git://git.urcu.so/urcu.git
 
-Use wait_event_freezable() that does the right thing.
-
-Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: oleg@redhat.com
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20141002102251.GA6324@worktop.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/audit.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 80983df..32bfc43 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -499,7 +499,6 @@ static int kauditd_thread(void *dummy)
- 	set_freezable();
- 	while (!kthread_should_stop()) {
- 		struct sk_buff *skb;
--		DECLARE_WAITQUEUE(wait, current);
- 
- 		flush_hold_queue();
- 
-@@ -514,16 +513,8 @@ static int kauditd_thread(void *dummy)
- 				audit_printk_skb(skb);
- 			continue;
- 		}
--		set_current_state(TASK_INTERRUPTIBLE);
--		add_wait_queue(&kauditd_wait, &wait);
- 
--		if (!skb_queue_len(&audit_skb_queue)) {
--			try_to_freeze();
--			schedule();
--		}
--
--		__set_current_state(TASK_RUNNING);
--		remove_wait_queue(&kauditd_wait, &wait);
-+		wait_event_freezable(kauditd_wait, skb_queue_len(&audit_skb_queue));
- 	}
- 	return 0;
- }
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
