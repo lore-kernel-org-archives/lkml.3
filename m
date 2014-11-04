@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127AbaKDQE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:04:27 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:34039 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916AbaKDQEV (ORCPT
+	id S1754634AbaKDQE5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:04:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44946 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163AbaKDQEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:04:21 -0500
+	Tue, 4 Nov 2014 11:04:55 -0500
+Date: Tue, 4 Nov 2014 08:03:45 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
+        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
+        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Lucas Stach <l.stach@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        djkurtz@google.com, ykk@rock-chips.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
+        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org
+Subject: Re: [PATCH 2/2] move imx-hdmi to bridge/dw-hdmi
+Message-ID: <20141104160345.GB1503@kroah.com>
+References: <1415108398-34376-1-git-send-email-andy.yan@rock-chips.com>
 MIME-Version: 1.0
-In-Reply-To: <3430954.VNaFmamXmP@wuerfel>
-References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
-	<CALCETrXGoevmD_avz5sQfbbD624vpLW5=-8ovzTPT_5wzNFnVA@mail.gmail.com>
-	<CALAqxLXfy5P0kg-W7hL+Jf1iYv758+-2cTdZwsY8kAns1nvEmg@mail.gmail.com>
-	<3430954.VNaFmamXmP@wuerfel>
-Date: Tue, 4 Nov 2014 08:04:20 -0800
-Message-ID: <CALAqxLWf9KVmSh2WHPi-RjERex2UvFXf2A3yuP44dLJ8ucbTBw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/3] perf: User/kernel time correlation and event generation
-From: John Stultz <john.stultz@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andy Lutomirski <luto@amacapital.net>, Pawel Moll <pawel.moll@arm.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Pawel Moll <mail@pawelmoll.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415108398-34376-1-git-send-email-andy.yan@rock-chips.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 12:01 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 03 November 2014 17:11:53 John Stultz wrote:
->> I've got some thoughts on what a possible interface that wouldn't be
->> awful could look like, but I'm still hesitant because I don't really
->> know if exposing this sort of data is actually a good idea long term.
->
-> I was also thinking (while working on an unrelated patch) we could use
-> a system call like
->
-> int clock_getoffset(clockid_t clkid, struct timespec *offs);
->
-> that returns the current offset between CLOCK_REALTIME and the
-> requested timebase. It is of course racy, but so is every use
-> of CLOCK_REALTIME. We could also use a reference other than
-> CLOCK_REALTIME that might be more stable, but passing two arbitrary
-> clocks as input would make this much more complex to implement.
+On Tue, Nov 04, 2014 at 09:39:58PM +0800, Andy Yan wrote:
+> From: Andy yan <andy.yan@rock-chips.com>
+> 
+> the original imx hdmi driver is under staging/imx-drm,
+> which depends on imx-drm, so move the imx hdmi drvier out
+> to drm/bridge and rename imx-hdmi to dw-hdmi
+> 
+> Change-Id: I5f417372f256aa26cd00a3cd0160741680afd39d
 
-Yea, this is too racy for me, at least for it to be useful. You get an
-offset, but you don't get any sense of what it was actually valid for.
-
-I think to be at all useful, you'll have to return both a timestamp
-for a given clockid, and an offset to the second clockid. That way you
-can generate a valid point in time on two clocks (as best as possible,
-given possible non-atomic reads of separately backed clockids).
-
-But again, I'm not totally sure exposing this provides that much value
-over userspace reading the two clocks itself (in ABA fashion) to sort
-this out.
-
-And I also don't see it as particularly related to this perf extension
-that Pawel is doing (since we are trying to avoid making the perf
-clock a directly accessible clockid).
-
-thanks
--john
+Never include this line in a public patch, it means nothing to us,
+sorry...
