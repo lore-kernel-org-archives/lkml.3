@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaKDLAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:00:49 -0500
-Received: from sauhun.de ([89.238.76.85]:53469 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256AbaKDLAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:00:47 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH] sched: completion: document when to use wait_for_completion_io_*
-Date: Tue,  4 Nov 2014 12:01:41 +0100
-Message-Id: <1415098901-2768-1-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 2.1.1
+	id S1753071AbaKDLCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:02:16 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:40044 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaKDLCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 06:02:14 -0500
+Message-ID: <5458B22D.8000209@collabora.co.uk>
+Date: Tue, 04 Nov 2014 12:02:05 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Mark Brown <broonie@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 02/14] regulator: Add function to map modes to struct
+ regulator_desc
+References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk> <1415025649-8119-3-git-send-email-javier.martinez@collabora.co.uk> <1415097072.7941.5.camel@AMDC1943>
+In-Reply-To: <1415097072.7941.5.camel@AMDC1943>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As discussed [1], accounting IO is meant for blkio only. Document that
-so driver authors won't use them for device io.
+Hello Krzysztof,
 
-[1] http://thread.gmane.org/gmane.linux.drivers.i2c/20470
+Thanks a for your feedback.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- kernel/sched/completion.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+On 11/04/2014 11:31 AM, Krzysztof Kozlowski wrote:
+>> + *
+>> + * @map_modes: Callback invoked to translate between hardware to standard modes.
+> 
+> Initially I thought it should map from standard to hardware. But then I
+> looked at max77802 implementation and it maps from hardware to standard.
+> Anyway I got confused (both are "modes" and both unsigned ints).
+> 
+> Could you describe which should be returned?
+> 
 
-diff --git a/kernel/sched/completion.c b/kernel/sched/completion.c
-index a63f4dc27909..607f852b4d04 100644
---- a/kernel/sched/completion.c
-+++ b/kernel/sched/completion.c
-@@ -148,7 +148,7 @@ EXPORT_SYMBOL(wait_for_completion_timeout);
-  *
-  * This waits to be signaled for completion of a specific task. It is NOT
-  * interruptible and there is no timeout. The caller is accounted as waiting
-- * for IO.
-+ * for IO (which traditionally means blkio only).
-  */
- void __sched wait_for_completion_io(struct completion *x)
- {
-@@ -163,7 +163,8 @@ EXPORT_SYMBOL(wait_for_completion_io);
-  *
-  * This waits for either a completion of a specific task to be signaled or for a
-  * specified timeout to expire. The timeout is in jiffies. It is not
-- * interruptible. The caller is accounted as waiting for IO.
-+ * interruptible. The caller is accounted as waiting for IO (which traditionally
-+ * means blkio only).
-  *
-  * Return: 0 if timed out, and positive (at least 1, or number of jiffies left
-  * till timeout) if completed.
--- 
-2.1.1
+Sure, maybe rewording to:
 
+"Callback invoked to translate from hardware to standard modes." ?
+
+But I'll add also document that the parameter should be a hardware
+mode and the return value a standard mode.
+
+ >>   */
+>>  struct regulator_desc {
+>>  	const char *name;
+>> @@ -285,6 +287,8 @@ struct regulator_desc {
+>>  	unsigned int enable_time;
+>>  
+>>  	unsigned int off_on_delay;
+>> +
+>> +	unsigned int (*map_modes)(unsigned int mode);
+> 
+> Shouldn't this be in regulator ops?
+> 
+
+regulator ops are for the operations that a regulator support
+(enable, disable, set mode, etc). All the thse are actions but
+how to translate between hardware and standard modes is not an
+action but a non-varying configuration of the regulator.
+
+So I believe that regulator desc was what fit the most. I don't
+have a strong opinion though if people think that it should be
+in regulator ops instead.
+
+Best regards,
+Javier
