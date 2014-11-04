@@ -1,243 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaKDNdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:33:10 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:35159 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752851AbaKDNdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:33:07 -0500
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH] mfd: qcom-spmi-pmic: Add support for more chips versions
-Date: Tue,  4 Nov 2014 15:33:23 +0200
-Message-Id: <1415108003-16387-1-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753902AbaKDNdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:33:52 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:46787 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478AbaKDNdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 08:33:51 -0500
+Message-ID: <5458D5B8.6040706@gmail.com>
+Date: Tue, 04 Nov 2014 21:33:44 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
+ hotplug
+References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com> <20141103104111.GA23531@worktop.programming.kicks-ass.net> <20141103235747.GA26702@kernel> <20141104083225.GG10501@worktop.programming.kicks-ass.net> <20141104082345.GA22062@kernel> <20141104101022.GH10501@worktop.programming.kicks-ass.net> <5458D506.4080702@gmail.com>
+In-Reply-To: <5458D506.4080702@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update compatible string with runtime detected chip revision
-information, for example qcom,pm8941 will become qcom,pm8941-v1.0.
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- .../devicetree/bindings/mfd/qcom,spmi-pmic.txt     |  18 ++-
- drivers/mfd/qcom-spmi-pmic.c                       | 142 +++++++++++++++++++++
- 2 files changed, 156 insertions(+), 4 deletions(-)
+On 14/11/4 下午9:30, Wanpeng Li wrote:
+> Hi Peter,
+> On 14/11/4 下午6:10, Peter Zijlstra wrote:
+>> On Tue, Nov 04, 2014 at 04:23:45PM +0800, Wanpeng Li wrote:
+>>> On Tue, Nov 04, 2014 at 09:32:25AM +0100, Peter Zijlstra wrote:
+>>>> On Tue, Nov 04, 2014 at 07:57:48AM +0800, Wanpeng Li wrote:
+>>>>> On Mon, Nov 03, 2014 at 11:41:11AM +0100, Peter Zijlstra wrote:
+>>>>>> On Fri, Oct 31, 2014 at 03:28:17PM +0800, Wanpeng Li wrote:
+>>>>>> So what is wrong with making dl_task_timer() deal with it? The timer
+>>>>>> will still fire on the correct time, canceling it and or otherwise
+>>>>>> messing with the CBS is wrong. Once it fires, all we need to do is
+>>>>>> migrate it to another cpu (preferably one that is still online of 
+>>>>>> course
+>>>>>> :-).
+>>>>> Do you mean what I need to do is push the task to another cpu in 
+>>>>> dl_task_timer()
+>>>>> if rq is offline?
+>>>> That does indeed appear to be the sensible fix to me.
+>>>>
+>>>>> In addition, what will happen if dl task can't preempt on
+>>>>> another cpu?
+>>>> So if we find that the rq the task was on is no longer available, we
+>>>> need to select a new rq, the 'right' rq would be the one running the
+>>>> latest deadline.
+>>>>
+>>>> If it cannot preempt the latest (running) deadline, it was not 
+>>>> eligible
+>>>> for running in the first place so no worries, right?
+>>> I think this will lead to this deadline task cannot running on any 
+>>> rqs any more.
+>>> If my understanding is not right, when it will be picked?
+>> So you unconditionally place it on the rq with the latest deadline. If
+>> it cannot preempt, at least its on an online cpu. It will get scheduled
+>> whenever its deadline is one of the N earliest, with N the number of
+>> online CPUs.
+>
+> If something like this make sense?
+>
+> (Will test it tomorrow and send out a formal one)
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index f3d7776..dac33d1 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -553,6 +553,41 @@ again:
+> push_dl_task(rq);
+> #endif
+> }
+> +
+> + /*
+> + * So if we find that the rq the task was on is no longer
+> + * available, we need to select a new rq, the 'right' rq
+> + * would be the one running the latest deadline.
+> + *
+> + * If it cannot preempt, at least it's on an online cpu. It
+> + * will get scheduled whenever its deadline is one of the N
+> + * earliest, with N the number of online CPUs.
+> + */
+> +
+> + if (!rq->online) {
+> + struct rq *latest_rq = NULL;
+> + int cpu;
+> + u64 dmin = LONG_MAX;
+> +
+> + for_each_cpu(cpu, &p->cpus_allowed)
+> + if (cpu_online(cpu) &&
+> + cpu_rq(cpu)->dl.earliest_dl.curr < dmin) {
+> + latest_rq = cpu_rq(cpu);
+> + dmin = latest_rq->dl.earliest_dl.curr;
+> + }
+> +
+> + if (!latest_rq)
+> + goto unlock;
+> +
+> + raw_spin_lock(&latest_rq->lock);
+> +
+> + deactivate_task(rq, p, 0);
+> + set_task_cpu(p, latest_rq->cpu);
+> + activate_task(latest_rq, p, 0);
+> +
+> + raw_spin_unlock(&latest_rq->lock);
+> + }
+> +
+> unlock:
+> raw_spin_unlock(&rq->lock);
 
-diff --git a/Documentation/devicetree/bindings/mfd/qcom,spmi-pmic.txt b/Documentation/devicetree/bindings/mfd/qcom,spmi-pmic.txt
-index 7182b88..bbe7db8 100644
---- a/Documentation/devicetree/bindings/mfd/qcom,spmi-pmic.txt
-+++ b/Documentation/devicetree/bindings/mfd/qcom,spmi-pmic.txt
-@@ -15,10 +15,20 @@ each. A function can consume one or more of these fixed-size register regions.
- 
- Required properties:
- - compatible:      Should contain one of:
--                     "qcom,pm8941"
--                     "qcom,pm8841"
--                     "qcom,pma8084"
--                     or generalized "qcom,spmi-pmic".
-+                   qcom,pm8941,
-+                   qcom,pm8841,
-+                   qcom,pm8019,
-+                   qcom,pm8226,
-+                   qcom,pm8110,
-+                   qcom,pma8084,
-+                   qcom,pmi8962,
-+                   qcom,pmd9635,
-+                   qcom,pm8994,
-+                   qcom,pmi8994,
-+                   qcom,pm8916,
-+                   qcom,pm8004,
-+                   qcom,pm8909,
-+                   or generalized "qcom,spmi-pmic".
- - reg:             Specifies the SPMI USID slave address for this device.
-                    For more information see:
-                    Documentation/devicetree/bindings/spmi/spmi.txt
-diff --git a/drivers/mfd/qcom-spmi-pmic.c b/drivers/mfd/qcom-spmi-pmic.c
-index 4b8beb2..67446a4 100644
---- a/drivers/mfd/qcom-spmi-pmic.c
-+++ b/drivers/mfd/qcom-spmi-pmic.c
-@@ -13,10 +13,126 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/slab.h>
- #include <linux/spmi.h>
- #include <linux/regmap.h>
-+#include <linux/of.h>
- #include <linux/of_platform.h>
- 
-+#define PMIC_REV2		0x101
-+#define PMIC_REV3		0x102
-+#define PMIC_REV4		0x103
-+#define PMIC_TYPE		0x104
-+#define PMIC_SUBTYPE		0x105
-+
-+#define PMIC_TYPE_VALUE		0x51
-+
-+#define PM8941_SUBTYPE		0x01
-+#define PM8841_SUBTYPE		0x02
-+#define PM8019_SUBTYPE		0x03
-+#define PM8226_SUBTYPE		0x04
-+#define PM8110_SUBTYPE		0x05
-+#define PMA8084_SUBTYPE		0x06
-+#define PMI8962_SUBTYPE		0x07
-+#define PMD9635_SUBTYPE		0x08
-+#define PM8994_SUBTYPE		0x09
-+#define PMI8994_SUBTYPE		0x0a
-+#define PM8916_SUBTYPE		0x0b
-+#define PM8004_SUBTYPE		0x0c
-+#define PM8909_SUBTYPE		0x0d
-+
-+static int pmic_spmi_read_revid(struct regmap *map, char **name,
-+				int *major, int *minor)
-+{
-+	unsigned int rev2, rev3, rev4, type, subtype;
-+	int ret;
-+
-+	ret = regmap_read(map, PMIC_TYPE, &type);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (type != PMIC_TYPE_VALUE)
-+		return -EINVAL;
-+
-+	ret = regmap_read(map, PMIC_SUBTYPE, &subtype);
-+	if (ret < 0)
-+		return ret;
-+
-+	rev2 = regmap_read(map, PMIC_REV2, &rev2);
-+	if (ret < 0)
-+		return ret;
-+
-+	rev3 = regmap_read(map, PMIC_REV3, &rev3);
-+	if (ret < 0)
-+		return ret;
-+
-+	rev4 = regmap_read(map, PMIC_REV4, &rev4);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * In early versions of PM8941 and PM8226, the major revision number
-+	 * started incrementing from 0 (eg 0 = v1.0, 1 = v2.0).
-+	 * Increment the major revision number here if the chip is an early
-+	 * version of PM8941 or PM8226.
-+	 */
-+	if ((subtype == PM8941_SUBTYPE || subtype == PM8226_SUBTYPE) &&
-+	    rev4 < 0x02)
-+		rev4++;
-+
-+	*major = rev4;
-+	if (subtype == PM8110_SUBTYPE)
-+		*minor = rev2;
-+	else
-+		*minor = rev3;
-+
-+	switch (subtype) {
-+	case PM8941_SUBTYPE:
-+		*name = "pm8941";
-+		break;
-+	case PM8841_SUBTYPE:
-+		*name = "pm8841";
-+		break;
-+	case PM8019_SUBTYPE:
-+		*name = "pm8019";
-+		break;
-+	case PM8226_SUBTYPE:
-+		*name = "pm8226";
-+		break;
-+	case PM8110_SUBTYPE:
-+		*name = "pm8110";
-+		break;
-+	case PMA8084_SUBTYPE:
-+		*name = "pma8084";
-+		break;
-+	case PMI8962_SUBTYPE:
-+		*name = "pmi8962";
-+		break;
-+	case PMD9635_SUBTYPE:
-+		*name = "pmd8635";
-+		break;
-+	case PM8994_SUBTYPE:
-+		*name = "pm8994";
-+		break;
-+	case PMI8994_SUBTYPE:
-+		*name = "pmi8994";
-+		break;
-+	case PM8916_SUBTYPE:
-+		*name = "pm8916";
-+		break;
-+	case PM8004_SUBTYPE:
-+		*name = "pm8004";
-+		break;
-+	case PM8909_SUBTYPE:
-+		*name = "pm8909";
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static const struct regmap_config spmi_regmap_config = {
- 	.reg_bits	= 16,
- 	.val_bits	= 8,
-@@ -28,11 +144,27 @@ static int pmic_spmi_probe(struct spmi_device *sdev)
- {
- 	struct device_node *root = sdev->dev.of_node;
- 	struct regmap *regmap;
-+	struct property *prop;
-+	int major, minor, ret;
-+	char *name, compatible[32];
- 
- 	regmap = devm_regmap_init_spmi_ext(sdev, &spmi_regmap_config);
- 	if (IS_ERR(regmap))
- 		return PTR_ERR(regmap);
- 
-+	ret = pmic_spmi_read_revid(regmap, &name, &major, &minor);
-+	if (!ret) {
-+		snprintf(compatible, ARRAY_SIZE(compatible), "qcom,%s-v%d.%d",
-+			 name, major, minor);
-+		prop = kzalloc(sizeof(*prop), GFP_KERNEL);
-+		if (prop) {
-+			prop->name = kstrdup("compatible", GFP_KERNEL);
-+			prop->value = kstrdup(compatible, GFP_KERNEL);
-+			prop->length = strlen(prop->value);
-+			of_update_property(root, prop);
-+		}
-+	}
-+
- 	return of_platform_populate(root, NULL, NULL, &sdev->dev);
- }
- 
-@@ -45,7 +177,17 @@ static const struct of_device_id pmic_spmi_id_table[] = {
- 	{ .compatible = "qcom,spmi-pmic" },
- 	{ .compatible = "qcom,pm8941" },
- 	{ .compatible = "qcom,pm8841" },
-+	{ .compatible = "qcom,pm8019" },
-+	{ .compatible = "qcom,pm8226" },
-+	{ .compatible = "qcom,pm8110" },
- 	{ .compatible = "qcom,pma8084" },
-+	{ .compatible = "qcom,pmi8962" },
-+	{ .compatible = "qcom,pmd9635" },
-+	{ .compatible = "qcom,pm8994" },
-+	{ .compatible = "qcom,pmi8994" },
-+	{ .compatible = "qcom,pm8916" },
-+	{ .compatible = "qcom,pm8004" },
-+	{ .compatible = "qcom,pm8909" },
- 	{ }
- };
- MODULE_DEVICE_TABLE(of, pmic_spmi_id_table);
--- 
-1.9.1
+wow, sorry for mess format.
+
+>
+> Regards,
+> Wanpeng Li
+>
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
