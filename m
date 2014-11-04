@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690AbaKDV4n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:56:43 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:65298 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688AbaKDV4m (ORCPT
+	id S1752517AbaKDV6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:58:43 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59727 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaKDV6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:56:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141104173624.67dd3286@canb.auug.org.au>
-References: <20141104173624.67dd3286@canb.auug.org.au>
-Date: Tue, 4 Nov 2014 22:56:40 +0100
-X-Google-Sender-Auth: RLRkVXfRm0F4_l2IGQzHHTl1ff8
-Message-ID: <CAMuHMdVfTK4xEu33YMay9naTThvhRLdCpVCQLHW1FSW643mSAw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Nov 4
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Michael Ellerman <michael@ellerman.id.au>
-Cc: Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Nov 2014 16:58:42 -0500
+Date: Tue, 04 Nov 2014 16:58:37 -0500 (EST)
+Message-Id: <20141104.165837.2166936588915191109.davem@davemloft.net>
+To: fabf@skynet.be
+Cc: linux-kernel@vger.kernel.org, joe@perches.com,
+        steffen.klassert@secunet.com, herbert@gondor.apana.org.au,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org
+Subject: Re: [PATCH V2 net-next] esp4: remove assignment in if condition
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1415138076-7036-1-git-send-email-fabf@skynet.be>
+References: <1415138076-7036-1-git-send-email-fabf@skynet.be>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Nov 2014 13:58:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen, Michael,
+From: Fabian Frederick <fabf@skynet.be>
+Date: Tue,  4 Nov 2014 22:54:36 +0100
 
-On Tue, Nov 4, 2014 at 7:36 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Status of my local build tests will be at
-> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-> advice about cross compilers/configs that work, we are always open to add
-> more builds.
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> V2: remove blank line between set and test (suggested by Joe Perches).
 
-Looks like the build results got stuck on Nov 3? There are also no
-results for v3.18-rc3 yet.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Applied, thanks.
