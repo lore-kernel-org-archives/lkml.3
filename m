@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaKDFpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 00:45:49 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:52836 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbaKDFpq (ORCPT
+	id S1751278AbaKDFy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 00:54:27 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:47561 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaKDFyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 00:45:46 -0500
-Date: Tue, 4 Nov 2014 14:45:34 +0900
-From: Gyungoh Yoo <gyungoh@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v6 7/8] regulator: sky81452: Add compatible
- string for device binding
-Message-ID: <20141104054534.GA4108@jack-ThinkPad-T520>
-References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
- <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
- <1414739322-12487-8-git-send-email-jack.yoo@skyworksinc.com>
- <20141031164418.GC18557@sirena.org.uk>
- <20141104004333.GA2965@jack-ThinkPad-T520>
- <20141104005329.GA3815@sirena.org.uk>
+	Tue, 4 Nov 2014 00:54:25 -0500
+Date: Mon, 3 Nov 2014 21:54:19 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: =?iso-8859-1?Q?=C9ric?= Piel <eric.piel@tremplin-utc.net>
+Cc: Giedrius Statkevicius <giedriuswork@gmail.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com
+Subject: Re: [PATCH v2] platform: hp_accel: add a i8042 filter to remove
+ HPQ6000 data from kb bus stream
+Message-ID: <20141104055418.GA56751@vmdeb7>
+References: <1414688267-29676-1-git-send-email-giedriuswork@gmail.com>
+ <5456ADF2.8080400@tremplin-utc.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141104005329.GA3815@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5456ADF2.8080400@tremplin-utc.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 12:53:29AM +0000, Mark Brown wrote:
-> On Tue, Nov 04, 2014 at 09:43:34AM +0900, Gyungoh Yoo wrote:
-> > On Fri, Oct 31, 2014 at 04:44:18PM +0000, Mark Brown wrote:
+On Sun, Nov 02, 2014 at 11:19:30PM +0100, Éric Piel wrote:
+> On 30-10-14 17:57, Giedrius Statkevicius wrote:
+> >Add a i8042 filter to hp_accel to remove accelerometer's data with acpi
+> >id HPQ6000 from keyboard bus stream. The codes sent by accelerometer are
+> >e0 25, e0 26, e0 27 and e0 28. The relevant information is already
+> >passed through /dev/freefall so no need to send these undocumented weird
+> >signals through the keyboard bus. Also, unclogs `dmesg` because atkbd
+> >complained about weird scan codes, saves processing power and disk
+> >space.
+> >
+> >Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
+> >Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Hi,
+> Looks fine with respect to the hp accel driver. If Dmitry thinks the
+> behaviour is fine then I've got nothing more to say :-)
 > 
-> > > This doesn't apply against current code and depends on the MFD symbol
-> > > rename - can you please check what's going on here?
+> Reviewed-by: Éric Piel <eric.piel@tremplin-utc.net>
 > 
-> > Are you talking about 'sky81452-regulator'?
-> > I am sorry I don't understand. Can you explain in more detail?
-> 
-> No, I mean the Kconfig change.
-> 
-> > > It would make sense to split the Kconfig symbol rename into a separate
-> > > patch to ease merging, it doesn't seem obviously related to the driver
-> > > change and should probably be in the same patch as the MFD symbol rename
-> > > for bisetion.
-> 
-> > becuase the symbol in the modfied MFD does not match with the
-> > merged regulator driver, it was hard to split the patch.
-> 
-> I'm having a hard time understanding why it is difficult to split the
-> two changes - they are in completely separate files.
+> Darren, could you pick up this patch in your tree?
 
-I am sorry for the hard time.
+Yes, applied. It will make my 3.18-3 series to Linus by the end of the week, I
+want it to spend a few days in next first.
 
-That was because the symbol changes had a dependency with 1/8.
-In this case, Should Kconfig symbol change back from MFD_SKY81452
-to SKY81452 in this patch series? And then should I submit to change to MFD_SKY81452
-with seperate patch?
+> 
+> Cheers,
+> Éric
+> 
+> 
+> >---
+> >Changes in v2:
+> >* Remove a unnecessary deletion of a blank line
+> >* Move #includes of i8042.h and serio.h before the relative path
+> >   includes.
+> >
+> >First of all, any Tested-Bys are very welcome by people who also have a
+> >accelerometer with acpi id HPQ6000. If it happens with HPQ6007 too we
+> >can easily modify this to install the filter when HPQ6007 is detected.
+> >For the time being the filter is only installed when HPQ6000 is
+> >detected.
+> >
+> >Now moving to what was changed since the RFC. I reworked the filter
+> >function to hopefully make it more clear what it is doing. Since the
+> >codes sent by the accelerometer are extended then we need to filter all
+> >of 0xe0's and then send one 0xe0 back when the actual key isn't in the
+> >range of 0x25-0x28. Also, I've removed the check for errors for
+> >i8042_install_filter() because it's unnecessary to check if it failed.
+> >If multiple HPQ6000's are in the system then no issue occurs even if
+> >multiple i8042_install_filter() are issued because this is handled by
+> >i8042 and it's smart enough not to install the same filter two or more
+> >times.
+> >
+> >This fixes https://bugzilla.kernel.org/show_bug.cgi?id=84941.
+> :
+> 
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
