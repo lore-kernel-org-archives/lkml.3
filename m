@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229AbaKDOjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:39:16 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:50186 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751847AbaKDOjP (ORCPT
+	id S1754265AbaKDOkr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:40:47 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:56705 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaKDOkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:39:15 -0500
-Date: Tue, 4 Nov 2014 09:39:13 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "pang.xunlei" <pang.xunlei@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH v2 3/6] sched/cpupri: Remove unnecessary definitions in
- cpupri.h
-Message-ID: <20141104093913.392d2ed2@gandalf.local.home>
-In-Reply-To: <1415099585-31174-3-git-send-email-pang.xunlei@linaro.org>
-References: <1415099585-31174-1-git-send-email-pang.xunlei@linaro.org>
-	<1415099585-31174-3-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 4 Nov 2014 09:40:45 -0500
+Date: Tue, 4 Nov 2014 08:41:16 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: Felipe Balbi <balbi@ti.com>, <myungjoo.ham@samsung.com>,
+        <cw00.choi@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
+        <grant.likely@linaro.org>
+Subject: Re: [PATCH 0/4] extcon: gpio: add DT support
+Message-ID: <20141104144116.GB24983@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415032350-8459-1-git-send-email-balbi@ti.com>
+ <54586E34.6090602@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
+Content-Disposition: inline
+In-Reply-To: <54586E34.6090602@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Nov 2014 19:13:02 +0800
-"pang.xunlei" <pang.xunlei@linaro.org> wrote:
+--+g7M9IMkV8truYOl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Actually, cpupri_set() and cpupri_init() can never be used without
-> CONFIG_SMP.
-> 
+On Tue, Nov 04, 2014 at 11:42:04AM +0530, George Cherian wrote:
+> Hi Felipe et al.
+>=20
+> Another series was posted by removing the platform support.
+> https://lkml.org/lkml/2014/10/14/244
+>=20
+> I guess I forgot to copy linux-omap.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+you do too many things in patch one. I wonder why you decided to combine
+three patches in one for that series.
 
--- Steve
+--=20
+balbi
 
-> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
-> ---
->  kernel/sched/cpupri.h |    3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/kernel/sched/cpupri.h b/kernel/sched/cpupri.h
-> index 6b03334..63cbb9c 100644
-> --- a/kernel/sched/cpupri.h
-> +++ b/kernel/sched/cpupri.h
-> @@ -26,9 +26,6 @@ int  cpupri_find(struct cpupri *cp,
->  void cpupri_set(struct cpupri *cp, int cpu, int pri);
->  int cpupri_init(struct cpupri *cp);
->  void cpupri_cleanup(struct cpupri *cp);
-> -#else
-> -#define cpupri_set(cp, cpu, pri) do { } while (0)
-> -#define cpupri_init() do { } while (0)
->  #endif
->  
->  #endif /* _LINUX_CPUPRI_H */
+--+g7M9IMkV8truYOl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUWOWMAAoJEIaOsuA1yqREVLkQAJAxPatL4YsmCE0YGJ6wDGCr
+jRykXTqbxwe4E1JknLk7wJNHoryzimgmvbNMEu/RXfWKMVc5TQGHMTVjY1lhVF+7
+6hP0Nu9nM1nJQM005vFnkiwCEBJ1gDDQHKSiZjf0AhTiPp0qJU8bh7ZdjRvQOSV2
+slcLSLvZo1ZoLxmoXY4tOtPkn1M2kXWdk3zZKa5bC07osO7MmREsO3P6tUuYPSYY
+zt1PbdIsVvOx/cV5ZBl11ceWQY0vIBbVrOq0qQps4yk+CFqfvM1tXqRg8fNUwEDU
+3zI/S7Rm1paAaoOv68S+pZ50+Ie33gNxcIx94pti2nbvEvPVEsoQoVYLmoYWDh1i
+NbKCvhA/t1PdBE8oVu7jcpb1HvP0Wg3II3SaKYWHyf6tDLvnfkSqeMGR3QrlpBAn
+zw2sPvrvdr19X+ta8ehRAzAg9nBQF2E4WLrJ26IQiRQbmJxzwdvYUk5nuOR1BShY
+qv3l+yv7CI82zaO0YHZ8uz2l4X+BULITVReC7j2QGy07Bdm8N6WHN9amkmq9frFy
+O1zM5mBIhT1vfZzM70Efig5yNdYhkcRIU7SPABqNlAmk6zHJawKmVpplVSJZDGIE
+tSwxZYzcKDbd2o+quIC7Ksj8MojvNdQ59rcBQ1ueEVSEjmhVjs0bbZtxnXNTTiMQ
+pxmAdrkii0m8HdckJ0Oo
+=c2JS
+-----END PGP SIGNATURE-----
+
+--+g7M9IMkV8truYOl--
