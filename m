@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaKDC3d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 21:29:33 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38298 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558AbaKDC33 (ORCPT
+	id S1752540AbaKDCaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 21:30:35 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36084 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751322AbaKDCaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 21:29:29 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 4 Nov 2014 11:31:12 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: Hui Zhu <zhuhui@xiaomi.com>, rjw@rjwysocki.net, len.brown@intel.com,
-        pavel@ucw.cz, m.szyprowski@samsung.com,
-        Andrew Morton <akpm@linux-foundation.org>, mina86@mina86.com,
-        aneesh.kumar@linux.vnet.ibm.com, hannes@cmpxchg.org,
-        Rik van Riel <riel@redhat.com>, mgorman@suse.de, minchan@kernel.org,
-        nasa4836@gmail.com, ddstreet@ieee.org, Hugh Dickins <hughd@google.com>,
-        mingo@kernel.org, rientjes@google.com,
-        Peter Zijlstra <peterz@infradead.org>, keescook@chromium.org,
-        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        kirill.shutemov@linux.intel.com, n-horiguchi@ah.jp.nec.com,
-        k.khlebnikov@samsung.com, msalter@redhat.com, deller@gmx.de,
-        tangchen@cn.fujitsu.com, ben@decadent.org.uk, akinobu.mita@gmail.com,
-        lauraa@codeaurora.org, vbabka@suse.cz, sasha.levin@oracle.com,
-        vdavydov@parallels.com, suleiman@google.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
- about allocation
-Message-ID: <20141104023112.GA17804@js1304-P5Q-DELUXE>
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
- <20141024052553.GE15243@js1304-P5Q-DELUXE>
- <CANFwon1JUmxP5S_jrEg=k7VRBhrD9DC0cH3ve4FioSVRYK0n4A@mail.gmail.com>
- <20141103080546.GB7052@js1304-P5Q-DELUXE>
+	Mon, 3 Nov 2014 21:30:30 -0500
+Message-ID: <54583A43.2000303@hurleysoftware.com>
+Date: Mon, 03 Nov 2014 21:30:27 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103080546.GB7052@js1304-P5Q-DELUXE>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ftrace: Document ftrace command line limitations
+References: <1415065525-8267-1-git-send-email-peter@hurleysoftware.com> <20141103211431.0d8a80b8@gandalf.local.home>
+In-Reply-To: <20141103211431.0d8a80b8@gandalf.local.home>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 05:05:46PM +0900, Joonsoo Kim wrote:
-> On Mon, Nov 03, 2014 at 03:28:38PM +0800, Hui Zhu wrote:
-> > On Fri, Oct 24, 2014 at 1:25 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> > > On Thu, Oct 16, 2014 at 11:35:47AM +0800, Hui Zhu wrote:
-> > >> In fallbacks of page_alloc.c, MIGRATE_CMA is the fallback of
-> > >> MIGRATE_MOVABLE.
-> > >> MIGRATE_MOVABLE will use MIGRATE_CMA when it doesn't have a page in
-> > >> order that Linux kernel want.
-> > >>
-> > >> If a system that has a lot of user space program is running, for
-> > >> instance, an Android board, most of memory is in MIGRATE_MOVABLE and
-> > >> allocated.  Before function __rmqueue_fallback get memory from
-> > >> MIGRATE_CMA, the oom_killer will kill a task to release memory when
-> > >> kernel want get MIGRATE_UNMOVABLE memory because fallbacks of
-> > >> MIGRATE_UNMOVABLE are MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE.
-> > >> This status is odd.  The MIGRATE_CMA has a lot free memory but Linux
-> > >> kernel kill some tasks to release memory.
-> > >>
-> > >> This patch series adds a new function CMA_AGGRESSIVE to make CMA memory
-> > >> be more aggressive about allocation.
-> > >> If function CMA_AGGRESSIVE is available, when Linux kernel call function
-> > >> __rmqueue try to get pages from MIGRATE_MOVABLE and conditions allow,
-> > >> MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.  If MIGRATE_CMA
-> > >> doesn't have enough pages for allocation, go back to allocate memory from
-> > >> MIGRATE_MOVABLE.
-> > >> Then the memory of MIGRATE_MOVABLE can be kept for MIGRATE_UNMOVABLE and
-> > >> MIGRATE_RECLAIMABLE which doesn't have fallback MIGRATE_CMA.
-> > >
-> > > Hello,
-> > >
-> > > I did some work similar to this.
-> > > Please reference following links.
-> > >
-> > > https://lkml.org/lkml/2014/5/28/64
-> > > https://lkml.org/lkml/2014/5/28/57
-> > 
-> > > I tested #1 approach and found the problem. Although free memory on
-> > > meminfo can move around low watermark, there is large fluctuation on free
-> > > memory, because too many pages are reclaimed when kswapd is invoked.
-> > > Reason for this behaviour is that successive allocated CMA pages are
-> > > on the LRU list in that order and kswapd reclaim them in same order.
-> > > These memory doesn't help watermark checking from kwapd, so too many
-> > > pages are reclaimed, I guess.
-> > 
-> > This issue can be handle with some change around shrink code.  I am
-> > trying to integrate  a patch for them.
-> > But I am not sure we met the same issue.  Do you mind give me more
-> > info about this part?
+On 11/03/2014 09:14 PM, Steven Rostedt wrote:
+> On Mon,  3 Nov 2014 20:45:25 -0500
+> Peter Hurley <peter@hurleysoftware.com> wrote:
 > 
-> I forgot the issue because there is so big time-gap. I need sometime
-> to bring issue back to my brain. I will answer it soon after some thinking.
+>> When using the function or function_graph tracers from the command
+>> line, certain command line options have limitations.
+>>
+>> Document that only kernel built-in functions can be filtered via
+>> ftrace_filter= or ftrace_graph_filter=. Also document that tracer-
+>> specific options cannot be set on the command line via trace_options.
+> 
+> It's not just a command line limitation. The command line behaves
+> exactly like set_ftrace_filter does. That is, it only affects the
+> functions that are loaded when the filter is modified. It never updates
+> functions that will be loaded when modules are.
+> 
+> Adding this documentation makes it seem that set_ftrace_filter has the
+> ability to update functions that were not loaded yet. This is not true.
+> The command line filtering behaves exactly like set_ftrace_filter does.
+> It only enables the functions that are loaded at the time the function
+> is set. Which was at boot up, and it just happens to be only built in
+> functions at that time.
 
-Hello,
+Ah, ok. I'll clarify those two lines and add to the documentation in
+Documentation/trace/ftrace.txt
 
-Yes, the issue I mentioned before can be handled by modifying shrink code.
-I didn't dive into the problem so I also didn't know the detail. What
-I know is that there is large fluctuation on memory statistics and
-my guess is that it is caused by order of reclaimable pages. If we use
-#1 approach, the bulk of cma pages used for page cache or something are
-linked together and will be reclaimed all at once, because reclaiming cma
-pages are not counted and watermark check still fails until normal
-pages are reclaimed.
-
-I think that round-robin approach is better. Reasons are on the
-following:
-
-1) Want to spread CMA freepages to whole users, not specific one user.
-We can modify shirnk code not to reclaim pages on CMA, because it
-doesn't help watermark checking in some cases. In this case, if we
-don't use round-robin, one specific user whose mapping with CMA pages
-can get all the benefit. Others would take all the overhead. I think that
-spreading will make all users fair.
-
-2) Using CMA freepages first needlessly imposes overhead to CMA user.
-If the system has enough normal freepages, it is better not to use it
-as much as possible.
-
-Thanks.
