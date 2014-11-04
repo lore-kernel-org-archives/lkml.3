@@ -1,115 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaKDIbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:31:32 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:10662 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752409AbaKDIb1 (ORCPT
+	id S1752704AbaKDIbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:31:50 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:48923 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848AbaKDIbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:31:27 -0500
-X-IronPort-AV: E=Sophos;i="5.04,845,1406563200"; 
-   d="scan'208";a="42814357"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: "serge@hallyn.com" <serge@hallyn.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: RE: [PATCHv5] procfs: show hierarchy of pid namespace
-Thread-Topic: [PATCHv5] procfs: show hierarchy of pid namespace
-Thread-Index: AQHP9Tjd+ELnxFHceEOKh+ztGUpbhpxOpQXA
-Date: Tue, 4 Nov 2014 08:31:27 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E619A56@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1413460916-2852-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <g2lzcx.nebnfr.1hgfdih-qmf@mail.hallyn.com>
-In-Reply-To: <g2lzcx.nebnfr.1hgfdih-qmf@mail.hallyn.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Tue, 4 Nov 2014 03:31:44 -0500
+Subject: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+References: <20141104033818.GA11149@gondor.apana.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Message-Id: <E1XlZWY-0003HZ-Ef@gondolin.me.apana.org.au>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Tue, 04 Nov 2014 16:31:34 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sA48VdB6014485
 
+This patch adds skb_copy_datagram_iter, which is identical to
+skb_copy_datagram_iovec except that it operates on iov_iter
+instead of iovec.
 
+Eventually all users of skb_copy_datagram_iovec should switch
+over to iov_iter and then we can remove skb_copy_datagram_iovec.
 
-> -----Original Message-----
-> From: serge@hallyn.com [mailto:serge@hallyn.com]
-> Sent: Saturday, November 01, 2014 2:31 AM
-> To: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org; Chen,
-> Hanxiao/é™ˆ æ™—éœ„
-> Cc: Richard Weinberger; Serge Hallyn; Oleg Nesterov; Mateusz Guzik; David Howells;
-> Eric W. Biederman
-> Subject: Re: [PATCHv5] procfs: show hierarchy of pid namespace
-> 
-> If pidns_list_add fails, the get_pid taken in the caller leaks.
-> 
-Will fix in the next patch.
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+---
 
-> It's not clear to me that the loop in 'if curns' will always end in a list_add_tail,
-> and if not the get_pid leaks.  It does look like it should, but something to catch
-> the unexpected failure (especially after someone modifies that code) would be
-> nice
+ include/linux/skbuff.h |    3 +
+ net/core/datagram.c    |   82 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+)
 
-The previous version collect all namespace's pids on host,
-in one scenario we had to add them into list according to curr_ns;
-another scenario we add them into list directly.
-But now using find_ge_pid, we only collect pids of current ns,
-so these codes are redundant.
-Sorry for that mistake.
-
-Thanks,
-- Chen
-
-> On 10/16/14 7:01 Chen Hanxiao wrote:
-> We lack of pid hierarchy information, and this will lead to:
-> a) we don't know pids' relationship, who is whose child:
->    /proc/PID/ns/pid only tell us whether two pids live in same ns;
-> b) bring trouble to nested lxc container check/restore/migration
-> c) bring trouble to pid translation between containers;
-> 
-> This patch will show the hierarchy of pid namespace
-> by pidns_hierarchy like:
-> 
-> [root@localhost ~]#cat /proc/pidns_hierarchy
-> 18060 18102 1534
-> 18060 18102 1600
-> 1550
-> *Note: numbers represent the pid 1 in different ns
-> 
-> It shows the pid hierarchy below:
-> 
->       init_pid_ns (not showed in /proc/pidns_hierarchy)
->               â”‚
-> â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-> ns1                      ns2
-> â”‚                        â”‚
-> 1550                    18060
->                           â”‚
->                           â”‚
->                          ns3
->                           â”‚
->                         18102
->                           â”‚
->                  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
->                  ns4                   ns5
->                  â”‚                    â”‚
->                 1534                  1600
-> 
-> Every pid printed in pidns_hierarchy
-> is the init pid of that pid ns level.
-> 
-> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-> ---
-
-[snip]
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 6c8b6f6..5ff7054 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -148,6 +148,7 @@
+ struct net_device;
+ struct scatterlist;
+ struct pipe_inode_info;
++struct iov_iter;
+ 
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+ struct nf_conntrack {
+@@ -2641,6 +2642,8 @@ int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *frm,
+ int skb_copy_datagram_const_iovec(const struct sk_buff *from, int offset,
+ 				  const struct iovec *to, int to_offset,
+ 				  int size);
++int skb_copy_datagram_iter(const struct sk_buff *from, int offset,
++			   struct iov_iter *to, int size);
+ void skb_free_datagram(struct sock *sk, struct sk_buff *skb);
+ void skb_free_datagram_locked(struct sock *sk, struct sk_buff *skb);
+ int skb_kill_datagram(struct sock *sk, struct sk_buff *skb, unsigned int flags);
+diff --git a/net/core/datagram.c b/net/core/datagram.c
+index fdbc9a8..45a9d4d 100644
+--- a/net/core/datagram.c
++++ b/net/core/datagram.c
+@@ -49,6 +49,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/slab.h>
+ #include <linux/pagemap.h>
++#include <linux/uio.h>
+ 
+ #include <net/protocol.h>
+ #include <linux/skbuff.h>
+@@ -482,6 +483,87 @@ fault:
+ EXPORT_SYMBOL(skb_copy_datagram_const_iovec);
+ 
+ /**
++ *	skb_copy_datagram_iter - Copy a datagram to an iovec iterator.
++ *	@skb: buffer to copy
++ *	@offset: offset in the buffer to start copying from
++ *	@to: iovec iterator to copy to
++ *	@len: amount of data to copy from buffer to iovec
++ */
++int skb_copy_datagram_iter(const struct sk_buff *skb, int offset,
++			   struct iov_iter *to, int len)
++{
++	int start = skb_headlen(skb);
++	int i, copy = start - offset;
++	struct sk_buff *frag_iter;
++
++	trace_skb_copy_datagram_iovec(skb, len);
++
++	/* Copy header. */
++	if (copy > 0) {
++		if (copy > len)
++			copy = len;
++		if (copy_to_iter(skb->data + offset, copy, to))
++			goto fault;
++		if ((len -= copy) == 0)
++			return 0;
++		offset += copy;
++	}
++
++	/* Copy paged appendix. Hmm... why does this look so complicated? */
++	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++		int end;
++		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
++
++		WARN_ON(start > offset + len);
++
++		end = start + skb_frag_size(frag);
++		if ((copy = end - offset) > 0) {
++			int err;
++			u8  *vaddr;
++			struct page *page = skb_frag_page(frag);
++
++			if (copy > len)
++				copy = len;
++			vaddr = kmap(page);
++			err = copy_to_iter(vaddr + frag->page_offset +
++					   offset - start, copy, to);
++			kunmap(page);
++			if (err)
++				goto fault;
++			if (!(len -= copy))
++				return 0;
++			offset += copy;
++		}
++		start = end;
++	}
++
++	skb_walk_frags(skb, frag_iter) {
++		int end;
++
++		WARN_ON(start > offset + len);
++
++		end = start + frag_iter->len;
++		if ((copy = end - offset) > 0) {
++			if (copy > len)
++				copy = len;
++			if (skb_copy_datagram_iter(frag_iter, offset - start,
++						   to, copy))
++				goto fault;
++			if ((len -= copy) == 0)
++				return 0;
++			offset += copy;
++		}
++		start = end;
++	}
++	if (!len)
++		return 0;
++
++fault:
++	return -EFAULT;
++}
++EXPORT_SYMBOL(skb_copy_datagram_iter);
++
++/**
+  *	skb_copy_datagram_from_iovec - Copy a datagram from an iovec.
+  *	@skb: buffer to copy
+  *	@offset: offset in the buffer to start copying to
