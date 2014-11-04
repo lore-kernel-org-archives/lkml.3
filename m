@@ -1,114 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaKDA1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 19:27:14 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53590 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbaKDA1J (ORCPT
+	id S1751620AbaKDA3A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 19:29:00 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:52421 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaKDA2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 19:27:09 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 4 Nov 2014 09:28:50 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 4/5] mm, compaction: always update cached scanner
- positions
-Message-ID: <20141104002850.GA8412@js1304-P5Q-DELUXE>
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
- <1412696019-21761-5-git-send-email-vbabka@suse.cz>
- <20141027073522.GB23379@js1304-P5Q-DELUXE>
- <544E12B5.5070008@suse.cz>
- <20141028070818.GA27813@js1304-P5Q-DELUXE>
- <5453B088.6080605@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5453B088.6080605@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Nov 2014 19:28:55 -0500
+From: Pawel Moll <pawel.moll@arm.com>
+To: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Pawel Moll <mail@pawelmoll.com>
+Subject: [PATCH v3 0/3] perf: User/kernel time correlation and event generation
+Date: Tue,  4 Nov 2014 00:28:35 +0000
+Message-Id: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 04:53:44PM +0100, Vlastimil Babka wrote:
-> On 10/28/2014 08:08 AM, Joonsoo Kim wrote:
-> >>
-> >>>And, I guess that pageblock skip feature effectively disable pageblock
-> >>>rescanning if there is no freepage during rescan.
-> >>
-> >>If there's no freepage during rescan, then the cached free_pfn also
-> >>won't be pointed to the pageblock anymore. Regardless of pageblock skip
-> >>being set, there will not be second rescan. But there will still be the
-> >>first rescan to determine there are no freepages.
-> >
-> >Yes, What I'd like to say is that these would work well. Just decreasing
-> >few percent of scanning page doesn't look good to me to validate this
-> >patch, because there is some facilities to reduce rescan overhead and
-> 
-> The mechanisms have a tradeoff, while this patch didn't seem to have
-> negative consequences.
-> 
-> >compaction is fundamentally time-consuming process. Moreover, failure of
-> >compaction could cause serious system crash in some cases.
-> 
-> Relying on successful high-order allocation for not crashing is
-> dangerous, success is never guaranteed. Such critical allocation
-> should try harder than fail due to a single compaction attempt. With
-> this argument you could aim to remove all the overhead reducing
-> heuristics.
-> 
-> >>>This patch would
-> >>>eliminate effect of pageblock skip feature.
-> >>
-> >>I don't think so (as explained above). Also if free pages were isolated
-> >>(and then returned and skipped over), the pageblock should remain
-> >>without skip bit, so after scanners meet and positions reset (which
-> >>doesn't go hand in hand with skip bit reset), the next round will skip
-> >>over the blocks without freepages and find quickly the blocks where free
-> >>pages were skipped in the previous round.
-> >>
-> >>>IIUC, compaction logic assume that there are many temporary failure
-> >>>conditions. Retrying from others would reduce effect of this temporary
-> >>>failure so implementation looks as is.
-> >>
-> >>The implementation of pfn caching was written at time when we did not
-> >>keep isolated free pages between migration attempts in a single
-> >>compaction run. And the idea of async compaction is to try with minimal
-> >>effort (thus latency), and if there's a failure, try somewhere else.
-> >>Making sure we don't skip anything doesn't seem productive.
-> >
-> >free_pfn is shared by async/sync compaction and unconditional updating
-> >causes sync compaction to stop prematurely, too.
-> >
-> >And, if this patch makes migrate/freepage scanner meet more frequently,
-> >there is one problematic scenario.
-> 
-> OK, so you don't find a problem with how this patch changes
-> migration scanner caching, just the free scanner, right?
-> So how about making release_freepages() return the highest freepage
-> pfn it encountered (could perhaps do without comparing individual
-> pfn's, the list should be ordered so it could be just the pfn of
-> first or last page in the list, but need to check that) and updating
-> cached free pfn with that? That should ensure rescanning only when
-> needed.
+From: Pawel Moll <mail@pawelmoll.com>
 
-Hello,
+Hello again,
 
-Updating cached free pfn in release_freepages() looks good to me.
+Back to the subject, this time with a slightly different angle...
 
-In fact, I guess that migration scanner also has similar problems, but,
-it's just my guess. I admit your following arguments in patch description.
+I've organised a session on the subject during the tracing
+minisummit at LPC 2014 in Dusseldorf. Notes taken from the discussion
+taken by Steven Rostedt (thanks Steve!)
 
-  However, the downside is that potentially many pages are rescanned without
-  successful isolation. At worst, there might be a page where isolation from LRU 
-  succeeds but migration fails (potentially always).
+http://www.linuxplumbersconf.org/2014/wp-content/uploads/2014/10/LPC2014_Tracing.txt
 
-So, I'm okay if you update cached free pfn in release_freepages().
+The following three patches address three main topics. They are pretty
+much orthogonal and (subject to small and obvious modifications) could
+be applied independently from each other.
 
-Thanks.
+An executive summary of both discussion and the patches:
+
+1. User/kernel perf timestamps correlation
+
+Thomas suggested that, instead of jumping through loops of correlation,
+perf should simply generate monotonic clock timestamps, instead of
+using sched clock. Peter and I pointed out that Ingo didn't like this
+idea as monotonic can be slow, but apparently the cases when it is are
+irrelevant. Thomas offered to fly to Budapest to physically convince
+Ingo - I hope it won't be necessary and he will be able to achieve
+this here, on mailing lists :-)
+
+Setting aside potential performance problems, it would be a really
+great solution, unifying all trace systems (perf, ftrace and LTTng)
+in this respect. I'm more than happy to work on potential improvements
+in the are of monotonic clock if it was to help the cause.
+
+If it is a definite no-go, we still have the third patch, allowing post-
+capture correlation based on synchronisation events.
+
+2. User event generation
+
+Everyone present agreed that it would be a very-nice-to-have feature.
+There was some discussion about implementation details, so I welcome
+feedback and comments regarding my take on the matter.
+
+3. Correlation with external timestamps
+
+This is a new issue, which surfaced recently while I was working on
+hardware trace infrastructure. It can timestamp trace packets, but is
+using yet another, completely different time source to do this.
+
+Thomas suggested solution which gets down to my original proposal for
+sched/monotonic clock correlation - an additional sample type so events
+can be "double stamped" using different clock sources providing
+synchronisation points for later time approximation. I've just extended
+the implementation with configuration value to select the clock source.
+If the first patch (making perf timestamps monotonic) gets accepted,
+there will be no immediate need for this one, but I'd like to gain some
+feedback anyway.
+
+
+That's all for this series. Previous versions:
+
+- RFC: http://www.spinics.net/lists/kernel/msg1824419.html
+- v1: http://thread.gmane.org/gmane.linux.kernel/1790231
+- v2: http://thread.gmane.org/gmane.linux.kernel/1793272
+
+Pawel Moll (3):
+  perf: Use monotonic clock as a source for timestamps
+  perf: Userspace event
+  perf: Sample additional clock value
+
+ include/linux/perf_event.h      |   7 +++
+ include/uapi/linux/perf_event.h |  37 +++++++++++++-
+ include/uapi/linux/prctl.h      |  10 ++++
+ kernel/events/core.c            | 105 +++++++++++++++++++++++++++++++++++++++-
+ kernel/sys.c                    |   5 ++
+ kernel/sysctl.c                 |   7 +++
+ 6 files changed, 168 insertions(+), 3 deletions(-)
+
+-- 
+1.8.3.2
+
