@@ -1,87 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbaKDTE5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 14:04:57 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58059 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188AbaKDTE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 14:04:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,314,1413270000"; 
-   d="scan'208";a="631358135"
-Date: Tue, 4 Nov 2014 21:04:51 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-Message-ID: <20141104190451.GS1618@lahna.fi.intel.com>
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com>
- <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com>
- <20141104082056.GG1618@lahna.fi.intel.com>
- <545912D2.5090708@codeaurora.org>
+	id S1752148AbaKDTGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 14:06:20 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:44907 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805AbaKDTGS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 14:06:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545912D2.5090708@codeaurora.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415105570-7871-3-git-send-email-k.kozlowski@samsung.com>
+References: <1415105570-7871-1-git-send-email-k.kozlowski@samsung.com>
+	<1415105570-7871-3-git-send-email-k.kozlowski@samsung.com>
+Date: Tue, 4 Nov 2014 20:06:17 +0100
+Message-ID: <CAPDyKFo6o8v9u6+MdGSRMmHeMcODqCcdToHXoJqVGcsRVgQwdA@mail.gmail.com>
+Subject: Re: [PATCH v9 2/4] amba: Don't unprepare the clocks if device driver
+ wants IRQ safe runtime PM
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 11:54:26AM -0600, Timur Tabi wrote:
-> On 11/04/2014 02:20 AM, Mika Westerberg wrote:
-> >There is nothing like that yet in ACPI world but with the ACPI _DSD
-> >patches we are getting properties similar to DT which means that we can
-> >provide pinctrl bindings from ACPI systems as well.
-> 
-> Do you know if anyone has signed up to actually do the work of defining how
-> pinctrl will look in ACPI?
+On 4 November 2014 13:52, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> The AMBA bus driver defines runtime Power Management functions which
+> disable and unprepare AMBA bus clock. This is problematic for runtime PM
+> because unpreparing a clock might sleep so it is not interrupt safe.
+>
+> However some drivers may want to implement runtime PM functions in
+> interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
+> bus driver should only disable/enable the clock in runtime suspend and
+> resume callbacks.
+>
+> Detect the device driver behavior during runtime suspend. During runtime
+> resume deal with clocks according to stored value.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/amba/bus.c       | 24 ++++++++++++++++++++----
+>  include/linux/amba/bus.h |  1 +
+>  2 files changed, 21 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+> index 47bbdc1b5be3..27ec8882ec8e 100644
+> --- a/drivers/amba/bus.c
+> +++ b/drivers/amba/bus.c
+> @@ -85,6 +85,13 @@ static struct device_attribute amba_dev_attrs[] = {
+>  };
+>
+>  #ifdef CONFIG_PM
+> +
+> +#ifdef CONFIG_PM_RUNTIME
+> +#define get_pm_runtime_irq_safe(dev)   ((dev)->power.irq_safe)
+> +#else
+> +#define get_pm_runtime_irq_safe(dev)   1
 
-No, not yet.
+No, this doesn't work for those drivers that isn't configured as
+irq_safe. The pm_runtime_force_suspend() invoked from the driver's
+system PM suspend callback, will expect clocks to be unprepared when
+CONFIG_PM_RUNTIME is unset.
 
-> I'm guessing the simplest approach would be to:
-> 
-> 1) Modify pinctrl_dt_to_map() so that it uses functions like
-> device_read_property() instead of of_find_property() (i.e. use
-> ACPI/DT-agnostic calls instead of DT-specific calls).
-> 
-> 2) Define all of the DSD property in ASL so that pinctrl_dt_to_map() works
-> as-is.
-> 
-> 3) Possibly rename pinctrl_dt_to_map() to something like
-> pinctrl_prop_to_map() or whatever.
+To address this issue, in principle we need to know whether the driver
+has invoked pm_runtime_irq_safe(), even when CONFIG_PM_RUNTIME is
+unset.
 
-Yes, something like that.
+This may be solved by the help of PM core:
+1) Move the irq_safe member in the struct dev_pm_info, outside the
+#ifdef CONFIG_PM_RUNTIME.
+2) Let the pm_runtime_irq_safe() function be implemented for CONFIG_PM
+instead of CONFIG_PM_RUNTIME.
 
-We still need to account the fact that BIOS is supposed to configure the
-pins in advance. The pinctrl mappings are just for refining that, like
-muxing out the SPI pins instead of GPIOs and so on.
+If the PM core maintainers don't like that approach we can always add
+an amba specific wrapper function for pm_runtime_irq_safe() and store
+the information needed in the struct amba_device.
 
-> > Typically it has
-> >been the BIOS that configures things but it cannot get everything 100%
-> >right.
-> 
-> True, but this assumes that the BIOS can already talk to the pin control
-> device without using the Linux driver.  If we use DSD properties to describe
-> the pin control functions, then we're actually using the Linux driver to do
-> pin control, albeit indirectly.
+Kind regards
+Uffe
 
-Right.
-
-> >Currently I've been testing the muxing functionality so that I have a
-> >small board file that sets mappings and the driver core handles
-> >everything from there. For example I have development board where SPI
-> >pins are muxed as GPIOs by the BIOS and with the mappings when the SPI
-> >device appears the core will mux SPI out of those pins.
-> 
-> How do you actually get the kernel to call into your pinctrl driver, without
-> using any device tree properties or DSD properties?
-
-I'm using a small board file (which is not included in this patch set)
-that lives in arch/x86/platform/*.
+> +#endif
+> +
+>  /*
+>   * Hooks to provide runtime PM of the pclk (bus clock).  It is safe to
+>   * enable/disable the bus clock at runtime PM suspend/resume as this
+> @@ -95,8 +102,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
+>         struct amba_device *pcdev = to_amba_device(dev);
+>         int ret = pm_generic_runtime_suspend(dev);
+>
+> -       if (ret == 0 && dev->driver)
+> -               clk_disable_unprepare(pcdev->pclk);
+> +       if (ret == 0 && dev->driver) {
+> +               pcdev->irq_safe = get_pm_runtime_irq_safe(dev);
+> +
+> +               if (pcdev->irq_safe)
+> +                       clk_disable(pcdev->pclk);
+> +               else
+> +                       clk_disable_unprepare(pcdev->pclk);
+> +       }
+>
+>         return ret;
+>  }
+> @@ -107,7 +120,10 @@ static int amba_pm_runtime_resume(struct device *dev)
+>         int ret;
+>
+>         if (dev->driver) {
+> -               ret = clk_prepare_enable(pcdev->pclk);
+> +               if (pcdev->irq_safe)
+> +                       ret = clk_enable(pcdev->pclk);
+> +               else
+> +                       ret = clk_prepare_enable(pcdev->pclk);
+>                 /* Failure is probably fatal to the system, but... */
+>                 if (ret)
+>                         return ret;
+> @@ -115,7 +131,7 @@ static int amba_pm_runtime_resume(struct device *dev)
+>
+>         return pm_generic_runtime_resume(dev);
+>  }
+> -#endif
+> +#endif /* CONFIG_PM */
+>
+>  static const struct dev_pm_ops amba_pm = {
+>         .suspend        = pm_generic_suspend,
+> diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+> index ac02f9bd63dc..c4bae79851fb 100644
+> --- a/include/linux/amba/bus.h
+> +++ b/include/linux/amba/bus.h
+> @@ -32,6 +32,7 @@ struct amba_device {
+>         struct clk              *pclk;
+>         unsigned int            periphid;
+>         unsigned int            irq[AMBA_NR_IRQS];
+> +       unsigned int            irq_safe:1;
+>  };
+>
+>  struct amba_driver {
+> --
+> 1.9.1
+>
