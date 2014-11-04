@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225AbaKDLkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:40:22 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37874 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaKDLkR (ORCPT
+	id S1753250AbaKDLlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:41:16 -0500
+Received: from s250.sam-solutions.net ([217.21.49.219]:56776 "EHLO
+	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaKDLlO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:40:17 -0500
-Message-ID: <1415101213.3701.9.camel@pengutronix.de>
-Subject: Re: [PATCHv2] reset: add socfpga_reset_status
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: dinguyen@opensource.altera.com
-Cc: dinh.linux@gmail.com, linux-kernel@vger.kernel.org,
-        Alan Tull <atull@opensource.altera.com>
-Date: Tue, 04 Nov 2014 12:40:13 +0100
-In-Reply-To: <1415053985-10552-1-git-send-email-dinguyen@opensource.altera.com>
-References: <1415053985-10552-1-git-send-email-dinguyen@opensource.altera.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 4 Nov 2014 06:41:14 -0500
+From: Dmitry Lavnikevich <D.Lavnikevich@sam-solutions.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH v5 2/3] ARM: dts: pbab01: enable I2S audio on
+ phyFLEX-i.MX6 boards
+Thread-Topic: [PATCH v5 2/3] ARM: dts: pbab01: enable I2S audio on
+ phyFLEX-i.MX6 boards
+Thread-Index: AQHP837byG6yn/QTxEG6I1dcN2Hgn5xOQX6AgAHtgIA=
+Date: Tue, 4 Nov 2014 11:40:32 +0000
+Message-ID: <76742380-95D6-4E0C-8622-E9FA27993A42@sam-solutions.com>
+References: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
+ <1414590424-25585-3-git-send-email-d.lavnikevich@sam-solutions.com>
+ <20141103061408.GA21210@tiger>
+In-Reply-To: <20141103061408.GA21210@tiger>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.109.108]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <21147BB21AF23B4987237294F68A1FEC@sam-solutions.net>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dinh,
 
-Am Montag, den 03.11.2014, 16:33 -0600 schrieb
-dinguyen@opensource.altera.com:
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
+> On 3Nov, 2014, at 09:14, Shawn Guo <shawn.guo@linaro.org> wrote:
+> On Wed, Oct 29, 2014 at 04:47:03PM +0300, Dmitry Lavnikevich wrote:
+>> +		fsl,audmux-port = <4>;
+>> +		fsl,port-config = <
+>> +			0x00000000
+>> +			IMX_AUDMUX_V2_PDCR_RXDSEL(1)
+>> +		>;
+>> +	};
+>> +};
+>> +
+>> &i2c2 {
+>> 	status = "okay";
+>> 
+>> -	tlv320@18 {
+>> -		compatible = "ti,tlv320aic3x";
+>> +	codec: tlv320@18 {
+>> +		compatible = "ti,tlv320aic3007";
 > 
-> Populate the reset_status callback for SOCFPGA.
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
-> ---
-> v2: Remove spin_lock around readl
-> ---
->  drivers/reset/reset-socfpga.c | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
-> 
-> diff --git a/drivers/reset/reset-socfpga.c b/drivers/reset/reset-socfpga.c
-> index 79c32ca..39da5cb 100644
-> --- a/drivers/reset/reset-socfpga.c
-> +++ b/drivers/reset/reset-socfpga.c
-> @@ -76,9 +76,25 @@ static int socfpga_reset_deassert(struct reset_controller_dev *rcdev,
->  	return 0;
->  }
->  
-> +static int socfpga_reset_status(struct reset_controller_dev *rcdev,
-> +				unsigned long id)
-> +{
-> +	struct socfpga_reset_data *data = container_of(rcdev,
-> +						struct socfpga_reset_data, rcdev);
-> +	int bank = id / BITS_PER_LONG;
-> +	int offset = id % BITS_PER_LONG;
-> +	unsigned long flags;
+> Both compatible strings are documented in
+> Documentation/devicetree/bindings/sound/tlv320aic3x.txt.  But I hope
+> this change will not cause any DT compatible issues.
 
-Now the flags variable is unused.
-I'll fix it up and apply it, no need to resend.
+This change is needed because unlike other tlv320aic3x-codecs tlv320aic3007 has D-class amplifier which is controlled by set of registers that in case of 3x-codecs control mono output.
 
-> +	u32 reg;
-> +
-> +	reg = readl(data->membase + OFFSET_MODRST + (bank * NR_BANKS));
-> +
-> +	return !(reg & BIT(offset));
-> +}
-> +
->  static struct reset_control_ops socfpga_reset_ops = {
->  	.assert		= socfpga_reset_assert,
->  	.deassert	= socfpga_reset_deassert,
-> +	.status		= socfpga_reset_status,
->  };
->  
->  static int socfpga_reset_probe(struct platform_device *pdev)
-
-thanks
-Philipp
-
+I will correct patches according to other notes and soon will resend patchset.
