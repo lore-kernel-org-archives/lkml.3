@@ -1,97 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaKDKDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:03:35 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60077 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303AbaKDKDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:03:31 -0500
-Message-ID: <5458A40B.7080603@ti.com>
-Date: Tue, 4 Nov 2014 15:31:47 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-CC: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>, <gregory.clement@free-electrons.com>,
-        <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v4 2/8] phy: miphy28lp: Add PHY header file for DT x Driver
- defines
-References: <1413962067-25557-1-git-send-email-gabriel.fernandez@linaro.org>	<1413962067-25557-3-git-send-email-gabriel.fernandez@linaro.org>	<54589B78.3040104@ti.com> <CAG374jDfd24odPXMGC1=1ckaeukk=8Pix1j_bspH5prNpJWhQw@mail.gmail.com>
-In-Reply-To: <CAG374jDfd24odPXMGC1=1ckaeukk=8Pix1j_bspH5prNpJWhQw@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753318AbaKDKAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:00:18 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:60840 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752761AbaKDJzV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 04:55:21 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH 05/15] [media] pci: Make use of media_bus_format enum
+Date: Tue,  4 Nov 2014 10:55:00 +0100
+Message-Id: <1415094910-15899-6-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In order to have subsytem agnostic media bus format definitions we've
+moved media bus definition to include/uapi/linux/media-bus-format.h and
+prefixed enum values with MEDIA_BUS_FMT instead of V4L2_MBUS_FMT.
 
+Replace all references to the old definition in pci drivers.
 
-On Tuesday 04 November 2014 03:28 PM, Gabriel Fernandez wrote:
-> Hi Kishon,
-> 
-> Sure, I'll update my patch set and sent to you soon as possible.
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ drivers/media/pci/cx18/cx18-av-core.c       | 2 +-
+ drivers/media/pci/cx18/cx18-controls.c      | 2 +-
+ drivers/media/pci/cx18/cx18-ioctl.c         | 2 +-
+ drivers/media/pci/cx23885/cx23885-video.c   | 2 +-
+ drivers/media/pci/ivtv/ivtv-controls.c      | 2 +-
+ drivers/media/pci/ivtv/ivtv-ioctl.c         | 2 +-
+ drivers/media/pci/saa7134/saa7134-empress.c | 4 ++--
+ 7 files changed, 8 insertions(+), 8 deletions(-)
 
-cool, thanks.
+diff --git a/drivers/media/pci/cx18/cx18-av-core.c b/drivers/media/pci/cx18/cx18-av-core.c
+index 2d3afe0..4c6ce21 100644
+--- a/drivers/media/pci/cx18/cx18-av-core.c
++++ b/drivers/media/pci/cx18/cx18-av-core.c
+@@ -952,7 +952,7 @@ static int cx18_av_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt
+ 	int HSC, VSC, Vsrc, Hsrc, filter, Vlines;
+ 	int is_50Hz = !(state->std & V4L2_STD_525_60);
+ 
+-	if (fmt->code != V4L2_MBUS_FMT_FIXED)
++	if (fmt->code != MEDIA_BUS_FMT_FIXED)
+ 		return -EINVAL;
+ 
+ 	fmt->field = V4L2_FIELD_INTERLACED;
+diff --git a/drivers/media/pci/cx18/cx18-controls.c b/drivers/media/pci/cx18/cx18-controls.c
+index 282a3d2..4aeb7c6 100644
+--- a/drivers/media/pci/cx18/cx18-controls.c
++++ b/drivers/media/pci/cx18/cx18-controls.c
+@@ -98,7 +98,7 @@ static int cx18_s_video_encoding(struct cx2341x_handler *cxhdl, u32 val)
+ 	/* fix videodecoder resolution */
+ 	fmt.width = cxhdl->width / (is_mpeg1 ? 2 : 1);
+ 	fmt.height = cxhdl->height;
+-	fmt.code = V4L2_MBUS_FMT_FIXED;
++	fmt.code = MEDIA_BUS_FMT_FIXED;
+ 	v4l2_subdev_call(cx->sd_av, video, s_mbus_fmt, &fmt);
+ 	return 0;
+ }
+diff --git a/drivers/media/pci/cx18/cx18-ioctl.c b/drivers/media/pci/cx18/cx18-ioctl.c
+index 6f2b590..71963db 100644
+--- a/drivers/media/pci/cx18/cx18-ioctl.c
++++ b/drivers/media/pci/cx18/cx18-ioctl.c
+@@ -294,7 +294,7 @@ static int cx18_s_fmt_vid_cap(struct file *file, void *fh,
+ 
+ 	mbus_fmt.width = cx->cxhdl.width = w;
+ 	mbus_fmt.height = cx->cxhdl.height = h;
+-	mbus_fmt.code = V4L2_MBUS_FMT_FIXED;
++	mbus_fmt.code = MEDIA_BUS_FMT_FIXED;
+ 	v4l2_subdev_call(cx->sd_av, video, s_mbus_fmt, &mbus_fmt);
+ 	return cx18_g_fmt_vid_cap(file, fh, fmt);
+ }
+diff --git a/drivers/media/pci/cx23885/cx23885-video.c b/drivers/media/pci/cx23885/cx23885-video.c
+index 682a4f9..091f5db 100644
+--- a/drivers/media/pci/cx23885/cx23885-video.c
++++ b/drivers/media/pci/cx23885/cx23885-video.c
+@@ -608,7 +608,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
+ 	dev->field	= f->fmt.pix.field;
+ 	dprintk(2, "%s() width=%d height=%d field=%d\n", __func__,
+ 		dev->width, dev->height, dev->field);
+-	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, V4L2_MBUS_FMT_FIXED);
++	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, MEDIA_BUS_FMT_FIXED);
+ 	call_all(dev, video, s_mbus_fmt, &mbus_fmt);
+ 	v4l2_fill_pix_format(&f->fmt.pix, &mbus_fmt);
+ 	/* s_mbus_fmt overwrites f->fmt.pix.field, restore it */
+diff --git a/drivers/media/pci/ivtv/ivtv-controls.c b/drivers/media/pci/ivtv/ivtv-controls.c
+index 2b0ab26..ccf548c 100644
+--- a/drivers/media/pci/ivtv/ivtv-controls.c
++++ b/drivers/media/pci/ivtv/ivtv-controls.c
+@@ -69,7 +69,7 @@ static int ivtv_s_video_encoding(struct cx2341x_handler *cxhdl, u32 val)
+ 	/* fix videodecoder resolution */
+ 	fmt.width = cxhdl->width / (is_mpeg1 ? 2 : 1);
+ 	fmt.height = cxhdl->height;
+-	fmt.code = V4L2_MBUS_FMT_FIXED;
++	fmt.code = MEDIA_BUS_FMT_FIXED;
+ 	v4l2_subdev_call(itv->sd_video, video, s_mbus_fmt, &fmt);
+ 	return 0;
+ }
+diff --git a/drivers/media/pci/ivtv/ivtv-ioctl.c b/drivers/media/pci/ivtv/ivtv-ioctl.c
+index 3e0cb77..4d8ee18 100644
+--- a/drivers/media/pci/ivtv/ivtv-ioctl.c
++++ b/drivers/media/pci/ivtv/ivtv-ioctl.c
+@@ -595,7 +595,7 @@ static int ivtv_s_fmt_vid_cap(struct file *file, void *fh, struct v4l2_format *f
+ 		fmt->fmt.pix.width /= 2;
+ 	mbus_fmt.width = fmt->fmt.pix.width;
+ 	mbus_fmt.height = h;
+-	mbus_fmt.code = V4L2_MBUS_FMT_FIXED;
++	mbus_fmt.code = MEDIA_BUS_FMT_FIXED;
+ 	v4l2_subdev_call(itv->sd_video, video, s_mbus_fmt, &mbus_fmt);
+ 	return ivtv_g_fmt_vid_cap(file, fh, fmt);
+ }
+diff --git a/drivers/media/pci/saa7134/saa7134-empress.c b/drivers/media/pci/saa7134/saa7134-empress.c
+index e4ea85f..8b3bb78 100644
+--- a/drivers/media/pci/saa7134/saa7134-empress.c
++++ b/drivers/media/pci/saa7134/saa7134-empress.c
+@@ -140,7 +140,7 @@ static int empress_s_fmt_vid_cap(struct file *file, void *priv,
+ 	struct saa7134_dev *dev = video_drvdata(file);
+ 	struct v4l2_mbus_framefmt mbus_fmt;
+ 
+-	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, V4L2_MBUS_FMT_FIXED);
++	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, MEDIA_BUS_FMT_FIXED);
+ 	saa_call_all(dev, video, s_mbus_fmt, &mbus_fmt);
+ 	v4l2_fill_pix_format(&f->fmt.pix, &mbus_fmt);
+ 
+@@ -157,7 +157,7 @@ static int empress_try_fmt_vid_cap(struct file *file, void *priv,
+ 	struct saa7134_dev *dev = video_drvdata(file);
+ 	struct v4l2_mbus_framefmt mbus_fmt;
+ 
+-	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, V4L2_MBUS_FMT_FIXED);
++	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, MEDIA_BUS_FMT_FIXED);
+ 	saa_call_all(dev, video, try_mbus_fmt, &mbus_fmt);
+ 	v4l2_fill_pix_format(&f->fmt.pix, &mbus_fmt);
+ 
+-- 
+1.9.1
 
--Kishon
-> 
-> Best Regards
-> 
-> Gabriel
-> 
-> On 4 November 2014 10:25, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->> Hi Gabriel,
->>
->> On Wednesday 22 October 2014 12:44 PM, Gabriel FERNANDEZ wrote:
->>> This provides the shared header file which will be reference from both
->>> PHY driver and its associated Device Tree node(s).
->>>
->>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
->>> ---
->>>  include/dt-bindings/phy/phy.h | 17 +++++++++++++++++
->>>  1 file changed, 17 insertions(+)
->>>  create mode 100644 include/dt-bindings/phy/phy.h
->>>
->>> diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
->>> new file mode 100644
->>> index 0000000..a142c69
->>> --- /dev/null
->>> +++ b/include/dt-bindings/phy/phy.h
->>> @@ -0,0 +1,17 @@
->>> +/*
->>> + *
->>> + * This header provides constants for the phy framework
->>> + *
->>> + * Copyright (C) 2014 STMicroelectronics
->>> + * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
->>> + * License terms:  GNU General Public License (GPL), version 2
->>> + */
->>> +
->>> +#ifndef _DT_BINDINGS_PHY
->>> +#define _DT_BINDINGS_PHY
->>> +
->>> +#define PHY_TYPE_SATA                1
->>> +#define PHY_TYPE_PCIE                2
->>> +#define PHY_TYPE_USB         3
->>
->> Can we have a separate #define for USB2 and USB3? Looks like Gregory will need
->> it for Armada 375 SoC.
->>
->> Thanks
->> Kishon
