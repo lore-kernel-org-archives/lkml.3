@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaKDK30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:29:26 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:49173 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaKDK3W convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:29:22 -0500
-Date: Tue, 4 Nov 2014 11:29:12 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: David Miller <davem@davemloft.net>
-Cc: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>,
-        fabio.estevam@freescale.com, Frank.Li@freescale.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Subject: Re: net: fec: fix regression on i.MX28 introduced by rx_copybreak
- support
-Message-ID: <20141104112912.2be8bf1a@ipc1.ka-ro>
-In-Reply-To: <20141031063210.69004315@ipc1.ka-ro>
-References: <1414502584-10583-1-git-send-email-LW@KARO-electronics.de>
-	<20141029.153430.1036004676442879956.davem@davemloft.net>
-	<20141030075104.05e44b43@ipc1.ka-ro>
-	<20141030.121710.1524000348187962764.davem@davemloft.net>
-	<20141031063210.69004315@ipc1.ka-ro>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753072AbaKDK3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:29:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42346 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaKDK16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 05:27:58 -0500
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3/4] chardev: Don't use i_devices inode field
+Date: Tue,  4 Nov 2014 11:27:30 +0100
+Message-Id: <1415096851-17209-4-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1415096851-17209-1-git-send-email-jack@suse.cz>
+References: <1415096851-17209-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Now that character device can be freed only after all inodes referencing
+it through i_cdev are gone, we can remove all the tracking of inodes
+pointing to a character device.
 
-Lothar Waßmann wrote:
-> David Miller wrote:
-> > From: Lothar Waßmann <LW@KARO-electronics.de>
-> > Date: Thu, 30 Oct 2014 07:51:04 +0100
-> > 
-> > >> Also, I don't thnk your DIV_ROUND_UP() eliminate for the loop
-> > >> in swap_buffer() is valid.  The whole point is that the current
-> > >> code handles buffers which have a length which is not a multiple
-> > >> of 4 properly, after your change it will no longer do so.
-> > >>
-> > > Do you really think so?
-> > 
-> > Yes, because you're rounding down so you'll miss the final
-> > partial word (if any).
-> >
-> Nope. DIV_ROUND_UP() would give '1' as upper bound for lengths from 1 to
-> 4, '2' for lengths from 5 to 8 and so on.
-> 
-> The loop with increment 4 and i < len does exactly the same.
-> Try it for yourself, if you don't believe it.
-> 
-> 
-Do you still think, the loop without DIV_ROUND_UP() is incorrect,
-or can this patch be applied?
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/char_dev.c        | 22 +---------------------
+ include/linux/cdev.h |  1 -
+ 2 files changed, 1 insertion(+), 22 deletions(-)
 
-
-Lothar Waßmann
+diff --git a/fs/char_dev.c b/fs/char_dev.c
+index 518b3016ab92..4c155efc1556 100644
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -390,7 +390,6 @@ static int chrdev_open(struct inode *inode, struct file *filp)
+ 		if (!p) {
+ 			/* Use reference from kobj_lookup for i_cdev ref */
+ 			inode->i_cdev = p = new;
+-			list_add(&inode->i_devices, &p->list);
+ 			new = NULL;
+ 		}
+ 	}
+@@ -425,7 +424,6 @@ void cd_forget(struct inode *inode)
+ 	struct cdev *to_put;
+ 
+ 	spin_lock(&cdev_lock);
+-	list_del_init(&inode->i_devices);
+ 	to_put = inode->i_cdev;
+ 	inode->i_cdev = NULL;
+ 	spin_unlock(&cdev_lock);
+@@ -433,18 +431,6 @@ void cd_forget(struct inode *inode)
+ 		cdev_put(to_put);
+ }
+ 
+-static void cdev_purge(struct cdev *cdev)
+-{
+-	spin_lock(&cdev_lock);
+-	while (!list_empty(&cdev->list)) {
+-		struct inode *inode;
+-		inode = container_of(cdev->list.next, struct inode, i_devices);
+-		list_del_init(&inode->i_devices);
+-		inode->i_cdev = NULL;
+-	}
+-	spin_unlock(&cdev_lock);
+-}
+-
+ /*
+  * Dummy default file-operations: the only thing this does
+  * is contain the open that then fills in the correct operations
+@@ -515,10 +501,8 @@ void cdev_del(struct cdev *p)
+ 
+ static void cdev_default_release(struct kobject *kobj)
+ {
+-	struct cdev *p = container_of(kobj, struct cdev, kobj);
+ 	struct kobject *parent = kobj->parent;
+ 
+-	cdev_purge(p);
+ 	kobject_put(parent);
+ }
+ 
+@@ -527,7 +511,6 @@ static void cdev_dynamic_release(struct kobject *kobj)
+ 	struct cdev *p = container_of(kobj, struct cdev, kobj);
+ 	struct kobject *parent = kobj->parent;
+ 
+-	cdev_purge(p);
+ 	kfree(p);
+ 	kobject_put(parent);
+ }
+@@ -548,10 +531,8 @@ static struct kobj_type ktype_cdev_dynamic = {
+ struct cdev *cdev_alloc(void)
+ {
+ 	struct cdev *p = kzalloc(sizeof(struct cdev), GFP_KERNEL);
+-	if (p) {
+-		INIT_LIST_HEAD(&p->list);
++	if (p)
+ 		kobject_init(&p->kobj, &ktype_cdev_dynamic);
+-	}
+ 	return p;
+ }
+ 
+@@ -566,7 +547,6 @@ struct cdev *cdev_alloc(void)
+ void cdev_init(struct cdev *cdev, const struct file_operations *fops)
+ {
+ 	memset(cdev, 0, sizeof *cdev);
+-	INIT_LIST_HEAD(&cdev->list);
+ 	kobject_init(&cdev->kobj, &ktype_cdev_default);
+ 	cdev->ops = fops;
+ }
+diff --git a/include/linux/cdev.h b/include/linux/cdev.h
+index fb4591977b03..fe00138b5106 100644
+--- a/include/linux/cdev.h
++++ b/include/linux/cdev.h
+@@ -13,7 +13,6 @@ struct cdev {
+ 	struct kobject kobj;
+ 	struct module *owner;
+ 	const struct file_operations *ops;
+-	struct list_head list;
+ 	dev_t dev;
+ 	unsigned int count;
+ };
 -- 
-___________________________________________________________
+1.8.1.4
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
