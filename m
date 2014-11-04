@@ -1,152 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336AbaKDN1R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:27:17 -0500
-Received: from mailout.micron.com ([137.201.242.129]:16881 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaKDN1Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:27:16 -0500
-From: bpqw <bpqw@micron.com>
-To: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1 v4] driver:mtd:spi-nor: Add quad I/O support for Micron
- spi nor
-Thread-Topic: [PATCH 1/1 v4] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Index: AQHP2KkjagwG2in0R7+6ioZ2PHnYSpwTG1RugAKuPPCAAgpzkIADfZeAgBhBsxCABMQ/MIAGOkDwgASw+FCADXBPcA==
-Date: Tue, 4 Nov 2014 13:25:14 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E9B48@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>       
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21074.005
-x-tm-as-result: No--32.293000-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1753482AbaKDN1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:27:25 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:58279 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228AbaKDN1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 08:27:22 -0500
+Date: Tue, 4 Nov 2014 08:27:01 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
+        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
+Message-ID: <20141104132701.GA18441@phnom.home.cmpxchg.org>
+References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
+ <54589017.9060604@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54589017.9060604@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+On Tue, Nov 04, 2014 at 05:36:39PM +0900, Kamezawa Hiroyuki wrote:
+> (2014/11/02 12:15), Johannes Weiner wrote:
+> > Memory cgroups used to have 5 per-page pointers.  To allow users to
+> > disable that amount of overhead during runtime, those pointers were
+> > allocated in a separate array, with a translation layer between them
+> > and struct page.
+> > 
+> > There is now only one page pointer remaining: the memcg pointer, that
+> > indicates which cgroup the page is associated with when charged.  The
+> > complexity of runtime allocation and the runtime translation overhead
+> > is no longer justified to save that *potential* 0.19% of memory.  With
+> > CONFIG_SLUB, page->mem_cgroup actually sits in the doubleword padding
+> > after the page->private member and doesn't even increase struct page,
+> > and then this patch actually saves space.  Remaining users that care
+> > can still compile their kernels without CONFIG_MEMCG.
+> > 
+> >     text    data     bss     dec     hex     filename
+> > 8828345 1725264  983040 11536649 b00909  vmlinux.old
+> > 8827425 1725264  966656 11519345 afc571  vmlinux.new
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > ---
+> >   include/linux/memcontrol.h  |   6 +-
+> >   include/linux/mm_types.h    |   5 +
+> >   include/linux/mmzone.h      |  12 --
+> >   include/linux/page_cgroup.h |  53 --------
+> >   init/main.c                 |   7 -
+> >   mm/memcontrol.c             | 124 +++++------------
+> >   mm/page_alloc.c             |   2 -
+> >   mm/page_cgroup.c            | 319 --------------------------------------------
+> >   8 files changed, 41 insertions(+), 487 deletions(-)
+> > 
+> 
+> Great! 
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-For Micron SPI NOR flash,enabling or disabling quad I/O protocol is controlled
-by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7.
-When EVCR bit 7 is reset to 0,the SPI NOR flash will operate in quad I/O mode.
+Thank you!
 
-Signed-off-by: bean huo <beanhuo@micron.com>
-Acked-by: Marek Vasut <marex@denx.de>
+> BTW, init/Kconfig comments shouldn't be updated ?
+> (I'm sorry if it has been updated since your latest fix.)
+
+Good point.  How about this?
+
 ---
- v1-v2:modified to that capture wait_till_ready()
-	 return value,if error,directly return its
-	 the value.
- v2-v3:directly use the reurning error value of
-	 read_reg and write_reg,instead of -EINVAL.
- V3-v4:
-	Modify commit logs that wraped into 80 columns 
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: move page->mem_cgroup bad page handling into generic code fix
 
- drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
- include/linux/mtd/spi-nor.h   |    6 ++++++
- 2 files changed, 52 insertions(+)
+Remove obsolete memory saving recommendations from the MEMCG Kconfig
+help text.
 
-diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c index b5ad6be..486b167 100644
---- a/drivers/mtd/spi-nor/spi-nor.c
-+++ b/drivers/mtd/spi-nor/spi-nor.c
-@@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
- 	return 0;
- }
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ init/Kconfig | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index 01b7f2a6abf7..d68d8b0780b3 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -983,18 +983,6 @@ config MEMCG
+ 	  Provides a memory resource controller that manages both anonymous
+ 	  memory and page cache. (See Documentation/cgroups/memory.txt)
  
-+static int micron_quad_enable(struct spi_nor *nor) {
-+	int ret, val;
-+
-+	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-+		return ret;
-+	}
-+
-+	write_enable(nor);
-+
-+	/* set EVCR ,enable quad I/O */
-+	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
-+	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
-+	if (ret < 0) {
-+		dev_err(nor->dev,
-+			"error while writing EVCR register\n");
-+		return ret;
-+	}
-+
-+	ret = wait_till_ready(nor);
-+	if (ret)
-+		return ret;
-+
-+	/* read EVCR and check it */
-+	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-+		return ret;
-+	}
-+	if (val & EVCR_QUAD_EN_MICRON) {
-+		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)  {
- 	int status;
-@@ -890,6 +929,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
- 			return -EINVAL;
- 		}
- 		return status;
-+	case CFI_MFR_ST:
-+		status = micron_quad_enable(nor);
-+		if (status) {
-+			dev_err(nor->dev, "Micron quad-read not enabled\n");
-+			return -EINVAL;
-+		}
-+		return status;
- 	default:
- 		status = spansion_quad_enable(nor);
- 		if (status) {
-diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h index 9e6294f..d71b659 100644
---- a/include/linux/mtd/spi-nor.h
-+++ b/include/linux/mtd/spi-nor.h
-@@ -56,6 +56,10 @@
- /* Used for Spansion flashes only. */
- #define SPINOR_OP_BRWR		0x17	/* Bank register write */
- 
-+/* Used for Micron flashes only. */
-+#define SPINOR_OP_RD_EVCR	0x65	/* Read EVCR register */
-+#define SPINOR_OP_WD_EVCR	0x61	/* Write EVCR register */
-+
- /* Status Register bits. */
- #define SR_WIP			1	/* Write in progress */
- #define SR_WEL			2	/* Write enable latch */
-@@ -67,6 +71,8 @@
- 
- #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
- 
-+#define EVCR_QUAD_EN_MICRON	0x80	/* Micron Quad I/O */
-+
- /* Flag Status Register bits */
- #define FSR_READY		0x80
- 
---
-1.7.9.5
+-	  Note that setting this option increases fixed memory overhead
+-	  associated with each page of memory in the system. By this,
+-	  8(16)bytes/PAGE_SIZE on 32(64)bit system will be occupied by memory
+-	  usage tracking struct at boot. Total amount of this is printed out
+-	  at boot.
+-
+-	  Only enable when you're ok with these trade offs and really
+-	  sure you need the memory resource controller. Even when you enable
+-	  this, you can set "cgroup_disable=memory" at your boot option to
+-	  disable memory resource controller and you can avoid overheads.
+-	  (and lose benefits of memory resource controller)
+-
+ config MEMCG_SWAP
+ 	bool "Memory Resource Controller Swap Extension"
+ 	depends on MEMCG && SWAP
+-- 
+2.1.3
+
