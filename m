@@ -1,194 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679AbaKDNFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:05:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:45760 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753335AbaKDNFh (ORCPT
+	id S1753774AbaKDNGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:06:21 -0500
+Received: from s250.sam-solutions.net ([217.21.49.219]:53013 "EHLO
+	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaKDNGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:05:37 -0500
-Date: Tue, 4 Nov 2014 08:05:35 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        <netfilter-devel@vger.kernel.org>, <coreteam@netfilter.org>
-Subject: Re: [RFA][PATCH 2/8] netfilter: Remove return values for
- print_conntrack callbacks
-Message-ID: <20141104080535.5f651713@gandalf.local.home>
-In-Reply-To: <20141029220107.465008329@goodmis.org>
-References: <20141029215602.535533597@goodmis.org>
-	<20141029220107.465008329@goodmis.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 4 Nov 2014 08:06:19 -0500
+From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+To: <shawn.guo@linaro.org>, <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <perex@perex.cz>, <tiwai@suse.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        "Dmitry Lavnikevich" <d.lavnikevich@sam-solutions.com>
+Subject: [PATCH v6 2/3] ARM: dts: pbab01: enable I2S audio on phyFLEX-i.MX6 boards
+Date: Tue, 4 Nov 2014 16:05:48 +0300
+Message-ID: <1415106349-18846-3-git-send-email-d.lavnikevich@sam-solutions.com>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1415106349-18846-1-git-send-email-d.lavnikevich@sam-solutions.com>
+References: <1415106349-18846-1-git-send-email-d.lavnikevich@sam-solutions.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
+X-Originating-IP: [192.168.117.165]
+X-ClientProxiedBy: S326.sam-solutions.net (217.21.35.11) To
+ S326.sam-solutions.net (217.21.35.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014 17:56:04 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Audio on phyFLEX boards is presented by tlv320aic3007 codec connected
+over SSI interface.
 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> [ REQUEST FOR ACKS ]
+Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+---
+ arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi | 101 ++++++++++++++++++++++++++-
+ arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi |  15 ++++
+ 2 files changed, 114 insertions(+), 2 deletions(-)
 
-Can any of the netfilter folks give me an Acked-by for this?
-
-Thanks!
-
--- Steve
-
-> 
-> The seq_printf() and friends are having their return values removed.
-> The print_conntrack() returns the result of seq_printf(), which is
-> meaningless when seq_printf() returns void. Might as well remove the
-> return values of print_conntrack() as well.
-> 
-> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-> Cc: netfilter-devel@vger.kernel.org
-> Cc: coreteam@netfilter.org
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/net/netfilter/nf_conntrack_l4proto.h          | 2 +-
->  net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c | 5 ++++-
->  net/netfilter/nf_conntrack_proto_dccp.c               | 4 ++--
->  net/netfilter/nf_conntrack_proto_gre.c                | 8 ++++----
->  net/netfilter/nf_conntrack_proto_sctp.c               | 4 ++--
->  net/netfilter/nf_conntrack_proto_tcp.c                | 4 ++--
->  net/netfilter/nf_conntrack_standalone.c               | 4 ++--
->  7 files changed, 17 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/net/netfilter/nf_conntrack_l4proto.h b/include/net/netfilter/nf_conntrack_l4proto.h
-> index 4c8d573830b7..82e4ec002a39 100644
-> --- a/include/net/netfilter/nf_conntrack_l4proto.h
-> +++ b/include/net/netfilter/nf_conntrack_l4proto.h
-> @@ -60,7 +60,7 @@ struct nf_conntrack_l4proto {
->  			   const struct nf_conntrack_tuple *);
->  
->  	/* Print out the private part of the conntrack. */
-> -	int (*print_conntrack)(struct seq_file *s, struct nf_conn *);
-> +	void (*print_conntrack)(struct seq_file *s, struct nf_conn *);
->  
->  	/* Return the array of timeouts for this protocol. */
->  	unsigned int *(*get_timeouts)(struct net *net);
-> diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> index 4c48e434bb1f..91f207c2cb69 100644
-> --- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> +++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> @@ -147,7 +147,10 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
->  		goto release;
->  
-> -	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
-> +	if (l4proto->print_conntrack)
-> +		l4proto->print_conntrack(s, ct);
-> +
-> +	if (seq_has_overflowed(s))
->  		goto release;
->  
->  	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
-> diff --git a/net/netfilter/nf_conntrack_proto_dccp.c b/net/netfilter/nf_conntrack_proto_dccp.c
-> index cb372f96f10d..15971177470a 100644
-> --- a/net/netfilter/nf_conntrack_proto_dccp.c
-> +++ b/net/netfilter/nf_conntrack_proto_dccp.c
-> @@ -626,9 +626,9 @@ static int dccp_print_tuple(struct seq_file *s,
->  			  ntohs(tuple->dst.u.dccp.port));
->  }
->  
-> -static int dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
-> +static void dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
->  {
-> -	return seq_printf(s, "%s ", dccp_state_names[ct->proto.dccp.state]);
-> +	seq_printf(s, "%s ", dccp_state_names[ct->proto.dccp.state]);
->  }
->  
->  #if IS_ENABLED(CONFIG_NF_CT_NETLINK)
-> diff --git a/net/netfilter/nf_conntrack_proto_gre.c b/net/netfilter/nf_conntrack_proto_gre.c
-> index d5665739e3b1..cba607ada069 100644
-> --- a/net/netfilter/nf_conntrack_proto_gre.c
-> +++ b/net/netfilter/nf_conntrack_proto_gre.c
-> @@ -235,11 +235,11 @@ static int gre_print_tuple(struct seq_file *s,
->  }
->  
->  /* print private data for conntrack */
-> -static int gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
-> +static void gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
->  {
-> -	return seq_printf(s, "timeout=%u, stream_timeout=%u ",
-> -			  (ct->proto.gre.timeout / HZ),
-> -			  (ct->proto.gre.stream_timeout / HZ));
-> +	seq_printf(s, "timeout=%u, stream_timeout=%u ",
-> +		   (ct->proto.gre.timeout / HZ),
-> +		   (ct->proto.gre.stream_timeout / HZ));
->  }
->  
->  static unsigned int *gre_get_timeouts(struct net *net)
-> diff --git a/net/netfilter/nf_conntrack_proto_sctp.c b/net/netfilter/nf_conntrack_proto_sctp.c
-> index 1314d33f6bcf..c61f4cd6407d 100644
-> --- a/net/netfilter/nf_conntrack_proto_sctp.c
-> +++ b/net/netfilter/nf_conntrack_proto_sctp.c
-> @@ -175,7 +175,7 @@ static int sctp_print_tuple(struct seq_file *s,
->  }
->  
->  /* Print out the private part of the conntrack. */
-> -static int sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
-> +static void sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
->  {
->  	enum sctp_conntrack state;
->  
-> @@ -183,7 +183,7 @@ static int sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
->  	state = ct->proto.sctp.state;
->  	spin_unlock_bh(&ct->lock);
->  
-> -	return seq_printf(s, "%s ", sctp_conntrack_names[state]);
-> +	seq_printf(s, "%s ", sctp_conntrack_names[state]);
->  }
->  
->  #define for_each_sctp_chunk(skb, sch, _sch, offset, dataoff, count)	\
-> diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
-> index 44d1ea32570a..79668fd3db96 100644
-> --- a/net/netfilter/nf_conntrack_proto_tcp.c
-> +++ b/net/netfilter/nf_conntrack_proto_tcp.c
-> @@ -311,7 +311,7 @@ static int tcp_print_tuple(struct seq_file *s,
->  }
->  
->  /* Print out the private part of the conntrack. */
-> -static int tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
-> +static void tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
->  {
->  	enum tcp_conntrack state;
->  
-> @@ -319,7 +319,7 @@ static int tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
->  	state = ct->proto.tcp.state;
->  	spin_unlock_bh(&ct->lock);
->  
-> -	return seq_printf(s, "%s ", tcp_conntrack_names[state]);
-> +	seq_printf(s, "%s ", tcp_conntrack_names[state]);
->  }
->  
->  static unsigned int get_conntrack_index(const struct tcphdr *tcph)
-> diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-> index cf65a1e040dd..348aa3602787 100644
-> --- a/net/netfilter/nf_conntrack_standalone.c
-> +++ b/net/netfilter/nf_conntrack_standalone.c
-> @@ -199,8 +199,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  		       ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
->  		goto release;
->  
-> -	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
-> -		goto release;
-> +	if (l4proto->print_conntrack)
-> +		l4proto->print_conntrack(s, ct);
->  
->  	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
->  			l3proto, l4proto))
+diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
+index f1bdcae..6b2c892 100644
+--- a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
+@@ -9,10 +9,96 @@
+  * http://www.gnu.org/copyleft/gpl.html
+  */
+ 
++#include <dt-bindings/sound/fsl-imx-audmux.h>
++
+ / {
+ 	chosen {
+ 		linux,stdout-path = &uart4;
+ 	};
++
++	regulators {
++		sound_1v8: regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "i2s-audio-1v8";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		sound_3v3: regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <3>;
++			regulator-name = "i2s-audio-3v3";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++		};
++	};
++
++	tlv320_mclk: oscillator {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <19200000>;
++		clock-output-names = "tlv320-mclk";
++	};
++
++	sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "OnboardTLV320AIC3007";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&dailink_master>;
++		simple-audio-card,frame-master = <&dailink_master>;
++		simple-audio-card,widgets =
++			"Microphone", "Mic Jack",
++			"Line", "Line In",
++			"Line", "Line Out",
++			"Speaker", "Speaker",
++			"Headphone", "Headphone Jack";
++		simple-audio-card,routing =
++			"Line Out", "LLOUT",
++			"Line Out", "RLOUT",
++			"Speaker", "SPOP",
++			"Speaker", "SPOM",
++			"Headphone Jack", "HPLOUT",
++			"Headphone Jack", "HPROUT",
++			"MIC3L", "Mic Jack",
++			"MIC3R", "Mic Jack",
++			"Mic Jack", "Mic Bias",
++			"LINE1L", "Line In",
++			"LINE1R", "Line In";
++
++		simple-audio-card,cpu {
++			sound-dai = <&ssi2>;
++		};
++
++		dailink_master: simple-audio-card,codec {
++			sound-dai = <&codec>;
++			clocks = <&tlv320_mclk>;
++		};
++	};
++
++};
++
++&audmux {
++	status = "okay";
++
++	ssi2 {
++		fsl,audmux-port = <1>;
++		fsl,port-config = <
++			(IMX_AUDMUX_V2_PTCR_TFSDIR |
++			IMX_AUDMUX_V2_PTCR_TFSEL(4) |
++			IMX_AUDMUX_V2_PTCR_TCLKDIR |
++			IMX_AUDMUX_V2_PTCR_TCSEL(4))
++			IMX_AUDMUX_V2_PDCR_RXDSEL(4)
++		>;
++	};
++
++	pins5 {
++		fsl,audmux-port = <4>;
++		fsl,port-config = <
++			0x00000000
++			IMX_AUDMUX_V2_PDCR_RXDSEL(1)
++		>;
++	};
+ };
+ 
+ &fec {
+@@ -30,9 +116,16 @@
+ &i2c2 {
+ 	status = "okay";
+ 
+-	tlv320@18 {
+-		compatible = "ti,tlv320aic3x";
++	codec: tlv320@18 {
++		compatible = "ti,tlv320aic3007";
++		#sound-dai-cells = <0>;
+ 		reg = <0x18>;
++		ai3x-micbias-vg = <2>;
++
++		AVDD-supply = <&sound_3v3>;
++		IOVDD-supply = <&sound_3v3>;
++		DRVDD-supply = <&sound_3v3>;
++		DVDD-supply = <&sound_1v8>;
+ 	};
+ 
+ 	stmpe@41 {
+@@ -55,6 +148,10 @@
+ 	status = "okay";
+ };
+ 
++&ssi2 {
++	status = "okay";
++};
++
+ &uart3 {
+ 	status = "okay";
+ };
+diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
+index aa22756..ab3b1f9 100644
+--- a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
+@@ -58,6 +58,12 @@
+ 	};
+ };
+ 
++&audmux {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_audmux>;
++	status = "disabled";
++};
++
+ &ecspi3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ecspi3>;
+@@ -319,6 +325,15 @@
+ 				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000
+ 			>;
+ 		};
++
++		pinctrl_audmux: audmuxgrp {
++			fsl,pins = <
++				MX6QDL_PAD_DISP0_DAT16__AUD5_TXC	0x130b0
++				MX6QDL_PAD_DISP0_DAT17__AUD5_TXD	0x110b0
++				MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS	0x130b0
++				MX6QDL_PAD_DISP0_DAT19__AUD5_RXD	0x130b0
++			>;
++		};
+ 	};
+ };
+ 
+-- 
+2.1.2
 
