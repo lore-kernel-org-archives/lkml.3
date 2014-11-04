@@ -1,268 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019AbaKDO34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:29:56 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:41616 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaKDO3u (ORCPT
+	id S1754058AbaKDOaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:30:08 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:52851 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbaKDOaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:29:50 -0500
-Message-ID: <5458E294.40509@roeck-us.net>
-Date: Tue, 04 Nov 2014 06:28:36 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 4 Nov 2014 09:30:02 -0500
+Date: Tue, 4 Nov 2014 14:29:55 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
+ after TLB batching faiure
+Message-ID: <20141104142955.GA24816@e104818-lin.cambridge.arm.com>
+References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
+ <1414496662-25202-2-git-send-email-will.deacon@arm.com>
+ <CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
+ <CA+55aFwpOCeXdThX3zB64AU4hFwufD6UdJDi2tkD8Q7yEV2pOA@mail.gmail.com>
+ <20141029194738.GA29911@arm.com>
 MIME-Version: 1.0
-To: Neelesh Gupta <neelegup@linux.vnet.ibm.com>, jdelvare@suse.de
-CC: benh@au1.ibm.com, linux-kernel@vger.kernel.org, michaele@au1.ibm.com,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] hwmon: (ibmpowernv) Use platform 'id_table' to probe
- the device
-References: <20141104072927.4307.67881.stgit@localhost.localdomain>
-In-Reply-To: <20141104072927.4307.67881.stgit@localhost.localdomain>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.5458E2DE.002C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141029194738.GA29911@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 11:30 PM, Neelesh Gupta wrote:
-> The current driver probe() function assumes the sensor device to be
-> alwary present and gets executed every time if the driver is loaded,
-> but the appropriate hardware could not be present.
->
-> So, move the platform device creation as part of platform init code
-> and use the 'id_table' to check if the device present or not.
->
-> Signed-off-by: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
-> ---
->   arch/powerpc/platforms/powernv/opal-sensor.c |   20 ++++++++
->   drivers/hwmon/ibmpowernv.c                   |   67 +++++++-------------------
->   2 files changed, 39 insertions(+), 48 deletions(-)
->
-> diff --git a/arch/powerpc/platforms/powernv/opal-sensor.c b/arch/powerpc/platforms/powernv/opal-sensor.c
-> index 10271ad..215c418 100644
-> --- a/arch/powerpc/platforms/powernv/opal-sensor.c
-> +++ b/arch/powerpc/platforms/powernv/opal-sensor.c
-> @@ -20,7 +20,9 @@
->
->   #include <linux/delay.h>
->   #include <linux/mutex.h>
-> +#include <linux/of_platform.h>
->   #include <asm/opal.h>
-> +#include <asm/machdep.h>
->
->   static DEFINE_MUTEX(opal_sensor_mutex);
->
-> @@ -64,3 +66,21 @@ out:
->   	return ret;
->   }
->   EXPORT_SYMBOL_GPL(opal_get_sensor_data);
-> +
-> +static __init int opal_sensor_init(void)
+(catching up with email after holiday)
+
+On Wed, Oct 29, 2014 at 07:47:39PM +0000, Will Deacon wrote:
+>     mmu_gather: move minimal range calculations into generic code
+>     
+>     On architectures with hardware broadcasting of TLB invalidation messages
+>     , it makes sense to reduce the range of the mmu_gather structure when
+>     unmapping page ranges based on the dirty address information passed to
+>     tlb_remove_tlb_entry.
+>     
+>     arm64 already does this by directly manipulating the start/end fields
+>     of the gather structure, but this confuses the generic code which
+>     does not expect these fields to change and can end up calculating
+>     invalid, negative ranges when forcing a flush in zap_pte_range.
+>     
+>     This patch moves the minimal range calculation out of the arm64 code
+>     and into the generic implementation, simplifying zap_pte_range in the
+>     process (which no longer needs to care about start/end, since they will
+>     point to the appropriate ranges already).
+>     
+>     Signed-off-by: Will Deacon <will.deacon@arm.com>
+
+Nice to see this clean-up for arm64, however I have a question below.
+
+> diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+> index 5672d7ea1fa0..340bc5c5ca2d 100644
+> --- a/include/asm-generic/tlb.h
+> +++ b/include/asm-generic/tlb.h
+> @@ -128,6 +128,46 @@ static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
+>  		tlb_flush_mmu(tlb);
+>  }
+>  
+> +static inline void __tlb_adjust_range(struct mmu_gather *tlb,
+> +				      unsigned long address)
 > +{
-> +	struct platform_device *pdev;
-> +	struct device_node *sensor;
-> +
-> +	sensor = of_find_node_by_path("/ibm,opal/sensors");
-> +	if (sensor) {
-> +		pdev = of_platform_device_create(sensor, "opal-sensor", NULL);
-> +		of_node_put(sensor);
-> +	} else {
-> +		pr_info("Opal node 'sensors' not found\n");
-
-Hi Neelesh,
-
-this is either an error and should be reported with pr_err, or it is
-a valid condition and should be reported with pr_debug or not at all.
-
-Which one is it ?
-
-Also, can you put this code into a 'normal' error handler instead of using if/else ?
-
-	if (!sensor) {
-		pr_err("Opal node 'sensors' not found\n");
-		return -ENODEV;
-	}
-	pdev = of_platform_device_create(sensor, "opal-sensor", NULL);
-	...
-
-This would make the code flow easier to understand.
-
-Thanks,
-Guenter
-
-> +		return -ENODEV;
+> +	if (!tlb->fullmm) {
+> +		tlb->start = min(tlb->start, address);
+> +		tlb->end = max(tlb->end, address + PAGE_SIZE);
 > +	}
-> +
-> +	return PTR_ERR_OR_ZERO(pdev);
 > +}
-> +machine_subsys_initcall(powernv, opal_sensor_init);
-> diff --git a/drivers/hwmon/ibmpowernv.c b/drivers/hwmon/ibmpowernv.c
-> index 6a30eee..c7577b8 100644
-> --- a/drivers/hwmon/ibmpowernv.c
-> +++ b/drivers/hwmon/ibmpowernv.c
-> @@ -74,9 +74,6 @@ struct platform_data {
->   	u32 sensors_count; /* Total count of sensors from each group */
->   };
->
-> -/* Platform device representing all the ibmpowernv sensors */
-> -static struct platform_device *pdevice;
-> -
->   static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
->   			   char *buf)
->   {
-> @@ -99,7 +96,7 @@ static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
->   	return sprintf(buf, "%u\n", x);
->   }
->
-> -static int __init get_sensor_index_attr(const char *name, u32 *index,
-> +static int get_sensor_index_attr(const char *name, u32 *index,
->   					char *attr)
->   {
->   	char *hash_pos = strchr(name, '#');
-> @@ -136,7 +133,7 @@ static int __init get_sensor_index_attr(const char *name, u32 *index,
->    * which need to be mapped as fan2_input, temp1_max respectively before
->    * populating them inside hwmon device class.
->    */
-> -static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
-> +static int create_hwmon_attr_name(struct device *dev, enum sensors type,
->   					 const char *node_name,
->   					 char *hwmon_attr_name)
->   {
-> @@ -172,7 +169,7 @@ static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
->   	return 0;
->   }
->
-> -static int __init populate_attr_groups(struct platform_device *pdev)
-> +static int populate_attr_groups(struct platform_device *pdev)
->   {
->   	struct platform_data *pdata = platform_get_drvdata(pdev);
->   	const struct attribute_group **pgroups = pdata->attr_groups;
-> @@ -180,11 +177,6 @@ static int __init populate_attr_groups(struct platform_device *pdev)
->   	enum sensors type;
->
->   	opal = of_find_node_by_path("/ibm,opal/sensors");
-> -	if (!opal) {
-> -		dev_dbg(&pdev->dev, "Opal node 'sensors' not found\n");
-> -		return -ENODEV;
-> -	}
-> -
->   	for_each_child_of_node(opal, np) {
->   		if (np->name == NULL)
->   			continue;
-> @@ -221,7 +213,7 @@ static int __init populate_attr_groups(struct platform_device *pdev)
->    * to the name required by the higher 'hwmon' driver like fan1_input, temp1_max
->    * etc..
->    */
-> -static int __init create_device_attrs(struct platform_device *pdev)
-> +static int create_device_attrs(struct platform_device *pdev)
->   {
->   	struct platform_data *pdata = platform_get_drvdata(pdev);
->   	const struct attribute_group **pgroups = pdata->attr_groups;
-> @@ -280,7 +272,7 @@ exit_put_node:
->   	return err;
->   }
->
-> -static int __init ibmpowernv_probe(struct platform_device *pdev)
-> +static int ibmpowernv_probe(struct platform_device *pdev)
->   {
->   	struct platform_data *pdata;
->   	struct device *hwmon_dev;
-> @@ -309,52 +301,31 @@ static int __init ibmpowernv_probe(struct platform_device *pdev)
->   	return PTR_ERR_OR_ZERO(hwmon_dev);
->   }
->
-> +static const struct platform_device_id opal_sensor_driver_ids[] = {
-> +	{
-> +		.name = "opal-sensor",
-> +	},
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(platform, opal_sensor_driver_ids);
-> +
->   static struct platform_driver ibmpowernv_driver = {
-> -	.driver = {
-> -		.owner = THIS_MODULE,
-> -		.name = DRVNAME,
-> +	.probe		= ibmpowernv_probe,
-> +	.id_table	= opal_sensor_driver_ids,
-> +	.driver		= {
-> +		.owner	= THIS_MODULE,
-> +		.name	= DRVNAME,
->   	},
->   };
->
->   static int __init ibmpowernv_init(void)
->   {
-> -	int err;
-> -
-> -	pdevice = platform_device_alloc(DRVNAME, 0);
-> -	if (!pdevice) {
-> -		pr_err("Device allocation failed\n");
-> -		err = -ENOMEM;
-> -		goto exit;
-> -	}
-> -
-> -	err = platform_device_add(pdevice);
-> -	if (err) {
-> -		pr_err("Device addition failed (%d)\n", err);
-> -		goto exit_device_put;
-> -	}
-> -
-> -	err = platform_driver_probe(&ibmpowernv_driver, ibmpowernv_probe);
-> -	if (err) {
-> -		if (err != -ENODEV)
-> -			pr_err("Platform driver probe failed (%d)\n", err);
-> -
-> -		goto exit_device_del;
-> -	}
-> -
-> -	return 0;
-> -
-> -exit_device_del:
-> -	platform_device_del(pdevice);
-> -exit_device_put:
-> -	platform_device_put(pdevice);
-> -exit:
-> -	return err;
-> +	return platform_driver_register(&ibmpowernv_driver);
->   }
->
->   static void __exit ibmpowernv_exit(void)
->   {
->   	platform_driver_unregister(&ibmpowernv_driver);
-> -	platform_device_unregister(pdevice);
->   }
->
->   MODULE_AUTHOR("Neelesh Gupta <neelegup@linux.vnet.ibm.com>");
->
->
 
+Here __tlb_adjust_range() assumes end to be (start + PAGE_SIZE) always.
+
+> @@ -152,12 +193,14 @@ static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
+>  #define tlb_remove_pmd_tlb_entry(tlb, pmdp, address)		\
+>  	do {							\
+>  		tlb->need_flush = 1;				\
+> +		__tlb_adjust_range(tlb, address);		\
+>  		__tlb_remove_pmd_tlb_entry(tlb, pmdp, address);	\
+>  	} while (0)
+
+[...]
+
+>  #define pmd_free_tlb(tlb, pmdp, address)			\
+>  	do {							\
+>  		tlb->need_flush = 1;				\
+> +		__tlb_adjust_range(tlb, address);		\
+>  		__pmd_free_tlb(tlb, pmdp, address);		\
+>  	} while (0)
+
+This would work on arm64 but is the PAGE_SIZE range enough for all
+architectures even when we flush a huge page or a pmd/pud table entry?
+The approach Peter Z took with his patches was to use pmd_addr_end(addr,
+TASK_SIZE) and change __tlb_adjust_range() to take start/end arguments:
+
+https://lkml.org/lkml/2011/3/7/302
+
+-- 
+Catalin
