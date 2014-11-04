@@ -1,318 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaKDBSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:18:55 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:32974 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaKDBRA (ORCPT
+	id S1751239AbaKDB0E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:26:04 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:39543 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009AbaKDB0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:17:00 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/8] perf tools: Preparation for compressed kernel module support
-Date: Tue,  4 Nov 2014 10:14:27 +0900
-Message-Id: <1415063674-17206-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1415063674-17206-1-git-send-email-namhyung@kernel.org>
-References: <1415063674-17206-1-git-send-email-namhyung@kernel.org>
+	Mon, 3 Nov 2014 20:26:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALAqxLXfy5P0kg-W7hL+Jf1iYv758+-2cTdZwsY8kAns1nvEmg@mail.gmail.com>
+References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
+ <CALCETrXGoevmD_avz5sQfbbD624vpLW5=-8ovzTPT_5wzNFnVA@mail.gmail.com> <CALAqxLXfy5P0kg-W7hL+Jf1iYv758+-2cTdZwsY8kAns1nvEmg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Nov 2014 17:25:38 -0800
+Message-ID: <CALCETrUAkXKyXzZy4xaYcW2f65Lh=APrU4cFU1zm-qmc6EwB8g@mail.gmail.com>
+Subject: Re: [PATCH v3 0/3] perf: User/kernel time correlation and event generation
+To: John Stultz <john.stultz@linaro.org>
+Cc: Pawel Moll <pawel.moll@arm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Pawel Moll <mail@pawelmoll.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic support to handle compressed kernel module as
-some distro (such as Archlinux) carries on it now.  The actual work
-using compression library will be added later.
+On Mon, Nov 3, 2014 at 5:11 PM, John Stultz <john.stultz@linaro.org> wrote:
+> On Mon, Nov 3, 2014 at 4:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Mon, Nov 3, 2014 at 4:28 PM, Pawel Moll <pawel.moll@arm.com> wrote:
+>>> From: Pawel Moll <mail@pawelmoll.com>
+>>> Thomas suggested solution which gets down to my original proposal for
+>>> sched/monotonic clock correlation - an additional sample type so events
+>>> can be "double stamped" using different clock sources providing
+>>> synchronisation points for later time approximation. I've just extended
+>>> the implementation with configuration value to select the clock source.
+>>> If the first patch (making perf timestamps monotonic) gets accepted,
+>>> there will be no immediate need for this one, but I'd like to gain some
+>>> feedback anyway.
+>>>
+>>
+>> I have nothing intelligent to add to the potentional Thomas/Ingo
+>> showdown, but I do have a related thought. :)
+>>
+>> If you're going to add double-stamped packets, can you also add a
+>> syscall to read multiple clocks at once, atomically?  Or can you
+>> otherwise add a non-perf mechanism to get at this data?
+>>
+>> Because the realtime to monotonic offset is really quite useful for
+>> things like this, and it seems silly to make people actually open a
+>> perf_event to get at it.
+>
+> So this comes up periodically, but I don't think I've seen a interface
+> proposal that was decent yet.
+>
+> Also, if you want to read multiple clocks at once, do you stop at two,
+> or three, or... there's possibly quite a few.  Additionally some
+> clocks may not be possible to read atomically (perf/sched clock and
+> system time for example may be based on different underlying
+> clocksources). The general idea feels like its creeping towards some
+> "atomically expose all timekeeping state" mega-interface.
+>
+> I've got some thoughts on what a possible interface that wouldn't be
+> awful could look like, but I'm still hesitant because I don't really
+> know if exposing this sort of data is actually a good idea long term.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/dso.c        | 75 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/dso.h        |  7 +++++
- tools/perf/util/machine.c    | 19 ++++++++++-
- tools/perf/util/symbol-elf.c | 35 ++++++++++++++++++++-
- tools/perf/util/symbol.c     |  8 ++++-
- 5 files changed, 141 insertions(+), 3 deletions(-)
+My only real thought here is that, if perf is going to try to do this,
+then presumably it should be reasonably integrated w/ the core timing
+code.  I.e. if perf does this, then presumably the core code should
+know about it and there should be a core interface to it.
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 0247acfdfaca..36a607cf8f50 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -21,8 +21,10 @@ char dso__symtab_origin(const struct dso *dso)
- 		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]		= 'b',
- 		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]		= 'd',
- 		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]		= 'K',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP]	= 'm',
- 		[DSO_BINARY_TYPE__GUEST_KALLSYMS]		= 'g',
- 		[DSO_BINARY_TYPE__GUEST_KMODULE]		= 'G',
-+		[DSO_BINARY_TYPE__GUEST_KMODULE_COMP]		= 'M',
- 		[DSO_BINARY_TYPE__GUEST_VMLINUX]		= 'V',
- 	};
- 
-@@ -112,11 +114,13 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 		break;
- 
- 	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+	case DSO_BINARY_TYPE__GUEST_KMODULE_COMP:
- 		path__join3(filename, size, symbol_conf.symfs,
- 			    root_dir, dso->long_name);
- 		break;
- 
- 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP:
- 		__symbol__join_symfs(filename, size, dso->long_name);
- 		break;
- 
-@@ -137,6 +141,77 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 	return ret;
- }
- 
-+static int decompress_dummy(const char *input __maybe_unused,
-+			    int output __maybe_unused)
-+{
-+	return -1;
-+}
-+
-+static const struct {
-+	const char *fmt;
-+	int (*decompress)(const char *input, int output);
-+} compressions[] = {
-+	{ "gz", decompress_dummy },
-+	{ NULL, },
-+};
-+
-+bool is_supported_compression(const char *ext)
-+{
-+	unsigned i;
-+
-+	for (i = 0; compressions[i].fmt; i++) {
-+		if (!strcmp(ext, compressions[i].fmt))
-+			return true;
-+	}
-+	return false;
-+}
-+
-+bool is_kmodule_extension(const char *ext)
-+{
-+	if (strncmp(ext, "ko", 2))
-+		return false;
-+
-+	if (ext[2] == '\0' || (ext[2] == '.' && is_supported_compression(ext+3)))
-+		return true;
-+
-+	return false;
-+}
-+
-+bool is_kernel_module(const char *pathname, bool *compressed)
-+{
-+	const char *ext = strrchr(pathname, '.');
-+
-+	if (ext == NULL)
-+		return false;
-+
-+	if (is_supported_compression(ext + 1)) {
-+		if (compressed)
-+			*compressed = true;
-+		ext -= 3;
-+	} else if (compressed)
-+		*compressed = false;
-+
-+	return is_kmodule_extension(ext + 1);
-+}
-+
-+bool decompress_to_file(const char *ext, const char *filename, int output_fd)
-+{
-+	unsigned i;
-+
-+	for (i = 0; compressions[i].fmt; i++) {
-+		if (!strcmp(ext, compressions[i].fmt))
-+			return !compressions[i].decompress(filename,
-+							   output_fd);
-+	}
-+	return false;
-+}
-+
-+bool dso__needs_decompress(struct dso *dso)
-+{
-+	return dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE_COMP;
-+}
-+
- /*
-  * Global list of open DSOs and the counter.
-  */
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index a316e4af321f..3782c82c6e44 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -22,7 +22,9 @@ enum dso_binary_type {
- 	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
- 	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__GUEST_KMODULE_COMP,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP,
- 	DSO_BINARY_TYPE__KCORE,
- 	DSO_BINARY_TYPE__GUEST_KCORE,
- 	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
-@@ -185,6 +187,11 @@ int dso__kernel_module_get_build_id(struct dso *dso, const char *root_dir);
- char dso__symtab_origin(const struct dso *dso);
- int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type type,
- 				   char *root_dir, char *filename, size_t size);
-+bool is_supported_compression(const char *ext);
-+bool is_kmodule_extension(const char *ext);
-+bool is_kernel_module(const char *pathname, bool *compressed);
-+bool decompress_to_file(const char *ext, const char *filename, int output_fd);
-+bool dso__needs_decompress(struct dso *dso);
- 
- /*
-  * The dso__data_* external interface provides following functions:
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 51a630301afa..946c7d62cb6e 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -464,6 +464,7 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- {
- 	struct map *map;
- 	struct dso *dso = __dsos__findnew(&machine->kernel_dsos, filename);
-+	bool compressed;
- 
- 	if (dso == NULL)
- 		return NULL;
-@@ -476,6 +477,11 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- 		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
- 	else
- 		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
-+
-+	/* _KMODULE_COMP should be next to _KMODULE */
-+	if (is_kernel_module(filename, &compressed) && compressed)
-+		dso->symtab_type++;
-+
- 	map_groups__insert(&machine->kmaps, map);
- 	return map;
- }
-@@ -861,8 +867,14 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
- 			struct map *map;
- 			char *long_name;
- 
--			if (dot == NULL || strcmp(dot, ".ko"))
-+			if (dot == NULL)
- 				continue;
-+
-+			/* On some system, modules are compressed like .ko.gz */
-+			if (is_supported_compression(dot + 1) &&
-+			    is_kmodule_extension(dot - 2))
-+				dot -= 3;
-+
- 			snprintf(dso_name, sizeof(dso_name), "[%.*s]",
- 				 (int)(dot - dent->d_name), dent->d_name);
- 
-@@ -1044,6 +1056,11 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
- 			dot = strrchr(name, '.');
- 			if (dot == NULL)
- 				goto out_problem;
-+			/* On some system, modules are compressed like .ko.gz */
-+			if (is_supported_compression(dot + 1))
-+				dot -= 3;
-+			if (!is_kmodule_extension(dot + 1))
-+				goto out_problem;
- 			snprintf(short_module_name, sizeof(short_module_name),
- 					"[%.*s]", (int)(dot - name), name);
- 			strxfrchar(short_module_name, '-', '_');
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 1e23a5bfb044..efc7eb6b8f0f 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -546,6 +546,35 @@ static int dso__swap_init(struct dso *dso, unsigned char eidata)
- 	return 0;
- }
- 
-+static int decompress_kmodule(struct dso *dso, const char *name,
-+			      enum dso_binary_type type)
-+{
-+	int fd;
-+	const char *ext = strrchr(name, '.');
-+	char tmpbuf[] = "/tmp/perf-kmod-XXXXXX";
-+
-+	if ((type != DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP &&
-+	     type != DSO_BINARY_TYPE__GUEST_KMODULE_COMP) ||
-+	    type != dso->symtab_type)
-+		return -1;
-+
-+	if (!ext || !is_supported_compression(ext + 1))
-+		return -1;
-+
-+	fd = mkstemp(tmpbuf);
-+	if (fd < 0)
-+		return -1;
-+
-+	if (!decompress_to_file(ext + 1, name, fd)) {
-+		close(fd);
-+		fd = -1;
-+	}
-+
-+	unlink(tmpbuf);
-+
-+	return fd;
-+}
-+
- bool symsrc__possibly_runtime(struct symsrc *ss)
- {
- 	return ss->dynsym || ss->opdsec;
-@@ -571,7 +600,11 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 	Elf *elf;
- 	int fd;
- 
--	fd = open(name, O_RDONLY);
-+	if (dso__needs_decompress(dso))
-+		fd = decompress_kmodule(dso, name, type);
-+	else
-+		fd = open(name, O_RDONLY);
-+
- 	if (fd < 0)
- 		return -1;
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 078331140d8c..c69915c9d5bc 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -51,7 +51,9 @@ static enum dso_binary_type binary_type_symtab[] = {
- 	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
- 	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__GUEST_KMODULE_COMP,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP,
- 	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
- 	DSO_BINARY_TYPE__NOT_FOUND,
- };
-@@ -1300,7 +1302,9 @@ static bool dso__is_compatible_symtab_type(struct dso *dso, bool kmod,
- 		return dso->kernel == DSO_TYPE_GUEST_KERNEL;
- 
- 	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+	case DSO_BINARY_TYPE__GUEST_KMODULE_COMP:
- 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP:
- 		/*
- 		 * kernel modules know their symtab type - it's set when
- 		 * creating a module dso in machine__new_module().
-@@ -1368,7 +1372,9 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		return -1;
- 
- 	kmod = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
--		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE;
-+		dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE_COMP;
- 
- 	/*
- 	 * Iterate over candidate debug images.
+--Andy
+
+>
+> thanks
+> -john
+
+
+
 -- 
-2.1.2
-
+Andy Lutomirski
+AMA Capital Management, LLC
