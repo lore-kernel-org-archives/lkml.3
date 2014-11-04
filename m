@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaKDLEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:04:45 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:60498 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaKDLEk (ORCPT
+	id S1752205AbaKDLG5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:06:57 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:48749 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750727AbaKDLGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:04:40 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-e9-5458b2c5f56f
-Message-id: <1415099076.7941.14.camel@AMDC1943>
-Subject: Re: [PATCH v4 00/14] Add max77802 regulator operating mode support
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Mark Brown <broonie@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Tue, 04 Nov 2014 12:04:36 +0100
-In-reply-to: <5458AF9D.1080201@collabora.co.uk>
-References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
- <1415097899.7941.10.camel@AMDC1943> <5458AF9D.1080201@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t/xy7pHN0WEGFx6ZWEx9eETNovrX56z
-	Wsw/co7V4ujvAos1f5UsehdcZbO4vGsOm8WM8/uYLE5d/8xmMf/BDmYHLo+/z6+zeOycdZfd
-	Y9OqTjaPKyeaWD3+ztrP4tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZmxZvZyvYwFLx8fAd
-	tgbGDcxdjJwcEgImEld+PmSHsMUkLtxbzwZiCwksZZSYfaigi5ELyP7MKLH7+QImkASvgL7E
-	2r1TgGwODmEBb4mf77RBwmwCxhKbly8B6xURsJO4sfohM0gvs8AxJomZq9axgCRYBFQlOncs
-	AyviBJqz9GsbI8SC6YwSa58tB7uCWUBdYtK8RcwgCyQElCUa+90g9gpK/Jh8jwWiRF5i85q3
-	zBMYBWYh6ZiFpGwWkrIFjMyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUJi4usOxqXHrA4x
-	CnAwKvHwroiPCBFiTSwrrsw9xCjBwawkwru6CijEm5JYWZValB9fVJqTWnyIkYmDU6qBkdNh
-	hfH+c6evRGx7/fzwqZKZH0za5JvOWps/2Rm6amHVRUGB9+ulvUUa1f3u6SXeMF0iwBvE8+Xp
-	x72NE6NzfXjKdupLbZWz9XmWmTTTlLmf73jT5H87tD3+sT4P5lpvueX2uT99t/krY2a4fbv8
-	bXVtcatk4LIjG759+CDqp7gg7PH8kHd8M5VYijMSDbWYi4oTAf+IumJnAgAA
+	Tue, 4 Nov 2014 06:06:53 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Date: Tue, 4 Nov 2014 03:05:57 -0800
+Subject: RE: [PATCH] usb: gadget: don't create new string_container if
+ already exist
+Thread-Topic: [PATCH] usb: gadget: don't create new string_container if
+ already exist
+Thread-Index: Ac/ysJH16QdLMBGdS3WNFlh6N+PB6QFbXF3g
+Message-ID: <9034CBD80F070943B59700D7F8149ED9024ED2A5B7@SC-VEXCH4.marvell.com>
+References: <1414496039-5655-1-git-send-email-zhangwm@marvell.com>
+ <544F95C3.2080306@samsung.com>
+In-Reply-To: <544F95C3.2080306@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-04_05:2014-11-03,2014-11-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1411040108
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sA4B739A015988
 
-On wto, 2014-11-04 at 11:51 +0100, Javier Martinez Canillas wrote:
-> Hello Krzysztof,
+
+> -----Original Message-----
+> From: Andrzej Pietrasiewicz [mailto:andrzej.p@samsung.com]
+> Sent: 2014ƒÍ10‘¬28»’ 21:10
+> To: Neil Zhang; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Cc: balbi@ti.com; gregkh@linuxfoundation.org
+> Subject: Re: [PATCH] usb: gadget: don't create new string_container if already
+> exist
 > 
-> On 11/04/2014 11:44 AM, Krzysztof Kozlowski wrote:
-> > 
-> > Where's a diff stat? It is helpful to see what files were touched and I
-> > believe it is created by default with format-patch.
+> Hi,
+> 
+> W dniu 28.10.2014 o 12:33, Neil Zhang pisze:
+> > Don't create new usb_gadget_string_container if the current strings
+> > are already exist in the usb_composite_dev.
+> > Otherwise the ids_tab will overflow soon if we bind / unbind usb
+> > functions frequently like android does.
+> 
+> The problem you are describing does not exist in mainline kernel, where
+> functions are always unbound as part of the whole gadget's unbind - regardless
+> of whether it is a legacy gadget or configfs-composed gadget. When the whole
+> gadget is unbound, composite_dev_cleanup() is called which zeroes cdev-
+> >next_string_id and frees all gadget strings containers.
+> 
+
+Yes, you are right that the current mainline won't suffer this issue.
+But it will be needed if we want to implement similar features like android do.
+It will only remove config rather than whole gadget driver.
+
+
 > >
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > ---
+> >   drivers/usb/gadget/composite.c |    6 ++++++
+> >   1 file changed, 6 insertions(+)
+> >
+> > diff --git a/drivers/usb/gadget/composite.c
+> > b/drivers/usb/gadget/composite.c index a8c18df..6fe3c6b 100644
+> > --- a/drivers/usb/gadget/composite.c
+> > +++ b/drivers/usb/gadget/composite.c
+> > @@ -1183,6 +1183,12 @@ struct usb_string *usb_gstrings_attach(struct
+> usb_composite_dev *cdev,
+> >   	if (!n_gstrings)
+> >   		return ERR_PTR(-EINVAL);
+> >
+> > +	list_for_each_entry(uc, &cdev->gstrings, list) {
+> > +		n_gs = get_containers_gs(uc);
+> > +		if (!strcmp(n_gs[0]->strings[0].s, sp[0]->strings[0].s))
 > 
-> Yes, I removed the diffstat since it was quite big due the drivers
-> refactor and the cover letter was already long but I'll add it in
-> the next revision.
+> To me it looks like it is a big assumption that if the first string matches,
+> the rest are the same, too. Isn't it?
+> 
+> Anyway, this solution looks more like pushing the moment when cdev-
+> >next_string_id becomes 254 to a later time rather than preventing such a
+> situation.
+> 
+> If usb_gstrings_attach() happens at function bind time, perhaps there should
+> be some usb_gstrings_detach() called at function unbind?
+> 
+> AP
 
-I was searching for regulator.h and I hope to find it in diffstat...
 
-Best regards,
-Krzysztof
-
-
+Best Regards,
+Neil Zhang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
