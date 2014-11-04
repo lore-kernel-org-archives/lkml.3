@@ -1,125 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaKDFoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 00:44:44 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39361 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaKDFom (ORCPT
+	id S1751928AbaKDFpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 00:45:21 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39923 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaKDFpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 00:44:42 -0500
-Message-ID: <545867BC.9070000@hitachi.com>
-Date: Tue, 04 Nov 2014 14:44:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 4 Nov 2014 00:45:18 -0500
+Date: Tue, 4 Nov 2014 05:45:13 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org
+Subject: Re: [0/3] net: Kill skb_copy_datagram_const_iovec
+Message-ID: <20141104054513.GB7996@ZenIV.linux.org.uk>
+References: <20141103002207.GA26588@gondor.apana.org.au>
+ <20141103004503.GX7996@ZenIV.linux.org.uk>
+ <20141103053751.GA27845@gondor.apana.org.au>
+ <20141103.150553.633529234958324183.davem@davemloft.net>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, srikar@linux.vnet.ibm.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options
- for cache
-References: <20141031185128.27889.32747.stgit@localhost.localdomain> <87389z7j3x.fsf@sejong.aot.lge.com>
-In-Reply-To: <87389z7j3x.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103.150553.633529234958324183.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/04 12:14), Namhyung Kim wrote:
-> Hi Masami,
-> 
-> On Fri, 31 Oct 2014 14:51:29 -0400, Masami Hiramatsu wrote:
->> Hi,
->>
->> Here is a sereis of patches for enabling "event cache" feature
->> to perf probe. Brendan gives me this cool idea, thanks! :)
->>
->> In this series, I added following options/features;
->>  - --output option
->>    We can save the probe definition command for given probe-event
->>    instead of setting up the local tracing/kprobe_events.
->>
->>  - --no-inlines option
->>    We can avoid searching the inline functions in debuginfo. Usually
->>    useful with wildcards since the wildcards will hit a huge amount
->>    of probe-points.
->>
->>  - $params special probe argument
->>    $params is expanded to function parameters only, no locally defined
->>    variables. This is useful for function-call tracing.
->>
->>  - wildcard support for function name
->>    Wildcard support is the key feature for this idea. Now we can use
->>    '*foo*' for function name to define the probe-point.
->>
->> So by using all of them, we can make an "event cache" file on all
->> functions (except for inlined functions) as below.
->>
->>   # perf probe --max-probes=100000 --no-inlines -a '* $params' -o event.cache
->>
->> builds "event.cache" file in which event settings for
->> all function entries, like below;
->>
->>   p:probe/reset_early_page_tables _text+12980741
->>   p:probe/copy_bootdata _text+12980830 real_mode_data=%di:u64
->>   p:probe/exit_amd_microcode _text+14692680
->>   p:probe/early_make_pgtable _text+12981274 address=%di:u64
->>   p:probe/x86_64_start_reservations _text+12981700 real_mode_data=%di:u64
->>   p:probe/x86_64_start_kernel _text+12981744 real_mode_data=%di:u64
->>   p:probe/reserve_ebda_region _text+12982117
-> 
-> Does this event cache support kernel modules too?  AFAIK it can have a
-> different address whenever loaded even on a same kernel.
+On Mon, Nov 03, 2014 at 03:05:53PM -0500, David Miller wrote:
 
-Yes, for the modules perf probe uses target function symbol directly instead
-of _text.
+> I'll see if I can make some progress converting the networking over
+> to iov_iter.  It can't be that difficult... albeit perhaps a little
+> time consuming.
 
- ----
- perf probe -m xfs -o - -q -a xfs_acl_exists
- p:probe/xfs_acl_exists xfs:xfs_acl_exists+0
- ----
+FWIW, I have a queue that got started back in April; basically, the plan
+of attack was
+	* separate kernel-side and userland msghdr.
+	* localize ->msg_iov uses - most of that gets taken care of by
+several new helpers, as in
+    new helper: skb_copy_datagram_msg()
+    
+    Absolute majority of skb_copy_datagram_iovec() callers (49 out of 56)
+    are passing it msg->msg_iov as iovec.  Provide a trivial wrapper that
+    takes msg as argument instead of iovec.
+and several like that (the numbers in the above are probably incorrect these
+days - it was done more than half a year ago).
+	* switch kernel-side msghdr to iov_iter.  That means diverging
+layouts; it's really not hard, since we have copying of msghdr from
+userland already localized.  Initially - just a mechanical conversion
+(i.e. direct uses of iov_iter fields instead of ->msg_iov/->msg_iovlen;
+note that after the introduction of wrappers the number of such places
+is very much reduced).
+	* start converting those relatively few places to iov_iter primitives.
 
->> This event.cache file will be big (but much smaller than native
->> debuginfo :) ) if your kernel have many option embedded.
->> Anyway, you can compress it too.
->>
->>   # wc -l event.cache
->>   33813 event.cache
->>   # ls -sh event.cache
->>   2.3M event.cache
->>   # ls -sh event.cache.gz
->>   464K event.cache.gz
->>
->> For setting up a probe event, you can grep the function name
->> and write it to tracing/kprobe_events, as below;
->>
->>   # zcat event.cache.gz | \
->>     grep probe/vfs_symlink > /sys/kernel/debug/tracing/kprobe_events
->>
->> This can be applied for the remote machine only if the machine
->> runs on completely same kernel binary. Perhaps, we need some
->> helper tool to check it.
-> 
-> While it's useful for "agent-less" systems, I think we also need to have
-> a simple way to apply it with perf tools.
+And that's where it got stalled, since we have to deal with expectations
+of callers.  Syscall ones are trivial; that's not a problem.  Unfortunately,
+there are kernel_{send,recv}msg() users, and those do care about the state the
+iovec is left in.  Strictly speaking, the state of iovec after e.g.
+->sendmsg() is undefined.  And it's not just protocol-dependent - unless
+I'm seriously misreading it, tcp_sendmsg() ends up modifying iovec in case
+when it hits tcp_send_rcvq(), while in the normal case it leaves iovec
+unmodified.  So in general you need to feed ->{send,recv}msg() a throwaway copy
+of iovec.  Leads to wonders like
+        /* NB we can't trust socket ops to either consume our iovs
+         * or leave them alone. */
+        LASSERT (niov > 0);
 
-Yeah, I see. As I've sent a reply to Arnaldo, I'd like to add --query for
-cached event definition by checking a build id.
-In that case, you just need to run perf-archive and send it to remote,
-then you can run perf-probe --query-set "event" on the machine.
+        for (nob = i = 0; i < niov; i++) {
+                scratchiov[i] = iov[i];
+                nob += scratchiov[i].iov_len;
+        }
+        LASSERT (nob <= conn->ksnc_rx_nob_wanted);
 
-Thank you,
+        rc = kernel_recvmsg(conn->ksnc_sock, &msg,
+                (struct kvec *)scratchiov, niov, nob, MSG_DONTWAIT);
+etc.  However, there are places that don't bother and do this:
+        while (total_rx < data) {
+                rx_loop = kernel_recvmsg(conn->sock, &msg, iov_p, iov_len,
+                                        (data - total_rx), MSG_WAITALL);
+                if (rx_loop <= 0) {
+                        pr_debug("rx_loop: %d total_rx: %d\n",
+                                rx_loop, total_rx); 
+                        return rx_loop;
+                }
+                total_rx += rx_loop;
+                pr_debug("rx_loop: %d, total_rx: %d, data: %d\n",
+                                rx_loop, total_rx, data);
+        }
+(that's iscsit_do_rx_data()).  Maybe it's a bug; maybe it's relying on
+specific behaviour of the protocol known to be used - this code clearly
+expects recvmsg to advance iovec, which seems to depend only on the
+protocol.  At the moment.  In any case, it's very brittle...
 
+Hell knows; I hadn't finished digging through that zoo - got sidetracked back
+then.  *IF* all such places either use a throwaway copy or assume that iovec
+gets modified, we can do the following: switch the access to iovecs to
+iov_iter primitives, with the first kind of callers creating a throwaway
+iov_iter and the second just feeding the same iov_iter to e.g.
+kernel_recvmsg().  iovec will remain constant, iov_iter will be advanced.
+Moreover, in a lot of cases of first kind will be able to get rid of
+throwaway iov_iter (and of manually advancing it), effectively converting
+to the second one.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+If we have places that currently rely on iovec remaining unchanged (i.e.
+manually advancing it after kernel_{send,recv}msg()), the series will be
+more painful ;-/  I very much hope that no such places exist...
 
+FWIW, there is also a tactical question that needs to be dealt with.  We
+can, of course, start with renaming the "kernel-side" (i.e. post
+copy_msghdr_from_user()/get_compat_msghdr()) to struct kmsghdr.  OTOH,
+that's a _lot_ of churn for very little reason - most of the instances
+in the tree are of that kind.  So I did it the other way round - introduced
+struct user_msghdr (only in linux/socket.h; note that we do *not* have
+struct msghdr in uabi/linux/socket.h, or anywhere else in uabi/*),
+made the syscalls take pointers to it and (initially) rely upon the identical
+layouts in copy_msghdr_from_user(); once we put iov_iter into kernel-side
+msghdr, we'll just do it like get_compat_msghdr() does.
 
+Is that acceptable?  It would greatly reduce the amount of churn in net/* -
+we don't need to pass iov_iter separately and most of the functions in
+the middle of call chains are completely unchanged.  Only the originators
+of ->sendmsg()/->recvmsg() and the places doing actual data copying
+need to be touched.  OTOH, it makes for kernel struct msghdr looking
+odd - instead of normal ->msg_iov and ->msg_iovlen it would have
+->msg_iov_iter, with ->sendmsg()/->recvmsg() callers needing to set it
+up...  OTTH, the things *are* odd from userland programmer POV - sendmsg(2)
+and recvmsg(2) leave the iovec unchanged, and having it changed unpredicatably
+in the kernel-side counterparts seems to make for a nasty trap.  Certainly
+makes for a bunch of nasty comments in the code using those...
+
+Comments?
