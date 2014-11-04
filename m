@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaKDCye (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 21:54:34 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:46542 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaKDCyc (ORCPT
+	id S1751991AbaKDCzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 21:55:09 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34966 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaKDCym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 21:54:32 -0500
+	Mon, 3 Nov 2014 21:54:42 -0500
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
@@ -14,59 +14,164 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
         Hannes Frederic Sowa <hannes@stressinduktion.org>,
         Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 0/7] implementation of eBPF maps
-Date: Mon,  3 Nov 2014 18:54:09 -0800
-Message-Id: <1415069656-14138-1-git-send-email-ast@plumgrid.com>
+Subject: [PATCH net-next 6/7] bpf: allow eBPF programs to use maps
+Date: Mon,  3 Nov 2014 18:54:15 -0800
+Message-Id: <1415069656-14138-7-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1415069656-14138-1-git-send-email-ast@plumgrid.com>
+References: <1415069656-14138-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+expose bpf_map_lookup_elem(), bpf_map_update_elem(), bpf_map_delete_elem()
+map accessors to eBPF programs
 
-this set of patches adds implementation of HASH and ARRAY types of eBPF maps
-which were described in manpage in commit b4fc1a460f30("Merge branch 'bpf-next'")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+Note, these helpers are exposed as '.gpl_only = false', so non-GPL eBPF programs
+can use them. That was requested by AndyL and DavidL before.
 
-The difference vs previous version of these patches from August:
-- added 'flags' attribute to BPF_MAP_UPDATE_ELEM
-- in HASH type implementation removed per-map kmem_cache.
-  I was doing kmem_cache_create() for every map to enable selective slub
-  debugging to check for overflows and leaks. Now it's not needed, so just
-  use normal kmalloc() for map elements.
-- added ARRAY type which was mentioned in manpage, but wasn't public yet
-- added map testsuite and removed temporary bits from test_stubs
-
-Note, eBPF programs cannot be attached to events yet.
-It will come in the next set.
-
-Alexei Starovoitov (7):
-  bpf: add 'flags' attribute to BPF_MAP_UPDATE_ELEM command
-  bpf: add hashtable type of eBPF maps
-  bpf: add array type of eBPF maps
-  bpf: fix BPF_MAP_LOOKUP_ELEM command return code
-  bpf: add a testsuite for eBPF maps
-  bpf: allow eBPF programs to use maps
-  bpf: remove test map scaffolding and user proper types
-
- include/linux/bpf.h         |    7 +-
- include/uapi/linux/bpf.h    |   15 +-
- kernel/bpf/Makefile         |    2 +-
- kernel/bpf/arraymap.c       |  150 ++++++++++++++++++
- kernel/bpf/hashtab.c        |  362 +++++++++++++++++++++++++++++++++++++++++++
- kernel/bpf/helpers.c        |   88 +++++++++++
- kernel/bpf/syscall.c        |    6 +-
- kernel/bpf/test_stub.c      |   56 ++-----
- samples/bpf/Makefile        |    3 +-
- samples/bpf/libbpf.c        |    3 +-
- samples/bpf/libbpf.h        |    2 +-
- samples/bpf/test_maps.c     |  287 ++++++++++++++++++++++++++++++++++
- samples/bpf/test_verifier.c |   14 +-
- 13 files changed, 932 insertions(+), 63 deletions(-)
- create mode 100644 kernel/bpf/arraymap.c
- create mode 100644 kernel/bpf/hashtab.c
+ include/linux/bpf.h      |    5 +++
+ include/uapi/linux/bpf.h |    3 ++
+ kernel/bpf/Makefile      |    2 +-
+ kernel/bpf/helpers.c     |   88 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 97 insertions(+), 1 deletion(-)
  create mode 100644 kernel/bpf/helpers.c
- create mode 100644 samples/bpf/test_maps.c
 
+diff --git a/include/linux/bpf.h b/include/linux/bpf.h
+index 51e9242e4803..75e94eaa228b 100644
+--- a/include/linux/bpf.h
++++ b/include/linux/bpf.h
+@@ -133,4 +133,9 @@ struct bpf_prog *bpf_prog_get(u32 ufd);
+ /* verify correctness of eBPF program */
+ int bpf_check(struct bpf_prog *fp, union bpf_attr *attr);
+ 
++/* verifier prototypes for helper functions called from eBPF programs */
++extern struct bpf_func_proto bpf_map_lookup_elem_proto;
++extern struct bpf_func_proto bpf_map_update_elem_proto;
++extern struct bpf_func_proto bpf_map_delete_elem_proto;
++
+ #endif /* _LINUX_BPF_H */
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 9811d012b766..84a7fc3a23ec 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -160,6 +160,9 @@ union bpf_attr {
+  */
+ enum bpf_func_id {
+ 	BPF_FUNC_unspec,
++	BPF_FUNC_map_lookup_elem, /* void *map_lookup_elem(&map, &key) */
++	BPF_FUNC_map_update_elem, /* int map_update_elem(&map, &key, &value, flags) */
++	BPF_FUNC_map_delete_elem, /* int map_delete_elem(&map, &key) */
+ 	__BPF_FUNC_MAX_ID,
+ };
+ 
+diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
+index 72ec98ba2d42..a5ae60f0b0a2 100644
+--- a/kernel/bpf/Makefile
++++ b/kernel/bpf/Makefile
+@@ -1,5 +1,5 @@
+ obj-y := core.o
+-obj-$(CONFIG_BPF_SYSCALL) += syscall.o verifier.o hashtab.o arraymap.o
++obj-$(CONFIG_BPF_SYSCALL) += syscall.o verifier.o hashtab.o arraymap.o helpers.o
+ ifdef CONFIG_TEST_BPF
+ obj-$(CONFIG_BPF_SYSCALL) += test_stub.o
+ endif
+diff --git a/kernel/bpf/helpers.c b/kernel/bpf/helpers.c
+new file mode 100644
+index 000000000000..3fa78babe728
+--- /dev/null
++++ b/kernel/bpf/helpers.c
+@@ -0,0 +1,88 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ */
++#include <linux/bpf.h>
++#include <linux/rcupdate.h>
++
++/* called from eBPF program under rcu lock
++ *
++ * if kernel subsystem is allowing eBPF programs to call this function,
++ * inside its own verifier_ops->get_func_proto() callback it should return
++ * bpf_map_lookup_elem_proto, so that verifier can properly checks the arguments
++ */
++static u64 bpf_map_lookup_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	/* verifier checked that R1 contains a valid pointer to bpf_map
++	 * and R2 points to a program stack and map->key_size bytes were
++	 * initialized
++	 */
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++	void *value;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	value = map->ops->map_lookup_elem(map, key);
++
++	/* lookup() returns either pointer to element value or NULL
++	 * which is the meaning of PTR_TO_MAP_VALUE_OR_NULL type
++	 */
++	return (unsigned long) value;
++}
++
++struct bpf_func_proto bpf_map_lookup_elem_proto = {
++	.func = bpf_map_lookup_elem,
++	.gpl_only = false,
++	.ret_type = RET_PTR_TO_MAP_VALUE_OR_NULL,
++	.arg1_type = ARG_CONST_MAP_PTR,
++	.arg2_type = ARG_PTR_TO_MAP_KEY,
++};
++
++/* called from eBPF program under rcu lock */
++static u64 bpf_map_update_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++	void *value = (void *) (unsigned long) r3;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	return map->ops->map_update_elem(map, key, value, r4);
++}
++
++struct bpf_func_proto bpf_map_update_elem_proto = {
++	.func = bpf_map_update_elem,
++	.gpl_only = false,
++	.ret_type = RET_INTEGER,
++	.arg1_type = ARG_CONST_MAP_PTR,
++	.arg2_type = ARG_PTR_TO_MAP_KEY,
++	.arg3_type = ARG_PTR_TO_MAP_VALUE,
++	.arg4_type = ARG_ANYTHING,
++};
++
++/* called from eBPF program under rcu lock */
++static u64 bpf_map_delete_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	return map->ops->map_delete_elem(map, key);
++}
++
++struct bpf_func_proto bpf_map_delete_elem_proto = {
++	.func = bpf_map_delete_elem,
++	.gpl_only = false,
++	.ret_type = RET_INTEGER,
++	.arg1_type = ARG_CONST_MAP_PTR,
++	.arg2_type = ARG_PTR_TO_MAP_KEY,
++};
 -- 
 1.7.9.5
 
