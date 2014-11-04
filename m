@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313AbaKDPHa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:07:30 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:52870 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072AbaKDPH1 (ORCPT
+	id S1754236AbaKDPJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:09:14 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:52640 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153AbaKDPJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:07:27 -0500
-Message-ID: <1415113632.24819.4.camel@arm.com>
-Subject: Re: [PATCH v3 0/3] perf: User/kernel time correlation and event
- generation
-From: Pawel Moll <pawel.moll@arm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+	Tue, 4 Nov 2014 10:09:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141104094707.79e9ca86@gandalf.local.home>
+References: <1415099585-31174-1-git-send-email-pang.xunlei@linaro.org>
+	<1415099585-31174-2-git-send-email-pang.xunlei@linaro.org>
+	<20141104075237.4eb9b5e6@gandalf.local.home>
+	<CADcy93XK9-p3iFw28qeA=q9Fp4_Qbd1Hoig6Tu5G+QfwxNWiow@mail.gmail.com>
+	<20141104094707.79e9ca86@gandalf.local.home>
+Date: Tue, 4 Nov 2014 23:09:09 +0800
+Message-ID: <CADcy93Xeb8+pkyjPCazpA5_fhZycrYNf654Ev6j2tEkwqdJXmg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/6] sched/rt: Optimize select_task_rq_rt() for non-RT
+ curr task
+From: "pang.xunlei" <pang.xunlei@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Date: Tue, 04 Nov 2014 15:07:12 +0000
-In-Reply-To: <CALCETrUAkXKyXzZy4xaYcW2f65Lh=APrU4cFU1zm-qmc6EwB8g@mail.gmail.com>
-References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
-	 <CALCETrXGoevmD_avz5sQfbbD624vpLW5=-8ovzTPT_5wzNFnVA@mail.gmail.com>
-	 <CALAqxLXfy5P0kg-W7hL+Jf1iYv758+-2cTdZwsY8kAns1nvEmg@mail.gmail.com>
-	 <CALCETrUAkXKyXzZy4xaYcW2f65Lh=APrU4cFU1zm-qmc6EwB8g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        Juri Lelli <juri.lelli@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-04 at 01:25 +0000, Andy Lutomirski wrote:
-> >> If you're going to add double-stamped packets, can you also add a
-> >> syscall to read multiple clocks at once, atomically?  Or can you
-> >> otherwise add a non-perf mechanism to get at this data?
-> >
-> > I've got some thoughts on what a possible interface that wouldn't be
-> > awful could look like, but I'm still hesitant because I don't really
-> > know if exposing this sort of data is actually a good idea long term.
-> 
-> My only real thought here is that, if perf is going to try to do this,
-> then presumably it should be reasonably integrated w/ the core timing
-> code.  I.e. if perf does this, then presumably the core code should
-> know about it and there should be a core interface to it.
+On 4 November 2014 22:47, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 4 Nov 2014 22:29:24 +0800
+> "pang.xunlei" <pang.xunlei@linaro.org> wrote:
+>
+>
+>> > Migration is not cheap. It causes cache misses and TLB flushes. This is
+>> > not something that should be taken lightly.
+>> Ok, thanks!
+>> But I think the PUSH operation optimized by the former patch is reasonable,
+>> since PUSH itselft does involve the Migration. Do I miss something?
+>
+> For the first patch you may be right, but I want to think about it some
+> more. I want to make sure we are not adding any other type of overhead
+> with the extra calls.
+Yes, this may cause some overhead/latency in idle especially its exit
+stage, if that can't be accepted, I think it can also be done just in
+find_lowest_rq() after cpupri_find(), we can modify cpupri_find() for
+example to return a pri_to_cpu[] index plus one instead of 1, then if
+the return index equals CPUPRI_NORMAL+1, then iterate the
+"lowest_mask" with something like cpu_idle() judgement to select the
+idle cpu.
 
-I think I understand where you're coming from. Arnd's idea for the API
-seems reasonable, although I can't promise implementing a proposal
-(don't make me stop you from doing it :-).
-
-As to the perf-specific correlation, I'm assuming limited accuracy.
-Others already mentioned that in the absence of hardware support, the
-time values are never really "atomic". The best what can be done is to
-access them as near to each other in the code as possible and make sure
-it happens in a non-preemptible section. In my tests I've achieved, on
-average, sub-microsecond accuracy, which was good enough from my
-perspective, but it's far from ideal 42ns resolution for my (just an
-example) time source clocked at 24MHz.
-
-Paweł
-
+>
+> -- Steve
