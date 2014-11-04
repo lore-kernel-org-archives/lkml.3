@@ -1,411 +1,705 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026AbaKDQN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:13:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59567 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755009AbaKDQN0 (ORCPT
+	id S932083AbaKDQRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:17:32 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58594 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751288AbaKDQRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:13:26 -0500
-Date: Tue, 4 Nov 2014 08:12:32 -0800
-From: tip-bot for Iulia Manda <tipbot@zytor.com>
-Message-ID: <tip-44dba3d5d6a10685fb15bd1954e62016334825e0@git.kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, hpa@zytor.com,
-        iulia.manda21@gmail.com, tglx@linutronix.de, peterz@infradead.org,
-        linux-kernel@vger.kernel.org
-Reply-To: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        peterz@infradead.org, mingo@kernel.org, torvalds@linux-foundation.org,
-        iulia.manda21@gmail.com, hpa@zytor.com
-In-Reply-To: <20141031001331.GA30662@winterfell>
-References: <20141031001331.GA30662@winterfell>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Refactor task_struct to use numa_faults instead of numa_* pointers
-Git-Commit-ID: 44dba3d5d6a10685fb15bd1954e62016334825e0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 4 Nov 2014 11:17:30 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <darren.hart@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>
+Subject: [Update][PATCH v6 02/12] Driver core: Unified device properties interface for platform firmware
+Date: Tue, 04 Nov 2014 17:38:13 +0100
+Message-ID: <2077334.u2YofzPq8Z@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2127128.VT1Iq03xz1@vostro.rjw.lan>
+References: <13750506.S2yVlRRDa2@vostro.rjw.lan> <2127128.VT1Iq03xz1@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  44dba3d5d6a10685fb15bd1954e62016334825e0
-Gitweb:     http://git.kernel.org/tip/44dba3d5d6a10685fb15bd1954e62016334825e0
-Author:     Iulia Manda <iulia.manda21@gmail.com>
-AuthorDate: Fri, 31 Oct 2014 02:13:31 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 4 Nov 2014 07:17:57 +0100
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-sched: Refactor task_struct to use numa_faults instead of numa_* pointers
+Add a uniform interface by which device drivers can request device
+properties from the platform firmware by providing a property name
+and the corresponding data type.  The purpose of it is to help to
+write portable code that won't depend on any particular platform
+firmware interface.
 
-This patch simplifies task_struct by removing the four numa_* pointers
-in the same array and replacing them with the array pointer. By doing this,
-on x86_64, the size of task_struct is reduced by 3 ulong pointers (24 bytes on
-x86_64).
+The following general helper functions are added:
 
-A new parameter is added to the task_faults_idx function so that it can return
-an index to the correct offset, corresponding with the old precalculated
-pointers.
+device_property_present()
+device_property_read_u8()
+device_property_read_u16()
+device_property_read_u32()
+device_property_read_u64()
+device_property_read_string()
+device_property_read_u8_array()
+device_property_read_u16_array()
+device_property_read_u32_array()
+device_property_read_u64_array()
+device_property_read_string_array()
 
-All of the code in sched/ that depended on task_faults_idx and numa_* was
-changed in order to match the new logic.
+The first one allows the caller to check if the given property is
+present.  The next 5 of them allow single-valued properties of
+various types to be retrieved in a uniform way.  The remaining 5 are
+for reading properties with multiple values (arrays of either numbers
+or strings).
 
-Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: mgorman@suse.de
-Cc: dave@stgolabs.net
-Cc: riel@redhat.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20141031001331.GA30662@winterfell
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+The interface covers both ACPI and Device Trees.
+
+This change set includes material from Mika Westerberg and Aaron Lu.
+
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- include/linux/sched.h |  31 ++++++--------
- kernel/sched/core.c   |   3 +-
- kernel/sched/debug.c  |   4 +-
- kernel/sched/fair.c   | 110 ++++++++++++++++++++++++++------------------------
- kernel/sched/sched.h  |   7 ++++
- 5 files changed, 80 insertions(+), 75 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4400ddc..bd7c14b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1597,28 +1597,23 @@ struct task_struct {
- 	struct numa_group *numa_group;
- 
- 	/*
--	 * Exponential decaying average of faults on a per-node basis.
--	 * Scheduling placement decisions are made based on the these counts.
--	 * The values remain static for the duration of a PTE scan
-+	 * numa_faults is an array split into four regions:
-+	 * faults_memory, faults_cpu, faults_memory_buffer, faults_cpu_buffer
-+	 * in this precise order.
-+	 *
-+	 * faults_memory: Exponential decaying average of faults on a per-node
-+	 * basis. Scheduling placement decisions are made based on these
-+	 * counts. The values remain static for the duration of a PTE scan.
-+	 * faults_cpu: Track the nodes the process was running on when a NUMA
-+	 * hinting fault was incurred.
-+	 * faults_memory_buffer and faults_cpu_buffer: Record faults per node
-+	 * during the current scan window. When the scan completes, the counts
-+	 * in faults_memory and faults_cpu decay and these values are copied.
- 	 */
--	unsigned long *numa_faults_memory;
-+	unsigned long *numa_faults;
- 	unsigned long total_numa_faults;
- 
- 	/*
--	 * numa_faults_buffer records faults per node during the current
--	 * scan window. When the scan completes, the counts in
--	 * numa_faults_memory decay and these values are copied.
--	 */
--	unsigned long *numa_faults_buffer_memory;
--
--	/*
--	 * Track the nodes the process was running on when a NUMA hinting
--	 * fault was incurred.
--	 */
--	unsigned long *numa_faults_cpu;
--	unsigned long *numa_faults_buffer_cpu;
--
--	/*
- 	 * numa_faults_locality tracks if faults recorded during the last
- 	 * scan window were remote/local. The task scan period is adapted
- 	 * based on the locality of the faults with different weights
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index df0569e..72d9d92 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1857,8 +1857,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
- 	p->numa_work.next = &p->numa_work;
--	p->numa_faults_memory = NULL;
--	p->numa_faults_buffer_memory = NULL;
-+	p->numa_faults = NULL;
- 	p->last_task_numa_placement = 0;
- 	p->last_sum_exec_runtime = 0;
- 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index eeb6046..92cc520 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -535,8 +535,8 @@ static void sched_show_numa(struct task_struct *p, struct seq_file *m)
- 			unsigned long nr_faults = -1;
- 			int cpu_current, home_node;
- 
--			if (p->numa_faults_memory)
--				nr_faults = p->numa_faults_memory[2*node + i];
-+			if (p->numa_faults)
-+				nr_faults = p->numa_faults[2*node + i];
- 
- 			cpu_current = !i ? (task_node(p) == node) :
- 				(pol && node_isset(node, pol->v.nodes));
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index d03d76d..826fdf3 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -896,18 +896,24 @@ pid_t task_numa_group_id(struct task_struct *p)
- 	return p->numa_group ? p->numa_group->gid : 0;
- }
- 
--static inline int task_faults_idx(int nid, int priv)
+This has been rebased on top of
+
+	http://marc.info/?l=linux-kernel&m=141505792126265&w=4
+
+(with the const bug fixed).
+
+Grant, I've also made the other changes suggested by you.
+
+Now, this *really* needs to stabilize, so I'd very much prefer to do any
+subsequent fix-ups on top of this series rather than by modifying the
+patches in it.
+
+Rafael
+
+---
+ drivers/acpi/property.c  |  178 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/base/Makefile    |    2 
+ drivers/base/property.c  |  185 +++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/of/base.c        |   33 ++++++++
+ include/linux/acpi.h     |   32 ++++++++
+ include/linux/of.h       |   12 +++
+ include/linux/property.h |   73 ++++++++++++++++++
+ 7 files changed, 514 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/base/property.c
+ create mode 100644 include/linux/property.h
+
+Index: linux-pm/include/linux/property.h
+===================================================================
+--- /dev/null
++++ linux-pm/include/linux/property.h
+@@ -0,0 +1,73 @@
 +/*
-+ * The averaged statistics, shared & private, memory & cpu,
-+ * occupy the first half of the array. The second half of the
-+ * array is for current counters, which are averaged into the
-+ * first set by task_numa_placement.
++ * property.h - Unified device property interface.
++ *
++ * Copyright (C) 2014, Intel Corporation
++ * Authors: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++ *          Mika Westerberg <mika.westerberg@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+static inline int task_faults_idx(enum numa_faults_stats s, int nid, int priv)
++
++#ifndef _LINUX_PROPERTY_H_
++#define _LINUX_PROPERTY_H_
++
++#include <linux/types.h>
++
++struct device;
++
++enum dev_prop_type {
++	DEV_PROP_U8,
++	DEV_PROP_U16,
++	DEV_PROP_U32,
++	DEV_PROP_U64,
++	DEV_PROP_STRING,
++	DEV_PROP_MAX,
++};
++
++bool device_property_present(struct device *dev, const char *propname);
++int device_property_read_u8_array(struct device *dev, const char *propname,
++				  u8 *val, size_t nval);
++int device_property_read_u16_array(struct device *dev, const char *propname,
++				   u16 *val, size_t nval);
++int device_property_read_u32_array(struct device *dev, const char *propname,
++				   u32 *val, size_t nval);
++int device_property_read_u64_array(struct device *dev, const char *propname,
++				   u64 *val, size_t nval);
++int device_property_read_string_array(struct device *dev, const char *propname,
++				      const char **val, size_t nval);
++int device_property_read_string(struct device *dev, const char *propname,
++				const char **val);
++
++static inline bool device_property_read_bool(struct device *dev,
++					     const char *propname)
++{
++	return device_property_present(dev, propname);
++}
++
++static inline int device_property_read_u8(struct device *dev,
++					  const char *propname, u8 *val)
++{
++	return device_property_read_u8_array(dev, propname, val, 1);
++}
++
++static inline int device_property_read_u16(struct device *dev,
++					   const char *propname, u16 *val)
++{
++	return device_property_read_u16_array(dev, propname, val, 1);
++}
++
++static inline int device_property_read_u32(struct device *dev,
++					   const char *propname, u32 *val)
++{
++	return device_property_read_u32_array(dev, propname, val, 1);
++}
++
++static inline int device_property_read_u64(struct device *dev,
++					   const char *propname, u64 *val)
++{
++	return device_property_read_u64_array(dev, propname, val, 1);
++}
++
++#endif /* _LINUX_PROPERTY_H_ */
+Index: linux-pm/include/linux/of.h
+===================================================================
+--- linux-pm.orig/include/linux/of.h
++++ linux-pm/include/linux/of.h
+@@ -23,6 +23,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/topology.h>
+ #include <linux/notifier.h>
++#include <linux/property.h>
+ 
+ #include <asm/byteorder.h>
+ #include <asm/errno.h>
+@@ -263,6 +264,10 @@ extern int of_property_read_u32_array(co
+ 				      size_t sz);
+ extern int of_property_read_u64(const struct device_node *np,
+ 				const char *propname, u64 *out_value);
++extern int of_property_read_u64_array(const struct device_node *np,
++				      const char *propname,
++				      u64 *out_values,
++				      size_t sz);
+ 
+ extern int of_property_read_string(struct device_node *np,
+ 				   const char *propname,
+@@ -476,6 +481,13 @@ static inline int of_property_read_u32_a
  {
--	return NR_NUMA_HINT_FAULT_TYPES * nid + priv;
-+	return NR_NUMA_HINT_FAULT_TYPES * (s * nr_node_ids + nid) + priv;
+ 	return -ENOSYS;
  }
++
++static inline int of_property_read_u64_array(const struct device_node *np,
++					     const char *propname,
++					     u64 *out_values, size_t sz)
++{
++	return -ENOSYS;
++}
  
- static inline unsigned long task_faults(struct task_struct *p, int nid)
+ static inline int of_property_read_string(struct device_node *np,
+ 					  const char *propname,
+Index: linux-pm/include/linux/acpi.h
+===================================================================
+--- linux-pm.orig/include/linux/acpi.h
++++ linux-pm/include/linux/acpi.h
+@@ -28,6 +28,7 @@
+ #include <linux/errno.h>
+ #include <linux/ioport.h>	/* for struct resource */
+ #include <linux/device.h>
++#include <linux/property.h>
+ 
+ #ifndef _LINUX
+ #define _LINUX
+@@ -677,6 +678,13 @@ int acpi_dev_get_property_array(struct a
+ int acpi_dev_get_property_reference(struct acpi_device *adev, const char *name,
+ 				    const char *cells_name, size_t index,
+ 				    struct acpi_reference_args *args);
++
++int acpi_dev_prop_get(struct acpi_device *adev, const char *propname,
++		      void **valptr);
++int acpi_dev_prop_read_single(struct acpi_device *adev, const char *propname,
++			      enum dev_prop_type proptype, void *val);
++int acpi_dev_prop_read(struct acpi_device *adev, const char *propname,
++		       enum dev_prop_type proptype, void *val, size_t nval);
+ #else
+ static inline int acpi_dev_get_property(struct acpi_device *adev,
+ 					const char *name, acpi_object_type type,
+@@ -697,6 +705,30 @@ static inline int acpi_dev_get_property_
  {
--	if (!p->numa_faults_memory)
-+	if (!p->numa_faults)
- 		return 0;
- 
--	return p->numa_faults_memory[task_faults_idx(nid, 0)] +
--		p->numa_faults_memory[task_faults_idx(nid, 1)];
-+	return p->numa_faults[task_faults_idx(NUMA_MEM, nid, 0)] +
-+		p->numa_faults[task_faults_idx(NUMA_MEM, nid, 1)];
+ 	return -ENXIO;
  }
- 
- static inline unsigned long group_faults(struct task_struct *p, int nid)
-@@ -915,14 +921,14 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
- 	if (!p->numa_group)
- 		return 0;
- 
--	return p->numa_group->faults[task_faults_idx(nid, 0)] +
--		p->numa_group->faults[task_faults_idx(nid, 1)];
-+	return p->numa_group->faults[task_faults_idx(NUMA_MEM, nid, 0)] +
-+		p->numa_group->faults[task_faults_idx(NUMA_MEM, nid, 1)];
- }
- 
- static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
- {
--	return group->faults_cpu[task_faults_idx(nid, 0)] +
--		group->faults_cpu[task_faults_idx(nid, 1)];
-+	return group->faults_cpu[task_faults_idx(NUMA_MEM, nid, 0)] +
-+		group->faults_cpu[task_faults_idx(NUMA_MEM, nid, 1)];
- }
- 
- /* Handle placement on systems where not all nodes are directly connected. */
-@@ -1001,7 +1007,7 @@ static inline unsigned long task_weight(struct task_struct *p, int nid,
- {
- 	unsigned long faults, total_faults;
- 
--	if (!p->numa_faults_memory)
-+	if (!p->numa_faults)
- 		return 0;
- 
- 	total_faults = p->total_numa_faults;
-@@ -1517,7 +1523,7 @@ static void numa_migrate_preferred(struct task_struct *p)
- 	unsigned long interval = HZ;
- 
- 	/* This task has no NUMA fault statistics yet */
--	if (unlikely(p->numa_preferred_nid == -1 || !p->numa_faults_memory))
-+	if (unlikely(p->numa_preferred_nid == -1 || !p->numa_faults))
- 		return;
- 
- 	/* Periodically retry migrating the task to the preferred node */
-@@ -1779,18 +1785,23 @@ static void task_numa_placement(struct task_struct *p)
- 
- 	/* Find the node with the highest number of faults */
- 	for_each_online_node(nid) {
-+		/* Keep track of the offsets in numa_faults array */
-+		int mem_idx, membuf_idx, cpu_idx, cpubuf_idx;
- 		unsigned long faults = 0, group_faults = 0;
--		int priv, i;
-+		int priv;
- 
- 		for (priv = 0; priv < NR_NUMA_HINT_FAULT_TYPES; priv++) {
- 			long diff, f_diff, f_weight;
- 
--			i = task_faults_idx(nid, priv);
-+			mem_idx = task_faults_idx(NUMA_MEM, nid, priv);
-+			membuf_idx = task_faults_idx(NUMA_MEMBUF, nid, priv);
-+			cpu_idx = task_faults_idx(NUMA_CPU, nid, priv);
-+			cpubuf_idx = task_faults_idx(NUMA_CPUBUF, nid, priv);
- 
- 			/* Decay existing window, copy faults since last scan */
--			diff = p->numa_faults_buffer_memory[i] - p->numa_faults_memory[i] / 2;
--			fault_types[priv] += p->numa_faults_buffer_memory[i];
--			p->numa_faults_buffer_memory[i] = 0;
-+			diff = p->numa_faults[membuf_idx] - p->numa_faults[mem_idx] / 2;
-+			fault_types[priv] += p->numa_faults[membuf_idx];
-+			p->numa_faults[membuf_idx] = 0;
- 
- 			/*
- 			 * Normalize the faults_from, so all tasks in a group
-@@ -1800,21 +1811,27 @@ static void task_numa_placement(struct task_struct *p)
- 			 * faults are less important.
- 			 */
- 			f_weight = div64_u64(runtime << 16, period + 1);
--			f_weight = (f_weight * p->numa_faults_buffer_cpu[i]) /
-+			f_weight = (f_weight * p->numa_faults[cpubuf_idx]) /
- 				   (total_faults + 1);
--			f_diff = f_weight - p->numa_faults_cpu[i] / 2;
--			p->numa_faults_buffer_cpu[i] = 0;
-+			f_diff = f_weight - p->numa_faults[cpu_idx] / 2;
-+			p->numa_faults[cpubuf_idx] = 0;
- 
--			p->numa_faults_memory[i] += diff;
--			p->numa_faults_cpu[i] += f_diff;
--			faults += p->numa_faults_memory[i];
-+			p->numa_faults[mem_idx] += diff;
-+			p->numa_faults[cpu_idx] += f_diff;
-+			faults += p->numa_faults[mem_idx];
- 			p->total_numa_faults += diff;
- 			if (p->numa_group) {
--				/* safe because we can only change our own group */
--				p->numa_group->faults[i] += diff;
--				p->numa_group->faults_cpu[i] += f_diff;
-+				/*
-+				 * safe because we can only change our own group
-+				 *
-+				 * mem_idx represents the offset for a given
-+				 * nid and priv in a specific region because it
-+				 * is at the beginning of the numa_faults array.
-+				 */
-+				p->numa_group->faults[mem_idx] += diff;
-+				p->numa_group->faults_cpu[mem_idx] += f_diff;
- 				p->numa_group->total_faults += diff;
--				group_faults += p->numa_group->faults[i];
-+				group_faults += p->numa_group->faults[mem_idx];
- 			}
- 		}
- 
-@@ -1886,7 +1903,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 		node_set(task_node(current), grp->active_nodes);
- 
- 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
--			grp->faults[i] = p->numa_faults_memory[i];
-+			grp->faults[i] = p->numa_faults[i];
- 
- 		grp->total_faults = p->total_numa_faults;
- 
-@@ -1945,8 +1962,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 	double_lock_irq(&my_grp->lock, &grp->lock);
- 
- 	for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++) {
--		my_grp->faults[i] -= p->numa_faults_memory[i];
--		grp->faults[i] += p->numa_faults_memory[i];
-+		my_grp->faults[i] -= p->numa_faults[i];
-+		grp->faults[i] += p->numa_faults[i];
- 	}
- 	my_grp->total_faults -= p->total_numa_faults;
- 	grp->total_faults += p->total_numa_faults;
-@@ -1971,14 +1988,14 @@ no_join:
- void task_numa_free(struct task_struct *p)
- {
- 	struct numa_group *grp = p->numa_group;
--	void *numa_faults = p->numa_faults_memory;
-+	void *numa_faults = p->numa_faults;
- 	unsigned long flags;
- 	int i;
- 
- 	if (grp) {
- 		spin_lock_irqsave(&grp->lock, flags);
- 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
--			grp->faults[i] -= p->numa_faults_memory[i];
-+			grp->faults[i] -= p->numa_faults[i];
- 		grp->total_faults -= p->total_numa_faults;
- 
- 		list_del(&p->numa_entry);
-@@ -1988,10 +2005,7 @@ void task_numa_free(struct task_struct *p)
- 		put_numa_group(grp);
- 	}
- 
--	p->numa_faults_memory = NULL;
--	p->numa_faults_buffer_memory = NULL;
--	p->numa_faults_cpu= NULL;
--	p->numa_faults_buffer_cpu = NULL;
-+	p->numa_faults = NULL;
- 	kfree(numa_faults);
- }
- 
-@@ -2014,24 +2028,14 @@ void task_numa_fault(int last_cpupid, int mem_node, int pages, int flags)
- 		return;
- 
- 	/* Allocate buffer to track faults on a per-node basis */
--	if (unlikely(!p->numa_faults_memory)) {
--		int size = sizeof(*p->numa_faults_memory) *
-+	if (unlikely(!p->numa_faults)) {
-+		int size = sizeof(*p->numa_faults) *
- 			   NR_NUMA_HINT_FAULT_BUCKETS * nr_node_ids;
- 
--		p->numa_faults_memory = kzalloc(size, GFP_KERNEL|__GFP_NOWARN);
--		if (!p->numa_faults_memory)
-+		p->numa_faults = kzalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		if (!p->numa_faults)
- 			return;
- 
--		BUG_ON(p->numa_faults_buffer_memory);
--		/*
--		 * The averaged statistics, shared & private, memory & cpu,
--		 * occupy the first half of the array. The second half of the
--		 * array is for current counters, which are averaged into the
--		 * first set by task_numa_placement.
--		 */
--		p->numa_faults_cpu = p->numa_faults_memory + (2 * nr_node_ids);
--		p->numa_faults_buffer_memory = p->numa_faults_memory + (4 * nr_node_ids);
--		p->numa_faults_buffer_cpu = p->numa_faults_memory + (6 * nr_node_ids);
- 		p->total_numa_faults = 0;
- 		memset(p->numa_faults_locality, 0, sizeof(p->numa_faults_locality));
- 	}
-@@ -2071,8 +2075,8 @@ void task_numa_fault(int last_cpupid, int mem_node, int pages, int flags)
- 	if (migrated)
- 		p->numa_pages_migrated += pages;
- 
--	p->numa_faults_buffer_memory[task_faults_idx(mem_node, priv)] += pages;
--	p->numa_faults_buffer_cpu[task_faults_idx(cpu_node, priv)] += pages;
-+	p->numa_faults[task_faults_idx(NUMA_MEMBUF, mem_node, priv)] += pages;
-+	p->numa_faults[task_faults_idx(NUMA_CPUBUF, cpu_node, priv)] += pages;
- 	p->numa_faults_locality[local] += pages;
- }
- 
-@@ -5361,7 +5365,7 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
- 	struct numa_group *numa_group = rcu_dereference(p->numa_group);
- 	int src_nid, dst_nid;
- 
--	if (!sched_feat(NUMA_FAVOUR_HIGHER) || !p->numa_faults_memory ||
-+	if (!sched_feat(NUMA_FAVOUR_HIGHER) || !p->numa_faults ||
- 	    !(env->sd->flags & SD_NUMA)) {
- 		return false;
- 	}
-@@ -5400,7 +5404,7 @@ static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
- 	if (!sched_feat(NUMA) || !sched_feat(NUMA_RESIST_LOWER))
- 		return false;
- 
--	if (!p->numa_faults_memory || !(env->sd->flags & SD_NUMA))
-+	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
- 		return false;
- 
- 	src_nid = cpu_to_node(env->src_cpu);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 7e5c1ee..31f1e4d 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -709,6 +709,13 @@ extern bool find_numa_distance(int distance);
++
++static inline int acpi_dev_prop_get(struct acpi_device *adev,
++				    const char *propname,
++				    void **valptr)
++{
++	return -ENXIO;
++}
++
++static inline int acpi_dev_prop_read_single(struct acpi_device *adev,
++					    const char *propname,
++					    enum dev_prop_type proptype,
++					    void *val)
++{
++	return -ENXIO;
++}
++
++static inline int acpi_dev_prop_read(struct acpi_device *adev,
++				     const char *propname,
++				     enum dev_prop_type proptype,
++				     void *val, size_t nval)
++{
++	return -ENXIO;
++}
++
  #endif
  
- #ifdef CONFIG_NUMA_BALANCING
-+/* The regions in numa_faults array from task_struct */
-+enum numa_faults_stats {
-+	NUMA_MEM = 0,
-+	NUMA_CPU,
-+	NUMA_MEMBUF,
-+	NUMA_CPUBUF
-+};
- extern void sched_setnuma(struct task_struct *p, int node);
- extern int migrate_task_to(struct task_struct *p, int cpu);
- extern int migrate_swap(struct task_struct *, struct task_struct *);
+ #endif	/*_LINUX_ACPI_H*/
+Index: linux-pm/drivers/base/Makefile
+===================================================================
+--- linux-pm.orig/drivers/base/Makefile
++++ linux-pm/drivers/base/Makefile
+@@ -4,7 +4,7 @@ obj-y			:= component.o core.o bus.o dd.o
+ 			   driver.o class.o platform.o \
+ 			   cpu.o firmware.o init.o map.o devres.o \
+ 			   attribute_container.o transport_class.o \
+-			   topology.o container.o
++			   topology.o container.o property.o
+ obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+ obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
+ obj-y			+= power/
+Index: linux-pm/drivers/base/property.c
+===================================================================
+--- /dev/null
++++ linux-pm/drivers/base/property.c
+@@ -0,0 +1,185 @@
++/*
++ * property.c - Unified device property interface.
++ *
++ * Copyright (C) 2014, Intel Corporation
++ * Authors: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++ *          Mika Westerberg <mika.westerberg@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/property.h>
++#include <linux/export.h>
++#include <linux/acpi.h>
++#include <linux/of.h>
++
++/**
++ * device_property_present - check if a property of a device is present
++ * @dev: Device whose property is being checked
++ * @propname: Name of the property
++ *
++ * Check if property @propname is present in the device firmware description.
++ */
++bool device_property_present(struct device *dev, const char *propname)
++{
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
++		return of_property_read_bool(dev->of_node, propname);
++
++	return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
++}
++EXPORT_SYMBOL_GPL(device_property_present);
++
++#define OF_DEV_PROP_READ_ARRAY(node, propname, type, val, nval) \
++	(val) ? of_property_read_##type##_array((node), (propname), (val), (nval)) \
++	      : of_property_count_elems_of_size((node), (propname), sizeof(type))
++
++#define DEV_PROP_READ_ARRAY(_dev_, _propname_, _type_, _proptype_, _val_, _nval_) \
++	IS_ENABLED(CONFIG_OF) && _dev_->of_node ? \
++		(OF_DEV_PROP_READ_ARRAY(_dev_->of_node, _propname_, _type_, \
++					_val_, _nval_)) : \
++		acpi_dev_prop_read(ACPI_COMPANION(_dev_), _propname_, \
++				   _proptype_, _val_, _nval_)
++
++/**
++ * device_property_read_u8_array - return a u8 array property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of u8 properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_u8_array(struct device *dev, const char *propname,
++				  u8 *val, size_t nval)
++{
++	return DEV_PROP_READ_ARRAY(dev, propname, u8, DEV_PROP_U8, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u8_array);
++
++/**
++ * device_property_read_u16_array - return a u16 array property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of u16 properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_u16_array(struct device *dev, const char *propname,
++				   u16 *val, size_t nval)
++{
++	return DEV_PROP_READ_ARRAY(dev, propname, u16, DEV_PROP_U16, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u16_array);
++
++/**
++ * device_property_read_u32_array - return a u32 array property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of u32 properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_u32_array(struct device *dev, const char *propname,
++				   u32 *val, size_t nval)
++{
++	return DEV_PROP_READ_ARRAY(dev, propname, u32, DEV_PROP_U32, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u32_array);
++
++/**
++ * device_property_read_u64_array - return a u64 array property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of u64 properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_u64_array(struct device *dev, const char *propname,
++				   u64 *val, size_t nval)
++{
++	return DEV_PROP_READ_ARRAY(dev, propname, u64, DEV_PROP_U64, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u64_array);
++
++/**
++ * device_property_read_string_array - return a string array property of device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of string properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO or %-EILSEQ if the property is not an array of strings,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_string_array(struct device *dev, const char *propname,
++				      const char **val, size_t nval)
++{
++	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
++		of_property_read_string_array(dev->of_node, propname, val, nval) :
++		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++				   DEV_PROP_STRING, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_string_array);
++
++/**
++ * device_property_read_string - return a string property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The value is stored here
++ *
++ * Function reads property @propname from the device firmware description and
++ * stores the value into @val if found. The value is checked to be a string.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO or %-EILSEQ if the property type is not a string.
++ */
++int device_property_read_string(struct device *dev, const char *propname,
++				const char **val)
++{
++	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
++		of_property_read_string(dev->of_node, propname, val) :
++		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++				   DEV_PROP_STRING, val, 1);
++}
++EXPORT_SYMBOL_GPL(device_property_read_string);
+Index: linux-pm/drivers/of/base.c
+===================================================================
+--- linux-pm.orig/drivers/of/base.c
++++ linux-pm/drivers/of/base.c
+@@ -1250,6 +1250,39 @@ int of_property_read_u64(const struct de
+ EXPORT_SYMBOL_GPL(of_property_read_u64);
+ 
+ /**
++ * of_property_read_u64_array - Find and read an array of 64 bit integers
++ * from a property.
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @out_values:	pointer to return value, modified only if return value is 0.
++ * @sz:		number of array elements to read
++ *
++ * Search for a property in a device node and read 64-bit value(s) from
++ * it. Returns 0 on success, -EINVAL if the property does not exist,
++ * -ENODATA if property does not have a value, and -EOVERFLOW if the
++ * property data isn't large enough.
++ *
++ * The out_values is modified only if a valid u64 value can be decoded.
++ */
++int of_property_read_u64_array(const struct device_node *np,
++			       const char *propname, u64 *out_values,
++			       size_t sz)
++{
++	const __be32 *val = of_find_property_value_of_size(np, propname,
++						(sz * sizeof(*out_values)));
++
++	if (IS_ERR(val))
++		return PTR_ERR(val);
++
++	while (sz--) {
++		*out_values++ = of_read_number(val, 2);
++		val += 2;
++	}
++	return 0;
++}
++
++/**
+  * of_property_read_string - Find and read a string from a property
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
+Index: linux-pm/drivers/acpi/property.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/property.c
++++ linux-pm/drivers/acpi/property.c
+@@ -362,3 +362,181 @@ int acpi_dev_get_property_reference(stru
+ 	return -EPROTO;
+ }
+ EXPORT_SYMBOL_GPL(acpi_dev_get_property_reference);
++
++int acpi_dev_prop_get(struct acpi_device *adev, const char *propname,
++		      void **valptr)
++{
++	return acpi_dev_get_property(adev, propname, ACPI_TYPE_ANY,
++				     (const union acpi_object **)valptr);
++}
++
++int acpi_dev_prop_read_single(struct acpi_device *adev, const char *propname,
++			      enum dev_prop_type proptype, void *val)
++{
++	const union acpi_object *obj;
++	int ret;
++
++	if (!val)
++		return -EINVAL;
++
++	if (proptype >= DEV_PROP_U8 && proptype <= DEV_PROP_U64) {
++		ret = acpi_dev_get_property(adev, propname, ACPI_TYPE_INTEGER, &obj);
++		if (ret)
++			return ret;
++
++		switch (proptype) {
++		case DEV_PROP_U8:
++			if (obj->integer.value > U8_MAX)
++				return -EOVERFLOW;
++			*(u8 *)val = obj->integer.value;
++			break;
++		case DEV_PROP_U16:
++			if (obj->integer.value > U16_MAX)
++				return -EOVERFLOW;
++			*(u16 *)val = obj->integer.value;
++			break;
++		case DEV_PROP_U32:
++			if (obj->integer.value > U32_MAX)
++				return -EOVERFLOW;
++			*(u32 *)val = obj->integer.value;
++			break;
++		default:
++			*(u64 *)val = obj->integer.value;
++			break;
++		}
++	} else if (proptype == DEV_PROP_STRING) {
++		ret = acpi_dev_get_property(adev, propname, ACPI_TYPE_STRING, &obj);
++		if (ret)
++			return ret;
++
++		*(char **)val = obj->string.pointer;
++	} else {
++		ret = -EINVAL;
++	}
++	return ret;
++}
++
++static int acpi_copy_property_array_u8(const union acpi_object *items, u8 *val,
++				       size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_INTEGER)
++			return -EPROTO;
++		if (items[i].integer.value > U8_MAX)
++			return -EOVERFLOW;
++
++		val[i] = items[i].integer.value;
++	}
++	return 0;
++}
++
++static int acpi_copy_property_array_u16(const union acpi_object *items,
++					u16 *val, size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_INTEGER)
++			return -EPROTO;
++		if (items[i].integer.value > U16_MAX)
++			return -EOVERFLOW;
++
++		val[i] = items[i].integer.value;
++	}
++	return 0;
++}
++
++static int acpi_copy_property_array_u32(const union acpi_object *items,
++					u32 *val, size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_INTEGER)
++			return -EPROTO;
++		if (items[i].integer.value > U32_MAX)
++			return -EOVERFLOW;
++
++		val[i] = items[i].integer.value;
++	}
++	return 0;
++}
++
++static int acpi_copy_property_array_u64(const union acpi_object *items,
++					u64 *val, size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_INTEGER)
++			return -EPROTO;
++
++		val[i] = items[i].integer.value;
++	}
++	return 0;
++}
++
++static int acpi_copy_property_array_string(const union acpi_object *items,
++					   char **val, size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_STRING)
++			return -EPROTO;
++
++		val[i] = items[i].string.pointer;
++	}
++	return 0;
++}
++
++int acpi_dev_prop_read(struct acpi_device *adev, const char *propname,
++		       enum dev_prop_type proptype, void *val, size_t nval)
++{
++	const union acpi_object *obj;
++	const union acpi_object *items;
++	int ret;
++
++	if (val && nval == 1) {
++		ret = acpi_dev_prop_read_single(adev, propname, proptype, val);
++		if (!ret)
++			return ret;
++	}
++
++	ret = acpi_dev_get_property_array(adev, propname, ACPI_TYPE_ANY, &obj);
++	if (ret)
++		return ret;
++
++	if (!val)
++		return obj->package.count;
++	else if (nval <= 0)
++		return -EINVAL;
++
++	if (nval > obj->package.count)
++		return -EOVERFLOW;
++
++	items = obj->package.elements;
++	switch (proptype) {
++	case DEV_PROP_U8:
++		ret = acpi_copy_property_array_u8(items, (u8 *)val, nval);
++		break;
++	case DEV_PROP_U16:
++		ret = acpi_copy_property_array_u16(items, (u16 *)val, nval);
++		break;
++	case DEV_PROP_U32:
++		ret = acpi_copy_property_array_u32(items, (u32 *)val, nval);
++		break;
++	case DEV_PROP_U64:
++		ret = acpi_copy_property_array_u64(items, (u64 *)val, nval);
++		break;
++	case DEV_PROP_STRING:
++		ret = acpi_copy_property_array_string(items, (char **)val, nval);
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
+
