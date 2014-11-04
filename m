@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317AbaKDCWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 21:22:44 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:51803 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262AbaKDCWj (ORCPT
+	id S1752359AbaKDCWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 21:22:51 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56189 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325AbaKDCWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 21:22:39 -0500
+	Mon, 3 Nov 2014 21:22:47 -0500
 From: varkabhadram@gmail.com
 To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
 Cc: balbi@ti.com, stern@rowland.harvard.edu,
         sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
         Varka Bhadram <varkabhadram@gmail.com>, Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH usb v4 10/27] host: ohci-pxa27x: remove duplicate check on resource
-Date: Tue,  4 Nov 2014 07:51:17 +0530
-Message-Id: <1415067694-9473-11-git-send-email-varkabhadram@gmail.com>
+Subject: [PATCH usb v4 12/27] host: ohci-spear: remove duplicate check on resource
+Date: Tue,  4 Nov 2014 07:51:19 +0530
+Message-Id: <1415067694-9473-13-git-send-email-varkabhadram@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1415067694-9473-1-git-send-email-varkabhadram@gmail.com>
 References: <1415067694-9473-1-git-send-email-varkabhadram@gmail.com>
@@ -29,36 +29,37 @@ Sanity check on resource happening with devm_ioremap_resource().
 Signed-off-by: Varka Bhadram <varkab@cdac.in>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/host/ohci-pxa27x.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ drivers/usb/host/ohci-spear.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/host/ohci-pxa27x.c b/drivers/usb/host/ohci-pxa27x.c
-index e68f3d0..1339981 100644
---- a/drivers/usb/host/ohci-pxa27x.c
-+++ b/drivers/usb/host/ohci-pxa27x.c
-@@ -447,20 +447,13 @@ int usb_hcd_pxa27x_probe (const struct hc_driver *driver, struct platform_device
- 		return -ENOMEM;
+diff --git a/drivers/usb/host/ohci-spear.c b/drivers/usb/host/ohci-spear.c
+index 8d58766..4a54f9d 100644
+--- a/drivers/usb/host/ohci-spear.c
++++ b/drivers/usb/host/ohci-spear.c
+@@ -74,20 +74,15 @@ static int spear_ohci_hcd_drv_probe(struct platform_device *pdev)
+ 	}
  
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r) {
--		pr_err("no resource of IORESOURCE_MEM");
--		retval = -ENXIO;
--		goto err;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		retval = -ENODEV;
+-		goto err_put_hcd;
 -	}
 -
--	hcd->rsrc_start = r->start;
--	hcd->rsrc_len = resource_size(r);
+-	hcd->rsrc_start = pdev->resource[0].start;
+-	hcd->rsrc_len = resource_size(res);
 -
- 	hcd->regs = devm_ioremap_resource(&pdev->dev, r);
+ 	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
  	if (IS_ERR(hcd->regs)) {
  		retval = PTR_ERR(hcd->regs);
- 		goto err;
+ 		goto err_put_hcd;
  	}
-+	hcd->rsrc_start = r->start;
-+	hcd->rsrc_len = resource_size(r);
  
- 	/* initialize "struct pxa27x_ohci" */
- 	pxa_ohci = to_pxa27x_ohci(hcd);
++	hcd->rsrc_start = pdev->resource[0].start;
++	hcd->rsrc_len = resource_size(res);
++
+ 	sohci_p = to_spear_ohci(hcd);
+ 	sohci_p->clk = usbh_clk;
+ 
 -- 
 1.7.9.5
 
