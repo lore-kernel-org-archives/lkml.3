@@ -1,280 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbaKDQ3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:29:40 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:49625 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733AbaKDQ3e (ORCPT
+	id S932125AbaKDQ3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:29:43 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:35169 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754924AbaKDQ3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:29:34 -0500
+	Tue, 4 Nov 2014 11:29:40 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
         David Herrmann <dh.herrmann@gmail.com>,
         dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [RFC 1/2] core: Add generic object registry implementation
-Date: Tue,  4 Nov 2014 17:29:27 +0100
-Message-Id: <1415118568-18771-1-git-send-email-thierry.reding@gmail.com>
+Subject: [RFC 2/2] drm/panel: Use generic object registry
+Date: Tue,  4 Nov 2014 17:29:28 +0100
+Message-Id: <1415118568-18771-2-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415118568-18771-1-git-send-email-thierry.reding@gmail.com>
+References: <1415118568-18771-1-git-send-email-thierry.reding@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Add a generic implementation of an object registry. This targets drivers
-and subsystems that provide auxiliary objects that other drivers need to
-look up. The goal is to put the difficult parts (keep object references,
-module usage count, ...) into core code so that individual subsystems do
-not have to deal with them.
-
-The intention is for subsystems to instantiate a struct registry and use
-a struct registry_record embedded into a subsystem-specific structure to
-provide a subsystem-specific API around that.
+Convert to the new generic object registry and introduce proper object
+and module reference counting. This should make panel registration and
+removal a lot more robust.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/base/Makefile    |   2 +-
- drivers/base/registry.c  | 147 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/registry.h |  62 ++++++++++++++++++++
- 3 files changed, 210 insertions(+), 1 deletion(-)
- create mode 100644 drivers/base/registry.c
- create mode 100644 include/linux/registry.h
+ drivers/gpu/drm/drm_panel.c | 100 ++++++++++++++++++++++++++++++++++----------
+ include/drm/drm_panel.h     |  13 ++++--
+ 2 files changed, 86 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-index 53c3fe1aeb29..250262d1af2c 100644
---- a/drivers/base/Makefile
-+++ b/drivers/base/Makefile
-@@ -4,7 +4,7 @@ obj-y			:= component.o core.o bus.o dd.o syscore.o \
- 			   driver.o class.o platform.o \
- 			   cpu.o firmware.o init.o map.o devres.o \
- 			   attribute_container.o transport_class.o \
--			   topology.o container.o property.o
-+			   topology.o container.o property.o registry.o
- obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
- obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
- obj-y			+= power/
-diff --git a/drivers/base/registry.c b/drivers/base/registry.c
-new file mode 100644
-index 000000000000..9f510f6237b7
---- /dev/null
-+++ b/drivers/base/registry.c
-@@ -0,0 +1,147 @@
-+/*
-+ * Copyright (C) 2014, NVIDIA Corporation.  All rights reserved.
-+ *
-+ * This file is released under the GPL v2.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/module.h>
+diff --git a/drivers/gpu/drm/drm_panel.c b/drivers/gpu/drm/drm_panel.c
+index 3dfe3c886502..c1b58bd421a3 100644
+--- a/drivers/gpu/drm/drm_panel.c
++++ b/drivers/gpu/drm/drm_panel.c
+@@ -23,13 +23,11 @@
+ 
+ #include <linux/err.h>
+ #include <linux/module.h>
 +#include <linux/registry.h>
-+
-+static inline struct registry_record *to_registry_record(struct kref *kref)
-+{
-+	return container_of(kref, struct registry_record, kref);
-+}
-+
-+static void registry_record_release(struct kref *kref)
-+{
-+	struct registry_record *record = to_registry_record(kref);
-+
-+	record->release(record);
-+}
-+
-+/**
-+ * registry_record_init - initialize a registry record
-+ * @record: record to initialize
-+ *
-+ * Sets up internal fields of the registry record so that it can subsequently
-+ * be added to a registry.
+ 
+ #include <drm/drm_crtc.h>
+ #include <drm/drm_panel.h>
+ 
+-static DEFINE_MUTEX(panel_lock);
+-static LIST_HEAD(panel_list);
+-
+ /**
+  * DOC: drm panel
+  *
+@@ -38,6 +36,33 @@ static LIST_HEAD(panel_list);
+  * drivers.
+  */
+ 
++/*
++ * DRM panel registry
 + */
-+void registry_record_init(struct registry_record *record)
++static struct registry panels = {
++	.lock = __MUTEX_INITIALIZER(panels.lock),
++	.list = LIST_HEAD_INIT(panels.list),
++	.owner = THIS_MODULE,
++};
++
++static inline struct drm_panel *to_drm_panel(struct registry_record *record)
 +{
-+	INIT_LIST_HEAD(&record->list);
-+	kref_init(&record->kref);
++	return container_of(record, struct drm_panel, record);
 +}
 +
-+/**
-+ * registry_record_ref - reference on the registry record
-+ * @record: record to reference
-+ *
-+ * Increases the reference count on the record and returns a pointer to it.
-+ *
-+ * Return: A pointer to the record on success or NULL on failure.
-+ */
-+struct registry_record *registry_record_ref(struct registry_record *record)
++static void drm_panel_release(struct registry_record *record)
 +{
-+	if (!record)
-+		return NULL;
++	struct drm_panel *panel = to_drm_panel(record);
 +
 +	/*
-+	 * Refuse to give out any more references if the module owning the
-+	 * record is being removed.
++	 * The .release() callback is optional because drivers may not need
++	 * to manually release any resources (e.g. if they've used devm_*()
++	 * helper functions).
 +	 */
-+	if (!try_module_get(record->owner))
-+		return NULL;
-+
-+	kref_get(&record->kref);
-+
-+	return record;
++	if (panel->funcs && panel->funcs->release)
++		panel->funcs->release(panel);
 +}
 +
-+/**
-+ * registry_record_unref - drop a reference to a registry record
-+ * @record: record to unreference
+ /**
+  * drm_panel_init - initialize a panel
+  * @panel: DRM panel
+@@ -47,11 +72,48 @@ static LIST_HEAD(panel_list);
+  */
+ void drm_panel_init(struct drm_panel *panel)
+ {
+-	INIT_LIST_HEAD(&panel->list);
++	registry_record_init(&panel->record);
++	panel->record.release = drm_panel_release;
+ }
+ EXPORT_SYMBOL(drm_panel_init);
+ 
+ /**
++ * drm_panel_ref - acquire a reference to a panel
++ * @panel: DRM panel
 + *
-+ * Decreases the reference count on the record. When the reference count
-+ * reaches zero the record will be destroyed.
++ * Increases the reference on a panel and returns a pointer to it.
++ *
++ * Return: A reference to the panel on success or NULL on failure.
 + */
-+void registry_record_unref(struct registry_record *record)
++struct drm_panel *drm_panel_ref(struct drm_panel *panel)
 +{
-+	if (record) {
-+		/*
-+		 * Keep a copy of the module owner since the record may
-+		 * disappear during the kref_put().
-+		 */
-+		struct module *owner = record->owner;
++	if (panel) {
++		struct registry_record *record;
 +
-+		kref_put(&record->kref, registry_record_release);
-+		module_put(owner);
++		record = registry_record_ref(&panel->record);
++		if (!record)
++			panel = NULL;
 +	}
++
++	return panel;
 +}
++EXPORT_SYMBOL(drm_panel_ref);
 +
 +/**
-+ * registry_add - add a record to a registry
-+ * @registry: registry to add the record to
-+ * @record: record to add
++ * drm_panel_unref - release a reference to a panel
++ * @panel: DRM panel
 + *
-+ * Tries to increase the reference count of the module owning the registry. If
-+ * successful adds the new record to the registry.
-+ *
-+ * Return: 0 on success or a negative error code on failure.
++ * Decreases the reference count on a panel. If the reference count reaches 0
++ * the panel is destroyed.
 + */
-+int registry_add(struct registry *registry, struct registry_record *record)
++void drm_panel_unref(struct drm_panel *panel)
 +{
-+	if (!try_module_get(registry->owner))
-+		return -ENODEV;
-+
-+	mutex_lock(&registry->lock);
-+	list_add_tail(&record->list, &registry->list);
-+	mutex_unlock(&registry->lock);
-+
-+	return 0;
++	if (panel)
++		registry_record_unref(&panel->record);
 +}
++EXPORT_SYMBOL(drm_panel_unref);
 +
 +/**
-+ * registry_remove - remove a record from a registry
-+ * @registry: registry to remove the record from
-+ * @record: record to remove
-+ *
-+ * Decreases the reference count on the module owning the registry.
-+ */
-+void registry_remove(struct registry *registry,
-+		     struct registry_record *record)
-+{
-+	mutex_lock(&registry->lock);
-+	list_del_init(&record->list);
-+	mutex_unlock(&registry->lock);
-+
-+	module_put(registry->owner);
-+}
-+
-+#ifdef CONFIG_OF
-+/**
-+ * registry_find_by_of_node - look up an object by device node in a registry
-+ * @registry: registry to search
-+ * @np: device node to match on
-+ *
-+ * Return: A pointer to the record matching @np or NULL if no such record was
-+ * found.
-+ */
-+struct registry_record *registry_find_by_of_node(struct registry *registry,
-+						 struct device_node *np)
-+{
+  * drm_panel_add - add a panel to the global registry
+  * @panel: panel to add
+  *
+@@ -62,11 +124,10 @@ EXPORT_SYMBOL(drm_panel_init);
+  */
+ int drm_panel_add(struct drm_panel *panel)
+ {
+-	mutex_lock(&panel_lock);
+-	list_add_tail(&panel->list, &panel_list);
+-	mutex_unlock(&panel_lock);
++	panel->record.owner = panel->dev->driver->owner;
++	panel->record.dev = panel->dev;
+ 
+-	return 0;
++	return registry_add(&panels, &panel->record);
+ }
+ EXPORT_SYMBOL(drm_panel_add);
+ 
+@@ -74,13 +135,12 @@ EXPORT_SYMBOL(drm_panel_add);
+  * drm_panel_remove - remove a panel from the global registry
+  * @panel: DRM panel
+  *
+- * Removes a panel from the global registry.
++ * Removes a panel from the global registry. References to the object can
++ * still exist, but drivers won't be able to look the panel up again.
+  */
+ void drm_panel_remove(struct drm_panel *panel)
+ {
+-	mutex_lock(&panel_lock);
+-	list_del_init(&panel->list);
+-	mutex_unlock(&panel_lock);
++	registry_remove(&panels, &panel->record);
+ }
+ EXPORT_SYMBOL(drm_panel_remove);
+ 
+@@ -132,25 +192,19 @@ EXPORT_SYMBOL(drm_panel_detach);
+  * @np: device tree node of the panel
+  *
+  * Searches the set of registered panels for one that matches the given device
+- * tree node. If a matching panel is found, return a pointer to it.
++ * tree node. If a matching panel is found, return a reference to it.
+  *
+  * Return: A pointer to the panel registered for the specified device tree
+  * node or NULL if no panel matching the device tree node can be found.
+  */
+ struct drm_panel *of_drm_find_panel(struct device_node *np)
+ {
+-	struct drm_panel *panel;
+-
+-	mutex_lock(&panel_lock);
 +	struct registry_record *record;
+ 
+-	list_for_each_entry(panel, &panel_list, list) {
+-		if (panel->dev->of_node == np) {
+-			mutex_unlock(&panel_lock);
+-			return panel;
+-		}
+-	}
++	record = registry_find_by_of_node(&panels, np);
++	if (record)
++		return container_of(record, struct drm_panel, record);
+ 
+-	mutex_unlock(&panel_lock);
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(of_drm_find_panel);
+diff --git a/include/drm/drm_panel.h b/include/drm/drm_panel.h
+index b88b4dcd698b..117e221dbc08 100644
+--- a/include/drm/drm_panel.h
++++ b/include/drm/drm_panel.h
+@@ -24,7 +24,8 @@
+ #ifndef __DRM_PANEL_H__
+ #define __DRM_PANEL_H__
+ 
+-#include <linux/list.h>
++#include <linux/module.h>
++#include <linux/registry.h>
+ 
+ struct drm_connector;
+ struct drm_device;
+@@ -32,6 +33,7 @@ struct drm_panel;
+ 
+ /**
+  * struct drm_panel_funcs - perform operations on a given panel
++ * @release: called when the final reference is dropped
+  * @disable: disable panel (turn off back light, etc.)
+  * @unprepare: turn off panel
+  * @prepare: turn on panel and perform set up
+@@ -63,6 +65,7 @@ struct drm_panel;
+  * the panel. This is the job of the .unprepare() function.
+  */
+ struct drm_panel_funcs {
++	void (*release)(struct drm_panel *panel);
+ 	int (*disable)(struct drm_panel *panel);
+ 	int (*unprepare)(struct drm_panel *panel);
+ 	int (*prepare)(struct drm_panel *panel);
+@@ -72,20 +75,20 @@ struct drm_panel_funcs {
+ 
+ /**
+  * struct drm_panel - DRM panel object
++ * @record: registry record
+  * @drm: DRM device owning the panel
+  * @connector: DRM connector that the panel is attached to
+  * @dev: parent device of the panel
+  * @funcs: operations that can be performed on the panel
+- * @list: panel entry in registry
+  */
+ struct drm_panel {
++	struct registry_record record;
 +
-+	mutex_lock(&registry->lock);
-+
-+	list_for_each_entry(record, &registry->list, list)
-+		if (record->dev->of_node == np)
-+			goto out;
-+
-+	record = NULL;
-+
-+out:
-+	mutex_unlock(&registry->lock);
-+	return record;
-+}
-+#endif
-diff --git a/include/linux/registry.h b/include/linux/registry.h
-new file mode 100644
-index 000000000000..a807f4124736
---- /dev/null
-+++ b/include/linux/registry.h
-@@ -0,0 +1,62 @@
-+/*
-+ * Copyright (C) 2014, NVIDIA Corporation.  All rights reserved.
-+ *
-+ * This file is released under the GPL v2.
-+ */
-+
-+#ifndef __LINUX_REGISTRY_H
-+#define __LINUX_REGISTRY_H
-+
-+#include <linux/kref.h>
-+#include <linux/list.h>
-+#include <linux/mutex.h>
-+
-+struct device;
-+struct device_node;
-+struct module;
-+
-+struct registry;
-+
-+/**
-+ * struct registry_record - registry record object
-+ * @list: entry in registry for this record
-+ * @owner: owner module
-+ * @kref: reference count
-+ * @dev: parent device
-+ * @release: callback to destroy a record when no reference are left
-+ */
-+struct registry_record {
-+	struct list_head list;
-+	struct module *owner;
-+	struct kref kref;
-+	struct device *dev;
-+
-+	void (*release)(struct registry_record *record);
-+};
-+
-+void registry_record_init(struct registry_record *record);
-+struct registry_record *registry_record_ref(struct registry_record *record);
-+void registry_record_unref(struct registry_record *record);
-+
-+/**
-+ * struct registry - generic object registry
-+ * @list: list head of objects
-+ * @owner: owner module
-+ * @lock: lock for object list
-+ */
-+struct registry {
-+	struct list_head list;
-+	struct module *owner;
-+	struct mutex lock;
-+};
-+
-+int registry_add(struct registry *registry, struct registry_record *record);
-+void registry_remove(struct registry *registry,
-+		     struct registry_record *record);
-+
-+#ifdef CONFIG_OF
-+struct registry_record *registry_find_by_of_node(struct registry *registry,
-+						 struct device_node *np);
-+#endif
-+
-+#endif
+ 	struct drm_device *drm;
+ 	struct drm_connector *connector;
+ 	struct device *dev;
+ 
+ 	const struct drm_panel_funcs *funcs;
+-
+-	struct list_head list;
+ };
+ 
+ /**
+@@ -180,6 +183,8 @@ static inline int drm_panel_get_modes(struct drm_panel *panel)
+ }
+ 
+ void drm_panel_init(struct drm_panel *panel);
++struct drm_panel *drm_panel_ref(struct drm_panel *panel);
++void drm_panel_unref(struct drm_panel *panel);
+ 
+ int drm_panel_add(struct drm_panel *panel);
+ void drm_panel_remove(struct drm_panel *panel);
 -- 
 2.1.3
 
