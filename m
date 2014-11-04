@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaKDR1F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:27:05 -0500
-Received: from mailout.easymail.ca ([64.68.201.169]:50542 "EHLO
-	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaKDRSQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:18:16 -0500
-X-Quarantine-ID: <cqf0bpzeZp8e>
-X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
-X-Spam-Flag: NO
-X-Spam-Score: -4.399
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
-        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        ebiederm@xmission.com, serge.hallyn@ubuntu.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 10/20] selftests/kcmp: add install target to enable installing test
-Date: Tue,  4 Nov 2014 10:11:06 -0700
-Message-Id: <1dc6f2a853bd645cdb64b904b5a3b90ff7be9ad2.1415117102.git.shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
-References: <cover.1415117102.git.shuahkh@osg.samsung.com>
-In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
-References: <cover.1415117102.git.shuahkh@osg.samsung.com>
+	id S1751292AbaKDRcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:32:55 -0500
+Received: from mail-by2on0106.outbound.protection.outlook.com ([207.46.100.106]:40856
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750985AbaKDRcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 12:32:53 -0500
+X-WSS-ID: 0NEIZEM-07-CW5-02
+X-M-MSG: 
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+To: <herrmann.der.user@googlemail.com>, <jdelvare@suse.de>,
+        <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Subject: [PATCH] hwmon, fam15h_power: Fix NB device ID for F16h M30h
+Date: Tue, 4 Nov 2014 11:49:02 -0600
+Message-ID: <1415123342-11368-1-git-send-email-aravind.gopalakrishnan@amd.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(53416004)(89996001)(68736004)(120916001)(93916002)(19580395003)(19580405001)(101416001)(97736003)(33646002)(105586002)(106466001)(95666004)(88136002)(4396001)(50226001)(77096003)(77156002)(62966003)(64706001)(50466002)(46102003)(102836001)(107046002)(86362001)(36756003)(20776003)(92566001)(48376002)(50986999)(84676001)(104166001)(44976005)(21056001)(47776003)(229853001)(92726001)(2201001)(31966008)(87286001)(99396003)(87936001)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB205;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03853D523D
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new make target to enable installing test. This target
-installs test in the kselftest install location and add to the
-kselftest script to run the test.
+F3 device ID is wrongly included in fam15h_power_id_table
+for F16h M30h. It should be F4 device ID. Fix this.
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
 ---
- tools/testing/selftests/kcmp/Makefile | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/hwmon/fam15h_power.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/kcmp/Makefile b/tools/testing/selftests/kcmp/Makefile
-index 8aabd82..e105619 100644
---- a/tools/testing/selftests/kcmp/Makefile
-+++ b/tools/testing/selftests/kcmp/Makefile
-@@ -21,6 +21,18 @@ else
- 	echo "Not an x86 target, can't build kcmp selftest"
- endif
- 
-+install: all
-+ifeq ($(ARCH),x86)
-+	install ./kcmp_test $(INSTALL_KSFT_PATH)
-+	echo "\necho \"Start kcmp test ....\"" >> $(KSELFTEST)
-+	echo "./kcmp_test || echo \"kcmp_test: [FAIL]\"" >> $(KSELFTEST)
-+	echo "rm -f kcmp-test-file" >> $(KSELFTEST)
-+	echo "echo \"End kcmp test ....\"" >> $(KSELFTEST)
-+	echo "echo \"==============================\"" >> $(KSELFTEST)
-+else
-+	echo "Not an x86 target, can't install kcmp selftests"
-+endif
-+
- run_tests: all
- 	@./kcmp_test || echo "kcmp_test: [FAIL]"
- 
+diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
+index fcdbde4..3057dfc 100644
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -234,7 +234,7 @@ static const struct pci_device_id fam15h_power_id_table[] = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
+-	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F4) },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
 -- 
-1.9.1
+2.1.0
 
