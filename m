@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaKDMlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:41:15 -0500
-Received: from canardo.mork.no ([148.122.252.1]:38655 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368AbaKDMlK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:41:10 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Matthias Klein <matthias.klein@linux.com>
-Cc: Lars Melin <larsm17@gmail.com>, johan@kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: option: Add ID for Peiker LTE NAD
-Organization: m
-References: <1414857669-1292-1-git-send-email-matthias.klein@linux.com>
-	<5455A676.2080305@gmail.com> <54564E3D.60806@linux.com>
-Date: Tue, 04 Nov 2014 13:40:50 +0100
-In-Reply-To: <54564E3D.60806@linux.com> (Matthias Klein's message of "Sun, 02
-	Nov 2014 16:31:09 +0100")
-Message-ID: <87389zdtpp.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.4 (gnu/linux)
+	id S1753169AbaKDMri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:47:38 -0500
+Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:36072 "EHLO
+	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750866AbaKDMrg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 07:47:36 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.899
+X-Spam-Languages: en
+Message-ID: <5458CAE4.4080809@topic.nl>
+Date: Tue, 4 Nov 2014 13:47:32 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Mark Brown <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] Add ltc3562 voltage regulator driver
+References: <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl> <1414668415-597-1-git-send-email-mike.looijmans@topic.nl> <20141030165133.GB18557@sirena.org.uk> <54573860.4060708@topic.nl> <20141103120919.GE3815@sirena.org.uk> <545795D8.1040600@topic.nl> <20141103151058.GP3815@sirena.org.uk> <5457BD85.2070901@topic.nl> <54589472.8030305@topic.nl> <20141104113417.GG3815@sirena.org.uk>
+In-Reply-To: <20141104113417.GG3815@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.9 (canardo.mork.no [IPv6:2001:4641::1]); Tue, 04 Nov 2014 13:40:58 +0100 (CET)
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthias Klein <matthias.klein@linux.com> writes:
-> Am 02.11.2014 um 04:35 schrieb Lars Melin:
->> On 2014-11-01 23:01, Matthias Klein wrote:
->>> Add ID of the Peiker LTE NAD for legacy serial interface
->>>
->>> Signed-off-by: Matthias Klein <matthias.klein@linux.com>
->>> ---
->>>   drivers/usb/serial/option.c | 1 +
->>>   1 file changed, 1 insertion(+)
->>>
->>> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
->>> index d1a3f60..d7f1042 100644
->>> --- a/drivers/usb/serial/option.c
->>> +++ b/drivers/usb/serial/option.c
->>> @@ -1091,6 +1091,7 @@ static const struct usb_device_id option_ids[] = {
->>>       { USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE
->>> MF330 */
->>>       { USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
->>>       { USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
->>> +    { USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9025)}, /* Peiker LTE NAD */
->>>       { USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
->>>       { USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_300) },
->>>       { USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6003),
->> 05c6:9025 already has its net interface (#4) supported by the
->> qmi_wwan driver so your patch is wrong.
->> There is also an ADB interface which I don't think should be driven
->> by option.
->>
->>
-> The ID is right, and it can be used with the option driver or qmi_wwan.
-> Ignore my patch, I will move to qmi_wwan in the future ...
+﻿On 11/04/2014 12:34 PM, Mark Brown wrote:
+> On Tue, Nov 04, 2014 at 09:55:14AM +0100, Mike Looijmans wrote:
+>> ﻿On 11/03/2014 06:38 PM, Mike Looijmans wrote:
+>
+>>>> You need to develop against current versions of the kernel, this is
+>>>> something that was merged into Linus' tree during the merge window.
+>
+>>> Is this an absolute show-stopper for you?
+>
+>>> With some effort I could move from our current 3.15 to 3.17, but even that
+>>> wouldn't be recent enough then. I can justify spending a few days on getting
+>>> the driver integrated into mainline, even if the initial version cost less
+>>> than that; but moving everything to mainline is going to take weeks and the
+>>> boss is definitely going to say "no" to that.
+>
+> It should be easy to backport the support into your current kernel, it's
+> just a few commits and there hasn't been much development in this area
+> of the code.  Can you take a look at doing that please?
 
-The serial functions should still be supported by the option driver.
-Both serial and QMI can be used at the same time, and applications like
-ModemManager will take advantage of this.
+That option hadn't crossed my mind yet, I'll look into it.
 
-What you need to to is to make sure the option driver ignores all the
-USB interfaces it cannot handle.  How to best do that depends on the
-descriptors - specifically which class codes they use.
+>
+>> More important than that: Since this chip powers the IO banks, we need it
+>> for our own products, and hence it has to work (also) on the current 3.15
+>> kernel. Using APIs from 3.18 wouold render the driver useless to ourselves.
+>
+> This is just not at all important upstream, sorry.  The kernel moves on
+> and internal APIs within the kernel move on so it is expected that code
+> used in production won't be the latest and greatest upstream code.
 
-"lsusb -vd 05c6:9025" should tell you more about that.
-
-Assuming that all serial interfaces and the QMI interface all use
-ff/ff/ff, while the ADB interface probably use ff/42/01, then something
-like this should work:
-
-
-        { USB_DEVICE_AND_INTERFACE_INFO(QUALCOMM_VENDOR_ID, 0x9025, 0xff, 0xff, 0xff), /* Peiker LTE NAD */
-          .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+I realize that, but then the result would be that I'll stop working on getting 
+the driver into mainline and force customers to use a patch or use our fork of 
+linux.
 
 
 
-Bjørn
+
+Met vriendelijke groet / kind regards,
+
+Mike Looijmans
+System Expert
+
+
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
+
+Please consider the environment before printing this e-mail
+
+Topic zoekt gedreven (embedded) software specialisten!
+http://topic.nl/vacatures/topic-zoekt-software-engineers/
+
