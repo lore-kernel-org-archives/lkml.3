@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792AbaKDOzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:55:47 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:55935 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbaKDOzq (ORCPT
+	id S1754029AbaKDO4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:56:09 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:55780 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753839AbaKDO4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:55:46 -0500
-Date: Tue, 4 Nov 2014 22:55:38 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
-Message-ID: <20141104145538.GA14944@gondor.apana.org.au>
-References: <20141104033818.GA11149@gondor.apana.org.au>
- <E1XlZWY-0003HZ-Ef@gondolin.me.apana.org.au>
- <20141104143200.GC7996@ZenIV.linux.org.uk>
- <20141104143536.GD7996@ZenIV.linux.org.uk>
- <20141104144416.GB14743@gondor.apana.org.au>
- <20141104145222.GF7996@ZenIV.linux.org.uk>
+	Tue, 4 Nov 2014 09:56:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104145222.GF7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415108003-16387-1-git-send-email-iivanov@mm-sol.com>
+References: <1415108003-16387-1-git-send-email-iivanov@mm-sol.com>
+Date: Tue, 4 Nov 2014 12:56:02 -0200
+Message-ID: <CAOMZO5Bkmqmm6Fe-iKHbnZS=1f3TQKQ0E4+XMOk1XqCaEeuW_g@mail.gmail.com>
+Subject: Re: [PATCH] mfd: qcom-spmi-pmic: Add support for more chips versions
+From: Fabio Estevam <festevam@gmail.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 02:52:22PM +0000, Al Viro wrote:
->
-> > Hmm if that is your concern then I don't see how skb_copy_datagram_msg
-> > changes things as you'd still have to convert every existing caller
-> > of skb_copy_datagram_iovec.  Colour me confused.
-> 
-> Fewer places having to even think of iovec/iov_iter...
+On Tue, Nov 4, 2014 at 11:33 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
 
-Well it's the difference between
+> +       ret = regmap_read(map, PMIC_SUBTYPE, &subtype);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       rev2 = regmap_read(map, PMIC_REV2, &rev2);
+> +       if (ret < 0)
+> +               return ret;
 
-	skb_copy_datagram_iter(..., &kmsghdr->iov_iter, ...)
+I think you meant:
+ret = regmap_read(map, PMIC_REV2, &rev2);
 
-and
+> +
+> +       rev3 = regmap_read(map, PMIC_REV3, &rev3);
 
-	skb_copy_datagram_msg(..., kmsghdr, ...)
+Likewise.
 
-Heck we could even make skb_copy_datagram_msg an inline wrapper
-around skb_copy_datagram_iter if you like.
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       rev4 = regmap_read(map, PMIC_REV4, &rev4);
 
-Anyway, the point is that not everything comes with a kmsghdr.
+Likewise.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> +       if (ret < 0)
+> +               return ret;
