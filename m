@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbaKDXpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:45:11 -0500
-Received: from mga11.intel.com ([192.55.52.93]:24205 "EHLO mga11.intel.com"
+	id S1752827AbaKDXpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:45:24 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:43468 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435AbaKDXpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:45:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411513680"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v2] sched/fair: fix use stale overloaded status to find busiest group
-Date: Wed,  5 Nov 2014 07:44:50 +0800
-Message-Id: <1415144690-25196-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1751804AbaKDXpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 18:45:22 -0500
+Message-ID: <5459650E.6070201@osg.samsung.com>
+Date: Tue, 04 Nov 2014 16:45:18 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+        tranmanphong@gmail.com, David Herrmann <dh.herrmann@gmail.com>,
+        Hugh Dickins <hughd@google.com>, bobby.prani@gmail.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 00/20] kselftest install target feature
+References: <cover.1415117102.git.shuahkh@osg.samsung.com> <CAGXu5jK9-TpOF4SFX2bkU2UJMXk-3W+-_we0BTxu4Ga+7bYXSQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jK9-TpOF4SFX2bkU2UJMXk-3W+-_we0BTxu4Ga+7bYXSQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit caeb178c60f4 ("sched/fair: Make update_sd_pick_busiest() return 
-'true' on a busier sd") makes groups are ranked in the order overloaded > 
-imbalance > other and busiest group is picked according to this order. 
-sgs->group_capacity_factor is used to check if group is overloaded. 
+On 11/04/2014 12:22 PM, Kees Cook wrote:
+> On Tue, Nov 4, 2014 at 9:10 AM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+>> This patch series adds a new kselftest_install make target
+>> to enable selftest install. When make kselftest_install is
+>> run, selftests are installed on the system. A new install
+>> target is added to selftests Makefile which will install
+>> targets for the tests that are specified in INSTALL_TARGETS.
+>> During install, a script is generated to run tests that are
+>> installed. This script will be installed in the selftest install
+>> directory. Individual test Makefiles are changed to add to the
+>> script. This will allow new tests to add install and run test
+>> commands to the generated kselftest script.
+> 
+> I'm all for making the self tests more available, but I don't think
+> this is the right approach. My primary objection is that it creates a
+> second way to run tests, and that means any changes and additions need
+> to be updated in two places. I'd much rather just maintain the single
+> "make" targets instead. Having "make" available on the target device
+> doesn't seem too bad to me. Is there a reason that doesn't work for
+> your situation?
 
-In the case of the child domain prefers tasks go to siblings first, the 
-sgs->group_capacity_factor will be set lower to one in order to move all 
-the excess tasks away. 
+Kees,
 
-However, group overloaded status is not updated in the case of 
-sgs->group_capacity_factor be set lower to one which leads to miss find 
-the busiest group. 
+My primary objective is to provide a way to install selftests for a
+specific kernel release. This will allow developers to run tests for
+a specific release and look for regressions. Adding an install target
+will also help support local execution of tests in a virtualized
+environments. In some cases such as qemu, it is not practical to
+expect the target to have support for "make". Once tests are installed
+to be run outside the git environment, we need a master script that
+can run the tests. Hence the need for a master script that can run
+tests.
 
-This patch fix it by updating group overloaded status in the case of sg 
-capacity factor is set to one in order to find busiest group accurately.
+We have the ability to run all tests via make kselftest target or
+run a specific test using the individual test's run_tests target.
+Both of above are necessary to support running tests from the tree.
+Embedding run_tests logic in the makefiles doesn't work very well
+in the long run.
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
-v1 -> v2:
- * introduce some newlines in the changelog.
+We also need a way to run them outside tree. I agree with you that
+the way I added the script generation, duplicates the code in individual
+run_tests targets and that changes/updates need to be made in both
+places.
 
- kernel/sched/fair.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Would you be ok with the approach if I fixed the duplicating
+problem? I can address the duplication concern easily.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ec32c26d..c603e50 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6344,8 +6344,10 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
- 		 * with a large weight task outweighs the tasks on the system).
- 		 */
- 		if (prefer_sibling && sds->local &&
--		    sds->local_stat.group_has_free_capacity)
-+		    sds->local_stat.group_has_free_capacity) {
- 			sgs->group_capacity_factor = min(sgs->group_capacity_factor, 1U);
-+			sgs->group_type = group_classify(sg, sgs);
-+		}
- 
- 		if (update_sd_pick_busiest(env, sds, sg, sgs)) {
- 			sds->busiest = sg;
+> 
+> I would, however, like to see some better standardization of the test
+> "framework" that we've got in there already. (For example, some
+> failures fail the "make", some don't, there are various reporting
+> methods for success/failure depending on the test, etc.)
+
+This is being addressed and I have the framework in linux-kselftest
+git next branch at the moment. I do think the above work is part of
+addressing the larger framework issues such as being able to run tests
+on a target system that might not have "make" support and makes it
+easier to use.
+
+thanks,
+-- Shuah
+
+
 -- 
-1.9.1
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
