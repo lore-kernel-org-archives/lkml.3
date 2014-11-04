@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaKDRFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:05:37 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:47644 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869AbaKDRFf (ORCPT
+	id S1752199AbaKDRGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:06:16 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:63071 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaKDRGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:05:35 -0500
-Message-ID: <54590755.1070204@linaro.org>
-Date: Tue, 04 Nov 2014 17:05:25 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
+	Tue, 4 Nov 2014 12:06:14 -0500
+Message-ID: <54590781.9070500@plexistor.com>
+Date: Tue, 04 Nov 2014 19:06:09 +0200
+From: Boaz Harrosh <boaz@plexistor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Drake <drake@endlessm.com>
-CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jon Medhurst <tixy@linaro.org>, Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH 3.17-rc4 v7 0/6] arm: Implement arch_trigger_all_cpu_backtrace
-References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org> <CAD8Lp44gPOBh_q1zDy3y1GkrRVAvix5YaNr-+E92+g8Q7fLKJA@mail.gmail.com> <20141014233126.GF27405@n2100.arm.linux.org.uk> <543F90ED.5030005@linaro.org>
-In-Reply-To: <543F90ED.5030005@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+CC: Boaz Harrosh <boaz@plexistor.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, Nick Piggin <npiggin@kernel.dk>,
+        "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "Knippers, Linda" <linda.knippers@hp.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvdimm@lists.01.org" <linux-nvdimm@ml01.01.org>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>
+Subject: Re: [PATCH 1/4] pmem: Initial version of persistent memory driver
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>	 <1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>	 <94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net>	 <100D68C7BA14664A8938383216E40DE04082985D@FMSMSX114.amr.corp.intel.com>	 <5458AC75.3030207@plexistor.com>	 <94D0CD8314A33A4D9D801C0FE68B40295936C4B1@G4W3202.americas.hpqcorp.net> <1415119296.26199.12.camel@theros.lm.intel.com>
+In-Reply-To: <1415119296.26199.12.camel@theros.lm.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/10/14 10:33, Daniel Thompson wrote:
->> The blocker on this work right now is the annoying Versatile Express
->> platform, which pretty much means that we currently can't push the
->> code into the GIC to support FIQs.  As long as adding FIQ support to
->> the GIC results in the Versatile Express becoming non-bootable, the
->> idea of using FIQs is a total non-starter.
->>
->> Or we decide that we dump the platform completely (which will upset
->> a number of developers.)
->>
->> I have patches I'm using for trigger_all_cpu_backtrace() which I'm
->> maintaining privately in my tree until we can get the FIQ situation
->> sorted.
+On 11/04/2014 06:41 PM, Ross Zwisler wrote:
+<>
 > 
-> I do hope to gain (remote) access to a vexpress at some point just to
-> pick at this issue a little.
+> The UEFI organization is in the process of defining a generic specification
+> for platform non-volatile memory resources.  Essentially the thought was to
+> wait until that was publicly available before adding any new device discovery
+> capabilities to pmem.
+> 
+> What Boaz has suggested and coded up is certainly useful, but the worry is
+> that it will end up being incompatible with what comes out of UEFI.  If we
+> stay with the dead-simple module parameter method, we will have less code to
+> unwind later.
+> 
 
-This week with the help of one of my colleagues (thanks Tixy) I have
-been able to run some tests and figure out what it going on on vexpress-a9.
+What ??
+What I coded up is a exactly "dead-simple module parameter method"
+that will not need to be changed in future, that is actually sane.
 
-The summary is that on some GICv1 implementations the bit to enable
-group 1 interrupts cannot be accessed using secure memory accesses. More
-specifically the presence/absence of the EnableGrp1 bit in the secure
-version GICD_CTRL register is implementation defined.
+Actually your version of the code needs changing with the global parameters,
+one range support, and same size devices.
 
-My original patches overlooked this and as a result the existing code
-will migrate all interrupts to group but then cannot enable delivery of
-group 1 interrupts.
+My version of the code is specifically made very probe() ready and dynamic
+ready. It was the point of it all. Including bugs and ugliness fixed.
+(I have a small patch that dynamically addes/removes devices on the fly
+ through the same module-param interface)
 
-I'm planning to respin the code so it will automatically disable FIQ
-support when the EnableGrp1 bit is not implemented. This means
-vexpress-a9 will not benefit from FIQ support but will also not be
-harmed by it.
+There is not a line in all of my patches that might be affected by
+that UEFI comity. (Again actually fixing what needed changing). And in
+addition to that comity and the new HW they will define, my system
+also supports all the current NvDIMMs in the market.
+
+I really can not understand what you guys are saying? Have you actually
+looked at the code and used it, compared to the unusable thing you guys
+have now ??
+[Like you are saying "before adding any new device discovery capabilities"
+ But I have not added any? All I did was fix and simplify the module-param
+ interface. Which makes me think that you might not have looked at any of
+ my fixes?
+]
+
+> Thanks,
+> - Ross
+
+Cheers
+Boaz
+
