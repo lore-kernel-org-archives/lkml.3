@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaKDXoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:44:07 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:61180 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaKDXoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:44:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
-References: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 4 Nov 2014 15:43:43 -0800
-Message-ID: <CALCETrVKW39sg8mYTTgzqkMpW3GeJM-SSNCK6rJWd5Y+_=6rfQ@mail.gmail.com>
-Subject: Re: [PATCH] x86_64,entry: Fix RCX for traced syscalls
-To: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1752686AbaKDXpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:45:11 -0500
+Received: from mga11.intel.com ([192.55.52.93]:24205 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435AbaKDXpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 18:45:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="411513680"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v2] sched/fair: fix use stale overloaded status to find busiest group
+Date: Wed,  5 Nov 2014 07:44:50 +0800
+Message-Id: <1415144690-25196-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 12:08 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> The int_ret_from_sys_call and syscall tracing code disagrees with
-> the sysret path as to the value of RCX.
->
-> The Intel SDM, the AMD APM, and my laptop all agree that sysret
-> returns with RCX == RIP.  The syscall tracing code does not respect
-> this property.
->
-> For example, this program:
->
-> int main()
-> {
->         extern const char syscall_rip[];
->         unsigned long rcx = 1;
->         unsigned long orig_rcx = rcx;
->         asm ("mov $-1, %%eax\n\t"
->              "syscall\n\t"
->              "syscall_rip:"
->              : "+c" (rcx) : : "r11");
->         printf("syscall: RCX = %lX  RIP = %lX  orig RCX = %lx\n",
->                rcx, (unsigned long)syscall_rip, orig_rcx);
->         return 0;
-> }
->
-> prints:
-> syscall: RCX = 400556  RIP = 400556  orig RCX = 1
->
-> Running it under strace gives this instead:
-> syscall: RCX = FFFFFFFFFFFFFFFF  RIP = 400556  orig RCX = 1
->
-> This changes FIXUP_TOP_OF_STACK to match sysret, causing the test to
-> show RCX == RIP even under strace.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/kernel/entry_64.S | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index b25ca96..6624e18 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -143,7 +143,8 @@ ENDPROC(native_usergs_sysret64)
->         movq \tmp,RSP+\offset(%rsp)
->         movq $__USER_DS,SS+\offset(%rsp)
->         movq $__USER_CS,CS+\offset(%rsp)
-> -       movq $-1,RCX+\offset(%rsp)
-> +       movq RIP+\offset(%rsp),\tmp  /* get rip */
-> +       movq \tmp,RCX+\offset(%rsp)  /* copy it to rcx as sysret would do */
->         movq R11+\offset(%rsp),\tmp  /* get eflags */
->         movq \tmp,EFLAGS+\offset(%rsp)
->         .endm
-> --
-> 1.9.3
->
+Commit caeb178c60f4 ("sched/fair: Make update_sd_pick_busiest() return 
+'true' on a busier sd") makes groups are ranked in the order overloaded > 
+imbalance > other and busiest group is picked according to this order. 
+sgs->group_capacity_factor is used to check if group is overloaded. 
 
-Hi all-
+In the case of the child domain prefers tasks go to siblings first, the 
+sgs->group_capacity_factor will be set lower to one in order to move all 
+the excess tasks away. 
 
-I think this got lost.  No one acked it, but no one nacked it either.
-Summary of arguments in favor of applying:
+However, group overloaded status is not updated in the case of 
+sgs->group_capacity_factor be set lower to one which leads to miss find 
+the busiest group. 
 
- - It's arguably a bugfix.
+This patch fix it by updating group overloaded status in the case of sg 
+capacity factor is set to one in order to find busiest group accurately.
 
- - Processes shouldn't be able to detect that they're being traced.
-There are probably any number of ways that tracing is visible, but
-this fixes one of them.
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v1 -> v2:
+ * introduce some newlines in the changelog.
 
- - The assembly code is complex enough anyway without requiring people
-to wonder why setting the saved RCX to -1 is a reasonable thing to do.
+ kernel/sched/fair.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- - The performance hit is probably negligible.  It's a single
-instruction, it only happens during a slow path, and it's unlikely to
-cause a cache miss.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ec32c26d..c603e50 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6344,8 +6344,10 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ 		 * with a large weight task outweighs the tasks on the system).
+ 		 */
+ 		if (prefer_sibling && sds->local &&
+-		    sds->local_stat.group_has_free_capacity)
++		    sds->local_stat.group_has_free_capacity) {
+ 			sgs->group_capacity_factor = min(sgs->group_capacity_factor, 1U);
++			sgs->group_type = group_classify(sg, sgs);
++		}
+ 
+ 		if (update_sd_pick_busiest(env, sds, sg, sgs)) {
+ 			sds->busiest = sg;
+-- 
+1.9.1
 
-Summary of arguments against:
-
- - It adds one instruction.
-
- - The bug it fixes isn't really entirely obviously a bug in the first place.
-
-I'm still in favor.
-
---Andy
