@@ -1,73 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaKDGdY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 01:33:24 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:57131 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaKDGdV (ORCPT
+	id S1751880AbaKDGfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 01:35:11 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:50952 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaKDGfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 01:33:21 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        David Ahern <dsahern@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, Pawel Moll <mail@pawelmoll.com>
-Subject: Re: [PATCH v3 2/3] perf: Userspace event
-References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
-	<1415060918-19954-3-git-send-email-pawel.moll@arm.com>
-Date: Tue, 04 Nov 2014 15:33:19 +0900
-In-Reply-To: <1415060918-19954-3-git-send-email-pawel.moll@arm.com> (Pawel
-	Moll's message of "Tue, 4 Nov 2014 00:28:37 +0000")
-Message-ID: <87ppd35vbk.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 4 Nov 2014 01:35:07 -0500
+Date: Mon, 3 Nov 2014 22:35:04 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Davidlohr Bueso <dave@stgolabs.net>
+cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
+        hughd@google.com, riel@redhat.com, mgorman@suse.de,
+        peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        dbueso@suse.de, linux-mm@kvack.org
+Subject: Re: [PATCH 10/10] mm/hugetlb: share the i_mmap_rwsem
+In-Reply-To: <1414697657-1678-11-git-send-email-dave@stgolabs.net>
+Message-ID: <alpine.LSU.2.11.1411032208390.15596@eggly.anvils>
+References: <1414697657-1678-1-git-send-email-dave@stgolabs.net> <1414697657-1678-11-git-send-email-dave@stgolabs.net>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pawel,
+On Thu, 30 Oct 2014, Davidlohr Bueso wrote:
 
-On Tue,  4 Nov 2014 00:28:37 +0000, Pawel Moll wrote:
-> +	/*
-> +	 * Data in userspace event record is transparent for the kernel
-> +	 *
-> +	 * Userspace perf tool code maintains a list of known types with
-> +	 * reference implementations of parsers for the data field.
-> +	 *
-> +	 * Overall size of the record (including type and size fields)
-> +	 * is always aligned to 8 bytes by adding padding after the data.
-> +	 *
-> +	 * struct {
-> +	 *	struct perf_event_header	header;
-> +	 *	u32				type;
-> +	 *	u32				size;
+> The i_mmap_rwsem protects shared pages against races
+> when doing the sharing and unsharing, ultimately
+> calling huge_pmd_share/unshare() for PMD pages --
+> it also needs it to avoid races when populating the pud
+> for pmd allocation when looking for a shareable pmd page
+> for hugetlb. Ultimately the interval tree remains intact.
+> 
+> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> Acked-by: Kirill A. Shutemov <kirill.shutemov@intel.linux.com>
+                                                linux.intel.com
 
-The struct perf_event_header also has 'size' field and it has the entire
-length of the record so it's redundant.  Also there's 'misc' field in the
-perf_event_header and I guess it can be used as 'type' info as it's
-mostly for cpumode and we are in user mode by definition.
+I'm uncomfortable with this one: I'm certainly not prepared to Ack it;
+but that could easily be that I'm just not thinking hard enough - I'd
+rather leave the heavy thinking to someone else!
 
-Thanks,
-Namhyung
+The fs/hugetlbfs/inode.c part of it should be okay, but the rest is
+iffy.  It gets into huge page table sharing territory, which is very
+tricky and surprising territory indeed (take a look at my
+__unmap_hugepage_range_final() comment, for one example).
 
+You're right that the interval tree remains intact, but I've a feeling
+we end up using i_mmap_mutex for more exclusion than just that (rather
+like how huge_memory.c finds anon_vma lock useful for other exclusions).
 
-> +	 *	char				data[size];
-> +	 *	char				__padding[-size & 7];
-> +	 * 	struct sample_id		sample_id;
-> +	 * };
-> +	 */
-> +	PERF_RECORD_UEVENT			= 11,
-> +
->  	PERF_RECORD_MAX,			/* non-ABI */
->  };
+I think Mel (already Cc'ed) and Michal (adding him) both have past
+experience with the shared page table (as do I, but I'm in denial).
+
+I wonder if the huge shared page table would be a good next target
+for Kirill's removal of mm nastiness.  (Removing it wouldn't hurt
+Google for one: we have it "#if 0"ed out, though I forget why at
+this moment.)
+
+But, returning to the fs/hugetlbfs/inode.c part of it, that reminds
+me: you're missing one patch from the series, aren't you?  Why no
+i_mmap_lock_read() in mm/memory.c unmap_mapping_range()?  I doubt
+it will add much useful parallelism, but it would be correct.
+
+Hugh
+
+> ---
+>  fs/hugetlbfs/inode.c |  4 ++--
+>  mm/hugetlb.c         | 12 ++++++------
+>  mm/memory.c          |  4 ++--
+>  3 files changed, 10 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index 5eba47f..0dca54d 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -412,10 +412,10 @@ static int hugetlb_vmtruncate(struct inode *inode, loff_t offset)
+>  	pgoff = offset >> PAGE_SHIFT;
+>  
+>  	i_size_write(inode, offset);
+> -	i_mmap_lock_write(mapping);
+> +	i_mmap_lock_read(mapping);
+>  	if (!RB_EMPTY_ROOT(&mapping->i_mmap))
+>  		hugetlb_vmtruncate_list(&mapping->i_mmap, pgoff);
+> -	i_mmap_unlock_write(mapping);
+> +	i_mmap_unlock_read(mapping);
+>  	truncate_hugepages(inode, offset);
+>  	return 0;
+>  }
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 2071cf4..80349f2 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2775,7 +2775,7 @@ static void unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	 * this mapping should be shared between all the VMAs,
+>  	 * __unmap_hugepage_range() is called as the lock is already held
+>  	 */
+> -	i_mmap_lock_write(mapping);
+> +	i_mmap_lock_read(mapping);
+>  	vma_interval_tree_foreach(iter_vma, &mapping->i_mmap, pgoff, pgoff) {
+>  		/* Do not unmap the current VMA */
+>  		if (iter_vma == vma)
+> @@ -2792,7 +2792,7 @@ static void unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			unmap_hugepage_range(iter_vma, address,
+>  					     address + huge_page_size(h), page);
+>  	}
+> -	i_mmap_unlock_write(mapping);
+> +	i_mmap_unlock_read(mapping);
+>  }
+>  
+>  /*
+> @@ -3350,7 +3350,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+>  	flush_cache_range(vma, address, end);
+>  
+>  	mmu_notifier_invalidate_range_start(mm, start, end);
+> -	i_mmap_lock_write(vma->vm_file->f_mapping);
+> +	i_mmap_lock_read(vma->vm_file->f_mapping);
+>  	for (; address < end; address += huge_page_size(h)) {
+>  		spinlock_t *ptl;
+>  		ptep = huge_pte_offset(mm, address);
+> @@ -3379,7 +3379,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+>  	 */
+>  	flush_tlb_range(vma, start, end);
+>  	mmu_notifier_invalidate_range(mm, start, end);
+> -	i_mmap_unlock_write(vma->vm_file->f_mapping);
+> +	i_mmap_unlock_read(vma->vm_file->f_mapping);
+>  	mmu_notifier_invalidate_range_end(mm, start, end);
+>  
+>  	return pages << h->order;
+> @@ -3547,7 +3547,7 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+>  	if (!vma_shareable(vma, addr))
+>  		return (pte_t *)pmd_alloc(mm, pud, addr);
+>  
+> -	i_mmap_lock_write(mapping);
+> +	i_mmap_lock_read(mapping);
+>  	vma_interval_tree_foreach(svma, &mapping->i_mmap, idx, idx) {
+>  		if (svma == vma)
+>  			continue;
+> @@ -3575,7 +3575,7 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+>  	spin_unlock(ptl);
+>  out:
+>  	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+> -	i_mmap_unlock_write(mapping);
+> +	i_mmap_unlock_read(mapping);
+>  	return pte;
+>  }
+>  
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 22c3089..2ca3105 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1345,9 +1345,9 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+>  			 * safe to do nothing in this case.
+>  			 */
+>  			if (vma->vm_file) {
+> -				i_mmap_lock_write(vma->vm_file->f_mapping);
+> +				i_mmap_lock_read(vma->vm_file->f_mapping);
+>  				__unmap_hugepage_range_final(tlb, vma, start, end, NULL);
+> -				i_mmap_unlock_write(vma->vm_file->f_mapping);
+> +				i_mmap_unlock_read(vma->vm_file->f_mapping);
+>  			}
+>  		} else
+>  			unmap_page_range(tlb, vma, start, end, details);
+> -- 
+> 1.8.4.5
