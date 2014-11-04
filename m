@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaKDIu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:50:28 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:58379 "EHLO
+	id S1752974AbaKDIuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:50:55 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:51896 "EHLO
 	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756AbaKDIuX convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752092AbaKDIuw convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Tue, 4 Nov 2014 03:50:23 -0500
-Message-Id: <5458A15A0200007800044A9A@mail.emea.novell.com>
+	Tue, 4 Nov 2014 03:50:52 -0500
+Message-Id: <5458A1780200007800044A9D@mail.emea.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Tue, 04 Nov 2014 08:50:18 +0000
+Date: Tue, 04 Nov 2014 08:50:48 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
 Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] x86-64: handle PC-relative relocations on per-CPU
- data
+Subject: [PATCH 2/2] x86-64: use RIP-relative addressing for most
+ per-CPU accesses
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,125 +23,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is in preparation of using RIP-relative addressing in many of the
-per-CPU accesses.
+Observing that per-CPU data (in the SMP case) is reachable by
+exploiting 64-bit address wraparound (building on the default kernel
+load address being at 16Mb), the one byte shorter RIP-relative
+addressing form can be used for most per-CPU accesses. The one
+exception are the "stable" reads, where the use of the "P" operand
+modifier prevents the compiler from using RIP-relative addressing, but
+is unavoidable due to the use of the "p" constraint (side note: with
+gcc 4.9.x the intended effect of this isn't being achieved anymore,
+see gcc bug 63637).
+
+With the dependency on the minimum kernel load address, arbitrarily
+low values for CONFIG_PHYSICAL_START are now no longer possible. A
+link time assertion is being added, directing to the need to increase
+that value when it triggers.
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
 ---
- arch/x86/boot/compressed/misc.c |   14 +++++++++++++-
- arch/x86/tools/relocs.c         |   38 ++++++++++++++++++++++++++++----------
- 2 files changed, 41 insertions(+), 11 deletions(-)
+ arch/x86/include/asm/percpu.h |   59 +++++++++++++++++++++++++++++++-----------
+ arch/x86/kernel/vmlinux.lds.S |    2 +
+ 2 files changed, 46 insertions(+), 15 deletions(-)
 
---- 3.18-rc3-x86_64-PCrel-per-CPU.orig/arch/x86/boot/compressed/misc.c
-+++ 3.18-rc3-x86_64-PCrel-per-CPU/arch/x86/boot/compressed/misc.c
-@@ -260,7 +260,7 @@ static void handle_relocations(void *out
+--- 3.18-rc3-x86_64-PCrel-per-CPU.orig/arch/x86/include/asm/percpu.h
++++ 3.18-rc3-x86_64-PCrel-per-CPU/arch/x86/include/asm/percpu.h
+@@ -64,7 +64,7 @@
+ #define __percpu_prefix		""
+ #endif
  
- 	/*
- 	 * Process relocations: 32 bit relocations first then 64 bit after.
--	 * Two sets of binary relocations are added to the end of the kernel
-+	 * Three sets of binary relocations are added to the end of the kernel
- 	 * before compression. Each relocation table entry is the kernel
- 	 * address of the location which needs to be updated stored as a
- 	 * 32-bit value which is sign extended to 64 bits.
-@@ -270,6 +270,8 @@ static void handle_relocations(void *out
- 	 * kernel bits...
- 	 * 0 - zero terminator for 64 bit relocations
- 	 * 64 bit relocation repeated
-+	 * 0 - zero terminator for inverse 32 bit relocations
-+	 * 32 bit inverse relocation repeated
- 	 * 0 - zero terminator for 32 bit relocations
- 	 * 32 bit relocation repeated
- 	 *
-@@ -286,6 +288,16 @@ static void handle_relocations(void *out
- 		*(uint32_t *)ptr += delta;
- 	}
+-#define __percpu_arg(x)		__percpu_prefix "%P" #x
++#define __percpu_arg(x)		__percpu_prefix "%" #x
+ 
+ /*
+  * Initialized pointers to per-cpu variables needed for the boot
+@@ -179,29 +179,58 @@ do {									\
+ 	}								\
+ } while (0)
+ 
+-#define percpu_from_op(op, var, constraint)		\
++#define percpu_from_op(op, var)				\
+ ({							\
+ 	typeof(var) pfo_ret__;				\
+ 	switch (sizeof(var)) {				\
+ 	case 1:						\
+ 		asm(op "b "__percpu_arg(1)",%0"		\
+ 		    : "=q" (pfo_ret__)			\
+-		    : constraint);			\
++		    : "m" (var));			\
+ 		break;					\
+ 	case 2:						\
+ 		asm(op "w "__percpu_arg(1)",%0"		\
+ 		    : "=r" (pfo_ret__)			\
+-		    : constraint);			\
++		    : "m" (var));			\
+ 		break;					\
+ 	case 4:						\
+ 		asm(op "l "__percpu_arg(1)",%0"		\
+ 		    : "=r" (pfo_ret__)			\
+-		    : constraint);			\
++		    : "m" (var));			\
+ 		break;					\
+ 	case 8:						\
+ 		asm(op "q "__percpu_arg(1)",%0"		\
+ 		    : "=r" (pfo_ret__)			\
+-		    : constraint);			\
++		    : "m" (var));			\
++		break;					\
++	default: __bad_percpu_size();			\
++	}						\
++	pfo_ret__;					\
++})
++
++#define percpu_stable_op(op, var)			\
++({							\
++	typeof(var) pfo_ret__;				\
++	switch (sizeof(var)) {				\
++	case 1:						\
++		asm(op "b "__percpu_arg(P1)",%0"	\
++		    : "=q" (pfo_ret__)			\
++		    : "p" (&(var)));			\
++		break;					\
++	case 2:						\
++		asm(op "w "__percpu_arg(P1)",%0"	\
++		    : "=r" (pfo_ret__)			\
++		    : "p" (&(var)));			\
++		break;					\
++	case 4:						\
++		asm(op "l "__percpu_arg(P1)",%0"	\
++		    : "=r" (pfo_ret__)			\
++		    : "p" (&(var)));			\
++		break;					\
++	case 8:						\
++		asm(op "q "__percpu_arg(P1)",%0"	\
++		    : "=r" (pfo_ret__)			\
++		    : "p" (&(var)));			\
+ 		break;					\
+ 	default: __bad_percpu_size();			\
+ 	}						\
+@@ -359,11 +388,11 @@ do {									\
+  * per-thread variables implemented as per-cpu variables and thus
+  * stable for the duration of the respective task.
+  */
+-#define this_cpu_read_stable(var)	percpu_from_op("mov", var, "p" (&(var)))
++#define this_cpu_read_stable(var)	percpu_stable_op("mov", var)
+ 
+-#define raw_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+-#define raw_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+-#define raw_cpu_read_4(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
++#define raw_cpu_read_1(pcp)		percpu_from_op("mov", pcp)
++#define raw_cpu_read_2(pcp)		percpu_from_op("mov", pcp)
++#define raw_cpu_read_4(pcp)		percpu_from_op("mov", pcp)
+ 
+ #define raw_cpu_write_1(pcp, val)	percpu_to_op("mov", (pcp), val)
+ #define raw_cpu_write_2(pcp, val)	percpu_to_op("mov", (pcp), val)
+@@ -381,9 +410,9 @@ do {									\
+ #define raw_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
+ #define raw_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
+ 
+-#define this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+-#define this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+-#define this_cpu_read_4(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
++#define this_cpu_read_1(pcp)		percpu_from_op("mov", pcp)
++#define this_cpu_read_2(pcp)		percpu_from_op("mov", pcp)
++#define this_cpu_read_4(pcp)		percpu_from_op("mov", pcp)
+ #define this_cpu_write_1(pcp, val)	percpu_to_op("mov", (pcp), val)
+ #define this_cpu_write_2(pcp, val)	percpu_to_op("mov", (pcp), val)
+ #define this_cpu_write_4(pcp, val)	percpu_to_op("mov", (pcp), val)
+@@ -435,7 +464,7 @@ do {									\
+  * 32 bit must fall back to generic operations.
+  */
  #ifdef CONFIG_X86_64
-+	while (*--reloc) {
-+		long extended = *reloc;
-+		extended += map;
-+
-+		ptr = (unsigned long)extended;
-+		if (ptr < min_addr || ptr > max_addr)
-+			error("inverse 32-bit relocation outside of kernel!\n");
-+
-+		*(int32_t *)ptr -= delta;
-+	}
- 	for (reloc--; *reloc; reloc--) {
- 		long extended = *reloc;
- 		extended += map;
---- 3.18-rc3-x86_64-PCrel-per-CPU.orig/arch/x86/tools/relocs.c
-+++ 3.18-rc3-x86_64-PCrel-per-CPU/arch/x86/tools/relocs.c
-@@ -20,7 +20,10 @@ struct relocs {
+-#define raw_cpu_read_8(pcp)			percpu_from_op("mov", (pcp), "m"(pcp))
++#define raw_cpu_read_8(pcp)			percpu_from_op("mov", pcp)
+ #define raw_cpu_write_8(pcp, val)		percpu_to_op("mov", (pcp), val)
+ #define raw_cpu_add_8(pcp, val)			percpu_add_op((pcp), val)
+ #define raw_cpu_and_8(pcp, val)			percpu_to_op("and", (pcp), val)
+@@ -444,7 +473,7 @@ do {									\
+ #define raw_cpu_xchg_8(pcp, nval)		percpu_xchg_op(pcp, nval)
+ #define raw_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
  
- static struct relocs relocs16;
- static struct relocs relocs32;
-+#if ELF_BITS == 64
-+static struct relocs relocs32neg;
- static struct relocs relocs64;
-+#endif
+-#define this_cpu_read_8(pcp)			percpu_from_op("mov", (pcp), "m"(pcp))
++#define this_cpu_read_8(pcp)			percpu_from_op("mov", pcp)
+ #define this_cpu_write_8(pcp, val)		percpu_to_op("mov", (pcp), val)
+ #define this_cpu_add_8(pcp, val)		percpu_add_op((pcp), val)
+ #define this_cpu_and_8(pcp, val)		percpu_to_op("and", (pcp), val)
+--- 3.18-rc3-x86_64-PCrel-per-CPU.orig/arch/x86/kernel/vmlinux.lds.S
++++ 3.18-rc3-x86_64-PCrel-per-CPU/arch/x86/kernel/vmlinux.lds.S
+@@ -186,6 +186,8 @@ SECTIONS
+ 	 * start another segment - init.
+ 	 */
+ 	PERCPU_VADDR(INTERNODE_CACHE_BYTES, 0, :percpu)
++	ASSERT(SIZEOF(.data..percpu) < CONFIG_PHYSICAL_START,
++	       "per-CPU data too large - increase CONFIG_PHYSICAL_START")
+ #endif
  
- struct section {
- 	Elf_Shdr       shdr;
-@@ -762,11 +765,16 @@ static int do_reloc64(struct section *se
- 
- 	switch (r_type) {
- 	case R_X86_64_NONE:
-+		/* NONE can be ignored. */
-+		break;
-+
- 	case R_X86_64_PC32:
- 		/*
--		 * NONE can be ignored and PC relative relocations don't
--		 * need to be adjusted.
-+		 * PC relative relocations don't need to be adjusted unless
-+		 * referencing a percpu symbol.
- 		 */
-+		if (is_percpu_sym(sym, symname))
-+			add_reloc(&relocs32neg, offset);
- 		break;
- 
- 	case R_X86_64_32:
-@@ -986,7 +994,10 @@ static void emit_relocs(int as_text, int
- 	/* Order the relocations for more efficient processing */
- 	sort_relocs(&relocs16);
- 	sort_relocs(&relocs32);
-+#if ELF_BITS == 64
-+	sort_relocs(&relocs32neg);
- 	sort_relocs(&relocs64);
-+#endif
- 
- 	/* Print the relocations */
- 	if (as_text) {
-@@ -1007,14 +1018,21 @@ static void emit_relocs(int as_text, int
- 		for (i = 0; i < relocs32.count; i++)
- 			write_reloc(relocs32.offset[i], stdout);
- 	} else {
--		if (ELF_BITS == 64) {
--			/* Print a stop */
--			write_reloc(0, stdout);
--
--			/* Now print each relocation */
--			for (i = 0; i < relocs64.count; i++)
--				write_reloc(relocs64.offset[i], stdout);
--		}
-+#if ELF_BITS == 64
-+		/* Print a stop */
-+		write_reloc(0, stdout);
-+
-+		/* Now print each relocation */
-+		for (i = 0; i < relocs64.count; i++)
-+			write_reloc(relocs64.offset[i], stdout);
-+
-+		/* Print a stop */
-+		write_reloc(0, stdout);
-+
-+		/* Now print each inverse 32-bit relocation */
-+		for (i = 0; i < relocs32neg.count; i++)
-+			write_reloc(relocs32neg.offset[i], stdout);
-+#endif
- 
- 		/* Print a stop */
- 		write_reloc(0, stdout);
-
+ 	INIT_TEXT_SECTION(PAGE_SIZE)
 
 
