@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaKDIVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:21:04 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46281 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411AbaKDIVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:21:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411026603"
-Date: Tue, 4 Nov 2014 10:20:56 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-Message-ID: <20141104082056.GG1618@lahna.fi.intel.com>
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com>
- <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752476AbaKDIXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:23:13 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:59446 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaKDIXK convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 4 Nov 2014 03:23:10 -0500
+Message-Id: <54589AFA0200007800044A77@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Tue, 04 Nov 2014 08:23:06 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: "Steven Rostedt" <rostedt@goodmis.org>, <akpm@linux-foundation.org>,
+        <mingo@redhat.com>
+Subject: [PATCH] irqflags: fix (at least latent) code generation issue
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 05:24:55PM -0600, Timur Tabi wrote:
-> On Mon, Nov 3, 2014 at 5:01 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > Hi,
-> >
-> > This is second version of the patch series adding pinctrl/GPIO support
-> > for Intel Braswell and Cherrryview. The previous version can be found here:
-> >
-> > https://lkml.org/lkml/2014/10/27/118
-> >
-> > I've dropped patches [2/4] and [3/4] as they are already applied to the
-> > pinctrl tree.
-> 
-> Mika,
-> 
-> I am also trying to add ACPI enablement to my pinctrl driver (not yet
-> submitted), but I'm new to ACPI and pin control drivers, so I have a
-> lot of catching up to do.
-> 
-> In reviewing this patchset, it appears to me that pinctrl-cherryview.c
-> is a normal pinctrl driver that has an acpi_match_table entry, and
-> nothing more.
+The conditional in local_irq_restore() otherwise can cause code bloat
+(the if and else blocks may get translated into separate code paths
+despite the generated code being identical, dependent on compiler
+internal heuristics). Note that this adjustment gets the code in sync
+with the comment preceding it (which was slightly wrong from at least
+from 2.6.37 onwards).
 
-Indeed, it just a normal platform driver that can be enumerated from
-ACPI using the .acpi_match_table entry.
+The code bloat was observed in reality with an experimental x86 patch
+I'm about to post as RFC.
 
-> Assuming that this driver is booting on an ACPI system, what is the
-> mechanism that calls into the driver to configure the pins?  Is there
-> a definition for pin control in ASL that provides similar
-> functionality as the pinctrl nodes in a device tree?
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+---
+ include/linux/irqflags.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-There is nothing like that yet in ACPI world but with the ACPI _DSD
-patches we are getting properties similar to DT which means that we can
-provide pinctrl bindings from ACPI systems as well. Typically it has
-been the BIOS that configures things but it cannot get everything 100%
-right.
+--- 3.18-rc3/include/linux/irqflags.h
++++ 3.18-rc3-irqflags/include/linux/irqflags.h
+@@ -85,7 +85,7 @@
+  * The local_irq_*() APIs are equal to the raw_local_irq*()
+  * if !TRACE_IRQFLAGS.
+  */
+-#ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
++#ifdef CONFIG_TRACE_IRQFLAGS
+ #define local_irq_enable() \
+ 	do { trace_hardirqs_on(); raw_local_irq_enable(); } while (0)
+ #define local_irq_disable() \
+@@ -131,7 +131,7 @@
+ 	} while (0)
+ 
+ 
+-#else /* !CONFIG_TRACE_IRQFLAGS_SUPPORT */
++#else /* !CONFIG_TRACE_IRQFLAGS */
+ 
+ #define local_irq_enable()	do { raw_local_irq_enable(); } while (0)
+ #define local_irq_disable()	do { raw_local_irq_disable(); } while (0)
+@@ -145,6 +145,6 @@
+ #define irqs_disabled_flags(flags) (raw_irqs_disabled_flags(flags))
+ #define safe_halt()		do { raw_safe_halt(); } while (0)
+ 
+-#endif /* CONFIG_TRACE_IRQFLAGS_SUPPORT */
++#endif /* CONFIG_TRACE_IRQFLAGS */
+ 
+ #endif
 
-Currently I've been testing the muxing functionality so that I have a
-small board file that sets mappings and the driver core handles
-everything from there. For example I have development board where SPI
-pins are muxed as GPIOs by the BIOS and with the mappings when the SPI
-device appears the core will mux SPI out of those pins.
+
+
