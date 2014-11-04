@@ -1,189 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626AbaKDI7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:59:33 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:62296 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045AbaKDI7c (ORCPT
+	id S1752694AbaKDJAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:00:11 -0500
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:35795 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247AbaKDJAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:59:32 -0500
-Date: Tue, 4 Nov 2014 09:52:40 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Joe Perches <joe@perches.com>
-Cc: David Airlie <airlied@linux.ie>, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] drm: Reduce code size of drm_err and DRM_DEBUG[_<FOO>]
- uses
-Message-ID: <20141104085240.GA26941@phenom.ffwll.local>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	David Airlie <airlied@linux.ie>,
-	LKML <linux-kernel@vger.kernel.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>
-References: <1415088226.24560.1.camel@perches.com>
+	Tue, 4 Nov 2014 04:00:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415088226.24560.1.camel@perches.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141104075330.GB23102@bbox>
+References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
+ <543F8812.2020002@codeaurora.org> <5450FD15.4000708@suse.cz> <20141104075330.GB23102@bbox>
+From: Hui Zhu <teawater@gmail.com>
+Date: Tue, 4 Nov 2014 16:59:24 +0800
+Message-ID: <CANFwon3rM+2pA_hiQ=cnv53kHkC+hAbVi3pvhVDNytr20qC=ww@mail.gmail.com>
+Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
+ about allocation
+To: Minchan Kim <minchan@kernel.org>
+Cc: Vlastimil Babka <vbabka@suse.cz>, Laura Abbott <lauraa@codeaurora.org>,
+        Hui Zhu <zhuhui@xiaomi.com>, rjw@rjwysocki.net, len.brown@intel.com,
+        pavel@ucw.cz, m.szyprowski@samsung.com,
+        Andrew Morton <akpm@linux-foundation.org>, mina86@mina86.com,
+        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
+        hannes@cmpxchg.org, Rik van Riel <riel@redhat.com>, mgorman@suse.de,
+        nasa4836@gmail.com, ddstreet@ieee.org, Hugh Dickins <hughd@google.com>,
+        mingo@kernel.org, rientjes@google.com,
+        Peter Zijlstra <peterz@infradead.org>, keescook@chromium.org,
+        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        kirill.shutemov@linux.intel.com, n-horiguchi@ah.jp.nec.com,
+        k.khlebnikov@samsung.com, msalter@redhat.com, deller@gmx.de,
+        tangchen@cn.fujitsu.com, ben@decadent.org.uk, akinobu.mita@gmail.com,
+        sasha.levin@oracle.com, vdavydov@parallels.com, suleiman@google.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 12:03:46AM -0800, Joe Perches wrote:
-> Using %pf, __builtin_return_address(0) instead ofy 
-> "%s", __func__ reduces code size by eliminating
-> a function argument.
-> 
-> (allyesconfig)
-> $ size drivers/gpu/drm/built-in.o*
->    text	   data	    bss	    dec	    hex	filename
-> 4656061	1321947	1669536	7647544	 74b138	drivers/gpu/drm/built-in.o.new
-> 4737680	1321947	1669472	7729099	 75efcb	drivers/gpu/drm/built-in.o.old
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Tue, Nov 4, 2014 at 3:53 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Hello,
+>
+> On Wed, Oct 29, 2014 at 03:43:33PM +0100, Vlastimil Babka wrote:
+>> On 10/16/2014 10:55 AM, Laura Abbott wrote:
+>> >On 10/15/2014 8:35 PM, Hui Zhu wrote:
+>> >
+>> >It's good to see another proposal to fix CMA utilization. Do you have
+>> >any data about the success rate of CMA contiguous allocation after
+>> >this patch series? I played around with a similar approach of using
+>> >CMA for MIGRATE_MOVABLE allocations and found that although utilization
+>> >did increase, contiguous allocations failed at a higher rate and were
+>> >much slower. I see what this series is trying to do with avoiding
+>> >allocation from CMA pages when a contiguous allocation is progress.
+>> >My concern is that there would still be problems with contiguous
+>> >allocation after all the MIGRATE_MOVABLE fallback has happened.
+>>
+>> Hi,
+>>
+>> did anyone try/suggest the following idea?
+>>
+>> - keep CMA as fallback to MOVABLE as is is now, i.e. non-agressive
+>> - when UNMOVABLE (RECLAIMABLE also?) allocation fails and CMA
+>> pageblocks have space, don't OOM immediately, but first try to
+>> migrate some MOVABLE pages to CMA pageblocks, to make space for the
+>> UNMOVABLE allocation in non-CMA pageblocks
+>> - this should keep CMA pageblocks free as long as possible and
+>> useful for CMA allocations, but without restricting the non-MOVABLE
+>> allocations even though there is free memory (but in CMA pageblocks)
+>> - the fact that a MOVABLE page could be successfully migrated to CMA
+>> pageblock, means it was not pinned or otherwise non-migratable, so
+>> there's a good chance it can be migrated back again if CMA
+>> pageblocks need to be used by CMA allocation
+>
+> I suggested exactly same idea long time ago.
+>
+>> - it's more complex, but I guess we have most of the necessary
+>> infrastructure in compaction already :)
+>
+> I agree but still, it doesn't solve reclaim problem(ie, VM doesn't
+> need to reclaim CMA pages when memory pressure of unmovable pages
+> happens). Of course, we could make VM be aware of that via introducing
+> new flag of __isolate_lru_page.
+>
+> However, I'd like to think CMA design from the beginning.
+> It made page allocation logic complicated, even very fragile as we
+> had recently and now we need to add new logics to migrate like you said.
+> As well, we need to fix reclaim path, too.
+>
+> It makes mm complicated day by day even though it doesn't do the role
+> enough well(ie, big latency and frequent allocation failure) so I really
+> want to stop making the mess bloated.
+>
+> Long time ago, when I saw Joonsoo's CMA agressive allocation patchset
+> (ie, roundrobin allocation between CMA and normal movable pages)
+> it was good to me at a first glance but it needs tweak of allocation
+> path and doesn't solve reclaim path, either. Yes, reclaim path could
+> be solved by another patch but I want to solve it altogether.
+>
+> At that time, I suggested big surgery to Joonsoo in offline that
+> let's move CMA allocation with movable zone allocation. With it,
+> we could make allocation/reclaim path simple but thing is we should
+> make VM be aware of overlapping MOVABLE zone which means some of pages
+> in the zone could be part of another zones but I think we already have
+> logics to handle it when I read comment in isolate_freepages so I think
+> the design should work.
 
-I have an earlier version from you of this patch already, and it's in
-linux-next. And this patch here lacks the changelog indicating what
-changed exactly. Can you please rebase on top of linux-next and improve
-the commit message?
+Thanks.
 
-Thanks, Daniel
+>
+> A thing you guys might worry is bigger CMA latency because it makes
+> CMA memory usage ratio higher than the approach you mentioned but
+> anyone couldn't guarantee it once memory is fully utilized.
+> In addition, we have used fair zone allocator policy so it makes
+> round robin allocation automatically so I believe it should be way
+> to go.
 
-> ---
->  drivers/gpu/drm/drm_drv.c | 10 ++++++----
->  include/drm/drmP.h        | 45 ++++++++++++++++++++++-----------------------
->  2 files changed, 28 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
-> index bc3da32..22f76a2 100644
-> --- a/drivers/gpu/drm/drm_drv.c
-> +++ b/drivers/gpu/drm/drm_drv.c
-> @@ -56,7 +56,7 @@ static struct idr drm_minors_idr;
->  struct class *drm_class;
->  static struct dentry *drm_debugfs_root;
->  
-> -void drm_err(const char *func, const char *format, ...)
-> +void drm_err(const char *format, ...)
->  {
->  	struct va_format vaf;
->  	va_list args;
-> @@ -66,13 +66,14 @@ void drm_err(const char *func, const char *format, ...)
->  	vaf.fmt = format;
->  	vaf.va = &args;
->  
-> -	printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* %pV", func, &vaf);
-> +	printk(KERN_ERR "[" DRM_NAME ":%pf] *ERROR* %pV",
-> +	       __builtin_return_address(0), &vaf);
->  
->  	va_end(args);
->  }
->  EXPORT_SYMBOL(drm_err);
->  
-> -void drm_ut_debug_printk(const char *function_name, const char *format, ...)
-> +void drm_ut_debug_printk(const char *format, ...)
->  {
->  	struct va_format vaf;
->  	va_list args;
-> @@ -81,7 +82,8 @@ void drm_ut_debug_printk(const char *function_name, const char *format, ...)
->  	vaf.fmt = format;
->  	vaf.va = &args;
->  
-> -	printk(KERN_DEBUG "[" DRM_NAME ":%s] %pV", function_name, &vaf);
-> +	printk(KERN_DEBUG "[" DRM_NAME ":%pf] %pV",
-> +	       __builtin_return_address(0), &vaf);
->  
->  	va_end(args);
->  }
-> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-> index 53ed876..02aaa1a 100644
-> --- a/include/drm/drmP.h
-> +++ b/include/drm/drmP.h
-> @@ -122,11 +122,10 @@ struct dma_buf_attachment;
->  #define DRM_UT_KMS		0x04
->  #define DRM_UT_PRIME		0x08
->  
-> -extern __printf(2, 3)
-> -void drm_ut_debug_printk(const char *function_name,
-> -			 const char *format, ...);
-> -extern __printf(2, 3)
-> -void drm_err(const char *func, const char *format, ...);
-> +__printf(1, 2)
-> +void drm_ut_debug_printk(const char *format, ...);
-> +__printf(1, 2)
-> +void drm_err(const char *format, ...);
->  
->  /***********************************************************************/
->  /** \name DRM template customization defaults */
-> @@ -155,7 +154,7 @@ void drm_err(const char *func, const char *format, ...);
->   * \param arg arguments
->   */
->  #define DRM_ERROR(fmt, ...)				\
-> -	drm_err(__func__, fmt, ##__VA_ARGS__)
-> +	drm_err(fmt, ##__VA_ARGS__)
->  
->  /**
->   * Rate limited error output.  Like DRM_ERROR() but won't flood the log.
-> @@ -170,7 +169,7 @@ void drm_err(const char *func, const char *format, ...);
->  				      DEFAULT_RATELIMIT_BURST);		\
->  									\
->  	if (__ratelimit(&_rs))						\
-> -		drm_err(__func__, fmt, ##__VA_ARGS__);			\
-> +		drm_err(fmt, ##__VA_ARGS__);			\
->  })
->  
->  #define DRM_INFO(fmt, ...)				\
-> @@ -186,26 +185,26 @@ void drm_err(const char *func, const char *format, ...);
->   * \param arg arguments
->   */
->  #define DRM_DEBUG(fmt, args...)						\
-> -	do {								\
-> -		if (unlikely(drm_debug & DRM_UT_CORE))			\
-> -			drm_ut_debug_printk(__func__, fmt, ##args);	\
-> -	} while (0)
-> +do {									\
-> +	if (unlikely(drm_debug & DRM_UT_CORE))				\
-> +		drm_ut_debug_printk(fmt, ##args);			\
-> +} while (0)
->  
->  #define DRM_DEBUG_DRIVER(fmt, args...)					\
-> -	do {								\
-> -		if (unlikely(drm_debug & DRM_UT_DRIVER))		\
-> -			drm_ut_debug_printk(__func__, fmt, ##args);	\
-> -	} while (0)
-> +do {									\
-> +	if (unlikely(drm_debug & DRM_UT_DRIVER))			\
-> +		drm_ut_debug_printk(fmt, ##args);			\
-> +} while (0)
->  #define DRM_DEBUG_KMS(fmt, args...)					\
-> -	do {								\
-> -		if (unlikely(drm_debug & DRM_UT_KMS))			\
-> -			drm_ut_debug_printk(__func__, fmt, ##args);	\
-> -	} while (0)
-> +do {									\
-> +	if (unlikely(drm_debug & DRM_UT_KMS))				\
-> +		drm_ut_debug_printk(fmt, ##args);			\
-> +} while (0)
->  #define DRM_DEBUG_PRIME(fmt, args...)					\
-> -	do {								\
-> -		if (unlikely(drm_debug & DRM_UT_PRIME))			\
-> -			drm_ut_debug_printk(__func__, fmt, ##args);	\
-> -	} while (0)
-> +do {									\
-> +	if (unlikely(drm_debug & DRM_UT_PRIME))				\
-> +		drm_ut_debug_printk(fmt, ##args);			\
-> +} while (0)
->  
->  /*@}*/
->  
-> 
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Even if kernel use it to allocate the CMA memory, CMA alloc latency
+will happen if most of memory is allocated and driver try to get CMA
+memory.
+https://lkml.org/lkml/2014/10/17/129
+https://lkml.org/lkml/2014/10/17/130
+These patches let cma_alloc do a shrink with function
+shrink_all_memory_for_cma if need.  It handle a lot of latency issue
+in my part.
+And I think it can be more configurable for example some device use it
+and others not.
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Thanks,
+Hui
+
+
+
+>
+>>
+>> Thoughts?
+>> Vlastimil
+>>
+>> >Thanks,
+>> >Laura
+>> >
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Kind regards,
+> Minchan Kim
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
