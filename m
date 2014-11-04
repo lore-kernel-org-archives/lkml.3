@@ -1,124 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407AbaKDBaH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:30:07 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:7337 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750856AbaKDBaA (ORCPT
+	id S1751312AbaKDBgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:36:49 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63245 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750834AbaKDBgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:30:00 -0500
-X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Nov 2014 20:30:00 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvENAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2WGflQCgRwXAQF8hAIBAQEBAgEjBBEeIgEFCwsYAgIFFAILAgIJAwIBAgEnFQkGAQwBBwEBiDQJDbZvlHYBAQEBAQEBAwEBAQEBAQEBGoEshQiEPIN7gh0HgneBVAEElk+CQ4Y8hX+HaIRrgW+DeTwvAQEBAYJHAQEB
-X-IPAS-Result: AvENAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2WGflQCgRwXAQF8hAIBAQEBAgEjBBEeIgEFCwsYAgIFFAILAgIJAwIBAgEnFQkGAQwBBwEBiDQJDbZvlHYBAQEBAQEBAwEBAQEBAQEBGoEshQiEPIN7gh0HgneBVAEElk+CQ4Y8hX+HaIRrgW+DeTwvAQEBAYJHAQEB
-X-IronPort-AV: E=Sophos;i="5.04,797,1406606400"; 
-   d="scan'208";a="95892338"
-Message-ID: <545829CA.7040900@voxpopuli.im>
-Date: Tue, 04 Nov 2014 02:20:10 +0100
-From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 3 Nov 2014 20:36:47 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v8 3/5] amba: Don't unprepare the clocks if device driver wants IRQ safe runtime PM
+Date: Tue, 04 Nov 2014 02:57:30 +0100
+Message-ID: <1464221.Cac76ZHBQl@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1411031036350.1316-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1411031036350.1316-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: FW: [RFC 0/5] perf tools: Add perf data CTF conversion
-References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com> <53F4F38C.4080407@voxpopuli.im> <5457C259.8030605@linutronix.de>
-In-Reply-To: <5457C259.8030605@linutronix.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Monday, November 03, 2014 10:41:02 AM Alan Stern wrote:
+> On Mon, 3 Nov 2014, Russell King - ARM Linux wrote:
+> 
+> > That makes it pretty horrid from the point of view of having bus
+> > management code, because we now have the management of the bus clock
+> > split between the bus layer and the device driver.
+> > 
+> > This is /really/ a problem for runtime PM.  Runtime PM permits there
+> > to be a bus layer involved - and runtime PM can also be coupled up
+> > to PM domains as well.  For all this stuff, the context which the
+> > callbacks are called in depends on whether the driver itself has
+> > marked the device as having IRQ-safe callbacks.
+> > 
+> > That's fine, but the bus and PM domain level code then /really/ needs
+> > to know what context they're being called in, so they know whether
+> > they can sleep or not, or they must to be written to always use
+> > non-sleeping functions so they work in both contexts.  If we assume
+> > the former, then that implies that the irq-safe flag must never change
+> > state between a suspend and a resume.
+> 
+> If a bus subsystem or PM domain is going to allow its drivers to choose
+> between IRQ-safe and non-IRQ-safe runtime PM, then it is up to the
+> subsystem to come up with a way for drivers to indicate their choice.
+> 
+> I tend to agree with Rafael that testing dev->power.irq_safe should be 
+> good enough, with no real need for a wrapper.  But the subsystem can 
+> use a different mechanism if it wants.
+> 
+> Bear in mind, however, that once the irq_safe flag has been set, the 
+> runtime PM core offers no way to turn it off again.
 
-On 11/03/2014 06:58 PM, Sebastian Andrzej Siewior wrote:
-> [...]
-> I did on the linux side:
->
-> |perf record \
-> | -e sched:sched_switch \
-> | -a
->
-> This gave me perf.data trace. No with the new extension I converted it
-> into CTF data stream (perf data convert -i perf.data --to-ctf ctf) and
-> imported it into eclipse as a new trace. By setting 'domain = "kernel"'
-> I managed to get it accepted as a kernel trace.
->
-> Additionally I had to:
-> - rename sched:sched_switch -> sched_switch (I dropped the other events)
-> - rename "perf_cpu" to "cpu_id" and move it within "packet context"
->    (had a patch for that but we wanted to merge this later)
-> - I added "prev_tid" with the content of "prev_pid" and I added
->    "next_tid" with the content of "next_pid". Now exclipse does not
->    "freeze" after loading the first entry
-> - I prefixed every entry with _ (so "prev_tid" becomes "_prev_tid") and
->    now it seems to be recognized by the tracing plugin.
->
-> puh. Now I have something in "cpu usage", "control flow" windows.
+There is a problem with it, though.  Say, a driver handles a device that
+may or may not be in a power domain.  Or in other words, the power domain
+the device is in may or may not be always on.  If the domain is always on,
+the runtime PM callbacks are IRQ-safe (they depend on the driver only).
+If it isn't, they may not be IRQ-safe.  How's the driver going to decide
+whether or not to set power.irq_safe?
 
-This is really great! Initially, I had believed that we would have 
-needed to add a separate parser plugin, and to consider "perf traces" as 
-a completely different beast from LTTng traces. However if you can get 
-this close to they way LTTng presents its data, then we can probably 
-re-use most of the existing code. In which case we could rename the 
-"LTTng Kernel Trace" type in the UI to simply "Linux Kernel Trace". And 
-that would cover both LTTng kernel traces and CTF-perf traces.
-
-> The cpu_id field change will be addressed soon on our side.
-> Now, the remaining things:
-> The "domain = kernel" thingy (or another identifier if desired) is
-> something we could add.
-
-Unless the event data is exactly the same, it would be easier to use a 
-different name. Like "kernel-perf" for instance?
- From the user's point of view, both would still be Linux Kernel Traces, 
-but we could use the domain internally to determine which event/field 
-layout to use.
-
-Mathieu, any thoughts on how CTF domains should be namespaced?
-
-> What do we do on the naming convention?
->
-> The converter takes basically the event names the way they come from
-> perf. That is why we have a "system" prefix.
-> For the member fields, we take all the specific ones as perf serves
-> them. The only exception is for the generic fields which get a "perf_"
-> prefix in order not to clash with the specific ones.
-> And there is this _ prefix in front of every data member.
->
-> Now that I identified the differences between the CTF from lttng and
-> perf, any suggestions / ideas how this could be solved?
-
-I suppose it would be better/cleaner if the event and field names would 
-remain the same, or at least be similar, in the perf.data and perf-CTF 
-formats.
-
-If the trace events from both LTTng and perf represent the same thing 
-(and I assume they should, since they come from the same tracepoints, 
-right?), then we could just add a wrapper on the viewer side to decide 
-which event/field names to use, depending on the trace type.
-
-Right now, we only define LTTng event and field names:
-http://git.eclipse.org/c/tracecompass/org.eclipse.tracecompass.git/tree/org.eclipse.tracecompass.lttng2.kernel.core/src/org/eclipse/tracecompass/internal/lttng2/kernel/core/LttngStrings.java
-
-But if you could for example tell me the perf equivalents of all the 
-strings in that file, I could hack together such wrapper. With that, in 
-theory, perf traces should behave exactly the same as LTTng traces in 
-the viewer!
-
-
-Cheers,
-Alexandre
-
-ps.  fyi, we have recently moved the trace viewer code to its own 
-project, now called "Trace Compass". We will still support the Linux 
-Tools plugins for the time being, but all new developments are done in 
-Trace Compass. If you want to check it out: http://eclipse.org/tracecompass
+Rafael
 
