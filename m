@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaKDVcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:32:51 -0500
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:54334 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaKDVcu (ORCPT
+	id S1752164AbaKDViX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:38:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48205 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034AbaKDViW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:32:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <1414747777-12625-1-git-send-email-kever.yang@rock-chips.com>
-References: <1414747777-12625-1-git-send-email-kever.yang@rock-chips.com>
-Date: Tue, 4 Nov 2014 13:32:49 -0800
-X-Google-Sender-Auth: 7xdtH7pxeM8W-us5idYxBcePkH4
-Message-ID: <CAD=FV=VByf=YKw7q4L2493C-z9uJ3dTSk9WZyCFdOkSjD2XoDw@mail.gmail.com>
-Subject: Re: [PATCH] clk: rockchip: change hierarchy for some clocks
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, han jiang <hj@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Nov 2014 16:38:22 -0500
+Date: Tue, 4 Nov 2014 13:38:23 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: eparis@redhat.com, john@johnmccutchan.com, rlove@rlove.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fsnotify: don't call mutex_lock from TASK_INTERRUPTIBLE
+ context
+Message-Id: <20141104133823.6872a4c977891b98a4091b6a@linux-foundation.org>
+In-Reply-To: <1414900298-7871-1-git-send-email-sasha.levin@oracle.com>
+References: <1414900298-7871-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever
+On Sat,  1 Nov 2014 23:51:38 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 
-On Fri, Oct 31, 2014 at 2:29 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> This patch change the hierarchy for some clocks, to met the following
-> bus hierarchy:
-> hclk_usb_peri is bus clock for
-> |- hclk_otg0,
-> |- hclk_host0,
-> |- hclk_host1,
-> |- hclk_hsic
+> Sleeping functions should only be called from TASK_RUNNING. The following
+> code in fanotify_read():
+> 
+> 	prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
+> 
+>         mutex_lock(&group->notification_mutex);
+> 
+> would call it under TASK_INTERRUPTIBLE, and trigger a warning:
+> 
+> [12326.092094] WARNING: CPU: 27 PID: 30207 at kernel/sched/core.c:7305 __might_sleep+0xd2/0x110()
+> [12326.092878] do not call blocking ops when !TASK_RUNNING; state=1 set at prepare_to_wait (./arch/x86/include/asm/current.h:14 kernel/sched/wait.c:179)
+> [12326.093938] Modules linked in:
 >
-> hclk_emem is bus clock for
-> |- hclk_nandc0
-> |- hclk_nandc1
+> ...
 >
-> hclk_mem is bus clock for
-> |- hclk_sdmmc
-> |- hclk_sdio0
-> |- hclk_sdio1
-> |- hclk_emmc
 
-So as I understand it the "parent" clocks aren't really parents but
-are actually peer clocks.  That is if "hclk_usb_peri" is gated
-"hclk_otg0" continues to run.  ...but the OTG periperhal is useless
-without "hclk_usb_peri" also being enabled.
+It's a fairly minor problem - if mutex_lock() hits contention we get
+flipped into TASK_RUNNING and the schedule() immediately returns and we
+take another trip around the loop.
 
-There doesn't seem to be any real downside to modeling thing as you
-have done it, though it's not quite a true representation of the
-world.  A slightly more true representation would be to make it so
-that whenever "hclk_otg0" is enabled/disabled that it makes an
-enable/disable call to "hclk_usb_peri".  I think you'd have to
-subclass the gate clock and patch your stuff in the "enable" function.
+fanotify_read() also calls copy_event_to_user()->copy_to_user() in
+TASK_INTERRUPTIBLE state.  That's a bug and this is why the first thing
+handle_mm_fault() does is to set TASK_RUNNING.
 
-I'm personally OK with things landing as you've described it (I can
-see no downside), but it seems like this at least deserves a comment
-(either in the code or the commit message).
+> Instead of trying to fix fanotify_read() I've converted
+> notification_mutex into a spinlock.  I didn't see a reason why it
+> should be a mutex nor anything complained when I ran the same tests
+> again.
 
-If Mike T. thinks that we should use a more truthful model or if
-there's some better way to express this, you should of course listen
-to him and not to me.
+This could be a latency problem - those lists can get very long.
 
+I wonder if we can zap the prepare_to_wait()/finish_wait() and use
+something like
 
--Doug
+	wait_event_interruptible(notification_waitq, foo(group, count));
+
+int foo(struct fsnotify_group *group, size_t count)
+{
+	int ret;
+
+	mutex_lock(&group->notification_mutex);
+	ret = get_one_event(group, count);
+	mutex_unlock(&group->notification_mutex);
+}
+
