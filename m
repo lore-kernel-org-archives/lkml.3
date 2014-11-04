@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaKDHlG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:41:06 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:53300 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076AbaKDHlD (ORCPT
+	id S1751376AbaKDHuV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:50:21 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:32049 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaKDHuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:41:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: HC Yen <hc.yen@mediatek.com>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>,
-        "Joe. C" <yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        arm@kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        huang eddie <eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        Yuhau Chen <yh.chen@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH v4 1/8] ARM: mediatek: Add basic support for mt8127
-Date: Tue, 04 Nov 2014 08:39:55 +0100
-Message-ID: <13477264.GuOdydWub7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415083006.10186.85.camel@mtksdaap41>
-References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com> <CABuKBeLYMbD-dV_25FJd_NE1RgfVkgF+SoCiAx9O9jKUUAcexA@mail.gmail.com> <1415083006.10186.85.camel@mtksdaap41>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:RCRbeeasEAzLXprxyNSuUeAHZ+zndRBlZD5eJwPv0Ni
- 67oUBU2tAeDQWVHet8K+VC1+eNhLwjPzfuXPSJtOfGHB4Zigh3
- b540C/2Dg0EsZ1Zou/GCYIc+TgkeTxip+2SyvJdDEQIyuu/Z0V
- iumHoSe2c0nLqQqOc+CWAEQgN/brULGHap22p7nuFZotfM+Bq+
- 8Me3b3GeH2+7wnVZiuC5wxk/Zo8Ry0fqHkEaJVycjO8zFhaK40
- +466BmMNC9hW1Lf+53bwiWWvR95NPHqJaISRCStQVSUZR1DOCI
- tY9YQgWAoZ9mh81W3GnafI1pRIY0+tGEdb81Ma0TeC4uXqtw3D
- WabUUa+Npm/t6gkqxbEI=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 4 Nov 2014 02:50:15 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-08-545885333678
+Message-id: <1415087409.2389.2.camel@AMDC1943>
+Subject: Re: [PATCH 7/7] mfd: ab8500: Decrement the power supply's device
+ reference counter
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
+        Pavel Machek <pavel@ucw.cz>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Tue, 04 Nov 2014 08:50:09 +0100
+In-reply-to: <20141103180059.GW12011@x1>
+References: <1413290117-13082-1-git-send-email-k.kozlowski@samsung.com>
+ <1413290117-13082-8-git-send-email-k.kozlowski@samsung.com>
+ <20141103175945.GV12011@x1> <20141103180059.GW12011@x1>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA02RW0iTYRzGefft+/Y5GryuZS9CietgCs6GQa8i0lV8JIHVLtSSWrqc4KZs
+	zlKi1JJKMZ1m5Iwx8nxK/ZY1D1gND0tNpKVGni7MNI9MHWrFyLUb7378+T3Pc/GnCWE715dO
+	VqcrNGp5ipjic4dcA/bg0LwY2emOQRJ/bA/EbS9aSFyVq8QlP9YJrK8vJfDztsO4pnIe4M+5
+	Kzw86+wD+NnfWg5m58ZJbO98SeHNwl6AHdWtJG7unebhLx9MHDw92EfhubpVHh4qIPFQVzo2
+	s2UE3mmdI8/5MMVFG4DpMEzzGBOrY8x1QUxl9y8OwzY8oZip8W6KWRsZ4THGT5cYc9V9xjH/
+	ncus94xRzNM3DYCpa9zmMZvsUcb2cIuMhnH8iERFSnKGQhMSeYOvdOQvctK2+XcmJnq52cBE
+	5wMvGsEzaHhqjedhHzQ600K5WQirAVqdlHl4E6An2RFuFkAJ+lpu5Lj5IIxHbL0NuJmCochc
+	W7WXpWkRPI5GVs7mAz5NQJZCNWMVpNvhwhNo11FAuNkLnkKsqxO4JSF8D1CPc+f/MAEDUInx
+	FeEuQvAYyik679n1RjulM1yP4ofMTatEMYCGfQnDPs2wTzMBogEcUugS0rQ3k1RSiVau0urU
+	SZKEVBULPK/esoDK/nArgDQQHxAoA2JkQlKeoc1UWQGiCbFI0Ji1dxIkyjOzFJrU6xpdikJr
+	BRzayzcbXF1WWbbWjwzcvRymKabQ5GgUfGCzx4XHhqh9Y17/9E8Lq/BTWNoylt/5c53Bljxl
+	YVmgvYCWbOj1jX/0j63SmYSl6AJovyI1Ny1eG66OflTuyvl9++LYrYXZBVOmWPStSxZrvLBL
+	RL2914xyevptwd42V3+kxlkkik9eOinmapVyaRCh0cr/AVqbJyLIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 November 2014 14:36:45 HC Yen wrote:
-> > > +
-> > > +#include <dt-bindings/interrupt-controller/irq.h>
-> > > +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> > > +#include "skeleton64.dtsi"
+On pon, 2014-11-03 at 18:00 +0000, Lee Jones wrote:
+> On Mon, 03 Nov 2014, Lee Jones wrote:
+> 
+> > On Tue, 14 Oct 2014, Krzysztof Kozlowski wrote:
 > > 
-> > Cortex a7 is 32 bits, right? So why do you use skeleton64.dtsi?
+> > > Use power_supply_put() to decrement the power supply's device reference
+> > > counter.
+> > > 
+> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > ---
+> > >  drivers/mfd/ab8500-sysctrl.c | 2 ++
+> > >  1 file changed, 2 insertions(+)
+> > 
+> > Applied, thanks.
 > 
-> Cortex-A7 is 32-bit, but that doesn't mean it can only have 32-bit
-> physical address.  With LPAE enabled, we can have physical address more
-> than 32 bits.
+> Whoops, to hasty there -- unapplied.
 > 
-> The main difference between "skeleton64.dtsi" and "skeleton.dtsi" is
-> "#address-cells" property set to 2.  Although there are few sources
-> using "skeleton64.dtsi", some of them write "#address-cells = <2>"
-> directly in order to have 64-bit address space.  ARM's TC2 reference
-> platform (vexpress-v2p-ca15_a7.dts) is an example.
-> 
-> Some of MediaTek ARMv7 SoCs support address space larger than 4GB. It
-> will be convenient to share the sources if we all use 64-bit device
-> tree.
+> What's going on with this set?
 
-Right, in general, I'd use #address-cells=<2> for Cortex-A7/A15/A17.
+The set should be pulled at once (everything depends on 1st patch).
 
-	Arnd
+It is still waiting for reviews. I'll resend soon.
+
+Best regards,
+Krzysztof
+
+> 
+> > > diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
+> > > index 93b2d2c32ca3..d05a5719cfc4 100644
+> > > --- a/drivers/mfd/ab8500-sysctrl.c
+> > > +++ b/drivers/mfd/ab8500-sysctrl.c
+> > > @@ -51,6 +51,7 @@ static void ab8500_power_off(void)
+> > >  
+> > >  		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,
+> > >  				&val);
+> > > +		power_supply_put(psy);
+> > >  
+> > >  		if (!ret && val.intval) {
+> > >  			charger_present = true;
+> > > @@ -73,6 +74,7 @@ static void ab8500_power_off(void)
+> > >  			       pss[i]);
+> > >  			machine_restart("charging");
+> > >  		}
+> > > +		power_supply_put(psy);
+> > >  	}
+> > >  
+> > >  shutdown:
+> > 
+> 
+
