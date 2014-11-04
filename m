@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710AbaKDNRZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:17:25 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37046 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203AbaKDNRY (ORCPT
+	id S1753791AbaKDNSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:18:14 -0500
+Received: from mailout.micron.com ([137.201.242.129]:15351 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847AbaKDNSK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:17:24 -0500
-Date: Tue, 4 Nov 2014 14:17:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vikas Shivappa <vikas.shivappa@intel.com>
-Cc: Tejun Heo <tj@kernel.org>, "Auld, Will" <will.auld@intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>, h.peter.anvin@intel.com
-Subject: Re: Cache Allocation Technology Design
-Message-ID: <20141104131714.GR3219@twins.programming.kicks-ass.net>
-References: <20141029081640.GT3337@twins.programming.kicks-ass.net>
- <20141029124834.GQ12020@console-pimps.org>
- <20141029134526.GC3337@twins.programming.kicks-ass.net>
- <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
- <20141029172845.GP12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
- <20141029182234.GA13393@mtj.dyndns.org>
- <20141030070725.GG3337@twins.programming.kicks-ass.net>
- <20141030124333.GA29540@htj.dyndns.org>
- <alpine.DEB.2.10.1410301610000.27874@vshiva-Udesk>
+	Tue, 4 Nov 2014 08:18:10 -0500
+From: bpqw <bpqw@micron.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+CC: Jason Cooper <jason@lakedaemon.net>, Mark Brown <broonie@kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>, Thierry Reding <treding@nvidia.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Silvio F <silvio.fricke@gmail.com>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1 V2] devicetree: bindings: Add vendor prefix for Micron
+ Technology Co., Ltd.
+Thread-Topic: [PATCH 1/1 V2] devicetree: bindings: Add vendor prefix for
+ Micron Technology Co., Ltd.
+Thread-Index: AQHP+DGn+re/Jt9ANUKG3dqCQiRQFQ==
+Date: Tue, 4 Nov 2014 13:17:16 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E9B34@NTXXIAMBX02.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21074.005
+X-TM-AS-Result: No--4.836200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1410301610000.27874@vshiva-Udesk>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 04:18:33PM -0700, Vikas Shivappa wrote:
-> One way to it is to merge the CAT cgroups into the cpuset . In essense there
-> is no CAT cgroup seperately and we just have a new file 'cbm' in the cpuset.
-> This would be visible only when system has Cache allocation support and the
-> user can manipulate the cache bit mask here.
-> The  user can use the already existing cpu_exclusive file in the cpuset to
-> mark the cgroups to use exclusive CPUs.
-> That way we simplify and reuse cpuset code/hierarchy .. ?
+This patch is used to add vendor prefix for Micron Technology Inc in the 
+vendor-prefixes.txt file.
 
-I don't like extending cpusets further. Its already a weird and too big
-controller.
+Micron Technology,Inc.is an American multinational corporation based in Boise,
+Idaho,best known for producing many forms of semiconductor devices.This includes
+DRAM,SDRAM,flash memory,eMMC and SSDs.
 
-What is wrong with having a specific CQM controller and using it
-together with cpusets where desired?
+Signed-off-by: bean huo <beanhuo@micron.com>
+Signed-off-by: bpqw <bpqw@micron.com>
+---
+V2:
+  - Add signed-off-by
+  - Modify commit logs that wrapped to less than 80 columns
+
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 723999d..a7bbf6e 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -92,6 +92,7 @@ maxim	Maxim Integrated Products
+ mediatek	MediaTek Inc.
+ micrel	Micrel Inc.
+ microchip	Microchip Technology Inc.
++micron	Micron Technology Inc.
+ mitsubishi	Mitsubishi Electric Corporation
+ mosaixtech	Mosaix Technologies, Inc.
+ moxa	Moxa
+--
+1.7.9.5
