@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446AbaKDOq1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:46:27 -0500
-Received: from smtprelay0095.hostedemail.com ([216.40.44.95]:34780 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754426AbaKDOqY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:46:24 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3874:4321:5007:6261:7576:7809:8660:10004:10400:10848:10967:11026:11232:11658:11914:12517:12519:12740:13069:13148:13230:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cover91_377650357d114
-X-Filterd-Recvd-Size: 2317
-Message-ID: <1415112379.24560.6.camel@perches.com>
-Subject: Re: [RFA][PATCH 2/8] netfilter: Remove return values for
- print_conntrack callbacks
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
-Date: Tue, 04 Nov 2014 06:46:19 -0800
-In-Reply-To: <20141104093150.7410f6d0@gandalf.local.home>
-References: <20141029215602.535533597@goodmis.org>
-	 <20141029220107.465008329@goodmis.org>
-	 <20141104080535.5f651713@gandalf.local.home>
-	 <20141104142236.GA10239@salvia>
-	 <20141104093150.7410f6d0@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754475AbaKDOrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:47:00 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60942 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753792AbaKDOq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 09:46:58 -0500
+Date: Tue, 4 Nov 2014 08:47:26 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Huang Rui <ray.huang@amd.com>
+CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Tony Li <tony.li@amd.com>, Vincent Wan <vincent.wan@amd.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: remove warning of disable scramble check
+Message-ID: <20141104144726.GD24983@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415093391-4569-1-git-send-email-ray.huang@amd.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WChQLJJJfbwij+9x"
+Content-Disposition: inline
+In-Reply-To: <1415093391-4569-1-git-send-email-ray.huang@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-04 at 09:31 -0500, Steven Rostedt wrote:
-> On Tue, 4 Nov 2014 15:22:36 +0100
-> Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> > On Tue, Nov 04, 2014 at 08:05:35AM -0500, Steven Rostedt wrote:
-> > > On Wed, 29 Oct 2014 17:56:04 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > > > [ REQUEST FOR ACKS ]
-> > > Can any of the netfilter folks give me an Acked-by for this?
-> > If Florian's concern were addressed, then:
-> Yeah, the change he mentioned was done is 3/8. As that was written by
-> Joe Perches, I did some work that he missed and put it before his
-> patch, which showed a discrepancy between the two functions. After all
-> patches are applied, it should be consistent to his liking.
+--WChQLJJJfbwij+9x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think seq_has_overflowed does not need
-to be used after every seq_<put/print> call.
+On Tue, Nov 04, 2014 at 05:29:51PM +0800, Huang Rui wrote:
+> Some SoC's FPGA platform will need this quirk, but it will complain if
+> running at true SoC platform. This is a normal case, so remove this
+> warning.
 
-It interrupts reading code flow and just
-isn't alll that necessary as every operation
-before it will be redone anyway.
+nope, why do you need disable_scramble on actual SoC ? Without an
+erratum number I will not accept this, sorry.
 
-It should be used before or after a large
-blocks though.
+--=20
+balbi
 
+--WChQLJJJfbwij+9x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUWOb+AAoJEIaOsuA1yqREkEwP/RVs45HII5Rnr5lZ8VBGE0Tq
+dOLFcrw7cGUF1Id0kIrbKYlBbMn1p40Qgf1rM03SB1PO96fc3i1JsqJQJs+cow8K
+Q0YJwF/ThkRjLwiJYnm52De6sywDtQMrGJcXJv59nkRTRx66j9EMRP8sglkX4F/S
+vQToIj+IIeKDXjUWVY6/qtX8kncRRmVDg0UlkG8PRmvfWkbAWi+tNIUtiQzChRzG
+0vSqX/KmSsnbQvFVS4GvyQ1LxZNePxebo4PLqLyXT5Rs3FdNTwp56pnG9/ZEhs+s
+tmoX5Vvo/BMqx5TbnjKLZQn69ke9pAwiMW1nS9xMb0k863O9YSsX5caL8dz03/Bt
+280AWOaRH2CQ7Wkk0iW05KcMQAqjRSGPs3IOPBK8GdAt4MI+hAHOvL0mhDGLerZl
+Y/TgkRl+mXNgT+UHh+M8MKaXZDYLWszMthVphU18P0Iqu8y8bx4BEMnVxnmjUGwn
+wSJaj0xO3b0r4GkkVJwAghfqIuLC2g1Xb51prQf4+F3sC05uUz+TuHhMgXBaQlvc
+78Smcf1KqWmv4AXX0hwFXKImJKUZ6LdBDMH5FeWf8BZLbMio6shNZEzebq7UzGHn
+ZM7y7/6SD2KpPV2rYKkXLn+ApiK+nVUQOmeMnvXJrbIsKkiXmZ5BIoU/tGOSn+TS
+joF2wUsSawRbvictAWv1
+=zKeR
+-----END PGP SIGNATURE-----
+
+--WChQLJJJfbwij+9x--
