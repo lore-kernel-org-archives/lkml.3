@@ -1,102 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaKDSOr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 13:14:47 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:37614 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaKDSOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 13:14:44 -0500
-Date: Tue, 4 Nov 2014 11:14:33 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v5 7/7] tpm: create TPM 2.0 devices using own device class
-Message-ID: <20141104181433.GA28387@obsidianresearch.com>
-References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1414832495-23609-8-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141102213305.GB28519@obsidianresearch.com>
- <20141103054101.GA4795@intel.com>
- <20141103213826.GG8303@obsidianresearch.com>
- <1415101654.4115.22.camel@linux.intel.com>
+	id S1751962AbaKDSP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 13:15:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60408 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaKDSPx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 13:15:53 -0500
+Date: Tue, 4 Nov 2014 10:15:33 -0800
+From: tip-bot for Jan Beulich <tipbot@zytor.com>
+Message-ID: <tip-3b67bdc6599e25b082f12dbde6b0ce91dd235549@git.kernel.org>
+Cc: jiang.liu@linux.intel.com, jbeulich@suse.com, hpa@zytor.com,
+        JBeulich@suse.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        mingo@kernel.org
+Reply-To: mingo@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        jiang.liu@linux.intel.com, hpa@zytor.com, jbeulich@suse.com,
+        JBeulich@suse.com
+In-Reply-To: <545747BE020000780004436E@mail.emea.novell.com>
+References: <545747BE020000780004436E@mail.emea.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86: irq: Fix placement of mp_should_keep_irq()
+Git-Commit-ID: 3b67bdc6599e25b082f12dbde6b0ce91dd235549
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1415101654.4115.22.camel@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 01:47:34PM +0200, Jarkko Sakkinen wrote:
+Commit-ID:  3b67bdc6599e25b082f12dbde6b0ce91dd235549
+Gitweb:     http://git.kernel.org/tip/3b67bdc6599e25b082f12dbde6b0ce91dd235549
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Mon, 3 Nov 2014 08:15:42 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 4 Nov 2014 19:12:41 +0100
 
-> > > I used the class 'tpm' only for TPM 2.x because I didn't want to
-> > > break the binary compatibility for TPM 1.x anyway. In ideal situtation
-> > > both would be character devices inside the class 'tpm' and there would
-> > > be sysfs attribute such as 'family' to mark the protocol to be used.
-> > 
-> > You can create the class without moving away from miscdev...
-> > 
-> > Not having the device creates way to much difference that has to be
-> > supported, way too messy.
-> 
-> I have to admit that I'm not quite following here but I assume that
-> you restated this below in more verbose way and this is basically the
-> same argument :)
+x86: irq: Fix placement of mp_should_keep_irq()
 
-I mean, if we have a patch that does:
+While f3761db164 ("x86, irq: Fix build error caused by
+9eabc99a635a77cbf09") addressed the original build problem,
+declaration, inline stub, and definition still seem misplaced: It isn't
+really IO-APIC related, and it's being used solely in arch/x86/pci/.
+This also means stubbing it out when !CONFIG_X86_IO_APIC was at least
+questionable.
 
-struct tpm_chip {
-   struct device cdev;  // the class device
-   struct device *pdev; // the 'platform' device chip is bound too
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+Link: http://lkml.kernel.org/r/545747BE020000780004436E@mail.emea.novell.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/io_apic.h |  3 ---
+ arch/x86/include/asm/pci_x86.h |  2 ++
+ arch/x86/kernel/apic/io_apic.c | 12 ------------
+ arch/x86/pci/irq.c             | 12 ++++++++++++
+ 4 files changed, 14 insertions(+), 15 deletions(-)
 
-   struct device *dev = pdev; // Temporary Compatability
-[+ device_register/etc/etc]
-
-Then both cdev and pdev should always be valid. We should not have cdev
-be valid for TPM2 and invalid for TPM1, that is just a big mess.
-
-Just this change is perfectly safe, it creates the /sys/class/tpm/tpm0
-directory, but doesn't change anything already existing
-
-Then, a patch: go through and replace all uses of chip->dev with &chip->cdev in
-90% of cases
-
-Another patch: use chip->pdev for the handfull of the rest, and drop
-dev entirely
-
-Then a patch: Drop misc_register entirely, no compat stuff. Explain
-clearly the resulting sysfs changes, CC the various people who monitor
-the sysfs API, act on any feedback. I'm hoping it is an OK change.
-[ If it is not OK then we can talk about using it only for TPM2 or
-  whatever ]
-
-> I think the current variable name "dev" is miss-leading. The
-> use of "pdev" would document better the appropriate use for that
-> field (i.e. for the most cases DON'T use it).
-
-Yes, see above :)
-
-> I think that would be a mess. The way things are done in this v5
-> patch set is actually quite coherent and it does not break backwards
-> compatibility because the "proper" device hierarchy is only used for
-> TPM 2.0 devices.
-
-I mean, just do something like this:
-
-if (chip->id == 0)
-   chip->cdev.devt = MKDEV(MISC_MAJOR, TPM_MINOR)
-else
-   chip->cdev.devt = [.. dynamic alloc_chrddev_region ..]
-
-Very simple, keeps the major/minor for TPM0, moves the 'dev' file to
-the new location in sysfs.
-
-I can't find another example of this in the kernel, so I don't know
-what the thinking is..
-
-Jason
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index ca742d5..0db2b70 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -229,8 +229,6 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+ 
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+ 
+-extern bool mp_should_keep_irq(struct device *dev);
+-
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
+ #define io_apic_assign_pci_irqs 0
+@@ -241,7 +239,6 @@ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
+ static inline int mp_map_gsi_to_irq(u32 gsi, unsigned int flags) { return gsi; }
+ static inline void mp_unmap_irq(int irq) { }
+-static inline bool mp_should_keep_irq(struct device *dev) { return 1; }
+ 
+ static inline int save_ioapic_entries(void)
+ {
+diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
+index fa1195d..164e3f8 100644
+--- a/arch/x86/include/asm/pci_x86.h
++++ b/arch/x86/include/asm/pci_x86.h
+@@ -93,6 +93,8 @@ extern raw_spinlock_t pci_config_lock;
+ extern int (*pcibios_enable_irq)(struct pci_dev *dev);
+ extern void (*pcibios_disable_irq)(struct pci_dev *dev);
+ 
++extern bool mp_should_keep_irq(struct device *dev);
++
+ struct pci_raw_ops {
+ 	int (*read)(unsigned int domain, unsigned int bus, unsigned int devfn,
+ 						int reg, int len, u32 *val);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ff2709e..1b7de4c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -4116,18 +4116,6 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
+ 	return ret;
+ }
+ 
+-bool mp_should_keep_irq(struct device *dev)
+-{
+-	if (dev->power.is_prepared)
+-		return true;
+-#ifdef	CONFIG_PM_RUNTIME
+-	if (dev->power.runtime_status == RPM_SUSPENDING)
+-		return true;
+-#endif
+-
+-	return false;
+-}
+-
+ /* Enable IOAPIC early just for system timer */
+ void __init pre_init_apic_IRQ0(void)
+ {
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index a47e2de..9988458 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1258,6 +1258,18 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 	return 0;
+ }
+ 
++bool mp_should_keep_irq(struct device *dev)
++{
++	if (dev->power.is_prepared)
++		return true;
++#ifdef CONFIG_PM_RUNTIME
++	if (dev->power.runtime_status == RPM_SUSPENDING)
++		return true;
++#endif
++
++	return false;
++}
++
+ static void pirq_disable_irq(struct pci_dev *dev)
+ {
+ 	if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
