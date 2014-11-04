@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaKDLYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:24:55 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:56782 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaKDLYx (ORCPT
+	id S1751983AbaKDL3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:29:43 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:24861 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaKDL3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:24:53 -0500
-Message-ID: <5458B77F.9060007@gmail.com>
-Date: Tue, 04 Nov 2014 19:24:47 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "pang.xunlei" <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH v2 5/6] sched/dl: Optimize select_task_rq_dl() for non-DL
- curr task
-References: <1415099585-31174-1-git-send-email-pang.xunlei@linaro.org> <1415099585-31174-5-git-send-email-pang.xunlei@linaro.org>
-In-Reply-To: <1415099585-31174-5-git-send-email-pang.xunlei@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 4 Nov 2014 06:29:42 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+X-AuditID: cbfec7f4-b7f6c6d00000120b-4b-5458b8a3ef9b
+Content-transfer-encoding: 8BIT
+Message-id: <5458B8A3.4050100@samsung.com>
+Date: Tue, 04 Nov 2014 12:29:39 +0100
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+To: Neil Zhang <zhangwm@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] usb: gadget: don't create new string_container if already
+ exist
+References: <1414496039-5655-1-git-send-email-zhangwm@marvell.com>
+ <544F95C3.2080306@samsung.com>
+ <9034CBD80F070943B59700D7F8149ED9024ED2A5B7@SC-VEXCH4.marvell.com>
+In-reply-to: <9034CBD80F070943B59700D7F8149ED9024ED2A5B7@SC-VEXCH4.marvell.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xy7qLd0SEGCx4ZWlx8H69RfPi9WwW
+	l3fNYbNYtKyV2WL1xSXsDqwe++euYfeYvPAis8fxG9uZPD5vkgtgieKySUnNySxLLdK3S+DK
+	uNW8mrlgInfF68OtrA2Mkzi7GDk5JARMJN4e2McKYYtJXLi3nq2LkYtDSGApo8ScxavZQBK8
+	AoISPybfY+li5OBgFpCXOHIpGyTMLGAm8ahlHTNE/WdGiQ8dr5lAangFtCRutRuA1LAIqErM
+	nHydGcRmEzCW2HuwgxHEFhUIk9i+ZgJYXERgAaPEhmfeEDPjJDaf/8YCYgsD1TRsnQA1fwWj
+	xK2pzWCHcgr4S8yd2ss4gVFgFpLzZiGcNwvJeQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn
+	525ihITwlx2Mi49ZHWIU4GBU4uHNUI8IEWJNLCuuzD3EKMHBrCTCu7oKKMSbklhZlVqUH19U
+	mpNafIiRiYNTqoGxvUcw1NNkqp11An/Q/BUvVU4mHvuTdV2vd6fCjWX1nJz2czukbl3fxmvX
+	s0lNkG1NQufvr+/mFnWpbF+kFPV7sUpu0YKZfcd2nkj9U1rkttXxRpdZWHFKRdnFa06N5yfd
+	+Pk/X1fdcuG9RbOWquprX81kZ6l62SSbsP9VVtFXj82Goo361c5KLMUZiYZazEXFiQBJ+PUJ
+	PwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 14/11/4 下午7:13, pang.xunlei wrote:
-> When selecting the cpu for a waking DL task, if curr is a non-DL
-> task which is bound only on this cpu, then we can give it a chance
-> to select a different cpu for this DL task to avoid curr starving.
+W dniu 04.11.2014 o 12:05, Neil Zhang pisze:
 >
-> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
-> ---
->   kernel/sched/deadline.c |   14 ++++++++++----
->   1 file changed, 10 insertions(+), 4 deletions(-)
+>> -----Original Message-----
+>> From: Andrzej Pietrasiewicz [mailto:andrzej.p@samsung.com]
+>> Sent: 2014年10月28日 21:10
+>> To: Neil Zhang; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+>> Cc: balbi@ti.com; gregkh@linuxfoundation.org
+>> Subject: Re: [PATCH] usb: gadget: don't create new string_container if already
+>> exist
+>>
+
+<snip>
+
+>>
+>> The problem you are describing does not exist in mainline kernel, where
+>> functions are always unbound as part of the whole gadget's unbind - regardless
+>> of whether it is a legacy gadget or configfs-composed gadget. When the whole
+>> gadget is unbound, composite_dev_cleanup() is called which zeroes cdev-
+>>> next_string_id and frees all gadget strings containers.
+>>
 >
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 7b0b2d2..1f64d4a 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -954,6 +954,9 @@ select_task_rq_dl(struct task_struct *p, int cpu, int sd_flag, int flags)
->   	struct task_struct *curr;
->   	struct rq *rq;
->   
-> +	if (p->nr_cpus_allowed == 1)
-> +		goto out;
-> +
->   	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
->   		goto out;
+> Yes, you are right that the current mainline won't suffer this issue.
+> But it will be needed if we want to implement similar features like android do.
 
-I don't think you use right branch of tip tree.
+What features do you think of?
+Mainlining the android gadget has been attempted a number of times
+and is unlikely to succeed.
 
-Regards,
-Wanpeng Li
+A configurable gadget can be composed with configfs interface,
+so no need to add anything new.
 
->   
-> @@ -970,11 +973,14 @@ select_task_rq_dl(struct task_struct *p, int cpu, int sd_flag, int flags)
->   	 * can!) we prefer to send it somewhere else. On the
->   	 * other hand, if it has a shorter deadline, we
->   	 * try to make it stay here, it might be important.
-> +	 *
-> +	 * If the current task on @p's runqueue is a non-DL task,
-> +	 * and this task is bound on current runqueue, then try to
-> +	 * see if we can wake this DL task up on a different runqueue,
->   	 */
-> -	if (unlikely(dl_task(curr)) &&
-> -	    (curr->nr_cpus_allowed < 2 ||
-> -	     !dl_entity_preempt(&p->dl, &curr->dl)) &&
-> -	    (p->nr_cpus_allowed > 1)) {
-> +	if (unlikely(curr->nr_cpus_allowed < 2) ||
-> +		unlikely(dl_task(curr) &&
-> +				!dl_entity_preempt(&p->dl, &curr->dl))) {
->   		int target = find_later_rq(p);
->   
->   		if (target != -1)
+That said, I think that the proper way of eliminating the problem
+described is freeing the resources on function unbind rather than
+preventing composite from allocating more (duplicate) resources
+on bind, which your patch does.
 
+AP
