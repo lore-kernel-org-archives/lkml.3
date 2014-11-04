@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaKDKMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:12:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42017 "EHLO mx2.suse.de"
+	id S1752870AbaKDKNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:13:15 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:52631 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168AbaKDKMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:12:07 -0500
-Date: Tue, 4 Nov 2014 11:12:05 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] HID: logitech-hidpp: 2 fixes in
- hidpp_root_get_protocol_version()
-In-Reply-To: <1415048999-4490-2-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1411041111580.19451@pobox.suse.cz>
-References: <1415048999-4490-1-git-send-email-benjamin.tissoires@redhat.com> <1415048999-4490-2-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1750985AbaKDKNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 05:13:11 -0500
+Message-ID: <1415095985.2064.12.camel@sipsolutions.net>
+Subject: Re: [PATCH v1 09/11] backports: use Kconfig for backport version
+ information
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yann.morin.1998@free.fr, mmarek@suse.cz, sassmann@kpanic.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Tue, 04 Nov 2014 11:13:05 +0100
+In-Reply-To: <1415090582-14129-10-git-send-email-mcgrof@do-not-panic.com> (sfid-20141104_094402_127361_9E36D521)
+References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1415090582-14129-10-git-send-email-mcgrof@do-not-panic.com>
+	 (sfid-20141104_094402_127361_9E36D521)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Nov 2014, Benjamin Tissoires wrote:
-
-> - remove the constant '1'
-> - when the device is not connected, the protocol error
->   HIDPP_ERROR_RESOURCE_ERROR is raised. We should not warn the user about
->   it because it is somewhat expected as an answer when we check if the
->   device is connected.
+On Tue, 2014-11-04 at 00:43 -0800, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
-> 
-> Changes in v2:
->  none
+> Instead of relying on Makefile hacks just use Kconfig for
+> defining the variables needed. We can do this since these
+> variables are all known at packaging time. The exception
+> is BACKPORTS_GIT_TRACKED, but for that we can define a
+> kconfig variable which only if set will we rely on the
+> environment for picking it up and later exporting it through
+> Kconfig. Since Kconfig doesn't keep config variables defined
+> with option env we use a secondary config entry for that.
 
-Applied, thanks.
+I'd prefer you didn't do this. When we track the backports in a git tree
+this will mean constant changes to these files, where currently the
+changes are constrained to just the "versions" file.
 
--- 
-Jiri Kosina
-SUSE Labs
+johannes
+
