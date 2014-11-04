@@ -1,63 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaKDICc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:02:32 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:52264 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbaKDIC2 (ORCPT
+	id S1751897AbaKDIDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:03:51 -0500
+Received: from smtprelay0193.hostedemail.com ([216.40.44.193]:56226 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750819AbaKDIDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:02:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Pawel Moll <pawel.moll@arm.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Pawel Moll <mail@pawelmoll.com>
-Subject: Re: [PATCH v3 0/3] perf: User/kernel time correlation and event generation
-Date: Tue, 04 Nov 2014 09:01:31 +0100
-Message-ID: <3430954.VNaFmamXmP@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CALAqxLXfy5P0kg-W7hL+Jf1iYv758+-2cTdZwsY8kAns1nvEmg@mail.gmail.com>
-References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com> <CALCETrXGoevmD_avz5sQfbbD624vpLW5=-8ovzTPT_5wzNFnVA@mail.gmail.com> <CALAqxLXfy5P0kg-W7hL+Jf1iYv758+-2cTdZwsY8kAns1nvEmg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:txJ0H+hZ2+1L2O/S3sfp83JNRCljdw2DyatBpuXBKci
- WUmOg2knPQ55ooGLOdgmHGDgklzuCjjdl1iEluySMqChKhJkkh
- 9UDeFHJ53iD8+B2ea4bDiDLBU6GtapAIMQnbMJg2rBiNKhK5Zs
- xJE6sIF3WE/yeNgxG+MFu5h2GtvpMqMoa75JZaifw1aNIi5rqP
- w+l2HEfue8JtEfINwoZCYhiQnLyJ/7zBzQsp2etgIBziLCo9Av
- w4GAOW9BWKyk2gDzshBzT9e1iDCJq6vHQ4SlbcSIaiD5/cyWv5
- rIg2wmN+SHp+7XyLbbN+PmWjbV+xpNeCmfLvp0/c7uUAN/POFV
- wuamchppjquCBC6Q2S4E=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 4 Nov 2014 03:03:49 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1544:1593:1594:1605:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3865:3870:4250:4321:4605:5007:6119:6261:7903:8603:10004:10848:11026:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13548:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bone33_2128f5ca85f57
+X-Filterd-Recvd-Size: 5177
+Message-ID: <1415088226.24560.1.camel@perches.com>
+Subject: [PATCH] drm: Reduce code size of drm_err and DRM_DEBUG[_<FOO>] uses
+From: Joe Perches <joe@perches.com>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 04 Nov 2014 00:03:46 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 November 2014 17:11:53 John Stultz wrote:
-> I've got some thoughts on what a possible interface that wouldn't be
-> awful could look like, but I'm still hesitant because I don't really
-> know if exposing this sort of data is actually a good idea long term.
+Using %pf, __builtin_return_address(0) instead ofy 
+"%s", __func__ reduces code size by eliminating
+a function argument.
+
+(allyesconfig)
+$ size drivers/gpu/drm/built-in.o*
+   text	   data	    bss	    dec	    hex	filename
+4656061	1321947	1669536	7647544	 74b138	drivers/gpu/drm/built-in.o.new
+4737680	1321947	1669472	7729099	 75efcb	drivers/gpu/drm/built-in.o.old
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/gpu/drm/drm_drv.c | 10 ++++++----
+ include/drm/drmP.h        | 45 ++++++++++++++++++++++-----------------------
+ 2 files changed, 28 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+index bc3da32..22f76a2 100644
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -56,7 +56,7 @@ static struct idr drm_minors_idr;
+ struct class *drm_class;
+ static struct dentry *drm_debugfs_root;
  
-I was also thinking (while working on an unrelated patch) we could use
-a system call like
+-void drm_err(const char *func, const char *format, ...)
++void drm_err(const char *format, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+@@ -66,13 +66,14 @@ void drm_err(const char *func, const char *format, ...)
+ 	vaf.fmt = format;
+ 	vaf.va = &args;
+ 
+-	printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* %pV", func, &vaf);
++	printk(KERN_ERR "[" DRM_NAME ":%pf] *ERROR* %pV",
++	       __builtin_return_address(0), &vaf);
+ 
+ 	va_end(args);
+ }
+ EXPORT_SYMBOL(drm_err);
+ 
+-void drm_ut_debug_printk(const char *function_name, const char *format, ...)
++void drm_ut_debug_printk(const char *format, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+@@ -81,7 +82,8 @@ void drm_ut_debug_printk(const char *function_name, const char *format, ...)
+ 	vaf.fmt = format;
+ 	vaf.va = &args;
+ 
+-	printk(KERN_DEBUG "[" DRM_NAME ":%s] %pV", function_name, &vaf);
++	printk(KERN_DEBUG "[" DRM_NAME ":%pf] %pV",
++	       __builtin_return_address(0), &vaf);
+ 
+ 	va_end(args);
+ }
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 53ed876..02aaa1a 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -122,11 +122,10 @@ struct dma_buf_attachment;
+ #define DRM_UT_KMS		0x04
+ #define DRM_UT_PRIME		0x08
+ 
+-extern __printf(2, 3)
+-void drm_ut_debug_printk(const char *function_name,
+-			 const char *format, ...);
+-extern __printf(2, 3)
+-void drm_err(const char *func, const char *format, ...);
++__printf(1, 2)
++void drm_ut_debug_printk(const char *format, ...);
++__printf(1, 2)
++void drm_err(const char *format, ...);
+ 
+ /***********************************************************************/
+ /** \name DRM template customization defaults */
+@@ -155,7 +154,7 @@ void drm_err(const char *func, const char *format, ...);
+  * \param arg arguments
+  */
+ #define DRM_ERROR(fmt, ...)				\
+-	drm_err(__func__, fmt, ##__VA_ARGS__)
++	drm_err(fmt, ##__VA_ARGS__)
+ 
+ /**
+  * Rate limited error output.  Like DRM_ERROR() but won't flood the log.
+@@ -170,7 +169,7 @@ void drm_err(const char *func, const char *format, ...);
+ 				      DEFAULT_RATELIMIT_BURST);		\
+ 									\
+ 	if (__ratelimit(&_rs))						\
+-		drm_err(__func__, fmt, ##__VA_ARGS__);			\
++		drm_err(fmt, ##__VA_ARGS__);			\
+ })
+ 
+ #define DRM_INFO(fmt, ...)				\
+@@ -186,26 +185,26 @@ void drm_err(const char *func, const char *format, ...);
+  * \param arg arguments
+  */
+ #define DRM_DEBUG(fmt, args...)						\
+-	do {								\
+-		if (unlikely(drm_debug & DRM_UT_CORE))			\
+-			drm_ut_debug_printk(__func__, fmt, ##args);	\
+-	} while (0)
++do {									\
++	if (unlikely(drm_debug & DRM_UT_CORE))				\
++		drm_ut_debug_printk(fmt, ##args);			\
++} while (0)
+ 
+ #define DRM_DEBUG_DRIVER(fmt, args...)					\
+-	do {								\
+-		if (unlikely(drm_debug & DRM_UT_DRIVER))		\
+-			drm_ut_debug_printk(__func__, fmt, ##args);	\
+-	} while (0)
++do {									\
++	if (unlikely(drm_debug & DRM_UT_DRIVER))			\
++		drm_ut_debug_printk(fmt, ##args);			\
++} while (0)
+ #define DRM_DEBUG_KMS(fmt, args...)					\
+-	do {								\
+-		if (unlikely(drm_debug & DRM_UT_KMS))			\
+-			drm_ut_debug_printk(__func__, fmt, ##args);	\
+-	} while (0)
++do {									\
++	if (unlikely(drm_debug & DRM_UT_KMS))				\
++		drm_ut_debug_printk(fmt, ##args);			\
++} while (0)
+ #define DRM_DEBUG_PRIME(fmt, args...)					\
+-	do {								\
+-		if (unlikely(drm_debug & DRM_UT_PRIME))			\
+-			drm_ut_debug_printk(__func__, fmt, ##args);	\
+-	} while (0)
++do {									\
++	if (unlikely(drm_debug & DRM_UT_PRIME))				\
++		drm_ut_debug_printk(fmt, ##args);			\
++} while (0)
+ 
+ /*@}*/
+ 
 
-int clock_getoffset(clockid_t clkid, struct timespec *offs);
 
-that returns the current offset between CLOCK_REALTIME and the
-requested timebase. It is of course racy, but so is every use
-of CLOCK_REALTIME. We could also use a reference other than
-CLOCK_REALTIME that might be more stable, but passing two arbitrary
-clocks as input would make this much more complex to implement.
-
-	Arnd
