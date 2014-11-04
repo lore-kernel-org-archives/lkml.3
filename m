@@ -1,76 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702AbaKDKhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:37:50 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:38722 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaKDKhp (ORCPT
+	id S1752092AbaKDKl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:41:26 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:42486 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208AbaKDKlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:37:45 -0500
-Message-ID: <5458AC75.3030207@plexistor.com>
-Date: Tue, 04 Nov 2014 12:37:41 +0200
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Jens Axboe <axboe@kernel.dk>, Nick Piggin <npiggin@kernel.dk>,
-        "Kani, Toshimitsu" <toshi.kani@hp.com>,
-        "Knippers, Linda" <linda.knippers@hp.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvdimm@lists.01.org" <linux-nvdimm@ml01.01.org>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: Re: [PATCH 1/4] pmem: Initial version of persistent memory driver
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com> <1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com> <94D0CD8314A33A4D9D801C0FE68B4029593548AB@G9W0745.americas.hpqcorp.net> <100D68C7BA14664A8938383216E40DE04082985D@FMSMSX114.amr.corp.intel.com>
-In-Reply-To: <100D68C7BA14664A8938383216E40DE04082985D@FMSMSX114.amr.corp.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Nov 2014 05:41:22 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-96-5458ad4e55c3
+Message-id: <1415097677.7941.8.camel@AMDC1943>
+Subject: Re: [PATCH v4 10/14] regulator: of: Add support for parsing initial
+ and suspend modes
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Mark Brown <broonie@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Date: Tue, 04 Nov 2014 11:41:17 +0100
+In-reply-to: <1415025649-8119-11-git-send-email-javier.martinez@collabora.co.uk>
+References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1415025649-8119-11-git-send-email-javier.martinez@collabora.co.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xy7p+ayNCDE7MN7GY+vAJm8X1L89Z
+	LeYfOcdqcfR3gcWav0oWvQuusllc3jWHzWLG+X1MFqeuf2azmP9gB7MDl8ff59dZPHbOusvu
+	sWlVJ5vHlRNNrB5/Z+1n8ejbsorR4/MmuQD2KC6blNSczLLUIn27BK6MnbeusxesE61YOOcM
+	awPjOsEuRk4OCQETiV37L7JC2GISF+6tZ+ti5OIQEljKKLF8x0Io5zOjxJUlP9lAqngF9CS2
+	bZrHBGILCyRItN+7xwhiswkYS2xevgSsRkTATuLG6ofMIM3MAseYJGauWscCkmARUJU4MvkD
+	M4jNKRAgcfLwA0aIDVMYJVbc2A12B7OAusSkeYuAijiAblKWaOx3g1gsKPFj8j0WiBJ5ic1r
+	3jJPYBSYhaRjFpKyWUjKFjAyr2IUTS1NLihOSs810itOzC0uzUvXS87P3cQIiYuvOxiXHrM6
+	xCjAwajEw7siPiJEiDWxrLgy9xCjBAezkgjv6iqgEG9KYmVValF+fFFpTmrxIUYmDk6pBsYL
+	xipVP5axz5137+Szt02yhg/sqo7yfK84FPJwoekO3RnnzBY0G8922XOt2Pdo1eH1Iq6hwvP3
+	urGmvmyNXfrkZrag4vSkf+kGH9dYuy++VZ7K80DCe+tWBllDE61rt1zm+nP1H+ba/afoXWli
+	OxNTGDOXveWKXJP1Bm1/Zzldznn4Yf6Nty+VWIozEg21mIuKEwHJPUtYaQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2014 06:19 PM, Wilcox, Matthew R wrote:
-<>
->>> +config BLK_DEV_PMEM_COUNT
->>> +	int "Default number of PMEM disks"
->>> +	default "4"
->>
->> For real use I think a default of 1 would be better.
+On pon, 2014-11-03 at 15:40 +0100, Javier Martinez Canillas wrote:
+> Some regulators support their operating mode to be changed on startup
+> or by consumers when the system is running while others only support
+> their operating mode to be changed while the system has entered in a
+> suspend state.
 > 
-> For real use, you need at least two to run xfstests.  This whole configuration mechanism is going away soon anyway.
+> The regulator Device Tree binding documents a set of properties to
+> configure the regulators operating modes from a FDT. This patch builds
+> on (40e20d6 regulator: of: Add support for parsing regulator_state for
+> suspend state) and adds support to parse those properties and fill the
+> regulator constraints so the regulator core can call the right suspend
+> handlers when the system enters into sleep.
 > 
->>> +	size_t page_offset = sector >> PAGE_SECTORS_SHIFT;
->>> +	size_t offset = page_offset << PAGE_SHIFT;
->>> +
->>
->> Since page_offset is only used to calculate offset, they
->> could be joined to avoid relying on the compiler to
->> optimize it away:
->> 	size_t offset = sector >> PAGE_SECTORS_SHIFT << PAGE_SHIFT;
+> The modes are defined in the Device Tree using the hardware specific
+> modes supported by the regulators. Regulator drivers have to define a
+> translation function that is used to map the hardware specific modes
+> to the standard ones.
 > 
-> If you insist on doing the compiler's job for it, why not:
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
 > 
-> 	size_t offset = sector >> (PAGE_SECTORS_SHIFT - PAGE_SHIFT);
+> Changes in v4:
+>  - Parse the properties in the core and map using driver provided functions.
+>    Suggested by Mark Brown
 > 
-> I actually think the original is clearer.
+> Changes in v3:
+>  - Use the standard suspend states binding instead of custom properties.
+>    Suggested by Mark Brown
 > 
+>  drivers/regulator/of_regulator.c | 22 ++++++++++++++++++++--
+>  1 file changed, 20 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+> index cbc1d71..cd65885 100644
+> --- a/drivers/regulator/of_regulator.c
+> +++ b/drivers/regulator/of_regulator.c
+> @@ -25,7 +25,8 @@ static const char *const regulator_states[PM_SUSPEND_MAX + 1] = {
+>  };
+>  
+>  static void of_get_regulation_constraints(struct device_node *np,
+> -					struct regulator_init_data **init_data)
+> +					struct regulator_init_data **init_data,
+> +					const struct regulator_desc *desc)
+>  {
+>  	const __be32 *min_uV, *max_uV;
+>  	struct regulation_constraints *constraints = &(*init_data)->constraints;
+> @@ -81,6 +82,14 @@ static void of_get_regulation_constraints(struct device_node *np,
+>  	if (!ret)
+>  		constraints->enable_time = pval;
+>  
+> +	if (!of_property_read_u32(np, "regulator-initial-mode", &pval)) {
+> +		if (desc && desc->map_modes)
+> +			constraints->initial_mode = desc->map_modes(pval);
+> +		else
+> +			pr_warn("%s: failed to parse regulator-initial-mode\n",
+> +				np->name);
+> +	}
+> +
 
-I wish you guys would actually review the correct code.
+Here's a hidden assumption that if driver does not provide map_modes
+then any "regulator-initial-mode" property is not valid. Shouldn't this
+be mentioned somewhere? Maybe in description of map_modes callback?
 
-In the actual good driver that has any shape of proper code all these issue
-are gone.
+Best regards,
+Krzysztof
 
-* config defaults gone, multiple-devices multiple-memory ranges fully supported
-  hot plug style.
-* above shifts cruft completely gone it is left overs from brd.c and
-  its page usage.
-* getgeo fixed to do what we realy want by the only application on earth
-  that still uses it, fdisk. All other partitioners do not call it at all.
-
-Why are we reviewing dead code ?
-
-Cheers
-Boaz
 
