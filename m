@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaKDQWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:22:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56471 "EHLO mx1.redhat.com"
+	id S1754849AbaKDQWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:22:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754631AbaKDQUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754622AbaKDQUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Nov 2014 11:20:50 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
         uobergfe@redhat.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 6/9] watchdog: implement error handling for failure to set up hardware perf events
-Date: Tue,  4 Nov 2014 11:20:21 -0500
-Message-Id: <1415118024-194247-7-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 8/9] watchdog: clean up some function names and arguments
+Date: Tue,  4 Nov 2014 11:20:23 -0500
+Message-Id: <1415118024-194247-9-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1415118024-194247-1-git-send-email-dzickus@redhat.com>
 References: <1415118024-194247-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,53 +21,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ulrich Obergfell <uobergfe@redhat.com>
 
-If watchdog_nmi_enable() fails to set up the hardware perf event
-of one CPU, the entire hard lockup detector is deemed unreliable.
-Hence, disable the hard lockup detector and shut down the hardware
-perf events on all CPUs.
+Rename the update_timers*() functions to update_watchdog*().
+
+Remove the boolean argument from watchdog_enable_all_cpus()
+because update_watchdog_all_cpus() is now a generic function
+to change the run state of the lockup detectors and to have
+the lockup detectors use a new sample period.
 
 Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- kernel/watchdog.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+ kernel/watchdog.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 2897a5e..86ba5e5 100644
+index 7043274..e804ea4 100644
 --- a/kernel/watchdog.c
 +++ b/kernel/watchdog.c
-@@ -502,6 +502,15 @@ static void watchdog(unsigned int cpu)
- 	__this_cpu_write(soft_lockup_hrtimer_cnt,
- 			 __this_cpu_read(hrtimer_interrupts));
- 	__touch_watchdog();
-+
-+	/*
-+	 * watchdog_nmi_enable() clears the NMI_WATCHDOG_ENABLED bit in the
-+	 * failure path. Check for failures that can occur asynchronously -
-+	 * for example, when CPUs are on-lined - and shut down the hardware
-+	 * perf event on each CPU accordingly.
-+	 */
-+	if (!(watchdog_enabled & NMI_WATCHDOG_ENABLED))
-+		watchdog_nmi_disable(cpu);
+@@ -641,7 +641,7 @@ static void restart_watchdog_hrtimer(void *info)
+ 				HRTIMER_MODE_REL_PINNED);
  }
  
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
-@@ -552,6 +561,15 @@ handle_err:
- 		goto out_save;
+-static void update_timers(int cpu)
++static void update_watchdog(int cpu)
+ {
+ 	/*
+ 	 * Make sure that perf event counter will adopt to a new
+@@ -656,17 +656,17 @@ static void update_timers(int cpu)
+ 	watchdog_nmi_enable(cpu);
+ }
+ 
+-static void update_timers_all_cpus(void)
++static void update_watchdog_all_cpus(void)
+ {
+ 	int cpu;
+ 
+ 	get_online_cpus();
+ 	for_each_online_cpu(cpu)
+-		update_timers(cpu);
++		update_watchdog(cpu);
+ 	put_online_cpus();
+ }
+ 
+-static int watchdog_enable_all_cpus(bool sample_period_changed)
++static int watchdog_enable_all_cpus(void)
+ {
+ 	int err = 0;
+ 
+@@ -676,8 +676,12 @@ static int watchdog_enable_all_cpus(bool sample_period_changed)
+ 			pr_err("Failed to create watchdog threads, disabled\n");
+ 		else
+ 			watchdog_running = 1;
+-	} else if (sample_period_changed) {
+-		update_timers_all_cpus();
++	} else {
++		/*
++		 * Enable/disable the lockup detectors or
++		 * change the sample period 'on the fly'.
++		 */
++		update_watchdog_all_cpus();
  	}
  
-+	/*
-+	 * Disable the hard lockup detector if _any_ CPU fails to set up
-+	 * set up the hardware perf event. The watchdog() function checks
-+	 * the NMI_WATCHDOG_ENABLED bit periodically.
-+	 */
-+	smp_mb__before_atomic();
-+	clear_bit(NMI_WATCHDOG_ENABLED_BIT, &watchdog_enabled);
-+	smp_mb__after_atomic();
-+
- 	/* skip displaying the same error again */
- 	if (cpu > 0 && (PTR_ERR(event) == cpu0_err))
- 		return PTR_ERR(event);
+ 	return err;
+@@ -709,7 +713,7 @@ static int proc_watchdog_update(void)
+ 	 * or disabled 'on the fly'.
+ 	 */
+ 	if (watchdog_enabled && watchdog_thresh)
+-		err = watchdog_enable_all_cpus(true);
++		err = watchdog_enable_all_cpus();
+ 	else
+ 		watchdog_disable_all_cpus();
+ 
+@@ -849,5 +853,5 @@ void __init lockup_detector_init(void)
+ 	set_sample_period();
+ 
+ 	if (watchdog_enabled)
+-		watchdog_enable_all_cpus(false);
++		watchdog_enable_all_cpus();
+ }
 -- 
 1.7.1
 
