@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaKDRYf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:24:35 -0500
-Received: from mailout.easymail.ca ([64.68.201.169]:50547 "EHLO
+	id S1753728AbaKDR0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:26:08 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:50546 "EHLO
 	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaKDRST (ORCPT
+	with ESMTP id S1752069AbaKDRSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:18:19 -0500
-X-Quarantine-ID: <oxtbSc74QuhK>
+	Tue, 4 Nov 2014 12:18:18 -0500
+X-Quarantine-ID: <4mjMYUwe7hkD>
 X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
 X-Spam-Flag: NO
 X-Spam-Score: -4.399
@@ -19,9 +19,9 @@ To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH 15/20] selftests/net: add install target to enable installing test
-Date: Tue,  4 Nov 2014 10:11:11 -0700
-Message-Id: <5c5e744edcdce1977e35c1e8f0d31956b373bc77.1415117102.git.shuahkh@osg.samsung.com>
+Subject: [PATCH 05/20] selftests/breakpoints: add install target to enable installing test
+Date: Tue,  4 Nov 2014 10:11:01 -0700
+Message-Id: <47902f6867b033618b2821dbf6ab2d89f77a15a8.1415117102.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
 References: <cover.1415117102.git.shuahkh@osg.samsung.com>
@@ -37,35 +37,39 @@ kselftest script to run the test.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/net/Makefile | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ tools/testing/selftests/breakpoints/Makefile | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/tools/testing/selftests/net/Makefile b/tools/testing/selftests/net/Makefile
-index 62f22cc..988e722 100644
---- a/tools/testing/selftests/net/Makefile
-+++ b/tools/testing/selftests/net/Makefile
-@@ -6,11 +6,21 @@ CFLAGS = -Wall -O2 -g
- CFLAGS += -I../../../../usr/include/
+diff --git a/tools/testing/selftests/breakpoints/Makefile b/tools/testing/selftests/breakpoints/Makefile
+index e18b42b..4b4e385 100644
+--- a/tools/testing/selftests/breakpoints/Makefile
++++ b/tools/testing/selftests/breakpoints/Makefile
+@@ -8,6 +8,7 @@ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+ endif
  
- NET_PROGS = socket psock_fanout psock_tpacket
-+INSTALL_PROGS = run_netsocktests run_afpackettests test_bpf.sh $(NET_PROGS)
++TEST_STR = "./breakpoint_test || echo \"breakpoints selftests: [FAIL]\""
  
- all: $(NET_PROGS)
- %: %.c
- 	$(CC) $(CFLAGS) -o $@ $^
+ all:
+ ifeq ($(ARCH),x86)
+@@ -16,6 +17,17 @@ else
+ 	echo "Not an x86 target, can't build breakpoints selftests"
+ endif
  
 +install: all
-+	install $(INSTALL_PROGS) $(INSTALL_KSFT_PATH)
-+	echo "\necho \"Start net test ....\"" >> $(KSELFTEST)
-+	echo "/bin/sh ./run_netsocktests || echo \"sockettests: [FAIL]\"" >> $(KSELFTEST)
-+	echo "/bin/sh ./run_afpackettests || echo \"afpackettests: [FAIL]\"" >> $(KSELFTEST)
-+	echo "./test_bpf.sh" >> $(KSELFTEST)
-+	echo "echo \"End net test ....\"" >> $(KSELFTEST)
++ifeq ($(ARCH),x86)
++	install ./breakpoint_test $(INSTALL_KSFT_PATH)
++	echo "\necho \"Start breakpoints test ....\"" >> $(KSELFTEST)
++	echo $(TEST_STR) >> $(KSELFTEST)
++	echo "echo \"End breakpoints test ....\"" >> $(KSELFTEST)
 +	echo "echo \"==============================\"" >> $(KSELFTEST)
++else
++	echo "Not an x86 target, can't install breakpoints selftests"
++endif
 +
- run_tests: all
- 	@/bin/sh ./run_netsocktests || echo "sockettests: [FAIL]"
- 	@/bin/sh ./run_afpackettests || echo "afpackettests: [FAIL]"
+ run_tests:
+ 	@./breakpoint_test || echo "breakpoints selftests: [FAIL]"
+ 
 -- 
 1.9.1
 
