@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaKDSFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 13:05:51 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23742 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752026AbaKDSFs (ORCPT
+	id S1752120AbaKDSIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 13:08:42 -0500
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:60273 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbaKDSIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 13:05:48 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+QDMzQ54y0j9qe8QEV4vcx
-Date: Tue, 4 Nov 2014 10:04:41 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
- enabled
-Message-ID: <20141104180441.GU31454@atomide.com>
-References: <20141102180756.GH31454@atomide.com>
- <5458D29E.50908@compulab.co.il>
- <20141104154231.GP31454@atomide.com>
- <54591265.3030207@compulab.co.il>
+	Tue, 4 Nov 2014 13:08:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54591265.3030207@compulab.co.il>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415092270-24932-1-git-send-email-kever.yang@rock-chips.com>
+References: <1415092270-24932-1-git-send-email-kever.yang@rock-chips.com>
+Date: Tue, 4 Nov 2014 10:08:38 -0800
+X-Google-Sender-Auth: heZmVp-zVAMRjVJ4N5yMDyIX5oM
+Message-ID: <CAD=FV=WAby=EdvpvqARG0c+1_jZOCWM_NAo2eEOR3+JvLC8d=Q@mail.gmail.com>
+Subject: Re: [PATCH v5] clk: rockchip: disable unused clocks
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Igor Grinberg <grinberg@compulab.co.il> [141104 09:54]:
-> On 11/04/14 17:42, Tony Lindgren wrote:
-> > * Igor Grinberg <grinberg@compulab.co.il> [141104 05:22]:
-> >> Hi Tony,
-> >>
-> >> On 11/02/14 20:07, Tony Lindgren wrote:
-> >>> Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
-> >>> configuration") enabled configuring the PM features for twl4030.
-> >>>
-> >>> This caused poweroff command to fail on devices that have the
-> >>> BCI charger on twl4030 wired, or have power wired for VBUS.
-> >>> Instead of powering off, the device reboots. This is because
-> >>> voltage is detected on charger or VBUS with the default bits
-> >>> enabled for the power transition registers.
-> >>>
-> >>> To fix the issue, let's just clear VBUS and CHG bits as we want
-> >>> poweroff command to keep the system powered off.
-> >>
-> >> What about devices that really need to start once VBUS or CHG is connected?
-> > 
-> > More handling can be added for some cases. With this patch the
-> > poweron bits will clear to defaults if power is completely removed.
-> > So start-up with VBUS and CHG works in that case.
-> > 
-> > However, if you have a battery connected, and you poweroff, with
-> > this patch the device won't power up with VBUS or CHG connected.
-> > 
-> > Note that most battery operated devices are not using the charger
-> > on twl4030 because it has issues charging a completely empty
-> > battery AFAIK. So most battery powered devices have been using an
-> > external USB charger chip that's not affected by this patch.
-> > 
-> > We could consider exporting a function for the charger driver to
-> > configure the poweron mask. And we could also consider passing a
-> > mask in ti,use_poweroff = 0xff.
-> 
-> Ok. That sounds better to me.
-> Yet, if you say there are no such devices in practice,
-> IMHO, we can merge this.
-> 
-> >> It seems to me that forcing these bits on power off can break that kind of
-> >> devices and these settings should really be board specific.
-> >> What do you think?
-> > 
-> > There's a patch series for "[RFC,01/16] kernel: Add support for
-> > poweroff handler call chain" that should help with that. For sure
-> > the poweroff handling needs to be board specific as some systems
-> > may need to use a GPIO to shut off a regulator powering something
-> > before powering off the SoC.
-> 
-> Yes, I've seen this series.
-> I'm not sure though that I understand how is this supposed
-> to be used with DT...
-> Through the regulator bindings?
-> Which will tell it to hook up on the call chain?
+Kever,
 
-Yes that should be doable with regulator bindings for board specifc
-configuration. For the SoC specific functions those can be registered
-by the platform code.
+On Tue, Nov 4, 2014 at 1:11 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> The rockchip clock driver use CLK_IGNORE_UNUSED flag to make sure
+> all the clocks are available like default power on state.
+> We have implement the clock manage in most of rockchip drivers,
+> it is time to remove it for power save.
+> Instead we add CLK_IGNORE_UNUSED for some clock nodes which should
+> be on during boot or no module driver in kernel will initialize it.
+>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> Tested-by: Doug Anderson <dianders@chromium.org>
+> ---
+>
+> Changes in v5:
+> - take CLK_IGNORE_UNUSED tag out of EMMC and UART2
+> - take CLK_IGNORE_UNUSED tag out of pclk_publ*, pclk_ddrupctl*
+> - add Doug's Reviewed-by and Tested-by
 
-Regards,
+You also took CLK_IGNORE_UNUSED out of dclk_vop0.  I don't have a
+problem with that since my test cases still work and I'm all for
+removing as many of these as we can.
 
-Tony
+
+> Changes in v4:
+> - add CLK_IGNORE_UNUSED tag for all the niu/arbi/matrix clock
+>
+> Changes in v3:
+> - get CLK_DIVIDER_READ_ONLY tag back fro armcores
+> - add CLK_IGNORE_UNUSED tag for cs_dbg, pclk_dgb_pre and pclk_rkpwm
+>
+> Changes in v2:
+> - get some clock ID back
+> - add CLK_IGNORE_UNUSED tag for aclk_strc and aclk_core in clk-rk3188.c
+> - add CLK_IGNORE_UNUSED tag for rk3288 dwc2
+>
+>  drivers/clk/rockchip/clk-rk3188.c |  40 ++++++------
+>  drivers/clk/rockchip/clk-rk3288.c | 132 +++++++++++++++++++-------------------
+>  drivers/clk/rockchip/clk.c        |   9 ---
+>  3 files changed, 86 insertions(+), 95 deletions(-)
+
+For whatever reason this patch didn't apply super cleanly.  Maybe you
+have other local patches to these files that you didn't send up?  It's
+nice to post a patch directly atop some upstream tree.  I get:
+
+fatal: sha1 information is lacking or useless
+(drivers/clk/rockchip/clk-rk3288.c).
+Repository lacks necessary blobs to fall back on 3-way merge.
+Cannot fall back to three-way merge.
+
+...but "patch -p1 < x" had no trouble applying for me...
