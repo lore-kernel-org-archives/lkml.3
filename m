@@ -1,80 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaKDJky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:40:54 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:44941 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaKDJkt (ORCPT
+	id S1752659AbaKDJlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:41:22 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:55768 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570AbaKDJlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:40:49 -0500
+	Tue, 4 Nov 2014 04:41:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <d0973f4d-e8a4-4c5c-8bd1-1b1cb1f080b5@email.android.com>
-References: <1415015305-15494-1-git-send-email-drysdale@google.com>
- <1415015305-15494-2-git-send-email-drysdale@google.com> <20141103152036.GA7996@ZenIV.linux.org.uk>
- <CALCETrWmivJCvAAZPQo9Jf5gDiSbpWKesjZWfqEQRXPOBSPY9g@mail.gmail.com> <d0973f4d-e8a4-4c5c-8bd1-1b1cb1f080b5@email.android.com>
-From: David Drysdale <drysdale@google.com>
-Date: Tue, 4 Nov 2014 09:40:28 +0000
-Message-ID: <CAHse=S-d3beytm2AKyBjZORdJPffmjfa2Ua1VCU8VjoRE9RiYQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] fs: add O_BENEATH flag to openat(2)
-To: "Eric W.Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Al Viro <viro@zeniv.linux.org.uk>,
+In-Reply-To: <1415086357-4619-1-git-send-email-vincent.wan@amd.com>
+References: <1415086357-4619-1-git-send-email-vincent.wan@amd.com>
+Date: Tue, 4 Nov 2014 10:41:15 +0100
+Message-ID: <CAPDyKFqWiJS3ckfY1Ap0VwAbss0qdJoeA+2BCw=DZStdq=h7bA@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc: Add a quirk for AMD SDHC transfer mode register
+ need to be cleared for cmd without data
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Vincent Wan <vincent.wan@amd.com>
+Cc: linux-mmc <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Will Drewry <wad@chromium.org>,
-        Jorge Lucangeli Obes <jorgelo@google.com>,
-        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
-        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
+        Arindam Nath <arindam.nath@amd.com>, Huang Rui <ray.huang@amd.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 5:22 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
-> On November 3, 2014 7:42:58 AM PST, Andy Lutomirski <luto@amacapital.net> wrote:
->>On Mon, Nov 3, 2014 at 7:20 AM, Al Viro <viro@zeniv.linux.org.uk>
->>wrote:
->>> On Mon, Nov 03, 2014 at 11:48:23AM +0000, David Drysdale wrote:
->>>> Add a new O_BENEATH flag for openat(2) which restricts the
->>>> provided path, rejecting (with -EACCES) paths that are not beneath
->>>> the provided dfd.  In particular, reject:
->>>>  - paths that contain .. components
->>>>  - paths that begin with /
->>>>  - symlinks that have paths as above.
->>>
->>> Yecch...  The degree of usefulness aside (and I'm not convinced that
->>it
->>> is non-zero),
->>
->>This is extremely useful in conjunction with seccomp.
->>
->>> WTF pass one bit out of nameidata->flags in a separate argument?
->>> Through the mutual recursion, no less...  And then you are not even
->>attempting
->>> to detect symlinks that are not followed by interpretation of _any_
->>pathname.
->>
->>How many symlinks like that are there?  Is there anything except
->>nd_jump_link users?  All of those are in /proc.  Arguably O_BENEATH
->>should prevent traversal of all of those links.
+On 4 November 2014 08:32, Vincent Wan <vincent.wan@amd.com> wrote:
+> SDHC controller in AMD chipsets require SDHC transfer mode
+> register to be cleared for commands without data. The issue was
+> uncovered during testing eMMC cards on KB/ML based platforms.
 >
-> Not commenting on the sanity of this one way or another, and I haven't read the patch.  There is an absolutely trivial implementation of this.
->
-> After the path is resolved, walk backwards along d_parent and the mount tree, and see if you come to the file or directory dfd refers to.
->
-> That can handle magic proc symlinks, and does not need to disallow .. or / explicitly so it should be much simpler code.
->
-> My gut says that if Al says blech when looking at your code it is too complex to give you a security guarantee.
->
-> Eric
+> Signed-off-by: Vincent Wan <vincent.wan@amd.com>
+> Signed-off-by: Arindam Nath <arindam.nath@amd.com>
+> Cc: Huang Rui <ray.huang@amd.com>
+> Tested-by: Vikram B <vikram.b@amd.com>
+> Tested-by: Raghavendra Swamy <raghavendra.swamy@amd.com>
 
-Well, the 'yecch' was deserved for the unnecessary duplication of the
-flags.  Without that, the patch looks much simpler -- I'll send out a v2
-with those changes for discussion, and think about your alternative
-implementation suggestion (thanks!) separately.
+The patch needs to be rebased towwards my latest next branch, it had a
+minor conflict. I can normally handle such myself, but I decided since
+the rebase was needed anyway, let's me give you a few comments.
+
+> ---
+>  drivers/mmc/host/sdhci-pci.c | 27 +++++++++++++++++++++++++++
+>  drivers/mmc/host/sdhci.c     | 11 ++++++++---
+>  include/linux/mmc/sdhci.h    |  2 ++
+>  3 files changed, 37 insertions(+), 3 deletions(-)
+
+This patch should be split into two parts.
+
+1) The sdhci core specific part. "mmc: sdhci:...."
+2) The sdhci-pci part. "mmc: sdhci-pci: ...."
+
+Kind regards
+Uffe
+
+>
+> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> index 6119297..8f5c998 100644
+> --- a/drivers/mmc/host/sdhci-pci.c
+> +++ b/drivers/mmc/host/sdhci-pci.c
+> @@ -645,6 +645,23 @@ static const struct sdhci_pci_fixes sdhci_rtsx = {
+>         .probe_slot     = rtsx_probe_slot,
+>  };
+>
+> +static int amd_probe(struct sdhci_pci_chip *chip)
+> +{
+> +       struct pci_dev  *smbus_dev;
+> +
+> +       smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+> +                       PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, NULL);
+> +
+> +       if (smbus_dev && (smbus_dev->revision < 0x51))
+> +               chip->quirks2 |= SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD;
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct sdhci_pci_fixes sdhci_amd = {
+> +       .probe          = amd_probe,
+> +};
+> +
+>  static const struct pci_device_id pci_ids[] = {
+>         {
+>                 .vendor         = PCI_VENDOR_ID_RICOH,
+> @@ -1045,6 +1062,16 @@ static const struct pci_device_id pci_ids[] = {
+>                 .driver_data    = (kernel_ulong_t)&sdhci_o2,
+>         },
+>
+> +       {
+> +               .vendor         = PCI_VENDOR_ID_AMD,
+> +               .device         = PCI_ANY_ID,
+> +               .class          = PCI_CLASS_SYSTEM_SDHCI << 8,
+> +               .class_mask     = 0xFFFF00,
+> +               .subvendor      = PCI_ANY_ID,
+> +               .subdevice      = PCI_ANY_ID,
+> +               .driver_data    = (kernel_ulong_t)&sdhci_amd,
+> +       },
+> +
+>         {       /* Generic SD host controller */
+>                 PCI_DEVICE_CLASS((PCI_CLASS_SYSTEM_SDHCI << 8), 0xFFFF00)
+>         },
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index ada1a3e..8085f26 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -889,10 +889,15 @@ static void sdhci_set_transfer_mode(struct sdhci_host *host,
+>         struct mmc_data *data = cmd->data;
+>
+>         if (data == NULL) {
+> -               /* clear Auto CMD settings for no data CMDs */
+> -               mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
+> -               sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
+> +               if (host->quirks2 &
+> +                       SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD) {
+> +                       sdhci_writew(host, 0x0, SDHCI_TRANSFER_MODE);
+> +               } else {
+> +                       /* clear Auto CMD settings for no data CMDs */
+> +                       mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
+> +                       sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
+>                                 SDHCI_TRNS_AUTO_CMD23), SDHCI_TRANSFER_MODE);
+> +               }
+>                 return;
+>         }
+>
+> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+> index dba793e..0a287aa 100644
+> --- a/include/linux/mmc/sdhci.h
+> +++ b/include/linux/mmc/sdhci.h
+> @@ -100,6 +100,8 @@ struct sdhci_host {
+>  #define SDHCI_QUIRK2_BROKEN_DDR50                      (1<<7)
+>  /* Stop command (CMD12) can set Transfer Complete when not using MMC_RSP_BUSY */
+>  #define SDHCI_QUIRK2_STOP_WITH_TC                      (1<<8)
+> +/* need clear transfer mode register before send cmd */
+> +#define SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD (1<<9)
+>
+>         int irq;                /* Device IRQ */
+>         void __iomem *ioaddr;   /* Mapped address */
+> --
+> 1.8.1.2
+>
