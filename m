@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaKDPvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:51:01 -0500
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:51567
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470AbaKDPu5 (ORCPT
+	id S1754581AbaKDPvU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:51:20 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:52937 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203AbaKDPvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:50:57 -0500
-Date: Tue, 4 Nov 2014 16:50:52 +0100
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Tejun Heo <tj@kernel.org>, Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
+	Tue, 4 Nov 2014 10:51:17 -0500
+Message-ID: <1415116269.24819.14.camel@arm.com>
+Subject: Re: [PATCH v3 0/3] perf: User/kernel time correlation and event
+ generation
+From: Pawel Moll <pawel.moll@arm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, cgroups@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init
- cgroupns
-Message-ID: <20141104155052.GA7027@mail.hallyn.com>
-References: <1414783141-6947-1-git-send-email-adityakali@google.com>
- <1414783141-6947-8-git-send-email-adityakali@google.com>
- <87y4rvrakn.fsf@x220.int.ebiederm.org>
- <CAGr1F2Hd_PS_AscBGMXdZC9qkHGRUp-MeQvJksDOQkRBB3RGoA@mail.gmail.com>
- <20141104134633.GA14014@htj.dyndns.org>
- <CALCETrUggQCJyxsTWRNrjt3GM=R0VMU6RjMkU1aw3YUNMx1xEw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUggQCJyxsTWRNrjt3GM=R0VMU6RjMkU1aw3YUNMx1xEw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Date: Tue, 04 Nov 2014 15:51:09 +0000
+In-Reply-To: <54589B58.7080102@hitachi.com>
+References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
+	 <54589B58.7080102@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On Tue, Nov 4, 2014 at 5:46 AM, Tejun Heo <tj@kernel.org> wrote:
-> > Hello, Aditya.
-> >
-> > On Mon, Nov 03, 2014 at 02:43:47PM -0800, Aditya Kali wrote:
-> >> I agree that this is effectively bind-mounting, but doing this in kernel
-> >> makes it really convenient for the userspace. The process that sets up the
-> >> container doesn't need to care whether it should bind-mount cgroupfs inside
-> >> the container or not. The tasks inside the container can mount cgroupfs on
-> >> as-needed basis. The root container manager can simply unshare cgroupns and
-> >> forget about the internal setup. I think this is useful just for the reason
-> >> that it makes life much simpler for userspace.
-> >
-> > If it's okay to require userland to just do bind mounting, I'd be far
-> > happier with that.  cgroup mount code is already overcomplicated
-> > because of the dynamic matching of supers to mounts when it could just
-> > have told userland to use bind mounting.  Doesn't the host side have
-> > to set up some of the filesystem layouts anyway?  Does it really
-> > matter that we require the host to set up cgroup hierarchy too?
-> >
+On Tue, 2014-11-04 at 09:24 +0000, Masami Hiramatsu wrote:
+> What I'd like to do is the binary version of ftrace-marker, the text
+> version is already supported by qemu (see below).
+> https://lists.gnu.org/archive/html/qemu-devel/2013-04/msg00505.html
 > 
-> Sort of, but only sort of.
+> But since that is just a string data (not structured data), it is hard to
+> analyze via perf-script or some other useful filters/triggers in ftrace.
 > 
-> You can create a container by unsharing namespaces, mounting
-> everything, and then calling pivot_root.  But this is unpleasant
-> because of the strange way that pid namespaces work -- you generally
-> have to fork first, so this gets tedious.  And it doesn't integrate
-> well with things like fstab or other container-side configuration
-> mechanisms.
+> In my idea, the new event will be defined via a special file in debugfs like
+> kprobe-events, like below.
 > 
-> It's nicer if you can unshare namespaces, mount the bare minimum,
-> pivot_root, and let the contained software do as much setup as
-> possible.
+>   # cd $debugfs/tracing
+>   # echo "newgrp/newevent signarg:s32 flag:u64" >> marker_events
+>   # cat events/newgrp/newevent/format
+>   name: newevent
+>   ID: 2048
+>   format:
+>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
+>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+>         field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
+>         field:int common_pid;   offset:4;       size:4; signed:1;
+> 
+>         field:s32 signarg;      offset:8;      size:4; signed:1;
+>         field:u64 flag; offset:12;      size:8; signed:0;
+> 
+>   print fmt: "signarg=%d flag=0x%Lx", REC->signarg, REC->flag
+> 
+> Then, users will write the data (excluded common fields) when the event happens
+> via trace_marker which start with '\0'ID(in u32). Kernel just checks the ID and
+> its data size, but doesn't parse, filter/trigger it and log it into the kernel buffer.
 
-Also, the bind-mount requires the container manager to know where
-the guest distro will want the cgroups mounted.
+Very neat, I like it! Certainly useful with scripting. Any gut feeling
+regarding the kernel version it will be ready for? 3.19 or later than
+that?
 
--serge
+> Of course, this has a downside that the user must have a privilege to access to debugfs.
+> Thus maybe we need both of prctl() IF for perf and this IF for ftrace.
+
+I don't have any particularly strong feelings about the solution as long
+as I'm able to create this "synchronisation point" of mine in the perf
+data. In one of this patch's previous incarnations I was also doing a
+write() to the perf fd to achieve pretty much the same result.
+
+In my personal use case root access to debugfs isn't a problem (I need
+it for other ftrace operations anyway). However Ingo and some other guys
+seemed interested in prctl() approach because: 1. it's much simpler to
+use even comparing with simple trace_marker's open(path)/write()/close()
+and 2. because any process can do it at any time and the results are
+quietly discarded if no one is listening. I also remember that when I
+proposed sort of "unification" between trace_marker and the uevents,
+Ingo straight away "suggested" keeping it separate.
+
+Pawel
+
