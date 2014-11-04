@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101AbaKDObz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:31:55 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:58625 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751510AbaKDObx (ORCPT
+	id S1754145AbaKDOcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:32:09 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40856 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaKDOcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:31:53 -0500
-Date: Tue, 4 Nov 2014 09:31:50 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
-Subject: Re: [RFA][PATCH 2/8] netfilter: Remove return values for
- print_conntrack callbacks
-Message-ID: <20141104093150.7410f6d0@gandalf.local.home>
-In-Reply-To: <20141104142236.GA10239@salvia>
-References: <20141029215602.535533597@goodmis.org>
-	<20141029220107.465008329@goodmis.org>
-	<20141104080535.5f651713@gandalf.local.home>
-	<20141104142236.GA10239@salvia>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 4 Nov 2014 09:32:05 -0500
+Date: Tue, 4 Nov 2014 14:32:00 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141104143200.GC7996@ZenIV.linux.org.uk>
+References: <20141104033818.GA11149@gondor.apana.org.au>
+ <E1XlZWY-0003HZ-Ef@gondolin.me.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1XlZWY-0003HZ-Ef@gondolin.me.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Nov 2014 15:22:36 +0100
-Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-
-> On Tue, Nov 04, 2014 at 08:05:35AM -0500, Steven Rostedt wrote:
-> > On Wed, 29 Oct 2014 17:56:04 -0400
-> > Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > > 
-> > > [ REQUEST FOR ACKS ]
-> > 
-> > Can any of the netfilter folks give me an Acked-by for this?
+On Tue, Nov 04, 2014 at 04:31:34PM +0800, Herbert Xu wrote:
+> This patch adds skb_copy_datagram_iter, which is identical to
+> skb_copy_datagram_iovec except that it operates on iov_iter
+> instead of iovec.
 > 
-> If Florian's concern were addressed, then:
+> Eventually all users of skb_copy_datagram_iovec should switch
+> over to iov_iter and then we can remove skb_copy_datagram_iovec.
 
-Yeah, the change he mentioned was done is 3/8. As that was written by
-Joe Perches, I did some work that he missed and put it before his
-patch, which showed a discrepancy between the two functions. After all
-patches are applied, it should be consistent to his liking.
-
-> 
-> Acked-by: Pablo Neira Ayuso <pablo@netfilter.org>
-> 
-> to this patch and 4/8.
-
-Thanks for this!
-
-Can I get someone to ack 3/8?
-
-Thanks again,
-
--- Steve
+Too noisy, IMO.  How about skb_copy_datagram_msg() first?  The fewer
+places have to even think of iovec or iov_iter, the better...
