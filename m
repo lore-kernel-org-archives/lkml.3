@@ -1,94 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaKDBEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:04:39 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:8926 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaKDBEe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:04:34 -0500
-Message-ID: <1415062233.10958.42.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
-From: Toshi Kani <toshi.kani@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jgross@suse.com" <jgross@suse.com>,
-        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
-        "luto@amacapital.net" <luto@amacapital.net>,
-        "hmh@hmh.eng.br" <hmh@hmh.eng.br>,
-        "yigal@plexistor.com" <yigal@plexistor.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Date: Mon, 03 Nov 2014 17:50:33 -0700
-In-Reply-To: <alpine.DEB.2.11.1411032352161.5308@nanos>
-References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
-	  <1414450545-14028-5-git-send-email-toshi.kani@hp.com>
-	  <94D0CD8314A33A4D9D801C0FE68B4029593578ED@G9W0745.americas.hpqcorp.net>
-	 <1415052905.10958.39.camel@misato.fc.hp.com>
-	 <alpine.DEB.2.11.1411032352161.5308@nanos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751643AbaKDBFG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:05:06 -0500
+Received: from ozlabs.org ([103.22.144.67]:49944 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751017AbaKDBFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 20:05:03 -0500
+Date: Tue, 4 Nov 2014 12:05:01 +1100
+From: Anton Blanchard <anton@samba.org>
+To: jack@suse.cz
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] quota: Add log level to printk
+Message-ID: <20141104120501.0318cc7d@kryten>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 23:53 +0100, Thomas Gleixner wrote:
-> On Mon, 3 Nov 2014, Toshi Kani wrote:
-> > On Mon, 2014-11-03 at 22:10 +0000, Elliott, Robert (Server Storage)
-> > wrote:
-> >  :
-> > > > Subject: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for
-> > > > WT
-> > > > 
-> > > > This patch adds pgprot_writethrough() for setting WT to a given
-> > > > pgprot_t.
-> > > > 
-> > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > > Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > ...
-> > > > diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-> > > > index a214f5a..a0264d3 100644
-> > > > --- a/arch/x86/mm/pat.c
-> > > > +++ b/arch/x86/mm/pat.c
-> > > > @@ -896,6 +896,16 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
-> > > >  }
-> > > >  EXPORT_SYMBOL_GPL(pgprot_writecombine);
-> > > > 
-> > > > +pgprot_t pgprot_writethrough(pgprot_t prot)
-> > > > +{
-> > > > +	if (pat_enabled)
-> > > > +		return __pgprot(pgprot_val(prot) |
-> > > > +				cachemode2protval(_PAGE_CACHE_MODE_WT));
-> > > > +	else
-> > > > +		return pgprot_noncached(prot);
-> > > > +}
-> > > > +EXPORT_SYMBOL_GPL(pgprot_writethrough);
-> > > ...
-> > > 
-> > > Would you be willing to use EXPORT_SYMBOL for the new 
-> > > pgprot_writethrough function to provide more flexibility
-> > > for modules to utilize the new feature?  In x86/mm, 18 of 60
-> > > current exports are GPL and 42 are not GPL.
-> > 
-> > I simply used EXPORT_SYMBOL_GPL() since pgprot_writecombine() used
-> > it. :-)  This interface is intended to be used along with
-> > remap_pfn_range() and ioremap_prot(), which are both exported with
-> > EXPORT_SYMBOL().  So, it seems reasonable to export it with
-> > EXPORT_SYMBOL() as well.  I will make this change.
-> 
-> NAK.
-> 
-> This is new functionality and we really have no reason to give the GPL
-> circumventors access to it.
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
 
-Thanks for the background info about EXPORT_SYMBOL.  I will keep it no
-change.
-
--Toshi
-
+Index: b/fs/quota/dquot.c
+===================================================================
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -2743,7 +2743,7 @@ static int __init dquot_init(void)
+ 	for (i = 0; i < nr_hash; i++)
+ 		INIT_HLIST_HEAD(dquot_hash + i);
+ 
+-	printk("Dquot-cache hash table entries: %ld (order %ld, %ld bytes)\n",
++	pr_info("Dquot-cache hash table entries: %ld (order %ld, %ld bytes)\n",
+ 			nr_hash, order, (PAGE_SIZE << order));
+ 
+ 	register_shrinker(&dqcache_shrinker);
