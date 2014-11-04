@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaKDLKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:10:53 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:40066 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaKDLKt (ORCPT
+	id S1753343AbaKDLLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:11:04 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:59781 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaKDLLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:10:49 -0500
-Message-ID: <5458B433.50706@collabora.co.uk>
-Date: Tue, 04 Nov 2014 12:10:43 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Tue, 4 Nov 2014 06:11:00 -0500
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Mark Brown <broonie@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 11/14] regulator: max77802: Document binding for regulator
- operating modes
-References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk> <1415025649-8119-12-git-send-email-javier.martinez@collabora.co.uk> <1415098229.7941.12.camel@AMDC1943>
-In-Reply-To: <1415098229.7941.12.camel@AMDC1943>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5458AD87.7020709@gmail.com>
+References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org>
+ <1414745252-4895-4-git-send-email-vincent.guittot@linaro.org>
+ <54588E89.1080108@gmail.com> <CAKfTPtDOaE00BZnOYW8ioz22mi6H-4xkVa=25f44fQmh46Vq3w@mail.gmail.com>
+ <5458AD87.7020709@gmail.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 4 Nov 2014 12:10:37 +0100
+Message-ID: <CAKfTPtAgg8b-ERmUXd0imTdp_pEvCX0uSvq7CZvfCs5gw49y+w@mail.gmail.com>
+Subject: Re: [PATCH v8 03/10] sched: move cfs task on a CPU with higher capacity
+To: Wanpeng Li <kernellwp@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+On 4 November 2014 11:42, Wanpeng Li <kernellwp@gmail.com> wrote:
+> Hi Vincent,
+>
+>>>> +
+>>>> +/*
+>>>>     * Group imbalance indicates (and tries to solve) the problem where
+>>>> balancing
+>>>>     * groups is inadequate due to tsk_cpus_allowed() constraints.
+>>>>     *
+>>>> @@ -6562,6 +6574,28 @@ static int need_active_balance(struct lb_env
+>>>> *env)
+>>>>                          return 1;
+>>>>          }
+>>>>    +     /*
+>>>> +        * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
+>>>
+>>>
+>>> Why specify one task instead of not less than one?
+>>
+>> if cfs.h_nr_running == 0 (which should not occurs at that point), we
+>> don't need to do more test to check if it's worth moving the task
+>> because there is no task to move.
+>
+>
+> Sorry for my confusing statement. I mean cfs.h_nr_running >= 1.
 
-On 11/04/2014 11:50 AM, Krzysztof Kozlowski wrote:
->> +
->> +The possible values for "regulator-initial-mode" and "regulator-mode" are:
->> +	1: Normal regulator voltage output mode.
->> +	3: Low Power which reduces the quiescent current down to only 1uA
->> +
->> +The list of valid modes are defined in the dt-bindings/regulator/regulator.h
->> +header and can be included by device tree source files.
-> 
-> The more he looked inside, the more regulator.h wasn't there.
-> 
+ok.
 
-Right, that's a typo from when the documentation was updated since previous
-versions used the standard modes instead of hardware specific modes.
+If we have more than 1 task, we fall back into the default balancing
+policy than should move a not running task or that will use the
+imbalance field in case of the presence of pinned tasks
 
-Should say that are defined in include/dt-bindings/regulator/maxim,max77802.h
-instead, sorry about that.
+Regards,
+Vincent
 
-Best regards,
-Javier
-
+>
+> Regards,
+> Wanpeng Li
+>
+>
+>>
+>> Regards,
+>> Vincent
+>>>
+>>> Regards,
+>>> Wanpeng Li
+>>>
+>>>
+>>>> +        * It's worth migrating the task if the src_cpu's capacity is
+>>>> reduced
+>>>> +        * because of other sched_class or IRQs whereas capacity stays
+>>>> +        * available on dst_cpu.
+>>>> +        */
+>>>> +       if ((env->idle != CPU_NOT_IDLE) &&
+>>>> +                       (env->src_rq->cfs.h_nr_running == 1)) {
+>>>> +               unsigned long src_eff_capacity, dst_eff_capacity;
+>>>> +
+>>>> +               dst_eff_capacity = 100;
+>>>> +               dst_eff_capacity *= capacity_of(env->dst_cpu);
+>>>> +               dst_eff_capacity *= capacity_orig_of(env->src_cpu);
+>>>> +
+>>>> +               src_eff_capacity = sd->imbalance_pct;
+>>>> +               src_eff_capacity *= capacity_of(env->src_cpu);
+>>>> +               src_eff_capacity *= capacity_orig_of(env->dst_cpu);
+>>>> +
+>>>> +               if (src_eff_capacity < dst_eff_capacity)
+>>>> +                       return 1;
+>>>> +       }
+>>>> +
