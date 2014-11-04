@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbaKDN1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:27:25 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:58279 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228AbaKDN1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:27:22 -0500
-Date: Tue, 4 Nov 2014 08:27:01 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
-        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
-Message-ID: <20141104132701.GA18441@phnom.home.cmpxchg.org>
-References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
- <54589017.9060604@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54589017.9060604@jp.fujitsu.com>
+	id S1753624AbaKDN1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:27:33 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:36421 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228AbaKDN11 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 08:27:27 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of: Fix overflow bug in string property parsing
+ functions
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Darren Hart <darren.hart@intel.com>, stable@vger.kernel.org
+In-Reply-To: <4744029.MmARg0u2A0@vostro.rjw.lan>
+References: <1415057904-6187-1-git-send-email-grant.likely@linaro.org>
+	<4744029.MmARg0u2A0@vostro.rjw.lan>
+Date: Tue, 04 Nov 2014 13:27:21 +0000
+Message-Id: <20141104132721.3199FC408F6@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 05:36:39PM +0900, Kamezawa Hiroyuki wrote:
-> (2014/11/02 12:15), Johannes Weiner wrote:
-> > Memory cgroups used to have 5 per-page pointers.  To allow users to
-> > disable that amount of overhead during runtime, those pointers were
-> > allocated in a separate array, with a translation layer between them
-> > and struct page.
-> > 
-> > There is now only one page pointer remaining: the memcg pointer, that
-> > indicates which cgroup the page is associated with when charged.  The
-> > complexity of runtime allocation and the runtime translation overhead
-> > is no longer justified to save that *potential* 0.19% of memory.  With
-> > CONFIG_SLUB, page->mem_cgroup actually sits in the doubleword padding
-> > after the page->private member and doesn't even increase struct page,
-> > and then this patch actually saves space.  Remaining users that care
-> > can still compile their kernels without CONFIG_MEMCG.
-> > 
-> >     text    data     bss     dec     hex     filename
-> > 8828345 1725264  983040 11536649 b00909  vmlinux.old
-> > 8827425 1725264  966656 11519345 afc571  vmlinux.new
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ---
-> >   include/linux/memcontrol.h  |   6 +-
-> >   include/linux/mm_types.h    |   5 +
-> >   include/linux/mmzone.h      |  12 --
-> >   include/linux/page_cgroup.h |  53 --------
-> >   init/main.c                 |   7 -
-> >   mm/memcontrol.c             | 124 +++++------------
-> >   mm/page_alloc.c             |   2 -
-> >   mm/page_cgroup.c            | 319 --------------------------------------------
-> >   8 files changed, 41 insertions(+), 487 deletions(-)
-> > 
+On Tue, 04 Nov 2014 01:43:24 +0100
+, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+ wrote:
+> On Monday, November 03, 2014 11:38:24 PM Grant Likely wrote:
 > 
-> Great! 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> [cut]
+> 
+> > diff --git a/include/linux/of.h b/include/linux/of.h
+> > index 6545e7aec7bb..3b3c6e849ae8 100644
+> > --- a/include/linux/of.h
+> > +++ b/include/linux/of.h
+> > @@ -267,14 +267,12 @@ extern int of_property_read_u64(const struct device_node *np,
+> >  extern int of_property_read_string(struct device_node *np,
+> >  				   const char *propname,
+> >  				   const char **out_string);
+> > -extern int of_property_read_string_index(struct device_node *np,
+> > -					 const char *propname,
+> > -					 int index, const char **output);
+> >  extern int of_property_match_string(struct device_node *np,
+> >  				    const char *propname,
+> >  				    const char *string);
+> > -extern int of_property_count_strings(struct device_node *np,
+> > -				     const char *propname);
+> > +extern int of_property_read_string_helper(struct device_node *np,
+> > +					      const char *propname,
+> > +					      const char **out_strs, size_t sz, int index);
+> >  extern int of_device_is_compatible(const struct device_node *device,
+> >  				   const char *);
+> >  extern int of_device_is_available(const struct device_node *device);
+> > @@ -486,15 +484,9 @@ static inline int of_property_read_string(struct device_node *np,
+> >  	return -ENOSYS;
+> >  }
+> >  
+> > -static inline int of_property_read_string_index(struct device_node *np,
+> > -						const char *propname, int index,
+> > -						const char **out_string)
+> > -{
+> > -	return -ENOSYS;
+> > -}
+> > -
+> > -static inline int of_property_count_strings(struct device_node *np,
+> > -					    const char *propname)
+> > +static inline int of_property_read_string_helper(struct device_node *np,
+> > +						 const char *propname,
+> > +						 char **out_strs, size_t sz, int index)
+> 
+> 	const char **out_strs, size_t sz, int index)
+> 
+> >  {
+> >  	return -ENOSYS;
+> >  }
+> 
+> Other than that, looks good to me.
 
-Thank you!
+Fixed, thanks.
 
-> BTW, init/Kconfig comments shouldn't be updated ?
-> (I'm sorry if it has been updated since your latest fix.)
-
-Good point.  How about this?
-
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: move page->mem_cgroup bad page handling into generic code fix
-
-Remove obsolete memory saving recommendations from the MEMCG Kconfig
-help text.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- init/Kconfig | 12 ------------
- 1 file changed, 12 deletions(-)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 01b7f2a6abf7..d68d8b0780b3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -983,18 +983,6 @@ config MEMCG
- 	  Provides a memory resource controller that manages both anonymous
- 	  memory and page cache. (See Documentation/cgroups/memory.txt)
- 
--	  Note that setting this option increases fixed memory overhead
--	  associated with each page of memory in the system. By this,
--	  8(16)bytes/PAGE_SIZE on 32(64)bit system will be occupied by memory
--	  usage tracking struct at boot. Total amount of this is printed out
--	  at boot.
--
--	  Only enable when you're ok with these trade offs and really
--	  sure you need the memory resource controller. Even when you enable
--	  this, you can set "cgroup_disable=memory" at your boot option to
--	  disable memory resource controller and you can avoid overheads.
--	  (and lose benefits of memory resource controller)
--
- config MEMCG_SWAP
- 	bool "Memory Resource Controller Swap Extension"
- 	depends on MEMCG && SWAP
--- 
-2.1.3
+g.
 
