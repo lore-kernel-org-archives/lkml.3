@@ -1,295 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaKDKC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:02:28 -0500
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:59367 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090AbaKDKCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:02:21 -0500
-From: David Drysdale <drysdale@google.com>
-To: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Will Drewry <wad@chromium.org>,
-        Jorge Lucangeli Obes <jorgelo@google.com>,
-        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
-        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        David Drysdale <drysdale@google.com>
-Subject: [PATCHv2 2/3] selftests: Add test of O_BENEATH & openat(2)
-Date: Tue,  4 Nov 2014 09:54:43 +0000
-Message-Id: <1415094884-18349-3-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1415094884-18349-1-git-send-email-drysdale@google.com>
-References: <1415094884-18349-1-git-send-email-drysdale@google.com>
+	id S1753491AbaKDKCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:02:52 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:52577 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751999AbaKDKCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 05:02:46 -0500
+Message-ID: <1415095355.2064.9.camel@sipsolutions.net>
+Subject: Re: [PATCH v1 02/11] backports: extend module_init() module_exit()
+ for built-in
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yann.morin.1998@free.fr, mmarek@suse.cz, sassmann@kpanic.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Tue, 04 Nov 2014 11:02:35 +0100
+In-Reply-To: <1415090582-14129-3-git-send-email-mcgrof@do-not-panic.com> (sfid-20141104_094850_244065_E63B2A7F)
+References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1415090582-14129-3-git-send-email-mcgrof@do-not-panic.com>
+	 (sfid-20141104_094850_244065_E63B2A7F)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add simple tests of openat(2) variations, including examples that
-check the new O_BENEATH flag.
+On Tue, 2014-11-04 at 00:42 -0800, Luis R. Rodriguez wrote:
 
-Signed-off-by: David Drysdale <drysdale@google.com>
----
- tools/testing/selftests/Makefile          |   1 +
- tools/testing/selftests/openat/.gitignore |   4 +
- tools/testing/selftests/openat/Makefile   |  28 +++++
- tools/testing/selftests/openat/openat.c   | 180 ++++++++++++++++++++++++++++++
- 4 files changed, 213 insertions(+)
- create mode 100644 tools/testing/selftests/openat/.gitignore
- create mode 100644 tools/testing/selftests/openat/Makefile
- create mode 100644 tools/testing/selftests/openat/openat.c
+> +#ifndef MODULE
+> +/*
+> + * Forcing the backports module to load allows us to easily
+> + * identify the backport.
+> + */
 
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 36ff2e4c7b6f..812e973233d2 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -14,6 +14,7 @@ TARGETS += powerpc
- TARGETS += user
- TARGETS += sysctl
- TARGETS += firmware
-+TARGETS += openat
+That comment is wrong really, making the dependency on the symbol forced
+the backport module to load but if it's built-in that makes no sense.
 
- TARGETS_HOTPLUG = cpu-hotplug
- TARGETS_HOTPLUG += memory-hotplug
-diff --git a/tools/testing/selftests/openat/.gitignore b/tools/testing/selftests/openat/.gitignore
-new file mode 100644
-index 000000000000..835b2dcd8678
---- /dev/null
-+++ b/tools/testing/selftests/openat/.gitignore
-@@ -0,0 +1,4 @@
-+openat
-+subdir
-+topfile
-+symlinkdown
-\ No newline at end of file
-diff --git a/tools/testing/selftests/openat/Makefile b/tools/testing/selftests/openat/Makefile
-new file mode 100644
-index 000000000000..84cd06e7ee82
---- /dev/null
-+++ b/tools/testing/selftests/openat/Makefile
-@@ -0,0 +1,28 @@
-+CC = $(CROSS_COMPILE)gcc
-+CFLAGS = -Wall
-+BINARIES = openat
-+DEPS = subdir topfile symlinkdown subdir/bottomfile subdir/symlinkup subdir/symlinkout subdir/symlinkin
-+all: $(BINARIES) $(DEPS)
-+
-+subdir:
-+	mkdir -p subdir
-+topfile:
-+	echo 0123456789 > $@
-+subdir/bottomfile: | subdir
-+	echo 0123456789 > $@
-+subdir/symlinkup: | subdir
-+	ln -s ../topfile $@
-+subdir/symlinkout: | subdir
-+	ln -s /etc/passwd $@
-+subdir/symlinkin: | subdir
-+	ln -s bottomfile $@
-+symlinkdown:
-+	ln -s subdir/bottomfile $@
-+%: %.c
-+	$(CC) $(CFLAGS) -o $@ $^
-+
-+run_tests: all
-+	./openat
-+
-+clean:
-+	rm -rf $(BINARIES) $(DEPS)
-diff --git a/tools/testing/selftests/openat/openat.c b/tools/testing/selftests/openat/openat.c
-new file mode 100644
-index 000000000000..0c030cbd10dc
---- /dev/null
-+++ b/tools/testing/selftests/openat/openat.c
-@@ -0,0 +1,180 @@
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <sys/syscall.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include <string.h>
-+#include <errno.h>
-+
-+#include <linux/fcntl.h>
-+
-+/* Bypass glibc */
-+static int openat_(int dirfd, const char *pathname, int flags)
-+{
-+	return syscall(__NR_openat, dirfd, pathname, flags);
-+}
-+
-+static int openat_or_die(int dfd, const char *path, int flags)
-+{
-+	int fd = openat_(dfd, path, flags);
-+
-+	if (fd < 0) {
-+		printf("Failed to openat(%d, '%s'); "
-+			"check prerequisites are available\n", dfd, path);
-+		exit(1);
-+	}
-+	return fd;
-+}
-+
-+static int check_openat(int dfd, const char *path, int flags)
-+{
-+	int rc;
-+	int fd;
-+	char buffer[4];
-+
-+	errno = 0;
-+	printf("Check success of openat(%d, '%s', %x)... ",
-+	       dfd, path?:"(null)", flags);
-+	fd = openat_(dfd, path, flags);
-+	if (fd < 0) {
-+		printf("[FAIL]: openat() failed, rc=%d errno=%d (%s)\n",
-+			fd, errno, strerror(errno));
-+		return 1;
-+	}
-+	errno = 0;
-+	rc = read(fd, buffer, sizeof(buffer));
-+	if (rc < 0) {
-+		printf("[FAIL]: read() failed, rc=%d errno=%d (%s)\n",
-+			rc, errno, strerror(errno));
-+		return 1;
-+	}
-+	close(fd);
-+	printf("[OK]\n");
-+	return 0;
-+}
-+
-+#define check_openat_fail(dfd, path, flags, errno)	\
-+	_check_openat_fail(dfd, path, flags, errno, #errno)
-+static int _check_openat_fail(int dfd, const char *path, int flags,
-+			      int expected_errno, const char *errno_str)
-+{
-+	int rc;
-+
-+	errno = 0;
-+	printf("Check failure of openat(%d, '%s', %x) with %s... ",
-+		dfd, path?:"(null)", flags, errno_str);
-+	rc = openat_(dfd, path, flags);
-+	if (rc > 0) {
-+		printf("[FAIL] (unexpected success from openat(2))\n");
-+		close(rc);
-+		return 1;
-+	}
-+	if (errno != expected_errno) {
-+		printf("[FAIL] (expected errno %d (%s) not %d (%s)\n",
-+			expected_errno, strerror(expected_errno),
-+			errno, strerror(errno));
-+		return 1;
-+	}
-+	printf("[OK]\n");
-+	return 0;
-+}
-+
-+int check_proc(void)
-+{
-+	int proc_dfd = openat_(AT_FDCWD, "/proc/self", O_RDONLY);
-+	int fail = 0;
-+
-+	if (proc_dfd < 0) {
-+		printf("'/proc/self' unavailable (errno=%d '%s'), skipping\n",
-+			errno, strerror(errno));
-+		return 1;
-+	}
-+	fail |= check_openat(proc_dfd, "root/etc/passwd", O_RDONLY);
-+#ifdef O_BENEATH
-+	fail |= check_openat_fail(proc_dfd, "root/etc/passwd",
-+				  O_RDONLY|O_BENEATH, EPERM);
-+#endif
-+	return fail;
-+}
-+
-+int main(int argc, char *argv[])
-+{
-+	int fail = 0;
-+	int dot_dfd = openat_or_die(AT_FDCWD, ".", O_RDONLY);
-+	int subdir_dfd = openat_or_die(AT_FDCWD, "subdir", O_RDONLY);
-+	int file_fd = openat_or_die(AT_FDCWD, "topfile", O_RDONLY);
-+
-+	/* Sanity check normal behavior */
-+	fail |= check_openat(AT_FDCWD, "topfile", O_RDONLY);
-+	fail |= check_openat(AT_FDCWD, "subdir/bottomfile", O_RDONLY);
-+
-+	fail |= check_openat(dot_dfd, "topfile", O_RDONLY);
-+	fail |= check_openat(dot_dfd, "subdir/bottomfile", O_RDONLY);
-+	fail |= check_openat(dot_dfd, "subdir/../topfile", O_RDONLY);
-+
-+	fail |= check_openat(subdir_dfd, "../topfile", O_RDONLY);
-+	fail |= check_openat(subdir_dfd, "bottomfile", O_RDONLY);
-+	fail |= check_openat(subdir_dfd, "../subdir/bottomfile", O_RDONLY);
-+	fail |= check_openat(subdir_dfd, "symlinkup", O_RDONLY);
-+	fail |= check_openat(subdir_dfd, "symlinkout", O_RDONLY);
-+
-+	fail |= check_openat(AT_FDCWD, "/etc/passwd", O_RDONLY);
-+	fail |= check_openat(dot_dfd, "/etc/passwd", O_RDONLY);
-+	fail |= check_openat(subdir_dfd, "/etc/passwd", O_RDONLY);
-+
-+	fail |= check_openat_fail(AT_FDCWD, "bogus", O_RDONLY, ENOENT);
-+	fail |= check_openat_fail(dot_dfd, "bogus", O_RDONLY, ENOENT);
-+	fail |= check_openat_fail(999, "bogus", O_RDONLY, EBADF);
-+	fail |= check_openat_fail(file_fd, "bogus", O_RDONLY, ENOTDIR);
-+
-+#ifdef O_BENEATH
-+	/* Test out O_BENEATH */
-+	fail |= check_openat(AT_FDCWD, "topfile", O_RDONLY|O_BENEATH);
-+	fail |= check_openat(AT_FDCWD, "subdir/bottomfile",
-+			     O_RDONLY|O_BENEATH);
-+
-+	fail |= check_openat(dot_dfd, "topfile", O_RDONLY|O_BENEATH);
-+	fail |= check_openat(dot_dfd, "subdir/bottomfile",
-+			     O_RDONLY|O_BENEATH);
-+	fail |= check_openat(subdir_dfd, "bottomfile", O_RDONLY|O_BENEATH);
-+
-+	/* Symlinks without .. or leading / are OK */
-+	fail |= check_openat(dot_dfd, "symlinkdown", O_RDONLY|O_BENEATH);
-+	fail |= check_openat(dot_dfd, "subdir/symlinkin", O_RDONLY|O_BENEATH);
-+	fail |= check_openat(subdir_dfd, "symlinkin", O_RDONLY|O_BENEATH);
-+	/* ... unless of course we specify O_NOFOLLOW */
-+	fail |= check_openat_fail(dot_dfd, "symlinkdown",
-+				  O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
-+	fail |= check_openat_fail(dot_dfd, "subdir/symlinkin",
-+				  O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
-+	fail |= check_openat_fail(subdir_dfd, "symlinkin",
-+				  O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
-+
-+	/* Can't open paths with ".." in them */
-+	fail |= check_openat_fail(dot_dfd, "subdir/../topfile",
-+				O_RDONLY|O_BENEATH, EPERM);
-+	fail |= check_openat_fail(subdir_dfd, "../topfile",
-+				  O_RDONLY|O_BENEATH, EPERM);
-+	fail |= check_openat_fail(subdir_dfd, "../subdir/bottomfile",
-+				O_RDONLY|O_BENEATH, EPERM);
-+
-+	/* Can't open paths starting with "/" */
-+	fail |= check_openat_fail(AT_FDCWD, "/etc/passwd",
-+				  O_RDONLY|O_BENEATH, EPERM);
-+	fail |= check_openat_fail(dot_dfd, "/etc/passwd",
-+				  O_RDONLY|O_BENEATH, EPERM);
-+	fail |= check_openat_fail(subdir_dfd, "/etc/passwd",
-+				  O_RDONLY|O_BENEATH, EPERM);
-+	/* Can't sneak around constraints with symlinks */
-+	fail |= check_openat_fail(subdir_dfd, "symlinkup",
-+				  O_RDONLY|O_BENEATH, EPERM);
-+	fail |= check_openat_fail(subdir_dfd, "symlinkout",
-+				  O_RDONLY|O_BENEATH, EPERM);
-+#else
-+	printf("Skipping O_BENEATH tests due to missing #define\n");
-+#endif
-+	fail |= check_proc();
-+
-+	return fail ? -1 : 0;
-+}
---
-2.1.0.rc2.206.gedb03e5
+> +#undef module_init
+> +#define module_init(fn)							\
+> +	static int __init __init_backport_##fn(void)			\
+> +	{								\
+> +		backport_dependency_symbol();				\
+
+That won't do anything at all after all.
+
+> +		return fn();						\
+> +	}								\
+> +	__initcall(__init_backport_##fn);
+> +
+> +#undef module_exit
+> +#define module_exit(fn)							\
+> +	static void __exit __exit_backport_##fn(void)			\
+> +	{								\
+> +		fn();							\
+> +		rcu_barrier();						\
+> +	}								\
+> +	__exitcall(__exit_backport_##fn);
+
+This is also pointless if it's built-in.
+
+I don't think this patch makes sense, you just want to add the "#ifdef
+MODULE" I guess.
+
+johannes
+
 
