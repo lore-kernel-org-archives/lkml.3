@@ -1,173 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaKDSF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 13:05:27 -0500
-Received: from mga03.intel.com ([134.134.136.65]:59109 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416AbaKDSFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 13:05:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,314,1413270000"; 
-   d="scan'208";a="602145819"
-Date: Tue, 4 Nov 2014 10:05:26 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141104180526.GB2224@psi-dev26.jf.intel.com>
-References: <20141031162339.GA7136@psi-dev26.jf.intel.com>
- <20141031184509.GA2224@psi-dev26.jf.intel.com>
- <20141103092402.GA1304@lahna.fi.intel.com>
- <20141103150048.GB27425@saruman>
- <20141103152743.GB1618@lahna.fi.intel.com>
- <20141103154207.GC1618@lahna.fi.intel.com>
- <20141103155011.GH27425@saruman>
- <20141103184247.GD1618@lahna.fi.intel.com>
- <20141103221903.GA20305@psi-dev26.jf.intel.com>
- <20141104075936.GF1618@lahna.fi.intel.com>
+	id S1752117AbaKDSFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 13:05:51 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23742 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752026AbaKDSFs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 13:05:48 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+QDMzQ54y0j9qe8QEV4vcx
+Date: Tue, 4 Nov 2014 10:04:41 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Igor Grinberg <grinberg@compulab.co.il>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
+ enabled
+Message-ID: <20141104180441.GU31454@atomide.com>
+References: <20141102180756.GH31454@atomide.com>
+ <5458D29E.50908@compulab.co.il>
+ <20141104154231.GP31454@atomide.com>
+ <54591265.3030207@compulab.co.il>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141104075936.GF1618@lahna.fi.intel.com>
+In-Reply-To: <54591265.3030207@compulab.co.il>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 09:59:36AM +0200, Mika Westerberg wrote:
-> On Mon, Nov 03, 2014 at 02:19:03PM -0800, David Cohen wrote:
-> > Hi Mika,
+* Igor Grinberg <grinberg@compulab.co.il> [141104 09:54]:
+> On 11/04/14 17:42, Tony Lindgren wrote:
+> > * Igor Grinberg <grinberg@compulab.co.il> [141104 05:22]:
+> >> Hi Tony,
+> >>
+> >> On 11/02/14 20:07, Tony Lindgren wrote:
+> >>> Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+> >>> configuration") enabled configuring the PM features for twl4030.
+> >>>
+> >>> This caused poweroff command to fail on devices that have the
+> >>> BCI charger on twl4030 wired, or have power wired for VBUS.
+> >>> Instead of powering off, the device reboots. This is because
+> >>> voltage is detected on charger or VBUS with the default bits
+> >>> enabled for the power transition registers.
+> >>>
+> >>> To fix the issue, let's just clear VBUS and CHG bits as we want
+> >>> poweroff command to keep the system powered off.
+> >>
+> >> What about devices that really need to start once VBUS or CHG is connected?
 > > 
-> > Thanks for your feedbacks :)
+> > More handling can be added for some cases. With this patch the
+> > poweron bits will clear to defaults if power is completely removed.
+> > So start-up with VBUS and CHG works in that case.
 > > 
-> > On Mon, Nov 03, 2014 at 08:42:47PM +0200, Mika Westerberg wrote:
-> > > On Mon, Nov 03, 2014 at 09:50:11AM -0600, Felipe Balbi wrote:
-> > > > Hi,
-> > > > 
-> > > > On Mon, Nov 03, 2014 at 05:42:07PM +0200, Mika Westerberg wrote:
-> > > > > On Mon, Nov 03, 2014 at 05:27:43PM +0200, Mika Westerberg wrote:
-> > > > > > On Mon, Nov 03, 2014 at 09:00:48AM -0600, Felipe Balbi wrote:
-> > > > > > > On Mon, Nov 03, 2014 at 11:24:02AM +0200, Mika Westerberg wrote:
-> > > > > > > > On Fri, Oct 31, 2014 at 11:45:09AM -0700, David Cohen wrote:
-> > > > > > > > > > I think adding the module exit + allowing this driver to be a module
-> > > > > > > > > > would be a good approach. Then we don't need to force generic x86 kernel
-> > > > > > > > > > binaries to always have this driver. Unless Mathias or Mika knows a
-> > > > > > > > > > constraint to force this driver to be builtin only.
-> > > > > > > > > 
-> > > > > > > > > It helps if I CC them when asking for feedback :)
-> > > > > > > > > 
-> > > > > > > > > Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
-> > > > > > > > > to be bool?
-> > > > > > > > 
-> > > > > > > > The only constraint that has been keeping this driver as bool is that
-> > > > > > > > some machines like, Asus T100, uses ACPI GPIO operation regions for
-> > > > > > > > toggling GPIOs to get things like sensor hub powered on. The GPIO
-> > > > > > > > operation region code does not yet handle -EPROBE_DEFER so only way to
-> > > > > > > > ensure that the operation region is there is to have the driver compiled
-> > > > > > > > in to the kernel.
-> > > > > > > 
-> > > > > > > But that's not enough excuse to have every single x86 in the market
-> > > > > > > shipping with this driver. Think about a distro kernel, most likely this
-> > > > > > > gets enabled and it's wrong in 80% of the cases.
-> > > > > > 
-> > > > > > True, but see below.
-> > > > > > 
-> > > > > > > It would be nicer to add EPROBE_DEFER support, convert this into
-> > > > > > > tristate and have default = M if BAYTRAIL, or something.
-> > > > > > 
-> > > > > > If it were simple as that we would have done that already. Please check
-> > > > > > drivers/gpio/gpiolib-acpi.c:acpi_gpio_adr_space_handler() and tell me
-> > > > > > how we can do that.
-> > > > > 
-> > > > > Actually the above is not the problem because we already have registered
-> > > > > the GPIO chip and hence we have the GPIO available to the firmware code.
-> > > > 
-> > > > what happens before you registered the gpio chip ? It takes some time
-> > > > from head.S to gpiochip_irqchip_add(). Anywhere between that time,
-> > > > firmware could try to access gpios and the same problem would occur.
-> > > 
-> > > The operation region is not ready and the firmware does not try to use
-> > > it. However, the subsys_initcall() is there just to be sure that the
-> > > GPIO driver gets loaded before anything that is going to use GPIOs from
-> > > firmware.
+> > However, if you have a battery connected, and you poweroff, with
+> > this patch the device won't power up with VBUS or CHG connected.
 > > 
-> > That sounds hackish and dangerous. There are shared registers between
-> > different GPIOs.
-> 
-> For one it certainly is not hackish and dangerous. It is well defined
-> in the ACPI specification as interfaces between firmware and OS.
-
-It looks we have an implicit dependency to GPIO driver in Bay Trail, and
-having this window until load the module is not acceptable to fulfill
-this implicit dependency.
-
-But IMHO all dependency to a driver should be explicitly described
-(e.g. on Kconfigs, or maybe failing probe). With current situation if we
-do not select pinctrl_baytrail, instead of affecting just the drivers
-that explicitly depend on that, it affects others which we are unable to
-easily identify.
-
-Maybe I don't like or fully agreee/understand ACPI, but I'd call that
-dangerous.
-
-> 
-> > > > > The real problem is that if the ACPI GPIO operation handler is not there
-> > > > > at the time firmware decides to do something it will just skip things
-> > > > > that depend on the operation region. So if it has a GPIO that is used to
-> > > > > turn on sensor hub or touch panel or whatever, this will not be done and
-> > > > > it results that the device in question might not work properly.
-> > > > 
-> > > > that's an issue that needs solving, but forcing every x86 kernel to ship
-> > > > with this driver, is not a proper solution.
-> > > 
-> > > I would rather have the driver build in to the kernel now (and btw it
-> > > has been already in mainline quite some time so I suspect many distros
-> > > have already enabled it), than turning it module and render some devices
-> > > that have been working previously, fail suddenly.
+> > Note that most battery operated devices are not using the charger
+> > on twl4030 because it has issues charging a completely empty
+> > battery AFAIK. So most battery powered devices have been using an
+> > external USB charger chip that's not affected by this patch.
 > > 
-> > Hm.... it sounds like we're saying: we got it working somehow and from
-> > now on we'll avoid change it to not create regression.
+> > We could consider exporting a function for the charger driver to
+> > configure the poweron mask. And we could also consider passing a
+> > mask in ti,use_poweroff = 0xff.
 > 
-> That's exactly what I'm saying :-)
-
-In this case, I think we need to carefully document our concerns about
-the driver to help others not involved in original implementation to
-easily contribute to it.
-
+> Ok. That sounds better to me.
+> Yet, if you say there are no such devices in practice,
+> IMHO, we can merge this.
 > 
-> > Correct if I'm wrong, but there's nothing really preventing this driver
-> > to be a module beside the buggy ACPI interface that allows kernel and fw
-> > to play freely (and silently) with same piece of hw.
+> >> It seems to me that forcing these bits on power off can break that kind of
+> >> devices and these settings should really be board specific.
+> >> What do you think?
+> > 
+> > There's a patch series for "[RFC,01/16] kernel: Add support for
+> > poweroff handler call chain" that should help with that. For sure
+> > the poweroff handling needs to be board specific as some systems
+> > may need to use a GPIO to shut off a regulator powering something
+> > before powering off the SoC.
 > 
-> Not a buggy ACPI interface. Lack of implementation from Linux side.
-> 
-> > IMHO we could allow this driver be M, but default to Y and an
-> > explanation to set to Y in case FW needs to use GPIO before module gets
-> > loaded. Since we've development board (Minnow Max), we should let kernel
-> > more free for other developers as well.
-> 
-> All I'm saying both to you guys that this is the reasoning we have the
-> driver as a bool. Which is what you asked from me in the first place.
+> Yes, I've seen this series.
+> I'm not sure though that I understand how is this supposed
+> to be used with DT...
+> Through the regulator bindings?
+> Which will tell it to hook up on the call chain?
 
-I apology for my frustration :)
-You've been more than helpful clarifying our questions.
+Yes that should be doable with regulator bindings for board specifc
+configuration. For the SoC specific functions those can be registered
+by the platform code.
 
-> 
-> Since you both insist to turn it module, please send a patch with the
-> corresponding changelog telling why you think it does not need to build
-> in and let's see if we are getting any regressions. If yes, then we just
-> revert the patch. Does that work for you?
+Regards,
 
-I'm in favor of not hardcoding kernel features based on possible hidden
-things that may happen on closed source FWs.
-Having the module option does help further development of this driver
-and others that depend on it. A clear explanation on Kconfig why we
-recommend Y for production and why M is still experimental should be
-enough to guide ppl working on distributions and at same time help
-kernel developers involved with the driver.
-
-Br, David
+Tony
