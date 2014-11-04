@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaKDNhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:37:46 -0500
-Received: from out4133-98.mail.aliyun.com ([42.120.133.98]:4949 "EHLO
-	out4133-98.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750985AbaKDNhn (ORCPT
+	id S1754001AbaKDNiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:38:06 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:63281 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255AbaKDNiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:37:43 -0500
-X-Greylist: delayed 2570 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Nov 2014 08:37:42 EST
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R111e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g08153;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=8;RT=8;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'Vincent Guittot'" <vincent.guittot@linaro.org>
-Cc: "'Wanpeng Li'" <kernellwp@gmail.com>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Preeti U Murthy'" <preeti@linux.vnet.ibm.com>,
-        "'Morten Rasmussen'" <Morten.Rasmussen@arm.com>,
-        "'Kamalesh Babulal'" <kamalesh@linux.vnet.ibm.com>
-References: <011001cff827$f14b9870$d3e2c950$@alibaba-inc.com> <CAKfTPtD6TZ4iHv9wtg-KCkGZriU79ySSxEV3nao2qQacveKAxA@mail.gmail.com> <011801cff82e$78cd2c90$6a6785b0$@alibaba-inc.com> <CAKfTPtCwLobjq6RVsB=61D_4amMtnLCmfUcpPo50Z7kzWgy5Hw@mail.gmail.com>
-In-Reply-To: <CAKfTPtCwLobjq6RVsB=61D_4amMtnLCmfUcpPo50Z7kzWgy5Hw@mail.gmail.com>
-Subject: RE: [PATCH v8 03/10] sched: move cfs task on a CPU with higher capacity
-Date: Tue, 04 Nov 2014 21:31:57 +0800
-Message-ID: <011901cff833$b49afb30$1dd0f190$@alibaba-inc.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIA8HtVxJmKoorqFpZD8DtHhnWE3gJX3gDYApYsit4BZQPEiZu76sbw
-Content-Language: zh-cn
+	Tue, 4 Nov 2014 08:38:02 -0500
+From: Grant Likely <grant.likely@linaro.org>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH 1/2] of/unittest: Remove test devices after adding them
+Date: Tue,  4 Nov 2014 13:37:52 +0000
+Message-Id: <1415108273-4536-1-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> > I wonder if you can please shed light on the case that
-> >> > the dst_cpu is newly idle.
-> >>
-> >> The main problem if we do the test only for newly idle case, is that
-> >> we are not sure to move the task because we must rely on the
-> >> wakeup/sleep sequence of other tasks on an idle CPU in order to trig
-> >> the migration (periodic background task as an example). So we might
-> >> never move the task whereas idle CPUs are available
-> >>
-> > So no task is migrated in the newly idle case, if I understand the
-> > above correctly.
-> 
-> A task can be moved in both idle and newly idle. If we rely only on
-> newly idle and we  have only idle CPUs, we can never move task. In the
-> same way, if we rely only on idle case and a CPU never stays idle long
-> enough to trig the idle load balance, we will never move the task. I
-> agree that for the latter, we might wonder if it's worth moving the
-> task. This is your concern ?
-> 
-I concern if the only-one cfs task is migrated to a newly-idle CPU in
-your code:
-+	/*
-+	 * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
-+	 * It's worth migrating the task if the src_cpu's capacity is reduced
-+	 * because of other sched_class or IRQs whereas capacity stays
-+	 * available on dst_cpu.
-+	 */
-+	if ((env->idle != CPU_NOT_IDLE) &&
-+			(env->src_rq->cfs.h_nr_running == 1)) {
-+	
-due to the comment:
-                /*
-                 * Increment the failure counter only on periodic balance.
-                 * We do not want newidle balance, which can be very
-                 * frequent, pollute the failure counter causing
-                 * excessive cache_hot migrations and active balances.
-                 */
-                if (idle != CPU_NEWLY_IDLE)
-                        sd->nr_balance_failed++;
+The of_platform_populate() test cases don't remove the test devices
+after they are added. Fix this by adding tests for
+of_platform_depopulate().
 
-Hillf
+At the same time rework the selftest() macro to return the test result
+value. This makes it easy to use the macro inside an if() condition.
+
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
+ drivers/of/selftest.c | 39 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 28 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index bf7d99317a94..082bb2b6a5ad 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -30,15 +30,17 @@ static struct device_node *nodes[NO_OF_NODES];
+ static int last_node_index;
+ static bool selftest_live_tree;
+ 
+-#define selftest(result, fmt, ...) { \
+-	if (!(result)) { \
++#define selftest(result, fmt, ...) ({ \
++	bool failed = !(result); \
++	if (failed) { \
+ 		selftest_results.failed++; \
+ 		pr_err("FAIL %s():%i " fmt, __func__, __LINE__, ##__VA_ARGS__); \
+ 	} else { \
+ 		selftest_results.passed++; \
+ 		pr_debug("pass %s():%i\n", __func__, __LINE__); \
+ 	} \
+-}
++	failed; \
++})
+ 
+ static void __init of_selftest_find_node_by_name(void)
+ {
+@@ -694,10 +696,13 @@ static void __init of_selftest_match_node(void)
+ 	}
+ }
+ 
++struct device test_bus = {
++	.init_name = "unittest-bus",
++};
+ static void __init of_selftest_platform_populate(void)
+ {
+-	int irq;
+-	struct device_node *np, *child;
++	int irq, rc;
++	struct device_node *np, *child, *grandchild;
+ 	struct platform_device *pdev;
+ 	struct of_device_id match[] = {
+ 		{ .compatible = "test-device", },
+@@ -722,20 +727,32 @@ static void __init of_selftest_platform_populate(void)
+ 	irq = platform_get_irq(pdev, 0);
+ 	selftest(irq < 0 && irq != -EPROBE_DEFER, "device parsing error failed - %d\n", irq);
+ 
+-	np = of_find_node_by_path("/testcase-data/platform-tests");
+-	if (!np) {
+-		pr_err("No testcase data in device tree\n");
++	if (selftest(np = of_find_node_by_path("/testcase-data/platform-tests"),
++		     "No testcase data in device tree\n"));
++		return;
++
++	if (selftest(!(rc = device_register(&test_bus)),
++		     "testbus registration failed; rc=%i\n", rc));
+ 		return;
+-	}
+ 
+ 	for_each_child_of_node(np, child) {
+-		struct device_node *grandchild;
+-		of_platform_populate(child, match, NULL, NULL);
++		of_platform_populate(child, match, NULL, &test_bus);
+ 		for_each_child_of_node(child, grandchild)
+ 			selftest(of_find_device_by_node(grandchild),
+ 				 "Could not create device for node '%s'\n",
+ 				 grandchild->name);
+ 	}
++
++	of_platform_depopulate(&test_bus);
++	for_each_child_of_node(np, child) {
++		for_each_child_of_node(child, grandchild)
++			selftest(!of_find_device_by_node(grandchild),
++				 "device didn't get destroyed '%s'\n",
++				 grandchild->name);
++	}
++
++	device_unregister(&test_bus);
++	of_node_put(np);
+ }
+ 
+ /**
+-- 
+1.9.1
 
