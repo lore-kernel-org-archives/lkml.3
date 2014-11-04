@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588AbaKDBkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:40:33 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44683 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaKDBka (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:40:30 -0500
-Message-ID: <1415065194.24825.13.camel@debian>
-Subject: Re: [PATCH 2/2] x86, mce, amd: extend mce-inject for support
- threshold interrupt event injection on AMD platform
-From: Chen Yucong <slaoub@gmail.com>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, ak@linux.intel.com,
-        gong.chen@linux.intel.com, linux-edac@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 04 Nov 2014 09:39:54 +0800
-In-Reply-To: <5457C0B3.30007@amd.com>
-References: <1414718648-7766-1-git-send-email-slaoub@gmail.com>
-	 <1414718648-7766-3-git-send-email-slaoub@gmail.com>
-	 <CAOjmkp9Aec9Ec-93YvT5S_mMaxrOoZSYCDbjyWaxGV_dac6qog@mail.gmail.com>
-	 <5457C0B3.30007@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751605AbaKDBps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:45:48 -0500
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:12338 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751046AbaKDBpr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 20:45:47 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Joe Perches <joe@perches.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 4 Nov 2014 09:45:42 +0800
+Subject: RE: [RFC V6 3/3] arm64:add bitrev.h file to support rbit instruction
+Thread-Topic: [RFC V6 3/3] arm64:add bitrev.h file to support rbit
+ instruction
+Thread-Index: Ac/3S6wTI0zxMshrQ4qGSbsKS1fzQAAhTWMw
+Message-ID: <35FD53F367049845BC99AC72306C23D103E010D18288@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E010D18265@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18266@CNBJMBX05.corpusers.net>
+ <20141030120127.GC32589@arm.com>
+ <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
+ <20141030135749.GE32589@arm.com>
+ <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18274@CNBJMBX05.corpusers.net>
+ <20141031104305.GC6731@arm.com>
+ <35FD53F367049845BC99AC72306C23D103E010D18287@CNBJMBX05.corpusers.net>
+ <CAKv+Gu-+fe9Hj-uGQHq8KR_6WjrQL-1q=xVBSXVXg2EJO=MW2w@mail.gmail.com>
+ <20141103095051.GA23019@arm.com>
+In-Reply-To: <20141103095051.GA23019@arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 11:51 -0600, Aravind Gopalakrishnan wrote:
-> On 11/3/2014 11:05 AM, Aravind Gopalakrishnan wrote:
+> From: Will Deacon [mailto:will.deacon@arm.com]
 > >
-> > There are three ways that have been used to report machine check event.
-> > And they are MCE, CMCI/Threshold Interrupt, and POLL. On the Intel
-> > platform, CMCI/Threshold Interrupt and POLL share the same event handler
-> > - machine_check_poll(). However, on the AMD platform, they have a
-> > separate event handler. amd_threshold_interrupt() is used for handling
-> > Threshold Interrupt event. And machine_check_poll() has been used for
-> > polling other events.
-> >
-> > This patch introduces a new flag MCJ_INTERRUPT that will be used to
-> > separate CMCI/Threshold Interrupt and POLL handler in mce-inject.
-> >
-> > Signed-off-by: Chen Yucong <slaoub@gmail.com <mailto:slaoub@gmail.com>>
-> > ---
-> >  arch/x86/include/asm/mce.h              |    5 +++--
-> >  arch/x86/kernel/cpu/mcheck/mce-inject.c |   16 ++++++++++++++++
-> >  arch/x86/kernel/cpu/mcheck/threshold.c  |    1 +
-> >  3 files changed, 20 insertions(+), 2 deletions(-)
-> >
+> > If this is the case, I suggest you update patch 8187/1 to retain the
+> > byte_rev_table symbol, even in the accelerated case, and remove it
+> > with a followup patch once Joe's patches have landed upstream. Also, a
+> > link to the patches would be nice, and perhaps a bit of explanation
+> > how/when they are expected to be merged.
 > 
+> Indeed, or instead put together a series with the appropriate acks so
+> somebody can merge it all in one go. Merging this on a piecemeal basis is
+> going to cause breakages (as you pointed out).
 > 
-> We currently test decoding logic on AMD by performing mce injections 
-> using edac/mce_amd_inj.c,
-> So instead of modifying mce-inject just for testing 
-> amd_threshold_interrupt(),
-> Why not put it under mce_amd_inj? (It's AMD specific code anyway)
-> 
-Until now, edac/mce_amd_inj.c is just used for testing EDAC decoding
-logic on AMD. But there are some tools that can be also used to decode
-machine check error information, such as `rasdaemon' and `mcelog'. If
-we want to use mce_amd_inj.c for error injection, we may need to move
-it.
+> Will
 
-In addition, EDAC decoding logic does not need to access machine check 
-specific `MSRs', so edac/mce_amd_inj.c can work well for error
-injection.
+Hi  Will,
+Could I add you as ack-by , and submit these 2 patches into the
+Patch system ?
+So you can merge them together .
 
-Finally, amd_threshold_interrupt is AMD specific code,
-intel_threshold_interrupt is also Intel specific code.
-
-thx!
-cyc
-
-
+Thanks
