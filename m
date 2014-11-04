@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaKDUSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 15:18:38 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42646 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274AbaKDUSg (ORCPT
+	id S1751848AbaKDUTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 15:19:07 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:46642 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaKDUTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 15:18:36 -0500
-Date: Tue, 4 Nov 2014 21:18:34 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v9 2/4] amba: Don't unprepare the clocks if device driver
- wants IRQ safe runtime PM
-Message-ID: <20141104201834.GC15071@amd>
-References: <1415105570-7871-1-git-send-email-k.kozlowski@samsung.com>
- <1415105570-7871-3-git-send-email-k.kozlowski@samsung.com>
+	Tue, 4 Nov 2014 15:19:05 -0500
+Date: Tue, 4 Nov 2014 20:18:59 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        paulus@samba.org, mpe@ellerman.id.au,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, eiko.carstens@de.ibm.com,
+        linux390@de.ibm.com, Chris Metcalf <cmetcalf@tilera.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, dave.long@linaro.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [RFC PATCH] make CONFIG_STRICT_DEVMEM a core non-debug feature
+Message-ID: <20141104201859.GZ22224@bivouac.eciton.net>
+References: <1415121836-16241-1-git-send-email-leif.lindholm@linaro.org>
+ <CAGXu5jL1BBAvoxVqFa1YHJSMCbGdLiPey-dyC15YKVPB2xGfig@mail.gmail.com>
+ <20141104195914.GY22224@bivouac.eciton.net>
+ <CAGXu5jJnaAFMUBR50TgapRzRcvKS0j=XO7u9z6fdNouwMb=_sQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415105570-7871-3-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAGXu5jJnaAFMUBR50TgapRzRcvKS0j=XO7u9z6fdNouwMb=_sQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-11-04 13:52:48, Krzysztof Kozlowski wrote:
-> The AMBA bus driver defines runtime Power Management functions which
-> disable and unprepare AMBA bus clock. This is problematic for runtime PM
-> because unpreparing a clock might sleep so it is not interrupt safe.
+On Tue, Nov 04, 2014 at 12:02:32PM -0800, Kees Cook wrote:
+> > I considered doing that, but didn't want to risk listing too many
+> > details of one architecture, and too few of others.
 > 
-> However some drivers may want to implement runtime PM functions in
-> interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-> bus driver should only disable/enable the clock in runtime suspend and
-> resume callbacks.
+> Well, the others only say "memory mapped peripherals", so that's what
+> I was suggesting adding the x86 language: it was the most detailed
+> about what that would really mean to the end-user.
 
+The problem is that this currently isn't strictly speaking true for
+some architectures (at least not arm*). Without a standardised memory
+map, we are exposing mapping anything not system RAM.
 
+(Patches related to that will follow later this month.)
 
->  /*
->   * Hooks to provide runtime PM of the pclk (bus clock).  It is safe to
->   * enable/disable the bus clock at runtime PM suspend/resume as this
-> @@ -95,8 +102,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
->  	struct amba_device *pcdev = to_amba_device(dev);
->  	int ret = pm_generic_runtime_suspend(dev);
->  
-> -	if (ret == 0 && dev->driver)
-> -		clk_disable_unprepare(pcdev->pclk);
-> +	if (ret == 0 && dev->driver) {
-> +		pcdev->irq_safe = get_pm_runtime_irq_safe(dev);
-> +
-> +		if (pcdev->irq_safe)
-> +			clk_disable(pcdev->pclk);
-> +		else
-> +			clk_disable_unprepare(pcdev->pclk);
-> +	}
-
-So you can handle the case of !pcdev->irq_safe. What is the penalty
-for always assuming !pcdev->irq_safe?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+/
+    Leif
