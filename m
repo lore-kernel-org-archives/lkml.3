@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaKDWS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 17:18:58 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:10294 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742AbaKDWSz (ORCPT
+	id S1752736AbaKDWSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 17:18:52 -0500
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:53381 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138AbaKDWSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 17:18:55 -0500
+	Tue, 4 Nov 2014 17:18:50 -0500
 From: Toshi Kani <toshi.kani@hp.com>
 To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
         akpm@linux-foundation.org, arnd@arndb.de
@@ -14,9 +14,9 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
         stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
         yigal@plexistor.com, konrad.wilk@oracle.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v5 7/8] x86, mm, asm: Add WT support to set_page_memtype()
-Date: Tue,  4 Nov 2014 15:04:37 -0700
-Message-Id: <1415138678-22958-8-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v5 4/8] x86, mm, asm-gen: Add ioremap_wt() for WT
+Date: Tue,  4 Nov 2014 15:04:34 -0700
+Message-Id: <1415138678-22958-5-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415138678-22958-1-git-send-email-toshi.kani@hp.com>
 References: <1415138678-22958-1-git-send-email-toshi.kani@hp.com>
@@ -24,144 +24,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As set_memory_wb() calls set_page_memtype() with -1, _PGMT_DEFAULT is
-solely used for tracking the WB type.  _PGMT_WB is defined but unused.
-Hence, this patch renames _PGMT_DEFAULT to _PGMT_WB to clarify its
-usage, and releases the slot used by _PGMT_WB before.  As a result,
-set_memory_wb() is changed to call set_page_memtype() with _PGMT_WB,
-and get_page_memtype() returns _PAGE_CACHE_MODE_WB for _PGMT_WB.
+This patch adds ioremap_wt() for creating WT mapping on x86.
+It follows the same model as ioremap_wc() for multi-architecture
+support.  ARCH_HAS_IOREMAP_WT is defined in the x86 version of
+io.h to indicate that ioremap_wt() is implemented on x86.
 
-This patch then defines _PGMT_WT to the released slot.  This enables
-set_page_memtype() to track the WT type.
+Also update the PAT documentation file to cover ioremap_wt().
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/pat.c |   48 +++++++++++++++++++++---------------------------
- 1 file changed, 21 insertions(+), 27 deletions(-)
+ Documentation/x86/pat.txt   |    4 +++-
+ arch/x86/include/asm/io.h   |    2 ++
+ arch/x86/mm/ioremap.c       |   24 ++++++++++++++++++++++++
+ include/asm-generic/io.h    |    4 ++++
+ include/asm-generic/iomap.h |    4 ++++
+ 5 files changed, 37 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 5f5b950..c255ba8 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -313,17 +313,17 @@ static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
- }
+diff --git a/Documentation/x86/pat.txt b/Documentation/x86/pat.txt
+index cf08c9f..be7b8c2 100644
+--- a/Documentation/x86/pat.txt
++++ b/Documentation/x86/pat.txt
+@@ -12,7 +12,7 @@ virtual addresses.
  
- /*
-- * X86 PAT uses page flags WC and Uncached together to keep track of
-- * memory type of pages that have backing page struct. X86 PAT supports 3
-- * different memory types, _PAGE_CACHE_MODE_WB, _PAGE_CACHE_MODE_WC and
-- * _PAGE_CACHE_MODE_UC_MINUS and fourth state where page's memory type has not
-- * been changed from its default (value of -1 used to denote this).
-+ * X86 PAT uses page flags arch_1 and uncached together to keep track of
-+ * memory type of pages that have backing page struct. X86 PAT supports 4
-+ * different memory types, _PAGE_CACHE_MODE_WT, _PAGE_CACHE_MODE_WC,
-+ * _PAGE_CACHE_MODE_UC_MINUS and _PAGE_CACHE_MODE_WB where page's memory
-+ * type has not been changed from its default.
-  * Note we do not support _PAGE_CACHE_MODE_UC here.
-  */
--#define _PGMT_DEFAULT		0
-+#define _PGMT_WB		0	/* default */
- #define _PGMT_WC		(1UL << PG_arch_1)
- #define _PGMT_UC_MINUS		(1UL << PG_uncached)
--#define _PGMT_WB		(1UL << PG_uncached | 1UL << PG_arch_1)
-+#define _PGMT_WT		(1UL << PG_uncached | 1UL << PG_arch_1)
- #define _PGMT_MASK		(1UL << PG_uncached | 1UL << PG_arch_1)
- #define _PGMT_CLEAR_MASK	(~_PGMT_MASK)
+ PAT allows for different types of memory attributes. The most commonly used
+ ones that will be supported at this time are Write-back, Uncached,
+-Write-combined and Uncached Minus.
++Write-combined, Write-through and Uncached Minus.
  
-@@ -331,14 +331,14 @@ static inline enum page_cache_mode get_page_memtype(struct page *pg)
- {
- 	unsigned long pg_flags = pg->flags & _PGMT_MASK;
  
--	if (pg_flags == _PGMT_DEFAULT)
--		return -1;
-+	if (pg_flags == _PGMT_WB)
-+		return _PAGE_CACHE_MODE_WB;
- 	else if (pg_flags == _PGMT_WC)
- 		return _PAGE_CACHE_MODE_WC;
- 	else if (pg_flags == _PGMT_UC_MINUS)
- 		return _PAGE_CACHE_MODE_UC_MINUS;
- 	else
--		return _PAGE_CACHE_MODE_WB;
-+		return _PAGE_CACHE_MODE_WT;
- }
+ PAT APIs
+@@ -38,6 +38,8 @@ ioremap_nocache        |    --    |    UC-     |       UC-        |
+                        |          |            |                  |
+ ioremap_wc             |    --    |    --      |       WC         |
+                        |          |            |                  |
++ioremap_wt             |    --    |    --      |       WT         |
++                       |          |            |                  |
+ set_memory_uc          |    UC-   |    --      |       --         |
+  set_memory_wb         |          |            |                  |
+                        |          |            |                  |
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 71b9e65..c813c86 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -35,6 +35,7 @@
+   */
  
- static inline void set_page_memtype(struct page *pg,
-@@ -355,11 +355,12 @@ static inline void set_page_memtype(struct page *pg,
- 	case _PAGE_CACHE_MODE_UC_MINUS:
- 		memtype_flags = _PGMT_UC_MINUS;
+ #define ARCH_HAS_IOREMAP_WC
++#define ARCH_HAS_IOREMAP_WT
+ 
+ #include <linux/string.h>
+ #include <linux/compiler.h>
+@@ -316,6 +317,7 @@ extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
+ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 				enum page_cache_mode pcm);
+ extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
++extern void __iomem *ioremap_wt(resource_size_t offset, unsigned long size);
+ 
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 8832e51..ee6e55a 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -167,6 +167,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 		prot = __pgprot(pgprot_val(prot) |
+ 				cachemode2protval(_PAGE_CACHE_MODE_WC));
  		break;
--	case _PAGE_CACHE_MODE_WB:
--		memtype_flags = _PGMT_WB;
 +	case _PAGE_CACHE_MODE_WT:
-+		memtype_flags = _PGMT_WT;
- 		break;
-+	case _PAGE_CACHE_MODE_WB:
- 	default:
--		memtype_flags = _PGMT_DEFAULT;
-+		memtype_flags = _PGMT_WB;	/* default */
++		prot = __pgprot(pgprot_val(prot) |
++				cachemode2protval(_PAGE_CACHE_MODE_WT));
++		break;
+ 	case _PAGE_CACHE_MODE_WB:
  		break;
  	}
- 
-@@ -371,8 +372,9 @@ static inline void set_page_memtype(struct page *pg,
- 
- /*
-  * For RAM pages, we use page flags to mark the pages with appropriate type.
-- * The page flags are limited to three types, WB, WC and UC-.
-- * WT and WP requests fail with -EINVAL, and UC gets redirected to UC-.
-+ * The page flags are limited to four types, WB (default), WC, WT and UC-.
-+ * WP request fails with -EINVAL, and UC gets redirected to UC-.
-+ * A new memtype can only be set to the default memtype WB.
-  * Here we do two pass:
-  * - Find the memtype of all the pages in the range, look for any conflicts
-  * - In case of no conflicts, set the new memtype for pages in the range
-@@ -384,8 +386,7 @@ static int reserve_ram_pages_type(u64 start, u64 end,
- 	struct page *page;
- 	u64 pfn;
- 
--	if ((req_type == _PAGE_CACHE_MODE_WT) ||
--	    (req_type == _PAGE_CACHE_MODE_WP)) {
-+	if (req_type == _PAGE_CACHE_MODE_WP) {
- 		if (new_type)
- 			*new_type = _PAGE_CACHE_MODE_UC_MINUS;
- 		return -EINVAL;
-@@ -402,7 +403,7 @@ static int reserve_ram_pages_type(u64 start, u64 end,
- 
- 		page = pfn_to_page(pfn);
- 		type = get_page_memtype(page);
--		if (type != -1) {
-+		if (type != _PAGE_CACHE_MODE_WB) {
- 			pr_info("reserve_ram_pages_type failed [mem %#010Lx-%#010Lx], track 0x%x, req 0x%x\n",
- 				start, end - 1, type, req_type);
- 			if (new_type)
-@@ -429,7 +430,7 @@ static int free_ram_pages_type(u64 start, u64 end)
- 
- 	for (pfn = (start >> PAGE_SHIFT); pfn < (end >> PAGE_SHIFT); ++pfn) {
- 		page = pfn_to_page(pfn);
--		set_page_memtype(page, -1);
-+		set_page_memtype(page, _PAGE_CACHE_MODE_WB);
- 	}
- 	return 0;
+@@ -261,6 +265,26 @@ void __iomem *ioremap_wc(resource_size_t phys_addr, unsigned long size)
  }
-@@ -558,7 +559,7 @@ int free_memtype(u64 start, u64 end)
-  * @paddr: physical address of which memory type needs to be looked up
-  *
-  * Returns _PAGE_CACHE_MODE_WB, _PAGE_CACHE_MODE_WC, _PAGE_CACHE_MODE_UC_MINUS
-- * or _PAGE_CACHE_MODE_UC
-+ * or _PAGE_CACHE_MODE_WT.
-  */
- static enum page_cache_mode lookup_memtype(u64 paddr)
- {
-@@ -572,13 +573,6 @@ static enum page_cache_mode lookup_memtype(u64 paddr)
- 		struct page *page;
- 		page = pfn_to_page(paddr >> PAGE_SHIFT);
- 		rettype = get_page_memtype(page);
--		/*
--		 * -1 from get_page_memtype() implies RAM page is in its
--		 * default state and not reserved, and hence of type WB
--		 */
--		if (rettype == -1)
--			rettype = _PAGE_CACHE_MODE_WB;
--
- 		return rettype;
- 	}
+ EXPORT_SYMBOL(ioremap_wc);
  
++/**
++ * ioremap_wt	-	map memory into CPU space write through
++ * @phys_addr:	bus address of the memory
++ * @size:	size of the resource to map
++ *
++ * This version of ioremap ensures that the memory is marked write through.
++ * Write through stores data into memory while keeping the cache up-to-date.
++ *
++ * Must be freed with iounmap.
++ */
++void __iomem *ioremap_wt(resource_size_t phys_addr, unsigned long size)
++{
++	if (pat_enabled)
++		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WT,
++					__builtin_return_address(0));
++	else
++		return ioremap_nocache(phys_addr, size);
++}
++EXPORT_SYMBOL(ioremap_wt);
++
+ void __iomem *ioremap_cache(resource_size_t phys_addr, unsigned long size)
+ {
+ 	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WB,
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index b8fdc57..9dd07bf 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -322,6 +322,10 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ioremap_wt
++#define ioremap_wt ioremap_nocache
++#endif
++
+ static inline void iounmap(void __iomem *addr)
+ {
+ }
+diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
+index 1b41011..d8f8622 100644
+--- a/include/asm-generic/iomap.h
++++ b/include/asm-generic/iomap.h
+@@ -66,6 +66,10 @@ extern void ioport_unmap(void __iomem *);
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ARCH_HAS_IOREMAP_WT
++#define ioremap_wt ioremap_nocache
++#endif
++
+ #ifdef CONFIG_PCI
+ /* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
+ struct pci_dev;
