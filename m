@@ -1,121 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751171AbaKDAmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 19:42:50 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55800 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaKDAmt (ORCPT
+	id S1751449AbaKDAnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 19:43:49 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:59705 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaKDAnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 19:42:49 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 4 Nov 2014 09:44:21 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Heesub Shin <heesub.shin@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, Gioh Kim <gioh.kim@lge.com>,
-        Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v5 2/4] mm/page_alloc: add freepage on isolate pageblock
- to correct buddy list
-Message-ID: <20141104004421.GD8412@js1304-P5Q-DELUXE>
-References: <1414740330-4086-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1414740330-4086-3-git-send-email-iamjoonsoo.kim@lge.com>
- <54573B3B.4070500@samsung.com>
+	Mon, 3 Nov 2014 19:43:45 -0500
+Date: Tue, 4 Nov 2014 09:43:34 +0900
+From: Gyungoh Yoo <gyungoh@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
+        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: Re: [RESUBMIT PATCH v6 7/8] regulator: sky81452: Add compatible
+ string for device binding
+Message-ID: <20141104004333.GA2965@jack-ThinkPad-T520>
+References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-8-git-send-email-jack.yoo@skyworksinc.com>
+ <20141031164418.GC18557@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <54573B3B.4070500@samsung.com>
+In-Reply-To: <20141031164418.GC18557@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 05:22:19PM +0900, Heesub Shin wrote:
-> Hello,
+On Fri, Oct 31, 2014 at 04:44:18PM +0000, Mark Brown wrote:
+> On Fri, Oct 31, 2014 at 04:08:41PM +0900, gyungoh@gmail.com wrote:
+> > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > 
+> > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 > 
-> On 10/31/2014 04:25 PM, Joonsoo Kim wrote:
-> >In free_pcppages_bulk(), we use cached migratetype of freepage
-> >to determine type of buddy list where freepage will be added.
-> >This information is stored when freepage is added to pcp list, so
-> >if isolation of pageblock of this freepage begins after storing,
-> >this cached information could be stale. In other words, it has
-> >original migratetype rather than MIGRATE_ISOLATE.
-> >
-> >There are two problems caused by this stale information. One is that
-> >we can't keep these freepages from being allocated. Although this
-> >pageblock is isolated, freepage will be added to normal buddy list
-> >so that it could be allocated without any restriction. And the other
-> >problem is incorrect freepage accounting. Freepages on isolate pageblock
-> >should not be counted for number of freepage.
-> >
-> >Following is the code snippet in free_pcppages_bulk().
-> >
-> >/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
-> >__free_one_page(page, page_to_pfn(page), zone, 0, mt);
-> >trace_mm_page_pcpu_drain(page, 0, mt);
-> >if (likely(!is_migrate_isolate_page(page))) {
-> >	__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
-> >	if (is_migrate_cma(mt))
-> >		__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
-> >}
-> >
-> >As you can see above snippet, current code already handle second problem,
-> >incorrect freepage accounting, by re-fetching pageblock migratetype
-> >through is_migrate_isolate_page(page). But, because this re-fetched
-> >information isn't used for __free_one_page(), first problem would not be
-> >solved. This patch try to solve this situation to re-fetch pageblock
-> >migratetype before __free_one_page() and to use it for __free_one_page().
-> >
-> >In addition to move up position of this re-fetch, this patch use
-> >optimization technique, re-fetching migratetype only if there is
-> >isolate pageblock. Pageblock isolation is rare event, so we can
-> >avoid re-fetching in common case with this optimization.
-> >
-> >This patch also correct migratetype of the tracepoint output.
-> >
-> >Cc: <stable@vger.kernel.org>
-> >Acked-by: Minchan Kim <minchan@kernel.org>
-> >Acked-by: Michal Nazarewicz <mina86@mina86.com>
-> >Acked-by: Vlastimil Babka <vbabka@suse.cz>
-> >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >---
-> >  mm/page_alloc.c |   13 ++++++++-----
-> >  1 file changed, 8 insertions(+), 5 deletions(-)
-> >
-> >diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> >index f7a867e..6df23fe 100644
-> >--- a/mm/page_alloc.c
-> >+++ b/mm/page_alloc.c
-> >@@ -725,14 +725,17 @@ static void free_pcppages_bulk(struct zone *zone, int count,
-> >  			/* must delete as __free_one_page list manipulates */
-> >  			list_del(&page->lru);
-> >  			mt = get_freepage_migratetype(page);
-> >+			if (unlikely(has_isolate_pageblock(zone))) {
+> This doesn't apply against current code and depends on the MFD symbol
+> rename - can you please check what's going on here?
+
+Are you talking about 'sky81452-regulator'?
+I am sorry I don't understand. Can you explain in more detail?
+
 > 
-> How about adding an additional check for 'mt == MIGRATE_MOVABLE'
-> here? Then, most of get_pageblock_migratetype() calls could be
-> avoided while the isolation is in progress. I am not sure this is
-> the case on memory offlining. How do you think?
+> It would make sense to split the Kconfig symbol rename into a separate
+> patch to ease merging, it doesn't seem obviously related to the driver
+> change and should probably be in the same patch as the MFD symbol rename
+> for bisetion.
 
-Hello,
-
-Isolation could be invoked to other migratetype pageblock. You can
-reference has_unmovable_pages() in page_alloc.c. So, additional check
-'mt == MIGRATE_MOVABLE' should not be inserted.
-
-Thanks.
+becuase the symbol in the modfied MFD does not match with the
+merged regulator driver, it was hard to split the patch.
