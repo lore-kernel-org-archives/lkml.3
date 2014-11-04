@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362AbaKDMJf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:09:35 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:56611 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965AbaKDMJc (ORCPT
+	id S1754028AbaKDMKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:10:23 -0500
+Received: from 14.mo4.mail-out.ovh.net ([46.105.40.29]:34675 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752479AbaKDMKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:09:32 -0500
-From: Frank Blaschka <blaschka@linux.vnet.ibm.com>
-To: schwidefsky@de.ibm.com
-Cc: alex.williamson@redhat.com, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Frank Blaschka <frank.blaschka@de.ibm.com>
-Subject: [PATCH linux-next] s390/io: add ioport_map stubs
-Date: Tue,  4 Nov 2014 13:09:13 +0100
-Message-Id: <1415102953-49643-1-git-send-email-blaschka@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110412-0041-0000-0000-000001F69651
+	Tue, 4 Nov 2014 07:10:22 -0500
+X-Greylist: delayed 4766 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Nov 2014 07:10:21 EST
+From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+To: gregkh@linuxfoundation.org
+Cc: jslaby@suse.cz, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-rockchip@lists.infradead.org,
+        Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Subject: [PATCH v2] serial: 8250_dw: get index of serial line from DT aliases
+Date: Tue,  4 Nov 2014 11:45:55 +0100
+Message-Id: <1415097955-31966-1-git-send-email-julien.chauveau@neo-technologies.fr>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1414681129-10578-1-git-send-email-julien.chauveau@neo-technologies.fr>
+References: <1414681129-10578-1-git-send-email-julien.chauveau@neo-technologies.fr>
+X-Ovh-Tracer-Id: 12648641030507331702
+X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-01-116-88.w193-248.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Blaschka <frank.blaschka@de.ibm.com>
+Get index of serial line from device tree using function of_alias_get_id().
+If no alias is found, the 8250 core takes care of incrementing the line number.
 
-add ioport_map stubs to make vfio build on s390.
-
-Signed-off-by: Frank Blaschka <frank.blaschka@de.ibm.com>
+Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
 ---
- arch/s390/include/asm/io.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Changes since v1:
+- use int type to get the value from of_alias_get_id (fix always true condition)
 
-diff --git a/arch/s390/include/asm/io.h b/arch/s390/include/asm/io.h
-index cd6b9ee..ba516f8 100644
---- a/arch/s390/include/asm/io.h
-+++ b/arch/s390/include/asm/io.h
-@@ -38,6 +38,15 @@ static inline void iounmap(volatile void __iomem *addr)
- {
- }
+ drivers/tty/serial/8250/8250_dw.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index beea6ca..d96fc78 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -258,6 +258,7 @@ static int dw8250_probe_of(struct uart_port *p,
+ 	struct uart_8250_port *up = up_to_u8250p(p);
+ 	u32			val;
+ 	bool has_ucv = true;
++	int id;
  
-+static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
-+{
-+	return NULL;
-+}
+ 	if (of_device_is_compatible(np, "cavium,octeon-3860-uart")) {
+ #ifdef __BIG_ENDIAN
+@@ -293,6 +294,11 @@ static int dw8250_probe_of(struct uart_port *p,
+ 	if (!of_property_read_u32(np, "reg-shift", &val))
+ 		p->regshift = val;
+ 
++	/* get index of serial line, if found in DT aliases */
++	id = of_alias_get_id(np, "serial");
++	if (id >= 0)
++		p->line = id;
 +
-+static inline void ioport_unmap(void __iomem *p)
-+{
-+}
-+
- /*
-  * s390 needs a private implementation of pci_iomap since ioremap with its
-  * offset parameter isn't sufficient. That's because BAR spaces are not
+ 	/* clock got configured through clk api, all done */
+ 	if (p->uartclk)
+ 		return 0;
 -- 
-1.8.5.5
+2.1.0
 
