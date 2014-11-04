@@ -1,236 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaKDIwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:52:05 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:14995 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaKDIuC (ORCPT
+	id S1752764AbaKDIx3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:53:29 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:16237 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751223AbaKDIx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:50:02 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-b4-545893380c01
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RFT 4/6] regulator: max77802: Remove support for board files
-Date: Tue, 04 Nov 2014 09:49:44 +0100
-Message-id: <1415090986-30623-5-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4NV2LyREhBuseyllsnLGe1WLqwyds
-	Fkd/F1i8fmFocbbpDbvF/a9HGS2+Xelgsri8aw6bxdojd9ktTnezOnB5/H1+ncVj56y77B6b
-	VnWyedy5tofNY97JQI++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKWLRkF2vBOpOKm5MOsTYw
-	ftLsYuTkkBAwkVh0qo8ZwhaTuHBvPVsXIxeHkMBSRoldPz+wQjh9TBJ3Fk9mAaliEzCW2Lx8
-	CViViMAmRolJ/VdYQRLMAs1MEqff54DYwgJuEjvfzwdrYBFQlfix8zXYCl4Bd4nl93+yQayT
-	kzh5bDJQLwcHp4CHxP1usBIhoJKm9YtYJjDyLmBkWMUomlqaXFCclJ5rpFecmFtcmpeul5yf
-	u4kREoBfdzAuPWZ1iFGAg1GJh3dFfESIEGtiWXFl7iFGCQ5mJRHe1VVAId6UxMqq1KL8+KLS
-	nNTiQ4xMHJxSDYwnl/L+n6X77Xf76b33HPcsl2ibViBw9Li3T8iG70L8BgX/il5wGEstd5B5
-	NPm8KPf6n/yz9Fq38YvOVj94X8rj5bVP58I2tt14mPzaqjHjlBuPTuPz8HmJZVu2rDV7ckc/
-	aW1llMW8dX1bbRP/zvtk0W8reDBpVf80vbs6sx137JLVyEkX+PpWiaU4I9FQi7moOBEAfvg8
-	tR4CAAA=
+	Tue, 4 Nov 2014 03:53:27 -0500
+X-IronPort-AV: E=Sophos;i="5.04,845,1406563200"; 
+   d="scan'208";a="42816034"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Kosina <trivial@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: [PATCH] sched: updated comments of CLONE_NEWUTS and CLONE_NEWIPC
+Date: Tue, 4 Nov 2014 16:51:22 +0800
+Message-ID: <1415091082-15093-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is used only on Exynos based boards with DTS support.
-Simplify the driver and remove dead (unused) entries in platform_data
-structure.
+Remove question mark:
+s/New utsname group?/New utsname namespace
 
-Convert the driver to DTS-only version. Parse all regulators at once,
-not one-by-one. Remove dependency on data provided by max77686 MFD
-driver. Use new DT style parsing method for regulators init data.
+Unified style for IPC:
+s/New ipcs/New ipc namespace
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
 ---
- drivers/regulator/max77802.c | 92 +++++++++-----------------------------------
- 1 file changed, 19 insertions(+), 73 deletions(-)
+ include/uapi/linux/sched.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index 7cbff7038b43..f91bc43a6808 100644
---- a/drivers/regulator/max77802.c
-+++ b/drivers/regulator/max77802.c
-@@ -70,6 +70,7 @@ static unsigned int ramp_table_77802_4bit[] = {
- };
- 
- struct max77802_regulator_prv {
-+	/* Array indexed by regulator id */
- 	unsigned int opmode[MAX77802_REG_MAX];
- };
- 
-@@ -362,6 +363,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* LDOs 3-7, 9-14, 18-26, 28, 29, 32-34 */
- #define regulator_77802_desc_p_ldo(num, supply, log)	{		\
- 	.name		= "LDO"#num,					\
-+	.of_match	= of_match_ptr("LDO"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_LDO##num,				\
- 	.supply_name	= "inl"#supply,					\
- 	.ops		= &max77802_ldo_ops_logic##log,			\
-@@ -380,6 +383,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* LDOs 1, 2, 8, 15, 17, 27, 30, 35 */
- #define regulator_77802_desc_n_ldo(num, supply, log)   {		\
- 	.name		= "LDO"#num,					\
-+	.of_match	= of_match_ptr("LDO"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_LDO##num,				\
- 	.supply_name	= "inl"#supply,					\
- 	.ops		= &max77802_ldo_ops_logic##log,			\
-@@ -398,6 +403,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* BUCKs 1, 6 */
- #define regulator_77802_desc_16_buck(num)	{		\
- 	.name		= "BUCK"#num,					\
-+	.of_match	= of_match_ptr("BUCK"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
- 	.ops		= &max77802_buck_16_dvs_ops,			\
-@@ -416,6 +423,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* BUCKS 2-4 */
- #define regulator_77802_desc_234_buck(num)	{		\
- 	.name		= "BUCK"#num,					\
-+	.of_match	= of_match_ptr("BUCK"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
- 	.ops		= &max77802_buck_234_ops,			\
-@@ -435,6 +444,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* BUCK 5 */
- #define regulator_77802_desc_buck5(num)		{		\
- 	.name		= "BUCK"#num,					\
-+	.of_match	= of_match_ptr("BUCK"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
- 	.ops		= &max77802_buck_dvs_ops,			\
-@@ -453,6 +464,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* BUCKs 7-10 */
- #define regulator_77802_desc_buck7_10(num)	{		\
- 	.name		= "BUCK"#num,					\
-+	.of_match	= of_match_ptr("BUCK"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
- 	.ops		= &max77802_buck_dvs_ops,			\
-@@ -513,85 +526,19 @@ static const struct regulator_desc regulators[] = {
- 	regulator_77802_desc_n_ldo(35, 2, 1),
- };
- 
--#ifdef CONFIG_OF
--static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
--					struct max77686_platform_data *pdata)
--{
--	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct device_node *pmic_np, *regulators_np;
--	struct max77686_regulator_data *rdata;
--	struct of_regulator_match rmatch;
--	unsigned int i;
--
--	pmic_np = iodev->dev->of_node;
--	regulators_np = of_get_child_by_name(pmic_np, "regulators");
--	if (!regulators_np) {
--		dev_err(&pdev->dev, "could not find regulators sub-node\n");
--		return -EINVAL;
--	}
--
--	pdata->num_regulators = ARRAY_SIZE(regulators);
--	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) *
--			     pdata->num_regulators, GFP_KERNEL);
--	if (!rdata) {
--		of_node_put(regulators_np);
--		return -ENOMEM;
--	}
--
--	for (i = 0; i < pdata->num_regulators; i++) {
--		rmatch.name = regulators[i].name;
--		rmatch.init_data = NULL;
--		rmatch.of_node = NULL;
--		if (of_regulator_match(&pdev->dev, regulators_np, &rmatch,
--				       1) != 1) {
--			dev_warn(&pdev->dev, "No matching regulator for '%s'\n",
--				 rmatch.name);
--			continue;
--		}
--		rdata[i].initdata = rmatch.init_data;
--		rdata[i].of_node = rmatch.of_node;
--		rdata[i].id = regulators[i].id;
--	}
--
--	pdata->regulators = rdata;
--	of_node_put(regulators_np);
--
--	return 0;
--}
--#else
--static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
--					struct max77686_platform_data *pdata)
--{
--	return 0;
--}
--#endif /* CONFIG_OF */
--
- static int max77802_pmic_probe(struct platform_device *pdev)
- {
- 	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
- 	struct max77802_regulator_prv *max77802;
--	int i, ret = 0, val;
-+	int i, val;
- 	struct regulator_config config = { };
- 
--	/* This is allocated by the MFD driver */
--	if (!pdata) {
--		dev_err(&pdev->dev, "no platform data found for regulator\n");
--		return -ENODEV;
--	}
--
- 	max77802 = devm_kzalloc(&pdev->dev,
- 				sizeof(struct max77802_regulator_prv),
- 				GFP_KERNEL);
- 	if (!max77802)
- 		return -ENOMEM;
- 
--	if (iodev->dev->of_node) {
--		ret = max77802_pmic_dt_parse_pdata(pdev, pdata);
--		if (ret)
--			return ret;
--	}
--
- 	config.dev = iodev->dev;
- 	config.regmap = iodev->regmap;
- 	config.driver_data = max77802;
-@@ -599,11 +546,9 @@ static int max77802_pmic_probe(struct platform_device *pdev)
- 
- 	for (i = 0; i < MAX77802_REG_MAX; i++) {
- 		struct regulator_dev *rdev;
--		int id = pdata->regulators[i].id;
-+		int id = regulators[i].id;
- 		int shift = max77802_get_opmode_shift(id);
--
--		config.init_data = pdata->regulators[i].initdata;
--		config.of_node = pdata->regulators[i].of_node;
-+		int ret;
- 
- 		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
- 		if (ret < 0) {
-@@ -627,9 +572,10 @@ static int max77802_pmic_probe(struct platform_device *pdev)
- 		rdev = devm_regulator_register(&pdev->dev,
- 					       &regulators[i], &config);
- 		if (IS_ERR(rdev)) {
-+			ret = PTR_ERR(rdev);
- 			dev_err(&pdev->dev,
--				"regulator init failed for %d\n", i);
--			return PTR_ERR(rdev);
-+				"regulator init failed for %d: %d\n", i, ret);
-+			return ret;
- 		}
- 	}
- 
+diff --git a/include/uapi/linux/sched.h b/include/uapi/linux/sched.h
+index b932be9..cc89dde 100644
+--- a/include/uapi/linux/sched.h
++++ b/include/uapi/linux/sched.h
+@@ -23,8 +23,8 @@
+ #define CLONE_CHILD_SETTID	0x01000000	/* set the TID in the child */
+ /* 0x02000000 was previously the unused CLONE_STOPPED (Start in stopped state)
+    and is now available for re-use. */
+-#define CLONE_NEWUTS		0x04000000	/* New utsname group? */
+-#define CLONE_NEWIPC		0x08000000	/* New ipcs */
++#define CLONE_NEWUTS		0x04000000	/* New utsname namespace */
++#define CLONE_NEWIPC		0x08000000	/* New ipc namespace */
+ #define CLONE_NEWUSER		0x10000000	/* New user namespace */
+ #define CLONE_NEWPID		0x20000000	/* New pid namespace */
+ #define CLONE_NEWNET		0x40000000	/* New network namespace */
 -- 
-1.9.1
+1.9.3
 
