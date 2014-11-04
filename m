@@ -1,313 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaKDSr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 13:47:59 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:52257 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbaKDSrx (ORCPT
+	id S1752285AbaKDSs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 13:48:59 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40636 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaKDSs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 13:47:53 -0500
+	Tue, 4 Nov 2014 13:48:57 -0500
+Message-ID: <54591F74.9090103@ti.com>
+Date: Tue, 4 Nov 2014 12:48:20 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1415094884-18349-3-git-send-email-drysdale@google.com>
-References: <1415094884-18349-1-git-send-email-drysdale@google.com>
-	<1415094884-18349-3-git-send-email-drysdale@google.com>
-Date: Tue, 4 Nov 2014 10:47:52 -0800
-X-Google-Sender-Auth: 7tuzVam8cpIOloZyRmoj-gogtsQ
-Message-ID: <CAGXu5j+RLXgO=N=h1qGfsZnzFdD6h7DcH7oTdXdib_Tn7bv4rA@mail.gmail.com>
-Subject: Re: [PATCHv2 2/3] selftests: Add test of O_BENEATH & openat(2)
-From: Kees Cook <keescook@chromium.org>
-To: David Drysdale <drysdale@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+To: Javier Martinez Canillas <javier@dowhile0.org>,
+        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        <linux-serial@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Will Drewry <wad@chromium.org>,
-        Jorge Lucangeli Obes <jorgelo@google.com>,
-        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
-        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 11/13] arm: dts: dra7: add DMA properties for UART
+References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>	<1412014009-13315-12-git-send-email-bigeasy@linutronix.de>	<20141104170233.GB24112@csclub.uwaterloo.ca>	<5459079D.7080703@linutronix.de>	<20141104172117.GC24112@csclub.uwaterloo.ca> <CABxcv=kT+M70Xoyf_z4eQQyM0Oo9S5Y0YeX2R6PbAqxK-JTLLg@mail.gmail.com>
+In-Reply-To: <CABxcv=kT+M70Xoyf_z4eQQyM0Oo9S5Y0YeX2R6PbAqxK-JTLLg@mail.gmail.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 1:54 AM, David Drysdale <drysdale@google.com> wrote:
-> Add simple tests of openat(2) variations, including examples that
-> check the new O_BENEATH flag.
->
-> Signed-off-by: David Drysdale <drysdale@google.com>
+On 11/04/2014 12:32 PM, Javier Martinez Canillas wrote:
+> Hello,
+> 
+> On Tue, Nov 4, 2014 at 6:21 PM, Lennart Sorensen
+> <lsorense@csclub.uwaterloo.ca> wrote:
+>>> Mind sharing the manual with me? Mine does not mention DMA channels for
+>>> UART7-10. If you are able to test 7+8 (and it works) could you please
+>>> make patch which with for the remaining four devices?
+>>
+>> Well the file I have is called AM572x_ES1.1_NDA_TRM_vT.pdf, so I am not
+>> sure who I am allowed to share that file with.  Might be simpler to just
+>> ask TI for the latest version.
+>>
+>> How I hate NDAs.
+>>
+> 
+> I saw today an announcement about a public AM572x Silicon Revision 1.1
+> TRM [0] that has just made available by TI. I'm not familiar with this
+> SoC so I don't know if that has the information you want but I thought
+> it was worth to mention in case it did.
+> 
+> Best regards,
+> Javier
+> 
+> [0]: http://www.ti.com/lit/ug/spruhz6/spruhz6.pdf
 
-Excellent! Thank you for including self tests. :)
-
-Acked-by: Kees Cook <keescook@chromium.org>
-
--Kees
-
-> ---
->  tools/testing/selftests/Makefile          |   1 +
->  tools/testing/selftests/openat/.gitignore |   4 +
->  tools/testing/selftests/openat/Makefile   |  28 +++++
->  tools/testing/selftests/openat/openat.c   | 180 ++++++++++++++++++++++++++++++
->  4 files changed, 213 insertions(+)
->  create mode 100644 tools/testing/selftests/openat/.gitignore
->  create mode 100644 tools/testing/selftests/openat/Makefile
->  create mode 100644 tools/testing/selftests/openat/openat.c
->
-> diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-> index 36ff2e4c7b6f..812e973233d2 100644
-> --- a/tools/testing/selftests/Makefile
-> +++ b/tools/testing/selftests/Makefile
-> @@ -14,6 +14,7 @@ TARGETS += powerpc
->  TARGETS += user
->  TARGETS += sysctl
->  TARGETS += firmware
-> +TARGETS += openat
->
->  TARGETS_HOTPLUG = cpu-hotplug
->  TARGETS_HOTPLUG += memory-hotplug
-> diff --git a/tools/testing/selftests/openat/.gitignore b/tools/testing/selftests/openat/.gitignore
-> new file mode 100644
-> index 000000000000..835b2dcd8678
-> --- /dev/null
-> +++ b/tools/testing/selftests/openat/.gitignore
-> @@ -0,0 +1,4 @@
-> +openat
-> +subdir
-> +topfile
-> +symlinkdown
-> \ No newline at end of file
-> diff --git a/tools/testing/selftests/openat/Makefile b/tools/testing/selftests/openat/Makefile
-> new file mode 100644
-> index 000000000000..84cd06e7ee82
-> --- /dev/null
-> +++ b/tools/testing/selftests/openat/Makefile
-> @@ -0,0 +1,28 @@
-> +CC = $(CROSS_COMPILE)gcc
-> +CFLAGS = -Wall
-> +BINARIES = openat
-> +DEPS = subdir topfile symlinkdown subdir/bottomfile subdir/symlinkup subdir/symlinkout subdir/symlinkin
-> +all: $(BINARIES) $(DEPS)
-> +
-> +subdir:
-> +       mkdir -p subdir
-> +topfile:
-> +       echo 0123456789 > $@
-> +subdir/bottomfile: | subdir
-> +       echo 0123456789 > $@
-> +subdir/symlinkup: | subdir
-> +       ln -s ../topfile $@
-> +subdir/symlinkout: | subdir
-> +       ln -s /etc/passwd $@
-> +subdir/symlinkin: | subdir
-> +       ln -s bottomfile $@
-> +symlinkdown:
-> +       ln -s subdir/bottomfile $@
-> +%: %.c
-> +       $(CC) $(CFLAGS) -o $@ $^
-> +
-> +run_tests: all
-> +       ./openat
-> +
-> +clean:
-> +       rm -rf $(BINARIES) $(DEPS)
-> diff --git a/tools/testing/selftests/openat/openat.c b/tools/testing/selftests/openat/openat.c
-> new file mode 100644
-> index 000000000000..0c030cbd10dc
-> --- /dev/null
-> +++ b/tools/testing/selftests/openat/openat.c
-> @@ -0,0 +1,180 @@
-> +#include <sys/types.h>
-> +#include <sys/stat.h>
-> +#include <sys/syscall.h>
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <unistd.h>
-> +#include <string.h>
-> +#include <errno.h>
-> +
-> +#include <linux/fcntl.h>
-> +
-> +/* Bypass glibc */
-> +static int openat_(int dirfd, const char *pathname, int flags)
-> +{
-> +       return syscall(__NR_openat, dirfd, pathname, flags);
-> +}
-> +
-> +static int openat_or_die(int dfd, const char *path, int flags)
-> +{
-> +       int fd = openat_(dfd, path, flags);
-> +
-> +       if (fd < 0) {
-> +               printf("Failed to openat(%d, '%s'); "
-> +                       "check prerequisites are available\n", dfd, path);
-> +               exit(1);
-> +       }
-> +       return fd;
-> +}
-> +
-> +static int check_openat(int dfd, const char *path, int flags)
-> +{
-> +       int rc;
-> +       int fd;
-> +       char buffer[4];
-> +
-> +       errno = 0;
-> +       printf("Check success of openat(%d, '%s', %x)... ",
-> +              dfd, path?:"(null)", flags);
-> +       fd = openat_(dfd, path, flags);
-> +       if (fd < 0) {
-> +               printf("[FAIL]: openat() failed, rc=%d errno=%d (%s)\n",
-> +                       fd, errno, strerror(errno));
-> +               return 1;
-> +       }
-> +       errno = 0;
-> +       rc = read(fd, buffer, sizeof(buffer));
-> +       if (rc < 0) {
-> +               printf("[FAIL]: read() failed, rc=%d errno=%d (%s)\n",
-> +                       rc, errno, strerror(errno));
-> +               return 1;
-> +       }
-> +       close(fd);
-> +       printf("[OK]\n");
-> +       return 0;
-> +}
-> +
-> +#define check_openat_fail(dfd, path, flags, errno)     \
-> +       _check_openat_fail(dfd, path, flags, errno, #errno)
-> +static int _check_openat_fail(int dfd, const char *path, int flags,
-> +                             int expected_errno, const char *errno_str)
-> +{
-> +       int rc;
-> +
-> +       errno = 0;
-> +       printf("Check failure of openat(%d, '%s', %x) with %s... ",
-> +               dfd, path?:"(null)", flags, errno_str);
-> +       rc = openat_(dfd, path, flags);
-> +       if (rc > 0) {
-> +               printf("[FAIL] (unexpected success from openat(2))\n");
-> +               close(rc);
-> +               return 1;
-> +       }
-> +       if (errno != expected_errno) {
-> +               printf("[FAIL] (expected errno %d (%s) not %d (%s)\n",
-> +                       expected_errno, strerror(expected_errno),
-> +                       errno, strerror(errno));
-> +               return 1;
-> +       }
-> +       printf("[OK]\n");
-> +       return 0;
-> +}
-> +
-> +int check_proc(void)
-> +{
-> +       int proc_dfd = openat_(AT_FDCWD, "/proc/self", O_RDONLY);
-> +       int fail = 0;
-> +
-> +       if (proc_dfd < 0) {
-> +               printf("'/proc/self' unavailable (errno=%d '%s'), skipping\n",
-> +                       errno, strerror(errno));
-> +               return 1;
-> +       }
-> +       fail |= check_openat(proc_dfd, "root/etc/passwd", O_RDONLY);
-> +#ifdef O_BENEATH
-> +       fail |= check_openat_fail(proc_dfd, "root/etc/passwd",
-> +                                 O_RDONLY|O_BENEATH, EPERM);
-> +#endif
-> +       return fail;
-> +}
-> +
-> +int main(int argc, char *argv[])
-> +{
-> +       int fail = 0;
-> +       int dot_dfd = openat_or_die(AT_FDCWD, ".", O_RDONLY);
-> +       int subdir_dfd = openat_or_die(AT_FDCWD, "subdir", O_RDONLY);
-> +       int file_fd = openat_or_die(AT_FDCWD, "topfile", O_RDONLY);
-> +
-> +       /* Sanity check normal behavior */
-> +       fail |= check_openat(AT_FDCWD, "topfile", O_RDONLY);
-> +       fail |= check_openat(AT_FDCWD, "subdir/bottomfile", O_RDONLY);
-> +
-> +       fail |= check_openat(dot_dfd, "topfile", O_RDONLY);
-> +       fail |= check_openat(dot_dfd, "subdir/bottomfile", O_RDONLY);
-> +       fail |= check_openat(dot_dfd, "subdir/../topfile", O_RDONLY);
-> +
-> +       fail |= check_openat(subdir_dfd, "../topfile", O_RDONLY);
-> +       fail |= check_openat(subdir_dfd, "bottomfile", O_RDONLY);
-> +       fail |= check_openat(subdir_dfd, "../subdir/bottomfile", O_RDONLY);
-> +       fail |= check_openat(subdir_dfd, "symlinkup", O_RDONLY);
-> +       fail |= check_openat(subdir_dfd, "symlinkout", O_RDONLY);
-> +
-> +       fail |= check_openat(AT_FDCWD, "/etc/passwd", O_RDONLY);
-> +       fail |= check_openat(dot_dfd, "/etc/passwd", O_RDONLY);
-> +       fail |= check_openat(subdir_dfd, "/etc/passwd", O_RDONLY);
-> +
-> +       fail |= check_openat_fail(AT_FDCWD, "bogus", O_RDONLY, ENOENT);
-> +       fail |= check_openat_fail(dot_dfd, "bogus", O_RDONLY, ENOENT);
-> +       fail |= check_openat_fail(999, "bogus", O_RDONLY, EBADF);
-> +       fail |= check_openat_fail(file_fd, "bogus", O_RDONLY, ENOTDIR);
-> +
-> +#ifdef O_BENEATH
-> +       /* Test out O_BENEATH */
-> +       fail |= check_openat(AT_FDCWD, "topfile", O_RDONLY|O_BENEATH);
-> +       fail |= check_openat(AT_FDCWD, "subdir/bottomfile",
-> +                            O_RDONLY|O_BENEATH);
-> +
-> +       fail |= check_openat(dot_dfd, "topfile", O_RDONLY|O_BENEATH);
-> +       fail |= check_openat(dot_dfd, "subdir/bottomfile",
-> +                            O_RDONLY|O_BENEATH);
-> +       fail |= check_openat(subdir_dfd, "bottomfile", O_RDONLY|O_BENEATH);
-> +
-> +       /* Symlinks without .. or leading / are OK */
-> +       fail |= check_openat(dot_dfd, "symlinkdown", O_RDONLY|O_BENEATH);
-> +       fail |= check_openat(dot_dfd, "subdir/symlinkin", O_RDONLY|O_BENEATH);
-> +       fail |= check_openat(subdir_dfd, "symlinkin", O_RDONLY|O_BENEATH);
-> +       /* ... unless of course we specify O_NOFOLLOW */
-> +       fail |= check_openat_fail(dot_dfd, "symlinkdown",
-> +                                 O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
-> +       fail |= check_openat_fail(dot_dfd, "subdir/symlinkin",
-> +                                 O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
-> +       fail |= check_openat_fail(subdir_dfd, "symlinkin",
-> +                                 O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
-> +
-> +       /* Can't open paths with ".." in them */
-> +       fail |= check_openat_fail(dot_dfd, "subdir/../topfile",
-> +                               O_RDONLY|O_BENEATH, EPERM);
-> +       fail |= check_openat_fail(subdir_dfd, "../topfile",
-> +                                 O_RDONLY|O_BENEATH, EPERM);
-> +       fail |= check_openat_fail(subdir_dfd, "../subdir/bottomfile",
-> +                               O_RDONLY|O_BENEATH, EPERM);
-> +
-> +       /* Can't open paths starting with "/" */
-> +       fail |= check_openat_fail(AT_FDCWD, "/etc/passwd",
-> +                                 O_RDONLY|O_BENEATH, EPERM);
-> +       fail |= check_openat_fail(dot_dfd, "/etc/passwd",
-> +                                 O_RDONLY|O_BENEATH, EPERM);
-> +       fail |= check_openat_fail(subdir_dfd, "/etc/passwd",
-> +                                 O_RDONLY|O_BENEATH, EPERM);
-> +       /* Can't sneak around constraints with symlinks */
-> +       fail |= check_openat_fail(subdir_dfd, "symlinkup",
-> +                                 O_RDONLY|O_BENEATH, EPERM);
-> +       fail |= check_openat_fail(subdir_dfd, "symlinkout",
-> +                                 O_RDONLY|O_BENEATH, EPERM);
-> +#else
-> +       printf("Skipping O_BENEATH tests due to missing #define\n");
-> +#endif
-> +       fail |= check_proc();
-> +
-> +       return fail ? -1 : 0;
-> +}
-> --
-> 2.1.0.rc2.206.gedb03e5
->
-
+Same chip.
 
 
 -- 
-Kees Cook
-Chrome OS Security
+Regards,
+Nishanth Menon
