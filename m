@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271AbaKDLKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:10:20 -0500
-Received: from aer-iport-4.cisco.com ([173.38.203.54]:62549 "EHLO
-	aer-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaKDLKO (ORCPT
+	id S1753316AbaKDLKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:10:53 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:40066 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaKDLKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:10:14 -0500
-X-IronPort-AV: E=Sophos;i="5.07,312,1413244800"; 
-   d="scan'208";a="230636637"
-Message-ID: <5458B407.6050701@cisco.com>
-Date: Tue, 04 Nov 2014 12:09:59 +0100
-From: Hans Verkuil <hansverk@cisco.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 4 Nov 2014 06:10:49 -0500
+Message-ID: <5458B433.50706@collabora.co.uk>
+Date: Tue, 04 Nov 2014 12:10:43 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-api@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH 01/15] [media] Move mediabus format definition to a more
- standard place
-References: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>	<1415094910-15899-2-git-send-email-boris.brezillon@free-electrons.com>	<5458A878.3010809@cisco.com> <20141104114503.309cb54f@bbrezillon>
-In-Reply-To: <20141104114503.309cb54f@bbrezillon>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Mark Brown <broonie@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 11/14] regulator: max77802: Document binding for regulator
+ operating modes
+References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk> <1415025649-8119-12-git-send-email-javier.martinez@collabora.co.uk> <1415098229.7941.12.camel@AMDC1943>
+In-Reply-To: <1415098229.7941.12.camel@AMDC1943>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: hansverk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, I gave two alternatives :-)
+Hello Krzysztof,
 
-Both are fine as far as I am concerned, but it would be nice to hear
-what others think.
+On 11/04/2014 11:50 AM, Krzysztof Kozlowski wrote:
+>> +
+>> +The possible values for "regulator-initial-mode" and "regulator-mode" are:
+>> +	1: Normal regulator voltage output mode.
+>> +	3: Low Power which reduces the quiescent current down to only 1uA
+>> +
+>> +The list of valid modes are defined in the dt-bindings/regulator/regulator.h
+>> +header and can be included by device tree source files.
+> 
+> The more he looked inside, the more regulator.h wasn't there.
+> 
 
-Regards,
+Right, that's a typo from when the documentation was updated since previous
+versions used the standard modes instead of hardware specific modes.
 
-	Hans
+Should say that are defined in include/dt-bindings/regulator/maxim,max77802.h
+instead, sorry about that.
 
-On 11/04/14 11:45, Boris Brezillon wrote:
-> Hi Hans,
-> 
-> On Tue, 04 Nov 2014 11:20:40 +0100
-> Hans Verkuil <hansverk@cisco.com> wrote:
-> 
->> Hi Boris,
->>
->> On 11/04/14 10:54, Boris Brezillon wrote:
->>> Rename mediabus formats and move the enum into a separate header file so
->>> that it can be used by DRM/KMS subsystem without any reference to the V4L2
->>> subsystem.
->>>
->>> Old V4L2_MBUS_FMT_ definitions are now referencing MEDIA_BUS_FMT_ value.
->>
->> I missed earlier that v4l2-mediabus.h contained a struct as well, so it can't be
->> deprecated and neither can a #warning be added.
->>
->> The best approach, I think, is to use a macro in media-bus-format.h
->> that will either define just the MEDIA_BUS value when compiled in the kernel, or
->> define both MEDIA_BUS and V4L2_MBUS values when compiled for userspace.
->>
->> E.g. something like this:
->>
->> #ifdef __KERNEL__
->> #define MEDIA_BUS_FMT_ENTRY(name, val) MEDIA_BUS_FMT_ # name = val
->> #else
->> /* Keep V4L2_MBUS_FMT for backwards compatibility */
->> #define MEDIA_BUS_FMT_ENTRY(name, val) \
->> 	MEDIA_BUS_FMT_ # name = val, \
->> 	V4L2_MBUS_FMT_ # name = val
->> #endif
-> 
-> Okay, but this means we keep adding V4L2_MBUS_FMT_ definitions even for
-> new formats (which definitely doesn't encourage people to move on).
-> Moreover, we add a V4L2 prefix in what was supposed to be a subsystem
-> neutral header.
-> 
-> Anyway, these are just nitpicks, and if you prefer this approach
-> I'll rework my series :-).
-> 
->>
->> An alternative approach is to have v4l2-mediabus.h include media-bus-format.h,
->> put #ifndef __KERNEL__ around the enum v4l2_mbus_pixelcode and add a big comment
->> there that applications should use the defines from media-bus-format.h and that
->> this enum is frozen (i.e. new values are only added to media-bus-format.h).
->>
->> But I think I like the macro idea best.
-> 
-> As you wish, my only intent is to use those bus format definitions in a
-> DRM driver :-).
-> 
-> Thanks,
-> 
-> Boris
-> 
-> 
+Best regards,
+Javier
+
