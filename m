@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaKDJZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:25:29 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:54270 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160AbaKDJZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:25:26 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-33-54589b8383b7
-Message-id: <1415093122.2389.15.camel@AMDC1943>
-Subject: Re: [PATCH 0/6] regulator: max77686/802: Cleanup
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Date: Tue, 04 Nov 2014 10:25:22 +0100
-In-reply-to: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t/xq7rNsyNCDOa3y1tsnLGe1WLqwyds
-	Fkd/F1icbXrDbnH/61FGi29XOpgsLu+aw2ax9shddovT3awOnB5/n19n8dg56y67x6ZVnWwe
-	d67tYfOYdzLQo2/LKkaPz5vkAtijuGxSUnMyy1KL9O0SuDLeXGxnK3jDVrF63nPmBsZdrF2M
-	nBwSAiYS27bsZYewxSQu3FvP1sXIxSEksJRR4vbRb0wQzmdGidWfNjOCVPEK6Ets2H0ZrENY
-	wFLi7f5mFhCbTcBYYvPyJUDdHBwiAhoSe3tqQHqZBe4wSexp6WcGqWERUJVoXH2PBaSGU8BD
-	4n43WFhIwF2iaf0isDHMAuoSk+YtYgYpkRBQlmjsd4PYKijxY/I9qBJ5ic1r3jJPYBSYhaRj
-	FpKyWUjKFjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P3cQIiYIvOxgXH7M6xCjAwajEw5uh
-	HhEixJpYVlyZe4hRgoNZSYR3dRVQiDclsbIqtSg/vqg0J7X4ECMTB6dUA2Ppk+dbpd+u9Ij5
-	HPtn9p1uk18vl01SiJvQ+1vXxvTO54tzNtczHn9dfHHf4fqyA3/t291Nl7z/mrMw75a5zi3P
-	izPnvEuaf2jGsmeGXilPDn8Ks1SQCV8hZXF4ukqSv9feoLK9jBNe+aaKTpCb3Lf3S37+8jfb
-	3JR3627pKfv+aKLcmcTLy5fvUmIpzkg01GIuKk4EABC9YIJgAgAA
+	id S1752838AbaKDJZr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:25:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34627 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160AbaKDJZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 04:25:43 -0500
+Message-ID: <54589B89.5000309@redhat.com>
+Date: Tue, 04 Nov 2014 10:25:29 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 1/7] bpf: add 'flags' attribute to BPF_MAP_UPDATE_ELEM
+ command
+References: <1415069656-14138-1-git-send-email-ast@plumgrid.com> <1415069656-14138-2-git-send-email-ast@plumgrid.com>
+In-Reply-To: <1415069656-14138-2-git-send-email-ast@plumgrid.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-11-04 at 09:49 +0100, Krzysztof Kozlowski wrote:
-> Hi,
-> 
-> 
-> Previously this patchset was part of adding GPIO to max77686
-> regulator driver [1]. I split it but the goal is the same:
-> cleanup and simplify the regulator drivers by removing obsolete
-> board file support so adding new features would be easier.
-> 
-> The patchset removes board file support from regulator drivers
-> incrementally and in a bisect-friendly way. Thus MFD driver is
-> updated at the end.
-> 
-> Everything should be pulled at once (preferrably regulator tree).
-> Rebased on next-20141031.
+On 11/04/2014 03:54 AM, Alexei Starovoitov wrote:
+> the current meaning of BPF_MAP_UPDATE_ELEM syscall command is:
+> either update existing map element or create a new one.
+> Initially the plan was to add a new command to handle the case of
+> 'create new element if it didn't exist', but 'flags' style looks
+> cleaner and overall diff is much smaller (more code reused), so add 'flags'
+> attribute to BPF_MAP_UPDATE_ELEM command with the following meaning:
+> enum {
+>    BPF_MAP_UPDATE_OR_CREATE = 0, /* add new element or update existing */
+>    BPF_MAP_CREATE_ONLY,          /* add new element if it didn't exist */
+>    BPF_MAP_UPDATE_ONLY           /* update existing element */
+> };
 
-Probably I should rebase it on newer next or regulator tree because
-yesterdays Javier's changes were applied. The merge conflict is trivial
-to solve (only removal of lines).
+ From you commit message/code I currently don't see an explanation why
+it cannot be done in typical ``flags style'' as various syscalls do,
+i.e. BPF_MAP_UPDATE_OR_CREATE rather represented as ...
 
-Mark, let me know if you want me to resubmit because of the conflict.
+   BPF_MAP_CREATE | BPF_MAP_UPDATE
 
-Best regards,
-Krzysztof
+Do you expect more than 64 different flags to be passed from user space
+for BPF_MAP?
 
+> BPF_MAP_CREATE_ONLY can fail with EEXIST if element already exists.
+> BPF_MAP_UPDATE_ONLY can fail with ENOENT if element doesn't exist.
+>
+> Userspace will call it as:
+> int bpf_update_elem(int fd, void *key, void *value, __u64 flags)
+> {
+>      union bpf_attr attr = {
+>          .map_fd = fd,
+>          .key = ptr_to_u64(key),
+>          .value = ptr_to_u64(value),
+>          .flags = flags;
+>      };
+>
+>      return bpf(BPF_MAP_UPDATE_ELEM, &attr, sizeof(attr));
+> }
+>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
