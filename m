@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272AbaKDRWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:22:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60080 "EHLO
+	id S1753313AbaKDRWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:22:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60086 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaKDRWe (ORCPT
+	with ESMTP id S1751502AbaKDRWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:22:34 -0500
-Date: Tue, 4 Nov 2014 09:22:13 -0800
+	Tue, 4 Nov 2014 12:22:47 -0500
+Date: Tue, 4 Nov 2014 09:22:29 -0800
 From: tip-bot for Daniel J Blueman <tipbot@zytor.com>
-Message-ID: <tip-b980dcf25d0ee1f0f8c7b6afc0e715a2f5da5ec4@git.kernel.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, sp@numascale.com,
-        daniel@numascale.com, bhelgaas@google.com, tglx@linutronix.de,
-        hpa@zytor.com
-Reply-To: daniel@numascale.com, tglx@linutronix.de, bhelgaas@google.com,
-        hpa@zytor.com, mingo@kernel.org, sp@numascale.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1415089784-28779-3-git-send-email-daniel@numascale.com>
-References: <1415089784-28779-3-git-send-email-daniel@numascale.com>
+Message-ID: <tip-bdee237c0343a5d1a6cf72c7ea68e88338b26e08@git.kernel.org>
+Cc: sp@numascale.com, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        daniel@numascale.com, mingo@kernel.org
+Reply-To: sp@numascale.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, daniel@numascale.com, mingo@kernel.org,
+        bhelgaas@google.com
+In-Reply-To: <1415089784-28779-4-git-send-email-daniel@numascale.com>
+References: <1415089784-28779-4-git-send-email-daniel@numascale.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86: numachip: APIC driver cleanups
-Git-Commit-ID: b980dcf25d0ee1f0f8c7b6afc0e715a2f5da5ec4
+Subject: [tip:x86/mm] x86: mm:
+  Use 2GB memory block size on large-memory x86-64 systems
+Git-Commit-ID: bdee237c0343a5d1a6cf72c7ea68e88338b26e08
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,86 +34,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b980dcf25d0ee1f0f8c7b6afc0e715a2f5da5ec4
-Gitweb:     http://git.kernel.org/tip/b980dcf25d0ee1f0f8c7b6afc0e715a2f5da5ec4
+Commit-ID:  bdee237c0343a5d1a6cf72c7ea68e88338b26e08
+Gitweb:     http://git.kernel.org/tip/bdee237c0343a5d1a6cf72c7ea68e88338b26e08
 Author:     Daniel J Blueman <daniel@numascale.com>
-AuthorDate: Tue, 4 Nov 2014 16:29:43 +0800
+AuthorDate: Tue, 4 Nov 2014 16:29:44 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 4 Nov 2014 18:17:27 +0100
+CommitDate: Tue, 4 Nov 2014 18:19:27 +0100
 
-x86: numachip: APIC driver cleanups
+x86: mm: Use 2GB memory block size on large-memory x86-64 systems
 
-Drop printing that serves no purpose, as it's printing fixed or known
-values, and mark constant structure appropriately.
+On large-memory x86-64 systems of 64GB or more with memory hot-plug
+enabled, use a 2GB memory block size. Eg with 64GB memory, this reduces
+the number of directories in /sys/devices/system/memory from 512 to 32,
+making it more manageable, and reducing the creation time accordingly.
+
+This caveat is that the memory can't be offlined (for hotplug or
+otherwise) with the finer default 128MB granularity, but this is
+unimportant due to the high memory densities generally used with such
+large-memory systems, where eg a single DIMM is the order of 16GB.
 
 Signed-off-by: Daniel J Blueman <daniel@numascale.com>
 Cc: Steffen Persvold <sp@numascale.com>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
-Link: http://lkml.kernel.org/r/1415089784-28779-3-git-send-email-daniel@numascale.com
+Link: http://lkml.kernel.org/r/1415089784-28779-4-git-send-email-daniel@numascale.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/apic/apic_numachip.c | 22 +++-------------------
- arch/x86/pci/numachip.c              |  2 +-
- 2 files changed, 4 insertions(+), 20 deletions(-)
+ arch/x86/mm/init_64.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 7a31912..c2fd21f 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -153,20 +153,8 @@ static int __init numachip_probe(void)
- 	return apic == &apic_numachip;
- }
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 4cb8763..ebca30f 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -52,7 +52,6 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
+-#include <asm/uv/uv.h>
+ #include <asm/setup.h>
  
--static void __init map_csrs(void)
--{
--	printk(KERN_INFO "NumaChip: Mapping local CSR space (%016llx - %016llx)\n",
--		NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_BASE + NUMACHIP_LCSR_SIZE - 1);
--	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
--
--	printk(KERN_INFO "NumaChip: Mapping global CSR space (%016llx - %016llx)\n",
--		NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_BASE + NUMACHIP_GCSR_SIZE - 1);
--	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
--}
--
- static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- {
--
- 	if (c->phys_proc_id != node) {
- 		c->phys_proc_id = node;
- 		per_cpu(cpu_llc_id, smp_processor_id()) = node;
-@@ -175,19 +163,15 @@ static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ #include "mm_internal.h"
+@@ -1247,12 +1246,10 @@ static unsigned long probe_memory_block_size(void)
+ 	/* start from 2g */
+ 	unsigned long bz = 1UL<<31;
  
- static int __init numachip_system_init(void)
- {
--	unsigned int val;
--
- 	if (!numachip_system)
- 		return 0;
+-#ifdef CONFIG_X86_UV
+-	if (is_uv_system()) {
+-		printk(KERN_INFO "UV: memory block size 2GB\n");
++	if (totalram_pages >= (64ULL << (30 - PAGE_SHIFT))) {
++		pr_info("Using 2GB memory block size for large-memory system\n");
+ 		return 2UL * 1024 * 1024 * 1024;
+ 	}
+-#endif
  
-+	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
-+	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
-+
- 	x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
- 	x86_init.pci.arch_init = pci_numachip_init;
- 
--	map_csrs();
--
--	val = read_lcsr(CSR_G0_NODE_IDS);
--	printk(KERN_INFO "NumaChip: Local NodeID = %08x\n", val);
--
- 	return 0;
- }
- early_initcall(numachip_system_init);
-diff --git a/arch/x86/pci/numachip.c b/arch/x86/pci/numachip.c
-index 7307d9d..2e565e6 100644
---- a/arch/x86/pci/numachip.c
-+++ b/arch/x86/pci/numachip.c
-@@ -103,7 +103,7 @@ static int pci_mmcfg_write_numachip(unsigned int seg, unsigned int bus,
- 	return 0;
- }
- 
--const struct pci_raw_ops pci_mmcfg_numachip = {
-+static const struct pci_raw_ops pci_mmcfg_numachip = {
- 	.read = pci_mmcfg_read_numachip,
- 	.write = pci_mmcfg_write_numachip,
- };
+ 	/* less than 64g installed */
+ 	if ((max_pfn << PAGE_SHIFT) < (16UL << 32))
