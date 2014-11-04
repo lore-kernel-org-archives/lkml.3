@@ -1,132 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaKDFpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 00:45:21 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39923 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaKDFpS (ORCPT
+	id S1751973AbaKDFpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 00:45:49 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52836 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968AbaKDFpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 00:45:18 -0500
-Date: Tue, 4 Nov 2014 05:45:13 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org
-Subject: Re: [0/3] net: Kill skb_copy_datagram_const_iovec
-Message-ID: <20141104054513.GB7996@ZenIV.linux.org.uk>
-References: <20141103002207.GA26588@gondor.apana.org.au>
- <20141103004503.GX7996@ZenIV.linux.org.uk>
- <20141103053751.GA27845@gondor.apana.org.au>
- <20141103.150553.633529234958324183.davem@davemloft.net>
+	Tue, 4 Nov 2014 00:45:46 -0500
+Date: Tue, 4 Nov 2014 14:45:34 +0900
+From: Gyungoh Yoo <gyungoh@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
+        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: Re: [RESUBMIT PATCH v6 7/8] regulator: sky81452: Add compatible
+ string for device binding
+Message-ID: <20141104054534.GA4108@jack-ThinkPad-T520>
+References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-8-git-send-email-jack.yoo@skyworksinc.com>
+ <20141031164418.GC18557@sirena.org.uk>
+ <20141104004333.GA2965@jack-ThinkPad-T520>
+ <20141104005329.GA3815@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141103.150553.633529234958324183.davem@davemloft.net>
+In-Reply-To: <20141104005329.GA3815@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 03:05:53PM -0500, David Miller wrote:
+On Tue, Nov 04, 2014 at 12:53:29AM +0000, Mark Brown wrote:
+> On Tue, Nov 04, 2014 at 09:43:34AM +0900, Gyungoh Yoo wrote:
+> > On Fri, Oct 31, 2014 at 04:44:18PM +0000, Mark Brown wrote:
+> 
+> > > This doesn't apply against current code and depends on the MFD symbol
+> > > rename - can you please check what's going on here?
+> 
+> > Are you talking about 'sky81452-regulator'?
+> > I am sorry I don't understand. Can you explain in more detail?
+> 
+> No, I mean the Kconfig change.
+> 
+> > > It would make sense to split the Kconfig symbol rename into a separate
+> > > patch to ease merging, it doesn't seem obviously related to the driver
+> > > change and should probably be in the same patch as the MFD symbol rename
+> > > for bisetion.
+> 
+> > becuase the symbol in the modfied MFD does not match with the
+> > merged regulator driver, it was hard to split the patch.
+> 
+> I'm having a hard time understanding why it is difficult to split the
+> two changes - they are in completely separate files.
 
-> I'll see if I can make some progress converting the networking over
-> to iov_iter.  It can't be that difficult... albeit perhaps a little
-> time consuming.
+I am sorry for the hard time.
 
-FWIW, I have a queue that got started back in April; basically, the plan
-of attack was
-	* separate kernel-side and userland msghdr.
-	* localize ->msg_iov uses - most of that gets taken care of by
-several new helpers, as in
-    new helper: skb_copy_datagram_msg()
-    
-    Absolute majority of skb_copy_datagram_iovec() callers (49 out of 56)
-    are passing it msg->msg_iov as iovec.  Provide a trivial wrapper that
-    takes msg as argument instead of iovec.
-and several like that (the numbers in the above are probably incorrect these
-days - it was done more than half a year ago).
-	* switch kernel-side msghdr to iov_iter.  That means diverging
-layouts; it's really not hard, since we have copying of msghdr from
-userland already localized.  Initially - just a mechanical conversion
-(i.e. direct uses of iov_iter fields instead of ->msg_iov/->msg_iovlen;
-note that after the introduction of wrappers the number of such places
-is very much reduced).
-	* start converting those relatively few places to iov_iter primitives.
-
-And that's where it got stalled, since we have to deal with expectations
-of callers.  Syscall ones are trivial; that's not a problem.  Unfortunately,
-there are kernel_{send,recv}msg() users, and those do care about the state the
-iovec is left in.  Strictly speaking, the state of iovec after e.g.
-->sendmsg() is undefined.  And it's not just protocol-dependent - unless
-I'm seriously misreading it, tcp_sendmsg() ends up modifying iovec in case
-when it hits tcp_send_rcvq(), while in the normal case it leaves iovec
-unmodified.  So in general you need to feed ->{send,recv}msg() a throwaway copy
-of iovec.  Leads to wonders like
-        /* NB we can't trust socket ops to either consume our iovs
-         * or leave them alone. */
-        LASSERT (niov > 0);
-
-        for (nob = i = 0; i < niov; i++) {
-                scratchiov[i] = iov[i];
-                nob += scratchiov[i].iov_len;
-        }
-        LASSERT (nob <= conn->ksnc_rx_nob_wanted);
-
-        rc = kernel_recvmsg(conn->ksnc_sock, &msg,
-                (struct kvec *)scratchiov, niov, nob, MSG_DONTWAIT);
-etc.  However, there are places that don't bother and do this:
-        while (total_rx < data) {
-                rx_loop = kernel_recvmsg(conn->sock, &msg, iov_p, iov_len,
-                                        (data - total_rx), MSG_WAITALL);
-                if (rx_loop <= 0) {
-                        pr_debug("rx_loop: %d total_rx: %d\n",
-                                rx_loop, total_rx); 
-                        return rx_loop;
-                }
-                total_rx += rx_loop;
-                pr_debug("rx_loop: %d, total_rx: %d, data: %d\n",
-                                rx_loop, total_rx, data);
-        }
-(that's iscsit_do_rx_data()).  Maybe it's a bug; maybe it's relying on
-specific behaviour of the protocol known to be used - this code clearly
-expects recvmsg to advance iovec, which seems to depend only on the
-protocol.  At the moment.  In any case, it's very brittle...
-
-Hell knows; I hadn't finished digging through that zoo - got sidetracked back
-then.  *IF* all such places either use a throwaway copy or assume that iovec
-gets modified, we can do the following: switch the access to iovecs to
-iov_iter primitives, with the first kind of callers creating a throwaway
-iov_iter and the second just feeding the same iov_iter to e.g.
-kernel_recvmsg().  iovec will remain constant, iov_iter will be advanced.
-Moreover, in a lot of cases of first kind will be able to get rid of
-throwaway iov_iter (and of manually advancing it), effectively converting
-to the second one.
-
-If we have places that currently rely on iovec remaining unchanged (i.e.
-manually advancing it after kernel_{send,recv}msg()), the series will be
-more painful ;-/  I very much hope that no such places exist...
-
-FWIW, there is also a tactical question that needs to be dealt with.  We
-can, of course, start with renaming the "kernel-side" (i.e. post
-copy_msghdr_from_user()/get_compat_msghdr()) to struct kmsghdr.  OTOH,
-that's a _lot_ of churn for very little reason - most of the instances
-in the tree are of that kind.  So I did it the other way round - introduced
-struct user_msghdr (only in linux/socket.h; note that we do *not* have
-struct msghdr in uabi/linux/socket.h, or anywhere else in uabi/*),
-made the syscalls take pointers to it and (initially) rely upon the identical
-layouts in copy_msghdr_from_user(); once we put iov_iter into kernel-side
-msghdr, we'll just do it like get_compat_msghdr() does.
-
-Is that acceptable?  It would greatly reduce the amount of churn in net/* -
-we don't need to pass iov_iter separately and most of the functions in
-the middle of call chains are completely unchanged.  Only the originators
-of ->sendmsg()/->recvmsg() and the places doing actual data copying
-need to be touched.  OTOH, it makes for kernel struct msghdr looking
-odd - instead of normal ->msg_iov and ->msg_iovlen it would have
-->msg_iov_iter, with ->sendmsg()/->recvmsg() callers needing to set it
-up...  OTTH, the things *are* odd from userland programmer POV - sendmsg(2)
-and recvmsg(2) leave the iovec unchanged, and having it changed unpredicatably
-in the kernel-side counterparts seems to make for a nasty trap.  Certainly
-makes for a bunch of nasty comments in the code using those...
-
-Comments?
+That was because the symbol changes had a dependency with 1/8.
+In this case, Should Kconfig symbol change back from MFD_SKY81452
+to SKY81452 in this patch series? And then should I submit to change to MFD_SKY81452
+with seperate patch?
