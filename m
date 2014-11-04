@@ -1,216 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaKDHcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:32:46 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58145 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaKDHcn (ORCPT
+	id S1751299AbaKDHiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:38:12 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46456 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbaKDHiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:32:43 -0500
-Subject: [PATCH] hwmon: (ibmpowernv) Use platform 'id_table' to probe the
- device
-To: jdelvare@suse.de, linux@roeck-us.net
-From: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
-Cc: benh@au1.ibm.com, linux-kernel@vger.kernel.org, michaele@au1.ibm.com,
-        lm-sensors@lm-sensors.org
-Date: Tue, 04 Nov 2014 13:00:04 +0530
-Message-ID: <20141104072927.4307.67881.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	Tue, 4 Nov 2014 02:38:09 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Subject: Re: [PATCH v4 5/5] perf/sdt: Add support to perf record to trace SDT events
+References: <20141102105006.21708.28734.stgit@hemant-fedora>
+	<20141102105557.21708.19032.stgit@hemant-fedora>
+Date: Tue, 04 Nov 2014 16:38:06 +0900
+In-Reply-To: <20141102105557.21708.19032.stgit@hemant-fedora> (Hemant Kumar's
+	message of "Sun, 02 Nov 2014 16:26:28 +0530")
+Message-ID: <87lhnr5sbl.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110407-1618-0000-0000-0000012F480B
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current driver probe() function assumes the sensor device to be
-alwary present and gets executed every time if the driver is loaded,
-but the appropriate hardware could not be present.
+Hi Hemant,
 
-So, move the platform device creation as part of platform init code
-and use the 'id_table' to check if the device present or not.
+As you know, you need to keep an eye on how (kprobes) event cache
+patchset from Masami settles down.  For those who aren't CC'ed, please
+see the link below:
 
-Signed-off-by: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
----
- arch/powerpc/platforms/powernv/opal-sensor.c |   20 ++++++++
- drivers/hwmon/ibmpowernv.c                   |   67 +++++++-------------------
- 2 files changed, 39 insertions(+), 48 deletions(-)
+  https://lkml.org/lkml/2014/10/31/207
 
-diff --git a/arch/powerpc/platforms/powernv/opal-sensor.c b/arch/powerpc/platforms/powernv/opal-sensor.c
-index 10271ad..215c418 100644
---- a/arch/powerpc/platforms/powernv/opal-sensor.c
-+++ b/arch/powerpc/platforms/powernv/opal-sensor.c
-@@ -20,7 +20,9 @@
- 
- #include <linux/delay.h>
- #include <linux/mutex.h>
-+#include <linux/of_platform.h>
- #include <asm/opal.h>
-+#include <asm/machdep.h>
- 
- static DEFINE_MUTEX(opal_sensor_mutex);
- 
-@@ -64,3 +66,21 @@ out:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(opal_get_sensor_data);
-+
-+static __init int opal_sensor_init(void)
-+{
-+	struct platform_device *pdev;
-+	struct device_node *sensor;
-+
-+	sensor = of_find_node_by_path("/ibm,opal/sensors");
-+	if (sensor) {
-+		pdev = of_platform_device_create(sensor, "opal-sensor", NULL);
-+		of_node_put(sensor);
-+	} else {
-+		pr_info("Opal node 'sensors' not found\n");
-+		return -ENODEV;
-+	}
-+
-+	return PTR_ERR_OR_ZERO(pdev);
-+}
-+machine_subsys_initcall(powernv, opal_sensor_init);
-diff --git a/drivers/hwmon/ibmpowernv.c b/drivers/hwmon/ibmpowernv.c
-index 6a30eee..c7577b8 100644
---- a/drivers/hwmon/ibmpowernv.c
-+++ b/drivers/hwmon/ibmpowernv.c
-@@ -74,9 +74,6 @@ struct platform_data {
- 	u32 sensors_count; /* Total count of sensors from each group */
- };
- 
--/* Platform device representing all the ibmpowernv sensors */
--static struct platform_device *pdevice;
--
- static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
- 			   char *buf)
- {
-@@ -99,7 +96,7 @@ static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
- 	return sprintf(buf, "%u\n", x);
- }
- 
--static int __init get_sensor_index_attr(const char *name, u32 *index,
-+static int get_sensor_index_attr(const char *name, u32 *index,
- 					char *attr)
- {
- 	char *hash_pos = strchr(name, '#');
-@@ -136,7 +133,7 @@ static int __init get_sensor_index_attr(const char *name, u32 *index,
-  * which need to be mapped as fan2_input, temp1_max respectively before
-  * populating them inside hwmon device class.
-  */
--static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
-+static int create_hwmon_attr_name(struct device *dev, enum sensors type,
- 					 const char *node_name,
- 					 char *hwmon_attr_name)
- {
-@@ -172,7 +169,7 @@ static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
- 	return 0;
- }
- 
--static int __init populate_attr_groups(struct platform_device *pdev)
-+static int populate_attr_groups(struct platform_device *pdev)
- {
- 	struct platform_data *pdata = platform_get_drvdata(pdev);
- 	const struct attribute_group **pgroups = pdata->attr_groups;
-@@ -180,11 +177,6 @@ static int __init populate_attr_groups(struct platform_device *pdev)
- 	enum sensors type;
- 
- 	opal = of_find_node_by_path("/ibm,opal/sensors");
--	if (!opal) {
--		dev_dbg(&pdev->dev, "Opal node 'sensors' not found\n");
--		return -ENODEV;
--	}
--
- 	for_each_child_of_node(opal, np) {
- 		if (np->name == NULL)
- 			continue;
-@@ -221,7 +213,7 @@ static int __init populate_attr_groups(struct platform_device *pdev)
-  * to the name required by the higher 'hwmon' driver like fan1_input, temp1_max
-  * etc..
-  */
--static int __init create_device_attrs(struct platform_device *pdev)
-+static int create_device_attrs(struct platform_device *pdev)
- {
- 	struct platform_data *pdata = platform_get_drvdata(pdev);
- 	const struct attribute_group **pgroups = pdata->attr_groups;
-@@ -280,7 +272,7 @@ exit_put_node:
- 	return err;
- }
- 
--static int __init ibmpowernv_probe(struct platform_device *pdev)
-+static int ibmpowernv_probe(struct platform_device *pdev)
- {
- 	struct platform_data *pdata;
- 	struct device *hwmon_dev;
-@@ -309,52 +301,31 @@ static int __init ibmpowernv_probe(struct platform_device *pdev)
- 	return PTR_ERR_OR_ZERO(hwmon_dev);
- }
- 
-+static const struct platform_device_id opal_sensor_driver_ids[] = {
-+	{
-+		.name = "opal-sensor",
-+	},
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(platform, opal_sensor_driver_ids);
-+
- static struct platform_driver ibmpowernv_driver = {
--	.driver = {
--		.owner = THIS_MODULE,
--		.name = DRVNAME,
-+	.probe		= ibmpowernv_probe,
-+	.id_table	= opal_sensor_driver_ids,
-+	.driver		= {
-+		.owner	= THIS_MODULE,
-+		.name	= DRVNAME,
- 	},
- };
- 
- static int __init ibmpowernv_init(void)
- {
--	int err;
--
--	pdevice = platform_device_alloc(DRVNAME, 0);
--	if (!pdevice) {
--		pr_err("Device allocation failed\n");
--		err = -ENOMEM;
--		goto exit;
--	}
--
--	err = platform_device_add(pdevice);
--	if (err) {
--		pr_err("Device addition failed (%d)\n", err);
--		goto exit_device_put;
--	}
--
--	err = platform_driver_probe(&ibmpowernv_driver, ibmpowernv_probe);
--	if (err) {
--		if (err != -ENODEV)
--			pr_err("Platform driver probe failed (%d)\n", err);
--
--		goto exit_device_del;
--	}
--
--	return 0;
--
--exit_device_del:
--	platform_device_del(pdevice);
--exit_device_put:
--	platform_device_put(pdevice);
--exit:
--	return err;
-+	return platform_driver_register(&ibmpowernv_driver);
- }
- 
- static void __exit ibmpowernv_exit(void)
- {
- 	platform_driver_unregister(&ibmpowernv_driver);
--	platform_device_unregister(pdevice);
- }
- 
- MODULE_AUTHOR("Neelesh Gupta <neelegup@linux.vnet.ibm.com>");
 
+On Sun, 02 Nov 2014 16:26:28 +0530, Hemant Kumar wrote:
+> This patch adds support to perf to record SDT events. When invoked,
+> the SDT event is looked up in the sdt-cache. If its found, an entry is
+> made silently to uprobe_events file and then recording is invoked, and
+> then the entry for the SDT event in uprobe_events is silently discarded.
+>
+> The SDT events are already stored in a cache file
+> (/var/cache/perf/perf-sdt-file.cache).
+> Although the file_hash table helps in addition or deletion of SDT events
+> from the cache, its not of much use when it comes to probing the actual
+> SDT event, because the key to this hash list is a file name and not the
+> SDT event name (which is given as an argument to perf record). So, we
+> won't be able to hash into it.
+
+It likely to be ended up with per-file or per-buildid cache files under
+~/.debug directory.  In this case we also need to have the (central)
+event-to-cache table anyway IMHO.
+
+
+>
+> To avoid this problem, we can create another hash list "event_hash" list
+> which will be maintained along with the file_hash list.
+> Whenever a user invokes 'perf record -e %provider:event, perf should
+> initialize the event_hash list and the file_hash list.
+> The key to event_hash list is calculated from the event name and its
+> provider name.
+
+Isn't it enough just to use provide name?  I guess the provider names
+are (should be?) unique among a system although there's no absolute
+guarantee for that.
+
+
+>
+>             event_hash       sdt_note
+>             |---------|   ----------------
+>             |         |   |   file_ptr   |==> container file_sdt_ent
+> key = 129 =>| hlist ==|===|=> event_list=|==> to sdt notes hashed to
+>        	    |         |   |   name       |    same entry
+>             |---------|   |   provider   |
+>             |	      |   |   note_list==|==> to other notes in the
+> key = 130 =>| hlist   |   ---------------     same file
+>             |---------|
+>
+> The entry at that key in event_hash contains a list of SDT notes hashed to
+> the same entry. It compares the name and provider to see if that is the SDT
+> note we are looking for. If yes, find out the file that contains this SDT
+> note. There is a file_ptr pointer embedded in this note which points to the
+> struct file_sdt_ent contained in the file_hash. From "file_sdt_ent" we will
+> find out the file name.
+> Convert this sdt note into a perf event and then write this into
+> uprobe_events file to be able to record the event.
+> Then, corresponding entries are added to uprobe_events file for
+> the SDT events.
+> After recording is done, these events are silently deleted from uprobe_events
+> file. The uprobe_events file is present in debugfs/tracing directory.
+>
+> To support the addition and deletion of SDT events to/from uprobe_events
+> file, a record_sdt struct is maintained which has the event data.
+>
+> An example usage:
+>
+> # perf record -e %libc:setjmp -aR sleep 10
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.277 MB perf.data (~12103 samples) ]
+>
+> # perf report --stdio
+> # To display the perf.data header info, please use --header/--header-only
+> #
+> # Samples: 1  of event 'libc:setjmp'
+> # Event count (approx.): 1
+> #
+> # Overhead  Command  Shared Object  Symbol
+> # ........  .......  .............  ...............
+> #
+>    100.00%  sleep    libc-2.16.so   [.] __sigsetjmp
+>
+>
+> Signed-off-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
+
+
+[SNIP]
+> +/* Session specific to SDT tracing */
+> +struct record_sdt {
+> +	bool    sdt;    /* is this SDT event tracing? */
+> +	char    *str;   /* hold the event name */
+> +} rec_sdt;
+> +
+> +int trace_sdt_event(const char *str)
+> +{
+> +	int ret = 0;
+> +
+> +	rec_sdt.sdt = true;
+> +	rec_sdt.str = strdup(str);
+> +	if (!rec_sdt.str)
+> +		return -ENOMEM;
+> +	ret = event_hash_list__lookup(str);
+> +	return ret;
+> +}
+
+Hmm.. does it support multiple SDT events recorded in a session like:
+
+  # perf record -e %libc:setjmp -e %libc:longjmp -aR sleep 10
+
+?
+
+
+[SNIP]
+> +/* Parse an SDT event */
+> +static int parse_perf_sdt_event(struct perf_sdt_event *sev,
+> +				struct perf_probe_event *pev)
+> +{
+> +	struct perf_probe_point *pp = &pev->point;
+> +
+> +	pev->uprobes = true;
+> +	pev->sdt = true;
+> +	pev->event = strdup(sev->note->name);
+> +	if (pev->event == NULL)
+> +		return -ENOMEM;
+> +	pev->group = strdup(sev->note->provider);
+> +	if (pev->event == NULL)
+
+s/event/group/
+
+> +		return -ENOMEM;
+> +
+> +	pp->file = strdup(sev->file_name);
+> +	if (pp->file == NULL)
+> +		return -ENOMEM;
+> +
+> +	pp->function = strdup(sev->note->name);
+
+Missing NULL check.  Also you need to free prior allocations in case of
+error.
+
+Thanks,
+Namhyung
+
+
+> +	pp->offset = sev->note->addr.a64[0];
+> +	return 0;
+> +}
