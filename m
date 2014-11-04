@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaKDCBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 21:01:41 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:33382 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162AbaKDCBi (ORCPT
+	id S1752152AbaKDCDJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 21:03:09 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:48493 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaKDCDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 21:01:38 -0500
-Message-ID: <5458336F.6090600@huawei.com>
-Date: Tue, 4 Nov 2014 10:01:19 +0800
-From: Yao Dongdong <yaodongdong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] Thermal:Fix memory leak if occur goto unregister
-References: <5444C778.8050008@huawei.com> <20141020123338.GA3744@developer> <4D68720C2E767A4AA6A8796D42C8EB590902F30A@BGSMSX101.gar.corp.intel.com> <20141103183510.GA441@developer>
-In-Reply-To: <20141103183510.GA441@developer>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 3 Nov 2014 21:03:05 -0500
+Message-ID: <1415066556.24825.24.camel@debian>
+Subject: Re: [PATCH 2/2] x86, mce, amd: extend mce-inject for support
+ threshold interrupt event injection on AMD platform
+From: Chen Yucong <slaoub@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        tony.luck@intel.com, ak@linux.intel.com, gong.chen@linux.intel.com,
+        linux-edac@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 04 Nov 2014 10:02:36 +0800
+In-Reply-To: <20141103180047.GG27384@pd.tnic>
+References: <1414718648-7766-1-git-send-email-slaoub@gmail.com>
+	 <1414718648-7766-3-git-send-email-slaoub@gmail.com>
+	 <CAOjmkp9Aec9Ec-93YvT5S_mMaxrOoZSYCDbjyWaxGV_dac6qog@mail.gmail.com>
+	 <5457C0B3.30007@amd.com> <20141103180047.GG27384@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.110.51.36]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/4 2:35, Eduardo Valentin wrote:
-> Hello,
->
-> On Mon, Nov 03, 2014 at 06:17:37PM +0000, R, Durgadoss wrote:
->>> -----Original Message-----
->>> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
->>> owner@vger.kernel.org] On Behalf Of Eduardo Valentin
->>> Sent: Monday, October 20, 2014 6:04 PM
->>> To: Yao Dongdong
->>> Cc: Zhang, Rui; linux-pm@vger.kernel.org; LKML
->>> Subject: Re: [PATCH 1/2] Thermal:Fix memory leak if occur goto unregister
->>>
->>> Hello,
->>>
->>> On Mon, Oct 20, 2014 at 04:27:36PM +0800, Yao Dongdong wrote:
->>>> Signed-off-by:yaodongdong@huawei.com
->>> Acked-by: Eduardo Valentin <edubezval@gmail.com>
->>>
->>> Rui, would you take care of this?
->>>
->> If I remember it right, this 'tz' is freed in the thermal_release()
->> function, during device_unregister().
->>
->> It is similar in all other functions in thermal_core.c
->>
->> So, Yao, Did you really test this patch ?
->> And did not see any crashes ?
->>
-> Yao, reading the patch change carefully, now I see that Durga is correct
-> here. 
->
->> Thanks,
->> Durga
->>
->>>> ---
->>>>  drivers/thermal/thermal_core.c | 1 +
->>>>  1 file changed, 1 insertion(+)
->>>>
->>>> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
->>>> index 71b0ec0..5b7d466 100644
->>>> --- a/drivers/thermal/thermal_core.c
->>>> +++ b/drivers/thermal/thermal_core.c
->>>> @@ -1574,6 +1574,7 @@ struct thermal_zone_device
->>> *thermal_zone_device_register(const char *type,
->>>>  unregister:
->>>>     release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
->>>>     device_unregister(&tz->device);
->>>> +   kfree(tz);
-> The device unregister is called above your kfree call, which will cause
-> the thermal_release to be called. Did you test the code for double kfree
-> calls? Your patch probably inserts a memory corruption.
->
-> I will revert your patch from my tree until you provide an answer about
-> your testing.
+On Mon, 2014-11-03 at 19:00 +0100, Borislav Petkov wrote:
+> On Mon, Nov 03, 2014 at 11:51:47AM -0600, Aravind Gopalakrishnan wrote:
+> > On 11/3/2014 11:05 AM, Aravind Gopalakrishnan wrote:
+> > >
+> > >There are three ways that have been used to report machine check event.
+> > >And they are MCE, CMCI/Threshold Interrupt, and POLL. On the Intel
+> > >platform, CMCI/Threshold Interrupt and POLL share the same event handler
+> > >- machine_check_poll(). However, on the AMD platform, they have a
+> > >separate event handler. amd_threshold_interrupt() is used for handling
+> > >Threshold Interrupt event. And machine_check_poll() has been used for
+> > >polling other events.
+> > >
+> > >This patch introduces a new flag MCJ_INTERRUPT that will be used to
+> > >separate CMCI/Threshold Interrupt and POLL handler in mce-inject.
+> > >
+> > >Signed-off-by: Chen Yucong <slaoub@gmail.com <mailto:slaoub@gmail.com>>
+> > >---
+> > > arch/x86/include/asm/mce.h              |    5 +++--
+> > > arch/x86/kernel/cpu/mcheck/mce-inject.c |   16 ++++++++++++++++
+> > > arch/x86/kernel/cpu/mcheck/threshold.c  |    1 +
+> > > 3 files changed, 20 insertions(+), 2 deletions(-)
+> > >
+> > 
+> > 
+> > We currently test decoding logic on AMD by performing mce injections using
+> > edac/mce_amd_inj.c,
+> > So instead of modifying mce-inject just for testing
+> > amd_threshold_interrupt(),
+> > Why not put it under mce_amd_inj? (It's AMD specific code anyway)
+> 
+> Right, I think this is supposed to be vendor-agnostic as it is calling
+> mce_threshold_vector() directly.
+> 
+I'm not sure I understand your point. But mce_threshold_vector is shared
+by AMD and Intel. 
 
-Yes, i have checked it and you are right, the patch will double kfree tz.
+> Btw, I wouldn't mind if someone would sit down and unify those injection
+> methods and come up with a saner interface which can actually be used by
+> humans, not those yucky files you feed mce-inject with...
+> 
+Anyway, I think it can be work well for testing EDAC/raddaemon/mcelog
+decoding logic. So I suggest you try to use it, and you can add it to
+your list of test tools.
 
-Thansks Durga for correcting me.
-
-> Thanks,
->
->
-> Eduardo Valentin
->
->>>>     return ERR_PTR(result);
->>>>  }
->>>>  EXPORT_SYMBOL_GPL(thermal_zone_device_register);
->>>> --
->>>> 1.8.0.1
->>>>
->>>>
-
+thx!
+cyc
 
