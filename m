@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaKDNlR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:41:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47442 "EHLO mx2.suse.de"
+	id S1753601AbaKDNlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:41:46 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:40436 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104AbaKDNlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:41:14 -0500
-Date: Tue, 4 Nov 2014 14:41:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
-        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
-Message-ID: <20141104134110.GD22207@dhcp22.suse.cz>
-References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
- <54589017.9060604@jp.fujitsu.com>
- <20141104132701.GA18441@phnom.home.cmpxchg.org>
+	id S1751617AbaKDNlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 08:41:44 -0500
+Message-ID: <5458D771.1080109@ti.com>
+Date: Tue, 4 Nov 2014 15:41:05 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104132701.GA18441@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Santosh Shilimkar <santosh.shilimkar@gmail.com>, <ssantosh@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, <khilman@linaro.org>
+CC: <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v3 0/5] ARM: keystone: pm: switch to use generic pm domains
+References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com> <544A99B2.8080507@gmail.com>
+In-Reply-To: <544A99B2.8080507@gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-11-14 08:27:01, Johannes Weiner wrote:
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] mm: move page->mem_cgroup bad page handling into generic code fix
-> 
-> Remove obsolete memory saving recommendations from the MEMCG Kconfig
-> help text.
+Hi Santosh,
 
-The memory overhead is still there. So I do not think it is good to
-remove the message altogether. The current overhead might be 4 or 8B
-depending on the configuration. What about
-"
-	Note that setting this option might increase fixed memory
-	overhead associated with each page descriptor in the system.
-	The memory overhead depends on the architecture and other
-	configuration options which have influence on the size and
-	alignment on the page descriptor (struct page). Namely
-	CONFIG_SLUB has a requirement for page alignment to two words
-	which in turn means that 64b systems might not see any memory
-	overhead as the additional data fits into alignment. On the
-	other hand 32b systems might see 8B memory overhead.
-"
+On 10/24/2014 09:25 PM, Santosh Shilimkar wrote:
+> On 10/23/2014 07:22 AM, Grygorii Strashko wrote:
+>> Hi Santosh, Kevin,
+>>
+>> This series switches Keystone 2 PM code to use Generic PM domains
+>> instead of PM clock domains because of the lack of DT support
+>> for the last.
+>> It will finally allow to enable Runtime PM for Keystone 2.
+>>
+>> Patch 1 was reused from [1].
+>>
+>> RFC version of patches can be found at [2].
+>>
+>> Changes in v3:
+>>   - handling of the case when !CONFIG_PM_RUNTIME has been
+>>     moved in PM clock framework.
+>>
+>> Changes in v2:
+>> - minor comments applied and rebased on top of Linux 3.18-rc1.
+>>
+>> Links on previous versions:
+>> v2:  https://lkml.org/lkml/2014/10/20/248
+>> v1:  https://lkml.org/lkml/2014/9/29/382
+>>
+>> [1] "[PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core"
+>>    https://lkml.org/lkml/2014/4/24/1118
+>>
+>> [2] "[RFC PATCH 0/4] ARM: keystone: pm: switch to use generic pm domains"
+>>    https://lkml.org/lkml/2014/9/25/364
+>>
+>> CC: Santosh Shilimkar <ssantosh@kernel.org>
+>> CC: Kevin Hilman <khilman@linaro.org>
+>> CC: Ulf Hansson <ulf.hansson@linaro.org>
+>> CC: Geert Uytterhoeven <geert@linux-m68k.org>
+>> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>
+>> Geert Uytterhoeven (1):
+>>    PM / clock_ops: Add pm_clk_add_clk()
+>>
+>> Grygorii Strashko (4):
+>>    PM / clock_ops: make __pm_clk_enable more generic
+>>    PM / clock_ops: add and enable clocks always if !CONFIG_PM_RUNTIME
+>>    ARM: keystone: pm: switch to use generic pm domains
+>>    ARM: dts: keystone: add generic pm controller node
+>>
+> You can split this series. Lets get first 3 patches sorted out as
+> there have been active discussion on those. Once they get direction
+> and merged then you can post the keystone ones which I will be
+> happy to merge.
 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  init/Kconfig | 12 ------------
->  1 file changed, 12 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 01b7f2a6abf7..d68d8b0780b3 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -983,18 +983,6 @@ config MEMCG
->  	  Provides a memory resource controller that manages both anonymous
->  	  memory and page cache. (See Documentation/cgroups/memory.txt)
->  
-> -	  Note that setting this option increases fixed memory overhead
-> -	  associated with each page of memory in the system. By this,
-> -	  8(16)bytes/PAGE_SIZE on 32(64)bit system will be occupied by memory
-> -	  usage tracking struct at boot. Total amount of this is printed out
-> -	  at boot.
-> -
-> -	  Only enable when you're ok with these trade offs and really
-> -	  sure you need the memory resource controller. Even when you enable
-> -	  this, you can set "cgroup_disable=memory" at your boot option to
-> -	  disable memory resource controller and you can avoid overheads.
-> -	  (and lose benefits of memory resource controller)
-> -
->  config MEMCG_SWAP
->  	bool "Memory Resource Controller Swap Extension"
->  	depends on MEMCG && SWAP
-> -- 
-> 2.1.3
-> 
+Sure, will do.
 
--- 
-Michal Hocko
-SUSE Labs
+Sorry, for delayed reply - I was ooo last week.
+
+regards,
+-grygorii
+
