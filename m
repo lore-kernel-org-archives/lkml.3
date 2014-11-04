@@ -1,65 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653AbaKDTVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 14:21:21 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:52119 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457AbaKDTVP (ORCPT
+	id S1752747AbaKDTXC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 14:23:02 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:47438 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaKDTW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 14:21:15 -0500
-From: Gregory Fong <gregory.0xf0@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org, carlos@redhat.com,
-        eblake@redhat.com, Kumar Gala <galak@codeaurora.org>,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Miller <davem@davemloft.net>
-Subject: [PATCH] bridge: include in6.h in if_bridge.h for struct in6_addr
-Date: Tue,  4 Nov 2014 11:21:21 -0800
-Message-Id: <1415128881-30183-1-git-send-email-gregory.0xf0@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 4 Nov 2014 14:22:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
+References: <cover.1415117102.git.shuahkh@osg.samsung.com>
+Date: Tue, 4 Nov 2014 11:22:57 -0800
+X-Google-Sender-Auth: B56PU7pidBXz0HIpeEj_UQeiEVU
+Message-ID: <CAGXu5jK9-TpOF4SFX2bkU2UJMXk-3W+-_we0BTxu4Ga+7bYXSQ@mail.gmail.com>
+Subject: Re: [PATCH 00/20] kselftest install target feature
+From: Kees Cook <keescook@chromium.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+        tranmanphong@gmail.com, David Herrmann <dh.herrmann@gmail.com>,
+        Hugh Dickins <hughd@google.com>, bobby.prani@gmail.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if_bridge.h uses struct in6_addr ip6, but wasn't including the in6.h
-header.  Thomas Backlund originally sent a patch to do this, but this
-revealed a redefinition issue: https://lkml.org/lkml/2013/1/13/116
+On Tue, Nov 4, 2014 at 9:10 AM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+> This patch series adds a new kselftest_install make target
+> to enable selftest install. When make kselftest_install is
+> run, selftests are installed on the system. A new install
+> target is added to selftests Makefile which will install
+> targets for the tests that are specified in INSTALL_TARGETS.
+> During install, a script is generated to run tests that are
+> installed. This script will be installed in the selftest install
+> directory. Individual test Makefiles are changed to add to the
+> script. This will allow new tests to add install and run test
+> commands to the generated kselftest script.
 
-The redefinition issue should have been fixed by the following Linux
-commits:
-ee262ad827f89e2dc7851ec2986953b5b125c6bc inet: defines IPPROTO_* needed for module alias generation
-cfd280c91253cc28e4919e349fa7a813b63e71e8 net: sync some IP headers with glibc
+I'm all for making the self tests more available, but I don't think
+this is the right approach. My primary objection is that it creates a
+second way to run tests, and that means any changes and additions need
+to be updated in two places. I'd much rather just maintain the single
+"make" targets instead. Having "make" available on the target device
+doesn't seem too bad to me. Is there a reason that doesn't work for
+your situation?
 
-and the following glibc commit:
-6c82a2f8d7c8e21e39237225c819f182ae438db3 Coordinate IPv6 definitions for Linux and glibc
+I would, however, like to see some better standardization of the test
+"framework" that we've got in there already. (For example, some
+failures fail the "make", some don't, there are various reporting
+methods for success/failure depending on the test, etc.)
 
-so actually include the header now.
+-Kees
 
-Reported-by: Colin Guthrie <colin@mageia.org>
-Reported-by: Christiaan Welvaart <cjw@daneel.dyndns.org>
-Reported-by: Thomas Backlund <tmb@mageia.org>
-Cc: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Gregory Fong <gregory.0xf0@gmail.com>
----
- include/uapi/linux/if_bridge.h | 1 +
- 1 file changed, 1 insertion(+)
+> Approach:
+>
+> make kselftest_target:
+> -- exports kselftest INSTALL_KSFT_PATH
+>    default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
+> -- exports path for ksefltest.sh
+> -- runs selftests make install target:
+>
+> selftests make install target
+> -- creates kselftest.sh script in install install dir
+> -- runs install targets for all INSTALL_TARGETS
+>
+> Individual test make install targets:
+> -- install test programs and/or scripts in install dir
+> -- append to the ksefltest.sh file to add commands to run test
+>
+> Shuah Khan (20):
+>   selftests/user: move test out of Makefile into a shell script
+>   selftests/net: move test out of Makefile into a shell script
+>   kbuild: kselftest_install - add a new make target to install selftests
+>   selftests: add install target to enable installing selftests
+>   selftests/breakpoints: add install target to enable installing test
+>   selftests/cpu-hotplug: add install target to enable installing test
+>   selftests/efivarfs: add install target to enable installing test
+>   selftests/firmware: add install target to enable installing test
+>   selftests/ipc: add install target to enable installing test
+>   selftests/kcmp: add install target to enable installing test
+>   selftests/memfd: add install target to enable installing test
+>   selftests/memory-hotplug: add install target to enable installing test
+>   selftests/mount: add install target to enable installing test
+>   selftests/mqueue: add install target to enable installing test
+>   selftests/net: add install target to enable installing test
+>   selftests/ptrace: add install target to enable installing test
+>   selftests/sysctl: add install target to enable installing test
+>   selftests/timers: add install target to enable installing test
+>   selftests/vm: add install target to enable installing test
+>   selftests/user: add install target to enable installing test
+>
+>  Makefile                                        | 17 +++++++++++++++++
+>  tools/testing/selftests/Makefile                | 14 ++++++++++++++
+>  tools/testing/selftests/breakpoints/Makefile    | 12 ++++++++++++
+>  tools/testing/selftests/cpu-hotplug/Makefile    |  9 +++++++++
+>  tools/testing/selftests/efivarfs/Makefile       | 13 ++++++++++++-
+>  tools/testing/selftests/firmware/Makefile       | 20 ++++++++++++++++++++
+>  tools/testing/selftests/ipc/Makefile            | 11 +++++++++++
+>  tools/testing/selftests/kcmp/Makefile           | 12 ++++++++++++
+>  tools/testing/selftests/memfd/Makefile          | 10 ++++++++++
+>  tools/testing/selftests/memory-hotplug/Makefile |  9 +++++++++
+>  tools/testing/selftests/mount/Makefile          |  7 +++++++
+>  tools/testing/selftests/mqueue/Makefile         |  8 ++++++++
+>  tools/testing/selftests/net/Makefile            | 18 +++++++++++-------
+>  tools/testing/selftests/net/test_bpf.sh         | 10 ++++++++++
+>  tools/testing/selftests/ptrace/Makefile         | 11 +++++++++--
+>  tools/testing/selftests/sysctl/Makefile         | 10 ++++++++++
+>  tools/testing/selftests/timers/Makefile         |  7 +++++++
+>  tools/testing/selftests/user/Makefile           | 15 ++++++++-------
+>  tools/testing/selftests/user/test_user_copy.sh  | 10 ++++++++++
+>  tools/testing/selftests/vm/Makefile             |  7 +++++++
+>  20 files changed, 213 insertions(+), 17 deletions(-)
+>  create mode 100755 tools/testing/selftests/net/test_bpf.sh
+>  create mode 100755 tools/testing/selftests/user/test_user_copy.sh
+>
+> --
+> 1.9.1
+>
 
-diff --git a/include/uapi/linux/if_bridge.h b/include/uapi/linux/if_bridge.h
-index 39f621a..da17e45 100644
---- a/include/uapi/linux/if_bridge.h
-+++ b/include/uapi/linux/if_bridge.h
-@@ -15,6 +15,7 @@
- 
- #include <linux/types.h>
- #include <linux/if_ether.h>
-+#include <linux/in6.h>
- 
- #define SYSFS_BRIDGE_ATTR	"bridge"
- #define SYSFS_BRIDGE_FDB	"brforward"
+
+
 -- 
-1.9.1
-
+Kees Cook
+Chrome OS Security
