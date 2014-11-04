@@ -1,192 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaKDIcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:32:22 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:34229 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaKDIbo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:31:44 -0500
-Subject: [PATCH 2/4] tun: Use iovec iterators
-References: <20141104033818.GA11149@gondor.apana.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Message-Id: <E1XlZWY-0003Hk-Qu@gondolin.me.apana.org.au>
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Tue, 04 Nov 2014 16:31:34 +0800
+	id S1752577AbaKDIbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:31:16 -0500
+Received: from numascale.com ([213.162.240.84]:57480 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752224AbaKDIbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 03:31:12 -0500
+From: Daniel J Blueman <daniel@numascale.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Steffen Persvold <sp@numascale.com>
+Subject: [PATCH v4 2/4] Numachip: Elide self-IPI ICR polling
+Date: Tue,  4 Nov 2014 16:29:42 +0800
+Message-Id: <1415089784-28779-2-git-send-email-daniel@numascale.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415089784-28779-1-git-send-email-daniel@numascale.com>
+References: <1415089784-28779-1-git-send-email-daniel@numascale.com>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of skb_copy_datagram_const_iovec in
-favour of the iovec iterator-based skb_copy_datagram_iter.
+The default self-IPI path polls the ICR to delay sending the IPI until
+there is no IPI in progress. This is redundant on x86-86 APICs, since
+IPIs are queued. See the AMD64 Architecture Programmer's Manual, vol 2,
+p525.
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Daniel J Blueman <daniel@numascale.com>
 ---
+ apic_numachip.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/net/tun.c |   65 +++++++++++++++++++++++++-----------------------------
- 1 file changed, 31 insertions(+), 34 deletions(-)
-
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 9dd3746..cfb81ca 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -71,6 +71,7 @@
- #include <net/rtnetlink.h>
- #include <net/sock.h>
- #include <linux/seq_file.h>
-+#include <linux/uio.h>
+diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+index 81d70ba..bd083c0 100644
+--- a/arch/x86/kernel/apic/apic_numachip.c
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -145,7 +145,7 @@ static void numachip_send_IPI_all(int vector)
  
- #include <asm/uaccess.h>
- 
-@@ -1230,11 +1231,11 @@ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
- static ssize_t tun_put_user(struct tun_struct *tun,
- 			    struct tun_file *tfile,
- 			    struct sk_buff *skb,
--			    const struct iovec *iv, int len)
-+			    struct iov_iter *iter)
+ static void numachip_send_IPI_self(int vector)
  {
- 	struct tun_pi pi = { 0, skb->protocol };
--	ssize_t total = 0;
--	int vlan_offset = 0, copied;
-+	ssize_t total;
-+	int vlan_offset;
- 	int vlan_hlen = 0;
- 	int vnet_hdr_sz = 0;
- 
-@@ -1244,23 +1245,25 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 	if (tun->flags & TUN_VNET_HDR)
- 		vnet_hdr_sz = tun->vnet_hdr_sz;
- 
-+	total = skb->len + vlan_hlen + vnet_hdr_sz;
-+
- 	if (!(tun->flags & TUN_NO_PI)) {
--		if ((len -= sizeof(pi)) < 0)
-+		if (iov_iter_count(iter) < sizeof(pi))
- 			return -EINVAL;
- 
--		if (len < skb->len + vlan_hlen + vnet_hdr_sz) {
-+		if (iov_iter_count(iter) < total) {
- 			/* Packet will be striped */
- 			pi.flags |= TUN_PKT_STRIP;
- 		}
- 
--		if (memcpy_toiovecend(iv, (void *) &pi, 0, sizeof(pi)))
-+		if (copy_to_iter(&pi, sizeof(pi), iter))
- 			return -EFAULT;
- 		total += sizeof(pi);
- 	}
- 
- 	if (vnet_hdr_sz) {
- 		struct virtio_net_hdr gso = { 0 }; /* no info leak */
--		if ((len -= vnet_hdr_sz) < 0)
-+		if (iov_iter_count(iter) < vnet_hdr_sz)
- 			return -EINVAL;
- 
- 		if (skb_is_gso(skb)) {
-@@ -1299,17 +1302,12 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
- 		} /* else everything is zero */
- 
--		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
--					       sizeof(gso))))
-+		if (copy_to_iter(&gso, sizeof(gso), iter))
- 			return -EFAULT;
--		total += vnet_hdr_sz;
- 	}
- 
--	copied = total;
--	len = min_t(int, skb->len + vlan_hlen, len);
--	total += skb->len + vlan_hlen;
- 	if (vlan_hlen) {
--		int copy, ret;
-+		int ret;
- 		struct {
- 			__be16 h_vlan_proto;
- 			__be16 h_vlan_TCI;
-@@ -1320,36 +1318,34 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 
- 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
- 
--		copy = min_t(int, vlan_offset, len);
--		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
--		len -= copy;
--		copied += copy;
--		if (ret || !len)
-+		ret = skb_copy_datagram_iter(skb, 0, iter, vlan_offset);
-+		if (ret || !iov_iter_count(iter))
- 			goto done;
- 
--		copy = min_t(int, sizeof(veth), len);
--		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
--		len -= copy;
--		copied += copy;
--		if (ret || !len)
-+		ret = copy_to_iter(&veth, sizeof(veth), iter);
-+		if (ret || !iov_iter_count(iter))
- 			goto done;
-+
-+		__skb_pull(skb, vlan_offset);
- 	}
- 
--	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
-+	skb_copy_datagram_iter(skb, vlan_offset, iter, skb->len - vlan_offset);
- 
- done:
- 	tun->dev->stats.tx_packets++;
--	tun->dev->stats.tx_bytes += len;
-+	tun->dev->stats.tx_bytes += skb->len + vlan_hlen;
- 
- 	return total;
+-	__default_send_IPI_shortcut(APIC_DEST_SELF, vector, APIC_DEST_PHYSICAL);
++	apic_write(APIC_SELF_IPI, vector);
  }
  
- static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
--			   const struct iovec *iv, ssize_t len, int noblock)
-+			   const struct iovec *iv, unsigned long segs,
-+			   ssize_t len, int noblock)
- {
- 	struct sk_buff *skb;
- 	ssize_t ret = 0;
- 	int peeked, err, off = 0;
-+	struct iov_iter iter;
- 
- 	tun_debug(KERN_INFO, tun, "tun_do_read\n");
- 
-@@ -1362,11 +1358,12 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 	/* Read frames from queue */
- 	skb = __skb_recv_datagram(tfile->socket.sk, noblock ? MSG_DONTWAIT : 0,
- 				  &peeked, &off, &err);
--	if (skb) {
--		ret = tun_put_user(tun, tfile, skb, iv, len);
--		kfree_skb(skb);
--	} else
--		ret = err;
-+	if (!skb)
-+		return ret;
-+
-+	iov_iter_init(&iter, READ, iv, segs, len);
-+	ret = tun_put_user(tun, tfile, skb, &iter);
-+	kfree_skb(skb);
- 
- 	return ret;
- }
-@@ -1387,7 +1384,7 @@ static ssize_t tun_chr_aio_read(struct kiocb *iocb, const struct iovec *iv,
- 		goto out;
- 	}
- 
--	ret = tun_do_read(tun, tfile, iv, len,
-+	ret = tun_do_read(tun, tfile, iv, count, len,
- 			  file->f_flags & O_NONBLOCK);
- 	ret = min_t(ssize_t, ret, len);
- 	if (ret > 0)
-@@ -1488,7 +1485,7 @@ static int tun_recvmsg(struct kiocb *iocb, struct socket *sock,
- 					 SOL_PACKET, TUN_TX_TIMESTAMP);
- 		goto out;
- 	}
--	ret = tun_do_read(tun, tfile, m->msg_iov, total_len,
-+	ret = tun_do_read(tun, tfile, m->msg_iov, m->msg_iovlen, total_len,
- 			  flags & MSG_DONTWAIT);
- 	if (ret > total_len) {
- 		m->msg_flags |= MSG_TRUNC;
+ static int __init numachip_probe(void)
+-- 
+1.9.1
+
