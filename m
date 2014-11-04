@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaKDIod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:44:33 -0500
-Received: from mga03.intel.com ([134.134.136.65]:3077 "EHLO mga03.intel.com"
+	id S1752807AbaKDIov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:44:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12174 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247AbaKDIo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:44:29 -0500
+	id S1752454AbaKDIot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 03:44:49 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,312,1413270000"; 
-   d="scan'208";a="601829912"
-Date: Tue, 4 Nov 2014 16:23:45 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
-        Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
- hotplug
-Message-ID: <20141104082345.GA22062@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com>
- <20141103104111.GA23531@worktop.programming.kicks-ass.net>
- <20141103235747.GA26702@kernel>
- <20141104083225.GG10501@worktop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104083225.GG10501@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="484326597"
+From: Lu Baolu <baolu.lu@linux.intel.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lu Baolu <baolu.lu@linux.intel.com>
+Subject: [PATCH v2 3/3] usb: xhci: fix comment for PORT_DEV_REMOVE
+Date: Tue,  4 Nov 2014 16:34:26 +0800
+Message-Id: <1415090066-57007-4-git-send-email-baolu.lu@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415090066-57007-1-git-send-email-baolu.lu@linux.intel.com>
+References: <1415090066-57007-1-git-send-email-baolu.lu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-On Tue, Nov 04, 2014 at 09:32:25AM +0100, Peter Zijlstra wrote:
->On Tue, Nov 04, 2014 at 07:57:48AM +0800, Wanpeng Li wrote:
->> On Mon, Nov 03, 2014 at 11:41:11AM +0100, Peter Zijlstra wrote:
->
->> >On Fri, Oct 31, 2014 at 03:28:17PM +0800, Wanpeng Li wrote:
->> >So what is wrong with making dl_task_timer() deal with it? The timer
->> >will still fire on the correct time, canceling it and or otherwise
->> >messing with the CBS is wrong. Once it fires, all we need to do is
->> >migrate it to another cpu (preferably one that is still online of course
->> >:-).
->
->> Do you mean what I need to do is push the task to another cpu in dl_task_timer() 
->> if rq is offline?
->
->That does indeed appear to be the sensible fix to me.
->
->> In addition, what will happen if dl task can't preempt on 
->> another cpu?
->
->So if we find that the rq the task was on is no longer available, we
->need to select a new rq, the 'right' rq would be the one running the
->latest deadline.
->
->If it cannot preempt the latest (running) deadline, it was not eligible
->for running in the first place so no worries, right?
+According to xHCI specification, PORT_DEV_REMOVE(bit 30) in PORTSC
+true means "Device is non-removable".
 
-I think this will lead to this deadline task cannot running on any rqs any more.
-If my understanding is not right, when it will be picked?
+Reported-by: Juro Bystricky <jurobystricky@hotmail.com>
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+---
+ drivers/usb/host/xhci.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Regards,
-Wanpeng Li 
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index df76d64..66c168a9 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -358,7 +358,7 @@ struct xhci_op_regs {
+ /* wake on over-current (enable) */
+ #define PORT_WKOC_E	(1 << 27)
+ /* bits 28:29 reserved */
+-/* true: device is removable - for USB 3.0 roothub emulation */
++/* true: device is non-removable - for USB 3.0 roothub emulation */
+ #define PORT_DEV_REMOVE	(1 << 30)
+ /* Initiate a warm port reset - complete when PORT_WRC is '1' */
+ #define PORT_WR		(1 << 31)
+-- 
+1.9.1
+
