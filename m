@@ -1,133 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264AbaKDPAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:00:51 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:13149 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881AbaKDPAq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:00:46 -0500
-X-IronPort-AV: E=Sophos;i="5.07,313,1413244800"; 
-   d="scan'208";a="189316018"
-Date: Tue, 4 Nov 2014 15:00:18 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
-In-Reply-To: <5458B9FC.3050309@ti.com>
-Message-ID: <alpine.DEB.2.02.1411041419490.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com> <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com> <20141103105716.GC23162@arm.com>
- <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com> <5458B9FC.3050309@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754318AbaKDPBH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:01:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51786 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753641AbaKDPAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 10:00:41 -0500
+Date: Tue, 4 Nov 2014 16:00:39 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
+        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
+Message-ID: <20141104150039.GF22207@dhcp22.suse.cz>
+References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
+ <54589017.9060604@jp.fujitsu.com>
+ <20141104132701.GA18441@phnom.home.cmpxchg.org>
+ <20141104134110.GD22207@dhcp22.suse.cz>
+ <20141104140937.GA18602@phnom.home.cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141104140937.GA18602@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Nov 2014, Grygorii Strashko wrote:
-> Hi Stefano,
-> 
-> On 11/03/2014 01:10 PM, Stefano Stabellini wrote:
-> > On Mon, 3 Nov 2014, Will Deacon wrote:
-> >> On Mon, Nov 03, 2014 at 10:46:03AM +0000, Stefano Stabellini wrote:
-> >>> On Mon, 27 Oct 2014, Stefano Stabellini wrote:
-> >>>> Introduce a boolean flag and an accessor function to check whether a
-> >>>> device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
-> >>>>
-> >>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >>>> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> >>>> CC: will.deacon@arm.com
-> >>>
-> >>> Will, Catalin,
-> >>> are you OK with this patch?
-> >>
-> >> It would be nicer if the dma_coherent flag didn't have to be duplicated by
-> >> each architecture in dev_archdata. Is there any reason not to put it in the
-> >> core code?
+On Tue 04-11-14 09:09:37, Johannes Weiner wrote:
+> On Tue, Nov 04, 2014 at 02:41:10PM +0100, Michal Hocko wrote:
+> > On Tue 04-11-14 08:27:01, Johannes Weiner wrote:
+> > > From: Johannes Weiner <hannes@cmpxchg.org>
+> > > Subject: [patch] mm: move page->mem_cgroup bad page handling into generic code fix
+> > > 
+> > > Remove obsolete memory saving recommendations from the MEMCG Kconfig
+> > > help text.
 > > 
-> > Yes, there is a reason for it: if I added a boolean dma_coherent flag in
-> > struct device as Catalin initially suggested, what would be the default
-> > for each architecture? Where would I set it for arch that don't use
-> > device tree? It is not easy.
-> > 
-> > I thought it would be better to introduce is_device_dma_coherent only on
-> > the architectures where it certainly makes sense to have it. In fact I
-> > checked and arm and arm64 are the only architectures to define
-> > set_arch_dma_coherent_ops at the moment. At that point if
-> > is_device_dma_coherent becomes arch-specific, it makes sense to store
-> > the flag in dev_archdata instead of struct device.
+> > The memory overhead is still there. So I do not think it is good to
+> > remove the message altogether. The current overhead might be 4 or 8B
+> > depending on the configuration. What about
+> > "
+> > 	Note that setting this option might increase fixed memory
+> > 	overhead associated with each page descriptor in the system.
+> > 	The memory overhead depends on the architecture and other
+> > 	configuration options which have influence on the size and
+> > 	alignment on the page descriptor (struct page). Namely
+> > 	CONFIG_SLUB has a requirement for page alignment to two words
+> > 	which in turn means that 64b systems might not see any memory
+> > 	overhead as the additional data fits into alignment. On the
+> > 	other hand 32b systems might see 8B memory overhead.
+> > "
 > 
-> The proposition from Will looks reasonable for me too, because
-> there is "small" side-effect of adding such kind of properties to
-> arch-specific data or even to the core device structure. ;(
-> 
-> There are some sub-systems in kernel which do not create their devices
-> from DT and instead some host device populates its children devices manually.
->  Now, I know at least two cases:
-> - usb: dwc3 core creates xhci device manually
-> - pci: adds its client devices
-> 
-> In such, case DMA configuration have to be propagated from host to
-> child (in our case host device's got DMA configuration from DT), like:
-> 	dma_set_coherent_mask(&xhci->dev, dwc->dev->coherent_dma_mask);
-> 
-> 	xhci->dev.parent	= dwc->dev;
-> 	xhci->dev.dma_mask	= dwc->dev->dma_mask;
-> 	xhci->dev.dma_parms	= dwc->dev->dma_parms;
-> 
-> So, once new DMA property is added it has to be propagated from 
-> host to child device too.
-> 
-> Recently, the new property  dma_pfn_offset was introduced in struct device 
-> and such kind of problem was observed on keystone 2:
-> - for usb case it was fixed using Platform Bus notifier (xhci - platform device)
-> - for pci - the work is in progress, because solution with PCI Bus notifier
->   was rejected https://lkml.org/lkml/2014/10/10/308.
-> 
-> In general, if dma_coherent will belong to struct device then
-> such problems will be possible to fix directly in drivers/subsystems:
-> xhci->dev.dma_coherent	= dwc->dev->dma_coherent;
-> 
-> But, if it will be arch-specific data then it will be impossible to
-> set it without introducing proper and arch-specific setters/getters functions.
->
-> Also, as an idea, we are thinking about introducing something like:
->   void dma_apply_parent_cfg(struct device *dev, struct device *parent)
-> which will ensure that all DMA configuration properly copied from
-> parent to children device. Now it should be (as minimum for ARM):
->  dma_mask
->  coherent_dma_mask
->  dma_parms
->  dma_pfn_offset
->  dev_archdata->dma_ops
->  [dma_coherent]?
+> What difference does it make whether this feature maybe costs an extra
+> pointer per page or not?  These texts are supposed to help decide with
+> the selection, but this is not a "good to have, if affordable" type of
+> runtime debugging option.  You either need cgroup memory accounting
+> and limiting or not.  There is no possible trade-off to be had.
 
-I understand your concern but the problem you have goes far beyond a
-simple dma_coherent flag: what about all the other dev_archdata fields?
-Aside from dma_ops, on some other architectures there might be other
-data structrures in dev_archdata that need to be properly initialized
-from the parent.
+If you are compiling the kernel for your specific usecase then it
+is clear. You enable only what you really need/want. But if you are
+providing a pre-built kernel and considering which features to enable
+then an information about overhead might be useful. You can simply
+disable the feature for memory restricted kernel flavors.
 
-Your idea of introducing something like dma_apply_parent_cfg is the only
-solid solution I can see.  However I would consider naming it something
-more generic like init_dev_from_parent to handle other possible
-configurations (inside or outside dev_archdata) that might have to be
-initialized from information on the parent device.
+> Slub and numa balancing don't mention this, either, simply because
+> this cost is negligible or irrelevant when it comes to these knobs.
 
+I agree that the overhead seems negligible but does it hurt us to
+mention it though?
 
-Regarding the dma_coherent flag, I still prefer this approach because
-introducing the dma_coherent flag in dev_archdata wouldn't make this
-issue any worse than already is, but would avoid other problems as
-mentioned in my previous reply.
+-- 
+Michal Hocko
+SUSE Labs
