@@ -1,267 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaKDJRQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:17:16 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:47151 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaKDJRL (ORCPT
+	id S1752392AbaKDJTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:19:05 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:43868 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaKDJTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:17:11 -0500
-Date: Tue, 4 Nov 2014 09:17:03 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: gyungoh@gmail.com
-Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
-        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v6 1/8] mfd: Add support for Skyworks SKY81452
- driver
-Message-ID: <20141104091703.GJ17577@x1>
-References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
- <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
- <1414739322-12487-2-git-send-email-jack.yoo@skyworksinc.com>
+	Tue, 4 Nov 2014 04:19:01 -0500
+Message-ID: <545899CF.3080001@ti.com>
+Date: Tue, 4 Nov 2014 14:48:07 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414739322-12487-2-git-send-email-jack.yoo@skyworksinc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Mark Rutland <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/6] phy: add support for USB cluster on the Armada
+ 375 SoC
+References: <1414164254-13053-1-git-send-email-gregory.clement@free-electrons.com> <1414164254-13053-5-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1414164254-13053-5-git-send-email-gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Oct 2014, gyungoh@gmail.com wrote:
+Hi,
 
-> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+On Friday 24 October 2014 08:54 PM, Gregory CLEMENT wrote:
+> The Armada 375 SoC comes with an USB2 host and device controller and
+> an USB3 controller. The USB cluster control register allows to manage
+> common features of both USB controllers.
 > 
-> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> This commit adds a driver integrated in the generic PHY framework to
+> control this USB cluster feature.
+> 
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 > ---
-> Changes v6:
-> Added new line character at the end of line of dev_err()
+>  drivers/phy/Kconfig                              |   6 +
+>  drivers/phy/Makefile                             |   1 +
+>  drivers/phy/phy-armada375-usb2.c                 | 145 +++++++++++++++++++++++
+>  include/dt-bindings/phy/armada-375-usb-cluster.h |  19 +++
+>  4 files changed, 171 insertions(+)
+>  create mode 100644 drivers/phy/phy-armada375-usb2.c
+>  create mode 100644 include/dt-bindings/phy/armada-375-usb-cluster.h
 > 
-> Changes v5:
-> Move sky81452-backlight.h to include/linux/platform_data
-> 
-> Changes v4:
-> Removed MODULE_VERSION()
-> Modified license to GPLv2
-> 
-> Changes v3:
-> Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
-> Assigned mfd_cell.of_compatible for binding device node
-> Modified error messages
-> 
-> Changes v2:
-> Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
-> Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
-> Added message for exception or errors
-> 
->  drivers/mfd/Kconfig          |  12 +++++
->  drivers/mfd/Makefile         |   1 +
->  drivers/mfd/sky81452.c       | 109 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/sky81452.h |  32 +++++++++++++
->  4 files changed, 154 insertions(+)
->  create mode 100644 drivers/mfd/sky81452.c
->  create mode 100644 include/linux/mfd/sky81452.h
-
-Applied, thanks.
-
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 1456ea7..a54244c 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -693,6 +693,18 @@ config MFD_SM501_GPIO
->  	 lines on the SM501. The platform data is used to supply the
->  	 base number for the first GPIO line to register.
->  
-> +config MFD_SKY81452
-> +	tristate "Skyworks Solutions SKY81452"
-> +	select MFD_CORE
-> +	select REGMAP_I2C
-> +	depends on I2C
-> +	help
-> +	  This is the core driver for the Skyworks SKY81452 backlight and
-> +	  voltage regulator device.
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 2a436e607f99..625adb0abd43 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -21,6 +21,12 @@ config PHY_BERLIN_SATA
+>  	select GENERIC_PHY
+>  	help
+>  	  Enable this to support the SATA PHY on Marvell Berlin SoCs.
+> +config ARMADA375_USBCLUSTER_PHY
+> +	def_bool y
+> +	depends on MACH_ARMADA_375 || COMPILE_TEST
+> +	depends on OF
+> +	select GENERIC_PHY
 > +
-> +	  This driver can also be built as a module.  If so, the module
-> +	  will be called sky81452.
-> +
->  config MFD_SMSC
->         bool "SMSC ECE1099 series chips"
->         depends on I2C=y
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 8bd54b1..d9683ea 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -174,6 +174,7 @@ obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
->  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
->  obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
->  obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
-> +obj-$(CONFIG_MFD_SKY81452)		+= sky81452.o
 >  
->  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
->  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-> diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
+>  config PHY_EXYNOS_MIPI_VIDEO
+>  	tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index c4590fce082f..26b5633f378a 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -4,6 +4,7 @@
+>  
+>  obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
+>  obj-$(CONFIG_PHY_BERLIN_SATA)		+= phy-berlin-sata.o
+> +obj-$(CONFIG_ARMADA375_USBCLUSTER_PHY)	+= phy-armada375-usb2.o
+>  obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
+>  obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
+>  obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+> diff --git a/drivers/phy/phy-armada375-usb2.c b/drivers/phy/phy-armada375-usb2.c
 > new file mode 100644
-> index 0000000..ae1b584
+> index 000000000000..7c6daa9029b3
 > --- /dev/null
-> +++ b/drivers/mfd/sky81452.c
-> @@ -0,0 +1,109 @@
+> +++ b/drivers/phy/phy-armada375-usb2.c
+> @@ -0,0 +1,145 @@
 > +/*
-> + * sky81452.c	SKY81452 MFD driver
+> + * USB cluster support for Armada 375 platform.
 > + *
-> + * Copyright 2014 Skyworks Solutions Inc.
-> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> + * Copyright (C) 2014 Marvell
 > + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2, or (at your option) any
-> + * later version.
+> + * Gregory CLEMENT <gregory.clement@free-electrons.com>
 > + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2 or later. This program is licensed "as is"
+> + * without any warranty of any kind, whether express or implied.
 > + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> + * Armada 375 comes with an USB2 host and device controller and an
+> + * USB3 controller. The USB cluster control register allows to manage
+> + * common features of both USB controllers.
 > + */
 > +
+> +#include <dt-bindings/phy/armada-375-usb-cluster.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
 > +#include <linux/kernel.h>
 > +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/err.h>
-> +#include <linux/slab.h>
-> +#include <linux/i2c.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/mfd/sky81452.h>
+> +#include <linux/of_address.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/platform_device.h>
 > +
-> +static const struct regmap_config sky81452_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
+> +#define USB2_PHY_CONFIG_DISABLE BIT(0)
+> +
+> +struct armada375_cluster_phy {
+> +	struct phy *phy;
+> +	void __iomem *reg;
+> +	bool use_usb3;
+> +	int phy_provided;
 > +};
 > +
-> +static int sky81452_probe(struct i2c_client *client,
-> +				const struct i2c_device_id *id)
+> +static struct armada375_cluster_phy usb_cluster_phy;
+> +
+> +static int armada375_usb_phy_init(struct phy *phy)
 > +{
-> +	struct device *dev = &client->dev;
-> +	const struct sky81452_platform_data *pdata = dev_get_platdata(dev);
-> +	struct mfd_cell cells[2];
-> +	struct regmap *regmap;
-> +	int ret;
+> +	struct armada375_cluster_phy *cluster_phy = phy_get_drvdata(phy);
+> +	u32 reg;
 > +
-> +	if (!pdata) {
-> +		pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +		if (!pdata)
-> +			return -ENOMEM;
-> +	}
+> +	reg = readl(cluster_phy->reg);
+> +	if (cluster_phy->use_usb3)
+> +		reg |= USB2_PHY_CONFIG_DISABLE;
+> +	else
+> +		reg &= ~USB2_PHY_CONFIG_DISABLE;
+> +	writel(reg, cluster_phy->reg);
 > +
-> +	regmap = devm_regmap_init_i2c(client, &sky81452_config);
-> +	if (IS_ERR(regmap)) {
-> +		dev_err(dev, "failed to initialize.err=%ld\n", PTR_ERR(regmap));
-> +		return PTR_ERR(regmap);
-> +	}
-> +
-> +	i2c_set_clientdata(client, regmap);
-> +
-> +	memset(cells, 0, sizeof(cells));
-> +	cells[0].name = "sky81452-backlight";
-> +	cells[0].of_compatible = "skyworks,sky81452-backlight";
-> +	cells[0].platform_data = pdata->bl_pdata;
-> +	cells[0].pdata_size = sizeof(*pdata->bl_pdata);
-> +	cells[1].name = "sky81452-regulator";
-> +	cells[1].platform_data = pdata->regulator_init_data;
-> +	cells[1].pdata_size = sizeof(*pdata->regulator_init_data);
-> +
-> +	ret = mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells), NULL, 0, NULL);
-> +	if (ret)
-> +		dev_err(dev, "failed to add child devices. err=%d\n", ret);
-> +
-> +	return ret;
-> +}
-> +
-> +static int sky81452_remove(struct i2c_client *client)
-> +{
-> +	mfd_remove_devices(&client->dev);
 > +	return 0;
 > +}
 > +
-> +static const struct i2c_device_id sky81452_ids[] = {
-> +	{ "sky81452" },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, sky81452_ids);
-> +
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id sky81452_of_match[] = {
-> +	{ .compatible = "skyworks,sky81452", },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, sky81452_of_match);
-> +#endif
-> +
-> +static struct i2c_driver sky81452_driver = {
-> +	.driver = {
-> +		.name = "sky81452",
-> +		.of_match_table = of_match_ptr(sky81452_of_match),
-> +	},
-> +	.probe = sky81452_probe,
-> +	.remove = sky81452_remove,
-> +	.id_table = sky81452_ids,
+> +static struct phy_ops armada375_usb_phy_ops = {
+> +	.init = armada375_usb_phy_init,
+> +	.owner = THIS_MODULE,
 > +};
 > +
-> +module_i2c_driver(sky81452_driver);
-> +
-> +MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
-> +MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/mfd/sky81452.h b/include/linux/mfd/sky81452.h
-> new file mode 100644
-> index 0000000..9d84872
-> --- /dev/null
-> +++ b/include/linux/mfd/sky81452.h
-> @@ -0,0 +1,32 @@
 > +/*
-> + * sky81452.h	SKY81452 MFD driver
+> + * Only one controller can use this PHY. We shouldn't have the case
+> + * when two controllers want to use this PHY. But if this case occurs
+> + * then we provide a phy to the first one and return an error for the
+> + * next one. This error has also to be an error returned by
+> + * devm_phy_optional_get() so different from ENODEV for USB2. In the
+> + * USB3 case it still optional and we use ENODEV.
+> + */
+> +static struct phy *armada375_usb_phy_xlate(struct device *dev,
+> +					struct of_phandle_args *args)
+> +{
+> +
+> +    /*
+> +     * Either the phy had never been requested and then the first usb
+> +     * claiming it can get it, or it had already been requested in
+> +     * this case, we only allow to use it with the same configuration.
+> +     */
+> +	if (WARN_ON((usb_cluster_phy.phy_provided != PHY_NONE) &&
+> +			(usb_cluster_phy.phy_provided != args->args[0]))) {
+> +		dev_err(dev, "This PHY has already been provided!\n");
+> +		dev_err(dev, "Check your device tree, only one controller can use it\n.");
+> +		if (args->args[0] == PHY_USB2)
+> +			return ERR_PTR(-EBUSY);
+> +		else
+> +			return ERR_PTR(-ENODEV);
+> +	}
+> +
+> +	if (args->args[0] == PHY_USB2)
+> +		usb_cluster_phy.use_usb3 = false;
+> +	else if (args->args[0] == PHY_USB3)
+> +		usb_cluster_phy.use_usb3 = true;
+> +	else {
+> +		dev_err(dev, "Invalid PHY mode\n");
+> +		return ERR_PTR(-ENODEV);
+> +	}
+> +
+> +	/* Store which phy mode is used for next test */
+> +	usb_cluster_phy.phy_provided = args->args[0];
+> +
+> +	return usb_cluster_phy.phy;
+> +}
+> +
+> +static int armada375_usb_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct phy *phy;
+> +	struct phy_provider *phy_provider;
+> +	void __iomem *usb_cluster_base;
+> +	struct resource *res;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	usb_cluster_base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (!usb_cluster_base)
+> +		return -ENOMEM;
+> +
+> +	phy = devm_phy_create(dev, NULL, &armada375_usb_phy_ops, NULL);
+> +	if (IS_ERR(phy)) {
+> +		dev_err(dev, "failed to create PHY\n");
+> +		return PTR_ERR(phy);
+> +	}
+> +
+> +	usb_cluster_phy.phy = phy;
+> +	usb_cluster_phy.reg = usb_cluster_base;
+> +	phy_set_drvdata(phy, &usb_cluster_phy);
+> +
+> +	phy_provider = devm_of_phy_provider_register(&pdev->dev,
+> +						     armada375_usb_phy_xlate);
+> +	return PTR_ERR_OR_ZERO(phy_provider);
+> +}
+> +
+> +static const struct of_device_id of_usb_cluster_table[] = {
+> +	{ .compatible = "marvell,armada-375-usb-cluster", },
+> +	{ /* end of list */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, of_usb_cluster_table);
+> +
+> +static struct platform_driver armada375_usb_phy_driver = {
+> +	.probe	= armada375_usb_phy_probe,
+> +	.driver = {
+> +		.of_match_table	= of_usb_cluster_table,
+> +		.name  = "armada-375-usb-cluster",
+> +		.owner = THIS_MODULE,
+> +	}
+> +};
+> +module_platform_driver(armada375_usb_phy_driver);
+> +
+> +MODULE_DESCRIPTION("Armada 375 USB cluster driver");
+> +MODULE_AUTHOR("Gregory CLEMENT <gregory.clement@free-electrons.com>");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/dt-bindings/phy/armada-375-usb-cluster.h b/include/dt-bindings/phy/armada-375-usb-cluster.h
+> new file mode 100644
+> index 000000000000..cbd2d4e720bb
+> --- /dev/null
+> +++ b/include/dt-bindings/phy/armada-375-usb-cluster.h
+> @@ -0,0 +1,19 @@
+> +/*
+> + * Copyright (C) 2014 Marvell
 > + *
-> + * Copyright 2014 Skyworks Solutions Inc.
-> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2, or (at your option) any
-> + * later version.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of the
+> + * License, or (at your option) any later version.
 > + */
 > +
-> +#ifndef _SKY81452_H
-> +#define _SKY81452_H
+> +#ifndef __ARMADA_375_USB_CLUSTER__
+> +#define __ARMADA_375_USB_CLUSTER__
 > +
-> +#include <linux/platform_data/sky81452-backlight.h>
-> +#include <linux/regulator/machine.h>
+> +/* The supported mode passed through by the phandle are the following */
 > +
-> +struct sky81452_platform_data {
-> +	struct sky81452_bl_platform_data *bl_pdata;
-> +	struct regulator_init_data *regulator_init_data;
-> +};
-> +
-> +#endif
+> +#define PHY_NONE    0
+> +#define PHY_USB2    1
+> +#define PHY_USB3    2
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Let's not add a separate file for every platform for these generic modes.
+
+Thanks
+Kishon
+> +
+> +#endif /* __DT_BINDINGS_CLOCK_R8A7791_H__ */
+> 
