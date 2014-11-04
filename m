@@ -1,146 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770AbaKDIcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:32:24 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:59280 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492AbaKDIbo (ORCPT
+	id S1752813AbaKDIcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:32:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35069 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144AbaKDIc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:31:44 -0500
-Subject: [PATCH 4/4] net: Kill skb_copy_datagram_const_iovec
-References: <20141104033818.GA11149@gondor.apana.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Message-Id: <E1XlZWZ-0003II-QE@gondolin.me.apana.org.au>
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Tue, 04 Nov 2014 16:31:35 +0800
+	Tue, 4 Nov 2014 03:32:28 -0500
+Date: Tue, 4 Nov 2014 09:32:25 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
+ hotplug
+Message-ID: <20141104083225.GG10501@worktop.programming.kicks-ass.net>
+References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com>
+ <20141103104111.GA23531@worktop.programming.kicks-ass.net>
+ <20141103235747.GA26702@kernel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103235747.GA26702@kernel>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that both macvtap and tun are using skb_copy_datagram_iter, we
-can kill the abomination that is skb_copy_datagram_const_iovec.
+On Tue, Nov 04, 2014 at 07:57:48AM +0800, Wanpeng Li wrote:
+> On Mon, Nov 03, 2014 at 11:41:11AM +0100, Peter Zijlstra wrote:
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
----
+> >On Fri, Oct 31, 2014 at 03:28:17PM +0800, Wanpeng Li wrote:
+> >So what is wrong with making dl_task_timer() deal with it? The timer
+> >will still fire on the correct time, canceling it and or otherwise
+> >messing with the CBS is wrong. Once it fires, all we need to do is
+> >migrate it to another cpu (preferably one that is still online of course
+> >:-).
 
- include/linux/skbuff.h |    3 -
- net/core/datagram.c    |   89 -------------------------------------------------
- 2 files changed, 92 deletions(-)
+> Do you mean what I need to do is push the task to another cpu in dl_task_timer() 
+> if rq is offline?
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 5ff7054..dfd8623 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2639,9 +2639,6 @@ int skb_copy_datagram_from_iovec(struct sk_buff *skb, int offset,
- 				 int len);
- int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *frm,
- 			   int offset, size_t count);
--int skb_copy_datagram_const_iovec(const struct sk_buff *from, int offset,
--				  const struct iovec *to, int to_offset,
--				  int size);
- int skb_copy_datagram_iter(const struct sk_buff *from, int offset,
- 			   struct iov_iter *to, int size);
- void skb_free_datagram(struct sock *sk, struct sk_buff *skb);
-diff --git a/net/core/datagram.c b/net/core/datagram.c
-index 45a9d4d..93054b9 100644
---- a/net/core/datagram.c
-+++ b/net/core/datagram.c
-@@ -394,95 +394,6 @@ fault:
- EXPORT_SYMBOL(skb_copy_datagram_iovec);
- 
- /**
-- *	skb_copy_datagram_const_iovec - Copy a datagram to an iovec.
-- *	@skb: buffer to copy
-- *	@offset: offset in the buffer to start copying from
-- *	@to: io vector to copy to
-- *	@to_offset: offset in the io vector to start copying to
-- *	@len: amount of data to copy from buffer to iovec
-- *
-- *	Returns 0 or -EFAULT.
-- *	Note: the iovec is not modified during the copy.
-- */
--int skb_copy_datagram_const_iovec(const struct sk_buff *skb, int offset,
--				  const struct iovec *to, int to_offset,
--				  int len)
--{
--	int start = skb_headlen(skb);
--	int i, copy = start - offset;
--	struct sk_buff *frag_iter;
--
--	/* Copy header. */
--	if (copy > 0) {
--		if (copy > len)
--			copy = len;
--		if (memcpy_toiovecend(to, skb->data + offset, to_offset, copy))
--			goto fault;
--		if ((len -= copy) == 0)
--			return 0;
--		offset += copy;
--		to_offset += copy;
--	}
--
--	/* Copy paged appendix. Hmm... why does this look so complicated? */
--	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
--		int end;
--		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
--
--		WARN_ON(start > offset + len);
--
--		end = start + skb_frag_size(frag);
--		if ((copy = end - offset) > 0) {
--			int err;
--			u8  *vaddr;
--			struct page *page = skb_frag_page(frag);
--
--			if (copy > len)
--				copy = len;
--			vaddr = kmap(page);
--			err = memcpy_toiovecend(to, vaddr + frag->page_offset +
--						offset - start, to_offset, copy);
--			kunmap(page);
--			if (err)
--				goto fault;
--			if (!(len -= copy))
--				return 0;
--			offset += copy;
--			to_offset += copy;
--		}
--		start = end;
--	}
--
--	skb_walk_frags(skb, frag_iter) {
--		int end;
--
--		WARN_ON(start > offset + len);
--
--		end = start + frag_iter->len;
--		if ((copy = end - offset) > 0) {
--			if (copy > len)
--				copy = len;
--			if (skb_copy_datagram_const_iovec(frag_iter,
--							  offset - start,
--							  to, to_offset,
--							  copy))
--				goto fault;
--			if ((len -= copy) == 0)
--				return 0;
--			offset += copy;
--			to_offset += copy;
--		}
--		start = end;
--	}
--	if (!len)
--		return 0;
--
--fault:
--	return -EFAULT;
--}
--EXPORT_SYMBOL(skb_copy_datagram_const_iovec);
--
--/**
-  *	skb_copy_datagram_iter - Copy a datagram to an iovec iterator.
-  *	@skb: buffer to copy
-  *	@offset: offset in the buffer to start copying from
+That does indeed appear to be the sensible fix to me.
+
+> In addition, what will happen if dl task can't preempt on 
+> another cpu?
+
+So if we find that the rq the task was on is no longer available, we
+need to select a new rq, the 'right' rq would be the one running the
+latest deadline.
+
+If it cannot preempt the latest (running) deadline, it was not eligible
+for running in the first place so no worries, right?
