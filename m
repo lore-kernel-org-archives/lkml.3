@@ -1,277 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaKDODS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:03:18 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:57266 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751510AbaKDODR (ORCPT
+	id S1753487AbaKDODi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:03:38 -0500
+Received: from regular1.263xmail.com ([211.150.99.138]:57183 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203AbaKDODe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:03:17 -0500
-Date: Tue, 4 Nov 2014 09:03:15 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH 4/4 v2] ftracetest: Add a couple of ftrace test
- cases
-Message-ID: <20141104090315.4726130e@gandalf.local.home>
-In-Reply-To: <87h9yf5pu4.fsf@sejong.aot.lge.com>
-References: <20141103212737.696365174@goodmis.org>
-	<20141103212842.139783956@goodmis.org>
-	<87h9yf5pu4.fsf@sejong.aot.lge.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 4 Nov 2014 09:03:34 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <e08fbaa6bff64e80d80f2a0568454cdb>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Addy Ke <addy.ke@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        heiko@sntech.de, olof@lixom.net, dianders@chromium.org,
+        sonnyrao@chromium.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
+        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
+        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
+        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
+        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
+        Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH v4] mmc: dw_mmc: add support for the other bit of sdio interrupt
+Date: Tue,  4 Nov 2014 22:03:09 +0800
+Message-Id: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1414977633-3196-1-git-send-email-addy.ke@rock-chips.com>
+References: <1414977633-3196-1-git-send-email-addy.ke@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Nov 2014 17:31:47 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+The bit of sdio interrupt is 16 in designware implementation,
+but it is 24 on Rockchip SoCs.This patch add sdio_id0 for the
+number of slot0 in the SDIO interrupt registers.
 
-> Hi Steve,
-> 
-> Just a few nitpicks..  Otherwise looks good to me.
-> 
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+---
+Changes in v2:
+- rebase on http://git.linaro.org/git/people/ulf.hansson/mmc.git, next branch
+Changes in v3:
+- Remove dts for sdio_id0, just replace this with 8, suggested by Doug
+- Change to support all Rockchip Socs, suggested by Heiko
+Changes in v4:
+- use init-hook to set sdio_id0, suggested by Jaehoon
 
-Of course. It wasn't easy taking my hacks and making them somewhat less
-hacky.
+ drivers/mmc/host/dw_mmc-rockchip.c | 10 ++++++++++
+ drivers/mmc/host/dw_mmc.c          | 12 +++++++-----
+ drivers/mmc/host/dw_mmc.h          |  2 ++
+ include/linux/mmc/dw_mmc.h         |  3 +++
+ 4 files changed, 22 insertions(+), 5 deletions(-)
 
-> 
-> On Mon, 03 Nov 2014 16:27:41 -0500, Steven Rostedt wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> >
-> > Added three test cases to get the feel of adding tests to ftracetest.
-> > The three cases are:
-> >
-> >   function profiling test, to make sure function profiling still works
-> >    with function tracing (was a regression)
-> >
-> >   function graph filter test to make sure that function graph filtering works.
-> >
-> >   function graph filter with stack tracing test to make sure that the function
-> >    graph filter does filter and also continues to filter when another function tracer
-> >    is running (like the stack tracer)
-> >
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  .../ftrace/test.d/ftrace/fgraph-filter-stack.tc    | 94 ++++++++++++++++++++++
-> >  .../ftrace/test.d/ftrace/fgraph-filter.tc          | 49 +++++++++++
-> >  .../ftrace/test.d/ftrace/func_profiler.tc          | 76 +++++++++++++++++
-> >  3 files changed, 219 insertions(+)
-> >  create mode 100644 tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter-stack.tc
-> >  create mode 100644 tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter.tc
-> >  create mode 100644 tools/testing/selftests/ftrace/test.d/ftrace/func_profiler.tc
-> >
-> > diff --git a/tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter-stack.tc b/tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter-stack.tc
-> > new file mode 100644
-> > index 000000000000..3d8f79176681
-> > --- /dev/null
-> > +++ b/tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter-stack.tc
-> > @@ -0,0 +1,94 @@
-> > +#!/bin/sh
-> > +# description: ftrace - function graph filters with stack tracer
-> > +
-> > +# Make sure that function graph filtering works, and is not
-> > +# affected by other tracers enabled (like stack tracer)
-> > +
-> > +if ! grep -q function_graph available_tracers; then
-> > +    echo "no function graph tracer configured"
-> > +    exit_unsupported
-> > +fi
-> > +
-> > +if [ ! -f set_ftrace_filter ]; then
-> > +    echo "set_ftrace_filter not found? Is dynamic ftrace not set?"
-> > +    exit_unsupported
-> > +fi
-> > +
-> > +do_reset() {
-> > +    reset_tracer
-> > +    echo 0 > /proc/sys/kernel/stack_tracer_enabled
-> > +    enable_tracing
-> > +    clear_trace
-> > +    echo > set_ftrace_filter
-> > +}
-> > +
-> > +disable_tracing
-> > +clear_trace;
-> > +
-> > +# filter something, schedule is always good
-> > +if ! echo "schedule" > set_ftrace_filter; then
-> > +    # test for powerpc 64
-> > +    if ! echo ".schedule" > set_ftrace_filter; then
-> 
-> You did 'echo '*schedule' > set_ftrace_filter' in the last test case.
-
-That was me being lazy. :-)
-
-I actually like having both ways, as it adds different types of testing
-to the infrastructure. When it comes to testing, having all tests do
-everything the same isn't always the best thing. I've found most my bugs
-by tests doing things slightly different.
-
-> 
-> 
-> > +	echo "can not enable schedule filter"
-> > +	exit -1
-> > +    fi
-> > +fi
-> > +
-> > +echo function_graph > current_tracer
-> > +
-> > +if [ ! -f stack_trace ]; then
-> > +    echo "Stack tracer not configured"
-> > +    do_reset
-> > +    exit_unsupported;
-> > +fi
-> > +
-> > +echo "Now testing with stack tracer"
-> > +
-> > +echo 1 > /proc/sys/kernel/stack_tracer_enabled
-> > +
-> > +disable_tracing
-> > +clear_trace
-> > +enable_tracing
-> > +sleep 1
-> > +
-> > +count=`cat trace | grep '()' | grep -v schedule | wc -l`
-> > +
-> > +if [ $count -ne 0 ]; then
-> > +    echo "Graph filtering not working with stack tracer?"
-> > +    exit -1
-> > +fi
-> > +
-> > +count=`cat trace | grep 'schedule()' | wc -l` 
-> > +if [ $count -eq 0 ]; then
-> > +    echo "No schedule traces found?"
-> > +    exit -1
-> > +fi
-> > +
-> > +# Make sure we did find something
-> > +count=`cat trace | grep 'schedule()' | wc -l` 
-> > +if [ $count -eq 0 ]; then
-> > +    echo "No schedule traces found?"
-> > +    exit -1
-> > +fi
-> 
-> Do you really want to do it twice?
-
-Crap, no. Hmm, that was probably suppose to go into the other file. Let
-me fix that.
-
-> 
-> 
-> > +
-> > +echo 0 > /proc/sys/kernel/stack_tracer_enabled
-> > +clear_trace
-> > +sleep 1
-> > +
-> > +
-> > +count=`cat trace | grep '()' | grep -v schedule | wc -l`
-> > +
-> > +if [ $count -ne 0 ]; then
-> > +    echo "Graph filtering not working after stack tracer disabled?"
-> > +    exit -1
-> > +fi
-> > +
-> > +count=`cat trace | grep 'schedule()' | wc -l` 
-> > +if [ $count -eq 0 ]; then
-> > +    echo "No schedule traces found?"
-> > +    exit -1
-> > +fi
-> > +
-> > +do_reset
-> > +
-> > +exit 0
-> 
-> 
-> [SNIP]
-> > --- /dev/null
-> > +++ b/tools/testing/selftests/ftrace/test.d/ftrace/func_profiler.tc
-> > @@ -0,0 +1,76 @@
-> > +#!/bin/sh
-> > +# description: ftrace - function profiler with function tracing
-> > +
-> > +# There was a bug after a rewrite of the ftrace infrastructure that
-> > +# caused the function_profiler not to be able to run with the function
-> > +# tracer, because the function_profiler used the function_graph tracer
-> > +# and it was assumed the two could not run simultaneously.
-> > +#
-> > +# There was another related bug where the solution to the first bug
-> > +# broke the way filtering of the function tracer worked.
-> > +#
-> > +# This test triggers those bugs on those kernels.
-> > +#
-> > +# We need function_graph and profiling to to run this test
-> > +if ! grep -q function_graph available_tracers; then
-> > +    echo "no function graph tracer configured"
-> > +    exit_unsupported;
-> > +fi
-> > +
-> > +if [ ! -f set_ftrace_filter ]; then
-> > +    echo "set_ftrace_filter not found? Is dynamic ftrace not set?"
-> > +    exit_unsupported
-> > +fi
-> > +
-> > +if [ ! -f function_profile_enabled ]; then
-> > +    echo "function_profile_enabled not found, function profiling enabled?"
-> > +    exit_unsupported
-> > +fi
-> > +
-> > +echo "Testing function tracer with profiler:"
-> > +echo "enable function tracer"
-> > +echo function > current_tracer
-> > +echo "enable profiler"
-> > +echo 1 > function_profile_enabled
-> 
-> Oh, this test is verbose.. :)
-
-I could switch those to comments. When running the tests, these are
-suppressed. Should I change them?
-
-> 
-> 
-> > +
-> > +sleep 1
-> > +
-> > +echo "Now filter on just schedule"
-> > +echo '*schedule' > set_ftrace_filter
-> 
-> Here..
-
-Yep, me being lazy. But I think I'll keep it as a variant. At least
-until I have better testing of filters. This is really basic. My stress
-tests use trace-cmd, which isn't what we want for these tests.
+diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
+index bbb4ec3..5650ac4 100644
+--- a/drivers/mmc/host/dw_mmc-rockchip.c
++++ b/drivers/mmc/host/dw_mmc-rockchip.c
+@@ -68,14 +68,24 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
+ 	}
+ }
+ 
++static int dw_mci_rockchip_init(struct dw_mci *host)
++{
++	/* It is slot 8 on Rockchip SoCs */
++	host->sdio_id0 = 8;
++
++	return 0;
++}
++
+ static const struct dw_mci_drv_data rk2928_drv_data = {
+ 	.prepare_command        = dw_mci_rockchip_prepare_command,
++	.init			= dw_mci_rockchip_init,
+ };
+ 
+ static const struct dw_mci_drv_data rk3288_drv_data = {
+ 	.prepare_command        = dw_mci_rockchip_prepare_command,
+ 	.set_ios		= dw_mci_rk3288_set_ios,
+ 	.setup_clock    = dw_mci_rk3288_setup_clock,
++	.init			= dw_mci_rockchip_init,
+ };
+ 
+ static const struct of_device_id dw_mci_rockchip_match[] = {
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index bb46b1b..a633b58 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -823,7 +823,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
+ 
+ 		/* enable clock; only low power if no SDIO */
+ 		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
+-		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
++		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->sdio_id)))
+ 			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
+ 		mci_writel(host, CLKENA, clk_en_a);
+ 
+@@ -1184,10 +1184,10 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+ 		dw_mci_disable_low_power(slot);
+ 
+ 		mci_writel(host, INTMASK,
+-			   (int_mask | SDMMC_INT_SDIO(slot->id)));
++			   (int_mask | SDMMC_INT_SDIO(slot->sdio_id)));
+ 	} else {
+ 		mci_writel(host, INTMASK,
+-			   (int_mask & ~SDMMC_INT_SDIO(slot->id)));
++			   (int_mask & ~SDMMC_INT_SDIO(slot->sdio_id)));
+ 	}
+ }
+ 
+@@ -2056,8 +2056,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+ 		/* Handle SDIO Interrupts */
+ 		for (i = 0; i < host->num_slots; i++) {
+ 			struct dw_mci_slot *slot = host->slot[i];
+-			if (pending & SDMMC_INT_SDIO(i)) {
+-				mci_writel(host, RINTSTS, SDMMC_INT_SDIO(i));
++			if (pending & SDMMC_INT_SDIO(slot->sdio_id)) {
++				mci_writel(host, RINTSTS,
++					   SDMMC_INT_SDIO(slot->sdio_id));
+ 				mmc_signal_sdio_irq(slot->mmc);
+ 			}
+ 		}
+@@ -2145,6 +2146,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 
+ 	slot = mmc_priv(mmc);
+ 	slot->id = id;
++	slot->sdio_id = host->sdio_id0 + id;
+ 	slot->mmc = mmc;
+ 	slot->host = host;
+ 	host->slot[id] = slot;
+diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+index 71d4995..0562f10 100644
+--- a/drivers/mmc/host/dw_mmc.h
++++ b/drivers/mmc/host/dw_mmc.h
+@@ -214,6 +214,7 @@ extern int dw_mci_resume(struct dw_mci *host);
+  *	with CONFIG_MMC_CLKGATE.
+  * @flags: Random state bits associated with the slot.
+  * @id: Number of this slot.
++ * @sdio_id: Number of this slot in the SDIO interrupt registers.
+  */
+ struct dw_mci_slot {
+ 	struct mmc_host		*mmc;
+@@ -233,6 +234,7 @@ struct dw_mci_slot {
+ #define DW_MMC_CARD_PRESENT	0
+ #define DW_MMC_CARD_NEED_INIT	1
+ 	int			id;
++	int			sdio_id;
+ };
+ 
+ struct dw_mci_tuning_data {
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index 69d0814..72c319f 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -96,6 +96,7 @@ struct mmc_data;
+  * @quirks: Set of quirks that apply to specific versions of the IP.
+  * @irq_flags: The flags to be passed to request_irq.
+  * @irq: The irq value to be passed to request_irq.
++ * @sdio_id0: Number of slot0 in the SDIO interrupt registers.
+  *
+  * Locking
+  * =======
+@@ -191,6 +192,8 @@ struct dw_mci {
+ 	bool			vqmmc_enabled;
+ 	unsigned long		irq_flags; /* IRQ flags */
+ 	int			irq;
++
++	int			sdio_id0;
+ };
+ 
+ /* DMA ops for Internal/External DMAC interface */
+-- 
+1.8.3.2
 
 
-> 
-> > +clear_trace
-> > +
-> > +echo "Now disable function profiler"
-> > +echo 0 > function_profile_enabled
-> > +
-> > +sleep 1
-> > +
-> > +# make sure only schedule functions exist
-> > +
-> > +echo "testing if only schedule is being traced"
-> > +if grep -v -e '^#' -e 'schedule' trace; then
-> 
-> It seems you might want to add -q or > /dev/null.  Or count the
-> resulting lines like other tests.
-
-Why?
-
-The -v is an inverse search. It returns true if it finds anything but
-'^#' and 'schedule', and false if it doesn't.
-
-That's what we want. Why count lines? We could add -q, but again, all
-output is suppressed. This came from my own test scripts, and there I
-purposely left out the -q because if it failed, I wanted to see what
-was there that wasn't suppose to be.
-
--- Steve
