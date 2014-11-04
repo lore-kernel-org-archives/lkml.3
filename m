@@ -1,54 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065AbaKDPcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:32:10 -0500
-Received: from 8bytes.org ([81.169.241.247]:34725 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999AbaKDPcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:32:06 -0500
-Date: Tue, 4 Nov 2014 16:32:03 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Patch Part2 v4 00/31] Enable hierarchy irqdomian on x86
- platforms
-Message-ID: <20141104153203.GE10744@8bytes.org>
-References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
- <20141104144730.GE14512@8bytes.org>
- <5458ECF3.4040308@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5458ECF3.4040308@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932102AbaKDPcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:32:24 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37630 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754062AbaKDPcW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 10:32:22 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd: arizona: Document HP_CTRL_1L and HP_CTRL_1R registers
+Date: Tue,  4 Nov 2014 15:24:36 +0000
+Message-Id: <1415114676-32614-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 11:12:51PM +0800, Jiang Liu wrote:
-> 	Do you have the call stack? I have changed the way to call
-> irq_set_msi_desc_off() for MSI/MSIx interrupts, which may cause the
-> panic. Patch 19-21 changes the PCI MSI code.
+These registers are documented in the datasheet and used as part of the
+extcon driver. Expose them properly through regmap as the datasheet
+notes they should be treated as volatile do so.
 
-Unfortunatly I have no full call-stack yet, as the intersting parts
-scrolled out of the screen. But the last interesting function seen there
-was do_one_initcall(). I'll try to setup serial console on the machine
-and let you know when I have a full call-stack.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm5102-tables.c           |    6 +++-
+ drivers/mfd/wm5110-tables.c           |    4 +++
+ drivers/mfd/wm8997-tables.c           |    4 +++
+ include/linux/mfd/arizona/registers.h |   42 +++++++++++++++++++++++++++++++++
+ 4 files changed, 54 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+index d6f35bb..b326a82 100644
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@ -336,8 +336,6 @@ static const struct reg_default wm5102_reg_default[] = {
+ 	{ 0x00000218, 0x01A6 },   /* R536   - Mic Bias Ctrl 1 */ 
+ 	{ 0x00000219, 0x01A6 },   /* R537   - Mic Bias Ctrl 2 */ 
+ 	{ 0x0000021A, 0x01A6 },   /* R538   - Mic Bias Ctrl 3 */ 
+-	{ 0x00000225, 0x0400 },   /* R549   - HP Ctrl 1L */
+-	{ 0x00000226, 0x0400 },   /* R550   - HP Ctrl 1R */
+ 	{ 0x00000293, 0x0000 },   /* R659   - Accessory Detect Mode 1 */ 
+ 	{ 0x0000029B, 0x0020 },   /* R667   - Headphone Detect 1 */ 
+ 	{ 0x0000029C, 0x0000 },   /* R668   - Headphone Detect 2 */
+@@ -1112,6 +1110,8 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_MIC_BIAS_CTRL_1:
+ 	case ARIZONA_MIC_BIAS_CTRL_2:
+ 	case ARIZONA_MIC_BIAS_CTRL_3:
++	case ARIZONA_HP_CTRL_1L:
++	case ARIZONA_HP_CTRL_1R:
+ 	case ARIZONA_ACCESSORY_DETECT_MODE_1:
+ 	case ARIZONA_HEADPHONE_DETECT_1:
+ 	case ARIZONA_HEADPHONE_DETECT_2:
+@@ -1949,6 +1949,8 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_DSP1_SCRATCH_1:
+ 	case ARIZONA_DSP1_SCRATCH_2:
+ 	case ARIZONA_DSP1_SCRATCH_3:
++	case ARIZONA_HP_CTRL_1L:
++	case ARIZONA_HP_CTRL_1R:
+ 	case ARIZONA_HEADPHONE_DETECT_2:
+ 	case ARIZONA_HP_DACVAL:
+ 	case ARIZONA_MIC_DETECT_3:
+diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+index 64eab95..12cad94 100644
+--- a/drivers/mfd/wm5110-tables.c
++++ b/drivers/mfd/wm5110-tables.c
+@@ -1798,6 +1798,8 @@ static bool wm5110_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_MIC_BIAS_CTRL_1:
+ 	case ARIZONA_MIC_BIAS_CTRL_2:
+ 	case ARIZONA_MIC_BIAS_CTRL_3:
++	case ARIZONA_HP_CTRL_1L:
++	case ARIZONA_HP_CTRL_1R:
+ 	case ARIZONA_ACCESSORY_DETECT_MODE_1:
+ 	case ARIZONA_HEADPHONE_DETECT_1:
+ 	case ARIZONA_HEADPHONE_DETECT_2:
+@@ -2841,6 +2843,8 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
+ 	case ARIZONA_ASYNC_SAMPLE_RATE_2_STATUS:
+ 	case ARIZONA_MIC_DETECT_3:
++	case ARIZONA_HP_CTRL_1L:
++	case ARIZONA_HP_CTRL_1R:
+ 	case ARIZONA_HEADPHONE_DETECT_2:
+ 	case ARIZONA_INPUT_ENABLES_STATUS:
+ 	case ARIZONA_OUTPUT_STATUS_1:
+diff --git a/drivers/mfd/wm8997-tables.c b/drivers/mfd/wm8997-tables.c
+index 510da3b..06c3093 100644
+--- a/drivers/mfd/wm8997-tables.c
++++ b/drivers/mfd/wm8997-tables.c
+@@ -886,6 +886,8 @@ static bool wm8997_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_MIC_BIAS_CTRL_1:
+ 	case ARIZONA_MIC_BIAS_CTRL_2:
+ 	case ARIZONA_MIC_BIAS_CTRL_3:
++	case ARIZONA_HP_CTRL_1L:
++	case ARIZONA_HP_CTRL_1R:
+ 	case ARIZONA_ACCESSORY_DETECT_MODE_1:
+ 	case ARIZONA_HEADPHONE_DETECT_1:
+ 	case ARIZONA_HEADPHONE_DETECT_2:
+@@ -1477,6 +1479,8 @@ static bool wm8997_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_SAMPLE_RATE_3_STATUS:
+ 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
+ 	case ARIZONA_MIC_DETECT_3:
++	case ARIZONA_HP_CTRL_1L:
++	case ARIZONA_HP_CTRL_1R:
+ 	case ARIZONA_HEADPHONE_DETECT_2:
+ 	case ARIZONA_INPUT_ENABLES_STATUS:
+ 	case ARIZONA_OUTPUT_STATUS_1:
+diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
+index fbf6489..aacc10d 100644
+--- a/include/linux/mfd/arizona/registers.h
++++ b/include/linux/mfd/arizona/registers.h
+@@ -125,6 +125,8 @@
+ #define ARIZONA_MIC_BIAS_CTRL_1                  0x218
+ #define ARIZONA_MIC_BIAS_CTRL_2                  0x219
+ #define ARIZONA_MIC_BIAS_CTRL_3                  0x21A
++#define ARIZONA_HP_CTRL_1L                       0x225
++#define ARIZONA_HP_CTRL_1R                       0x226
+ #define ARIZONA_ACCESSORY_DETECT_MODE_1          0x293
+ #define ARIZONA_HEADPHONE_DETECT_1               0x29B
+ #define ARIZONA_HEADPHONE_DETECT_2               0x29C
+@@ -2253,6 +2255,46 @@
+ #define ARIZONA_MICB3_ENA_WIDTH                       1  /* MICB3_ENA */
+ 
+ /*
++ * R549 (0x225) - HP Ctrl 1L
++ */
++#define ARIZONA_RMV_SHRT_HP1L                    0x4000  /* RMV_SHRT_HP1L */
++#define ARIZONA_RMV_SHRT_HP1L_MASK               0x4000  /* RMV_SHRT_HP1L */
++#define ARIZONA_RMV_SHRT_HP1L_SHIFT                  14  /* RMV_SHRT_HP1L */
++#define ARIZONA_RMV_SHRT_HP1L_WIDTH                   1  /* RMV_SHRT_HP1L */
++#define ARIZONA_HP1L_FLWR                        0x0004  /* HP1L_FLWR */
++#define ARIZONA_HP1L_FLWR_MASK                   0x0004  /* HP1L_FLWR */
++#define ARIZONA_HP1L_FLWR_SHIFT                       2  /* HP1L_FLWR */
++#define ARIZONA_HP1L_FLWR_WIDTH                       1  /* HP1L_FLWR */
++#define ARIZONA_HP1L_SHRTI                       0x0002  /* HP1L_SHRTI */
++#define ARIZONA_HP1L_SHRTI_MASK                  0x0002  /* HP1L_SHRTI */
++#define ARIZONA_HP1L_SHRTI_SHIFT                      1  /* HP1L_SHRTI */
++#define ARIZONA_HP1L_SHRTI_WIDTH                      1  /* HP1L_SHRTI */
++#define ARIZONA_HP1L_SHRTO                       0x0001  /* HP1L_SHRTO */
++#define ARIZONA_HP1L_SHRTO_MASK                  0x0001  /* HP1L_SHRTO */
++#define ARIZONA_HP1L_SHRTO_SHIFT                      0  /* HP1L_SHRTO */
++#define ARIZONA_HP1L_SHRTO_WIDTH                      1  /* HP1L_SHRTO */
++
++/*
++ * R550 (0x226) - HP Ctrl 1R
++ */
++#define ARIZONA_RMV_SHRT_HP1R                    0x4000  /* RMV_SHRT_HP1R */
++#define ARIZONA_RMV_SHRT_HP1R_MASK               0x4000  /* RMV_SHRT_HP1R */
++#define ARIZONA_RMV_SHRT_HP1R_SHIFT                  14  /* RMV_SHRT_HP1R */
++#define ARIZONA_RMV_SHRT_HP1R_WIDTH                   1  /* RMV_SHRT_HP1R */
++#define ARIZONA_HP1R_FLWR                        0x0004  /* HP1R_FLWR */
++#define ARIZONA_HP1R_FLWR_MASK                   0x0004  /* HP1R_FLWR */
++#define ARIZONA_HP1R_FLWR_SHIFT                       2  /* HP1R_FLWR */
++#define ARIZONA_HP1R_FLWR_WIDTH                       1  /* HP1R_FLWR */
++#define ARIZONA_HP1R_SHRTI                       0x0002  /* HP1R_SHRTI */
++#define ARIZONA_HP1R_SHRTI_MASK                  0x0002  /* HP1R_SHRTI */
++#define ARIZONA_HP1R_SHRTI_SHIFT                      1  /* HP1R_SHRTI */
++#define ARIZONA_HP1R_SHRTI_WIDTH                      1  /* HP1R_SHRTI */
++#define ARIZONA_HP1R_SHRTO                       0x0001  /* HP1R_SHRTO */
++#define ARIZONA_HP1R_SHRTO_MASK                  0x0001  /* HP1R_SHRTO */
++#define ARIZONA_HP1R_SHRTO_SHIFT                      0  /* HP1R_SHRTO */
++#define ARIZONA_HP1R_SHRTO_WIDTH                      1  /* HP1R_SHRTO */
++
++/*
+  * R659 (0x293) - Accessory Detect Mode 1
+  */
+ #define ARIZONA_ACCDET_SRC                       0x2000  /* ACCDET_SRC */
+-- 
+1.7.2.5
 
-	Joerg
