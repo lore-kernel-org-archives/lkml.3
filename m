@@ -1,52 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbaKDOEB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:04:01 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:55328 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751841AbaKDOD7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:03:59 -0500
-Date: Tue, 4 Nov 2014 09:03:57 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH 0/4 v2] ftracetests: Add ftrace tests to ftracetests
-Message-ID: <20141104090357.37531ed3@gandalf.local.home>
-In-Reply-To: <54589CBD.8040303@hitachi.com>
-References: <20141103212737.696365174@goodmis.org>
-	<54589CBD.8040303@hitachi.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1753907AbaKDOE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:04:27 -0500
+Received: from 8bytes.org ([81.169.241.247]:33929 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753822AbaKDOEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 09:04:25 -0500
+Date: Tue, 4 Nov 2014 15:04:22 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] msm: iommu: use dev_get_platdata()
+Message-ID: <20141104140422.GB14512@8bytes.org>
+References: <1414650311-24211-1-git-send-email-kiran.padwal@smartplayin.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414650311-24211-1-git-send-email-kiran.padwal@smartplayin.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Nov 2014 18:30:37 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> (2014/11/04 6:27), Steven Rostedt wrote:
-> > Second attempt. I took the advice from Masami Hiramatsu and modified
-> > my tests. I also added some helper functions to ftracetests as well.
-> > 
-> > I split the one function graph test into two. One to just test the
-> > filtering of the function graph and another to test with stack tracer.
-> > 
-> > Steven Rostedt (Red Hat) (4):
-> >       ftracetest: Add clear_trace() helper to reset the trace file
-> >       ftracetest: Add disable/enable_tracing() helper calls
-> >       ftracetest: Add helper reset_tracer() function
+On Thu, Oct 30, 2014 at 11:55:11AM +0530, Kiran Padwal wrote:
+> Use the wrapper function for retrieving the platform data instead of
+> accessing dev->platform_data directly.
 > 
-> BTW, I think you can fold these patches into one. No need to separate
-> for each helper functions.
+> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
 
-Yeah, I probably should. I did those each at different times, and just
-put them in separately.
-
--- Steve
-
-
+Applied to arm/msm, thanks.
