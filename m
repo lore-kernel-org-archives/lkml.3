@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaKDHxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:53:20 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:32209 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205AbaKDHxQ (ORCPT
+	id S1752373AbaKDHyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:54:39 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:29035 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752336AbaKDHyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:53:16 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-6c-545885ebe092
-Message-id: <1415087593.2389.6.camel@AMDC1943>
-Subject: Re: [PATCH v3 02/14] mfd/regulator: dt-bindings: max77686: Document
- of_compatible for regulator
+	Tue, 4 Nov 2014 02:54:33 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-5a-54588636590a
+Message-id: <1415087669.2389.7.camel@AMDC1943>
+Subject: Re: linux-next: build failure after merge of the mfd tree
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Date: Tue, 04 Nov 2014 08:53:13 +0100
-In-reply-to: <20141103170042.GC12011@x1>
-References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
- <1414668053-31370-3-git-send-email-k.kozlowski@samsung.com>
- <20141103170042.GC12011@x1>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Date: Tue, 04 Nov 2014 08:54:29 +0100
+In-reply-to: <20141104164005.1a45ad46@canb.auug.org.au>
+References: <20141104164005.1a45ad46@canb.auug.org.au>
 Content-type: text/plain; charset=UTF-8
 X-Mailer: Evolution 3.10.4-0ubuntu2
 MIME-version: 1.0
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t/xy7qvWyNCDO5NYrLYOGM9q8WkdQeY
-	LKY+fMJmcf3Lc1aL+UfOsVoc/V1g0bvgKpvF2aY37Bb3vx5ltPh2pYPJYtPja6wWl3fNYbOY
-	cX4fk8Xty7wWa4/cZbc43c3qIODR0tzD5vH3+XUWj7+rXjB77Jx1l91j06pONo871/awecw7
-	GeixeUm9R9+WVYwenzfJBXBFcdmkpOZklqUW6dslcGWsW3+DqeAdb8XaH41MDYzd3F2MnBwS
-	AiYSX/pOs0HYYhIX7q0Hsrk4hASWMkrM276EHcL5zCix8c5fRpAqXgE9iQm7XrKD2MICWRJz
-	lixhBrHZBIwlNi9fAtTNwSEioCJx7o05SC+zwH0Wie3r/4JtYBFQlVi97BUriM0poCGxcsUe
-	MFtIYDGjxNZZNSA2s4C6xKR5i5hB5kgIKEs09rtBrBWU+DH5HgtEibzE5jVvmScwCsxC0jEL
-	SdksJGULGJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoTE2ZcdjIuPWR1iFOBgVOLhzVCP
-	CBFiTSwrrsw9xCjBwawkwru6CijEm5JYWZValB9fVJqTWnyIkYmDU6qBsfmx32PvlGu9F2dt
-	vMogrOYUuvBsTJrTk5jKxxt8JvckBzRt5X299dn3Oxf5N5/w3mWy87XWH82ZSzx8kuo1Wbc+
-	eq93fPbdjKZTpz6Ezlyedle/Nk3qxE+7bYcfhRpHSq+ZIxdard/iFMtTtMs/l/FcqJreOQaW
-	zgTmhd7Xs6Vj9v65x3qkRYmlOCPRUIu5qDgRAK/whEmRAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t/xy7pmbREhBt1LdC2O/i6wuP/1KKPF
+	5V1z2CwOLmxjtNi69yq7A6tH440bbB5/n19n8bhzbQ+bx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
+	29/lF9wSrJjV1sjWwPiHt4uRg0NCwESiY7JIFyMnkCkmceHeerYuRi4OIYGljBLbHtxhhXA+
+	M0psnXGYGaSKV0BPYt2vuWwgtrCAk8TCzk4wm03AWGLz8iVsIENFBLQlDvwWAOllFpjHKDHh
+	yFWwXhYBVYnPH9eygticAuYSTzsPgsWFBMwkjnx/yQRiMwuoS0yat4gZ4jhlicZ+N4i1ghI/
+	Jt9jgSiRl9i85i3zBEaBWUg6ZiEpm4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2M
+	kAD+soNx8TGrQ4wCHIxKPLwZ6hEhQqyJZcWVuYcYJTiYlUR4V1cBhXhTEiurUovy44tKc1KL
+	DzEycXBKNTCuvh+/L/LFsTeH3IVLDUSKPsttmhkcIXW2fo+hSdGKY2e2lLAc3G6jfyfKrsA8
+	6srxw+6CibePuIbP93+WdnZWdOHflq9NlvUa3+vetjGtWO0hov6xUaQ1rYT33Z6zCuGNm9qO
+	n/4Qcb2t+Y+o6aNOYe4HPutqP8z50berRHXfxpD9siZBX/yVWIozEg21mIuKEwE43aKCPgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-11-03 at 17:00 +0000, Lee Jones wrote:
-> On Thu, 30 Oct 2014, Krzysztof Kozlowski wrote:
+On wto, 2014-11-04 at 16:40 +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> > Document new required property for regulator driver: of_compatible. The
-> > property allows MFD core to bind the driver to node with regulators and
-> > this simplifies parsing regulators init data from DTS
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  Documentation/devicetree/bindings/mfd/max77686.txt | 7 ++++++-
-> >  1 file changed, 6 insertions(+), 1 deletion(-)
+> After merging the mfd tree, today's linux-next build (powerpc allyesconfig)
+> failed like this:
 > 
-> I want a thumbs-up from Mark on this before applying.
+> drivers/regulator/max77686.c:432:13: warning: 'struct max77686_platform_data' declared inside parameter list
+>       struct max77686_platform_data *pdata)
+>              ^
+> drivers/regulator/max77686.c:432:13: warning: its scope is only this definition or declaration, which is probably not what you want
+> drivers/regulator/max77686.c: In function 'max77686_pmic_dt_parse_pdata':
+> drivers/regulator/max77686.c:447:7: error: dereferencing pointer to incomplete type
+>   pdata->num_regulators = ARRAY_SIZE(regulators);
+>        ^
+> drivers/regulator/max77686.c:448:42: error: dereferencing pointer to incomplete type
+>   rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) *
+>                                           ^
+> drivers/regulator/max77686.c:449:14: error: dereferencing pointer to incomplete type
+>          pdata->num_regulators, GFP_KERNEL);
+>               ^
+> drivers/regulator/max77686.c:455:23: error: dereferencing pointer to incomplete type
+>   for (i = 0; i < pdata->num_regulators; i++) {
+>                        ^
+> drivers/regulator/max77686.c:460:3: error: invalid use of undefined type 'struct max77686_regulator_data'
+>    rdata[i].initdata = rmatch.init_data;
+>    ^
+> drivers/regulator/max77686.c:460:8: error: dereferencing pointer to incomplete type
+>    rdata[i].initdata = rmatch.init_data;
+>         ^
+> drivers/regulator/max77686.c:461:3: error: invalid use of undefined type 'struct max77686_regulator_data'
+>    rdata[i].of_node = rmatch.of_node;
+>    ^
+> drivers/regulator/max77686.c:461:8: error: dereferencing pointer to incomplete type
+>    rdata[i].of_node = rmatch.of_node;
+>         ^
+> drivers/regulator/max77686.c:464:7: error: dereferencing pointer to incomplete type
+>   pdata->regulators = rdata;
+>        ^
+> 
+> And so on ...
+> 
+> Caused by commit 9d5f4c2c748e ("mfd: max77686/802: Remove support for
+> board files") from the mfd tree.
+> 
+> I reverted that commit for today.
 
-I'll be resending new version, without the compatible property.
+The commit depends on other patches from a set which hadn't been
+applied. Please drop it.
 
 Best regards,
 Krzysztof
-
-> 
-> > diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
-> > index 75fdfaf41831..f4010a9f66eb 100644
-> > --- a/Documentation/devicetree/bindings/mfd/max77686.txt
-> > +++ b/Documentation/devicetree/bindings/mfd/max77686.txt
-> > @@ -18,8 +18,11 @@ Required properties:
-> >  
-> >  Optional node:
-> >  - voltage-regulators : The regulators of max77686 have to be instantiated
-> > -  under subnode named "voltage-regulators" using the following format.
-> > +  under subnode named "voltage-regulators".
-> > +  Required property:
-> > +  - compatible : Must be "maxim,max77686-pmic"
-> >  
-> > +  Optional properties: For each regulator use following format:
-> >  	regulator_name {
-> >  		regulator-compatible = LDOn/BUCKn
-> >  		standard regulator constraints....
-> > @@ -49,6 +52,8 @@ Example:
-> >  		reg = <0x09>;
-> >  
-> >  		voltage-regulators {
-> > +			compatible = "maxim,max77686-pmic";
-> > +
-> >  			ldo11_reg {
-> >  				regulator-compatible = "LDO11";
-> >  				regulator-name = "vdd_ldo11";
-> 
 
