@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982AbaKDEnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 23:43:31 -0500
-Received: from ozlabs.org ([103.22.144.67]:52201 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475AbaKDEn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 23:43:29 -0500
-Date: Tue, 4 Nov 2014 15:43:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>, Robert Elliott <elliott@hp.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: linux-next: build failure after merge of the scsi tree
-Message-ID: <20141104154320.2919bf64@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751990AbaKDErR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 23:47:17 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:35449 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaKDErP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 23:47:15 -0500
+Date: Mon, 3 Nov 2014 20:47:17 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Robert Richter <rric@kernel.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Robert Richter <rrichter@cavium.com>,
+        Andrew Bresticker <abrestic@google.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>
+Subject: Re: [GIT PULL] dts, kbuild: Implement support for dtb vendor subdirs
+Message-ID: <20141104044717.GA13562@quad.lixom.net>
+References: <1409899692-1455-1-git-send-email-rric@kernel.org>
+ <20141021181504.GV20170@rric.localhost>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/wy/dvRL0Jh3Bl.7ttsN289G"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141021181504.GV20170@rric.localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/wy/dvRL0Jh3Bl.7ttsN289G
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 21, 2014 at 08:15:04PM +0200, Robert Richter wrote:
+> Arnd,
+> 
+> On 05.09.14 08:48:06, Robert Richter wrote:
+> > From: Robert Richter <rrichter@cavium.com>
+> > 
+> > For arm64 we want to put dts files into vendor's subdirectories from
+> > the beginning. This patch set implements this. As this is a generic
+> > kbuild implementation, vendor subdirs will be also available for
+> > arch/arm and other architectures. The subdirectory tree is also
+> > reflected in the install path.
+> > 
+> > A new makefile variable dts-dirs is introduced to point to dts
+> > subdirs. This variable is used by kbuild for building and installation
+> > of dtb files.
+> > 
+> > A dts Makefile looks now as follows:
+> > 
+> > ----
+> > dtb-$(CONFIG_...) += some_file_1.dtb
+> > dtb-$(CONFIG_...) += some_file_2.dtb
+> > 
+> > dts-dirs          += dir_vendor_a
+> > dts-dirs          += dir_vendor_b
+> > 
+> > # come always afterwards:
+> > always         := $(dtb-y)
+> > subdir-y       := $(dts-dirs)
+> > clean-files    := *.dtb
+> > ----
+> > 
+> > This patches also introduces the dtbs_install make target for
+> > arm64. Install rules are moved to Makefile.dtbinst using the same
+> > style and calling convention like for modinst and fwinst.
+> > 
+> > Robert Richter (6):
+> >   dts, arm64: Add dtbs_install make target
+> >   dts, kbuild: Factor out dtbs install rules to Makefile.dtbinst
+> >   dts, arm/arm64: Remove dtbs build rules in sub-makes
+> >   dts, kbuild: Implement support for dtb vendor subdirs
+> >   dts, arm64: Move dts files to vendor subdirs
+> >   dts, arm: Remove $(MACHINE) variable from dtbs make recipes
+> 
+> please pull this series for inclusion into v3.19 from:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git dts-subdirs-for-arm-soc-v3.19
+> 
+> I have updated and rebased the patches to v3.18-rc1. No changes except
+> conflict resolution of patch 5/6.
 
-Hi James,
+Pulled, and I added the description from 0/6 as the merge text -- feel free to
+add it to the tag if you do something like this in the future.
 
-After merging the scsi tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
 
-In file included from include/linux/sched.h:17:0,
-                 from include/linux/blkdev.h:4,
-                 from drivers/scsi/constants.c:10:
-drivers/scsi/constants.c: In function 'scsi_opcode_sa_name':
-include/linux/kernel.h:54:32: error: invalid application of 'sizeof' to inc=
-omplete type 'const char *[]'
- #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(=
-arr))
-                                ^
-drivers/scsi/constants.c:300:15: note: in expansion of macro 'ARRAY_SIZE'
-  if (opcode < ARRAY_SIZE(cdb_byte0_names))
-               ^
-
-Caused by 94bafab0008c ("scsi: consolidate opcode lookup in
-scsi_opcode_sa_name()").  This build does not have
-CONFIG_SCSI_CONSTANTS set.
-
-I have used the scsi tree from next-20141031 again (since yesterday's
-tree had a different build problem).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/wy/dvRL0Jh3Bl.7ttsN289G
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUWFltAAoJEMDTa8Ir7ZwVGdoP/12arQwBPQCDJ2r+gKsy8+ge
-puMmMd1ATTxpHwXaaHkM3XYl3V39E/FnrOJwZbFGml1wR+23hpFt8RRFJRSj5G/S
-6k+2IGe8xnRXvAXipIt541H4nmZbrRxKLeUbWU+Ilp0YuRa5Ah2XuvBdNb0TD6yn
-P9022FYc2GTO+9IHaG4yoDNSSwMJQwiOZopzcYrR3WnheI9HYzpsJMr5FLgxqvC8
-I7cHj0hj3QsVCpkKjPaWkgTahDkQgvlsxn/70Blw0MlFZdSkeLK+qqzFP3y9Z1/0
-UCmw1NcjL6diIxfeDF/ag0nKPC1XMB8BtdNuYNgUHCkwTYrUMg/GbajOkV1UsRW0
-embYcXnLHOjnZ+oUF7MZCIMWc79WPRSGRf673gBj1RyC5BWB44WGyL8PswqxsGDW
-cqlGcrn/Ft8mEVraCOmeBK39eOQ6J7R3StUWcpHZkez/g+zGms79f1H2spRxgAAs
-n/mDXaFd1knLqRxl26oikq45RejYw8zFr35kkVBj2965MMVcuzTAtJthCJqvlRtF
-jpZ7awOfAScitBcfYGrDpOYgXBGMOKk2fhePJzMO6+IgOEfdAl4nGPzgL07tugn9
-R3yLxHx+7fV6WKktwy27+Krbw66eir13f+z7xBE4ljfFSXRbHo2qARpNuPKXoDBz
-D6AYnvKqIqIn/F4tl62t
-=rHWC
------END PGP SIGNATURE-----
-
---Sig_/wy/dvRL0Jh3Bl.7ttsN289G--
+-Olof
