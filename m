@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577AbaKDPLU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:11:20 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:49710 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaKDPLQ (ORCPT
+	id S1754401AbaKDPKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:10:55 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:54472 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754243AbaKDPKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:11:16 -0500
-Date: Tue, 4 Nov 2014 16:11:09 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "pang.xunlei" <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH v2 5/6] sched/dl: Optimize select_task_rq_dl() for non-DL
- curr task
-Message-ID: <20141104151109.GI10501@worktop.programming.kicks-ass.net>
-References: <1415099585-31174-1-git-send-email-pang.xunlei@linaro.org>
- <1415099585-31174-5-git-send-email-pang.xunlei@linaro.org>
- <20141104094549.59acebb6@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104094549.59acebb6@gandalf.local.home>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Tue, 4 Nov 2014 10:10:50 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-93-5458ec780392
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org
+Cc: Anton Vorontsov <anton@enomsg.org>, Pavel Machek <pavel@ucw.cz>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH RESEND v2 3/7] x86/olpc/xo1/sci: Use newly added
+ power_supply_put API
+Date: Tue, 04 Nov 2014 16:10:32 +0100
+Message-id: <1415113836-26098-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1415113836-26098-1-git-send-email-k.kozlowski@samsung.com>
+References: <1415113836-26098-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/xy7oVbyJCDL7+FrE4uFXTYuOM9awW
+	S5oyLCY9ec9sMXHlZGaLaRvFLV6/MLRYtvgpo8XZpjfsFve/HmW0mPJnOZPFpsfXWC0u75rD
+	ZvG59wijxcelG1gt1h65y25x6cACJou7p46yWTxe8Zbd4nQ3q8Xp3SUWmzdNZbb4seExq4O4
+	x4T+T4weO2fdZfdYsKnUY/MKLY/Fe14yeWxa1cnmcefaHjaPd+fOsXvMOxnosXlJvcfHp7dY
+	PN7vu8rm0bdlFaPHitXf2T0+b5LzONHyhTVAIIrLJiU1J7MstUjfLoEr49SPZ8wFt9kqfrzZ
+	y9zAeIa1i5GTQ0LARKLrySs2CFtM4sK99WC2kMBSRom139W7GLmA7D4miXuXboA1sAkYS2xe
+	voQNJCEi0MgqcW7rGyYQh1mgg0nidstOsCphgXCJYzNfsoDYLAKqEj92tYPZvALuEj0PH7JD
+	rJOTOHlsMlg9p4CHxM6W/+wQq90l3mzczjqBkXcBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k
+	/NxNjJCY+rKDcfExq0OMAhyMSjy8GeoRIUKsiWXFlbmHGCU4mJVEeNUfA4V4UxIrq1KL8uOL
+	SnNSiw8xMnFwSjUw6rzc8V703sUbkUsESt5Ma6yaflX526ZiaXdrq59cVcdX1ASa/o6xdW7O
+	n31LiqF0T9+OFb+mR2YfXd9zNr5at09szXOjVUXM/v8eyefsaT9uFKmwU+19DOemQ1L9rrqb
+	v2m/6AjnvrujLf733hvTQ7yi+xTyqpd4S3z579G80HnrrnVuW8yNlViKMxINtZiLihMB4FQ6
+	aYcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 09:45:49AM -0500, Steven Rostedt wrote:
-> > +++ b/kernel/sched/deadline.c
-> > @@ -954,6 +954,9 @@ select_task_rq_dl(struct task_struct *p, int cpu, int sd_flag, int flags)
-> >  	struct task_struct *curr;
-> >  	struct rq *rq;
-> >  
-> > +	if (p->nr_cpus_allowed == 1)
-> > +		goto out;
-> > +
-> 
-> This looks fine, and I'm wondering if we shouldn't just move this into
-> kernel/sched/core.c: select_task_rq(). Why bother calling the select_rq
-> code if the task is pinned?
-> 
-> This change will make fair.c, rt.c, and deadline.c all start with the
-> same logic. If this should be an optimization, just move it to core.c
-> and be done with it.
+Replace direct usage of put_device() with new API: power_supply_put().
 
-Yeah, that makes sense. Back when, in the olden days, nr_cpus_allowed
-was specific to the rt class, but we fixed that.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Pavel Machek <pavel@ucw.cz>
+---
+ arch/x86/platform/olpc/olpc-xo1-sci.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c b/arch/x86/platform/olpc/olpc-xo1-sci.c
+index 9a2e590dd202..7fa8b3b53bc0 100644
+--- a/arch/x86/platform/olpc/olpc-xo1-sci.c
++++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
+@@ -61,7 +61,7 @@ static void battery_status_changed(void)
+ 
+ 	if (psy) {
+ 		power_supply_changed(psy);
+-		put_device(psy->dev);
++		power_supply_put(psy);
+ 	}
+ }
+ 
+@@ -71,7 +71,7 @@ static void ac_status_changed(void)
+ 
+ 	if (psy) {
+ 		power_supply_changed(psy);
+-		put_device(psy->dev);
++		power_supply_put(psy);
+ 	}
+ }
+ 
+-- 
+1.9.1
+
