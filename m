@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaKDRVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:21:23 -0500
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:50309 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832AbaKDRVT (ORCPT
+	id S1752272AbaKDRSV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:18:21 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:50517 "EHLO
+	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042AbaKDRSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:21:19 -0500
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Tue, 4 Nov 2014 12:21:17 -0500
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 11/13] arm: dts: dra7: add DMA properties for UART
-Message-ID: <20141104172117.GC24112@csclub.uwaterloo.ca>
-References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
- <1412014009-13315-12-git-send-email-bigeasy@linutronix.de>
- <20141104170233.GB24112@csclub.uwaterloo.ca>
- <5459079D.7080703@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5459079D.7080703@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Nov 2014 12:18:14 -0500
+X-Quarantine-ID: <K1FT1vRSFb4b>
+X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
+X-Spam-Flag: NO
+X-Spam-Score: -4.399
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
+        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
+        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
+        ebiederm@xmission.com, serge.hallyn@ubuntu.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 19/20] selftests/vm: add install target to enable installing test
+Date: Tue,  4 Nov 2014 10:11:15 -0700
+Message-Id: <271b880cb8efb17078c090715c6b0c729c61dbbc.1415117102.git.shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
+References: <cover.1415117102.git.shuahkh@osg.samsung.com>
+In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
+References: <cover.1415117102.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 06:06:37PM +0100, Sebastian Andrzej Siewior wrote:
-> On 11/04/2014 06:02 PM, Lennart Sorensen wrote:
-> > 
-> > According to the manual the DMA channels for UART7 to 10 are:
-> > 
-> > uart7:  144 145
-> > uart8:  146 147
-> > uart9:  148 149
-> > uart10: 150 151
-> > 
-> > Might as well add those too.  We have uart 7 and 8 in use on our board
-> > so I am about to go test it.
-> 
-> Mind sharing the manual with me? Mine does not mention DMA channels for
-> UART7-10. If you are able to test 7+8 (and it works) could you please
-> make patch which with for the remaining four devices?
+Add a new make target to enable installing test. This target
+installs test in the kselftest install location and add to the
+kselftest script to run the test.
 
-Well the file I have is called AM572x_ES1.1_NDA_TRM_vT.pdf, so I am not
-sure who I am allowed to share that file with.  Might be simpler to just
-ask TI for the latest version.
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+---
+ tools/testing/selftests/vm/Makefile | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-How I hate NDAs.
-
+diff --git a/tools/testing/selftests/vm/Makefile b/tools/testing/selftests/vm/Makefile
+index 4c4b1f6..254ce92 100644
+--- a/tools/testing/selftests/vm/Makefile
++++ b/tools/testing/selftests/vm/Makefile
+@@ -9,6 +9,13 @@ all: $(BINARIES)
+ %: %.c
+ 	$(CC) $(CFLAGS) -o $@ $^
+ 
++install: all
++	install run_vmtests $(BINARIES) $(INSTALL_KSFT_PATH)
++	echo "\necho \"Start vm test ....\"" >> $(KSELFTEST)
++	echo "/bin/sh ./run_vmtests || echo \"vmtests: [FAIL]\"" >> $(KSELFTEST)
++	echo "echo \"End vm test ....\"" >> $(KSELFTEST)
++	echo "echo \"==============================\"" >> $(KSELFTEST)
++
+ run_tests: all
+ 	@/bin/sh ./run_vmtests || (echo "vmtests: [FAIL]"; exit 1)
+ 
 -- 
-Len Sorensen
+1.9.1
+
