@@ -1,137 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775AbaKDMGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:06:12 -0500
-Received: from mga02.intel.com ([134.134.136.20]:48611 "EHLO mga02.intel.com"
+	id S1754286AbaKDMG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:06:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:44031 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753792AbaKDMGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:06:07 -0500
+	id S1753556AbaKDMGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 07:06:23 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,313,1413270000"; 
-   d="scan'208";a="631076299"
-Date: Tue, 4 Nov 2014 14:05:35 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v5 7/7] tpm: create TPM 2.0 devices using own device class
-Message-ID: <20141104120535.GA31559@intel.com>
-References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1414832495-23609-8-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141102213305.GB28519@obsidianresearch.com>
- <20141103054101.GA4795@intel.com>
- <20141103213826.GG8303@obsidianresearch.com>
- <1415101654.4115.22.camel@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415101654.4115.22.camel@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+   d="scan'208";a="616768903"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [Patch Part2 v4 29/31] x86, irq: Use hierarchy irqdomain to manage DMAR interrupts
+Date: Tue,  4 Nov 2014 20:02:03 +0800
+Message-Id: <1415102525-9898-30-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 01:47:34PM +0200, Jarkko Sakkinen wrote:
-> On Mon, 2014-11-03 at 14:38 -0700, Jason Gunthorpe wrote:
-> > On Mon, Nov 03, 2014 at 07:41:01AM +0200, Jarkko Sakkinen wrote:
-> > 
-> > > I used the class 'tpm' only for TPM 2.x because I didn't want to
-> > > break the binary compatibility for TPM 1.x anyway. In ideal situtation
-> > > both would be character devices inside the class 'tpm' and there would
-> > > be sysfs attribute such as 'family' to mark the protocol to be used.
-> > 
-> > You can create the class without moving away from miscdev...
-> > 
-> > Not having the device creates way to much difference that has to be
-> > supported, way too messy.
-> 
-> I have to admit that I'm not quite following here but I assume that
-> you restated this below in more verbose way and this is basically the
-> same argument :)
-> 
-> > > > And considering the volume of changes it might be better to leave
-> > > > 'dev' as a pointer to the tpm class rather than try and tackle that in
-> > > > this giant patch..
-> > > 
-> > > Maybe, or maybe I could make the rename a separate patch?
-> > 
-> > Pointer then rename?
-> > 
-> > > It's fairly mechanical, just a matter of replacing string
-> > > "chip->dev" with "chip->pdev".
-> > 
-> > Not everyone should be replaced :|
-> 
-> I think the current variable name "dev" is miss-leading. The
-> use of "pdev" would document better the appropriate use for that
-> field (i.e. for the most cases DON'T use it).
-> 
-> > > > > +	chip->cdev.owner = chip->pdev->driver->owner;
-> > > > 
-> > > > Is that right? the cdev fops is in this module, not the driver's
-> > > > module..
-> > > 
-> > > tpm.ko defines the interface but TPM device driver module owns the
-> > > character device. I think this is right and similar logic is also
-> > > for example rtc_device_register().
-> > 
-> > Hmm, yes, I see that in rtc_dev_prepare - but I don't have time to
-> > figure out why that might be :)
-> > 
-> > On the surface, it doesn't seem to make sense: The cdev layer never
-> > calls into a function that goes to the chip module - all functions go
-> > to the fops in tpm.ko, and tmp.ko is (eventually) responsible for
-> > ensuring that ops never points to an unloaded module.
-> > 
-> > So why should it care what the driver module is??
-> 
-> Fully agreed, I think you got a point here. I think it makes sense
-> as a guideline to kind of "centralize" robustness to tpm.ko and
-> leave as little responsibility as possible to device drivers.
-> 
-> > > I could understand in the context of a misc device but don't really
-> > > when TPM 2.0 devices have their own device class. Using a 'tpm' class
-> > > would in all cases break non-udev systems because major number is no
-> > > longer 10 (misc).
-> > 
-> > I'm just saying it would be nice to force the major/minor to misc.tpm
-> > for tmp0.
-> > 
-> > No idea if that is OK or not.
-> 
-> I think that would be a mess. The way things are done in this v5
-> patch set is actually quite coherent and it does not break backwards
-> compatibility because the "proper" device hierarchy is only used for
-> TPM 2.0 devices.
-> 
-> I think the improvement for v6 would be to add a sysctl attribute
-> to disable legacy device hierarchy and sysfs attributes. If that
-> attribute is unset, the old misc hierarchy would be used for any
-> TPM version and TPM 1.0 devices would use existing sysfs attributes.
+Enhance DMAR code to support hierarchy irqdomain, it helps to make
+the architecture more clear.
 
-Mistake here. Should be a module parameter to be not racy, not 
-sysctl attribute :)
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/hw_irq.h |    7 ++
+ arch/x86/kernel/apic/msi.c    |  157 ++++++++++++++++++++++++++---------------
+ 2 files changed, 108 insertions(+), 56 deletions(-)
 
-> If the flag is set, then the new proper device hierarchy would be
-> used for any TPM device and we would have also chance to redefine
-> sysfs attributes.
-> 
-> This would add some legacy clutter to the stack but would be a
-> piss-off-free and non-ABI-breaking solution.
-> 
-> > Jason
-> 
-> PS. I feel that drivers/char/tpm is a like a desolated town. How 
-> many of the people currently marked as maintainers are actually
-> participating to the subsystem development let alone driving it?
-> 
-> This subsystem is increasingly important to us given that major
-> software platforms like Chrome OS make extensive use of it and
-> I've heard that even bug fixes have taken some times over a year
-> to get through. Does not look good at all.
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index eb206e8b0bb7..1b7501cfee8c 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -122,6 +122,7 @@ enum irq_alloc_type {
+ 	X86_IRQ_ALLOC_TYPE_HPET,
+ 	X86_IRQ_ALLOC_TYPE_MSI,
+ 	X86_IRQ_ALLOC_TYPE_MSIX,
++	X86_IRQ_ALLOC_TYPE_DMAR,
+ };
+ 
+ struct irq_alloc_info {
+@@ -152,6 +153,12 @@ struct irq_alloc_info {
+ 			struct IO_APIC_route_entry *ioapic_entry;
+ 		};
+ #endif
++#ifdef	CONFIG_DMAR_TABLE
++		struct {
++			int		dmar_id;
++			void		*dmar_data;
++		};
++#endif
+ 	};
+ };
+ 
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index 79fc6bb0d104..cc70fc659121 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -25,32 +25,6 @@
+ 
+ static struct irq_domain *msi_default_domain;
+ 
+-static void native_compose_msi_msg(struct irq_cfg *cfg, struct msi_msg *msg)
+-{
+-	msg->address_hi = MSI_ADDR_BASE_HI;
+-
+-	if (x2apic_enabled())
+-		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(cfg->dest_apicid);
+-
+-	msg->address_lo =
+-		MSI_ADDR_BASE_LO |
+-		((apic->irq_dest_mode == 0) ?
+-			MSI_ADDR_DEST_MODE_PHYSICAL :
+-			MSI_ADDR_DEST_MODE_LOGICAL) |
+-		((apic->irq_delivery_mode != dest_LowestPrio) ?
+-			MSI_ADDR_REDIRECTION_CPU :
+-			MSI_ADDR_REDIRECTION_LOWPRI) |
+-		MSI_ADDR_DEST_ID(cfg->dest_apicid);
+-
+-	msg->data =
+-		MSI_DATA_TRIGGER_EDGE |
+-		MSI_DATA_LEVEL_ASSERT |
+-		((apic->irq_delivery_mode != dest_LowestPrio) ?
+-			MSI_DATA_DELIVERY_FIXED :
+-			MSI_DATA_DELIVERY_LOWPRI) |
+-		MSI_DATA_VECTOR(cfg->vector);
+-}
+-
+ static void msi_compose_msg(struct irq_data *data, struct msi_msg *msg)
+ {
+ 	struct irq_cfg *cfg = irqd_cfg(data);
+@@ -87,6 +61,9 @@ static void msi_update_msg(struct msi_msg *msg, struct irq_data *irq_data)
+ 	msg->data |= MSI_DATA_VECTOR(cfg->vector);
+ 	msg->address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+ 	msg->address_lo |= MSI_ADDR_DEST_ID(cfg->dest_apicid);
++	if (x2apic_enabled())
++		msg->address_hi = MSI_ADDR_BASE_HI |
++				  MSI_ADDR_EXT_DEST_ID(cfg->dest_apicid);
+ }
+ 
+ static int msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+@@ -187,59 +164,127 @@ static int
+ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		      bool force)
+ {
+-	struct irq_cfg *cfg = irqd_cfg(data);
+-	unsigned int dest, irq = data->irq;
++	struct irq_data *parent = data->parent_data;
+ 	struct msi_msg msg;
+ 	int ret;
+ 
+-	ret = apic_set_affinity(data, mask, &dest);
+-	if (ret)
+-		return ret;
+-
+-	dmar_msi_read(irq, &msg);
+-
+-	msg.data &= ~MSI_DATA_VECTOR_MASK;
+-	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+-	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+-	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
+-	msg.address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(dest);
+-
+-	dmar_msi_write(irq, &msg);
++	ret = parent->chip->irq_set_affinity(parent, mask, force);
++	if (ret >= 0) {
++		dmar_msi_read(data->irq, &msg);
++		msi_update_msg(&msg, data);
++		dmar_msi_write(data->irq, &msg);
++	}
+ 
+-	return IRQ_SET_MASK_OK_NOCOPY;
++	return ret;
+ }
+ 
+ static struct irq_chip dmar_msi_type = {
+ 	.name			= "DMAR_MSI",
+ 	.irq_unmask		= dmar_msi_unmask,
+ 	.irq_mask		= dmar_msi_mask,
+-	.irq_ack		= apic_ack_edge,
++	.irq_ack		= irq_chip_ack_parent,
+ 	.irq_set_affinity	= dmar_msi_set_affinity,
+-	.irq_retrigger		= apic_retrigger_irq,
++	.irq_retrigger		= irq_chip_retrigger_hierarchy,
++	.irq_compose_msi_msg	= msi_compose_msg,
+  	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+-int dmar_alloc_hwirq(int id, int node, void *arg)
++static int dmar_domain_alloc(struct irq_domain *domain, unsigned int virq,
++			     unsigned int nr_irqs, void *arg)
++{
++	struct irq_alloc_info *info = arg;
++	int ret;
++
++	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_DMAR)
++		return -EINVAL;
++	if (irq_find_mapping(domain, info->dmar_id)) {
++		pr_warn("IRQ for DMAR%d already exists.\n", info->dmar_id);
++		return -EEXIST;
++	}
++
++	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
++	if (ret >= 0) {
++		irq_domain_set_hwirq_and_chip(domain, virq, info->dmar_id,
++					      &dmar_msi_type, NULL);
++		irq_set_handler_data(virq, info->dmar_data);
++		__irq_set_handler(virq, handle_edge_irq, 0, "edge");
++	}
++
++	return ret;
++}
++
++static void dmar_domain_free(struct irq_domain *domain, unsigned int virq,
++			     unsigned int nr_irqs)
++{
++	BUG_ON(nr_irqs > 1);
++	irq_domain_free_irqs_top(domain, virq, nr_irqs);
++}
++
++static int dmar_domain_activate(struct irq_domain *domain,
++				struct irq_data *irq_data)
++{
++	int ret;
++	struct msi_msg msg;
++
++	ret = irq_chip_compose_msi_msg(irq_data, &msg);
++	if (ret == 0)
++		dmar_msi_write(irq_data->irq, &msg);
++
++	return ret;
++}
++
++static int dmar_domain_deactivate(struct irq_domain *domain,
++				  struct irq_data *irq_data)
+ {
+-	int irq;
+ 	struct msi_msg msg;
+ 
+-	irq = irq_domain_alloc_irqs(NULL, 1, node, NULL);
+-	if (irq > 0) {
+-		irq_set_handler_data(irq, arg);
+-		irq_set_chip_and_handler_name(irq, &dmar_msi_type,
+-					      handle_edge_irq, "edge");
+-		native_compose_msi_msg(irq_cfg(irq), &msg);
+-		dmar_msi_write(irq, &msg);
++	memset(&msg, 0, sizeof(msg));
++	dmar_msi_write(irq_data->irq, &msg);
++
++	return 0;
++}
++
++static struct irq_domain_ops dmar_domain_ops = {
++	.alloc = dmar_domain_alloc,
++	.free = dmar_domain_free,
++	.activate = dmar_domain_activate,
++	.deactivate = dmar_domain_deactivate,
++};
++
++static struct irq_domain *dmar_get_irq_domain(void)
++{
++	static struct irq_domain *dmar_domain;
++	static DEFINE_MUTEX(dmar_lock);
++
++	mutex_lock(&dmar_lock);
++	if (dmar_domain == NULL) {
++		dmar_domain = irq_domain_add_tree(NULL, &dmar_domain_ops, NULL);
++		if (dmar_domain)
++			dmar_domain->parent = x86_vector_domain;
+ 	}
++	mutex_unlock(&dmar_lock);
++
++	return dmar_domain;
++}
++
++int dmar_alloc_hwirq(int id, int node, void *arg)
++{
++	struct irq_domain *domain = dmar_get_irq_domain();
++	struct irq_alloc_info info;
++
++	if (!domain)
++		return -1;
++
++	init_irq_alloc_info(&info, NULL);
++	info.type = X86_IRQ_ALLOC_TYPE_DMAR;
++	info.dmar_id = id;
++	info.dmar_data = arg;
+ 
+-	return irq;
++	return irq_domain_alloc_irqs(domain, 1, node, &info);
+ }
+ 
+ void dmar_free_hwirq(int irq)
+ {
+-	irq_set_handler_data(irq, NULL);
+-	irq_set_handler(irq, NULL);
+ 	irq_domain_free_irqs(irq, 1);
+ }
+ #endif
+-- 
+1.7.10.4
 
-/Jarkko
