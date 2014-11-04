@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaKDQI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:08:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45093 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470AbaKDQI0 (ORCPT
+	id S1754828AbaKDQId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:08:33 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:49815 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaKDQI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:08:26 -0500
-Date: Tue, 4 Nov 2014 08:07:16 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] of/platform: Move platform devices under
- /sys/devices/platform
-Message-ID: <20141104160716.GA1630@kroah.com>
-References: <1415097920-30014-1-git-send-email-grant.likely@linaro.org>
+	Tue, 4 Nov 2014 11:08:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415097920-30014-1-git-send-email-grant.likely@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141104142955.GA24816@e104818-lin.cambridge.arm.com>
+References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
+	<1414496662-25202-2-git-send-email-will.deacon@arm.com>
+	<CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
+	<CA+55aFwpOCeXdThX3zB64AU4hFwufD6UdJDi2tkD8Q7yEV2pOA@mail.gmail.com>
+	<20141029194738.GA29911@arm.com>
+	<20141104142955.GA24816@e104818-lin.cambridge.arm.com>
+Date: Tue, 4 Nov 2014 08:08:27 -0800
+X-Google-Sender-Auth: nkofHEoKR_lFWHA9F-8AgLObLrk
+Message-ID: <CA+55aFzBggoXtNXQeng5d_mRoDnaMBE5Y+URs+PHR67nUpMtaw@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
+ after TLB batching faiure
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 10:45:20AM +0000, Grant Likely wrote:
-> Currently the devices created by drivers/of/platform.c get created at
-> the root of /sys/devices. This goes against the typical pattern for
-> sysfs where the top level /sys/devices structure contains categories of
-> devices, and the structure of devices is placed below that. To fix this,
-> make the code in drivers/of/platform.c follow the drivers/base/platform.c
-> behaviour, and use &platform_bus as the default parent for all new
-> platform_devices and amba_devices.
-> 
-> This change has been discussed for a long time, but nobody has actually
-> acted on it. Userspace code that expects to find devices under a fixed
-> /sys/devices/... path will be affected. It isn't /supposed/ to do that,
-> but if anyone complains then I'll add a default-off workaround option to
-> put them back into the root.
-> 
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Tue, Nov 4, 2014 at 6:29 AM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>
+> This would work on arm64 but is the PAGE_SIZE range enough for all
+> architectures even when we flush a huge page or a pmd/pud table entry?
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+It pretty much had *better* be.
+
+For things like page tables caches (ie caching addresses "inside" the
+page tables, like x86 does), for legacy reasons, flushing an
+individual page had better flush the page table caches behind it. This
+is definitely how x86 works, for example. And if you have an
+architected non-legacy page table cache (which I'm not aware of
+anybody actually doing), you're going to have some architecturally
+explicit flushing for that, likely *separate* from a regular TLB entry
+flush, and thus you'd need more than just some range expansion..
+
+And the logic is very similar for things like hugepages. Either a
+normal "TLB invalidate" insutrction anywhere in the hugepage will
+invalidate the whole hugepage), or you would have special instructions
+or rules for invalidating hugepages and you'd need more than just some
+range expansion.
+
+So in neither case does it make sense to expand the range, afaik. And
+it would hurt normal architectures. So if we ever find an architecture
+that would want something that odd, I think it is up to that
+architecture to do its own odd thing, not cause pain for others.
+
+                          Linus
