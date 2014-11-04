@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaKDIbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:31:16 -0500
-Received: from numascale.com ([213.162.240.84]:57480 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752224AbaKDIbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:31:12 -0500
-From: Daniel J Blueman <daniel@numascale.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: [PATCH v4 2/4] Numachip: Elide self-IPI ICR polling
-Date: Tue,  4 Nov 2014 16:29:42 +0800
-Message-Id: <1415089784-28779-2-git-send-email-daniel@numascale.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415089784-28779-1-git-send-email-daniel@numascale.com>
-References: <1415089784-28779-1-git-send-email-daniel@numascale.com>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752182AbaKDIdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:33:51 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:33940 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaKDIdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 03:33:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141103145623.GH4538@x1>
+References: <1414171197-18620-1-git-send-email-dbaryshkov@gmail.com>
+	<20141103145623.GH4538@x1>
+Date: Tue, 4 Nov 2014 12:33:46 +0400
+Message-ID: <CALT56yNqnK-Xj3exPrgeXY_1ExcE2hbixZVS9e9ferE-gMxEig@mail.gmail.com>
+Subject: Re: [PATCH] mfd: tc6393xb fail ohci suspend if full state restore is required
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default self-IPI path polls the ICR to delay sending the IPI until
-there is no IPI in progress. This is redundant on x86-86 APICs, since
-IPIs are queued. See the AMD64 Architecture Programmer's Manual, vol 2,
-p525.
+Hello.
 
-Signed-off-by: Daniel J Blueman <daniel@numascale.com>
----
- apic_numachip.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+2014-11-03 17:56 GMT+03:00 Lee Jones <lee.jones@linaro.org>:
+> On Fri, 24 Oct 2014, Dmitry Eremin-Solenikov wrote:
+>
+>> Some boards with TC6393XB chip require full state restore during system
+>> resume thanks to chip's VCC being cut off during suspend (Sharp SL-6000
+>> tosa is one of them). Failing to do so would result in ohci Oops on
+>> resume due to internal memory contentes being changed. Fail ohci suspend
+>> on tc6393xb is full state restore is required.
+>>
+>> Recommended workaround is to unbind tmio-ohci driver before suspend and
+>> rebind it after resume.
+>>
+>> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>> Cc: stable@vger.kernel.org
+>> ---
+>>  drivers/mfd/tc6393xb.c | 13 ++++++++++++-
+>>  1 file changed, 12 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+>> index 11c19e5..48579e5 100644
+>> --- a/drivers/mfd/tc6393xb.c
+>> +++ b/drivers/mfd/tc6393xb.c
+>> @@ -263,6 +263,17 @@ static int tc6393xb_ohci_disable(struct platform_device *dev)
+>>       return 0;
+>>  }
+>>
+>> +static int tc6393xb_ohci_suspend(struct platform_device *dev)
+>> +{
+>> +     struct tc6393xb_platform_data *tcpd = dev_get_platdata(dev->dev.parent);
+>> +
+>> +     /* We can't properly store/restore OHCI state, so fail here */
+>> +     if (tcpd->resume_restore)
+>> +             return -EBUSY;
+>
+> Wouldn't it be easier to just put these three lines into
+> tc6393xb_ohci_disable() instead off adding 7 superfluous lines and
+> making the Ops names inconsistent?
 
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 81d70ba..bd083c0 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -145,7 +145,7 @@ static void numachip_send_IPI_all(int vector)
- 
- static void numachip_send_IPI_self(int vector)
- {
--	__default_send_IPI_shortcut(APIC_DEST_SELF, vector, APIC_DEST_PHYSICAL);
-+	apic_write(APIC_SELF_IPI, vector);
- }
- 
- static int __init numachip_probe(void)
+No. The problem only exists on suspend/resume path. tc6393xb_ohci_disable
+is also used on driver removal and can (should?) be used on device shutdown.
+Using the tc6393xb_ohci_disable() function in that paths is not a problem.
+
+Also with this patch the Oops name will not be inconsistent - returning -EBUSY
+from this disable callback will cancel the device suspension with
+clearly stating
+that OHCI is busy in dmesg.
+
+>
+>
+>> +     return tc6393xb_ohci_disable(dev);
+>> +}
+>> +
+>>  static int tc6393xb_fb_enable(struct platform_device *dev)
+>>  {
+>>       struct tc6393xb *tc6393xb = dev_get_drvdata(dev->dev.parent);
+>> @@ -403,7 +414,7 @@ static struct mfd_cell tc6393xb_cells[] = {
+>>               .num_resources = ARRAY_SIZE(tc6393xb_ohci_resources),
+>>               .resources = tc6393xb_ohci_resources,
+>>               .enable = tc6393xb_ohci_enable,
+>> -             .suspend = tc6393xb_ohci_disable,
+>> +             .suspend = tc6393xb_ohci_suspend,
+>>               .resume = tc6393xb_ohci_enable,
+>>               .disable = tc6393xb_ohci_disable,
+>>       },
+
+
 -- 
-1.9.1
-
+With best wishes
+Dmitry
