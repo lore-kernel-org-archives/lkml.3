@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaKDRrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:47:11 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:58316 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502AbaKDRrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:47:07 -0500
-Date: Tue, 4 Nov 2014 12:46:50 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
-        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
-Message-ID: <20141104174650.GA19061@phnom.home.cmpxchg.org>
-References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
- <54589017.9060604@jp.fujitsu.com>
- <20141104132701.GA18441@phnom.home.cmpxchg.org>
- <20141104134110.GD22207@dhcp22.suse.cz>
- <20141104140937.GA18602@phnom.home.cmpxchg.org>
- <20141104150039.GF22207@dhcp22.suse.cz>
+	id S1751379AbaKDRwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:52:45 -0500
+Received: from softlayer.compulab.co.il ([50.23.254.55]:53821 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750796AbaKDRwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 12:52:42 -0500
+Message-ID: <54591265.3030207@compulab.co.il>
+Date: Tue, 04 Nov 2014 19:52:37 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104150039.GF22207@dhcp22.suse.cz>
+To: Tony Lindgren <tony@atomide.com>
+CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
+ enabled
+References: <20141102180756.GH31454@atomide.com> <5458D29E.50908@compulab.co.il> <20141104154231.GP31454@atomide.com>
+In-Reply-To: <20141104154231.GP31454@atomide.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 04:00:39PM +0100, Michal Hocko wrote:
-> On Tue 04-11-14 09:09:37, Johannes Weiner wrote:
-> > On Tue, Nov 04, 2014 at 02:41:10PM +0100, Michal Hocko wrote:
-> > > On Tue 04-11-14 08:27:01, Johannes Weiner wrote:
-> > > > From: Johannes Weiner <hannes@cmpxchg.org>
-> > > > Subject: [patch] mm: move page->mem_cgroup bad page handling into generic code fix
-> > > > 
-> > > > Remove obsolete memory saving recommendations from the MEMCG Kconfig
-> > > > help text.
-> > > 
-> > > The memory overhead is still there. So I do not think it is good to
-> > > remove the message altogether. The current overhead might be 4 or 8B
-> > > depending on the configuration. What about
-> > > "
-> > > 	Note that setting this option might increase fixed memory
-> > > 	overhead associated with each page descriptor in the system.
-> > > 	The memory overhead depends on the architecture and other
-> > > 	configuration options which have influence on the size and
-> > > 	alignment on the page descriptor (struct page). Namely
-> > > 	CONFIG_SLUB has a requirement for page alignment to two words
-> > > 	which in turn means that 64b systems might not see any memory
-> > > 	overhead as the additional data fits into alignment. On the
-> > > 	other hand 32b systems might see 8B memory overhead.
-> > > "
-> > 
-> > What difference does it make whether this feature maybe costs an extra
-> > pointer per page or not?  These texts are supposed to help decide with
-> > the selection, but this is not a "good to have, if affordable" type of
-> > runtime debugging option.  You either need cgroup memory accounting
-> > and limiting or not.  There is no possible trade-off to be had.
+On 11/04/14 17:42, Tony Lindgren wrote:
+> * Igor Grinberg <grinberg@compulab.co.il> [141104 05:22]:
+>> Hi Tony,
+>>
+>> On 11/02/14 20:07, Tony Lindgren wrote:
+>>> Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+>>> configuration") enabled configuring the PM features for twl4030.
+>>>
+>>> This caused poweroff command to fail on devices that have the
+>>> BCI charger on twl4030 wired, or have power wired for VBUS.
+>>> Instead of powering off, the device reboots. This is because
+>>> voltage is detected on charger or VBUS with the default bits
+>>> enabled for the power transition registers.
+>>>
+>>> To fix the issue, let's just clear VBUS and CHG bits as we want
+>>> poweroff command to keep the system powered off.
+>>
+>> What about devices that really need to start once VBUS or CHG is connected?
 > 
-> If you are compiling the kernel for your specific usecase then it
-> is clear. You enable only what you really need/want. But if you are
-> providing a pre-built kernel and considering which features to enable
-> then an information about overhead might be useful. You can simply
-> disable the feature for memory restricted kernel flavors.
+> More handling can be added for some cases. With this patch the
+> poweron bits will clear to defaults if power is completely removed.
+> So start-up with VBUS and CHG works in that case.
 > 
-> > Slub and numa balancing don't mention this, either, simply because
-> > this cost is negligible or irrelevant when it comes to these knobs.
+> However, if you have a battery connected, and you poweroff, with
+> this patch the device won't power up with VBUS or CHG connected.
 > 
-> I agree that the overhead seems negligible but does it hurt us to
-> mention it though?
+> Note that most battery operated devices are not using the charger
+> on twl4030 because it has issues charging a completely empty
+> battery AFAIK. So most battery powered devices have been using an
+> external USB charger chip that's not affected by this patch.
+> 
+> We could consider exporting a function for the charger driver to
+> configure the poweron mask. And we could also consider passing a
+> mask in ti,use_poweroff = 0xff.
 
-Yes, it's fairly misleading.  What about the instructions it adds to
-the fault hotpaths?  The additional memory footprint of each cgroup
-created?  You're adding 9 lines to point out one specific cost aspect,
-when the entire feature is otherwise summed up in two lines.  The
-per-page overhead of memcg is not exceptional or unexpected if you
-know what it does - which you should when you enable it, even as a
-distributor - and such a gross overrepresentation in the help text is
-more confusing than helpful.
+Ok. That sounds better to me.
+Yet, if you say there are no such devices in practice,
+IMHO, we can merge this.
+
+> 
+>> It seems to me that forcing these bits on power off can break that kind of
+>> devices and these settings should really be board specific.
+>> What do you think?
+> 
+> There's a patch series for "[RFC,01/16] kernel: Add support for
+> poweroff handler call chain" that should help with that. For sure
+> the poweroff handling needs to be board specific as some systems
+> may need to use a GPIO to shut off a regulator powering something
+> before powering off the SoC.
+
+Yes, I've seen this series.
+I'm not sure though that I understand how is this supposed
+to be used with DT...
+Through the regulator bindings?
+Which will tell it to hook up on the call chain?
+
+
+-- 
+Regards,
+Igor.
