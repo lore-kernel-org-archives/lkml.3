@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaKDM5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:57:04 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:60516 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999AbaKDM5B (ORCPT
+	id S1753509AbaKDM6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:58:52 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:37919 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646AbaKDM6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:57:01 -0500
-Message-ID: <5458CD15.4010101@hitachi.com>
-Date: Tue, 04 Nov 2014 21:56:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Hemant Kumar <hemant@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
-Subject: Re: Re: [PATCH v4 5/5] perf/sdt: Add support to perf record to
- trace SDT events
-References: <20141102105006.21708.28734.stgit@hemant-fedora> <20141102105557.21708.19032.stgit@hemant-fedora> <87lhnr5sbl.fsf@sejong.aot.lge.com> <54588905.7040002@linux.vnet.ibm.com>
-In-Reply-To: <54588905.7040002@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 4 Nov 2014 07:58:49 -0500
+Message-ID: <1415105926.11912.6.camel@umadbro>
+Subject: Re: [PATCH 0/2 v3] cfg80211: mac80211: 802.11p OCB mode support
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de, burak.simsek@volkswagen.de,
+        Emmanuel Thierry <emmanuel.thierry@yogoko.fr>,
+        laszlo.virag@commsignia.com,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Date: Tue, 04 Nov 2014 13:58:46 +0100
+In-Reply-To: <1415093148.2064.5.camel@sipsolutions.net>
+References: <1415007199-31506-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	 (sfid-20141103_103325_972796_F4E0AE3F) <1415093148.2064.5.camel@sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-(2014/11/04 17:06), Hemant Kumar wrote:
-> Hi Namhyung,
+On Tue, 2014-11-04 at 10:25 +0100, Johannes Berg wrote:
+> On Mon, 2014-11-03 at 10:33 +0100, Rostislav Lisovy wrote:
+> > The IEEE 802.11p amendment (already part of IEEE 802.11-2012)
+> > specifies usage of 5 and 10 MHz wide channels in 5.9GHz band for
+> > vehicular environment. All the 802.11p compliant devices should
+> > be set to the newly added operation mode -- OCB (Outside the
+> > Context of a BSS). No authentication/association is necessary to
+> > communicate. The only parameter to be configured is the channel
+> > (central frequency and bandwidth) to communicate on. The channel
+> > has to be known a priori. It is set during the 'ocb join'
+> > operation (sent via netlink message from user-space).
+> > 
+> > This patchset adds the OCB mode, OCB join and leave handling
+> > (nl80211, cfg80211, mac80211), 802.11p EDCA parameters
+> > modification, RX and TX path (for unicast/broadcast messages).
 > 
-> On 11/04/2014 01:08 PM, Namhyung Kim wrote:
->> Hi Hemant,
->>
->> As you know, you need to keep an eye on how (kprobes) event cache
->> patchset from Masami settles down.  For those who aren't CC'ed, please
->> see the link below:
->>
->>    https://lkml.org/lkml/2014/10/31/207
->>
->> On Sun, 02 Nov 2014 16:26:28 +0530, Hemant Kumar wrote:
->>> This patch adds support to perf to record SDT events. When invoked,
->>> the SDT event is looked up in the sdt-cache. If its found, an entry is
->>> made silently to uprobe_events file and then recording is invoked, and
->>> then the entry for the SDT event in uprobe_events is silently discarded.
->>>
->>> The SDT events are already stored in a cache file
->>> (/var/cache/perf/perf-sdt-file.cache).
->>> Although the file_hash table helps in addition or deletion of SDT events
->>> from the cache, its not of much use when it comes to probing the actual
->>> SDT event, because the key to this hash list is a file name and not the
->>> SDT event name (which is given as an argument to perf record). So, we
->>> won't be able to hash into it.
->> It likely to be ended up with per-file or per-buildid cache files under
->> ~/.debug directory.  In this case we also need to have the (central)
->> event-to-cache table anyway IMHO.
+> Applied, thanks for all the changes.
 
-What we are talking is to make a new caching file with buildid under
-.debug/.
-We already has ~/.debug/.build-id/<build-id> for string the binary
-symbol maps. I think there are 2 options, one is expanding the current
-build-id file format to include sdt and probe-event caches. The other is
-to add ~/.debug/.build-id/<build-id>.probe and
-~/.debug/.build-id/<build-id>.sdt for caching probe/sdt information.
+Johannes, thank you for your help.
 
-And also, user interface is a discussion point. This series defines new
-sdt-cache command, and we already have buildid-cache command. We should
-have probe-cache command too? or consolidate those cache managing commands?
-This question should be involving your series too.
+What do you think should be the next step? Until the new nl80211.h is
+not in the 'iw' I will send some patches to the Atheros mailinglist
+(adding OCB mode handling). Thereafter I will send patches for the 'iw'?
 
->>> To avoid this problem, we can create another hash list "event_hash" list
->>> which will be maintained along with the file_hash list.
->>> Whenever a user invokes 'perf record -e %provider:event, perf should
->>> initialize the event_hash list and the file_hash list.
->>> The key to event_hash list is calculated from the event name and its
->>> provider name.
->> Isn't it enough just to use provide name?  I guess the provider names
->> are (should be?) unique among a system although there's no absolute
->> guarantee for that.
->>
-> 
-> Yes, there is no guarantee for the provider names to be unique.
-> If we use only provider name with "perf record", then, what if a user 
-> wants to trace
-> only a specific SDT event (not all the events for that provider)?
-> What do you think?
-
-How about failing if the provider name is not unique unless user
-gives the actual binary path?
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Best regards;
+Rostislav
 
