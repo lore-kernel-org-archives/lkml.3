@@ -1,176 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475AbaKDSJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 13:09:38 -0500
-Received: from smtp113.iad3a.emailsrvr.com ([173.203.187.113]:50788 "EHLO
-	smtp113.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752274AbaKDSJW (ORCPT
+	id S1751947AbaKDSMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 13:12:42 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55795 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751156AbaKDSMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 13:09:22 -0500
-X-Sender-Id: abbotti@mev.co.uk
-From: Ian Abbott <abbotti@mev.co.uk>
-To: <driverdev-devel@linuxdriverproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] staging: comedi: add ioctls to set per-file read and write subdevice
-Date: Tue,  4 Nov 2014 18:09:01 +0000
-Message-Id: <1415124541-13648-3-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1415124541-13648-1-git-send-email-abbotti@mev.co.uk>
-References: <1415124541-13648-1-git-send-email-abbotti@mev.co.uk>
+	Tue, 4 Nov 2014 13:12:41 -0500
+Date: Tue, 4 Nov 2014 18:12:19 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/6] clk: sunxi: Add support for sun9i a80 usb clocks and
+ resets
+Message-ID: <20141104181219.GJ4042@n2100.arm.linux.org.uk>
+References: <1415074039-16590-1-git-send-email-wens@csie.org>
+ <1415074039-16590-2-git-send-email-wens@csie.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415074039-16590-2-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that Comedi has the structures in place to support setting the
-current "read" and/or "write" subdevice on a per-file object basis, add
-new ioctls to set them.  The newly chosen "read" ("write") subdevice
-needs to support "read" ("write") commands, and the file cannot be busy
-handling a "read" ("write") command on the previous subdevice (if any).
+On Tue, Nov 04, 2014 at 12:07:14PM +0800, Chen-Yu Tsai wrote:
+> +	spin_lock_irqsave(data->lock, flags);
+> +
+> +	reg = readl(data->reg);
+> +	writel(reg & ~BIT(id), data->reg);
+> +
+> +	spin_unlock_irqrestore(data->lock, flags);
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/comedi.h          |  2 +
- drivers/staging/comedi/comedi_compat32.c |  2 +
- drivers/staging/comedi/comedi_fops.c     | 90 ++++++++++++++++++++++++++++++++
- 3 files changed, 94 insertions(+)
+Don't we have generic support for atomic modification of register
+values?  Hmm, we have it for ARM only - atomic_io_modify() and
+atomic_io_modify_relaxed().
 
-diff --git a/drivers/staging/comedi/comedi.h b/drivers/staging/comedi/comedi.h
-index f302ce6..7455740 100644
---- a/drivers/staging/comedi/comedi.h
-+++ b/drivers/staging/comedi/comedi.h
-@@ -367,6 +367,8 @@ enum comedi_support_level {
- #define COMEDI_BUFCONFIG _IOR(CIO, 13, struct comedi_bufconfig)
- #define COMEDI_BUFINFO _IOWR(CIO, 14, struct comedi_bufinfo)
- #define COMEDI_POLL _IO(CIO, 15)
-+#define COMEDI_SETRSUBD _IO(CIO, 16)
-+#define COMEDI_SETWSUBD _IO(CIO, 17)
- 
- /* structures */
- 
-diff --git a/drivers/staging/comedi/comedi_compat32.c b/drivers/staging/comedi/comedi_compat32.c
-index 9b6f96f..5a4c74f 100644
---- a/drivers/staging/comedi/comedi_compat32.c
-+++ b/drivers/staging/comedi/comedi_compat32.c
-@@ -416,6 +416,8 @@ static inline int raw_ioctl(struct file *file, unsigned int cmd,
- 	case COMEDI_UNLOCK:
- 	case COMEDI_CANCEL:
- 	case COMEDI_POLL:
-+	case COMEDI_SETRSUBD:
-+	case COMEDI_SETWSUBD:
- 		/* No translation needed. */
- 		rc = translated_ioctl(file, cmd, arg);
- 		break;
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 79b852c..f143cb6 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1847,6 +1847,90 @@ static int do_poll_ioctl(struct comedi_device *dev, unsigned long arg,
- 	return -EINVAL;
- }
- 
-+/*
-+ * COMEDI_SETRSUBD ioctl
-+ * sets the current "read" subdevice on a per-file basis
-+ *
-+ * arg:
-+ *	subdevice number
-+ *
-+ * reads:
-+ *	nothing
-+ *
-+ * writes:
-+ *	nothing
-+ */
-+static int do_setrsubd_ioctl(struct comedi_device *dev, unsigned long arg,
-+			     struct file *file)
-+{
-+	struct comedi_file *cfp = file->private_data;
-+	struct comedi_subdevice *s_old, *s_new;
-+
-+	if (arg >= dev->n_subdevices)
-+		return -EINVAL;
-+
-+	s_new = &dev->subdevices[arg];
-+	s_old = comedi_file_read_subdevice(file);
-+	if (s_old == s_new)
-+		return 0;	/* no change */
-+
-+	if (!(s_new->subdev_flags & SDF_CMD_READ))
-+		return -EINVAL;
-+
-+	/*
-+	 * Check the file isn't still busy handling a "read" command on the
-+	 * old subdevice (if any).
-+	 */
-+	if (s_old && s_old->busy == file && s_old->async &&
-+	    !(s_old->async->cmd.flags & CMDF_WRITE))
-+		return -EBUSY;
-+
-+	ACCESS_ONCE(cfp->read_subdev) = s_new;
-+	return 0;
-+}
-+
-+/*
-+ * COMEDI_SETWSUBD ioctl
-+ * sets the current "write" subdevice on a per-file basis
-+ *
-+ * arg:
-+ *	subdevice number
-+ *
-+ * reads:
-+ *	nothing
-+ *
-+ * writes:
-+ *	nothing
-+ */
-+static int do_setwsubd_ioctl(struct comedi_device *dev, unsigned long arg,
-+			     struct file *file)
-+{
-+	struct comedi_file *cfp = file->private_data;
-+	struct comedi_subdevice *s_old, *s_new;
-+
-+	if (arg >= dev->n_subdevices)
-+		return -EINVAL;
-+
-+	s_new = &dev->subdevices[arg];
-+	s_old = comedi_file_write_subdevice(file);
-+	if (s_old == s_new)
-+		return 0;	/* no change */
-+
-+	if (!(s_new->subdev_flags & SDF_CMD_WRITE))
-+		return -EINVAL;
-+
-+	/*
-+	 * Check the file isn't still busy handling a "write" command on the
-+	 * old subdevice (if any).
-+	 */
-+	if (s_old && s_old->busy == file && s_old->async &&
-+	    (s_old->async->cmd.flags & CMDF_WRITE))
-+		return -EBUSY;
-+
-+	ACCESS_ONCE(cfp->write_subdev) = s_new;
-+	return 0;
-+}
-+
- static long comedi_unlocked_ioctl(struct file *file, unsigned int cmd,
- 				  unsigned long arg)
- {
-@@ -1941,6 +2025,12 @@ static long comedi_unlocked_ioctl(struct file *file, unsigned int cmd,
- 	case COMEDI_POLL:
- 		rc = do_poll_ioctl(dev, arg, file);
- 		break;
-+	case COMEDI_SETRSUBD:
-+		rc = do_setrsubd_ioctl(dev, arg, file);
-+		break;
-+	case COMEDI_SETWSUBD:
-+		rc = do_setwsubd_ioctl(dev, arg, file);
-+		break;
- 	default:
- 		rc = -ENOTTY;
- 		break;
+I guess we should push for those to become cross-arch if we end up
+with generic drivers shared between other architectures.
+
 -- 
-2.1.1
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
