@@ -1,477 +1,530 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbaKDNIU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:08:20 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:2565 "EHLO
+	id S932117AbaKDNJC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:09:02 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:16380 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753640AbaKDNIS (ORCPT
+	by vger.kernel.org with ESMTP id S1753718AbaKDNI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:08:18 -0500
-Date: Tue, 4 Nov 2014 08:08:15 -0500
+	Tue, 4 Nov 2014 08:08:58 -0500
+Date: Tue, 4 Nov 2014 08:08:52 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        <netfilter-devel@vger.kernel.org>, <coreteam@netfilter.org>
-Subject: Re: [RFA][PATCH 4/8] netfilter: Remove checks of seq_printf()
- return values
-Message-ID: <20141104080815.1a8ae071@gandalf.local.home>
-In-Reply-To: <20141029220107.786969515@goodmis.org>
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, <cluster-devel@redhat.com>
+Subject: Re: [RFA][PATCH 5/8] dlm: Remove seq_printf() return checks and use
+ seq_has_overflowed()
+Message-ID: <20141104080852.4c666fbe@gandalf.local.home>
+In-Reply-To: <20141029220107.939492048@goodmis.org>
 References: <20141029215602.535533597@goodmis.org>
-	<20141029220107.786969515@goodmis.org>
+	<20141029220107.939492048@goodmis.org>
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014 17:56:06 -0400
+On Wed, 29 Oct 2014 17:56:07 -0400
 Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> From: Joe Perches <joe@perches.com>
 > 
 > [ REQUEST FOR ACKS ]
 
-Can any of the netfilter maintainers give me an Acked-by for this?
+Can any of the DLM maintainers give me an Acked-by for this?
 
 Thanks!
 
 -- Steve
 
 > 
-> The return value of seq_printf() is soon to be removed. Remove the
-> checks from seq_printf() in favor of seq_has_overflowed().
+> The seq_printf() return is going away soon and users of it should
+> check seq_has_overflowed() to see if the buffer is full and will
+> not accept any more data.
 > 
-> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-> Cc: netfilter-devel@vger.kernel.org
-> Cc: coreteam@netfilter.org
+> Convert functions returning int to void where seq_printf() is used.
+> 
+> Link: http://lkml.kernel.org/p/43590057bcb83846acbbcc1fe641f792b2fb7773.1412031505.git.joe@perches.com
+> 
+> Cc: Christine Caulfield <ccaulfie@redhat.com>
+> Cc: David Teigland <teigland@redhat.com>
+> Cc: cluster-devel@redhat.com
+> Signed-off-by: Joe Perches <joe@perches.com>
 > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  .../netfilter/nf_conntrack_l3proto_ipv4_compat.c   | 36 ++++++-------
->  net/netfilter/nf_conntrack_standalone.c            | 60 +++++++++++-----------
->  net/netfilter/nf_log.c                             | 30 ++++++-----
->  net/netfilter/nfnetlink_queue_core.c               | 13 ++---
->  net/netfilter/x_tables.c                           | 19 ++++---
->  net/netfilter/xt_hashlimit.c                       | 36 ++++++-------
->  6 files changed, 97 insertions(+), 97 deletions(-)
+>  fs/dlm/debug_fs.c | 251 +++++++++++++++++++++++++-----------------------------
+>  1 file changed, 117 insertions(+), 134 deletions(-)
 > 
-> diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> index d927f9e72130..a460a87e14f8 100644
-> --- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> +++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-> @@ -94,7 +94,7 @@ static void ct_seq_stop(struct seq_file *s, void *v)
->  }
->  
->  #ifdef CONFIG_NF_CONNTRACK_SECMARK
-> -static int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
-> +static void ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
->  {
->  	int ret;
->  	u32 len;
-> @@ -102,17 +102,15 @@ static int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
->  
->  	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
->  	if (ret)
-> -		return 0;
-> +		return;
->  
-> -	ret = seq_printf(s, "secctx=%s ", secctx);
-> +	seq_printf(s, "secctx=%s ", secctx);
->  
->  	security_release_secctx(secctx, len);
-> -	return ret;
->  }
->  #else
-> -static inline int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
-> +static inline void ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
->  {
-> -	return 0;
->  }
->  #endif
->  
-> @@ -141,11 +139,10 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  	NF_CT_ASSERT(l4proto);
->  
->  	ret = -ENOSPC;
-> -	if (seq_printf(s, "%-8s %u %ld ",
-> -		      l4proto->name, nf_ct_protonum(ct),
-> -		      timer_pending(&ct->timeout)
-> -		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
-> -		goto release;
-> +	seq_printf(s, "%-8s %u %ld ",
-> +		   l4proto->name, nf_ct_protonum(ct),
-> +		   timer_pending(&ct->timeout)
-> +		   ? (long)(ct->timeout.expires - jiffies)/HZ : 0);
->  
->  	if (l4proto->print_conntrack)
->  		l4proto->print_conntrack(s, ct);
-> @@ -163,8 +160,7 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  		goto release;
->  
->  	if (!(test_bit(IPS_SEEN_REPLY_BIT, &ct->status)))
-> -		if (seq_printf(s, "[UNREPLIED] "))
-> -			goto release;
-> +		seq_printf(s, "[UNREPLIED] ");
->  
->  	print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
->  		    l3proto, l4proto);
-> @@ -176,19 +172,19 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  		goto release;
->  
->  	if (test_bit(IPS_ASSURED_BIT, &ct->status))
-> -		if (seq_printf(s, "[ASSURED] "))
-> -			goto release;
-> +		seq_printf(s, "[ASSURED] ");
->  
->  #ifdef CONFIG_NF_CONNTRACK_MARK
-> -	if (seq_printf(s, "mark=%u ", ct->mark))
-> -		goto release;
-> +	seq_printf(s, "mark=%u ", ct->mark);
->  #endif
->  
-> -	if (ct_show_secctx(s, ct))
-> -		goto release;
-> +	ct_show_secctx(s, ct);
-> +
-> +	seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use));
->  
-> -	if (seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use)))
-> +	if (seq_has_overflowed(s))
->  		goto release;
-> +
->  	ret = 0;
->  release:
->  	nf_ct_put(ct);
-> diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-> index 23a0dcab21d4..fc823fa5dcf5 100644
-> --- a/net/netfilter/nf_conntrack_standalone.c
-> +++ b/net/netfilter/nf_conntrack_standalone.c
-> @@ -120,7 +120,7 @@ static void ct_seq_stop(struct seq_file *s, void *v)
->  }
->  
->  #ifdef CONFIG_NF_CONNTRACK_SECMARK
-> -static int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
-> +static void ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
->  {
->  	int ret;
->  	u32 len;
-> @@ -128,22 +128,20 @@ static int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
->  
->  	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
->  	if (ret)
-> -		return 0;
-> +		return;
->  
-> -	ret = seq_printf(s, "secctx=%s ", secctx);
-> +	seq_printf(s, "secctx=%s ", secctx);
->  
->  	security_release_secctx(secctx, len);
-> -	return ret;
->  }
->  #else
-> -static inline int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
-> +static inline void ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
->  {
-> -	return 0;
->  }
->  #endif
->  
->  #ifdef CONFIG_NF_CONNTRACK_TIMESTAMP
-> -static int ct_show_delta_time(struct seq_file *s, const struct nf_conn *ct)
-> +static void ct_show_delta_time(struct seq_file *s, const struct nf_conn *ct)
->  {
->  	struct ct_iter_state *st = s->private;
->  	struct nf_conn_tstamp *tstamp;
-> @@ -157,16 +155,15 @@ static int ct_show_delta_time(struct seq_file *s, const struct nf_conn *ct)
->  		else
->  			delta_time = 0;
->  
-> -		return seq_printf(s, "delta-time=%llu ",
-> -				  (unsigned long long)delta_time);
-> +		seq_printf(s, "delta-time=%llu ",
-> +			   (unsigned long long)delta_time);
+> diff --git a/fs/dlm/debug_fs.c b/fs/dlm/debug_fs.c
+> index 1323c568e362..3bf460894088 100644
+> --- a/fs/dlm/debug_fs.c
+> +++ b/fs/dlm/debug_fs.c
+> @@ -48,8 +48,8 @@ static char *print_lockmode(int mode)
 >  	}
-> -	return 0;
-> +	return;
 >  }
->  #else
-> -static inline int
-> +static inline void
->  ct_show_delta_time(struct seq_file *s, const struct nf_conn *ct)
+>  
+> -static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> -			      struct dlm_rsb *res)
+> +static void print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> +			       struct dlm_rsb *res)
 >  {
-> -	return 0;
+>  	seq_printf(s, "%08x %s", lkb->lkb_id, print_lockmode(lkb->lkb_grmode));
+>  
+> @@ -68,21 +68,17 @@ static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+>  	if (lkb->lkb_wait_type)
+>  		seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
+>  
+> -	return seq_puts(s, "\n");
+> +	seq_puts(s, "\n");
 >  }
->  #endif
 >  
-> @@ -193,12 +190,11 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  	NF_CT_ASSERT(l4proto);
->  
->  	ret = -ENOSPC;
-> -	if (seq_printf(s, "%-8s %u %-8s %u %ld ",
-> -		       l3proto->name, nf_ct_l3num(ct),
-> -		       l4proto->name, nf_ct_protonum(ct),
-> -		       timer_pending(&ct->timeout)
-> -		       ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
-> -		goto release;
-> +	seq_printf(s, "%-8s %u %-8s %u %ld ",
-> +		   l3proto->name, nf_ct_l3num(ct),
-> +		   l4proto->name, nf_ct_protonum(ct),
-> +		   timer_pending(&ct->timeout)
-> +		   ? (long)(ct->timeout.expires - jiffies)/HZ : 0);
->  
->  	if (l4proto->print_conntrack)
->  		l4proto->print_conntrack(s, ct);
-> @@ -206,12 +202,14 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  	print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
->  		    l3proto, l4proto);
->  
-> +	if (seq_has_overflowed(s))
-> +		goto release;
-> +
->  	if (seq_print_acct(s, ct, IP_CT_DIR_ORIGINAL))
->  		goto release;
->  
->  	if (!(test_bit(IPS_SEEN_REPLY_BIT, &ct->status)))
-> -		if (seq_printf(s, "[UNREPLIED] "))
-> -			goto release;
-> +		seq_printf(s, "[UNREPLIED] ");
->  
->  	print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
->  		    l3proto, l4proto);
-> @@ -220,26 +218,26 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  		goto release;
->  
->  	if (test_bit(IPS_ASSURED_BIT, &ct->status))
-> -		if (seq_printf(s, "[ASSURED] "))
-> -			goto release;
-> +		seq_printf(s, "[ASSURED] ");
->  
-> -#if defined(CONFIG_NF_CONNTRACK_MARK)
-> -	if (seq_printf(s, "mark=%u ", ct->mark))
-> +	if (seq_has_overflowed(s))
->  		goto release;
-> +
-> +#if defined(CONFIG_NF_CONNTRACK_MARK)
-> +	seq_printf(s, "mark=%u ", ct->mark);
->  #endif
->  
-> -	if (ct_show_secctx(s, ct))
-> -		goto release;
-> +	ct_show_secctx(s, ct);
->  
->  #ifdef CONFIG_NF_CONNTRACK_ZONES
-> -	if (seq_printf(s, "zone=%u ", nf_ct_zone(ct)))
-> -		goto release;
-> +	seq_printf(s, "zone=%u ", nf_ct_zone(ct));
->  #endif
->  
-> -	if (ct_show_delta_time(s, ct))
-> -		goto release;
-> +	ct_show_delta_time(s, ct);
-> +
-> +	seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use));
->  
-> -	if (seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use)))
-> +	if (seq_has_overflowed(s))
->  		goto release;
->  
->  	ret = 0;
-> diff --git a/net/netfilter/nf_log.c b/net/netfilter/nf_log.c
-> index d7197649dba6..6e3b9117db1f 100644
-> --- a/net/netfilter/nf_log.c
-> +++ b/net/netfilter/nf_log.c
-> @@ -294,19 +294,19 @@ static int seq_show(struct seq_file *s, void *v)
+> -static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+> +static void print_format1(struct dlm_rsb *res, struct seq_file *s)
 >  {
->  	loff_t *pos = v;
->  	const struct nf_logger *logger;
-> -	int i, ret;
-> +	int i;
->  	struct net *net = seq_file_net(s);
+>  	struct dlm_lkb *lkb;
+>  	int i, lvblen = res->res_ls->ls_lvblen, recover_list, root_list;
+> -	int rv;
 >  
->  	logger = rcu_dereference_protected(net->nf.nf_loggers[*pos],
->  					   lockdep_is_held(&nf_log_mutex));
+>  	lock_rsb(res);
 >  
->  	if (!logger)
-> -		ret = seq_printf(s, "%2lld NONE (", *pos);
-> +		seq_printf(s, "%2lld NONE (", *pos);
+> -	rv = seq_printf(s, "\nResource %p Name (len=%d) \"",
+> -			res, res->res_length);
+> -	if (rv)
+> -		goto out;
+> +	seq_printf(s, "\nResource %p Name (len=%d) \"", res, res->res_length);
+>  
+>  	for (i = 0; i < res->res_length; i++) {
+>  		if (isprint(res->res_name[i]))
+> @@ -92,17 +88,16 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  	}
+>  
+>  	if (res->res_nodeid > 0)
+> -		rv = seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
+> -				res->res_nodeid);
+> +		seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
+> +			   res->res_nodeid);
+>  	else if (res->res_nodeid == 0)
+> -		rv = seq_puts(s, "\"\nMaster Copy\n");
+> +		seq_puts(s, "\"\nMaster Copy\n");
+>  	else if (res->res_nodeid == -1)
+> -		rv = seq_printf(s, "\"\nLooking up master (lkid %x)\n",
+> -			   	res->res_first_lkid);
+> +		seq_printf(s, "\"\nLooking up master (lkid %x)\n",
+> +			   res->res_first_lkid);
 >  	else
-> -		ret = seq_printf(s, "%2lld %s (", *pos, logger->name);
-> +		seq_printf(s, "%2lld %s (", *pos, logger->name);
->  
-> -	if (ret < 0)
-> -		return ret;
+> -		rv = seq_printf(s, "\"\nInvalid master %d\n",
+> -				res->res_nodeid);
+> -	if (rv)
+> +		seq_printf(s, "\"\nInvalid master %d\n", res->res_nodeid);
 > +	if (seq_has_overflowed(s))
-> +		return -ENOSPC;
+>  		goto out;
 >  
->  	for (i = 0; i < NF_LOG_TYPE_MAX; i++) {
->  		if (loggers[*pos][i] == NULL)
-> @@ -314,17 +314,19 @@ static int seq_show(struct seq_file *s, void *v)
->  
->  		logger = rcu_dereference_protected(loggers[*pos][i],
->  					   lockdep_is_held(&nf_log_mutex));
-> -		ret = seq_printf(s, "%s", logger->name);
-> -		if (ret < 0)
-> -			return ret;
-> -		if (i == 0 && loggers[*pos][i + 1] != NULL) {
-> -			ret = seq_printf(s, ",");
-> -			if (ret < 0)
-> -				return ret;
-> -		}
-> +		seq_printf(s, "%s", logger->name);
-> +		if (i == 0 && loggers[*pos][i + 1] != NULL)
-> +			seq_printf(s, ",");
-> +
+>  	/* Print the LVB: */
+> @@ -116,8 +111,8 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  		}
+>  		if (rsb_flag(res, RSB_VALNOTVALID))
+>  			seq_puts(s, " (INVALID)");
+> -		rv = seq_puts(s, "\n");
+> -		if (rv)
+> +		seq_puts(s, "\n");
 > +		if (seq_has_overflowed(s))
-> +			return -ENOSPC;
+>  			goto out;
 >  	}
 >  
-> -	return seq_printf(s, ")\n");
-> +	seq_printf(s, ")\n");
-> +
+> @@ -125,32 +120,30 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  	recover_list = !list_empty(&res->res_recover_list);
+>  
+>  	if (root_list || recover_list) {
+> -		rv = seq_printf(s, "Recovery: root %d recover %d flags %lx "
+> -				"count %d\n", root_list, recover_list,
+> -			   	res->res_flags, res->res_recover_locks_count);
+> -		if (rv)
+> -			goto out;
+> +		seq_printf(s, "Recovery: root %d recover %d flags %lx count %d\n",
+> +			   root_list, recover_list,
+> +			   res->res_flags, res->res_recover_locks_count);
+>  	}
+>  
+>  	/* Print the locks attached to this resource */
+>  	seq_puts(s, "Granted Queue\n");
+>  	list_for_each_entry(lkb, &res->res_grantqueue, lkb_statequeue) {
+> -		rv = print_format1_lock(s, lkb, res);
+> -		if (rv)
+> +		print_format1_lock(s, lkb, res);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>  
+>  	seq_puts(s, "Conversion Queue\n");
+>  	list_for_each_entry(lkb, &res->res_convertqueue, lkb_statequeue) {
+> -		rv = print_format1_lock(s, lkb, res);
+> -		if (rv)
+> +		print_format1_lock(s, lkb, res);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>  
+>  	seq_puts(s, "Waiting Queue\n");
+>  	list_for_each_entry(lkb, &res->res_waitqueue, lkb_statequeue) {
+> -		rv = print_format1_lock(s, lkb, res);
+> -		if (rv)
+> +		print_format1_lock(s, lkb, res);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>  
+> @@ -159,23 +152,23 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  
+>  	seq_puts(s, "Lookup Queue\n");
+>  	list_for_each_entry(lkb, &res->res_lookup, lkb_rsb_lookup) {
+> -		rv = seq_printf(s, "%08x %s", lkb->lkb_id,
+> -				print_lockmode(lkb->lkb_rqmode));
+> +		seq_printf(s, "%08x %s",
+> +			   lkb->lkb_id, print_lockmode(lkb->lkb_rqmode));
+>  		if (lkb->lkb_wait_type)
+>  			seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
+> -		rv = seq_puts(s, "\n");
+> +		seq_puts(s, "\n");
+> +		if (seq_has_overflowed(s))
+> +			goto out;
+>  	}
+>   out:
+>  	unlock_rsb(res);
+> -	return rv;
+>  }
+>  
+> -static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> -			      struct dlm_rsb *r)
+> +static void print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> +			       struct dlm_rsb *r)
+>  {
+>  	u64 xid = 0;
+>  	u64 us;
+> -	int rv;
+>  
+>  	if (lkb->lkb_flags & DLM_IFL_USER) {
+>  		if (lkb->lkb_ua)
+> @@ -188,103 +181,97 @@ static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+>  	/* id nodeid remid pid xid exflags flags sts grmode rqmode time_us
+>  	   r_nodeid r_len r_name */
+>  
+> -	rv = seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
+> -			lkb->lkb_id,
+> -			lkb->lkb_nodeid,
+> -			lkb->lkb_remid,
+> -			lkb->lkb_ownpid,
+> -			(unsigned long long)xid,
+> -			lkb->lkb_exflags,
+> -			lkb->lkb_flags,
+> -			lkb->lkb_status,
+> -			lkb->lkb_grmode,
+> -			lkb->lkb_rqmode,
+> -			(unsigned long long)us,
+> -			r->res_nodeid,
+> -			r->res_length,
+> -			r->res_name);
+> -	return rv;
+> +	seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
+> +		   lkb->lkb_id,
+> +		   lkb->lkb_nodeid,
+> +		   lkb->lkb_remid,
+> +		   lkb->lkb_ownpid,
+> +		   (unsigned long long)xid,
+> +		   lkb->lkb_exflags,
+> +		   lkb->lkb_flags,
+> +		   lkb->lkb_status,
+> +		   lkb->lkb_grmode,
+> +		   lkb->lkb_rqmode,
+> +		   (unsigned long long)us,
+> +		   r->res_nodeid,
+> +		   r->res_length,
+> +		   r->res_name);
+>  }
+>  
+> -static int print_format2(struct dlm_rsb *r, struct seq_file *s)
+> +static void print_format2(struct dlm_rsb *r, struct seq_file *s)
+>  {
+>  	struct dlm_lkb *lkb;
+> -	int rv = 0;
+>  
+>  	lock_rsb(r);
+>  
+>  	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
+> -		rv = print_format2_lock(s, lkb, r);
+> -		if (rv)
+> +		print_format2_lock(s, lkb, r);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
+> -		rv = print_format2_lock(s, lkb, r);
+> -		if (rv)
+> +		print_format2_lock(s, lkb, r);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
+> -		rv = print_format2_lock(s, lkb, r);
+> -		if (rv)
+> +		print_format2_lock(s, lkb, r);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>   out:
+>  	unlock_rsb(r);
+> -	return rv;
+>  }
+>  
+> -static int print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> +static void print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
+>  			      int rsb_lookup)
+>  {
+>  	u64 xid = 0;
+> -	int rv;
+>  
+>  	if (lkb->lkb_flags & DLM_IFL_USER) {
+>  		if (lkb->lkb_ua)
+>  			xid = lkb->lkb_ua->xid;
+>  	}
+>  
+> -	rv = seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
+> -			lkb->lkb_id,
+> -			lkb->lkb_nodeid,
+> -			lkb->lkb_remid,
+> -			lkb->lkb_ownpid,
+> -			(unsigned long long)xid,
+> -			lkb->lkb_exflags,
+> -			lkb->lkb_flags,
+> -			lkb->lkb_status,
+> -			lkb->lkb_grmode,
+> -			lkb->lkb_rqmode,
+> -			lkb->lkb_last_bast.mode,
+> -			rsb_lookup,
+> -			lkb->lkb_wait_type,
+> -			lkb->lkb_lvbseq,
+> -			(unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
+> -			(unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
+> -	return rv;
+> +	seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
+> +		   lkb->lkb_id,
+> +		   lkb->lkb_nodeid,
+> +		   lkb->lkb_remid,
+> +		   lkb->lkb_ownpid,
+> +		   (unsigned long long)xid,
+> +		   lkb->lkb_exflags,
+> +		   lkb->lkb_flags,
+> +		   lkb->lkb_status,
+> +		   lkb->lkb_grmode,
+> +		   lkb->lkb_rqmode,
+> +		   lkb->lkb_last_bast.mode,
+> +		   rsb_lookup,
+> +		   lkb->lkb_wait_type,
+> +		   lkb->lkb_lvbseq,
+> +		   (unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
+> +		   (unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
+>  }
+>  
+> -static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+> +static void print_format3(struct dlm_rsb *r, struct seq_file *s)
+>  {
+>  	struct dlm_lkb *lkb;
+>  	int i, lvblen = r->res_ls->ls_lvblen;
+>  	int print_name = 1;
+> -	int rv;
+>  
+>  	lock_rsb(r);
+>  
+> -	rv = seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
+> -			r,
+> -			r->res_nodeid,
+> -			r->res_first_lkid,
+> -			r->res_flags,
+> -			!list_empty(&r->res_root_list),
+> -			!list_empty(&r->res_recover_list),
+> -			r->res_recover_locks_count,
+> -			r->res_length);
+> -	if (rv)
+> +	seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
+> +		   r,
+> +		   r->res_nodeid,
+> +		   r->res_first_lkid,
+> +		   r->res_flags,
+> +		   !list_empty(&r->res_root_list),
+> +		   !list_empty(&r->res_recover_list),
+> +		   r->res_recover_locks_count,
+> +		   r->res_length);
 > +	if (seq_has_overflowed(s))
-> +		return -ENOSPC;
+>  		goto out;
+>  
+>  	for (i = 0; i < r->res_length; i++) {
+> @@ -300,8 +287,8 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+>  		else
+>  			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+>  	}
+> -	rv = seq_puts(s, "\n");
+> -	if (rv)
+> +	seq_puts(s, "\n");
+> +	if (seq_has_overflowed(s))
+>  		goto out;
+>  
+>  	if (!r->res_lvbptr)
+> @@ -311,58 +298,55 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+>  
+>  	for (i = 0; i < lvblen; i++)
+>  		seq_printf(s, " %02x", (unsigned char)r->res_lvbptr[i]);
+> -	rv = seq_puts(s, "\n");
+> -	if (rv)
+> +	seq_puts(s, "\n");
+> +	if (seq_has_overflowed(s))
+>  		goto out;
+>  
+>   do_locks:
+>  	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
+> -		rv = print_format3_lock(s, lkb, 0);
+> -		if (rv)
+> +		print_format3_lock(s, lkb, 0);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
+> -		rv = print_format3_lock(s, lkb, 0);
+> -		if (rv)
+> +		print_format3_lock(s, lkb, 0);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
+> -		rv = print_format3_lock(s, lkb, 0);
+> -		if (rv)
+> +		print_format3_lock(s, lkb, 0);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_lookup, lkb_rsb_lookup) {
+> -		rv = print_format3_lock(s, lkb, 1);
+> -		if (rv)
+> +		print_format3_lock(s, lkb, 1);
+> +		if (seq_has_overflowed(s))
+>  			goto out;
+>  	}
+>   out:
+>  	unlock_rsb(r);
+> -	return rv;
+>  }
+>  
+> -static int print_format4(struct dlm_rsb *r, struct seq_file *s)
+> +static void print_format4(struct dlm_rsb *r, struct seq_file *s)
+>  {
+>  	int our_nodeid = dlm_our_nodeid();
+>  	int print_name = 1;
+> -	int i, rv;
+> +	int i;
+>  
+>  	lock_rsb(r);
+>  
+> -	rv = seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
+> -			r,
+> -			r->res_nodeid,
+> -			r->res_master_nodeid,
+> -			r->res_dir_nodeid,
+> -			our_nodeid,
+> -			r->res_toss_time,
+> -			r->res_flags,
+> -			r->res_length);
+> -	if (rv)
+> -		goto out;
+> +	seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
+> +		   r,
+> +		   r->res_nodeid,
+> +		   r->res_master_nodeid,
+> +		   r->res_dir_nodeid,
+> +		   our_nodeid,
+> +		   r->res_toss_time,
+> +		   r->res_flags,
+> +		   r->res_length);
+>  
+>  	for (i = 0; i < r->res_length; i++) {
+>  		if (!isascii(r->res_name[i]) || !isprint(r->res_name[i]))
+> @@ -377,10 +361,9 @@ static int print_format4(struct dlm_rsb *r, struct seq_file *s)
+>  		else
+>  			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+>  	}
+> -	rv = seq_puts(s, "\n");
+> - out:
+> +	seq_puts(s, "\n");
+> +
+>  	unlock_rsb(r);
+> -	return rv;
+>  }
+>  
+>  struct rsbtbl_iter {
+> @@ -390,20 +373,20 @@ struct rsbtbl_iter {
+>  	int header;
+>  };
+>  
+> -/* seq_printf returns -1 if the buffer is full, and 0 otherwise.
+> -   If the buffer is full, seq_printf can be called again, but it
+> -   does nothing and just returns -1.  So, the these printing routines
+> -   periodically check the return value to avoid wasting too much time
+> -   trying to print to a full buffer. */
+> +/*
+> + * If the buffer is full, seq_printf can be called again, but it
+> + * does nothing.  So, the these printing routines periodically check
+> + * seq_has_overflowed to avoid wasting too much time trying to print to
+> + * a full buffer.
+> + */
+>  
+>  static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+>  {
+>  	struct rsbtbl_iter *ri = iter_ptr;
+> -	int rv = 0;
+>  
+>  	switch (ri->format) {
+>  	case 1:
+> -		rv = print_format1(ri->rsb, seq);
+> +		print_format1(ri->rsb, seq);
+>  		break;
+>  	case 2:
+>  		if (ri->header) {
+> @@ -412,25 +395,25 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+>  					"r_nodeid r_len r_name\n");
+>  			ri->header = 0;
+>  		}
+> -		rv = print_format2(ri->rsb, seq);
+> +		print_format2(ri->rsb, seq);
+>  		break;
+>  	case 3:
+>  		if (ri->header) {
+>  			seq_printf(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
+>  			ri->header = 0;
+>  		}
+> -		rv = print_format3(ri->rsb, seq);
+> +		print_format3(ri->rsb, seq);
+>  		break;
+>  	case 4:
+>  		if (ri->header) {
+>  			seq_printf(seq, "version 4 rsb 2\n");
+>  			ri->header = 0;
+>  		}
+> -		rv = print_format4(ri->rsb, seq);
+> +		print_format4(ri->rsb, seq);
+>  		break;
+>  	}
+>  
+> -	return rv;
 > +	return 0;
 >  }
 >  
->  static const struct seq_operations nflog_seq_ops = {
-> diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
-> index a82077d9f59b..f823f1538c4f 100644
-> --- a/net/netfilter/nfnetlink_queue_core.c
-> +++ b/net/netfilter/nfnetlink_queue_core.c
-> @@ -1242,12 +1242,13 @@ static int seq_show(struct seq_file *s, void *v)
->  {
->  	const struct nfqnl_instance *inst = v;
->  
-> -	return seq_printf(s, "%5d %6d %5d %1d %5d %5d %5d %8d %2d\n",
-> -			  inst->queue_num,
-> -			  inst->peer_portid, inst->queue_total,
-> -			  inst->copy_mode, inst->copy_range,
-> -			  inst->queue_dropped, inst->queue_user_dropped,
-> -			  inst->id_sequence, 1);
-> +	seq_printf(s, "%5d %6d %5d %1d %5d %5d %5d %8d %2d\n",
-> +		   inst->queue_num,
-> +		   inst->peer_portid, inst->queue_total,
-> +		   inst->copy_mode, inst->copy_range,
-> +		   inst->queue_dropped, inst->queue_user_dropped,
-> +		   inst->id_sequence, 1);
-> +	return seq_has_overflowed(s);
->  }
->  
->  static const struct seq_operations nfqnl_seq_ops = {
-> diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
-> index 133eb4772f12..51a459c3c649 100644
-> --- a/net/netfilter/x_tables.c
-> +++ b/net/netfilter/x_tables.c
-> @@ -947,9 +947,10 @@ static int xt_table_seq_show(struct seq_file *seq, void *v)
->  {
->  	struct xt_table *table = list_entry(v, struct xt_table, list);
->  
-> -	if (strlen(table->name))
-> -		return seq_printf(seq, "%s\n", table->name);
-> -	else
-> +	if (strlen(table->name)) {
-> +		seq_printf(seq, "%s\n", table->name);
-> +		return seq_has_overflowed(seq);
-> +	} else
->  		return 0;
->  }
->  
-> @@ -1086,8 +1087,10 @@ static int xt_match_seq_show(struct seq_file *seq, void *v)
->  		if (trav->curr == trav->head)
->  			return 0;
->  		match = list_entry(trav->curr, struct xt_match, list);
-> -		return (*match->name == '\0') ? 0 :
-> -		       seq_printf(seq, "%s\n", match->name);
-> +		if (*match->name == '\0')
-> +			return 0;
-> +		seq_printf(seq, "%s\n", match->name);
-> +		return seq_has_overflowed(seq);
->  	}
->  	return 0;
->  }
-> @@ -1139,8 +1142,10 @@ static int xt_target_seq_show(struct seq_file *seq, void *v)
->  		if (trav->curr == trav->head)
->  			return 0;
->  		target = list_entry(trav->curr, struct xt_target, list);
-> -		return (*target->name == '\0') ? 0 :
-> -		       seq_printf(seq, "%s\n", target->name);
-> +		if (*target->name == '\0')
-> +			return 0;
-> +		seq_printf(seq, "%s\n", target->name);
-> +		return seq_has_overflowed(seq);
->  	}
->  	return 0;
->  }
-> diff --git a/net/netfilter/xt_hashlimit.c b/net/netfilter/xt_hashlimit.c
-> index 05fbc2a0be46..178696852bde 100644
-> --- a/net/netfilter/xt_hashlimit.c
-> +++ b/net/netfilter/xt_hashlimit.c
-> @@ -789,7 +789,6 @@ static void dl_seq_stop(struct seq_file *s, void *v)
->  static int dl_seq_real_show(struct dsthash_ent *ent, u_int8_t family,
->  				   struct seq_file *s)
->  {
-> -	int res;
->  	const struct xt_hashlimit_htable *ht = s->private;
->  
->  	spin_lock(&ent->lock);
-> @@ -798,33 +797,32 @@ static int dl_seq_real_show(struct dsthash_ent *ent, u_int8_t family,
->  
->  	switch (family) {
->  	case NFPROTO_IPV4:
-> -		res = seq_printf(s, "%ld %pI4:%u->%pI4:%u %u %u %u\n",
-> -				 (long)(ent->expires - jiffies)/HZ,
-> -				 &ent->dst.ip.src,
-> -				 ntohs(ent->dst.src_port),
-> -				 &ent->dst.ip.dst,
-> -				 ntohs(ent->dst.dst_port),
-> -				 ent->rateinfo.credit, ent->rateinfo.credit_cap,
-> -				 ent->rateinfo.cost);
-> +		seq_printf(s, "%ld %pI4:%u->%pI4:%u %u %u %u\n",
-> +			   (long)(ent->expires - jiffies)/HZ,
-> +			   &ent->dst.ip.src,
-> +			   ntohs(ent->dst.src_port),
-> +			   &ent->dst.ip.dst,
-> +			   ntohs(ent->dst.dst_port),
-> +			   ent->rateinfo.credit, ent->rateinfo.credit_cap,
-> +			   ent->rateinfo.cost);
->  		break;
->  #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
->  	case NFPROTO_IPV6:
-> -		res = seq_printf(s, "%ld %pI6:%u->%pI6:%u %u %u %u\n",
-> -				 (long)(ent->expires - jiffies)/HZ,
-> -				 &ent->dst.ip6.src,
-> -				 ntohs(ent->dst.src_port),
-> -				 &ent->dst.ip6.dst,
-> -				 ntohs(ent->dst.dst_port),
-> -				 ent->rateinfo.credit, ent->rateinfo.credit_cap,
-> -				 ent->rateinfo.cost);
-> +		seq_printf(s, "%ld %pI6:%u->%pI6:%u %u %u %u\n",
-> +			   (long)(ent->expires - jiffies)/HZ,
-> +			   &ent->dst.ip6.src,
-> +			   ntohs(ent->dst.src_port),
-> +			   &ent->dst.ip6.dst,
-> +			   ntohs(ent->dst.dst_port),
-> +			   ent->rateinfo.credit, ent->rateinfo.credit_cap,
-> +			   ent->rateinfo.cost);
->  		break;
->  #endif
->  	default:
->  		BUG();
-> -		res = 0;
->  	}
->  	spin_unlock(&ent->lock);
-> -	return res;
-> +	return seq_has_overflowed(s);
->  }
->  
->  static int dl_seq_show(struct seq_file *s, void *v)
+>  static const struct seq_operations format1_seq_ops;
 
