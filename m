@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285AbaKDMWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:22:30 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:32824 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751626AbaKDMW3 (ORCPT
+	id S1753123AbaKDM1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:27:34 -0500
+Received: from out21.biz.mail.alibaba.com ([205.204.114.132]:55515 "EHLO
+	out21.biz.mail.alibaba.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750866AbaKDM1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:22:29 -0500
-Message-ID: <5458C501.3040505@hurleysoftware.com>
-Date: Tue, 04 Nov 2014 07:22:25 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 4 Nov 2014 07:27:33 -0500
+X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Nov 2014 07:27:32 EST
+X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R211e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g08144;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=6;RT=6;SR=0;
+Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
+From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
+To: "'pang.xunlei'" <pang.xunlei@linaro.org>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "'Ingo Molnar'" <mingo@redhat.com>,
+        "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'Steven Rostedt'" <rostedt@goodmis.org>,
+        "'Juri Lelli'" <juri.lelli@gmail.com>
+Subject: Re: [PATCH v2 2/6] sched/rt: Optimize select_task_rq_rt() for non-RT curr task
+Date: Tue, 04 Nov 2014 20:21:37 +0800
+Message-ID: <011501cff829$e1a26e60$a4e74b20$@alibaba-inc.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Michal Nazarewicz <mina86@mina86.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: alloc_contig_range: demote pages busy message from
- warn to info
-References: <2457604.k03RC2Mv4q@avalon> <1415033873-28569-1-git-send-email-mina86@mina86.com> <20141104054307.GA23102@bbox>
-In-Reply-To: <20141104054307.GA23102@bbox>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac/4KVxFThArGhaQRK2FCl2G0QbaxA==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2014 12:43 AM, Minchan Kim wrote:
-> Hello,
 > 
-> On Mon, Nov 03, 2014 at 05:57:53PM +0100, Michal Nazarewicz wrote:
->> Having test_pages_isolated failure message as a warning confuses
->> users into thinking that it is more serious than it really is.  In
->> reality, if called via CMA, allocation will be retried so a single
->> test_pages_isolated failure does not prevent allocation from
->> succeeding.
->>
->> Demote the warning message to an info message and reformat it such
->> that the text “failed” does not appear and instead a less worrying
->> “PFNS busy” is used.
+> When selecting the cpu for a waking RT task, if curr is a non-RT
+> task which is bound only on this cpu, then we can give it a chance
+> to select a different cpu(definitely an idle cpu if existing) for
+> the RT task to avoid curr starving.
 > 
-> What do you expect from this message? Please describe it so that we can
-> review below message helps your goal.
+> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+> ---
+>  kernel/sched/rt.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index da6922e..dc1f7f0 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1340,6 +1340,11 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+>  	 * runqueue. Otherwise simply start this RT task
+>  	 * on its current runqueue.
+>  	 *
+> +	 * If the current task on @p's runqueue is a non-RT task,
+> +	 * and this task is bound on current runqueue, then try to
+> +	 * see if we can wake this RT task up on a different runqueue,
+> +	 * we will definitely find an idle cpu if there is any.
+> +	 *
+>  	 * We want to avoid overloading runqueues. If the woken
+>  	 * task is a higher priority, then it will stay on this CPU
+>  	 * and the lower prio task should be moved to another CPU.
+> @@ -1356,9 +1361,8 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+>  	 * This test is optimistic, if we get it wrong the load-balancer
+>  	 * will have to sort it out.
+>  	 */
+> -	if (curr && unlikely(rt_task(curr)) &&
+> -	    (curr->nr_cpus_allowed < 2 ||
+> -	     curr->prio <= p->prio)) {
+> +	if (curr && unlikely(curr->nr_cpus_allowed < 2 ||
+> +				curr->prio <= p->prio)) {
 
-I expect this message to not show up in logs unless there is a real problem.
+Nack, it is no meaning to compare apple against orange.
 
-This message is trivially reproducible on a 10GB x86 machine on 3.16.y
-kernels configured with CONFIG_DMA_CMA.
-
+Hillf
+>  		int target = find_lowest_rq(p);
+> 
+>  		if (target != -1)
+> --
+> 1.7.9.5
 
