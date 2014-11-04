@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaKDVvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:51:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34299 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752815AbaKDVvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:51:13 -0500
-Date: Tue, 4 Nov 2014 22:51:11 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de
-Subject: Re: [PATCH v1 09/11] backports: use Kconfig for backport version
-	information
-Message-ID: <20141104215111.GG12953@wotan.suse.de>
-References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com> <1415090582-14129-10-git-send-email-mcgrof@do-not-panic.com> <1415095985.2064.12.camel@sipsolutions.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415095985.2064.12.camel@sipsolutions.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1752052AbaKDVyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:54:51 -0500
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:62443 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751084AbaKDVyt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 16:54:49 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ar8SABRKWVRbsl9p/2dsb2JhbABagw6BLbsKBQF0misEAoEkFwEBAQEBfYRfI4EaN4hFAbwNjy+GN4l1ZB2ENQWeDpZSgUcBgjE8L4EGgUUBAQE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Joe Perches <joe@perches.com>, Fabian Frederick <fabf@skynet.be>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH V2 net-next] esp4: remove assignment in if condition
+Date: Tue,  4 Nov 2014 22:54:36 +0100
+Message-Id: <1415138076-7036-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 11:13:05AM +0100, Johannes Berg wrote:
-> On Tue, 2014-11-04 at 00:43 -0800, Luis R. Rodriguez wrote:
-> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > 
-> > Instead of relying on Makefile hacks just use Kconfig for
-> > defining the variables needed. We can do this since these
-> > variables are all known at packaging time. The exception
-> > is BACKPORTS_GIT_TRACKED, but for that we can define a
-> > kconfig variable which only if set will we rely on the
-> > environment for picking it up and later exporting it through
-> > Kconfig. Since Kconfig doesn't keep config variables defined
-> > with option env we use a secondary config entry for that.
-> 
-> I'd prefer you didn't do this. When we track the backports in a git tree
-> this will mean constant changes to these files, where currently the
-> changes are constrained to just the "versions" file.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V2: remove blank line between set and test (suggested by Joe Perches).
 
-OK.
+ net/ipv4/esp4.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- Luis
+diff --git a/net/ipv4/esp4.c b/net/ipv4/esp4.c
+index 360b565..d2bf02e 100644
+--- a/net/ipv4/esp4.c
++++ b/net/ipv4/esp4.c
+@@ -392,8 +392,10 @@ static int esp_input(struct xfrm_state *x, struct sk_buff *skb)
+ 	if (elen <= 0)
+ 		goto out;
+ 
+-	if ((err = skb_cow_data(skb, 0, &trailer)) < 0)
++	err = skb_cow_data(skb, 0, &trailer);
++	if (err < 0)
+ 		goto out;
++
+ 	nfrags = err;
+ 
+ 	assoclen = sizeof(*esph);
+-- 
+1.9.3
+
