@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409AbaKDVni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:43:38 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:46791 "EHLO mail.skyhub.de"
+	id S1752629AbaKDVpS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:45:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34251 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129AbaKDVng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:43:36 -0500
-Date: Tue, 4 Nov 2014 22:43:27 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: linux-mm@kvack.org
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: 18-rc3+: ODEBUG: assert_init not available (active state 0) object
- type: timer_list hint: stub_timer
-Message-ID: <20141104214327.GE14296@pd.tnic>
+	id S1751324AbaKDVpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 16:45:16 -0500
+Date: Tue, 4 Nov 2014 22:45:13 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
+        sassmann@kpanic.de
+Subject: Re: [PATCH v1 03/11] backports: allow for different backport prefix
+Message-ID: <20141104214513.GE12953@wotan.suse.de>
+References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com> <1415090582-14129-4-git-send-email-mcgrof@do-not-panic.com> <1415095517.2064.10.camel@sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415095517.2064.10.camel@sipsolutions.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Nov 04, 2014 at 11:05:17AM +0100, Johannes Berg wrote:
+> On Tue, 2014-11-04 at 00:42 -0800, Luis R. Rodriguez wrote:
+> 
+> > --- a/devel/ckmake
+> > +++ b/devel/ckmake
+> > @@ -165,6 +165,7 @@ def process_kernel(num, kset, cmdline_args):
+> >          all_config_name = os.path.join(work_dir, 'all.config')
+> >          all_config = open(all_config_name, 'w')
+> >          all_config.write("CPTCFG_CFG80211_INTERNAL_REGDB=n\n")
+> > +        all_config.write("CONFIG_BACKPORT_CFG80211_INTERNAL_REGDB=n\n")
+> 
+> don't you know the prefix here?
 
-I see the following splat on rc3+ of today when doing a suspend/resume
-cycle. My suspend script does
+Yeah, good point, for built-in I suppose we'll need something different or if
+ckmake is extended it would know that too. Dropping this.
 
-echo 3 > /proc/sys/vm/drop_caches
-
-and this maybe is related, judging by the code the splat points to:
-page-writeback.c
-
->From looking at this a bit, there's some already freed timer we're
-touching in laptop_sync_completion(), probably already freed in
-blk_cleanup_queue(). Hmm...
-
-[  106.615059] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-[  113.317145] ------------[ cut here ]------------
-[  113.319022] WARNING: CPU: 1 PID: 4006 at lib/debugobjects.c:263 debug_print_object+0x8b/0xa0()
-[  113.320970] ODEBUG: assert_init not available (active state 0) object type: timer_list hint: stub_timer+0x0/
-0x20
-[  113.322866] Modules linked in: cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_userspace binfmt
-_misc uinput ipv6 vfat fat snd_hda_codec_conexant snd_hda_codec_generic snd_hda_codec_hdmi arc4 rtl8192ce rtl_p
-ci rtl8192c_common rtlwifi pcspkr evdev mac80211 k10temp cfg80211 snd_hda_intel snd_hda_controller snd_hda_code
-c snd_hwdep thinkpad_acpi nvram snd_pcm snd_seq snd_seq_device snd_timer radeon snd video soundcore battery drm
-_kms_helper ac ttm button rtsx_pci_sdmmc mmc_core rtsx_pci mfd_core ehci_pci ohci_pci ohci_hcd ehci_hcd thermal
-[  113.327292] CPU: 1 PID: 4006 Comm: sync Not tainted 3.18.0-rc3+ #1
-[  113.327294] Hardware name: LENOVO 30515QG/30515QG, BIOS 8RET30WW (1.12 ) 09/15/2011
-[  113.327297]  0000000000000009 ffff8800ba2f3d98 ffffffff8155dbc4 ffffffff810b3d56
-[  113.327303]  ffff8800ba2f3de8 ffff8800ba2f3dd8 ffffffff810721ac ffff8800ba2f3e08
-[  113.327308]  ffff8800ba2f3e88 ffffffff81a3bf60 ffffffff817fb9e5 ffffffff82b46508
-[  113.327314] Call Trace:
-[  113.327317]  [<ffffffff8155dbc4>] dump_stack+0x4f/0x7c
-[  113.327326]  [<ffffffff810b3d56>] ? down_trylock+0x36/0x50
-[  113.327331]  [<ffffffff810721ac>] warn_slowpath_common+0x8c/0xc0
-[  113.327337]  [<ffffffff81072226>] warn_slowpath_fmt+0x46/0x50
-[  113.327341]  [<ffffffff810d8b3c>] ? do_init_timer+0x5c/0x60
-[  113.327345]  [<ffffffff812b992b>] debug_print_object+0x8b/0xa0
-[  113.327349]  [<ffffffff810d8aa0>] ? ftrace_raw_event_tick_stop+0xe0/0xe0
-[  113.327353]  [<ffffffff812ba621>] debug_object_assert_init+0x101/0x140
-[  113.327358]  [<ffffffff811529d5>] ? laptop_sync_completion+0x5/0xa0
-[  113.327364]  [<ffffffff810d9a4f>] del_timer+0x1f/0x70
-[  113.327367]  [<ffffffff81152a2c>] laptop_sync_completion+0x5c/0xa0
-[  113.327371]  [<ffffffff811529d5>] ? laptop_sync_completion+0x5/0xa0
-[  113.327375]  [<ffffffff811d82d5>] sys_sync+0x85/0x90
-[  113.327379]  [<ffffffff815672d2>] system_call_fastpath+0x12/0x17
-[  113.327386] ---[ end trace 97d71e72cfb411a7 ]---
-[  113.576302] hib.sh (4003): drop_caches: 3
-[  115.126304] PM: Syncing filesystems ... done.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+  Luis
