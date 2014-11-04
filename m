@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaKDVsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:48:51 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57004 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaKDVst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:48:49 -0500
-Message-ID: <545949BF.1080503@kernel.dk>
-Date: Tue, 04 Nov 2014 14:48:47 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752727AbaKDVuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:50:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34288 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751129AbaKDVuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 16:50:07 -0500
+Date: Tue, 4 Nov 2014 22:50:02 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
+        sassmann@kpanic.de
+Subject: Re: [PATCH v1 10/11] backports: prefix c-file / h-file auto
+	backport with BPAUTO
+Message-ID: <20141104215002.GF12953@wotan.suse.de>
+References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com> <1415090582-14129-11-git-send-email-mcgrof@do-not-panic.com> <1415096092.2064.13.camel@sipsolutions.net>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Christian Borntraeger <borntraeger@de.ibm.com>
-CC: Kent Overstreet <kmo@daterainc.com>, Christoph Hellwig <hch@lst.de>,
-        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
-	<linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>
-Subject: Re: [PATCH block/for-linus] blk-mq: make mq_queue_reinit_notify()
- freeze queues in parallel
-References: <544FF00B.8050403@de.ibm.com> <20141028200055.GA8205@htj.dyndns.org> <544FFAA7.1060705@de.ibm.com> <20141028202255.GB8205@htj.dyndns.org> <544FFC9C.60908@de.ibm.com> <20141028203040.GD8205@htj.dyndns.org> <20141104185227.GH14459@htj.dyndns.org>
-In-Reply-To: <20141104185227.GH14459@htj.dyndns.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415096092.2064.13.camel@sipsolutions.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-11-04 11:52, Tejun Heo wrote:
-> q->mq_usage_counter is a percpu_ref which is killed and drained when
-> the queue is frozen.  On a CPU hotplug event, blk_mq_queue_reinit()
-> which involves freezing the queue is invoked on all existing queues.
-> Because percpu_ref killing and draining involve a RCU grace period,
-> doing the above on one queue after another may take a long time if
-> there are many queues on the system.
->
-> This patch splits out initiation of freezing and waiting for its
-> completion, and updates blk_mq_queue_reinit_notify() so that the
-> queues are frozen in parallel instead of one after another.  Note that
-> freezing and unfreezing are moved from blk_mq_queue_reinit() to
-> blk_mq_queue_reinit_notify().
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> ---
-> Christian, can you please verify that this resolves the latency issue
-> that you're seeing?  Jens, can you please route this patch once
-> Christian confirms it?
+On Tue, Nov 04, 2014 at 11:14:52AM +0100, Johannes Berg wrote:
+> On Tue, 2014-11-04 at 00:43 -0800, Luis R. Rodriguez wrote:
+> 
+> > -            mf.write('compat-$(%s%s) += %s\n' % (bp_prefix, sym, ' '.join(o_files)))
+> > +            if bp_prefix not in sym:
+> > +                mf.write('compat-$(%s%s) += %s\n' % (bp_prefix, sym, ' '.join(o_files)))
+> > +            else:
+> > +                mf.write('compat-$(%s) += %s\n' % (sym, ' '.join(o_files)))
+> 
+> I don't think these changes are correct, the bp_prefix is needed anyway,
+> and there's no way it could already be. Looks like this comes from a
+> previous attempt where you misunderstood and thought
+> CONFIG_BACKPORT_BACKPORT_... was actually wrong, when in fact it is
+> correct (and would now be CONFIG_BACKPORT_BPAUTO_...)
 
-Will queue up for 3.18.
+I did at one point have BACKPORT_BPAUTO_* stuff on the compat/Kconfig for
+the auto stuff but figured that was superfluous. I'll respin with it.
 
--- 
-Jens Axboe
-
+  Luis
