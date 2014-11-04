@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725AbaKDDFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 22:05:30 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:12084 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaKDDF2 (ORCPT
+	id S1751914AbaKDDGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 22:06:43 -0500
+Received: from smtprelay0060.hostedemail.com ([216.40.44.60]:49920 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751187AbaKDDGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 22:05:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 03 Nov 2014 18:59:49 -0800
-Message-ID: <54584260.8030602@nvidia.com>
-Date: Tue, 4 Nov 2014 12:05:04 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Tim Kryger <tim.kryger@gmail.com>, Sachin Kamat <spk.linux@gmail.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-CC: <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Possible regression with commit 52221610d
-X-NVConfidentiality: public
-X-Originating-IP: [10.19.57.128]
-X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
- HKMAIL102.nvidia.com (10.18.16.11)
-Content-Type: text/plain; charset="utf-8"; format=flowed
+	Mon, 3 Nov 2014 22:06:42 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3622:3865:3870:4321:5007:6261:10004:10400:10848:11026:11232:11473:11658:11914:12043:12291:12517:12519:12683:12740:13069:13161:13229:13311:13357:14110:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fork50_3a496924f7f2f
+X-Filterd-Recvd-Size: 1422
+Message-ID: <1415070399.17743.49.camel@perches.com>
+Subject: Re: [PATCH] quota: Add log level to printk
+From: Joe Perches <joe@perches.com>
+To: Anton Blanchard <anton@samba.org>
+Cc: jack@suse.cz, linux-kernel@vger.kernel.org
+Date: Mon, 03 Nov 2014 19:06:39 -0800
+In-Reply-To: <20141104120501.0318cc7d@kryten>
+References: <20141104120501.0318cc7d@kryten>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Tue, 2014-11-04 at 12:05 +1100, Anton Blanchard wrote:
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+> ---
+> 
+> Index: b/fs/quota/dquot.c
+> ===================================================================
+> --- a/fs/quota/dquot.c
+> +++ b/fs/quota/dquot.c
+> @@ -2743,7 +2743,7 @@ static int __init dquot_init(void)
+>  	for (i = 0; i < nr_hash; i++)
+>  		INIT_HLIST_HEAD(dquot_hash + i);
+>  
+> -	printk("Dquot-cache hash table entries: %ld (order %ld, %ld bytes)\n",
+> +	pr_info("Dquot-cache hash table entries: %ld (order %ld, %ld bytes)\n",
+>  			nr_hash, order, (PAGE_SIZE << order));
 
-On the NVIDIA shield (tegra114-roth) platform, I have noticed that MMC 
-stopped working completely on recent kernels. MMC devices will not show 
-up and the message "mmc1: Controller never released inhibit bit(s)." 
-shows up repeatedly in the console.
+The other printks in the file have a "VFS: " prefix.
+Maybe this one too?
 
-After bisecting I tracked commit 
-52221610dd84dc3e9196554f0292ca9e8ab3541d ("mmc: sdhci: Improve external 
-VDD regulator support") as the one that introduced this issue, which 
-seems somehow surprising to me since it has been around for a while and 
-nobody else complained about this AFAICT.
 
-The following diff solves the issue for me, however I don't know whether 
-it also reverts the intended purpose of the initial patch:
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index ada1a3ea3a87..615701bb8ea3 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1235,13 +1235,6 @@ static void sdhci_set_power(struct sdhci_host 
-*host, unsigned char mode,
-         struct mmc_host *mmc = host->mmc;
-         u8 pwr = 0;
-
--       if (!IS_ERR(mmc->supply.vmmc)) {
--               spin_unlock_irq(&host->lock);
--               mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
--               spin_lock_irq(&host->lock);
--               return;
--       }
--
-         if (mode != MMC_POWER_OFF) {
-                 switch (1 << vdd) {
-                 case MMC_VDD_165_195:
-@@ -1300,6 +1293,12 @@ static void sdhci_set_power(struct sdhci_host 
-*host, unsigned char mode,
-                 if (host->quirks & SDHCI_QUIRK_DELAY_AFTER_POWER)
-                         mdelay(10);
-         }
-+
-+       if (!IS_ERR(mmc->supply.vmmc)) {
-+               spin_unlock_irq(&host->lock);
-+               mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
-+               spin_lock_irq(&host->lock);
-+       }
-  }
-
-Does this look like the right approach? If not, would you have any 
-suggestion as to how to solve this problem?
-
-Thanks,
-Alex.
