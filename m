@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbaKDLQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:16:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32817 "EHLO arroyo.ext.ti.com"
+	id S1753456AbaKDLQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:16:33 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32818 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753167AbaKDLQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753363AbaKDLQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Nov 2014 06:16:25 -0500
 From: Vignesh R <vigneshr@ti.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -16,47 +16,94 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         Vignesh R <vigneshr@ti.com>
-Subject: [PATCH v2 0/3] Add support for ADC on am437x-gp and am43x-epos-evm
-Date: Tue, 4 Nov 2014 16:45:25 +0530
-Message-ID: <1415099728-10959-1-git-send-email-vigneshr@ti.com>
+Subject: [PATCH v2 1/3] ARM: OMAP2+: hwmod: AM335x/AM43x: Move am33xx_l4_hs_hwmod to ipblock_data
+Date: Tue, 4 Nov 2014 16:45:26 +0530
+Message-ID: <1415099728-10959-2-git-send-email-vigneshr@ti.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415099728-10959-1-git-send-email-vigneshr@ti.com>
+References: <1415099728-10959-1-git-send-email-vigneshr@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches enable ADC on am437x-gp-evm and am43x-epos-evm.
-The ADC clock hwmod data of am33xx has been moved to commom place so that
-both am43xx and am33xx can reuse them.
-tscadc DT node has been adided to am437x-gp and am43x-epos dt files.
-With these patches, ADC functionalities are now available on am43xx.
+This patch moves am33xx_l4_hs_hwmod from 33xx_data to ipblock_data. This
+is required because it can be reused in 43xx to add hwmod support to
+tscadc as it uses the same l4_hs hwmod in am43xx. This helps in setting
+appropriate clock domain names for tscadc on am33xx and am43xx.
 
-Changelog:
+Signed-off-by: Vignesh R <vigneshr@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h  |  1 +
+ arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c | 15 +++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c              | 15 ---------------
+ 3 files changed, 16 insertions(+), 15 deletions(-)
 
-v2:
-Removed phy addresses in hwmod. Using DT instead.
-Removed unused "ti,am4372" compatible string.
-Use macro to set clk domain name.
-Fixed subject format of all patches
-
-Vignesh R (3):
-  ARM: OMAP2+: hwmod: AM335x/AM43x: Move am33xx_l4_hs_hwmod to
-    ipblock_data
-  ARM: OMAP2+: hwmod: AM335x/AM43x: add hwmod support for tscadc on
-    am43x-evm
-  ARM: dts: AM43xx: add tscadc DT entries for am437x-evm and
-    am43x-epos-evm
-
- arch/arm/boot/dts/am4372.dtsi                      | 20 ++++++
- arch/arm/boot/dts/am437x-gp-evm.dts                |  8 +++
- arch/arm/boot/dts/am43x-epos-evm.dts               |  8 +++
- .../mach-omap2/omap_hwmod_33xx_43xx_common_data.h  |  2 +
- .../mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c | 71 ++++++++++++++++++++++
- arch/arm/mach-omap2/omap_hwmod_33xx_data.c         | 64 -------------------
- arch/arm/mach-omap2/omap_hwmod_43xx_data.c         |  1 +
- 7 files changed, 110 insertions(+), 64 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
+index 130332c0534d..6e57b8ad0db5 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
++++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_common_data.h
+@@ -82,6 +82,7 @@ extern struct omap_hwmod am33xx_l3_main_hwmod;
+ extern struct omap_hwmod am33xx_l3_s_hwmod;
+ extern struct omap_hwmod am33xx_l3_instr_hwmod;
+ extern struct omap_hwmod am33xx_l4_ls_hwmod;
++extern struct omap_hwmod am33xx_l4_hs_hwmod;
+ extern struct omap_hwmod am33xx_l4_wkup_hwmod;
+ extern struct omap_hwmod am33xx_mpu_hwmod;
+ extern struct omap_hwmod am33xx_pruss_hwmod;
+diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
+index a579b89ce9b7..7f44922ab540 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c
+@@ -94,6 +94,21 @@ struct omap_hwmod am33xx_l4_ls_hwmod = {
+ 	},
+ };
+ 
++/* l4_hs */
++struct omap_hwmod am33xx_l4_hs_hwmod = {
++	.name		= "l4_hs",
++	.class		= &am33xx_l4_hwmod_class,
++	.clkdm_name	= "l4hs_clkdm",
++	.flags		= HWMOD_INIT_NO_IDLE,
++	.main_clk	= "l4hs_gclk",
++	.prcm		= {
++		.omap4  = {
++			.clkctrl_offs   = AM33XX_CM_PER_L4HS_CLKCTRL_OFFSET,
++			.modulemode     = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
+ /* l4_wkup */
+ struct omap_hwmod am33xx_l4_wkup_hwmod = {
+ 	.name		= "l4_wkup",
+diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+index 6b406ca4bd3b..ce7d260495cb 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+@@ -63,21 +63,6 @@ static struct omap_hwmod am33xx_emif_hwmod = {
+ 	},
+ };
+ 
+-/* l4_hs */
+-static struct omap_hwmod am33xx_l4_hs_hwmod = {
+-	.name		= "l4_hs",
+-	.class		= &am33xx_l4_hwmod_class,
+-	.clkdm_name	= "l4hs_clkdm",
+-	.flags		= HWMOD_INIT_NO_IDLE,
+-	.main_clk	= "l4hs_gclk",
+-	.prcm		= {
+-		.omap4	= {
+-			.clkctrl_offs	= AM33XX_CM_PER_L4HS_CLKCTRL_OFFSET,
+-			.modulemode	= MODULEMODE_SWCTRL,
+-		},
+-	},
+-};
+-
+ static struct omap_hwmod_rst_info am33xx_wkup_m3_resets[] = {
+ 	{ .name = "wkup_m3", .rst_shift = 3, .st_shift = 5 },
+ };
 -- 
 1.9.1
 
