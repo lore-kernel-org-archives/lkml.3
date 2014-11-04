@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125AbaKDT65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 14:58:57 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37859 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752855AbaKDT6y (ORCPT
+	id S1753189AbaKDT7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 14:59:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:59037 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753073AbaKDT7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 14:58:54 -0500
-Date: Tue, 4 Nov 2014 19:57:32 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Torsten Fleischer <torfl6749@gmail.com>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141104195732.GX3815@sirena.org.uk>
-References: <1415031475-2268-1-git-send-email-torfl6749@gmail.com>
+	Tue, 4 Nov 2014 14:59:06 -0500
+Date: Tue, 4 Nov 2014 14:59:04 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
+Subject: Re: [RFA][PATCH 2/8] netfilter: Remove return values for
+ print_conntrack callbacks
+Message-ID: <20141104145904.6d0e200d@gandalf.local.home>
+In-Reply-To: <20141104144632.GA11096@salvia>
+References: <20141029215602.535533597@goodmis.org>
+	<20141029220107.465008329@goodmis.org>
+	<20141104080535.5f651713@gandalf.local.home>
+	<20141104142236.GA10239@salvia>
+	<20141104093150.7410f6d0@gandalf.local.home>
+	<20141104144632.GA11096@salvia>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="umhhH1MY3lvPZrwj"
-Content-Disposition: inline
-In-Reply-To: <1415031475-2268-1-git-send-email-torfl6749@gmail.com>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/1] spi: spi-gpio: Add dt support for a single device
- with no chip select
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 4 Nov 2014 15:46:32 +0100
+Pablo Neira Ayuso <pablo@netfilter.org> wrote:
 
---umhhH1MY3lvPZrwj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 03, 2014 at 05:17:55PM +0100, Torsten Fleischer wrote:
-> From: Torsten Fleischer <torfl6749@gmail.com>
->=20
-> In order to describe a single slave device that has no chip select line
-> the 'num-chipselects' property has to be <0> and the 'cs-gpios' property
-> doesn't need to be set.
+> > > 
+> > > Acked-by: Pablo Neira Ayuso <pablo@netfilter.org>
+> > > 
+> > > to this patch and 4/8.
+> > 
+> > Thanks for this!
+> > 
+> > Can I get someone to ack 3/8?
+> 
+> I don't see any 3/8 in my inbox, only 2/8 and 4/8.
+> 
+> Let me know, thanks.
 
-Applied, thanks.
+I replied to the patch. Did you get that reply?
 
---umhhH1MY3lvPZrwj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Or did it somehow end up in your spam filter?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUWS+sAAoJECTWi3JdVIfQ2zoH/AtLkp1eNCvq46l7yZU6Cy+9
-DUB96pmHjF1HozvCcFPzuS9S+6JUJYxmoVYltYKt6hb5D/Pgta7z3Iwo9BTwe/pt
-/bW4S7wCb2Bu2yfZ4Heu2vftWhUXc3cwfi0VPT7qsCch+EOEHH3cw3W0vFcPVq2+
-YH+EG6wOHhrVWojX6YsOH/0Trl7YAsWKC1sqI/E7IKnr6C7c/KQ/KJV3FIhpIDtN
-cqCVZ0YIpozGCqmAPWMCTkJlYaxXVahiXixqZ4o6OJ9K0j5khHLPhxjWK9KTJUU8
-QsSiQbVLRkbFa58Xv7DB2azHpB87JaJR6aMXbyKuX04DBfg4/7HQVY0SlFdIW8U=
-=nmig
------END PGP SIGNATURE-----
-
---umhhH1MY3lvPZrwj--
+-- Steve
