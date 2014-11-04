@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204AbaKDMEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:04:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:1815 "EHLO mga01.intel.com"
+	id S1753599AbaKDMFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:05:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60207 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853AbaKDMES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:04:18 -0500
+	id S1753281AbaKDMDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 07:03:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,313,1413270000"; 
-   d="scan'208";a="616767771"
+   d="scan'208";a="616767249"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -29,9 +29,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         iommu@lists.linux-foundation.org
-Subject: [Patch Part2 v4 24/31] iommu/vt-d: Clean up unused MSI related code
-Date: Tue,  4 Nov 2014 20:01:58 +0800
-Message-Id: <1415102525-9898-25-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part2 v4 19/31] PCI/MSI: Simplify PCI MSI code by initializing msi_desc.nvec_used earlier
+Date: Tue,  4 Nov 2014 20:01:53 +0800
+Message-Id: <1415102525-9898-20-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
@@ -39,183 +39,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now MSI interrupt has been converted to new hierarchy irqdomain
-interfaces, so kill legacy MSI related code.
+Simplify PCI MSI code by initializing msi_desc.nvec_used and
+msi_desc.msi_attrib.mutiple when create MSI descriptors.
+
+Also remove redundant checks in IRQ remapping drivers, PCI MSI core
+already guarattees these.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/intel_irq_remapping.c |  144 -----------------------------------
- 1 file changed, 144 deletions(-)
+ drivers/iommu/irq_remapping.c |    8 --------
+ drivers/pci/msi.c             |   40 +++++++++++++++-------------------------
+ 2 files changed, 15 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 88196ca55e29..cbaad087a872 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -145,44 +145,6 @@ static int qi_flush_iec(struct intel_iommu *iommu, int index, int mask)
- 	return qi_submit_sync(&desc, iommu);
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 176ff4372b7d..32fe5b1322d0 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -69,19 +69,13 @@ static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
+ 	unsigned int irq;
+ 	struct msi_desc *msidesc;
+ 
+-	WARN_ON(!list_is_singular(&dev->msi_list));
+ 	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
+-	WARN_ON(msidesc->irq);
+-	WARN_ON(msidesc->msi_attrib.multiple);
+-	WARN_ON(msidesc->nvec_used);
+ 
+ 	irq = irq_alloc_hwirqs(nvec, dev_to_node(&dev->dev));
+ 	if (irq == 0)
+ 		return -ENOSPC;
+ 
+ 	nvec_pow2 = __roundup_pow_of_two(nvec);
+-	msidesc->nvec_used = nvec;
+-	msidesc->msi_attrib.multiple = ilog2(nvec_pow2);
+ 	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
+ 		if (!sub_handle) {
+ 			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
+@@ -109,8 +103,6 @@ error:
+ 	 * IRQs from tearing down again in default_teardown_msi_irqs()
+ 	 */
+ 	msidesc->irq = 0;
+-	msidesc->nvec_used = 0;
+-	msidesc->msi_attrib.multiple = 0;
+ 
+ 	return ret;
+ }
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index fb2ccb536324..afe974600c7d 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -85,19 +85,13 @@ int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+  */
+ void default_teardown_msi_irqs(struct pci_dev *dev)
+ {
++	int i;
+ 	struct msi_desc *entry;
+ 
+-	list_for_each_entry(entry, &dev->msi_list, list) {
+-		int i, nvec;
+-		if (entry->irq == 0)
+-			continue;
+-		if (entry->nvec_used)
+-			nvec = entry->nvec_used;
+-		else
+-			nvec = 1 << entry->msi_attrib.multiple;
+-		for (i = 0; i < nvec; i++)
+-			arch_teardown_msi_irq(entry->irq + i);
+-	}
++	list_for_each_entry(entry, &dev->msi_list, list)
++		if (entry->irq)
++			for (i = 0; i < entry->nvec_used; i++)
++				arch_teardown_msi_irq(entry->irq + i);
  }
  
--static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
--{
--	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	unsigned long flags;
--	int index;
--
--	if (!irq_iommu)
--		return -1;
--
--	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
--	*sub_handle = irq_iommu->sub_handle;
--	index = irq_iommu->irte_index;
--	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
--	return index;
--}
--
--static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
--{
--	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_cfg(irq);
--	unsigned long flags;
--
--	if (!irq_iommu)
--		return -1;
--
--	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
--
--	cfg->remapped = 1;
--	irq_iommu->iommu = iommu;
--	irq_iommu->irte_index = index;
--	irq_iommu->sub_handle = subhandle;
--	irq_iommu->irte_mask = 0;
--
--	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
--
--	return 0;
--}
--
- static int modify_irte(struct irq_2_iommu *irq_iommu,
- 		       struct irte *irte_modified)
- {
-@@ -1070,108 +1032,6 @@ intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	return 0;
+ void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
+@@ -353,19 +347,12 @@ static void free_msi_irqs(struct pci_dev *dev)
+ 	struct msi_desc *entry, *tmp;
+ 	struct attribute **msi_attrs;
+ 	struct device_attribute *dev_attr;
+-	int count = 0;
++	int i, count = 0;
+ 
+-	list_for_each_entry(entry, &dev->msi_list, list) {
+-		int i, nvec;
+-		if (!entry->irq)
+-			continue;
+-		if (entry->nvec_used)
+-			nvec = entry->nvec_used;
+-		else
+-			nvec = 1 << entry->msi_attrib.multiple;
+-		for (i = 0; i < nvec; i++)
+-			BUG_ON(irq_has_action(entry->irq + i));
+-	}
++	list_for_each_entry(entry, &dev->msi_list, list)
++		if (entry->irq)
++			for (i = 0; i < entry->nvec_used; i++)
++				BUG_ON(irq_has_action(entry->irq + i));
+ 
+ 	arch_teardown_msi_irqs(dev);
+ 
+@@ -556,7 +543,7 @@ error_attrs:
+ 	return ret;
  }
  
--static void intel_compose_msi_msg(struct pci_dev *pdev,
--				  unsigned int irq, unsigned int dest,
--				  struct msi_msg *msg, u8 hpet_id)
--{
--	struct irq_cfg *cfg;
--	struct irte irte;
--	u16 sub_handle = 0;
--	int ir_index;
--
--	cfg = irq_cfg(irq);
--
--	ir_index = map_irq_to_irte_handle(irq, &sub_handle);
--	BUG_ON(ir_index == -1);
--
--	prepare_irte(&irte, cfg->vector, dest);
--
--	/* Set source-id of interrupt request */
--	if (pdev)
--		set_msi_sid(&irte, pdev);
--	else
--		set_hpet_sid(&irte, hpet_id);
--
--	modify_irte(irq_2_iommu(irq), &irte);
--
--	msg->address_hi = MSI_ADDR_BASE_HI;
--	msg->data = sub_handle;
--	msg->address_lo = MSI_ADDR_BASE_LO | MSI_ADDR_IR_EXT_INT |
--			  MSI_ADDR_IR_SHV |
--			  MSI_ADDR_IR_INDEX1(ir_index) |
--			  MSI_ADDR_IR_INDEX2(ir_index);
--}
--
--/*
-- * Map the PCI dev to the corresponding remapping hardware unit
-- * and allocate 'nvec' consecutive interrupt-remapping table entries
-- * in it.
-- */
--static int intel_msi_alloc_irq(struct pci_dev *dev, int irq, int nvec)
--{
--	struct intel_iommu *iommu;
--	int index;
--
--	down_read(&dmar_global_lock);
--	iommu = map_dev_to_ir(dev);
--	if (!iommu) {
--		printk(KERN_ERR
--		       "Unable to map PCI %s to iommu\n", pci_name(dev));
--		index = -ENOENT;
--	} else {
--		index = alloc_irte(iommu, irq, irq_2_iommu(irq), nvec);
--		if (index < 0) {
--			printk(KERN_ERR
--			       "Unable to allocate %d IRTE for PCI %s\n",
--			       nvec, pci_name(dev));
--			index = -ENOSPC;
--		}
--	}
--	up_read(&dmar_global_lock);
--
--	return index;
--}
--
--static int intel_msi_setup_irq(struct pci_dev *pdev, unsigned int irq,
--			       int index, int sub_handle)
--{
--	struct intel_iommu *iommu;
--	int ret = -ENOENT;
--
--	down_read(&dmar_global_lock);
--	iommu = map_dev_to_ir(pdev);
--	if (iommu) {
--		/*
--		 * setup the mapping between the irq and the IRTE
--		 * base index, the sub_handle pointing to the
--		 * appropriate interrupt remap table entry.
--		 */
--		set_irte_irq(irq, iommu, index, sub_handle);
--		ret = 0;
--	}
--	up_read(&dmar_global_lock);
--
--	return ret;
--}
--
--static int intel_alloc_hpet_msi(unsigned int irq, unsigned int id)
--{
--	int ret = -1;
--	struct intel_iommu *iommu;
--	int index;
--
--	down_read(&dmar_global_lock);
--	iommu = map_hpet_to_ir(id);
--	if (iommu) {
--		index = alloc_irte(iommu, irq, irq_2_iommu(irq), 1);
--		if (index >= 0)
--			ret = 0;
--	}
--	up_read(&dmar_global_lock);
--
--	return ret;
--}
--
- static struct irq_domain *intel_get_ir_irq_domain(struct irq_alloc_info *info)
+-static struct msi_desc *msi_setup_entry(struct pci_dev *dev)
++static struct msi_desc *msi_setup_entry(struct pci_dev *dev, int nvec)
  {
- 	struct intel_iommu *iommu = NULL;
-@@ -1229,10 +1089,6 @@ struct irq_remap_ops intel_irq_remap_ops = {
- 	.setup_ioapic_entry	= intel_setup_ioapic_entry,
- 	.set_affinity		= intel_ioapic_set_affinity,
- 	.free_irq		= free_irte,
--	.compose_msi_msg	= intel_compose_msi_msg,
--	.msi_alloc_irq		= intel_msi_alloc_irq,
--	.msi_setup_irq		= intel_msi_setup_irq,
--	.alloc_hpet_msi		= intel_alloc_hpet_msi,
- 	.get_ir_irq_domain	= intel_get_ir_irq_domain,
- 	.get_irq_domain		= intel_get_irq_domain,
- };
+ 	u16 control;
+ 	struct msi_desc *entry;
+@@ -574,6 +561,8 @@ static struct msi_desc *msi_setup_entry(struct pci_dev *dev)
+ 	entry->msi_attrib.maskbit	= !!(control & PCI_MSI_FLAGS_MASKBIT);
+ 	entry->msi_attrib.default_irq	= dev->irq;	/* Save IOAPIC IRQ */
+ 	entry->msi_attrib.multi_cap	= (control & PCI_MSI_FLAGS_QMASK) >> 1;
++	entry->msi_attrib.multiple	= ilog2(__roundup_pow_of_two(nvec));
++	entry->nvec_used		= nvec;
+ 
+ 	if (control & PCI_MSI_FLAGS_64BIT)
+ 		entry->mask_pos = dev->msi_cap + PCI_MSI_MASK_64;
+@@ -606,7 +595,7 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
+ 
+ 	msi_set_enable(dev, 0);	/* Disable MSI during set up */
+ 
+-	entry = msi_setup_entry(dev);
++	entry = msi_setup_entry(dev, nvec);
+ 	if (!entry)
+ 		return -ENOMEM;
+ 
+@@ -677,6 +666,7 @@ static int msix_setup_entries(struct pci_dev *dev, void __iomem *base,
+ 		entry->msi_attrib.entry_nr	= entries[i].entry;
+ 		entry->msi_attrib.default_irq	= dev->irq;
+ 		entry->mask_base		= base;
++		entry->nvec_used		= 1;
+ 
+ 		list_add_tail(&entry->list, &dev->msi_list);
+ 	}
 -- 
 1.7.10.4
 
