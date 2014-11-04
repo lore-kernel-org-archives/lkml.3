@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311AbaKDAN2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 19:13:28 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:40734 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaKDANX (ORCPT
+	id S1751434AbaKDAN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 19:13:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35272 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaKDAN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 19:13:23 -0500
-Date: Tue, 4 Nov 2014 02:13:19 +0200
-From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-To: Jarod Wilson <jarod@wilsonet.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Gulsah Kose <gulsah.1004@gmail.com>,
-        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Matina Maria Trompouki <mtrompou@gmail.com>
-Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: media: lirc: replace dev_err by pr_err
-Message-ID: <20141104001319.GA14567@localhost.localdomain>
+	Mon, 3 Nov 2014 19:13:56 -0500
+Date: Mon, 3 Nov 2014 16:13:55 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: steph <stephanie.s.wallick@intel.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        "Sean O. Stalley" <sean.stalley@intel.com>
+Subject: Re: [PATCH 01/10] added media agnostic (MA) USB HCD driver
+Message-ID: <20141104001355.GA10900@kroah.com>
+References: <1415047377-3139-1-git-send-email-stephanie.s.wallick@intel.com>
+ <1415047377-3139-2-git-send-email-stephanie.s.wallick@intel.com>
+ <20141103212139.GB7379@kroah.com>
+ <20141104000442.GC8890@steph-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141104000442.GC8890@steph-desktop>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces dev_err by pr_err since the value
-of ir is NULL when the message is displayed.
+On Mon, Nov 03, 2014 at 04:04:42PM -0800, steph wrote:
+> On Mon, Nov 03, 2014 at 01:21:39PM -0800, Greg KH wrote:
+> > On Mon, Nov 03, 2014 at 12:42:48PM -0800, Stephanie Wallick wrote:
+> > > +EXPORT_SYMBOL(mausb_register_ms_driver);
+> > 
+> > EXPORT_SYMBOL_GPL()?  I have to ask...
+> >
+> The source is dual-licenced under BSD and GPL. It was our understanding
+> that dual-licensed should use EXPORT_SYMBOL() instead. Is that wrong?
 
-Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
----
- drivers/staging/media/lirc/lirc_zilog.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Talk to your company lawyers please to get confirmation of what you want
+to do here, I can't answer this question, I just have to ask...
 
-diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-index 11a7cb1..ecdd71e 100644
---- a/drivers/staging/media/lirc/lirc_zilog.c
-+++ b/drivers/staging/media/lirc/lirc_zilog.c
-@@ -1633,7 +1633,7 @@ out_put_xx:
- out_put_ir:
- 	put_ir_device(ir, true);
- out_no_ir:
--	dev_err(ir->l.dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
-+	pr_err("%s: probing IR %s on %s (i2c-%d) failed with %d\n",
- 		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
- 		   ret);
- 	mutex_unlock(&ir_devices_lock);
--- 
-1.9.3
+> > > +static int mausb_hcd_init(void)
+> > > +{
+> > > +	int ret;
+> > > +
+> > > +	/* register HCD driver */
+> > > +	ret = platform_driver_register(&mausb_driver);
+> > 
+> > Why is this a platform driver?  How does this relate to platform
+> > hardware?
+> > 
+> The driver doesn't require platform resources. It looks like a host
+> controller driver but communicates over the network instead of to
+> a physical host controller. There is no MA USB-specific hardware.
+> 
+> Should we use a struct device instead of a struct platform_device?
 
+Yes, please make it a "virtual" device.
+
+thanks,
+
+greg k-h
