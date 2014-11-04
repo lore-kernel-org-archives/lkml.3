@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444AbaKDJ2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:28:10 -0500
-Received: from mail-bl2on0143.outbound.protection.outlook.com ([65.55.169.143]:55424
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750985AbaKDJ2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:28:06 -0500
-X-Greylist: delayed 3452 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Nov 2014 04:28:06 EST
-X-WSS-ID: 0NEICYM-08-YX6-02
-X-M-MSG: 
-From: Vincent Wan <vincent.wan@amd.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Arindam Nath <arindam.nath@amd.com>, Huang Rui <ray.huang@amd.com>,
-        Vincent Wan <vincent.wan@amd.com>
-Subject: [PATCH] mmc: Add a quirk for AMD SD controller doesn't support HS200
-Date: Tue, 4 Nov 2014 17:27:39 +0800
-Message-ID: <1415093259-5076-1-git-send-email-vincent.wan@amd.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752888AbaKDJ2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:28:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40814 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750985AbaKDJ2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 04:28:14 -0500
+Date: Tue, 4 Nov 2014 10:28:09 +0100
+From: Jan Kara <jack@suse.cz>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Jan Kara <jack@suse.cz>,
+        "Sergey \"Shnatsel\" Davidoff" <sergey@elementaryos.org>,
+        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
+Subject: Re: A desktop environment[1] kernel wishlist
+Message-ID: <20141104092809.GB2953@quack.suse.cz>
+References: <1413881397.30379.7.camel@hadess.net>
+ <loom.20141021T140216-28@post.gmane.org>
+ <20141027092311.GA9807@amd>
+ <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com>
+ <20141031093618.GB30321@quack.suse.cz>
+ <5457C7B7.7050302@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(21056001)(64706001)(53416004)(84676001)(33646002)(46102003)(4396001)(99396003)(104166001)(87936001)(31966008)(105586002)(50226001)(110136001)(47776003)(20776003)(106466001)(120916001)(102836001)(107046002)(95666004)(229853001)(86362001)(89996001)(101416001)(36756003)(50466002)(87286001)(77096003)(19580395003)(92726001)(62966003)(44976005)(19580405001)(50986999)(77156002)(68736004)(88136002)(48376002)(97736003)(93916002)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03853D523D
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Vincent.Wan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5457C7B7.7050302@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD SD controller support the SDR104 mode, but caps2 can not
-be promoted to support hs200 for eMMC.
+On Mon 03-11-14 19:21:43, Heinrich Schuchardt wrote:
+> On 31.10.2014 10:36, Jan Kara wrote:
+> >On Mon 27-10-14 20:02:51, Sergey "Shnatsel" Davidoff wrote:
+> >>>If "recursive mtime" was available, would that work for you?
+> >>
+> >>It would work for detecting "offline" changes. I suppose recursive
+> >>mtime not viable for online monitoring, mostly because detecting file
+> >>renaming would be a massive PITA (and we already have fanotify with
+> >>exactly this problem).
+> >   Yes, you'll get only "something has changed in a subtree" information for
+> >each directory. You'd then have to rescan the directory to find out what
+> >has changed. But there's no simple solution for this - either you have to
+> >process tons of events for busy directory tree or you have to somehow
+> >reduce the amount of information provided to userspace...
+> 
+> If inotify_add_watch() would allow to mark a complete mount (like
+> fanotify_mark() called with FAN_MOUNT) events for all files on this
+> mount could be detected. If furthermore inotify_read() would return
+> the complete relative path of the changed file relative to the mount
+> in inotify_event->name, it would be obvious what the meaning of the
+> event is.
+  There are two catches though:
+1) Getting of the path itself is unreliable due to presence of other fs
+changes happening in parallel to you traversing the directory tree.
 
-Signed-off-by: Vincent Wan <vincent.wan@amd.com>
----
- drivers/mmc/host/sdhci-pci.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+2) The name you get from inotify_event->name is unreliable because by the
+time you read the event, directory tree may be completely different.
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 8f5c998..6b4e84c 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -652,8 +652,10 @@ static int amd_probe(struct sdhci_pci_chip *chip)
- 	smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
- 			PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, NULL);
- 
--	if (smbus_dev && (smbus_dev->revision < 0x51))
-+	if (smbus_dev && (smbus_dev->revision < 0x51)) {
- 		chip->quirks2 |= SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD;
-+		chip->quirks2 |= SDHCI_QUIRK2_BROKEN_HS200;
-+	}
- 
- 	return 0;
- }
+  These are the reasons why fanotify passes file descriptors with the
+events instead of names.
+
+  Also for mountpoint wide notification your app has to be much faster
+processing events so that the event queue doesn't overflow (and thus forces
+you to do full rescan). fanotify deals with this by not limiting event
+queue length at all but that's one of the reason why it's restricted to
+CAP_SYS_ADMIN users.
+
+  So all in all I would find it better to extend fanotify to provide
+directory events (that was originally planned but the support was dropped
+due to technical issues), solve problems with unlimited event queues, add
+some permission checking for passed file descriptors and audit fanotify to
+verify it's otherwise safe for regular users.
+
+								Honza
 -- 
-1.8.1.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
