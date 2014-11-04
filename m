@@ -1,104 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaKDQWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:22:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622AbaKDQUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:20:50 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        uobergfe@redhat.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 8/9] watchdog: clean up some function names and arguments
-Date: Tue,  4 Nov 2014 11:20:23 -0500
-Message-Id: <1415118024-194247-9-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1415118024-194247-1-git-send-email-dzickus@redhat.com>
-References: <1415118024-194247-1-git-send-email-dzickus@redhat.com>
+	id S1754858AbaKDQW5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:22:57 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:48657 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533AbaKDQWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 11:22:54 -0500
+Message-ID: <5458FD56.8040304@hitachi.com>
+Date: Wed, 05 Nov 2014 01:22:46 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
+        namhyung@kernel.org, Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options
+ for cache
+References: <20141031185128.27889.32747.stgit@localhost.localdomain> <20141031121301.GI1313@kernel.org> <545770E6.2010506@hitachi.com> <20141103161900.GA18464@kernel.org> <545857CF.3060709@hitachi.com> <20141104143814.GH18464@kernel.org>
+In-Reply-To: <20141104143814.GH18464@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulrich Obergfell <uobergfe@redhat.com>
+(2014/11/04 23:38), Arnaldo Carvalho de Melo wrote:
+> Em Tue, Nov 04, 2014 at 01:36:31PM +0900, Masami Hiramatsu escreveu:
+>> (2014/11/04 1:19), Arnaldo Carvalho de Melo wrote:
+>>> Em Mon, Nov 03, 2014 at 09:11:18PM +0900, Masami Hiramatsu escreveu:
+>>>> (2014/10/31 21:13), Arnaldo Carvalho de Melo wrote:
+>>>>> Em Fri, Oct 31, 2014 at 02:51:29PM -0400, Masami Hiramatsu escreveu:
+>>>> Actually, kprobe event itself can reject command if the given address
+>>>> is not in the kernel text nor instruction boundary (perhaps, uprobes
+>>>> may have a problem...), so for the kernel level, it is safe.
+> 
+>>> No, it is not necessarily safe.
+> 
+>>> What if you specify function foo() that has address 0x1234 for kernel
+>>> v3.16 and then run the cached probe on kernel v3.18 and on that kernel
+>>> the function foo() maps to address 0x2345 and function bar() instead
+>>> maps to address 0x1234? Oops.
+>  
+>> In that case user just trace bar() instead of foo(). Of course it's
+>> not correct, but shouldn't break the kernel (if the kernel is broken,
+>> it is a bug of kprobes).
+> 
+> I.e. no crashes, just misleading information :-\
 
-Rename the update_timers*() functions to update_watchdog*().
+Right.
 
-Remove the boolean argument from watchdog_enable_all_cpus()
-because update_watchdog_all_cpus() is now a generic function
-to change the run state of the lockup detectors and to have
-the lockup detectors use a new sample period.
+>>> The build-id was designed to uniquely identify a DSO, we need to use it.
+> 
+>>> I think that at some point not using it should be left to a, in
+>>> systemtap parlance, "guru" mode, with tooling warning profusely when
+>>> build ids are not available and requiring even more forcing when it
+>>> doesn't matches.
+>  
+>> But it is not necessarily everyone uses perf probe to set up the probe
+>> events(because it is a part of ftrace), as we can see in the Brendan's
+>> scripts.
+> 
+> Right, If I implied that some particular tool should be used, sorry
+> about that, what I wanted to get accross was that the information that
+> allows users or tools to make sure there is no mismatch between the
+> cached probes and the target kernel is collected at cached probe
+> creating time and available at target use time.
 
-Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- kernel/watchdog.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+Yes, and if user setting probes via perf, the perf must ensure that it
+picks up the correct cache by using build-id. If someone wants to use
+other tools, he/she must ensure it. We just give a information how to
+check that :)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 7043274..e804ea4 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -641,7 +641,7 @@ static void restart_watchdog_hrtimer(void *info)
- 				HRTIMER_MODE_REL_PINNED);
- }
- 
--static void update_timers(int cpu)
-+static void update_watchdog(int cpu)
- {
- 	/*
- 	 * Make sure that perf event counter will adopt to a new
-@@ -656,17 +656,17 @@ static void update_timers(int cpu)
- 	watchdog_nmi_enable(cpu);
- }
- 
--static void update_timers_all_cpus(void)
-+static void update_watchdog_all_cpus(void)
- {
- 	int cpu;
- 
- 	get_online_cpus();
- 	for_each_online_cpu(cpu)
--		update_timers(cpu);
-+		update_watchdog(cpu);
- 	put_online_cpus();
- }
- 
--static int watchdog_enable_all_cpus(bool sample_period_changed)
-+static int watchdog_enable_all_cpus(void)
- {
- 	int err = 0;
- 
-@@ -676,8 +676,12 @@ static int watchdog_enable_all_cpus(bool sample_period_changed)
- 			pr_err("Failed to create watchdog threads, disabled\n");
- 		else
- 			watchdog_running = 1;
--	} else if (sample_period_changed) {
--		update_timers_all_cpus();
-+	} else {
-+		/*
-+		 * Enable/disable the lockup detectors or
-+		 * change the sample period 'on the fly'.
-+		 */
-+		update_watchdog_all_cpus();
- 	}
- 
- 	return err;
-@@ -709,7 +713,7 @@ static int proc_watchdog_update(void)
- 	 * or disabled 'on the fly'.
- 	 */
- 	if (watchdog_enabled && watchdog_thresh)
--		err = watchdog_enable_all_cpus(true);
-+		err = watchdog_enable_all_cpus();
- 	else
- 		watchdog_disable_all_cpus();
- 
-@@ -849,5 +853,5 @@ void __init lockup_detector_init(void)
- 	set_sample_period();
- 
- 	if (watchdog_enabled)
--		watchdog_enable_all_cpus(false);
-+		watchdog_enable_all_cpus();
- }
+> 
+>> I think, at least what we need is clarifying how can they ensure
+>> build-id before setting the probe events. I'd like to give them options
+>> with knowledge instead of forcing by tools.
+> 
+> Right, so we need to have the build-id as part of the cache format,
+> perhaps as the first line, starting with a comment (#), that way the
+> user can use whatever way he has at its disposal to check that the
+> running kernel build-id is the same as the one on that comment. Using
+> that script you provided, that uses just things that are on the machine
+> (od, /sys/kernel/notes).
+
+
+Ah, that's a good idea :)
+So, with such build-id comment line, would you think we can have an
+--output option? Or we'd better moving onto the .debug/ cache file?
+
+What I'm thinking about this feature is to make a compact and reduced
+function-entry level probe cache while building the kernel (as a part
+of kbuild), so that we can deploy the stripped kernel and the cache
+to remote machines.
+
+[snip]
+>> OK, I agree using .debug/.buildid/ to store caches.
+>> Here is what I'm thinking,
+>  
+>>   # this makes caches for given pattern instead of adding probes.
+>>   perf probe --cache '* $params'
+> 
+>>   # the cache is stored in .debug/.buildid/<buildid>.probe
+>>   # the cache entry can be queried by buildid and eventname
+> 
+> To follow the existing standard this would instead go to:
+> 
+>>   # the cache is stored in .debug/probes/path/to/dso/name/buildid
+>>   # And can be found via its buildid link .debug/.buildid/bu/ildid -> ../../probes/path/to/dso/name/buildid
+
+Ah, I see. so you meant adding a top-level .debug/probes/ dir.
+But in that case, shouldn't we change .debug/.buildid/bu/ildid to
+.debug/probes/.buildid/bu/ildid ?
+
+> 
+>>   perf probe --query ${remote_buildid}:do_fork
+>>   p:probe/do_fork _text+298722 clone_flags=%di:u64 stack_start=%si:u64 stack_size=%dx:u64 parent_tidptr=%cx:u64 child_tidptr=%r8:u64
+> 
+>>   # or perf can set it up directly to local
+>>   perf probe --query-add do_fork
+> 
+> You missed the build id above, no? I.e. it would be:
+> 
+>>   # or perf can set it up directly to local
+>>   perf probe --query-add ${remote_buildid}:do_fork
+
+No, since this command set the event to local machine, perf-probe
+should check the local build-id and query the appropriate event
+from the cache.
+# BTW, maybe we'd better use perf probe --add '$do_fork' (calls
+# "cache of do_fork")  instead of long --query-add. :)
+
+> 
+> Right? and that would be the equivalent to:
+> 
+>  perf probe --query ${remote_buildid}:do_fork > /sys/kernel/debug/tracing/kprobe_events
+> 
+> No?
+> 
+> And do you intend to generate that script above that checks the build
+> id, tees into /sys/kernel/debug/tracing/kprobe_events, etc as part of
+> this process?
+
+No, not yet. But that sounds nice :) Thanks!
+
+> 
+> I.e. the process would be, as you describe above plus telling the user
+> that he/she then should unconpress the script and run it.
+> 
+> Scripts like Brendan's would do whatever they want with it of course,
+> but the default end result of 'perf probe' would be usable straight away
+> and doing the build id checking without requiring any extra tooling to
+> be available at the target machine.
+
+Agreed, with .debug/ archive, perf-probe should pick and set event
+correctly without any other tools.
+
+Thank you!
+
+> 
+>>   Added new event:
+>>     probe:do_fork        (on do_fork with clone_flags satck_start stack_size parent_tidptr child_tidptr)
+> 
+>>   You can now use it in all perf tools, such as:
+> 
+>>         perf record -e probe:do_fork -aR sleep 1
+> 
+>> What would you think about this? :)
+> 
+> Cool feature! :-)
+> 
+>>>>> Then, later, one would use 'perf archive' passing some keys (or a
+>>>>> perf.data file, like done nowadays to pick the files in ~/.debug for
+>>>>> dsos that had hits on the specified perf.data file) to get the cached
+>>>>> values to use on some other machine, to avoid having to use the
+>>>>> debuginfo files there.
+> 
+>>>> Yeah, querying it from the BUILDID database by using a pair of remote
+>>>> build-id and the binary path is a good feature.
+> 
+>>>>> I.e. in summary I think that the format is ok, but we need to have this
+>>>>> inside the ~/.debug hierarchy so that we can make sure that we use the
+>>>>> right probe definition, one that matches the DSOs being used (the kernel
+>>>>> or some other userspace binary).
+>>>
+>>>> OK, perhaps, that is also good to SDT series at last.
+>>>
+>>> Sure thing!
+>>>
+>>
+>> Thank you!
+> 
+> You're welcome!
+> 
+> - Arnaldo
+> 
+
+
 -- 
-1.7.1
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
