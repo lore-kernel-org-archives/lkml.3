@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033AbaKDWE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 17:04:27 -0500
-Received: from na6sys009bog017.obsmtp.com ([74.125.150.74]:37172 "HELO
-	na6sys009bog017.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752975AbaKDWEY (ORCPT
+	id S1752474AbaKDWLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 17:11:32 -0500
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:16562 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751129AbaKDWLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 17:04:24 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: netdev@vger.kernel.org
-Cc: sathya.perla@emulex.com, jeffrey.t.kirsher@intel.com, linux.nics@intel.com,
-        amirv@mellanox.com, shahed.shaikh@qlogic.com,
-        Dept-GELinuxNICDev@qlogic.com, therbert@google.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net 3/5] fm10k: Implement ndo_gso_check()
-Date: Tue,  4 Nov 2014 13:56:40 -0800
-Message-Id: <1415138202-1197-4-git-send-email-joestringer@nicira.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
-References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
+	Tue, 4 Nov 2014 17:11:31 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ar8SAMJOWVRbsl9p/2dsb2JhbABagw6BLbsKBQF0misEAoElFwEBAQEBfYQwLyOBGjeIRQG5KI8LLIY3iXVkHYQ1BZ4OllKBRwGCMTwvgQaBRQEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Joe Perches <joe@perches.com>, Fabian Frederick <fabf@skynet.be>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Jiri Kosina <trivial@kernel.org>,
+        netdev@vger.kernel.org
+Subject: [PATCH/TRIVIAL 1/1 net-next] udp: remove blank line between set and test
+Date: Tue,  4 Nov 2014 23:11:19 +0100
+Message-Id: <1415139079-7931-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ndo_gso_check() was recently introduced to allow NICs to report the
-offloading support that they have on a per-skb basis. Add an
-implementation for this driver which checks for something that looks
-like VXLAN.
-
-Implementation shamelessly stolen from Tom Herbert:
-http://thread.gmane.org/gmane.linux.network/332428/focus=333111
-
-Signed-off-by: Joe Stringer <joestringer@nicira.com>
+Suggested-by: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
-Should this driver report support for GSO on packets with tunnel headers
-up to 64B like the i40e driver does?
----
- drivers/net/ethernet/intel/fm10k/fm10k_netdev.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ net/ipv4/udp.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c b/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-index 8811364..b9ef622 100644
---- a/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-+++ b/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-@@ -1350,6 +1350,17 @@ static void fm10k_dfwd_del_station(struct net_device *dev, void *priv)
- 	}
- }
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index cf0cece..3f001db 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1784,7 +1784,6 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
+ 				saddr, daddr, udptable);
  
-+static bool fm10k_gso_check(struct sk_buff *skb, struct net_device *dev)
-+{
-+	if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
-+	    (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
-+	     skb->inner_protocol != htons(ETH_P_TEB) ||
-+	     skb_inner_mac_header(skb) - skb_transport_header(skb) != 16))
-+		return false;
-+
-+	return true;
-+}
-+
- static const struct net_device_ops fm10k_netdev_ops = {
- 	.ndo_open		= fm10k_open,
- 	.ndo_stop		= fm10k_close,
-@@ -1372,6 +1383,7 @@ static const struct net_device_ops fm10k_netdev_ops = {
- 	.ndo_do_ioctl		= fm10k_ioctl,
- 	.ndo_dfwd_add_station	= fm10k_dfwd_add_station,
- 	.ndo_dfwd_del_station	= fm10k_dfwd_del_station,
-+	.ndo_gso_check		= fm10k_gso_check,
- };
+ 	sk = __udp4_lib_lookup_skb(skb, uh->source, uh->dest, udptable);
+-
+ 	if (sk != NULL) {
+ 		int ret;
  
- #define DEFAULT_DEBUG_LEVEL_SHIFT 3
 -- 
-1.7.10.4
+1.9.3
 
