@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaKDUTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 15:19:07 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:46642 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaKDUTF (ORCPT
+	id S1752666AbaKDUUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 15:20:30 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41868 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaKDUU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 15:19:05 -0500
-Date: Tue, 4 Nov 2014 20:18:59 +0000
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        paulus@samba.org, mpe@ellerman.id.au,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, eiko.carstens@de.ibm.com,
-        linux390@de.ibm.com, Chris Metcalf <cmetcalf@tilera.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, dave.long@linaro.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [RFC PATCH] make CONFIG_STRICT_DEVMEM a core non-debug feature
-Message-ID: <20141104201859.GZ22224@bivouac.eciton.net>
-References: <1415121836-16241-1-git-send-email-leif.lindholm@linaro.org>
- <CAGXu5jL1BBAvoxVqFa1YHJSMCbGdLiPey-dyC15YKVPB2xGfig@mail.gmail.com>
- <20141104195914.GY22224@bivouac.eciton.net>
- <CAGXu5jJnaAFMUBR50TgapRzRcvKS0j=XO7u9z6fdNouwMb=_sQ@mail.gmail.com>
+	Tue, 4 Nov 2014 15:20:28 -0500
+Date: Tue, 4 Nov 2014 20:20:26 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 0/4 v3] fs: Remove i_devices from struct inode
+Message-ID: <20141104202018.GM7996@ZenIV.linux.org.uk>
+References: <1415096851-17209-1-git-send-email-jack@suse.cz>
+ <20141104153940.GH7996@ZenIV.linux.org.uk>
+ <54592D49.4070704@amacapital.net>
+ <20141104195514.GA28531@quack.suse.cz>
+ <CALCETrV3DauoM0x9aiEdKtZLxXqfeEapsWD-t3n_norkX5To7Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJnaAFMUBR50TgapRzRcvKS0j=XO7u9z6fdNouwMb=_sQ@mail.gmail.com>
+In-Reply-To: <CALCETrV3DauoM0x9aiEdKtZLxXqfeEapsWD-t3n_norkX5To7Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 12:02:32PM -0800, Kees Cook wrote:
-> > I considered doing that, but didn't want to risk listing too many
-> > details of one architecture, and too few of others.
-> 
-> Well, the others only say "memory mapped peripherals", so that's what
-> I was suggesting adding the x86 language: it was the most detailed
-> about what that would really mean to the end-user.
+On Tue, Nov 04, 2014 at 12:14:26PM -0800, Andy Lutomirski wrote:
 
-The problem is that this currently isn't strictly speaking true for
-some architectures (at least not arm*). Without a standardised memory
-map, we are exposing mapping anything not system RAM.
+> Yeah, this idea clearly doesn't work.  But I wonder whether the
+> revised variant (which may be just moving cd_forget and bd_forget from
+> evict to iput_final) would work.
 
-(Patches related to that will follow later this month.)
-
-/
-    Leif
+How the hell is it better?  Neither of those will happen as long as dentry
+is retained.  And with /dev on tmpfs (which is bloody common) _that_ won't
+happen until device node is unlinked...
