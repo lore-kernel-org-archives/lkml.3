@@ -1,109 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaKDBA6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:00:58 -0500
-Received: from mga01.intel.com ([192.55.52.88]:44356 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574AbaKDBAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:00:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,310,1413270000"; 
-   d="scan'208";a="616484633"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/3] perf, x86, uncore: Fix SBOX PMU on Haswell-EP to fix boot crash
-Date: Mon,  3 Nov 2014 17:00:28 -0800
-Message-Id: <1415062828-19759-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415062828-19759-1-git-send-email-andi@firstfloor.org>
-References: <1415062828-19759-1-git-send-email-andi@firstfloor.org>
+	id S1751522AbaKDBEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:04:39 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:8926 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaKDBEe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Nov 2014 20:04:34 -0500
+Message-ID: <1415062233.10958.42.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for WT
+From: Toshi Kani <toshi.kani@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgross@suse.com" <jgross@suse.com>,
+        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
+        "luto@amacapital.net" <luto@amacapital.net>,
+        "hmh@hmh.eng.br" <hmh@hmh.eng.br>,
+        "yigal@plexistor.com" <yigal@plexistor.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Date: Mon, 03 Nov 2014 17:50:33 -0700
+In-Reply-To: <alpine.DEB.2.11.1411032352161.5308@nanos>
+References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
+	  <1414450545-14028-5-git-send-email-toshi.kani@hp.com>
+	  <94D0CD8314A33A4D9D801C0FE68B4029593578ED@G9W0745.americas.hpqcorp.net>
+	 <1415052905.10958.39.camel@misato.fc.hp.com>
+	 <alpine.DEB.2.11.1411032352161.5308@nanos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Mon, 2014-11-03 at 23:53 +0100, Thomas Gleixner wrote:
+> On Mon, 3 Nov 2014, Toshi Kani wrote:
+> > On Mon, 2014-11-03 at 22:10 +0000, Elliott, Robert (Server Storage)
+> > wrote:
+> >  :
+> > > > Subject: [PATCH v4 4/7] x86, mm, pat: Add pgprot_writethrough() for
+> > > > WT
+> > > > 
+> > > > This patch adds pgprot_writethrough() for setting WT to a given
+> > > > pgprot_t.
+> > > > 
+> > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > ...
+> > > > diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+> > > > index a214f5a..a0264d3 100644
+> > > > --- a/arch/x86/mm/pat.c
+> > > > +++ b/arch/x86/mm/pat.c
+> > > > @@ -896,6 +896,16 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
+> > > >  }
+> > > >  EXPORT_SYMBOL_GPL(pgprot_writecombine);
+> > > > 
+> > > > +pgprot_t pgprot_writethrough(pgprot_t prot)
+> > > > +{
+> > > > +	if (pat_enabled)
+> > > > +		return __pgprot(pgprot_val(prot) |
+> > > > +				cachemode2protval(_PAGE_CACHE_MODE_WT));
+> > > > +	else
+> > > > +		return pgprot_noncached(prot);
+> > > > +}
+> > > > +EXPORT_SYMBOL_GPL(pgprot_writethrough);
+> > > ...
+> > > 
+> > > Would you be willing to use EXPORT_SYMBOL for the new 
+> > > pgprot_writethrough function to provide more flexibility
+> > > for modules to utilize the new feature?  In x86/mm, 18 of 60
+> > > current exports are GPL and 42 are not GPL.
+> > 
+> > I simply used EXPORT_SYMBOL_GPL() since pgprot_writecombine() used
+> > it. :-)  This interface is intended to be used along with
+> > remap_pfn_range() and ioremap_prot(), which are both exported with
+> > EXPORT_SYMBOL().  So, it seems reasonable to export it with
+> > EXPORT_SYMBOL() as well.  I will make this change.
+> 
+> NAK.
+> 
+> This is new functionality and we really have no reason to give the GPL
+> circumventors access to it.
 
-There were several reports that on some systems writing the SBOX0 PMU
-initialization MSR would #GP at boot. This did not happen on all
-systems -- my two test systems booted fine.
+Thanks for the background info about EXPORT_SYMBOL.  I will keep it no
+change.
 
-Writing the three initialization bits bit-by-bit seems to avoid the
-problem. So add a special callback to do just that.
-
-This replaces an earlier patch that disabled the SBOX.
-
-Tested-by: patrick.lu@intel.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- .../x86/kernel/cpu/perf_event_intel_uncore_snbep.c | 33 ++++++++++++++++++++--
- 1 file changed, 30 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-index 04e9a83..236dde2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-@@ -490,14 +490,17 @@ static struct attribute_group snbep_uncore_qpi_format_group = {
- 	.attrs = snbep_uncore_qpi_formats_attr,
- };
- 
--#define SNBEP_UNCORE_MSR_OPS_COMMON_INIT()			\
--	.init_box	= snbep_uncore_msr_init_box,		\
-+#define __SNBEP_UNCORE_MSR_OPS_COMMON_INIT()			\
- 	.disable_box	= snbep_uncore_msr_disable_box,		\
- 	.enable_box	= snbep_uncore_msr_enable_box,		\
- 	.disable_event	= snbep_uncore_msr_disable_event,	\
- 	.enable_event	= snbep_uncore_msr_enable_event,	\
- 	.read_counter	= uncore_msr_read_counter
- 
-+#define SNBEP_UNCORE_MSR_OPS_COMMON_INIT()			\
-+	__SNBEP_UNCORE_MSR_OPS_COMMON_INIT(),			\
-+	.init_box	= snbep_uncore_msr_init_box		\
-+
- static struct intel_uncore_ops snbep_uncore_msr_ops = {
- 	SNBEP_UNCORE_MSR_OPS_COMMON_INIT(),
- };
-@@ -1923,6 +1926,30 @@ static struct intel_uncore_type hswep_uncore_cbox = {
- 	.format_group		= &hswep_uncore_cbox_format_group,
- };
- 
-+/*
-+ * Write SBOX Initialization register bit by bit to avoid spurious #GPs
-+ */
-+static void hswep_uncore_sbox_msr_init_box(struct intel_uncore_box *box)
-+{
-+	unsigned msr = uncore_msr_box_ctl(box);
-+
-+	if (msr) {
-+		u64 init = SNBEP_PMON_BOX_CTL_INT;
-+		u64 flags = 0;
-+		int i;
-+
-+		for_each_set_bit (i, (unsigned long *)&init, 64) {
-+			flags |= (1ULL << i);
-+			wrmsrl(msr, flags);
-+		}
-+	}
-+}
-+
-+static struct intel_uncore_ops hswep_uncore_sbox_msr_ops = {
-+	__SNBEP_UNCORE_MSR_OPS_COMMON_INIT(),
-+	.init_box		= hswep_uncore_sbox_msr_init_box
-+};
-+
- static struct attribute *hswep_uncore_sbox_formats_attr[] = {
- 	&format_attr_event.attr,
- 	&format_attr_umask.attr,
-@@ -1948,7 +1975,7 @@ static struct intel_uncore_type hswep_uncore_sbox = {
- 	.event_mask		= HSWEP_S_MSR_PMON_RAW_EVENT_MASK,
- 	.box_ctl		= HSWEP_S0_MSR_PMON_BOX_CTL,
- 	.msr_offset		= HSWEP_SBOX_MSR_OFFSET,
--	.ops			= &snbep_uncore_msr_ops,
-+	.ops			= &hswep_uncore_sbox_msr_ops,
- 	.format_group		= &hswep_uncore_sbox_format_group,
- };
- 
--- 
-1.9.3
+-Toshi
 
