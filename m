@@ -1,74 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaKDViX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:38:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48205 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034AbaKDViW (ORCPT
+	id S1751762AbaKDVmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:42:16 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:46858 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaKDVmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:38:22 -0500
-Date: Tue, 4 Nov 2014 13:38:23 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: eparis@redhat.com, john@johnmccutchan.com, rlove@rlove.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fsnotify: don't call mutex_lock from TASK_INTERRUPTIBLE
- context
-Message-Id: <20141104133823.6872a4c977891b98a4091b6a@linux-foundation.org>
-In-Reply-To: <1414900298-7871-1-git-send-email-sasha.levin@oracle.com>
-References: <1414900298-7871-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 4 Nov 2014 16:42:15 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v2] [RESEND] mmc: add Toshiba PCI SD controller driver
+Date: Tue, 4 Nov 2014 22:41:44 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: "linux-mmc" <linux-mmc@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <1414965074-4784-1-git-send-email-linux@rainbow-software.org> <CAPDyKFrf+kHbyzyr1O906NRcPh2jr0TGkeoAxpd1aSK8a0bqRA@mail.gmail.com>
+In-Reply-To: <CAPDyKFrf+kHbyzyr1O906NRcPh2jr0TGkeoAxpd1aSK8a0bqRA@mail.gmail.com>
+X-KMail-QuotePrefix: > 
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201411042241.45125.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  1 Nov 2014 23:51:38 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
-
-> Sleeping functions should only be called from TASK_RUNNING. The following
-> code in fanotify_read():
+On Tuesday 04 November 2014 12:09:44 Ulf Hansson wrote:
+> On 2 November 2014 22:51, Ondrej Zary <linux@rainbow-software.org> wrote:
+> > This patch resurrects an old never-finished driver for Toshiba PCI SD
+> > controllers found in some older Toshiba laptops (such as Portege R100):
+> >
+> > 02:0d.0 System peripheral [0880]: Toshiba America Info Systems SD TypA Controller [1179:0805] (rev 05)
+> >
+> > The code is fixed, cleaned up and successfully tested with SD, SDHC, SDXC and
+> > MMC cards on Portege R100. (MMC cards don't even work in Windows!)
+> > SDIO probably does not work (don't have any SDIO card).
+> >
+> > The hardware is slow (around 2 MB/s - same in Windows) because it does not
+> > support bus mastering (busmaster enable bit cannot be set in PCI control reg).
+> > Also the card clock is limited to 16MHz (33MHz PCI clock divided by 2).
+> >
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 > 
-> 	prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
+> Hi Ondrej,
 > 
->         mutex_lock(&group->notification_mutex);
+> Sorry for a very very late reply.
 > 
-> would call it under TASK_INTERRUPTIBLE, and trigger a warning:
+
+...
+
+> > +static void toshsd_init(struct toshsd_host *host);
+> > +static void toshsd_set_ios_unlocked(struct mmc_host *mmc, struct mmc_ios *ios);
 > 
-> [12326.092094] WARNING: CPU: 27 PID: 30207 at kernel/sched/core.c:7305 __might_sleep+0xd2/0x110()
-> [12326.092878] do not call blocking ops when !TASK_RUNNING; state=1 set at prepare_to_wait (./arch/x86/include/asm/current.h:14 kernel/sched/wait.c:179)
-> [12326.093938] Modules linked in:
->
-> ...
->
+> I would implement these functions at the proper place instead of
+> having them defined here.
+> 
+> Moreover I think toshsd_set_ios_unlocked() could be renamed to
+> "__toshsd_set_ios()".
 
-It's a fairly minor problem - if mutex_lock() hits contention we get
-flipped into TASK_RUNNING and the schedule() immediately returns and we
-take another trip around the loop.
+OK, will do.
+ 
+> > +
+> > +static inline u16 toshsd_readw(struct toshsd_host *host, u16 reg)
+> > +{
+> > +       return ioread16(host->ioaddr + reg);
+> > +}
+> > +
+> > +static inline u32 toshsd_readl(struct toshsd_host *host, u16 reg)
+> > +{
+> > +       return ioread32(host->ioaddr + reg);
+> > +}
+> > +
+> > +static inline void toshsd_writew(struct toshsd_host *host, u16 reg, u16 val)
+> > +{
+> > +       iowrite16(val, host->ioaddr + reg);
+> > +}
+> > +
+> > +static inline void toshsd_writel(struct toshsd_host *host, u16 reg, u32 val)
+> > +{
+> > +       iowrite32(val, host->ioaddr + reg);
+> > +}
+> > +
+> > +static inline void toshsd_readl_rep(struct toshsd_host *host, u16 reg,
+> > +                                   void *dst, unsigned long count)
+> > +{
+> > +       ioread32_rep(host->ioaddr + reg, dst, count);
+> > +}
+> > +
+> > +static inline void toshsd_writel_rep(struct toshsd_host *host, u16 reg,
+> > +                                    const void *src, unsigned long count)
+> > +{
+> > +       iowrite32_rep(host->ioaddr + reg, src, count);
+> > +}
+> 
+> To me, all these wrapper functions seems a bit ugly. How about
+> invoking io* functions directly instead?
 
-fanotify_read() also calls copy_event_to_user()->copy_to_user() in
-TASK_INTERRUPTIBLE state.  That's a bug and this is why the first thing
-handle_mm_fault() does is to set TASK_RUNNING.
+It's a matter of preference, some drivers use wrappers, some don't.
+I can remove them if they're not recommended in mmc subsystem.
+ 
+...
 
-> Instead of trying to fix fanotify_read() I've converted
-> notification_mutex into a spinlock.  I didn't see a reason why it
-> should be a mutex nor anything complained when I ran the same tests
-> again.
+> > +               tasklet_schedule(&host->data_read_tasklet);
+> 
+> Instead of using a tasklet, I would advise to use a threaded IRQ.
+ 
+Haven't used threaded IRQ yet, will try.
 
-This could be a latency problem - those lists can get very long.
+...
 
-I wonder if we can zap the prepare_to_wait()/finish_wait() and use
-something like
+> > +#ifdef CONFIG_PM
+> 
+> This should be CONFIG_PM_SLEEP.
+> 
+> > +
+> > +static int toshsd_suspend(struct pci_dev *pdev, pm_message_t state)
+> 
+> This is the legacy version of system PM callbacks. You need to convert
+> to the modern ones instead.
+> 
+> > +{
+> > +       struct toshsd_host *host = pci_get_drvdata(pdev);
+> > +
+> > +       toshsd_powerdown(host);
+> > +
+> > +       pci_save_state(pdev);
+> > +       pci_enable_wake(pdev, pci_choose_state(pdev, state), 0);
+> > +       pci_disable_device(pdev);
+> > +       pci_set_power_state(pdev, pci_choose_state(pdev, state));
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static int toshsd_resume(struct pci_dev *pdev)
+> 
+> This is the legacy version of system PM callbacks. You need to convert
+> to the modern ones instead.
 
-	wait_event_interruptible(notification_waitq, foo(group, count));
+I just converted them and found that suspend does not work on current kernels
+when a SD card is inserted (even with unmodified toshsd driver):
+[  188.960862] dpm_run_callback(): mmc_bus_suspend+0x0/0x2c [mmc_core] returns -110
+[  188.960867] PM: Device mmc0:b368 failed to suspend: error -110
+[  188.960869] PM: Some devices failed to suspend, or early wake event detected
 
-int foo(struct fsnotify_group *group, size_t count)
-{
-	int ret;
+Is it a kernel bug or the driver is missing something?
 
-	mutex_lock(&group->notification_mutex);
-	ret = get_one_event(group, count);
-	mutex_unlock(&group->notification_mutex);
-}
-
+-- 
+Ondrej Zary
