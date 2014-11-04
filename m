@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaKDMIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:08:41 -0500
-Received: from mail113-251.mail.alibaba.com ([205.204.113.251]:41778 "EHLO
-	us-alimail-mta1.hst.scl.en.alidc.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753913AbaKDMIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:08:38 -0500
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R191e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g03043;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=8;RT=8;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'Vincent Guittot'" <vincent.guittot@linaro.org>
-Cc: "'Wanpeng Li'" <kernellwp@gmail.com>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Preeti U Murthy'" <preeti@linux.vnet.ibm.com>,
-        "'Morten Rasmussen'" <Morten.Rasmussen@arm.com>,
-        "'Kamalesh Babulal'" <kamalesh@linux.vnet.ibm.com>
-Subject: Re: [PATCH v8 03/10] sched: move cfs task on a CPU with higher capacity
-Date: Tue, 04 Nov 2014 20:07:44 +0800
-Message-ID: <011001cff827$f14b9870$d3e2c950$@alibaba-inc.com>
+	id S1754358AbaKDMJG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:09:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44329 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753029AbaKDL6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 06:58:25 -0500
+Date: Tue, 4 Nov 2014 11:59:22 +0100
+From: Jan Kara <jack@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Anton Blanchard <anton@samba.org>, jack@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] quota: Add log level to printk
+Message-ID: <20141104105922.GD2953@quack.suse.cz>
+References: <20141104120501.0318cc7d@kryten>
+ <1415070399.17743.49.camel@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac/4JKLZrobawMGFRYuFjk4tF8JOtA==
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415070399.17743.49.camel@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>   +     /*
-> >> +        * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
-> >
-> >
-> > Why specify one task instead of not less than one?
+On Mon 03-11-14 19:06:39, Joe Perches wrote:
+> On Tue, 2014-11-04 at 12:05 +1100, Anton Blanchard wrote:
+> > Signed-off-by: Anton Blanchard <anton@samba.org>
+> > ---
+> > 
+> > Index: b/fs/quota/dquot.c
+> > ===================================================================
+> > --- a/fs/quota/dquot.c
+> > +++ b/fs/quota/dquot.c
+> > @@ -2743,7 +2743,7 @@ static int __init dquot_init(void)
+> >  	for (i = 0; i < nr_hash; i++)
+> >  		INIT_HLIST_HEAD(dquot_hash + i);
+> >  
+> > -	printk("Dquot-cache hash table entries: %ld (order %ld, %ld bytes)\n",
+> > +	pr_info("Dquot-cache hash table entries: %ld (order %ld, %ld bytes)\n",
+> >  			nr_hash, order, (PAGE_SIZE << order));
 > 
-> if cfs.h_nr_running = 0 (which should not occurs at that point), we
-> don't need to do more test to check if it's worth moving the task
-> because there is no task to move.
-> 
-I wonder if you can please shed light on the case that 
-the dst_cpu is newly idle.
+> The other printks in the file have a "VFS: " prefix.
+> Maybe this one too?
+  I'll merge Anton's patch and include additional VFS:.
 
-Thanks
-Hillf
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
