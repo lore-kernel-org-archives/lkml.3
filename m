@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420AbaKDPmw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:42:52 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:19384 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999AbaKDPmt (ORCPT
+	id S1754459AbaKDPnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:43:41 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:19408 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753255AbaKDPnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:42:49 -0500
-X-CheckPoint: {5458F3F9-0-2100090A-C0000000}
-Message-ID: <5458F3F8.3030100@tilera.com>
-Date: Tue, 4 Nov 2014 10:42:48 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 4 Nov 2014 10:43:39 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Z5TCxh/gXZlQ9DuB+gLRB
+Date: Tue, 4 Nov 2014 07:42:32 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Igor Grinberg <grinberg@compulab.co.il>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
+ enabled
+Message-ID: <20141104154231.GP31454@atomide.com>
+References: <20141102180756.GH31454@atomide.com>
+ <5458D29E.50908@compulab.co.il>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>, <dwalter@google.com>,
-        <richard@nod.at>, Al Viro <viro@ZenIV.linux.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: tile: kernel: signal.c: Use __copy_from/to_user()
- instead of __get/put_user()
-References: <54559337.7050506@gmail.com>
-In-Reply-To: <54559337.7050506@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5458D29E.50908@compulab.co.il>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/1/2014 10:13 PM, Chen Gang wrote:
-> setup/restore_sigcontext() want to copy all related registers between
-> user and kernel. So use block copy instead of each registers copy. Then
-> can let code simple and clearer (which can avoid compiler's warning):
->
-> [...]
->
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->   arch/tile/kernel/signal.c | 12 ++----------
->   1 file changed, 2 insertions(+), 10 deletions(-)
->
-> diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
-> index 7c2fecc..f867783 100644
-> --- a/arch/tile/kernel/signal.c
-> +++ b/arch/tile/kernel/signal.c
-> @@ -46,7 +46,6 @@ int restore_sigcontext(struct pt_regs *regs,
->   		       struct sigcontext __user *sc)
->   {
->   	int err = 0;
-> -	int i;
+* Igor Grinberg <grinberg@compulab.co.il> [141104 05:22]:
+> Hi Tony,
+> 
+> On 11/02/14 20:07, Tony Lindgren wrote:
+> > Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+> > configuration") enabled configuring the PM features for twl4030.
+> > 
+> > This caused poweroff command to fail on devices that have the
+> > BCI charger on twl4030 wired, or have power wired for VBUS.
+> > Instead of powering off, the device reboots. This is because
+> > voltage is detected on charger or VBUS with the default bits
+> > enabled for the power transition registers.
+> > 
+> > To fix the issue, let's just clear VBUS and CHG bits as we want
+> > poweroff command to keep the system powered off.
+> 
+> What about devices that really need to start once VBUS or CHG is connected?
 
-Taken into the tile tree, but I removed the now-redundant initialization
-of err (shown above).
+More handling can be added for some cases. With this patch the
+poweron bits will clear to defaults if power is completely removed.
+So start-up with VBUS and CHG works in that case.
 
-Thanks!
+However, if you have a battery connected, and you poweroff, with
+this patch the device won't power up with VBUS or CHG connected.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Note that most battery operated devices are not using the charger
+on twl4030 because it has issues charging a completely empty
+battery AFAIK. So most battery powered devices have been using an
+external USB charger chip that's not affected by this patch.
 
+We could consider exporting a function for the charger driver to
+configure the poweron mask. And we could also consider passing a
+mask in ti,use_poweroff = 0xff.
+
+> It seems to me that forcing these bits on power off can break that kind of
+> devices and these settings should really be board specific.
+> What do you think?
+
+There's a patch series for "[RFC,01/16] kernel: Add support for
+poweroff handler call chain" that should help with that. For sure
+the poweroff handling needs to be board specific as some systems
+may need to use a GPIO to shut off a regulator powering something
+before powering off the SoC.
+
+Regards,
+
+Tony
