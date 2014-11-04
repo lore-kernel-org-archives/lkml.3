@@ -1,66 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaKDPAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:00:42 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:37044 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbaKDPAj (ORCPT
+	id S1754264AbaKDPAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:00:51 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:13149 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881AbaKDPAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:00:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141104134633.GA14014@htj.dyndns.org>
-References: <1414783141-6947-1-git-send-email-adityakali@google.com>
- <1414783141-6947-8-git-send-email-adityakali@google.com> <87y4rvrakn.fsf@x220.int.ebiederm.org>
- <CAGr1F2Hd_PS_AscBGMXdZC9qkHGRUp-MeQvJksDOQkRBB3RGoA@mail.gmail.com> <20141104134633.GA14014@htj.dyndns.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 4 Nov 2014 07:00:15 -0800
-Message-ID: <CALCETrUggQCJyxsTWRNrjt3GM=R0VMU6RjMkU1aw3YUNMx1xEw@mail.gmail.com>
-Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init cgroupns
-To: Tejun Heo <tj@kernel.org>
-Cc: Aditya Kali <adityakali@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        cgroups@vger.kernel.org,
+	Tue, 4 Nov 2014 10:00:46 -0500
+X-IronPort-AV: E=Sophos;i="5.07,313,1413244800"; 
+   d="scan'208";a="189316018"
+Date: Tue, 4 Nov 2014 15:00:18 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Rohit Jnagal <jnagal@google.com>
-Content-Type: text/plain; charset=UTF-8
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
+In-Reply-To: <5458B9FC.3050309@ti.com>
+Message-ID: <alpine.DEB.2.02.1411041419490.22875@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com> <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com> <20141103105716.GC23162@arm.com>
+ <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com> <5458B9FC.3050309@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 5:46 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Aditya.
+On Tue, 4 Nov 2014, Grygorii Strashko wrote:
+> Hi Stefano,
+> 
+> On 11/03/2014 01:10 PM, Stefano Stabellini wrote:
+> > On Mon, 3 Nov 2014, Will Deacon wrote:
+> >> On Mon, Nov 03, 2014 at 10:46:03AM +0000, Stefano Stabellini wrote:
+> >>> On Mon, 27 Oct 2014, Stefano Stabellini wrote:
+> >>>> Introduce a boolean flag and an accessor function to check whether a
+> >>>> device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
+> >>>>
+> >>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> >>>> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> >>>> CC: will.deacon@arm.com
+> >>>
+> >>> Will, Catalin,
+> >>> are you OK with this patch?
+> >>
+> >> It would be nicer if the dma_coherent flag didn't have to be duplicated by
+> >> each architecture in dev_archdata. Is there any reason not to put it in the
+> >> core code?
+> > 
+> > Yes, there is a reason for it: if I added a boolean dma_coherent flag in
+> > struct device as Catalin initially suggested, what would be the default
+> > for each architecture? Where would I set it for arch that don't use
+> > device tree? It is not easy.
+> > 
+> > I thought it would be better to introduce is_device_dma_coherent only on
+> > the architectures where it certainly makes sense to have it. In fact I
+> > checked and arm and arm64 are the only architectures to define
+> > set_arch_dma_coherent_ops at the moment. At that point if
+> > is_device_dma_coherent becomes arch-specific, it makes sense to store
+> > the flag in dev_archdata instead of struct device.
+> 
+> The proposition from Will looks reasonable for me too, because
+> there is "small" side-effect of adding such kind of properties to
+> arch-specific data or even to the core device structure. ;(
+> 
+> There are some sub-systems in kernel which do not create their devices
+> from DT and instead some host device populates its children devices manually.
+>  Now, I know at least two cases:
+> - usb: dwc3 core creates xhci device manually
+> - pci: adds its client devices
+> 
+> In such, case DMA configuration have to be propagated from host to
+> child (in our case host device's got DMA configuration from DT), like:
+> 	dma_set_coherent_mask(&xhci->dev, dwc->dev->coherent_dma_mask);
+> 
+> 	xhci->dev.parent	= dwc->dev;
+> 	xhci->dev.dma_mask	= dwc->dev->dma_mask;
+> 	xhci->dev.dma_parms	= dwc->dev->dma_parms;
+> 
+> So, once new DMA property is added it has to be propagated from 
+> host to child device too.
+> 
+> Recently, the new property  dma_pfn_offset was introduced in struct device 
+> and such kind of problem was observed on keystone 2:
+> - for usb case it was fixed using Platform Bus notifier (xhci - platform device)
+> - for pci - the work is in progress, because solution with PCI Bus notifier
+>   was rejected https://lkml.org/lkml/2014/10/10/308.
+> 
+> In general, if dma_coherent will belong to struct device then
+> such problems will be possible to fix directly in drivers/subsystems:
+> xhci->dev.dma_coherent	= dwc->dev->dma_coherent;
+> 
+> But, if it will be arch-specific data then it will be impossible to
+> set it without introducing proper and arch-specific setters/getters functions.
 >
-> On Mon, Nov 03, 2014 at 02:43:47PM -0800, Aditya Kali wrote:
->> I agree that this is effectively bind-mounting, but doing this in kernel
->> makes it really convenient for the userspace. The process that sets up the
->> container doesn't need to care whether it should bind-mount cgroupfs inside
->> the container or not. The tasks inside the container can mount cgroupfs on
->> as-needed basis. The root container manager can simply unshare cgroupns and
->> forget about the internal setup. I think this is useful just for the reason
->> that it makes life much simpler for userspace.
->
-> If it's okay to require userland to just do bind mounting, I'd be far
-> happier with that.  cgroup mount code is already overcomplicated
-> because of the dynamic matching of supers to mounts when it could just
-> have told userland to use bind mounting.  Doesn't the host side have
-> to set up some of the filesystem layouts anyway?  Does it really
-> matter that we require the host to set up cgroup hierarchy too?
->
+> Also, as an idea, we are thinking about introducing something like:
+>   void dma_apply_parent_cfg(struct device *dev, struct device *parent)
+> which will ensure that all DMA configuration properly copied from
+> parent to children device. Now it should be (as minimum for ARM):
+>  dma_mask
+>  coherent_dma_mask
+>  dma_parms
+>  dma_pfn_offset
+>  dev_archdata->dma_ops
+>  [dma_coherent]?
 
-Sort of, but only sort of.
+I understand your concern but the problem you have goes far beyond a
+simple dma_coherent flag: what about all the other dev_archdata fields?
+Aside from dma_ops, on some other architectures there might be other
+data structrures in dev_archdata that need to be properly initialized
+from the parent.
 
-You can create a container by unsharing namespaces, mounting
-everything, and then calling pivot_root.  But this is unpleasant
-because of the strange way that pid namespaces work -- you generally
-have to fork first, so this gets tedious.  And it doesn't integrate
-well with things like fstab or other container-side configuration
-mechanisms.
+Your idea of introducing something like dma_apply_parent_cfg is the only
+solid solution I can see.  However I would consider naming it something
+more generic like init_dev_from_parent to handle other possible
+configurations (inside or outside dev_archdata) that might have to be
+initialized from information on the parent device.
 
-It's nicer if you can unshare namespaces, mount the bare minimum,
-pivot_root, and let the contained software do as much setup as
-possible.
 
---Andy
+Regarding the dma_coherent flag, I still prefer this approach because
+introducing the dma_coherent flag in dev_archdata wouldn't make this
+issue any worse than already is, but would avoid other problems as
+mentioned in my previous reply.
