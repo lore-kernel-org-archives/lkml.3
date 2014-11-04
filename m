@@ -1,117 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaKDMKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:10:42 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:60379 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376AbaKDMKk (ORCPT
+	id S1752961AbaKDMWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:22:00 -0500
+Received: from mail-bl2on0144.outbound.protection.outlook.com ([65.55.169.144]:4174
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750914AbaKDMV7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:10:40 -0500
-From: Frank Blaschka <blaschka@linux.vnet.ibm.com>
-To: alex.williamson@redhat.com
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frank Blaschka <frank.blaschka@de.ibm.com>
-Subject: [PATCH linux-next] vfio: make vfio run on s390
-Date: Tue,  4 Nov 2014 13:10:31 +0100
-Message-Id: <1415103031-50412-1-git-send-email-blaschka@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110412-0017-0000-0000-000001B50827
+	Tue, 4 Nov 2014 07:21:59 -0500
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Dmitry Voytik <voytikd@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ARM: imx: refactor mxc_iomux_mode()
+Thread-Topic: [PATCH] ARM: imx: refactor mxc_iomux_mode()
+Thread-Index: AQHP7TzTG8o6DJtqoEG3s5vFMoYlZ5xEB/UAgAxriGA=
+Date: Tue, 4 Nov 2014 12:21:55 +0000
+Message-ID: <54dc2a9edf554125b2158a1f9edd8adb@BN1PR0301MB0772.namprd03.prod.outlook.com>
+References: <1413902151-20255-1-git-send-email-voytikd@gmail.com>
+ <20141027142054.GB14033@voytthpd>
+In-Reply-To: <20141027142054.GB14033@voytthpd>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [192.88.158.211]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0771;
+x-forefront-prvs: 03853D523D
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(189002)(199003)(24454002)(21056001)(33646002)(4396001)(106356001)(31966008)(64706001)(106116001)(110136001)(46102003)(105586002)(20776003)(120916001)(66066001)(107046002)(87936001)(95666004)(1411001)(108616004)(50986999)(99396003)(101416001)(76576001)(74316001)(76176999)(54356999)(77096003)(99286002)(2656002)(62966003)(19580395003)(15975445006)(19580405001)(92566001)(86362001)(575784001)(97736003)(15202345003)(77156002)(122556002)(40100003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0771;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Blaschka <frank.blaschka@de.ibm.com>
 
-add Kconfig switch to hide INTx
-add Kconfig switch to let vfio announce PCI BARs are not mapable
+> 
+> On Tue, Oct 21, 2014 at 06:35:51PM +0400, Dmitry Voytik wrote:
+> > Refactor mxc_iomux_mode():
+> >  - since it always returns 0 make it to return void
+> >  - remove unnecessary ret variable
+> >  - declare variables according to the kernel coding style
+> >
+> > Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
+> > ---
+> >  arch/arm/mach-imx/iomux-imx31.c | 8 ++++----
+> >  arch/arm/mach-imx/iomux-mx3.h   | 2 +-
+> >  2 files changed, 5 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-imx/iomux-imx31.c
+> > b/arch/arm/mach-imx/iomux-imx31.c index 1657fe6..d6a3075 100644
+> > --- a/arch/arm/mach-imx/iomux-imx31.c
+> > +++ b/arch/arm/mach-imx/iomux-imx31.c
+> > @@ -44,9 +44,11 @@ static unsigned long mxc_pin_alloc_map[NB_PORTS *
+> > 32 / BITS_PER_LONG];
+> >  /*
+> >   * set the mode for a IOMUX pin.
+> >   */
+> > -int mxc_iomux_mode(unsigned int pin_mode)
+> > +void mxc_iomux_mode(unsigned int pin_mode)
+> >  {
+> > -	u32 field, l, mode, ret = 0;
+> > +	u32 field;
+> > +	u32 l;
+> > +	u32 mode;
+> >  	void __iomem *reg;
+> >
 
-Signed-off-by: Frank Blaschka <frank.blaschka@de.ibm.com>
----
- drivers/vfio/Kconfig               | 2 +-
- drivers/vfio/pci/Kconfig           | 8 ++++++++
- drivers/vfio/pci/vfio_pci.c        | 5 +++--
- drivers/vfio/pci/vfio_pci_config.c | 7 +++++++
- 4 files changed, 19 insertions(+), 3 deletions(-)
+Why you use three lines to define it, it makes the function longer.
+Besides, Shawn's email changes to : <shawn.guo@linaro.org>
 
-diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-index d8c5763..b93c259 100644
---- a/drivers/vfio/Kconfig
-+++ b/drivers/vfio/Kconfig
-@@ -16,7 +16,7 @@ config VFIO_SPAPR_EEH
- menuconfig VFIO
- 	tristate "VFIO Non-Privileged userspace driver framework"
- 	depends on IOMMU_API
--	select VFIO_IOMMU_TYPE1 if X86
-+	select VFIO_IOMMU_TYPE1 if (X86 || S390)
- 	select VFIO_IOMMU_SPAPR_TCE if (PPC_POWERNV || PPC_PSERIES)
- 	select VFIO_SPAPR_EEH if (PPC_POWERNV || PPC_PSERIES)
- 	select ANON_INODES
-diff --git a/drivers/vfio/pci/Kconfig b/drivers/vfio/pci/Kconfig
-index c41b01e..c6bb5da 100644
---- a/drivers/vfio/pci/Kconfig
-+++ b/drivers/vfio/pci/Kconfig
-@@ -16,3 +16,11 @@ config VFIO_PCI_VGA
- 	  BIOS and generic video drivers.
- 
- 	  If you don't know what to do here, say N.
-+
-+config VFIO_PCI_MMAP
-+	depends on VFIO_PCI
-+	def_bool y if !S390
-+
-+config VFIO_PCI_INTX
-+	depends on VFIO_PCI
-+	def_bool y if !S390
-diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-index 9558da3..255201f 100644
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -215,7 +215,7 @@ static int vfio_pci_get_irq_count(struct vfio_pci_device *vdev, int irq_type)
- 	if (irq_type == VFIO_PCI_INTX_IRQ_INDEX) {
- 		u8 pin;
- 		pci_read_config_byte(vdev->pdev, PCI_INTERRUPT_PIN, &pin);
--		if (pin)
-+		if (IS_ENABLED(CONFIG_VFIO_PCI_INTX) && pin)
- 			return 1;
- 
- 	} else if (irq_type == VFIO_PCI_MSI_IRQ_INDEX) {
-@@ -406,7 +406,8 @@ static long vfio_pci_ioctl(void *device_data,
- 
- 			info.flags = VFIO_REGION_INFO_FLAG_READ |
- 				     VFIO_REGION_INFO_FLAG_WRITE;
--			if (pci_resource_flags(pdev, info.index) &
-+			if (IS_ENABLED(CONFIG_VFIO_PCI_MMAP) &&
-+			    pci_resource_flags(pdev, info.index) &
- 			    IORESOURCE_MEM && info.size >= PAGE_SIZE)
- 				info.flags |= VFIO_REGION_INFO_FLAG_MMAP;
- 			break;
-diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-index 1de3f94..ff75ca3 100644
---- a/drivers/vfio/pci/vfio_pci_config.c
-+++ b/drivers/vfio/pci/vfio_pci_config.c
-@@ -609,6 +609,10 @@ static int __init init_pci_cap_basic_perm(struct perm_bits *perm)
- 
- 	/* Sometimes used by sw, just virtualize */
- 	p_setb(perm, PCI_INTERRUPT_LINE, (u8)ALL_VIRT, (u8)ALL_WRITE);
-+
-+	/* Virtualize interrupt pin to allow hiding INTx */
-+	p_setb(perm, PCI_INTERRUPT_PIN, (u8)ALL_VIRT, (u8)NO_WRITE);
-+
- 	return 0;
- }
- 
-@@ -1445,6 +1449,9 @@ int vfio_config_init(struct vfio_pci_device *vdev)
- 		*(__le16 *)&vconfig[PCI_DEVICE_ID] = cpu_to_le16(pdev->device);
- 	}
- 
-+	if (!IS_ENABLED(CONFIG_VFIO_PCI_INTX))
-+		vconfig[PCI_INTERRUPT_PIN] = 0;
-+
- 	ret = vfio_cap_init(vdev);
- 	if (ret)
- 		goto out;
--- 
-1.8.5.5
+Peter
 
+> >  	reg = IOMUXSW_MUX_CTL + (pin_mode & IOMUX_REG_MASK); @@ -
+> 61,8 +63,6
+> > @@ int mxc_iomux_mode(unsigned int pin_mode)
+> >  	__raw_writel(l, reg);
+> >
+> >  	spin_unlock(&gpio_mux_lock);
+> > -
+> > -	return ret;
+> >  }
+> >
+> >  /*
+> > diff --git a/arch/arm/mach-imx/iomux-mx3.h
+> > b/arch/arm/mach-imx/iomux-mx3.h index f79f78a..0a5adba 100644
+> > --- a/arch/arm/mach-imx/iomux-mx3.h
+> > +++ b/arch/arm/mach-imx/iomux-mx3.h
+> > @@ -144,7 +144,7 @@ void mxc_iomux_set_gpr(enum iomux_gp_func, bool
+> en);
+> >   * It is called by the setup functions and should not be called directly
+> anymore.
+> >   * It is here visible for backward compatibility
+> >   */
+> > -int mxc_iomux_mode(unsigned int pin_mode);
+> > +void mxc_iomux_mode(unsigned int pin_mode);
+> >
+> >  #define IOMUX_PADNUM_MASK	0x1ff
+> >  #define IOMUX_GPIONUM_SHIFT	9
+> > --
+> > 1.9.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
