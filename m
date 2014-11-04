@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaKDFl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 00:41:56 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:40800 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaKDFlz (ORCPT
+	id S1751584AbaKDFoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 00:44:30 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:37986 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751069AbaKDFo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 00:41:55 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 4 Nov 2014 14:43:07 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: alloc_contig_range: demote pages busy message from
- warn to info
-Message-ID: <20141104054307.GA23102@bbox>
-References: <2457604.k03RC2Mv4q@avalon>
- <1415033873-28569-1-git-send-email-mina86@mina86.com>
+	Tue, 4 Nov 2014 00:44:26 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v4 2/8] ARM: mediatek: add dts for 8127 Moose board
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, <arm@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        Hsien-Chun Yen <hc.yen@mediatek.com>,
+        huang eddie <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Yuhau Chen <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+In-Reply-To: <CABuKBe+ku=vWiWbvAm8M7QgyzvVWZ5sdkRMocuUym8JTyk-okg@mail.gmail.com>
+References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com>
+	 <1413973797-17619-3-git-send-email-yingjoe.chen@mediatek.com>
+	 <CABuKBe+ku=vWiWbvAm8M7QgyzvVWZ5sdkRMocuUym8JTyk-okg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 4 Nov 2014 13:44:21 +0800
+Message-ID: <1415079861.31861.0.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415033873-28569-1-git-send-email-mina86@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Nov 03, 2014 at 05:57:53PM +0100, Michal Nazarewicz wrote:
-> Having test_pages_isolated failure message as a warning confuses
-> users into thinking that it is more serious than it really is.  In
-> reality, if called via CMA, allocation will be retried so a single
-> test_pages_isolated failure does not prevent allocation from
-> succeeding.
+On Mon, 2014-11-03 at 18:55 +0100, Matthias Brugger wrote:
+> 2014-10-22 12:29 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
+> > From: "Joe.C" <yingjoe.chen@mediatek.com>
+> >
+> > Moose is a tablet evalutation board based on MT8127 SoC.
+> >
+> > Signed-off-by: Joe.C <yingjoe.chen@mediatek.com>
+> > ---
+> >  arch/arm/boot/dts/mt8127-moose.dts | 24 ++++++++++++++++++++++++
+> >  1 file changed, 24 insertions(+)
+> >  create mode 100644 arch/arm/boot/dts/mt8127-moose.dts
+> >
+> > diff --git a/arch/arm/boot/dts/mt8127-moose.dts b/arch/arm/boot/dts/mt8127-moose.dts
+> > new file mode 100644
+> > index 0000000..602e2f0
+> > --- /dev/null
+> > +++ b/arch/arm/boot/dts/mt8127-moose.dts
+> > @@ -0,0 +1,24 @@
+> > +/*
+> > + * Copyright (c) 2014 MediaTek Inc.
+> > + * Author: Joe.C <yingjoe.chen@mediatek.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +/dts-v1/;
+> > +#include "mt8127.dtsi"
+> > +
+> > +/ {
+> > +       model = "mediatek,mt8127-moose", "mediatek,mt8127";
 > 
-> Demote the warning message to an info message and reformat it such
-> that the text “failed” does not appear and instead a less worrying
-> “PFNS busy” is used.
+> The model should be a string that identifies the board, e.g. "Moose".
+> Please add the compatible property.
 
-What do you expect from this message? Please describe it so that we can
-review below message helps your goal.
+Thanks for catching this. I just note we have warning on this line.
+Will fix in next version.
 
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> ---
->  mm/page_alloc.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 372e3f3..e2731eb 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -6431,13 +6431,12 @@ int alloc_contig_range(unsigned long start, unsigned long end,
->  
->  	/* Make sure the range is really isolated. */
->  	if (test_pages_isolated(outer_start, end, false)) {
-> -		pr_warn("alloc_contig_range test_pages_isolated(%lx, %lx) failed\n",
-> -		       outer_start, end);
-> +		pr_info("%s: [%lx, %lx) PFNs busy\n",
-> +			__func__, outer_start, end);
->  		ret = -EBUSY;
->  		goto done;
->  	}
->  
-> -
->  	/* Grab isolated pages from freelists. */
->  	outer_end = isolate_freepages_range(&cc, outer_start, end);
->  	if (!outer_end) {
-> -- 
-> 2.1.0.rc2.206.gedb03e5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Joe.C
 
--- 
-Kind regards,
-Minchan Kim
