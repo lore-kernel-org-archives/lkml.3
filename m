@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaKDBqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:46:07 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:38543 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751081AbaKDBqD (ORCPT
+	id S1751757AbaKDBrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:47:43 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:65151 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbaKDBrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:46:03 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH] ftrace: Document ftrace command line limitations
-Date: Mon,  3 Nov 2014 20:45:25 -0500
-Message-Id: <1415065525-8267-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.1.1
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Mon, 3 Nov 2014 20:47:41 -0500
+From: varkabhadram@gmail.com
+To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
+Cc: balbi@ti.com, stern@rowland.harvard.edu,
+        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH usb v4 0/2] fixes on resource check
+Date: Tue,  4 Nov 2014 07:17:09 +0530
+Message-Id: <1415065631-6010-1-git-send-email-varkabhadram@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <N>
+References: <N>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the function or function_graph tracers from the command
-line, certain command line options have limitations.
+From: Varka Bhadram <varkab@cdac.in>
 
-Document that only kernel built-in functions can be filtered via
-ftrace_filter= or ftrace_graph_filter=. Also document that tracer-
-specific options cannot be set on the command line via trace_options.
+This series fixes for NULL pointer dereference on resource.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- Documentation/kernel-parameters.txt | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Series based on usb-next of [1]
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4c81a86..6f9dfa0 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1121,6 +1121,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			list of functions. This list can be changed at run
- 			time by the set_ftrace_filter file in the debugfs
- 			tracing directory.
-+			Only built-in functions can be traced when specified
-+			this way.
- 
- 	ftrace_notrace=[function-list]
- 			[FTRACE] Do not trace the functions specified in
-@@ -1134,6 +1136,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			function-list is a comma separated list of functions
- 			that can be changed at run time by the
- 			set_graph_function file in the debugfs tracing directory.
-+			Only built-in functions can be traced when specified
-+			this way.
- 
- 	ftrace_graph_notrace=[function-list]
- 			[FTRACE] Do not trace from the functions specified in
-@@ -3521,6 +3525,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 			      trace_options=stacktrace
- 
-+			Tracer-specific options are ignored when set this way.
-+			For example, the 'func_stack_trace' option cannot be
-+			set here.
-+
- 			See also Documentation/trace/ftrace.txt "trace options"
- 			section.
- 
+changes:
+	Up to v3, combined series for fixes and cleanups for resource
+check. For v4 seperated as two series on for fixes another for cleanups.
+
+[1]: https://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git
+
+Varka Bhadram (2):
+  host: uhci-platform: fix NULL pointer dereference on resource
+  host: ehci-sead3: fix NULL pointer dereference on resource
+
+ drivers/usb/host/ehci-sead3.c    |    5 ++---
+ drivers/usb/host/uhci-platform.c |    6 +++---
+ 2 files changed, 5 insertions(+), 6 deletions(-)
+
 -- 
-2.1.1
+1.7.9.5
 
