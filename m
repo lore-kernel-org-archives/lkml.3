@@ -1,75 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaKDOSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:18:15 -0500
-Received: from mga14.intel.com ([192.55.52.115]:58788 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753301AbaKDOSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:18:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,313,1413270000"; 
-   d="scan'208";a="616838316"
-Message-ID: <1415110688.26277.36.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH v2 3/3] efi: Capsule update with user helper interface
-From: Matt Fleming <matt.fleming@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+	id S1754175AbaKDOSf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:18:35 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:63530 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754032AbaKDOSc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 09:18:32 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v6 04/12] misc: at25: Make use of device property API
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "Sam Protsenko" <semen.protsenko@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Date: Tue, 4 Nov 2014 14:18:08 +0000
-In-Reply-To: <CALCETrU2wk_FdcD6E+oMcp-tF97zN7f+w7q5rfPWBaNKrrmxVg@mail.gmail.com>
-References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
-	 <1414984030-13859-4-git-send-email-hock.leong.kweh@intel.com>
-	 <20141104043247.GA23418@kroah.com>
-	 <CALCETrXjJju+cMWJfB6W5kSD=Ox5y+Hj_AfmbbbOTOh8CV8eaQ@mail.gmail.com>
-	 <F54AEECA5E2B9541821D670476DAE19C2B80EAE4@PGSMSX102.gar.corp.intel.com>
-	 <CALCETrU2wk_FdcD6E+oMcp-tF97zN7f+w7q5rfPWBaNKrrmxVg@mail.gmail.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [163.33.239.181]
+        Darren Hart <darren.hart@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        devicetree@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>
+In-Reply-To: <5019278.RtDq7RlWqt@vostro.rjw.lan>
+References: <13750506.S2yVlRRDa2@vostro.rjw.lan>
+	<5019278.RtDq7RlWqt@vostro.rjw.lan>
+Date: Tue, 04 Nov 2014 14:18:26 +0000
+Message-Id: <20141104141826.36F8AC408F6@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 22:32 -0800, Andy Lutomirski wrote:
+On Tue, 21 Oct 2014 23:19:56 +0200
+, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+ wrote:
+> From: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> It seems like a large fraction of the code in this module exists just
-> to work around the fact that request_firmware doesn't do what you want
-> it to do.  You have code to:
+> Make use of device property API in this driver so that both DT and ACPI
+> based systems can use this driver.
 > 
->  - Prevent the /lib/firmware mechanism from working.
->  - Avoid a deadlock by doing strange things in the unload code.
->  - Allow more than one capsule per module load.  (Isn't this hard to
-> use?  User code will have to wait for the next firmware request before
-> sending a second capsule.)
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/misc/eeprom/at25.c |   34 +++++++++++++---------------------
+>  1 file changed, 13 insertions(+), 21 deletions(-)
 > 
-> All of this is for dubious gain.  You have to do three separate opens
-> in sysfs to upload a capsule, and there's no way to report back to
-> userspace whether the EFI call worked and whether a reboot is needed.
+> Index: linux-pm/drivers/misc/eeprom/at25.c
+> ===================================================================
+> --- linux-pm.orig/drivers/misc/eeprom/at25.c
+> +++ linux-pm/drivers/misc/eeprom/at25.c
+> @@ -18,7 +18,7 @@
+>  
+>  #include <linux/spi/spi.h>
+>  #include <linux/spi/eeprom.h>
+> -#include <linux/of.h>
+> +#include <linux/property.h>
+>  
+>  /*
+>   * NOTE: this is an *EEPROM* driver.  The vagaries of product naming
+> @@ -301,35 +301,33 @@ static ssize_t at25_mem_write(struct mem
+>  
+>  /*-------------------------------------------------------------------------*/
+>  
+> -static int at25_np_to_chip(struct device *dev,
+> -			   struct device_node *np,
+> -			   struct spi_eeprom *chip)
+> +static int at25_fw_to_chip(struct device *dev, struct spi_eeprom *chip)
+>  {
+>  	u32 val;
+>  
+>  	memset(chip, 0, sizeof(*chip));
+> -	strncpy(chip->name, np->name, sizeof(chip->name));
+> +	strncpy(chip->name, "at25", sizeof(chip->name));
 
-Whether or not a reboot is required is indicated in the capsule image
-itself, i.e. the capsule tells the firmware whether an immediate reboot
-is required not the other way around.
+This line changes behaviour of the driver. It's possibly not a problem,
+but it should be commented on and whether any due diligance has been
+done to make sure it there isn't anything that depends on it.
 
-The firmware does tell the kernel what *kind* of a reboot is required,
-but that doesn't need reporting to userspace.
+Otherwise:
+Acked-by: Grant Likely <grant.likely@linaro.org>
 
-> What's the benefit of using the firmware interface here?
-
-I originally implemented something to send capsules to the firmware via
-sysfs files back in 2013 and I basically ended up duplicating 25% of the
-code that's already in drivers/base/firmware_class.c.
-
-If you're objecting to the lack of modularity in firmware_class.c, then
-we could probably carve up the functionality we require a little more
-neatly (like not having to do the /lib/firmware avoidance hacks), but
-firmware_class.c should definitely be used as the foundation.
+>  
+> -	if (of_property_read_u32(np, "size", &val) == 0 ||
+> -	    of_property_read_u32(np, "at25,byte-len", &val) == 0) {
+> +	if (device_property_read_u32(dev, "size", &val) == 0 ||
+> +	    device_property_read_u32(dev, "at25,byte-len", &val) == 0) {
+>  		chip->byte_len = val;
+>  	} else {
+>  		dev_err(dev, "Error: missing \"size\" property\n");
+>  		return -ENODEV;
+>  	}
+>  
+> -	if (of_property_read_u32(np, "pagesize", &val) == 0 ||
+> -	    of_property_read_u32(np, "at25,page-size", &val) == 0) {
+> +	if (device_property_read_u32(dev, "pagesize", &val) == 0 ||
+> +	    device_property_read_u32(dev, "at25,page-size", &val) == 0) {
+>  		chip->page_size = (u16)val;
+>  	} else {
+>  		dev_err(dev, "Error: missing \"pagesize\" property\n");
+>  		return -ENODEV;
+>  	}
+>  
+> -	if (of_property_read_u32(np, "at25,addr-mode", &val) == 0) {
+> +	if (device_property_read_u32(dev, "at25,addr-mode", &val) == 0) {
+>  		chip->flags = (u16)val;
+>  	} else {
+> -		if (of_property_read_u32(np, "address-width", &val)) {
+> +		if (device_property_read_u32(dev, "address-width", &val)) {
+>  			dev_err(dev,
+>  				"Error: missing \"address-width\" property\n");
+>  			return -ENODEV;
+> @@ -350,7 +348,7 @@ static int at25_np_to_chip(struct device
+>  				val);
+>  			return -ENODEV;
+>  		}
+> -		if (of_find_property(np, "read-only", NULL))
+> +		if (device_property_present(dev, "read-only"))
+>  			chip->flags |= EE_READONLY;
+>  	}
+>  	return 0;
+> @@ -360,21 +358,15 @@ static int at25_probe(struct spi_device
+>  {
+>  	struct at25_data	*at25 = NULL;
+>  	struct spi_eeprom	chip;
+> -	struct device_node	*np = spi->dev.of_node;
+>  	int			err;
+>  	int			sr;
+>  	int			addrlen;
+>  
+>  	/* Chip description */
+>  	if (!spi->dev.platform_data) {
+> -		if (np) {
+> -			err = at25_np_to_chip(&spi->dev, np, &chip);
+> -			if (err)
+> -				return err;
+> -		} else {
+> -			dev_err(&spi->dev, "Error: no chip description\n");
+> -			return -ENODEV;
+> -		}
+> +		err = at25_fw_to_chip(&spi->dev, &chip);
+> +		if (err)
+> +			return err;
+>  	} else
+>  		chip = *(struct spi_eeprom *)spi->dev.platform_data;
+>  
+> 
 
