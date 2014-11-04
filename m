@@ -1,140 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaKDJlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:41:22 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:55768 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaKDJlQ (ORCPT
+	id S1752735AbaKDJle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:41:34 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:34021 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662AbaKDJl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:41:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <1415086357-4619-1-git-send-email-vincent.wan@amd.com>
-References: <1415086357-4619-1-git-send-email-vincent.wan@amd.com>
-Date: Tue, 4 Nov 2014 10:41:15 +0100
-Message-ID: <CAPDyKFqWiJS3ckfY1Ap0VwAbss0qdJoeA+2BCw=DZStdq=h7bA@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: Add a quirk for AMD SDHC transfer mode register
- need to be cleared for cmd without data
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Vincent Wan <vincent.wan@amd.com>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arindam Nath <arindam.nath@amd.com>, Huang Rui <ray.huang@amd.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Nov 2014 04:41:28 -0500
+Message-ID: <1415094070.15462.1.camel@BR9GV9YG.de.ibm.com>
+Subject: Re: [PATCH v4] drivers: s390: net: ctcm: migrate variables to
+ handle y2038 problem
+From: Ursula Braun <ubraun@linux.vnet.ibm.com>
+To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+Cc: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Date: Tue, 04 Nov 2014 10:41:10 +0100
+In-Reply-To: <20141103193324.GA9434@localhost.localdomain>
+References: <20141103193324.GA9434@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110409-0025-0000-0000-0000023B131E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 November 2014 08:32, Vincent Wan <vincent.wan@amd.com> wrote:
-> SDHC controller in AMD chipsets require SDHC transfer mode
-> register to be cleared for commands without data. The issue was
-> uncovered during testing eMMC cards on KB/ML based platforms.
->
-> Signed-off-by: Vincent Wan <vincent.wan@amd.com>
-> Signed-off-by: Arindam Nath <arindam.nath@amd.com>
-> Cc: Huang Rui <ray.huang@amd.com>
-> Tested-by: Vikram B <vikram.b@amd.com>
-> Tested-by: Raghavendra Swamy <raghavendra.swamy@amd.com>
+thx, Aya. This time you forgot this part:
 
-The patch needs to be rebased towwards my latest next branch, it had a
-minor conflict. I can normally handle such myself, but I decided since
-the rebase was needed anyway, let's me give you a few comments.
+--- a/drivers/s390/net/ctcm_sysfs.c
++++ b/drivers/s390/net/ctcm_sysfs.c
+@@ -100,8 +100,8 @@ static void ctcm_print_statistics(struct
+                     priv->channel[WRITE]->prof.doios_multi);
+        p += sprintf(p, "  Netto bytes written: %ld\n",
+                     priv->channel[WRITE]->prof.txlen);
+-       p += sprintf(p, "  Max. TX IO-time: %ld\n",
+-                    priv->channel[WRITE]->prof.tx_time);
++       p += sprintf(p, "  Max. TX IO-time: %u\n",
++                 jiffies_to_usecs(priv->channel[WRITE]->prof.tx_time));
+ 
+        printk(KERN_INFO "Statistics for %s:\n%s",
+                                priv->channel[CTCM_WRITE]->netdev->name,
+sbuf);
 
+Regards, Ursula Braun
+
+On Mon, 2014-11-03 at 21:33 +0200, Aya Mahfouz wrote:
+> This patch is concerned with migrating the time variables for the s390
+> network driver. The changes handle the y2038 problem where timespec will
+> overflow in the year 2038. timespec was replaced by unsigned long and
+> all time variables get their values from the jiffies global variable.
+> This was done for the sake of speed and efficiency. 
+> 
+> ch->prof.tx_time will now hold the difference between two jiffies' 
+> values instead of the difference between two xtime values 
+> represented in microseconds.
+> 
+> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
 > ---
->  drivers/mmc/host/sdhci-pci.c | 27 +++++++++++++++++++++++++++
->  drivers/mmc/host/sdhci.c     | 11 ++++++++---
->  include/linux/mmc/sdhci.h    |  2 ++
->  3 files changed, 37 insertions(+), 3 deletions(-)
-
-This patch should be split into two parts.
-
-1) The sdhci core specific part. "mmc: sdhci:...."
-2) The sdhci-pci part. "mmc: sdhci-pci: ...."
-
-Kind regards
-Uffe
-
->
-> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-> index 6119297..8f5c998 100644
-> --- a/drivers/mmc/host/sdhci-pci.c
-> +++ b/drivers/mmc/host/sdhci-pci.c
-> @@ -645,6 +645,23 @@ static const struct sdhci_pci_fixes sdhci_rtsx = {
->         .probe_slot     = rtsx_probe_slot,
+> v1: Arnd has advised me to provide you with options for time
+>     calculation. The first option: "accuracy" is used in this
+>     patch. The second option: "speed" can be done through
+>     jiffies.
+> 
+> v2: Moved on to the speed option. Let me know if I explicitly
+>     need to include the jiffies header. The module compiles with
+>     no problems on my side.
+> 
+> v3: Handled the error pointed out by Ursula. The current version
+>     does not handle overflows. There are two solutions for this.
+>     The first is to use jiffies_64 since s/390 is a 64-bit
+>     architecture after all. The second is to use wrapper functions
+>     like time_before and time_after. Two files were added too.
+>     They are: ctcm_main.c and netiucv.c. This patch could be sent
+>     as a patchset in its final version for convenience.
+> 
+> v4: removed #include <linux/jiffies.h> per Ursula's feedback.
+>     Changed duration to hold the difference between jiffies
+>     instead of difference between microsecond values per Arnd's
+>     suggestion.
+> 
+>  drivers/s390/net/ctcm_fsms.c | 18 +++++++-----------
+>  drivers/s390/net/ctcm_main.c |  4 ++--
+>  drivers/s390/net/ctcm_main.h |  2 +-
+>  drivers/s390/net/netiucv.c   |  6 +++---
+>  4 files changed, 13 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
+> index fb92524..49143c3 100644
+> --- a/drivers/s390/net/ctcm_fsms.c
+> +++ b/drivers/s390/net/ctcm_fsms.c
+> @@ -251,13 +251,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+>  	int first = 1;
+>  	int i;
+>  	unsigned long duration;
+> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
+> +	unsigned long done_stamp jiffies;
+> 
+>  	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
+> 
+> -	duration =
+> -	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+> -	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
+> +	duration = done_stamp -ch->prof.send_stamp;
+>  	if (duration > ch->prof.tx_time)
+>  		ch->prof.tx_time = duration;
+> 
+> @@ -307,7 +305,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+>  		spin_unlock(&ch->collect_lock);
+>  		ch->ccw[1].count = ch->trans_skb->len;
+>  		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+> -		ch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +		ch->prof.send_stamp = jiffies;
+>  		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+>  						(unsigned long)ch, 0xff, 0);
+>  		ch->prof.doios_multi++;
+> @@ -1229,14 +1227,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+>  	int		rc;
+>  	struct th_header *header;
+>  	struct pdu	*p_header;
+> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
+> +	unsigned long done_stamp = jiffies;
+> 
+>  	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
+>  			__func__, dev->name, smp_processor_id());
+> 
+> -	duration =
+> -		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+> -		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
+> +	duration = done_stamp -ch->prof.send_stamp;
+>  	if (duration > ch->prof.tx_time)
+>  		ch->prof.tx_time = duration;
+> 
+> @@ -1361,7 +1357,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+> 
+>  	ch->ccw[1].count = ch->trans_skb->len;
+>  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +	ch->prof.send_stamp = jiffies;
+>  	if (do_debug_ccw)
+>  		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
+>  	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+> @@ -1827,7 +1823,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
+>  	fsm_newstate(wch->fsm, CTC_STATE_TX);
+> 
+>  	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
+> -	wch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +	wch->prof.send_stamp = jiffies;
+>  	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
+>  					(unsigned long) wch, 0xff, 0);
+>  	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
+> diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
+> index e056dd4..05c37d6 100644
+> --- a/drivers/s390/net/ctcm_main.c
+> +++ b/drivers/s390/net/ctcm_main.c
+> @@ -567,7 +567,7 @@ static int ctcm_transmit_skb(struct channel *ch, struct sk_buff *skb)
+>  	fsm_newstate(ch->fsm, CTC_STATE_TX);
+>  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+>  	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
+> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +	ch->prof.send_stamp = jiffies;
+>  	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
+>  					(unsigned long)ch, 0xff, 0);
+>  	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
+> @@ -831,7 +831,7 @@ static int ctcmpc_transmit_skb(struct channel *ch, struct sk_buff *skb)
+>  					sizeof(struct ccw1) * 3);
+> 
+>  	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
+> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
+> +	ch->prof.send_stamp = jiffies;
+>  	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
+>  					(unsigned long)ch, 0xff, 0);
+>  	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
+> diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
+> index 477c933..6f4417c 100644
+> --- a/drivers/s390/net/ctcm_main.h
+> +++ b/drivers/s390/net/ctcm_main.h
+> @@ -121,7 +121,7 @@ struct ctcm_profile {
+>  	unsigned long doios_multi;
+>  	unsigned long txlen;
+>  	unsigned long tx_time;
+> -	struct timespec send_stamp;
+> +	unsigned long send_stamp;
 >  };
->
-> +static int amd_probe(struct sdhci_pci_chip *chip)
-> +{
-> +       struct pci_dev  *smbus_dev;
-> +
-> +       smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
-> +                       PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, NULL);
-> +
-> +       if (smbus_dev && (smbus_dev->revision < 0x51))
-> +               chip->quirks2 |= SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD;
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct sdhci_pci_fixes sdhci_amd = {
-> +       .probe          = amd_probe,
-> +};
-> +
->  static const struct pci_device_id pci_ids[] = {
->         {
->                 .vendor         = PCI_VENDOR_ID_RICOH,
-> @@ -1045,6 +1062,16 @@ static const struct pci_device_id pci_ids[] = {
->                 .driver_data    = (kernel_ulong_t)&sdhci_o2,
->         },
->
-> +       {
-> +               .vendor         = PCI_VENDOR_ID_AMD,
-> +               .device         = PCI_ANY_ID,
-> +               .class          = PCI_CLASS_SYSTEM_SDHCI << 8,
-> +               .class_mask     = 0xFFFF00,
-> +               .subvendor      = PCI_ANY_ID,
-> +               .subdevice      = PCI_ANY_ID,
-> +               .driver_data    = (kernel_ulong_t)&sdhci_amd,
-> +       },
-> +
->         {       /* Generic SD host controller */
->                 PCI_DEVICE_CLASS((PCI_CLASS_SYSTEM_SDHCI << 8), 0xFFFF00)
->         },
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index ada1a3e..8085f26 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -889,10 +889,15 @@ static void sdhci_set_transfer_mode(struct sdhci_host *host,
->         struct mmc_data *data = cmd->data;
->
->         if (data == NULL) {
-> -               /* clear Auto CMD settings for no data CMDs */
-> -               mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
-> -               sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
-> +               if (host->quirks2 &
-> +                       SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD) {
-> +                       sdhci_writew(host, 0x0, SDHCI_TRANSFER_MODE);
-> +               } else {
-> +                       /* clear Auto CMD settings for no data CMDs */
-> +                       mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
-> +                       sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
->                                 SDHCI_TRNS_AUTO_CMD23), SDHCI_TRANSFER_MODE);
-> +               }
->                 return;
->         }
->
-> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-> index dba793e..0a287aa 100644
-> --- a/include/linux/mmc/sdhci.h
-> +++ b/include/linux/mmc/sdhci.h
-> @@ -100,6 +100,8 @@ struct sdhci_host {
->  #define SDHCI_QUIRK2_BROKEN_DDR50                      (1<<7)
->  /* Stop command (CMD12) can set Transfer Complete when not using MMC_RSP_BUSY */
->  #define SDHCI_QUIRK2_STOP_WITH_TC                      (1<<8)
-> +/* need clear transfer mode register before send cmd */
-> +#define SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD (1<<9)
->
->         int irq;                /* Device IRQ */
->         void __iomem *ioaddr;   /* Mapped address */
-> --
-> 1.8.1.2
->
+> 
+>  /*
+> diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
+> index 0a87809..7e91f54 100644
+> --- a/drivers/s390/net/netiucv.c
+> +++ b/drivers/s390/net/netiucv.c
+> @@ -178,7 +178,7 @@ struct connection_profile {
+>  	unsigned long doios_multi;
+>  	unsigned long txlen;
+>  	unsigned long tx_time;
+> -	struct timespec send_stamp;
+> +	unsigned long send_stamp;
+>  	unsigned long tx_pending;
+>  	unsigned long tx_max_pending;
+>  };
+> @@ -786,7 +786,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
+> 
+>  	header.next = 0;
+>  	memcpy(skb_put(conn->tx_buff, NETIUCV_HDRLEN), &header, NETIUCV_HDRLEN);
+> -	conn->prof.send_stamp = current_kernel_time();
+> +	conn->prof.send_stamp = jiffies;
+>  	txmsg.class = 0;
+>  	txmsg.tag = 0;
+>  	rc = iucv_message_send(conn->path, &txmsg, 0, 0,
+> @@ -1220,7 +1220,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
+>  		memcpy(skb_put(nskb, NETIUCV_HDRLEN), &header,  NETIUCV_HDRLEN);
+> 
+>  		fsm_newstate(conn->fsm, CONN_STATE_TX);
+> -		conn->prof.send_stamp = current_kernel_time();
+> +		conn->prof.send_stamp = jiffies;
+> 
+>  		msg.tag = 1;
+>  		msg.class = 0;
+
+
