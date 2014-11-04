@@ -1,211 +1,623 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858AbaKDQW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:22:57 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:48657 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533AbaKDQWy (ORCPT
+	id S1754870AbaKDQXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:23:11 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55668 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753432AbaKDQXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:22:54 -0500
-Message-ID: <5458FD56.8040304@hitachi.com>
-Date: Wed, 05 Nov 2014 01:22:46 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 4 Nov 2014 11:23:07 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <darren.hart@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>
+Subject: [Update][PATCH v6 09/12] Driver core: Unified interface for firmware node properties
+Date: Tue, 04 Nov 2014 17:43:51 +0100
+Message-ID: <2291934.EVWzcMgvWJ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3311274.lPerUdEdSh@vostro.rjw.lan>
+References: <13750506.S2yVlRRDa2@vostro.rjw.lan> <3311274.lPerUdEdSh@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        namhyung@kernel.org, Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options
- for cache
-References: <20141031185128.27889.32747.stgit@localhost.localdomain> <20141031121301.GI1313@kernel.org> <545770E6.2010506@hitachi.com> <20141103161900.GA18464@kernel.org> <545857CF.3060709@hitachi.com> <20141104143814.GH18464@kernel.org>
-In-Reply-To: <20141104143814.GH18464@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/04 23:38), Arnaldo Carvalho de Melo wrote:
-> Em Tue, Nov 04, 2014 at 01:36:31PM +0900, Masami Hiramatsu escreveu:
->> (2014/11/04 1:19), Arnaldo Carvalho de Melo wrote:
->>> Em Mon, Nov 03, 2014 at 09:11:18PM +0900, Masami Hiramatsu escreveu:
->>>> (2014/10/31 21:13), Arnaldo Carvalho de Melo wrote:
->>>>> Em Fri, Oct 31, 2014 at 02:51:29PM -0400, Masami Hiramatsu escreveu:
->>>> Actually, kprobe event itself can reject command if the given address
->>>> is not in the kernel text nor instruction boundary (perhaps, uprobes
->>>> may have a problem...), so for the kernel level, it is safe.
-> 
->>> No, it is not necessarily safe.
-> 
->>> What if you specify function foo() that has address 0x1234 for kernel
->>> v3.16 and then run the cached probe on kernel v3.18 and on that kernel
->>> the function foo() maps to address 0x2345 and function bar() instead
->>> maps to address 0x1234? Oops.
->  
->> In that case user just trace bar() instead of foo(). Of course it's
->> not correct, but shouldn't break the kernel (if the kernel is broken,
->> it is a bug of kprobes).
-> 
-> I.e. no crashes, just misleading information :-\
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Right.
+Add new generic routines are provided for retrieving properties from
+device description objects in the platform firmware in case there are
+no struct device objects for them (either those objects have not been
+created yet or they do not exist at all).
 
->>> The build-id was designed to uniquely identify a DSO, we need to use it.
-> 
->>> I think that at some point not using it should be left to a, in
->>> systemtap parlance, "guru" mode, with tooling warning profusely when
->>> build ids are not available and requiring even more forcing when it
->>> doesn't matches.
->  
->> But it is not necessarily everyone uses perf probe to set up the probe
->> events(because it is a part of ftrace), as we can see in the Brendan's
->> scripts.
-> 
-> Right, If I implied that some particular tool should be used, sorry
-> about that, what I wanted to get accross was that the information that
-> allows users or tools to make sure there is no mismatch between the
-> cached probes and the target kernel is collected at cached probe
-> creating time and available at target use time.
+The following functions are provided:
 
-Yes, and if user setting probes via perf, the perf must ensure that it
-picks up the correct cache by using build-id. If someone wants to use
-other tools, he/she must ensure it. We just give a information how to
-check that :)
+fwnode_property_present()
+fwnode_property_read_u8()
+fwnode_property_read_u16()
+fwnode_property_read_u32()
+fwnode_property_read_u64()
+fwnode_property_read_string()
+fwnode_property_read_u8_array()
+fwnode_property_read_u16_array()
+fwnode_property_read_u32_array()
+fwnode_property_read_u64_array()
+fwnode_property_read_string_array()
 
-> 
->> I think, at least what we need is clarifying how can they ensure
->> build-id before setting the probe events. I'd like to give them options
->> with knowledge instead of forcing by tools.
-> 
-> Right, so we need to have the build-id as part of the cache format,
-> perhaps as the first line, starting with a comment (#), that way the
-> user can use whatever way he has at its disposal to check that the
-> running kernel build-id is the same as the one on that comment. Using
-> that script you provided, that uses just things that are on the machine
-> (od, /sys/kernel/notes).
+in analogy with the corresponding functions for struct device added
+previously.  For all of them, the first argument is a pointer to struct
+fwnode_handle (new type) that allows a device description object
+(depending on what platform firmware interface is in use) to be
+obtained.
 
+Add a new macro device_for_each_child_node() for iterating over the
+children of the device description object associated with a given
+device and a new function device_get_child_node_count() returning the
+number of a given device's child nodes.
 
-Ah, that's a good idea :)
-So, with such build-id comment line, would you think we can have an
---output option? Or we'd better moving onto the .debug/ cache file?
+The interface covers both ACPI and Device Trees.
 
-What I'm thinking about this feature is to make a compact and reduced
-function-entry level probe cache while building the kernel (as a part
-of kbuild), so that we can deploy the stripped kernel and the cache
-to remote machines.
+Suggested-by: Grant Likely <grant.likely@linaro.org>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-[snip]
->> OK, I agree using .debug/.buildid/ to store caches.
->> Here is what I'm thinking,
->  
->>   # this makes caches for given pattern instead of adding probes.
->>   perf probe --cache '* $params'
-> 
->>   # the cache is stored in .debug/.buildid/<buildid>.probe
->>   # the cache entry can be queried by buildid and eventname
-> 
-> To follow the existing standard this would instead go to:
-> 
->>   # the cache is stored in .debug/probes/path/to/dso/name/buildid
->>   # And can be found via its buildid link .debug/.buildid/bu/ildid -> ../../probes/path/to/dso/name/buildid
+Rebased on top of http://marc.info/?l=linux-kernel&m=141511786113206&w=4
 
-Ah, I see. so you meant adding a top-level .debug/probes/ dir.
-But in that case, shouldn't we change .debug/.buildid/bu/ildid to
-.debug/probes/.buildid/bu/ildid ?
+Grant, I've also made changes following your suggestions for patch [2/12].
 
-> 
->>   perf probe --query ${remote_buildid}:do_fork
->>   p:probe/do_fork _text+298722 clone_flags=%di:u64 stack_start=%si:u64 stack_size=%dx:u64 parent_tidptr=%cx:u64 child_tidptr=%r8:u64
-> 
->>   # or perf can set it up directly to local
->>   perf probe --query-add do_fork
-> 
-> You missed the build id above, no? I.e. it would be:
-> 
->>   # or perf can set it up directly to local
->>   perf probe --query-add ${remote_buildid}:do_fork
+Rafael
 
-No, since this command set the event to local machine, perf-probe
-should check the local build-id and query the appropriate event
-from the cache.
-# BTW, maybe we'd better use perf probe --add '$do_fork' (calls
-# "cache of do_fork")  instead of long --query-add. :)
+---
+ drivers/acpi/scan.c      |   21 ++++
+ drivers/base/property.c  |  246 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h  |   17 +++
+ include/linux/acpi.h     |   26 ++++
+ include/linux/of.h       |   22 ++++
+ include/linux/property.h |   70 +++++++++++++
+ 6 files changed, 402 insertions(+)
 
-> 
-> Right? and that would be the equivalent to:
-> 
->  perf probe --query ${remote_buildid}:do_fork > /sys/kernel/debug/tracing/kprobe_events
-> 
-> No?
-> 
-> And do you intend to generate that script above that checks the build
-> id, tees into /sys/kernel/debug/tracing/kprobe_events, etc as part of
-> this process?
-
-No, not yet. But that sounds nice :) Thanks!
-
-> 
-> I.e. the process would be, as you describe above plus telling the user
-> that he/she then should unconpress the script and run it.
-> 
-> Scripts like Brendan's would do whatever they want with it of course,
-> but the default end result of 'perf probe' would be usable straight away
-> and doing the build id checking without requiring any extra tooling to
-> be available at the target machine.
-
-Agreed, with .debug/ archive, perf-probe should pick and set event
-correctly without any other tools.
-
-Thank you!
-
-> 
->>   Added new event:
->>     probe:do_fork        (on do_fork with clone_flags satck_start stack_size parent_tidptr child_tidptr)
-> 
->>   You can now use it in all perf tools, such as:
-> 
->>         perf record -e probe:do_fork -aR sleep 1
-> 
->> What would you think about this? :)
-> 
-> Cool feature! :-)
-> 
->>>>> Then, later, one would use 'perf archive' passing some keys (or a
->>>>> perf.data file, like done nowadays to pick the files in ~/.debug for
->>>>> dsos that had hits on the specified perf.data file) to get the cached
->>>>> values to use on some other machine, to avoid having to use the
->>>>> debuginfo files there.
-> 
->>>> Yeah, querying it from the BUILDID database by using a pair of remote
->>>> build-id and the binary path is a good feature.
-> 
->>>>> I.e. in summary I think that the format is ok, but we need to have this
->>>>> inside the ~/.debug hierarchy so that we can make sure that we use the
->>>>> right probe definition, one that matches the DSOs being used (the kernel
->>>>> or some other userspace binary).
->>>
->>>> OK, perhaps, that is also good to SDT series at last.
->>>
->>> Sure thing!
->>>
->>
->> Thank you!
-> 
-> You're welcome!
-> 
-> - Arnaldo
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Index: linux-pm/include/linux/property.h
+===================================================================
+--- linux-pm.orig/include/linux/property.h
++++ linux-pm/include/linux/property.h
+@@ -40,6 +40,46 @@ int device_property_read_string_array(st
+ int device_property_read_string(struct device *dev, const char *propname,
+ 				const char **val);
+ 
++enum fwnode_type {
++	FWNODE_INVALID = 0,
++	FWNODE_OF,
++	FWNODE_ACPI,
++};
++
++struct fwnode_handle {
++	enum fwnode_type type;
++};
++
++bool fwnode_property_present(struct fwnode_handle *fwnode, const char *propname);
++int fwnode_property_read_u8_array(struct fwnode_handle *fwnode,
++				  const char *propname, u8 *val,
++				  size_t nval);
++int fwnode_property_read_u16_array(struct fwnode_handle *fwnode,
++				   const char *propname, u16 *val,
++				   size_t nval);
++int fwnode_property_read_u32_array(struct fwnode_handle *fwnode,
++				   const char *propname, u32 *val,
++				   size_t nval);
++int fwnode_property_read_u64_array(struct fwnode_handle *fwnode,
++				   const char *propname, u64 *val,
++				   size_t nval);
++int fwnode_property_read_string_array(struct fwnode_handle *fwnode,
++				      const char *propname, const char **val,
++				      size_t nval);
++int fwnode_property_read_string(struct fwnode_handle *fwnode,
++				const char *propname, const char **val);
++
++struct fwnode_handle *device_get_next_child_node(struct device *dev,
++						 struct fwnode_handle *child);
++
++#define device_for_each_child_node(dev, child) \
++	for (child = device_get_next_child_node(dev, NULL); child; \
++	     child = device_get_next_child_node(dev, child))
++
++void fwnode_handle_put(struct fwnode_handle *fwnode);
++
++unsigned int device_get_child_node_count(struct device *dev);
++
+ static inline bool device_property_read_bool(struct device *dev,
+ 					     const char *propname)
+ {
+@@ -70,4 +110,34 @@ static inline int device_property_read_u
+ 	return device_property_read_u64_array(dev, propname, val, 1);
+ }
+ 
++static inline bool fwnode_property_read_bool(struct fwnode_handle *fwnode,
++					     const char *propname)
++{
++	return fwnode_property_present(fwnode, propname);
++}
++
++static inline int fwnode_property_read_u8(struct fwnode_handle *fwnode,
++					  const char *propname, u8 *val)
++{
++	return fwnode_property_read_u8_array(fwnode, propname, val, 1);
++}
++
++static inline int fwnode_property_read_u16(struct fwnode_handle *fwnode,
++					   const char *propname, u16 *val)
++{
++	return fwnode_property_read_u16_array(fwnode, propname, val, 1);
++}
++
++static inline int fwnode_property_read_u32(struct fwnode_handle *fwnode,
++					   const char *propname, u32 *val)
++{
++	return fwnode_property_read_u32_array(fwnode, propname, val, 1);
++}
++
++static inline int fwnode_property_read_u64(struct fwnode_handle *fwnode,
++					   const char *propname, u64 *val)
++{
++	return fwnode_property_read_u64_array(fwnode, propname, val, 1);
++}
++
+ #endif /* _LINUX_PROPERTY_H_ */
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -27,6 +27,7 @@
+ #define __ACPI_BUS_H__
+ 
+ #include <linux/device.h>
++#include <linux/property.h>
+ 
+ /* TBD: Make dynamic */
+ #define ACPI_MAX_HANDLES	10
+@@ -348,6 +349,7 @@ struct acpi_device_data {
+ struct acpi_device {
+ 	int device_type;
+ 	acpi_handle handle;		/* no handle for fixed hardware */
++	struct fwnode_handle fwnode;
+ 	struct acpi_device *parent;
+ 	struct list_head children;
+ 	struct list_head node;
+@@ -372,6 +374,21 @@ struct acpi_device {
+ 	void (*remove)(struct acpi_device *);
+ };
+ 
++static inline bool is_acpi_node(struct fwnode_handle *fwnode)
++{
++	return fwnode && fwnode->type == FWNODE_ACPI;
++}
++
++static inline struct acpi_device *acpi_node(struct fwnode_handle *fwnode)
++{
++	return fwnode ? container_of(fwnode, struct acpi_device, fwnode) : NULL;
++}
++
++static inline struct fwnode_handle *acpi_fwnode_handle(struct acpi_device *adev)
++{
++	return &adev->fwnode;
++}
++
+ static inline void *acpi_driver_data(struct acpi_device *d)
+ {
+ 	return d->driver_data;
+Index: linux-pm/include/linux/acpi.h
+===================================================================
+--- linux-pm.orig/include/linux/acpi.h
++++ linux-pm/include/linux/acpi.h
+@@ -440,6 +440,23 @@ struct platform_device *acpi_create_plat
+ #define ACPI_COMPANION_SET(dev, adev)	do { } while (0)
+ #define ACPI_HANDLE(dev)		(NULL)
+ 
++struct fwnode_handle;
++
++static inline bool is_acpi_node(struct fwnode_handle *fwnode)
++{
++	return false;
++}
++
++static inline struct acpi_device *acpi_node(struct fwnode_handle *fwnode)
++{
++	return NULL;
++}
++
++static inline struct fwnode_handle *acpi_fwnode_handle(struct acpi_device *adev)
++{
++	return NULL;
++}
++
+ static inline const char *acpi_dev_name(struct acpi_device *adev)
+ {
+ 	return NULL;
+@@ -681,6 +698,9 @@ int acpi_dev_prop_read_single(struct acp
+ 			      enum dev_prop_type proptype, void *val);
+ int acpi_dev_prop_read(struct acpi_device *adev, const char *propname,
+ 		       enum dev_prop_type proptype, void *val, size_t nval);
++
++struct acpi_device *acpi_get_next_child(struct device *dev,
++					struct acpi_device *child);
+ #else
+ static inline int acpi_dev_get_property(struct acpi_device *adev,
+ 					const char *name, acpi_object_type type,
+@@ -725,6 +745,12 @@ static inline int acpi_dev_prop_read(str
+ 	return -ENXIO;
+ }
+ 
++static inline struct acpi_device *acpi_get_next_child(struct device *dev,
++						      struct acpi_device *child)
++{
++	return NULL;
++}
++
+ #endif
+ 
+ #endif	/*_LINUX_ACPI_H*/
+Index: linux-pm/include/linux/of.h
+===================================================================
+--- linux-pm.orig/include/linux/of.h
++++ linux-pm/include/linux/of.h
+@@ -50,6 +50,7 @@ struct device_node {
+ 	const char *type;
+ 	phandle phandle;
+ 	const char *full_name;
++	struct fwnode_handle fwnode;
+ 
+ 	struct	property *properties;
+ 	struct	property *deadprops;	/* removed properties */
+@@ -80,6 +81,7 @@ extern struct kobj_type of_node_ktype;
+ static inline void of_node_init(struct device_node *node)
+ {
+ 	kobject_init(&node->kobj, &of_node_ktype);
++	node->fwnode.type = FWNODE_OF;
+ }
+ 
+ /* true when node is initialized */
+@@ -115,6 +117,16 @@ extern struct device_node *of_aliases;
+ extern struct device_node *of_stdout;
+ extern raw_spinlock_t devtree_lock;
+ 
++static inline bool is_of_node(struct fwnode_handle *fwnode)
++{
++	return fwnode && fwnode->type == FWNODE_OF;
++}
++
++static inline struct device_node *of_node(struct fwnode_handle *fwnode)
++{
++	return fwnode ? container_of(fwnode, struct device_node, fwnode) : NULL;
++}
++
+ static inline bool of_have_populated_dt(void)
+ {
+ 	return of_allnodes != NULL;
+@@ -360,6 +372,16 @@ bool of_console_check(struct device_node
+ 
+ #else /* CONFIG_OF */
+ 
++static inline bool is_of_node(struct fwnode_handle *fwnode)
++{
++	return false;
++}
++
++static inline struct device_node *of_node(struct fwnode_handle *fwnode)
++{
++	return NULL;
++}
++
+ static inline const char* of_node_full_name(const struct device_node *np)
+ {
+ 	return "<no-node>";
+Index: linux-pm/drivers/base/property.c
+===================================================================
+--- linux-pm.orig/drivers/base/property.c
++++ linux-pm/drivers/base/property.c
+@@ -31,6 +31,22 @@ bool device_property_present(struct devi
+ }
+ EXPORT_SYMBOL_GPL(device_property_present);
+ 
++/**
++ * fwnode_property_present - check if a property of a firmware node is present
++ * @fwnode: Firmware node whose property to check
++ * @propname: Name of the property
++ */
++bool fwnode_property_present(struct fwnode_handle *fwnode, const char *propname)
++{
++	if (is_of_node(fwnode))
++		return of_property_read_bool(of_node(fwnode), propname);
++	else if (is_acpi_node(fwnode))
++		return !acpi_dev_prop_get(acpi_node(fwnode), propname, NULL);
++
++	return false;
++}
++EXPORT_SYMBOL_GPL(fwnode_property_present);
++
+ #define OF_DEV_PROP_READ_ARRAY(node, propname, type, val, nval) \
+ 	(val) ? of_property_read_##type##_array((node), (propname), (val), (nval)) \
+ 	      : of_property_count_elems_of_size((node), (propname), sizeof(type))
+@@ -183,3 +199,233 @@ int device_property_read_string(struct d
+ 				   DEV_PROP_STRING, val, 1);
+ }
+ EXPORT_SYMBOL_GPL(device_property_read_string);
++
++#define FWNODE_PROP_READ_ARRAY(_fwnode_, _propname_, _type_, _proptype_, _val_, _nval_) \
++({ \
++	int _ret_; \
++	if (is_of_node(_fwnode_)) \
++		_ret_ = OF_DEV_PROP_READ_ARRAY(of_node(_fwnode_), _propname_, \
++					       _type_, _val_, _nval_); \
++	else if (is_acpi_node(_fwnode_)) \
++		_ret_ = acpi_dev_prop_read(acpi_node(_fwnode_), _propname_, \
++					   _proptype_, _val_, _nval_); \
++	else \
++		_ret_ = -ENXIO; \
++	_ret_; \
++})
++
++/**
++ * fwnode_property_read_u8_array - return a u8 array property of firmware node
++ * @fwnode: Firmware node to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Read an array of u8 properties with @propname from @fwnode and stores them to
++ * @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected,
++ *	   %-ENXIO if no suitable firmware interface is present.
++ */
++int fwnode_property_read_u8_array(struct fwnode_handle *fwnode,
++				  const char *propname, u8 *val, size_t nval)
++{
++	return FWNODE_PROP_READ_ARRAY(fwnode, propname, u8, DEV_PROP_U8,
++				      val, nval);
++}
++EXPORT_SYMBOL_GPL(fwnode_property_read_u8_array);
++
++/**
++ * fwnode_property_read_u16_array - return a u16 array property of firmware node
++ * @fwnode: Firmware node to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Read an array of u16 properties with @propname from @fwnode and store them to
++ * @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected,
++ *	   %-ENXIO if no suitable firmware interface is present.
++ */
++int fwnode_property_read_u16_array(struct fwnode_handle *fwnode,
++				   const char *propname, u16 *val, size_t nval)
++{
++	return FWNODE_PROP_READ_ARRAY(fwnode, propname, u16, DEV_PROP_U16,
++				      val, nval);
++}
++EXPORT_SYMBOL_GPL(fwnode_property_read_u16_array);
++
++/**
++ * fwnode_property_read_u32_array - return a u32 array property of firmware node
++ * @fwnode: Firmware node to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Read an array of u32 properties with @propname from @fwnode store them to
++ * @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected,
++ *	   %-ENXIO if no suitable firmware interface is present.
++ */
++int fwnode_property_read_u32_array(struct fwnode_handle *fwnode,
++				   const char *propname, u32 *val, size_t nval)
++{
++	return FWNODE_PROP_READ_ARRAY(fwnode, propname, u32, DEV_PROP_U32,
++				      val, nval);
++}
++EXPORT_SYMBOL_GPL(fwnode_property_read_u32_array);
++
++/**
++ * fwnode_property_read_u64_array - return a u64 array property firmware node
++ * @fwnode: Firmware node to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Read an array of u64 properties with @propname from @fwnode and store them to
++ * @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected,
++ *	   %-ENXIO if no suitable firmware interface is present.
++ */
++int fwnode_property_read_u64_array(struct fwnode_handle *fwnode,
++				   const char *propname, u64 *val, size_t nval)
++{
++	return FWNODE_PROP_READ_ARRAY(fwnode, propname, u64, DEV_PROP_U64,
++				      val, nval);
++}
++EXPORT_SYMBOL_GPL(fwnode_property_read_u64_array);
++
++/**
++ * fwnode_property_read_string_array - return string array property of a node
++ * @fwnode: Firmware node to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Read an string list property @propname from the given firmware node and store
++ * them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of strings,
++ *	   %-EOVERFLOW if the size of the property is not as expected,
++ *	   %-ENXIO if no suitable firmware interface is present.
++ */
++int fwnode_property_read_string_array(struct fwnode_handle *fwnode,
++				      const char *propname, const char **val,
++				      size_t nval)
++{
++	if (is_of_node(fwnode))
++		return of_property_read_string_array(of_node(fwnode), propname,
++						     val, nval);
++	else if (is_acpi_node(fwnode))
++		return acpi_dev_prop_read(acpi_node(fwnode), propname,
++					  DEV_PROP_STRING, val, nval);
++
++	return -ENXIO;
++}
++EXPORT_SYMBOL_GPL(fwnode_property_read_string_array);
++
++/**
++ * fwnode_property_read_string - return a string property of a firmware node
++ * @fwnode: Firmware node to get the property of
++ * @propname: Name of the property
++ * @val: The value is stored here
++ *
++ * Read property @propname from the given firmware node and store the value into
++ * @val if found.  The value is checked to be a string.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO or %-EILSEQ if the property is not a string,
++ *	   %-ENXIO if no suitable firmware interface is present.
++ */
++int fwnode_property_read_string(struct fwnode_handle *fwnode,
++				const char *propname, const char **val)
++{
++	if (is_of_node(fwnode))
++		return of_property_read_string(of_node(fwnode),propname, val);
++	else if (is_acpi_node(fwnode))
++		return acpi_dev_prop_read(acpi_node(fwnode), propname,
++					  DEV_PROP_STRING, val, 1);
++
++	return -ENXIO;
++}
++EXPORT_SYMBOL_GPL(fwnode_property_read_string);
++
++/**
++ * device_get_next_child_node - Return the next child node handle for a device
++ * @dev: Device to find the next child node for.
++ * @child: Handle to one of the device's child nodes or a null handle.
++ */
++struct fwnode_handle *device_get_next_child_node(struct device *dev,
++						 struct fwnode_handle *child)
++{
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node) {
++		struct device_node *node;
++
++		node = of_get_next_available_child(dev->of_node, of_node(child));
++		if (node)
++			return &node->fwnode;
++	} else if (IS_ENABLED(CONFIG_ACPI)) {
++		struct acpi_device *node;
++
++		node = acpi_get_next_child(dev, acpi_node(child));
++		if (node)
++			return acpi_fwnode_handle(node);
++	}
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(device_get_next_child_node);
++
++/**
++ * fwnode_handle_put - Drop reference to a device node
++ * @fwnode: Pointer to the device node to drop the reference to.
++ *
++ * This has to be used when terminating device_for_each_child_node() iteration
++ * with break or return to prevent stale device node references from being left
++ * behind.
++ */
++void fwnode_handle_put(struct fwnode_handle *fwnode)
++{
++	if (is_of_node(fwnode))
++		of_node_put(of_node(fwnode));
++}
++EXPORT_SYMBOL_GPL(fwnode_handle_put);
++
++/**
++ * device_get_child_node_count - return the number of child nodes for device
++ * @dev: Device to cound the child nodes for
++ */
++unsigned int device_get_child_node_count(struct device *dev)
++{
++	struct fwnode_handle *child;
++	unsigned int count = 0;
++
++	device_for_each_child_node(dev, child)
++		count++;
++
++	return count;
++}
++EXPORT_SYMBOL_GPL(device_get_child_node_count);
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1389,6 +1389,26 @@ int acpi_device_add(struct acpi_device *
+ 	return result;
+ }
+ 
++struct acpi_device *acpi_get_next_child(struct device *dev,
++					struct acpi_device *child)
++{
++	struct acpi_device *adev = ACPI_COMPANION(dev);
++	struct list_head *head, *next;
++
++	if (!adev)
++		return NULL;
++
++	head = &adev->children;
++	if (list_empty(head))
++		return NULL;
++
++	if (!child)
++		return list_first_entry(head, struct acpi_device, node);
++
++	next = child->node.next;
++	return next == head ? NULL : list_entry(next, struct acpi_device, node);
++}
++
+ /* --------------------------------------------------------------------------
+                                  Driver Management
+    -------------------------------------------------------------------------- */
+@@ -2008,6 +2028,7 @@ void acpi_init_device_object(struct acpi
+ 	device->device_type = type;
+ 	device->handle = handle;
+ 	device->parent = acpi_bus_get_parent(handle);
++	device->fwnode.type = FWNODE_ACPI;
+ 	acpi_set_device_status(device, sta);
+ 	acpi_device_get_busid(device);
+ 	acpi_set_pnp_ids(handle, &device->pnp, type);
 
