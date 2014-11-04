@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967AbaKDRSx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:18:53 -0500
-Received: from mailout.easymail.ca ([64.68.201.169]:50552 "EHLO
+	id S1752915AbaKDRSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:18:51 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:50553 "EHLO
 	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752161AbaKDRSV (ORCPT
+	with ESMTP id S1752184AbaKDRSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Nov 2014 12:18:21 -0500
-X-Quarantine-ID: <da6wp8eGXvBn>
+X-Quarantine-ID: <dICyphc45aCm>
 X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
 X-Spam-Flag: NO
 X-Spam-Score: -4.399
@@ -19,9 +19,9 @@ To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH 18/20] selftests/timers: add install target to enable installing test
-Date: Tue,  4 Nov 2014 10:11:14 -0700
-Message-Id: <bec2beda6c834a49bd9c24479ab167156c10b8c9.1415117102.git.shuahkh@osg.samsung.com>
+Subject: [PATCH 08/20] selftests/firmware: add install target to enable installing test
+Date: Tue,  4 Nov 2014 10:11:04 -0700
+Message-Id: <a2ce2a487fda9cb4ffe45bf96325b2f9ebd4c215.1415117102.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
 References: <cover.1415117102.git.shuahkh@osg.samsung.com>
@@ -37,27 +37,40 @@ kselftest script to run the test.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/timers/Makefile | 7 +++++++
- 1 file changed, 7 insertions(+)
+ tools/testing/selftests/firmware/Makefile | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/tools/testing/selftests/timers/Makefile b/tools/testing/selftests/timers/Makefile
-index eb2859f..5fce7ae 100644
---- a/tools/testing/selftests/timers/Makefile
-+++ b/tools/testing/selftests/timers/Makefile
-@@ -1,6 +1,13 @@
- all:
- 	gcc posix_timers.c -o posix_timers -lrt
+diff --git a/tools/testing/selftests/firmware/Makefile b/tools/testing/selftests/firmware/Makefile
+index e23cce0..d5008ec 100644
+--- a/tools/testing/selftests/firmware/Makefile
++++ b/tools/testing/selftests/firmware/Makefile
+@@ -19,6 +19,26 @@ fw_userhelper:
+                 exit 1; \
+         fi
  
 +install: all
-+	install ./posix_timers $(INSTALL_KSFT_PATH)
-+	echo "\necho \"Start timers test ....\"" >> $(KSELFTEST)
-+	echo "./posix_timers" >> $(KSELFTEST)
-+	echo "echo \"End timers test ....\"" >> $(KSELFTEST)
++	install ./fw_filesystem.sh ./fw_userhelper.sh $(INSTALL_KSFT_PATH)
++	echo "\necho \"Start firmware filesystem test ....\"" >> $(KSELFTEST)
++	echo "if /bin/sh ./fw_filesystem.sh ; then \\" >> $(KSELFTEST)
++	echo "\techo \"fw_filesystem: ok \"; \\" >> $(KSELFTEST)
++	echo "else \\" >> $(KSELFTEST)
++	echo "\techo \"fw_filesystem: [FAIL] \"; \\" >> $(KSELFTEST)
++	echo "fi" >> $(KSELFTEST)
++	echo "echo \"End firmware filesystem test ....\"" >> $(KSELFTEST)
++	echo "echo \"--------------------\"" >> $(KSELFTEST)
++
++	echo "echo \"Start firmware userhelper test ....\"" >> $(KSELFTEST)
++	echo "if /bin/sh ./fw_userhelper.sh ; then \\" >> $(KSELFTEST)
++	echo "\techo \"fw_userhelper: ok\"; \\" >> $(KSELFTEST)
++	echo "else \\" >> $(KSELFTEST)
++	echo "\techo \"fw_userhelper: [FAIL] \"; \\" >> $(KSELFTEST)
++	echo "fi" >> $(KSELFTEST)
++	echo "echo \"End firmware userhelper test ....\"" >> $(KSELFTEST)
 +	echo "echo \"==============================\"" >> $(KSELFTEST)
 +
- run_tests: all
- 	./posix_timers
+ run_tests: all fw_filesystem fw_userhelper
  
+ # Nothing to clean up.
 -- 
 1.9.1
 
