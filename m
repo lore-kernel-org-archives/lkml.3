@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430AbaKDCXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 21:23:16 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:36531 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280AbaKDCWn (ORCPT
+	id S1752497AbaKDCXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 21:23:33 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42089 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752234AbaKDCWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 21:22:43 -0500
+	Mon, 3 Nov 2014 21:22:35 -0500
 From: varkabhadram@gmail.com
 To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
 Cc: balbi@ti.com, stern@rowland.harvard.edu,
         sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
         Varka Bhadram <varkabhadram@gmail.com>, Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH usb v4 11/27] host: ehci-sh: remove duplicate check on resource
-Date: Tue,  4 Nov 2014 07:51:18 +0530
-Message-Id: <1415067694-9473-12-git-send-email-varkabhadram@gmail.com>
+Subject: [PATCH usb v4 09/27] host: ohci-platform: remove duplicate check on resource
+Date: Tue,  4 Nov 2014 07:51:16 +0530
+Message-Id: <1415067694-9473-10-git-send-email-varkabhadram@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1415067694-9473-1-git-send-email-varkabhadram@gmail.com>
 References: <1415067694-9473-1-git-send-email-varkabhadram@gmail.com>
@@ -29,47 +29,45 @@ Sanity check on resource happening with devm_ioremap_resource().
 Signed-off-by: Varka Bhadram <varkab@cdac.in>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/host/ehci-sh.c |   15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
+ drivers/usb/host/ohci-platform.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-sh.c b/drivers/usb/host/ehci-sh.c
-index f9ebf8a..0e0ce68 100644
---- a/drivers/usb/host/ehci-sh.c
-+++ b/drivers/usb/host/ehci-sh.c
-@@ -86,15 +86,6 @@ static int ehci_hcd_sh_probe(struct platform_device *pdev)
- 	if (usb_disabled())
- 		return -ENODEV;
+diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
+index adb691d..9434c1d 100644
+--- a/drivers/usb/host/ohci-platform.c
++++ b/drivers/usb/host/ohci-platform.c
+@@ -134,12 +134,6 @@ static int ohci_platform_probe(struct platform_device *dev)
+ 		return irq;
+ 	}
  
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev,
--			"Found HC with no register addr. Check %s setup!\n",
--			dev_name(&pdev->dev));
--		ret = -ENODEV;
--		goto fail_create_hcd;
+-	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
+-	if (!res_mem) {
+-		dev_err(&dev->dev, "no memory resource provided");
+-		return -ENXIO;
 -	}
 -
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq <= 0) {
- 		dev_err(&pdev->dev,
-@@ -114,14 +105,14 @@ static int ehci_hcd_sh_probe(struct platform_device *pdev)
- 		goto fail_create_hcd;
+ 	hcd = usb_create_hcd(&ohci_platform_hc_driver, &dev->dev,
+ 			dev_name(&dev->dev));
+ 	if (!hcd)
+@@ -231,14 +225,15 @@ static int ohci_platform_probe(struct platform_device *dev)
+ 			goto err_reset;
  	}
  
--	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = resource_size(res);
+-	hcd->rsrc_start = res_mem->start;
+-	hcd->rsrc_len = resource_size(res_mem);
 -
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
++	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
+ 	hcd->regs = devm_ioremap_resource(&dev->dev, res_mem);
  	if (IS_ERR(hcd->regs)) {
- 		ret = PTR_ERR(hcd->regs);
- 		goto fail_request_resource;
+ 		err = PTR_ERR(hcd->regs);
+ 		goto err_power;
  	}
-+	hcd->rsrc_start = res->start;
-+	hcd->rsrc_len = resource_size(res);
- 
- 	priv = devm_kzalloc(&pdev->dev, sizeof(struct ehci_sh_priv),
- 			    GFP_KERNEL);
++	hcd->rsrc_start = res_mem->start;
++	hcd->rsrc_len = resource_size(res_mem);
++
+ 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (err)
+ 		goto err_power;
 -- 
 1.7.9.5
 
