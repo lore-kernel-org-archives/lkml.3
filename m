@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaKDKxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:53:52 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:35288 "EHLO
+	id S1753059AbaKDKxQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:53:16 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:48121 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753095AbaKDKxr (ORCPT
+	by vger.kernel.org with ESMTP id S1751256AbaKDKxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:53:47 -0500
+	Tue, 4 Nov 2014 05:53:12 -0500
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -22,51 +22,70 @@ Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         Lee Jones <lee.jones@linaro.org>,
         Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v5 2/8] phy: miphy28lp: Add PHY header file for DT x Driver defines
-Date: Tue,  4 Nov 2014 11:51:18 +0100
-Message-Id: <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH v5 0/8] phy: miphy28lp: Introduce support for MiPHY28lp
+Date: Tue,  4 Nov 2014 11:51:16 +0100
+Message-Id: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org>
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
  definitions=2014-11-04_05:2014-11-03,2014-11-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the shared header file which will be reference from both
-PHY driver and its associated Device Tree node(s).
+Changes in v5:
+ - split TYPE_USB define into TYPE_USB2 & TYPE_USB3
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- include/dt-bindings/phy/phy.h | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+Changes in v4:
+ - use a generic phy header file for dt binding 
+ - cosmetic correction
+ - add comments
+
+Changes in v3:
+ - split into separate smaller functions and can be resued 
+   for sata / pcie and usb
+ - uses macros for registers and values
+ - cosmetic correction
+
+from Kishon
+ - create a common file for phy
+ - cosmetic correction in phy-miphy28lp.txt file
+ - change initialization of the registers
+from Srinivas
+ - rename and simplify a procedure
+ - Add Tx impedance and SSC support for SATA and PCI
+
+Hi Kishon,
+
+The goal of this series is to add the support of MiPHY28lp Generic PHY.
+I tried to be as close as possible to the MiPHY365x Lee Jones proposal.
+
+Best Regards
+Gabriel.
+
+Gabriel Fernandez (8):
+  phy: miphy28lp: Add Device Tree bindings for the MiPHY28lp
+  phy: miphy28lp: Add PHY header file for DT x Driver defines
+  phy: miphy28lp: Provide support for the MiPHY28lp Generic PHY
+  ARM: DT: STi: STiH407: Add DT node for MiPHY28lp
+  phy: miphy28lp: Add SSC support for SATA
+  phy: miphy28lp: Add SSC support for PCIE
+  phy: miphy28lp: Tune tx impedance across Soc cuts
+  ARM: multi_v7_defconfig: Enable MiPHY28lp - ST's Generic (SATA, PCIe &
+    USB3) PHY
+
+ .../devicetree/bindings/phy/phy-miphy28lp.txt      |  128 ++
+ arch/arm/boot/dts/stih407-b2120.dts                |   11 +
+ arch/arm/boot/dts/stih407.dtsi                     |   65 +
+ arch/arm/configs/multi_v7_defconfig                |    1 +
+ drivers/phy/Kconfig                                |    8 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-miphy28lp.c                        | 1283 ++++++++++++++++++++
+ include/dt-bindings/phy/phy.h                      |   18 +
+ 8 files changed, 1515 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+ create mode 100644 drivers/phy/phy-miphy28lp.c
  create mode 100644 include/dt-bindings/phy/phy.h
 
-diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
-new file mode 100644
-index 0000000..e8c6a3f
---- /dev/null
-+++ b/include/dt-bindings/phy/phy.h
-@@ -0,0 +1,18 @@
-+/*
-+ *
-+ * This header provides constants for the phy framework
-+ *
-+ * Copyright (C) 2014 STMicroelectronics
-+ * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#ifndef _DT_BINDINGS_PHY
-+#define _DT_BINDINGS_PHY
-+
-+#define PHY_TYPE_SATA		1
-+#define PHY_TYPE_PCIE		2
-+#define PHY_TYPE_USB2		3
-+#define PHY_TYPE_USB3		4
-+
-+#endif /* _DT_BINDINGS_PHY */
 -- 
 1.9.1
 
