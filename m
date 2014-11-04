@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaKDNuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:50:01 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:13127 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753421AbaKDNtR (ORCPT
+	id S1753567AbaKDNww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:52:52 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:53526 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbaKDNwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:49:17 -0500
-Message-Id: <20141104134916.016542150@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Tue, 04 Nov 2014 08:48:49 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next][PATCH 2/4] tracing: Kill the dead code in probe_sched_switch() and
- probe_sched_wakeup()
-References: <20141104134847.978505265@goodmis.org>
+	Tue, 4 Nov 2014 08:52:50 -0500
+Message-ID: <5458D9B9.5030606@imgtec.com>
+Date: Tue, 4 Nov 2014 13:50:49 +0000
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-tracing-Kill-the-dead-code-in-probe_sched_switch-and.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
+        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
+        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
+        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
+        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
+        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>
+Subject: Re: [PATCH 2/2] move imx-hdmi to bridge/dw-hdmi
+References: <1415108398-34376-1-git-send-email-andy.yan@rock-chips.com>
+In-Reply-To: <1415108398-34376-1-git-send-email-andy.yan@rock-chips.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+Hi,
 
-After the previous patch it is clear that "tracer_enabled" can never be
-true, we can remove the "if (tracer_enabled)" code in probe_sched_switch()
-and probe_sched_wakeup(). Plus we can obviously remove tracer_enabled,
-ctx_trace, and sched_stopped as well.
-
-Link: http://lkml.kernel.org/p/20140723193503.GA30217@redhat.com
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_sched_switch.c | 40 ---------------------------------------
- 1 file changed, 40 deletions(-)
-
-diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_switch.c
-index 3b60301c59d2..f7c7f4f1544c 100644
---- a/kernel/trace/trace_sched_switch.c
-+++ b/kernel/trace/trace_sched_switch.c
-@@ -14,12 +14,8 @@
- 
- #include "trace.h"
- 
--static struct trace_array	*ctx_trace;
--static int __read_mostly	tracer_enabled;
- static int			sched_ref;
- static DEFINE_MUTEX(sched_register_mutex);
--static int			sched_stopped;
--
- 
- void
- tracing_sched_switch_trace(struct trace_array *tr,
-@@ -52,29 +48,11 @@ tracing_sched_switch_trace(struct trace_array *tr,
- static void
- probe_sched_switch(void *ignore, struct task_struct *prev, struct task_struct *next)
- {
--	struct trace_array_cpu *data;
--	unsigned long flags;
--	int cpu;
--	int pc;
--
- 	if (unlikely(!sched_ref))
- 		return;
- 
- 	tracing_record_cmdline(prev);
- 	tracing_record_cmdline(next);
--
--	if (!tracer_enabled || sched_stopped)
--		return;
--
--	pc = preempt_count();
--	local_irq_save(flags);
--	cpu = raw_smp_processor_id();
--	data = per_cpu_ptr(ctx_trace->trace_buffer.data, cpu);
--
--	if (likely(!atomic_read(&data->disabled)))
--		tracing_sched_switch_trace(ctx_trace, prev, next, flags, pc);
--
--	local_irq_restore(flags);
- }
- 
- void
-@@ -108,28 +86,10 @@ tracing_sched_wakeup_trace(struct trace_array *tr,
- static void
- probe_sched_wakeup(void *ignore, struct task_struct *wakee, int success)
- {
--	struct trace_array_cpu *data;
--	unsigned long flags;
--	int cpu, pc;
--
- 	if (unlikely(!sched_ref))
- 		return;
- 
- 	tracing_record_cmdline(current);
--
--	if (!tracer_enabled || sched_stopped)
--		return;
--
--	pc = preempt_count();
--	local_irq_save(flags);
--	cpu = raw_smp_processor_id();
--	data = per_cpu_ptr(ctx_trace->trace_buffer.data, cpu);
--
--	if (likely(!atomic_read(&data->disabled)))
--		tracing_sched_wakeup_trace(ctx_trace, wakee, current,
--					   flags, pc);
--
--	local_irq_restore(flags);
- }
- 
- static int tracing_sched_register(void)
--- 
-2.1.1
+On 04/11/14 13:39, Andy Yan wrote:
+> From: Andy yan <andy.yan@rock-chips.com>
+> 
+> the original imx hdmi driver is under staging/imx-drm,
+> which depends on imx-drm, so move the imx hdmi drvier out
+> to drm/bridge and rename imx-hdmi to dw-hdmi
+> 
+> Change-Id: I5f417372f256aa26cd00a3cd0160741680afd39d
+> ---
+>  drivers/gpu/drm/bridge/Kconfig        |    5 +
+>  drivers/gpu/drm/bridge/Makefile       |    1 +
+>  drivers/gpu/drm/bridge/dw_hdmi.c      | 1651 +++++++++++++++++++++++++++++++++
+>  drivers/gpu/drm/bridge/dw_hdmi.h      | 1032 +++++++++++++++++++++
+>  drivers/staging/imx-drm/Kconfig       |    1 +
+>  drivers/staging/imx-drm/Makefile      |    2 +-
+>  drivers/staging/imx-drm/dw_hdmi-imx.c |   66 +-
+>  drivers/staging/imx-drm/imx-hdmi.c    | 1651 ---------------------------------
+>  drivers/staging/imx-drm/imx-hdmi.h    | 1032 ---------------------
+>  include/drm/bridge/dw_hdmi.h          |   26 +-
+>  10 files changed, 2737 insertions(+), 2730 deletions(-)
+>  create mode 100644 drivers/gpu/drm/bridge/dw_hdmi.c
+>  create mode 100644 drivers/gpu/drm/bridge/dw_hdmi.h
+>  delete mode 100644 drivers/staging/imx-drm/imx-hdmi.c
+>  delete mode 100644 drivers/staging/imx-drm/imx-hdmi.h
+> 
 
 
+Could you try generating this patch with the -M option?
+
+git format-patch should then understand its a rename.
+Then it should generate a smaller patch that is possible to review easily.
+
+Thanks
+ZubairLK
