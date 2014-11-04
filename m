@@ -1,140 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaKDHkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:40:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:48093 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936AbaKDHkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:40:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="484313999"
-Message-ID: <545882FE.70907@linux.intel.com>
-Date: Tue, 04 Nov 2014 15:40:46 +0800
-From: "Lu, Baolu" <baolu.lu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752133AbaKDHlG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:41:06 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:53300 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076AbaKDHlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 02:41:03 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: HC Yen <hc.yen@mediatek.com>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        "Joe. C" <yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
+        arm@kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        huang eddie <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Yuhau Chen <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH v4 1/8] ARM: mediatek: Add basic support for mt8127
+Date: Tue, 04 Nov 2014 08:39:55 +0100
+Message-ID: <13477264.GuOdydWub7@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1415083006.10186.85.camel@mtksdaap41>
+References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com> <CABuKBeLYMbD-dV_25FJd_NE1RgfVkgF+SoCiAx9O9jKUUAcexA@mail.gmail.com> <1415083006.10186.85.camel@mtksdaap41>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] usb: xhci: This reworks ff8cbf250b448aac35589f6075082c3fcad8a8fe
-References: <Pine.LNX.4.44L0.1410311023550.1833-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1410311023550.1833-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:RCRbeeasEAzLXprxyNSuUeAHZ+zndRBlZD5eJwPv0Ni
+ 67oUBU2tAeDQWVHet8K+VC1+eNhLwjPzfuXPSJtOfGHB4Zigh3
+ b540C/2Dg0EsZ1Zou/GCYIc+TgkeTxip+2SyvJdDEQIyuu/Z0V
+ iumHoSe2c0nLqQqOc+CWAEQgN/brULGHap22p7nuFZotfM+Bq+
+ 8Me3b3GeH2+7wnVZiuC5wxk/Zo8Ry0fqHkEaJVycjO8zFhaK40
+ +466BmMNC9hW1Lf+53bwiWWvR95NPHqJaISRCStQVSUZR1DOCI
+ tY9YQgWAoZ9mh81W3GnafI1pRIY0+tGEdb81Ma0TeC4uXqtw3D
+ WabUUa+Npm/t6gkqxbEI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 04 November 2014 14:36:45 HC Yen wrote:
+> > > +
+> > > +#include <dt-bindings/interrupt-controller/irq.h>
+> > > +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> > > +#include "skeleton64.dtsi"
+> > 
+> > Cortex a7 is 32 bits, right? So why do you use skeleton64.dtsi?
+> 
+> Cortex-A7 is 32-bit, but that doesn't mean it can only have 32-bit
+> physical address.  With LPAE enabled, we can have physical address more
+> than 32 bits.
+> 
+> The main difference between "skeleton64.dtsi" and "skeleton.dtsi" is
+> "#address-cells" property set to 2.  Although there are few sources
+> using "skeleton64.dtsi", some of them write "#address-cells = <2>"
+> directly in order to have 64-bit address space.  ARM's TC2 reference
+> platform (vexpress-v2p-ca15_a7.dts) is an example.
+> 
+> Some of MediaTek ARMv7 SoCs support address space larger than 4GB. It
+> will be convenient to share the sources if we all use 64-bit device
+> tree.
 
-On 10/31/2014 10:28 PM, Alan Stern wrote:
-> On Fri, 31 Oct 2014, Lu Baolu wrote:
->
->> xhci: clear root port wake on bits if controller isn't wake-up capable
->>
->> When xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
->> xhci_pci_suspend needs to clear all root port wake on bits. Otherwise some Intel
->> platforms may get a spurious wakeup, even if PCI PME# is disabled.
->>
->> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
->> ---
->>   drivers/usb/host/xhci-pci.c | 42 ++++++++++++++++++++++++++++++++++++++++++
->>   drivers/usb/host/xhci.h     |  6 ++++++
->>   2 files changed, 48 insertions(+)
->>
->> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
->> index 280dde9..3e7441a 100644
->> --- a/drivers/usb/host/xhci-pci.c
->> +++ b/drivers/usb/host/xhci-pci.c
->> @@ -27,6 +27,8 @@
->>   #include "xhci.h"
->>   #include "xhci-trace.h"
->>   
->> +#define	PORT_WAKE_BITS	(PORT_WKOC_E | PORT_WKDISC_E | PORT_WKCONN_E)
->> +
->>   /* Device for a quirk */
->>   #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
->>   #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
->> @@ -126,6 +128,7 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
->>   		 */
->>   		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
->>   		xhci->quirks |= XHCI_AVOID_BEI;
->> +		xhci->quirks |= XHCI_DISABLE_PORT_WOB;
->>   	}
->>   	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
->>   	    (pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI ||
->> @@ -279,6 +282,42 @@ static void xhci_pci_remove(struct pci_dev *dev)
->>   }
->>   
->>   #ifdef CONFIG_PM
->> +static void xhci_disable_port_wake_bits(struct xhci_hcd *xhci)
->> +{
->> +	int port_index;
->> +	__le32 __iomem **port_array;
->> +	unsigned long flags;
->> +	u32 t1, t2;
->> +
->> +	spin_lock_irqsave(&xhci->lock, flags);
->> +
->> +	/* disble usb3 ports Wake bits*/
->> +	port_index = xhci->num_usb3_ports;
->> +	port_array = xhci->usb3_ports;
->> +	while (port_index--) {
->> +		t1 = readl(port_array[port_index]);
->> +		t2 = xhci_port_state_to_neutral(t1);
->> +		t2 &= ~PORT_WAKE_BITS;
->> +		t1 = xhci_port_state_to_neutral(t1);
->> +		if (t1 != t2)
->> +			writel(t2, port_array[port_index]);
->> +	}
->> +
->> +	/* disble usb2 ports Wake bits*/
->> +	port_index = xhci->num_usb2_ports;
->> +	port_array = xhci->usb2_ports;
->> +	while (port_index--) {
->> +		t1 = readl(port_array[port_index]);
->> +		t2 = xhci_port_state_to_neutral(t1);
->> +		t2 &= ~PORT_WAKE_BITS;
->> +		t1 = xhci_port_state_to_neutral(t1);
->> +		if (t1 != t2)
->> +			writel(t2, port_array[port_index]);
->> +	}
->> +
->> +	spin_unlock_irqrestore(&xhci->lock, flags);
->> +}
->> +
->>   static int xhci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
->>   {
->>   	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
->> @@ -291,6 +330,9 @@ static int xhci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
->>   	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
->>   		pdev->no_d3cold = true;
->>   
->> +	if (xhci->quirks & XHCI_DISABLE_PORT_WOB && !do_wakeup)
->> +		xhci_disable_port_wake_bits(xhci);
->> +
->>   	return xhci_suspend(xhci);
->>   }
-> There are two things wrong here.  First, this should not be a quirk.
-> The Wake-On bits should be disabled whenever they aren't needed, on
-> every controller.
->
-> Second, this code (or something like it) belongs in xhci.c or
-> xhci-hub.c, not xhci-pci.c.  This is because it should apply to all
-> xHCI controllers, not just the PCI-based ones.
-Hi Alan,
+Right, in general, I'd use #address-cells=<2> for Cortex-A7/A15/A17.
 
-I agree with you. I will resubmit my patches.
-
-BR,
-baolu
-
->
-> (In fact, instead of disabling the Wake-On bits when the controller is
-> suspended and do_wakeup is 0, it probably would be better to leave them
-> disabled normally and then _enable_ them if do_wakeup is 1.)
->
-> Alan Stern
->
-
+	Arnd
