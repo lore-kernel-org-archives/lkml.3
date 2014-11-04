@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbaKDTxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 14:53:00 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:64560 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752298AbaKDTw6 (ORCPT
+	id S1753113AbaKDTxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 14:53:25 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58687 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaKDTxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 14:52:58 -0500
-Message-ID: <1415130776.20372.194.camel@x220>
-Subject: Re: [PATCH v3] usb: Remove references to non-existent PLAT_S5P
- symbol
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jg1.han@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Date: Tue, 04 Nov 2014 20:52:56 +0100
-In-Reply-To: <20141104194221.GB3722@kroah.com>
-References: <1412673127-11479-1-git-send-email-s.nawrocki@samsung.com>
-	 <20141103232438.GA11698@kroah.com> <54591BDF.8060203@samsung.com>
-	 <1415128864.20372.189.camel@x220> <20141104194221.GB3722@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+	Tue, 4 Nov 2014 14:53:23 -0500
+Date: Tue, 04 Nov 2014 14:53:15 -0500 (EST)
+Message-Id: <20141104.145315.548353349719796428.davem@davemloft.net>
+To: shuahkh@osg.samsung.com
+Cc: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
+        keescook@chromium.org, tranmanphong@gmail.com, dh.herrmann@gmail.com,
+        hughd@google.com, bobby.prani@gmail.com, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 02/20] selftests/net: move test out of Makefile into a
+ shell script
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <51d57725e89809806bd8af5555af341296cc4dd7.1415117102.git.shuahkh@osg.samsung.com>
+References: <cover.1415117102.git.shuahkh@osg.samsung.com>
+	<cover.1415117102.git.shuahkh@osg.samsung.com>
+	<51d57725e89809806bd8af5555af341296cc4dd7.1415117102.git.shuahkh@osg.samsung.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Nov 2014 19:52:56.0463 (UTC) FILETIME=[EDA981F0:01CFF868]
-X-RcptDomain: vger.kernel.org
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Nov 2014 11:53:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-04 at 11:42 -0800, Greg KH wrote:
-> As it's something that no one seemed to ever need before (i.e. it's not
-> a regression fix), but it would be a "new feature", I don't think it's
-> really a stable fix.
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Date: Tue,  4 Nov 2014 10:10:58 -0700
+
+> Currently bpf test run from the Makefile. Move it out of the
+> Makefile to be run from a shell script to allow the test to
+> be run as stand-alone test, in addition to allowing the test
+> run from a make target.
 > 
-> But feel free to convince me otherwise :)
+> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 
-Sylwester, was I right in thinking that users of PLAT_S5P, who could set
-USB_EHCI_EXYNOS or USB_OHCI_EXYNOS pre v3.17, got, well, transferred to
-ARCH_S5PV210 and lost the ability to set one of those symbols in v3.17?
-
-
-Paul Bolle
-
+Acked-by: David S. Miller <davem@davemloft.net>
