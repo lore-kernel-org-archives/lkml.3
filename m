@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322AbaKDFad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 00:30:33 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:35705 "EHLO
+	id S1751613AbaKDFau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 00:30:50 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:35758 "EHLO
 	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751081AbaKDFab (ORCPT
+	with ESMTP id S1751379AbaKDFaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 00:30:31 -0500
+	Tue, 4 Nov 2014 00:30:46 -0500
 X-Listener-Flag: 11101
 From: Xudong Chen <xudong.chen@mediatek.com>
 To: Mark Rutland <mark.rutland@arm.com>, <arm@kernel.org>,
@@ -26,10 +26,12 @@ CC: <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
         Eddie Huang <eddie.huang@mediatek.com>,
         Nathan Chung <nathan.chung@mediatek.com>,
         YH Chen <yh.chen@mediatek.com>
-Subject: [PATCH v2 0/3] ARM: mediatek: Add driver for Mediatek I2C controller
-Date: Tue, 4 Nov 2014 13:29:34 +0800
-Message-ID: <1415078977-18374-1-git-send-email-xudong.chen@mediatek.com>
+Subject: [PATCH v2 2/3] ARM: mediatek: Add I2C node for mt8135 and mt8127
+Date: Tue, 4 Nov 2014 13:29:36 +0800
+Message-ID: <1415078977-18374-3-git-send-email-xudong.chen@mediatek.com>
 X-Mailer: git-send-email 1.8.1.1.dirty
+In-Reply-To: <1415078977-18374-1-git-send-email-xudong.chen@mediatek.com>
+References: <1415078977-18374-1-git-send-email-xudong.chen@mediatek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-MTK: N
@@ -37,65 +39,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is the second version of Mediatek SoCs I2C controller common
-bus driver.
-Compared to the first version,
-1. Add comment for feature have-pmic in dt-bindings file i2c-mt6577.txt.
-2. Add notes for I2C4/5/6 in mt8135.dtsi.
-3. Add check compatible for the feature have-pmic in i2c-mt65xx.c, if set
-have-pmic for the compatible mt6577 the driver will return error.
+Add I2C node to mt8135.dtsi and mt8127.dtsi
 
-Because the clock driver for mediatek SoC is not ready yet(still work in
-progress), so I delete the related clock code in dtsi file for now.
+Signed-off-by: Xudong Chen <xudong.chen@mediatek.com>
+---
+ arch/arm/boot/dts/mt8127.dtsi | 27 +++++++++++++
+ arch/arm/boot/dts/mt8135.dtsi | 90 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 117 insertions(+)
 
-This driver is based on 3.18-rc1 & Hongzhou's gpio patch.
-
-MTK I2C HW has some limitation.
-1. If the i2c_msg number is more than one, STOP will be issued instead of
-RS(Repeat Start) between each message.
-Such as: "START + ADDR + DATA_n + STOP + START + ADDR + DATA_n + STOP ..."
-
-2. Mediatek I2C controller support WRRD(write then read) mode, in WRRD
-mode the Repeat Start will be issued between 2 messages.
-In this driver if 2 messages is first write then read, the driver will
-combine 2 messages using Write-Read mode so the RS will be issued between
-the 2 messages.
-Ex: W/R/R, driver will combine first W/R and then R.
-The data series will be:
-"START + WriteADDR + DATA + RS + ReadADDR + DATA + STOP + START + ReadADDR +
-DATA + STOP".
-
-3. Due to HW limitation, in this version the max transfer data length is 255
-in one message. If want to transfer more than 255 bytes, HW needs the SW
-driver to split the data. Take 600 bytes for example, the data need to be
-divided into 3 parts 255 + 255 + 90. The data series will be:
-"START + ADDR + DATA_255 + RS + ADDR + DATA_255 + RS + ADDR +  DATA_90 + STOP"
-instead of "START + ADDR + DATA_900 + STOP".
-We haven't implement this yet, we will do this in the separate patch.
-
-MT8135 and MT6589 can control I2C pins on PMIC(MT6397) by setting the i2c
-registers in MT8135 side. In this case, driver should set OFFSET_PATH_DIR
-bit first, the operation on other registers are still the same.
-For now MT6589/MT8135 support this, MT6577/MT6595/MT8127 do not support.
-For example, If want to use I2C4/5/6 pins on MT8135 just need to enable
-the pinmux, else if want to use I2C pins on PMIC(MT6397) just need to add
-"mediatek,have-pmic" property in the .dts file of each platform.
-
-Xudong Chen (3):
-  dt-bindings: Add I2C bindings for mt65xx/mt81xx.
-  ARM: mediatek: Add I2C node for mt8135 and mt8127
-  I2C: mediatek: Add driver for MediaTek I2C controller
-
- .../devicetree/bindings/i2c/i2c-mt6577.txt         |  39 ++
- arch/arm/boot/dts/mt8127.dtsi                      |  27 +
- arch/arm/boot/dts/mt8135.dtsi                      |  90 +++
- drivers/i2c/busses/Kconfig                         |   9 +
- drivers/i2c/busses/Makefile                        |   1 +
- drivers/i2c/busses/i2c-mt65xx.c                    | 742 +++++++++++++++++++++
- 6 files changed, 908 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-mt6577.txt
- create mode 100644 drivers/i2c/busses/i2c-mt65xx.c
-
---
+diff --git a/arch/arm/boot/dts/mt8127.dtsi b/arch/arm/boot/dts/mt8127.dtsi
+index 25c9f69..60d7685e 100644
+--- a/arch/arm/boot/dts/mt8127.dtsi
++++ b/arch/arm/boot/dts/mt8127.dtsi
+@@ -89,5 +89,32 @@
+ 			      <0 0x10214000 0 0x2000>,
+ 			      <0 0x10216000 0 0x2000>;
+ 		};
++
++		i2c0: i2c@11007000 {
++			compatible = "mediatek,mt8127-i2c",
++				"mediatek,mt6577-i2c";
++			reg = <0 0x11007000 0 0x70>,
++				<0 0x11000200 0 0x80>;
++			interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_LOW>;
++			mediatek,have-dcm;
++		};
++
++		i2c1: i2c@11008000 {
++			compatible = "mediatek,mt8127-i2c",
++				"mediatek,mt6577-i2c";
++			reg = <0 0x11008000 0 0x70>,
++				<0 0x11000280 0 0x80>;
++			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_LOW>;
++			mediatek,have-dcm;
++		};
++
++		i2c2: i2c@11009000 {
++			compatible = "mediatek,mt8127-i2c",
++				"mediatek,mt6577-i2c";
++			reg = <0 0x11009000 0 0x70>,
++				<0 0x11000300 0 0x80>;
++			interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_LOW>;
++			mediatek,have-dcm;
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/mt8135.dtsi b/arch/arm/boot/dts/mt8135.dtsi
+index 221ce09..cb32350 100644
+--- a/arch/arm/boot/dts/mt8135.dtsi
++++ b/arch/arm/boot/dts/mt8135.dtsi
+@@ -119,7 +119,97 @@
+ 			      <0 0x1020C000 0 0x1000>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
++
++			i2c0_pins_a: i2c0@0 {
++				mediatek,pins = <MT8135_PIN_100_SDA0__FUNC_SDA0 &pcfg_pull_none>,
++						<MT8135_PIN_101_SCL0__FUNC_SCL0 &pcfg_pull_none>;
++			};
++
++			i2c1_pins_a: i2c1@0 {
++				mediatek,pins = <MT8135_PIN_195_SDA1__FUNC_SDA1 &pcfg_pull_none>,
++						<MT8135_PIN_196_SCL1__FUNC_SCL1 &pcfg_pull_none>;
++			};
++
++			i2c2_pins_a: i2c2@0 {
++				mediatek,pins = <MT8135_PIN_193_SDA2__FUNC_SDA2 &pcfg_pull_none>,
++						<MT8135_PIN_194_SCL2__FUNC_SCL2 &pcfg_pull_none>;
++			};
++
++			i2c3_pins_a: i2c3@0 {
++				mediatek,pins = <MT8135_PIN_35_SCL3__FUNC_SCL3 &pcfg_pull_none>,
++						<MT8135_PIN_36_SDA3__FUNC_SDA3 &pcfg_pull_none>;
++			};
++
++			i2c4_pins_a: i2c4@0 {
++				mediatek,pins = <MT8135_PIN_87_MSDC1_DAT2__FUNC_SCL4 &pcfg_pull_none>,
++						<MT8135_PIN_88_MSDC1_DAT3__FUNC_SDA4 &pcfg_pull_none>;
++			};
++
++			i2c5_pins_a: i2c5@0 {
++				mediatek,pins = <MT8135_PIN_63_MSDC1_INSI__FUNC_SCL5 &pcfg_pull_none>,
++						<MT8135_PIN_64_MSDC1_SDWPI__FUNC_SDA5 &pcfg_pull_none>;
++			};
++
++			i2c6_pins_a: i2c6@0 {
++				mediatek,pins = <MT8135_PIN_197_MSDC3_DAT2__FUNC_SCL6 &pcfg_pull_none>,
++						<MT8135_PIN_198_MSDC3_DAT3__FUNC_SDA6 &pcfg_pull_none>;
++			};
+ 		};
+ 
++		i2c0: i2c@1100d000 {
++			compatible = "mediatek,mt8135-i2c",
++				"mediatek,mt6589-i2c";
++			reg = <0 0x1100d000 0 0x70>,
++				<0 0x11000300 0 0x80>;
++			interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_LOW>;
++		};
++
++		i2c1: i2c@1100e000 {
++			compatible = "mediatek,mt8135-i2c",
++				"mediatek,mt6589-i2c";
++			reg = <0 0x1100e000 0 0x70>,
++				<0 0x11000380 0 0x80>;
++			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_LOW>;
++		};
++
++		i2c2: i2c@1100f000 {
++			compatible = "mediatek,mt8135-i2c",
++				"mediatek,mt6589-i2c";
++			reg = <0 0x1100f000 0 0x70>,
++				<0 0x11000400 0 0x80>;
++			interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_LOW>;
++		};
++
++		i2c3: i2c@11010000 {
++			compatible = "mediatek,mt8135-i2c",
++				"mediatek,mt6589-i2c";
++			reg = <0 0x11010000 0 0x70>,
++				<0 0x11000480 0 0x80>;
++			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_LOW>;
++		};
++
++		i2c4: i2c@11011000 {
++			compatible = "mediatek,mt8135-i2c",
++				"mediatek,mt6589-i2c";
++			reg = <0 0x11011000 0 0x70>,
++				<0 0x11000500 0 0x80>;
++			interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_LOW>;
++		};
++
++		i2c5: i2c@11012000 {
++			compatible = "mediatek,mt8135-i2c",
++				"mediatek,mt6589-i2c";
++			reg = <0 0x11012000 0 0x70>,
++				<0 0x11000580 0 0x80>;
++			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_LOW>;
++		};
++
++		i2c6: i2c@11013000 {
++			compatible = "mediatek,mt8135-i2c",
++				"mediatek,mt6589-i2c";
++			reg = <0 0x11013000 0 0x70>,
++				<0 0x11000600 0 0x80>;
++			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_LOW>;
++		};
+ 	};
+ };
+-- 
 1.8.1.1.dirty
 
