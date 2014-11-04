@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713AbaKDNJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:09:38 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:51916 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751999AbaKDNJf (ORCPT
+	id S1753838AbaKDNKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:10:52 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:56058 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaKDNKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:09:35 -0500
-Date: Tue, 4 Nov 2014 08:09:28 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, <cluster-devel@redhat.com>
-Subject: Re: [RFA][PATCH 6/8] dlm: Use seq_puts() instead of seq_printf()
- for constant strings
-Message-ID: <20141104080928.55dd504a@gandalf.local.home>
-In-Reply-To: <20141029220108.088274858@goodmis.org>
-References: <20141029215602.535533597@goodmis.org>
-	<20141029220108.088274858@goodmis.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 4 Nov 2014 08:10:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <011801cff82e$78cd2c90$6a6785b0$@alibaba-inc.com>
+References: <011001cff827$f14b9870$d3e2c950$@alibaba-inc.com>
+ <CAKfTPtD6TZ4iHv9wtg-KCkGZriU79ySSxEV3nao2qQacveKAxA@mail.gmail.com> <011801cff82e$78cd2c90$6a6785b0$@alibaba-inc.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 4 Nov 2014 14:10:29 +0100
+Message-ID: <CAKfTPtCwLobjq6RVsB=61D_4amMtnLCmfUcpPo50Z7kzWgy5Hw@mail.gmail.com>
+Subject: Re: [PATCH v8 03/10] sched: move cfs task on a CPU with higher capacity
+To: Hillf Danton <hillf.zj@alibaba-inc.com>
+Cc: Wanpeng Li <kernellwp@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014 17:56:08 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On 4 November 2014 13:54, Hillf Danton <hillf.zj@alibaba-inc.com> wrote:
+>>
+>> On 4 November 2014 13:07, Hillf Danton <hillf.zj@alibaba-inc.com> wrote:
+>> >> >>   +     /*
+>> >> >> +        * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
+>> >> >
+>> >> >
+>> >> > Why specify one task instead of not less than one?
+>> >>
+>> >> if cfs.h_nr_running = 0 (which should not occurs at that point), we
+>> >> don't need to do more test to check if it's worth moving the task
+>> >> because there is no task to move.
+>> >>
+>> > I wonder if you can please shed light on the case that
+>> > the dst_cpu is newly idle.
+>>
+>> The main problem if we do the test only for newly idle case, is that
+>> we are not sure to move the task because we must rely on the
+>> wakeup/sleep sequence of other tasks on an idle CPU in order to trig
+>> the migration (periodic background task as an example). So we might
+>> never move the task whereas idle CPUs are available
+>>
+> So no task is migrated in the newly idle case, if I understand the
+> above correctly.
 
-> From: Joe Perches <joe@perches.com>
-> 
-> [ REQUEST FOR ACKS ]
+A task can be moved in both idle and newly idle. If we rely only on
+newly idle and we  have only idle CPUs, we can never move task. In the
+same way, if we rely only on idle case and a CPU never stays idle long
+enough to trig the idle load balance, we will never move the task. I
+agree that for the latter, we might wonder if it's worth moving the
+task. This is your concern ?
 
-Can any of the DLM maintainers give me an Acked-by for this?
+Vincent
 
-Thanks!
-
--- Steve
-
-> 
-> Convert the seq_printf output with constant strings to seq_puts.
-> 
-> Link: http://lkml.kernel.org/p/b416b016f4a6e49115ba736cad6ea2709a8bc1c4.1412031505.git.joe@perches.com
-> 
-> Cc: Christine Caulfield <ccaulfie@redhat.com>
-> Cc: David Teigland <teigland@redhat.com>
-> Cc: cluster-devel@redhat.com
-> Signed-off-by: Joe Perches <joe@perches.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  fs/dlm/debug_fs.c | 12 +++++-------
->  1 file changed, 5 insertions(+), 7 deletions(-)
-> 
-> diff --git a/fs/dlm/debug_fs.c b/fs/dlm/debug_fs.c
-> index 3bf460894088..eea64912c9c0 100644
-> --- a/fs/dlm/debug_fs.c
-> +++ b/fs/dlm/debug_fs.c
-> @@ -279,7 +279,7 @@ static void print_format3(struct dlm_rsb *r, struct seq_file *s)
->  			print_name = 0;
->  	}
->  
-> -	seq_printf(s, "%s", print_name ? "str " : "hex");
-> +	seq_puts(s, print_name ? "str " : "hex");
->  
->  	for (i = 0; i < r->res_length; i++) {
->  		if (print_name)
-> @@ -353,7 +353,7 @@ static void print_format4(struct dlm_rsb *r, struct seq_file *s)
->  			print_name = 0;
->  	}
->  
-> -	seq_printf(s, "%s", print_name ? "str " : "hex");
-> +	seq_puts(s, print_name ? "str " : "hex");
->  
->  	for (i = 0; i < r->res_length; i++) {
->  		if (print_name)
-> @@ -390,23 +390,21 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
->  		break;
->  	case 2:
->  		if (ri->header) {
-> -			seq_printf(seq, "id nodeid remid pid xid exflags "
-> -					"flags sts grmode rqmode time_ms "
-> -					"r_nodeid r_len r_name\n");
-> +			seq_puts(seq, "id nodeid remid pid xid exflags flags sts grmode rqmode time_ms r_nodeid r_len r_name\n");
->  			ri->header = 0;
->  		}
->  		print_format2(ri->rsb, seq);
->  		break;
->  	case 3:
->  		if (ri->header) {
-> -			seq_printf(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
-> +			seq_puts(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
->  			ri->header = 0;
->  		}
->  		print_format3(ri->rsb, seq);
->  		break;
->  	case 4:
->  		if (ri->header) {
-> -			seq_printf(seq, "version 4 rsb 2\n");
-> +			seq_puts(seq, "version 4 rsb 2\n");
->  			ri->header = 0;
->  		}
->  		print_format4(ri->rsb, seq);
-
+>
+> Hillf
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
