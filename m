@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaKDTTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 14:19:35 -0500
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:26665 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751158AbaKDTTe (ORCPT
+	id S1752402AbaKDTVK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 14:21:10 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:59677 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751261AbaKDTVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 14:19:34 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgcOAP8lWVRbsl9p/2dsb2JhbABbgw6BLLp9BgEBAQEBBQF0miiBJBcBAQEBAX2EXyOBGjeIRQG+Y482hjeJdWQdhDUFngeWT4FHATgegVs8L4EGgUUBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] cipso: remove NULL assignment on static
-Date: Tue,  4 Nov 2014 20:19:19 +0100
-Message-Id: <1415128759-11264-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Tue, 4 Nov 2014 14:21:08 -0500
+Message-ID: <1415128864.20372.189.camel@x220>
+Subject: Re: [PATCH v3] usb: Remove references to non-existent PLAT_S5P
+ symbol
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jg1.han@samsung.com,
+        linux-samsung-soc@vger.kernel.org
+Date: Tue, 04 Nov 2014 20:21:04 +0100
+In-Reply-To: <54591BDF.8060203@samsung.com>
+References: <1412673127-11479-1-git-send-email-s.nawrocki@samsung.com>
+	 <20141103232438.GA11698@kroah.com> <54591BDF.8060203@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Nov 2014 19:21:05.0306 (UTC) FILETIME=[7A8617A0:01CFF864]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also add blank line after structure declarations
+On Tue, 2014-11-04 at 19:33 +0100, Sylwester Nawrocki wrote:
+> On 04/11/14 00:24, Greg KH wrote:
+> > This isn't a stable issue...
+> 
+> Sorry for disturbing then, let me go and read the documentation again.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/ipv4/cipso_ipv4.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+If I remember correctly, I asked Sylwester to mark this for stable. So
+it's me that should be educated here.
 
-diff --git a/net/ipv4/cipso_ipv4.c b/net/ipv4/cipso_ipv4.c
-index 4715f25..dd3746a 100644
---- a/net/ipv4/cipso_ipv4.c
-+++ b/net/ipv4/cipso_ipv4.c
-@@ -72,6 +72,7 @@ struct cipso_v4_map_cache_bkt {
- 	u32 size;
- 	struct list_head list;
- };
-+
- struct cipso_v4_map_cache_entry {
- 	u32 hash;
- 	unsigned char *key;
-@@ -82,7 +83,8 @@ struct cipso_v4_map_cache_entry {
- 	u32 activity;
- 	struct list_head list;
- };
--static struct cipso_v4_map_cache_bkt *cipso_v4_cache = NULL;
-+
-+static struct cipso_v4_map_cache_bkt *cipso_v4_cache;
- 
- /* Restricted bitmap (tag #1) flags */
- int cipso_v4_rbm_optfmt = 0;
--- 
-1.9.3
+Why is a patch that allows the users of ARCH_S5PV210 to set
+USB_EHCI_EXYNOS or USB_OHCI_EXYNOS - which they apparently need - for a
+v3.17.y kernel, not a stable issue?
+
+
+Paul Bolle
 
