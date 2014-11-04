@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaKDKp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:45:56 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:62341 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174AbaKDKpv (ORCPT
+	id S1752506AbaKDKs0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:48:26 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:39056 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751228AbaKDKsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:45:51 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH] of/platform: Move platform devices under /sys/devices/platform
-Date: Tue,  4 Nov 2014 10:45:20 +0000
-Message-Id: <1415097920-30014-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Tue, 4 Nov 2014 05:48:22 -0500
+Message-ID: <5458AEC5.5020606@st.com>
+Date: Tue, 4 Nov 2014 11:47:33 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: <gong.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, <tytso@mit.edu>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        <kernel@stlinux.com>, <eric.paire@st.com>
+Subject: Re: [PATCH v2] bitops: Fix shift overflow in GENMASK macros
+References: <1415095437-28723-1-git-send-email-maxime.coquelin@st.com> <20141104104414.GL3337@twins.programming.kicks-ass.net>
+In-Reply-To: <20141104104414.GL3337@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-04_05:2014-11-03,2014-11-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the devices created by drivers/of/platform.c get created at
-the root of /sys/devices. This goes against the typical pattern for
-sysfs where the top level /sys/devices structure contains categories of
-devices, and the structure of devices is placed below that. To fix this,
-make the code in drivers/of/platform.c follow the drivers/base/platform.c
-behaviour, and use &platform_bus as the default parent for all new
-platform_devices and amba_devices.
 
-This change has been discussed for a long time, but nobody has actually
-acted on it. Userspace code that expects to find devices under a fixed
-/sys/devices/... path will be affected. It isn't /supposed/ to do that,
-but if anyone complains then I'll add a default-off workaround option to
-put them back into the root.
+On 11/04/2014 11:44 AM, Peter Zijlstra wrote:
+> On Tue, Nov 04, 2014 at 11:03:57AM +0100, Maxime COQUELIN wrote:
+>
+>> -#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
+>> -#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
+>> +#define GENMASK(h, l)     ((~0UL >> (BITS_PER_LONG - (h - l + 1))) << l)
+>> +#define GENMASK_ULL(h, l) ((~0ULL >> (BITS_PER_LONG_LONG - (h - l + 1))) << l)
+> OK, so you need to keep the (h) and (l) bits, macro arguments should be
+> wrapped in seemingly superfluous braces in order to preserve precedence
+> on expansion.
+You're right, I should have  seen this..
+>
+> My bad for not explicitly doing that when suggesting the alternative.
+Not a problem, v3 is coming.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- drivers/of/platform.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 3b64d0bf5bba..7c6771986c06 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -138,7 +138,7 @@ struct platform_device *of_device_alloc(struct device_node *np,
- 	}
- 
- 	dev->dev.of_node = of_node_get(np);
--	dev->dev.parent = parent;
-+	dev->dev.parent = parent ? : &platform_bus;
- 
- 	if (bus_id)
- 		dev_set_name(&dev->dev, "%s", bus_id);
-@@ -291,7 +291,7 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
- 
- 	/* setup generic device info */
- 	dev->dev.of_node = of_node_get(node);
--	dev->dev.parent = parent;
-+	dev->dev.parent = parent ? : &platform_bus;
- 	dev->dev.platform_data = platform_data;
- 	if (bus_id)
- 		dev_set_name(&dev->dev, "%s", bus_id);
--- 
-1.9.1
-
+Maxime
