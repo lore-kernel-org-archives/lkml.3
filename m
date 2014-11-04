@@ -1,623 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870AbaKDQXL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:23:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55668 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753432AbaKDQXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:23:07 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <darren.hart@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>
-Subject: [Update][PATCH v6 09/12] Driver core: Unified interface for firmware node properties
-Date: Tue, 04 Nov 2014 17:43:51 +0100
-Message-ID: <2291934.EVWzcMgvWJ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <3311274.lPerUdEdSh@vostro.rjw.lan>
-References: <13750506.S2yVlRRDa2@vostro.rjw.lan> <3311274.lPerUdEdSh@vostro.rjw.lan>
+	id S1754892AbaKDQXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:23:33 -0500
+Received: from 8bytes.org ([81.169.241.247]:35310 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752557AbaKDQWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 11:22:54 -0500
+Date: Tue, 4 Nov 2014 17:22:51 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Jon Mason <jdmason@kudzu.us>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Kernel NULL pointer deref in pci_get_hp_params with v3.18-rc3
+Message-ID: <20141104162251.GF10744@8bytes.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi,
 
-Add new generic routines are provided for retrieving properties from
-device description objects in the platform firmware in case there are
-no struct device objects for them (either those objects have not been
-created yet or they do not exist at all).
+booting v3.18-rc3 (havn't tested earlier -rcs on this box) on a Xeon box
+with a Neterion 10GBit card (vxge driver) I see the following NULL
+pointer deref in dmesg:
 
-The following functions are provided:
+[    7.221747] vxge: Copyright(c) 2002-2010 Exar Corp.
+[    7.221749] vxge: Driver version: 2.5.3.22640-k
+[    7.324070] pci 0000:07:00.1: [17d5:5833] type 00 class 0x020000
+[    7.324144] BUG: unable to handle kernel NULL pointer dereference at 00000000000002d8
+[    7.324162] IP: [<ffffffff8136733b>] pci_get_hp_params+0x2b/0x620
+[    7.324171] PGD 452334067 PUD 452335067 PMD 0 
+[    7.324179] Oops: 0000 [#1] PREEMPT SMP 
+[    7.324185] Modules linked in: vxge(+) dcdbas ptp sr_mod shpchp pps_core lrw snd iTCO_wdt iTCO_vendor_support cdrom i2c_i801 pcspkr mei_me mei serio_raw lpc_ich gf128mul ata_generic glue_helper soundcore aes_x86_64 mfd_core sg d
+m_mod autofs4 nouveau ttm drm_kms_helper drm i2c_algo_bit mxm_wmi video wmi processor thermal_sys button scsi_dh_emc scsi_dh_rdac scsi_dh_alua scsi_dh_hp_sw scsi_dh
+[    7.324254] CPU: 6 PID: 389 Comm: systemd-udevd Not tainted 3.18.0-rc3 #14
+[    7.324260] Hardware name: Dell Inc. Precision T3610/09M8Y8, BIOS A06 02/28/2014
+[    7.324265] task: ffff880450c14150 ti: ffff88045226c000 task.ti: ffff88045226c000
+[    7.324270] RIP: 0010:[<ffffffff8136733b>]  [<ffffffff8136733b>] pci_get_hp_params+0x2b/0x620
+[    7.324278] RSP: 0018:ffff88045226f8e8  EFLAGS: 00010202
+[    7.324282] RAX: ffff880459df2800 RBX: ffff880450a8a000 RCX: 0000000000000000
+[    7.324287] RDX: 0000000000000098 RSI: ffff88045226f950 RDI: ffff880450a8a000
+[    7.324292] RBP: ffff88045226f938 R08: ffff880459df55e8 R09: ffff88045226f984
+[    7.324297] R10: 0000000000000001 R11: ffff88045226f51e R12: ffff88045226f950
+[    7.324302] R13: ffff880450a8a098 R14: ffff8804521ce000 R15: ffff880450a8a0a8
+[    7.324307] FS:  00007f3dcede3880(0000) GS:ffff88046fd80000(0000) knlGS:0000000000000000
+[    7.324312] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[    7.324317] CR2: 00000000000002d8 CR3: 00000004514ab000 CR4: 00000000001407e0
+[    7.324322] Stack:
+[    7.324325]  ffff88045226f8f8 0000000000000006 ffff88045226f938 ffffffff8150d959
+[    7.324333]  ffff88045226f918 ffff880450a8a000 ffff8804521ce028 ffff880450a8a098
+[    7.324342]  ffff8804521ce000 ffff880450a8a0a8 ffff88045226f9d8 ffffffff813422ce
+[    7.324351] Call Trace:
+[    7.324357]  [<ffffffff8150d959>] ? pci_conf1_read+0xb9/0x120
+[    7.324364]  [<ffffffff813422ce>] pci_configure_device+0x2e/0x340
+[    7.324369]  [<ffffffff81343a13>] pci_device_add+0x23/0x160
+[    7.324373]  [<ffffffff813665ce>] pci_enable_sriov+0x44e/0x7a0
+[    7.324379]  [<ffffffffa0313f9c>] vxge_probe+0xaec/0x1b70 [vxge]
+[    7.324384]  [<ffffffff8134ab30>] local_pci_probe+0x40/0xa0
+[    7.324388]  [<ffffffff8134bd85>] ? pci_match_device+0xe5/0x110
+[    7.324392]  [<ffffffff8134bec1>] pci_device_probe+0xd1/0x130
+[    7.324397]  [<ffffffff8140f98b>] driver_probe_device+0x8b/0x3d0
+[    7.324401]  [<ffffffff8140fda3>] __driver_attach+0x93/0xa0
+[    7.324405]  [<ffffffff8140fd10>] ? __device_attach+0x40/0x40
+[    7.324409]  [<ffffffff8140da03>] bus_for_each_dev+0x63/0xa0
+[    7.324415]  [<ffffffff8140f409>] driver_attach+0x19/0x20
+[    7.324419]  [<ffffffff8140f020>] bus_add_driver+0x180/0x250
+[    7.324424]  [<ffffffffa02ef000>] ? 0xffffffffa02ef000
+[    7.324427]  [<ffffffff814105ff>] driver_register+0x5f/0xf0
+[    7.324431]  [<ffffffff8134a4d7>] __pci_register_driver+0x47/0x50
+[    7.324436]  [<ffffffffa02ef0d8>] vxge_starter+0xd8/0x1000 [vxge]
+[    7.324439]  [<ffffffffa02ef000>] ? 0xffffffffa02ef000
+[    7.324445]  [<ffffffff810002f4>] do_one_initcall+0xb4/0x1f0
+[    7.324450]  [<ffffffff81179472>] ? __vunmap+0xb2/0x100
+[    7.324455]  [<ffffffff810d6ef1>] load_module+0x2181/0x26c0
+[    7.324459]  [<ffffffff810d2900>] ? store_uevent+0x40/0x40
+[    7.324463]  [<ffffffff810d759e>] SyS_finit_module+0x7e/0xa0
+[    7.324469]  [<ffffffff8160e6ed>] system_call_fastpath+0x16/0x1b
+[    7.324472] Code: 55 48 89 e5 41 57 41 56 41 55 41 54 49 89 f4 53 48 83 ec 28 48 8b 57 10 48 85 d2 75 2b eb 41 90 48 8b 52 38 48 81 c2 98 00 00 00 <48> 8b 92 40 02 00 00 48 85 d2 74 09 48 8b 5a 08 48 85 db 75 38 
+[    7.324519] RIP  [<ffffffff8136733b>] pci_get_hp_params+0x2b/0x620
+[    7.324524]  RSP <ffff88045226f8e8>
+[    7.324526] CR2: 00000000000002d8
+[    7.332761] ---[ end trace 32633098d70cadfd ]---
 
-fwnode_property_present()
-fwnode_property_read_u8()
-fwnode_property_read_u16()
-fwnode_property_read_u32()
-fwnode_property_read_u64()
-fwnode_property_read_string()
-fwnode_property_read_u8_array()
-fwnode_property_read_u16_array()
-fwnode_property_read_u32_array()
-fwnode_property_read_u64_array()
-fwnode_property_read_string_array()
+Here is lspci from the box:
 
-in analogy with the corresponding functions for struct device added
-previously.  For all of them, the first argument is a pointer to struct
-fwnode_handle (new type) that allows a device description object
-(depending on what platform firmware interface is in use) to be
-obtained.
+00:00.0 Host bridge: Intel Corporation Xeon E5 v2/Core i7 DMI2 (rev 04)
+00:01.0 PCI bridge: Intel Corporation Xeon E5 v2/Core i7 PCI Express Root Port 1a (rev 04)
+00:02.0 PCI bridge: Intel Corporation Xeon E5 v2/Core i7 PCI Express Root Port 2a (rev 04)
+00:03.0 PCI bridge: Intel Corporation Xeon E5 v2/Core i7 PCI Express Root Port 3a (rev 04)
+00:05.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 VTd/Memory Map/Misc (rev 04)
+00:05.2 System peripheral: Intel Corporation Xeon E5 v2/Core i7 IIO RAS (rev 04)
+00:05.4 PIC: Intel Corporation Xeon E5 v2/Core i7 IOAPIC (rev 04)
+00:11.0 PCI bridge: Intel Corporation C600/X79 series chipset PCI Express Virtual Root Port (rev 06)
+00:16.0 Communication controller: Intel Corporation C600/X79 series chipset MEI Controller #1 (rev 05)
+00:16.2 IDE interface: Intel Corporation C600/X79 series chipset IDE-r Controller (rev 05)
+00:16.3 Serial controller: Intel Corporation C600/X79 series chipset KT Controller (rev 05)
+00:19.0 Ethernet controller: Intel Corporation 82579LM Gigabit Network Connection (rev 06)
+00:1a.0 USB controller: Intel Corporation C600/X79 series chipset USB2 Enhanced Host Controller #2 (rev 06)
+00:1b.0 Audio device: Intel Corporation C600/X79 series chipset High Definition Audio Controller (rev 06)
+00:1c.0 PCI bridge: Intel Corporation C600/X79 series chipset PCI Express Root Port 3 (rev b6)
+00:1c.4 PCI bridge: Intel Corporation C600/X79 series chipset PCI Express Root Port 5 (rev b6)
+00:1d.0 USB controller: Intel Corporation C600/X79 series chipset USB2 Enhanced Host Controller #1 (rev 06)
+00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev a6)
+00:1f.0 ISA bridge: Intel Corporation C600/X79 series chipset LPC Controller (rev 06)
+00:1f.2 RAID bus controller: Intel Corporation C600/X79 series chipset SATA RAID Controller (rev 06)
+00:1f.3 SMBus: Intel Corporation C600/X79 series chipset SMBus Host Controller (rev 06)
+02:00.0 VGA compatible controller: NVIDIA Corporation GF119 [NVS 310] (rev a1)
+02:00.1 Audio device: NVIDIA Corporation GF119 HDMI Audio Controller (rev a1)
+03:00.0 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC (be3) (rev 01)
+03:00.1 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC (be3) (rev 01)
+05:00.0 USB controller: Renesas Technology Corp. uPD720201 USB 3.0 Host Controller (rev 03)
+06:00.0 Ethernet controller: Exar Corp. X3100 Series 10 Gigabit Ethernet PCIe (rev 02)
+ff:08.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 QPI Link 0 (rev 04)
+ff:09.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 QPI Link 1 (rev 04)
+ff:0a.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Power Control Unit 0 (rev 04)
+ff:0a.1 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Power Control Unit 1 (rev 04)
+ff:0a.2 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Power Control Unit 2 (rev 04)
+ff:0a.3 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Power Control Unit 3 (rev 04)
+ff:0b.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 UBOX Registers (rev 04)
+ff:0b.3 System peripheral: Intel Corporation Xeon E5 v2/Core i7 UBOX Registers (rev 04)
+ff:0c.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Unicast Registers (rev 04)
+ff:0c.1 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Unicast Registers (rev 04)
+ff:0d.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Unicast Registers (rev 04)
+ff:0d.1 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Unicast Registers (rev 04)
+ff:0e.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Home Agent 0 (rev 04)
+ff:0e.1 Performance counters: Intel Corporation Xeon E5 v2/Core i7 Home Agent 0 (rev 04)
+ff:0f.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 0 Target Address/Thermal Registers (rev 04)
+ff:0f.1 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 0 RAS Registers (rev 04)
+ff:0f.2 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 04)
+ff:0f.3 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 04)
+ff:0f.4 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 04)
+ff:0f.5 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 04)
+ff:10.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 0 (rev 04)
+ff:10.1 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 1 (rev 04)
+ff:10.2 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 0 (rev 04)
+ff:10.3 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 1 (rev 04)
+ff:10.4 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 2 (rev 04)
+ff:10.5 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 3 (rev 04)
+ff:10.6 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 2 (rev 04)
+ff:10.7 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 3 (rev 04)
+ff:13.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 R2PCIe (rev 04)
+ff:13.1 Performance counters: Intel Corporation Xeon E5 v2/Core i7 R2PCIe (rev 04)
+ff:13.4 System peripheral: Intel Corporation Xeon E5 v2/Core i7 QPI Ring Registers (rev 04)
+ff:13.5 Performance counters: Intel Corporation Xeon E5 v2/Core i7 QPI Ring Performance Ring Monitoring (rev 04)
+ff:16.0 System peripheral: Intel Corporation Xeon E5 v2/Core i7 System Address Decoder (rev 04)
+ff:16.1 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Broadcast Registers (rev 04)
+ff:16.2 System peripheral: Intel Corporation Xeon E5 v2/Core i7 Broadcast Registers (rev 04)
 
-Add a new macro device_for_each_child_node() for iterating over the
-children of the device description object associated with a given
-device and a new function device_get_child_node_count() returning the
-number of a given device's child nodes.
+Please let me know if you need more information.
 
-The interface covers both ACPI and Device Trees.
 
-Suggested-by: Grant Likely <grant.likely@linaro.org>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-Rebased on top of http://marc.info/?l=linux-kernel&m=141511786113206&w=4
-
-Grant, I've also made changes following your suggestions for patch [2/12].
-
-Rafael
-
----
- drivers/acpi/scan.c      |   21 ++++
- drivers/base/property.c  |  246 +++++++++++++++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h  |   17 +++
- include/linux/acpi.h     |   26 ++++
- include/linux/of.h       |   22 ++++
- include/linux/property.h |   70 +++++++++++++
- 6 files changed, 402 insertions(+)
-
-Index: linux-pm/include/linux/property.h
-===================================================================
---- linux-pm.orig/include/linux/property.h
-+++ linux-pm/include/linux/property.h
-@@ -40,6 +40,46 @@ int device_property_read_string_array(st
- int device_property_read_string(struct device *dev, const char *propname,
- 				const char **val);
- 
-+enum fwnode_type {
-+	FWNODE_INVALID = 0,
-+	FWNODE_OF,
-+	FWNODE_ACPI,
-+};
-+
-+struct fwnode_handle {
-+	enum fwnode_type type;
-+};
-+
-+bool fwnode_property_present(struct fwnode_handle *fwnode, const char *propname);
-+int fwnode_property_read_u8_array(struct fwnode_handle *fwnode,
-+				  const char *propname, u8 *val,
-+				  size_t nval);
-+int fwnode_property_read_u16_array(struct fwnode_handle *fwnode,
-+				   const char *propname, u16 *val,
-+				   size_t nval);
-+int fwnode_property_read_u32_array(struct fwnode_handle *fwnode,
-+				   const char *propname, u32 *val,
-+				   size_t nval);
-+int fwnode_property_read_u64_array(struct fwnode_handle *fwnode,
-+				   const char *propname, u64 *val,
-+				   size_t nval);
-+int fwnode_property_read_string_array(struct fwnode_handle *fwnode,
-+				      const char *propname, const char **val,
-+				      size_t nval);
-+int fwnode_property_read_string(struct fwnode_handle *fwnode,
-+				const char *propname, const char **val);
-+
-+struct fwnode_handle *device_get_next_child_node(struct device *dev,
-+						 struct fwnode_handle *child);
-+
-+#define device_for_each_child_node(dev, child) \
-+	for (child = device_get_next_child_node(dev, NULL); child; \
-+	     child = device_get_next_child_node(dev, child))
-+
-+void fwnode_handle_put(struct fwnode_handle *fwnode);
-+
-+unsigned int device_get_child_node_count(struct device *dev);
-+
- static inline bool device_property_read_bool(struct device *dev,
- 					     const char *propname)
- {
-@@ -70,4 +110,34 @@ static inline int device_property_read_u
- 	return device_property_read_u64_array(dev, propname, val, 1);
- }
- 
-+static inline bool fwnode_property_read_bool(struct fwnode_handle *fwnode,
-+					     const char *propname)
-+{
-+	return fwnode_property_present(fwnode, propname);
-+}
-+
-+static inline int fwnode_property_read_u8(struct fwnode_handle *fwnode,
-+					  const char *propname, u8 *val)
-+{
-+	return fwnode_property_read_u8_array(fwnode, propname, val, 1);
-+}
-+
-+static inline int fwnode_property_read_u16(struct fwnode_handle *fwnode,
-+					   const char *propname, u16 *val)
-+{
-+	return fwnode_property_read_u16_array(fwnode, propname, val, 1);
-+}
-+
-+static inline int fwnode_property_read_u32(struct fwnode_handle *fwnode,
-+					   const char *propname, u32 *val)
-+{
-+	return fwnode_property_read_u32_array(fwnode, propname, val, 1);
-+}
-+
-+static inline int fwnode_property_read_u64(struct fwnode_handle *fwnode,
-+					   const char *propname, u64 *val)
-+{
-+	return fwnode_property_read_u64_array(fwnode, propname, val, 1);
-+}
-+
- #endif /* _LINUX_PROPERTY_H_ */
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -27,6 +27,7 @@
- #define __ACPI_BUS_H__
- 
- #include <linux/device.h>
-+#include <linux/property.h>
- 
- /* TBD: Make dynamic */
- #define ACPI_MAX_HANDLES	10
-@@ -348,6 +349,7 @@ struct acpi_device_data {
- struct acpi_device {
- 	int device_type;
- 	acpi_handle handle;		/* no handle for fixed hardware */
-+	struct fwnode_handle fwnode;
- 	struct acpi_device *parent;
- 	struct list_head children;
- 	struct list_head node;
-@@ -372,6 +374,21 @@ struct acpi_device {
- 	void (*remove)(struct acpi_device *);
- };
- 
-+static inline bool is_acpi_node(struct fwnode_handle *fwnode)
-+{
-+	return fwnode && fwnode->type == FWNODE_ACPI;
-+}
-+
-+static inline struct acpi_device *acpi_node(struct fwnode_handle *fwnode)
-+{
-+	return fwnode ? container_of(fwnode, struct acpi_device, fwnode) : NULL;
-+}
-+
-+static inline struct fwnode_handle *acpi_fwnode_handle(struct acpi_device *adev)
-+{
-+	return &adev->fwnode;
-+}
-+
- static inline void *acpi_driver_data(struct acpi_device *d)
- {
- 	return d->driver_data;
-Index: linux-pm/include/linux/acpi.h
-===================================================================
---- linux-pm.orig/include/linux/acpi.h
-+++ linux-pm/include/linux/acpi.h
-@@ -440,6 +440,23 @@ struct platform_device *acpi_create_plat
- #define ACPI_COMPANION_SET(dev, adev)	do { } while (0)
- #define ACPI_HANDLE(dev)		(NULL)
- 
-+struct fwnode_handle;
-+
-+static inline bool is_acpi_node(struct fwnode_handle *fwnode)
-+{
-+	return false;
-+}
-+
-+static inline struct acpi_device *acpi_node(struct fwnode_handle *fwnode)
-+{
-+	return NULL;
-+}
-+
-+static inline struct fwnode_handle *acpi_fwnode_handle(struct acpi_device *adev)
-+{
-+	return NULL;
-+}
-+
- static inline const char *acpi_dev_name(struct acpi_device *adev)
- {
- 	return NULL;
-@@ -681,6 +698,9 @@ int acpi_dev_prop_read_single(struct acp
- 			      enum dev_prop_type proptype, void *val);
- int acpi_dev_prop_read(struct acpi_device *adev, const char *propname,
- 		       enum dev_prop_type proptype, void *val, size_t nval);
-+
-+struct acpi_device *acpi_get_next_child(struct device *dev,
-+					struct acpi_device *child);
- #else
- static inline int acpi_dev_get_property(struct acpi_device *adev,
- 					const char *name, acpi_object_type type,
-@@ -725,6 +745,12 @@ static inline int acpi_dev_prop_read(str
- 	return -ENXIO;
- }
- 
-+static inline struct acpi_device *acpi_get_next_child(struct device *dev,
-+						      struct acpi_device *child)
-+{
-+	return NULL;
-+}
-+
- #endif
- 
- #endif	/*_LINUX_ACPI_H*/
-Index: linux-pm/include/linux/of.h
-===================================================================
---- linux-pm.orig/include/linux/of.h
-+++ linux-pm/include/linux/of.h
-@@ -50,6 +50,7 @@ struct device_node {
- 	const char *type;
- 	phandle phandle;
- 	const char *full_name;
-+	struct fwnode_handle fwnode;
- 
- 	struct	property *properties;
- 	struct	property *deadprops;	/* removed properties */
-@@ -80,6 +81,7 @@ extern struct kobj_type of_node_ktype;
- static inline void of_node_init(struct device_node *node)
- {
- 	kobject_init(&node->kobj, &of_node_ktype);
-+	node->fwnode.type = FWNODE_OF;
- }
- 
- /* true when node is initialized */
-@@ -115,6 +117,16 @@ extern struct device_node *of_aliases;
- extern struct device_node *of_stdout;
- extern raw_spinlock_t devtree_lock;
- 
-+static inline bool is_of_node(struct fwnode_handle *fwnode)
-+{
-+	return fwnode && fwnode->type == FWNODE_OF;
-+}
-+
-+static inline struct device_node *of_node(struct fwnode_handle *fwnode)
-+{
-+	return fwnode ? container_of(fwnode, struct device_node, fwnode) : NULL;
-+}
-+
- static inline bool of_have_populated_dt(void)
- {
- 	return of_allnodes != NULL;
-@@ -360,6 +372,16 @@ bool of_console_check(struct device_node
- 
- #else /* CONFIG_OF */
- 
-+static inline bool is_of_node(struct fwnode_handle *fwnode)
-+{
-+	return false;
-+}
-+
-+static inline struct device_node *of_node(struct fwnode_handle *fwnode)
-+{
-+	return NULL;
-+}
-+
- static inline const char* of_node_full_name(const struct device_node *np)
- {
- 	return "<no-node>";
-Index: linux-pm/drivers/base/property.c
-===================================================================
---- linux-pm.orig/drivers/base/property.c
-+++ linux-pm/drivers/base/property.c
-@@ -31,6 +31,22 @@ bool device_property_present(struct devi
- }
- EXPORT_SYMBOL_GPL(device_property_present);
- 
-+/**
-+ * fwnode_property_present - check if a property of a firmware node is present
-+ * @fwnode: Firmware node whose property to check
-+ * @propname: Name of the property
-+ */
-+bool fwnode_property_present(struct fwnode_handle *fwnode, const char *propname)
-+{
-+	if (is_of_node(fwnode))
-+		return of_property_read_bool(of_node(fwnode), propname);
-+	else if (is_acpi_node(fwnode))
-+		return !acpi_dev_prop_get(acpi_node(fwnode), propname, NULL);
-+
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(fwnode_property_present);
-+
- #define OF_DEV_PROP_READ_ARRAY(node, propname, type, val, nval) \
- 	(val) ? of_property_read_##type##_array((node), (propname), (val), (nval)) \
- 	      : of_property_count_elems_of_size((node), (propname), sizeof(type))
-@@ -183,3 +199,233 @@ int device_property_read_string(struct d
- 				   DEV_PROP_STRING, val, 1);
- }
- EXPORT_SYMBOL_GPL(device_property_read_string);
-+
-+#define FWNODE_PROP_READ_ARRAY(_fwnode_, _propname_, _type_, _proptype_, _val_, _nval_) \
-+({ \
-+	int _ret_; \
-+	if (is_of_node(_fwnode_)) \
-+		_ret_ = OF_DEV_PROP_READ_ARRAY(of_node(_fwnode_), _propname_, \
-+					       _type_, _val_, _nval_); \
-+	else if (is_acpi_node(_fwnode_)) \
-+		_ret_ = acpi_dev_prop_read(acpi_node(_fwnode_), _propname_, \
-+					   _proptype_, _val_, _nval_); \
-+	else \
-+		_ret_ = -ENXIO; \
-+	_ret_; \
-+})
-+
-+/**
-+ * fwnode_property_read_u8_array - return a u8 array property of firmware node
-+ * @fwnode: Firmware node to get the property of
-+ * @propname: Name of the property
-+ * @val: The values are stored here
-+ * @nval: Size of the @val array
-+ *
-+ * Read an array of u8 properties with @propname from @fwnode and stores them to
-+ * @val if found.
-+ *
-+ * Return: %0 if the property was found (success),
-+ *	   %-EINVAL if given arguments are not valid,
-+ *	   %-ENODATA if the property does not have a value,
-+ *	   %-EPROTO if the property is not an array of numbers,
-+ *	   %-EOVERFLOW if the size of the property is not as expected,
-+ *	   %-ENXIO if no suitable firmware interface is present.
-+ */
-+int fwnode_property_read_u8_array(struct fwnode_handle *fwnode,
-+				  const char *propname, u8 *val, size_t nval)
-+{
-+	return FWNODE_PROP_READ_ARRAY(fwnode, propname, u8, DEV_PROP_U8,
-+				      val, nval);
-+}
-+EXPORT_SYMBOL_GPL(fwnode_property_read_u8_array);
-+
-+/**
-+ * fwnode_property_read_u16_array - return a u16 array property of firmware node
-+ * @fwnode: Firmware node to get the property of
-+ * @propname: Name of the property
-+ * @val: The values are stored here
-+ * @nval: Size of the @val array
-+ *
-+ * Read an array of u16 properties with @propname from @fwnode and store them to
-+ * @val if found.
-+ *
-+ * Return: %0 if the property was found (success),
-+ *	   %-EINVAL if given arguments are not valid,
-+ *	   %-ENODATA if the property does not have a value,
-+ *	   %-EPROTO if the property is not an array of numbers,
-+ *	   %-EOVERFLOW if the size of the property is not as expected,
-+ *	   %-ENXIO if no suitable firmware interface is present.
-+ */
-+int fwnode_property_read_u16_array(struct fwnode_handle *fwnode,
-+				   const char *propname, u16 *val, size_t nval)
-+{
-+	return FWNODE_PROP_READ_ARRAY(fwnode, propname, u16, DEV_PROP_U16,
-+				      val, nval);
-+}
-+EXPORT_SYMBOL_GPL(fwnode_property_read_u16_array);
-+
-+/**
-+ * fwnode_property_read_u32_array - return a u32 array property of firmware node
-+ * @fwnode: Firmware node to get the property of
-+ * @propname: Name of the property
-+ * @val: The values are stored here
-+ * @nval: Size of the @val array
-+ *
-+ * Read an array of u32 properties with @propname from @fwnode store them to
-+ * @val if found.
-+ *
-+ * Return: %0 if the property was found (success),
-+ *	   %-EINVAL if given arguments are not valid,
-+ *	   %-ENODATA if the property does not have a value,
-+ *	   %-EPROTO if the property is not an array of numbers,
-+ *	   %-EOVERFLOW if the size of the property is not as expected,
-+ *	   %-ENXIO if no suitable firmware interface is present.
-+ */
-+int fwnode_property_read_u32_array(struct fwnode_handle *fwnode,
-+				   const char *propname, u32 *val, size_t nval)
-+{
-+	return FWNODE_PROP_READ_ARRAY(fwnode, propname, u32, DEV_PROP_U32,
-+				      val, nval);
-+}
-+EXPORT_SYMBOL_GPL(fwnode_property_read_u32_array);
-+
-+/**
-+ * fwnode_property_read_u64_array - return a u64 array property firmware node
-+ * @fwnode: Firmware node to get the property of
-+ * @propname: Name of the property
-+ * @val: The values are stored here
-+ * @nval: Size of the @val array
-+ *
-+ * Read an array of u64 properties with @propname from @fwnode and store them to
-+ * @val if found.
-+ *
-+ * Return: %0 if the property was found (success),
-+ *	   %-EINVAL if given arguments are not valid,
-+ *	   %-ENODATA if the property does not have a value,
-+ *	   %-EPROTO if the property is not an array of numbers,
-+ *	   %-EOVERFLOW if the size of the property is not as expected,
-+ *	   %-ENXIO if no suitable firmware interface is present.
-+ */
-+int fwnode_property_read_u64_array(struct fwnode_handle *fwnode,
-+				   const char *propname, u64 *val, size_t nval)
-+{
-+	return FWNODE_PROP_READ_ARRAY(fwnode, propname, u64, DEV_PROP_U64,
-+				      val, nval);
-+}
-+EXPORT_SYMBOL_GPL(fwnode_property_read_u64_array);
-+
-+/**
-+ * fwnode_property_read_string_array - return string array property of a node
-+ * @fwnode: Firmware node to get the property of
-+ * @propname: Name of the property
-+ * @val: The values are stored here
-+ * @nval: Size of the @val array
-+ *
-+ * Read an string list property @propname from the given firmware node and store
-+ * them to @val if found.
-+ *
-+ * Return: %0 if the property was found (success),
-+ *	   %-EINVAL if given arguments are not valid,
-+ *	   %-ENODATA if the property does not have a value,
-+ *	   %-EPROTO if the property is not an array of strings,
-+ *	   %-EOVERFLOW if the size of the property is not as expected,
-+ *	   %-ENXIO if no suitable firmware interface is present.
-+ */
-+int fwnode_property_read_string_array(struct fwnode_handle *fwnode,
-+				      const char *propname, const char **val,
-+				      size_t nval)
-+{
-+	if (is_of_node(fwnode))
-+		return of_property_read_string_array(of_node(fwnode), propname,
-+						     val, nval);
-+	else if (is_acpi_node(fwnode))
-+		return acpi_dev_prop_read(acpi_node(fwnode), propname,
-+					  DEV_PROP_STRING, val, nval);
-+
-+	return -ENXIO;
-+}
-+EXPORT_SYMBOL_GPL(fwnode_property_read_string_array);
-+
-+/**
-+ * fwnode_property_read_string - return a string property of a firmware node
-+ * @fwnode: Firmware node to get the property of
-+ * @propname: Name of the property
-+ * @val: The value is stored here
-+ *
-+ * Read property @propname from the given firmware node and store the value into
-+ * @val if found.  The value is checked to be a string.
-+ *
-+ * Return: %0 if the property was found (success),
-+ *	   %-EINVAL if given arguments are not valid,
-+ *	   %-ENODATA if the property does not have a value,
-+ *	   %-EPROTO or %-EILSEQ if the property is not a string,
-+ *	   %-ENXIO if no suitable firmware interface is present.
-+ */
-+int fwnode_property_read_string(struct fwnode_handle *fwnode,
-+				const char *propname, const char **val)
-+{
-+	if (is_of_node(fwnode))
-+		return of_property_read_string(of_node(fwnode),propname, val);
-+	else if (is_acpi_node(fwnode))
-+		return acpi_dev_prop_read(acpi_node(fwnode), propname,
-+					  DEV_PROP_STRING, val, 1);
-+
-+	return -ENXIO;
-+}
-+EXPORT_SYMBOL_GPL(fwnode_property_read_string);
-+
-+/**
-+ * device_get_next_child_node - Return the next child node handle for a device
-+ * @dev: Device to find the next child node for.
-+ * @child: Handle to one of the device's child nodes or a null handle.
-+ */
-+struct fwnode_handle *device_get_next_child_node(struct device *dev,
-+						 struct fwnode_handle *child)
-+{
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node) {
-+		struct device_node *node;
-+
-+		node = of_get_next_available_child(dev->of_node, of_node(child));
-+		if (node)
-+			return &node->fwnode;
-+	} else if (IS_ENABLED(CONFIG_ACPI)) {
-+		struct acpi_device *node;
-+
-+		node = acpi_get_next_child(dev, acpi_node(child));
-+		if (node)
-+			return acpi_fwnode_handle(node);
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(device_get_next_child_node);
-+
-+/**
-+ * fwnode_handle_put - Drop reference to a device node
-+ * @fwnode: Pointer to the device node to drop the reference to.
-+ *
-+ * This has to be used when terminating device_for_each_child_node() iteration
-+ * with break or return to prevent stale device node references from being left
-+ * behind.
-+ */
-+void fwnode_handle_put(struct fwnode_handle *fwnode)
-+{
-+	if (is_of_node(fwnode))
-+		of_node_put(of_node(fwnode));
-+}
-+EXPORT_SYMBOL_GPL(fwnode_handle_put);
-+
-+/**
-+ * device_get_child_node_count - return the number of child nodes for device
-+ * @dev: Device to cound the child nodes for
-+ */
-+unsigned int device_get_child_node_count(struct device *dev)
-+{
-+	struct fwnode_handle *child;
-+	unsigned int count = 0;
-+
-+	device_for_each_child_node(dev, child)
-+		count++;
-+
-+	return count;
-+}
-+EXPORT_SYMBOL_GPL(device_get_child_node_count);
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -1389,6 +1389,26 @@ int acpi_device_add(struct acpi_device *
- 	return result;
- }
- 
-+struct acpi_device *acpi_get_next_child(struct device *dev,
-+					struct acpi_device *child)
-+{
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
-+	struct list_head *head, *next;
-+
-+	if (!adev)
-+		return NULL;
-+
-+	head = &adev->children;
-+	if (list_empty(head))
-+		return NULL;
-+
-+	if (!child)
-+		return list_first_entry(head, struct acpi_device, node);
-+
-+	next = child->node.next;
-+	return next == head ? NULL : list_entry(next, struct acpi_device, node);
-+}
-+
- /* --------------------------------------------------------------------------
-                                  Driver Management
-    -------------------------------------------------------------------------- */
-@@ -2008,6 +2028,7 @@ void acpi_init_device_object(struct acpi
- 	device->device_type = type;
- 	device->handle = handle;
- 	device->parent = acpi_bus_get_parent(handle);
-+	device->fwnode.type = FWNODE_ACPI;
- 	acpi_set_device_status(device, sta);
- 	acpi_device_get_busid(device);
- 	acpi_set_pnp_ids(handle, &device->pnp, type);
+	Joerg
 
