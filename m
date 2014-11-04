@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaKDI3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:29:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35042 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaKDI3H (ORCPT
+	id S1752549AbaKDI3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:29:39 -0500
+Received: from smtp.eu1.fugro.com ([46.34.88.151]:46365 "EHLO
+	smtp.eu1.fugro.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbaKDI3h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:29:07 -0500
-Date: Tue, 4 Nov 2014 09:29:01 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: gong.chen@linux.intel.com, Ingo Molnar <mingo@kernel.org>,
-        " Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel@stlinux.com, eric.paire@st.com
-Subject: Re: [PATCH] bitops: Fix shift overflow in GENMASK macros
-Message-ID: <20141104082901.GF10501@worktop.programming.kicks-ass.net>
-References: <1415036398-26984-1-git-send-email-maxime.coquelin@st.com>
+	Tue, 4 Nov 2014 03:29:37 -0500
+X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Nov 2014 03:29:36 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArAEANKKWFQKCmUW/2dsb2JhbABchDrWLgKBNgEBAQEBAXyEAgEBAQEDMAo/DAQCAQgNBAMBAQELBhcBBgEeJwkIAQEEARII1BQBAQEBAQEBAQEBAQEBAQEBAQEBAQEXjUGDHjEHBoMngR4FhRsDjHwDk0FBhFuMC4FFa4JLAQEB
+X-IPAS-Result: ArAEANKKWFQKCmUW/2dsb2JhbABchDrWLgKBNgEBAQEBAXyEAgEBAQEDMAo/DAQCAQgNBAMBAQELBhcBBgEeJwkIAQEEARII1BQBAQEBAQEBAQEBAQEBAQEBAQEBAQEXjUGDHjEHBoMngR4FhRsDjHwDk0FBhFuMC4FFa4JLAQEB
+X-IronPort-AV: E=Sophos;i="5.07,312,1413244800"; 
+   d="scan'208";a="43028730"
+X-IRP-Internal: 1
+X-IRP-FugroSender: 200661
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415036398-26984-1-git-send-email-maxime.coquelin@st.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on arndale platform
+Date: Tue, 4 Nov 2014 09:19:26 +0100
+Message-ID: <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local>
+In-Reply-To: <20141104072236.GA559@afflict.kos.to>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on arndale platform
+Thread-Index: Ac/4ACMfzxTnqeIrTXaS3BgT2r6ZEgABuMAA
+References: <20141104072236.GA559@afflict.kos.to>
+From: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
+To: "Riku Voipio" <riku.voipio@iki.fi>, <davem@davemloft.net>
+Cc: <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 06:39:58PM +0100, Maxime COQUELIN wrote:
-> On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
-> instead of the expected ~0UL.
-> 
-> This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
-> 
-> This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
-> 1 << 64 for GENMASK_ULL.
-> 
-> Fixes: 10ef6b0dffe404bcc54e94cb2ca1a5b18445a66b
-> Cc: <stable@vger.kernel.org> #v3.13+
-> Reported-by: Eric Paire <eric.paire@st.com>
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
-> ---
->  include/linux/bitops.h | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-> index be5fd38..81f9725 100644
-> --- a/include/linux/bitops.h
-> +++ b/include/linux/bitops.h
-> @@ -18,8 +18,12 @@
->   * position @h. For example
->   * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
->   */
-> -#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
-> -#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
-> +#define GENMASK(h, l) \
-> +	((~0UL >> ((BITS_PER_LONG - 1) - (h))) & ~((1UL << (l)) - 1))
-> +
-> +#define GENMASK_ULL(h, l) \
-> +	((~0ULL >> ((BITS_PER_LONG_LONG - 1) - (h))) & ~((1ULL << (l)) - 1))
-> +
+Hello Riku,
 
-I was not expecting the mask there, but instead something like:
+Interesting, as the commit itself is a revert from a kernel back to 2.6
+somewhere. The problem I had is related to the PHY being reset on
+interface-up, can you confirm that you require this? Reverting this
+breaks ethtool support in turn.
 
-	((~0UL >> (BITS_PER_LONG - (h-l+1))) << l)
+Kind regards,
 
-which shifts the bits to the desired length and then back to the desired
-place. Would that not be more readable?
+Michel Stam
 
+-----Original Message-----
+From: Riku Voipio [mailto:riku.voipio@iki.fi] 
+Sent: Tuesday, November 04, 2014 8:23 AM
+To: davem@davemloft.net; Stam, Michel [FINT]
+Cc: linux-usb@vger.kernel.org; netdev@vger.kernel.org;
+linux-kernel@vger.kernel.org; linux-samsung-soc@vger.kernel.org
+Subject: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
+arndale platform
+
+Hi,
+
+With 3.18-rc3, asix on arndale (samsung exynos 5250 based board), fails
+to work. Interface is initialized but network traffic seem not to pass
+through. With kernel IP config the result looks like:
+
+[    3.323275] usb 3-3.2.4: new high-speed USB device number 4 using
+exynos-ehci
+[    3.419151] usb 3-3.2.4: New USB device found, idVendor=0b95,
+idProduct=772a
+[    3.424735] usb 3-3.2.4: New USB device strings: Mfr=1, Product=2,
+SerialNumber=3
+[    3.432196] usb 3-3.2.4: Product: AX88772 
+[    3.436279] usb 3-3.2.4: Manufacturer: ASIX Elec. Corp.
+[    3.441486] usb 3-3.2.4: SerialNumber: 000001
+[    3.447530] asix 3-3.2.4:1.0 (unnamed net_device) (uninitialized):
+invalid hw address, using random
+[    3.764352] asix 3-3.2.4:1.0 eth0: register 'asix' at
+usb-12110000.usb-3.2.4, ASIX AX88772 USB 2.0 Ethernet, de:a2:66:bf:ca:4f
+[    4.488773] asix 3-3.2.4:1.0 eth0: link down
+[    5.690025] asix 3-3.2.4:1.0 eth0: link up, 100Mbps, full-duplex, lpa
+0xC5E1
+[    5.712947] Sending DHCP requests ...... timed out!
+[   83.165303] IP-Config: Retrying forever (NFS root)...
+[   83.170397] asix 3-3.2.4:1.0 eth0: link up, 100Mbps, full-duplex, lpa
+0xC5E1
+[   83.192944] Sending DHCP requests .....
+
+Similar results also with dhclient. Git bisect identified the breaking
+commit as:
+
+commit 3cc81d85ee01e5a0b7ea2f4190e2ed1165f53c31
+Author: Michel Stam <m.stam@fugro.nl>
+Date:   Thu Oct 2 10:22:02 2014 +0200
+
+    asix: Don't reset PHY on if_up for ASIX 88772
+
+Taking 3.18-rc3 and that commit reverted, network works again:
+
+[    3.303500] usb 3-3.2.4: new high-speed USB device number 4 using
+exynos-ehci
+[    3.399375] usb 3-3.2.4: New USB device found, idVendor=0b95,
+idProduct=772a
+[    3.404963] usb 3-3.2.4: New USB device strings: Mfr=1, Product=2,
+SerialNumber=3
+[    3.412424] usb 3-3.2.4: Product: AX88772 
+[    3.416508] usb 3-3.2.4: Manufacturer: ASIX Elec. Corp.
+[    3.421715] usb 3-3.2.4: SerialNumber: 000001
+[    3.427755] asix 3-3.2.4:1.0 (unnamed net_device) (uninitialized):
+invalid hw address, using random
+[    3.744837] asix 3-3.2.4:1.0 eth0: register 'asix' at
+usb-12110000.usb-3.2.4, ASIX AX88772 USB 2.0 Ethernet, 12:59:f1:a8:43:90
+[    7.098998] asix 3-3.2.4:1.0 eth0: link up, 100Mbps, full-duplex, lpa
+0xC5E1
+[    7.118258] Sending DHCP requests ., OK
+[    9.753259] IP-Config: Got DHCP answer from 192.168.1.1, my address
+is 192.168.1.111
+
+There might something wrong on the samsung platform code (I understand
+the USB on arndale is "funny"), but this is still an regression from
+3.17.
+
+Riku
