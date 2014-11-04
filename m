@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaKDVrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:47:39 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:58368 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaKDVri (ORCPT
+	id S1752689AbaKDVsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:48:51 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:57004 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805AbaKDVst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:47:38 -0500
-From: Mariusz Gorski <marius.gorski@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <willy@meta-x.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: panel: Fix single-open policy race condition
-Date: Tue,  4 Nov 2014 22:47:19 +0100
-Message-Id: <1415137639-569-1-git-send-email-marius.gorski@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Tue, 4 Nov 2014 16:48:49 -0500
+Message-ID: <545949BF.1080503@kernel.dk>
+Date: Tue, 04 Nov 2014 14:48:47 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>, Christian Borntraeger <borntraeger@de.ibm.com>
+CC: Kent Overstreet <kmo@daterainc.com>, Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
+	<linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Subject: Re: [PATCH block/for-linus] blk-mq: make mq_queue_reinit_notify()
+ freeze queues in parallel
+References: <544FF00B.8050403@de.ibm.com> <20141028200055.GA8205@htj.dyndns.org> <544FFAA7.1060705@de.ibm.com> <20141028202255.GB8205@htj.dyndns.org> <544FFC9C.60908@de.ibm.com> <20141028203040.GD8205@htj.dyndns.org> <20141104185227.GH14459@htj.dyndns.org>
+In-Reply-To: <20141104185227.GH14459@htj.dyndns.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the implementation of a single-open policy for both
-devices (lcd and keypad) by using atomic_t instead of plain ints.
+On 2014-11-04 11:52, Tejun Heo wrote:
+> q->mq_usage_counter is a percpu_ref which is killed and drained when
+> the queue is frozen.  On a CPU hotplug event, blk_mq_queue_reinit()
+> which involves freezing the queue is invoked on all existing queues.
+> Because percpu_ref killing and draining involve a RCU grace period,
+> doing the above on one queue after another may take a long time if
+> there are many queues on the system.
+>
+> This patch splits out initiation of freezing and waiting for its
+> completion, and updates blk_mq_queue_reinit_notify() so that the
+> queues are frozen in parallel instead of one after another.  Note that
+> freezing and unfreezing are moved from blk_mq_queue_reinit() to
+> blk_mq_queue_reinit_notify().
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> ---
+> Christian, can you please verify that this resolves the latency issue
+> that you're seeing?  Jens, can you please route this patch once
+> Christian confirms it?
 
-Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
----
- drivers/staging/panel/panel.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+Will queue up for 3.18.
 
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 98556ce..d30ccb5 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -404,8 +404,11 @@ static unsigned char lcd_bits[LCD_PORTS][LCD_BITS][BIT_STATES];
- #endif /* DEFAULT_PROFILE == 0 */
- 
- /* global variables */
--static int keypad_open_cnt;	/* #times opened */
--static int lcd_open_cnt;	/* #times opened */
-+
-+/* Device single-open policy control */
-+static atomic_t lcd_available = ATOMIC_INIT(1);
-+static atomic_t keypad_available = ATOMIC_INIT(1);
-+
- static struct pardevice *pprt;
- 
- static int lcd_initialized;
-@@ -1347,7 +1350,7 @@ static ssize_t lcd_write(struct file *file,
- 
- static int lcd_open(struct inode *inode, struct file *file)
- {
--	if (lcd_open_cnt)
-+	if (!atomic_dec_and_test(&lcd_available))
- 		return -EBUSY;	/* open only once at a time */
- 
- 	if (file->f_mode & FMODE_READ)	/* device is write-only */
-@@ -1357,13 +1360,12 @@ static int lcd_open(struct inode *inode, struct file *file)
- 		lcd_clear_display();
- 		lcd_must_clear = 0;
- 	}
--	lcd_open_cnt++;
- 	return nonseekable_open(inode, file);
- }
- 
- static int lcd_release(struct inode *inode, struct file *file)
- {
--	lcd_open_cnt--;
-+	atomic_inc(&lcd_available);
- 	return 0;
- }
- 
-@@ -1627,20 +1629,19 @@ static ssize_t keypad_read(struct file *file,
- 
- static int keypad_open(struct inode *inode, struct file *file)
- {
--	if (keypad_open_cnt)
-+	if (!atomic_dec_and_test(&keypad_available))
- 		return -EBUSY;	/* open only once at a time */
- 
- 	if (file->f_mode & FMODE_WRITE)	/* device is read-only */
- 		return -EPERM;
- 
- 	keypad_buflen = 0;	/* flush the buffer on opening */
--	keypad_open_cnt++;
- 	return 0;
- }
- 
- static int keypad_release(struct inode *inode, struct file *file)
- {
--	keypad_open_cnt--;
-+	atomic_inc(&keypad_available);
- 	return 0;
- }
- 
-@@ -1663,7 +1664,7 @@ static void keypad_send_key(const char *string, int max_len)
- 		return;
- 
- 	/* send the key to the device only if a process is attached to it. */
--	if (keypad_open_cnt > 0) {
-+	if (!atomic_read(&keypad_available)) {
- 		while (max_len-- && keypad_buflen < KEYPAD_BUFFER && *string) {
- 			keypad_buffer[(keypad_start + keypad_buflen++) %
- 				      KEYPAD_BUFFER] = *string++;
 -- 
-2.1.3
+Jens Axboe
 
