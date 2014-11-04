@@ -1,315 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaKDPoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 10:44:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55344 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203AbaKDPoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 10:44:21 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
-        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
-        linux-api@vger.kernel.org
-Subject: [PATCH] kernel, add panic_on_warn
-Date: Tue,  4 Nov 2014 10:41:28 -0500
-Message-Id: <1415115688-12239-1-git-send-email-prarit@redhat.com>
+	id S1754333AbaKDPpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 10:45:30 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:48424 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999AbaKDPp0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 10:45:26 -0500
+Date: Tue, 4 Nov 2014 17:45:20 +0200
+From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+To: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Cc: linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: [PATCH] drivers: s390: net: ctcm: migrate variables to handle y2038
+ problem
+Message-ID: <20141104154520.GA3653@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have been several times where I have had to rebuild a kernel to
-cause a panic when hitting a WARN() in the code in order to get a crash
-dump from a system.  Sometimes this is easy to do, other times (such as
-in the case of a remote admin) it is not trivial to send new images to the
-user.
+This patch is concerned with migrating the time variables for the s390
+network driver. The changes handle the y2038 problem where timespec will
+overflow in the year 2038. timespec was replaced by unsigned long and
+all time variables get their values from the jiffies global variable.
+This was done for the sake of speed and efficiency.
 
-A much easier method would be a switch to change the WARN() over to a
-panic.  This makes debugging easier in that I can now test the actual
-image the WARN() was seen on and I do not have to engage in remote
-debugging.
+ch->prof.tx_time will now hold the difference between two jiffies'
+values instead of the difference between two xtime values
+represented in microseconds.
 
-This patch adds a panic_on_warn kernel parameter and
-/proc/sys/kernel/panic_on_warn calls panic() in the warn_slowpath_common()
-path.  The function will still print out the location of the warning.
-
-An example of the panic_on_warn output:
-
-The first line below is from the WARN_ON() to output the WARN_ON()'s location.
-After that the panic() output is displayed.
-
-WARNING: CPU: 30 PID: 11698 at /home/prarit/dummy_module/dummy-module.c:25 init_dummy+0x1f/0x30 [dummy_module]()
-Kernel panic - not syncing: panic_on_warn set ...
-
-CPU: 30 PID: 11698 Comm: insmod Tainted: G        W  OE  3.17.0+ #57
-Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.00.29.D696.1311111329 11/11/2013
- 0000000000000000 000000008e3f87df ffff88080f093c38 ffffffff81665190
- 0000000000000000 ffffffff818aea3d ffff88080f093cb8 ffffffff8165e2ec
- ffffffff00000008 ffff88080f093cc8 ffff88080f093c68 000000008e3f87df
-Call Trace:
- [<ffffffff81665190>] dump_stack+0x46/0x58
- [<ffffffff8165e2ec>] panic+0xd0/0x204
- [<ffffffffa038e05f>] ? init_dummy+0x1f/0x30 [dummy_module]
- [<ffffffff81076b90>] warn_slowpath_common+0xd0/0xd0
- [<ffffffffa038e040>] ? dummy_greetings+0x40/0x40 [dummy_module]
- [<ffffffff81076c8a>] warn_slowpath_null+0x1a/0x20
- [<ffffffffa038e05f>] init_dummy+0x1f/0x30 [dummy_module]
- [<ffffffff81002144>] do_one_initcall+0xd4/0x210
- [<ffffffff811b52c2>] ? __vunmap+0xc2/0x110
- [<ffffffff810f8889>] load_module+0x16a9/0x1b30
- [<ffffffff810f3d30>] ? store_uevent+0x70/0x70
- [<ffffffff810f49b9>] ? copy_module_from_fd.isra.44+0x129/0x180
- [<ffffffff810f8ec6>] SyS_finit_module+0xa6/0xd0
- [<ffffffff8166cf29>] system_call_fastpath+0x12/0x17
-
-Successfully tested by me.
-
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Fabian Frederick <fabf@skynet.be>
-Cc: vgoyal@redhat.com
-Cc: isimatu.yasuaki@jp.fujitsu.com
-Cc: jbaron@akamai.com
-Cc: linux-doc@vger.kernel.org
-Cc: kexec@lists.infradead.org
-Cc: linux-api@vger.kernel.org
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-[v2]: add /proc/sys/kernel/panic_on_warn, additional documentation, modify
-      !slowpath cases
-[v3]: use proc_dointvec_minmax() in sysctl handler
-[v4]: remove !slowpath cases, and add __read_mostly
-[v5]: change to panic_on_warn, re-alphabetize Documentation/sysctl/kernel.txt
-[v6]: disable on kdump kernel to avoid bogus panicks.
-[v7]: swithch to core param, and remove change from v6
+Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
 ---
- Documentation/kdump/kdump.txt       |    7 ++++++
- Documentation/kernel-parameters.txt |    3 +++
- Documentation/sysctl/kernel.txt     |   40 +++++++++++++++++++++++------------
- include/linux/kernel.h              |    1 +
- include/uapi/linux/sysctl.h         |    1 +
- kernel/panic.c                      |   15 ++++++++++++-
- kernel/sysctl.c                     |    9 ++++++++
- kernel/sysctl_binary.c              |    1 +
- 8 files changed, 62 insertions(+), 15 deletions(-)
+v1: Arnd has advised me to provide you with options for time
+    calculation. The first option: "accuracy" is used in this
+    patch. The second option: "speed" can be done through
+    jiffies.
 
-diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-index 6c0b9f2..bc4bd5a 100644
---- a/Documentation/kdump/kdump.txt
-+++ b/Documentation/kdump/kdump.txt
-@@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
+v2: Moved on to the speed option. Let me know if I explicitly
+    need to include the jiffies header. The module compiles with
+    no problems on my side.
+
+v3: Handled the error pointed out by Ursula. The current version
+    does not handle overflows. There are two solutions for this.
+    The first is to use jiffies_64 since s/390 is a 64-bit
+    architecture after all. The second is to use wrapper functions
+    like time_before and time_after. Two files were added too.
+    They are: ctcm_main.c and netiucv.c. This patch could be sent
+    as a patchset in its final version for convenience.
+
+v4: removed #include <linux/jiffies.h> per Ursula's feedback.
+    Changed duration to hold the difference between jiffies
+    instead of difference between microsecond values per Arnd's
+    suggestion.
+
+v5: added changes written by Ursula to handle missed modifications.
+
+ drivers/s390/net/ctcm_fsms.c  | 18 +++++++-----------
+ drivers/s390/net/ctcm_main.c  |  4 ++--
+ drivers/s390/net/ctcm_main.h  |  2 +-
+ drivers/s390/net/ctcm_sysfs.c |  4 ++--
+ drivers/s390/net/netiucv.c    |  6 +++---
+ 5 files changed, 15 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
+index fb92524..49143c3 100644
+--- a/drivers/s390/net/ctcm_fsms.c
++++ b/drivers/s390/net/ctcm_fsms.c
+@@ -251,13 +251,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+ 	int first = 1;
+ 	int i;
+ 	unsigned long duration;
+-	struct timespec done_stamp = current_kernel_time(); /* xtime */
++	unsigned long done_stamp jiffies;
  
-    http://people.redhat.com/~anderson/
+ 	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
  
-+Trigger Kdump on WARN()
-+=======================
-+
-+The kernel parameter, panic_on_warn, calls panic() in all WARN() paths.  This
-+will cause a kdump to occur at the panic() call.  In cases where a user wants
-+to specify this during runtime, /proc/sys/kernel/panic_on_warn can be set to 1
-+to achieve the same behaviour.
+-	duration =
+-	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+-	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
++	duration = done_stamp -ch->prof.send_stamp;
+ 	if (duration > ch->prof.tx_time)
+ 		ch->prof.tx_time = duration;
  
- Contact
- =======
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4c81a86..ea5d57c 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2509,6 +2509,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			timeout < 0: reboot immediately
- 			Format: <timeout>
+@@ -307,7 +305,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+ 		spin_unlock(&ch->collect_lock);
+ 		ch->ccw[1].count = ch->trans_skb->len;
+ 		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+-		ch->prof.send_stamp = current_kernel_time(); /* xtime */
++		ch->prof.send_stamp = jiffies;
+ 		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+ 						(unsigned long)ch, 0xff, 0);
+ 		ch->prof.doios_multi++;
+@@ -1229,14 +1227,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+ 	int		rc;
+ 	struct th_header *header;
+ 	struct pdu	*p_header;
+-	struct timespec done_stamp = current_kernel_time(); /* xtime */
++	unsigned long done_stamp = jiffies;
  
-+	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
-+			on a WARN().
-+
- 	crash_kexec_post_notifiers
- 			Run kdump after running panic-notifiers and dumping
- 			kmsg. This only for the users who doubt kdump always
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 57baff5..b5d0c85 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -54,8 +54,9 @@ show up in /proc/sys/kernel:
- - overflowuid
- - panic
- - panic_on_oops
--- panic_on_unrecovered_nmi
- - panic_on_stackoverflow
-+- panic_on_unrecovered_nmi
-+- panic_on_warn
- - pid_max
- - powersave-nap               [ PPC only ]
- - printk
-@@ -527,19 +528,6 @@ the recommended setting is 60.
+ 	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
+ 			__func__, dev->name, smp_processor_id());
  
- ==============================================================
+-	duration =
+-		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+-		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
++	duration = done_stamp -ch->prof.send_stamp;
+ 	if (duration > ch->prof.tx_time)
+ 		ch->prof.tx_time = duration;
  
--panic_on_unrecovered_nmi:
--
--The default Linux behaviour on an NMI of either memory or unknown is
--to continue operation. For many environments such as scientific
--computing it is preferable that the box is taken out and the error
--dealt with than an uncorrected parity/ECC error get propagated.
--
--A small number of systems do generate NMI's for bizarre random reasons
--such as power management so the default is off. That sysctl works like
--the existing panic controls already in that directory.
--
--==============================================================
--
- panic_on_oops:
+@@ -1361,7 +1357,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
  
- Controls the kernel's behaviour when an oops or BUG is encountered.
-@@ -563,6 +551,30 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
+ 	ch->ccw[1].count = ch->trans_skb->len;
+ 	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+-	ch->prof.send_stamp = current_kernel_time(); /* xtime */
++	ch->prof.send_stamp = jiffies;
+ 	if (do_debug_ccw)
+ 		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
+ 	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+@@ -1827,7 +1823,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
+ 	fsm_newstate(wch->fsm, CTC_STATE_TX);
  
- ==============================================================
+ 	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
+-	wch->prof.send_stamp = current_kernel_time(); /* xtime */
++	wch->prof.send_stamp = jiffies;
+ 	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
+ 					(unsigned long) wch, 0xff, 0);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
+diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
+index e056dd4..05c37d6 100644
+--- a/drivers/s390/net/ctcm_main.c
++++ b/drivers/s390/net/ctcm_main.c
+@@ -567,7 +567,7 @@ static int ctcm_transmit_skb(struct channel *ch, struct sk_buff *skb)
+ 	fsm_newstate(ch->fsm, CTC_STATE_TX);
+ 	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+ 	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
+-	ch->prof.send_stamp = current_kernel_time(); /* xtime */
++	ch->prof.send_stamp = jiffies;
+ 	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
+ 					(unsigned long)ch, 0xff, 0);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
+@@ -831,7 +831,7 @@ static int ctcmpc_transmit_skb(struct channel *ch, struct sk_buff *skb)
+ 					sizeof(struct ccw1) * 3);
  
-+panic_on_unrecovered_nmi:
-+
-+The default Linux behaviour on an NMI of either memory or unknown is
-+to continue operation. For many environments such as scientific
-+computing it is preferable that the box is taken out and the error
-+dealt with than an uncorrected parity/ECC error get propagated.
-+
-+A small number of systems do generate NMI's for bizarre random reasons
-+such as power management so the default is off. That sysctl works like
-+the existing panic controls already in that directory.
-+
-+==============================================================
-+
-+panic_on_warn:
-+
-+Calls panic() in the WARN() path when set to 1.  This is useful to avoid
-+a kernel rebuild when attempting to kdump at the location of a WARN().
-+
-+0: only WARN(), default behaviour.
-+
-+1: call panic() after printing out WARN() location.
-+
-+==============================================================
-+
- perf_cpu_time_max_percent:
+ 	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
+-	ch->prof.send_stamp = current_kernel_time(); /* xtime */
++	ch->prof.send_stamp = jiffies;
+ 	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
+ 					(unsigned long)ch, 0xff, 0);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
+diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
+index 477c933..6f4417c 100644
+--- a/drivers/s390/net/ctcm_main.h
++++ b/drivers/s390/net/ctcm_main.h
+@@ -121,7 +121,7 @@ struct ctcm_profile {
+ 	unsigned long doios_multi;
+ 	unsigned long txlen;
+ 	unsigned long tx_time;
+-	struct timespec send_stamp;
++	unsigned long send_stamp;
+ };
  
- Hints to the kernel how much CPU time it should be allowed to
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 3d770f55..d60d31d 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -422,6 +422,7 @@ extern int panic_timeout;
- extern int panic_on_oops;
- extern int panic_on_unrecovered_nmi;
- extern int panic_on_io_nmi;
-+extern int panic_on_warn;
- extern int sysctl_panic_on_stackoverflow;
  /*
-  * Only to be used by arch init code. If the user over-wrote the default
-diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
-index 43aaba1..0956373 100644
---- a/include/uapi/linux/sysctl.h
-+++ b/include/uapi/linux/sysctl.h
-@@ -153,6 +153,7 @@ enum
- 	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
- 	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
- 	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
-+	KERN_PANIC_ON_WARN=77, /* int: call panic() in WARN() functions */
+diff --git a/drivers/s390/net/ctcm_sysfs.c b/drivers/s390/net/ctcm_sysfs.c
+index 6bcfbbb..c88f465 100644
+--- a/drivers/s390/net/ctcm_sysfs.c
++++ b/drivers/s390/net/ctcm_sysfs.c
+@@ -100,8 +100,8 @@ static void ctcm_print_statistics(struct ctcm_priv *priv)
+ 		     priv->channel[WRITE]->prof.doios_multi);
+ 	p += sprintf(p, "  Netto bytes written: %ld\n",
+ 		     priv->channel[WRITE]->prof.txlen);
+-	p += sprintf(p, "  Max. TX IO-time: %ld\n",
+-		     priv->channel[WRITE]->prof.tx_time);
++	p += sprintf(p, "  Max. TX IO-time: %u\n",
++		jiffies_to_usecs(priv->channel[WRITE]->prof.tx_time));
+ 
+ 	printk(KERN_INFO "Statistics for %s:\n%s",
+ 				priv->channel[CTCM_WRITE]->netdev->name, sbuf);
+diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
+index 0a87809..7e91f54 100644
+--- a/drivers/s390/net/netiucv.c
++++ b/drivers/s390/net/netiucv.c
+@@ -178,7 +178,7 @@ struct connection_profile {
+ 	unsigned long doios_multi;
+ 	unsigned long txlen;
+ 	unsigned long tx_time;
+-	struct timespec send_stamp;
++	unsigned long send_stamp;
+ 	unsigned long tx_pending;
+ 	unsigned long tx_max_pending;
  };
+@@ -786,7 +786,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
  
+ 	header.next = 0;
+ 	memcpy(skb_put(conn->tx_buff, NETIUCV_HDRLEN), &header, NETIUCV_HDRLEN);
+-	conn->prof.send_stamp = current_kernel_time();
++	conn->prof.send_stamp = jiffies;
+ 	txmsg.class = 0;
+ 	txmsg.tag = 0;
+ 	rc = iucv_message_send(conn->path, &txmsg, 0, 0,
+@@ -1220,7 +1220,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
+ 		memcpy(skb_put(nskb, NETIUCV_HDRLEN), &header,  NETIUCV_HDRLEN);
  
-diff --git a/kernel/panic.c b/kernel/panic.c
-index d09dc5c..db37c35 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -23,6 +23,7 @@
- #include <linux/sysrq.h>
- #include <linux/init.h>
- #include <linux/nmi.h>
-+#include <linux/crash_dump.h>
+ 		fsm_newstate(conn->fsm, CONN_STATE_TX);
+-		conn->prof.send_stamp = current_kernel_time();
++		conn->prof.send_stamp = jiffies;
  
- #define PANIC_TIMER_STEP 100
- #define PANIC_BLINK_SPD 18
-@@ -33,6 +34,7 @@ static int pause_on_oops;
- static int pause_on_oops_flag;
- static DEFINE_SPINLOCK(pause_on_oops_lock);
- static bool crash_kexec_post_notifiers;
-+int panic_on_warn __read_mostly;
- 
- int panic_timeout = CONFIG_PANIC_TIMEOUT;
- EXPORT_SYMBOL_GPL(panic_timeout);
-@@ -420,13 +422,23 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
- {
- 	disable_trace_on_warning();
- 
--	pr_warn("------------[ cut here ]------------\n");
-+	if (!panic_on_warn)
-+		pr_warn("------------[ cut here ]------------\n");
- 	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
- 		raw_smp_processor_id(), current->pid, file, line, caller);
- 
- 	if (args)
- 		vprintk(args->fmt, args->args);
- 
-+	if (panic_on_warn) {
-+		/*
-+		 * A flood of WARN()s may occur.  Prevent further WARN()s
-+		 * from panicking the system.
-+		 */
-+		panic_on_warn = 0;
-+		panic("panic_on_warn set ...\n");
-+	}
-+
- 	print_modules();
- 	dump_stack();
- 	print_oops_end_marker();
-@@ -484,6 +496,7 @@ EXPORT_SYMBOL(__stack_chk_fail);
- 
- core_param(panic, panic_timeout, int, 0644);
- core_param(pause_on_oops, pause_on_oops, int, 0644);
-+core_param(panic_on_warn, panic_on_warn, int, 0644);
- 
- static int __init setup_crash_kexec_post_notifiers(char *s)
- {
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 15f2511..7c54ff7 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1104,6 +1104,15 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+	{
-+		.procname	= "panic_on_warn",
-+		.data		= &panic_on_warn,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
- 	{ }
- };
- 
-diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
-index 9a4f750..7e7746a 100644
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
- 	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
- 	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
- 	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
-+	{ CTL_INT,	KERN_PANIC_ON_WARN,		"panic_on_warn" },
- 	{}
- };
- 
+ 		msg.tag = 1;
+ 		msg.class = 0;
 -- 
-1.7.9.3
+1.9.3
 
