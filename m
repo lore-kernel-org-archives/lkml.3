@@ -1,93 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaKDLfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:35:37 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37078 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaKDLfe (ORCPT
+	id S1752913AbaKDLgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:36:14 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48971 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaKDLgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:35:34 -0500
-Date: Tue, 4 Nov 2014 11:34:17 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Message-ID: <20141104113417.GG3815@sirena.org.uk>
-References: <1414570560-10320-2-git-send-email-mike.looijmans@topic.nl>
- <1414668415-597-1-git-send-email-mike.looijmans@topic.nl>
- <20141030165133.GB18557@sirena.org.uk>
- <54573860.4060708@topic.nl>
- <20141103120919.GE3815@sirena.org.uk>
- <545795D8.1040600@topic.nl>
- <20141103151058.GP3815@sirena.org.uk>
- <5457BD85.2070901@topic.nl>
- <54589472.8030305@topic.nl>
+	Tue, 4 Nov 2014 06:36:07 -0500
+Message-ID: <5458B9FC.3050309@ti.com>
+Date: Tue, 4 Nov 2014 13:35:24 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fTrra2YUagINO7SV"
-Content-Disposition: inline
-In-Reply-To: <54589472.8030305@topic.nl>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] Add ltc3562 voltage regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Will Deacon <will.deacon@arm.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
+References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com> <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com> <20141103105716.GC23162@arm.com> <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Stefano,
 
---fTrra2YUagINO7SV
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/03/2014 01:10 PM, Stefano Stabellini wrote:
+> On Mon, 3 Nov 2014, Will Deacon wrote:
+>> On Mon, Nov 03, 2014 at 10:46:03AM +0000, Stefano Stabellini wrote:
+>>> On Mon, 27 Oct 2014, Stefano Stabellini wrote:
+>>>> Introduce a boolean flag and an accessor function to check whether a
+>>>> device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
+>>>>
+>>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>>> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+>>>> CC: will.deacon@arm.com
+>>>
+>>> Will, Catalin,
+>>> are you OK with this patch?
+>>
+>> It would be nicer if the dma_coherent flag didn't have to be duplicated by
+>> each architecture in dev_archdata. Is there any reason not to put it in the
+>> core code?
+> 
+> Yes, there is a reason for it: if I added a boolean dma_coherent flag in
+> struct device as Catalin initially suggested, what would be the default
+> for each architecture? Where would I set it for arch that don't use
+> device tree? It is not easy.
+> 
+> I thought it would be better to introduce is_device_dma_coherent only on
+> the architectures where it certainly makes sense to have it. In fact I
+> checked and arm and arm64 are the only architectures to define
+> set_arch_dma_coherent_ops at the moment. At that point if
+> is_device_dma_coherent becomes arch-specific, it makes sense to store
+> the flag in dev_archdata instead of struct device.
 
-On Tue, Nov 04, 2014 at 09:55:14AM +0100, Mike Looijmans wrote:
-> =EF=BB=BFOn 11/03/2014 06:38 PM, Mike Looijmans wrote:
+The proposition from Will looks reasonable for me too, because
+there is "small" side-effect of adding such kind of properties to
+arch-specific data or even to the core device structure. ;(
 
-> >>You need to develop against current versions of the kernel, this is
-> >>something that was merged into Linus' tree during the merge window.
+There are some sub-systems in kernel which do not create their devices
+from DT and instead some host device populates its children devices manually.
+ Now, I know at least two cases:
+- usb: dwc3 core creates xhci device manually
+- pci: adds its client devices
 
-> >Is this an absolute show-stopper for you?
+In such, case DMA configuration have to be propagated from host to
+child (in our case host device's got DMA configuration from DT), like:
+	dma_set_coherent_mask(&xhci->dev, dwc->dev->coherent_dma_mask);
 
-> >With some effort I could move from our current 3.15 to 3.17, but even th=
-at
-> >wouldn't be recent enough then. I can justify spending a few days on get=
-ting
-> >the driver integrated into mainline, even if the initial version cost le=
-ss
-> >than that; but moving everything to mainline is going to take weeks and =
-the
-> >boss is definitely going to say "no" to that.
+	xhci->dev.parent	= dwc->dev;
+	xhci->dev.dma_mask	= dwc->dev->dma_mask;
+	xhci->dev.dma_parms	= dwc->dev->dma_parms;
 
-It should be easy to backport the support into your current kernel, it's
-just a few commits and there hasn't been much development in this area
-of the code.  Can you take a look at doing that please?
+So, once new DMA property is added it has to be propagated from 
+host to child device too.
 
-> More important than that: Since this chip powers the IO banks, we need it
-> for our own products, and hence it has to work (also) on the current 3.15
-> kernel. Using APIs from 3.18 wouold render the driver useless to ourselve=
-s.
+Recently, the new property  dma_pfn_offset was introduced in struct device 
+and such kind of problem was observed on keystone 2:
+- for usb case it was fixed using Platform Bus notifier (xhci - platform device)
+- for pci - the work is in progress, because solution with PCI Bus notifier
+  was rejected https://lkml.org/lkml/2014/10/10/308.
 
-This is just not at all important upstream, sorry.  The kernel moves on
-and internal APIs within the kernel move on so it is expected that code
-used in production won't be the latest and greatest upstream code.
+In general, if dma_coherent will belong to struct device then
+such problems will be possible to fix directly in drivers/subsystems:
+xhci->dev.dma_coherent	= dwc->dev->dma_coherent;
 
---fTrra2YUagINO7SV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+But, if it will be arch-specific data then it will be impossible to
+set it without introducing proper and arch-specific setters/getters functions.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Also, as an idea, we are thinking about introducing something like:
+  void dma_apply_parent_cfg(struct device *dev, struct device *parent)
+which will ensure that all DMA configuration properly copied from
+parent to children device. Now it should be (as minimum for ARM):
+ dma_mask
+ coherent_dma_mask
+ dma_parms
+ dma_pfn_offset
+ dev_archdata->dma_ops
+ [dma_coherent]?
 
-iQEcBAEBAgAGBQJUWLm4AAoJECTWi3JdVIfQO+MH/AjuAhfVXy49MivhREFxmHFJ
-zJTrA0v2xDb3K//kAvUvzozdX+eiQyfu7R7761kvqzOjZgCkMvzx6gkoysBRrME/
-4boGyu4hBW2+CB2GXssM+PMHYu7/Q90Yfz4AtqHsSQsbyXBWjX49nfhzp+rekPsd
-yqQhYYURF0F6EhyZ+fLQorbOdP1N8NfVNEKKrAA619ONwd4I/fTZsuy68Hk+DU4L
-mzZXkwbyk0tVH+PUo0i1kns48SfY9GY0FbwHGGXPCkXJ7l26cgZelnjH9qNMs5ZA
-4RDuG0KAhnjaH4FsKELmpxAaIDfhVL3kS3c87Y+W1l4VTQJ1jyLOOilsAX46V60=
-=c8hb
------END PGP SIGNATURE-----
+regards,
+-grygorii 
 
---fTrra2YUagINO7SV--
