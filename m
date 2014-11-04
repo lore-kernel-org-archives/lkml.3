@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751195AbaKDGOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 01:14:39 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:38403 "EHLO comal.ext.ti.com"
+	id S1751423AbaKDGRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 01:17:15 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50130 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753AbaKDGOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 01:14:36 -0500
-Message-ID: <54586E34.6090602@ti.com>
-Date: Tue, 4 Nov 2014 11:42:04 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1750914AbaKDGRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 01:17:10 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
+Date: Tue, 4 Nov 2014 11:47:06 +0530
+Message-ID: <1415081826-9297-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Felipe Balbi <balbi@ti.com>, <myungjoo.ham@samsung.com>,
-        <cw00.choi@samsung.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
-        <grant.likely@linaro.org>
-Subject: Re: [PATCH 0/4] extcon: gpio: add DT support
-References: <1415032350-8459-1-git-send-email-balbi@ti.com>
-In-Reply-To: <1415032350-8459-1-git-send-email-balbi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe et al.
+From: Oussama Ghorbel <ghorbel@pivasoftware.com>
 
-Another series was posted by removing the platform support.
-https://lkml.org/lkml/2014/10/14/244
+The USB OTG port does not work since v3.16 on omap platform.
+This is a regression introduced by the commit
+eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
+ and remove).
+This because the call to pm_runtime_enable() function is moved after the
+call to devm_phy_create() function, which has side effect since later in
+the subsequent calls of devm_phy_create() there is a check with
+pm_runtime_enabled() to configure few things.
 
-I guess I forgot to copy linux-omap.
+Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
+Tested-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/phy/phy-omap-usb2.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-
-
-On 11/03/2014 10:02 PM, Felipe Balbi wrote:
-> Hi,
->
-> this series has been tested with v3.18-rc2 with a
-> yet-to-be-released board (called X15). That board
-> is DT-only and we use extcon-gpio to decide which
-> USB mode should be used (host or peripheral).
->
-> George Cherian (4):
->    extcon: gpio: Convert the driver to use gpio desc API's
->    extcon: gpio: Add dt support for the driver.
->    extcon: gpio: Always use gpio_get_value_cansleep
->    extcon: gpio: Add support for using cable names
->
->   .../devicetree/bindings/extcon/extcon-gpio.txt     | 23 ++++++
->   drivers/extcon/extcon-gpio.c                       | 93 ++++++++++++++--------
->   2 files changed, 84 insertions(+), 32 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio.txt
->
+diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+index 8c84298..f091576 100644
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -258,14 +258,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	otg->phy		= &phy->phy;
+ 
+ 	platform_set_drvdata(pdev, phy);
++	pm_runtime_enable(phy->dev);
+ 
+ 	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
+-	if (IS_ERR(generic_phy))
++	if (IS_ERR(generic_phy)) {
++		pm_runtime_disable(phy->dev);
+ 		return PTR_ERR(generic_phy);
++	}
+ 
+ 	phy_set_drvdata(generic_phy, phy);
+ 
+-	pm_runtime_enable(phy->dev);
+ 	phy_provider = devm_of_phy_provider_register(phy->dev,
+ 			of_phy_simple_xlate);
+ 	if (IS_ERR(phy_provider)) {
+-- 
+1.7.9.5
 
