@@ -1,186 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaKDIuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:50:18 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:32145 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087AbaKDIuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:50:05 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-b8-54589339fa6d
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 6/6] mfd: max77686/802: Remove support for board files
-Date: Tue, 04 Nov 2014 09:49:46 +0100
-Message-id: <1415090986-30623-7-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4NV3LyREhBit3yVlsnLGe1WLqwyds
-	Fkd/F1i8fmFocbbpDbvF/a9HGS2+Xelgsri8aw6bxdojd9ktTnezOnB5/H1+ncVj56y77B6b
-	VnWyedy5tofNY97JQI++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKmPblJVPBGZWKBTuesjcw
-	tsl1MXJySAiYSCzecIoJwhaTuHBvPVsXIxeHkMBSRomV0+YzQjh9TBItxy4wglSxCRhLbF6+
-	BKxKRGATo8Sk/iusIAlmgWYmidPvc0BsYQE3iV/f7oKNZRFQlXi9oQWshlfAXeLY+fMsEOvk
-	JE4emwwU5+DgFPCQuN/NDBIWAippWr+IZQIj7wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5
-	uZsYIQH4dQfj0mNWhxgFOBiVeHhXxEeECLEmlhVX5h5ilOBgVhLhXV0FFOJNSaysSi3Kjy8q
-	zUktPsTIxMEp1cAYtlX1nLhcLc/Ds3u2ic7Wu/sh3Za/99mx8KMFLxZunxq0pUT9cEDMpLvN
-	rWezcqvP//7ZMJdTVM0ujEeupXSRSoG0v6WHt+OubZwL32c7WtR7V0f6p31UOL9urbdpn1ft
-	6tIVXn73rC++2DG3aeO1Pt3IQs5JPh8iEtPFSyZvUQqcXbg7e7oSS3FGoqEWc1FxIgAIKtib
-	HgIAAA==
+	id S1752759AbaKDIu2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:50:28 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:58379 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaKDIuX convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 4 Nov 2014 03:50:23 -0500
+Message-Id: <5458A15A0200007800044A9A@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Tue, 04 Nov 2014 08:50:18 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] x86-64: handle PC-relative relocations on per-CPU
+ data
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is used only on Exynos based boards with DTS support.
-After removal of board file support from max77686 and max77802 regulator
-drivers, the MFD driver can be converted to DTS-only version. This
-simplifies a little the code:
-1. No dead (unused) entries in platform_data structure.
-2. More code removed.
-3. Regulator driver does not depend on allocated memory
-   from MFD driver.
-4. It makes also easier extending the regulator driver.
+This is in preparation of using RIP-relative addressing in many of the
+per-CPU accesses.
 
-Add to the max77686 MFD driver dependency on CONFIG_OF because without
-DTS the regulator drivers (max77686 and max77802) won't bind.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 ---
- drivers/mfd/Kconfig                  |  1 +
- drivers/mfd/max77686.c               | 23 -----------------------
- include/linux/mfd/max77686-private.h |  1 -
- include/linux/mfd/max77686.h         | 28 ----------------------------
- 4 files changed, 1 insertion(+), 52 deletions(-)
+ arch/x86/boot/compressed/misc.c |   14 +++++++++++++-
+ arch/x86/tools/relocs.c         |   38 ++++++++++++++++++++++++++++----------
+ 2 files changed, 41 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index cbdb10918af1..fd9d19ccf8c0 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -401,6 +401,7 @@ config MFD_MAX14577
- config MFD_MAX77686
- 	bool "Maxim Semiconductor MAX77686/802 PMIC Support"
- 	depends on I2C=y
-+	depends on OF
- 	select MFD_CORE
- 	select REGMAP_I2C
- 	select REGMAP_IRQ
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 929795eae9fc..3da237afacde 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -205,24 +205,10 @@ static const struct of_device_id max77686_pmic_dt_match[] = {
- 	{ },
- };
+--- 3.18-rc3-x86_64-PCrel-per-CPU.orig/arch/x86/boot/compressed/misc.c
++++ 3.18-rc3-x86_64-PCrel-per-CPU/arch/x86/boot/compressed/misc.c
+@@ -260,7 +260,7 @@ static void handle_relocations(void *out
  
--static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
--								  *dev)
--{
--	struct max77686_platform_data *pd;
--
--	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
--	if (!pd)
--		return NULL;
--
--	dev->platform_data = pd;
--	return pd;
--}
--
- static int max77686_i2c_probe(struct i2c_client *i2c,
- 			      const struct i2c_device_id *id)
- {
- 	struct max77686_dev *max77686 = NULL;
--	struct max77686_platform_data *pdata = dev_get_platdata(&i2c->dev);
- 	const struct of_device_id *match;
- 	unsigned int data;
- 	int ret = 0;
-@@ -233,14 +219,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	const struct mfd_cell *cells;
- 	int n_devs;
+ 	/*
+ 	 * Process relocations: 32 bit relocations first then 64 bit after.
+-	 * Two sets of binary relocations are added to the end of the kernel
++	 * Three sets of binary relocations are added to the end of the kernel
+ 	 * before compression. Each relocation table entry is the kernel
+ 	 * address of the location which needs to be updated stored as a
+ 	 * 32-bit value which is sign extended to 64 bits.
+@@ -270,6 +270,8 @@ static void handle_relocations(void *out
+ 	 * kernel bits...
+ 	 * 0 - zero terminator for 64 bit relocations
+ 	 * 64 bit relocation repeated
++	 * 0 - zero terminator for inverse 32 bit relocations
++	 * 32 bit inverse relocation repeated
+ 	 * 0 - zero terminator for 32 bit relocations
+ 	 * 32 bit relocation repeated
+ 	 *
+@@ -286,6 +288,16 @@ static void handle_relocations(void *out
+ 		*(uint32_t *)ptr += delta;
+ 	}
+ #ifdef CONFIG_X86_64
++	while (*--reloc) {
++		long extended = *reloc;
++		extended += map;
++
++		ptr = (unsigned long)extended;
++		if (ptr < min_addr || ptr > max_addr)
++			error("inverse 32-bit relocation outside of kernel!\n");
++
++		*(int32_t *)ptr -= delta;
++	}
+ 	for (reloc--; *reloc; reloc--) {
+ 		long extended = *reloc;
+ 		extended += map;
+--- 3.18-rc3-x86_64-PCrel-per-CPU.orig/arch/x86/tools/relocs.c
++++ 3.18-rc3-x86_64-PCrel-per-CPU/arch/x86/tools/relocs.c
+@@ -20,7 +20,10 @@ struct relocs {
  
--	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node && !pdata)
--		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
--
--	if (!pdata) {
--		dev_err(&i2c->dev, "No platform data found.\n");
--		return -EINVAL;
--	}
--
- 	max77686 = devm_kzalloc(&i2c->dev,
- 				sizeof(struct max77686_dev), GFP_KERNEL);
- 	if (!max77686)
-@@ -259,7 +237,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	max77686->dev = &i2c->dev;
- 	max77686->i2c = i2c;
+ static struct relocs relocs16;
+ static struct relocs relocs32;
++#if ELF_BITS == 64
++static struct relocs relocs32neg;
+ static struct relocs relocs64;
++#endif
  
--	max77686->wakeup = pdata->wakeup;
- 	max77686->irq = i2c->irq;
+ struct section {
+ 	Elf_Shdr       shdr;
+@@ -762,11 +765,16 @@ static int do_reloc64(struct section *se
  
- 	if (max77686->type == TYPE_MAX77686) {
-diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
-index 960b92ad450d..f5043490d67c 100644
---- a/include/linux/mfd/max77686-private.h
-+++ b/include/linux/mfd/max77686-private.h
-@@ -447,7 +447,6 @@ struct max77686_dev {
- 	struct regmap_irq_chip_data *rtc_irq_data;
+ 	switch (r_type) {
+ 	case R_X86_64_NONE:
++		/* NONE can be ignored. */
++		break;
++
+ 	case R_X86_64_PC32:
+ 		/*
+-		 * NONE can be ignored and PC relative relocations don't
+-		 * need to be adjusted.
++		 * PC relative relocations don't need to be adjusted unless
++		 * referencing a percpu symbol.
+ 		 */
++		if (is_percpu_sym(sym, symname))
++			add_reloc(&relocs32neg, offset);
+ 		break;
  
- 	int irq;
--	bool wakeup;
- 	struct mutex irqlock;
- 	int irq_masks_cur[MAX77686_IRQ_GROUP_NR];
- 	int irq_masks_cache[MAX77686_IRQ_GROUP_NR];
-diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
-index 553f7d09258a..bb995ab9a575 100644
---- a/include/linux/mfd/max77686.h
-+++ b/include/linux/mfd/max77686.h
-@@ -119,12 +119,6 @@ enum max77802_regulators {
- 	MAX77802_REG_MAX,
- };
+ 	case R_X86_64_32:
+@@ -986,7 +994,10 @@ static void emit_relocs(int as_text, int
+ 	/* Order the relocations for more efficient processing */
+ 	sort_relocs(&relocs16);
+ 	sort_relocs(&relocs32);
++#if ELF_BITS == 64
++	sort_relocs(&relocs32neg);
+ 	sort_relocs(&relocs64);
++#endif
  
--struct max77686_regulator_data {
--	int id;
--	struct regulator_init_data *initdata;
--	struct device_node *of_node;
--};
+ 	/* Print the relocations */
+ 	if (as_text) {
+@@ -1007,14 +1018,21 @@ static void emit_relocs(int as_text, int
+ 		for (i = 0; i < relocs32.count; i++)
+ 			write_reloc(relocs32.offset[i], stdout);
+ 	} else {
+-		if (ELF_BITS == 64) {
+-			/* Print a stop */
+-			write_reloc(0, stdout);
 -
- enum max77686_opmode {
- 	MAX77686_OPMODE_NORMAL,
- 	MAX77686_OPMODE_LP,
-@@ -136,26 +130,4 @@ struct max77686_opmode_data {
- 	int mode;
- };
+-			/* Now print each relocation */
+-			for (i = 0; i < relocs64.count; i++)
+-				write_reloc(relocs64.offset[i], stdout);
+-		}
++#if ELF_BITS == 64
++		/* Print a stop */
++		write_reloc(0, stdout);
++
++		/* Now print each relocation */
++		for (i = 0; i < relocs64.count; i++)
++			write_reloc(relocs64.offset[i], stdout);
++
++		/* Print a stop */
++		write_reloc(0, stdout);
++
++		/* Now print each inverse 32-bit relocation */
++		for (i = 0; i < relocs32neg.count; i++)
++			write_reloc(relocs32neg.offset[i], stdout);
++#endif
  
--struct max77686_platform_data {
--	int ono;
--	int wakeup;
--
--	/* ---- PMIC ---- */
--	struct max77686_regulator_data *regulators;
--	int num_regulators;
--
--	struct max77686_opmode_data *opmode_data;
--
--	/*
--	 * GPIO-DVS feature is not enabled with the current version of
--	 * MAX77686 driver. Buck2/3/4_voltages[0] is used as the default
--	 * voltage at probe. DVS/SELB gpios are set as OUTPUT-LOW.
--	 */
--	int buck234_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
--	int buck234_gpio_selb[3]; /* [0]SELB2, [1]SELB3, [2]SELB4 */
--	unsigned int buck2_voltage[8]; /* buckx_voltage in uV */
--	unsigned int buck3_voltage[8];
--	unsigned int buck4_voltage[8];
--};
--
- #endif /* __LINUX_MFD_MAX77686_H */
--- 
-1.9.1
+ 		/* Print a stop */
+ 		write_reloc(0, stdout);
+
+
 
