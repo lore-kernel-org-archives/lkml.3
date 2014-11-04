@@ -1,196 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722AbaKDQCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:02:48 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:24663 "EHLO
+	id S1754690AbaKDQCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:02:41 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:49577 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754661AbaKDQCb (ORCPT
+	by vger.kernel.org with ESMTP id S1754591AbaKDQCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:02:31 -0500
-Message-Id: <20141104160223.310714394@goodmis.org>
+	Tue, 4 Nov 2014 11:02:24 -0500
+Message-Id: <20141104155237.228431433@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Tue, 04 Nov 2014 10:52:49 -0500
+Date: Tue, 04 Nov 2014 10:52:37 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [RFC][PATCH 12/12 v3] x86/nmi: Perform a safe NMI stack trace on all CPUs
-References: <20141104155237.228431433@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0012-x86-nmi-Perform-a-safe-NMI-stack-trace-on-all-CPUs.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC][PATCH 00/12 v3] seq-buf/x86/printk: Print all stacks from NMI safely
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+This is version 3:
 
-When trigger_all_cpu_backtrace() is called on x86, it will trigger an
-NMI on each CPU and call show_regs(). But this can lead to a hard lock
-up if the NMI comes in on another printk().
+This is my proposal to print the NMI stack traces from an RCU stall safely,
+as well as from a sysrq-l.
 
-In order to avoid this, when the NMI triggers, it switches the printk
-routine for that CPU to call a NMI safe printk function that records the
-printk in a per_cpu seq_buf descriptor. After all NMIs have finished
-recording its data, the trace_seqs are printed in a safe context.
+Here's the gist of it.
 
-Link: http://lkml.kernel.org/p/20140619213952.360076309@goodmis.org
+ o Add a new layer to trace_seq called seq_buf, that the trace
+   seq uses. The seq_buf is more generic, and does not supply its own
+   buffer. The buffer must be supplied when initializing the seq_buf.
+   Note, these patches may be going into 3.19. There's some places in
+   the tracing code that I wanted to use a different size buffer
+   but still needed trace_seq to have a pre-allocated buffer. Having
+   this new layer will help me out.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/apic/hw_nmi.c | 90 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 85 insertions(+), 5 deletions(-)
+   I also based this on seq_file, and ideally, I want to merge the code
+   between seq_file.c and trace_seq.c, as they are very similar. I already
+   have a working set of patches that do this, but will get seq_buf
+   merged first.
 
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 6a1e71bde323..6e7bb0bc6fcd 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -18,6 +18,7 @@
- #include <linux/nmi.h>
- #include <linux/module.h>
- #include <linux/delay.h>
-+#include <linux/seq_buf.h>
- 
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- u64 hw_nmi_get_sample_period(int watchdog_thresh)
-@@ -29,14 +30,35 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
- #ifdef arch_trigger_all_cpu_backtrace
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
-+static cpumask_var_t printtrace_mask;
-+
-+#define NMI_BUF_SIZE		4096
-+
-+struct nmi_seq_buf {
-+	unsigned char		buffer[NMI_BUF_SIZE];
-+	struct seq_buf		seq;
-+};
-+
-+/* Safe printing in NMI context */
-+static DEFINE_PER_CPU(struct nmi_seq_buf, nmi_print_seq);
- 
- /* "in progress" flag of arch_trigger_all_cpu_backtrace */
- static unsigned long backtrace_flag;
- 
-+static void print_seq_line(struct nmi_seq_buf *s, int last, int pos)
-+{
-+	const char *buf = s->buffer + last;
-+
-+	printk("%.*s", (pos - last) + 1, buf);
-+}
-+
- void arch_trigger_all_cpu_backtrace(bool include_self)
- {
-+	struct nmi_seq_buf *s;
-+	int len;
-+	int cpu;
- 	int i;
--	int cpu = get_cpu();
-+	int this_cpu = get_cpu();
- 
- 	if (test_and_set_bit(0, &backtrace_flag)) {
- 		/*
-@@ -49,7 +71,17 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 
- 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
- 	if (!include_self)
--		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+		cpumask_clear_cpu(this_cpu, to_cpumask(backtrace_mask));
-+
-+	cpumask_copy(printtrace_mask, to_cpumask(backtrace_mask));
-+	/*
-+	 * Set up per_cpu seq_buf buffers that the NMIs running on the other
-+	 * CPUs will write to.
-+	 */
-+	for_each_cpu(cpu, to_cpumask(backtrace_mask)) {
-+		s = &per_cpu(nmi_print_seq, cpu);
-+		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
-+	}
- 
- 	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
- 		pr_info("sending NMI to %s CPUs:\n",
-@@ -65,11 +97,57 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 		touch_softlockup_watchdog();
- 	}
- 
-+	/*
-+	 * Now that all the NMIs have triggered, we can dump out their
-+	 * back traces safely to the console.
-+	 */
-+	for_each_cpu(cpu, printtrace_mask) {
-+		int last_i = 0;
-+
-+		s = &per_cpu(nmi_print_seq, cpu);
-+		len = s->seq.len;
-+		if (!len)
-+			continue;
-+
-+		/* Print line by line. */
-+		for (i = 0; i < len; i++) {
-+			if (s->buffer[i] == '\n') {
-+				print_seq_line(s, last_i, i);
-+				last_i = i + 1;
-+			}
-+		}
-+		if (last_i < i - 1) {
-+			print_seq_line(s, last_i, i);
-+			pr_cont("\n");
-+		}
-+	}
-+
- 	clear_bit(0, &backtrace_flag);
- 	smp_mb__after_atomic();
- 	put_cpu();
- }
- 
-+/*
-+ * It is not safe to call printk() directly from NMI handlers.
-+ * It may be fine if the NMI detected a lock up and we have no choice
-+ * but to do so, but doing a NMI on all other CPUs to get a back trace
-+ * can be done with a sysrq-l. We don't want that to lock up, which
-+ * can happen if the NMI interrupts a printk in progress.
-+ *
-+ * Instead, we redirect the vprintk() to this nmi_vprintk() that writes
-+ * the content into a per cpu seq_buf buffer. Then when the NMIs are
-+ * all done, we can safely dump the contents of the seq_buf to a printk()
-+ * from a non NMI context.
-+ */
-+static int nmi_vprintk(const char *fmt, va_list args)
-+{
-+	struct nmi_seq_buf *s = this_cpu_ptr(&nmi_print_seq);
-+	unsigned int len = s->seq.len;
-+
-+	seq_buf_vprintf(&s->seq, fmt, args);
-+	return s->seq.len - len;
-+}
-+
- static int
- arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
- {
-@@ -78,12 +156,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
- 	cpu = smp_processor_id();
- 
- 	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
--		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+		printk_func_t printk_func_save = this_cpu_read(printk_func);
- 
--		arch_spin_lock(&lock);
-+		/* Replace printk to write into the NMI seq */
-+		this_cpu_write(printk_func, nmi_vprintk);
- 		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
- 		show_regs(regs);
--		arch_spin_unlock(&lock);
-+		this_cpu_write(printk_func, printk_func_save);
-+
- 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
- 		return NMI_HANDLED;
- 	}
--- 
-2.1.1
+ o Update the seq_buf code to be more like seq_file.
 
+ o Move the seq_buf out of the tracing code. It's useful for other
+   purposes too. Like writing from an NMI context, and for seq_file.
 
+ o Add a per_cpu "printk_func" that printk calls. By default it calls
+   vprintk_def() which does what it has always done. This allows us to
+   override what printk() calls normally on a per cpu basis.
+
+ o Have the NMI handler that dumps the stack trace just change the
+   printk_func to call a NMI safe printk function that writes to a per cpu
+   seq_buf. When all NMI handlers chimed in, the original caller prints
+   out the seq_buf buffers for each CPU from a printk safe context.
+
+Changes since V2:
+
+- Mostly it was modifying seq_buf to be based on seq_file as there were
+  some questions to the way seq_buf should work. Note, there's also a
+  set of patches that are getting ready to remove the return value of
+  the seq_printf() and friends to be void, so the seq_buf_printf() and
+  friends return values can be ignored, because they will be void as well.
+  but for now, they just match what seq_file does.
+
+Changes since V1:
+
+- Note, I based this off of my 3.17 queue that already updated trace_seq
+  with a lot of comments from Andrew Morton. His comments have already
+  been incorporated into the trace_seq.c file. This patch set is on top
+  of those.
+
+- Added a change that is in my 3.17 queue that cleans up open coded
+  calculations of the trace_seq buffer to get the current location of
+  the buffer.
+
+- Biggest change is the added seq_buf. I'm keeping trace_seq doing the
+  stop everything once it fills up. But seq_buf will act more like other
+  utilities, as it will return what I would have written, and fills
+  up the buffer as much as it can. It sets an overflow flag to test to
+  see if there wasn't enough buffer space.
+
+- I updated the last patch to use the seq_buf instead of the trace_seq
+  by using its own struct nmi_seq_buf that allocates the buffer used.
+  I also made some updates from previous reviews like not stripping the
+  log level from the NMI printks and just using it in the final output
+  as well as adding more comments and fixing the "return true" on a void
+  function.
+
+Thoughts?
+
+-- Steve
+
+Steven Rostedt (Red Hat) (12):
+      x86/kvm/tracing: Use helper function trace_seq_buffer_ptr()
+      RAS/tracing: Use trace_seq_buffer_ptr() helper instead of open coded
+      tracing: Create seq_buf layer in trace_seq
+      tracing: Convert seq_buf_path() to be like seq_path()
+      tracing: Convert seq_buf fields to be like seq_file fields
+      tracing: Add a seq_buf_clear() helper and clear len and readpos in init
+      tracing: Have seq_buf use full buffer
+      tracing: Add seq_buf_get_buf() and seq_buf_commit() helper functions
+      seq_buf: Move the seq_buf code to lib/
+      seq-buf: Make seq_buf_bprintf() conditional on CONFIG_BINARY_PRINTF
+      printk: Add per_cpu printk func to allow printk to be diverted
+      x86/nmi: Perform a safe NMI stack trace on all CPUs
+
+----
+ arch/x86/kernel/apic/hw_nmi.c        |  90 ++++++++-
+ arch/x86/kvm/mmutrace.h              |   4 +-
+ drivers/firmware/efi/cper.c          |   2 +-
+ include/linux/percpu.h               |   3 +
+ include/linux/printk.h               |   2 +
+ include/linux/seq_buf.h              | 120 ++++++++++++
+ include/linux/trace_seq.h            |  10 +-
+ kernel/printk/printk.c               |  38 +++-
+ kernel/trace/trace.c                 |  39 ++--
+ kernel/trace/trace_events.c          |   6 +-
+ kernel/trace/trace_functions_graph.c |   6 +-
+ kernel/trace/trace_seq.c             | 184 +++++++++----------
+ lib/Makefile                         |   2 +-
+ lib/seq_buf.c                        | 344 +++++++++++++++++++++++++++++++++++
+ 14 files changed, 707 insertions(+), 143 deletions(-)
