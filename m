@@ -1,157 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaKDIbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:31:50 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:48923 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848AbaKDIbo (ORCPT
+	id S1752720AbaKDIby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:31:54 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46384 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696AbaKDIbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:31:44 -0500
-Subject: [PATCH 1/4] inet: Add skb_copy_datagram_iter
-References: <20141104033818.GA11149@gondor.apana.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Message-Id: <E1XlZWY-0003HZ-Ef@gondolin.me.apana.org.au>
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Tue, 04 Nov 2014 16:31:34 +0800
+	Tue, 4 Nov 2014 03:31:50 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 4/4 v2] ftracetest: Add a couple of ftrace test cases
+References: <20141103212737.696365174@goodmis.org>
+	<20141103212842.139783956@goodmis.org>
+Date: Tue, 04 Nov 2014 17:31:47 +0900
+In-Reply-To: <20141103212842.139783956@goodmis.org> (Steven Rostedt's message
+	of "Mon, 03 Nov 2014 16:27:41 -0500")
+Message-ID: <87h9yf5pu4.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds skb_copy_datagram_iter, which is identical to
-skb_copy_datagram_iovec except that it operates on iov_iter
-instead of iovec.
+Hi Steve,
 
-Eventually all users of skb_copy_datagram_iovec should switch
-over to iov_iter and then we can remove skb_copy_datagram_iovec.
+Just a few nitpicks..  Otherwise looks good to me.
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
----
 
- include/linux/skbuff.h |    3 +
- net/core/datagram.c    |   82 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 85 insertions(+)
+On Mon, 03 Nov 2014 16:27:41 -0500, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+>
+> Added three test cases to get the feel of adding tests to ftracetest.
+> The three cases are:
+>
+>   function profiling test, to make sure function profiling still works
+>    with function tracing (was a regression)
+>
+>   function graph filter test to make sure that function graph filtering works.
+>
+>   function graph filter with stack tracing test to make sure that the function
+>    graph filter does filter and also continues to filter when another function tracer
+>    is running (like the stack tracer)
+>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  .../ftrace/test.d/ftrace/fgraph-filter-stack.tc    | 94 ++++++++++++++++++++++
+>  .../ftrace/test.d/ftrace/fgraph-filter.tc          | 49 +++++++++++
+>  .../ftrace/test.d/ftrace/func_profiler.tc          | 76 +++++++++++++++++
+>  3 files changed, 219 insertions(+)
+>  create mode 100644 tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter-stack.tc
+>  create mode 100644 tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter.tc
+>  create mode 100644 tools/testing/selftests/ftrace/test.d/ftrace/func_profiler.tc
+>
+> diff --git a/tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter-stack.tc b/tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter-stack.tc
+> new file mode 100644
+> index 000000000000..3d8f79176681
+> --- /dev/null
+> +++ b/tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter-stack.tc
+> @@ -0,0 +1,94 @@
+> +#!/bin/sh
+> +# description: ftrace - function graph filters with stack tracer
+> +
+> +# Make sure that function graph filtering works, and is not
+> +# affected by other tracers enabled (like stack tracer)
+> +
+> +if ! grep -q function_graph available_tracers; then
+> +    echo "no function graph tracer configured"
+> +    exit_unsupported
+> +fi
+> +
+> +if [ ! -f set_ftrace_filter ]; then
+> +    echo "set_ftrace_filter not found? Is dynamic ftrace not set?"
+> +    exit_unsupported
+> +fi
+> +
+> +do_reset() {
+> +    reset_tracer
+> +    echo 0 > /proc/sys/kernel/stack_tracer_enabled
+> +    enable_tracing
+> +    clear_trace
+> +    echo > set_ftrace_filter
+> +}
+> +
+> +disable_tracing
+> +clear_trace;
+> +
+> +# filter something, schedule is always good
+> +if ! echo "schedule" > set_ftrace_filter; then
+> +    # test for powerpc 64
+> +    if ! echo ".schedule" > set_ftrace_filter; then
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 6c8b6f6..5ff7054 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -148,6 +148,7 @@
- struct net_device;
- struct scatterlist;
- struct pipe_inode_info;
-+struct iov_iter;
- 
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- struct nf_conntrack {
-@@ -2641,6 +2642,8 @@ int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *frm,
- int skb_copy_datagram_const_iovec(const struct sk_buff *from, int offset,
- 				  const struct iovec *to, int to_offset,
- 				  int size);
-+int skb_copy_datagram_iter(const struct sk_buff *from, int offset,
-+			   struct iov_iter *to, int size);
- void skb_free_datagram(struct sock *sk, struct sk_buff *skb);
- void skb_free_datagram_locked(struct sock *sk, struct sk_buff *skb);
- int skb_kill_datagram(struct sock *sk, struct sk_buff *skb, unsigned int flags);
-diff --git a/net/core/datagram.c b/net/core/datagram.c
-index fdbc9a8..45a9d4d 100644
---- a/net/core/datagram.c
-+++ b/net/core/datagram.c
-@@ -49,6 +49,7 @@
- #include <linux/spinlock.h>
- #include <linux/slab.h>
- #include <linux/pagemap.h>
-+#include <linux/uio.h>
- 
- #include <net/protocol.h>
- #include <linux/skbuff.h>
-@@ -482,6 +483,87 @@ fault:
- EXPORT_SYMBOL(skb_copy_datagram_const_iovec);
- 
- /**
-+ *	skb_copy_datagram_iter - Copy a datagram to an iovec iterator.
-+ *	@skb: buffer to copy
-+ *	@offset: offset in the buffer to start copying from
-+ *	@to: iovec iterator to copy to
-+ *	@len: amount of data to copy from buffer to iovec
-+ */
-+int skb_copy_datagram_iter(const struct sk_buff *skb, int offset,
-+			   struct iov_iter *to, int len)
-+{
-+	int start = skb_headlen(skb);
-+	int i, copy = start - offset;
-+	struct sk_buff *frag_iter;
-+
-+	trace_skb_copy_datagram_iovec(skb, len);
-+
-+	/* Copy header. */
-+	if (copy > 0) {
-+		if (copy > len)
-+			copy = len;
-+		if (copy_to_iter(skb->data + offset, copy, to))
-+			goto fault;
-+		if ((len -= copy) == 0)
-+			return 0;
-+		offset += copy;
-+	}
-+
-+	/* Copy paged appendix. Hmm... why does this look so complicated? */
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-+		int end;
-+		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
-+
-+		WARN_ON(start > offset + len);
-+
-+		end = start + skb_frag_size(frag);
-+		if ((copy = end - offset) > 0) {
-+			int err;
-+			u8  *vaddr;
-+			struct page *page = skb_frag_page(frag);
-+
-+			if (copy > len)
-+				copy = len;
-+			vaddr = kmap(page);
-+			err = copy_to_iter(vaddr + frag->page_offset +
-+					   offset - start, copy, to);
-+			kunmap(page);
-+			if (err)
-+				goto fault;
-+			if (!(len -= copy))
-+				return 0;
-+			offset += copy;
-+		}
-+		start = end;
-+	}
-+
-+	skb_walk_frags(skb, frag_iter) {
-+		int end;
-+
-+		WARN_ON(start > offset + len);
-+
-+		end = start + frag_iter->len;
-+		if ((copy = end - offset) > 0) {
-+			if (copy > len)
-+				copy = len;
-+			if (skb_copy_datagram_iter(frag_iter, offset - start,
-+						   to, copy))
-+				goto fault;
-+			if ((len -= copy) == 0)
-+				return 0;
-+			offset += copy;
-+		}
-+		start = end;
-+	}
-+	if (!len)
-+		return 0;
-+
-+fault:
-+	return -EFAULT;
-+}
-+EXPORT_SYMBOL(skb_copy_datagram_iter);
-+
-+/**
-  *	skb_copy_datagram_from_iovec - Copy a datagram from an iovec.
-  *	@skb: buffer to copy
-  *	@offset: offset in the buffer to start copying to
+You did 'echo '*schedule' > set_ftrace_filter' in the last test case.
+
+
+> +	echo "can not enable schedule filter"
+> +	exit -1
+> +    fi
+> +fi
+> +
+> +echo function_graph > current_tracer
+> +
+> +if [ ! -f stack_trace ]; then
+> +    echo "Stack tracer not configured"
+> +    do_reset
+> +    exit_unsupported;
+> +fi
+> +
+> +echo "Now testing with stack tracer"
+> +
+> +echo 1 > /proc/sys/kernel/stack_tracer_enabled
+> +
+> +disable_tracing
+> +clear_trace
+> +enable_tracing
+> +sleep 1
+> +
+> +count=`cat trace | grep '()' | grep -v schedule | wc -l`
+> +
+> +if [ $count -ne 0 ]; then
+> +    echo "Graph filtering not working with stack tracer?"
+> +    exit -1
+> +fi
+> +
+> +count=`cat trace | grep 'schedule()' | wc -l` 
+> +if [ $count -eq 0 ]; then
+> +    echo "No schedule traces found?"
+> +    exit -1
+> +fi
+> +
+> +# Make sure we did find something
+> +count=`cat trace | grep 'schedule()' | wc -l` 
+> +if [ $count -eq 0 ]; then
+> +    echo "No schedule traces found?"
+> +    exit -1
+> +fi
+
+Do you really want to do it twice?
+
+
+> +
+> +echo 0 > /proc/sys/kernel/stack_tracer_enabled
+> +clear_trace
+> +sleep 1
+> +
+> +
+> +count=`cat trace | grep '()' | grep -v schedule | wc -l`
+> +
+> +if [ $count -ne 0 ]; then
+> +    echo "Graph filtering not working after stack tracer disabled?"
+> +    exit -1
+> +fi
+> +
+> +count=`cat trace | grep 'schedule()' | wc -l` 
+> +if [ $count -eq 0 ]; then
+> +    echo "No schedule traces found?"
+> +    exit -1
+> +fi
+> +
+> +do_reset
+> +
+> +exit 0
+
+
+[SNIP]
+> --- /dev/null
+> +++ b/tools/testing/selftests/ftrace/test.d/ftrace/func_profiler.tc
+> @@ -0,0 +1,76 @@
+> +#!/bin/sh
+> +# description: ftrace - function profiler with function tracing
+> +
+> +# There was a bug after a rewrite of the ftrace infrastructure that
+> +# caused the function_profiler not to be able to run with the function
+> +# tracer, because the function_profiler used the function_graph tracer
+> +# and it was assumed the two could not run simultaneously.
+> +#
+> +# There was another related bug where the solution to the first bug
+> +# broke the way filtering of the function tracer worked.
+> +#
+> +# This test triggers those bugs on those kernels.
+> +#
+> +# We need function_graph and profiling to to run this test
+> +if ! grep -q function_graph available_tracers; then
+> +    echo "no function graph tracer configured"
+> +    exit_unsupported;
+> +fi
+> +
+> +if [ ! -f set_ftrace_filter ]; then
+> +    echo "set_ftrace_filter not found? Is dynamic ftrace not set?"
+> +    exit_unsupported
+> +fi
+> +
+> +if [ ! -f function_profile_enabled ]; then
+> +    echo "function_profile_enabled not found, function profiling enabled?"
+> +    exit_unsupported
+> +fi
+> +
+> +echo "Testing function tracer with profiler:"
+> +echo "enable function tracer"
+> +echo function > current_tracer
+> +echo "enable profiler"
+> +echo 1 > function_profile_enabled
+
+Oh, this test is verbose.. :)
+
+
+> +
+> +sleep 1
+> +
+> +echo "Now filter on just schedule"
+> +echo '*schedule' > set_ftrace_filter
+
+Here..
+
+> +clear_trace
+> +
+> +echo "Now disable function profiler"
+> +echo 0 > function_profile_enabled
+> +
+> +sleep 1
+> +
+> +# make sure only schedule functions exist
+> +
+> +echo "testing if only schedule is being traced"
+> +if grep -v -e '^#' -e 'schedule' trace; then
+
+It seems you might want to add -q or > /dev/null.  Or count the
+resulting lines like other tests.
+
+
+> +	echo "more than schedule was found"
+> +	exit 1
+
+'exit -1' for consistency?
+
+Thanks,
+Namhyung
+
+
+> +fi
+> +
+> +echo "Make sure schedule was traced"
+> +if ! grep -e 'schedule' trace > /dev/null; then
+> +	cat trace
+> +	echo "can not find schedule in trace"
+> +	exit 1
+> +fi
+> +
+> +echo > set_ftrace_filter
+> +clear_trace
+> +
+> +sleep 1
+> +
+> +echo "make sure something other than scheduler is being traced"
+> +if ! grep -v -e '^#' -e 'schedule' trace > /dev/null; then
+> +	cat trace
+> +	echo "no other functions besides schedule was found"
+> +	exit 1
+> +fi
+> +
+> +reset_tracer
+> +
+> +exit 0
