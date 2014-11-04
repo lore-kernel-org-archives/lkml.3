@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaKDMtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:49:22 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:65314 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401AbaKDMtT (ORCPT
+	id S1753184AbaKDMwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:52:46 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:58838 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750866AbaKDMwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:49:19 -0500
-From: Rostislav Lisovy <lisovy@gmail.com>
-X-Google-Original-From: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-To: Johannes Berg <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: lisovy@gmail.com, fengguang.wu@intel.com,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: [PATCH] cfg80211: Move join/leave_ocb comments to be in the correct order
-Date: Tue,  4 Nov 2014 13:49:12 +0100
-Message-Id: <1415105352-4295-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-X-Mailer: git-send-email 2.0.0.rc4
+	Tue, 4 Nov 2014 07:52:45 -0500
+Date: Tue, 4 Nov 2014 07:52:37 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH v2 2/6] sched/rt: Optimize select_task_rq_rt() for
+ non-RT curr task
+Message-ID: <20141104075237.4eb9b5e6@gandalf.local.home>
+In-Reply-To: <1415099585-31174-2-git-send-email-pang.xunlei@linaro.org>
+References: <1415099585-31174-1-git-send-email-pang.xunlei@linaro.org>
+	<1415099585-31174-2-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the same ordering in the comments section as it
-is in the structure below.
+On Tue,  4 Nov 2014 19:13:01 +0800
+"pang.xunlei" <pang.xunlei@linaro.org> wrote:
 
-Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
----
- include/net/cfg80211.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+> When selecting the cpu for a waking RT task, if curr is a non-RT
+> task which is bound only on this cpu, then we can give it a chance
+> to select a different cpu(definitely an idle cpu if existing) for
+> the RT task to avoid curr starving.
 
-diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
-index 5c3acd0..af0ef26 100644
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -2182,6 +2182,11 @@ struct cfg80211_qos_map {
-  * @leave_mesh: leave the current mesh network
-  *	(invoked with the wireless_dev mutex held)
-  *
-+ * @join_ocb: join the OCB network with the specified parameters
-+ *	(invoked with the wireless_dev mutex held)
-+ * @leave_ocb: leave the current OCB network
-+ *	(invoked with the wireless_dev mutex held)
-+ *
-  * @get_mesh_config: Get the current mesh configuration
-  *
-  * @update_mesh_config: Update mesh parameters on a running mesh.
-@@ -2362,11 +2367,6 @@ struct cfg80211_qos_map {
-  *	with the peer followed by immediate teardown when the addition is later
-  *	rejected)
-  * @del_tx_ts: remove an existing TX TS
-- *
-- * @join_ocb: join the OCB network with the specified parameters
-- *	(invoked with the wireless_dev mutex held)
-- * @leave_ocb: leave the current OCB network
-- *	(invoked with the wireless_dev mutex held)
-  */
- struct cfg80211_ops {
- 	int	(*suspend)(struct wiphy *wiphy, struct cfg80211_wowlan *wow);
--- 
-2.0.0.rc4
+Absolutely not! An RT task doesn't give a crap if a non RT task is
+bound to a CPU or not. We are not going to migrate an RT task to be
+nice to a bounded non-RT task.
+
+Migration is not cheap. It causes cache misses and TLB flushes. This is
+not something that should be taken lightly.
+
+Nack
+
+-- Steve
 
