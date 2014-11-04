@@ -1,256 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195AbaKDNpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:45:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523AbaKDNp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:45:28 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: KY Srinivasan <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tools: hv: introduce -n/--no-daemon option
-In-Reply-To: <9c8f6d2d85664e68a9a97a94e34c5393@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	(KY Srinivasan's message of "Wed, 22 Oct 2014 16:55:59 +0000")
-References: <1413994031-25957-1-git-send-email-vkuznets@redhat.com>
-	<9c8f6d2d85664e68a9a97a94e34c5393@BY2PR0301MB0711.namprd03.prod.outlook.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Tue, 04 Nov 2014 14:45:19 +0100
-Message-ID: <8761ev84gg.fsf@vitty.brq.redhat.com>
+	id S1753987AbaKDNqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:46:47 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:62743 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaKDNqm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 08:46:42 -0500
+Date: Tue, 4 Nov 2014 08:46:33 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Aditya Kali <adityakali@google.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Li Zefan <lizefan@huawei.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Rohit Jnagal <jnagal@google.com>
+Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init
+ cgroupns
+Message-ID: <20141104134633.GA14014@htj.dyndns.org>
+References: <1414783141-6947-1-git-send-email-adityakali@google.com>
+ <1414783141-6947-8-git-send-email-adityakali@google.com>
+ <87y4rvrakn.fsf@x220.int.ebiederm.org>
+ <CAGr1F2Hd_PS_AscBGMXdZC9qkHGRUp-MeQvJksDOQkRBB3RGoA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGr1F2Hd_PS_AscBGMXdZC9qkHGRUp-MeQvJksDOQkRBB3RGoA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KY Srinivasan <kys@microsoft.com> writes:
+Hello, Aditya.
 
->> -----Original Message-----
->> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
->> Sent: Wednesday, October 22, 2014 9:07 AM
->> To: KY Srinivasan; Haiyang Zhang; devel@linuxdriverproject.org
->> Cc: linux-kernel@vger.kernel.org
->> Subject: [PATCH] tools: hv: introduce -n/--no-daemon option
->> 
->> All tools/hv daemons do mandatory daemon() on startup. However, no
->> pidfile is created, this make it difficult for an init system to track such
->> daemons.
->> Modern linux distros use systemd as their init system. It can handle the
->> daemonizing by itself, however, it requires a daemon to stay in foreground
->> for that. Some distros already carry distro-specific patch for hv tools which
->> switches off daemon().
->> 
->> Introduce -n/--no-daemon option for all 3 daemons in hv/tools. Parse
->> options with getopt() to make this part easily expandable.
->> 
->> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> You may want to include Greg KH in the "to" list.
+On Mon, Nov 03, 2014 at 02:43:47PM -0800, Aditya Kali wrote:
+> I agree that this is effectively bind-mounting, but doing this in kernel
+> makes it really convenient for the userspace. The process that sets up the
+> container doesn't need to care whether it should bind-mount cgroupfs inside
+> the container or not. The tasks inside the container can mount cgroupfs on
+> as-needed basis. The root container manager can simply unshare cgroupns and
+> forget about the internal setup. I think this is useful just for the reason
+> that it makes life much simpler for userspace.
 
-For some reason he's missing on the get_maintainer.pl output for all
-Hyper-V parts.
+If it's okay to require userland to just do bind mounting, I'd be far
+happier with that.  cgroup mount code is already overcomplicated
+because of the dynamic matching of supers to mounts when it could just
+have told userland to use bind mounting.  Doesn't the host side have
+to set up some of the filesystem layouts anyway?  Does it really
+matter that we require the host to set up cgroup hierarchy too?
 
-Greg, will you pick this up or do I need to resend?
-
-> Signed-off-by:  K. Y. Srinivasan <kys@microsoft.com>
->
-
-Thanks!
-
->> ---
->>  tools/hv/hv_fcopy_daemon.c | 33 +++++++++++++++++++++++++++++++-
->> -
->>  tools/hv/hv_kvp_daemon.c   | 34
->> ++++++++++++++++++++++++++++++++--
->>  tools/hv/hv_vss_daemon.c   | 33 +++++++++++++++++++++++++++++++--
->>  3 files changed, 94 insertions(+), 6 deletions(-)
->> 
->> diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
->> index 8f96b3e..f437d73 100644
->> --- a/tools/hv/hv_fcopy_daemon.c
->> +++ b/tools/hv/hv_fcopy_daemon.c
->> @@ -33,6 +33,7 @@
->>  #include <sys/stat.h>
->>  #include <fcntl.h>
->>  #include <dirent.h>
->> +#include <getopt.h>
->> 
->>  static int target_fd;
->>  static char target_fname[W_MAX_PATH];
->> @@ -126,15 +127,43 @@ static int hv_copy_cancel(void)
->> 
->>  }
->> 
->> -int main(void)
->> +void print_usage(char *argv[])
->> +{
->> +	fprintf(stderr, "Usage: %s [options]\n"
->> +		"Options are:\n"
->> +		"  -n, --no-daemon        stay in foreground, don't
->> daemonize\n"
->> +		"  -h, --help             print this help\n", argv[0]);
->> +}
->> +
->> +int main(int argc, char *argv[])
->>  {
->>  	int fd, fcopy_fd, len;
->>  	int error;
->> +	int daemonize = 1, long_index = 0, opt;
->>  	int version = FCOPY_CURRENT_VERSION;
->>  	char *buffer[4096 * 2];
->>  	struct hv_fcopy_hdr *in_msg;
->> 
->> -	if (daemon(1, 0)) {
->> +	static struct option long_options[] = {
->> +		{"help",	no_argument,	   0,  'h' },
->> +		{"no-daemon",	no_argument,	   0,  'n' },
->> +		{0,		0,		   0,  0   }
->> +	};
->> +
->> +	while ((opt = getopt_long(argc, argv, "hn", long_options,
->> +				  &long_index)) != -1) {
->> +		switch (opt) {
->> +		case 'n':
->> +			daemonize = 0;
->> +			break;
->> +		case 'h':
->> +		default:
->> +			print_usage(argv);
->> +			exit(EXIT_FAILURE);
->> +		}
->> +	}
->> +
->> +	if (daemonize && daemon(1, 0)) {
->>  		syslog(LOG_ERR, "daemon() failed; error: %s",
->> strerror(errno));
->>  		exit(EXIT_FAILURE);
->>  	}
->> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c index
->> 4088b81..22b0764 100644
->> --- a/tools/hv/hv_kvp_daemon.c
->> +++ b/tools/hv/hv_kvp_daemon.c
->> @@ -43,6 +43,7 @@
->>  #include <fcntl.h>
->>  #include <dirent.h>
->>  #include <net/if.h>
->> +#include <getopt.h>
->> 
->>  /*
->>   * KVP protocol: The user mode component first registers with the @@ -
->> 1417,7 +1418,15 @@ netlink_send(int fd, struct cn_msg *msg)
->>  	return sendmsg(fd, &message, 0);
->>  }
->> 
->> -int main(void)
->> +void print_usage(char *argv[])
->> +{
->> +	fprintf(stderr, "Usage: %s [options]\n"
->> +		"Options are:\n"
->> +		"  -n, --no-daemon        stay in foreground, don't
->> daemonize\n"
->> +		"  -h, --help             print this help\n", argv[0]);
->> +}
->> +
->> +int main(int argc, char *argv[])
->>  {
->>  	int fd, len, nl_group;
->>  	int error;
->> @@ -1435,9 +1444,30 @@ int main(void)
->>  	struct hv_kvp_ipaddr_value *kvp_ip_val;
->>  	char *kvp_recv_buffer;
->>  	size_t kvp_recv_buffer_len;
->> +	int daemonize = 1, long_index = 0, opt;
->> +
->> +	static struct option long_options[] = {
->> +		{"help",	no_argument,	   0,  'h' },
->> +		{"no-daemon",	no_argument,	   0,  'n' },
->> +		{0,		0,		   0,  0   }
->> +	};
->> +
->> +	while ((opt = getopt_long(argc, argv, "hn", long_options,
->> +				  &long_index)) != -1) {
->> +		switch (opt) {
->> +		case 'n':
->> +			daemonize = 0;
->> +			break;
->> +		case 'h':
->> +		default:
->> +			print_usage(argv);
->> +			exit(EXIT_FAILURE);
->> +		}
->> +	}
->> 
->> -	if (daemon(1, 0))
->> +	if (daemonize && daemon(1, 0))
->>  		return 1;
->> +
->>  	openlog("KVP", 0, LOG_USER);
->>  	syslog(LOG_INFO, "KVP starting; pid is:%d", getpid());
->> 
->> diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c index
->> 6a213b8..9ae2b6e 100644
->> --- a/tools/hv/hv_vss_daemon.c
->> +++ b/tools/hv/hv_vss_daemon.c
->> @@ -36,6 +36,7 @@
->>  #include <linux/hyperv.h>
->>  #include <linux/netlink.h>
->>  #include <syslog.h>
->> +#include <getopt.h>
->> 
->>  static struct sockaddr_nl addr;
->> 
->> @@ -131,7 +132,15 @@ static int netlink_send(int fd, struct cn_msg *msg)
->>  	return sendmsg(fd, &message, 0);
->>  }
->> 
->> -int main(void)
->> +void print_usage(char *argv[])
->> +{
->> +	fprintf(stderr, "Usage: %s [options]\n"
->> +		"Options are:\n"
->> +		"  -n, --no-daemon        stay in foreground, don't
->> daemonize\n"
->> +		"  -h, --help             print this help\n", argv[0]);
->> +}
->> +
->> +int main(int argc, char *argv[])
->>  {
->>  	int fd, len, nl_group;
->>  	int error;
->> @@ -143,8 +152,28 @@ int main(void)
->>  	struct hv_vss_msg *vss_msg;
->>  	char *vss_recv_buffer;
->>  	size_t vss_recv_buffer_len;
->> +	int daemonize = 1, long_index = 0, opt;
->> +
->> +	static struct option long_options[] = {
->> +		{"help",	no_argument,	   0,  'h' },
->> +		{"no-daemon",	no_argument,	   0,  'n' },
->> +		{0,		0,		   0,  0   }
->> +	};
->> +
->> +	while ((opt = getopt_long(argc, argv, "hn", long_options,
->> +				  &long_index)) != -1) {
->> +		switch (opt) {
->> +		case 'n':
->> +			daemonize = 0;
->> +			break;
->> +		case 'h':
->> +		default:
->> +			print_usage(argv);
->> +			exit(EXIT_FAILURE);
->> +		}
->> +	}
->> 
->> -	if (daemon(1, 0))
->> +	if (daemonize && daemon(1, 0))
->>  		return 1;
->> 
->>  	openlog("Hyper-V VSS", 0, LOG_USER);
->> --
->> 1.9.3
+Thanks.
 
 -- 
-  Vitaly
+tejun
