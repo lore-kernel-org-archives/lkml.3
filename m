@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaKDKE5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:04:57 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:58746 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751155AbaKDKEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:04:50 -0500
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: gong.chen@linux.intel.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        " Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: kernel@stlinux.com, maxime.coquelin@st.com, eric.paire@st.com
-Subject: [PATCH v2] bitops: Fix shift overflow in GENMASK macros
-Date: Tue,  4 Nov 2014 11:03:57 +0100
-Message-Id: <1415095437-28723-1-git-send-email-maxime.coquelin@st.com>
-X-Mailer: git-send-email 1.9.1
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-04_05:2014-11-03,2014-11-04,1970-01-01 signatures=0
+	id S1752981AbaKDKFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:05:52 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:52599 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752557AbaKDKFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 05:05:51 -0500
+Message-ID: <1415095517.2064.10.camel@sipsolutions.net>
+Subject: Re: [PATCH v1 03/11] backports: allow for different backport prefix
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yann.morin.1998@free.fr, mmarek@suse.cz, sassmann@kpanic.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Tue, 04 Nov 2014 11:05:17 +0100
+In-Reply-To: <1415090582-14129-4-git-send-email-mcgrof@do-not-panic.com> (sfid-20141104_094338_661432_D1F2BC2E)
+References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1415090582-14129-4-git-send-email-mcgrof@do-not-panic.com>
+	 (sfid-20141104_094338_661432_D1F2BC2E)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
-instead of the expected ~0UL.
+On Tue, 2014-11-04 at 00:42 -0800, Luis R. Rodriguez wrote:
 
-This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
+> --- a/devel/ckmake
+> +++ b/devel/ckmake
+> @@ -165,6 +165,7 @@ def process_kernel(num, kset, cmdline_args):
+>          all_config_name = os.path.join(work_dir, 'all.config')
+>          all_config = open(all_config_name, 'w')
+>          all_config.write("CPTCFG_CFG80211_INTERNAL_REGDB=n\n")
+> +        all_config.write("CONFIG_BACKPORT_CFG80211_INTERNAL_REGDB=n\n")
 
-This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
-1 << 64 for GENMASK_ULL.
+don't you know the prefix here?
 
-Fixes: 10ef6b0dffe404bcc54e94cb2ca1a5b18445a66b
-Cc: <stable@vger.kernel.org> #v3.13+
-Reported-by: Eric Paire <eric.paire@st.com>
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
----
- include/linux/bitops.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+>          config_name = 'allnoconfig'
+>          if cmdline_args.allyesconfig:
+>              config_name = 'allyesconfig'
+> @@ -173,6 +174,7 @@ def process_kernel(num, kset, cmdline_args):
+>                  open(os.path.join(work_dir, 'defconfigs', cmdline_args.defconfig)).read())
+>          else:
+>              all_config.write("CPTCFG_BACKPORT_USERSEL_BUILD_ALL=y\n")
+> +            all_config.write("CONFIG_BACKPORT_CFG80211_INTERNAL_REGDB=y\n")
+>          all_config.close()
 
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index be5fd38..a49d7b7 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -18,8 +18,8 @@
-  * position @h. For example
-  * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
-  */
--#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
--#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
-+#define GENMASK(h, l)     ((~0UL >> (BITS_PER_LONG - (h - l + 1))) << l)
-+#define GENMASK_ULL(h, l) ((~0ULL >> (BITS_PER_LONG_LONG - (h - l + 1))) << l)
- 
- extern unsigned int __sw_hweight8(unsigned int w);
- extern unsigned int __sw_hweight16(unsigned int w);
--- 
-1.9.1
+Not sure this part is right?
+
+johannes
 
