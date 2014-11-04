@@ -1,179 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaKDOP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:15:57 -0500
-Received: from mga11.intel.com ([192.55.52.93]:57375 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847AbaKDOPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:15:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411167944"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc V3 3.18] mei: nfc: clean nfc internal struct on host exit
-Date: Tue,  4 Nov 2014 16:14:49 +0200
-Message-Id: <1415110489-25270-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1753939AbaKDORr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:17:47 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:53161 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751506AbaKDORp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 09:17:45 -0500
+Date: Tue, 4 Nov 2014 09:17:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.2.63-rt93
+Message-ID: <20141104091730.2de6a785@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFC internal structure cleaning was dropped by commit
 
-commit 5ad1550a15cd5b75ed8aa3009e162822f720375e
-Author: Tomas Winkler <tomas.winkler@intel.com>
-Date:   Sun Jan 26 11:53:06 2014 +0200
+Dear RT Folks,
 
-    mei: Remove all bus devices from the mei_dev list when stopping the MEI
+I'm pleased to announce the 3.2.63-rt93 stable release.
 
-We allocate nfc_dev and free it across the reset
-so we do not keep it in dirty state
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.2-rt
+  Head SHA1: 21561b920d1d034b059d44a6e86489c150bf9fbb
+
+
+Or to build 3.2.63-rt93 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.63.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.63-rt93.patch.xz
+
+
+
+You can also build from 3.2.63-rt92 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.63-rt92-rt93.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from v3.2.63-rt92:
+
 ---
-V2: allocate mei_nfc_dev dynamically
-V3: Drop the stable request as manual rebase is required,
-    a sperate request will be sent
 
- drivers/misc/mei/bus.c     |  4 ++--
- drivers/misc/mei/mei_dev.h |  1 +
- drivers/misc/mei/nfc.c     | 42 ++++++++++++++++++++++++++++++++----------
- 3 files changed, 35 insertions(+), 12 deletions(-)
+Steven Rostedt (Red Hat) (2):
+      lockdep: Fix backport of "Correctly annotate hardirq context in irq_exit()"
+      Linux 3.2.63-rt93
 
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 4d20d60ca38d..b3a72bca5242 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -140,7 +140,7 @@ static struct device_type mei_cl_device_type = {
- 	.release	= mei_cl_dev_release,
- };
- 
--static struct mei_cl *mei_bus_find_mei_cl_by_uuid(struct mei_device *dev,
-+struct mei_cl *mei_cl_bus_find_cl_by_uuid(struct mei_device *dev,
- 						uuid_le uuid)
+----
+ kernel/softirq.c | 5 +++--
+ localversion-rt  | 2 +-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+---------------------------
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 7d882ccfa22b..56d30853345d 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -637,9 +637,10 @@ static inline void invoke_softirq(void)
+ static inline void invoke_softirq(void)
  {
- 	struct mei_cl *cl;
-@@ -160,7 +160,7 @@ struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
- 	struct mei_cl *cl;
- 	int status;
- 
--	cl = mei_bus_find_mei_cl_by_uuid(dev, uuid);
-+	cl = mei_cl_bus_find_cl_by_uuid(dev, uuid);
- 	if (cl == NULL)
- 		return NULL;
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 71744b16cc8c..1288a5cf60b9 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -349,6 +349,7 @@ void mei_cl_bus_rx_event(struct mei_cl *cl);
- void mei_cl_bus_remove_devices(struct mei_device *dev);
- int mei_cl_bus_init(void);
- void mei_cl_bus_exit(void);
-+struct mei_cl *mei_cl_bus_find_cl_by_uuid(struct mei_device *dev, uuid_le uuid);
- 
- 
- /**
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 622654323177..82f38613c550 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -117,8 +117,6 @@ struct mei_nfc_dev {
- 	u16 recv_req_id;
- };
- 
--static struct mei_nfc_dev nfc_dev;
--
- /* UUIDs for NFC F/W clients */
- const uuid_le mei_nfc_guid = UUID_LE(0x0bb17a78, 0x2a8e, 0x4c50,
- 				     0x94, 0xd4, 0x50, 0x26,
-@@ -138,6 +136,9 @@ static const uuid_le mei_nfc_info_guid = UUID_LE(0xd2de1625, 0x382d, 0x417d,
- 
- static void mei_nfc_free(struct mei_nfc_dev *ndev)
- {
-+	if (!ndev)
-+		return;
-+
- 	if (ndev->cl) {
- 		list_del(&ndev->cl->device_link);
- 		mei_cl_unlink(ndev->cl);
-@@ -150,7 +151,7 @@ static void mei_nfc_free(struct mei_nfc_dev *ndev)
- 		kfree(ndev->cl_info);
- 	}
- 
--	memset(ndev, 0, sizeof(struct mei_nfc_dev));
-+	kfree(ndev);
- }
- 
- static int mei_nfc_build_bus_name(struct mei_nfc_dev *ndev)
-@@ -319,9 +320,10 @@ err:
- static int mei_nfc_enable(struct mei_cl_device *cldev)
- {
- 	struct mei_device *dev;
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
- 	int ret;
- 
-+	ndev = (struct mei_nfc_dev *)cldev->priv_data;
- 	dev = ndev->cl->dev;
- 
- 	ret = mei_nfc_connect(ndev);
-@@ -479,14 +481,16 @@ err:
- 
- int mei_nfc_host_init(struct mei_device *dev)
- {
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
- 	struct mei_cl *cl_info, *cl = NULL;
- 	struct mei_me_client *me_cl;
- 	int ret;
- 
--	/* already initialized */
--	if (ndev->cl_info)
--		return 0;
-+	ndev = kzalloc(sizeof(struct mei_nfc_dev), GFP_KERNEL);
-+	if (!ndev) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
- 
- 	ndev->cl_info = mei_cl_allocate(dev);
- 	ndev->cl = mei_cl_allocate(dev);
-@@ -550,9 +554,27 @@ err:
- 
- void mei_nfc_host_exit(struct mei_device *dev)
- {
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
-+	struct mei_cl *cl;
-+	struct mei_cl_device *cldev;
-+
-+	cl = mei_cl_bus_find_cl_by_uuid(dev, mei_nfc_guid);
-+	if (!cl)
-+		return;
-+
-+	cldev = cl->device;
-+	if (!cldev)
-+		return;
-+
-+	ndev = (struct mei_nfc_dev *)cldev->priv_data;
-+	if (ndev)
-+		cancel_work_sync(&ndev->init_work);
-+
-+	mutex_lock(&dev->device_lock);
-+	mei_nfc_free(ndev);
-+	mutex_unlock(&dev->device_lock);
- 
--	cancel_work_sync(&ndev->init_work);
-+	cldev->priv_data = NULL;
- }
- 
- 
--- 
-1.9.3
-
+ #ifndef CONFIG_PREEMPT_RT_FULL
+-	if (!force_irqthreads)
++	if (!force_irqthreads) {
++		lockdep_softirq_from_hardirq();
+ 		do_softirq();
+-	else {
++	} else {
+ 		__local_bh_disable((unsigned long)__builtin_return_address(0),
+ 				SOFTIRQ_OFFSET);
+ 		wakeup_softirqd();
+diff --git a/localversion-rt b/localversion-rt
+index 4905d52a4828..e98a1fe050bd 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt92
++-rt93
