@@ -1,58 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaKDDLH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 22:11:07 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:12311 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247AbaKDDLE (ORCPT
+	id S1751668AbaKDDOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 22:14:17 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:37433 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaKDDON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 22:11:04 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 03 Nov 2014 19:05:25 -0800
-Message-ID: <545843B1.3020101@nvidia.com>
-Date: Tue, 4 Nov 2014 12:10:41 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 3 Nov 2014 22:14:13 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, srikar@linux.vnet.ibm.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options for cache
+References: <20141031185128.27889.32747.stgit@localhost.localdomain>
+Date: Tue, 04 Nov 2014 12:14:10 +0900
+In-Reply-To: <20141031185128.27889.32747.stgit@localhost.localdomain> (Masami
+	Hiramatsu's message of "Fri, 31 Oct 2014 14:51:29 -0400")
+Message-ID: <87389z7j3x.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Linus Walleij <linus.walleij@linaro.org>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] leds: leds-gpio: Convert gpio_blink_set() to use GPIO
- descriptors
-References: <1414755658-96293-1-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1414755658-96293-1-git-send-email-mika.westerberg@linux.intel.com>
-X-NVConfidentiality: public
-X-Originating-IP: [10.19.57.128]
-X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
- HKMAIL102.nvidia.com (10.18.16.11)
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 08:40 PM, Mika Westerberg wrote:
-> Commit 21f2aae91e902aad ("leds: leds-gpio: Add support for GPIO
-> descriptors") already converted most of the driver to use GPIO descriptors.
-> What is still missing is the platform specific hook gpio_blink_set() and
-> board files which pass legacy GPIO numbers to this driver in platform data.
->
-> In this patch we handle the former and convert gpio_blink_set() to take
-> GPIO descriptor instead. In order to do this we convert the existing four
-> users to accept GPIO descriptor and translate it to legacy GPIO number in
-> the platform code. This effectively "pushes" legacy GPIO number usage from
-> the driver to platforms.
->
-> Also add comment to the remaining block describing that it is legacy code
-> path and we are getting rid of it eventually.
->
-> Suggested-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Hi Masami,
 
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+On Fri, 31 Oct 2014 14:51:29 -0400, Masami Hiramatsu wrote:
+> Hi,
+>
+> Here is a sereis of patches for enabling "event cache" feature
+> to perf probe. Brendan gives me this cool idea, thanks! :)
+>
+> In this series, I added following options/features;
+>  - --output option
+>    We can save the probe definition command for given probe-event
+>    instead of setting up the local tracing/kprobe_events.
+>
+>  - --no-inlines option
+>    We can avoid searching the inline functions in debuginfo. Usually
+>    useful with wildcards since the wildcards will hit a huge amount
+>    of probe-points.
+>
+>  - $params special probe argument
+>    $params is expanded to function parameters only, no locally defined
+>    variables. This is useful for function-call tracing.
+>
+>  - wildcard support for function name
+>    Wildcard support is the key feature for this idea. Now we can use
+>    '*foo*' for function name to define the probe-point.
+>
+> So by using all of them, we can make an "event cache" file on all
+> functions (except for inlined functions) as below.
+>
+>   # perf probe --max-probes=100000 --no-inlines -a '* $params' -o event.cache
+>
+> builds "event.cache" file in which event settings for
+> all function entries, like below;
+>
+>   p:probe/reset_early_page_tables _text+12980741
+>   p:probe/copy_bootdata _text+12980830 real_mode_data=%di:u64
+>   p:probe/exit_amd_microcode _text+14692680
+>   p:probe/early_make_pgtable _text+12981274 address=%di:u64
+>   p:probe/x86_64_start_reservations _text+12981700 real_mode_data=%di:u64
+>   p:probe/x86_64_start_kernel _text+12981744 real_mode_data=%di:u64
+>   p:probe/reserve_ebda_region _text+12982117
+
+Does this event cache support kernel modules too?  AFAIK it can have a
+different address whenever loaded even on a same kernel.
+
+
+>
+> This event.cache file will be big (but much smaller than native
+> debuginfo :) ) if your kernel have many option embedded.
+> Anyway, you can compress it too.
+>
+>   # wc -l event.cache
+>   33813 event.cache
+>   # ls -sh event.cache
+>   2.3M event.cache
+>   # ls -sh event.cache.gz
+>   464K event.cache.gz
+>
+> For setting up a probe event, you can grep the function name
+> and write it to tracing/kprobe_events, as below;
+>
+>   # zcat event.cache.gz | \
+>     grep probe/vfs_symlink > /sys/kernel/debug/tracing/kprobe_events
+>
+> This can be applied for the remote machine only if the machine
+> runs on completely same kernel binary. Perhaps, we need some
+> helper tool to check it.
+
+While it's useful for "agent-less" systems, I think we also need to have
+a simple way to apply it with perf tools.
+
+Thanks,
+Namhyung
+
+
+>
+> Thank you,
+>
+>
+> ---
+>
+> Masami Hiramatsu (6):
+>       [BUGFIX] perf-probe: Fix to handle optimized not-inlined but has no instance
+>       [DOC] perf-probe: Update perf-probe document
+>       perf-probe: Add --output option to write commands in a standard file
+>       perf-probe: Add --no-inlines option to avoid searching inline functions
+>       perf-probe: Support $params special probe argument
+>       perf-probe: Support glob wildcards for function name
+>
+>
+>  tools/perf/Documentation/perf-probe.txt |   25 ++++++++++
+>  tools/perf/builtin-probe.c              |   32 +++++++++++++
+>  tools/perf/util/dwarf-aux.c             |   31 +++++++++++++
+>  tools/perf/util/dwarf-aux.h             |    6 +++
+>  tools/perf/util/probe-event.c           |   73 +++++++++++++++++++++++--------
+>  tools/perf/util/probe-event.h           |    4 +-
+>  tools/perf/util/probe-finder.c          |   74 +++++++++++++++++++------------
+>  tools/perf/util/probe-finder.h          |    6 ++-
+>  tools/perf/util/util.h                  |    4 ++
+>  9 files changed, 202 insertions(+), 53 deletions(-)
+>
+> --
+> Masami HIRAMATSU
+> Software Platform Research Dpt. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
