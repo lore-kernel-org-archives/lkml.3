@@ -1,54 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaKDB7b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:59:31 -0500
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:58395 "HELO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751278AbaKDB73 (ORCPT
+	id S1752142AbaKDCAC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 21:00:02 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:57980 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaKDB77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:59:29 -0500
-From: Feng Kan <fkan@apm.com>
-To: patches@apm.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mathias.nyman@intel.com
-Cc: Feng Kan <fkan@apm.com>, Bao Truong <btruong@apm.com>
-Subject: [PATCH] usb:host:xhci-plat: 64-bit dma addressing support
-Date: Mon,  3 Nov 2014 17:59:28 -0800
-Message-Id: <1415066368-3829-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 3 Nov 2014 20:59:59 -0500
+Message-ID: <5458331C.50008@google.com>
+Date: Mon, 03 Nov 2014 17:59:56 -0800
+From: Aditya Kali <adityakali@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
+        luto@amacapital.net, ebiederm@xmission.com, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        mingo@redhat.com
+CC: containers@lists.linux-foundation.org, jnagal@google.com
+Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init
+ cgroupns
+References: <adityakali-cgroupns> <1414783141-6947-1-git-send-email-adityakali@google.com> <1414783141-6947-8-git-send-email-adityakali@google.com>
+In-Reply-To: <1414783141-6947-8-git-send-email-adityakali@google.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dma_addr_t to support 64-bit plaforms, which access beyond 32 bit
-address range.
+This patch enables cgroup mounting inside userns when a process
+as appropriate privileges. The cgroup filesystem mounted is
+rooted at the cgroupns-root. Thus, in a container-setup, only
+the hierarchy under the cgroupns-root is exposed inside the container.
+This allows container management tools to run inside the containers
+without depending on any global state.
+In order to support this, a new kernfs api is added to lookup the
+dentry for the cgroupns-root.
 
-Signed-off-by: Bao Truong <btruong@apm.com>
-Signed-off-by: Feng Kan <fkan@apm.com>
+Signed-off-by: Aditya Kali <adityakali@google.com>
 ---
- drivers/usb/host/xhci-plat.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+  fs/kernfs/mount.c      | 48 
+++++++++++++++++++++++++++++++++++++++++++++++++
+  include/linux/kernfs.h |  2 ++
+  kernel/cgroup.c        | 46 +++++++++++++++++++++++++++++++++++++++++++++-
+  3 files changed, 95 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 01d1862..8cf83f0 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -97,13 +97,14 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Initialize dma_mask and coherent_dma_mask to 32-bits */
--	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-+	ret = dma_set_coherent_mask(&pdev->dev,
-+					DMA_BIT_MASK(sizeof(dma_addr_t)*8));
- 	if (ret)
- 		return ret;
- 	if (!pdev->dev.dma_mask)
- 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
- 	else
--		dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-+		dma_set_mask(&pdev->dev, DMA_BIT_MASK(sizeof(dma_addr_t)*8));
- 
- 	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
- 	if (!hcd)
+diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+index f973ae9..efe5e15 100644
+--- a/fs/kernfs/mount.c
++++ b/fs/kernfs/mount.c
+@@ -62,6 +62,54 @@ struct kernfs_root *kernfs_root_from_sb(struct 
+super_block *sb)
+  	return NULL;
+  }
+
++/**
++ * kernfs_obtain_root - get a dentry for the given kernfs_node
++ * @sb: the kernfs super_block
++ * @kn: kernfs_node for which a dentry is needed
++ *
++ * This can used used by callers which want to mount only a part of the 
+kernfs
++ * as root of the filesystem.
++ */
++struct dentry *kernfs_obtain_root(struct super_block *sb,
++				  struct kernfs_node *kn)
++{
++	struct dentry *dentry;
++	struct inode *inode;
++
++	BUG_ON(sb->s_op != &kernfs_sops);
++
++	/* inode for the given kernfs_node should already exist. */
++	inode = ilookup(sb, kn->ino);
++	if (!inode) {
++		pr_debug("kernfs: could not get inode for '");
++		pr_cont_kernfs_path(kn);
++		pr_cont("'.\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	/* instantiate and link root dentry */
++	dentry = d_obtain_root(inode);
++	if (!dentry) {
++		pr_debug("kernfs: could not get dentry for '");
++		pr_cont_kernfs_path(kn);
++		pr_cont("'.\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	/* If this is a new dentry, set it up. We need kernfs_mutex because this
++	 * may be called by callers other than kernfs_fill_super. */
++	mutex_lock(&kernfs_mutex);
++	if (!dentry->d_fsdata) {
++		kernfs_get(kn);
++		dentry->d_fsdata = kn;
++	} else {
++		WARN_ON(dentry->d_fsdata != kn);
++	}
++	mutex_unlock(&kernfs_mutex);
++
++	return dentry;
++}
++
+  static int kernfs_fill_super(struct super_block *sb, unsigned long magic)
+  {
+  	struct kernfs_super_info *info = kernfs_info(sb);
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 3c2be75..b9538e0 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -274,6 +274,8 @@ void kernfs_put(struct kernfs_node *kn);
+  struct kernfs_node *kernfs_node_from_dentry(struct dentry *dentry);
+  struct kernfs_root *kernfs_root_from_sb(struct super_block *sb);
+
++struct dentry *kernfs_obtain_root(struct super_block *sb,
++				  struct kernfs_node *kn);
+  struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
+  				       unsigned int flags, void *priv);
+  void kernfs_destroy_root(struct kernfs_root *root);
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 7e5d597..8008c4c 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1389,6 +1389,14 @@ static int parse_cgroupfs_options(char *data, 
+struct cgroup_sb_opts *opts)
+  			return -ENOENT;
+  	}
+
++	/* If inside a non-init cgroup namespace, only allow default hierarchy
++	 * to be mounted.
++	 */
++	if ((current->nsproxy->cgroup_ns != &init_cgroup_ns) &&
++	    !(opts->flags & CGRP_ROOT_SANE_BEHAVIOR)) {
++		return -EINVAL;
++	}
++
+  	if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
+  		pr_warn("sane_behavior: this is still under development and its 
+behaviors will change, proceed at your own risk\n");
+  		if (nr_opts != 1) {
+@@ -1581,6 +1589,15 @@ static void init_cgroup_root(struct cgroup_root 
+*root,
+  		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &root->cgrp.flags);
+  }
+
++struct dentry *cgroupns_get_root(struct super_block *sb,
++				 struct cgroup_namespace *ns)
++{
++	struct dentry *nsdentry;
++
++	nsdentry = kernfs_obtain_root(sb, ns->root_cgrp->kn);
++	return nsdentry;
++}
++
+  static int cgroup_setup_root(struct cgroup_root *root, unsigned int 
+ss_mask)
+  {
+  	LIST_HEAD(tmp_links);
+@@ -1685,6 +1702,14 @@ static struct dentry *cgroup_mount(struct 
+file_system_type *fs_type,
+  	int ret;
+  	int i;
+  	bool new_sb;
++	struct cgroup_namespace *ns =
++		get_cgroup_ns(current->nsproxy->cgroup_ns);
++
++	/* Check if the caller has permission to mount. */
++	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN)) {
++		put_cgroup_ns(ns);
++		return ERR_PTR(-EPERM);
++	}
+
+  	/*
+  	 * The first time anyone tries to mount a cgroup, enable the list
+@@ -1817,11 +1842,28 @@ out_free:
+  	kfree(opts.release_agent);
+  	kfree(opts.name);
+
+-	if (ret)
++	if (ret) {
++		put_cgroup_ns(ns);
+  		return ERR_PTR(ret);
++	}
+
+  	dentry = kernfs_mount(fs_type, flags, root->kf_root,
+  				CGROUP_SUPER_MAGIC, &new_sb);
++
++	if (!IS_ERR(dentry) && (root == &cgrp_dfl_root)) {
++		/* If this mount is for the default hierarchy in non-init cgroup
++		 * namespace, then instead of root cgroup's dentry, we return
++		 * the dentry corresponding to the cgroupns->root_cgrp.
++		 */
++		if (ns != &init_cgroup_ns) {
++			struct dentry *nsdentry;
++
++			nsdentry = cgroupns_get_root(dentry->d_sb, ns);
++			dput(dentry);
++			dentry = nsdentry;
++		}
++	}
++
+  	if (IS_ERR(dentry) || !new_sb)
+  		cgroup_put(&root->cgrp);
+
+@@ -1834,6 +1876,7 @@ out_free:
+  		deactivate_super(pinned_sb);
+  	}
+
++	put_cgroup_ns(ns);
+  	return dentry;
+  }
+
+@@ -1862,6 +1905,7 @@ static struct file_system_type cgroup_fs_type = {
+  	.name = "cgroup",
+  	.mount = cgroup_mount,
+  	.kill_sb = cgroup_kill_sb,
++	.fs_flags = FS_USERNS_MOUNT,
+  };
+
+  static struct kobject *cgroup_kobj;
 -- 
-1.9.1
+2.1.0.rc2.206.gedb03e5
+
 
