@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbaKDRAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:00:39 -0500
-Received: from mail-bn1bbn0109.outbound.protection.outlook.com ([157.56.111.109]:25643
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750901AbaKDRAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:00:37 -0500
-X-WSS-ID: 0NEIXWU-08-P3A-02
-X-M-MSG: 
-Message-ID: <5459062F.6090603@amd.com>
-Date: Tue, 4 Nov 2014 11:00:31 -0600
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751861AbaKDRB2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:01:28 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:51834 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaKDRBZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 12:01:25 -0500
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, <marc.zyngier@arm.com>,
-        <mark.rutland@arm.com>, <jason@lakedaemon.net>, <tglx@linutronix.de>
-CC: <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>, <liviu.dudau@arm.com>,
-        <Harish.Kasiviswanathan@amd.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [V10 PATCH 2/2] irqchip: gicv2m: Add supports for ARM GICv2m
- MSI(-X)
-References: <1415052977-26036-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1415052977-26036-3-git-send-email-suravee.suthikulpanit@amd.com>
- <5458CE31.3040404@linux.intel.com>
-In-Reply-To: <5458CE31.3040404@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(979002)(6009001)(428002)(199003)(189002)(24454002)(51704005)(479174003)(164054003)(105586002)(87936001)(106466001)(2201001)(99396003)(15202345003)(65956001)(101416001)(87266999)(65806001)(92726001)(36756003)(20776003)(59896002)(107046002)(120916001)(62966003)(4396001)(68736004)(31966008)(46102003)(83506001)(84676001)(97736003)(19580395003)(47776003)(92566001)(80316001)(64126003)(95666004)(54356999)(77096003)(50466002)(102836001)(65816999)(44976005)(21056001)(33656002)(76176999)(50986999)(99136001)(86362001)(77156002)(64706001)(15975445006)(23746002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB196;H:atltwp02.amd.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03853D523D
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <3645687.BsyGDrJDrU@vostro.rjw.lan>
+References: <13750506.S2yVlRRDa2@vostro.rjw.lan> <2127128.VT1Iq03xz1@vostro.rjw.lan>
+ <CACxGe6tvz8MiXnNGJ3XtrofxFr=o87yOB6kUKm57fXvQ0fL8jw@mail.gmail.com> <3645687.BsyGDrJDrU@vostro.rjw.lan>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Tue, 4 Nov 2014 17:01:04 +0000
+X-Google-Sender-Auth: -F5YKZYifk7oj-24Gvzwxwt3ANg
+Message-ID: <CACxGe6uv0TmoZivL3ESw+oRW-OjqakLP4KBnDrwJXzQ2ku8ZLA@mail.gmail.com>
+Subject: Re: [PATCH v6 02/12] Driver core: Unified device properties interface
+ for platform firmware
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <darren.hart@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/4/14 07:01, Jiang Liu wrote:
-> Hi Suravee,
-> 	You may build a two level hierarchy irqdomains. Use the
-> utilities in this thread
-> http://www.spinics.net/lists/arm-kernel/msg374722.html to build an MSI
-> irqdomain to manage MSI controllers
-> in PCI devices. And build another irqdomain to manage SPI allocation
-> in GICv2.
-> 	That is: MSI irqdomain (program MSI registers)  -->
-> GIV irqdomain (manage SPIs in GICv2 controller)
+On Mon, Nov 3, 2014 at 10:04 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> I also found that this parser code doesn't correctly handle malformed
+>> (unterminated) string properties. It will overflow. The existing
+>> functions have the same problem, so it isn't something that you've
+>> added. I've got a fix, and as a side effect the fix creates the _array
+>> version basically for free as part of reworking
+>> of_property_count_strings() and of_property_read_string_index()
+>
+> OK
+>
+> So can you please point me to a git branch containing the fix?  I'll rebase the
+> patch on top of that then and everything should merge just fine.
 
-That's great. I'll look at this patch in and make use of it to create to 
-MSI domain.
+git://git.kernel.org/pub/scm/linux/kernel/git/glikely/linux.git devicetree/merge
 
-Thanks,
+I'm going to let the patch sit in there for a few days to get
+linux-next exposure before I ask Linus to pull. The pull req will go
+out before the end of the week.
 
-Suravee
-
-> Regards!
-> Gerry
+g.
