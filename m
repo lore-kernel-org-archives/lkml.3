@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950AbaKDOHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:07:31 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:47999 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaKDOH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 09:07:29 -0500
-Date: Tue, 4 Nov 2014 19:37:12 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com
-Subject: Re: [PATCH] goldfish: fixed sparse warning
-Message-ID: <20141104140712.GA8334@sudip-PC>
-References: <1412949525-17561-1-git-send-email-sudipm.mukherjee@gmail.com>
+	id S932074AbaKDOIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:08:45 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39133 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751999AbaKDOIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 09:08:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,313,1413270000"; 
+   d="scan'208";a="616832861"
+Message-ID: <1415110071.26277.28.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH v2 0/3] Enable user helper interface for efi capsule
+ update
+From: Matt Fleming <matt.fleming@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        "Sam Protsenko" <semen.protsenko@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-efi@vger.kernel.org>, Ong Boon Leong <boon.leong.ong@intel.com>
+Date: Tue, 4 Nov 2014 14:07:51 +0000
+In-Reply-To: <20141104003849.GA15147@kroah.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+	 <5457D883.4050201@amacapital.net> <20141103212706.GE7379@kroah.com>
+	 <CALCETrUNCuFvwkzbU4dWB0GH4mJKKV1e6jCNrSLVJe+n_et3kQ@mail.gmail.com>
+	 <20141103230234.GA9427@kroah.com>
+	 <CALCETrUtxqLaziC_f6iTEgKNhmTgJR6bOLJ=e=O22X_RsBc9sw@mail.gmail.com>
+	 <20141104003849.GA15147@kroah.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412949525-17561-1-git-send-email-sudipm.mukherjee@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [163.33.239.181]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 07:28:45PM +0530, Sudip Mukherjee wrote:
-> fixed sparse warning of Using plain integer as NULL pointer
+On Mon, 2014-11-03 at 16:38 -0800, Greg Kroah-Hartman wrote:
 > 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
->  drivers/tty/goldfish.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> Good point, I don't know.
 > 
-> diff --git a/drivers/tty/goldfish.c b/drivers/tty/goldfish.c
-> index 09495f5..c24b963 100644
-> --- a/drivers/tty/goldfish.c
-> +++ b/drivers/tty/goldfish.c
-> @@ -157,7 +157,7 @@ static int goldfish_tty_console_setup(struct console *co, char *options)
->  {
->  	if ((unsigned)co->index > goldfish_tty_line_count)
->  		return -ENODEV;
-> -	if (goldfish_ttys[co->index].base == 0)
-> +	if (!goldfish_ttys[co->index].base)
->  		return -ENODEV;
->  	return 0;
->  }
-> @@ -317,7 +317,7 @@ static int goldfish_tty_remove(struct platform_device *pdev)
->  	unregister_console(&qtty->console);
->  	tty_unregister_device(goldfish_tty_driver, pdev->id);
->  	iounmap(qtty->base);
-> -	qtty->base = 0;
-> +	qtty->base = NULL;
->  	free_irq(qtty->irq, pdev);
->  	goldfish_tty_current_line_count--;
->  	if (goldfish_tty_current_line_count == 0)
-> -- 
-> 1.8.1.2
-> 
-a gentle ping
+> Who ever wrote this code should know this, can someone please provide a
+> use-case for how this is all supposed to work?
 
-thanks
-sudip
+That would be Wilson. He's wanting to use this to send updates to the
+firmware on the Intel Quark, I think.
+
