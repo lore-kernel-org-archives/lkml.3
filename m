@@ -1,156 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaKDBtW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:49:22 -0500
-Received: from mail-pd0-f194.google.com ([209.85.192.194]:64764 "EHLO
-	mail-pd0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaKDBtU (ORCPT
+	id S1752176AbaKDBwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:52:12 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:55099 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaKDBwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 20:49:20 -0500
-From: "billbonaparte" <programme110@gmail.com>
-To: <fw@strlen.de>
-Cc: <linux-kernel@vger.kernel.org>, "Pablo Neira Ayuso" <pablo@netfilter.org>,
-        "Patrick McHardy" <kaber@trash.net>, <kadlec@blackhole.kfki.hu>,
-        <davem@davemloft.net>, "Changli Gao" <xiaosuo@gmail.com>,
-        "Jesper Dangaard Brouer" <brouer@redhat.com>,
-        "Andrey Vagin" <avagin@openvz.org>
-Subject: Re: netfilter: nf_conntrack: there maybe a bug in __nf_conntrack_confirm, when it race against get_next_corpse
-Date: Tue, 4 Nov 2014 09:48:32 +0800
-Message-ID: <012601cff7d1$7ce2d620$76a88260$@gmail.com>
+	Mon, 3 Nov 2014 20:52:08 -0500
+Message-ID: <545830E3.1020907@huawei.com>
+Date: Tue, 4 Nov 2014 09:50:27 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0127_01CFF814.8B094A70"
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac/30PYSucSRULmNTf2aYVpAYaLsJg==
-Content-Language: zh-cn
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
+        <grygorii.strashko@ti.com>, <yinghai@kernel.org>,
+        <isimatu.yasuaki@jp.fujitsu.co>, <fabf@skynet.be>, <nzimmer@sgi.com>,
+        <wangnan0@huawei.com>, <vdavydov@parallels.com>, <toshi.kani@hp.com>,
+        <phacht@linux.vnet.ibm.com>, <tj@kernel.org>,
+        <kirill.shutemov@linux.intel.com>, <riel@redhat.com>,
+        <luto@amacapital.net>, <hpa@linux.intel.com>, <aarcange@redhat.com>,
+        <mgorman@suse.de>, <rientjes@google.com>, <hannes@cmpxchg.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH 1/2] mem-hotplug: Reset node managed pages when hot-adding
+ a new pgdat.
+References: <1414748812-22610-1-git-send-email-tangchen@cn.fujitsu.com> <1414748812-22610-2-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1414748812-22610-2-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multipart message in MIME format.
+On 2014/10/31 17:46, Tang Chen wrote:
 
-------=_NextPart_000_0127_01CFF814.8B094A70
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-
-(sorry to send this e-mail again, last mail is rejected by server due to
-non-acceptable content)
-
-Florian Westphal [mailto:fw@strlen.de] wrote:
->Correct.  This is broken since the central spin lock removal, since 
->nf_conntrack_lock no longer protects both get_next_corpse and 
->conntrack_confirm.
+> In free_area_init_core(), zone->managed_pages is set to an approximate
+> value for lowmem, and will be adjusted when the bootmem allocator frees
+> pages into the buddy system. But free_area_init_core() is also called
+> by hotadd_new_pgdat() when hot-adding memory. As a result, zone->managed_pages
+> of the newly added node's pgdat is set to an approximate value in the
+> very beginning. Even if the memory on that node has node been onlined,
+> /sys/device/system/node/nodeXXX/meminfo has wrong value.
 > 
->Please send a patch, moving dying check after removal of conntrack from 
->the percpu list,
-Since unconfirmed conntrack is stored in unconfirmed-list which is per-cpu
-list and protected by per-cpu spin-lock, we can remove it from
-uncomfirmed-list and insert it into ct-hash-table separately. that is to
-say, we can remove it from uncomfirmed-list without holding corresponding
-hash-lock, then check if it is dying.
-if it is dying, we add it to the dying-list, then quit
-__nf_conntrack_confirm. we do this to follow the rules that the conntrack
-must alternatively at unconfirmed-list or dying-list when it is abort to be
-destroyed.
+> hot-add node2 (memory not onlined)
+> cat /sys/device/system/node/node2/meminfo
+> Node 2 MemTotal:       33554432 kB
+> Node 2 MemFree:               0 kB
+> Node 2 MemUsed:        33554432 kB
+> Node 2 Active:                0 kB
+> 
+> This patch fixes this problem by reset node managed pages to 0 after hot-adding
+> a new node.
+> 
+> 1. Move reset_managed_pages_done from reset_node_managed_pages() to reset_all_zones_managed_pages()
+> 2. Make reset_node_managed_pages() non-static
+> 3. Call reset_node_managed_pages() in hotadd_new_pgdat() after pgdat is initialized
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
+>  include/linux/bootmem.h | 1 +
+>  mm/bootmem.c            | 9 +++++----
+>  mm/memory_hotplug.c     | 9 +++++++++
+>  mm/nobootmem.c          | 8 +++++---
+>  4 files changed, 20 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+> index 4e2bd4c..0995c2d 100644
+> --- a/include/linux/bootmem.h
+> +++ b/include/linux/bootmem.h
+> @@ -46,6 +46,7 @@ extern unsigned long init_bootmem_node(pg_data_t *pgdat,
+>  extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
+>  
+>  extern unsigned long free_all_bootmem(void);
+> +extern void reset_node_managed_pages(pg_data_t *pgdat);
+>  extern void reset_all_zones_managed_pages(void);
+>  
+>  extern void free_bootmem_node(pg_data_t *pgdat,
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index 8a000ce..477be69 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -243,13 +243,10 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
+>  
+>  static int reset_managed_pages_done __initdata;
+>  
+> -static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
+> +void reset_node_managed_pages(pg_data_t *pgdat)
+>  {
+>  	struct zone *z;
+>  
+> -	if (reset_managed_pages_done)
+> -		return;
+> -
+>  	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
+>  		z->managed_pages = 0;
+>  }
+> @@ -258,8 +255,12 @@ void __init reset_all_zones_managed_pages(void)
+>  {
+>  	struct pglist_data *pgdat;
+>  
+> +	if (reset_managed_pages_done)
+> +		return;
+> +
+>  	for_each_online_pgdat(pgdat)
+>  		reset_node_managed_pages(pgdat);
+> +
+>  	reset_managed_pages_done = 1;
+>  }
+>  
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 29d8693..3ab01b2 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/stop_machine.h>
+>  #include <linux/hugetlb.h>
+>  #include <linux/memblock.h>
+> +#include <linux/bootmem.h>
+>  
+>  #include <asm/tlbflush.h>
+>  
+> @@ -1096,6 +1097,14 @@ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
+>  	build_all_zonelists(pgdat, NULL);
+>  	mutex_unlock(&zonelists_mutex);
+>  
+> +	/*
+> +	 *  zone->managed_pages is set to an approximate value in
+> +	 *  free_area_init_core(), which will cause
+> +	 *  /sys/device/system/node/nodeX/meminfo has wrong data.
+> +	 *  So reset it to 0 before any memory is onlined.
+> +	 */
+> +	reset_node_managed_pages(pgdat);
+> +
 
->> 	2. operation on ct->status should be atomic, because it race aginst 
->> get_next_corpse.
->
->Alternatively we could also get rid of the unconfirmed list handling in
-get_next_corpse, 
->it looks to me as if its simply not worth the trouble to also caring 
->about
-unconfirmed lists.
+I aggree with you, we should reset it before online pages.
 
-yes, I think so. 
-if there is a race at operating ct->status, there will be in alternative
-case:
-1) IPS_DYING bit which set in get_next_corpse override other bits (e.g.
-IPS_SRC_NAT_DONE_BIT), or
-2) other bits (e.g. IPS_SRC_NAT_DONE_BIT) which set in nf_nat_setup_info
-override IPS_DYING bit.
-but, any case seems to be okay.
+Thanks,
+Xishi Qiu
 
-------=_NextPart_000_0127_01CFF814.8B094A70
-Content-Type: application/octet-stream;
-	name="fix_conntrack_confirm_race.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="fix_conntrack_confirm_race.patch"
+>  	return pgdat;
+>  }
+>  
+> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+> index 7c7ab32..90b5046 100644
+> --- a/mm/nobootmem.c
+> +++ b/mm/nobootmem.c
+> @@ -145,12 +145,10 @@ static unsigned long __init free_low_memory_core_early(void)
+>  
+>  static int reset_managed_pages_done __initdata;
+>  
+> -static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
+> +void reset_node_managed_pages(pg_data_t *pgdat)
+>  {
+>  	struct zone *z;
+>  
+> -	if (reset_managed_pages_done)
+> -		return;
+>  	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
+>  		z->managed_pages = 0;
+>  }
+> @@ -159,8 +157,12 @@ void __init reset_all_zones_managed_pages(void)
+>  {
+>  	struct pglist_data *pgdat;
+>  
+> +	if (reset_managed_pages_done)
+> +		return;
+> +
+>  	for_each_online_pgdat(pgdat)
+>  		reset_node_managed_pages(pgdat);
+> +
+>  	reset_managed_pages_done = 1;
+>  }
+>  
 
->From c454ca5a96f5b6f815fe29cc2c91c92d719d7b95 Mon Sep 17 00:00:00 2001=0A=
-From: bill bonaparte <programme110@gmail.com>=0A=
-Date: Mon, 3 Nov 2014 17:13:51 +0800=0A=
-Subject: [PATCH] netfilter: nf_conntrack: fix a race in=0A=
- __nf_conntrack_confirm against nf_ct_get_next_corpse=0A=
-=0A=
-After we remove central spinlock nf_conntrack_lock, we get the race =
-against nf_ct_get_next_corpse again,=0A=
-to get rid of this race, we should remove the conntrack from the =
-unconfirmed-list (which is per-cpu list) firstly,=0A=
-then check if it is dying.=0A=
----=0A=
- net/netfilter/nf_conntrack_core.c |   28 ++++++++++++++++------------=0A=
- 1 files changed, 16 insertions(+), 12 deletions(-)=0A=
-=0A=
-diff --git a/net/netfilter/nf_conntrack_core.c =
-b/net/netfilter/nf_conntrack_core.c=0A=
-index 5016a69..5d54a18 100644=0A=
---- a/net/netfilter/nf_conntrack_core.c=0A=
-+++ b/net/netfilter/nf_conntrack_core.c=0A=
-@@ -589,6 +589,22 @@ __nf_conntrack_confirm(struct sk_buff *skb)=0A=
- =0A=
- 	zone =3D nf_ct_zone(ct);=0A=
- 	local_bh_disable();=0A=
-+	=0A=
-+	/* We have to check the DYING flag after unlink the conntrack=0A=
-+	   to prevent a race against nf_ct_get_next_corpse() possibly =0A=
-+	   called from user context, else we insert an already 'dead' hash, =0A=
-+	   blocking further use of that particular connection -JM */=0A=
-+	nf_ct_del_from_dying_or_unconfirmed_list(ct);=0A=
-+	=0A=
-+	if (unlikely(nf_ct_is_dying(ct))) {=0A=
-+	    /* let's follow the rules that the conntrack must=0A=
-+	       alternatively at the unconfirmed-list or dying-list=0A=
-+	       when it is abort to be destoryed =0A=
-+	     */=0A=
-+		nf_ct_add_to_dying_list(ct);=0A=
-+		local_bh_enable();=0A=
-+		return NF_ACCEPT;=0A=
-+	}=0A=
- =0A=
- 	do {=0A=
- 		sequence =3D read_seqcount_begin(&net->ct.generation);=0A=
-@@ -611,16 +627,6 @@ __nf_conntrack_confirm(struct sk_buff *skb)=0A=
- 	 */=0A=
- 	NF_CT_ASSERT(!nf_ct_is_confirmed(ct));=0A=
- 	pr_debug("Confirming conntrack %p\n", ct);=0A=
--	/* We have to check the DYING flag inside the lock to prevent=0A=
--	   a race against nf_ct_get_next_corpse() possibly called from=0A=
--	   user context, else we insert an already 'dead' hash, blocking=0A=
--	   further use of that particular connection -JM */=0A=
--=0A=
--	if (unlikely(nf_ct_is_dying(ct))) {=0A=
--		nf_conntrack_double_unlock(hash, reply_hash);=0A=
--		local_bh_enable();=0A=
--		return NF_ACCEPT;=0A=
--	}=0A=
- =0A=
- 	/* See if there's one in the list already, including reverse:=0A=
- 	   NAT could have grabbed it without realizing, since we're=0A=
-@@ -636,8 +642,6 @@ __nf_conntrack_confirm(struct sk_buff *skb)=0A=
- 		    zone =3D=3D nf_ct_zone(nf_ct_tuplehash_to_ctrack(h)))=0A=
- 			goto out;=0A=
- =0A=
--	nf_ct_del_from_dying_or_unconfirmed_list(ct);=0A=
--=0A=
- 	/* Timer relative to confirmation time, not original=0A=
- 	   setting time, otherwise we'd get timer wrap in=0A=
- 	   weird delay cases. */=0A=
--- =0A=
-1.7.5.4=0A=
-=0A=
 
-------=_NextPart_000_0127_01CFF814.8B094A70--
 
