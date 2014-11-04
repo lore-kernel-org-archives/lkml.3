@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaKDNsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:48:53 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:58289 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753412AbaKDNsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:48:51 -0500
-Date: Tue, 4 Nov 2014 08:48:41 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: David Miller <davem@davemloft.net>, kirill@shutemov.name,
-        akpm@linux-foundation.org, vdavydov@parallels.com, tj@kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
-Message-ID: <20141104134841.GB18441@phnom.home.cmpxchg.org>
-References: <20141103210607.GA24091@node.dhcp.inet.fi>
- <20141103213628.GA11428@phnom.home.cmpxchg.org>
- <20141103215206.GB24091@node.dhcp.inet.fi>
- <20141103.165807.2039166055692354811.davem@davemloft.net>
- <20141103223626.GA12006@phnom.home.cmpxchg.org>
- <20141104130652.GC22207@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104130652.GC22207@dhcp22.suse.cz>
+	id S1754202AbaKDNtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:49:18 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:30948 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752676AbaKDNtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 08:49:17 -0500
+Message-Id: <20141104134847.978505265@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 04 Nov 2014 08:48:47 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 0/4] tracing: Some clean ups to the code
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 02:06:52PM +0100, Michal Hocko wrote:
-> The code size grows (~1.5k) most probably due to struct page pointer
-> arithmetic (but I haven't checked that) but the data section shrinks
-> for SLAB. So we have additional 1.6k for SLUB. I guess this is
-> acceptable.
-> 
->    text    data     bss     dec     hex filename
-> 8427489  887684 3186688 12501861         bec365 mmotm/vmlinux.slab
-> 8429060  883588 3186688 12499336         beb988 page_cgroup/vmlinux.slab
-> 
-> 8438894  883428 3186688 12509010         bedf52 mmotm/vmlinux.slub
-> 8440529  883428 3186688 12510645         bee5b5 page_cgroup/vmlinux.slub
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next-next
 
-That's unexpected.  It's not much, but how could the object size grow
-at all when that much code is removed and we replace the lookups with
-simple struct member accesses?  Are you positive these are the right
-object files, in the right order?
+Head SHA1: bff81446ec9f8331b6443bddb92177fe10e27cb5
 
-> So to me it sounds like the savings for 64b are worth minor inconvenience
-> for 32b which is clearly on decline and I would definitely not encourage
-> people to use PAE kernels with a lot of memory where the difference
-> might matter. For the most x86 32b deployments (laptops with 4G) the
-> difference shouldn't be noticeable. I am not familiar with other archs
-> so the situation might be different there.
 
-On 32 bit, the overhead is 0.098% of memory, so 4MB on a 4G machine.
-This should be acceptable, even for the three people that run on the
-cutting edge of 3.18-based PAE distribution kernels. :-)
+Jiang Liu (1):
+      tracing: Add entry->next_cpu to trace_ctxwake_bin()
 
-> This should probably go into the changelog, I guess.
+Oleg Nesterov (2):
+      tracing: Kill tracing_{start,stop}_sched_switch_record() and tracing_sched_switch_assign_trace()
+      tracing: Kill the dead code in probe_sched_switch() and probe_sched_wakeup()
 
-Which part?
+Steven Rostedt (Red Hat) (1):
+      tracing: Move tracing_sched_{switch,wakeup}() into wakeup tracer
+
+----
+ kernel/trace/trace.h              |  12 ----
+ kernel/trace/trace_output.c       |   1 +
+ kernel/trace/trace_sched_switch.c | 144 --------------------------------------
+ kernel/trace/trace_sched_wakeup.c |  56 +++++++++++++++
+ 4 files changed, 57 insertions(+), 156 deletions(-)
