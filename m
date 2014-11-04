@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaKDVZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:25:12 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34852 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbaKDVZI (ORCPT
+	id S1752086AbaKDV0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:26:41 -0500
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:9187 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751084AbaKDV0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:25:08 -0500
-Date: Tue, 4 Nov 2014 13:23:47 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: herrmann.der.user@googlemail.com, jdelvare@suse.de,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon, fam15h_power: Fix NB device ID for F16h M30h
-Message-ID: <20141104212347.GA14379@roeck-us.net>
-References: <1415123342-11368-1-git-send-email-aravind.gopalakrishnan@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415123342-11368-1-git-send-email-aravind.gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.54594433.0164,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 4 Nov 2014 16:26:40 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgcOAEZDWVRbsl9p/2dsb2JhbABagw6BLLp/BgEBAQEBBQF0miiBJBcBAQEBAX2EMC8jgRo3iEUBu3uPBSyGN4pZHYQ1BZF3jBCMd4lYgUcBgjE8L4JLAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH V2 linux-next] fs/affs/file.c: adding support to O_DIRECT
+Date: Tue,  4 Nov 2014 22:26:30 +0100
+Message-Id: <1415136390-3892-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 11:49:02AM -0600, Aravind Gopalakrishnan wrote:
-> F3 device ID is wrongly included in fam15h_power_id_table
-> for F16h M30h. It should be F4 device ID. Fix this.
-> 
-> Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Based on ext2_direct_IO
 
-Applied.
+Tested with O_DIRECT file open and sysbench/mariadb with 1%
+written queries improvement (update_non_index test) on a volume
+created with mkaffs.
 
-Thanks,
-Guenter
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V2: Adding test results (suggested by Andrew Morton)
+
+ fs/affs/file.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/fs/affs/file.c b/fs/affs/file.c
+index 8e51085..05005bd 100644
+--- a/fs/affs/file.c
++++ b/fs/affs/file.c
+@@ -12,6 +12,7 @@
+  *  affs regular file handling primitives
+  */
+ 
++#include <linux/aio.h>
+ #include "affs.h"
+ 
+ #if PAGE_SIZE < 4096
+@@ -392,6 +393,22 @@ static void affs_write_failed(struct address_space *mapping, loff_t to)
+ 	}
+ }
+ 
++static ssize_t
++affs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
++	       loff_t offset)
++{
++	struct file *file = iocb->ki_filp;
++	struct address_space *mapping = file->f_mapping;
++	struct inode *inode = mapping->host;
++	size_t count = iov_iter_count(iter);
++	ssize_t ret;
++
++	ret = blockdev_direct_IO(rw, iocb, inode, iter, offset, affs_get_block);
++	if (ret < 0 && (rw & WRITE))
++		affs_write_failed(mapping, offset + count);
++	return ret;
++}
++
+ static int affs_write_begin(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+@@ -418,6 +435,7 @@ const struct address_space_operations affs_aops = {
+ 	.writepage = affs_writepage,
+ 	.write_begin = affs_write_begin,
+ 	.write_end = generic_write_end,
++	.direct_IO = affs_direct_IO,
+ 	.bmap = _affs_bmap
+ };
+ 
+-- 
+1.9.3
+
