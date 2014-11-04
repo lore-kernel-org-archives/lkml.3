@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaKDXSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:18:51 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:50959 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaKDXSt (ORCPT
+	id S1752361AbaKDXUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:20:30 -0500
+Received: from dovecot.logic.tuwien.ac.at ([128.130.175.61]:50589 "EHLO
+	mail.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaKDXU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:18:49 -0500
-Message-ID: <54595ED7.2090406@codeaurora.org>
-Date: Tue, 04 Nov 2014 17:18:47 -0600
-From: Timur Tabi <timur@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 4 Nov 2014 18:20:29 -0500
+Date: Wed, 5 Nov 2014 08:20:27 +0900
+To: linux-kernel@vger.kernel.org
+Subject: khugepaged / firefox going wild in 3.18-rc
+Message-ID: <20141104232027.GO13232@auth.logic.tuwien.ac.at>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <54595416.1020205@codeaurora.org> <54595590.7080603@codeaurora.org> <3210901.7DuAVnBdHS@vostro.rjw.lan> <545959A8.7010305@codeaurora.org>
-In-Reply-To: <545959A8.7010305@codeaurora.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Norbert Preining <preining@logic.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2014 04:56 PM, Timur Tabi wrote:
->
->  >  I'm
->> not sure how much of that code can be shared between DT and ACPI ATM, but
->> it looks like at least some of it can be shared.
->
-> So ACPI does not support the concept if variable length properties?
+Dear all,
 
-Ah, I see that it does:
+(please Cc)
 
-int acpi_dev_prop_read_array(struct acpi_device *adev, const char *propname,
-			     enum dev_prop_type proptype, void *val,
-			     size_t nval)
-{
-...
-	if (!val)
-		return obj->package.count;
+since 3.18-rc started, regularly, but unpredictably, firefox
+(Debian iceweasel) goes completely boom to 100% CPU, and there
+is also a kernel task khugepaged doing the same.
+
+I need to kill firefox, or better the X session to get it back to normal.
+
+THe logs don't show any strange output
+
+top's top process:
+
+27021 norbert   20   0 1351536 449868  88788 R 100.4  5.6   4:46.16 iceweasel   
+   35 root      39  19       0      0      0 R 100.0  0.0   2:41.10 khugepaged  
+
+Switching back to 3.17 does Not* exhibit the same behaviour.
+
+Is this a bug in Firefox/Iceweasel, or is there something luring in the
+kernel.
 
 
-If I pass NULL for 'val', it returns the number of items.
+All the best
 
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the
-Code Aurora Forum, a Linux Foundation Collaborative Project.
+Norbert
+
+------------------------------------------------------------------------
+PREINING, Norbert                               http://www.preining.info
+JAIST, Japan                                 TeX Live & Debian Developer
+GPG: 0x860CDC13   fp: F7D8 A928 26E3 16A1 9FA0  ACF0 6CAC A448 860C DC13
+------------------------------------------------------------------------
