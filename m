@@ -1,105 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaKDIbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:31:19 -0500
-Received: from numascale.com ([213.162.240.84]:34530 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752265AbaKDIbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:31:14 -0500
-From: Daniel J Blueman <daniel@numascale.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: [PATCH v4 3/4] Numachip: APIC driver cleanups
-Date: Tue,  4 Nov 2014 16:29:43 +0800
-Message-Id: <1415089784-28779-3-git-send-email-daniel@numascale.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415089784-28779-1-git-send-email-daniel@numascale.com>
-References: <1415089784-28779-1-git-send-email-daniel@numascale.com>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752796AbaKDIc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:32:26 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:40913 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409AbaKDIbo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 03:31:44 -0500
+Subject: [PATCH 3/4] macvtap: Use iovec iterators
+References: <20141104033818.GA11149@gondor.apana.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Message-Id: <E1XlZWZ-0003I1-9q@gondolin.me.apana.org.au>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Tue, 04 Nov 2014 16:31:35 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop printing that serves no purpose, as it's printing fixed or known
-values, and mark constant structure appropriately.
+This patch removes the use of skb_copy_datagram_const_iovec in
+favour of the iovec iterator-based skb_copy_datagram_iter.
 
-Signed-off-by: Daniel J Blueman <daniel@numascale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 ---
- arch/x86/kernel/apic/apic_numachip.c | 22 +++-------------------
- arch/x86/pci/numachip.c              |  2 +-
- 2 files changed, 4 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index c965b69..6374d94 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -153,20 +153,8 @@ static int __init numachip_probe(void)
- 	return apic == &apic_numachip;
- }
+ drivers/net/macvtap.c |   45 ++++++++++++++++++++-------------------------
+ 1 file changed, 20 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 880cc09..a0e1dd7 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -15,6 +15,7 @@
+ #include <linux/cdev.h>
+ #include <linux/idr.h>
+ #include <linux/fs.h>
++#include <linux/uio.h>
  
--static void __init map_csrs(void)
--{
--	printk(KERN_INFO "NumaChip: Mapping local CSR space (%016llx - %016llx)\n",
--		NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_BASE + NUMACHIP_LCSR_SIZE - 1);
--	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
--
--	printk(KERN_INFO "NumaChip: Mapping global CSR space (%016llx - %016llx)\n",
--		NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_BASE + NUMACHIP_GCSR_SIZE - 1);
--	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
--}
--
- static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ #include <net/ipv6.h>
+ #include <net/net_namespace.h>
+@@ -778,31 +779,28 @@ static ssize_t macvtap_aio_write(struct kiocb *iocb, const struct iovec *iv,
+ /* Put packet to the user space buffer */
+ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 				const struct sk_buff *skb,
+-				const struct iovec *iv, int len)
++				struct iov_iter *iter)
  {
--
- 	if (c->phys_proc_id != node) {
- 		c->phys_proc_id = node;
- 		per_cpu(cpu_llc_id, smp_processor_id()) = node;
-@@ -180,19 +168,15 @@ bool is_numachip_system(void)
+ 	int ret;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+-	int copied, total;
++	int total;
  
- static int __init numachip_system_init(void)
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		struct virtio_net_hdr vnet_hdr;
+ 		vnet_hdr_len = q->vnet_hdr_sz;
+-		if ((len -= vnet_hdr_len) < 0)
++		if (iov_iter_count(iter) < vnet_hdr_len)
+ 			return -EINVAL;
+ 
+ 		macvtap_skb_to_vnet_hdr(skb, &vnet_hdr);
+ 
+-		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
++		if (copy_to_iter(&vnet_hdr, sizeof(vnet_hdr), iter))
+ 			return -EFAULT;
+ 	}
+-	total = copied = vnet_hdr_len;
++	total = vnet_hdr_len;
+ 	total += skb->len;
+ 
+-	if (!vlan_tx_tag_present(skb))
+-		len = min_t(int, skb->len, len);
+-	else {
+-		int copy;
++	if (vlan_tx_tag_present(skb)) {
+ 		struct {
+ 			__be16 h_vlan_proto;
+ 			__be16 h_vlan_TCI;
+@@ -811,37 +809,33 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
+ 
+ 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+-		len = min_t(int, skb->len + VLAN_HLEN, len);
+ 		total += VLAN_HLEN;
+ 
+-		copy = min_t(int, vlan_offset, len);
+-		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+-		len -= copy;
+-		copied += copy;
+-		if (ret || !len)
++		ret = skb_copy_datagram_iter(skb, 0, iter, vlan_offset);
++		if (ret || !iov_iter_count(iter))
+ 			goto done;
+ 
+-		copy = min_t(int, sizeof(veth), len);
+-		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
+-		len -= copy;
+-		copied += copy;
+-		if (ret || !len)
++		ret = copy_to_iter(&veth, sizeof(veth), iter);
++		if (ret || !iov_iter_count(iter))
+ 			goto done;
+ 	}
+ 
+-	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
++	ret = skb_copy_datagram_iter(skb, vlan_offset, iter,
++				     skb->len - vlan_offset);
+ 
+ done:
+ 	return ret ? ret : total;
+ }
+ 
+ static ssize_t macvtap_do_read(struct macvtap_queue *q,
+-			       const struct iovec *iv, unsigned long len,
++			       const struct iovec *iv, unsigned long segs,
++			       unsigned long len,
+ 			       int noblock)
  {
--	unsigned int val;
--
- 	if (!numachip_system)
- 		return 0;
+ 	DEFINE_WAIT(wait);
+ 	struct sk_buff *skb;
+ 	ssize_t ret = 0;
++	struct iov_iter iter;
  
-+	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
-+	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
-+
- 	x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
- 	x86_init.pci.arch_init = pci_numachip_init;
+ 	while (len) {
+ 		if (!noblock)
+@@ -863,7 +857,8 @@ static ssize_t macvtap_do_read(struct macvtap_queue *q,
+ 			schedule();
+ 			continue;
+ 		}
+-		ret = macvtap_put_user(q, skb, iv, len);
++		iov_iter_init(&iter, READ, iv, segs, len);
++		ret = macvtap_put_user(q, skb, &iter);
+ 		kfree_skb(skb);
+ 		break;
+ 	}
+@@ -886,7 +881,7 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+ 		goto out;
+ 	}
  
--	map_csrs();
--
--	val = read_lcsr(CSR_G0_NODE_IDS);
--	printk(KERN_INFO "NumaChip: Local NodeID = %08x\n", val);
--
- 	return 0;
- }
- early_initcall(numachip_system_init);
-diff --git a/arch/x86/pci/numachip.c b/arch/x86/pci/numachip.c
-index 7307d9d..2e565e6 100644
---- a/arch/x86/pci/numachip.c
-+++ b/arch/x86/pci/numachip.c
-@@ -103,7 +103,7 @@ static int pci_mmcfg_write_numachip(unsigned int seg, unsigned int bus,
- 	return 0;
- }
- 
--const struct pci_raw_ops pci_mmcfg_numachip = {
-+static const struct pci_raw_ops pci_mmcfg_numachip = {
- 	.read = pci_mmcfg_read_numachip,
- 	.write = pci_mmcfg_write_numachip,
- };
--- 
-1.9.1
+-	ret = macvtap_do_read(q, iv, len, file->f_flags & O_NONBLOCK);
++	ret = macvtap_do_read(q, iv, count, len, file->f_flags & O_NONBLOCK);
+ 	ret = min_t(ssize_t, ret, len);
+ 	if (ret > 0)
+ 		iocb->ki_pos = ret;
+@@ -1117,7 +1112,7 @@ static int macvtap_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	int ret;
+ 	if (flags & ~(MSG_DONTWAIT|MSG_TRUNC))
+ 		return -EINVAL;
+-	ret = macvtap_do_read(q, m->msg_iov, total_len,
++	ret = macvtap_do_read(q, m->msg_iov, m->msg_iovlen, total_len,
+ 			  flags & MSG_DONTWAIT);
+ 	if (ret > total_len) {
+ 		m->msg_flags |= MSG_TRUNC;
