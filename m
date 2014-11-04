@@ -1,285 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaKDJzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:55:14 -0500
-Received: from mail-wg0-f73.google.com ([74.125.82.73]:33347 "EHLO
-	mail-wg0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697AbaKDJzB (ORCPT
+	id S1752829AbaKDJzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:55:25 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:60792 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752697AbaKDJzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:55:01 -0500
-From: David Drysdale <drysdale@google.com>
-To: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Will Drewry <wad@chromium.org>,
-        Jorge Lucangeli Obes <jorgelo@google.com>,
-        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
-        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        David Drysdale <drysdale@google.com>
-Subject: [PATCHv2 1/3] fs: add O_BENEATH flag to openat(2)
-Date: Tue,  4 Nov 2014 09:54:42 +0000
-Message-Id: <1415094884-18349-2-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1415094884-18349-1-git-send-email-drysdale@google.com>
-References: <1415094884-18349-1-git-send-email-drysdale@google.com>
+	Tue, 4 Nov 2014 04:55:15 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH 00/15] [media] Make mediabus format subsystem neutral
+Date: Tue,  4 Nov 2014 10:54:55 +0100
+Message-Id: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new O_BENEATH flag for openat(2) which restricts the
-provided path, rejecting (with -EACCES) paths that are not beneath
-the provided dfd.  In particular, reject:
- - paths that contain .. components
- - paths that begin with /
- - symlinks that have paths as above.
+Hello,
 
-Also disallow use of nd_jump_link() for following symlinks without
-path expansion, when O_BENEATH is set.
+This patch series prepares the use of media bus formats outside of
+the V4L2 subsytem (my final goal is to use it in the Atmel HLCDC DRM
+driver where I have to configure my DPI/RGB bus according to the
+connected display).
 
-Signed-off-by: David Drysdale <drysdale@google.com>
----
- arch/alpha/include/uapi/asm/fcntl.h  |  1 +
- arch/parisc/include/uapi/asm/fcntl.h |  1 +
- arch/sparc/include/uapi/asm/fcntl.h  |  1 +
- fs/fcntl.c                           |  5 +++--
- fs/namei.c                           | 21 ++++++++++++++++++---
- fs/open.c                            |  4 +++-
- fs/proc/base.c                       |  4 +++-
- fs/proc/namespaces.c                 |  7 ++++++-
- include/linux/namei.h                |  3 ++-
- include/uapi/asm-generic/fcntl.h     |  4 ++++
- 10 files changed, 42 insertions(+), 9 deletions(-)
+The series first defines a new enum with a neutral name (media_bus_format),
+and then replace all references to the old enum and its values within the
+kernel.
 
-diff --git a/arch/alpha/include/uapi/asm/fcntl.h b/arch/alpha/include/uapi/asm/fcntl.h
-index 09f49a6b87d1..76a87038d2c1 100644
---- a/arch/alpha/include/uapi/asm/fcntl.h
-+++ b/arch/alpha/include/uapi/asm/fcntl.h
-@@ -33,6 +33,7 @@
+It also deprecates the v4l2_mbus_pixelcode enum and the v4l2-mediabus.h
+header. Kernel users can't use the v4l2_mbus_pixelcode enum anymore and new
+user-space users are encouraged to move to the media_bus_format enum
+and include v4l2-mbus.h.
 
- #define O_PATH		040000000
- #define __O_TMPFILE	0100000000
-+#define O_BENEATH	0200000000	/* no / or .. in openat path */
+Hans, I'm not sure this is exactly what you had in mind for
+v4l2_mbus_pixelcode deprecation. If you agree with this approach, and think
+it is worth it, I can reorder the series and squash the last 4 patches into
+previous ones (patches 4, 9, 6 and 8)
 
- #define F_GETLK		7
- #define F_SETLK		8
-diff --git a/arch/parisc/include/uapi/asm/fcntl.h b/arch/parisc/include/uapi/asm/fcntl.h
-index 34a46cbc76ed..3adadf72f929 100644
---- a/arch/parisc/include/uapi/asm/fcntl.h
-+++ b/arch/parisc/include/uapi/asm/fcntl.h
-@@ -21,6 +21,7 @@
+Best Regards,
 
- #define O_PATH		020000000
- #define __O_TMPFILE	040000000
-+#define O_BENEATH	080000000	/* no / or .. in openat path */
+Boris
 
- #define F_GETLK64	8
- #define F_SETLK64	9
-diff --git a/arch/sparc/include/uapi/asm/fcntl.h b/arch/sparc/include/uapi/asm/fcntl.h
-index 7e8ace5bf760..ea38f0bd6cec 100644
---- a/arch/sparc/include/uapi/asm/fcntl.h
-+++ b/arch/sparc/include/uapi/asm/fcntl.h
-@@ -36,6 +36,7 @@
+Boris Brezillon (15):
+  [media] Move mediabus format definition to a more standard place
+  [media] v4l: Update subdev-formats doc with new MEDIA_BUS_FMT values
+  [media] Make use of the new media_bus_format definitions
+  [media] i2c: Make use of media_bus_format enum
+  [media] pci: Make use of media_bus_format enum
+  [media] platform: Make use of media_bus_format enum
+  [media] usb: Make use of media_bus_format enum
+  staging: media: Make use of media_bus_format enum
+  gpu: ipu-v3: Make use of media_bus_format enum
+  [media] v4l: Forbid usage of V4L2_MBUS_FMT definitions inside the
+    kernel
+  [media] Deprecate v4l2_mbus_pixelcode
+  [media] i2c: Replace v4l2-mediabus.h inclusion with v4l2-mbus.h
+  gpu: ipu-v3: Replace v4l2-mediabus.h inclusion with v4l2-mbus.h
+  [media] platform: Replace v4l2-mediabus.h inclusion with v4l2-mbus.h
+  staging: media: Replace v4l2-mediabus.h inclusion with v4l2-mbus.h
 
- #define O_PATH		0x1000000
- #define __O_TMPFILE	0x2000000
-+#define O_BENEATH	0x4000000	/* no / or .. in openat path */
+ Documentation/DocBook/media/Makefile               |   4 +-
+ Documentation/DocBook/media/v4l/subdev-formats.xml | 308 ++++++++++-----------
+ Documentation/video4linux/soc-camera.txt           |   2 +-
+ arch/arm/mach-davinci/board-dm355-evm.c            |   2 +-
+ arch/arm/mach-davinci/board-dm365-evm.c            |   4 +-
+ arch/arm/mach-davinci/dm355.c                      |   6 +-
+ arch/arm/mach-davinci/dm365.c                      |   6 +-
+ arch/arm/mach-shmobile/board-mackerel.c            |   2 +-
+ arch/sh/boards/mach-ap325rxa/setup.c               |   2 +-
+ drivers/gpu/ipu-v3/ipu-csi.c                       |  68 ++---
+ drivers/media/i2c/adv7170.c                        |  16 +-
+ drivers/media/i2c/adv7175.c                        |  16 +-
+ drivers/media/i2c/adv7180.c                        |   6 +-
+ drivers/media/i2c/adv7183.c                        |   6 +-
+ drivers/media/i2c/adv7604.c                        |  72 ++---
+ drivers/media/i2c/adv7842.c                        |   6 +-
+ drivers/media/i2c/ak881x.c                         |   8 +-
+ drivers/media/i2c/cx25840/cx25840-core.c           |   2 +-
+ drivers/media/i2c/m5mols/m5mols_core.c             |   6 +-
+ drivers/media/i2c/ml86v7667.c                      |   6 +-
+ drivers/media/i2c/mt9m032.c                        |   8 +-
+ drivers/media/i2c/mt9p031.c                        |   8 +-
+ drivers/media/i2c/mt9t001.c                        |  10 +-
+ drivers/media/i2c/mt9v011.c                        |   6 +-
+ drivers/media/i2c/mt9v032.c                        |  14 +-
+ drivers/media/i2c/noon010pc30.c                    |  12 +-
+ drivers/media/i2c/ov7670.c                         |  16 +-
+ drivers/media/i2c/ov9650.c                         |  10 +-
+ drivers/media/i2c/s5c73m3/s5c73m3.h                |   6 +-
+ drivers/media/i2c/s5k4ecgx.c                       |   4 +-
+ drivers/media/i2c/s5k5baf.c                        |  14 +-
+ drivers/media/i2c/s5k6a3.c                         |   2 +-
+ drivers/media/i2c/s5k6aa.c                         |   8 +-
+ drivers/media/i2c/saa6752hs.c                      |   6 +-
+ drivers/media/i2c/saa7115.c                        |   2 +-
+ drivers/media/i2c/saa717x.c                        |   2 +-
+ drivers/media/i2c/smiapp/smiapp-core.c             |  34 +--
+ drivers/media/i2c/soc_camera/imx074.c              |  10 +-
+ drivers/media/i2c/soc_camera/mt9m001.c             |  14 +-
+ drivers/media/i2c/soc_camera/mt9m111.c             |  72 ++---
+ drivers/media/i2c/soc_camera/mt9t031.c             |  12 +-
+ drivers/media/i2c/soc_camera/mt9t112.c             |  24 +-
+ drivers/media/i2c/soc_camera/mt9v022.c             |  26 +-
+ drivers/media/i2c/soc_camera/ov2640.c              |  56 ++--
+ drivers/media/i2c/soc_camera/ov5642.c              |  10 +-
+ drivers/media/i2c/soc_camera/ov6650.c              |  60 ++--
+ drivers/media/i2c/soc_camera/ov772x.c              |  22 +-
+ drivers/media/i2c/soc_camera/ov9640.c              |  42 +--
+ drivers/media/i2c/soc_camera/ov9740.c              |  14 +-
+ drivers/media/i2c/soc_camera/rj54n1cb0c.c          |  56 ++--
+ drivers/media/i2c/soc_camera/tw9910.c              |  12 +-
+ drivers/media/i2c/sr030pc30.c                      |  14 +-
+ drivers/media/i2c/tvp514x.c                        |  14 +-
+ drivers/media/i2c/tvp5150.c                        |   6 +-
+ drivers/media/i2c/tvp7002.c                        |  10 +-
+ drivers/media/i2c/vs6624.c                         |  18 +-
+ drivers/media/pci/cx18/cx18-av-core.c              |   2 +-
+ drivers/media/pci/cx18/cx18-controls.c             |   2 +-
+ drivers/media/pci/cx18/cx18-ioctl.c                |   2 +-
+ drivers/media/pci/cx23885/cx23885-video.c          |   2 +-
+ drivers/media/pci/ivtv/ivtv-controls.c             |   2 +-
+ drivers/media/pci/ivtv/ivtv-ioctl.c                |   2 +-
+ drivers/media/pci/saa7134/saa7134-empress.c        |   4 +-
+ drivers/media/platform/blackfin/bfin_capture.c     |  14 +-
+ drivers/media/platform/davinci/vpbe.c              |   2 +-
+ drivers/media/platform/davinci/vpfe_capture.c      |   4 +-
+ drivers/media/platform/exynos-gsc/gsc-core.c       |   8 +-
+ drivers/media/platform/exynos-gsc/gsc-core.h       |   2 +-
+ drivers/media/platform/exynos4-is/fimc-capture.c   |   2 +-
+ drivers/media/platform/exynos4-is/fimc-core.c      |  14 +-
+ drivers/media/platform/exynos4-is/fimc-core.h      |   4 +-
+ drivers/media/platform/exynos4-is/fimc-isp.c       |  16 +-
+ drivers/media/platform/exynos4-is/fimc-lite-reg.c  |  26 +-
+ drivers/media/platform/exynos4-is/fimc-lite.c      |  14 +-
+ drivers/media/platform/exynos4-is/fimc-reg.c       |  14 +-
+ drivers/media/platform/exynos4-is/mipi-csis.c      |  14 +-
+ drivers/media/platform/marvell-ccic/mcam-core.c    |  22 +-
+ drivers/media/platform/marvell-ccic/mcam-core.h    |   2 +-
+ drivers/media/platform/omap3isp/ispccdc.c          | 112 ++++----
+ drivers/media/platform/omap3isp/ispccp2.c          |  18 +-
+ drivers/media/platform/omap3isp/ispcsi2.c          |  44 +--
+ drivers/media/platform/omap3isp/isppreview.c       |  58 ++--
+ drivers/media/platform/omap3isp/ispresizer.c       |  18 +-
+ drivers/media/platform/omap3isp/ispvideo.c         |  94 +++----
+ drivers/media/platform/omap3isp/ispvideo.h         |  12 +-
+ drivers/media/platform/s3c-camif/camif-capture.c   |  10 +-
+ drivers/media/platform/s3c-camif/camif-regs.c      |   8 +-
+ drivers/media/platform/s5p-tv/hdmi_drv.c           |   2 +-
+ drivers/media/platform/s5p-tv/sdo_drv.c            |   2 +-
+ drivers/media/platform/sh_vou.c                    |   8 +-
+ drivers/media/platform/soc_camera/atmel-isi.c      |  22 +-
+ drivers/media/platform/soc_camera/mx2_camera.c     |  24 +-
+ drivers/media/platform/soc_camera/mx3_camera.c     |   6 +-
+ drivers/media/platform/soc_camera/omap1_camera.c   |  36 +--
+ drivers/media/platform/soc_camera/pxa_camera.c     |  16 +-
+ drivers/media/platform/soc_camera/rcar_vin.c       |  14 +-
+ .../platform/soc_camera/sh_mobile_ceu_camera.c     |  20 +-
+ drivers/media/platform/soc_camera/sh_mobile_csi2.c |  38 +--
+ drivers/media/platform/soc_camera/soc_camera.c     |   2 +-
+ .../platform/soc_camera/soc_camera_platform.c      |   2 +-
+ drivers/media/platform/soc_camera/soc_mediabus.c   |  78 +++---
+ drivers/media/platform/via-camera.c                |   8 +-
+ drivers/media/platform/vsp1/vsp1_bru.c             |  14 +-
+ drivers/media/platform/vsp1/vsp1_hsit.c            |  12 +-
+ drivers/media/platform/vsp1/vsp1_lif.c             |  10 +-
+ drivers/media/platform/vsp1/vsp1_lut.c             |  14 +-
+ drivers/media/platform/vsp1/vsp1_rwpf.c            |  10 +-
+ drivers/media/platform/vsp1/vsp1_sru.c             |  12 +-
+ drivers/media/platform/vsp1/vsp1_uds.c             |  10 +-
+ drivers/media/platform/vsp1/vsp1_video.c           |  44 +--
+ drivers/media/usb/cx231xx/cx231xx-417.c            |   2 +-
+ drivers/media/usb/cx231xx/cx231xx-video.c          |   4 +-
+ drivers/media/usb/em28xx/em28xx-camera.c           |   2 +-
+ drivers/media/usb/go7007/go7007-v4l2.c             |   2 +-
+ drivers/media/usb/pvrusb2/pvrusb2-hdw.c            |   2 +-
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.c   |  18 +-
+ .../staging/media/davinci_vpfe/dm365_ipipe_hw.c    |  26 +-
+ drivers/staging/media/davinci_vpfe/dm365_ipipeif.c | 100 +++----
+ drivers/staging/media/davinci_vpfe/dm365_isif.c    |  90 +++---
+ drivers/staging/media/davinci_vpfe/dm365_resizer.c |  96 +++----
+ .../staging/media/davinci_vpfe/vpfe_mc_capture.c   |  18 +-
+ drivers/staging/media/omap4iss/iss_csi2.c          |  64 ++---
+ drivers/staging/media/omap4iss/iss_ipipe.c         |  16 +-
+ drivers/staging/media/omap4iss/iss_ipipeif.c       |  28 +-
+ drivers/staging/media/omap4iss/iss_resizer.c       |  26 +-
+ drivers/staging/media/omap4iss/iss_video.c         |  78 +++---
+ drivers/staging/media/omap4iss/iss_video.h         |  12 +-
+ include/media/davinci/vpbe.h                       |   2 +-
+ include/media/davinci/vpbe_venc.h                  |   4 +-
+ include/media/exynos-fimc.h                        |   2 +-
+ include/media/soc_camera.h                         |   2 +-
+ include/media/soc_mediabus.h                       |   8 +-
+ include/media/v4l2-mediabus.h                      |   4 +-
+ include/media/v4l2-subdev.h                        |   2 +-
+ include/uapi/linux/Kbuild                          |   2 +
+ include/uapi/linux/media-bus-format.h              | 126 +++++++++
+ include/uapi/linux/v4l2-mbus.h                     |  35 +++
+ include/uapi/linux/v4l2-mediabus.h                 | 208 ++++++--------
+ include/uapi/linux/v4l2-subdev.h                   |   8 +-
+ 139 files changed, 1632 insertions(+), 1509 deletions(-)
+ create mode 100644 include/uapi/linux/media-bus-format.h
+ create mode 100644 include/uapi/linux/v4l2-mbus.h
 
- #define F_GETOWN	5	/*  for sockets. */
- #define F_SETOWN	6	/*  for sockets. */
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 22d1c3df61ac..c07a32efc34b 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -747,14 +747,15 @@ static int __init fcntl_init(void)
- 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
- 	 * is defined as O_NONBLOCK on some platforms and not on others.
- 	 */
--	BUILD_BUG_ON(20 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
-+	BUILD_BUG_ON(21 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
- 		O_RDONLY	| O_WRONLY	| O_RDWR	|
- 		O_CREAT		| O_EXCL	| O_NOCTTY	|
- 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
- 		__O_SYNC	| O_DSYNC	| FASYNC	|
- 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
- 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
--		__FMODE_EXEC	| O_PATH	| __O_TMPFILE
-+		__FMODE_EXEC	| O_PATH	| __O_TMPFILE	|
-+		O_BENEATH
- 		));
-
- 	fasync_cache = kmem_cache_create("fasync_cache",
-diff --git a/fs/namei.c b/fs/namei.c
-index a7b05bf82d31..01d1d97eab3e 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -685,13 +685,16 @@ static inline void path_to_nameidata(const struct path *path,
-  * Helper to directly jump to a known parsed path from ->follow_link,
-  * caller must have taken a reference to path beforehand.
-  */
--void nd_jump_link(struct nameidata *nd, struct path *path)
-+int nd_jump_link(struct nameidata *nd, struct path *path)
- {
-+	if (nd->flags & LOOKUP_BENEATH)
-+		return -EPERM;
- 	path_put(&nd->path);
-
- 	nd->path = *path;
- 	nd->inode = nd->path.dentry->d_inode;
- 	nd->flags |= LOOKUP_JUMPED;
-+	return 0;
- }
-
- static inline void put_link(struct nameidata *nd, struct path *link, void *cookie)
-@@ -1743,9 +1746,14 @@ static int link_path_walk(const char *name, struct nameidata *nd)
- {
- 	struct path next;
- 	int err;
--
--	while (*name=='/')
-+
-+	while (*name == '/') {
-+		if (nd->flags & LOOKUP_BENEATH) {
-+			err = -EPERM;
-+			goto exit;
-+		}
- 		name++;
-+	}
- 	if (!*name)
- 		return 0;
-
-@@ -1764,6 +1772,10 @@ static int link_path_walk(const char *name, struct nameidata *nd)
- 		if (name[0] == '.') switch (hashlen_len(hash_len)) {
- 			case 2:
- 				if (name[1] == '.') {
-+					if (nd->flags & LOOKUP_BENEATH) {
-+						err = -EPERM;
-+						goto exit;
-+					}
- 					type = LAST_DOTDOT;
- 					nd->flags |= LOOKUP_JUMPED;
- 				}
-@@ -1815,6 +1827,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
- 			break;
- 		}
- 	}
-+exit:
- 	terminate_walk(nd);
- 	return err;
- }
-@@ -1853,6 +1866,8 @@ static int path_init(int dfd, const char *name, unsigned int flags,
-
- 	nd->m_seq = read_seqbegin(&mount_lock);
- 	if (*name=='/') {
-+		if (flags & LOOKUP_BENEATH)
-+			return -EPERM;
- 		if (flags & LOOKUP_RCU) {
- 			rcu_read_lock();
- 			nd->seq = set_root_rcu(nd);
-diff --git a/fs/open.c b/fs/open.c
-index d6fd3acde134..8afca5b87a0b 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -874,7 +874,7 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
- 		 * If we have O_PATH in the open flag. Then we
- 		 * cannot have anything other than the below set of flags
- 		 */
--		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH;
-+		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH | O_BENEATH;
- 		acc_mode = 0;
- 	} else {
- 		acc_mode = MAY_OPEN | ACC_MODE(flags);
-@@ -905,6 +905,8 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
- 		lookup_flags |= LOOKUP_DIRECTORY;
- 	if (!(flags & O_NOFOLLOW))
- 		lookup_flags |= LOOKUP_FOLLOW;
-+	if (flags & O_BENEATH)
-+		lookup_flags |= LOOKUP_BENEATH;
- 	op->lookup_flags = lookup_flags;
- 	return 0;
- }
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index baf852b648ad..75d430155f9a 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1410,7 +1410,9 @@ static void *proc_pid_follow_link(struct dentry *dentry, struct nameidata *nd)
- 	if (error)
- 		goto out;
-
--	nd_jump_link(nd, &path);
-+	error = nd_jump_link(nd, &path);
-+	if (error)
-+		goto out;
- 	return NULL;
- out:
- 	return ERR_PTR(error);
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index 89026095f2b5..5cdbe5950756 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -113,6 +113,7 @@ static void *proc_ns_follow_link(struct dentry *dentry, struct nameidata *nd)
- 	struct proc_inode *ei = PROC_I(inode);
- 	struct task_struct *task;
- 	struct path ns_path;
-+	int err;
- 	void *error = ERR_PTR(-EACCES);
-
- 	task = get_proc_task(inode);
-@@ -129,7 +130,11 @@ static void *proc_ns_follow_link(struct dentry *dentry, struct nameidata *nd)
- 	}
-
- 	ns_path.mnt = mntget(nd->path.mnt);
--	nd_jump_link(nd, &ns_path);
-+	err = nd_jump_link(nd, &ns_path);
-+	if (err) {
-+		error = ERR_PTR(err);
-+		goto out_put_task;
-+	}
- 	error = NULL;
-
- out_put_task:
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 492de72560fa..a018cd8219ec 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -39,6 +39,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- #define LOOKUP_FOLLOW		0x0001
- #define LOOKUP_DIRECTORY	0x0002
- #define LOOKUP_AUTOMOUNT	0x0004
-+#define LOOKUP_BENEATH		0x0008
-
- #define LOOKUP_PARENT		0x0010
- #define LOOKUP_REVAL		0x0020
-@@ -81,7 +82,7 @@ extern int follow_up(struct path *);
- extern struct dentry *lock_rename(struct dentry *, struct dentry *);
- extern void unlock_rename(struct dentry *, struct dentry *);
-
--extern void nd_jump_link(struct nameidata *nd, struct path *path);
-+extern int nd_jump_link(struct nameidata *nd, struct path *path);
-
- static inline void nd_set_link(struct nameidata *nd, char *path)
- {
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 7543b3e51331..f63aa749a4fb 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -92,6 +92,10 @@
- #define O_TMPFILE (__O_TMPFILE | O_DIRECTORY)
- #define O_TMPFILE_MASK (__O_TMPFILE | O_DIRECTORY | O_CREAT)
-
-+#ifndef O_BENEATH
-+#define O_BENEATH	040000000	/* no / or .. in openat path */
-+#endif
-+
- #ifndef O_NDELAY
- #define O_NDELAY	O_NONBLOCK
- #endif
---
-2.1.0.rc2.206.gedb03e5
+-- 
+1.9.1
 
