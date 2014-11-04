@@ -1,68 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaKDO3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 09:29:53 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55583 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751228AbaKDO3u (ORCPT
+	id S1754019AbaKDO34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 09:29:56 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41616 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbaKDO3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Nov 2014 09:29:50 -0500
-Date: Tue, 4 Nov 2014 14:29:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        djkurtz@google.com, ykk@rock-chips.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
-        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org
-Subject: Re: [PATCH 0/2] make imx hdmi publicly used by dw hdmi compatible
- platform
-Message-ID: <20141104142908.GG4042@n2100.arm.linux.org.uk>
-References: <1415107992-34289-1-git-send-email-andy.yan@rock-chips.com>
+Message-ID: <5458E294.40509@roeck-us.net>
+Date: Tue, 04 Nov 2014 06:28:36 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415107992-34289-1-git-send-email-andy.yan@rock-chips.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Neelesh Gupta <neelegup@linux.vnet.ibm.com>, jdelvare@suse.de
+CC: benh@au1.ibm.com, linux-kernel@vger.kernel.org, michaele@au1.ibm.com,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH] hwmon: (ibmpowernv) Use platform 'id_table' to probe
+ the device
+References: <20141104072927.4307.67881.stgit@localhost.localdomain>
+In-Reply-To: <20141104072927.4307.67881.stgit@localhost.localdomain>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A02020A.5458E2DE.002C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 09:33:10PM +0800, Andy Yan wrote:
-> From: Andy yan <andy.yan@rock-chips.com>
-> 
-> We found freescale imx6 and rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
-> use the interface compatible Designware HDMI IP, but they also have some
-> lightly difference, such as phy pll configuration, register width(imx hdmi
-> register is one byte, but rk3288 is 4 bytes width and can only access by word),
-> 4K support(imx6 doesn't support 4k, but rk3288 does).
-> 
-> To reuse the imx-hdmi driver, we do this patch set:
-> patch (1): split out imx-soc code from imx-hdmi to dw_hdmi-imx.c
-> patch (2): move imx-hdmi to bridge/, and rename to dw-hdmi to
-> make this driver indepent of drm-imx . And we will add rockchip 
-> platform specific code dw_hdmi-rockchip.c later, this is depend
-> on drm-rockchip.
+On 11/03/2014 11:30 PM, Neelesh Gupta wrote:
+> The current driver probe() function assumes the sensor device to be
+> alwary present and gets executed every time if the driver is loaded,
+> but the appropriate hardware could not be present.
+>
+> So, move the platform device creation as part of platform init code
+> and use the 'id_table' to check if the device present or not.
+>
+> Signed-off-by: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
+> ---
+>   arch/powerpc/platforms/powernv/opal-sensor.c |   20 ++++++++
+>   drivers/hwmon/ibmpowernv.c                   |   67 +++++++-------------------
+>   2 files changed, 39 insertions(+), 48 deletions(-)
+>
+> diff --git a/arch/powerpc/platforms/powernv/opal-sensor.c b/arch/powerpc/platforms/powernv/opal-sensor.c
+> index 10271ad..215c418 100644
+> --- a/arch/powerpc/platforms/powernv/opal-sensor.c
+> +++ b/arch/powerpc/platforms/powernv/opal-sensor.c
+> @@ -20,7 +20,9 @@
+>
+>   #include <linux/delay.h>
+>   #include <linux/mutex.h>
+> +#include <linux/of_platform.h>
+>   #include <asm/opal.h>
+> +#include <asm/machdep.h>
+>
+>   static DEFINE_MUTEX(opal_sensor_mutex);
+>
+> @@ -64,3 +66,21 @@ out:
+>   	return ret;
+>   }
+>   EXPORT_SYMBOL_GPL(opal_get_sensor_data);
+> +
+> +static __init int opal_sensor_init(void)
+> +{
+> +	struct platform_device *pdev;
+> +	struct device_node *sensor;
+> +
+> +	sensor = of_find_node_by_path("/ibm,opal/sensors");
+> +	if (sensor) {
+> +		pdev = of_platform_device_create(sensor, "opal-sensor", NULL);
+> +		of_node_put(sensor);
+> +	} else {
+> +		pr_info("Opal node 'sensors' not found\n");
 
-Great - I fully agree that this needs to be renamed as it is a Designware
-IP.
+Hi Neelesh,
 
-Should it be moved into bridge/ ?  It isn't implemented as a DRM bridge
-driver at present, so this seems illogical.  Is the longer term plan to
-convert it to be a DRM bridge?
+this is either an error and should be reported with pr_err, or it is
+a valid condition and should be reported with pr_debug or not at all.
 
-Secondly, if you want HDMI audio support, you may find the patches I
-maintain for the SolidRun devices useful, which add this as a standard
-ALSA device.  I also have CEC support for it as well.  If you're
-interested, I'll email those.
+Which one is it ?
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Also, can you put this code into a 'normal' error handler instead of using if/else ?
+
+	if (!sensor) {
+		pr_err("Opal node 'sensors' not found\n");
+		return -ENODEV;
+	}
+	pdev = of_platform_device_create(sensor, "opal-sensor", NULL);
+	...
+
+This would make the code flow easier to understand.
+
+Thanks,
+Guenter
+
+> +		return -ENODEV;
+> +	}
+> +
+> +	return PTR_ERR_OR_ZERO(pdev);
+> +}
+> +machine_subsys_initcall(powernv, opal_sensor_init);
+> diff --git a/drivers/hwmon/ibmpowernv.c b/drivers/hwmon/ibmpowernv.c
+> index 6a30eee..c7577b8 100644
+> --- a/drivers/hwmon/ibmpowernv.c
+> +++ b/drivers/hwmon/ibmpowernv.c
+> @@ -74,9 +74,6 @@ struct platform_data {
+>   	u32 sensors_count; /* Total count of sensors from each group */
+>   };
+>
+> -/* Platform device representing all the ibmpowernv sensors */
+> -static struct platform_device *pdevice;
+> -
+>   static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
+>   			   char *buf)
+>   {
+> @@ -99,7 +96,7 @@ static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
+>   	return sprintf(buf, "%u\n", x);
+>   }
+>
+> -static int __init get_sensor_index_attr(const char *name, u32 *index,
+> +static int get_sensor_index_attr(const char *name, u32 *index,
+>   					char *attr)
+>   {
+>   	char *hash_pos = strchr(name, '#');
+> @@ -136,7 +133,7 @@ static int __init get_sensor_index_attr(const char *name, u32 *index,
+>    * which need to be mapped as fan2_input, temp1_max respectively before
+>    * populating them inside hwmon device class.
+>    */
+> -static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
+> +static int create_hwmon_attr_name(struct device *dev, enum sensors type,
+>   					 const char *node_name,
+>   					 char *hwmon_attr_name)
+>   {
+> @@ -172,7 +169,7 @@ static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
+>   	return 0;
+>   }
+>
+> -static int __init populate_attr_groups(struct platform_device *pdev)
+> +static int populate_attr_groups(struct platform_device *pdev)
+>   {
+>   	struct platform_data *pdata = platform_get_drvdata(pdev);
+>   	const struct attribute_group **pgroups = pdata->attr_groups;
+> @@ -180,11 +177,6 @@ static int __init populate_attr_groups(struct platform_device *pdev)
+>   	enum sensors type;
+>
+>   	opal = of_find_node_by_path("/ibm,opal/sensors");
+> -	if (!opal) {
+> -		dev_dbg(&pdev->dev, "Opal node 'sensors' not found\n");
+> -		return -ENODEV;
+> -	}
+> -
+>   	for_each_child_of_node(opal, np) {
+>   		if (np->name == NULL)
+>   			continue;
+> @@ -221,7 +213,7 @@ static int __init populate_attr_groups(struct platform_device *pdev)
+>    * to the name required by the higher 'hwmon' driver like fan1_input, temp1_max
+>    * etc..
+>    */
+> -static int __init create_device_attrs(struct platform_device *pdev)
+> +static int create_device_attrs(struct platform_device *pdev)
+>   {
+>   	struct platform_data *pdata = platform_get_drvdata(pdev);
+>   	const struct attribute_group **pgroups = pdata->attr_groups;
+> @@ -280,7 +272,7 @@ exit_put_node:
+>   	return err;
+>   }
+>
+> -static int __init ibmpowernv_probe(struct platform_device *pdev)
+> +static int ibmpowernv_probe(struct platform_device *pdev)
+>   {
+>   	struct platform_data *pdata;
+>   	struct device *hwmon_dev;
+> @@ -309,52 +301,31 @@ static int __init ibmpowernv_probe(struct platform_device *pdev)
+>   	return PTR_ERR_OR_ZERO(hwmon_dev);
+>   }
+>
+> +static const struct platform_device_id opal_sensor_driver_ids[] = {
+> +	{
+> +		.name = "opal-sensor",
+> +	},
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(platform, opal_sensor_driver_ids);
+> +
+>   static struct platform_driver ibmpowernv_driver = {
+> -	.driver = {
+> -		.owner = THIS_MODULE,
+> -		.name = DRVNAME,
+> +	.probe		= ibmpowernv_probe,
+> +	.id_table	= opal_sensor_driver_ids,
+> +	.driver		= {
+> +		.owner	= THIS_MODULE,
+> +		.name	= DRVNAME,
+>   	},
+>   };
+>
+>   static int __init ibmpowernv_init(void)
+>   {
+> -	int err;
+> -
+> -	pdevice = platform_device_alloc(DRVNAME, 0);
+> -	if (!pdevice) {
+> -		pr_err("Device allocation failed\n");
+> -		err = -ENOMEM;
+> -		goto exit;
+> -	}
+> -
+> -	err = platform_device_add(pdevice);
+> -	if (err) {
+> -		pr_err("Device addition failed (%d)\n", err);
+> -		goto exit_device_put;
+> -	}
+> -
+> -	err = platform_driver_probe(&ibmpowernv_driver, ibmpowernv_probe);
+> -	if (err) {
+> -		if (err != -ENODEV)
+> -			pr_err("Platform driver probe failed (%d)\n", err);
+> -
+> -		goto exit_device_del;
+> -	}
+> -
+> -	return 0;
+> -
+> -exit_device_del:
+> -	platform_device_del(pdevice);
+> -exit_device_put:
+> -	platform_device_put(pdevice);
+> -exit:
+> -	return err;
+> +	return platform_driver_register(&ibmpowernv_driver);
+>   }
+>
+>   static void __exit ibmpowernv_exit(void)
+>   {
+>   	platform_driver_unregister(&ibmpowernv_driver);
+> -	platform_device_unregister(pdevice);
+>   }
+>
+>   MODULE_AUTHOR("Neelesh Gupta <neelegup@linux.vnet.ibm.com>");
+>
+>
+
