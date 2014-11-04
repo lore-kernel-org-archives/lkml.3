@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaKDRSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:18:37 -0500
-Received: from mailout.easymail.ca ([64.68.201.169]:50518 "EHLO
+	id S1752783AbaKDRSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:18:41 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:50543 "EHLO
 	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaKDRSO (ORCPT
+	with ESMTP id S1752067AbaKDRSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:18:14 -0500
-X-Quarantine-ID: <U+M8XO3kLhh5>
+	Tue, 4 Nov 2014 12:18:17 -0500
+X-Quarantine-ID: <1B-FiB5+DCig>
 X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
 X-Spam-Flag: NO
 X-Spam-Score: -4.399
@@ -19,9 +19,9 @@ To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH 16/20] selftests/ptrace: add install target to enable installing test
-Date: Tue,  4 Nov 2014 10:11:12 -0700
-Message-Id: <c29ba0f8dcdd2bf345a7e92496d17413c7a4acb4.1415117102.git.shuahkh@osg.samsung.com>
+Subject: [PATCH 02/20] selftests/net: move test out of Makefile into a shell script
+Date: Tue,  4 Nov 2014 10:10:58 -0700
+Message-Id: <51d57725e89809806bd8af5555af341296cc4dd7.1415117102.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
 References: <cover.1415117102.git.shuahkh@osg.samsung.com>
@@ -31,36 +31,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new make target to enable installing test. This target
-installs test in the kselftest install location and add to the
-kselftest script to run the test.
+Currently bpf test run from the Makefile. Move it out of the
+Makefile to be run from a shell script to allow the test to
+be run as stand-alone test, in addition to allowing the test
+run from a make target.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/ptrace/Makefile | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ tools/testing/selftests/net/Makefile    |  8 +-------
+ tools/testing/selftests/net/test_bpf.sh | 10 ++++++++++
+ 2 files changed, 11 insertions(+), 7 deletions(-)
+ create mode 100755 tools/testing/selftests/net/test_bpf.sh
 
-diff --git a/tools/testing/selftests/ptrace/Makefile b/tools/testing/selftests/ptrace/Makefile
-index 47ae2d3..7826045 100644
---- a/tools/testing/selftests/ptrace/Makefile
-+++ b/tools/testing/selftests/ptrace/Makefile
-@@ -1,7 +1,14 @@
- CFLAGS += -iquote../../../../include/uapi -Wall
--peeksiginfo: peeksiginfo.c
- 
--all: peeksiginfo
-+all:
-+	gcc peeksiginfo.c -o peeksiginfo
-+
-+install: all
-+	install ./peeksiginfo $(INSTALL_KSFT_PATH)
-+	echo "\necho \"Start ptrace test ....\"" >> $(KSELFTEST)
-+	echo "./peeksiginfo || echo \"peeksiginfo selftests: [FAIL]\"" >> $(KSELFTEST)
-+	echo "echo \"End ptrace test ....\"" >> $(KSELFTEST)
-+	echo "echo \"==============================\"" >> $(KSELFTEST)
- 
+diff --git a/tools/testing/selftests/net/Makefile b/tools/testing/selftests/net/Makefile
+index c7493b8..62f22cc 100644
+--- a/tools/testing/selftests/net/Makefile
++++ b/tools/testing/selftests/net/Makefile
+@@ -14,12 +14,6 @@ all: $(NET_PROGS)
+ run_tests: all
+ 	@/bin/sh ./run_netsocktests || echo "sockettests: [FAIL]"
+ 	@/bin/sh ./run_afpackettests || echo "afpackettests: [FAIL]"
+-	@if /sbin/modprobe test_bpf ; then \
+-		/sbin/rmmod test_bpf; \
+-		echo "test_bpf: ok"; \
+-	else \
+-		echo "test_bpf: [FAIL]"; \
+-		exit 1; \
+-	fi
++	./test_bpf.sh
  clean:
- 	rm -f peeksiginfo
+ 	$(RM) $(NET_PROGS)
+diff --git a/tools/testing/selftests/net/test_bpf.sh b/tools/testing/selftests/net/test_bpf.sh
+new file mode 100755
+index 0000000..8b29796
+--- /dev/null
++++ b/tools/testing/selftests/net/test_bpf.sh
+@@ -0,0 +1,10 @@
++#!/bin/sh
++# Runs bpf test using test_bpf kernel module
++
++if /sbin/modprobe -q test_bpf ; then
++	/sbin/modprobe -q -r test_bpf;
++	echo "test_bpf: ok";
++else
++	echo "test_bpf: [FAIL]";
++	exit 1;
++fi
 -- 
 1.9.1
 
