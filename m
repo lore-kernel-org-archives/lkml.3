@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaKDBRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 20:17:24 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:33038 "EHLO
+	id S1751899AbaKDBRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 20:17:23 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:33046 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578AbaKDBRD (ORCPT
+	with ESMTP id S1751638AbaKDBRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Nov 2014 20:17:03 -0500
 X-Original-SENDERIP: 10.177.222.235
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 6/8] perf record: Do not save pathname in ./debug/.build-id directory for vmlinux
-Date: Tue,  4 Nov 2014 10:14:32 +0900
-Message-Id: <1415063674-17206-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 7/8] perf tools: Fix build-id matching on vmlinux
+Date: Tue,  4 Nov 2014 10:14:33 +0900
+Message-Id: <1415063674-17206-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1415063674-17206-1-git-send-email-namhyung@kernel.org>
 References: <1415063674-17206-1-git-send-email-namhyung@kernel.org>
@@ -27,105 +27,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When perf record finishes a session recording, it then pre-process
-samples in order to write build-id info from actually used DSOs.
-During this process it'll call map__load() for kernel map, and it ends
-up calling dso__load_vmlinux_path() which replaces dso->long_name.
+There's a problem on finding correct kernel symbols when perf report
+runs on a different kernel.  Although a part of the problem was solved
+by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+version when finding vmlinux"), there's a remaining problem still.
 
-But this function checks kernel's build-id before searching vmlinux
-path so it'll have the cryptic name which can be confusing to users IMHO.
+When perf records samples, it synthesizes the kernel map using
+machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+You can easily see it using 'perf report -D' command.
 
-This patch adds a flag to skip the build-id check during record, so
-it'll have a vmlinux path for the kernel dso->long_name.
+After finishing record, it goes through the recorded events to find
+maps/dsos actually used.  And then record build-id info of them.
+
+During this process, it needs to load symbols in a dso and it'd call
+dso__load_vmlinux_path() since the default value of the symbol_conf.
+try_vmlinux_path is true.  However it changes dso->long_name to a real
+path of the vmlinux file (e.g. /lib/modules/3.16.4/build/vmlinux)
+if one is running on a custom kernel.
+
+It resulted in that perf report reads the build-id of the vmlinux, but
+cannot use it since it only knows about the [kernel.kallsyms] map.  It
+then falls back to possible vmlinux paths by using the recorded kernel
+version (in case of a recent version) or a running kernel silently.
+
+Even with the recent tools, this still has a possibility of breaking
+the result.  As the build directory is a symbolic link, if one built a
+new kernel in the same directory with different source/config, the old
+link to vmlinux will point the new file.  So it's absolutely needed to
+use build-id when finding a kernel image.
+
+In this patch, it's now changed to try to search a kernel dso in the
+existing dso list which was constructed during build-id table parsing
+so it'll always have a build-id.  If not found, search "[kernel.kallsyms]".
 
 Before:
-  # perf record -va sleep 3
-  mmap size 528384B
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.196 MB perf.data (~8545 samples) ]
-  Looking at the vmlinux_path (7 entries long)
-  Using /home/namhyung/.debug/.build-id/f0/6e17aa50adf4d00b88925e03775de107611551 for symbols
 
-After:
-  # perf record -va sleep 3
-  mmap size 528384B
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.193 MB perf.data (~8432 samples) ]
-  Looking at the vmlinux_path (7 entries long)
-  Using /lib/modules/3.16.4-1-ARCH/build/vmlinux for symbols
+  $ perf report
+  # Children      Self  Command  Shared Object      Symbol
+  # ........  ........  .......  .................  ...............................
+  #
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
+      71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
+   ...
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+After (for the same perf.data):
+
+      72.15%     0.00%  swapper  vmlinux  [k] cpu_startup_entry
+      72.15%     0.00%  swapper  vmlinux  [k] arch_cpu_idle
+      72.15%     0.00%  swapper  vmlinux  [k] default_idle
+      71.87%    71.87%  swapper  vmlinux  [k] native_safe_halt
+   ...
+
+Cc: Adrian Huner <adrian.hunter@intel.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-record.c | 11 +++++++++++
- tools/perf/util/symbol.c    | 11 ++++++-----
- tools/perf/util/symbol.h    |  1 +
- 3 files changed, 18 insertions(+), 5 deletions(-)
+ tools/perf/util/header.c  |  2 +-
+ tools/perf/util/machine.c | 16 ++++++++++++++--
+ 2 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 5091a27e6d28..582c4da155ea 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -200,6 +200,17 @@ static int process_buildids(struct record *rec)
- 	if (size == 0)
- 		return 0;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 3081f030aef0..e86fffd89e2b 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1266,7 +1266,7 @@ static int __event_process_build_id(struct build_id_event *bev,
  
-+	/*
-+	 * During this process, it'll load kernel map and replace the
-+	 * dso->long_name to a real pathname it found.  In this case
-+	 * we prefer the vmlinux path like
-+	 *   /lib/modules/3.16.4/build/vmlinux
-+	 *
-+	 * rather than build-id path (in debug directory).
-+	 *   $HOME/.debug/.build-id/f0/6e17aa50adf4d00b88925e03775de107611551
-+	 */
-+	symbol_conf.ignore_vmlinux_buildid = true;
+ 		dso__set_build_id(dso, &bev->build_id);
+ 
+-		if (filename[0] == '[')
++		if (!is_kernel_module(filename, NULL))
+ 			dso->kernel = dso_type;
+ 
+ 		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 946c7d62cb6e..53f90e9c65fe 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1085,8 +1085,20 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+ 		 * Should be there already, from the build-id table in
+ 		 * the header.
+ 		 */
+-		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+-						     kmmap_prefix);
++		struct dso *kernel = NULL;
++		struct dso *dso;
 +
- 	return __perf_session__process_events(session, start,
- 					      size - start,
- 					      size, &build_id__mark_dso_hit_ops);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index c69915c9d5bc..c24c5b83156c 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1511,12 +1511,10 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
- 			   symbol_filter_t filter)
- {
- 	int i, err = 0;
--	char *filename;
-+	char *filename = NULL;
- 
--	pr_debug("Looking at the vmlinux_path (%d entries long)\n",
--		 vmlinux_path__nr_entries + 1);
--
--	filename = dso__build_id_filename(dso, NULL, 0);
-+	if (!symbol_conf.ignore_vmlinux_buildid)
-+		filename = dso__build_id_filename(dso, NULL, 0);
- 	if (filename != NULL) {
- 		err = dso__load_vmlinux(dso, map, filename, true, filter);
- 		if (err > 0)
-@@ -1524,6 +1522,9 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
- 		free(filename);
- 	}
- 
-+	pr_debug("Looking at the vmlinux_path (%d entries long)\n",
-+		 vmlinux_path__nr_entries + 1);
++		list_for_each_entry(dso, &machine->kernel_dsos.head, node) {
++			if (is_kernel_module(dso->long_name, NULL))
++				continue;
 +
- 	for (i = 0; i < vmlinux_path__nr_entries; ++i) {
- 		err = dso__load_vmlinux(dso, map, vmlinux_path[i], false, filter);
- 		if (err > 0)
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index eb2c19bf8d90..ded3ca7266de 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -105,6 +105,7 @@ struct symbol_conf {
- 	unsigned short	nr_events;
- 	bool		try_vmlinux_path,
- 			ignore_vmlinux,
-+			ignore_vmlinux_buildid,
- 			show_kernel_path,
- 			use_modules,
- 			sort_by_name,
++			kernel = dso;
++			break;
++		}
++
++		if (kernel == NULL)
++			kernel = __dsos__findnew(&machine->kernel_dsos,
++						 kmmap_prefix);
+ 		if (kernel == NULL)
+ 			goto out_problem;
+ 
 -- 
 2.1.2
 
