@@ -1,120 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083AbaKDHvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:51:43 -0500
-Received: from mga11.intel.com ([192.55.52.93]:44218 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989AbaKDHvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:51:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411013373"
-Date: Tue, 4 Nov 2014 09:51:35 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: David Cohen <david.a.cohen@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141104075135.GE1618@lahna.fi.intel.com>
-References: <20141031132005.GB1273@saruman>
- <20141031162339.GA7136@psi-dev26.jf.intel.com>
- <20141031184509.GA2224@psi-dev26.jf.intel.com>
- <20141103092402.GA1304@lahna.fi.intel.com>
- <20141103150048.GB27425@saruman>
- <20141103152743.GB1618@lahna.fi.intel.com>
- <20141103154207.GC1618@lahna.fi.intel.com>
- <20141103155011.GH27425@saruman>
- <20141103184247.GD1618@lahna.fi.intel.com>
- <20141103204038.GB17356@saruman>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103204038.GB17356@saruman>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752147AbaKDHv6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:51:58 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:11863 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaKDHvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 02:51:54 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-c9-54588597e62e
+Message-id: <1415087510.2389.4.camel@AMDC1943>
+Subject: Re: [PATCH v3 08/14] mfd: max77686/802: Remove support for board files
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Date: Tue, 04 Nov 2014 08:51:50 +0100
+In-reply-to: <20141103170128.GD12011@x1>
+References: <1414668053-31370-1-git-send-email-k.kozlowski@samsung.com>
+ <1414668053-31370-9-git-send-email-k.kozlowski@samsung.com>
+ <20141103170128.GD12011@x1>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsVy+t/xq7rTWyNCDC5d0LfYOGM9q8WkdQeY
+	LKY+fMJmcf3Lc1aL+UfOsVoc/V1g0bvgKpvF2aY37Bb3vx5ltPh2pYPJYtPja6wWl3fNYbOY
+	cX4fk8Xty7wWa4/cZbc43c3qIODR0tzD5vH3+XUWj7+rXjB77Jx1l91j06pONo871/awecw7
+	GeixeUm9R9+WVYwenzfJBXBFcdmkpOZklqUW6dslcGX0bBEuOMlVseK/YQPjLI4uRg4OCQET
+	iecnxboYOYFMMYkL99azdTFycQgJLGWU+PFrCxOE85lR4teTvYwgVbwCehJ/lq9gA7GFBfwl
+	Xr5bB2azCRhLbF6+hA1kqIiAisS5N+YgvcwC91kktq//C1bDIqAqcfvERnYQm1NAQ2LP4//s
+	EAsWM0p8P/GSGSTBLKAuMWneImaI65QlGvvdIPYKSvyYfI8FokReYvOat8wTGAVmIemYhaRs
+	FpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCYuzrDsalx6wOMQpwMCrx8K6IjwgR
+	Yk0sK67MPcQowcGsJMK7ugooxJuSWFmVWpQfX1Sak1p8iJGJg1OqgdGk7d3SHblff0k5/6io
+	njnj+vJHR+cfVTdd8PBT+t6yJ1eLbh7j1A5qXPpBv+X9mj2PH9x+NMP0DKOo343pbDIJnC+v
+	8gV+mupY6KC/7WYJ99ydIZP2r7/iKlK5IML3X6v79IZvrL6alxYsz+XnN94i4n+v/d+aI/O/
+	5L69ZmrI0GOftVva9m+OEktxRqKhFnNRcSIAa4frho8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 02:40:38PM -0600, Felipe Balbi wrote:
-> Hi,
+On pon, 2014-11-03 at 17:01 +0000, Lee Jones wrote:
+> On Thu, 30 Oct 2014, Krzysztof Kozlowski wrote:
 > 
-> On Mon, Nov 03, 2014 at 08:42:47PM +0200, Mika Westerberg wrote:
-> > > > > > > > > I think adding the module exit + allowing this driver to be a module
-> > > > > > > > > would be a good approach. Then we don't need to force generic x86 kernel
-> > > > > > > > > binaries to always have this driver. Unless Mathias or Mika knows a
-> > > > > > > > > constraint to force this driver to be builtin only.
-> > > > > > > > 
-> > > > > > > > It helps if I CC them when asking for feedback :)
-> > > > > > > > 
-> > > > > > > > Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
-> > > > > > > > to be bool?
-> > > > > > > 
-> > > > > > > The only constraint that has been keeping this driver as bool is that
-> > > > > > > some machines like, Asus T100, uses ACPI GPIO operation regions for
-> > > > > > > toggling GPIOs to get things like sensor hub powered on. The GPIO
-> > > > > > > operation region code does not yet handle -EPROBE_DEFER so only way to
-> > > > > > > ensure that the operation region is there is to have the driver compiled
-> > > > > > > in to the kernel.
-> > > > > > 
-> > > > > > But that's not enough excuse to have every single x86 in the market
-> > > > > > shipping with this driver. Think about a distro kernel, most likely this
-> > > > > > gets enabled and it's wrong in 80% of the cases.
-> > > > > 
-> > > > > True, but see below.
-> > > > > 
-> > > > > > It would be nicer to add EPROBE_DEFER support, convert this into
-> > > > > > tristate and have default = M if BAYTRAIL, or something.
-> > > > > 
-> > > > > If it were simple as that we would have done that already. Please check
-> > > > > drivers/gpio/gpiolib-acpi.c:acpi_gpio_adr_space_handler() and tell me
-> > > > > how we can do that.
-> > > > 
-> > > > Actually the above is not the problem because we already have registered
-> > > > the GPIO chip and hence we have the GPIO available to the firmware code.
-> > > 
-> > > what happens before you registered the gpio chip ? It takes some time
-> > > from head.S to gpiochip_irqchip_add(). Anywhere between that time,
-> > > firmware could try to access gpios and the same problem would occur.
+> > The driver is used only on Exynos based boards with DTS support.
+> > Convert the driver to DTS-only version. This simplifies a little the
+> > code:
+> > 1. No dead (unused) entries in platform_data structure.
+> > 2. More code removed.
+> > 3. Regulator driver does not depend on allocated memory
+> >    from MFD driver.
+> > 4. It makes also easier extending the regulator driver.
 > > 
-> > The operation region is not ready and the firmware does not try to use
-> > it. However, the subsys_initcall() is there just to be sure that the
-> > GPIO driver gets loaded before anything that is going to use GPIOs from
-> > firmware.
-> 
-> alright, so how does the firmware know that the operation region is
-> ready and why can't that be deferred until pinctrl-baytrail (module or
-> built-in) has finished probing ? That would sort both issues, would it
-> not ?
-
-The firmware checks the dependent object for AVBL or similar variable.
-If it is != 0 it assumes that the operation region is there. The problem
-is how can you tell the firmware that it should somehow try again?
-
-Here _DEP is the right solution as it forces the dependencies to be
-loaded first.
-
-> > > > The real problem is that if the ACPI GPIO operation handler is not there
-> > > > at the time firmware decides to do something it will just skip things
-> > > > that depend on the operation region. So if it has a GPIO that is used to
-> > > > turn on sensor hub or touch panel or whatever, this will not be done and
-> > > > it results that the device in question might not work properly.
-> > > 
-> > > that's an issue that needs solving, but forcing every x86 kernel to ship
-> > > with this driver, is not a proper solution.
+> > Add to the max77686 MFD driver dependency on CONFIG_OF because without
+> > DTS the regulator drivers won't bind.
 > > 
-> > I would rather have the driver build in to the kernel now (and btw it
-> > has been already in mainline quite some time so I suspect many distros
-> > have already enabled it), than turning it module and render some devices
-> > that have been working previously, fail suddenly.
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> > ---
+> >  drivers/mfd/Kconfig                  |  1 +
+> >  drivers/mfd/max77686.c               | 23 -----------------------
+> >  include/linux/mfd/max77686-private.h |  1 -
+> >  include/linux/mfd/max77686.h         | 28 ----------------------------
+> >  4 files changed, 1 insertion(+), 52 deletions(-)
 > 
-> that's why I said you should default to Y if BAYTRAIL or make it
-> tristate and always default to M.
+> Applied, thanks.
 
-So you are saying it is better to add config option BAYTRAIL and then
-make the driver Y? Well, now generic distros need to select that as Y
-which doesn't solve anything.
+
+Noooo, don't apply it. It depends on previous patches removing the board
+file support from regulators.
+
+If the patch looks OK, please only ack it. I would like to push
+everything through regulator tree.
+
+Best regards,
+Krzysztof
+
+
