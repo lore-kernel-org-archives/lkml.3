@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911AbaKDXq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:46:29 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:61194 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604AbaKDXq2 (ORCPT
+	id S1753052AbaKDXrS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:47:18 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:62530 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986AbaKDXrR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:46:28 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] x86_64: Add a comment explaining the TASK_SIZE_MAX guard page
-Date: Tue,  4 Nov 2014 15:46:21 -0800
-Message-Id: <23320cb5017c2da8475ec20fcde8089d82aa2699.1415144745.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Tue, 4 Nov 2014 18:47:17 -0500
+X-IronPort-AV: E=Sophos;i="5.07,316,1413270000"; 
+   d="scan'208";a="49744016"
+From: "Charley (Hao Chuan) Chu" <charley.chu@broadcom.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Kernel Oops in __inet_twsk_kill()
+Thread-Topic: Kernel Oops in __inet_twsk_kill()
+Thread-Index: Ac/4g+N3Z2wE9sbVRYiMvitea8436AABTaFAAAAZ6/A=
+Date: Tue, 4 Nov 2014 23:47:18 +0000
+Message-ID: <FB8A4655DFD2B34DB16AE06DDDD6C0E231A6F030@SJEXCHMB12.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That guard page is absolutely necessary; explain why for posterity.
+We have situation on our system. It brings the network interface up and down every a few seconds. Eventually, it brings down the system - the kernel crashed due to BUG on in __inet_twsk_kill(). The debug message show following call flow. 
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/include/asm/processor.h | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index eb71ec794732..82d93ea13c0c 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -893,7 +893,13 @@ extern unsigned long thread_saved_pc(struct task_struct *tsk);
- 
- #else
- /*
-- * User space process size. 47bits minus one guard page.
-+ * User space process size. 47bits minus one guard page.  The guard
-+ * page is necessary on Intel CPUs: if a SYSCALL instruction is at
-+ * the highest possible canonical userspace address, then that
-+ * syscall will enter the kernel with a non-canonical return
-+ * address, and SYSRET will explode dangerously.  We avoid this
-+ * particular problem by preventing anything from being mapped
-+ * at the maximum canonical address.
-  */
- #define TASK_SIZE_MAX	((1UL << 47) - PAGE_SIZE)
- 
--- 
-1.9.3
+1) time-wait socket is created by tcp_time_wait() when the socket gets into "TIME_WAIT" state. 
+    inet_twsk_alloc()               - refcnt= 0
+    inet_twsk_hashdance()  - refcnt = 3
+    inet_twsk_schedule()      - refcnt = 4
+    inet_twsk_put()                 - refcnt = 3
+2) tcp_v4_timewait_ack() is called when sync is received 
+    inet_twsk_put()                  - refcnt= 2      <== where we thing the problem is
+    occasionally, second sync is received, so the inet_twsk_put is called twice - refcnt = 1 
+3) twdr_do_twkill_work() is called when timed out
+    call __inet_twsk_kill - BUG_ON!!! as refcnt=2 (supposed to be 3).
+    call inet_twsk_put()
+
+In a normal case, the callflow only has step 1 and step 3.  Our understanding is the time-wait socket has three references - ehash, bhash and timer death row. In step 2, none of them are touched. Can anyone here explain to us why the inet_twsk_put() is called in tcp_v4_timewait_ack()?
+
+our system has 3.14 kernel.
+
+Any help would be highly appreciated.
+
+Charley Chu
 
