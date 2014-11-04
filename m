@@ -1,206 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaKDA3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 19:29:42 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:52462 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaKDA3G (ORCPT
+	id S1751016AbaKDAf5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 19:35:57 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:53329 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKDAfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 19:29:06 -0500
-From: Pawel Moll <pawel.moll@arm.com>
-To: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Pawel Moll <mail@pawelmoll.com>, Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH v3 3/3] perf: Sample additional clock value
-Date: Tue,  4 Nov 2014 00:28:38 +0000
-Message-Id: <1415060918-19954-4-git-send-email-pawel.moll@arm.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
-References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
+	Mon, 3 Nov 2014 19:35:53 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 4 Nov 2014 09:37:33 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 5/5] mm, compaction: more focused lru and pcplists
+ draining
+Message-ID: <20141104003733.GB8412@js1304-P5Q-DELUXE>
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
+ <1412696019-21761-6-git-send-email-vbabka@suse.cz>
+ <20141027074112.GC23379@js1304-P5Q-DELUXE>
+ <545738F1.4010307@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <545738F1.4010307@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pawel Moll <mail@pawelmoll.com>
+On Mon, Nov 03, 2014 at 09:12:33AM +0100, Vlastimil Babka wrote:
+> On 10/27/2014 08:41 AM, Joonsoo Kim wrote:
+> >On Tue, Oct 07, 2014 at 05:33:39PM +0200, Vlastimil Babka wrote:
+> >>The goal of memory compaction is to create high-order freepages through page
+> >>migration. Page migration however puts pages on the per-cpu lru_add cache,
+> >>which is later flushed to per-cpu pcplists, and only after pcplists are
+> >>drained the pages can actually merge. This can happen due to the per-cpu
+> >>caches becoming full through further freeing, or explicitly.
+> >>
+> >>During direct compaction, it is useful to do the draining explicitly so that
+> >>pages merge as soon as possible and compaction can detect success immediately
+> >>and keep the latency impact at minimum. However the current implementation is
+> >>far from ideal. Draining is done only in  __alloc_pages_direct_compact(),
+> >>after all zones were already compacted, and the decisions to continue or stop
+> >>compaction in individual zones was done without the last batch of migrations
+> >>being merged. It is also missing the draining of lru_add cache before the
+> >>pcplists.
+> >>
+> >>This patch moves the draining for direct compaction into compact_zone(). It
+> >>adds the missing lru_cache draining and uses the newly introduced single zone
+> >>pcplists draining to reduce overhead and avoid impact on unrelated zones.
+> >>Draining is only performed when it can actually lead to merging of a page of
+> >>desired order (passed by cc->order). This means it is only done when migration
+> >>occurred in the previously scanned cc->order aligned block(s) and the
+> >>migration scanner is now pointing to the next cc->order aligned block.
+> >>
+> >>The patch has been tested with stress-highalloc benchmark from mmtests.
+> >>Although overal allocation success rates of the benchmark were not affected,
+> >>the number of detected compaction successes has doubled. This suggests that
+> >>allocations were previously successful due to implicit merging caused by
+> >>background activity, making a later allocation attempt succeed immediately,
+> >>but not attributing the success to compaction. Since stress-highalloc always
+> >>tries to allocate almost the whole memory, it cannot show the improvement in
+> >>its reported success rate metric. However after this patch, compaction should
+> >>detect success and terminate earlier, reducing the direct compaction latencies
+> >>in a real scenario.
+> >>
+> >>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> >>Cc: Minchan Kim <minchan@kernel.org>
+> >>Cc: Mel Gorman <mgorman@suse.de>
+> >>Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >>Cc: Michal Nazarewicz <mina86@mina86.com>
+> >>Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> >>Cc: Christoph Lameter <cl@linux.com>
+> >>Cc: Rik van Riel <riel@redhat.com>
+> >>Cc: David Rientjes <rientjes@google.com>
+> >>---
+> >>  mm/compaction.c | 41 ++++++++++++++++++++++++++++++++++++++++-
+> >>  mm/page_alloc.c |  4 ----
+> >>  2 files changed, 40 insertions(+), 5 deletions(-)
+> >>
+> >>diff --git a/mm/compaction.c b/mm/compaction.c
+> >>index 8fa888d..41b49d7 100644
+> >>--- a/mm/compaction.c
+> >>+++ b/mm/compaction.c
+> >>@@ -1179,6 +1179,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+> >>  	while ((ret = compact_finished(zone, cc, migratetype)) ==
+> >>  						COMPACT_CONTINUE) {
+> >>  		int err;
+> >>+		unsigned long last_migrated_pfn = 0;
+> >
+> >I think that this definition looks odd.
+> >In every iteration, last_migrated_pfn is re-defined as 0.
+> >Maybe, it is on outside of the loop.
+> 
+> Oops you're right, that's a mistake and it makes the code miss some
+> of the drain points (a minority I think but anyway).
+> 
+> >>
+> >>  		switch (isolate_migratepages(zone, cc)) {
+> >>  		case ISOLATE_ABORT:
+> >>@@ -1187,7 +1188,12 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+> >>  			cc->nr_migratepages = 0;
+> >>  			goto out;
+> >>  		case ISOLATE_NONE:
+> >>-			continue;
+> >>+			/*
+> >>+			 * We haven't isolated and migrated anything, but
+> >>+			 * there might still be unflushed migrations from
+> >>+			 * previous cc->order aligned block.
+> >>+			 */
+> >>+			goto check_drain;
+> >>  		case ISOLATE_SUCCESS:
+> >>  			;
+> >>  		}
+> >>@@ -1212,6 +1218,39 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+> >>  				goto out;
+> >>  			}
+> >>  		}
+> >>+
+> >>+		/*
+> >>+		 * Record where we have freed pages by migration and not yet
+> >>+		 * flushed them to buddy allocator. Subtract 1, because often
+> >>+		 * we finish a pageblock and migrate_pfn points to the first
+> >>+		 * page* of the next one. In that case we want the drain below
+> >>+		 * to happen immediately.
+> >>+		 */
+> >>+		if (!last_migrated_pfn)
+> >>+			last_migrated_pfn = cc->migrate_pfn - 1;
+> >
+> >And, I wonder why last_migrated_pfn is set after isolate_migratepages().
+> 
+> Not sure I understand your question. With the mistake above, it
+> cannot currently be set at the point isolate_migratepages() is
+> called, so you might question the goto check_drain in the
+> ISOLATE_NONE case, if that's what you are wondering about.
+> 
+> When I correct that, it might be set when COMPACT_CLUSTER_MAX pages
+> are isolated and migrated the middle of a pageblock, and then the
+> rest of the pageblock contains no pages that could be isolated, so
+> the last isolate_migratepages() attempt in the pageblock returns
+> with ISOLATE_NONE. Still there were some migrations that produced
+> free pages that should be drained at that point.
 
-This patch adds an option to sample value of an additional clock with
-any perf event, with the the aim of allowing time correlation between
-data coming from perf and other sources like hardware trace which is
-timestamped with an external clock.
+To clarify my question, I attach psuedo code that I thought correct.
 
-The idea is to generate periodic perf record containing timestamps from
-two different sources, sampled as close to each other as possible. This
-allows performing simple linear approximation:
+static int compact_zone()
+{
+        unsigned long last_migrated_pfn = 0;
 
-        perf event    other event
-       -----O--------------+-------------O------> t_other
-            :              |             :
-            :              V             :
-       -----O----------------------------O------> t_perf
+        ...
 
-User can request such samples for any standard perf event, with the most
-obvious examples of cpu-clock (hrtimer) at selected frequency or other
-periodic events like sched:sched_switch.
+        compaction_suitable();
 
-In order to do this, PERF_SAMPLE_CLOCK has to be set in struct
-perf_event_attr.sample_type and a type of the clock to be sampled
-selected by setting perf_event_attr.clock to a value corresponding to
-a POSIX clock clk_id (see "man 2 clock_gettime")
+        ...
 
-Currently three clocks are implemented: CLOCK_REALITME = 0,
-CLOCK_MONOTONIC = 1 and CLOCK_MONOTONIC_RAW = 2. The clock field is
-5 bits wide to allow for future extension to custom, non-POSIX clock
-sources(MAX_CLOCK for those is 16, see include/uapi/linux/time.h) like
-ARM CoreSight (hardware trace) timestamp generator.
+        while (compact_finished()) {
+                if (!last_migrated_pfn)
+                        last_migrated_pfn = cc->migrate_pfn - 1;
 
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
----
- include/linux/perf_event.h      |  2 ++
- include/uapi/linux/perf_event.h | 16 ++++++++++++++--
- kernel/events/core.c            | 30 ++++++++++++++++++++++++++++++
- 3 files changed, 46 insertions(+), 2 deletions(-)
+                isolate_migratepages();
+                switch case
+                migrate_pages();
+                ...
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 867415d..395d6ed 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -607,6 +607,8 @@ struct perf_sample_data {
- 	 * Transaction flags for abort events:
- 	 */
- 	u64				txn;
-+	/* Clock value (additional timestamp for time correlation) */
-+	u64				clock;
- };
- 
- /* default value for data source */
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9a64eb1..53a7a72 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -137,8 +137,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
- 	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
- 	PERF_SAMPLE_TRANSACTION			= 1U << 17,
-+	PERF_SAMPLE_CLOCK			= 1U << 18,
- 
--	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
- };
- 
- /*
-@@ -304,7 +305,16 @@ struct perf_event_attr {
- 				mmap2          :  1, /* include mmap with inode data     */
- 				comm_exec      :  1, /* flag comm events that are due to an exec */
- 				uevents        :  1, /* allow uevents into the buffer */
--				__reserved_1   : 38;
-+
-+				/*
-+				 * clock: one of the POSIX clock IDs:
-+				 *
-+				 * 0 - CLOCK_REALTIME
-+				 * 1 - CLOCK_MONOTONIC
-+				 * 4 - CLOCK_MONOTONIC_RAW
-+				 */
-+				clock          :  5, /* clock type */
-+				__reserved_1   : 33;
- 
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
-@@ -544,6 +554,7 @@ enum perf_event_type {
- 	 * 	{ u64			id;       } && PERF_SAMPLE_ID
- 	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
- 	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
-+	 *	{ u64			clock;    } && PERF_SAMPLE_CLOCK
- 	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
- 	 * } && perf_event_attr::sample_id_all
- 	 *
-@@ -687,6 +698,7 @@ enum perf_event_type {
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
- 	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
-+	 *	{ u64			clock;    } && PERF_SAMPLE_CLOCK
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 3738e9c..611e2f7 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1232,6 +1232,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_TRANSACTION)
- 		size += sizeof(data->txn);
- 
-+	if (sample_type & PERF_SAMPLE_CLOCK)
-+		size += sizeof(data->clock);
-+
- 	event->header_size = size;
- }
- 
-@@ -1259,6 +1262,9 @@ static void perf_event__id_header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_CPU)
- 		size += sizeof(data->cpu_entry);
- 
-+	if (sample_type & PERF_SAMPLE_CLOCK)
-+		size += sizeof(data->clock);
-+
- 	event->id_header_size = size;
- }
- 
-@@ -4599,6 +4605,24 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
- 		data->cpu_entry.cpu	 = raw_smp_processor_id();
- 		data->cpu_entry.reserved = 0;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_CLOCK) {
-+		switch (event->attr.clock) {
-+		case CLOCK_REALTIME:
-+			data->clock = ktime_get_real_ns();
-+			break;
-+		case CLOCK_MONOTONIC:
-+			data->clock = ktime_get_mono_fast_ns();
-+			break;
-+		case CLOCK_MONOTONIC_RAW:
-+			data->clock = ktime_get_raw_ns();
-+			break;
-+		default:
-+			data->clock = 0;
-+			break;
-+		}
-+	}
-+
- }
- 
- void perf_event_header__init_id(struct perf_event_header *header,
-@@ -4629,6 +4653,9 @@ static void __perf_event__output_id_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_CPU)
- 		perf_output_put(handle, data->cpu_entry);
- 
-+	if (sample_type & PERF_SAMPLE_CLOCK)
-+		perf_output_put(handle, data->clock);
-+
- 	if (sample_type & PERF_SAMPLE_IDENTIFIER)
- 		perf_output_put(handle, data->id);
- }
-@@ -4857,6 +4884,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_TRANSACTION)
- 		perf_output_put(handle, data->txn);
- 
-+	if (sample_type & PERF_SAMPLE_CLOCK)
-+		perf_output_put(handle, data->clock);
-+
- 	if (!event->attr.watermark) {
- 		int wakeup_events = event->attr.wakeup_events;
- 
--- 
-1.8.3.2
+                check_drain: (at the end of loop)
+                        do flush and reset last_migrated_pfn if needed
+        }
+}
 
+We should record last_migrated_pfn before isolate_migratepages() and
+then compare it with cc->migrate_pfn after isolate_migratepages() to
+know if we moved away from the previous cc->order aligned block.
+Am I missing something?
+
+Thanks.
