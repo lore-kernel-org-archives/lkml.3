@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaKDJjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:39:33 -0500
-Received: from mga01.intel.com ([192.55.52.88]:38020 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaKDJj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:39:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,312,1413270000"; 
-   d="scan'208";a="626139822"
-Date: Tue, 4 Nov 2014 11:39:07 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-Message-ID: <20141104093907.GH1618@lahna.fi.intel.com>
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com>
- <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com>
- <20141104082056.GG1618@lahna.fi.intel.com>
+	id S1752509AbaKDJky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:40:54 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:44941 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaKDJkt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 04:40:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104082056.GG1618@lahna.fi.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <d0973f4d-e8a4-4c5c-8bd1-1b1cb1f080b5@email.android.com>
+References: <1415015305-15494-1-git-send-email-drysdale@google.com>
+ <1415015305-15494-2-git-send-email-drysdale@google.com> <20141103152036.GA7996@ZenIV.linux.org.uk>
+ <CALCETrWmivJCvAAZPQo9Jf5gDiSbpWKesjZWfqEQRXPOBSPY9g@mail.gmail.com> <d0973f4d-e8a4-4c5c-8bd1-1b1cb1f080b5@email.android.com>
+From: David Drysdale <drysdale@google.com>
+Date: Tue, 4 Nov 2014 09:40:28 +0000
+Message-ID: <CAHse=S-d3beytm2AKyBjZORdJPffmjfa2Ua1VCU8VjoRE9RiYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] fs: add O_BENEATH flag to openat(2)
+To: "Eric W.Biederman" <ebiederm@xmission.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Will Drewry <wad@chromium.org>,
+        Jorge Lucangeli Obes <jorgelo@google.com>,
+        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
+        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 10:20:56AM +0200, Mika Westerberg wrote:
-> On Mon, Nov 03, 2014 at 05:24:55PM -0600, Timur Tabi wrote:
-> > On Mon, Nov 3, 2014 at 5:01 AM, Mika Westerberg
-> > <mika.westerberg@linux.intel.com> wrote:
-> > > Hi,
-> > >
-> > > This is second version of the patch series adding pinctrl/GPIO support
-> > > for Intel Braswell and Cherrryview. The previous version can be found here:
-> > >
-> > > https://lkml.org/lkml/2014/10/27/118
-> > >
-> > > I've dropped patches [2/4] and [3/4] as they are already applied to the
-> > > pinctrl tree.
-> > 
-> > Mika,
-> > 
-> > I am also trying to add ACPI enablement to my pinctrl driver (not yet
-> > submitted), but I'm new to ACPI and pin control drivers, so I have a
-> > lot of catching up to do.
-> > 
-> > In reviewing this patchset, it appears to me that pinctrl-cherryview.c
-> > is a normal pinctrl driver that has an acpi_match_table entry, and
-> > nothing more.
-> 
-> Indeed, it just a normal platform driver that can be enumerated from
-> ACPI using the .acpi_match_table entry.
-> 
-> > Assuming that this driver is booting on an ACPI system, what is the
-> > mechanism that calls into the driver to configure the pins?  Is there
-> > a definition for pin control in ASL that provides similar
-> > functionality as the pinctrl nodes in a device tree?
-> 
-> There is nothing like that yet in ACPI world but with the ACPI _DSD
-> patches we are getting properties similar to DT which means that we can
-> provide pinctrl bindings from ACPI systems as well. Typically it has
-> been the BIOS that configures things but it cannot get everything 100%
-> right.
-> 
-> Currently I've been testing the muxing functionality so that I have a
-> small board file that sets mappings and the driver core handles
-> everything from there. For example I have development board where SPI
-> pins are muxed as GPIOs by the BIOS and with the mappings when the SPI
-> device appears the core will mux SPI out of those pins.
+On Mon, Nov 3, 2014 at 5:22 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
+> On November 3, 2014 7:42:58 AM PST, Andy Lutomirski <luto@amacapital.net> wrote:
+>>On Mon, Nov 3, 2014 at 7:20 AM, Al Viro <viro@zeniv.linux.org.uk>
+>>wrote:
+>>> On Mon, Nov 03, 2014 at 11:48:23AM +0000, David Drysdale wrote:
+>>>> Add a new O_BENEATH flag for openat(2) which restricts the
+>>>> provided path, rejecting (with -EACCES) paths that are not beneath
+>>>> the provided dfd.  In particular, reject:
+>>>>  - paths that contain .. components
+>>>>  - paths that begin with /
+>>>>  - symlinks that have paths as above.
+>>>
+>>> Yecch...  The degree of usefulness aside (and I'm not convinced that
+>>it
+>>> is non-zero),
+>>
+>>This is extremely useful in conjunction with seccomp.
+>>
+>>> WTF pass one bit out of nameidata->flags in a separate argument?
+>>> Through the mutual recursion, no less...  And then you are not even
+>>attempting
+>>> to detect symlinks that are not followed by interpretation of _any_
+>>pathname.
+>>
+>>How many symlinks like that are there?  Is there anything except
+>>nd_jump_link users?  All of those are in /proc.  Arguably O_BENEATH
+>>should prevent traversal of all of those links.
+>
+> Not commenting on the sanity of this one way or another, and I haven't read the patch.  There is an absolutely trivial implementation of this.
+>
+> After the path is resolved, walk backwards along d_parent and the mount tree, and see if you come to the file or directory dfd refers to.
+>
+> That can handle magic proc symlinks, and does not need to disallow .. or / explicitly so it should be much simpler code.
+>
+> My gut says that if Al says blech when looking at your code it is too complex to give you a security guarantee.
+>
+> Eric
 
-For reference the latest ACPI _DSD patches can be found here
-
-https://lkml.org/lkml/2014/10/21/762
+Well, the 'yecch' was deserved for the unnecessary duplication of the
+flags.  Without that, the patch looks much simpler -- I'll send out a v2
+with those changes for discussion, and think about your alternative
+implementation suggestion (thanks!) separately.
