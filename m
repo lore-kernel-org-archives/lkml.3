@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917AbaKDUt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 15:49:29 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:33417 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752470AbaKDUt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 15:49:28 -0500
-Date: Tue, 4 Nov 2014 13:49:18 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v5 7/7] tpm: create TPM 2.0 devices using own device class
-Message-ID: <20141104204918.GB3583@obsidianresearch.com>
-References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1414832495-23609-8-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141102213305.GB28519@obsidianresearch.com>
- <20141103054101.GA4795@intel.com>
- <20141103213826.GG8303@obsidianresearch.com>
- <1415101654.4115.22.camel@linux.intel.com>
- <20141104181433.GA28387@obsidianresearch.com>
- <20141104203843.GA7115@intel.com>
+	id S1753013AbaKDUvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 15:51:21 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43755 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaKDUvU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 15:51:20 -0500
+Date: Tue, 4 Nov 2014 21:51:17 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg
+Subject: N900 modem support in 3.18-rc1
+Message-ID: <20141104205117.GA17606@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141104203843.GA7115@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 10:38:43PM +0200, Jarkko Sakkinen wrote:
+Hi!
 
-> > Then a patch: Drop misc_register entirely, no compat stuff. Explain
-> > clearly the resulting sysfs changes, CC the various people who monitor
-> > the sysfs API, act on any feedback. I'm hoping it is an OK change.
-> > [ If it is not OK then we can talk about using it only for TPM2 or
-> >   whatever ]
-> 
-> Hold on. So you are proposing that for a TPM 1.0 device you would
-> have simultaneously as an intermediate step:
-> 
-> - /sys/class/tpm/tpm0
-> - /sys/class/misc/tpm0
+I'd like to test a modem (and eventually to get it to work :-) ) on
+n900. So far I found:
 
-Yes, well more specifically:
+http://lwn.net/Articles/592485/
 
-/sys/class/tpm/tpm0/
-/sys/class/misc/tpm0/dev
+It says:
 
-The reason for this is simply that adding to sysfs is certainly OK,
-I don't think the tpm and misc device will collide in any way - udev
-will look for the 'dev' file and ignore the class/tpm directory.
+# supported. Testing the patchset with ofono works like this:
+# 
+#  # provide cmt device for ofono
+#  ln -sf /sys/bus/hsi/n900-modem /dev/cmt
 
-It breaks up the patch too, this would be a monster:
+root@n900:/dev# ln -sf /sys/bus/hsi/n900-modem /dev/cmt
+root@n900:/dev# ls -al /dev/cmt
+lrwxrwxrwx 1 root root 23 Jan  1 08:51 /dev/cmt ->
+/sys/bus/hsi/n900-modem
+root@n900:/dev# cat /dev/cmt
+cat: /dev/cmt: No such file or directory
+root@n900:/dev# cd /dev/cmt
+-bash: cd: /dev/cmt: No such file or directory
+root@n900:/dev# 
+root@n900:/dev# ls -al /sys/bus/hsi/
+devices/           drivers_autoprobe  uevent             
+drivers/           drivers_probe      
+root@n900:/dev# ls -al /sys/bus/hsi/devices/
+cmt_speech/   hsi_char/     n900-modem/   ssi-protocol/ 
+root@n900:/dev# ls -al /sys/bus/hsi/devices/n900-modem
+lrwxrwxrwx 1 root root 0 Jan  1 08:46 /sys/bus/hsi/devices/n900-modem
+->
+../../../devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/n900-modem
+root@n900:/dev# 
 
-> Maybe it would be a better idea to just create patch that would simply
+That seemed to match, so I symlinked it.
 
-Because of all the variable rename noise and so forth.
+#  # start ofono
+#  ofono --nodetach --debug
 
-Even if the net result is we apply several patchs in a row that wipes
-/sys/class/misc/tpm0 the patches themselves will be smaller and more
-reviewable if split, especially those big variable rename ones..
+It it a typo and it wants ofonod?
 
-> Moving the current TPM sysfs attributes is not really an issue because
-> they are only for human consumption (not machine readable in any sany
-> way) :) And AFAIK TrouSerS does not use sysfs PPI interface.
+root@n900:~# ofonod --nodetach --debug &
+[1] 3552
+root@n900:~# ofonod[3552]: oFono version 1.6
 
-Someone in user space must use that event log and PPI stuff??? Does
-anyone know who and how?
+#  # enable the modem
+#  mdbus2 -s org.ofono /n900_0 org.ofono.Modem.SetProperty Powered true
 
-Jason
+root@n900:~# mdbus2 -s org.ofono /n900_0 org.ofono.Modem.SetProperty
+Powered true
+[ERR]: There is no method with name org.ofono.Modem.SetProperty on
+path /n900_0!
+
+#  # enable modem's RF parts
+#  mdbus2 -s org.ofono /n900_0 org.ofono.Modem.SetProperty Online true
+
+root@n900:~# mdbus2 -s org.ofono /n900_0 org.ofono.Modem.SetProperty
+Online true
+[ERR]: There is no method with name org.ofono.Modem.SetProperty on
+path /n900_0!
+
+#  # scan for available networks (takes some time)
+#  mdbus2 -s org.ofono /n900_0 org.ofono.NetworkRegistration.Scan
+
+root@n900:~# mdbus2 -s org.ofono /n900_0
+org.ofono.NetworkRegistration.Scan
+[ERR]: There is no method with name org.ofono.NetworkRegistration.Scan
+on path /n900_0!
+
+Any ideas? Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
