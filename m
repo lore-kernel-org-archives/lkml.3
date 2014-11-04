@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906AbaKDRyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:54:31 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:59610 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaKDRy3 (ORCPT
+	id S1752045AbaKDRz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:55:59 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:60541 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936AbaKDRzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:54:29 -0500
-Message-ID: <545912D2.5090708@codeaurora.org>
-Date: Tue, 04 Nov 2014 11:54:26 -0600
-From: Timur Tabi <timur@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 4 Nov 2014 12:55:55 -0500
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com> <20141104082056.GG1618@lahna.fi.intel.com>
-In-Reply-To: <20141104082056.GG1618@lahna.fi.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54579C25.5060705@xs4all.nl>
+References: <1414598634-13446-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	<1414598634-13446-4-git-send-email-andrey.krieger.utkin@gmail.com>
+	<54579C25.5060705@xs4all.nl>
+Date: Tue, 4 Nov 2014 21:55:55 +0400
+Message-ID: <CANZNk82rKAqTuy5hKSOT8UocS_=vbGD47_z5qKfVQkCZrPCNYA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] [media] solo6x10: don't turn off/on encoder interrupt
+ in processing loop
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Media <linux-media@vger.kernel.org>,
+        OSUOSL Drivers <devel@driverdev.osuosl.org>,
+        ismael.luceno@corp.bluecherry.net,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2014 02:20 AM, Mika Westerberg wrote:
-> There is nothing like that yet in ACPI world but with the ACPI _DSD
-> patches we are getting properties similar to DT which means that we can
-> provide pinctrl bindings from ACPI systems as well.
+2014-11-03 19:15 GMT+04:00 Hans Verkuil <hverkuil@xs4all.nl>:
+> Hi Andrey,
+>
+> On 10/29/2014 05:03 PM, Andrey Utkin wrote:
+>> The used approach actually cannot prevent new encoder interrupt to
+>> appear, because interrupt handler can execute in different thread, and
+>> in current implementation there is still race condition regarding this.
+>
+> I don't understand what you mean with 'interrupt handler can execute in
+> different thread'. Can you elaborate?
+>
+> Note that I do think that this change makes sense, but I do like to have a
+> better explanation.
+>
 
-Do you know if anyone has signed up to actually do the work of defining 
-how pinctrl will look in ACPI?  I'm guessing the simplest approach would 
-be to:
+Hi Hans, thanks for response.
 
-1) Modify pinctrl_dt_to_map() so that it uses functions like 
-device_read_property() instead of of_find_property() (i.e. use 
-ACPI/DT-agnostic calls instead of DT-specific calls).
+I'm not proficient in linux kernel, so it's hard to make sure and
+strict statements regarding this.
 
-2) Define all of the DSD property in ASL so that pinctrl_dt_to_map() 
-works as-is.
+In the commit justification I mean that solo_ring_thread(), which is
+edited, runs in a thread started with kthread_run().
+Interrupt hander is executed on random kernel thread (whichever is
+currently running, is it correct?). So temporarily disabling
+interrupts from video encoders by writing to special register cannot
+be used for "processing serialization", for "fixation of state" or
+anything useful at all, thus it should be removed from code.
 
-3) Possibly rename pinctrl_dt_to_map() to something like 
-pinctrl_prop_to_map() or whatever.
+Is it clear now?
 
- > Typically it has
-> been the BIOS that configures things but it cannot get everything 100%
-> right.
-
-True, but this assumes that the BIOS can already talk to the pin control 
-device without using the Linux driver.  If we use DSD properties to 
-describe the pin control functions, then we're actually using the Linux 
-driver to do pin control, albeit indirectly.
-
-> Currently I've been testing the muxing functionality so that I have a
-> small board file that sets mappings and the driver core handles
-> everything from there. For example I have development board where SPI
-> pins are muxed as GPIOs by the BIOS and with the mappings when the SPI
-> device appears the core will mux SPI out of those pins.
-
-How do you actually get the kernel to call into your pinctrl driver, 
-without using any device tree properties or DSD properties?
+Please feel free to push the patch with edited description, even
+without resubmission from me.
 
 -- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the
-Code Aurora Forum, a Linux Foundation Collaborative Project.
+Andrey Utkin
