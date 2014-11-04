@@ -1,136 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaKDUiw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 15:38:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:16342 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118AbaKDUiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 15:38:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411408920"
-Date: Tue, 4 Nov 2014 22:38:43 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v5 7/7] tpm: create TPM 2.0 devices using own device class
-Message-ID: <20141104203843.GA7115@intel.com>
-References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1414832495-23609-8-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141102213305.GB28519@obsidianresearch.com>
- <20141103054101.GA4795@intel.com>
- <20141103213826.GG8303@obsidianresearch.com>
- <1415101654.4115.22.camel@linux.intel.com>
- <20141104181433.GA28387@obsidianresearch.com>
+	id S1752282AbaKDUm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 15:42:58 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37924 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaKDUm5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 15:42:57 -0500
+Date: Tue, 4 Nov 2014 20:41:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Message-ID: <20141104204137.GB3815@sirena.org.uk>
+References: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
+ <1415090986-30623-2-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PsEZZJjWpOB92CxQ"
 Content-Disposition: inline
-In-Reply-To: <20141104181433.GA28387@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <1415090986-30623-2-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: Some optional equipment shown.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/6] regulator: max77686: Consistently index opmode array
+ by rdev id
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 11:14:33AM -0700, Jason Gunthorpe wrote:
-> On Tue, Nov 04, 2014 at 01:47:34PM +0200, Jarkko Sakkinen wrote:
-> 
-> > > > I used the class 'tpm' only for TPM 2.x because I didn't want to
-> > > > break the binary compatibility for TPM 1.x anyway. In ideal situtation
-> > > > both would be character devices inside the class 'tpm' and there would
-> > > > be sysfs attribute such as 'family' to mark the protocol to be used.
-> > > 
-> > > You can create the class without moving away from miscdev...
-> > > 
-> > > Not having the device creates way to much difference that has to be
-> > > supported, way too messy.
-> > 
-> > I have to admit that I'm not quite following here but I assume that
-> > you restated this below in more verbose way and this is basically the
-> > same argument :)
-> 
-> I mean, if we have a patch that does:
-> 
-> struct tpm_chip {
->    struct device cdev;  // the class device
->    struct device *pdev; // the 'platform' device chip is bound too
-> 
->    struct device *dev = pdev; // Temporary Compatability
-> [+ device_register/etc/etc]
-> 
-> Then both cdev and pdev should always be valid. We should not have cdev
-> be valid for TPM2 and invalid for TPM1, that is just a big mess.
-> 
-> Just this change is perfectly safe, it creates the /sys/class/tpm/tpm0
-> directory, but doesn't change anything already existing
-> 
-> Then, a patch: go through and replace all uses of chip->dev with &chip->cdev in
-> 90% of cases
-> 
-> Another patch: use chip->pdev for the handfull of the rest, and drop
-> dev entirely
-> 
-> Then a patch: Drop misc_register entirely, no compat stuff. Explain
-> clearly the resulting sysfs changes, CC the various people who monitor
-> the sysfs API, act on any feedback. I'm hoping it is an OK change.
-> [ If it is not OK then we can talk about using it only for TPM2 or
->   whatever ]
 
-Hold on. So you are proposing that for a TPM 1.0 device you would
-have simultaneously as an intermediate step:
+--PsEZZJjWpOB92CxQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- /sys/class/tpm/tpm0
-- /sys/class/misc/tpm0
+On Tue, Nov 04, 2014 at 09:49:41AM +0100, Krzysztof Kozlowski wrote:
+> Mixed indexes were used for array of opmodes in max77686_data structure:
+> id of regulator and index of regulator_desc array.
 
-Maybe it would be a better idea to just create patch that would simply
+Applied, thanks.
 
-- wipe /sys/class/misc/tpm0
-- introduce /sys/class/tpm/tpm0
-- for TPM 1 put existing sysfs attributes /sys/class/tpm/tpm0
+--PsEZZJjWpOB92CxQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I would put this into a  single patch. I don't really like those 
-intermediate steps. I think they cause more confusion but I think
-as a whole the change is reasonable.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-I'll do this "aggressive" patch for v6 and "soften" it based on 
-feedback if it is not liked (and CC to appropriate people).
+iQEcBAEBAgAGBQJUWToAAAoJECTWi3JdVIfQljcH/isdmErXTFRWHzqKXFhdEHgq
+OWjanfUn0OkjEf25Yh/qJDMouD36IBE3hG+9/3Hu+bVSnH2jSN3E8JJBmjetA/Ke
+nIHvdzZEAa6qayz3g/zU7wUH9ItyYus2CTFtIdasPK/rEttnIF6g0Kjy7eOtszG9
+tqpk+AfL/lt/jspqH4Qd+t+5728FgEo6KwzlrlsDXOOgJp5TtEkhgHw19hZycGuv
+AMkKtwF4t824CSv1XM2MS4LrRzKEfeyQQUB+rsujj4/1hTvps+PbjdJCTK9h4RU1
+w2gDD57PiWIQ9C/pKIPrPsada0TnwD9yoT3kSdZU6dzIw4ZQgEEV+1EF9VFKyMw=
+=PXI0
+-----END PGP SIGNATURE-----
 
-> > I think the current variable name "dev" is miss-leading. The
-> > use of "pdev" would document better the appropriate use for that
-> > field (i.e. for the most cases DON'T use it).
-> 
-> Yes, see above :)
-> 
-> > I think that would be a mess. The way things are done in this v5
-> > patch set is actually quite coherent and it does not break backwards
-> > compatibility because the "proper" device hierarchy is only used for
-> > TPM 2.0 devices.
-> 
-> I mean, just do something like this:
-> 
-> if (chip->id == 0)
->    chip->cdev.devt = MKDEV(MISC_MAJOR, TPM_MINOR)
-> else
->    chip->cdev.devt = [.. dynamic alloc_chrddev_region ..]
-> 
-> Very simple, keeps the major/minor for TPM0, moves the 'dev' file to
-> the new location in sysfs.
-> 
-> I can't find another example of this in the kernel, so I don't know
-> what the thinking is..
-
-Maybe it would be reasonable to break the path structure and do this
-change for the benefit of backward compatibility. Not doing the change
-your proposed might really cause unwanted breakage.
-
-Moving the current TPM sysfs attributes is not really an issue because
-they are only for human consumption (not machine readable in any sany
-way) :) And AFAIK TrouSerS does not use sysfs PPI interface.
-
-> Jason
-
-/Jarkko
+--PsEZZJjWpOB92CxQ--
