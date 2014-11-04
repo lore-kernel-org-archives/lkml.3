@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624AbaKDN1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:27:33 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:36421 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaKDN11 (ORCPT
+	id S1753800AbaKDN1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:27:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37107 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685AbaKDN1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:27:27 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of: Fix overflow bug in string property parsing
- functions
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <darren.hart@intel.com>, stable@vger.kernel.org
-In-Reply-To: <4744029.MmARg0u2A0@vostro.rjw.lan>
-References: <1415057904-6187-1-git-send-email-grant.likely@linaro.org>
-	<4744029.MmARg0u2A0@vostro.rjw.lan>
-Date: Tue, 04 Nov 2014 13:27:21 +0000
-Message-Id: <20141104132721.3199FC408F6@trevor.secretlab.ca>
+	Tue, 4 Nov 2014 08:27:39 -0500
+Date: Tue, 4 Nov 2014 14:27:31 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: gong.chen@linux.intel.com, Ingo Molnar <mingo@kernel.org>,
+        " Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel@stlinux.com, eric.paire@st.com
+Subject: Re: [PATCH v3] bitops: Fix shift overflow in GENMASK macros
+Message-ID: <20141104132731.GO3337@twins.programming.kicks-ass.net>
+References: <1415098697-16304-1-git-send-email-maxime.coquelin@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415098697-16304-1-git-send-email-maxime.coquelin@st.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Nov 2014 01:43:24 +0100
-, "Rafael J. Wysocki" <rjw@rjwysocki.net>
- wrote:
-> On Monday, November 03, 2014 11:38:24 PM Grant Likely wrote:
+On Tue, Nov 04, 2014 at 11:58:17AM +0100, Maxime COQUELIN wrote:
+> On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
+> instead of the expected ~0UL.
 > 
-> [cut]
+> This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
 > 
-> > diff --git a/include/linux/of.h b/include/linux/of.h
-> > index 6545e7aec7bb..3b3c6e849ae8 100644
-> > --- a/include/linux/of.h
-> > +++ b/include/linux/of.h
-> > @@ -267,14 +267,12 @@ extern int of_property_read_u64(const struct device_node *np,
-> >  extern int of_property_read_string(struct device_node *np,
-> >  				   const char *propname,
-> >  				   const char **out_string);
-> > -extern int of_property_read_string_index(struct device_node *np,
-> > -					 const char *propname,
-> > -					 int index, const char **output);
-> >  extern int of_property_match_string(struct device_node *np,
-> >  				    const char *propname,
-> >  				    const char *string);
-> > -extern int of_property_count_strings(struct device_node *np,
-> > -				     const char *propname);
-> > +extern int of_property_read_string_helper(struct device_node *np,
-> > +					      const char *propname,
-> > +					      const char **out_strs, size_t sz, int index);
-> >  extern int of_device_is_compatible(const struct device_node *device,
-> >  				   const char *);
-> >  extern int of_device_is_available(const struct device_node *device);
-> > @@ -486,15 +484,9 @@ static inline int of_property_read_string(struct device_node *np,
-> >  	return -ENOSYS;
-> >  }
-> >  
-> > -static inline int of_property_read_string_index(struct device_node *np,
-> > -						const char *propname, int index,
-> > -						const char **out_string)
-> > -{
-> > -	return -ENOSYS;
-> > -}
-> > -
-> > -static inline int of_property_count_strings(struct device_node *np,
-> > -					    const char *propname)
-> > +static inline int of_property_read_string_helper(struct device_node *np,
-> > +						 const char *propname,
-> > +						 char **out_strs, size_t sz, int index)
+> This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
+> 1 << 64 for GENMASK_ULL.
 > 
-> 	const char **out_strs, size_t sz, int index)
-> 
-> >  {
-> >  	return -ENOSYS;
-> >  }
-> 
-> Other than that, looks good to me.
+> Fixes: 10ef6b0dffe404bcc54e94cb2ca1a5b18445a66b
+> Cc: <stable@vger.kernel.org> #v3.13+
+> Reported-by: Eric Paire <eric.paire@st.com>
+> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-Fixed, thanks.
 
-g.
+There doesn't appear to be a clear maintainer for this file, so I'll try
+and stick in in tip.
+
+Thanks!
 
