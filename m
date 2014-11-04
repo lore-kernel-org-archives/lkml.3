@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaKDSMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 13:12:42 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55795 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751156AbaKDSMl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 13:12:41 -0500
-Date: Tue, 4 Nov 2014 18:12:19 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/6] clk: sunxi: Add support for sun9i a80 usb clocks and
- resets
-Message-ID: <20141104181219.GJ4042@n2100.arm.linux.org.uk>
-References: <1415074039-16590-1-git-send-email-wens@csie.org>
- <1415074039-16590-2-git-send-email-wens@csie.org>
+	id S1752063AbaKDSOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 13:14:47 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:37614 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751017AbaKDSOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 13:14:44 -0500
+Date: Tue, 4 Nov 2014 11:14:33 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com
+Subject: Re: [PATCH v5 7/7] tpm: create TPM 2.0 devices using own device class
+Message-ID: <20141104181433.GA28387@obsidianresearch.com>
+References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1414832495-23609-8-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20141102213305.GB28519@obsidianresearch.com>
+ <20141103054101.GA4795@intel.com>
+ <20141103213826.GG8303@obsidianresearch.com>
+ <1415101654.4115.22.camel@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415074039-16590-2-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415101654.4115.22.camel@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 12:07:14PM +0800, Chen-Yu Tsai wrote:
-> +	spin_lock_irqsave(data->lock, flags);
-> +
-> +	reg = readl(data->reg);
-> +	writel(reg & ~BIT(id), data->reg);
-> +
-> +	spin_unlock_irqrestore(data->lock, flags);
+On Tue, Nov 04, 2014 at 01:47:34PM +0200, Jarkko Sakkinen wrote:
 
-Don't we have generic support for atomic modification of register
-values?  Hmm, we have it for ARM only - atomic_io_modify() and
-atomic_io_modify_relaxed().
+> > > I used the class 'tpm' only for TPM 2.x because I didn't want to
+> > > break the binary compatibility for TPM 1.x anyway. In ideal situtation
+> > > both would be character devices inside the class 'tpm' and there would
+> > > be sysfs attribute such as 'family' to mark the protocol to be used.
+> > 
+> > You can create the class without moving away from miscdev...
+> > 
+> > Not having the device creates way to much difference that has to be
+> > supported, way too messy.
+> 
+> I have to admit that I'm not quite following here but I assume that
+> you restated this below in more verbose way and this is basically the
+> same argument :)
 
-I guess we should push for those to become cross-arch if we end up
-with generic drivers shared between other architectures.
+I mean, if we have a patch that does:
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+struct tpm_chip {
+   struct device cdev;  // the class device
+   struct device *pdev; // the 'platform' device chip is bound too
+
+   struct device *dev = pdev; // Temporary Compatability
+[+ device_register/etc/etc]
+
+Then both cdev and pdev should always be valid. We should not have cdev
+be valid for TPM2 and invalid for TPM1, that is just a big mess.
+
+Just this change is perfectly safe, it creates the /sys/class/tpm/tpm0
+directory, but doesn't change anything already existing
+
+Then, a patch: go through and replace all uses of chip->dev with &chip->cdev in
+90% of cases
+
+Another patch: use chip->pdev for the handfull of the rest, and drop
+dev entirely
+
+Then a patch: Drop misc_register entirely, no compat stuff. Explain
+clearly the resulting sysfs changes, CC the various people who monitor
+the sysfs API, act on any feedback. I'm hoping it is an OK change.
+[ If it is not OK then we can talk about using it only for TPM2 or
+  whatever ]
+
+> I think the current variable name "dev" is miss-leading. The
+> use of "pdev" would document better the appropriate use for that
+> field (i.e. for the most cases DON'T use it).
+
+Yes, see above :)
+
+> I think that would be a mess. The way things are done in this v5
+> patch set is actually quite coherent and it does not break backwards
+> compatibility because the "proper" device hierarchy is only used for
+> TPM 2.0 devices.
+
+I mean, just do something like this:
+
+if (chip->id == 0)
+   chip->cdev.devt = MKDEV(MISC_MAJOR, TPM_MINOR)
+else
+   chip->cdev.devt = [.. dynamic alloc_chrddev_region ..]
+
+Very simple, keeps the major/minor for TPM0, moves the 'dev' file to
+the new location in sysfs.
+
+I can't find another example of this in the kernel, so I don't know
+what the thinking is..
+
+Jason
