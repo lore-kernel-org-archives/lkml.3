@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaKDRB2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:01:28 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:51834 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaKDRBZ (ORCPT
+	id S1751946AbaKDRCg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:02:36 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:34397 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaKDRCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:01:25 -0500
+	Tue, 4 Nov 2014 12:02:35 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Tue, 4 Nov 2014 12:02:33 -0500
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 11/13] arm: dts: dra7: add DMA properties for UART
+Message-ID: <20141104170233.GB24112@csclub.uwaterloo.ca>
+References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
+ <1412014009-13315-12-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <3645687.BsyGDrJDrU@vostro.rjw.lan>
-References: <13750506.S2yVlRRDa2@vostro.rjw.lan> <2127128.VT1Iq03xz1@vostro.rjw.lan>
- <CACxGe6tvz8MiXnNGJ3XtrofxFr=o87yOB6kUKm57fXvQ0fL8jw@mail.gmail.com> <3645687.BsyGDrJDrU@vostro.rjw.lan>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Tue, 4 Nov 2014 17:01:04 +0000
-X-Google-Sender-Auth: -F5YKZYifk7oj-24Gvzwxwt3ANg
-Message-ID: <CACxGe6uv0TmoZivL3ESw+oRW-OjqakLP4KBnDrwJXzQ2ku8ZLA@mail.gmail.com>
-Subject: Re: [PATCH v6 02/12] Driver core: Unified device properties interface
- for platform firmware
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <darren.hart@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412014009-13315-12-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 10:04 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> I also found that this parser code doesn't correctly handle malformed
->> (unterminated) string properties. It will overflow. The existing
->> functions have the same problem, so it isn't something that you've
->> added. I've got a fix, and as a side effect the fix creates the _array
->> version basically for free as part of reworking
->> of_property_count_strings() and of_property_read_string_index()
->
-> OK
->
-> So can you please point me to a git branch containing the fix?  I'll rebase the
-> patch on top of that then and everything should merge just fine.
+On Mon, Sep 29, 2014 at 08:06:47PM +0200, Sebastian Andrzej Siewior wrote:
+> Cc: devicetree@vger.kernel.org
+> Reviewed-by: Tony Lindgren <tony@atomide.com>
+> Tested-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  arch/arm/boot/dts/dra7.dtsi | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index d678152db4cb..f273e3811f75 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -332,6 +332,8 @@
+>  			ti,hwmods = "uart1";
+>  			clock-frequency = <48000000>;
+>  			status = "disabled";
+> +			dmas = <&sdma 49>, <&sdma 50>;
+> +			dma-names = "tx", "rx";
+>  		};
+>  
+>  		uart2: serial@4806c000 {
+> @@ -341,6 +343,8 @@
+>  			ti,hwmods = "uart2";
+>  			clock-frequency = <48000000>;
+>  			status = "disabled";
+> +			dmas = <&sdma 51>, <&sdma 52>;
+> +			dma-names = "tx", "rx";
+>  		};
+>  
+>  		uart3: serial@48020000 {
+> @@ -350,6 +354,8 @@
+>  			ti,hwmods = "uart3";
+>  			clock-frequency = <48000000>;
+>  			status = "disabled";
+> +			dmas = <&sdma 53>, <&sdma 54>;
+> +			dma-names = "tx", "rx";
+>  		};
+>  
+>  		uart4: serial@4806e000 {
+> @@ -359,6 +365,8 @@
+>  			ti,hwmods = "uart4";
+>  			clock-frequency = <48000000>;
+>                          status = "disabled";
+> +			dmas = <&sdma 55>, <&sdma 56>;
+> +			dma-names = "tx", "rx";
+>  		};
+>  
+>  		uart5: serial@48066000 {
+> @@ -368,6 +376,8 @@
+>  			ti,hwmods = "uart5";
+>  			clock-frequency = <48000000>;
+>  			status = "disabled";
+> +			dmas = <&sdma 63>, <&sdma 64>;
+> +			dma-names = "tx", "rx";
+>  		};
+>  
+>  		uart6: serial@48068000 {
+> @@ -377,6 +387,8 @@
+>  			ti,hwmods = "uart6";
+>  			clock-frequency = <48000000>;
+>  			status = "disabled";
+> +			dmas = <&sdma 79>, <&sdma 80>;
+> +			dma-names = "tx", "rx";
+>  		};
+>  
+>  		uart7: serial@48420000 {
 
-git://git.kernel.org/pub/scm/linux/kernel/git/glikely/linux.git devicetree/merge
+According to the manual the DMA channels for UART7 to 10 are:
 
-I'm going to let the patch sit in there for a few days to get
-linux-next exposure before I ask Linus to pull. The pull req will go
-out before the end of the week.
+uart7:  144 145
+uart8:  146 147
+uart9:  148 149
+uart10: 150 151
 
-g.
+Might as well add those too.  We have uart 7 and 8 in use on our board
+so I am about to go test it.
+
+-- 
+Len Sorensen
