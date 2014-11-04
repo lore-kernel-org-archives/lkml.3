@@ -1,181 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaKDIuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:50:55 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:51896 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaKDIuw convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Tue, 4 Nov 2014 03:50:52 -0500
-Message-Id: <5458A1780200007800044A9D@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Tue, 04 Nov 2014 08:50:48 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] x86-64: use RIP-relative addressing for most
- per-CPU accesses
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752874AbaKDIvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:51:49 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:32145 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070AbaKDIuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 03:50:03 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-95-54589337b9e7
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RFT 3/6] regulator: max77802: Don't ignore return value of current
+ opmode
+Date: Tue, 04 Nov 2014 09:49:43 +0100
+Message-id: <1415090986-30623-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
+References: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupiluLIzCtJLcpLzFFi42I5/e/4NV3zyREhBi8brC02zljPajH14RM2
+	i6O/CyxevzC0ONv0ht3i/tejjBbfrnQwWVzeNYfNYu2Ru+wWp7tZHbg8/j6/zuKxc9Zddo9N
+	qzrZPO5c28PmMe9koEffllWMHp83yQWwR3HZpKTmZJalFunbJXBlLP7YwFbwmLNi67z9jA2M
+	zRxdjJwcEgImElN3XWWCsMUkLtxbz9bFyMUhJLCUUeLnxbmsEE4fk8SH7w2sIFVsAsYSm5cv
+	AasSEdjEKDGp/wpYglmgmUni9PucLkYODmGBUImrE6VBwiwCqhJzdswC28Ar4C7x+u5jVoht
+	chInj01mBSnnFPCQuN/NDBIWAippWr+IZQIj7wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5
+	uZsYIeH3ZQfj4mNWhxgFOBiVeHgz1CNChFgTy4orcw8xSnAwK4nwrq4CCvGmJFZWpRblxxeV
+	5qQWH2Jk4uCUamDUDbqd3DvtCbccr66Q5BsfDtfEUK5f24+2vZu16dM64Ql7bqbvdFTfuER0
+	rtB1Lr1Xp5bdyLjoJ/q21emHxpkz/xMuf6pJ9PdRcfTMuNo1u/vh1p9Lt1ycL2Nx5uM+1icy
+	0sdmu3NpR99ZtET5bCrHY9b4fDuBxpvXzryUFQ/ffVKYOzRuyZdjSizFGYmGWsxFxYkA/9aS
+	Cx0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Observing that per-CPU data (in the SMP case) is reachable by
-exploiting 64-bit address wraparound (building on the default kernel
-load address being at 16Mb), the one byte shorter RIP-relative
-addressing form can be used for most per-CPU accesses. The one
-exception are the "stable" reads, where the use of the "P" operand
-modifier prevents the compiler from using RIP-relative addressing, but
-is unavoidable due to the use of the "p" constraint (side note: with
-gcc 4.9.x the intended effect of this isn't being achieved anymore,
-see gcc bug 63637).
+The return value of regmap_read() of current opmode for regulator was
+silently ignored and whatever happened to be in 'val' variable was used
+as new opmode. This could lead to using bogus opmode.
 
-With the dependency on the minimum kernel load address, arbitrarily
-low values for CONFIG_PHYSICAL_START are now no longer possible. A
-link time assertion is being added, directing to the need to increase
-that value when it triggers.
+Don't ignore what regmap_read() returns. If it fails just fall back to
+normal opmode.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- arch/x86/include/asm/percpu.h |   59 +++++++++++++++++++++++++++++++-----------
- arch/x86/kernel/vmlinux.lds.S |    2 +
- 2 files changed, 46 insertions(+), 15 deletions(-)
+ drivers/regulator/max77802.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- 3.18-rc3-x86_64-PCrel-per-CPU.orig/arch/x86/include/asm/percpu.h
-+++ 3.18-rc3-x86_64-PCrel-per-CPU/arch/x86/include/asm/percpu.h
-@@ -64,7 +64,7 @@
- #define __percpu_prefix		""
- #endif
+diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+index a0d146278b76..7cbff7038b43 100644
+--- a/drivers/regulator/max77802.c
++++ b/drivers/regulator/max77802.c
+@@ -606,7 +606,13 @@ static int max77802_pmic_probe(struct platform_device *pdev)
+ 		config.of_node = pdata->regulators[i].of_node;
  
--#define __percpu_arg(x)		__percpu_prefix "%P" #x
-+#define __percpu_arg(x)		__percpu_prefix "%" #x
+ 		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
+-		val = val >> shift & MAX77802_OPMODE_MASK;
++		if (ret < 0) {
++			dev_warn(&pdev->dev,
++				"cannot read current mode for %d\n", i);
++			val = MAX77802_OPMODE_NORMAL;
++		} else {
++			val = val >> shift & MAX77802_OPMODE_MASK;
++		}
  
- /*
-  * Initialized pointers to per-cpu variables needed for the boot
-@@ -179,29 +179,58 @@ do {									\
- 	}								\
- } while (0)
- 
--#define percpu_from_op(op, var, constraint)		\
-+#define percpu_from_op(op, var)				\
- ({							\
- 	typeof(var) pfo_ret__;				\
- 	switch (sizeof(var)) {				\
- 	case 1:						\
- 		asm(op "b "__percpu_arg(1)",%0"		\
- 		    : "=q" (pfo_ret__)			\
--		    : constraint);			\
-+		    : "m" (var));			\
- 		break;					\
- 	case 2:						\
- 		asm(op "w "__percpu_arg(1)",%0"		\
- 		    : "=r" (pfo_ret__)			\
--		    : constraint);			\
-+		    : "m" (var));			\
- 		break;					\
- 	case 4:						\
- 		asm(op "l "__percpu_arg(1)",%0"		\
- 		    : "=r" (pfo_ret__)			\
--		    : constraint);			\
-+		    : "m" (var));			\
- 		break;					\
- 	case 8:						\
- 		asm(op "q "__percpu_arg(1)",%0"		\
- 		    : "=r" (pfo_ret__)			\
--		    : constraint);			\
-+		    : "m" (var));			\
-+		break;					\
-+	default: __bad_percpu_size();			\
-+	}						\
-+	pfo_ret__;					\
-+})
-+
-+#define percpu_stable_op(op, var)			\
-+({							\
-+	typeof(var) pfo_ret__;				\
-+	switch (sizeof(var)) {				\
-+	case 1:						\
-+		asm(op "b "__percpu_arg(P1)",%0"	\
-+		    : "=q" (pfo_ret__)			\
-+		    : "p" (&(var)));			\
-+		break;					\
-+	case 2:						\
-+		asm(op "w "__percpu_arg(P1)",%0"	\
-+		    : "=r" (pfo_ret__)			\
-+		    : "p" (&(var)));			\
-+		break;					\
-+	case 4:						\
-+		asm(op "l "__percpu_arg(P1)",%0"	\
-+		    : "=r" (pfo_ret__)			\
-+		    : "p" (&(var)));			\
-+		break;					\
-+	case 8:						\
-+		asm(op "q "__percpu_arg(P1)",%0"	\
-+		    : "=r" (pfo_ret__)			\
-+		    : "p" (&(var)));			\
- 		break;					\
- 	default: __bad_percpu_size();			\
- 	}						\
-@@ -359,11 +388,11 @@ do {									\
-  * per-thread variables implemented as per-cpu variables and thus
-  * stable for the duration of the respective task.
-  */
--#define this_cpu_read_stable(var)	percpu_from_op("mov", var, "p" (&(var)))
-+#define this_cpu_read_stable(var)	percpu_stable_op("mov", var)
- 
--#define raw_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define raw_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define raw_cpu_read_4(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-+#define raw_cpu_read_1(pcp)		percpu_from_op("mov", pcp)
-+#define raw_cpu_read_2(pcp)		percpu_from_op("mov", pcp)
-+#define raw_cpu_read_4(pcp)		percpu_from_op("mov", pcp)
- 
- #define raw_cpu_write_1(pcp, val)	percpu_to_op("mov", (pcp), val)
- #define raw_cpu_write_2(pcp, val)	percpu_to_op("mov", (pcp), val)
-@@ -381,9 +410,9 @@ do {									\
- #define raw_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
- #define raw_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
- 
--#define this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define this_cpu_read_4(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-+#define this_cpu_read_1(pcp)		percpu_from_op("mov", pcp)
-+#define this_cpu_read_2(pcp)		percpu_from_op("mov", pcp)
-+#define this_cpu_read_4(pcp)		percpu_from_op("mov", pcp)
- #define this_cpu_write_1(pcp, val)	percpu_to_op("mov", (pcp), val)
- #define this_cpu_write_2(pcp, val)	percpu_to_op("mov", (pcp), val)
- #define this_cpu_write_4(pcp, val)	percpu_to_op("mov", (pcp), val)
-@@ -435,7 +464,7 @@ do {									\
-  * 32 bit must fall back to generic operations.
-  */
- #ifdef CONFIG_X86_64
--#define raw_cpu_read_8(pcp)			percpu_from_op("mov", (pcp), "m"(pcp))
-+#define raw_cpu_read_8(pcp)			percpu_from_op("mov", pcp)
- #define raw_cpu_write_8(pcp, val)		percpu_to_op("mov", (pcp), val)
- #define raw_cpu_add_8(pcp, val)			percpu_add_op((pcp), val)
- #define raw_cpu_and_8(pcp, val)			percpu_to_op("and", (pcp), val)
-@@ -444,7 +473,7 @@ do {									\
- #define raw_cpu_xchg_8(pcp, nval)		percpu_xchg_op(pcp, nval)
- #define raw_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- 
--#define this_cpu_read_8(pcp)			percpu_from_op("mov", (pcp), "m"(pcp))
-+#define this_cpu_read_8(pcp)			percpu_from_op("mov", pcp)
- #define this_cpu_write_8(pcp, val)		percpu_to_op("mov", (pcp), val)
- #define this_cpu_add_8(pcp, val)		percpu_add_op((pcp), val)
- #define this_cpu_and_8(pcp, val)		percpu_to_op("and", (pcp), val)
---- 3.18-rc3-x86_64-PCrel-per-CPU.orig/arch/x86/kernel/vmlinux.lds.S
-+++ 3.18-rc3-x86_64-PCrel-per-CPU/arch/x86/kernel/vmlinux.lds.S
-@@ -186,6 +186,8 @@ SECTIONS
- 	 * start another segment - init.
- 	 */
- 	PERCPU_VADDR(INTERNODE_CACHE_BYTES, 0, :percpu)
-+	ASSERT(SIZEOF(.data..percpu) < CONFIG_PHYSICAL_START,
-+	       "per-CPU data too large - increase CONFIG_PHYSICAL_START")
- #endif
- 
- 	INIT_TEXT_SECTION(PAGE_SIZE)
-
+ 		/*
+ 		 * If the regulator is disabled and the system warm rebooted,
+-- 
+1.9.1
 
