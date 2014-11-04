@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaKDLQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 06:16:04 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46867 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167AbaKDLPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 06:15:45 -0500
-From: "pang.xunlei" <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [PATCH v2 6/6] sched/dl: Remove unnecessary definitions in cpudeadline.h
-Date: Tue,  4 Nov 2014 19:13:05 +0800
-Message-Id: <1415099585-31174-6-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1415099585-31174-1-git-send-email-pang.xunlei@linaro.org>
-References: <1415099585-31174-1-git-send-email-pang.xunlei@linaro.org>
+	id S1753415AbaKDLQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 06:16:30 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32817 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753167AbaKDLQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 06:16:25 -0500
+From: Vignesh R <vigneshr@ti.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Vignesh R <vigneshr@ti.com>
+Subject: [PATCH v2 0/3] Add support for ADC on am437x-gp and am43x-epos-evm
+Date: Tue, 4 Nov 2014 16:45:25 +0530
+Message-ID: <1415099728-10959-1-git-send-email-vigneshr@ti.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually, cpudl_set() and cpudl_init() can never be used without
-CONFIG_SMP.
+This series of patches enable ADC on am437x-gp-evm and am43x-epos-evm.
+The ADC clock hwmod data of am33xx has been moved to commom place so that
+both am43xx and am33xx can reuse them.
+tscadc DT node has been adided to am437x-gp and am43x-epos dt files.
+With these patches, ADC functionalities are now available on am43xx.
 
-Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
----
- kernel/sched/cpudeadline.h |    3 ---
- 1 file changed, 3 deletions(-)
+Changelog:
 
-diff --git a/kernel/sched/cpudeadline.h b/kernel/sched/cpudeadline.h
-index d79e4d8..7096e5a 100644
---- a/kernel/sched/cpudeadline.h
-+++ b/kernel/sched/cpudeadline.h
-@@ -34,9 +34,6 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
- void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int set_flags);
- int cpudl_init(struct cpudl *cp);
- void cpudl_cleanup(struct cpudl *cp);
--#else
--#define cpudl_set(cp, cpu, dl) do { } while (0)
--#define cpudl_init() do { } while (0)
- #endif /* CONFIG_SMP */
- 
- #endif /* _LINUX_CPUDL_H */
+v2:
+Removed phy addresses in hwmod. Using DT instead.
+Removed unused "ti,am4372" compatible string.
+Use macro to set clk domain name.
+Fixed subject format of all patches
+
+Vignesh R (3):
+  ARM: OMAP2+: hwmod: AM335x/AM43x: Move am33xx_l4_hs_hwmod to
+    ipblock_data
+  ARM: OMAP2+: hwmod: AM335x/AM43x: add hwmod support for tscadc on
+    am43x-evm
+  ARM: dts: AM43xx: add tscadc DT entries for am437x-evm and
+    am43x-epos-evm
+
+ arch/arm/boot/dts/am4372.dtsi                      | 20 ++++++
+ arch/arm/boot/dts/am437x-gp-evm.dts                |  8 +++
+ arch/arm/boot/dts/am43x-epos-evm.dts               |  8 +++
+ .../mach-omap2/omap_hwmod_33xx_43xx_common_data.h  |  2 +
+ .../mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c | 71 ++++++++++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c         | 64 -------------------
+ arch/arm/mach-omap2/omap_hwmod_43xx_data.c         |  1 +
+ 7 files changed, 110 insertions(+), 64 deletions(-)
+
 -- 
-1.7.9.5
+1.9.1
 
