@@ -1,106 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaKDQuv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:50:51 -0500
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:57528
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751649AbaKDQur convert rfc822-to-8bit (ORCPT
+	id S1751382AbaKDQ6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:58:39 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:51317 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751035AbaKDQ6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:50:47 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] Drivers: hv: vmbus: Fix a race condition when
- unregistering a device
-Thread-Topic: [PATCH] Drivers: hv: vmbus: Fix a race condition when
- unregistering a device
-Thread-Index: AQHP+Cx/QGK5N5xRuUCqDgcGtmoOqpxQrg1w
-Date: Tue, 4 Nov 2014 16:50:42 +0000
-Message-ID: <c4546b3420864d0d8be7e4b8e36d1875@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1415104811-28142-1-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1415104811-28142-1-git-send-email-vkuznets@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [50.135.110.52]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0712;UriScan:;
-x-forefront-prvs: 03853D523D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(189002)(13464003)(199003)(97736003)(76176999)(33646002)(19580405001)(2656002)(87936001)(19580395003)(2421001)(54356999)(101416001)(120916001)(122556002)(64706001)(106116001)(76576001)(20776003)(66066001)(86362001)(46102003)(95666004)(99286002)(1511001)(86612001)(50986999)(77096003)(21056001)(77156002)(108616004)(99396003)(105586002)(40100003)(31966008)(4396001)(62966003)(106356001)(92566001)(107046002)(74316001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0712;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Nov 2014 11:58:38 -0500
+Date: Tue, 4 Nov 2014 11:58:37 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lu Baolu <baolu.lu@linux.intel.com>
+cc: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] usb: xhci: This reworks ff8cbf250b448aac35589f6075082c3fcad8a8fe
+In-Reply-To: <1415090066-57007-3-git-send-email-baolu.lu@linux.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1411041149510.966-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 4 Nov 2014, Lu Baolu wrote:
 
-
-> -----Original Message-----
-> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> Sent: Tuesday, November 4, 2014 4:40 AM
-> To: KY Srinivasan; Haiyang Zhang
-> Cc: Greg Kroah-Hartman; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH] Drivers: hv: vmbus: Fix a race condition when unregistering
-> a device
+> xhci: clear root port wake on bits if controller isn't wake-up capable
 > 
-> When build with Debug the following crash is sometimes observed:
-> Call Trace:
->  [<ffffffff812b9600>] string+0x40/0x100
->  [<ffffffff812bb038>] vsnprintf+0x218/0x5e0  [<ffffffff810baf7d>] ?
-> trace_hardirqs_off+0xd/0x10  [<ffffffff812bb4c1>] vscnprintf+0x11/0x30
-> [<ffffffff8107a2f0>] vprintk+0xd0/0x5c0  [<ffffffffa0051ea0>] ?
-> vmbus_process_rescind_offer+0x0/0x110 [hv_vmbus]  [<ffffffff8155c71c>]
-> printk+0x41/0x45  [<ffffffffa004ebac>] vmbus_device_unregister+0x2c/0x40
-> [hv_vmbus]  [<ffffffffa0051ecb>]
-> vmbus_process_rescind_offer+0x2b/0x110 [hv_vmbus] ...
+> When system is being suspended, if host device is not wakeup capable,
+> xhci_suspend() needs to clear all root port wake on bits.  Otherwise,
+> some platforms may generate spurious wakeup, even if PCI PME# is dis-
+> abled.
 > 
-> This happens due to the following race: between 'if (channel->device_obj)'
-> check in vmbus_process_rescind_offer() and pr_debug() in
-> vmbus_device_unregister() the device can disappear. Fix the issue by taking
-> an additional reference to the device before proceeding to
-> vmbus_device_unregister().
-> 
-Thank you.
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: <stable@vger.kernel.org>
+> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
 > ---
->  drivers/hv/channel_mgmt.c | 11 +++++++++--
->  1 file changed, 9 insertions(+), 2 deletions(-)
+>  drivers/usb/host/xhci.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 42 insertions(+)
 > 
-> diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c index
-> a2d1a96..d36ce68 100644
-> --- a/drivers/hv/channel_mgmt.c
-> +++ b/drivers/hv/channel_mgmt.c
-> @@ -216,9 +216,16 @@ static void vmbus_process_rescind_offer(struct
-> work_struct *work)
->  	unsigned long flags;
->  	struct vmbus_channel *primary_channel;
->  	struct vmbus_channel_relid_released msg;
-> +	struct device *dev;
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 2a5d45b..cd57aae 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -35,6 +35,8 @@
+>  #define DRIVER_AUTHOR "Sarah Sharp"
+>  #define DRIVER_DESC "'eXtensible' Host Controller (xHC) Driver"
+>  
+> +#define	PORT_WAKE_BITS	(PORT_WKOC_E | PORT_WKDISC_E | PORT_WKCONN_E)
 > +
-> +	if (channel->device_obj) {
-> +		dev = get_device(&channel->device_obj->device);
-> +		if (dev) {
-> +			vmbus_device_unregister(channel->device_obj);
-> +			put_device(dev);
-> +		}
+>  /* Some 0.95 hardware can't handle the chain bit on a Link TRB being cleared */
+>  static int link_quirk;
+>  module_param(link_quirk, int, S_IRUGO | S_IWUSR);
+> @@ -851,6 +853,42 @@ static void xhci_clear_command_ring(struct xhci_hcd *xhci)
+>  	xhci_set_cmd_ring_deq(xhci);
+>  }
+>  
+> +static void xhci_disable_port_wake_on_bits(struct xhci_hcd *xhci)
+> +{
+> +	int port_index;
+> +	__le32 __iomem **port_array;
+> +	unsigned long flags;
+> +	u32 t1, t2;
+> +
+> +	spin_lock_irqsave(&xhci->lock, flags);
+> +
+> +	/* disble usb3 ports Wake bits*/
+> +	port_index = xhci->num_usb3_ports;
+> +	port_array = xhci->usb3_ports;
+> +	while (port_index--) {
+> +		t1 = readl(port_array[port_index]);
+> +		t2 = xhci_port_state_to_neutral(t1);
+> +		t2 &= ~PORT_WAKE_BITS;
+> +		t1 = xhci_port_state_to_neutral(t1);
+> +		if (t1 != t2)
+> +			writel(t2, port_array[port_index]);
 > +	}
-> 
-> -	if (channel->device_obj)
-> -		vmbus_device_unregister(channel->device_obj);
->  	memset(&msg, 0, sizeof(struct vmbus_channel_relid_released));
->  	msg.child_relid = channel->offermsg.child_relid;
->  	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
-> --
-> 1.9.3
+> +
+> +	/* disble usb2 ports Wake bits*/
+> +	port_index = xhci->num_usb2_ports;
+> +	port_array = xhci->usb2_ports;
+> +	while (port_index--) {
+> +		t1 = readl(port_array[port_index]);
+> +		t2 = xhci_port_state_to_neutral(t1);
+> +		t2 &= ~PORT_WAKE_BITS;
+> +		t1 = xhci_port_state_to_neutral(t1);
+> +		if (t1 != t2)
+> +			writel(t2, port_array[port_index]);
+> +	}
+> +
+> +	spin_unlock_irqrestore(&xhci->lock, flags);
+> +}
+> +
+>  /*
+>   * Stop HC (not bus-specific)
+>   *
+> @@ -868,6 +906,10 @@ int xhci_suspend(struct xhci_hcd *xhci)
+>  			xhci->shared_hcd->state != HC_STATE_SUSPENDED)
+>  		return -EINVAL;
+>  
+> +	/* Clear root port wake on bits if not wakeup capable. */
+> +	if (!device_may_wakeup(hcd->self.controller))
+> +		xhci_disable_port_wake_on_bits(xhci);
+> +
+>  	/* Don't poll the roothubs on bus suspend. */
+>  	xhci_dbg(xhci, "%s: stopping port polling.\n", __func__);
+>  	clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
+
+This is better but still wrong.  Remember, this same code gets called
+for system suspend _and_ for runtime suspend.  During runtime suspend,
+wakeup is always supposed to be turned on, even if device_may_wakeup()
+is false.  That's because device_may_wakeup() refers only to system
+suspend.  What you need to test is the do_wakeup flag, which should be
+passed into xhci_suspend() by xhci_pci_suspend() and
+xhci_plat_suspend().
+
+Another problem is in the patch description and the comments.  If 
+device_may_wakeup() returns false, it doesn't mean the controller isn't 
+wakeup-capable -- it means the controller isn't _allowed_ to wake up 
+the system.  Those are two different things.
+
+Finally, the code in xhci_disable_port_wake_on_bits() looks a little 
+peculiar -- I'm not sure about all those calls to 
+xhci_port_state_to_neutral().  But I'm not an expert on that; Mathias 
+will have to advise on it.
+
+Alan Stern
 
