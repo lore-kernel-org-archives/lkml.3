@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751021AbaKDANV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 19:13:21 -0500
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:62277 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaKDANQ (ORCPT
+	id S1751311AbaKDAN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 19:13:28 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:40734 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069AbaKDANX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 19:13:16 -0500
+	Mon, 3 Nov 2014 19:13:23 -0500
+Date: Tue, 4 Nov 2014 02:13:19 +0200
+From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+To: Jarod Wilson <jarod@wilsonet.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Gulsah Kose <gulsah.1004@gmail.com>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Matina Maria Trompouki <mtrompou@gmail.com>
+Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: media: lirc: replace dev_err by pr_err
+Message-ID: <20141104001319.GA14567@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUB_xx5zno26k5UjAFt77nZTpgyndD4AuBSZxiZBNjXSw@mail.gmail.com>
-References: <1414783141-6947-1-git-send-email-adityakali@google.com>
- <1414783141-6947-8-git-send-email-adityakali@google.com> <CALCETrXTaZ3SJ_t-gnbc93BVZXg-912NqO78kFd0Tpi-5-dZoQ@mail.gmail.com>
- <CAGr1F2FuPQxLraYv7PstJ9c8H-XQsgawaAtj4AS77B+_0k2o+A@mail.gmail.com>
- <CALCETrW64-6xC6psP-8k0H-1GfVnWBTeEBNSrE_sH+-DFtuZQQ@mail.gmail.com>
- <CAGr1F2GX45gC-V7kEzVjp-EiYfdPDVBRs+99nASpgFVAdYX+1w@mail.gmail.com> <CALCETrUB_xx5zno26k5UjAFt77nZTpgyndD4AuBSZxiZBNjXSw@mail.gmail.com>
-From: Aditya Kali <adityakali@google.com>
-Date: Mon, 3 Nov 2014 16:12:53 -0800
-Message-ID: <CAGr1F2EV4p_nJP_oMe3N8pBPedAZHbdB=XCMPjSEZTC9jmZoAg@mail.gmail.com>
-Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init cgroupns
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Rohit Jnagal <jnagal@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 3:48 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, Nov 3, 2014 at 3:23 PM, Aditya Kali <adityakali@google.com> wrote:
->> On Mon, Nov 3, 2014 at 3:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Mon, Nov 3, 2014 at 3:12 PM, Aditya Kali <adityakali@google.com> wrote:
->>>> On Fri, Oct 31, 2014 at 5:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>> On Fri, Oct 31, 2014 at 12:19 PM, Aditya Kali <adityakali@google.com> wrote:
->>>>>>         if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
->>>>>>                 pr_warn("sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
->>>>>> -               if (nr_opts != 1) {
->>>>>> +               if (nr_opts > 1) {
->>>>>>                         pr_err("sane_behavior: no other mount options allowed\n");
->>>>>>                         return -EINVAL;
->>>>>
->>>>> This looks wrong.  But, if you make the change above, then it'll be right.
->>>>>
->>>>
->>>> It would have been nice if simple 'mount -t cgroup cgroup <mnt>' from
->>>> cgroupns does the right thing automatically.
->>>>
->>>
->>> This is a debatable point, but it's not what I meant.  Won't your code
->>> let 'mount -t cgroup -o one_evil_flag cgroup mountpoint' through?
->>>
->>
->> I don't think so. This check "if (nr_opts > 1)" is nested under "if
->> (opts->flags & CGRP_ROOT_SANE_BEHAVIOR)". So we know that there is
->> atleast 1 option ('__DEVEL__sane_behavior') present (implicit or not).
->> Addition of 'one_evil_flag' will make nr_opts = 2 and result in EINVAL
->> here.
->
-> But the implicit __DEVEL__sane_behavior doesn't increment nr_opts, right?
->
+This patch replaces dev_err by pr_err since the value
+of ir is NULL when the message is displayed.
 
-Yes. Hence this change makes sure that we don't return EINVAL when
-nr_opts == 0 or nr_opts == 1 :)
-That way, both of the following are equivalent when inside non-init cgroupns:
+Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+---
+ drivers/staging/media/lirc/lirc_zilog.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-(1) $ mount -t cgroup -o __DEVEL__sane_behavior cgroup mountpoint
-(2) $ mount -t cgroup cgroup mountpoint
-
-Any other mount option will trigger the error here.
-
-
-> --Andy
-
+diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+index 11a7cb1..ecdd71e 100644
+--- a/drivers/staging/media/lirc/lirc_zilog.c
++++ b/drivers/staging/media/lirc/lirc_zilog.c
+@@ -1633,7 +1633,7 @@ out_put_xx:
+ out_put_ir:
+ 	put_ir_device(ir, true);
+ out_no_ir:
+-	dev_err(ir->l.dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
++	pr_err("%s: probing IR %s on %s (i2c-%d) failed with %d\n",
+ 		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
+ 		   ret);
+ 	mutex_unlock(&ir_devices_lock);
 -- 
-Aditya
+1.9.3
+
