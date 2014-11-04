@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831AbaKDQIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 11:08:50 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:39334 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470AbaKDQIq (ORCPT
+	id S1754684AbaKDQJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 11:09:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59415 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493AbaKDQJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 11:08:46 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of/fdt: Don't clear initial_boot_params
- =?iso-8859-1?Q?if=0D?= fdt_check_header() fails
-To: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20141029181500.16094.46561.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20141029181500.16094.46561.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-Date: Tue, 04 Nov 2014 16:08:39 +0000
-Message-Id: <20141104160839.6F238C423D0@trevor.secretlab.ca>
+	Tue, 4 Nov 2014 11:09:44 -0500
+Date: Tue, 4 Nov 2014 08:08:47 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-6b55fc63f46ba299f3d84013e9232be4bd259eab@git.kernel.org>
+Cc: hpa@zytor.com, torvalds@linux-foundation.org, eparis@redhat.com,
+        mingo@kernel.org, linux-kernel@vger.kernel.org,
+        umgwanakikbuti@gmail.com, tglx@linutronix.de, peterz@infradead.org
+Reply-To: tglx@linutronix.de, peterz@infradead.org, eparis@redhat.com,
+        hpa@zytor.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, umgwanakikbuti@gmail.com,
+        mingo@kernel.org
+In-Reply-To: <20141002102251.GA6324@worktop.programming.kicks-ass.net>
+References: <20141002102251.GA6324@worktop.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] audit, sched/wait: Fixup kauditd_thread()
+  wait loop
+Git-Commit-ID: 6b55fc63f46ba299f3d84013e9232be4bd259eab
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014 12:15:00 -0600
-, Bjorn Helgaas <bhelgaas@google.com>
- wrote:
-> If the device tree pointer is NULL, early_init_dt_verify() fails, leaving
-> initial_boot_params unchanged.  If the device tree pointer is non-NULL but
-> invalid, early_init_dt_verify() again fails but this time it also clears
-> initial_boot_params.
-> 
-> Leave initial_boot_params unchanged if the device tree pointer is invalid.
-> This doesn't fix a bug, but it makes the behavior more consistent and
-> easier to analyze.
-> 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Commit-ID:  6b55fc63f46ba299f3d84013e9232be4bd259eab
+Gitweb:     http://git.kernel.org/tip/6b55fc63f46ba299f3d84013e9232be4bd259eab
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Thu, 2 Oct 2014 12:22:51 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 4 Nov 2014 07:17:47 +0100
 
-Looks correct. Applied.
+audit, sched/wait: Fixup kauditd_thread() wait loop
 
-g.
+The kauditd_thread wait loop is a bit iffy; it has a number of problems:
 
-> ---
->  drivers/of/fdt.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index d1ffca8b34ea..55a566a53f36 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -994,15 +994,12 @@ bool __init early_init_dt_verify(void *params)
->  	if (!params)
->  		return false;
->  
-> -	/* Setup flat device-tree pointer */
-> -	initial_boot_params = params;
-> -
->  	/* check device tree validity */
-> -	if (fdt_check_header(params)) {
-> -		initial_boot_params = NULL;
-> +	if (fdt_check_header(params))
->  		return false;
-> -	}
->  
-> +	/* Setup flat device-tree pointer */
-> +	initial_boot_params = params;
->  	return true;
->  }
->  
-> 
+ - calls try_to_freeze() before schedule(); you typically want the
+   thread to re-evaluate the sleep condition when unfreezing, also
+   freeze_task() issues a wakeup.
 
+ - it unconditionally does the {add,remove}_wait_queue(), even when the
+   sleep condition is false.
+
+Use wait_event_freezable() that does the right thing.
+
+Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: oleg@redhat.com
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20141002102251.GA6324@worktop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/audit.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 80983df..32bfc43 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -499,7 +499,6 @@ static int kauditd_thread(void *dummy)
+ 	set_freezable();
+ 	while (!kthread_should_stop()) {
+ 		struct sk_buff *skb;
+-		DECLARE_WAITQUEUE(wait, current);
+ 
+ 		flush_hold_queue();
+ 
+@@ -514,16 +513,8 @@ static int kauditd_thread(void *dummy)
+ 				audit_printk_skb(skb);
+ 			continue;
+ 		}
+-		set_current_state(TASK_INTERRUPTIBLE);
+-		add_wait_queue(&kauditd_wait, &wait);
+ 
+-		if (!skb_queue_len(&audit_skb_queue)) {
+-			try_to_freeze();
+-			schedule();
+-		}
+-
+-		__set_current_state(TASK_RUNNING);
+-		remove_wait_queue(&kauditd_wait, &wait);
++		wait_event_freezable(kauditd_wait, skb_queue_len(&audit_skb_queue));
+ 	}
+ 	return 0;
+ }
