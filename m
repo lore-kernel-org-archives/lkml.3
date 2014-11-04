@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838AbaKDNKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 08:10:52 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:56058 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaKDNKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 08:10:50 -0500
+	id S1754086AbaKDNLC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 08:11:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750985AbaKDNK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 08:10:56 -0500
+Date: Tue, 4 Nov 2014 08:10:30 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Aditya Kali <adityakali@google.com>
+Cc: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
+        luto@amacapital.net, ebiederm@xmission.com, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        mingo@redhat.com, containers@lists.linux-foundation.org
+Subject: Re: [PATCHv2 0/7] CGroup Namespaces
+Message-ID: <20141104131030.GA2937@redhat.com>
+References: <adityakali-cgroupns>
+ <1414783141-6947-1-git-send-email-adityakali@google.com>
 MIME-Version: 1.0
-In-Reply-To: <011801cff82e$78cd2c90$6a6785b0$@alibaba-inc.com>
-References: <011001cff827$f14b9870$d3e2c950$@alibaba-inc.com>
- <CAKfTPtD6TZ4iHv9wtg-KCkGZriU79ySSxEV3nao2qQacveKAxA@mail.gmail.com> <011801cff82e$78cd2c90$6a6785b0$@alibaba-inc.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 4 Nov 2014 14:10:29 +0100
-Message-ID: <CAKfTPtCwLobjq6RVsB=61D_4amMtnLCmfUcpPo50Z7kzWgy5Hw@mail.gmail.com>
-Subject: Re: [PATCH v8 03/10] sched: move cfs task on a CPU with higher capacity
-To: Hillf Danton <hillf.zj@alibaba-inc.com>
-Cc: Wanpeng Li <kernellwp@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414783141-6947-1-git-send-email-adityakali@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 November 2014 13:54, Hillf Danton <hillf.zj@alibaba-inc.com> wrote:
->>
->> On 4 November 2014 13:07, Hillf Danton <hillf.zj@alibaba-inc.com> wrote:
->> >> >>   +     /*
->> >> >> +        * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
->> >> >
->> >> >
->> >> > Why specify one task instead of not less than one?
->> >>
->> >> if cfs.h_nr_running = 0 (which should not occurs at that point), we
->> >> don't need to do more test to check if it's worth moving the task
->> >> because there is no task to move.
->> >>
->> > I wonder if you can please shed light on the case that
->> > the dst_cpu is newly idle.
->>
->> The main problem if we do the test only for newly idle case, is that
->> we are not sure to move the task because we must rely on the
->> wakeup/sleep sequence of other tasks on an idle CPU in order to trig
->> the migration (periodic background task as an example). So we might
->> never move the task whereas idle CPUs are available
->>
-> So no task is migrated in the newly idle case, if I understand the
-> above correctly.
+On Fri, Oct 31, 2014 at 12:18:54PM -0700, Aditya Kali wrote:
+[..]
+>  fs/kernfs/dir.c                  | 194 ++++++++++++++++++++++++++++++++++-----
+>  fs/kernfs/mount.c                |  48 ++++++++++
+>  fs/proc/namespaces.c             |   1 +
+>  include/linux/cgroup.h           |  41 ++++++++-
+>  include/linux/cgroup_namespace.h |  36 ++++++++
+>  include/linux/kernfs.h           |   5 +
+>  include/linux/nsproxy.h          |   2 +
+>  include/linux/proc_ns.h          |   4 +
+>  include/uapi/linux/sched.h       |   3 +-
+>  kernel/Makefile                  |   2 +-
+>  kernel/cgroup.c                  | 108 +++++++++++++++++-----
+>  kernel/cgroup_namespace.c        | 148 +++++++++++++++++++++++++++++
+>  kernel/fork.c                    |   2 +-
+>  kernel/nsproxy.c                 |  19 +++-
 
-A task can be moved in both idle and newly idle. If we rely only on
-newly idle and we  have only idle CPUs, we can never move task. In the
-same way, if we rely only on idle case and a CPU never stays idle long
-enough to trig the idle load balance, we will never move the task. I
-agree that for the latter, we might wonder if it's worth moving the
-task. This is your concern ?
+Hi Aditya,
 
-Vincent
+Can we provide a documentation file for cgroup namespace behavior. Say,
+Documentation/namespaces/cgroup-namespace.txt.
 
->
-> Hillf
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Namespaces are complicated and it might be a good idea to keep one .txt
+file for each namespace.
+
+Thanks
+Vivek
