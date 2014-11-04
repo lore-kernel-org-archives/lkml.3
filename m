@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaKDKpG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:45:06 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:39570 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaKDKpD (ORCPT
+	id S1753135AbaKDKpN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:45:13 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33301 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753071AbaKDKpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:45:03 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-44-5458ae2cf9f4
-Message-id: <1415097899.7941.10.camel@AMDC1943>
-Subject: Re: [PATCH v4 00/14] Add max77802 regulator operating mode support
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Mark Brown <broonie@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Tue, 04 Nov 2014 11:44:59 +0100
-In-reply-to: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1415025649-8119-1-git-send-email-javier.martinez@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xy7o66yJCDOYvN7GY+vAJm8X1L89Z
-	LeYfOcdqcfR3gcWav0oWvQuusllc3jWHzWLG+X1MFqeuf2azmP9gB7MDl8ff59dZPHbOusvu
-	sWlVJ5vHlRNNrB5/Z+1n8ejbsorR4/MmuQD2KC6blNSczLLUIn27BK6MX/fqCx7IVaxa/4+l
-	gfGJRBcjJ4eEgInE8Tt7WSFsMYkL99azdTFycQgJLGWUuLZtFQuE85lRYsL6x+wgVbwC+hL3
-	Dz8Csjk4hAW8JX6+0wYJswkYS2xevoQNxBYRsJO4sfohM0gvs8AxJomZq9axgCRYBFQlDq06
-	xwhicwr4S5z4so8JxBYS8JNYv2U3WA2zgLrEpHmLmEHmSwgoSzT2u0GsFZT4MfkeVIm8xOY1
-	b5knMArMQtIxC0nZLCRlCxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKERMTXHYxLj1kd
-	YhTgYFTi4V0RHxEixJpYVlyZe4hRgoNZSYR3dRVQiDclsbIqtSg/vqg0J7X4ECMTB6dUA+Ph
-	p3fZDL2Ep3JZcO5wcapVX5j5jN0tmVlrq2Xd150HRZ4uiXW6pG9d59f0UD+APeV6RHja4jVR
-	EZ+kisTEZr42DD66WHqa7NkvZVnzUtq2RAarGf99nNTOvziboXnjXwOWzGPuHy7I1piqMKWW
-	nVnxdJl52Gn5SI4p719vqN8ht6Qo2qpRUomlOCPRUIu5qDgRAHVMx7lmAgAA
+	Tue, 4 Nov 2014 05:45:07 -0500
+Date: Tue, 4 Nov 2014 11:45:03 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Hans Verkuil <hansverk@cisco.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-api@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH 01/15] [media] Move mediabus format definition to a more
+ standard place
+Message-ID: <20141104114503.309cb54f@bbrezillon>
+In-Reply-To: <5458A878.3010809@cisco.com>
+References: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1415094910-15899-2-git-send-email-boris.brezillon@free-electrons.com>
+	<5458A878.3010809@cisco.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-11-03 at 15:40 +0100, Javier Martinez Canillas wrote:
-> Hello Mark,
-> 
-> This is the fourth version of the series that adds operating modes
-> support for the regulators in the max77802 PMIC. This version uses
-> the standard suspend states bindings and the opmodes are parsed by
-> the regulator core while drivers only define a translation function
-> to map between hardware specific to standard modes as you suggested.
-> 
-> The series adds a "regulator-initial-mode" property to configure at
-> startup the operating mode for the regulators that support changing
-> its mode during normal operation and a "regulator-mode" property for
-> the regulators that supports changing its operating mode when the
-> system enters in a suspend state. These properties were originally
-> part of Chanwoo Choi's regulator suspend state series [0] but were
-> removed since there wasn't a way to define the operating modes in a
-> generic way.
-> 
-> In this series, the generic regulator DT binding doc explains that each
-> device has to document what their valid operating modes are. Drivers
-> must provide a translation function so the core can map the modes.
-> 
-> Since parsing the modes in the core is a very different approach, most
-> of the patches are new but those that remains have a changelog.
-> 
-> This series depend on [0] and also v2 of patch:
-> "ARM: EXYNOS: Call regulator core suspend prepare and finish functions" [1].
-> 
-> Javier Martinez Canillas (14):
->   regulator: Document binding for initial and suspend modes
->   regulator: Add function to map modes to struct regulator_desc
->   regulator: of: Add regulator desc param to
->     of_get_regulator_init_data()
->   regulator: of: Pass the regulator description in the match table
->   regulator: max1586: zero-initialize regulator match table array
->   regulator: max77686: zero-initialize regulator match table
->   regulator: max77802: zero-initialize regulator match table
->   regulator: max8660: zero-initialize regulator match table array
->   regulator: s2mpa01: zero-initialize regulator match table array
->   regulator: of: Add support for parsing initial and suspend modes
->   regulator: max77802: Document binding for regulator operating modes
->   regulator: max77802: Use unsigned int for modes in max77802_map_mode()
->   regulator: max77802: Set regulator modes translation callback
->   ARM: dts: Configure regulators for suspend on exynos Peach boards
-> 
-> Patch #1 extends the regulator DT binding to document the initial and
-> suspend modes properties.
-> 
-> Patch #2 adds a function pointer to the static regulator description
-> so drivers can define a callback that does the modes translation.
-> 
-> Patch #3 does some refactoring to pass the regulator descriptor to the
-> function extracting the regulator initial data from DT.
-> 
-> Patch #4 adds a pointer to the regulator descriptor in the match table
-> so users extracting the init_data from of_regulator_match can also map
-> the modes.
-> 
-> Patch #5-#9 are fixes to be sure that all callers are passing an
-> initialised match table.
-> 
-> Patch #10 modifies the function that extracts the regulator data from
-> DT to parse the initial and suspend modes.
-> 
-> Patch #11 extends the max77802 DT binding to document the valid opmodes
-> for the regulators on this device.
-> 
-> Patch #12 change the signature of the function doing the modes mapping
-> for the max77802 regulators mode.
-> 
-> Patch #13 set the function handler for the max77802 modes translation.
-> 
-> Patch #14 configure the regulators for the Peach Pit and Pi Chromebooks.
-> 
-> Best regards,
-> Javier
-> 
-> [0]: https://lkml.org/lkml/2014/10/10/161
-> [1]: http://www.spinics.net/lists/arm-kernel/msg369923.html
+Hi Hans,
 
-Where's a diff stat? It is helpful to see what files were touched and I
-believe it is created by default with format-patch.
+On Tue, 04 Nov 2014 11:20:40 +0100
+Hans Verkuil <hansverk@cisco.com> wrote:
 
-Bet regards,
-Krzysztof
+> Hi Boris,
+> 
+> On 11/04/14 10:54, Boris Brezillon wrote:
+> > Rename mediabus formats and move the enum into a separate header file so
+> > that it can be used by DRM/KMS subsystem without any reference to the V4L2
+> > subsystem.
+> > 
+> > Old V4L2_MBUS_FMT_ definitions are now referencing MEDIA_BUS_FMT_ value.
+> 
+> I missed earlier that v4l2-mediabus.h contained a struct as well, so it can't be
+> deprecated and neither can a #warning be added.
+> 
+> The best approach, I think, is to use a macro in media-bus-format.h
+> that will either define just the MEDIA_BUS value when compiled in the kernel, or
+> define both MEDIA_BUS and V4L2_MBUS values when compiled for userspace.
+> 
+> E.g. something like this:
+> 
+> #ifdef __KERNEL__
+> #define MEDIA_BUS_FMT_ENTRY(name, val) MEDIA_BUS_FMT_ # name = val
+> #else
+> /* Keep V4L2_MBUS_FMT for backwards compatibility */
+> #define MEDIA_BUS_FMT_ENTRY(name, val) \
+> 	MEDIA_BUS_FMT_ # name = val, \
+> 	V4L2_MBUS_FMT_ # name = val
+> #endif
 
+Okay, but this means we keep adding V4L2_MBUS_FMT_ definitions even for
+new formats (which definitely doesn't encourage people to move on).
+Moreover, we add a V4L2 prefix in what was supposed to be a subsystem
+neutral header.
+
+Anyway, these are just nitpicks, and if you prefer this approach
+I'll rework my series :-).
+
+> 
+> An alternative approach is to have v4l2-mediabus.h include media-bus-format.h,
+> put #ifndef __KERNEL__ around the enum v4l2_mbus_pixelcode and add a big comment
+> there that applications should use the defines from media-bus-format.h and that
+> this enum is frozen (i.e. new values are only added to media-bus-format.h).
+> 
+> But I think I like the macro idea best.
+
+As you wish, my only intent is to use those bus format definitions in a
+DRM driver :-).
+
+Thanks,
+
+Boris
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
