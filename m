@@ -1,224 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaKDJle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:41:34 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:34021 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaKDJl2 (ORCPT
+	id S1752441AbaKDJli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:41:38 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:38319 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155AbaKDJl3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:41:28 -0500
-Message-ID: <1415094070.15462.1.camel@BR9GV9YG.de.ibm.com>
-Subject: Re: [PATCH v4] drivers: s390: net: ctcm: migrate variables to
- handle y2038 problem
-From: Ursula Braun <ubraun@linux.vnet.ibm.com>
-To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-Cc: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Date: Tue, 04 Nov 2014 10:41:10 +0100
-In-Reply-To: <20141103193324.GA9434@localhost.localdomain>
-References: <20141103193324.GA9434@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110409-0025-0000-0000-0000023B131E
+	Tue, 4 Nov 2014 04:41:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <54588E89.1080108@gmail.com>
+References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org>
+ <1414745252-4895-4-git-send-email-vincent.guittot@linaro.org> <54588E89.1080108@gmail.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 4 Nov 2014 10:41:07 +0100
+Message-ID: <CAKfTPtDOaE00BZnOYW8ioz22mi6H-4xkVa=25f44fQmh46Vq3w@mail.gmail.com>
+Subject: Re: [PATCH v8 03/10] sched: move cfs task on a CPU with higher capacity
+To: Wanpeng Li <kernellwp@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thx, Aya. This time you forgot this part:
+On 4 November 2014 09:30, Wanpeng Li <kernellwp@gmail.com> wrote:
+>
+> On 14/10/31 下午4:47, Vincent Guittot wrote:
+>>
+>> When a CPU is used to handle a lot of IRQs or some RT tasks, the remaining
+>> capacity for CFS tasks can be significantly reduced. Once we detect such
+>> situation by comparing cpu_capacity_orig and cpu_capacity, we trig an idle
+>> load balance to check if it's worth moving its tasks on an idle CPU.
+>>
+>> Once the idle load_balance has selected the busiest CPU, it will look for
+>> an
+>> active load balance for only two cases :
+>> - there is only 1 task on the busiest CPU.
+>> - we haven't been able to move a task of the busiest rq.
+>>
+>> A CPU with a reduced capacity is included in the 1st case, and it's worth
+>> to
+>> actively migrate its task if the idle CPU has got full capacity. This test
+>> has
+>> been added in need_active_balance.
+>>
+>> As a sidenote, this will note generate more spurious ilb because we
+>> already
+>> trig an ilb if there is more than 1 busy cpu. If this cpu is the only one
+>> that
+>> has a task, we will trig the ilb once for migrating the task.
+>>
+>> The nohz_kick_needed function has been cleaned up a bit while adding the
+>> new
+>> test
+>>
+>> env.src_cpu and env.src_rq must be set unconditionnally because they are
+>> used
+>> in need_active_balance which is called even if busiest->nr_running equals
+>> 1
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>   kernel/sched/fair.c | 86
+>> ++++++++++++++++++++++++++++++++++++++++-------------
+>>   1 file changed, 65 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index bd214d2..54468f3 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5889,6 +5889,18 @@ fix_small_capacity(struct sched_domain *sd, struct
+>> sched_group *group)
+>>   }
+>>     /*
+>> + * Check whether the capacity of the rq has been noticeably reduced by
+>> side
+>> + * activity. The imbalance_pct is used for the threshold.
+>> + * Return true is the capacity is reduced
+>> + */
+>> +static inline int
+>> +check_cpu_capacity(struct rq *rq, struct sched_domain *sd)
+>> +{
+>> +       return ((rq->cpu_capacity * sd->imbalance_pct) <
+>> +                               (rq->cpu_capacity_orig * 100));
+>> +}
+>> +
+>> +/*
+>>    * Group imbalance indicates (and tries to solve) the problem where
+>> balancing
+>>    * groups is inadequate due to tsk_cpus_allowed() constraints.
+>>    *
+>> @@ -6562,6 +6574,28 @@ static int need_active_balance(struct lb_env *env)
+>>                         return 1;
+>>         }
+>>   +     /*
+>> +        * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
+>
+>
+> Why specify one task instead of not less than one?
 
---- a/drivers/s390/net/ctcm_sysfs.c
-+++ b/drivers/s390/net/ctcm_sysfs.c
-@@ -100,8 +100,8 @@ static void ctcm_print_statistics(struct
-                     priv->channel[WRITE]->prof.doios_multi);
-        p += sprintf(p, "  Netto bytes written: %ld\n",
-                     priv->channel[WRITE]->prof.txlen);
--       p += sprintf(p, "  Max. TX IO-time: %ld\n",
--                    priv->channel[WRITE]->prof.tx_time);
-+       p += sprintf(p, "  Max. TX IO-time: %u\n",
-+                 jiffies_to_usecs(priv->channel[WRITE]->prof.tx_time));
- 
-        printk(KERN_INFO "Statistics for %s:\n%s",
-                                priv->channel[CTCM_WRITE]->netdev->name,
-sbuf);
+if cfs.h_nr_running == 0 (which should not occurs at that point), we
+don't need to do more test to check if it's worth moving the task
+because there is no task to move.
 
-Regards, Ursula Braun
-
-On Mon, 2014-11-03 at 21:33 +0200, Aya Mahfouz wrote:
-> This patch is concerned with migrating the time variables for the s390
-> network driver. The changes handle the y2038 problem where timespec will
-> overflow in the year 2038. timespec was replaced by unsigned long and
-> all time variables get their values from the jiffies global variable.
-> This was done for the sake of speed and efficiency. 
-> 
-> ch->prof.tx_time will now hold the difference between two jiffies' 
-> values instead of the difference between two xtime values 
-> represented in microseconds.
-> 
-> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-> ---
-> v1: Arnd has advised me to provide you with options for time
->     calculation. The first option: "accuracy" is used in this
->     patch. The second option: "speed" can be done through
->     jiffies.
-> 
-> v2: Moved on to the speed option. Let me know if I explicitly
->     need to include the jiffies header. The module compiles with
->     no problems on my side.
-> 
-> v3: Handled the error pointed out by Ursula. The current version
->     does not handle overflows. There are two solutions for this.
->     The first is to use jiffies_64 since s/390 is a 64-bit
->     architecture after all. The second is to use wrapper functions
->     like time_before and time_after. Two files were added too.
->     They are: ctcm_main.c and netiucv.c. This patch could be sent
->     as a patchset in its final version for convenience.
-> 
-> v4: removed #include <linux/jiffies.h> per Ursula's feedback.
->     Changed duration to hold the difference between jiffies
->     instead of difference between microsecond values per Arnd's
->     suggestion.
-> 
->  drivers/s390/net/ctcm_fsms.c | 18 +++++++-----------
->  drivers/s390/net/ctcm_main.c |  4 ++--
->  drivers/s390/net/ctcm_main.h |  2 +-
->  drivers/s390/net/netiucv.c   |  6 +++---
->  4 files changed, 13 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
-> index fb92524..49143c3 100644
-> --- a/drivers/s390/net/ctcm_fsms.c
-> +++ b/drivers/s390/net/ctcm_fsms.c
-> @@ -251,13 +251,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
->  	int first = 1;
->  	int i;
->  	unsigned long duration;
-> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
-> +	unsigned long done_stamp jiffies;
-> 
->  	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
-> 
-> -	duration =
-> -	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
-> -	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-> +	duration = done_stamp -ch->prof.send_stamp;
->  	if (duration > ch->prof.tx_time)
->  		ch->prof.tx_time = duration;
-> 
-> @@ -307,7 +305,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
->  		spin_unlock(&ch->collect_lock);
->  		ch->ccw[1].count = ch->trans_skb->len;
->  		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
-> -		ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +		ch->prof.send_stamp = jiffies;
->  		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
->  						(unsigned long)ch, 0xff, 0);
->  		ch->prof.doios_multi++;
-> @@ -1229,14 +1227,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
->  	int		rc;
->  	struct th_header *header;
->  	struct pdu	*p_header;
-> -	struct timespec done_stamp = current_kernel_time(); /* xtime */
-> +	unsigned long done_stamp = jiffies;
-> 
->  	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
->  			__func__, dev->name, smp_processor_id());
-> 
-> -	duration =
-> -		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
-> -		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-> +	duration = done_stamp -ch->prof.send_stamp;
->  	if (duration > ch->prof.tx_time)
->  		ch->prof.tx_time = duration;
-> 
-> @@ -1361,7 +1357,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
-> 
->  	ch->ccw[1].count = ch->trans_skb->len;
->  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
-> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	ch->prof.send_stamp = jiffies;
->  	if (do_debug_ccw)
->  		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
->  	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
-> @@ -1827,7 +1823,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
->  	fsm_newstate(wch->fsm, CTC_STATE_TX);
-> 
->  	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
-> -	wch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	wch->prof.send_stamp = jiffies;
->  	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
->  					(unsigned long) wch, 0xff, 0);
->  	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
-> diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
-> index e056dd4..05c37d6 100644
-> --- a/drivers/s390/net/ctcm_main.c
-> +++ b/drivers/s390/net/ctcm_main.c
-> @@ -567,7 +567,7 @@ static int ctcm_transmit_skb(struct channel *ch, struct sk_buff *skb)
->  	fsm_newstate(ch->fsm, CTC_STATE_TX);
->  	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
->  	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
-> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	ch->prof.send_stamp = jiffies;
->  	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
->  					(unsigned long)ch, 0xff, 0);
->  	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
-> @@ -831,7 +831,7 @@ static int ctcmpc_transmit_skb(struct channel *ch, struct sk_buff *skb)
->  					sizeof(struct ccw1) * 3);
-> 
->  	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
-> -	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-> +	ch->prof.send_stamp = jiffies;
->  	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
->  					(unsigned long)ch, 0xff, 0);
->  	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
-> diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
-> index 477c933..6f4417c 100644
-> --- a/drivers/s390/net/ctcm_main.h
-> +++ b/drivers/s390/net/ctcm_main.h
-> @@ -121,7 +121,7 @@ struct ctcm_profile {
->  	unsigned long doios_multi;
->  	unsigned long txlen;
->  	unsigned long tx_time;
-> -	struct timespec send_stamp;
-> +	unsigned long send_stamp;
->  };
-> 
->  /*
-> diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
-> index 0a87809..7e91f54 100644
-> --- a/drivers/s390/net/netiucv.c
-> +++ b/drivers/s390/net/netiucv.c
-> @@ -178,7 +178,7 @@ struct connection_profile {
->  	unsigned long doios_multi;
->  	unsigned long txlen;
->  	unsigned long tx_time;
-> -	struct timespec send_stamp;
-> +	unsigned long send_stamp;
->  	unsigned long tx_pending;
->  	unsigned long tx_max_pending;
->  };
-> @@ -786,7 +786,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
-> 
->  	header.next = 0;
->  	memcpy(skb_put(conn->tx_buff, NETIUCV_HDRLEN), &header, NETIUCV_HDRLEN);
-> -	conn->prof.send_stamp = current_kernel_time();
-> +	conn->prof.send_stamp = jiffies;
->  	txmsg.class = 0;
->  	txmsg.tag = 0;
->  	rc = iucv_message_send(conn->path, &txmsg, 0, 0,
-> @@ -1220,7 +1220,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
->  		memcpy(skb_put(nskb, NETIUCV_HDRLEN), &header,  NETIUCV_HDRLEN);
-> 
->  		fsm_newstate(conn->fsm, CONN_STATE_TX);
-> -		conn->prof.send_stamp = current_kernel_time();
-> +		conn->prof.send_stamp = jiffies;
-> 
->  		msg.tag = 1;
->  		msg.class = 0;
-
-
+Regards,
+Vincent
+>
+> Regards,
+> Wanpeng Li
+>
+>
+>> +        * It's worth migrating the task if the src_cpu's capacity is
+>> reduced
+>> +        * because of other sched_class or IRQs whereas capacity stays
+>> +        * available on dst_cpu.
+>> +        */
+>> +       if ((env->idle != CPU_NOT_IDLE) &&
+>> +                       (env->src_rq->cfs.h_nr_running == 1)) {
+>> +               unsigned long src_eff_capacity, dst_eff_capacity;
+>> +
+>> +               dst_eff_capacity = 100;
+>> +               dst_eff_capacity *= capacity_of(env->dst_cpu);
+>> +               dst_eff_capacity *= capacity_orig_of(env->src_cpu);
+>> +
+>> +               src_eff_capacity = sd->imbalance_pct;
+>> +               src_eff_capacity *= capacity_of(env->src_cpu);
+>> +               src_eff_capacity *= capacity_orig_of(env->dst_cpu);
+>> +
+>> +               if (src_eff_capacity < dst_eff_capacity)
+>> +                       return 1;
+>> +       }
+>> +
+>>         return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);
+>>   }
+>>   @@ -6661,6 +6695,9 @@ static int load_balance(int this_cpu, struct rq
+>> *this_rq,
+>>         schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+>>   +     env.src_cpu = busiest->cpu;
+>> +       env.src_rq = busiest;
+>> +
+>>         ld_moved = 0;
+>>         if (busiest->nr_running > 1) {
+>>                 /*
+>> @@ -6670,8 +6707,6 @@ static int load_balance(int this_cpu, struct rq
+>> *this_rq,
+>>                  * correctly treated as an imbalance.
+>>                  */
+>>                 env.flags |= LBF_ALL_PINNED;
+>> -               env.src_cpu   = busiest->cpu;
+>> -               env.src_rq    = busiest;
+>>                 env.loop_max  = min(sysctl_sched_nr_migrate,
+>> busiest->nr_running);
+>>     more_balance:
+>> @@ -7371,22 +7406,25 @@ static void nohz_idle_balance(struct rq *this_rq,
+>> enum cpu_idle_type idle)
+>>     /*
+>>    * Current heuristic for kicking the idle load balancer in the presence
+>> - * of an idle cpu is the system.
+>> + * of an idle cpu in the system.
+>>    *   - This rq has more than one task.
+>> - *   - At any scheduler domain level, this cpu's scheduler group has
+>> multiple
+>> - *     busy cpu's exceeding the group's capacity.
+>> + *   - This rq has at least one CFS task and the capacity of the CPU is
+>> + *     significantly reduced because of RT tasks or IRQs.
+>> + *   - At parent of LLC scheduler domain level, this cpu's scheduler
+>> group has
+>> + *     multiple busy cpu.
+>>    *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+>>    *     domain span are idle.
+>>    */
+>> -static inline int nohz_kick_needed(struct rq *rq)
+>> +static inline bool nohz_kick_needed(struct rq *rq)
+>>   {
+>>         unsigned long now = jiffies;
+>>         struct sched_domain *sd;
+>>         struct sched_group_capacity *sgc;
+>>         int nr_busy, cpu = rq->cpu;
+>> +       bool kick = false;
+>>         if (unlikely(rq->idle_balance))
+>> -               return 0;
+>> +               return false;
+>>            /*
+>>         * We may be recently in ticked or tickless idle mode. At the first
+>> @@ -7400,38 +7438,44 @@ static inline int nohz_kick_needed(struct rq *rq)
+>>          * balancing.
+>>          */
+>>         if (likely(!atomic_read(&nohz.nr_cpus)))
+>> -               return 0;
+>> +               return false;
+>>         if (time_before(now, nohz.next_balance))
+>> -               return 0;
+>> +               return false;
+>>         if (rq->nr_running >= 2)
+>> -               goto need_kick;
+>> +               return true;
+>>         rcu_read_lock();
+>>         sd = rcu_dereference(per_cpu(sd_busy, cpu));
+>> -
+>>         if (sd) {
+>>                 sgc = sd->groups->sgc;
+>>                 nr_busy = atomic_read(&sgc->nr_busy_cpus);
+>>   -             if (nr_busy > 1)
+>> -                       goto need_kick_unlock;
+>> +               if (nr_busy > 1) {
+>> +                       kick = true;
+>> +                       goto unlock;
+>> +               }
+>> +
+>>         }
+>>   -     sd = rcu_dereference(per_cpu(sd_asym, cpu));
+>> +       sd = rcu_dereference(rq->sd);
+>> +       if (sd) {
+>> +               if ((rq->cfs.h_nr_running >= 1) &&
+>> +                               check_cpu_capacity(rq, sd)) {
+>> +                       kick = true;
+>> +                       goto unlock;
+>> +               }
+>> +       }
+>>   +     sd = rcu_dereference(per_cpu(sd_asym, cpu));
+>>         if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
+>>                                   sched_domain_span(sd)) < cpu))
+>> -               goto need_kick_unlock;
+>> +               kick = true;
+>>   +unlock:
+>>         rcu_read_unlock();
+>> -       return 0;
+>> -
+>> -need_kick_unlock:
+>> -       rcu_read_unlock();
+>> -need_kick:
+>> -       return 1;
+>> +       return kick;
+>>   }
+>>   #else
+>>   static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type
+>> idle) { }
+>
+>
