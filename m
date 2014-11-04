@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaKDJYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:24:53 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46086 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454AbaKDJYs (ORCPT
+	id S1752814AbaKDJZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:25:29 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:54270 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaKDJZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:24:48 -0500
-Message-ID: <54589B58.7080102@hitachi.com>
-Date: Tue, 04 Nov 2014 18:24:40 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, Pawel Moll <mail@pawelmoll.com>
-Subject: Re: [PATCH v3 0/3] perf: User/kernel time correlation and event
- generation
-References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
-In-Reply-To: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Nov 2014 04:25:26 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-33-54589b8383b7
+Message-id: <1415093122.2389.15.camel@AMDC1943>
+Subject: Re: [PATCH 0/6] regulator: max77686/802: Cleanup
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Date: Tue, 04 Nov 2014 10:25:22 +0100
+In-reply-to: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
+References: <1415090986-30623-1-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t/xq7rNsyNCDOa3y1tsnLGe1WLqwyds
+	Fkd/F1icbXrDbnH/61FGi29XOpgsLu+aw2ax9shddovT3awOnB5/n19n8dg56y67x6ZVnWwe
+	d67tYfOYdzLQo2/LKkaPz5vkAtijuGxSUnMyy1KL9O0SuDLeXGxnK3jDVrF63nPmBsZdrF2M
+	nBwSAiYS27bsZYewxSQu3FvP1sXIxSEksJRR4vbRb0wQzmdGidWfNjOCVPEK6Ets2H0ZrENY
+	wFLi7f5mFhCbTcBYYvPyJUDdHBwiAhoSe3tqQHqZBe4wSexp6WcGqWERUJVoXH2PBaSGU8BD
+	4n43WFhIwF2iaf0isDHMAuoSk+YtYgYpkRBQlmjsd4PYKijxY/I9qBJ5ic1r3jJPYBSYhaRj
+	FpKyWUjKFjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P3cQIiYIvOxgXH7M6xCjAwajEw5uh
+	HhEixJpYVlyZe4hRgoNZSYR3dRVQiDclsbIqtSg/vqg0J7X4ECMTB6dUA2Ppk+dbpd+u9Ij5
+	HPtn9p1uk18vl01SiJvQ+1vXxvTO54tzNtczHn9dfHHf4fqyA3/t291Nl7z/mrMw75a5zi3P
+	izPnvEuaf2jGsmeGXilPDn8Ks1SQCV8hZXF4ukqSv9feoLK9jBNe+aaKTpCb3Lf3S37+8jfb
+	3JR3627pKfv+aKLcmcTLy5fvUmIpzkg01GIuKk4EABC9YIJgAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-(2014/11/04 9:28), Pawel Moll wrote:
-> 2. User event generation
+On wto, 2014-11-04 at 09:49 +0100, Krzysztof Kozlowski wrote:
+> Hi,
 > 
-> Everyone present agreed that it would be a very-nice-to-have feature.
-> There was some discussion about implementation details, so I welcome
-> feedback and comments regarding my take on the matter.
+> 
+> Previously this patchset was part of adding GPIO to max77686
+> regulator driver [1]. I split it but the goal is the same:
+> cleanup and simplify the regulator drivers by removing obsolete
+> board file support so adding new features would be easier.
+> 
+> The patchset removes board file support from regulator drivers
+> incrementally and in a bisect-friendly way. Thus MFD driver is
+> updated at the end.
+> 
+> Everything should be pulled at once (preferrably regulator tree).
+> Rebased on next-20141031.
 
-Hmm, I'm trying to make a similar thing, dynamic event definition via
-ftrace, which is already done by kprobes/uprobes. And this will be shown
-as dynamic events from perf too.
+Probably I should rebase it on newer next or regulator tree because
+yesterdays Javier's changes were applied. The merge conflict is trivial
+to solve (only removal of lines).
 
-What I'd like to do is the binary version of ftrace-marker, the text
-version is already supported by qemu (see below).
-https://lists.gnu.org/archive/html/qemu-devel/2013-04/msg00505.html
+Mark, let me know if you want me to resubmit because of the conflict.
 
-But since that is just a string data (not structured data), it is hard to
-analyze via perf-script or some other useful filters/triggers in ftrace.
-
-In my idea, the new event will be defined via a special file in debugfs like
-kprobe-events, like below.
-
-  # cd $debugfs/tracing
-  # echo "newgrp/newevent signarg:s32 flag:u64" >> marker_events
-  # cat events/newgrp/newevent/format
-  name: newevent
-  ID: 2048
-  format:
-        field:unsigned short common_type;       offset:0;       size:2; signed:0;
-        field:unsigned char common_flags;       offset:2;       size:1; signed:0;
-        field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
-        field:int common_pid;   offset:4;       size:4; signed:1;
-
-        field:s32 signarg;      offset:8;      size:4; signed:1;
-        field:u64 flag; offset:12;      size:8; signed:0;
-
-  print fmt: "signarg=%d flag=0x%Lx", REC->signarg, REC->flag
-
-Then, users will write the data (excluded common fields) when the event happens
-via trace_marker which start with '\0'ID(in u32). Kernel just checks the ID and
-its data size, but doesn't parse, filter/trigger it and log it into the kernel buffer.
-
-Of course, this has a downside that the user must have a privilege to access to debugfs.
-Thus maybe we need both of prctl() IF for perf and this IF for ftrace.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Best regards,
+Krzysztof
 
