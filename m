@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaKDV0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 16:26:41 -0500
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:9187 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751084AbaKDV0k (ORCPT
+	id S1751830AbaKDVcv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 16:32:51 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:54334 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaKDVcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 16:26:40 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgcOAEZDWVRbsl9p/2dsb2JhbABagw6BLLp/BgEBAQEBBQF0miiBJBcBAQEBAX2EMC8jgRo3iEUBu3uPBSyGN4pZHYQ1BZF3jBCMd4lYgUcBgjE8L4JLAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH V2 linux-next] fs/affs/file.c: adding support to O_DIRECT
-Date: Tue,  4 Nov 2014 22:26:30 +0100
-Message-Id: <1415136390-3892-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Tue, 4 Nov 2014 16:32:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <1414747777-12625-1-git-send-email-kever.yang@rock-chips.com>
+References: <1414747777-12625-1-git-send-email-kever.yang@rock-chips.com>
+Date: Tue, 4 Nov 2014 13:32:49 -0800
+X-Google-Sender-Auth: 7xdtH7pxeM8W-us5idYxBcePkH4
+Message-ID: <CAD=FV=VByf=YKw7q4L2493C-z9uJ3dTSk9WZyCFdOkSjD2XoDw@mail.gmail.com>
+Subject: Re: [PATCH] clk: rockchip: change hierarchy for some clocks
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, han jiang <hj@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on ext2_direct_IO
+Kever
 
-Tested with O_DIRECT file open and sysbench/mariadb with 1%
-written queries improvement (update_non_index test) on a volume
-created with mkaffs.
+On Fri, Oct 31, 2014 at 2:29 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> This patch change the hierarchy for some clocks, to met the following
+> bus hierarchy:
+> hclk_usb_peri is bus clock for
+> |- hclk_otg0,
+> |- hclk_host0,
+> |- hclk_host1,
+> |- hclk_hsic
+>
+> hclk_emem is bus clock for
+> |- hclk_nandc0
+> |- hclk_nandc1
+>
+> hclk_mem is bus clock for
+> |- hclk_sdmmc
+> |- hclk_sdio0
+> |- hclk_sdio1
+> |- hclk_emmc
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
-V2: Adding test results (suggested by Andrew Morton)
+So as I understand it the "parent" clocks aren't really parents but
+are actually peer clocks.  That is if "hclk_usb_peri" is gated
+"hclk_otg0" continues to run.  ...but the OTG periperhal is useless
+without "hclk_usb_peri" also being enabled.
 
- fs/affs/file.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+There doesn't seem to be any real downside to modeling thing as you
+have done it, though it's not quite a true representation of the
+world.  A slightly more true representation would be to make it so
+that whenever "hclk_otg0" is enabled/disabled that it makes an
+enable/disable call to "hclk_usb_peri".  I think you'd have to
+subclass the gate clock and patch your stuff in the "enable" function.
 
-diff --git a/fs/affs/file.c b/fs/affs/file.c
-index 8e51085..05005bd 100644
---- a/fs/affs/file.c
-+++ b/fs/affs/file.c
-@@ -12,6 +12,7 @@
-  *  affs regular file handling primitives
-  */
- 
-+#include <linux/aio.h>
- #include "affs.h"
- 
- #if PAGE_SIZE < 4096
-@@ -392,6 +393,22 @@ static void affs_write_failed(struct address_space *mapping, loff_t to)
- 	}
- }
- 
-+static ssize_t
-+affs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
-+	       loff_t offset)
-+{
-+	struct file *file = iocb->ki_filp;
-+	struct address_space *mapping = file->f_mapping;
-+	struct inode *inode = mapping->host;
-+	size_t count = iov_iter_count(iter);
-+	ssize_t ret;
-+
-+	ret = blockdev_direct_IO(rw, iocb, inode, iter, offset, affs_get_block);
-+	if (ret < 0 && (rw & WRITE))
-+		affs_write_failed(mapping, offset + count);
-+	return ret;
-+}
-+
- static int affs_write_begin(struct file *file, struct address_space *mapping,
- 			loff_t pos, unsigned len, unsigned flags,
- 			struct page **pagep, void **fsdata)
-@@ -418,6 +435,7 @@ const struct address_space_operations affs_aops = {
- 	.writepage = affs_writepage,
- 	.write_begin = affs_write_begin,
- 	.write_end = generic_write_end,
-+	.direct_IO = affs_direct_IO,
- 	.bmap = _affs_bmap
- };
- 
--- 
-1.9.3
+I'm personally OK with things landing as you've described it (I can
+see no downside), but it seems like this at least deserves a comment
+(either in the code or the commit message).
 
+If Mike T. thinks that we should use a more truthful model or if
+there's some better way to express this, you should of course listen
+to him and not to me.
+
+
+-Doug
