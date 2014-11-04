@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449AbaKDAnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Nov 2014 19:43:49 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:59705 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898AbaKDAnp (ORCPT
+	id S1751503AbaKDAq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Nov 2014 19:46:57 -0500
+Received: from mga03.intel.com ([134.134.136.65]:31961 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbaKDAqy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Nov 2014 19:43:45 -0500
-Date: Tue, 4 Nov 2014 09:43:34 +0900
-From: Gyungoh Yoo <gyungoh@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v6 7/8] regulator: sky81452: Add compatible
- string for device binding
-Message-ID: <20141104004333.GA2965@jack-ThinkPad-T520>
-References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
- <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
- <1414739322-12487-8-git-send-email-jack.yoo@skyworksinc.com>
- <20141031164418.GC18557@sirena.org.uk>
+	Mon, 3 Nov 2014 19:46:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,310,1413270000"; 
+   d="scan'208";a="601622256"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        "Tan, Raymond" <raymond.tan@intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Subject: RE: [PATCH 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
+ I2C-GPIO MFD Driver
+Thread-Topic: [PATCH 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
+ I2C-GPIO MFD Driver
+Thread-Index: AQHP9zm83r/nWKJ6t0a9/XEnzc824JxOLysAgAFydyA=
+Date: Tue, 4 Nov 2014 00:46:06 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9AB06D@SHSMSX101.ccr.corp.intel.com>
+References: <1415000344-23575-1-git-send-email-raymond.tan@intel.com>
+ <1415000344-23575-2-git-send-email-raymond.tan@intel.com>
+ <54575A68.7060009@nexus-software.ie>
+In-Reply-To: <54575A68.7060009@nexus-software.ie>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141031164418.GC18557@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 04:44:18PM +0000, Mark Brown wrote:
-> On Fri, Oct 31, 2014 at 04:08:41PM +0900, gyungoh@gmail.com wrote:
-> > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> > 
-> > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 > 
-> This doesn't apply against current code and depends on the MFD symbol
-> rename - can you please check what's going on here?
+> On 03/11/14 07:39, Raymond Tan wrote:
+> > +	pdata->properties->irq	= pdev->irq;
+> > +	pdata->properties->irq_shared	= true;
+> 
+> OK I see it.
+> 
+> Thanks.
+> 
+> My question is. How extensively have edge triggered interrupts been tested on
+> the GPIO block ?
+> 
+> The BSP reference code is quite explicit about not missing edge interrupts.
+> 
+> Have you tested GPIO input in edge mode ?
+We indeed test edge mode. Now all are moved to gpio-dwapb module which has been accepted by maintainer.
+The BSP code doesn't meet the requirement of upstream, so we totally re-implement this feature in gpio-dwapb.
+This patch only passes the necessary parameters and registers the platform devices.
 
-Are you talking about 'sky81452-regulator'?
-I am sorry I don't understand. Can you explain in more detail?
+
 
 > 
-> It would make sense to split the Kconfig symbol rename into a separate
-> patch to ease merging, it doesn't seem obviously related to the driver
-> change and should probably be in the same patch as the MFD symbol rename
-> for bisetion.
+> +irqreturn_t intel_qrk_gpio_isr(int irq, void *dev_id) {
+> +	irqreturn_t ret = IRQ_NONE;
+> +	u32 pending = 0, gpio = 0;
+> +	void __iomem *reg_pending = reg_base + PORTA_INT_STATUS;
+> +	void __iomem *reg_eoi = reg_base + PORTA_INT_EOI;
+> +
+> +	/* Which pin (if any) triggered the interrupt */
+> +	while ((pending = ioread32(reg_pending))) {
+> +		/*
+> +		 * Acknowledge all the asserted GPIO interrupt lines before
+> +		 * serving them, so that we don't lose an edge.
+> +		 * This has only effect on edge-triggered interrupts.
+> +		 */
+> +		iowrite32(pending, reg_eoi);
+> +
+> +		/* Serve each asserted interrupt */
+> +		do {
+> +			gpio = __ffs(pending);
+> +			generic_handle_irq(
+> +				gpio_to_irq(INTEL_QRK_GIP_GPIO_BASE + gpio));
+> +			pending &= ~BIT(gpio);
+> +			ret = IRQ_HANDLED;
+> +		} while(pending);
+> +	}
+> +
+> +	return ret;
+> +}
 
-becuase the symbol in the modfied MFD does not match with the
-merged regulator driver, it was hard to split the patch.
