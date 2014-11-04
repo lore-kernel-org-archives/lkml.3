@@ -1,79 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaKDSo6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 13:44:58 -0500
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:35895
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751118AbaKDSoy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 13:44:54 -0500
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/2] staging: comedi: per-file read/write subdevice
- choice
-Thread-Topic: [PATCH 0/2] staging: comedi: per-file read/write subdevice
- choice
-Thread-Index: AQHP+Fp0vSRiegNkkEmUitG4jnntuZxQy/Ew
-Date: Tue, 4 Nov 2014 18:44:52 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8826023C34@P3PWEX4MB008.ex4.secureserver.net>
-References: <1415124541-13648-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1415124541-13648-1-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752126AbaKDSr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 13:47:59 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:52257 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaKDSrx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 13:47:53 -0500
 MIME-Version: 1.0
+In-Reply-To: <1415094884-18349-3-git-send-email-drysdale@google.com>
+References: <1415094884-18349-1-git-send-email-drysdale@google.com>
+	<1415094884-18349-3-git-send-email-drysdale@google.com>
+Date: Tue, 4 Nov 2014 10:47:52 -0800
+X-Google-Sender-Auth: 7tuzVam8cpIOloZyRmoj-gogtsQ
+Message-ID: <CAGXu5j+RLXgO=N=h1qGfsZnzFdD6h7DcH7oTdXdib_Tn7bv4rA@mail.gmail.com>
+Subject: Re: [PATCHv2 2/3] selftests: Add test of O_BENEATH & openat(2)
+From: Kees Cook <keescook@chromium.org>
+To: David Drysdale <drysdale@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Will Drewry <wad@chromium.org>,
+        Jorge Lucangeli Obes <jorgelo@google.com>,
+        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
+        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 04, 2014 11:09 AM, Ian Abbott wrote:
-> This series of patches adds a couple of ioctl codes to the Comedi core
-> to allow the current "read" and "write" subdevice to be changed after
-> opening the comedi device.  The current read and write subdevice
-> information is stored in file private data allocated for the lifetime of
-> the file object, so the notion of current "read" and "write" subdevice
-> is local to the file object and does not alter anything in the main
-> control structure for the comedi device.  An extra level of indirection
-> is now required to access the main control structure.
+On Tue, Nov 4, 2014 at 1:54 AM, David Drysdale <drysdale@google.com> wrote:
+> Add simple tests of openat(2) variations, including examples that
+> check the new O_BENEATH flag.
 >
-> I've tested the multiple "read" subdevice case using a modified version
-> of the "comedi_test" module (modifying it to clone the existing AI
-> subdevice), and a modified version of the "comedi_test" application
-> (part of the "comedilib" installation) modified to use the new ioctls.
-> There isn't any support in comedilib itself yet.
+> Signed-off-by: David Drysdale <drysdale@google.com>
+
+Excellent! Thank you for including self tests. :)
+
+Acked-by: Kees Cook <keescook@chromium.org>
+
+-Kees
+
+> ---
+>  tools/testing/selftests/Makefile          |   1 +
+>  tools/testing/selftests/openat/.gitignore |   4 +
+>  tools/testing/selftests/openat/Makefile   |  28 +++++
+>  tools/testing/selftests/openat/openat.c   | 180 ++++++++++++++++++++++++++++++
+>  4 files changed, 213 insertions(+)
+>  create mode 100644 tools/testing/selftests/openat/.gitignore
+>  create mode 100644 tools/testing/selftests/openat/Makefile
+>  create mode 100644 tools/testing/selftests/openat/openat.c
 >
-> 1) staging: comedi: prepare support for per-file read and write
->    subdevices
-> 2) staging: comedi: add ioctls to set per-file read and write subdevice
+> diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+> index 36ff2e4c7b6f..812e973233d2 100644
+> --- a/tools/testing/selftests/Makefile
+> +++ b/tools/testing/selftests/Makefile
+> @@ -14,6 +14,7 @@ TARGETS += powerpc
+>  TARGETS += user
+>  TARGETS += sysctl
+>  TARGETS += firmware
+> +TARGETS += openat
 >
->  drivers/staging/comedi/comedi.h          |   2 +
->  drivers/staging/comedi/comedi_compat32.c |   2 +
->  drivers/staging/comedi/comedi_fops.c     | 217 +++++++++++++++++++++++++++----
->  3 files changed, 196 insertions(+), 25 deletions(-)
+>  TARGETS_HOTPLUG = cpu-hotplug
+>  TARGETS_HOTPLUG += memory-hotplug
+> diff --git a/tools/testing/selftests/openat/.gitignore b/tools/testing/selftests/openat/.gitignore
+> new file mode 100644
+> index 000000000000..835b2dcd8678
+> --- /dev/null
+> +++ b/tools/testing/selftests/openat/.gitignore
+> @@ -0,0 +1,4 @@
+> +openat
+> +subdir
+> +topfile
+> +symlinkdown
+> \ No newline at end of file
+> diff --git a/tools/testing/selftests/openat/Makefile b/tools/testing/selftests/openat/Makefile
+> new file mode 100644
+> index 000000000000..84cd06e7ee82
+> --- /dev/null
+> +++ b/tools/testing/selftests/openat/Makefile
+> @@ -0,0 +1,28 @@
+> +CC = $(CROSS_COMPILE)gcc
+> +CFLAGS = -Wall
+> +BINARIES = openat
+> +DEPS = subdir topfile symlinkdown subdir/bottomfile subdir/symlinkup subdir/symlinkout subdir/symlinkin
+> +all: $(BINARIES) $(DEPS)
+> +
+> +subdir:
+> +       mkdir -p subdir
+> +topfile:
+> +       echo 0123456789 > $@
+> +subdir/bottomfile: | subdir
+> +       echo 0123456789 > $@
+> +subdir/symlinkup: | subdir
+> +       ln -s ../topfile $@
+> +subdir/symlinkout: | subdir
+> +       ln -s /etc/passwd $@
+> +subdir/symlinkin: | subdir
+> +       ln -s bottomfile $@
+> +symlinkdown:
+> +       ln -s subdir/bottomfile $@
+> +%: %.c
+> +       $(CC) $(CFLAGS) -o $@ $^
+> +
+> +run_tests: all
+> +       ./openat
+> +
+> +clean:
+> +       rm -rf $(BINARIES) $(DEPS)
+> diff --git a/tools/testing/selftests/openat/openat.c b/tools/testing/selftests/openat/openat.c
+> new file mode 100644
+> index 000000000000..0c030cbd10dc
+> --- /dev/null
+> +++ b/tools/testing/selftests/openat/openat.c
+> @@ -0,0 +1,180 @@
+> +#include <sys/types.h>
+> +#include <sys/stat.h>
+> +#include <sys/syscall.h>
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +#include <unistd.h>
+> +#include <string.h>
+> +#include <errno.h>
+> +
+> +#include <linux/fcntl.h>
+> +
+> +/* Bypass glibc */
+> +static int openat_(int dirfd, const char *pathname, int flags)
+> +{
+> +       return syscall(__NR_openat, dirfd, pathname, flags);
+> +}
+> +
+> +static int openat_or_die(int dfd, const char *path, int flags)
+> +{
+> +       int fd = openat_(dfd, path, flags);
+> +
+> +       if (fd < 0) {
+> +               printf("Failed to openat(%d, '%s'); "
+> +                       "check prerequisites are available\n", dfd, path);
+> +               exit(1);
+> +       }
+> +       return fd;
+> +}
+> +
+> +static int check_openat(int dfd, const char *path, int flags)
+> +{
+> +       int rc;
+> +       int fd;
+> +       char buffer[4];
+> +
+> +       errno = 0;
+> +       printf("Check success of openat(%d, '%s', %x)... ",
+> +              dfd, path?:"(null)", flags);
+> +       fd = openat_(dfd, path, flags);
+> +       if (fd < 0) {
+> +               printf("[FAIL]: openat() failed, rc=%d errno=%d (%s)\n",
+> +                       fd, errno, strerror(errno));
+> +               return 1;
+> +       }
+> +       errno = 0;
+> +       rc = read(fd, buffer, sizeof(buffer));
+> +       if (rc < 0) {
+> +               printf("[FAIL]: read() failed, rc=%d errno=%d (%s)\n",
+> +                       rc, errno, strerror(errno));
+> +               return 1;
+> +       }
+> +       close(fd);
+> +       printf("[OK]\n");
+> +       return 0;
+> +}
+> +
+> +#define check_openat_fail(dfd, path, flags, errno)     \
+> +       _check_openat_fail(dfd, path, flags, errno, #errno)
+> +static int _check_openat_fail(int dfd, const char *path, int flags,
+> +                             int expected_errno, const char *errno_str)
+> +{
+> +       int rc;
+> +
+> +       errno = 0;
+> +       printf("Check failure of openat(%d, '%s', %x) with %s... ",
+> +               dfd, path?:"(null)", flags, errno_str);
+> +       rc = openat_(dfd, path, flags);
+> +       if (rc > 0) {
+> +               printf("[FAIL] (unexpected success from openat(2))\n");
+> +               close(rc);
+> +               return 1;
+> +       }
+> +       if (errno != expected_errno) {
+> +               printf("[FAIL] (expected errno %d (%s) not %d (%s)\n",
+> +                       expected_errno, strerror(expected_errno),
+> +                       errno, strerror(errno));
+> +               return 1;
+> +       }
+> +       printf("[OK]\n");
+> +       return 0;
+> +}
+> +
+> +int check_proc(void)
+> +{
+> +       int proc_dfd = openat_(AT_FDCWD, "/proc/self", O_RDONLY);
+> +       int fail = 0;
+> +
+> +       if (proc_dfd < 0) {
+> +               printf("'/proc/self' unavailable (errno=%d '%s'), skipping\n",
+> +                       errno, strerror(errno));
+> +               return 1;
+> +       }
+> +       fail |= check_openat(proc_dfd, "root/etc/passwd", O_RDONLY);
+> +#ifdef O_BENEATH
+> +       fail |= check_openat_fail(proc_dfd, "root/etc/passwd",
+> +                                 O_RDONLY|O_BENEATH, EPERM);
+> +#endif
+> +       return fail;
+> +}
+> +
+> +int main(int argc, char *argv[])
+> +{
+> +       int fail = 0;
+> +       int dot_dfd = openat_or_die(AT_FDCWD, ".", O_RDONLY);
+> +       int subdir_dfd = openat_or_die(AT_FDCWD, "subdir", O_RDONLY);
+> +       int file_fd = openat_or_die(AT_FDCWD, "topfile", O_RDONLY);
+> +
+> +       /* Sanity check normal behavior */
+> +       fail |= check_openat(AT_FDCWD, "topfile", O_RDONLY);
+> +       fail |= check_openat(AT_FDCWD, "subdir/bottomfile", O_RDONLY);
+> +
+> +       fail |= check_openat(dot_dfd, "topfile", O_RDONLY);
+> +       fail |= check_openat(dot_dfd, "subdir/bottomfile", O_RDONLY);
+> +       fail |= check_openat(dot_dfd, "subdir/../topfile", O_RDONLY);
+> +
+> +       fail |= check_openat(subdir_dfd, "../topfile", O_RDONLY);
+> +       fail |= check_openat(subdir_dfd, "bottomfile", O_RDONLY);
+> +       fail |= check_openat(subdir_dfd, "../subdir/bottomfile", O_RDONLY);
+> +       fail |= check_openat(subdir_dfd, "symlinkup", O_RDONLY);
+> +       fail |= check_openat(subdir_dfd, "symlinkout", O_RDONLY);
+> +
+> +       fail |= check_openat(AT_FDCWD, "/etc/passwd", O_RDONLY);
+> +       fail |= check_openat(dot_dfd, "/etc/passwd", O_RDONLY);
+> +       fail |= check_openat(subdir_dfd, "/etc/passwd", O_RDONLY);
+> +
+> +       fail |= check_openat_fail(AT_FDCWD, "bogus", O_RDONLY, ENOENT);
+> +       fail |= check_openat_fail(dot_dfd, "bogus", O_RDONLY, ENOENT);
+> +       fail |= check_openat_fail(999, "bogus", O_RDONLY, EBADF);
+> +       fail |= check_openat_fail(file_fd, "bogus", O_RDONLY, ENOTDIR);
+> +
+> +#ifdef O_BENEATH
+> +       /* Test out O_BENEATH */
+> +       fail |= check_openat(AT_FDCWD, "topfile", O_RDONLY|O_BENEATH);
+> +       fail |= check_openat(AT_FDCWD, "subdir/bottomfile",
+> +                            O_RDONLY|O_BENEATH);
+> +
+> +       fail |= check_openat(dot_dfd, "topfile", O_RDONLY|O_BENEATH);
+> +       fail |= check_openat(dot_dfd, "subdir/bottomfile",
+> +                            O_RDONLY|O_BENEATH);
+> +       fail |= check_openat(subdir_dfd, "bottomfile", O_RDONLY|O_BENEATH);
+> +
+> +       /* Symlinks without .. or leading / are OK */
+> +       fail |= check_openat(dot_dfd, "symlinkdown", O_RDONLY|O_BENEATH);
+> +       fail |= check_openat(dot_dfd, "subdir/symlinkin", O_RDONLY|O_BENEATH);
+> +       fail |= check_openat(subdir_dfd, "symlinkin", O_RDONLY|O_BENEATH);
+> +       /* ... unless of course we specify O_NOFOLLOW */
+> +       fail |= check_openat_fail(dot_dfd, "symlinkdown",
+> +                                 O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
+> +       fail |= check_openat_fail(dot_dfd, "subdir/symlinkin",
+> +                                 O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
+> +       fail |= check_openat_fail(subdir_dfd, "symlinkin",
+> +                                 O_RDONLY|O_BENEATH|O_NOFOLLOW, ELOOP);
+> +
+> +       /* Can't open paths with ".." in them */
+> +       fail |= check_openat_fail(dot_dfd, "subdir/../topfile",
+> +                               O_RDONLY|O_BENEATH, EPERM);
+> +       fail |= check_openat_fail(subdir_dfd, "../topfile",
+> +                                 O_RDONLY|O_BENEATH, EPERM);
+> +       fail |= check_openat_fail(subdir_dfd, "../subdir/bottomfile",
+> +                               O_RDONLY|O_BENEATH, EPERM);
+> +
+> +       /* Can't open paths starting with "/" */
+> +       fail |= check_openat_fail(AT_FDCWD, "/etc/passwd",
+> +                                 O_RDONLY|O_BENEATH, EPERM);
+> +       fail |= check_openat_fail(dot_dfd, "/etc/passwd",
+> +                                 O_RDONLY|O_BENEATH, EPERM);
+> +       fail |= check_openat_fail(subdir_dfd, "/etc/passwd",
+> +                                 O_RDONLY|O_BENEATH, EPERM);
+> +       /* Can't sneak around constraints with symlinks */
+> +       fail |= check_openat_fail(subdir_dfd, "symlinkup",
+> +                                 O_RDONLY|O_BENEATH, EPERM);
+> +       fail |= check_openat_fail(subdir_dfd, "symlinkout",
+> +                                 O_RDONLY|O_BENEATH, EPERM);
+> +#else
+> +       printf("Skipping O_BENEATH tests due to missing #define\n");
+> +#endif
+> +       fail |= check_proc();
+> +
+> +       return fail ? -1 : 0;
+> +}
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
 
-Ian,
 
-If I understand this correctly, the user can now open the "comediX"
-device which will give then access to the default dev->read_subdev
-and dev->write_subdev. They can then use the new ioctls to change
-the read/write subdevice and use them without having the open the
-"comediX_subdY" devices.
 
-If this is correct it seems like a good idea.
-
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
-Also, does this mean we can get rid of comedi_alloc_subdevice_minor()
-and the "comediX_sudbY" stuff?
-
-Regards,
-Hartley
-
+-- 
+Kees Cook
+Chrome OS Security
