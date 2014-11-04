@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051AbaKDTsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 14:48:50 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37839 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaKDTsr (ORCPT
+	id S1752507AbaKDTwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 14:52:20 -0500
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:8604 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751682AbaKDTwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 14:48:47 -0500
-Date: Tue, 4 Nov 2014 19:47:29 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Message-ID: <20141104194729.GV3815@sirena.org.uk>
-References: <1414668415-597-1-git-send-email-mike.looijmans@topic.nl>
- <20141030165133.GB18557@sirena.org.uk>
- <54573860.4060708@topic.nl>
- <20141103120919.GE3815@sirena.org.uk>
- <545795D8.1040600@topic.nl>
- <20141103151058.GP3815@sirena.org.uk>
- <5457BD85.2070901@topic.nl>
- <54589472.8030305@topic.nl>
- <20141104113417.GG3815@sirena.org.uk>
- <5458D636.3000401@topic.nl>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CuZtzLgFeSWyzOuB"
-Content-Disposition: inline
-In-Reply-To: <5458D636.3000401@topic.nl>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] Add ltc3562 voltage regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 4 Nov 2014 14:52:18 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgcOALUtWVRbsl9p/2dsb2JhbABbgw6BLLp/BgEBAQEBBQF0miiBJBcBAQEBAX2EMC8jgRo3iEUBvnOPByyGN4pZhFIFhjaXUZZPgUcBgjE8L4JLAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] igmp: remove camel case definitions
+Date: Tue,  4 Nov 2014 20:52:14 +0100
+Message-Id: <1415130734-17124-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+use standard uppercase for definitions
 
---CuZtzLgFeSWyzOuB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/ipv4/igmp.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-On Tue, Nov 04, 2014 at 02:35:50PM +0100, Mike Looijmans wrote:
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index fb70e3e..3f80513 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -112,17 +112,17 @@
+ #ifdef CONFIG_IP_MULTICAST
+ /* Parameter names and values are taken from igmp-v2-06 draft */
+ 
+-#define IGMP_V1_Router_Present_Timeout		(400*HZ)
+-#define IGMP_V2_Router_Present_Timeout		(400*HZ)
+-#define IGMP_V2_Unsolicited_Report_Interval	(10*HZ)
+-#define IGMP_V3_Unsolicited_Report_Interval	(1*HZ)
+-#define IGMP_Query_Response_Interval		(10*HZ)
+-#define IGMP_Query_Robustness_Variable		2
++#define IGMP_V1_ROUTER_PRESENT_TIMEOUT		(400*HZ)
++#define IGMP_V2_ROUTER_PRESENT_TIMEOUT		(400*HZ)
++#define IGMP_V2_UNSOLICITED_REPORT_INTERVAL	(10*HZ)
++#define IGMP_V3_UNSOLICITED_REPORT_INTERVAL	(1*HZ)
++#define IGMP_QUERY_RESPONSE_INTERVAL		(10*HZ)
++#define IGMP_QUERY_ROBUSTNESS_VARIABLE		2
+ 
+ 
+-#define IGMP_Initial_Report_Delay		(1)
++#define IGMP_INITIAL_REPORT_DELAY		(1)
+ 
+-/* IGMP_Initial_Report_Delay is not from IGMP specs!
++/* IGMP_INITIAL_REPORT_DELAY is not from IGMP specs!
+  * IGMP specs require to report membership immediately after
+  * joining a group, but we delay the first report by a
+  * small interval. It seems more natural and still does not
+@@ -879,15 +879,15 @@ static bool igmp_heard_query(struct in_device *in_dev, struct sk_buff *skb,
+ 		if (ih->code == 0) {
+ 			/* Alas, old v1 router presents here. */
+ 
+-			max_delay = IGMP_Query_Response_Interval;
++			max_delay = IGMP_QUERY_RESPONSE_INTERVAL;
+ 			in_dev->mr_v1_seen = jiffies +
+-				IGMP_V1_Router_Present_Timeout;
++				IGMP_V1_ROUTER_PRESENT_TIMEOUT;
+ 			group = 0;
+ 		} else {
+ 			/* v2 router present */
+ 			max_delay = ih->code*(HZ/IGMP_TIMER_SCALE);
+ 			in_dev->mr_v2_seen = jiffies +
+-				IGMP_V2_Router_Present_Timeout;
++				IGMP_V2_ROUTER_PRESENT_TIMEOUT;
+ 		}
+ 		/* cancel the interface change timer */
+ 		in_dev->mr_ifc_count = 0;
+@@ -899,7 +899,7 @@ static bool igmp_heard_query(struct in_device *in_dev, struct sk_buff *skb,
+ 		return true;	/* ignore bogus packet; freed by caller */
+ 	} else if (IGMP_V1_SEEN(in_dev)) {
+ 		/* This is a v3 query with v1 queriers present */
+-		max_delay = IGMP_Query_Response_Interval;
++		max_delay = IGMP_QUERY_RESPONSE_INTERVAL;
+ 		group = 0;
+ 	} else if (IGMP_V2_SEEN(in_dev)) {
+ 		/* this is a v3 query with v2 queriers present;
+@@ -1218,7 +1218,7 @@ static void igmp_group_added(struct ip_mc_list *im)
+ 		return;
+ 	if (IGMP_V1_SEEN(in_dev) || IGMP_V2_SEEN(in_dev)) {
+ 		spin_lock_bh(&im->lock);
+-		igmp_start_timer(im, IGMP_Initial_Report_Delay);
++		igmp_start_timer(im, IGMP_INITIAL_REPORT_DELAY);
+ 		spin_unlock_bh(&im->lock);
+ 		return;
+ 	}
+@@ -1541,7 +1541,7 @@ static struct in_device *ip_mc_find_dev(struct net *net, struct ip_mreqn *imr)
+ int sysctl_igmp_max_memberships __read_mostly = IP_MAX_MEMBERSHIPS;
+ int sysctl_igmp_max_msf __read_mostly = IP_MAX_MSF;
+ #ifdef CONFIG_IP_MULTICAST
+-int sysctl_igmp_qrv __read_mostly = IGMP_Query_Robustness_Variable;
++int sysctl_igmp_qrv __read_mostly = IGMP_QUERY_ROBUSTNESS_VARIABLE;
+ #endif
+ 
+ static int ip_mc_del1_src(struct ip_mc_list *pmc, int sfmode,
+-- 
+1.9.3
 
-> I still need help with one thing that isn't clear to me though. The DT is
-> parsed when calling regulator_register. But then how do I fetch my "private"
-> settings in there BEFORE the regulator gets enabled? The feedback resistors
-> and regulator mode must be set to the correct board before the output is
-> enabled, otherwise it may damage the chip and its periferals.
-
-Add a callback for this.  Javier and/or Krzysztof were looking at this
-for some other stuff, though I think they were intending to add core
-functionality for their specific feature.
-
---CuZtzLgFeSWyzOuB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUWS1RAAoJECTWi3JdVIfQXHcH/0gHe0s8dr66qq0bHYRAYyT/
-NB+d1MFD3HI636VBgHMV9ZH6WOuzAVii19L7ZuyaDJyx9EZA5drQVRnXzAIuuMgU
-d4q7YSJ8rH2t5MBkU2d5Ck9Q9Ti4baTkLM/5jaPSJgBVjbOkQqo7X4nNoOLmvLzu
-WDyPIYtmQjrlv9KnqgkL7bu6UZ6RZX+rAUpcAxRtg1ZkXMaBFJW5lVs8JTs/lGoH
-dTfm/dxiNNlckSfja1P1a7R67CTKIZWx15prwjO4c0HAF5g3we1LLtugmOmOtIl6
-tGsQM2RH4yRYDEYWvxIk/TCQ8x6c8x67TlXT9ge5Kxe7ldt2GdFL4ttBbAEKHm8=
-=cJTC
------END PGP SIGNATURE-----
-
---CuZtzLgFeSWyzOuB--
