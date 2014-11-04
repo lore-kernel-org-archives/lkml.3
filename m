@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaKDInq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:43:46 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:62818 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbaKDInl (ORCPT
+	id S1752949AbaKDIrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:47:52 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63857 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbaKDInp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:43:41 -0500
+	Tue, 4 Nov 2014 03:43:45 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
         sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH v1 07/11] backports: split Kconfig into Kconfig.package and Kconfig.sources
-Date: Tue,  4 Nov 2014 00:42:58 -0800
-Message-Id: <1415090582-14129-8-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH v1 08/11] backports: move version file generation to run earlier
+Date: Tue,  4 Nov 2014 00:42:59 -0800
+Message-Id: <1415090582-14129-9-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,189 +23,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-This splits up the Kconfig from things which are needed due to
-our copy of code from the kernel and things which we need
-specifically only for packaging backports. We will later then
-share the Kconfig.souce for instance for kernel integration.
+The version file contains:
 
-While at it, split up the list of files that we need to copy
-into what we know could be shared for integration. The the
-case of backport packaging Kconfig.package will be copied to
-the package's Kconfig when building the package with gentree.py.
+  * BACKPORTS_VERSION
+  * BACKPORTED_KERNEL_VERSION
+  * BACKPORTED_KERNEL_NAME
+
+This file is used by the Makefile to export variable
+definitions used to identify the backport. For kernel
+integration we'll be using a generated Kconfig file
+instead and since these are needed when processing
+kconfig logic this will need to be defined earlier.
+
+Just move the generation of the version file for packaging
+up early to match where we will generate the Kconfig with
+the backports versioning identification.
+
+This change has no real functional change other than the
+move of some code running earlier.
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- backport/Kconfig         | 54 ------------------------------------------------
- backport/Kconfig.package | 32 ++++++++++++++++++++++++++++
- backport/Kconfig.sources | 23 +++++++++++++++++++++
- gentree.py               | 22 +++++++++++++++++---
- 4 files changed, 74 insertions(+), 57 deletions(-)
- delete mode 100644 backport/Kconfig
- create mode 100644 backport/Kconfig.package
- create mode 100644 backport/Kconfig.sources
+ gentree.py | 50 ++++++++++++++++++++++++++------------------------
+ 1 file changed, 26 insertions(+), 24 deletions(-)
 
-diff --git a/backport/Kconfig b/backport/Kconfig
-deleted file mode 100644
-index c523323..0000000
---- a/backport/Kconfig
-+++ /dev/null
-@@ -1,54 +0,0 @@
--mainmenu "Linux Backports from $BACKPORTED_KERNEL_NAME $BACKPORTED_KERNEL_VERSION (with backports $BACKPORTS_VERSION)"
--
--config BACKPORT_DIR
--	string
--	option env="BACKPORT_DIR"
--config BACKPORTS_VERSION
--	string
--	option env="BACKPORTS_VERSION"
--config BACKPORTED_KERNEL_VERSION
--	string
--	option env="BACKPORTED_KERNEL_VERSION"
--config BACKPORTED_KERNEL_NAME
--	string
--	option env="BACKPORTED_KERNEL_NAME"
--
--# these will be generated
--source "$BACKPORT_DIR/Kconfig.kernel"
--source "$BACKPORT_DIR/Kconfig.versions"
--
--# some hacks for when we use backports to generate a package
--# to build modules out of tree.
--#ignore-parser-package
--config WIRELESS
--	def_bool y
--#ignore-parser-package
--config NET_CORE
--	def_bool y
--#ignore-parser-package
--config EXPERT
--	def_bool y
--
--# this has the configuration for the backport code
--source "$BACKPORT_DIR/compat/Kconfig"
--
--# these are copied from the kernel
--source "$BACKPORT_DIR/net/wireless/Kconfig"
--source "$BACKPORT_DIR/net/mac80211/Kconfig"
--source "$BACKPORT_DIR/net/bluetooth/Kconfig"
--source "$BACKPORT_DIR/drivers/net/wireless/Kconfig"
--source "$BACKPORT_DIR/drivers/net/ethernet/Kconfig"
--source "$BACKPORT_DIR/drivers/net/usb/Kconfig"
--
--source "$BACKPORT_DIR/drivers/ssb/Kconfig"
--source "$BACKPORT_DIR/drivers/bcma/Kconfig"
--
--source "$BACKPORT_DIR/net/nfc/Kconfig"
--
--source "$BACKPORT_DIR/drivers/media/Kconfig"
--
--source "$BACKPORT_DIR/net/ieee802154/Kconfig"
--source "$BACKPORT_DIR/net/mac802154/Kconfig"
--source "$BACKPORT_DIR/drivers/net/ieee802154/Kconfig"
--
--source "$BACKPORT_DIR/drivers/usb/class/Kconfig"
-diff --git a/backport/Kconfig.package b/backport/Kconfig.package
-new file mode 100644
-index 0000000..c507de4
---- /dev/null
-+++ b/backport/Kconfig.package
-@@ -0,0 +1,32 @@
-+mainmenu "Backports from $BACKPORTED_KERNEL_NAME $BACKPORTED_KERNEL_VERSION (backports $BACKPORTS_VERSION)"
-+
-+config BACKPORT_DIR
-+	string
-+	option env="BACKPORT_DIR"
-+config BACKPORTS_VERSION
-+	string
-+	option env="BACKPORTS_VERSION"
-+config BACKPORTED_KERNEL_VERSION
-+	string
-+	option env="BACKPORTED_KERNEL_VERSION"
-+config BACKPORTED_KERNEL_NAME
-+	string
-+	option env="BACKPORTED_KERNEL_NAME"
-+
-+# some hacks for when we use backports to generate a package
-+# to build modules out of tree.
-+#ignore-parser-package
-+config WIRELESS
-+	def_bool y
-+#ignore-parser-package
-+config NET_CORE
-+	def_bool y
-+#ignore-parser-package
-+config EXPERT
-+	def_bool y
-+
-+source "$BACKPORT_DIR/Kconfig.sources"
-+
-+# these will be generated
-+source "$BACKPORT_DIR/Kconfig.kernel"
-+source "$BACKPORT_DIR/Kconfig.versions"
-diff --git a/backport/Kconfig.sources b/backport/Kconfig.sources
-new file mode 100644
-index 0000000..cdf993c
---- /dev/null
-+++ b/backport/Kconfig.sources
-@@ -0,0 +1,23 @@
-+# this has the configuration for the backport code
-+source "$BACKPORT_DIR/compat/Kconfig"
-+
-+# these are copied from the kernel
-+source "$BACKPORT_DIR/net/wireless/Kconfig"
-+source "$BACKPORT_DIR/net/mac80211/Kconfig"
-+source "$BACKPORT_DIR/net/bluetooth/Kconfig"
-+source "$BACKPORT_DIR/drivers/net/wireless/Kconfig"
-+source "$BACKPORT_DIR/drivers/net/ethernet/Kconfig"
-+source "$BACKPORT_DIR/drivers/net/usb/Kconfig"
-+
-+source "$BACKPORT_DIR/drivers/ssb/Kconfig"
-+source "$BACKPORT_DIR/drivers/bcma/Kconfig"
-+
-+source "$BACKPORT_DIR/net/nfc/Kconfig"
-+
-+source "$BACKPORT_DIR/drivers/media/Kconfig"
-+
-+source "$BACKPORT_DIR/net/ieee802154/Kconfig"
-+source "$BACKPORT_DIR/net/mac802154/Kconfig"
-+source "$BACKPORT_DIR/drivers/net/ieee802154/Kconfig"
-+
-+source "$BACKPORT_DIR/drivers/usb/class/Kconfig"
 diff --git a/gentree.py b/gentree.py
-index 3d4a8b4..860bb71 100755
+index 860bb71..1b6dc89 100755
 --- a/gentree.py
 +++ b/gentree.py
-@@ -746,11 +746,27 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
-     check_output_dir(args.outdir, args.clean)
+@@ -789,6 +789,25 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
  
-     # do the copy
-+    backport_package_files = [(x, x) for x in [
-+        'Makefile',
-+        'kconf/',
-+        'Makefile.real',
-+        'Makefile.kernel',
-+        'scripts/',
-+        '.blacklist.map',
-+        '.gitignore',
-+        'Makefile.build'] ]
-+    backport_package_files += [
-+            ('Kconfig.package', 'Kconfig'),
-+            ]
-     backport_files = [(x, x) for x in [
--        'Kconfig', 'Makefile', 'Makefile.build', 'Makefile.kernel', '.gitignore',
--        'Makefile.real', 'compat/', 'backport-include/', 'kconf/',
--        'scripts/', '.blacklist.map',
-+        'Kconfig.sources',
-+        'compat/',
-+        'backport-include/',
-     ]]
+     git_debug_snapshot(args, 'Add driver sources')
+ 
++    if git_tracked_version:
++        backports_version = "(see git)"
++        kernel_version = "(see git)"
++    else:
++        backports_version = git.describe(tree=source_dir, extra_args=['--long'])
++        kernel_version = git.describe(rev=args.git_revision or 'HEAD',
++                                      tree=args.kerneldir,
++                                      extra_args=['--long'])
 +
 +    if not integrate:
-+        backport_files += backport_package_files
++        f = open(os.path.join(args.outdir, 'versions'), 'w')
++        f.write('BACKPORTS_VERSION="%s"\n' % backports_version)
++        f.write('BACKPORTED_KERNEL_VERSION="%s"\n' % kernel_version)
++        f.write('BACKPORTED_KERNEL_NAME="%s"\n' % args.base_name)
++        if git_tracked_version:
++            f.write('BACKPORTS_GIT_TRACKED="backport tracker ID: $(shell git rev-parse HEAD 2>/dev/null || echo \'not built in git tree\')"\n')
++        f.close()
++        git_debug_snapshot(args, "generate kernel version info file: version")
 +
-     if not args.git_revision:
-         logwrite('Copy original source files ...')
-     else:
+     disable_list = add_automatic_backports(args, bp_prefix)
+     if disable_list:
+         bpcfg = kconfig.ConfigTree(os.path.join(args.outdir, 'compat', 'Kconfig'))
+@@ -815,32 +834,15 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
+     configtree.modify_selects()
+     git_debug_snapshot(args, "convert select to depends on")
+ 
+-    # write the versioning file
+-    if git_tracked_version:
+-        backports_version = "(see git)"
+-        kernel_version = "(see git)"
+-    else:
+-        backports_version = git.describe(tree=source_dir, extra_args=['--long'])
+-        kernel_version = git.describe(rev=args.git_revision or 'HEAD',
+-                                      tree=args.kerneldir,
+-                                      extra_args=['--long'])
+-    f = open(os.path.join(args.outdir, 'versions'), 'w')
+-    f.write('BACKPORTS_VERSION="%s"\n' % backports_version)
+-    f.write('BACKPORTED_KERNEL_VERSION="%s"\n' % kernel_version)
+-    f.write('BACKPORTED_KERNEL_NAME="%s"\n' % args.base_name)
+-    if git_tracked_version:
+-        f.write('BACKPORTS_GIT_TRACKED="backport tracker ID: $(shell git rev-parse HEAD 2>/dev/null || echo \'not built in git tree\')"\n')
+-    f.close()
+-
+     symbols = configtree.symbols()
+ 
+-    # write local symbol list -- needed during build
+-    f = open(os.path.join(args.outdir, '.local-symbols'), 'w')
+-    for sym in symbols:
+-        f.write('%s=\n' % sym)
+-    f.close()
+-
+-    git_debug_snapshot(args, "add versions/symbols files")
++    if not integrate:
++        # write local symbol list -- needed during build
++        f = open(os.path.join(args.outdir, '.local-symbols'), 'w')
++        for sym in symbols:
++            f.write('%s=\n' % sym)
++        f.close()
++        git_debug_snapshot(args, "add symbols files")
+ 
+     # add defconfigs that we want
+     defconfigs_dir = os.path.join(source_dir, 'backport', 'defconfigs')
 -- 
 2.1.1
 
