@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaKDHMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:12:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37881 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753AbaKDHMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:12:50 -0500
-From: Hannes Reinecke <hare@suse.de>
-To: linux-nvme@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH] nvme: fixup compiler warning
-Date: Tue,  4 Nov 2014 08:12:47 +0100
-Message-Id: <1415085167-128130-1-git-send-email-hare@suse.de>
-X-Mailer: git-send-email 1.8.5.2
+	id S1751913AbaKDHO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:14:27 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34426 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaKDHO0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 02:14:26 -0500
+Date: Tue, 4 Nov 2014 08:14:21 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Liang, Kan" <kan.liang@intel.com>
+Cc: "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "acme@kernel.org" <acme@kernel.org>,
+        "jolsa@redhat.com" <jolsa@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH V6 01/17] perf, x86: Reduce lbr_sel_map size
+Message-ID: <20141104071421.GD10501@worktop.programming.kicks-ass.net>
+References: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
+ <1413755712-8259-2-git-send-email-kan.liang@intel.com>
+ <20141024093930.GD12706@worktop.programming.kicks-ass.net>
+ <37D7C6CF3E00A74B8858931C1DB2F077016530FB@SHSMSX103.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F077016530FB@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gcc complains about a variable not initialized properly.
+On Tue, Nov 04, 2014 at 01:07:39AM +0000, Liang, Kan wrote:
+> Hi Peter,
+> 
+> Did you get a chance to review the rest of the patch set?
 
-Cc: Matthew Wilcox <willy@linux.intel.com>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
----
- drivers/block/nvme-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index e2bb8af..ff37b9f 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -571,7 +571,7 @@ static int nvme_split_and_submit(struct bio *bio, struct nvme_queue *nvmeq,
- static int nvme_map_bio(struct nvme_queue *nvmeq, struct nvme_iod *iod,
- 		struct bio *bio, enum dma_data_direction dma_dir, int psegs)
- {
--	struct bio_vec bvec, bvprv;
-+	struct bio_vec bvec, bvprv = {.bv_offset = 0, .bv_len = 0};
- 	struct bvec_iter iter;
- 	struct scatterlist *sg = NULL;
- 	int length = 0, nsegs = 0, split_len = bio->bi_iter.bi_size;
--- 
-1.8.5.2
-
+No point in reviewing stuff I could not apply if I wanted to is there?
