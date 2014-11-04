@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaKDJqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:46:36 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:52281 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaKDJqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:46:32 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: HC Yen <hc.yen@mediatek.com>, "Joe. C" <yingjoe.chen@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>, arm@kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        huang eddie <eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        Yuhau Chen <yh.chen@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH v4 1/8] ARM: mediatek: Add basic support for mt8127
-Date: Tue, 04 Nov 2014 10:45:40 +0100
-Message-ID: <4360790.RbZnni9y9f@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CABuKBeL1JX88BBK7uXqpmaGzwCe5D6inB_n-NV6ajUt59V1swA@mail.gmail.com>
-References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com> <13477264.GuOdydWub7@wuerfel> <CABuKBeL1JX88BBK7uXqpmaGzwCe5D6inB_n-NV6ajUt59V1swA@mail.gmail.com>
+	id S1752623AbaKDJq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:46:59 -0500
+Received: from mail-bn1bn0102.outbound.protection.outlook.com ([157.56.110.102]:5824
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752477AbaKDJq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 04:46:56 -0500
+X-WSS-ID: 0NEID3O-07-75D-02
+X-M-MSG: 
+From: Huang Rui <ray.huang@amd.com>
+To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Tony Li <tony.li@amd.com>, Vincent Wan <vincent.wan@amd.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Huang Rui <ray.huang@amd.com>
+Subject: [PATCH] usb: dwc3: remove warning of disable scramble check
+Date: Tue, 4 Nov 2014 17:29:51 +0800
+Message-ID: <1415093391-4569-1-git-send-email-ray.huang@amd.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:V2BuAKw1Cx5DHa7wx70a3IMhGUY4xl62L/1QSvu5lzN
- Mye+5h3REgVQZkuZMYItBl8jXJONzctWd7mSMkxYvcT2c+iX4u
- 74wWHuXACpfc57433hYBaUpF2HGXl26AgNm5ADrTuf+H4yKJz0
- 0Wpj1idEkDLwYisRrPV+E6tqsxbkHD3olj9ecbRTufroY4wgG5
- R2RSsB6o47nskU6BSHX9dkO2HE6Kzq1CH7oTW+lqxfQGQ7/MZU
- tYOCoMjwwv7zLf1YuCGrDWeC5coqMQrN7/EzwGJq+68QGPyP7F
- /kijdqJh2emvynCmbh6CP+GeFbrJsW45XJn4cZpmr35u1Qxa82
- a9AMIfgv+QOl2EfMkKQ4=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(164054003)(189002)(199003)(120916001)(33646002)(46102003)(107046002)(77096003)(106466001)(77156002)(104166001)(62966003)(95666004)(97736003)(99396003)(21056001)(50466002)(105586002)(229853001)(36756003)(89996001)(92726001)(92566001)(84676001)(87286001)(48376002)(68736004)(86362001)(87936001)(2171001)(88136002)(575784001)(93916002)(31966008)(101416001)(102836001)(44976005)(19580405001)(50986999)(53416004)(50226001)(4396001)(64706001)(47776003)(19580395003)(20776003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03853D523D
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Ray.Huang@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 November 2014 09:36:39 Matthias Brugger wrote:
-> 2014-11-04 8:39 GMT+01:00 Arnd Bergmann <arnd@arndb.de>:
-> > On Tuesday 04 November 2014 14:36:45 HC Yen wrote:
-> >> > > +
-> >> > > +#include <dt-bindings/interrupt-controller/irq.h>
-> >> > > +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> >> > > +#include "skeleton64.dtsi"
-> >> >
-> >> > Cortex a7 is 32 bits, right? So why do you use skeleton64.dtsi?
-> >>
-> >> Cortex-A7 is 32-bit, but that doesn't mean it can only have 32-bit
-> >> physical address.  With LPAE enabled, we can have physical address more
-> >> than 32 bits.
-> >>
-> >> The main difference between "skeleton64.dtsi" and "skeleton.dtsi" is
-> >> "#address-cells" property set to 2.  Although there are few sources
-> >> using "skeleton64.dtsi", some of them write "#address-cells = <2>"
-> >> directly in order to have 64-bit address space.  ARM's TC2 reference
-> >> platform (vexpress-v2p-ca15_a7.dts) is an example.
-> >>
-> >> Some of MediaTek ARMv7 SoCs support address space larger than 4GB. It
-> >> will be convenient to share the sources if we all use 64-bit device
-> >> tree.
-> >
-> > Right, in general, I'd use #address-cells=<2> for Cortex-A7/A15/A17.
-> 
-> Alright, thanks for clarification. So we should use skeleton64.dtsi
-> for mt6589 as well, right?
+Some SoC's FPGA platform will need this quirk, but it will complain if
+running at true SoC platform. This is a normal case, so remove this
+warning.
 
-If the chip is capable of accessing memory or registers higher than 4GB
-physical address, then you should, yes.
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
 
-If the SoC has limitations that mean you can't have higher addresses
-anyway, then either way is fine, no need to change it.
+Hi,
 
-	Arnd
+This patch is based on balbi/testing/next branch.
+
+Thanks,
+Rui
+
+---
+ drivers/usb/dwc3/core.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index 8ae42b8..3f1f0ab 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -531,9 +531,6 @@ static int dwc3_core_init(struct dwc3 *dwc)
+ 		dwc->is_fpga = true;
+ 	}
+ 
+-	WARN_ONCE(dwc->disable_scramble_quirk && !dwc->is_fpga,
+-			"disable_scramble cannot be used on non-FPGA builds\n");
+-
+ 	if (dwc->disable_scramble_quirk && dwc->is_fpga)
+ 		reg |= DWC3_GCTL_DISSCRAMBLE;
+ 	else
+-- 
+1.9.1
+
