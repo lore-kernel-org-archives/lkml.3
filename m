@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaKDUQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 15:16:30 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41855 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882AbaKDUQ2 (ORCPT
+	id S1753372AbaKDUSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 15:18:38 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42646 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274AbaKDUSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 15:16:28 -0500
-Date: Tue, 4 Nov 2014 20:16:21 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 0/4 v3] fs: Remove i_devices from struct inode
-Message-ID: <20141104201620.GL7996@ZenIV.linux.org.uk>
-References: <1415096851-17209-1-git-send-email-jack@suse.cz>
- <20141104153940.GH7996@ZenIV.linux.org.uk>
- <54592D49.4070704@amacapital.net>
- <CALCETrViY8biMs=D9XKAJx-9m5iEEUCbpzmOR2QFVyxcdoczxQ@mail.gmail.com>
+	Tue, 4 Nov 2014 15:18:36 -0500
+Date: Tue, 4 Nov 2014 21:18:34 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v9 2/4] amba: Don't unprepare the clocks if device driver
+ wants IRQ safe runtime PM
+Message-ID: <20141104201834.GC15071@amd>
+References: <1415105570-7871-1-git-send-email-k.kozlowski@samsung.com>
+ <1415105570-7871-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrViY8biMs=D9XKAJx-9m5iEEUCbpzmOR2QFVyxcdoczxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415105570-7871-3-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 11:52:22AM -0800, Andy Lutomirski wrote:
+On Tue 2014-11-04 13:52:48, Krzysztof Kozlowski wrote:
+> The AMBA bus driver defines runtime Power Management functions which
+> disable and unprepare AMBA bus clock. This is problematic for runtime PM
+> because unpreparing a clock might sleep so it is not interrupt safe.
+> 
+> However some drivers may want to implement runtime PM functions in
+> interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
+> bus driver should only disable/enable the clock in runtime suspend and
+> resume callbacks.
 
-> Let me try again, though: what if a chardev inode replaced i_cdev with
-> NULL and dropped its kobj reference in iput_final?  This would add a
-> bit over overhead to things that repeatedly open and close the same
-> device node, but I doubt this matters much.
 
-How is it different from what Jan proposed?  The whole problem is that
-iput_final() is too late.  We could clean the reference on close, all
-right, and have it looked up again on every open, but I'm not at all sure
-that situation with opening/closing cdev is never a hot path, especially with
-udev playing silly buggers, etc.
+
+>  /*
+>   * Hooks to provide runtime PM of the pclk (bus clock).  It is safe to
+>   * enable/disable the bus clock at runtime PM suspend/resume as this
+> @@ -95,8 +102,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
+>  	struct amba_device *pcdev = to_amba_device(dev);
+>  	int ret = pm_generic_runtime_suspend(dev);
+>  
+> -	if (ret == 0 && dev->driver)
+> -		clk_disable_unprepare(pcdev->pclk);
+> +	if (ret == 0 && dev->driver) {
+> +		pcdev->irq_safe = get_pm_runtime_irq_safe(dev);
+> +
+> +		if (pcdev->irq_safe)
+> +			clk_disable(pcdev->pclk);
+> +		else
+> +			clk_disable_unprepare(pcdev->pclk);
+> +	}
+
+So you can handle the case of !pcdev->irq_safe. What is the penalty
+for always assuming !pcdev->irq_safe?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
