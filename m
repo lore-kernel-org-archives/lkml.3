@@ -1,109 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaKDIpg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 03:45:36 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12145 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124AbaKDIop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 03:44:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="484326584"
-From: Lu Baolu <baolu.lu@linux.intel.com>
-To: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lu Baolu <baolu.lu@linux.intel.com>
-Subject: [PATCH v2 2/3] usb: xhci: This reworks ff8cbf250b448aac35589f6075082c3fcad8a8fe
-Date: Tue,  4 Nov 2014 16:34:25 +0800
-Message-Id: <1415090066-57007-3-git-send-email-baolu.lu@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415090066-57007-1-git-send-email-baolu.lu@linux.intel.com>
-References: <1415090066-57007-1-git-send-email-baolu.lu@linux.intel.com>
+	id S1752834AbaKDIqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 03:46:07 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:4982 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752444AbaKDIqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 03:46:02 -0500
+X-IronPort-AV: E=Sophos;i="5.04,845,1406563200"; 
+   d="scan'208";a="42815401"
+Message-ID: <54589268.7040206@cn.fujitsu.com>
+Date: Tue, 4 Nov 2014 16:46:32 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
+        <grygorii.strashko@ti.com>, <yinghai@kernel.org>,
+        <isimatu.yasuaki@jp.fujitsu.co>, <fabf@skynet.be>, <nzimmer@sgi.com>,
+        <wangnan0@huawei.com>, <vdavydov@parallels.com>, <toshi.kani@hp.com>,
+        <phacht@linux.vnet.ibm.com>, <tj@kernel.org>,
+        <kirill.shutemov@linux.intel.com>, <riel@redhat.com>,
+        <luto@amacapital.net>, <hpa@linux.intel.com>, <aarcange@redhat.com>,
+        <qiuxishi@huawei.com>, <mgorman@suse.de>, <rientjes@google.com>,
+        <hannes@cmpxchg.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH 2/2] mem-hotplug: Fix wrong check for zone->pageset initialization
+ in online_pages().
+References: <1414748812-22610-1-git-send-email-tangchen@cn.fujitsu.com> <1414748812-22610-3-git-send-email-tangchen@cn.fujitsu.com> <54588A0D.1060207@jp.fujitsu.com>
+In-Reply-To: <54588A0D.1060207@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xhci: clear root port wake on bits if controller isn't wake-up capable
 
-When system is being suspended, if host device is not wakeup capable,
-xhci_suspend() needs to clear all root port wake on bits.  Otherwise,
-some platforms may generate spurious wakeup, even if PCI PME# is dis-
-abled.
+On 11/04/2014 04:10 PM, Yasuaki Ishimatsu wrote:
+> (2014/10/31 18:46), Tang Chen wrote:
+>> When we are doing memory hot-add, the following functions are called:
+>>
+>> add_memory()
+>> |--> hotadd_new_pgdat()
+>>       |--> free_area_init_node()
+>>            |--> free_area_init_core()
+>>                 |--> zone->present_pages = realsize;           /* 1. zone is populated */
+>>                      |--> zone_pcp_init()
+>>                           |--> zone->pageset = &boot_pageset;  /* 2. zone->pageset is set to boot_pageset */
+>>
+>> There are two problems here:
+>> 1. Zones could be populated before any memory is onlined.
+>> 2. All the zones on a newly added node have the same pageset pointing to boot_pageset.
+>>
+>> The above two problems will result in the following problem:
+>> When we online memory on one node, e.g node2, the following code is executed:
+>>
+>> online_pages()
+>> {
+>>          ......
+>>          if (!populated_zone(zone)) {
+>>                  need_zonelists_rebuild = 1;
+>>                  build_all_zonelists(NULL, zone);
+>>          }
+>>          ......
+>> }
+>>
+>> Because of problem 1, the zone has been populated, and the build_all_zonelists()
+>>                        will never called. zone->pageset won't be updated.
+>> Because of problem 2, All the zones on a newly added node have the same pageset
+>>                        pointing to boot_pageset.
+>> And as a result, when we online memory on node2, node3's meminfo will corrupt.
+>> Pages on node2 may be freed to node3.
+>>
+>> # for ((i = 2048; i < 2064; i++)); do echo online_movable > /sys/devices/system/node/node2/memory$i/state; done
+>> # cat /sys/devices/system/node/node2/meminfo
+>> Node 2 MemTotal:       33554432 kB
+>> Node 2 MemFree:        33549092 kB
+>> Node 2 MemUsed:            5340 kB
+>> ......
+>> # cat /sys/devices/system/node/node3/meminfo
+>> Node 3 MemTotal:              0 kB
+>> Node 3 MemFree:               248 kB                    /* corrupted */
+>> Node 3 MemUsed:               0 kB
+>> ......
+>>
+>> We have to populate some zones before onlining memory, otherwise no memory could be onlined.
+>> So when onlining pages, we should also check if zone->pageset is pointing to boot_pageset.
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+>> ---
+>>   include/linux/mm.h  | 1 +
+>>   mm/memory_hotplug.c | 6 +++++-
+>>   mm/page_alloc.c     | 5 +++++
+>>   3 files changed, 11 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/include/linux/mm.h b/include/linux/mm.h
+>> index 02d11ee..83e6505 100644
+>> --- a/include/linux/mm.h
+>> +++ b/include/linux/mm.h
+>> @@ -1732,6 +1732,7 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
+>>   
+>>   extern void setup_per_cpu_pageset(void);
+>>   
+>> +extern bool zone_pcp_initialized(struct zone *zone);
+>>   extern void zone_pcp_update(struct zone *zone);
+>>   extern void zone_pcp_reset(struct zone *zone);
+>>   
+>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>> index 3ab01b2..bc0de0f 100644
+>> --- a/mm/memory_hotplug.c
+>> +++ b/mm/memory_hotplug.c
+>> @@ -1013,9 +1013,13 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+>>   	 * If this zone is not populated, then it is not in zonelist.
+>>   	 * This means the page allocator ignores this zone.
+>>   	 * So, zonelist must be updated after online.
+>> +	 *
+>> +	 * If this zone is populated, zone->pageset could be initialized
+>> +	 * to boot_pageset for the first time a node is added. If so,
+>> +	 * zone->pageset should be allocated.
+>>   	 */
+>>   	mutex_lock(&zonelists_mutex);
+>> -	if (!populated_zone(zone)) {
+>> +	if (!populated_zone(zone) || !zone_pcp_initialized(zone)) {
+>>   		need_zonelists_rebuild = 1;
+>>   		build_all_zonelists(NULL, zone);
+>>   	}
+> Why does zone->present_pages of the hot-added memroy have valid value?
+> In my understading, the present_pages is incremented/decremented by memory
+> online/offline. So when hot adding memory, the zone->present_pages of the
+> memory should be 0.
 
-Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
----
- drivers/usb/host/xhci.c | 42 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+Before zone->managed_pages was introduced, zone->present_pages had been
+abused.
+It had two meaning:
+1. pages existing in the zone
+2. pages managed by buddy system in the zone
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2a5d45b..cd57aae 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -35,6 +35,8 @@
- #define DRIVER_AUTHOR "Sarah Sharp"
- #define DRIVER_DESC "'eXtensible' Host Controller (xHC) Driver"
- 
-+#define	PORT_WAKE_BITS	(PORT_WKOC_E | PORT_WKDISC_E | PORT_WKCONN_E)
-+
- /* Some 0.95 hardware can't handle the chain bit on a Link TRB being cleared */
- static int link_quirk;
- module_param(link_quirk, int, S_IRUGO | S_IWUSR);
-@@ -851,6 +853,42 @@ static void xhci_clear_command_ring(struct xhci_hcd *xhci)
- 	xhci_set_cmd_ring_deq(xhci);
- }
- 
-+static void xhci_disable_port_wake_on_bits(struct xhci_hcd *xhci)
-+{
-+	int port_index;
-+	__le32 __iomem **port_array;
-+	unsigned long flags;
-+	u32 t1, t2;
-+
-+	spin_lock_irqsave(&xhci->lock, flags);
-+
-+	/* disble usb3 ports Wake bits*/
-+	port_index = xhci->num_usb3_ports;
-+	port_array = xhci->usb3_ports;
-+	while (port_index--) {
-+		t1 = readl(port_array[port_index]);
-+		t2 = xhci_port_state_to_neutral(t1);
-+		t2 &= ~PORT_WAKE_BITS;
-+		t1 = xhci_port_state_to_neutral(t1);
-+		if (t1 != t2)
-+			writel(t2, port_array[port_index]);
-+	}
-+
-+	/* disble usb2 ports Wake bits*/
-+	port_index = xhci->num_usb2_ports;
-+	port_array = xhci->usb2_ports;
-+	while (port_index--) {
-+		t1 = readl(port_array[port_index]);
-+		t2 = xhci_port_state_to_neutral(t1);
-+		t2 &= ~PORT_WAKE_BITS;
-+		t1 = xhci_port_state_to_neutral(t1);
-+		if (t1 != t2)
-+			writel(t2, port_array[port_index]);
-+	}
-+
-+	spin_unlock_irqrestore(&xhci->lock, flags);
-+}
-+
- /*
-  * Stop HC (not bus-specific)
-  *
-@@ -868,6 +906,10 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 			xhci->shared_hcd->state != HC_STATE_SUSPENDED)
- 		return -EINVAL;
- 
-+	/* Clear root port wake on bits if not wakeup capable. */
-+	if (!device_may_wakeup(hcd->self.controller))
-+		xhci_disable_port_wake_on_bits(xhci);
-+
- 	/* Don't poll the roothubs on bus suspend. */
- 	xhci_dbg(xhci, "%s: stopping port polling.\n", __func__);
- 	clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
--- 
-1.9.1
+So, zone->managed_pages was introduced. Now, it looks like:
+1. zone->present_pages is the pages existing in the zone
+2. zone->managed_pages is the pages managed by buddy system
+
+So when hot adding memory, the zone->present_pages should not be 0.
+zone->managed_pages should be 0. And here, since zone->managed_pages
+is updated in online_pages_range() callback, I think we should remove
+zone->present_pages and node_present_pages updates from online_pages().
+
+
+Furthermore, since we can online pages or online_movable pages,
+zones in a node could be changed. So we should update zone->present_pages
+when pfn is moved left or right.
+
+Thanks.
+
+>
+> Thanks,
+> Yasuaki Ishimatsu
+>
+>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index 736d8e1..4ff1540 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -6456,6 +6456,11 @@ void __meminit zone_pcp_update(struct zone *zone)
+>>   }
+>>   #endif
+>>   
+>> +bool zone_pcp_initialized(struct zone *zone)
+>> +{
+>> +	return (zone->pageset != &boot_pageset);
+>> +}
+>> +
+>>   void zone_pcp_reset(struct zone *zone)
+>>   {
+>>   	unsigned long flags;
+>>
+>
+> .
+>
 
