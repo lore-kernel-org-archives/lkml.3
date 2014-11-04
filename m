@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbaKDM1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 07:27:34 -0500
-Received: from out21.biz.mail.alibaba.com ([205.204.114.132]:55515 "EHLO
-	out21.biz.mail.alibaba.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750866AbaKDM1d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 07:27:33 -0500
-X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Nov 2014 07:27:32 EST
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R211e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g08144;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=6;RT=6;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'pang.xunlei'" <pang.xunlei@linaro.org>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "'Ingo Molnar'" <mingo@redhat.com>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Steven Rostedt'" <rostedt@goodmis.org>,
-        "'Juri Lelli'" <juri.lelli@gmail.com>
-Subject: Re: [PATCH v2 2/6] sched/rt: Optimize select_task_rq_rt() for non-RT curr task
-Date: Tue, 04 Nov 2014 20:21:37 +0800
-Message-ID: <011501cff829$e1a26e60$a4e74b20$@alibaba-inc.com>
+	id S1752897AbaKDMbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 07:31:51 -0500
+Received: from mta-out1.inet.fi ([62.71.2.234]:53754 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866AbaKDMbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 07:31:49 -0500
+Date: Tue, 4 Nov 2014 14:29:01 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Hugh Dickins <hughd@google.com>
+Cc: Davidlohr Bueso <dave@stgolabs.net>,
+        "Kirill A. Shutemov" <kirill.shutemov@intel.linux.com>,
+        Michel Lespinasse <walken@google.com>, akpm@linux-foundation.org,
+        riel@redhat.com, mgorman@suse.de, peterz@infradead.org,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, dbueso@suse.de,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 08/10] mm/mremap: share the i_mmap_rwsem
+Message-ID: <20141104122901.GA28274@node.dhcp.inet.fi>
+References: <1414697657-1678-1-git-send-email-dave@stgolabs.net>
+ <1414697657-1678-9-git-send-email-dave@stgolabs.net>
+ <alpine.LSU.2.11.1411032148230.15596@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac/4KVxFThArGhaQRK2FCl2G0QbaxA==
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1411032148230.15596@eggly.anvils>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 03, 2014 at 10:04:24PM -0800, Hugh Dickins wrote:
+> I'm glad to see this series back, and nicely presented: thank you.
+> Not worth respinning them, but consider 1,2,3,4,5,6,7 and 9 as
+> Acked-by: Hugh Dickins <hughd@google.com>
 > 
-> When selecting the cpu for a waking RT task, if curr is a non-RT
-> task which is bound only on this cpu, then we can give it a chance
-> to select a different cpu(definitely an idle cpu if existing) for
-> the RT task to avoid curr starving.
+> On Thu, 30 Oct 2014, Davidlohr Bueso wrote:
 > 
-> Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
-> ---
->  kernel/sched/rt.c |   10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
+> > As per the comment in move_ptes(), we only require taking the
+> > anon vma and i_mmap locks to ensure that rmap will always observe
+> > either the old or new ptes, in the case of need_rmap_lock=true.
+> > No modifications to the tree itself, thus share the i_mmap_rwsem.
+> > 
+> > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> > Acked-by: Kirill A. Shutemov <kirill.shutemov@intel.linux.com>
 > 
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index da6922e..dc1f7f0 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1340,6 +1340,11 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
->  	 * runqueue. Otherwise simply start this RT task
->  	 * on its current runqueue.
->  	 *
-> +	 * If the current task on @p's runqueue is a non-RT task,
-> +	 * and this task is bound on current runqueue, then try to
-> +	 * see if we can wake this RT task up on a different runqueue,
-> +	 * we will definitely find an idle cpu if there is any.
-> +	 *
->  	 * We want to avoid overloading runqueues. If the woken
->  	 * task is a higher priority, then it will stay on this CPU
->  	 * and the lower prio task should be moved to another CPU.
-> @@ -1356,9 +1361,8 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
->  	 * This test is optimistic, if we get it wrong the load-balancer
->  	 * will have to sort it out.
->  	 */
-> -	if (curr && unlikely(rt_task(curr)) &&
-> -	    (curr->nr_cpus_allowed < 2 ||
-> -	     curr->prio <= p->prio)) {
-> +	if (curr && unlikely(curr->nr_cpus_allowed < 2 ||
-> +				curr->prio <= p->prio)) {
+> But this one is Nacked by me.  I don't understand how you and Kirill
+> could read Michel's painstaking comment on need_rmap_locks, then go
+> go ahead and remove the exclusion of rmap_walk().
+> 
+> I agree the code here does not modify the interval tree, but the
+> comment explains how we're moving a pte from one place in the tree
+> to another, and in some cases there's a danger that the rmap walk
+> might miss the pte from both places (which doesn't matter much to
+> most of its uses, but is critical in page migration).
+> 
+> Or am I the one missing something?
 
-Nack, it is no meaning to compare apple against orange.
+You're completely right.
 
-Hillf
->  		int target = find_lowest_rq(p);
-> 
->  		if (target != -1)
-> --
-> 1.7.9.5
+I've seen the comment (and I've added the missed need_rmap_locks case for
+move_huge_pmd() before). What happened is I've over-extrapolated my
+experience of rmap walk in case of split_huge_page(), which takes exclusive
+anon_vma lock, to the rest of rmap use-cases. This of course was hugely
+wrong.
 
+I'm ashamed and feel really bad about the situation. Sorry.
+
+-- 
+ Kirill A. Shutemov
