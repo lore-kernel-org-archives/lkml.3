@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863AbaKDJ0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 04:26:00 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:52287 "EHLO sipsolutions.net"
+	id S1752886AbaKDJ02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 04:26:28 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58544 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752509AbaKDJZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 04:25:53 -0500
-Message-ID: <1415093148.2064.5.camel@sipsolutions.net>
-Subject: Re: [PATCH 0/2 v3] cfg80211: mac80211: 802.11p OCB mode support
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de, burak.simsek@volkswagen.de,
-        Emmanuel Thierry <emmanuel.thierry@yogoko.fr>,
-        laszlo.virag@commsignia.com,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Tue, 04 Nov 2014 10:25:48 +0100
-In-Reply-To: <1415007199-31506-1-git-send-email-rostislav.lisovy@fel.cvut.cz> (sfid-20141103_103325_972796_F4E0AE3F)
-References: <1415007199-31506-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 (sfid-20141103_103325_972796_F4E0AE3F)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
+	id S1751160AbaKDJ00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 04:26:26 -0500
+Message-ID: <54589B78.3040104@ti.com>
+Date: Tue, 4 Nov 2014 14:55:12 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        <gregory.clement@free-electrons.com>, <jason@lakedaemon.net>,
+        <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v4 2/8] phy: miphy28lp: Add PHY header file for DT x Driver
+ defines
+References: <1413962067-25557-1-git-send-email-gabriel.fernandez@linaro.org> <1413962067-25557-3-git-send-email-gabriel.fernandez@linaro.org>
+In-Reply-To: <1413962067-25557-3-git-send-email-gabriel.fernandez@linaro.org>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 10:33 +0100, Rostislav Lisovy wrote:
-> The IEEE 802.11p amendment (already part of IEEE 802.11-2012)
-> specifies usage of 5 and 10 MHz wide channels in 5.9GHz band for
-> vehicular environment. All the 802.11p compliant devices should
-> be set to the newly added operation mode -- OCB (Outside the
-> Context of a BSS). No authentication/association is necessary to
-> communicate. The only parameter to be configured is the channel
-> (central frequency and bandwidth) to communicate on. The channel
-> has to be known a priori. It is set during the 'ocb join'
-> operation (sent via netlink message from user-space).
+Hi Gabriel,
+
+On Wednesday 22 October 2014 12:44 PM, Gabriel FERNANDEZ wrote:
+> This provides the shared header file which will be reference from both
+> PHY driver and its associated Device Tree node(s).
 > 
-> This patchset adds the OCB mode, OCB join and leave handling
-> (nl80211, cfg80211, mac80211), 802.11p EDCA parameters
-> modification, RX and TX path (for unicast/broadcast messages).
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> ---
+>  include/dt-bindings/phy/phy.h | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+>  create mode 100644 include/dt-bindings/phy/phy.h
+> 
+> diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
+> new file mode 100644
+> index 0000000..a142c69
+> --- /dev/null
+> +++ b/include/dt-bindings/phy/phy.h
+> @@ -0,0 +1,17 @@
+> +/*
+> + *
+> + * This header provides constants for the phy framework
+> + *
+> + * Copyright (C) 2014 STMicroelectronics
+> + * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
+> + * License terms:  GNU General Public License (GPL), version 2
+> + */
+> +
+> +#ifndef _DT_BINDINGS_PHY
+> +#define _DT_BINDINGS_PHY
+> +
+> +#define PHY_TYPE_SATA		1
+> +#define PHY_TYPE_PCIE		2
+> +#define PHY_TYPE_USB		3
 
-Applied, thanks for all the changes.
+Can we have a separate #define for USB2 and USB3? Looks like Gregory will need
+it for Armada 375 SoC.
 
-johannes
-
+Thanks
+Kishon
