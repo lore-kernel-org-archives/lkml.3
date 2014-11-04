@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaKDXO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:14:58 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:57868 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaKDXO4 (ORCPT
+	id S1752138AbaKDXSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:18:51 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:50959 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaKDXSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:14:56 -0500
+	Tue, 4 Nov 2014 18:18:49 -0500
+Message-ID: <54595ED7.2090406@codeaurora.org>
+Date: Tue, 04 Nov 2014 17:18:47 -0600
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <5458A349.5020401@redhat.com>
-References: <1415069656-14138-1-git-send-email-ast@plumgrid.com>
-	<1415069656-14138-4-git-send-email-ast@plumgrid.com>
-	<5458A349.5020401@redhat.com>
-Date: Tue, 4 Nov 2014 15:14:55 -0800
-Message-ID: <CAMEtUuzZT8nTwA7mK3zDgmU=VSVe7UdTtj1h7nNdxc8wbWKruA@mail.gmail.com>
-Subject: Re: [PATCH net-next 3/7] bpf: add array type of eBPF maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
+References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <54595416.1020205@codeaurora.org> <54595590.7080603@codeaurora.org> <3210901.7DuAVnBdHS@vostro.rjw.lan> <545959A8.7010305@codeaurora.org>
+In-Reply-To: <545959A8.7010305@codeaurora.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 1:58 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> +
->> +       memcpy(array->value + array->elem_size * index, value,
->> array->elem_size);
+On 11/04/2014 04:56 PM, Timur Tabi wrote:
 >
-> What would protect this from concurrent updates?
+>  >  I'm
+>> not sure how much of that code can be shared between DT and ACPI ATM, but
+>> it looks like at least some of it can be shared.
+>
+> So ACPI does not support the concept if variable length properties?
 
-nothing.
-that's what I meant in commit log:
- - map_update_elem() replaces elements in an non-atomic way
-   (for atomic updates hashtable type should be used instead)
+Ah, I see that it does:
 
-The array map is like C array of structures.
-Nothing protects concurrent access.
-It's used in the cases where accuracy is not needed
-or when there is no concurrent access.
-To compute a histogram of events in tracing the array
-of integers is used. Every integer is a counter. Program
-increments it (may be without using xadd) and
-user space periodically reads it back.
-map_update_elem() is called by userspace once
-to initialize it if zero-init is not enough.
-Programs do lookup() and modify the values.
-For array type update() method is used rarely,
-delete() is never used and get_next() is needed
-for completeness to browse maps through
-common map API.
-I'm guessing you're asking, because it may feel
-that adding a lock() will help to make it more useful? ;)
-It's not, since programs cannot take a lock().
+int acpi_dev_prop_read_array(struct acpi_device *adev, const char *propname,
+			     enum dev_prop_type proptype, void *val,
+			     size_t nval)
+{
+...
+	if (!val)
+		return obj->package.count;
+
+
+If I pass NULL for 'val', it returns the number of items.
+
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, a Linux Foundation Collaborative Project.
