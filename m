@@ -1,110 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217AbaKDFkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 00:40:32 -0500
-Received: from ozlabs.org ([103.22.144.67]:37981 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989AbaKDFk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 00:40:28 -0500
-Date: Tue, 4 Nov 2014 16:40:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: linux-next: build failure after merge of the mfd tree
-Message-ID: <20141104164005.1a45ad46@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751340AbaKDFln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 00:41:43 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:46224 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbaKDFlm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 00:41:42 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: kan.liang@intel.com
+Cc: acme@kernel.org, jolsa@kernel.org, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org
+Subject: Re: [PATCH 1/1] perf tools: perf diff for different binaries
+References: <1414757172-20064-1-git-send-email-kan.liang@intel.com>
+Date: Tue, 04 Nov 2014 14:41:39 +0900
+In-Reply-To: <1414757172-20064-1-git-send-email-kan.liang@intel.com> (kan
+	liang's message of "Fri, 31 Oct 2014 05:06:12 -0700")
+Message-ID: <87tx2f5xpo.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/TWnCtqxca2B7h=6Z0t2nb3/"; protocol="application/pgp-signature"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TWnCtqxca2B7h=6Z0t2nb3/
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi kan,
 
-Hi all,
+On Fri, 31 Oct 2014 05:06:12 -0700, kan liang wrote:
+> From: Kan Liang <kan.liang@intel.com>
+>
+> perf diff can display the differential profile between two perf.data
+> files. However, the perf.data files have to come from same binaries.
+>
+> The patch introduced a key "symbol_name" for --sort option, so the user
+> can compare the perf.data files from different binaries, even different
+> kernel version. If symbol_name is set, perf diff display the
+> differential profile of functions.
+> It could help the user quickly locate the scaling regression caused by
+> new binaries/kernels.
+>
+> Here is an example. I have two version of binaries. One is running on
+> kernel 3.16. The other is running on kernel 3.17.
+>
+> Using perf record, I got two perf.data files, v1_1_6perf.data (version
+> one in 3.16) and v2_1_7perf.data (version two in 3.17).
+>
+> If I run old perf diff with --sort dso,symbol, we cannot get any useful
+> information for the user space binary. Furthermore, it failed to compare
+> the kernel function. E.g. native_write_msr_safe.
+>
+> perf diff -s dso,symbol --compute ratio v1_1_6perf.data v2_1_7perf.data
+>
+>  Event 'cycles'
+>
+>  Baseline           Ratio  Shared Object      Symbol
+>  ........  ..............  .................
+> ....................................
+>
+>                             [kernel.kallsyms]  [k]
+> __update_entity_load_avg_contrib
+>                             [kernel.kallsyms]  [k] _raw_spin_lock
+>                             [kernel.kallsyms]  [k] apic_timer_interrupt
+>                             [kernel.kallsyms]  [k] hrtimer_interrupt
+>      0.01%                  [kernel.kallsyms]  [k] native_write_msr_safe
+>                             [kernel.kallsyms]  [k] native_write_msr_safe
+>      0.01%                  [kernel.kallsyms]  [k] notifier_call_chain
+>      0.01%                  [kernel.kallsyms]  [k] perf_event_task_tick
+>      0.01%                  [kernel.kallsyms]  [k] run_posix_cpu_timers
+>      0.01%                  [kernel.kallsyms]  [k] run_timer_softirq
+>      0.01%                  [kernel.kallsyms]  [k] trigger_load_balance
+>      0.01%                  [kernel.kallsyms]  [k] update_vsyscall
+>      0.05%                  [unknown]          [.] 0x0000000000400540
+>      0.04%                  [unknown]          [.] 0x0000000000400541
+>      0.03%                  [unknown]          [.] 0x000000000040054b
+>      0.04%                  [unknown]          [.] 0x0000000000400552
+>     33.55%                  [unknown]          [.] 0x0000000000400554
+>      1.22%                  [unknown]          [.] 0x000000000040055a
+>      8.00%                  [unknown]          [.] 0x000000000040055e
+>      0.02%                  [unknown]          [.] 0x0000000000400562
+>      8.41%                  [unknown]          [.] 0x0000000000400564
+>     48.13%                  [unknown]          [.] 0x000000000040056b
+>      0.16%                  [unknown]          [.] 0x0000000000400570
+>      0.17%                  [unknown]          [.] 0x0000000000400571
+>                             [unknown]          [.] 0x0000000000400580
+>                             [unknown]          [.] 0x0000000000400581
+>      0.01%                  [unknown]          [.] 0x0000000000400583
+>      0.01%                  [unknown]          [.] 0x0000000000400588
+>                             [unknown]          [.] 0x000000000040058b
+>      0.01%     1240.990221  [unknown]          [.] 0x000000000040058d
+>                             [unknown]          [.] 0x0000000000400590
+>      0.06%                  [unknown]          [.] 0x0000000000400591
+>                             [unknown]          [.] 0x0000000000400593
+>      0.04%                  [unknown]          [.] 0x0000000000400595
+>      0.01%     1240.603148  [unknown]          [.] 0x0000000000400597
+>                             [unknown]          [.] 0x000000000040059b
+>                             [unknown]          [.] 0x000000000040059d
+>                             [unknown]          [.] 0x00000000004005a1
+>                             [unknown]          [.] 0x00000000004005a5
+>                             [unknown]          [.] 0x00000000004005a7
+>                             [unknown]          [.] 0x00000000004005a8
+>                             [unknown]          [.] 0x00000000004005aa
+>                             [unknown]          [.] 0x00000000004005ba
+>                             [unknown]          [.] 0x00000000004005bf
+>                             [unknown]          [.] 0x00000000004005c4
+>                             [unknown]          [.] 0x00000000004005c9
+>                             [unknown]          [.] 0x00000000004005ce
+>                             [unknown]          [.] 0x00000000004005d2
+>                             [unknown]          [.] 0x00000000004005d6
+>                             [unknown]          [.] 0x00000000004005d8
+>                             [unknown]          [.] 0x00000000004005f5
+>
+> With the key "symbol_name", we can easily get the differential profile
+> from different binary versions and different kernel versions.
+>
+> ./perf diff -s dso,symbol_name --compute ratio v1_1_6perf.data v2_1_7perf.data
+>
+>  Event 'cycles'
+>
+>  Baseline           Ratio  Shared Object      Symbol Name
+>  ........  ..............  .................
+> ....................................
+>
+>                             [kernel.kallsyms]  [k]
+> __update_entity_load_avg_contrib
+>                             [kernel.kallsyms]  [k] _raw_spin_lock
+>                             [kernel.kallsyms]  [k] apic_timer_interrupt
+>                             [kernel.kallsyms]  [k] hrtimer_interrupt
+>      0.01%        1.998522  [kernel.kallsyms]  [k] native_write_msr_safe
+>      0.01%                  [kernel.kallsyms]  [k] notifier_call_chain
+>      0.01%                  [kernel.kallsyms]  [k] perf_event_task_tick
+>      0.01%                  [kernel.kallsyms]  [k] run_posix_cpu_timers
+>      0.01%                  [kernel.kallsyms]  [k] run_timer_softirq
+>      0.01%                  [kernel.kallsyms]  [k] trigger_load_balance
+>      0.01%                  [kernel.kallsyms]  [k] update_vsyscall
+>                             tchain_edit        [.] f1
+>      0.14%        3.913444  tchain_edit        [.] f2
+>     99.82%        1.005478  tchain_edit        [.] f3
 
-After merging the mfd tree, today's linux-next build (powerpc allyesconfig)
-failed like this:
+Hmm.. I think it should be a default behavior for perf diff, otherwise
+-s symbol is almost meaningless IMHO.  What about setting the
+sort_sym.se_collapse in data_process() so that hists__match() can use
+symbol names?
 
-drivers/regulator/max77686.c:432:13: warning: 'struct max77686_platform_dat=
-a' declared inside parameter list
-      struct max77686_platform_data *pdata)
-             ^
-drivers/regulator/max77686.c:432:13: warning: its scope is only this defini=
-tion or declaration, which is probably not what you want
-drivers/regulator/max77686.c: In function 'max77686_pmic_dt_parse_pdata':
-drivers/regulator/max77686.c:447:7: error: dereferencing pointer to incompl=
-ete type
-  pdata->num_regulators =3D ARRAY_SIZE(regulators);
-       ^
-drivers/regulator/max77686.c:448:42: error: dereferencing pointer to incomp=
-lete type
-  rdata =3D devm_kzalloc(&pdev->dev, sizeof(*rdata) *
-                                          ^
-drivers/regulator/max77686.c:449:14: error: dereferencing pointer to incomp=
-lete type
-         pdata->num_regulators, GFP_KERNEL);
-              ^
-drivers/regulator/max77686.c:455:23: error: dereferencing pointer to incomp=
-lete type
-  for (i =3D 0; i < pdata->num_regulators; i++) {
-                       ^
-drivers/regulator/max77686.c:460:3: error: invalid use of undefined type 's=
-truct max77686_regulator_data'
-   rdata[i].initdata =3D rmatch.init_data;
-   ^
-drivers/regulator/max77686.c:460:8: error: dereferencing pointer to incompl=
-ete type
-   rdata[i].initdata =3D rmatch.init_data;
-        ^
-drivers/regulator/max77686.c:461:3: error: invalid use of undefined type 's=
-truct max77686_regulator_data'
-   rdata[i].of_node =3D rmatch.of_node;
-   ^
-drivers/regulator/max77686.c:461:8: error: dereferencing pointer to incompl=
-ete type
-   rdata[i].of_node =3D rmatch.of_node;
-        ^
-drivers/regulator/max77686.c:464:7: error: dereferencing pointer to incompl=
-ete type
-  pdata->regulators =3D rdata;
-       ^
-
-And so on ...
-
-Caused by commit 9d5f4c2c748e ("mfd: max77686/802: Remove support for
-board files") from the mfd tree.
-
-I reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/TWnCtqxca2B7h=6Z0t2nb3/
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUWGa7AAoJEMDTa8Ir7ZwVcY0P/RXPwiFBeVlgRdBBqSatw85v
-PyFkHIRgdo0aI9y7F6xd3UKO2y9F7GNQni9ge8oIZRB5JRjiFUuGzGDMfwaficI6
-ri7/I2aK+WHHwRh34nT1Rpa47i9kOES88z0JKfN0gd3BvRqloIXrgpRVc1MYWLkS
-MQ92k3CxndswDO5cU5BRlds1vujcv2umNWMtpQa124jMBp/iFYH8BDlwWN60FNiQ
-mEy3GLHrTu2rP7NU4V93ZFJL+l+CDbxLPyuyhwEXiSIiZWGoOuJJSpib0l1mNOnc
-TcMKAl+vHb8CQlRyBJXIHPA5Uc6JANEavNDR6xRJk0xpKul4vcZg19rlJFTFudcc
-ySXRqc8vwuBMBNPyH1dNJqB+b9BtiPwQP6Ax44QuImX0mfcqMbQFPDGlD2jMrgYC
-haP6FFl2T40h8duZX5pUHTi3e6a8KKr1i8lWHMYoOG6QFMj/Q5fLQXCduV4+FTkK
-QDFddAAA3kfF6/DlHcGU7RytCrm/qN6fLZUesoMA18eaEhhcxnalACQq2CmWMyZr
-tvIt3bgiIY6rVL8yPUy4QdEkPugAQQwy1z2oObBXHCeQsLNb72WTJvyksCvGfJls
-cECYv0TlEEao7zqXDx3XOwJdLUX2sukVRUJ/0iGHqnbg+JNjQYUSdHMIXiUNYDVZ
-jdBB8YThQqTmGtWjuQxX
-=JUus
------END PGP SIGNATURE-----
-
---Sig_/TWnCtqxca2B7h=6Z0t2nb3/--
+Thanks,
+Namhyung
