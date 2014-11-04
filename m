@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbaKDRWB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:22:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60066 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234AbaKDRV4 (ORCPT
+	id S1753185AbaKDRVq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:21:46 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:50541 "EHLO
+	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155AbaKDRSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:21:56 -0500
-Date: Tue, 4 Nov 2014 09:21:37 -0800
-From: tip-bot for Daniel J Blueman <tipbot@zytor.com>
-Message-ID: <tip-00e7977dd1bbd46e336d7ef907d0fb6b6a4c294f@git.kernel.org>
-Cc: mingo@kernel.org, daniel@numascale.com, sp@numascale.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, bhelgaas@google.com,
-        hpa@zytor.com
-Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        bhelgaas@google.com, mingo@kernel.org, daniel@numascale.com,
-        sp@numascale.com
-In-Reply-To: <1415089784-28779-1-git-send-email-daniel@numascale.com>
-References: <1415089784-28779-1-git-send-email-daniel@numascale.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86: numachip: Fix 16-bit APIC ID truncation
-Git-Commit-ID: 00e7977dd1bbd46e336d7ef907d0fb6b6a4c294f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 4 Nov 2014 12:18:21 -0500
+X-Quarantine-ID: <f6tXxgcqZ3oJ>
+X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
+X-Spam-Flag: NO
+X-Spam-Score: -4.399
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
+        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
+        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
+        ebiederm@xmission.com, serge.hallyn@ubuntu.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 20/20] selftests/user: add install target to enable installing test
+Date: Tue,  4 Nov 2014 10:11:16 -0700
+Message-Id: <8492c16c4963938f3f289f06885ff9029478065c.1415117102.git.shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
+References: <cover.1415117102.git.shuahkh@osg.samsung.com>
+In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
+References: <cover.1415117102.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  00e7977dd1bbd46e336d7ef907d0fb6b6a4c294f
-Gitweb:     http://git.kernel.org/tip/00e7977dd1bbd46e336d7ef907d0fb6b6a4c294f
-Author:     Daniel J Blueman <daniel@numascale.com>
-AuthorDate: Tue, 4 Nov 2014 16:29:41 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 4 Nov 2014 18:17:27 +0100
+Add a new make target to enable installing test. This target
+installs test in the kselftest install location and add to the
+kselftest script to run the test.
 
-x86: numachip: Fix 16-bit APIC ID truncation
-
-Prevent 16-bit APIC IDs being truncated by using correct mask. This fixes
-booting large systems, where the wrong core would receive the startup and
-init IPIs, causing hanging.
-
-Signed-off-by: Daniel J Blueman <daniel@numascale.com>
-Cc: Steffen Persvold <sp@numascale.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Link: http://lkml.kernel.org/r/1415089784-28779-1-git-send-email-daniel@numascale.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- arch/x86/kernel/apic/apic_numachip.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/testing/selftests/user/Makefile | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 4128b5f..2aaee79 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -40,7 +40,7 @@ static unsigned int get_apic_id(unsigned long x)
- 	unsigned int id;
+diff --git a/tools/testing/selftests/user/Makefile b/tools/testing/selftests/user/Makefile
+index 12c9d15..c8e3863 100644
+--- a/tools/testing/selftests/user/Makefile
++++ b/tools/testing/selftests/user/Makefile
+@@ -3,5 +3,12 @@
+ # No binaries, but make sure arg-less "make" doesn't trigger "run_tests"
+ all:
  
- 	rdmsrl(MSR_FAM10H_NODE_ID, value);
--	id = ((x >> 24) & 0xffU) | ((value << 2) & 0x3f00U);
-+	id = ((x >> 24) & 0xffU) | ((value << 2) & 0xff00U);
- 
- 	return id;
- }
++install: all
++	install ./test_user_copy.sh $(INSTALL_KSFT_PATH)
++	echo "\necho \"Start user copy test ....\"" >> $(KSELFTEST)
++	echo "./test_user_copy.sh" >> $(KSELFTEST)
++	echo "echo \"End user copy test ....\"" >> $(KSELFTEST)
++	echo "echo \"==============================\"" >> $(KSELFTEST)
++
+ run_tests: all
+ 	./test_user_copy.sh
+-- 
+1.9.1
+
