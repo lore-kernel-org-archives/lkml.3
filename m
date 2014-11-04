@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaKDRz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:55:59 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:60541 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936AbaKDRzz (ORCPT
+	id S1751617AbaKDSCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 13:02:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46222 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaKDSCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 12:55:55 -0500
+	Tue, 4 Nov 2014 13:02:12 -0500
+Date: Tue, 4 Nov 2014 10:02:10 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Stephanie Wallick <stephanie.s.wallick@intel.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "Sean O. Stalley" <sean.stalley@intel.com>
+Subject: Re: [PATCH 05/10] added media specific (MS) TCP drivers
+Message-ID: <20141104180210.GA3940@kroah.com>
+References: <1415047377-3139-1-git-send-email-stephanie.s.wallick@intel.com>
+ <1415047377-3139-6-git-send-email-stephanie.s.wallick@intel.com>
+ <20141104084833.GF26719@distanz.ch>
 MIME-Version: 1.0
-In-Reply-To: <54579C25.5060705@xs4all.nl>
-References: <1414598634-13446-1-git-send-email-andrey.krieger.utkin@gmail.com>
-	<1414598634-13446-4-git-send-email-andrey.krieger.utkin@gmail.com>
-	<54579C25.5060705@xs4all.nl>
-Date: Tue, 4 Nov 2014 21:55:55 +0400
-Message-ID: <CANZNk82rKAqTuy5hKSOT8UocS_=vbGD47_z5qKfVQkCZrPCNYA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] [media] solo6x10: don't turn off/on encoder interrupt
- in processing loop
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Media <linux-media@vger.kernel.org>,
-        OSUOSL Drivers <devel@driverdev.osuosl.org>,
-        ismael.luceno@corp.bluecherry.net,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141104084833.GF26719@distanz.ch>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-03 19:15 GMT+04:00 Hans Verkuil <hverkuil@xs4all.nl>:
-> Hi Andrey,
->
-> On 10/29/2014 05:03 PM, Andrey Utkin wrote:
->> The used approach actually cannot prevent new encoder interrupt to
->> appear, because interrupt handler can execute in different thread, and
->> in current implementation there is still race condition regarding this.
->
-> I don't understand what you mean with 'interrupt handler can execute in
-> different thread'. Can you elaborate?
->
-> Note that I do think that this change makes sense, but I do like to have a
-> better explanation.
->
+On Tue, Nov 04, 2014 at 09:48:33AM +0100, Tobias Klauser wrote:
+> On 2014-11-03 at 21:42:52 +0100, Stephanie Wallick <stephanie.s.wallick@intel.com> wrote:
+> > This is where we handle media specific packets and transport. The MS driver
+> > interfaces with a media agnostic (MA) driver via a series of transfer pairs.
+> > Transfer pairs consist of a set of functions to pass MA USB packets back
+> > and forth between MA and MS drivers. There is one transfer pair per device
+> > endpoint and one transfer pair for control/management traffic. When the MA
+> > driver needs to send an MA USB packet, it hands the packet off to the MS
+> > layer where the packet is converted into an MS form and sent via TCP over
+> > the underlying ethernet or wireless medium. When the MS driver receives a
+> > packet, it converts it into an MA USB packet and hands it off the the MA
+> > driver for handling.
+> > 
+> > In addition, the MS driver provides an interface to inititate connection events.
+> > Because there are no physical MA USB ports in an MA USB host, the host must be
+> > notified via software when a device is connected.
+> > 
+> > Lastly, the MS driver contains a number of ioctl functions that are used by a
+> > utility to adjust medium-related driver parameters and connect or disconnect the
+> > MA USB host and device drivers.
+> > 
+> > Signed-off-by: Sean O. Stalley <sean.stalley@intel.com>
+> > Signed-off-by: Stephanie Wallick <stephanie.s.wallick@intel.com>
+> > ---
+> >  drivers/staging/mausb/drivers/mausb_ioctl.c      | 373 +++++++++++++++++++
+> >  drivers/staging/mausb/drivers/mausb_ioctl.h      |  99 +++++
+> >  drivers/staging/mausb/drivers/mausb_msapi.c      | 110 ++++++
+> >  drivers/staging/mausb/drivers/mausb_msapi.h      | 232 ++++++++++++
+> >  drivers/staging/mausb/drivers/mausb_tcp-device.c | 147 ++++++++
+> >  drivers/staging/mausb/drivers/mausb_tcp-host.c   | 144 ++++++++
+> >  drivers/staging/mausb/drivers/mausb_tcp.c        | 446 +++++++++++++++++++++++
+> >  drivers/staging/mausb/drivers/mausb_tcp.h        | 129 +++++++
+> >  8 files changed, 1680 insertions(+)
+> >  create mode 100644 drivers/staging/mausb/drivers/mausb_ioctl.c
+> >  create mode 100644 drivers/staging/mausb/drivers/mausb_ioctl.h
+> >  create mode 100644 drivers/staging/mausb/drivers/mausb_msapi.c
+> >  create mode 100644 drivers/staging/mausb/drivers/mausb_msapi.h
+> >  create mode 100644 drivers/staging/mausb/drivers/mausb_tcp-device.c
+> >  create mode 100644 drivers/staging/mausb/drivers/mausb_tcp-host.c
+> >  create mode 100644 drivers/staging/mausb/drivers/mausb_tcp.c
+> >  create mode 100644 drivers/staging/mausb/drivers/mausb_tcp.h
+> > 
+> > diff --git a/drivers/staging/mausb/drivers/mausb_ioctl.c b/drivers/staging/mausb/drivers/mausb_ioctl.c
+> > new file mode 100644
+> > index 0000000..0c6c6bd
+> > --- /dev/null
+> > +++ b/drivers/staging/mausb/drivers/mausb_ioctl.c
+> 
+> [...]
+> 
+> > +/**
+> > + * This function is used to send a message to the user, in other words, the
+> > + * calling process. It basically copies the message one byte at a time.
+> > + *
+> > + * @msg:	The message to be sent to the user.
+> > + * @buffer:	The buffer in which to put the message. This buffer was given to
+> > + *	    	us to fill.
+> > + */
+> > +void to_user(char *msg, long unsigned int buffer)
+> > +{
+> > +	int length = (int)strlen(msg);
+> > +	int bytes = 0;
+> > +
+> > +	while (length && *msg) {
+> > +		put_user(*(msg++), (char *)buffer++);
+> > +		length--;
+> > +		bytes++;
+> > +	}
+> 
+> Any reason not to use copy_to_user here? That way, access_ok would only
+> need to be executed once for the whole range.
+> 
+> In any case, the return value of put_user/copy_to_user will need to be
+> checked.
 
-Hi Hans, thanks for response.
+Never use put_user if you can help it, this whole function should go
+away, and copy_to_user() should be used at the caller sites instead as
+you point out.
 
-I'm not proficient in linux kernel, so it's hard to make sure and
-strict statements regarding this.
+thanks,
 
-In the commit justification I mean that solo_ring_thread(), which is
-edited, runs in a thread started with kthread_run().
-Interrupt hander is executed on random kernel thread (whichever is
-currently running, is it correct?). So temporarily disabling
-interrupts from video encoders by writing to special register cannot
-be used for "processing serialization", for "fixation of state" or
-anything useful at all, thus it should be removed from code.
-
-Is it clear now?
-
-Please feel free to push the patch with edited description, even
-without resubmission from me.
-
--- 
-Andrey Utkin
+greg k-h
