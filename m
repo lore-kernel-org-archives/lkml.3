@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaKDKCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:02:52 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:52577 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999AbaKDKCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:02:46 -0500
-Message-ID: <1415095355.2064.9.camel@sipsolutions.net>
-Subject: Re: [PATCH v1 02/11] backports: extend module_init() module_exit()
- for built-in
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yann.morin.1998@free.fr, mmarek@suse.cz, sassmann@kpanic.de,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Tue, 04 Nov 2014 11:02:35 +0100
-In-Reply-To: <1415090582-14129-3-git-send-email-mcgrof@do-not-panic.com> (sfid-20141104_094850_244065_E63B2A7F)
-References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1415090582-14129-3-git-send-email-mcgrof@do-not-panic.com>
-	 (sfid-20141104_094850_244065_E63B2A7F)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932067AbaKDKAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:00:36 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:60820 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750985AbaKDJzS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 04:55:18 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH 03/15] [media] Make use of the new media_bus_format definitions
+Date: Tue,  4 Nov 2014 10:54:58 +0100
+Message-Id: <1415094910-15899-4-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-04 at 00:42 -0800, Luis R. Rodriguez wrote:
+Replace references to the v4l2_mbus_pixelcode enum with the new
+media_bus_format enum in all common headers.
 
-> +#ifndef MODULE
-> +/*
-> + * Forcing the backports module to load allows us to easily
-> + * identify the backport.
-> + */
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ include/media/v4l2-mediabus.h    | 2 +-
+ include/media/v4l2-subdev.h      | 2 +-
+ include/uapi/linux/v4l2-subdev.h | 6 +++---
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-That comment is wrong really, making the dependency on the symbol forced
-the backport module to load but if it's built-in that makes no sense.
-
-> +#undef module_init
-> +#define module_init(fn)							\
-> +	static int __init __init_backport_##fn(void)			\
-> +	{								\
-> +		backport_dependency_symbol();				\
-
-That won't do anything at all after all.
-
-> +		return fn();						\
-> +	}								\
-> +	__initcall(__init_backport_##fn);
-> +
-> +#undef module_exit
-> +#define module_exit(fn)							\
-> +	static void __exit __exit_backport_##fn(void)			\
-> +	{								\
-> +		fn();							\
-> +		rcu_barrier();						\
-> +	}								\
-> +	__exitcall(__exit_backport_##fn);
-
-This is also pointless if it's built-in.
-
-I don't think this patch makes sense, you just want to add the "#ifdef
-MODULE" I guess.
-
-johannes
-
+diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
+index 395c4a9..4915621 100644
+--- a/include/media/v4l2-mediabus.h
++++ b/include/media/v4l2-mediabus.h
+@@ -98,7 +98,7 @@ static inline void v4l2_fill_pix_format(struct v4l2_pix_format *pix_fmt,
+ 
+ static inline void v4l2_fill_mbus_format(struct v4l2_mbus_framefmt *mbus_fmt,
+ 			   const struct v4l2_pix_format *pix_fmt,
+-			   enum v4l2_mbus_pixelcode code)
++			   enum media_bus_format code)
+ {
+ 	mbus_fmt->width = pix_fmt->width;
+ 	mbus_fmt->height = pix_fmt->height;
+diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+index d746572..9af5932 100644
+--- a/include/media/v4l2-subdev.h
++++ b/include/media/v4l2-subdev.h
+@@ -341,7 +341,7 @@ struct v4l2_subdev_video_ops {
+ 	int (*query_dv_timings)(struct v4l2_subdev *sd,
+ 			struct v4l2_dv_timings *timings);
+ 	int (*enum_mbus_fmt)(struct v4l2_subdev *sd, unsigned int index,
+-			     enum v4l2_mbus_pixelcode *code);
++			     enum media_bus_format *code);
+ 	int (*enum_mbus_fsizes)(struct v4l2_subdev *sd,
+ 			     struct v4l2_frmsizeenum *fsize);
+ 	int (*g_mbus_fmt)(struct v4l2_subdev *sd,
+diff --git a/include/uapi/linux/v4l2-subdev.h b/include/uapi/linux/v4l2-subdev.h
+index a619cdd..7f44f04 100644
+--- a/include/uapi/linux/v4l2-subdev.h
++++ b/include/uapi/linux/v4l2-subdev.h
+@@ -68,7 +68,7 @@ struct v4l2_subdev_crop {
+  * struct v4l2_subdev_mbus_code_enum - Media bus format enumeration
+  * @pad: pad number, as reported by the media API
+  * @index: format index during enumeration
+- * @code: format code (from enum v4l2_mbus_pixelcode)
++ * @code: format code (from enum media_bus_format)
+  */
+ struct v4l2_subdev_mbus_code_enum {
+ 	__u32 pad;
+@@ -81,7 +81,7 @@ struct v4l2_subdev_mbus_code_enum {
+  * struct v4l2_subdev_frame_size_enum - Media bus format enumeration
+  * @pad: pad number, as reported by the media API
+  * @index: format index during enumeration
+- * @code: format code (from enum v4l2_mbus_pixelcode)
++ * @code: format code (from enum media_bus_format)
+  */
+ struct v4l2_subdev_frame_size_enum {
+ 	__u32 index;
+@@ -109,7 +109,7 @@ struct v4l2_subdev_frame_interval {
+  * struct v4l2_subdev_frame_interval_enum - Frame interval enumeration
+  * @pad: pad number, as reported by the media API
+  * @index: frame interval index during enumeration
+- * @code: format code (from enum v4l2_mbus_pixelcode)
++ * @code: format code (from enum media_bus_format)
+  * @width: frame width in pixels
+  * @height: frame height in pixels
+  * @interval: frame interval in seconds
+-- 
+1.9.1
 
