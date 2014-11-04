@@ -1,142 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaKDHvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:51:31 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:44648 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779AbaKDHv3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:51:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <5451B943.3060104@amd.com>
-References: <541A7F3D.70909@amd.com>
-	<5451B943.3060104@amd.com>
-Date: Tue, 4 Nov 2014 08:51:28 +0100
-Message-ID: <CAPDyKFoaN3WoYhsMoA1LRmOoyBpMdmX+ShzdD4ObKcFVTBbkFw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: Add a quirk for AMD SDHC transfer mode register need
- to be cleared for cmd without data
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Vincent Wan <vincent.wan@amd.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+	id S1752083AbaKDHvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:51:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:44218 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989AbaKDHvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 02:51:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="411013373"
+Date: Tue, 4 Nov 2014 09:51:35 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: David Cohen <david.a.cohen@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ray" <Ray.Huang@amd.com>, Wan Zongshun <mcuos.com@gmail.com>,
-        Arindam Nath <arindam.nath@amd.com>
-Content-Type: text/plain; charset=UTF-8
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
+Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
+ Intel Baytrail
+Message-ID: <20141104075135.GE1618@lahna.fi.intel.com>
+References: <20141031132005.GB1273@saruman>
+ <20141031162339.GA7136@psi-dev26.jf.intel.com>
+ <20141031184509.GA2224@psi-dev26.jf.intel.com>
+ <20141103092402.GA1304@lahna.fi.intel.com>
+ <20141103150048.GB27425@saruman>
+ <20141103152743.GB1618@lahna.fi.intel.com>
+ <20141103154207.GC1618@lahna.fi.intel.com>
+ <20141103155011.GH27425@saruman>
+ <20141103184247.GD1618@lahna.fi.intel.com>
+ <20141103204038.GB17356@saruman>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141103204038.GB17356@saruman>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 October 2014 05:06, Vincent Wan <vincent.wan@amd.com> wrote:
-> SDHC controller in AMD chipsets require SDHC transfer mode
-> register to be cleared for commands without data. The issue was
-> uncovered during testing eMMC cards on KB/ML based platforms.
->
-> Signed-off-by: Vincent Wan <vincent.wan@amd.com>
-> Signed-off-by: Arindam Nath <arindam.nath@amd.com>
-> Tested-by: Vikram B <vikram.b@amd.com>
-> Tested-by: Raghavendra Swamy <raghavendra.swamy@amd.com>
+On Mon, Nov 03, 2014 at 02:40:38PM -0600, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Nov 03, 2014 at 08:42:47PM +0200, Mika Westerberg wrote:
+> > > > > > > > > I think adding the module exit + allowing this driver to be a module
+> > > > > > > > > would be a good approach. Then we don't need to force generic x86 kernel
+> > > > > > > > > binaries to always have this driver. Unless Mathias or Mika knows a
+> > > > > > > > > constraint to force this driver to be builtin only.
+> > > > > > > > 
+> > > > > > > > It helps if I CC them when asking for feedback :)
+> > > > > > > > 
+> > > > > > > > Mathias, Mika, do you know any constraint that forces pinctrl-baytrail
+> > > > > > > > to be bool?
+> > > > > > > 
+> > > > > > > The only constraint that has been keeping this driver as bool is that
+> > > > > > > some machines like, Asus T100, uses ACPI GPIO operation regions for
+> > > > > > > toggling GPIOs to get things like sensor hub powered on. The GPIO
+> > > > > > > operation region code does not yet handle -EPROBE_DEFER so only way to
+> > > > > > > ensure that the operation region is there is to have the driver compiled
+> > > > > > > in to the kernel.
+> > > > > > 
+> > > > > > But that's not enough excuse to have every single x86 in the market
+> > > > > > shipping with this driver. Think about a distro kernel, most likely this
+> > > > > > gets enabled and it's wrong in 80% of the cases.
+> > > > > 
+> > > > > True, but see below.
+> > > > > 
+> > > > > > It would be nicer to add EPROBE_DEFER support, convert this into
+> > > > > > tristate and have default = M if BAYTRAIL, or something.
+> > > > > 
+> > > > > If it were simple as that we would have done that already. Please check
+> > > > > drivers/gpio/gpiolib-acpi.c:acpi_gpio_adr_space_handler() and tell me
+> > > > > how we can do that.
+> > > > 
+> > > > Actually the above is not the problem because we already have registered
+> > > > the GPIO chip and hence we have the GPIO available to the firmware code.
+> > > 
+> > > what happens before you registered the gpio chip ? It takes some time
+> > > from head.S to gpiochip_irqchip_add(). Anywhere between that time,
+> > > firmware could try to access gpios and the same problem would occur.
+> > 
+> > The operation region is not ready and the firmware does not try to use
+> > it. However, the subsys_initcall() is there just to be sure that the
+> > GPIO driver gets loaded before anything that is going to use GPIOs from
+> > firmware.
+> 
+> alright, so how does the firmware know that the operation region is
+> ready and why can't that be deferred until pinctrl-baytrail (module or
+> built-in) has finished probing ? That would sort both issues, would it
+> not ?
 
-Hi Vincent,
+The firmware checks the dependent object for AVBL or similar variable.
+If it is != 0 it assumes that the operation region is there. The problem
+is how can you tell the firmware that it should somehow try again?
 
-This looks good to me, but the patch has checkpatch errors.
+Here _DEP is the right solution as it forces the dependencies to be
+loaded first.
 
-Could you check at your side and re-send?
+> > > > The real problem is that if the ACPI GPIO operation handler is not there
+> > > > at the time firmware decides to do something it will just skip things
+> > > > that depend on the operation region. So if it has a GPIO that is used to
+> > > > turn on sensor hub or touch panel or whatever, this will not be done and
+> > > > it results that the device in question might not work properly.
+> > > 
+> > > that's an issue that needs solving, but forcing every x86 kernel to ship
+> > > with this driver, is not a proper solution.
+> > 
+> > I would rather have the driver build in to the kernel now (and btw it
+> > has been already in mainline quite some time so I suspect many distros
+> > have already enabled it), than turning it module and render some devices
+> > that have been working previously, fail suddenly.
+> 
+> that's why I said you should default to Y if BAYTRAIL or make it
+> tristate and always default to M.
 
-Kind regards
-Uffe
-
->
-> ---
->  drivers/mmc/host/sdhci-pci.c | 27 +++++++++++++++++++++++++++
->  drivers/mmc/host/sdhci.c     | 11 ++++++++---
->  include/linux/mmc/sdhci.h    |  2 ++
->  3 files changed, 37 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-> index 6119297..8f5c998 100644
-> --- a/drivers/mmc/host/sdhci-pci.c
-> +++ b/drivers/mmc/host/sdhci-pci.c
-> @@ -645,6 +645,23 @@ static const struct sdhci_pci_fixes sdhci_rtsx = {
->         .probe_slot     = rtsx_probe_slot,
->  };
->
-> +static int amd_probe(struct sdhci_pci_chip *chip)
-> +{
-> +       struct pci_dev  *smbus_dev;
-> +
-> +       smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
-> +                       PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, NULL);
-> +
-> +       if (smbus_dev && (smbus_dev->revision < 0x51))
-> +               chip->quirks2 |=
-> SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD;
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct sdhci_pci_fixes sdhci_amd = {
-> +       .probe          = amd_probe,
-> +};
-> +
->  static const struct pci_device_id pci_ids[] = {
->         {
->                 .vendor         = PCI_VENDOR_ID_RICOH,
-> @@ -1045,6 +1062,16 @@ static const struct pci_device_id pci_ids[] = {
->                 .driver_data    = (kernel_ulong_t)&sdhci_o2,
->         },
->
-> +       {
-> +               .vendor         = PCI_VENDOR_ID_AMD,
-> +               .device         = PCI_ANY_ID,
-> +               .class          = PCI_CLASS_SYSTEM_SDHCI << 8,
-> +               .class_mask     = 0xFFFF00,
-> +               .subvendor      = PCI_ANY_ID,
-> +               .subdevice      = PCI_ANY_ID,
-> +               .driver_data    = (kernel_ulong_t)&sdhci_amd,
-> +       },
-> +
->         {       /* Generic SD host controller */
->                 PCI_DEVICE_CLASS((PCI_CLASS_SYSTEM_SDHCI << 8), 0xFFFF00)
->         },
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index ada1a3e..8085f26 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -889,10 +889,15 @@ static void sdhci_set_transfer_mode(struct sdhci_host
-> *host,
->         struct mmc_data *data = cmd->data;
->
->         if (data == NULL) {
-> -               /* clear Auto CMD settings for no data CMDs */
-> -               mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
-> -               sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
-> +               if (host->quirks2 &
-> +                       SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD) {
-> +                       sdhci_writew(host, 0x0, SDHCI_TRANSFER_MODE);
-> +               } else {
-> +                       /* clear Auto CMD settings for no data CMDs */
-> +                       mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
-> +                       sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
->                                 SDHCI_TRNS_AUTO_CMD23),
-> SDHCI_TRANSFER_MODE);
-> +               }
->                 return;
->         }
->
-> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-> index dba793e..0a287aa 100644
-> --- a/include/linux/mmc/sdhci.h
-> +++ b/include/linux/mmc/sdhci.h
-> @@ -100,6 +100,8 @@ struct sdhci_host {
->  #define SDHCI_QUIRK2_BROKEN_DDR50                      (1<<7)
->  /* Stop command (CMD12) can set Transfer Complete when not using
-> MMC_RSP_BUSY */
->  #define SDHCI_QUIRK2_STOP_WITH_TC                      (1<<8)
-> +/* need clear transfer mode register before send cmd */
-> +#define SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD (1<<9)
->
->         int irq;                /* Device IRQ */
->         void __iomem *ioaddr;   /* Mapped address */
-> --
-> 1.8.1.2
->
+So you are saying it is better to add config option BAYTRAIL and then
+make the driver Y? Well, now generic distros need to select that as Y
+which doesn't solve anything.
