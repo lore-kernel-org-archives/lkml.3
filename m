@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441AbaKDHVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 02:21:00 -0500
-Received: from mga01.intel.com ([192.55.52.88]:31227 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbaKDHU7 convert rfc822-to-8bit (ORCPT
+	id S1751993AbaKDHXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 02:23:17 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34472 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaKDHXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 02:20:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,312,1413270000"; 
-   d="scan'208";a="626079526"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "Usyskin, Alexander" <alexander.usyskin@intel.com>
-Subject: RE: [char-misc-next V2] mei: nfc: clean nfc internal struct on host
- exit
-Thread-Topic: [char-misc-next V2] mei: nfc: clean nfc internal struct on
- host exit
-Thread-Index: AQHP98HTqHHhoJfXIkKMIdhTwnuG+ZxQD45Q
-Date: Tue, 4 Nov 2014 07:20:55 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1C493238@HASMSX106.ger.corp.intel.com>
-References: <1412667290-27964-1-git-send-email-tomas.winkler@intel.com>
- <20141103235630.GA31313@kroah.com>
-In-Reply-To: <20141103235630.GA31313@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Nov 2014 02:23:15 -0500
+Date: Tue, 4 Nov 2014 08:23:08 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] perf: Use monotonic clock as a source for
+ timestamps
+Message-ID: <20141104072308.GE10501@worktop.programming.kicks-ass.net>
+References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>
+ <1415060918-19954-2-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415060918-19954-2-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 04, 2014 at 12:28:36AM +0000, Pawel Moll wrote:
 
-> > Stable: 3.15+
-> 
-> Please read Documentation/stable_kernel_rules.txt for how to do this
-> properly.
+> +int sysctl_perf_sample_time_clk_id = CLOCK_MONOTONIC;
 
-Oops, this is my internal tracking it should be replaced with proper cc to stable, need to fix my scripts. 
+const ?
 
-> Please resend, after really verifying this does need to go to the stable
-> trees...
+>  /*
+>   * perf samples are done in some very critical code paths (NMIs).
+>   * If they take too much CPU time, the system can lock up and not
+> @@ -324,7 +326,7 @@ extern __weak const char *perf_pmu_name(void)
+>  
+>  static inline u64 perf_clock(void)
+>  {
+> -	return local_clock();
+> +	return ktime_get_mono_fast_ns();
+>  }
 
-Ok
-Tomas
+Do we maybe want to make it boot-time switchable back to local_clock for
+people with bad systems and or backwards compat issues?
 
+Everybody using Core2 and older will very much not want to have this
+unless they've got a very good reason for wanting it.
