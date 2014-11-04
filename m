@@ -1,184 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaKDKyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:54:36 -0500
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:40991 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752676AbaKDKxO (ORCPT
+	id S1753527AbaKDKy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:54:58 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:54286 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaKDKyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:53:14 -0500
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        alexandre torgue <alexandre.torgue@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: [PATCH v5 1/8] phy: miphy28lp: Add Device Tree bindings for the MiPHY28lp
-Date: Tue,  4 Nov 2014 11:51:17 +0100
-Message-Id: <1415098284-11182-2-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-04_05:2014-11-03,2014-11-04,1970-01-01 signatures=0
+	Tue, 4 Nov 2014 05:54:52 -0500
+Date: Tue, 4 Nov 2014 10:54:21 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: gyungoh@gmail.com
+Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
+        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: Re: [RESUBMIT PATCH v6 1/8] mfd: Add support for Skyworks SKY81452
+ driver
+Message-ID: <20141104105421.GO17577@x1>
+References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-2-git-send-email-jack.yoo@skyworksinc.com>
+ <20141103171451.GG12011@x1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141103171451.GG12011@x1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
-or USB3 devices.
+On Mon, 03 Nov 2014, Lee Jones wrote:
 
-Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- .../devicetree/bindings/phy/phy-miphy28lp.txt      | 126 +++++++++++++++++++++
- 1 file changed, 126 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+> On Fri, 31 Oct 2014, gyungoh@gmail.com wrote:
+> 
+> > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > 
+> > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > ---
+> > Changes v6:
+> > Added new line character at the end of line of dev_err()
+> > 
+> > Changes v5:
+> > Move sky81452-backlight.h to include/linux/platform_data
+> > 
+> > Changes v4:
+> > Removed MODULE_VERSION()
+> > Modified license to GPLv2
+> > 
+> > Changes v3:
+> > Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+> > Assigned mfd_cell.of_compatible for binding device node
+> > Modified error messages
+> > 
+> > Changes v2:
+> > Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+> > Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+> > Added message for exception or errors
+> > 
+> >  drivers/mfd/Kconfig          |  12 +++++
+> >  drivers/mfd/Makefile         |   1 +
+> >  drivers/mfd/sky81452.c       | 109 +++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/sky81452.h |  32 +++++++++++++
+> >  4 files changed, 154 insertions(+)
+> >  create mode 100644 drivers/mfd/sky81452.c
+> >  create mode 100644 include/linux/mfd/sky81452.h
+> 
+> Code looks fine, but what are its dependencies.  I'm assuming nothing;
+> however, did Mark say that something depends on it?  If so, what and
+> what are you going to do about it?
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-new file mode 100644
-index 0000000..b7c13ad
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-@@ -0,0 +1,126 @@
-+STMicroelectronics STi MIPHY28LP PHY binding
-+============================================
-+
-+This binding describes a miphy device that is used to control PHY hardware
-+for SATA, PCIe or USB3.
-+
-+Required properties (controller (parent) node):
-+- compatible	: Should be "st,miphy28lp-phy".
-+- st,syscfg	: Should be a phandle of the system configuration register group
-+		  which contain the SATA, PCIe or USB3 mode setting bits.
-+
-+Required nodes	:  A sub-node is required for each channel the controller
-+		   provides. Address range information including the usual
-+		   'reg' and 'reg-names' properties are used inside these
-+		   nodes to describe the controller's topology. These nodes
-+		   are translated by the driver's .xlate() function.
-+
-+Required properties (port (child) node):
-+- #phy-cells	: Should be 1 (See second example)
-+		  Cell after port phandle is device type from:
-+			- PHY_TYPE_SATA
-+			- PHY_TYPE_PCI
-+			- PHY_TYPE_USB3
-+- reg		: Address and length of the register set for the device.
-+- reg-names	: The names of the register addresses corresponding to the registers
-+		  filled in "reg". It can also contain the offset of the system configuration
-+		  registers used as glue-logic to setup the device for SATA/PCIe or USB3
-+		  devices.
-+- resets	: phandle to the parent reset controller.
-+- reset-names	: Associated name must be "miphy-sw-rst".
-+
-+Optional properties (port (child) node):
-+- st,osc-rdy		: to check the MIPHY0_OSC_RDY status in the glue-logic. This
-+			  is not available in all the MiPHY. For example, for STiH407, only the
-+			  MiPHY0 has this bit.
-+- st,osc-force-ext	: to select the external oscillator. This can change from
-+			  different MiPHY inside the same SoC.
-+- st,sata_gen		: to select which SATA_SPDMODE has to be set in the SATA system config
-+			  register.
-+- st,px_rx_pol_inv	: to invert polarity of RXn/RXp (respectively negative line and positive
-+			  line).
-+
-+example:
-+
-+		miphy28lp_phy: miphy28lp@9b22000 {
-+			compatible = "st,miphy28lp-phy";
-+			st,syscfg = <&syscfg_core>;
-+			#address-cells	= <1>;
-+			#size-cells	= <1>;
-+			ranges;
-+
-+			phy_port0: port@9b22000 {
-+				reg = <0x9b22000 0xff>,
-+				      <0x9b09000 0xff>,
-+				      <0x9b04000 0xff>,
-+				      <0x114 0x4>, /* sysctrl MiPHY cntrl */
-+				      <0x818 0x4>, /* sysctrl MiPHY status*/
-+				      <0xe0  0x4>, /* sysctrl PCIe */
-+				      <0xec  0x4>; /* sysctrl SATA */
-+				reg-names = "sata-up",
-+					    "pcie-up",
-+					    "pipew",
-+					    "miphy-ctrl-glue",
-+					    "miphy-status-glue",
-+					    "pcie-glue",
-+					    "sata-glue";
-+				#phy-cells = <1>;
-+				st,osc-rdy;
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY0_SOFTRESET>;
-+			};
-+
-+			phy_port1: port@9b2a000 {
-+				reg = <0x9b2a000 0xff>,
-+				      <0x9b19000 0xff>,
-+				      <0x9b14000 0xff>,
-+				      <0x118 0x4>,
-+				      <0x81c 0x4>,
-+				      <0xe4  0x4>,
-+				      <0xf0  0x4>;
-+				reg-names = "sata-up",
-+					    "pcie-up",
-+					    "pipew",
-+					    "miphy-ctrl-glue",
-+					    "miphy-status-glue",
-+					    "pcie-glue",
-+					    "sata-glue";
-+				#phy-cells = <1>;
-+				st,osc-force-ext;
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY1_SOFTRESET>;
-+			};
-+
-+			phy_port2: port@8f95000 {
-+				reg = <0x8f95000 0xff>,
-+				      <0x8f90000 0xff>,
-+				      <0x11c 0x4>,
-+				      <0x820 0x4>;
-+				reg-names = "pipew",
-+				    "usb3-up",
-+				    "miphy-ctrl-glue",
-+				    "miphy-status-glue";
-+				#phy-cells = <1>;
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY2_SOFTRESET>;
-+			};
-+		};
-+
-+
-+Specifying phy control of devices
-+=================================
-+
-+Device nodes should specify the configuration required in their "phys"
-+property, containing a phandle to the miphy device node and an index
-+specifying which configuration to use, as described in phy-bindings.txt.
-+
-+example:
-+		sata0: sata@9b20000  {
-+			...
-+			phys		= <&phy_port0 PHY_TYPE_SATA>;
-+			...
-+		};
-+
-+Macro definitions for the supported miphy configuration can be found in:
-+
-+include/dt-bindings/phy/phy-miphy28lp.h
+Okay, so this driver does in fact have a dependancy on the Backlight
+driver.  Until I get a Backlight Ack from either Brian and/or Jingoo,
+there is nothing I can do.
+
+Patch unapplied.
+
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index 1456ea7..a54244c 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -693,6 +693,18 @@ config MFD_SM501_GPIO
+> >  	 lines on the SM501. The platform data is used to supply the
+> >  	 base number for the first GPIO line to register.
+> >  
+> > +config MFD_SKY81452
+> > +	tristate "Skyworks Solutions SKY81452"
+> > +	select MFD_CORE
+> > +	select REGMAP_I2C
+> > +	depends on I2C
+> > +	help
+> > +	  This is the core driver for the Skyworks SKY81452 backlight and
+> > +	  voltage regulator device.
+> > +
+> > +	  This driver can also be built as a module.  If so, the module
+> > +	  will be called sky81452.
+> > +
+> >  config MFD_SMSC
+> >         bool "SMSC ECE1099 series chips"
+> >         depends on I2C=y
+> > diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> > index 8bd54b1..d9683ea 100644
+> > --- a/drivers/mfd/Makefile
+> > +++ b/drivers/mfd/Makefile
+> > @@ -174,6 +174,7 @@ obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+> >  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+> >  obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+> >  obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
+> > +obj-$(CONFIG_MFD_SKY81452)		+= sky81452.o
+> >  
+> >  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
+> >  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
+> > diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
+> > new file mode 100644
+> > index 0000000..ae1b584
+> > --- /dev/null
+> > +++ b/drivers/mfd/sky81452.c
+> > @@ -0,0 +1,109 @@
+> > +/*
+> > + * sky81452.c	SKY81452 MFD driver
+> > + *
+> > + * Copyright 2014 Skyworks Solutions Inc.
+> > + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License as published by the
+> > + * Free Software Foundation; either version 2, or (at your option) any
+> > + * later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful, but
+> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> > + * General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License along
+> > + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> > +#include <linux/init.h>
+> > +#include <linux/err.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/i2c.h>
+> > +#include <linux/regmap.h>
+> > +#include <linux/mfd/core.h>
+> > +#include <linux/mfd/sky81452.h>
+> > +
+> > +static const struct regmap_config sky81452_config = {
+> > +	.reg_bits = 8,
+> > +	.val_bits = 8,
+> > +};
+> > +
+> > +static int sky81452_probe(struct i2c_client *client,
+> > +				const struct i2c_device_id *id)
+> > +{
+> > +	struct device *dev = &client->dev;
+> > +	const struct sky81452_platform_data *pdata = dev_get_platdata(dev);
+> > +	struct mfd_cell cells[2];
+> > +	struct regmap *regmap;
+> > +	int ret;
+> > +
+> > +	if (!pdata) {
+> > +		pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> > +		if (!pdata)
+> > +			return -ENOMEM;
+> > +	}
+> > +
+> > +	regmap = devm_regmap_init_i2c(client, &sky81452_config);
+> > +	if (IS_ERR(regmap)) {
+> > +		dev_err(dev, "failed to initialize.err=%ld\n", PTR_ERR(regmap));
+> > +		return PTR_ERR(regmap);
+> > +	}
+> > +
+> > +	i2c_set_clientdata(client, regmap);
+> > +
+> > +	memset(cells, 0, sizeof(cells));
+> > +	cells[0].name = "sky81452-backlight";
+> > +	cells[0].of_compatible = "skyworks,sky81452-backlight";
+> > +	cells[0].platform_data = pdata->bl_pdata;
+> > +	cells[0].pdata_size = sizeof(*pdata->bl_pdata);
+> > +	cells[1].name = "sky81452-regulator";
+> > +	cells[1].platform_data = pdata->regulator_init_data;
+> > +	cells[1].pdata_size = sizeof(*pdata->regulator_init_data);
+> > +
+> > +	ret = mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells), NULL, 0, NULL);
+> > +	if (ret)
+> > +		dev_err(dev, "failed to add child devices. err=%d\n", ret);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int sky81452_remove(struct i2c_client *client)
+> > +{
+> > +	mfd_remove_devices(&client->dev);
+> > +	return 0;
+> > +}
+> > +
+> > +static const struct i2c_device_id sky81452_ids[] = {
+> > +	{ "sky81452" },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(i2c, sky81452_ids);
+> > +
+> > +#ifdef CONFIG_OF
+> > +static const struct of_device_id sky81452_of_match[] = {
+> > +	{ .compatible = "skyworks,sky81452", },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(of, sky81452_of_match);
+> > +#endif
+> > +
+> > +static struct i2c_driver sky81452_driver = {
+> > +	.driver = {
+> > +		.name = "sky81452",
+> > +		.of_match_table = of_match_ptr(sky81452_of_match),
+> > +	},
+> > +	.probe = sky81452_probe,
+> > +	.remove = sky81452_remove,
+> > +	.id_table = sky81452_ids,
+> > +};
+> > +
+> > +module_i2c_driver(sky81452_driver);
+> > +
+> > +MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
+> > +MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
+> > +MODULE_LICENSE("GPL v2");
+> > diff --git a/include/linux/mfd/sky81452.h b/include/linux/mfd/sky81452.h
+> > new file mode 100644
+> > index 0000000..9d84872
+> > --- /dev/null
+> > +++ b/include/linux/mfd/sky81452.h
+> > @@ -0,0 +1,32 @@
+> > +/*
+> > + * sky81452.h	SKY81452 MFD driver
+> > + *
+> > + * Copyright 2014 Skyworks Solutions Inc.
+> > + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License as published by the
+> > + * Free Software Foundation; either version 2, or (at your option) any
+> > + * later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful, but
+> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> > + * General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License along
+> > + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +
+> > +#ifndef _SKY81452_H
+> > +#define _SKY81452_H
+> > +
+> > +#include <linux/platform_data/sky81452-backlight.h>
+> > +#include <linux/regulator/machine.h>
+> > +
+> > +struct sky81452_platform_data {
+> > +	struct sky81452_bl_platform_data *bl_pdata;
+> > +	struct regulator_init_data *regulator_init_data;
+> > +};
+> > +
+> > +#endif
+> 
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
