@@ -1,252 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaKDKm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:42:26 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:52266 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaKDKmY (ORCPT
+	id S1752559AbaKDKn3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:43:29 -0500
+Received: from exprod7og108.obsmtp.com ([64.18.2.169]:43902 "EHLO
+	exprod7og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbaKDKnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:42:24 -0500
-Message-ID: <5458AD87.7020709@gmail.com>
-Date: Tue, 04 Nov 2014 18:42:15 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 4 Nov 2014 05:43:25 -0500
+X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Nov 2014 05:43:25 EST
+From: Sumit Saxena <sumit.saxena@avagotech.com>
+References: <1415018660-30775-1-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1415018660-30775-1-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v8 03/10] sched: move cfs task on a CPU with higher capacity
-References: <1414745252-4895-1-git-send-email-vincent.guittot@linaro.org> <1414745252-4895-4-git-send-email-vincent.guittot@linaro.org> <54588E89.1080108@gmail.com> <CAKfTPtDOaE00BZnOYW8ioz22mi6H-4xkVa=25f44fQmh46Vq3w@mail.gmail.com>
-In-Reply-To: <CAKfTPtDOaE00BZnOYW8ioz22mi6H-4xkVa=25f44fQmh46Vq3w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQFrfRpytSGaF/4nkIvrxKUESb0pIZ0ZO/PA
+Date: Tue, 4 Nov 2014 16:06:06 +0530
+Message-ID: <f16ae17914f6e3023f59d4e3b1f6d188@mail.gmail.com>
+Subject: RE: [PATCH] megaraid_sas : Fix bug in handling return value of pci_enable_msix_range()
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, linux-pci@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
-On 14/11/4 下午5:41, Vincent Guittot wrote:
-> On 4 November 2014 09:30, Wanpeng Li <kernellwp@gmail.com> wrote:
->> On 14/10/31 下午4:47, Vincent Guittot wrote:
->>> When a CPU is used to handle a lot of IRQs or some RT tasks, the remaining
->>> capacity for CFS tasks can be significantly reduced. Once we detect such
->>> situation by comparing cpu_capacity_orig and cpu_capacity, we trig an idle
->>> load balance to check if it's worth moving its tasks on an idle CPU.
->>>
->>> Once the idle load_balance has selected the busiest CPU, it will look for
->>> an
->>> active load balance for only two cases :
->>> - there is only 1 task on the busiest CPU.
->>> - we haven't been able to move a task of the busiest rq.
->>>
->>> A CPU with a reduced capacity is included in the 1st case, and it's worth
->>> to
->>> actively migrate its task if the idle CPU has got full capacity. This test
->>> has
->>> been added in need_active_balance.
->>>
->>> As a sidenote, this will note generate more spurious ilb because we
->>> already
->>> trig an ilb if there is more than 1 busy cpu. If this cpu is the only one
->>> that
->>> has a task, we will trig the ilb once for migrating the task.
->>>
->>> The nohz_kick_needed function has been cleaned up a bit while adding the
->>> new
->>> test
->>>
->>> env.src_cpu and env.src_rq must be set unconditionnally because they are
->>> used
->>> in need_active_balance which is called even if busiest->nr_running equals
->>> 1
->>>
->>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>> ---
->>>    kernel/sched/fair.c | 86
->>> ++++++++++++++++++++++++++++++++++++++++-------------
->>>    1 file changed, 65 insertions(+), 21 deletions(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index bd214d2..54468f3 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -5889,6 +5889,18 @@ fix_small_capacity(struct sched_domain *sd, struct
->>> sched_group *group)
->>>    }
->>>      /*
->>> + * Check whether the capacity of the rq has been noticeably reduced by
->>> side
->>> + * activity. The imbalance_pct is used for the threshold.
->>> + * Return true is the capacity is reduced
->>> + */
->>> +static inline int
->>> +check_cpu_capacity(struct rq *rq, struct sched_domain *sd)
->>> +{
->>> +       return ((rq->cpu_capacity * sd->imbalance_pct) <
->>> +                               (rq->cpu_capacity_orig * 100));
->>> +}
->>> +
->>> +/*
->>>     * Group imbalance indicates (and tries to solve) the problem where
->>> balancing
->>>     * groups is inadequate due to tsk_cpus_allowed() constraints.
->>>     *
->>> @@ -6562,6 +6574,28 @@ static int need_active_balance(struct lb_env *env)
->>>                          return 1;
->>>          }
->>>    +     /*
->>> +        * The dst_cpu is idle and the src_cpu CPU has only 1 CFS task.
->>
->> Why specify one task instead of not less than one?
-> if cfs.h_nr_running == 0 (which should not occurs at that point), we
-> don't need to do more test to check if it's worth moving the task
-> because there is no task to move.
-
-Sorry for my confusing statement. I mean cfs.h_nr_running >= 1.
-
-Regards,
-Wanpeng Li
-
+>-----Original Message-----
+>From: Jiang Liu [mailto:jiang.liu@linux.intel.com]
+>Sent: Monday, November 03, 2014 6:14 PM
+>To: Neela Syam Kolli; James E.J. Bottomley
+>Cc: Jiang Liu; Alexander Gordeev; linux-pci@vger.kernel.org; linux-
+>scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+>Subject: [PATCH] megaraid_sas : Fix bug in handling return value of
+>pci_enable_msix_range()
 >
-> Regards,
-> Vincent
->> Regards,
->> Wanpeng Li
->>
->>
->>> +        * It's worth migrating the task if the src_cpu's capacity is
->>> reduced
->>> +        * because of other sched_class or IRQs whereas capacity stays
->>> +        * available on dst_cpu.
->>> +        */
->>> +       if ((env->idle != CPU_NOT_IDLE) &&
->>> +                       (env->src_rq->cfs.h_nr_running == 1)) {
->>> +               unsigned long src_eff_capacity, dst_eff_capacity;
->>> +
->>> +               dst_eff_capacity = 100;
->>> +               dst_eff_capacity *= capacity_of(env->dst_cpu);
->>> +               dst_eff_capacity *= capacity_orig_of(env->src_cpu);
->>> +
->>> +               src_eff_capacity = sd->imbalance_pct;
->>> +               src_eff_capacity *= capacity_of(env->src_cpu);
->>> +               src_eff_capacity *= capacity_orig_of(env->dst_cpu);
->>> +
->>> +               if (src_eff_capacity < dst_eff_capacity)
->>> +                       return 1;
->>> +       }
->>> +
->>>          return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);
->>>    }
->>>    @@ -6661,6 +6695,9 @@ static int load_balance(int this_cpu, struct rq
->>> *this_rq,
->>>          schedstat_add(sd, lb_imbalance[idle], env.imbalance);
->>>    +     env.src_cpu = busiest->cpu;
->>> +       env.src_rq = busiest;
->>> +
->>>          ld_moved = 0;
->>>          if (busiest->nr_running > 1) {
->>>                  /*
->>> @@ -6670,8 +6707,6 @@ static int load_balance(int this_cpu, struct rq
->>> *this_rq,
->>>                   * correctly treated as an imbalance.
->>>                   */
->>>                  env.flags |= LBF_ALL_PINNED;
->>> -               env.src_cpu   = busiest->cpu;
->>> -               env.src_rq    = busiest;
->>>                  env.loop_max  = min(sysctl_sched_nr_migrate,
->>> busiest->nr_running);
->>>      more_balance:
->>> @@ -7371,22 +7406,25 @@ static void nohz_idle_balance(struct rq *this_rq,
->>> enum cpu_idle_type idle)
->>>      /*
->>>     * Current heuristic for kicking the idle load balancer in the presence
->>> - * of an idle cpu is the system.
->>> + * of an idle cpu in the system.
->>>     *   - This rq has more than one task.
->>> - *   - At any scheduler domain level, this cpu's scheduler group has
->>> multiple
->>> - *     busy cpu's exceeding the group's capacity.
->>> + *   - This rq has at least one CFS task and the capacity of the CPU is
->>> + *     significantly reduced because of RT tasks or IRQs.
->>> + *   - At parent of LLC scheduler domain level, this cpu's scheduler
->>> group has
->>> + *     multiple busy cpu.
->>>     *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
->>>     *     domain span are idle.
->>>     */
->>> -static inline int nohz_kick_needed(struct rq *rq)
->>> +static inline bool nohz_kick_needed(struct rq *rq)
->>>    {
->>>          unsigned long now = jiffies;
->>>          struct sched_domain *sd;
->>>          struct sched_group_capacity *sgc;
->>>          int nr_busy, cpu = rq->cpu;
->>> +       bool kick = false;
->>>          if (unlikely(rq->idle_balance))
->>> -               return 0;
->>> +               return false;
->>>             /*
->>>          * We may be recently in ticked or tickless idle mode. At the first
->>> @@ -7400,38 +7438,44 @@ static inline int nohz_kick_needed(struct rq *rq)
->>>           * balancing.
->>>           */
->>>          if (likely(!atomic_read(&nohz.nr_cpus)))
->>> -               return 0;
->>> +               return false;
->>>          if (time_before(now, nohz.next_balance))
->>> -               return 0;
->>> +               return false;
->>>          if (rq->nr_running >= 2)
->>> -               goto need_kick;
->>> +               return true;
->>>          rcu_read_lock();
->>>          sd = rcu_dereference(per_cpu(sd_busy, cpu));
->>> -
->>>          if (sd) {
->>>                  sgc = sd->groups->sgc;
->>>                  nr_busy = atomic_read(&sgc->nr_busy_cpus);
->>>    -             if (nr_busy > 1)
->>> -                       goto need_kick_unlock;
->>> +               if (nr_busy > 1) {
->>> +                       kick = true;
->>> +                       goto unlock;
->>> +               }
->>> +
->>>          }
->>>    -     sd = rcu_dereference(per_cpu(sd_asym, cpu));
->>> +       sd = rcu_dereference(rq->sd);
->>> +       if (sd) {
->>> +               if ((rq->cfs.h_nr_running >= 1) &&
->>> +                               check_cpu_capacity(rq, sd)) {
->>> +                       kick = true;
->>> +                       goto unlock;
->>> +               }
->>> +       }
->>>    +     sd = rcu_dereference(per_cpu(sd_asym, cpu));
->>>          if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
->>>                                    sched_domain_span(sd)) < cpu))
->>> -               goto need_kick_unlock;
->>> +               kick = true;
->>>    +unlock:
->>>          rcu_read_unlock();
->>> -       return 0;
->>> -
->>> -need_kick_unlock:
->>> -       rcu_read_unlock();
->>> -need_kick:
->>> -       return 1;
->>> +       return kick;
->>>    }
->>>    #else
->>>    static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type
->>> idle) { }
->>
+>Function pci_enable_msix_range() may return negative values for error
+>conditions. So it's a bug by checking (pci_enable_msix_range() != 0) for
+>success and causes failure to megaraid driver when MSI is disabled.
+>[   16.487267] megaraid_sas 0000:02:00.0: Controller type: iMR
+>[   16.487275] genirq: Flags mismatch irq 0. 00000000 (megasas) vs.
+00015a00 (tii
+>mer)
+>[   16.487347] megasas: Failed to register IRQ for vector 0.
+>
+>Fixes: 8ae80ed1734b "megaraid: Use pci_enable_msix_range() instead of
+>pci_enable_msix()"
+>
+>Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>Cc: Alexander Gordeev <agordeev@redhat.com>
+>Cc: "Bjorn Helgaas <bhelgaas@google.com>"
+>Cc: linux-pci@vger.kernel.org
+>Cc: <stable@vger.kernel.org> # 3.17
+>---
+> drivers/scsi/megaraid/megaraid_sas_base.c |    2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c
+>b/drivers/scsi/megaraid/megaraid_sas_base.c
+>index f6a69a3b1b3f..5640ad1c8214 100644
+>--- a/drivers/scsi/megaraid/megaraid_sas_base.c
+>+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+>@@ -4453,7 +4453,7 @@ static int megasas_init_fw(struct megasas_instance
+>*instance)
+> 			instance->msixentry[i].entry = i;
+> 		i = pci_enable_msix_range(instance->pdev, instance-
+>>msixentry,
+> 					  1, instance->msix_vectors);
+>-		if (i)
+>+		if (i > 0)
+> 			instance->msix_vectors = i;
+> 		else
+> 			instance->msix_vectors = 0;
 
+Acked-by: Sumit Saxena <sumit.saxena@avagotech.com>
+
+>--
+>1.7.10.4
