@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaKDK0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:26:46 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50284 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaKDK0o (ORCPT
+	id S1751667AbaKDK10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:27:26 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:61169 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaKDK1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:26:44 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH] MAINTAINERS: add maintainer for CODA video4linux mem2mem driver
-Date: Tue,  4 Nov 2014 11:26:35 +0100
-Message-Id: <1415096795-15440-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.1
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 4 Nov 2014 05:27:22 -0500
+Date: Tue, 4 Nov 2014 11:27:12 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] audit_tree: keep inode pinned
+Message-ID: <20141104102712.GA7088@tucsk.piliscsaba.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add myself as maintainer for the CODA V4L2 mem2mem driver.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Audit rules disappear when an inode they watch is evicted from the cache.
+This is likely not what we want.
+
+The guilty commit is "fsnotify: allow marks to not pin inodes in core",
+which didn't take into account that audit_tree adds watches with a zero
+mask.
+
+Adding any mask should fix this.
+
+Fixes: 90b1e7a57880 ("fsnotify: allow marks to not pin inodes in core")
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: stable@vger.kernel.org # 2.6.36+
 ---
- MAINTAINERS | 7 +++++++
- 1 file changed, 7 insertions(+)
+ kernel/audit_tree.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3c64271..34d3671 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2487,6 +2487,13 @@ F:	fs/coda/
- F:	include/linux/coda*.h
- F:	include/uapi/linux/coda*.h
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -154,6 +154,7 @@ static struct audit_chunk *alloc_chunk(i
+ 		chunk->owners[i].index = i;
+ 	}
+ 	fsnotify_init_mark(&chunk->mark, audit_tree_destroy_watch);
++	chunk->mark.mask = FS_IN_IGNORED;
+ 	return chunk;
+ }
  
-+CODA V4L2 MEM2MEM DRIVER
-+M:	Philipp Zabel <p.zabel@pengutronix.de>
-+L:	linux-media@vger.kernel.org
-+S:	Maintained
-+F:	Documentation/devicetree/bindings/media/coda.txt
-+F:	drivers/media/platform/coda/
-+
- COMMON CLK FRAMEWORK
- M:	Mike Turquette <mturquette@linaro.org>
- L:	linux-kernel@vger.kernel.org
--- 
-2.1.1
-
