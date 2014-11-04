@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbaKDXg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 18:36:57 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:38265 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaKDXg4 (ORCPT
+	id S1752135AbaKDXlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 18:41:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:24818 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751229AbaKDXlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 18:36:56 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] x86_64,vsyscall: Restore orig_ax after vsyscall seccomp
-Date: Tue,  4 Nov 2014 15:36:50 -0800
-Message-Id: <cdc6a564517a4df09235572ee5f530ccdcf933f7.1415144089.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Tue, 4 Nov 2014 18:41:09 -0500
+Date: Tue, 4 Nov 2014 18:41:02 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Petr Mladek <pmladek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 12/12 v3] x86/nmi: Perform a safe NMI stack trace
+ on all CPUs
+Message-ID: <20141104184102.4ecb3533@gandalf.local.home>
+In-Reply-To: <alpine.LNX.2.00.1411042343130.29198@pobox.suse.cz>
+References: <20141104155237.228431433@goodmis.org>
+	<20141104160223.310714394@goodmis.org>
+	<alpine.LNX.2.00.1411042343130.29198@pobox.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vsyscall emulation code sets orig_ax for seccomp's benefit,
-but it forgot to set it back.
+On Wed, 5 Nov 2014 00:05:12 +0100 (CET)
+Jiri Kosina <jkosina@suse.cz> wrote:
 
-I'm not sure that this is observable at all, but it could cause
-confusion to various /proc or ptrace users, and it's possible that
-it could cause minor artifacts if a signal were to be delivered
-on return from vsyscall emulation.
+> On Tue, 4 Nov 2014, Steven Rostedt wrote:
+> 
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > When trigger_all_cpu_backtrace() is called on x86, it will trigger an
+> > NMI on each CPU and call show_regs(). But this can lead to a hard lock
+> > up if the NMI comes in on another printk().
+> > 
+> > In order to avoid this, when the NMI triggers, it switches the printk
+> > routine for that CPU to call a NMI safe printk function that records the
+> > printk in a per_cpu seq_buf descriptor. After all NMIs have finished
+> > recording its data, the trace_seqs are printed in a safe context.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
+Hmm, I need to update the change log to say seq_bufs instead of
+trace_seqs.
 
-I misplaced this somehow as part of my vsyscall series.  It's very minor,
-so I don't care much whether it makes 3.19.
+> > 
+> > Link: http://lkml.kernel.org/p/20140619213952.360076309@goodmis.org
+> > 
+> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> I've been running the whole machinery that used to trigger very quickly 
+> the complete hardlock of the machine (*) for the whole evening/night, and 
+> it's still running flawlessly.
+> 
+> Plus, as I said previously, I agree with the whole idea (given the 
+> general nastiness of the problem and given the fact this simply has to be 
+> fixed without pointless delays).
+> 
+> I.e FWIW
+> 
+> 	Tested-by: Jiri Kosina <jkosina@suse.cz>
+> 	Acked-by: Jiri Kosina <jkosina@suse.cz>
+> 
+> for the whole series.
 
-My vsyscall seccomp tests all pass with or without this change.
+Thanks! I'll update the commits.
 
- arch/x86/kernel/vsyscall_64.c | 1 +
- 1 file changed, 1 insertion(+)
+-- Steve
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 7d9eb4bc10ac..2dcc6ff6fdcc 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -206,6 +206,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
- 				  "seccomp tried to change syscall nr or ip");
- 		do_exit(SIGSYS);
- 	}
-+	regs->orig_ax = -1;
- 	if (tmp)
- 		goto do_ret;  /* skip requested */
- 
--- 
-1.9.3
+> 
+> (*) heavy printk() workload (**) + sysrq-l in parallel
+> (**) iptables logging every incoming packet + flood ping from another 
+>      machine
+> 
+> Thanks,
+> 
 
