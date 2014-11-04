@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaKDR0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 12:26:30 -0500
-Received: from mailout.easymail.ca ([64.68.201.169]:50541 "EHLO
+	id S1753909AbaKDR1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 12:27:05 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:50542 "EHLO
 	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaKDRSQ (ORCPT
+	with ESMTP id S1752047AbaKDRSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Nov 2014 12:18:16 -0500
-X-Quarantine-ID: <aNUL3F5EX-s5>
+X-Quarantine-ID: <cqf0bpzeZp8e>
 X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
 X-Spam-Flag: NO
 X-Spam-Score: -4.399
@@ -19,9 +19,9 @@ To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH 17/20] selftests/sysctl: add install target to enable installing test
-Date: Tue,  4 Nov 2014 10:11:13 -0700
-Message-Id: <2eeb9fe120aac0bcd50a0644e4b9f81db856ed52.1415117102.git.shuahkh@osg.samsung.com>
+Subject: [PATCH 10/20] selftests/kcmp: add install target to enable installing test
+Date: Tue,  4 Nov 2014 10:11:06 -0700
+Message-Id: <1dc6f2a853bd645cdb64b904b5a3b90ff7be9ad2.1415117102.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1415117102.git.shuahkh@osg.samsung.com>
 References: <cover.1415117102.git.shuahkh@osg.samsung.com>
@@ -37,37 +37,32 @@ kselftest script to run the test.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/sysctl/Makefile | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ tools/testing/selftests/kcmp/Makefile | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/tools/testing/selftests/sysctl/Makefile b/tools/testing/selftests/sysctl/Makefile
-index 0a92ada..c8d9b2b 100644
---- a/tools/testing/selftests/sysctl/Makefile
-+++ b/tools/testing/selftests/sysctl/Makefile
-@@ -4,6 +4,8 @@
- # No binaries, but make sure arg-less "make" doesn't trigger "run_tests".
- all:
- 
-+INSTALL_PROGS = common_tests run_numerictests run_stringtests
-+
- # Allow specific tests to be selected.
- test_num:
- 	@/bin/sh ./run_numerictests
-@@ -11,6 +13,14 @@ test_num:
- test_string:
- 	@/bin/sh ./run_stringtests
+diff --git a/tools/testing/selftests/kcmp/Makefile b/tools/testing/selftests/kcmp/Makefile
+index 8aabd82..e105619 100644
+--- a/tools/testing/selftests/kcmp/Makefile
++++ b/tools/testing/selftests/kcmp/Makefile
+@@ -21,6 +21,18 @@ else
+ 	echo "Not an x86 target, can't build kcmp selftest"
+ endif
  
 +install: all
-+	install $(INSTALL_PROGS) $(INSTALL_KSFT_PATH)
-+	echo "\necho \"Start sysctl test ....\"" >> $(KSELFTEST)
-+	echo "/bin/sh ./run_numerictests" >> $(KSELFTEST)
-+	echo "/bin/sh ./run_stringtests" >> $(KSELFTEST)
-+	echo "echo \"End sysctl test ....\"" >> $(KSELFTEST)
++ifeq ($(ARCH),x86)
++	install ./kcmp_test $(INSTALL_KSFT_PATH)
++	echo "\necho \"Start kcmp test ....\"" >> $(KSELFTEST)
++	echo "./kcmp_test || echo \"kcmp_test: [FAIL]\"" >> $(KSELFTEST)
++	echo "rm -f kcmp-test-file" >> $(KSELFTEST)
++	echo "echo \"End kcmp test ....\"" >> $(KSELFTEST)
 +	echo "echo \"==============================\"" >> $(KSELFTEST)
++else
++	echo "Not an x86 target, can't install kcmp selftests"
++endif
 +
- run_tests: all test_num test_string
+ run_tests: all
+ 	@./kcmp_test || echo "kcmp_test: [FAIL]"
  
- # Nothing to clean up.
 -- 
 1.9.1
 
