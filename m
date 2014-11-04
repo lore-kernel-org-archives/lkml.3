@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaKDKNz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 05:13:55 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:33671 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaKDKNv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 05:13:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141103165035.GB12011@x1>
-References: <1415031356-11664-1-git-send-email-lee.jones@linaro.org>
-	<CAOMZO5C2sB1GNuNE-Bi5jqMO4DqBcDW2C1O+asYkbW=8fXA7TA@mail.gmail.com>
-	<20141103165035.GB12011@x1>
-Date: Tue, 4 Nov 2014 11:13:50 +0100
-Message-ID: <CACRpkdb-6-cjHhtLMNf_jevqqmew9u0OAL-rpFd5mfiwK6C6Ww@mail.gmail.com>
-Subject: Re: [PATCH] mfd: db8500-prcmu: Provide sane error path values
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752896AbaKDKPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 05:15:00 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:52671 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751496AbaKDKO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 05:14:57 -0500
+Message-ID: <1415096092.2064.13.camel@sipsolutions.net>
+Subject: Re: [PATCH v1 10/11] backports: prefix c-file / h-file auto
+ backport with BPAUTO
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yann.morin.1998@free.fr, mmarek@suse.cz, sassmann@kpanic.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Tue, 04 Nov 2014 11:14:52 +0100
+In-Reply-To: <1415090582-14129-11-git-send-email-mcgrof@do-not-panic.com> (sfid-20141104_094716_255472_7B15EC6D)
+References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1415090582-14129-11-git-send-email-mcgrof@do-not-panic.com>
+	 (sfid-20141104_094716_255472_7B15EC6D)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 5:50 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 03 Nov 2014, Fabio Estevam wrote:
->
->> On Mon, Nov 3, 2014 at 2:15 PM, Lee Jones <lee.jones@linaro.org> wrote:
->>
->> >         /* Clean up the mailbox interrupts after pre-kernel code. */
->> > @@ -3179,15 +3179,14 @@ static int db8500_prcmu_probe(struct platform_device *pdev)
->> >         irq = platform_get_irq(pdev, 0);
->> >         if (irq <= 0) {
->>
->> Shouldn't this be if (irq < 0) then?
->
-> Perhaps Linus can answer that.
->
-> Linus,
->
->   Is 0 a valid IRQ on the u8500 platform or not?
+On Tue, 2014-11-04 at 00:43 -0800, Luis R. Rodriguez wrote:
 
-It is not. 0 is NO_IRQ and should be so for every system... just
-the lazy and ancient ones lag behind.
+> -            mf.write('compat-$(%s%s) += %s\n' % (bp_prefix, sym, ' '.join(o_files)))
+> +            if bp_prefix not in sym:
+> +                mf.write('compat-$(%s%s) += %s\n' % (bp_prefix, sym, ' '.join(o_files)))
+> +            else:
+> +                mf.write('compat-$(%s) += %s\n' % (sym, ' '.join(o_files)))
 
-Yours,
-Linus Walleij
+I don't think these changes are correct, the bp_prefix is needed anyway,
+and there's no way it could already be. Looks like this comes from a
+previous attempt where you misunderstood and thought
+CONFIG_BACKPORT_BACKPORT_... was actually wrong, when in fact it is
+correct (and would now be CONFIG_BACKPORT_BPAUTO_...)
+
+johannes
+
