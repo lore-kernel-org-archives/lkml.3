@@ -1,184 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbaKEItN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:49:13 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:34788 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751298AbaKEItI (ORCPT
+	id S1753977AbaKEIuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 03:50:05 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:37404 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaKEIuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:49:08 -0500
-Date: Wed, 5 Nov 2014 14:18:32 +0530
-From: Pratyush Anand <pratyush.anand@st.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "pmladek@suse.cz" <pmladek@suse.cz>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "peter.chen@freescale.com" <peter.chen@freescale.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [Regression][v3.17][v3.18]   USB: Fix persist resume of some SS
- USB devices
-Message-ID: <20141105084832.GC2517@pratyush-vbox>
-References: <54595116.1050802@canonical.com>
- <20141105052335.GB2517@pratyush-vbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141105052335.GB2517@pratyush-vbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-05_04:2014-11-04,2014-11-05,1970-01-01 signatures=0
+	Wed, 5 Nov 2014 03:50:02 -0500
+From: Kever Yang <kever.yang@rock-chips.com>
+To: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>
+Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
+        dkl@rock-chips.com, huangtao@rock-chips.com,
+        linux-rockchip@lists.infradead.org,
+        Kever Yang <kever.yang@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] clk: rockchip: change hierarchy for some clocks
+Date: Wed,  5 Nov 2014 16:47:41 +0800
+Message-Id: <1415177261-6942-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 10:53:35AM +0530, Pratyush Anand wrote:
-> Hello Joe,
-> 
-> On Wed, Nov 05, 2014 at 06:20:06AM +0800, Joseph Salisbury wrote:
-> > Hello Pratyush,
-> > 
-> > A kernel bug report was opened against Ubuntu [0].  After a kernel
-> > bisect, it was found that reverting the following commit resolved this bug:
-> > 
-> > commit a40178b2fa6ad87670fb1e5fa4024db00c149629
-> > Author: Pratyush Anand <pratyush.anand@st.com>
-> > Date:   Fri Jul 18 12:37:10 2014 +0530
-> > 
-> >     USB: Fix persist resume of some SS USB devices
-> > 
-> > The regression was introduced as of v3.17-rc1.  The regression still
-> > exists in the 3.18-rc3 mainline kernel, and has made it's way into the
-> > stable kernels.
-> 
-> Its strange, as per my understanding patch does not introduce any side
-> effect for devices whose resume time is normal. So, if a device is
-> connected to the SS port and it was working after resume from
-> suspend to ram without this patch, then that device should still work
-> with this patch.
-> 
-> Infact this has resolved another bug reported to bugzilla
-> https://bugzilla.kernel.org/show_bug.cgi?id=53211
-> 
-> 
-> > 
-> > I was hoping to get your feedback, since you are the patch author.  Do
-> > you think gathering any additional data will help diagnose this issue,
-> 
-> Yaa, sure additional info will help to understand the issue.
-> -- dmesg log of suspend resume when this patch is not applied and also
-> when applied.
+There are some bus clock for multiple controllers with the same
+function in rk3288: four usb controllers on hclk_usb_peri,
+two nandc on hclk_emem and four dw_emmc controller on hclk_mem.
+These bus clock has the same parent with the controllers,
+they should be enabled if at least one of controllers
+on that bus is enabled, and should be disabled if all the
+controllers are disabled.
 
-I see that you have already provided both log to the buglink. I had a
-look on that. 
+There is no existern way to describ this kind of dependency,
+so maybe we can make the bus clock as a pseudo parent.
 
+This patch change the hierarchy for these bus clocks, to met
+the following bus hierarchy:
+hclk_usb_peri is bus clock for
+|- hclk_otg0,
+|- hclk_host0,
+|- hclk_host1,
+|- hclk_hsic
 
-When it fails (with this patch):
-Oct 22 15:38:59 mana kernel: [   59.825122] PM: resume of devices
-complete after 22223.878 msecs
+hclk_emem is bus clock for
+|- hclk_nandc0
+|- hclk_nandc1
 
-When it passed (without this patch):
-Oct 22 15:37:19 mana kernel: [   53.495109] PM: resume of devices
-complete after 3641.933 msecs
-However, even when patch was not present(and it passed), there is a logical
-disconnection of devices, so you would face the issue mentioned in
-https://bugzilla.kernel.org/show_bug.cgi?id=53211.
+hclk_mem is bus clock for
+|- hclk_sdmmc
+|- hclk_sdio0
+|- hclk_sdio1
+|- hclk_emmc
 
-Looking to the timeout, it seems that wait loop went for full length
-(2S) for all the devices, still could not find a connected device. So,
-basically SS link between root hub and hub was not up in 2 sec. Not
-sure why, but reading further hub port status caused some fatal issue
-with xhci host and so it is not able to get new device connection
-after logical disconnection.
+Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+---
 
-Increasing the timeout value may help. But with this long timeout I see a
-possibility of sync issue between port_event and usb_port_resume. It
-might happen that port_event reads hub port status before
-usb_port_resume handles reset_resume.
+Changes in v2:
+- update the commit message
 
-Can you try following patch with step increasing varied value of
-PORT_ENABLE_WAIT, and then let me know which value of
-PORT_ENABLE_WAIT works for you (if it works ;)).
+ drivers/clk/rockchip/clk-rk3288.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 11e80ac31324..6eaf481d3d53 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3311,13 +3311,14 @@ static int finish_port_resume(struct usb_device *udev)
-  * This routine should only be called when persist is enabled for a SS
-  * device.
-  */
-+#define PORT_ENABLE_WAIT	2000
- static int wait_for_ss_port_enable(struct usb_device *udev,
- 		struct usb_hub *hub, int *port1,
- 		u16 *portchange, u16 *portstatus)
- {
- 	int status = 0, delay_ms = 0;
+diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+index baf8a89..d31bc45 100644
+--- a/drivers/clk/rockchip/clk-rk3288.c
++++ b/drivers/clk/rockchip/clk-rk3288.c
+@@ -652,21 +652,21 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
  
--	while (delay_ms < 2000) {
-+	while (delay_ms < PORT_ENABLE_WAIT) {
- 		if (status || *portstatus & USB_PORT_STAT_CONNECTION)
- 			break;
- 		msleep(20);
-@@ -4881,6 +4882,22 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
- 	usb_lock_port(port_dev);
- }
+ 	/* hclk_peri gates */
+ 	GATE(0, "hclk_peri_matrix", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(6), 0, GFLAGS),
+-	GATE(HCLK_OTG0, "hclk_otg0", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 4, GFLAGS),
+-	GATE(HCLK_USBHOST0, "hclk_host0", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 6, GFLAGS),
+-	GATE(HCLK_USBHOST1, "hclk_host1", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 7, GFLAGS),
+-	GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 8, GFLAGS),
++	GATE(HCLK_OTG0, "hclk_otg0", "hclk_usb_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 4, GFLAGS),
++	GATE(HCLK_USBHOST0, "hclk_host0", "hclk_usb_peri", 0, RK3288_CLKGATE_CON(7), 6, GFLAGS),
++	GATE(HCLK_USBHOST1, "hclk_host1", "hclk_usb_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 7, GFLAGS),
++	GATE(HCLK_HSIC, "hclk_hsic", "hclk_usb_peri", 0, RK3288_CLKGATE_CON(7), 8, GFLAGS),
+ 	GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 9, GFLAGS),
+ 	GATE(0, "hclk_peri_ahb_arbi", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 10, GFLAGS),
+ 	GATE(0, "hclk_emem", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 12, GFLAGS),
+ 	GATE(0, "hclk_mem", "hclk_peri", CLK_IGNORE_UNUSED, RK3288_CLKGATE_CON(7), 13, GFLAGS),
+-	GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 14, GFLAGS),
+-	GATE(HCLK_NANDC1, "hclk_nandc1", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 15, GFLAGS),
++	GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_emem", 0, RK3288_CLKGATE_CON(7), 14, GFLAGS),
++	GATE(HCLK_NANDC1, "hclk_nandc1", "hclk_emem", 0, RK3288_CLKGATE_CON(7), 15, GFLAGS),
+ 	GATE(HCLK_TSP, "hclk_tsp", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 8, GFLAGS),
+-	GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 3, GFLAGS),
+-	GATE(HCLK_SDIO0, "hclk_sdio0", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 4, GFLAGS),
+-	GATE(HCLK_SDIO1, "hclk_sdio1", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 5, GFLAGS),
+-	GATE(HCLK_EMMC, "hclk_emmc", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 6, GFLAGS),
++	GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_mem", 0, RK3288_CLKGATE_CON(8), 3, GFLAGS),
++	GATE(HCLK_SDIO0, "hclk_sdio0", "hclk_mem", 0, RK3288_CLKGATE_CON(8), 4, GFLAGS),
++	GATE(HCLK_SDIO1, "hclk_sdio1", "hclk_mem", 0, RK3288_CLKGATE_CON(8), 5, GFLAGS),
++	GATE(HCLK_EMMC, "hclk_emmc", "hclk_mem", 0, RK3288_CLKGATE_CON(8), 6, GFLAGS),
+ 	GATE(HCLK_HSADC, "hclk_hsadc", "hclk_peri", 0, RK3288_CLKGATE_CON(8), 7, GFLAGS),
+ 	GATE(0, "pmu_hclk_otg0", "hclk_peri", 0, RK3288_CLKGATE_CON(7), 5, GFLAGS),
  
-+static void wait_for_reset_resume(struct usb_hub *hub, int port)
-+{
-+	struct usb_device *udev;
-+	int delay_ms = 0;
-+
-+	udev = hub->ports[port -1]->child;
-+	if (udev && udev->reset_resume) {
-+		while (delay_ms < PORT_ENABLE_WAIT) {
-+			if (!udev->reset_resume)
-+				break;
-+			msleep(20);
-+			delay_ms += 20;
-+		}
-+	}
-+}
-+
- static void port_event(struct usb_hub *hub, int port1)
- 		__must_hold(&port_dev->status_lock)
- {
-@@ -4894,6 +4911,8 @@ static void port_event(struct usb_hub *hub, int port1)
- 	clear_bit(port1, hub->event_bits);
- 	clear_bit(port1, hub->wakeup_bits);
- 
-+	wait_for_reset_resume(hub, port1);
-+
- 	if (hub_port_status(hub, port1, &portstatus, &portchange) < 0)
- 		return;
- 
-Regards
-Pratyush
+-- 
+1.9.1
 
-> -- dmesg log with following additional debug print.
-> @@ -3318,6 +3318,7 @@ static int wait_for_ss_port_enable(struct usb_device *udev,
->         int status = 0, delay_ms = 0;
->          
->         while (delay_ms < 2000) {
-> +               printk("%s:portstatus is %x and portchange is %x\n", __func__, *portstatus, *portchange);
->                if (status || *portstatus & USB_PORT_STAT_CONNECTION)
->                         break;
-> 
-> > or would it be best to submit a revert request?
-> 
-> Let me see what is the portstatus value and why didn't it break loop in first
-> iteration if device was OK.
-> 
-> Regards
-> Pratyush
-> 
-> >    
-> > 
-> > Thanks,
-> >    
-> > Joe
-> > 
-> > [0] http://pad.lv/1384041
