@@ -1,75 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaKEIyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:54:31 -0500
-Received: from mga01.intel.com ([192.55.52.88]:18488 "EHLO mga01.intel.com"
+	id S1751651AbaKEJAM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:00:12 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20156 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176AbaKEIy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:54:29 -0500
+	id S1750860AbaKEJAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 04:00:09 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411700986"
-Date: Wed, 5 Nov 2014 10:54:14 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: rjw@rjwysocki.net, lenb@kernel.org, wsa@the-dreams.de,
-        robert.moore@intel.com, lv.zheng@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devel@acpica.org
-Subject: Re: [RFC PATCH V2] ACPI: Add _DEP(Operation Region Dependencies)
- support to fix battery issue on the Asus T100TA
-Message-ID: <20141105085414.GV1618@lahna.fi.intel.com>
-References: <1414422584-2638-1-git-send-email-tianyu.lan@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414422584-2638-1-git-send-email-tianyu.lan@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-IronPort-AV: E=Sophos;i="5.07,318,1413270000"; 
+   d="scan'208";a="626841689"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@arm.com>
+Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [RFC PATCH v2] sched/deadline: support dl task migration during cpu hotplug
+Date: Wed,  5 Nov 2014 16:51:57 +0800
+Message-Id: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 11:09:44PM +0800, Lan Tianyu wrote:
-> ACPI 5.0 introduces _DEP to designate device objects that OSPM should
-> assign a higher priority in start ordering due to future operation region
-> accesses.
-> 
-> On Asus T100TA, ACPI battery info are read from a I2C slave device via
-> I2C operation region. Before I2C operation region handler is installed,
-> battery _STA always returns 0. There is a _DEP method of designating
-> start order under battery device node.
-> 
-> This patch is to implement _DEP feature to fix battery issue on the Asus T100TA.
-> Introducing acpi_dep_list and adding dep_unmet count in the struct
-> acpi_device. During ACPI namespace scan, create struct acpi_dep_data for a
-> valid pair of master (device pointed to by _DEP)/slave(device with _DEP), record
-> master's and slave's ACPI handle in it and put it into acpi_dep_list. The dep_unmet
-> count will increase by one if there is a device under its _DEP. Driver's probe() should
-> return EPROBE_DEFER when find dep_unmet larger than 0. When I2C operation
-> region handler is installed, remove all struct acpi_dep_data on the acpi_dep_list
-> whose master is pointed to I2C host controller and decrease slave's dep_unmet.
-> When dep_unmet decreases to 0, all _DEP conditions are met and then do acpi_bus_attach()
-> for the device in order to resolve battery _STA issue on the Asus T100TA.
+I observe that dl task can't be migrated to other cpus during cpu hotplug, in
+addition, task may/may not be running again if cpu is added back. The root cause
+which I found is that dl task will be throtted and removed from dl rq after
+comsuming all budget, which leads to stop task can't pick it up from dl rq and
+migrate to other cpus during hotplug.
 
-Is there a reason why the driver core can't handle this automatically in
-such way that when there are unmet dependencies, it will not probe the
-device? Or am I missing something?
+The method to reproduce:
+schedtool -E -t 50000:100000 -e ./test
+Actually test is just a simple for loop. Then observe which cpu the test
+task is on.
+echo 0 > /sys/devices/system/cpu/cpuN/online
 
-Now it looks like the driver itself needs to know about these and handle
-them somehow.
+This patch fix it by push the task to another cpu in dl_task_timer() if 
+rq is offline.
 
-I'm asking this because there are other things like devices using GPIOs
-that also take advantage of _DEP, like this on Asus T100:
+Note: dl task can be migrated successfully if rq is offline currently, however, 
+I'm still not sure why task_rq(task)->rd->span just include the cpu which the dl 
+task previous running on, so cpu_active_mask is used in the patch. 
 
-        Device (SDHB)
-        {
-            Name (_ADR, Zero)  // _ADR: Address
-            Name (_HID, "INT33BB")  // _HID: Hardware ID
-            ...
-            Name (_DEP, Package (0x02)  // _DEP: Dependencies
-            {
-                PEPD,
-                GPO2
-            })
+Peterz, Juri?
 
-I don't know what PEPD is but GPO2 is the GPIO controller.
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v1 -> v2:
+ * push the task to another cpu in dl_task_timer() if rq is offline.
+
+ kernel/sched/deadline.c | 39 ++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 36 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 04c2cbb..233e482 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+ 	return hrtimer_active(&dl_se->dl_timer);
+ }
+ 
++static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+ /*
+  * This is the bandwidth enforcement timer callback. If here, we know
+  * a task is not on its dl_rq, since the fact that the timer was running
+@@ -538,6 +539,39 @@ again:
+ 	update_rq_clock(rq);
+ 	dl_se->dl_throttled = 0;
+ 	dl_se->dl_yielded = 0;
++
++	/*
++	 * So if we find that the rq the task was on is no longer
++	 * available, we need to select a new rq.
++	 */
++	if (!rq->online) {
++		struct rq *later_rq = NULL;
++
++		/* We will release rq lock */
++		get_task_struct(p);
++
++		raw_spin_unlock(&rq->lock);
++
++		later_rq = find_lock_later_rq(p, rq);
++
++		if (!later_rq) {
++			put_task_struct(p);
++			goto out;
++		}
++
++		deactivate_task(rq, p, 0);
++		set_task_cpu(p, later_rq->cpu);
++		activate_task(later_rq, p, 0);
++
++		resched_curr(later_rq);
++
++		double_unlock_balance(rq, later_rq);
++
++		put_task_struct(p);
++
++		goto out;
++	}
++
+ 	if (task_on_rq_queued(p)) {
+ 		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+ 		if (dl_task(rq->curr))
+@@ -555,7 +589,7 @@ again:
+ 	}
+ unlock:
+ 	raw_spin_unlock(&rq->lock);
+-
++out:
+ 	return HRTIMER_NORESTART;
+ }
+ 
+@@ -1182,8 +1216,7 @@ static int find_later_rq(struct task_struct *task)
+ 	 * We have to consider system topology and task affinity
+ 	 * first, then we can look for a suitable cpu.
+ 	 */
+-	cpumask_copy(later_mask, task_rq(task)->rd->span);
+-	cpumask_and(later_mask, later_mask, cpu_active_mask);
++	cpumask_copy(later_mask, cpu_active_mask);
+ 	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+ 	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+ 			task, later_mask);
+-- 
+1.9.1
+
