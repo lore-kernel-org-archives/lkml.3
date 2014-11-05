@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475AbaKEPs6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:48:58 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:62078 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755424AbaKEPsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:48:55 -0500
-From: "pang.xunlei" <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [PATCH v3 3/7] sched/rt: Optimize find_lowest_rq() to select a cache hot cpu
-Date: Wed,  5 Nov 2014 23:48:22 +0800
-Message-Id: <1415202506-7800-3-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1415202506-7800-1-git-send-email-pang.xunlei@linaro.org>
-References: <1415202506-7800-1-git-send-email-pang.xunlei@linaro.org>
+	id S1755515AbaKEPtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:49:08 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755183AbaKEPtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:49:06 -0500
+Message-ID: <545A46F0.7030805@nod.at>
+Date: Wed, 05 Nov 2014 16:49:04 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tlinder@codeaurora.org
+Subject: Re: [PATCH 06/35] UBI: Fastmap: Ensure that all fastmap work is done
+ upon WL shutdown
+References: <1414586758-9972-1-git-send-email-richard@nod.at>	 <1414586758-9972-7-git-send-email-richard@nod.at> <1415202307.958.125.camel@sauron.fi.intel.com>
+In-Reply-To: <1415202307.958.125.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the case for iteration of sched_domains without SD_WAKE_AFFINE
-flags to select a cpu, this flag may be unset through proc by users.
+Am 05.11.2014 um 16:45 schrieb Artem Bityutskiy:
+> On Wed, 2014-10-29 at 13:45 +0100, Richard Weinberger wrote:
+>> ...otherwise the deferred work might run after datastructures
+>> got freed and corrupt memory.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>  drivers/mtd/ubi/wl.c | 3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+>> index bd2e8d5..a06e31e 100644
+>> --- a/drivers/mtd/ubi/wl.c
+>> +++ b/drivers/mtd/ubi/wl.c
+>> @@ -2047,6 +2047,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>>  void ubi_wl_close(struct ubi_device *ubi)
+>>  {
+>>  	dbg_wl("close the WL sub-system");
+>> +#ifdef CONFIG_MTD_UBI_FASTMAP
+>> +	flush_work(&ubi->fm_work);
+>> +#endif
+> 
+> I see in patch 35 you introduced the init function. Could you please
+> introduce fastmap init/close functions earlier, and add this line to the
+> fastmap close function instead of adding yet another ifdef to wl.c.
 
-Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
----
- kernel/sched/rt.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+If you want I can rebase.
+I did all fixes first and then the cleanups.
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index da6922e..49164f1 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1549,6 +1549,7 @@ static int find_lowest_rq(struct task_struct *task)
- 	struct cpumask *lowest_mask = this_cpu_cpumask_var_ptr(local_cpu_mask);
- 	int this_cpu = smp_processor_id();
- 	int cpu      = task_cpu(task);
-+	int cachehot_cpu = nr_cpu_ids;
- 
- 	/* Make sure the mask is initialized first */
- 	if (unlikely(!lowest_mask))
-@@ -1581,7 +1582,7 @@ static int find_lowest_rq(struct task_struct *task)
- 	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
- 		if (sd->flags & SD_WAKE_AFFINE) {
--			int best_cpu;
-+			int wakeaffine_cpu;
- 
- 			/*
- 			 * "this_cpu" is cheaper to preempt than a
-@@ -1593,16 +1594,25 @@ static int find_lowest_rq(struct task_struct *task)
- 				return this_cpu;
- 			}
- 
--			best_cpu = cpumask_first_and(lowest_mask,
-+			wakeaffine_cpu = cpumask_first_and(lowest_mask,
- 						     sched_domain_span(sd));
--			if (best_cpu < nr_cpu_ids) {
-+			if (wakeaffine_cpu < nr_cpu_ids) {
- 				rcu_read_unlock();
--				return best_cpu;
-+				return wakeaffine_cpu;
- 			}
-+		} else {
-+			/* affine domain outweighs lower level non-affine domain? */
-+			if (cachehot_cpu >= nr_cpu_ids)
-+				cachehot_cpu = cpumask_first_and(lowest_mask,
-+							   sched_domain_span(sd));
- 		}
- 	}
- 	rcu_read_unlock();
- 
-+	/* most likely cache-hot */
-+	if (cachehot_cpu < nr_cpu_ids)
-+		return cachehot_cpu;
-+
- 	/*
- 	 * And finally, if there were no matches within the domains
- 	 * just give the caller *something* to work with from the compatible
--- 
-2.1.0
-
+Thanks,
+//richard
