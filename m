@@ -1,131 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170AbaKEUaf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:30:35 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:38062 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaKEUac (ORCPT
+	id S1752147AbaKEUb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:31:57 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52794 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbaKEUbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:30:32 -0500
-Message-ID: <545A88E6.2060509@gmail.com>
-Date: Wed, 05 Nov 2014 15:30:30 -0500
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 5 Nov 2014 15:31:55 -0500
+Date: Wed, 5 Nov 2014 21:31:51 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg
+Subject: Re: N900 modem support in 3.18-rc1
+Message-ID: <20141105203151.GA24636@amd>
+References: <20141104205117.GA17606@amd>
+ <20141105011122.GA30622@earth.universe>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Martin Tournoij <martin@arp242.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] The SIGINFO signal from BSD
-References: <1415200663.3247743.187387481.75CE9317@webmail.messagingengine.com> <545A7B00.1040309@gmail.com> <20141105201404.GH27083@thunk.org>
-In-Reply-To: <20141105201404.GH27083@thunk.org>
-x-hashcash: 1:21:141105:tytso@mit.edu::d464a142f8091fbbcf0aea9f54692208:8daed1c6a81c451e
-x-hashcash: 1:21:141105:martin@arp242.net::bdacbe7799afadb0a071be913175c157:1dc43f57564c57cf
-x-hashcash: 1:21:141105:linux-kernel@vger.kernel.org::1c7565d119b87a35a27e07ff056ba38b:b59afaa20a239693
-x-stampprotocols: hashcash:1:17;mbound:0:10:3000:5000
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms060204040903040507050801"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141105011122.GA30622@earth.universe>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Wed 2014-11-05 02:11:22, Sebastian Reichel wrote:
+> Hi Pavel,
+> 
+> On Tue, Nov 04, 2014 at 09:51:17PM +0100, Pavel Machek wrote:
+> > I'd like to test a modem (and eventually to get it to work :-) ) on
+> > n900. So far I found:
+> > 
+> > http://lwn.net/Articles/592485/
+> > 
+> > It says:
+> > 
+> > # supported. Testing the patchset with ofono works like this:
+> > # 
+> > #  # provide cmt device for ofono
+> > #  ln -sf /sys/bus/hsi/n900-modem /dev/cmt
+> > 
+> > [...]
+> >
+> > That seemed to match, so I symlinked it.
+> 
+> looks ok. You should have the following files:
+> 
+> /dev/cmt/cmt_apeslpx
+> /dev/cmt/cmt_bsi
+> /dev/cmt/cmt_en
+> /dev/cmt/cmt_rst_rq
+> /dev/cmt/cmt_rst
 
---------------ms060204040903040507050801
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+No, it is not ok :-(. I did enable CONFIG_CMT now (it was not enabled
+before, and wow, that entry has least helpful config help, ever; is it
+related?), but still can't see the required files:
 
-On 2014-11-05 15:14, Theodore Ts'o wrote:
-> On Wed, Nov 05, 2014 at 02:31:12PM -0500, Austin S Hemmelgarn wrote:
->>>
->>> SIGINFO prints the status of the process to the terminal; BSD cp, for=
- example,
->>> shows show much data it's copied:
->>>
->>>      $ cp large_file /dev/null
->>>      <press ^t>
->>>      load: 1.39  cmd: cp 85837 [running] 3.91r 0.00u 0.98s 8% 2340k
->>>      large_file -> /dev/null  15%
->>>
->>> As you see, it shows the current load, pid, process status, memory us=
-age, as
->>> well as how much of the file has been copied. Many other BSD tools pr=
-int similar
->>> statistics (mv, tar, dd, sleep, fetch, etc.).
->>
->> You have to understand however, that the reason that SIGINFO works lik=
-e that
->> on *BSD is that the kernel and core userspace are developed together,
->> whereas on Linux, they are maintained entirely separately. Outside of =
-core
->> userspace components, using SIGINFO that way on *BSD is just conventio=
-n.
->
-> Actually, the first line:
->
-> 	load: 1.39  cmd: cp 85837 [running] 3.91r 0.00u 0.98s 8% 2340k
->
-> is actually printed by the kernel.  It's actually something which is
-> implemented in the BSD N_TTY line displine.  We never implemented it
-> (at least when I was maintaining the tty subsystem) mostly out of
-> laziness.  Part of the reason is that the main reason was that main
-> reason why people (at least systems programmers / kernel programers
-> like me) used ^T was to debug an apparently hung system, and for
-> Linux, we had a much more powerful system using the magic-sysrq key.
->
-I hadn't realized that it was actually the kernel printing that, but=20
-then I've never really looked all that deep into the BSD source code.
-Ironically, the magic-sysrq key is one of the big reasons I've=20
-personally chosen to stay with Linux over any of the BSD derivatives. :)
+root@n900:/sys# find . | grep cmt
+./bus/hsi/devices/cmt_speech
+./bus/hsi/drivers/cmt_speech
+./bus/hsi/drivers/cmt_speech/bind
+./bus/hsi/drivers/cmt_speech/cmt_speech
+./bus/hsi/drivers/cmt_speech/uevent
+./bus/hsi/drivers/cmt_speech/unbind
+./devices/virtual/misc/cmt_speech
+./devices/virtual/misc/cmt_speech/dev
+./devices/virtual/misc/cmt_speech/power
+./devices/virtual/misc/cmt_speech/power/control
+./devices/virtual/misc/cmt_speech/power/runtime_active_time
+./devices/virtual/misc/cmt_speech/power/autosuspend_delay_ms
+./devices/virtual/misc/cmt_speech/power/runtime_status
+./devices/virtual/misc/cmt_speech/power/runtime_suspended_time
+./devices/virtual/misc/cmt_speech/subsystem
+./devices/virtual/misc/cmt_speech/uevent
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/power
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/power/control
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/power/runtime_active_time
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/power/autosuspend_delay_ms
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/power/runtime_status
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/power/runtime_suspended_time
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/modalias
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/driver
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/subsystem
+./devices/68000000.ocp/48058000.ssi-controller/ssi0/port0/cmt_speech/uevent
+./class/misc/cmt_speech
+root@n900:/sys# 
+
+(What does CMT mean? I should fix the help files, I guess...)
 
 
---------------ms060204040903040507050801
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+> > root@n900:~# ofonod --nodetach --debug &
+> > [1] 3552
+> 
+> no output from ofono?
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIFuDCC
-BbQwggOcoAMCAQICAw9gVDANBgkqhkiG9w0BAQ0FADB5MRAwDgYDVQQKEwdSb290IENBMR4w
-HAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmlu
-ZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZzAeFw0xNDA4
-MDgxMTMwNDRaFw0xNTAyMDQxMTMwNDRaMGMxGDAWBgNVBAMTD0NBY2VydCBXb1QgVXNlcjEj
-MCEGCSqGSIb3DQEJARYUYWhmZXJyb2luN0BnbWFpbC5jb20xIjAgBgkqhkiG9w0BCQEWE2Fo
-ZW1tZWxnQG9oaW9ndC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDdmm8R
-BM5D6fGiB6rpogPZbLYu6CkU6834rcJepfmxKnLarYUYM593/VGygfaaHAyuc8qLaRA3u1M0
-Qp29flqmhv1VDTBZ+zFu6JgHjTDniBii1KOZRo0qV3jC5NvaS8KUM67+eQBjm29LhBWVi3+e
-a8jLxmogFXV0NGej+GHIr5zA9qKz2WJOEoGh0EfqZ2MQTmozcGI43/oqIYhRj8fRMkWXLUAF
-WsLzPQMpK19hD8fqwlxQWhBV8gsGRG54K5pyaQsjne7m89SF5M8JkNJPH39tHEvfv2Vhf7EM
-Y4WGyhLAULSlym1AI1uUHR1FfJaj3AChaEJZli/AdajYsqc7AgMBAAGjggFZMIIBVTAMBgNV
-HRMBAf8EAjAAMFYGCWCGSAGG+EIBDQRJFkdUbyBnZXQgeW91ciBvd24gY2VydGlmaWNhdGUg
-Zm9yIEZSRUUgaGVhZCBvdmVyIHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzAOBgNVHQ8BAf8E
-BAMCA6gwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEE
-AYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8v
-b2NzcC5jYWNlcnQub3JnMDEGA1UdHwQqMCgwJqAkoCKGIGh0dHA6Ly9jcmwuY2FjZXJ0Lm9y
-Zy9yZXZva2UuY3JsMDQGA1UdEQQtMCuBFGFoZmVycm9pbjdAZ21haWwuY29tgRNhaGVtbWVs
-Z0BvaGlvZ3QuY29tMA0GCSqGSIb3DQEBDQUAA4ICAQCr4klxcZU/PDRBpUtlb+d6JXl2dfto
-OUP/6g19dpx6Ekt2pV1eujpIj5whh5KlCSPUgtHZI7BcksLSczQbxNDvRu6LNKqGJGvcp99k
-cWL1Z6BsgtvxWKkOmy1vB+2aPfDiQQiMCCLAqXwHiNDZhSkwmGsJ7KHMWgF/dRVDnsl6aOQZ
-jAcBMpUZxzA/bv4nY2PylVdqJWp9N7x86TF9sda1zRZiyUwy83eFTDNzefYPtc4MLppcaD4g
-Wt8U6T2ffQfCWVzDirhg4WmDH3MybDItjkSB2/+pgGOS4lgtEBMHzAGQqQ+5PojTHRyqu9Jc
-O59oIGrTaOtKV9nDeDtzNaQZgygJItJi9GoAl68AmIHxpS1rZUNV6X8ydFrEweFdRTVWhUEL
-70Cnx84YBojXv01LYBSZaq18K8cERPLaIrUD2go+2ffjdE9ejvYDhNBllY+ufvRizIjQA1uC
-OdktVAN6auQob94kOOsWpoMSrzHHvOvVW/kbokmKzaLtcs9+nJoL+vPi2AyzbaoQASVZYOGW
-pE3daA0F5FJfcPZKCwd5wdnmT3dU1IRUxa5vMmgjP20lkfP8tCPtvZv2mmI2Nw5SaXNY4gVu
-WQrvkV2in+TnGqgEIwUrLVbx9G6PSYZZs07czhO+Q1iVuKdAwjL/AYK0Us9v50acIzbl5CWw
-ZGj3wjGCA6EwggOdAgEBMIGAMHkxEDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6
-Ly93d3cuY2FjZXJ0Lm9yZzEiMCAGA1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEh
-MB8GCSqGSIb3DQEJARYSc3VwcG9ydEBjYWNlcnQub3JnAgMPYFQwCQYFKw4DAhoFAKCCAfUw
-GAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQxMTA1MjAzMDMw
-WjAjBgkqhkiG9w0BCQQxFgQUYE+e3Hu1esBA62Ck5pRaT9zZIFcwbAYJKoZIhvcNAQkPMV8w
-XTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
-gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBkQYJKwYBBAGCNxAE
-MYGDMIGAMHkxEDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0
-Lm9yZzEiMCAGA1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJ
-ARYSc3VwcG9ydEBjYWNlcnQub3JnAgMPYFQwgZMGCyqGSIb3DQEJEAILMYGDoIGAMHkxEDAO
-BgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0Lm9yZzEiMCAGA1UE
-AxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJARYSc3VwcG9ydEBj
-YWNlcnQub3JnAgMPYFQwDQYJKoZIhvcNAQEBBQAEggEAwehs9/2KPIaaVnS4kyzYjaCgDiPq
-n8/1TG9PhBESixcsu3lSSOuZQAXXTvUxk8vnNnk5rnN+ZBjCa9o39x6R+3kaMMr2jrmMWtDe
-I7Z9oXxcAD9kv7D3FydU1TK4q79Lbmh4NNfhweEvrEDl7ILyVjLixUlNJIbkXTjd5aExf9oy
-z6xqAkMI7dcIq2cgJ4K8n1+HeXTczdZQnAAcZYVR6jCUC2Pc0P3K72tsnn7J5MzJG6KK4tSt
-448WOF0GZ1VnMowmTNWPMfe6N8DNgTZ2QYGIZGW3ASo1YhHg/NM2b0MUHUDQLb8UH6y8Hil5
-zMIGaZ6VOJXfeSadctnUkYWJMgAAAAAAAA==
---------------ms060204040903040507050801--
+Actually, a lot of output from ofonod, but nothing useful.
+
+> > root@n900:~# mdbus2 -s org.ofono /n900_0 xyz
+> > [ERR]: There is no method with name xyz on path /n900_0!
+> >
+> > [...]
+> > 
+> > Any ideas?
+> 
+> call mdbus2 with fewer arguments to see what is available on the
+> bus:
+> 
+> mdbus2 -s                      => list all system services
+> mdbus2 -s org.ofono            => list all ofono objects
+> mdbus2 -s org.ofono /n900_0    => list all methods from n900 object
+
+root@n900:~# mdbus2 -s org.ofono
+/
+root@n900:~# 
+
+But since I do not have required cmt_ files, I guess that's expected?
+
+
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
