@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914AbaKEPft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:35:49 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12468 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755051AbaKEPfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:35:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411865722"
-Message-ID: <1415201733.958.121.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: linux-mtd@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Richard Weinberger <richard@nod.at>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Wed, 05 Nov 2014 17:35:33 +0200
-In-Reply-To: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755934AbaKEPf4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:35:56 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39410 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454AbaKEPfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:35:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141105100056.152fd532@gandalf.local.home>
+References: <20141031170326.1491a63f@gandalf.local.home>
+	<1414913427.5380.110.camel@marge.simpson.net>
+	<CADLDEKvFvw7Aa98tVtM3z5JV8oocKqAdV4PqOMoZH2mXZ6x2jg@mail.gmail.com>
+	<20141105092707.7c9bb1ae@gandalf.local.home>
+	<CADLDEKsYzpN4uPD7wEE6bxZP21gd3xY4c0fsRqfB1RwEZ53iKg@mail.gmail.com>
+	<20141105100056.152fd532@gandalf.local.home>
+Date: Wed, 5 Nov 2014 15:35:51 +0000
+Message-ID: <CAKudYbNhjdNmw27tMz261p+6q4OStBp2zUoBsgtJdQGcJ9fkKw@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.14.23-rt20
+From: Harry van Haaren <harryhaaren@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Juerg Haefliger <juergh@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 15:58 +0200, Tanya Brokhman wrote:
-> If there is more then one UBI device mounted, there is no way to
-> distinguish between messages from different UBI devices.
-> Add device number to all ubi layer message types.
-> 
-> The R/O block driver messages were replaced by pr_* since
-> ubi_device structure is not used by it.
-> 
-> Amended a bit by Artem.
-> 
-> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
-> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On Wed, 5 Nov 2014 14:50:41 +0100 Juerg Haefliger <juergh@gmail.com> wrote:
+> The cpufreq code does nested down_read_trylocks and only the first one succeeds:
+>drivers/cpufreq/cpufreq.c:
+>store
+>  down_read_trylock(cpufreq_rwsem)  <- succeeds
+>  store_scaling_governor
+>    cpufreq_get_policy
+>      cpufreq_cpu_get
+>        down_read_trylock(cpufreq_rwsem)  <-- fails
 
-Oh, the entire patch-set again... this means we need to review it again!
-Please, have a mercy! :-) It is huge! Please, send a small patch against
-the one which I pushed already. Thanks!
+On a related note: I think this patch/issue may be the cause of the
+-rt CPU frequency scaling bug I reported a couple of months ago.
+http://comments.gmane.org/gmane.linux.rt.user/12472
 
-Artem.
+I'm currently using the performance governor by default as a
+workaround; thanks to JackWinter for packaging in the ArchAudio repos.
 
+Cheers, -Harry
+
+-- 
+
+http://www.openavproductions.com
