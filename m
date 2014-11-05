@@ -1,192 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaKEWfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:35:32 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:46670 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaKEWfL (ORCPT
+	id S1751121AbaKEWl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:41:29 -0500
+Received: from smtprelay0052.hostedemail.com ([216.40.44.52]:50926 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750796AbaKEWl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:35:11 -0500
-Date: Wed, 5 Nov 2014 15:35:06 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        iommu@lists.linux-foundation.org
-Subject: Re: [Patch Part2 v4 19/31] PCI/MSI: Simplify PCI MSI code by
- initializing msi_desc.nvec_used earlier
-Message-ID: <20141105223506.GF6168@google.com>
-References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
- <1415102525-9898-20-git-send-email-jiang.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415102525-9898-20-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Nov 2014 17:41:28 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:966:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3874:4250:4321:4385:5007:6117:6119:6261:6630:7875:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12438:12517:12519:12555:12740:13019:13069:13095:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: order02_29a30bf8ce43e
+X-Filterd-Recvd-Size: 2841
+Message-ID: <1415227284.6634.26.camel@perches.com>
+Subject: Re: [PATCH V3] x86, cpu: trivial printk formatting fixes
+From: Joe Perches <joe@perches.com>
+To: Steven Honeyman <stevenhoneyman@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jiri Kosina <trivial@kernel.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 05 Nov 2014 14:41:24 -0800
+In-Reply-To: <1415226516-20637-1-git-send-email-stevenhoneyman@gmail.com>
+References: <1415226516-20637-1-git-send-email-stevenhoneyman@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 08:01:53PM +0800, Jiang Liu wrote:
-
-  PCI/MSI: Initialize msi_desc.nvec_used earlier to simplify code
-
-> Simplify PCI MSI code by initializing msi_desc.nvec_used and
-> msi_desc.msi_attrib.mutiple when create MSI descriptors.
-
-multiple
-when creating
-
-> Also remove redundant checks in IRQ remapping drivers, PCI MSI core
-> already guarattees these.
-
-guarantees
-
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-
-> ---
->  drivers/iommu/irq_remapping.c |    8 --------
->  drivers/pci/msi.c             |   40 +++++++++++++++-------------------------
->  2 files changed, 15 insertions(+), 33 deletions(-)
+On Wed, 2014-11-05 at 22:28 +0000, Steven Honeyman wrote:
+> dmesg (from util-linux) currently has two methods for reading the
+> kernel message ring buffer: /dev/kmsg and syslog(2). Since kernel
+> 3.5.0 kmsg has been the default, which escapes control characters
+> (e.g. new lines) before they are shown.
 > 
-> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-> index 176ff4372b7d..32fe5b1322d0 100644
-> --- a/drivers/iommu/irq_remapping.c
-> +++ b/drivers/iommu/irq_remapping.c
-> @@ -69,19 +69,13 @@ static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
->  	unsigned int irq;
->  	struct msi_desc *msidesc;
->  
-> -	WARN_ON(!list_is_singular(&dev->msi_list));
->  	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
-> -	WARN_ON(msidesc->irq);
-> -	WARN_ON(msidesc->msi_attrib.multiple);
-> -	WARN_ON(msidesc->nvec_used);
->  
->  	irq = irq_alloc_hwirqs(nvec, dev_to_node(&dev->dev));
->  	if (irq == 0)
->  		return -ENOSPC;
->  
->  	nvec_pow2 = __roundup_pow_of_two(nvec);
-> -	msidesc->nvec_used = nvec;
-> -	msidesc->msi_attrib.multiple = ilog2(nvec_pow2);
->  	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
->  		if (!sub_handle) {
->  			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
-> @@ -109,8 +103,6 @@ error:
->  	 * IRQs from tearing down again in default_teardown_msi_irqs()
->  	 */
->  	msidesc->irq = 0;
-> -	msidesc->nvec_used = 0;
-> -	msidesc->msi_attrib.multiple = 0;
->  
->  	return ret;
->  }
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index fb2ccb536324..afe974600c7d 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -85,19 +85,13 @@ int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
->   */
->  void default_teardown_msi_irqs(struct pci_dev *dev)
->  {
-> +	int i;
->  	struct msi_desc *entry;
->  
-> -	list_for_each_entry(entry, &dev->msi_list, list) {
-> -		int i, nvec;
-> -		if (entry->irq == 0)
-> -			continue;
-> -		if (entry->nvec_used)
-> -			nvec = entry->nvec_used;
-> -		else
-> -			nvec = 1 << entry->msi_attrib.multiple;
-> -		for (i = 0; i < nvec; i++)
-> -			arch_teardown_msi_irq(entry->irq + i);
-> -	}
-> +	list_for_each_entry(entry, &dev->msi_list, list)
-> +		if (entry->irq)
-> +			for (i = 0; i < entry->nvec_used; i++)
-> +				arch_teardown_msi_irq(entry->irq + i);
->  }
->  
->  void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
-> @@ -353,19 +347,12 @@ static void free_msi_irqs(struct pci_dev *dev)
->  	struct msi_desc *entry, *tmp;
->  	struct attribute **msi_attrs;
->  	struct device_attribute *dev_attr;
-> -	int count = 0;
-> +	int i, count = 0;
->  
-> -	list_for_each_entry(entry, &dev->msi_list, list) {
-> -		int i, nvec;
-> -		if (!entry->irq)
-> -			continue;
-> -		if (entry->nvec_used)
-> -			nvec = entry->nvec_used;
-> -		else
-> -			nvec = 1 << entry->msi_attrib.multiple;
-> -		for (i = 0; i < nvec; i++)
-> -			BUG_ON(irq_has_action(entry->irq + i));
-> -	}
-> +	list_for_each_entry(entry, &dev->msi_list, list)
-> +		if (entry->irq)
-> +			for (i = 0; i < entry->nvec_used; i++)
-> +				BUG_ON(irq_has_action(entry->irq + i));
->  
->  	arch_teardown_msi_irqs(dev);
->  
-> @@ -556,7 +543,7 @@ error_attrs:
->  	return ret;
->  }
->  
-> -static struct msi_desc *msi_setup_entry(struct pci_dev *dev)
-> +static struct msi_desc *msi_setup_entry(struct pci_dev *dev, int nvec)
->  {
->  	u16 control;
->  	struct msi_desc *entry;
-> @@ -574,6 +561,8 @@ static struct msi_desc *msi_setup_entry(struct pci_dev *dev)
->  	entry->msi_attrib.maskbit	= !!(control & PCI_MSI_FLAGS_MASKBIT);
->  	entry->msi_attrib.default_irq	= dev->irq;	/* Save IOAPIC IRQ */
->  	entry->msi_attrib.multi_cap	= (control & PCI_MSI_FLAGS_QMASK) >> 1;
-> +	entry->msi_attrib.multiple	= ilog2(__roundup_pow_of_two(nvec));
-> +	entry->nvec_used		= nvec;
->  
->  	if (control & PCI_MSI_FLAGS_64BIT)
->  		entry->mask_pos = dev->msi_cap + PCI_MSI_MASK_64;
-> @@ -606,7 +595,7 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
->  
->  	msi_set_enable(dev, 0);	/* Disable MSI during set up */
->  
-> -	entry = msi_setup_entry(dev);
-> +	entry = msi_setup_entry(dev, nvec);
->  	if (!entry)
->  		return -ENOMEM;
->  
-> @@ -677,6 +666,7 @@ static int msix_setup_entries(struct pci_dev *dev, void __iomem *base,
->  		entry->msi_attrib.entry_nr	= entries[i].entry;
->  		entry->msi_attrib.default_irq	= dev->irq;
->  		entry->mask_base		= base;
-> +		entry->nvec_used		= 1;
->  
->  		list_add_tail(&entry->list, &dev->msi_list);
->  	}
-> -- 
-> 1.7.10.4
+> This change means that when dmesg is using /dev/kmsg, a 2 line printk
+> makes the output messy, because the second line does not get a
+> timestamp.
+> For example:
 > 
+> [    0.012863] CPU0: Thermal monitoring enabled (TM1)
+> [    0.012869] Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 1024
+> Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 1024, 1GB 4
+> [    0.012958] Freeing SMP alternatives memory: 28K (ffffffff81d86000
+> - ffffffff81d8d000)
+> [    0.014961] dmar: Host address width 39
+> 
+> Because printk.c intentionally escapes control characters, they should
+> not be there in the first place.
+> This patch fixes two occurrences of this.
+> 
+> V2: Revert change to log level, only fix the newline formatting issue
+> V3: Expand patch description
+
+The log level change is back...
+
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+[]
+> @@ -487,10 +487,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+>  
+>  		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+>  		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
+> -			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
+> -				" Set to 'normal', was 'performance'\n"
+> -				"ENERGY_PERF_BIAS: View and update with"
+> -				" x86_energy_perf_policy(8)\n");
+> +			pr_info_once("ENERGY_PERF_BIAS: Set to 'normal', was 'performance'\n");
+> +			pr_info_once("ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)\n");
+>  			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
+>  			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+>  		}
+
+
+
