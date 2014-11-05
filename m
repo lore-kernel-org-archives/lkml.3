@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaKEWKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:10:52 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:40993 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926AbaKEWKt (ORCPT
+	id S1751065AbaKEWNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:13:14 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45088 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750926AbaKEWNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:10:49 -0500
+	Wed, 5 Nov 2014 17:13:12 -0500
+Message-Id: <1415225591.3444747.187568145.134CEE91@webmail.messagingengine.com>
+X-Sasl-Enc: OsWyiODkv3Ay+zCqBlODb/Q5n2pRUuHn40ArTlHovsyG 1415225591
+From: Martin Tournoij <martin@arp242.net>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <tip-bdee237c0343a5d1a6cf72c7ea68e88338b26e08@git.kernel.org>
-References: <1415089784-28779-4-git-send-email-daniel@numascale.com>
-	<tip-bdee237c0343a5d1a6cf72c7ea68e88338b26e08@git.kernel.org>
-Date: Wed, 5 Nov 2014 14:10:48 -0800
-X-Google-Sender-Auth: xacAdu05oYX2hltykq0ikWpqxPc
-Message-ID: <CAE9FiQWSDJdEdDkiWog6xPLnmHo3xXtnnE0y6YGfuR8A5EkLNA@mail.gmail.com>
-Subject: Re: [tip:x86/mm] x86: mm: Use 2GB memory block size on large-memory
- x86-64 systems
-From: Yinghai Lu <yinghai@kernel.org>
-To: Steffen Persvold <sp@numascale.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Ingo Molnar <mingo@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-c51dec4f
+In-Reply-To: <20141105201404.GH27083@thunk.org>
+References: <1415200663.3247743.187387481.75CE9317@webmail.messagingengine.com>
+ <545A7B00.1040309@gmail.com> <20141105201404.GH27083@thunk.org>
+Subject: Re: [RFC] The SIGINFO signal from BSD
+Date: Wed, 05 Nov 2014 23:13:11 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 9:22 AM, tip-bot for Daniel J Blueman
-<tipbot@zytor.com> wrote:
-> Commit-ID:  bdee237c0343a5d1a6cf72c7ea68e88338b26e08
-> Gitweb:     http://git.kernel.org/tip/bdee237c0343a5d1a6cf72c7ea68e88338b26e08
-> Author:     Daniel J Blueman <daniel@numascale.com>
-> AuthorDate: Tue, 4 Nov 2014 16:29:44 +0800
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Tue, 4 Nov 2014 18:19:27 +0100
->
-> x86: mm: Use 2GB memory block size on large-memory x86-64 systems
->
-> On large-memory x86-64 systems of 64GB or more with memory hot-plug
-> enabled, use a 2GB memory block size. Eg with 64GB memory, this reduces
-> the number of directories in /sys/devices/system/memory from 512 to 32,
-> making it more manageable, and reducing the creation time accordingly.
->
-> This caveat is that the memory can't be offlined (for hotplug or
-> otherwise) with the finer default 128MB granularity, but this is
-> unimportant due to the high memory densities generally used with such
-> large-memory systems, where eg a single DIMM is the order of 16GB.
->
-> Signed-off-by: Daniel J Blueman <daniel@numascale.com>
-> Cc: Steffen Persvold <sp@numascale.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Link: http://lkml.kernel.org/r/1415089784-28779-4-git-send-email-daniel@numascale.com
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/mm/init_64.c | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 4cb8763..ebca30f 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -52,7 +52,6 @@
->  #include <asm/numa.h>
->  #include <asm/cacheflush.h>
->  #include <asm/init.h>
-> -#include <asm/uv/uv.h>
->  #include <asm/setup.h>
->
->  #include "mm_internal.h"
-> @@ -1247,12 +1246,10 @@ static unsigned long probe_memory_block_size(void)
->         /* start from 2g */
->         unsigned long bz = 1UL<<31;
->
-> -#ifdef CONFIG_X86_UV
-> -       if (is_uv_system()) {
-> -               printk(KERN_INFO "UV: memory block size 2GB\n");
-> +       if (totalram_pages >= (64ULL << (30 - PAGE_SHIFT))) {
-> +               pr_info("Using 2GB memory block size for large-memory system\n");
->                 return 2UL * 1024 * 1024 * 1024;
->         }
-> -#endif
->
->         /* less than 64g installed */
->         if ((max_pfn << PAGE_SHIFT) < (16UL << 32))
-.....
+On Wed, Nov 5, 2014, at 20:31, Austin S Hemmelgarn wrote:
+> The people to talk to about that for the core 
+> utilities on Linux would be the maintainers of the GNU coreutils, or 
+> whatever your distribution might use in their place (I think it's very 
+> unlikely that busybox or toybox would implement it however).
 
-Come on. Can you remove the following dead lines caused by this patch
-the same time ?
+Well, if the kernel doesn't provide the feature, then we can be sure it
+will never be implemented :-)
+I thought this was a good place to start asking,, and even if GNU
+coreutils opt to not implement this for whatever reasons, other
+applications still can (mine will!)
+Besides, there are already many tools which use this feature when
+available, these would for with no or minimal adjustments.
 
-Yinghai
+
+On Wed, Nov 5, 2014, at 21:14, Theodore Ts'o wrote: 
+> In a world where we have a GUI desktop, I suspect implementing ^T is
+> much less interesting but if someone were to submit a patch to at
+> least make ^T send a SIGINFO, I can't think of a reason why it
+> wouldn't be accepted.  (BTW, if you're going to do this, note that ^T
+> could be remapped to any control character via stty; so to do this we
+> would need to define an extra index in c_cc[] array in the struct
+> termios.)
+
+Thanks, this is what I needed :-) I wondered if there is a specific reason
+it's not implemented, or if it was just something no one ever did.
+
+I can start my investigation in the kernel sources ;)
+
+Thanks,
+Martin
