@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413AbaKEJSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:18:41 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:51347 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488AbaKEJSh (ORCPT
+	id S1754267AbaKEJVH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:21:07 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:40530 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaKEJVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:18:37 -0500
-Date: Wed, 5 Nov 2014 01:18:33 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Michal Sojka <sojkam1@fel.cvut.cz>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Update help of CONFIG_MTD_OF_PARTS
-Message-ID: <20141105091833.GG22361@norris-Latitude-E6410>
-References: <1412946377-18933-1-git-send-email-sojkam1@fel.cvut.cz>
- <20141022053453.GA16128@brian-ubuntu>
+	Wed, 5 Nov 2014 04:21:01 -0500
+Date: Wed, 5 Nov 2014 10:20:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kan Liang <kan.liang@intel.com>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        paulus@samba.org, acme@kernel.org, jolsa@redhat.com,
+        ak@linux.intel.com
+Subject: Re: [PATCH V7 11/17] perf, core: expose LBR call stack to user perf
+ tool
+Message-ID: <20141105092056.GO10501@worktop.programming.kicks-ass.net>
+References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
+ <1415156173-10035-12-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141022053453.GA16128@brian-ubuntu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415156173-10035-12-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 10:34:53PM -0700, Brian Norris wrote:
-> On Fri, Oct 10, 2014 at 03:06:17PM +0200, Michal Sojka wrote:
-> > The help text of CONFIG_MTD_OF_PARTS refers to additional documentation
-> > in booting-without-of.txt but this documentation was moved to another
-> > file in commit efcc2da3fd148c9acb7d7cf1d9800e0649f950fc (Stefan Roese:
-> > Factor MTD physmap bindings out of booting-without-of). This updates the
-> > help text to point to the right place.
-> > 
-> > Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
-> > ---
-> >  drivers/mtd/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
-> > index 94b8210..fa8371a 100644
-> > --- a/drivers/mtd/Kconfig
-> > +++ b/drivers/mtd/Kconfig
-> > @@ -133,7 +133,7 @@ config MTD_OF_PARTS
-> >  	help
-> >  	  This provides a partition parsing function which derives
-> >  	  the partition map from the children of the flash node,
-> > -	  as described in Documentation/devicetree/booting-without-of.txt.
-> > +	  as described in Documentation/devicetree/bindings/mtd/mtd-physmap.txt.
-> 
-> Did you read this file before sending the patch? I'm pretty sure you're
-> looking for this file instead:
-> 
->   Documentation/devicetree/bindings/mtd/partition.txt
+On Tue, Nov 04, 2014 at 09:56:07PM -0500, Kan Liang wrote:
+> From: Yan, Zheng <zheng.z.yan@intel.com>
 
-Fixed this up and pushed to l2-mtd.git.
+Now for this patch I'm fairly sure Zheng didn't actually write it; his
+last posting did something different IIRC.
 
-Brian
+> With LBR call stack feature enable, there are two call chain data
+
+_three_, LBR is the 3rd.
+
+> sources, traditional frame pointer and LBR call stack.
+> This patch extends the perf_callchain_entry struct to mark the available
+> call chain source.
+> The frame pointer is still output as PERF_SAMPLE_CALLCHAIN data format.
+> The LBR call stack data will be output as PERF_SAMPLE_BRANCH_STACK data
+> format.
+
+I'm not sure what this patch does?! Why do the FP based callchains need
+_any_ changes?
