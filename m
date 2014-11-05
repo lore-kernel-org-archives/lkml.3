@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434AbaKEREf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:04:35 -0500
-Received: from mga11.intel.com ([192.55.52.93]:25793 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932223AbaKEREc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:04:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="617662787"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "acme@kernel.org" <acme@kernel.org>,
-        "jolsa@redhat.com" <jolsa@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V7 00/17] perf, x86: Haswell LBR call stack support
-Thread-Topic: [PATCH V7 00/17] perf, x86: Haswell LBR call stack support
-Thread-Index: AQHP+KX2mQc4+JvE8EymwJ/+bhfdO5xRQPaAgADzn3D//37EgIAAh4Mg
-Date: Wed, 5 Nov 2014 17:02:48 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701654523@SHSMSX103.ccr.corp.intel.com>
-References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
- <20141105093759.GQ10501@worktop.programming.kicks-ass.net>
- <37D7C6CF3E00A74B8858931C1DB2F0770165410A@SHSMSX103.ccr.corp.intel.com>
- <20141105162723.GW3337@twins.programming.kicks-ass.net>
-In-Reply-To: <20141105162723.GW3337@twins.programming.kicks-ass.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
+	id S1755261AbaKEREv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:04:51 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:38353 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932357AbaKEREG convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Wed, 5 Nov 2014 12:04:06 -0500
+Message-Id: <545A588202000078000C1042@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Wed, 05 Nov 2014 17:04:02 +0000
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <mingo@kernel.org>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-tip-commits@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [tip:x86/boot] x86-64: Use RIP-relative addressing for
+ most per-CPU accesses
+References: <5458A1780200007800044A9D@mail.emea.novell.com>
+ <tip-97b67ae559947f1e208439a1bf6a734da3087006@git.kernel.org>
+ <545932C3.3080907@zytor.com>
+In-Reply-To: <545932C3.3080907@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> "H. Peter Anvin" <hpa@zytor.com> 11/04/14 9:11 PM >>>
+>On 11/04/2014 11:45 AM, tip-bot for Jan Beulich wrote:
+>> x86-64: Use RIP-relative addressing for most per-CPU accesses
+>> 
+>> Observing that per-CPU data (in the SMP case) is reachable by
+>> exploiting 64-bit address wraparound (building on the default kernel
+>> load address being at 16Mb), the one byte shorter RIP-relative
+>> addressing form can be used for most per-CPU accesses. The one
+>> exception are the "stable" reads, where the use of the "P" operand
+>> modifier prevents the compiler from using RIP-relative addressing, but
+>> is unavoidable due to the use of the "p" constraint (side note: with
+>> gcc 4.9.x the intended effect of this isn't being achieved anymore,
+>> see gcc bug 63637).
+>> 
+>> With the dependency on the minimum kernel load address, arbitrarily
+>> low values for CONFIG_PHYSICAL_START are now no longer possible. A
+>> link time assertion is being added, directing to the need to increase
+>> that value when it triggers.
+>> 
+>
+>This description makes very little sense.  What matters here is the
+>virtual address, which is always >= -2 GB.
 
+But code at or very close to -2Gb won't be able to reach addresses far
+enough from address zero; it indeed matters that the lowest code address
+is far enough away from -2Gb.
 
-> On Wed, Nov 05, 2014 at 04:22:09PM +0000, Liang, Kan wrote:
-> >
-> > >>
-> > >
-> > > So if I take all except 11,13,16,17 but instead do something like
-> > > the below, everything will work just fine, right?
-> > >
-> > > Or am I missing something?
-> > >
-> >
-> > Yes, it should work.  Then LBR callstack will rely on user to enable it.
-> > But user never get the LBR callstack data if it's available.
-> > I'm not sure why you do that?
-> 
-> Uhm what? If you request PERF_SAMPLE_BRANCH_CALL_STACK the user
-> will get the data through the regular PERF_SAMPLE_BRANCH_STACK
-> output of PERF_RECORD_SAMPLE, right?
+Jan
 
-OK, I think I should understand your meaning.
->From the kernel side, we provide a 3rd callchain option to user.
-The kernel only tries to enable LBR and prepare the data if possible.
-The kernel doesn't guarantee the data must come from hardware LBR,
-even user choose LBR callchain option. 
-
-It's user tool's responsibility to filter the request, choose the data source
-and reconstruct the data. It's not the scope of this kernel patch. That
-should depend on the implementation of another user tool patchset.
-
-What do you think?
-
-Thanks,
-Kan
