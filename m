@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaKEJsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:48:15 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:25736 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604AbaKEJsJ (ORCPT
+	id S1754270AbaKEJsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:48:18 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:23130 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524AbaKEJsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:48:09 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-c9-5459f257715b
+	Wed, 5 Nov 2014 04:48:10 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-cb-5459f257defd
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
@@ -17,74 +17,220 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 0/3] regulator: max77686/802: Cleanup
-Date: Wed, 05 Nov 2014 10:47:48 +0100
-Message-id: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 1/3] regulator: max77802: Remove support for board files
+Date: Wed, 05 Nov 2014 10:47:49 +0100
+Message-id: <1415180871-25293-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMJMWRmVeSWpSXmKPExsVy+t/xa7rhnyJDDG7/FrPYOGM9q8XUh0/Y
-	LI7+LrB4/cLQ4mzTG3aL+1+PMlp8u9LBZHF51xw2i7VH7rJbnO5mdeDy+Pv8OovHzll32T02
-	repk87hzbQ+bx7yTgR59W1YxenzeJBfAHsVlk5Kak1mWWqRvl8CV8erDC8aCvTwV/08uYG1g
-	fMrZxcjJISFgIrFjwhs2CFtM4sK99UA2F4eQwFJGiTVTtjBBOH1MEtN797ODVLEJGEtsXr4E
-	rEpEYBOjxKT+K6wgCWaBZiaJ0+9zuhg5OIQFLCTuX4oACbMIqEr82v+CBcTmFXCXOLBjNgvE
-	NjmJk8cms05g5F7AyLCKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIySgvuxgXHzM6hCjAAej
-	Eg+vR1NkiBBrYllxZe4hRgkOZiURXs5LQCHelMTKqtSi/Pii0pzU4kOMTBycUg2M8hMyJpit
-	uDx7XZzg3R6lo6uqza5Mumi3ME3n9p+PMqf1I1L5P0mZ+sesevNKvb8u7WhHToRGscTpC2sl
-	Oq6t1v1a/VnpRcQmyXQtzmtv1ntWn+uuPcN4O37TRuM3aYlW9YHTLabuP/Fl8o3TRz/cjb+4
-	aJvj9SnFD9dVhu2fNSnx7RSZt1t0ziqxFGckGmoxFxUnAgAxmFGQBgIAAA==
+In-reply-to: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
+References: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4Nd3wT5EhBg1PTSw2zljPajH14RM2
+	i6O/CyxevzC0ONv0ht3i/tejjBbfrnQwWVzeNYfNYu2Ru+wWp7tZHbg8/j6/zuKxc9Zddo9N
+	qzrZPO5c28PmMe9koEffllWMHp83yQWwR3HZpKTmZJalFunbJXBl3Pzwkr1gi0nF08NHmRoY
+	v2p2MXJySAiYSHw4spwVwhaTuHBvPVsXIxeHkMBSRok99z4zQTh9TBLTe/ezg1SxCRhLbF6+
+	BKxKRGATo8Sk/itg7cwCzUwSp9/ngNjCAt4SO7fcAmtgEVCVuN7/gg3E5hVwl7hzvocNYp2c
+	xMljk8F6OQU8JE7d/sgMYgsB1TTuvMA8gZF3ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95Pzc
+	TYyQEPyyg3HxMatDjAIcjEo8vB5NkSFCrIllxZW5hxglOJiVRHg5LwGFeFMSK6tSi/Lji0pz
+	UosPMTJxcEo1MPbW1N2OEZwrGmu0+hjrG+brJe+uH7wqq/tumpXIavf2XutDGUHq5o1PKzxS
+	FvN3m/Mdbu7Zc7z7961DH461XljoybJX9OqPz7EGxwRzbBb83XDf8/v1bW9Wn+Kbzb5wplKC
+	ycnpd/ytxSuj5nWxLnk2MXzGqvfv2sSnrWPrt3Eweft49leJuSJKLMUZiYZazEXFiQC8kdv1
+	HwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The driver is used only on Exynos based boards with DTS support.
+Simplify the driver and remove dead (unused) entries in platform_data
+structure.
 
+Convert the driver to DTS-only version. Parse all regulators at once,
+not one-by-one. Remove dependency on data provided by max77686 MFD
+driver. Use new DT style parsing method for regulators init data.
 
-Changes since v1
-================
-1. Rebase on next-20141105, now it should apply cleanly to regulator
-   tree.
-2. Remove first 3 patches, applied by Mark.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/regulator/max77802.c | 92 +++++++++-----------------------------------
+ 1 file changed, 19 insertions(+), 73 deletions(-)
 
-
-Description
-===========
-Previously this patchset was part of adding GPIO to max77686
-regulator driver [1]. I split it but the goal is the same:
-cleanup and simplify the regulator drivers by removing obsolete
-board file support so adding new features would be easier.
-
-The patchset removes board file support from regulator drivers
-incrementally and in a bisect-friendly way. Thus MFD driver is
-updated at the end.
-
-Everything should be pulled at once (preferrably regulator tree).
-Rebased on next-20141105.
-
-The changes on max77802 were not tested.
-I am kindly asking for testing it because I don't have the board
-with Maxim 77802.
-
-
-[1] [PATCH v3 00/14] regulator: max77686: Add GPIO control
-    https://lkml.org/lkml/2014/10/30/270
-
-
-Best regards,
-Krzysztof Kozlowski
-
-
-Krzysztof Kozlowski (3):
-  regulator: max77802: Remove support for board files
-  regulator: max77686: Remove support for board files
-  mfd: max77686/802: Remove support for board files
-
- drivers/mfd/Kconfig                  |  1 +
- drivers/mfd/max77686.c               | 23 ---------
- drivers/regulator/max77686.c         | 91 ++++++++---------------------------
- drivers/regulator/max77802.c         | 92 ++++++++----------------------------
- include/linux/mfd/max77686-private.h |  1 -
- include/linux/mfd/max77686.h         | 28 -----------
- 6 files changed, 39 insertions(+), 197 deletions(-)
-
+diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+index 8168dbfc532f..9b4d127387b9 100644
+--- a/drivers/regulator/max77802.c
++++ b/drivers/regulator/max77802.c
+@@ -70,6 +70,7 @@ static unsigned int ramp_table_77802_4bit[] = {
+ };
+ 
+ struct max77802_regulator_prv {
++	/* Array indexed by regulator id */
+ 	unsigned int opmode[MAX77802_REG_MAX];
+ };
+ 
+@@ -362,6 +363,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
+ /* LDOs 3-7, 9-14, 18-26, 28, 29, 32-34 */
+ #define regulator_77802_desc_p_ldo(num, supply, log)	{		\
+ 	.name		= "LDO"#num,					\
++	.of_match	= of_match_ptr("LDO"#num),			\
++	.regulators_node	= of_match_ptr("regulators"),		\
+ 	.id		= MAX77802_LDO##num,				\
+ 	.supply_name	= "inl"#supply,					\
+ 	.ops		= &max77802_ldo_ops_logic##log,			\
+@@ -380,6 +383,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
+ /* LDOs 1, 2, 8, 15, 17, 27, 30, 35 */
+ #define regulator_77802_desc_n_ldo(num, supply, log)   {		\
+ 	.name		= "LDO"#num,					\
++	.of_match	= of_match_ptr("LDO"#num),			\
++	.regulators_node	= of_match_ptr("regulators"),		\
+ 	.id		= MAX77802_LDO##num,				\
+ 	.supply_name	= "inl"#supply,					\
+ 	.ops		= &max77802_ldo_ops_logic##log,			\
+@@ -398,6 +403,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
+ /* BUCKs 1, 6 */
+ #define regulator_77802_desc_16_buck(num)	{		\
+ 	.name		= "BUCK"#num,					\
++	.of_match	= of_match_ptr("BUCK"#num),			\
++	.regulators_node	= of_match_ptr("regulators"),		\
+ 	.id		= MAX77802_BUCK##num,				\
+ 	.supply_name	= "inb"#num,					\
+ 	.ops		= &max77802_buck_16_dvs_ops,			\
+@@ -416,6 +423,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
+ /* BUCKS 2-4 */
+ #define regulator_77802_desc_234_buck(num)	{		\
+ 	.name		= "BUCK"#num,					\
++	.of_match	= of_match_ptr("BUCK"#num),			\
++	.regulators_node	= of_match_ptr("regulators"),		\
+ 	.id		= MAX77802_BUCK##num,				\
+ 	.supply_name	= "inb"#num,					\
+ 	.ops		= &max77802_buck_234_ops,			\
+@@ -435,6 +444,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
+ /* BUCK 5 */
+ #define regulator_77802_desc_buck5(num)		{		\
+ 	.name		= "BUCK"#num,					\
++	.of_match	= of_match_ptr("BUCK"#num),			\
++	.regulators_node	= of_match_ptr("regulators"),		\
+ 	.id		= MAX77802_BUCK##num,				\
+ 	.supply_name	= "inb"#num,					\
+ 	.ops		= &max77802_buck_dvs_ops,			\
+@@ -453,6 +464,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
+ /* BUCKs 7-10 */
+ #define regulator_77802_desc_buck7_10(num)	{		\
+ 	.name		= "BUCK"#num,					\
++	.of_match	= of_match_ptr("BUCK"#num),			\
++	.regulators_node	= of_match_ptr("regulators"),		\
+ 	.id		= MAX77802_BUCK##num,				\
+ 	.supply_name	= "inb"#num,					\
+ 	.ops		= &max77802_buck_dvs_ops,			\
+@@ -513,85 +526,19 @@ static const struct regulator_desc regulators[] = {
+ 	regulator_77802_desc_n_ldo(35, 2, 1),
+ };
+ 
+-#ifdef CONFIG_OF
+-static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
+-					struct max77686_platform_data *pdata)
+-{
+-	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+-	struct device_node *pmic_np, *regulators_np;
+-	struct max77686_regulator_data *rdata;
+-	struct of_regulator_match rmatch = { };
+-	unsigned int i;
+-
+-	pmic_np = iodev->dev->of_node;
+-	regulators_np = of_get_child_by_name(pmic_np, "regulators");
+-	if (!regulators_np) {
+-		dev_err(&pdev->dev, "could not find regulators sub-node\n");
+-		return -EINVAL;
+-	}
+-
+-	pdata->num_regulators = ARRAY_SIZE(regulators);
+-	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) *
+-			     pdata->num_regulators, GFP_KERNEL);
+-	if (!rdata) {
+-		of_node_put(regulators_np);
+-		return -ENOMEM;
+-	}
+-
+-	for (i = 0; i < pdata->num_regulators; i++) {
+-		rmatch.name = regulators[i].name;
+-		rmatch.init_data = NULL;
+-		rmatch.of_node = NULL;
+-		if (of_regulator_match(&pdev->dev, regulators_np, &rmatch,
+-				       1) != 1) {
+-			dev_warn(&pdev->dev, "No matching regulator for '%s'\n",
+-				 rmatch.name);
+-			continue;
+-		}
+-		rdata[i].initdata = rmatch.init_data;
+-		rdata[i].of_node = rmatch.of_node;
+-		rdata[i].id = regulators[i].id;
+-	}
+-
+-	pdata->regulators = rdata;
+-	of_node_put(regulators_np);
+-
+-	return 0;
+-}
+-#else
+-static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
+-					struct max77686_platform_data *pdata)
+-{
+-	return 0;
+-}
+-#endif /* CONFIG_OF */
+-
+ static int max77802_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+-	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
+ 	struct max77802_regulator_prv *max77802;
+-	int i, ret = 0, val;
++	int i, val;
+ 	struct regulator_config config = { };
+ 
+-	/* This is allocated by the MFD driver */
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "no platform data found for regulator\n");
+-		return -ENODEV;
+-	}
+-
+ 	max77802 = devm_kzalloc(&pdev->dev,
+ 				sizeof(struct max77802_regulator_prv),
+ 				GFP_KERNEL);
+ 	if (!max77802)
+ 		return -ENOMEM;
+ 
+-	if (iodev->dev->of_node) {
+-		ret = max77802_pmic_dt_parse_pdata(pdev, pdata);
+-		if (ret)
+-			return ret;
+-	}
+-
+ 	config.dev = iodev->dev;
+ 	config.regmap = iodev->regmap;
+ 	config.driver_data = max77802;
+@@ -599,11 +546,9 @@ static int max77802_pmic_probe(struct platform_device *pdev)
+ 
+ 	for (i = 0; i < MAX77802_REG_MAX; i++) {
+ 		struct regulator_dev *rdev;
+-		int id = pdata->regulators[i].id;
++		int id = regulators[i].id;
+ 		int shift = max77802_get_opmode_shift(id);
+-
+-		config.init_data = pdata->regulators[i].initdata;
+-		config.of_node = pdata->regulators[i].of_node;
++		int ret;
+ 
+ 		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
+ 		if (ret < 0) {
+@@ -627,9 +572,10 @@ static int max77802_pmic_probe(struct platform_device *pdev)
+ 		rdev = devm_regulator_register(&pdev->dev,
+ 					       &regulators[i], &config);
+ 		if (IS_ERR(rdev)) {
++			ret = PTR_ERR(rdev);
+ 			dev_err(&pdev->dev,
+-				"regulator init failed for %d\n", i);
+-			return PTR_ERR(rdev);
++				"regulator init failed for %d: %d\n", i, ret);
++			return ret;
+ 		}
+ 	}
+ 
 -- 
 1.9.1
 
