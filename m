@@ -1,122 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaKEItF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:49:05 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:21641 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298AbaKEItA (ORCPT
+	id S1754233AbaKEItN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 03:49:13 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:34788 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751298AbaKEItI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:49:00 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-33-5459e4794291
-Message-id: <1415177336.15850.14.camel@AMDC1943>
-Subject: Re: [PATCH v9 2/4] amba: Don't unprepare the clocks if device driver
- wants IRQ safe runtime PM
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jonathan Corbet <corbet@lwn.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
+	Wed, 5 Nov 2014 03:49:08 -0500
+Date: Wed, 5 Nov 2014 14:18:32 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
         Alan Stern <stern@rowland.harvard.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Wed, 05 Nov 2014 09:48:56 +0100
-In-reply-to: <CAPDyKFo6o8v9u6+MdGSRMmHeMcODqCcdToHXoJqVGcsRVgQwdA@mail.gmail.com>
-References: <1415105570-7871-1-git-send-email-k.kozlowski@samsung.com>
- <1415105570-7871-3-git-send-email-k.kozlowski@samsung.com>
- <CAPDyKFo6o8v9u6+MdGSRMmHeMcODqCcdToHXoJqVGcsRVgQwdA@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVy+t/xy7qVTyJDDOa+tLbYOGM9q8WTA+2M
-	FtOnXmC0WD31L6vF082PmSzONr1ht1gyeT6rRefEJewWs6bsZbK4vGsOm8Xn3iOMFrcv81qs
-	PXKX3eLdywiLu6eOslmcOX2J1WLC7wtsFsfXhlu87NvP4iDs0dLcw+Yxu2Mmq8fiPS+ZPDat
-	6mTzuHNtD5vH4r7JrB5L3hxi9dhytZ3FY/bdH4wefVtWMXqsWP2d3ePzJjmPvZ9/swTwRnHZ
-	pKTmZJalFunbJXBlrJ8xh6VgvXDFhFOzWRoYr/B3MXJySAiYSJzetJINwhaTuHBvPZDNxSEk
-	sJRRYsLsCVDOZ0aJxWv6wap4BQwkeo6sYgGxhQUyJVqOn2AHsdkEjCU2L18CViMioCGx5+F5
-	VpBmZoEWNon7X3cygyRYBFQl3l24AtTMwcEpECzR+IARYsEpRomDPSeYQGqYBdQlJs1bxAxS
-	IyGgLNHY7waxV1Dix+R7LBAl8hKb17xlnsAoMAtJxywkZbOQlC1gZF7FKJpamlxQnJSea6hX
-	nJhbXJqXrpecn7uJERKpX3YwLj5mdYhRgINRiYfXoykyRIg1say4MvcQowQHs5IIL+cloBBv
-	SmJlVWpRfnxRaU5q8SFGJg5OqQbGRSkHO5g6Y95vnXXBJ7RC5GFt7MqCmDMBv9U/W/7b/UKN
-	v2HTN59Dp10erC0vcJ9+p6virNn8pH9du2ze39podSw1vrqx4oKPtHv5w5QPqhEPxN7v7ag9
-	uiW4+efnzyuNXPep6p534NGqnrfDQGmXt32H5YH/bEzZ17lWyjZc3Z3Nr3Tzz6yLSizFGYmG
-	WsxFxYkAxUFTJrICAAA=
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "pmladek@suse.cz" <pmladek@suse.cz>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "peter.chen@freescale.com" <peter.chen@freescale.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [Regression][v3.17][v3.18]   USB: Fix persist resume of some SS
+ USB devices
+Message-ID: <20141105084832.GC2517@pratyush-vbox>
+References: <54595116.1050802@canonical.com>
+ <20141105052335.GB2517@pratyush-vbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141105052335.GB2517@pratyush-vbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-05_04:2014-11-04,2014-11-05,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-11-04 at 20:06 +0100, Ulf Hansson wrote:
-> On 4 November 2014 13:52, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> > The AMBA bus driver defines runtime Power Management functions which
-> > disable and unprepare AMBA bus clock. This is problematic for runtime PM
-> > because unpreparing a clock might sleep so it is not interrupt safe.
-> >
-> > However some drivers may want to implement runtime PM functions in
-> > interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-> > bus driver should only disable/enable the clock in runtime suspend and
-> > resume callbacks.
-> >
-> > Detect the device driver behavior during runtime suspend. During runtime
-> > resume deal with clocks according to stored value.
-> >
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/amba/bus.c       | 24 ++++++++++++++++++++----
-> >  include/linux/amba/bus.h |  1 +
-> >  2 files changed, 21 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-> > index 47bbdc1b5be3..27ec8882ec8e 100644
-> > --- a/drivers/amba/bus.c
-> > +++ b/drivers/amba/bus.c
-> > @@ -85,6 +85,13 @@ static struct device_attribute amba_dev_attrs[] = {
-> >  };
-> >
-> >  #ifdef CONFIG_PM
-> > +
-> > +#ifdef CONFIG_PM_RUNTIME
-> > +#define get_pm_runtime_irq_safe(dev)   ((dev)->power.irq_safe)
-> > +#else
-> > +#define get_pm_runtime_irq_safe(dev)   1
+On Wed, Nov 05, 2014 at 10:53:35AM +0530, Pratyush Anand wrote:
+> Hello Joe,
 > 
-> No, this doesn't work for those drivers that isn't configured as
-> irq_safe. The pm_runtime_force_suspend() invoked from the driver's
-> system PM suspend callback, will expect clocks to be unprepared when
-> CONFIG_PM_RUNTIME is unset.
-
-D'oh! You're right... 
-
-> To address this issue, in principle we need to know whether the driver
-> has invoked pm_runtime_irq_safe(), even when CONFIG_PM_RUNTIME is
-> unset.
+> On Wed, Nov 05, 2014 at 06:20:06AM +0800, Joseph Salisbury wrote:
+> > Hello Pratyush,
+> > 
+> > A kernel bug report was opened against Ubuntu [0].  After a kernel
+> > bisect, it was found that reverting the following commit resolved this bug:
+> > 
+> > commit a40178b2fa6ad87670fb1e5fa4024db00c149629
+> > Author: Pratyush Anand <pratyush.anand@st.com>
+> > Date:   Fri Jul 18 12:37:10 2014 +0530
+> > 
+> >     USB: Fix persist resume of some SS USB devices
+> > 
+> > The regression was introduced as of v3.17-rc1.  The regression still
+> > exists in the 3.18-rc3 mainline kernel, and has made it's way into the
+> > stable kernels.
 > 
-> This may be solved by the help of PM core:
-> 1) Move the irq_safe member in the struct dev_pm_info, outside the
-> #ifdef CONFIG_PM_RUNTIME.
-> 2) Let the pm_runtime_irq_safe() function be implemented for CONFIG_PM
-> instead of CONFIG_PM_RUNTIME.
-
-Before I'll start implementing this - could PM maintainers share their
-opinion on such change?
-
-Best regards,
-Krzysztof
-
-
-> If the PM core maintainers don't like that approach we can always add
-> an amba specific wrapper function for pm_runtime_irq_safe() and store
-> the information needed in the struct amba_device.
+> Its strange, as per my understanding patch does not introduce any side
+> effect for devices whose resume time is normal. So, if a device is
+> connected to the SS port and it was working after resume from
+> suspend to ram without this patch, then that device should still work
+> with this patch.
 > 
-> Kind regards
-> Uffe
+> Infact this has resolved another bug reported to bugzilla
+> https://bugzilla.kernel.org/show_bug.cgi?id=53211
+> 
+> 
+> > 
+> > I was hoping to get your feedback, since you are the patch author.  Do
+> > you think gathering any additional data will help diagnose this issue,
+> 
+> Yaa, sure additional info will help to understand the issue.
+> -- dmesg log of suspend resume when this patch is not applied and also
+> when applied.
+
+I see that you have already provided both log to the buglink. I had a
+look on that. 
 
 
+When it fails (with this patch):
+Oct 22 15:38:59 mana kernel: [   59.825122] PM: resume of devices
+complete after 22223.878 msecs
+
+When it passed (without this patch):
+Oct 22 15:37:19 mana kernel: [   53.495109] PM: resume of devices
+complete after 3641.933 msecs
+However, even when patch was not present(and it passed), there is a logical
+disconnection of devices, so you would face the issue mentioned in
+https://bugzilla.kernel.org/show_bug.cgi?id=53211.
+
+Looking to the timeout, it seems that wait loop went for full length
+(2S) for all the devices, still could not find a connected device. So,
+basically SS link between root hub and hub was not up in 2 sec. Not
+sure why, but reading further hub port status caused some fatal issue
+with xhci host and so it is not able to get new device connection
+after logical disconnection.
+
+Increasing the timeout value may help. But with this long timeout I see a
+possibility of sync issue between port_event and usb_port_resume. It
+might happen that port_event reads hub port status before
+usb_port_resume handles reset_resume.
+
+Can you try following patch with step increasing varied value of
+PORT_ENABLE_WAIT, and then let me know which value of
+PORT_ENABLE_WAIT works for you (if it works ;)).
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 11e80ac31324..6eaf481d3d53 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3311,13 +3311,14 @@ static int finish_port_resume(struct usb_device *udev)
+  * This routine should only be called when persist is enabled for a SS
+  * device.
+  */
++#define PORT_ENABLE_WAIT	2000
+ static int wait_for_ss_port_enable(struct usb_device *udev,
+ 		struct usb_hub *hub, int *port1,
+ 		u16 *portchange, u16 *portstatus)
+ {
+ 	int status = 0, delay_ms = 0;
+ 
+-	while (delay_ms < 2000) {
++	while (delay_ms < PORT_ENABLE_WAIT) {
+ 		if (status || *portstatus & USB_PORT_STAT_CONNECTION)
+ 			break;
+ 		msleep(20);
+@@ -4881,6 +4882,22 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
+ 	usb_lock_port(port_dev);
+ }
+ 
++static void wait_for_reset_resume(struct usb_hub *hub, int port)
++{
++	struct usb_device *udev;
++	int delay_ms = 0;
++
++	udev = hub->ports[port -1]->child;
++	if (udev && udev->reset_resume) {
++		while (delay_ms < PORT_ENABLE_WAIT) {
++			if (!udev->reset_resume)
++				break;
++			msleep(20);
++			delay_ms += 20;
++		}
++	}
++}
++
+ static void port_event(struct usb_hub *hub, int port1)
+ 		__must_hold(&port_dev->status_lock)
+ {
+@@ -4894,6 +4911,8 @@ static void port_event(struct usb_hub *hub, int port1)
+ 	clear_bit(port1, hub->event_bits);
+ 	clear_bit(port1, hub->wakeup_bits);
+ 
++	wait_for_reset_resume(hub, port1);
++
+ 	if (hub_port_status(hub, port1, &portstatus, &portchange) < 0)
+ 		return;
+ 
+Regards
+Pratyush
+
+> -- dmesg log with following additional debug print.
+> @@ -3318,6 +3318,7 @@ static int wait_for_ss_port_enable(struct usb_device *udev,
+>         int status = 0, delay_ms = 0;
+>          
+>         while (delay_ms < 2000) {
+> +               printk("%s:portstatus is %x and portchange is %x\n", __func__, *portstatus, *portchange);
+>                if (status || *portstatus & USB_PORT_STAT_CONNECTION)
+>                         break;
+> 
+> > or would it be best to submit a revert request?
+> 
+> Let me see what is the portstatus value and why didn't it break loop in first
+> iteration if device was OK.
+> 
+> Regards
+> Pratyush
+> 
+> >    
+> > 
+> > Thanks,
+> >    
+> > Joe
+> > 
+> > [0] http://pad.lv/1384041
