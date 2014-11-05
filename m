@@ -1,42 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955AbaKEOh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:37:59 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44132 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458AbaKEOh6 (ORCPT
+	id S1754983AbaKEOn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:43:27 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:42217 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660AbaKEOn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:37:58 -0500
-Date: Wed, 5 Nov 2014 14:37:54 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ying Xue <ying.xue@windriver.com>, linux-kernel@vger.kernel.org,
-        jack@suse.cz
-Subject: Re: [PATCH] acct: eliminate compile warning
-Message-ID: <20141105143754.GR7996@ZenIV.linux.org.uk>
-References: <1408586326-24579-1-git-send-email-ying.xue@windriver.com>
- <20140826162501.7c05fa936e79c07927681bad@linux-foundation.org>
+	Wed, 5 Nov 2014 09:43:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140826162501.7c05fa936e79c07927681bad@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141105092707.7c9bb1ae@gandalf.local.home>
+References: <20141031170326.1491a63f@gandalf.local.home>
+	<1414913427.5380.110.camel@marge.simpson.net>
+	<CADLDEKvFvw7Aa98tVtM3z5JV8oocKqAdV4PqOMoZH2mXZ6x2jg@mail.gmail.com>
+	<20141105092707.7c9bb1ae@gandalf.local.home>
+Date: Wed, 5 Nov 2014 15:43:24 +0100
+Message-ID: <CADLDEKsYzpN4uPD7wEE6bxZP21gd3xY4c0fsRqfB1RwEZ53iKg@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.14.23-rt20
+From: Juerg Haefliger <juergh@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 04:25:01PM -0700, Andrew Morton wrote:
+On Wed, Nov 5, 2014 at 3:27 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Wed, 5 Nov 2014 14:50:41 +0100
+> Juerg Haefliger <juergh@gmail.com> wrote:
+>
+>> On Sun, Nov 2, 2014 at 8:30 AM, Mike Galbraith <umgwanakikbuti@gmail.com>
+>> wrote:
+>> >
+>> > On Fri, 2014-10-31 at 17:03 -0400, Steven Rostedt wrote:
+>> > > Dear RT Folks,
+>> > >
+>> > > I'm pleased to announce the 3.14.23-rt20 stable release.
+>> > >
+>> > > This is the first 3.14-rt release in the stable-rt series. Normally I
+>> > > wait till the next development release is out before I pull in a new
+>> > > one. That is, I would pull in 3.14-rt when 3.16-rt or later was
+>> > > released. But because development is now moving at a "hobbyist rate"
+>> > > (read http://lwn.net/Articles/617140/ for details)
+>> > > and 3.14-rt is no longer being developed against, I figured it was
+>> > time
+>> > > to put it under the "stable-rt" umbrella.
+>> >
+>> > I piddled about with it yesterday, found that you can't change cpufreq
+>> > governor IFF the tree is configured as rt, but works fine as voluntary
+>> > preempt.
+>>
+>> The problem seems to be this patch: https://lkml.org/lkml/2014/4/8/584
+>>
+>> The cpufreq code does nested down_read_trylocks and only the first one
+>> succeeds:
+>>
+>> drivers/cpufreq/cpufreq.c:
+>> store
+>>   down_read_trylock(cpufreq_rwsem)  <- succeeds
+>>   store_scaling_governor
+>>     cpufreq_get_policy
+>>       cpufreq_cpu_get
+>>         down_read_trylock(cpufreq_rwsem)  <-- fails
+>>
+>> Reverting the above patch 'fixes' the problem. I don't understand Steven's
+>> commit comment that readers of rwsem are not allowed to nest in mainline
+>> since this works just fine in mainline.
+>
+> When we allow multiple readers, this will be allowed. But even in
+> mainline, if a writer were to come in and block between those two
+> down_read_trylocks(), the second trylock would fail.
 
-> We could actually do
-> 
-> 	if (ACCT_VERSION == 3)
-> 		...
-> 
-> in lots of places in acct.c.  The code would be less ugly and
-> compilation coverage testing would improve.
+Thanks for the explanation. So is this considered a temporary failure
+until multiple readers are allowed or does cpufreq need fixing or
+something else? Just trying to figure out what to do next.
 
-... too much.  Finally got around to trying that; the problem is that
-you can't do that in structure declarations.  acct_t is either struct
-acct, or struct acct_v3, and while we could split fill_ac() into
-v3 and v1/v2 versions, it still doesn't sort everything out.  So it
-looks like that idea is no-go ;-/
+...Juerg
+
+
+> PREEMPT_RT just has that fail all the time as we only allow an rwsem to
+> be held by a single reader.
+>
+>
+> -- Steve
+>
+>
+>
+>>
+>> ...Juerg
+>>
+>>
+>>
+>> >  I'll poke about for the entertainment value.  Having no
+>> > personal need/use for rt detracts from its hobby value somewhat, but rt
+>> > problems do have a tendency to be 'entertaining'.
+>> >
+>> > I'll follow up with a few patches that folks can apply to their trees if
+>> > they so desire.  There being no devel tree to submit against, I can't do
+>> > a proper submission (rules), and some of them you surely don't want :)
+>> >
+>> >         -Mike
+>> >
+>> >
+>> >
+>> >
+>
