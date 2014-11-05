@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531AbaKEQBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:01:47 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:43042 "EHLO
+	id S1755620AbaKEQBz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:01:55 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:43050 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755307AbaKEQBi (ORCPT
+	with ESMTP id S1755335AbaKEQBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:01:38 -0500
+	Wed, 5 Nov 2014 11:01:40 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
@@ -20,9 +20,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 08/11] ARM: at91/dt: add HSMC (Static Memory Controller) node in sama5d3 dtsi
-Date: Wed,  5 Nov 2014 17:01:24 +0100
-Message-Id: <1415203287-21517-9-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 09/11] ARM: at91/dt: add matrix node in sama5d3 dtsi
+Date: Wed,  5 Nov 2014 17:01:25 +0100
+Message-Id: <1415203287-21517-10-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -36,21 +36,21 @@ Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index 5f4144d..9f1eed5 100644
+index 9f1eed5..d49dab7 100644
 --- a/arch/arm/boot/dts/sama5d3.dtsi
 +++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -395,6 +395,11 @@
- 				clock-names = "tdes_clk";
+@@ -425,6 +425,11 @@
+ 				clock-names = "ddrck", "mpddr";
  			};
  
-+			hsmc: hsmc@ffffc000 {
-+				compatible = "atmel,sama5d3-smc", "syscon";
-+				reg = <0xffffc000 0x1000>;
++			matrix: matrix@ffffec00 {
++				compatible = "atmel,sama5d3-matrix", "syscon";
++				reg = <0xffffec00 0x200>;
 +			};
 +
- 			dma0: dma-controller@ffffe600 {
- 				compatible = "atmel,at91sam9g45-dma";
- 				reg = <0xffffe600 0x200>;
+ 			dbgu: serial@ffffee00 {
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xffffee00 0x200>;
 -- 
 1.9.1
 
