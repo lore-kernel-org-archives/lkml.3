@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaKEVHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:07:52 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44703 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaKEVHu (ORCPT
+	id S1751532AbaKEVM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:12:26 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:51883 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaKEVMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:07:50 -0500
-Date: Wed, 5 Nov 2014 21:07:45 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org
-Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
-Message-ID: <20141105210745.GT7996@ZenIV.linux.org.uk>
-References: <20141105022251.GA19136@gondor.apana.org.au>
- <20141104.222727.275422581392488793.davem@davemloft.net>
- <20141105035536.GO7996@ZenIV.linux.org.uk>
- <20141105.155054.2198151263164321219.davem@davemloft.net>
+	Wed, 5 Nov 2014 16:12:22 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: N900 modem support in 3.18-rc1
+Date: Wed, 5 Nov 2014 22:06:04 +0100
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Sebastian Reichel <sre@kernel.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg
+References: <20141104205117.GA17606@amd> <201411052137.31452@pali> <20141105203918.GA29199@amd>
+In-Reply-To: <20141105203918.GA29199@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105.155054.2198151263164321219.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart2683732.v9upTCThi5";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411052206.05379@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 03:50:54PM -0500, David Miller wrote:
-> I think we can get away with it if, as you say, we don't export a 'msghdr'
-> from any uapi headers.
+--nextPart2683732.v9upTCThi5
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-OK.  I'm about halfway through the review of struct msghdr instances in the
-current tree right now, will post user_msghdr patch once I'm done.  Already
-found a dumb bug in o2net_send_tcp_msg() while doing that - broken by me
-back in 3.15 ;-/  Will send a fix to Linus in an hour or so...
+Maybe you need to enable modem?
 
-> And indeed, double checking, it's purely a linux/socket.h thing.
-> 
-> If this patch is OK, mind if I toss it into net-next Al?
+This is n900 init sequence from script: nokia-n900-configs.sh
 
-Sure, no problem - AFAICS, the only real difference from rebase of April one
-I've quoted upthread is that you add include of socket.h into skbuff.h; the
-rest of the differences is pure whitespace noise.
+    # set up the GPIO's for N900 modem:
+    echo 70 >/sys/class/gpio/export
+    echo low >/sys/class/gpio/gpio70/direction
+    echo 0 >/sys/class/gpio/gpio70/value
+    echo 73 >/sys/class/gpio/export
+    echo high >/sys/class/gpio/gpio73/direction
+    echo 0 >/sys/class/gpio/gpio73/value
+    echo 74 >/sys/class/gpio/export
+    echo low >/sys/class/gpio/gpio74/direction
+    echo 75 >/sys/class/gpio/export
+    echo low >/sys/class/gpio/gpio75/direction
+    echo 157 >/sys/class/gpio/export
+    echo low >/sys/class/gpio/gpio157/direction
+    echo 0 >/sys/class/gpio/gpio157/value
+    # create symlinks for ofono N900 plugin
+    mkdir -p /dev/cmt
+    ln -nsf /sys/class/gpio/gpio70 /dev/cmt/cmt_apeslpx
+    ln -nsf /sys/class/gpio/gpio74 /dev/cmt/cmt_en
+    ln -nsf /sys/class/gpio/gpio73 /dev/cmt/cmt_rst_rq
+    ln -nsf /sys/class/gpio/gpio75 /dev/cmt/cmt_rst
+    ln -nsf /sys/class/gpio/gpio157 /dev/cmt/cmt_bsi
 
-Ping me when you put it there, OK?  I'll rebase the rest of old stuff on
-top of it (similar helpers, mostly).
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2683732.v9upTCThi5
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlRakT0ACgkQi/DJPQPkQ1IAyQCggohsTovx6sTcRoSat5Nematc
+jJAAn3FaCjj29X//NZ6FItoprxAF18Tw
+=cmIb
+-----END PGP SIGNATURE-----
+
+--nextPart2683732.v9upTCThi5--
