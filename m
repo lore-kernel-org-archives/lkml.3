@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbaKETH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 14:07:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57050 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaKETHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 14:07:54 -0500
-Date: Wed, 5 Nov 2014 13:08:21 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Neil Zhang <zhangwm@marvell.com>
-CC: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] usb: gadget: don't create new string_container if
- already exist
-Message-ID: <20141105190821.GF6548@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414496039-5655-1-git-send-email-zhangwm@marvell.com>
- <544F95C3.2080306@samsung.com>
- <9034CBD80F070943B59700D7F8149ED9024ED2A5B7@SC-VEXCH4.marvell.com>
+	id S1751412AbaKETNC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 14:13:02 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43922 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750891AbaKETM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 14:12:58 -0500
+Message-ID: <545A76B7.1060801@hurleysoftware.com>
+Date: Wed, 05 Nov 2014 14:12:55 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="twz1s1Hj1O0rHoT0"
-Content-Disposition: inline
-In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024ED2A5B7@SC-VEXCH4.marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Add --strict test for function pointer calling
+ style
+References: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>	 <1415208392-16189-3-git-send-email-peter@hurleysoftware.com> <1415212917.6634.17.camel@perches.com>
+In-Reply-To: <1415212917.6634.17.camel@perches.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---twz1s1Hj1O0rHoT0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/05/2014 01:41 PM, Joe Perches wrote:
+> Peter Hurley wrote:
+> 
+> The use of older function ptr calling style, (*fn)(), makes static
+> analysis more error-prone; replace with modern fn() style.
+> 
+> So make checkpatch emit a --strict test for that condition.
+> 
+> Update the unnecessary parentheses test for dereferencing
+> objects at the same time and create a $fix mechanism too.
 
-On Tue, Nov 04, 2014 at 03:05:57AM -0800, Neil Zhang wrote:
->=20
-> > -----Original Message-----
-> > From: Andrzej Pietrasiewicz [mailto:andrzej.p@samsung.com]
-> > Sent: 2014=E5=B9=B410=E6=9C=8828=E6=97=A5 21:10
-> > To: Neil Zhang; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> > Cc: balbi@ti.com; gregkh@linuxfoundation.org
-> > Subject: Re: [PATCH] usb: gadget: don't create new string_container if =
-already
-> > exist
-> >=20
-> > Hi,
-> >=20
-> > W dniu 28.10.2014 o 12:33, Neil Zhang pisze:
-> > > Don't create new usb_gadget_string_container if the current strings
-> > > are already exist in the usb_composite_dev.
-> > > Otherwise the ids_tab will overflow soon if we bind / unbind usb
-> > > functions frequently like android does.
-> >=20
-> > The problem you are describing does not exist in mainline kernel, where
-> > functions are always unbound as part of the whole gadget's unbind - reg=
-ardless
-> > of whether it is a legacy gadget or configfs-composed gadget. When the =
-whole
-> > gadget is unbound, composite_dev_cleanup() is called which zeroes cdev-
-> > >next_string_id and frees all gadget strings containers.
-> >=20
->=20
-> Yes, you are right that the current mainline won't suffer this issue.
-> But it will be needed if we want to implement similar features like andro=
-id do.
+Cool.
 
-once you have the features, then implement it. I don't want any unused
-code here, specially since it won't be tested by anything.
+perl's not my thing; how does it know not to trip up on
 
-> It will only remove config rather than whole gadget driver.
+	initcall_t *call;
 
-also, this is just wrong. You can't remove just one configuration, you
-need to remove the whole thing and the host needs to see a
-disconnection.
+	(*call)();
 
---=20
-balbi
+[which I verified it properly does not flag in drivers/tty/tty_io.c]
 
---twz1s1Hj1O0rHoT0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
+Peter Hurley
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUWnWlAAoJEIaOsuA1yqREmdoP/0+Fk2/Bxcw91ybFxvVhwTMp
-FmaEJF0bsdhv990eArF9SNNPJlTtYa1EN7KqKEt/I0T1LumCfI3RBzyGTv5BOrpS
-4Tmyw6nS8o5HNr8H655KOk2pqUQma6hpu+LQ0pWt4mBfFPfOq1pLc8EGqLU/eXSa
-YsFQmGk+vRt3ejOyXiUb/qlJXCUdpKUYrYkEiXI6SWinGLtJLF3OY1XAEJqSZ0uG
-jC2M2+9IGMjZ7jvFOOTQG0f0pjxIOKZJusQuXiKLisd9UCUMimOPtkQm97GA0YdV
-JfzdubT4Ia85SedmPoIhCyUWL2n9N3LtJNVI06YlooJ9eX5iNQ2AiOVHLl1xmo4s
-13C0eAKc47G/oCDIFJ8Nnt+OOi7KG1LzYSpX+2AVg60QlwhMiw4Mjle2VYeFOeD9
-acfbuIH43ywbyjCFT02B82C/RKcelCaSleQqCTClkZvUDeP0sjIRGmTwMLHnWUa6
-VOPDTleJHMUCeRns5p/R3FeCMq/XAsqM+ZVq7e5k+tOB+tsrTJfQesh2jqld8WdD
-tqIt6gAZk6MRabZvCsl5l89NwEHlnNix/ZgwS5TT4/HObJEmXvtcpIo5mTtE8kdS
-nInUBLnL+yHIu+Lv5fbzvk1hzpZcboFmyZ5HCUvwOo1j1patS9Dt4Zo3/1dmVxY8
-Ug7/HFi4esr8xZ5ybJCB
-=n6RB
------END PGP SIGNATURE-----
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  scripts/checkpatch.pl | 24 +++++++++++++++++++++---
+>  1 file changed, 21 insertions(+), 3 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 24d6702..552e5dd 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3838,9 +3838,27 @@ sub process {
+>  # ie: &(foo->bar) should be &foo->bar and *(foo->bar) should be *foo->bar
+>  
+>  		while ($line =~ /(?:[^&]&\s*|\*)\(\s*($Ident\s*(?:$Member\s*)+)\s*\)/g) {
+> -			CHK("UNNECESSARY_PARENTHESES",
+> -			    "Unnecessary parentheses around $1\n" . $herecurr);
+> -		    }
+> +			my $var = $1;
+> +			if (CHK("UNNECESSARY_PARENTHESES",
+> +				"Unnecessary parentheses around $var\n" . $herecurr) &&
+> +			    $fix) {
+> +				$fixed[$fixlinenr] =~ s/\(\s*\Q$var\E\s*\)/$var/;
+> +			}
+> +		}
+> +
+> +# check for unnecessary parentheses around function pointer uses
+> +# ie: (foo->bar)(); should be foo->bar();
+> +# but not "if (foo->bar) (" to avoid some false positives
+> +		if ($line =~ /(\bif\s*|)(\(\s*$Ident\s*(?:$Member\s*)+\))[ \t]*\(/ && $1 !~ /^if/) {
+> +			my $var = $2;
+> +			if (CHK("UNNECESSARY_PARENTHESES",
+> +				"Unnecessary parentheses around function pointer $var\n" . $herecurr) &&
+> +			    $fix) {
+> +				my $var2 = deparenthesize($var);
+> +				$var2 =~ s/\s//g;
+> +				$fixed[$fixlinenr] =~ s/\Q$var\E/$var2/;
+> +			}
+> +		}
+>  
+>  #goto labels aren't indented, allow a single space however
+>  		if ($line=~/^.\s+[A-Za-z\d_]+:(?![0-9]+)/ and
+> 
+> 
 
---twz1s1Hj1O0rHoT0--
