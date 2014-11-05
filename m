@@ -1,218 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441AbaKETEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 14:04:55 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53519 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaKETEv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 14:04:51 -0500
-Date: Wed, 5 Nov 2014 21:04:43 +0200
-From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-To: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
-Cc: linux390@de.ibm.com, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: [PATCH v5] drivers: s390: net: ctcm: migrate variables to handle
- y2038 problem
-Message-ID: <20141105190443.GA3868@localhost.localdomain>
+	id S1751346AbaKETH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 14:07:56 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:57050 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaKETHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 14:07:54 -0500
+Date: Wed, 5 Nov 2014 13:08:21 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Neil Zhang <zhangwm@marvell.com>
+CC: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] usb: gadget: don't create new string_container if
+ already exist
+Message-ID: <20141105190821.GF6548@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414496039-5655-1-git-send-email-zhangwm@marvell.com>
+ <544F95C3.2080306@samsung.com>
+ <9034CBD80F070943B59700D7F8149ED9024ED2A5B7@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="twz1s1Hj1O0rHoT0"
 Content-Disposition: inline
+In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024ED2A5B7@SC-VEXCH4.marvell.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is concerned with migrating the time variables for the s390
-network driver. The changes handle the y2038 problem where timespec will
-overflow in the year 2038. timespec was replaced by unsigned long and
-all time variables get their values from the jiffies global variable.
-This was done for the sake of speed and efficiency.
+--twz1s1Hj1O0rHoT0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ch->prof.tx_time will now hold the difference between two jiffies'
-values instead of the difference between two xtime values
-represented in microseconds.
+On Tue, Nov 04, 2014 at 03:05:57AM -0800, Neil Zhang wrote:
+>=20
+> > -----Original Message-----
+> > From: Andrzej Pietrasiewicz [mailto:andrzej.p@samsung.com]
+> > Sent: 2014=E5=B9=B410=E6=9C=8828=E6=97=A5 21:10
+> > To: Neil Zhang; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Cc: balbi@ti.com; gregkh@linuxfoundation.org
+> > Subject: Re: [PATCH] usb: gadget: don't create new string_container if =
+already
+> > exist
+> >=20
+> > Hi,
+> >=20
+> > W dniu 28.10.2014 o 12:33, Neil Zhang pisze:
+> > > Don't create new usb_gadget_string_container if the current strings
+> > > are already exist in the usb_composite_dev.
+> > > Otherwise the ids_tab will overflow soon if we bind / unbind usb
+> > > functions frequently like android does.
+> >=20
+> > The problem you are describing does not exist in mainline kernel, where
+> > functions are always unbound as part of the whole gadget's unbind - reg=
+ardless
+> > of whether it is a legacy gadget or configfs-composed gadget. When the =
+whole
+> > gadget is unbound, composite_dev_cleanup() is called which zeroes cdev-
+> > >next_string_id and frees all gadget strings containers.
+> >=20
+>=20
+> Yes, you are right that the current mainline won't suffer this issue.
+> But it will be needed if we want to implement similar features like andro=
+id do.
 
-Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-Suggested-by: Arnd Bergmann <arnd@arndb.de>
----
-v1: Arnd has advised me to provide you with options for time
-    calculation. The first option: "accuracy" is used in this
-    patch. The second option: "speed" can be done through
-    jiffies.
+once you have the features, then implement it. I don't want any unused
+code here, specially since it won't be tested by anything.
 
-v2: Moved on to the speed option. Let me know if I explicitly
-    need to include the jiffies header. The module compiles with
-    no problems on my side.
+> It will only remove config rather than whole gadget driver.
 
-v3: Handled the error pointed out by Ursula. The current version
-    does not handle overflows. There are two solutions for this.
-    The first is to use jiffies_64 since s/390 is a 64-bit
-    architecture after all. The second is to use wrapper functions
-    like time_before and time_after. Two files were added too.
-    They are: ctcm_main.c and netiucv.c. This patch could be sent
-    as a patchset in its final version for convenience.
+also, this is just wrong. You can't remove just one configuration, you
+need to remove the whole thing and the host needs to see a
+disconnection.
 
-v4: removed #include <linux/jiffies.h> per Ursula's feedback.
-    Changed duration to hold the difference between jiffies
-    instead of difference between microsecond values per Arnd's
-    suggestion.
+--=20
+balbi
 
-v5: added changes written by Ursula to handle missed modifications.
+--twz1s1Hj1O0rHoT0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- drivers/s390/net/ctcm_fsms.c  | 18 +++++++-----------
- drivers/s390/net/ctcm_main.c  |  4 ++--
- drivers/s390/net/ctcm_main.h  |  2 +-
- drivers/s390/net/ctcm_sysfs.c |  4 ++--
- drivers/s390/net/netiucv.c    |  6 +++---
- 5 files changed, 15 insertions(+), 19 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
-index fb92524..49143c3 100644
---- a/drivers/s390/net/ctcm_fsms.c
-+++ b/drivers/s390/net/ctcm_fsms.c
-@@ -251,13 +251,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
- 	int first = 1;
- 	int i;
- 	unsigned long duration;
--	struct timespec done_stamp = current_kernel_time(); /* xtime */
-+	unsigned long done_stamp jiffies;
- 
- 	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
- 
--	duration =
--	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
--	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-+	duration = done_stamp -ch->prof.send_stamp;
- 	if (duration > ch->prof.tx_time)
- 		ch->prof.tx_time = duration;
- 
-@@ -307,7 +305,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
- 		spin_unlock(&ch->collect_lock);
- 		ch->ccw[1].count = ch->trans_skb->len;
- 		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
--		ch->prof.send_stamp = current_kernel_time(); /* xtime */
-+		ch->prof.send_stamp = jiffies;
- 		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
- 						(unsigned long)ch, 0xff, 0);
- 		ch->prof.doios_multi++;
-@@ -1229,14 +1227,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
- 	int		rc;
- 	struct th_header *header;
- 	struct pdu	*p_header;
--	struct timespec done_stamp = current_kernel_time(); /* xtime */
-+	unsigned long done_stamp = jiffies;
- 
- 	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
- 			__func__, dev->name, smp_processor_id());
- 
--	duration =
--		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
--		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
-+	duration = done_stamp -ch->prof.send_stamp;
- 	if (duration > ch->prof.tx_time)
- 		ch->prof.tx_time = duration;
- 
-@@ -1361,7 +1357,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
- 
- 	ch->ccw[1].count = ch->trans_skb->len;
- 	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
--	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-+	ch->prof.send_stamp = jiffies;
- 	if (do_debug_ccw)
- 		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
- 	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
-@@ -1827,7 +1823,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
- 	fsm_newstate(wch->fsm, CTC_STATE_TX);
- 
- 	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
--	wch->prof.send_stamp = current_kernel_time(); /* xtime */
-+	wch->prof.send_stamp = jiffies;
- 	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
- 					(unsigned long) wch, 0xff, 0);
- 	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
-diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
-index e056dd4..05c37d6 100644
---- a/drivers/s390/net/ctcm_main.c
-+++ b/drivers/s390/net/ctcm_main.c
-@@ -567,7 +567,7 @@ static int ctcm_transmit_skb(struct channel *ch, struct sk_buff *skb)
- 	fsm_newstate(ch->fsm, CTC_STATE_TX);
- 	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
- 	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
--	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-+	ch->prof.send_stamp = jiffies;
- 	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
- 					(unsigned long)ch, 0xff, 0);
- 	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
-@@ -831,7 +831,7 @@ static int ctcmpc_transmit_skb(struct channel *ch, struct sk_buff *skb)
- 					sizeof(struct ccw1) * 3);
- 
- 	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
--	ch->prof.send_stamp = current_kernel_time(); /* xtime */
-+	ch->prof.send_stamp = jiffies;
- 	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
- 					(unsigned long)ch, 0xff, 0);
- 	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
-diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
-index 477c933..6f4417c 100644
---- a/drivers/s390/net/ctcm_main.h
-+++ b/drivers/s390/net/ctcm_main.h
-@@ -121,7 +121,7 @@ struct ctcm_profile {
- 	unsigned long doios_multi;
- 	unsigned long txlen;
- 	unsigned long tx_time;
--	struct timespec send_stamp;
-+	unsigned long send_stamp;
- };
- 
- /*
-diff --git a/drivers/s390/net/ctcm_sysfs.c b/drivers/s390/net/ctcm_sysfs.c
-index 6bcfbbb..c88f465 100644
---- a/drivers/s390/net/ctcm_sysfs.c
-+++ b/drivers/s390/net/ctcm_sysfs.c
-@@ -100,8 +100,8 @@ static void ctcm_print_statistics(struct ctcm_priv *priv)
- 		     priv->channel[WRITE]->prof.doios_multi);
- 	p += sprintf(p, "  Netto bytes written: %ld\n",
- 		     priv->channel[WRITE]->prof.txlen);
--	p += sprintf(p, "  Max. TX IO-time: %ld\n",
--		     priv->channel[WRITE]->prof.tx_time);
-+	p += sprintf(p, "  Max. TX IO-time: %u\n",
-+		jiffies_to_usecs(priv->channel[WRITE]->prof.tx_time));
- 
- 	printk(KERN_INFO "Statistics for %s:\n%s",
- 				priv->channel[CTCM_WRITE]->netdev->name, sbuf);
-diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
-index 0a87809..7e91f54 100644
---- a/drivers/s390/net/netiucv.c
-+++ b/drivers/s390/net/netiucv.c
-@@ -178,7 +178,7 @@ struct connection_profile {
- 	unsigned long doios_multi;
- 	unsigned long txlen;
- 	unsigned long tx_time;
--	struct timespec send_stamp;
-+	unsigned long send_stamp;
- 	unsigned long tx_pending;
- 	unsigned long tx_max_pending;
- };
-@@ -786,7 +786,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
- 
- 	header.next = 0;
- 	memcpy(skb_put(conn->tx_buff, NETIUCV_HDRLEN), &header, NETIUCV_HDRLEN);
--	conn->prof.send_stamp = current_kernel_time();
-+	conn->prof.send_stamp = jiffies;
- 	txmsg.class = 0;
- 	txmsg.tag = 0;
- 	rc = iucv_message_send(conn->path, &txmsg, 0, 0,
-@@ -1220,7 +1220,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
- 		memcpy(skb_put(nskb, NETIUCV_HDRLEN), &header,  NETIUCV_HDRLEN);
- 
- 		fsm_newstate(conn->fsm, CONN_STATE_TX);
--		conn->prof.send_stamp = current_kernel_time();
-+		conn->prof.send_stamp = jiffies;
- 
- 		msg.tag = 1;
- 		msg.class = 0;
--- 
-1.9.3
+iQIcBAEBAgAGBQJUWnWlAAoJEIaOsuA1yqREmdoP/0+Fk2/Bxcw91ybFxvVhwTMp
+FmaEJF0bsdhv990eArF9SNNPJlTtYa1EN7KqKEt/I0T1LumCfI3RBzyGTv5BOrpS
+4Tmyw6nS8o5HNr8H655KOk2pqUQma6hpu+LQ0pWt4mBfFPfOq1pLc8EGqLU/eXSa
+YsFQmGk+vRt3ejOyXiUb/qlJXCUdpKUYrYkEiXI6SWinGLtJLF3OY1XAEJqSZ0uG
+jC2M2+9IGMjZ7jvFOOTQG0f0pjxIOKZJusQuXiKLisd9UCUMimOPtkQm97GA0YdV
+JfzdubT4Ia85SedmPoIhCyUWL2n9N3LtJNVI06YlooJ9eX5iNQ2AiOVHLl1xmo4s
+13C0eAKc47G/oCDIFJ8Nnt+OOi7KG1LzYSpX+2AVg60QlwhMiw4Mjle2VYeFOeD9
+acfbuIH43ywbyjCFT02B82C/RKcelCaSleQqCTClkZvUDeP0sjIRGmTwMLHnWUa6
+VOPDTleJHMUCeRns5p/R3FeCMq/XAsqM+ZVq7e5k+tOB+tsrTJfQesh2jqld8WdD
+tqIt6gAZk6MRabZvCsl5l89NwEHlnNix/ZgwS5TT4/HObJEmXvtcpIo5mTtE8kdS
+nInUBLnL+yHIu+Lv5fbzvk1hzpZcboFmyZ5HCUvwOo1j1patS9Dt4Zo3/1dmVxY8
+Ug7/HFi4esr8xZ5ybJCB
+=n6RB
+-----END PGP SIGNATURE-----
 
+--twz1s1Hj1O0rHoT0--
