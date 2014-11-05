@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaKEGJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 01:09:28 -0500
-Received: from mail-bl2on0113.outbound.protection.outlook.com ([65.55.169.113]:23632
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750867AbaKEGJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 01:09:26 -0500
-X-WSS-ID: 0NEJYFG-08-KBJ-02
-X-M-MSG: 
-From: Vincent Wan <vincent.wan@amd.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Arindam Nath <arindam.nath@amd.com>, Huang Rui <ray.huang@amd.com>,
-        Wan Zongshun <mcuos.com@gmail.com>, Vincent Wan <vincent.wan@amd.com>
-Subject: [PATCH v3 1/3] mmc:sdhci: Add a quirk for AMD SDHC transfer mode register need to be cleared for cmd without data
-Date: Wed, 5 Nov 2014 14:09:00 +0800
-Message-ID: <1415167740-5762-1-git-send-email-vincent.wan@amd.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751422AbaKEGJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 01:09:44 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:47361 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaKEGJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 01:09:40 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, srikar@linux.vnet.ibm.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options for cache
+References: <20141031185128.27889.32747.stgit@localhost.localdomain>
+	<87389z7j3x.fsf@sejong.aot.lge.com> <545867BC.9070000@hitachi.com>
+Date: Wed, 05 Nov 2014 15:09:32 +0900
+In-Reply-To: <545867BC.9070000@hitachi.com> (Masami Hiramatsu's message of
+	"Tue, 04 Nov 2014 14:44:28 +0900")
+Message-ID: <87lhnqw543.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(99396003)(21056001)(229853001)(106466001)(33646002)(86362001)(77096003)(53416004)(95666004)(217423001)(31966008)(120916001)(107046002)(50466002)(20776003)(93916002)(62966003)(47776003)(4396001)(64706001)(46102003)(50226001)(97736003)(36756003)(92726001)(48376002)(110136001)(88136002)(87286001)(89996001)(87936001)(84676001)(92566001)(101416001)(105586002)(19580405001)(19580395003)(50986999)(44976005)(104166001)(77156002)(68736004)(102836001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB204;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0386B406AA
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Vincent.Wan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SDHC controller in AMD chipsets require SDHC transfer mode
-register to be cleared for commands without data. The issue was
-uncovered during testing eMMC cards on KB/ML based platforms
+Hi Masami,
 
-Signed-off-by: Vincent Wan <vincent.wan@amd.com>
-Signed-off-by: Wan Zongshun <mcuos.com@gmail.com>
-Signed-off-by: Arindam Nath <arindam.nath@amd.com>
-Tested-by: Vikram B <vikram.b@amd.com>
-Tested-by: Raghavendra Swamy <raghavendra.swamy@amd.com>
----
- drivers/mmc/host/sdhci.c  | 9 +++++++--
- include/linux/mmc/sdhci.h | 2 ++
- 2 files changed, 9 insertions(+), 2 deletions(-)
+On Tue, 04 Nov 2014 14:44:28 +0900, Masami Hiramatsu wrote:
+> (2014/11/04 12:14), Namhyung Kim wrote:
+>> Hi Masami,
+>> 
+>> On Fri, 31 Oct 2014 14:51:29 -0400, Masami Hiramatsu wrote:
+>>> So by using all of them, we can make an "event cache" file on all
+>>> functions (except for inlined functions) as below.
+>>>
+>>>   # perf probe --max-probes=100000 --no-inlines -a '* $params' -o event.cache
+>>>
+>>> builds "event.cache" file in which event settings for
+>>> all function entries, like below;
+>>>
+>>>   p:probe/reset_early_page_tables _text+12980741
+>>>   p:probe/copy_bootdata _text+12980830 real_mode_data=%di:u64
+>>>   p:probe/exit_amd_microcode _text+14692680
+>>>   p:probe/early_make_pgtable _text+12981274 address=%di:u64
+>>>   p:probe/x86_64_start_reservations _text+12981700 real_mode_data=%di:u64
+>>>   p:probe/x86_64_start_kernel _text+12981744 real_mode_data=%di:u64
+>>>   p:probe/reserve_ebda_region _text+12982117
+>> 
+>> Does this event cache support kernel modules too?  AFAIK it can have a
+>> different address whenever loaded even on a same kernel.
+>
+> Yes, for the modules perf probe uses target function symbol directly instead
+> of _text.
+>
+>  ----
+>  perf probe -m xfs -o - -q -a xfs_acl_exists
+>  p:probe/xfs_acl_exists xfs:xfs_acl_exists+0
+>  ----
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index f895ab0..a743d52 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -915,10 +915,15 @@ static void sdhci_set_transfer_mode(struct sdhci_host *host,
- 	struct mmc_data *data = cmd->data;
- 
- 	if (data == NULL) {
-+		if (host->quirks2 &
-+			SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD) {
-+			sdhci_writew(host, 0x0, SDHCI_TRANSFER_MODE);
-+		} else {
- 		/* clear Auto CMD settings for no data CMDs */
--		mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
--		sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
-+			mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
-+			sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
- 				SDHCI_TRNS_AUTO_CMD23), SDHCI_TRANSFER_MODE);
-+		}
- 		return;
- 	}
- 
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index 931ac5e..ae7f357 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -102,6 +102,8 @@ struct sdhci_host {
- #define SDHCI_QUIRK2_STOP_WITH_TC			(1<<8)
- /* Controller does not support 64-bit DMA */
- #define SDHCI_QUIRK2_BROKEN_64_BIT_DMA			(1<<9)
-+/* need clear transfer mode register before send cmd */
-+#define SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD	(1<<10)
- 
- 	int irq;		/* Device IRQ */
- 	void __iomem *ioaddr;	/* Mapped address */
--- 
-1.8.1.2
+Ah, great! :)
 
+Thanks,
+Namhyung
