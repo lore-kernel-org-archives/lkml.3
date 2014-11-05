@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243AbaKEPni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:43:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753644AbaKEPnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:43:35 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 7/7] SELinux: Check against union and lower labels for file
- ops on lower files
-From: David Howells <dhowells@redhat.com>
-To: linux-unionfs@vger.kernel.org, selinux@tycho.nsa.gov
-Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 05 Nov 2014 15:43:29 +0000
-Message-ID: <20141105154328.2555.98013.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20141105154217.2555.578.stgit@warthog.procyon.org.uk>
-References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S932176AbaKEPo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:44:28 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:58157 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644AbaKEPo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:44:26 -0500
+Message-ID: <1415202259.5402.90.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.14.23-rt20
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Juerg Haefliger <juergh@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Date: Wed, 05 Nov 2014 16:44:19 +0100
+In-Reply-To: <20141105100056.152fd532@gandalf.local.home>
+References: <20141031170326.1491a63f@gandalf.local.home>
+	 <1414913427.5380.110.camel@marge.simpson.net>
+	 <CADLDEKvFvw7Aa98tVtM3z5JV8oocKqAdV4PqOMoZH2mXZ6x2jg@mail.gmail.com>
+	 <20141105092707.7c9bb1ae@gandalf.local.home>
+	 <CADLDEKsYzpN4uPD7wEE6bxZP21gd3xY4c0fsRqfB1RwEZ53iKg@mail.gmail.com>
+	 <20141105100056.152fd532@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File operations (eg. read, write) issued against a file that is attached to
-the lower layer of a union file needs to be checked against the union-layer
-label as well as the lower-layer label.
+On Wed, 2014-11-05 at 10:00 -0500, Steven Rostedt wrote: 
+> On Wed, 5 Nov 2014 15:43:24 +0100
+> Juerg Haefliger <juergh@gmail.com> wrote:
+> 
+> > Thanks for the explanation. So is this considered a temporary failure
+> > until multiple readers are allowed or does cpufreq need fixing or
+> > something else? Just trying to figure out what to do next.
+> 
+> Good question. Unfortunately I don't know the answer to that.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+[RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
 
- security/selinux/hooks.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+The above springs to mind.
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 57f9c641779f..7084ccb1321c 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -1673,6 +1673,7 @@ static int file_has_perm(const struct cred *cred,
- 			 struct file *file,
- 			 u32 av)
- {
-+	struct inode_security_struct *isec;
- 	struct file_security_struct *fsec = file->f_security;
- 	struct inode *inode = file_inode(file);
- 	struct common_audit_data ad;
-@@ -1681,7 +1682,7 @@ static int file_has_perm(const struct cred *cred,
- 
- 	ad.type = LSM_AUDIT_DATA_PATH;
- 	ad.u.path = file->f_path;
--
-+	
- 	if (sid != fsec->sid) {
- 		rc = avc_has_perm(sid, fsec->sid,
- 				  SECCLASS_FD,
-@@ -1693,8 +1694,15 @@ static int file_has_perm(const struct cred *cred,
- 
- 	/* av is zero if only checking access to the descriptor. */
- 	rc = 0;
--	if (av)
--		rc = inode_has_perm(cred, inode, av, &ad);
-+	if (av && likely(!IS_PRIVATE(inode))) {
-+		if (fsec->union_isid) {
-+			isec = inode->i_security;
-+			rc = avc_has_perm(sid, fsec->union_isid, isec->sclass,
-+					  av, &ad);
-+		}
-+		if (!rc)
-+			rc = inode_has_perm(cred, inode, av, &ad);
-+	}
- 
- out:
- 	return rc;
+-Mike
 
