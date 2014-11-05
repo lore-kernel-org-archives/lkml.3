@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324AbaKEOyD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:54:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55465 "EHLO mx1.redhat.com"
+	id S1755342AbaKEOyQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:54:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55533 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754835AbaKEOyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:54:00 -0500
-Date: Wed, 5 Nov 2014 09:53:56 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: uobergfe@redhat.com, drjones@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Confusing behaviour with /proc/sys/kernel/nmi_watchdog
-Message-ID: <20141105145356.GL135937@redhat.com>
-References: <20141105093420.1c7500d8@kryten>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105093420.1c7500d8@kryten>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755328AbaKEOyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:54:13 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: robert.schoene@tu-dresden.de, sboyd@codeaurora.org,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: [PATCH 0/5] cpufreq, fix locking and data issues
+Date: Wed,  5 Nov 2014 09:53:54 -0500
+Message-Id: <1415199239-19019-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 09:34:20AM +1100, Anton Blanchard wrote:
-> 
-> Hi,
-> 
-> commit 9919e39a1738 ("kvm: ensure hard lockup detection is disabled by
-> default") provided a way for the kernel to disable the hard lockup
-> detector at runtime.
-> 
-> I'm using it on ppc64 but notice some weird behaviour with the
-> nmi_watchdog procfs variable. At boot, that the hard lockup
-> detector appears to be enabled even when we disable it via
-> watchdog_enable_hardlockup_detector(false):
-> 
-> # cat /proc/sys/kernel/nmi_watchdog 
-> 1
-> 
-> I have to echo 0 to it then echo 1 again to enable it.
+There are several issues that are fixed with this patchset.  Patch 1/5
+fixes an issue where reads of sysfs data return incorrect data values during
+writes of the scaling_governor.  Patch 2/5 resolves a known issue with
+the locking around governor _EXIT calls by restoring the locking based on
+the patch 1/5.  Patches 3/5 and 4/5 fix concurrent accesses to
+dbs_data->usage_count and policy->initialized by switching them to atomic_t
+and protecting them with a lock, and the last patch, 5/5 adds some additional
+BUG() debugging information.
 
-Hi Anton,
+Testing:
 
-I believe Andrew answered the question for you, it's a WIP and we have
-patches to clean that up.
+I tested this with
 
-I don't see ppc64 watchdog support in arch/powerpc, is that something you
-are working with on implementing?
+i=0
+while [ True ]; do
+        i=$((i+1))
+        echo "ondemand" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor &
+        echo "performance" > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor &
+        echo "ondemand" > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor & 
+        echo "performance" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor &
+        if [ $((i % 100)) = 0 ]; then
+                echo $i
+        fi
+done
 
-Cheers,
-Don
+exit 0
+
+which now succeeds with this patchset.  It previously would fail, typically
+within 100 events.  With this patchset I have run 24 hours without seeing
+any issues.
+
+I also testing this by modifying the acpi_cpufreq driver with CPUFREQ_HAVE_GOVERNOR_PER_POLICY, and confirmed the previously reported locking situation would
+not deadlock by doing
+
+# write then read
+echo ondemand > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+echo 10500 > /sys/devices/system/cpu/cpu$i/cpufreq/ondemand/sampling_min_rate
+echo conservative > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+cat /sys/devices/system/cpu/cpu$i/cpufreq/conservative/*
+
+# read then write
+echo ondemand > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+cat /sys/devices/system/cpu/cpu$i/cpufreq/ondemand/*
+echo conservative > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+
+which previously would spit out a LOCKDEP warning on a LOCKDEP enabled kernel,
+and confirmed (via additional printks) that the governor did not deadlock.
+
+Unfortunately, even with these fixes in place (which does shore up the
+locking quite a bit), I still hit an panic with this test from Robert Schone:
+
+crash_governor.sh:
+sysctl -w kernel.printk=8
+for I in `seq 1000`
+do
+    echo ondemand | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+    echo userspace | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+done
+
+runme.sh:
+    for I in `seq 8`
+    do
+            ./crash_governor.sh &
+    done
+
+At this point I believe I'm "peeling the onion" in terms of the bugs I'm
+exposing.  I'm chasing what appears to be a "new" bug with Robert's test.
+Additionally, with my changes in place it takes much longer to hit panics
+in the code so I'm going to move forward and push these five patches.
+
+Prarit Bhargava (5):
+  cpufreq, do not return stale data to userspace
+  cpufreq, fix locking around CPUFREQ_GOV_POLICY_EXIT calls
+  cpufreq, dbs_data->usage count must be atomic
+  cpufreq, policy->initialized count must be atomic
+  cpufreq, add BUG() messages in critical paths to aid debugging
+    failures
+
+ drivers/cpufreq/cpufreq.c          |   19 +++++++------
+ drivers/cpufreq/cpufreq_governor.c |   52 ++++++++++++++++++++++++++++--------
+ drivers/cpufreq/cpufreq_governor.h |    3 ++-
+ include/linux/cpufreq.h            |    7 ++---
+ 4 files changed, 56 insertions(+), 25 deletions(-)
+
+-- 
+1.7.9.3
+
