@@ -1,50 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387AbaKEQ3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:29:43 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:42781 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329AbaKEQ3l (ORCPT
+	id S1755190AbaKEQ2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:28:51 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37368 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaKEQ2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:29:41 -0500
-Date: Wed, 5 Nov 2014 17:29:32 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [PATCH V7 13/17] perf, x86: enable LBR callstack when recording
- callchain
-Message-ID: <20141105162932.GX3337@twins.programming.kicks-ass.net>
-References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
- <1415156173-10035-14-git-send-email-kan.liang@intel.com>
- <20141105092145.GP10501@worktop.programming.kicks-ass.net>
- <CABPqkBS89jrjOMR9b_7WudJ0rDn0uD8XxX2gCJYDvTEssjXcww@mail.gmail.com>
- <20141105104359.GP3337@twins.programming.kicks-ass.net>
- <CABPqkBQFqoZdRZvRT3kHukpYXHBJdB4mUWARNoo1QZmgH24p4w@mail.gmail.com>
- <20141105124926.GS3337@twins.programming.kicks-ass.net>
- <CABPqkBRF6VEigBcBr+6Hy5E3tmfk4vpDiR8Zui8=853GTjG_XQ@mail.gmail.com>
- <37D7C6CF3E00A74B8858931C1DB2F077016540B7@SHSMSX103.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F077016540B7@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 5 Nov 2014 11:28:48 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: akpm@linux-foundation.org, Steve Capper <steve.capper@linaro.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, benh@kernel.crashing.org,
+        mpe@ellerman.id.au, David Miller <davem@davemloft.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH V5 1/3] powerpc/mm: Add missing pmd accessors
+Date: Wed,  5 Nov 2014 21:57:39 +0530
+Message-Id: <1415204861-22016-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 2.1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110516-0033-0000-0000-000000717430
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 03:53:34PM +0000, Liang, Kan wrote:
-> > I don't think it would be very hard to modify the patch set to make that 3rd
-> > mode visible. Just need to make that new PERF_RECORD_* type visible to
-> > user and modify the compatibility checks.
-> 
-> It's not hard. But LBR is not an independent callchain options. It's better to be
-> a supplement of FP. Otherwise, it may confuse the user. He enables the
-> BRANCH_CALL_STACK, but the data is partly or even not at all from hardware.
+This patch add documentation and missing accessors.
 
-What the user sees is up to userspace. It should not be forced by the
-kernel/user interface.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/pgtable-ppc64-4k.h  | 16 ++++++++-
+ arch/powerpc/include/asm/pgtable-ppc64-64k.h |  3 ++
+ arch/powerpc/include/asm/pgtable-ppc64.h     | 51 +++++++++++++++++++++-------
+ arch/powerpc/mm/hugetlbpage.c                |  3 ++
+ arch/powerpc/mm/pgtable_64.c                 | 22 ++++++++++--
+ 5 files changed, 78 insertions(+), 17 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/pgtable-ppc64-4k.h b/arch/powerpc/include/asm/pgtable-ppc64-4k.h
+index 7b935683f268..132ee1d482c2 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc64-4k.h
++++ b/arch/powerpc/include/asm/pgtable-ppc64-4k.h
+@@ -57,7 +57,21 @@
+ #define pgd_present(pgd)	(pgd_val(pgd) != 0)
+ #define pgd_clear(pgdp)		(pgd_val(*(pgdp)) = 0)
+ #define pgd_page_vaddr(pgd)	(pgd_val(pgd) & ~PGD_MASKED_BITS)
+-#define pgd_page(pgd)		virt_to_page(pgd_page_vaddr(pgd))
++
++#ifndef __ASSEMBLY__
++
++static inline pte_t pgd_pte(pgd_t pgd)
++{
++	return __pte(pgd_val(pgd));
++}
++
++static inline pgd_t pte_pgd(pte_t pte)
++{
++	return __pgd(pte_val(pte));
++}
++extern struct page *pgd_page(pgd_t pgd);
++
++#endif /* !__ASSEMBLY__ */
+ 
+ #define pud_offset(pgdp, addr)	\
+   (((pud_t *) pgd_page_vaddr(*(pgdp))) + \
+diff --git a/arch/powerpc/include/asm/pgtable-ppc64-64k.h b/arch/powerpc/include/asm/pgtable-ppc64-64k.h
+index a56b82fb0609..1de35bbd02a6 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc64-64k.h
++++ b/arch/powerpc/include/asm/pgtable-ppc64-64k.h
+@@ -38,4 +38,7 @@
+ /* Bits to mask out from a PGD/PUD to get to the PMD page */
+ #define PUD_MASKED_BITS		0x1ff
+ 
++#define pgd_pte(pgd)	(pud_pte(((pud_t){ pgd })))
++#define pte_pgd(pte)	((pgd_t)pte_pud(pte))
++
+ #endif /* _ASM_POWERPC_PGTABLE_PPC64_64K_H */
+diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
+index ae153c40ab7c..d12092420560 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc64.h
++++ b/arch/powerpc/include/asm/pgtable-ppc64.h
+@@ -152,7 +152,7 @@
+ #define pmd_none(pmd)		(!pmd_val(pmd))
+ #define	pmd_bad(pmd)		(!is_kernel_addr(pmd_val(pmd)) \
+ 				 || (pmd_val(pmd) & PMD_BAD_BITS))
+-#define	pmd_present(pmd)	(pmd_val(pmd) != 0)
++#define	pmd_present(pmd)	(!pmd_none(pmd))
+ #define	pmd_clear(pmdp)		(pmd_val(*(pmdp)) = 0)
+ #define pmd_page_vaddr(pmd)	(pmd_val(pmd) & ~PMD_MASKED_BITS)
+ extern struct page *pmd_page(pmd_t pmd);
+@@ -164,9 +164,21 @@ extern struct page *pmd_page(pmd_t pmd);
+ #define pud_present(pud)	(pud_val(pud) != 0)
+ #define pud_clear(pudp)		(pud_val(*(pudp)) = 0)
+ #define pud_page_vaddr(pud)	(pud_val(pud) & ~PUD_MASKED_BITS)
+-#define pud_page(pud)		virt_to_page(pud_page_vaddr(pud))
+ 
++extern struct page *pud_page(pud_t pud);
++
++static inline pte_t pud_pte(pud_t pud)
++{
++	return __pte(pud_val(pud));
++}
++
++static inline pud_t pte_pud(pte_t pte)
++{
++	return __pud(pte_val(pte));
++}
++#define pud_write(pud)		pte_write(pud_pte(pud))
+ #define pgd_set(pgdp, pudp)	({pgd_val(*(pgdp)) = (unsigned long)(pudp);})
++#define pgd_write(pgd)		pte_write(pgd_pte(pgd))
+ 
+ /*
+  * Find an entry in a page-table-directory.  We combine the address region
+@@ -422,7 +434,22 @@ extern void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 		       pmd_t *pmdp, pmd_t pmd);
+ extern void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
+ 				 pmd_t *pmd);
+-
++/*
++ *
++ * For core kernel code by design pmd_trans_huge is never run on any hugetlbfs
++ * page. The hugetlbfs page table walking and mangling paths are totally
++ * separated form the core VM paths and they're differentiated by
++ *  VM_HUGETLB being set on vm_flags well before any pmd_trans_huge could run.
++ *
++ * pmd_trans_huge() is defined as false at build time if
++ * CONFIG_TRANSPARENT_HUGEPAGE=n to optimize away code blocks at build
++ * time in such case.
++ *
++ * For ppc64 we need to differntiate from explicit hugepages from THP, because
++ * for THP we also track the subpage details at the pmd level. We don't do
++ * that for explicit huge pages.
++ *
++ */
+ static inline int pmd_trans_huge(pmd_t pmd)
+ {
+ 	/*
+@@ -431,16 +458,6 @@ static inline int pmd_trans_huge(pmd_t pmd)
+ 	return (pmd_val(pmd) & 0x3) && (pmd_val(pmd) & _PAGE_THP_HUGE);
+ }
+ 
+-static inline int pmd_large(pmd_t pmd)
+-{
+-	/*
+-	 * leaf pte for huge page, bottom two bits != 00
+-	 */
+-	if (pmd_trans_huge(pmd))
+-		return pmd_val(pmd) & _PAGE_PRESENT;
+-	return 0;
+-}
+-
+ static inline int pmd_trans_splitting(pmd_t pmd)
+ {
+ 	if (pmd_trans_huge(pmd))
+@@ -451,6 +468,14 @@ static inline int pmd_trans_splitting(pmd_t pmd)
+ extern int has_transparent_hugepage(void);
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
++static inline int pmd_large(pmd_t pmd)
++{
++	/*
++	 * leaf pte for huge page, bottom two bits != 00
++	 */
++	return ((pmd_val(pmd) & 0x3) != 0x0);
++}
++
+ static inline pte_t pmd_pte(pmd_t pmd)
+ {
+ 	return __pte(pmd_val(pmd));
+diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
+index 7e70ae968e5f..2e35b9a82929 100644
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -62,6 +62,9 @@ static unsigned nr_gpages;
+ /*
+  * We have PGD_INDEX_SIZ = 12 and PTE_INDEX_SIZE = 8, so that we can have
+  * 16GB hugepage pte in PGD and 16MB hugepage pte at PMD;
++ *
++ * Defined in such a way that we can optimize away code block at build time
++ * if CONFIG_HUGETLB_PAGE=n.
+  */
+ int pmd_huge(pmd_t pmd)
+ {
+diff --git a/arch/powerpc/mm/pgtable_64.c b/arch/powerpc/mm/pgtable_64.c
+index c8d709ab489d..e40ca0e3f2bf 100644
+--- a/arch/powerpc/mm/pgtable_64.c
++++ b/arch/powerpc/mm/pgtable_64.c
+@@ -36,6 +36,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/memblock.h>
+ #include <linux/slab.h>
++#include <linux/hugetlb.h>
+ 
+ #include <asm/pgalloc.h>
+ #include <asm/page.h>
+@@ -352,16 +353,31 @@ EXPORT_SYMBOL(iounmap);
+ EXPORT_SYMBOL(__iounmap);
+ EXPORT_SYMBOL(__iounmap_at);
+ 
++#ifndef __PAGETABLE_PUD_FOLDED
++/* 4 level page table */
++struct page *pgd_page(pgd_t pgd)
++{
++	if (pgd_huge(pgd))
++		return pte_page(pgd_pte(pgd));
++	return virt_to_page(pgd_page_vaddr(pgd));
++}
++#endif
++
++struct page *pud_page(pud_t pud)
++{
++	if (pud_huge(pud))
++		return pte_page(pud_pte(pud));
++	return virt_to_page(pud_page_vaddr(pud));
++}
++
+ /*
+  * For hugepage we have pfn in the pmd, we use PTE_RPN_SHIFT bits for flags
+  * For PTE page, we have a PTE_FRAG_SIZE (4K) aligned virtual address.
+  */
+ struct page *pmd_page(pmd_t pmd)
+ {
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-	if (pmd_trans_huge(pmd))
++	if (pmd_trans_huge(pmd) || pmd_huge(pmd))
+ 		return pfn_to_page(pmd_pfn(pmd));
+-#endif
+ 	return virt_to_page(pmd_page_vaddr(pmd));
+ }
+ 
+-- 
+2.1.0
+
