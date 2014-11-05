@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142AbaKEOu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:50:28 -0500
+	id S932075AbaKEOu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:50:27 -0500
 Received: from mga01.intel.com ([192.55.52.88]:62496 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755121AbaKEOuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:50:19 -0500
+	id S1755101AbaKEOuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:50:16 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="617582889"
+   d="scan'208";a="617582795"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>
@@ -21,9 +21,9 @@ Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 19/19] mm, thp: remove compound_lock
-Date: Wed,  5 Nov 2014 16:49:54 +0200
-Message-Id: <1415198994-15252-20-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 06/19] mm: store mapcount for compound page separate
+Date: Wed,  5 Nov 2014 16:49:41 +0200
+Message-Id: <1415198994-15252-7-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -31,282 +31,354 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need a compound lock anymore: split_huge_page() doesn't need it
-anymore.
+We're going to allow mapping of individual 4k pages of THP compound and
+we need a cheap way to find out how many time the compound page is
+mapped with PMD -- compound_mapcount() does this.
+
+page_mapcount() counts both: PTE and PMD mappings of the page.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/mm.h         |  35 ------------
- include/linux/page-flags.h |  12 +---
- mm/page_alloc.c            |   3 -
- mm/swap.c                  | 135 +++++++++++++++------------------------------
- 4 files changed, 46 insertions(+), 139 deletions(-)
+ include/linux/mm.h   | 17 +++++++++++++++--
+ include/linux/rmap.h |  4 ++--
+ mm/huge_memory.c     | 23 ++++++++++++++---------
+ mm/hugetlb.c         |  4 ++--
+ mm/memory.c          |  2 +-
+ mm/migrate.c         |  2 +-
+ mm/page_alloc.c      | 13 ++++++++++---
+ mm/rmap.c            | 50 +++++++++++++++++++++++++++++++++++++++++++-------
+ 8 files changed, 88 insertions(+), 27 deletions(-)
 
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f2f95469f1c3..61f745f1fb2e 100644
+index 1825c468f158..aef03acff228 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -378,41 +378,6 @@ static inline int is_vmalloc_or_module_addr(const void *x)
+@@ -435,6 +435,19 @@ static inline struct page *compound_head(struct page *page)
+ 	return page;
+ }
  
- extern void kvfree(const void *addr);
++static inline atomic_t *compound_mapcount_ptr(struct page *page)
++{
++	return (atomic_t *)&page[1].mapping;
++}
++
++static inline int compound_mapcount(struct page *page)
++{
++	if (!PageCompound(page))
++		return 0;
++	page = compound_head(page);
++	return atomic_read(compound_mapcount_ptr(page)) + 1;
++}
++
+ /*
+  * The atomic page->_mapcount, starts from -1: so that transitions
+  * both from it and to it can be tracked, using atomic_inc_and_test
+@@ -447,7 +460,7 @@ static inline void page_mapcount_reset(struct page *page)
  
--static inline void compound_lock(struct page *page)
--{
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--	VM_BUG_ON_PAGE(PageSlab(page), page);
--	bit_spin_lock(PG_compound_lock, &page->flags);
--#endif
--}
--
--static inline void compound_unlock(struct page *page)
--{
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--	VM_BUG_ON_PAGE(PageSlab(page), page);
--	bit_spin_unlock(PG_compound_lock, &page->flags);
--#endif
--}
--
--static inline unsigned long compound_lock_irqsave(struct page *page)
--{
--	unsigned long uninitialized_var(flags);
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--	local_irq_save(flags);
--	compound_lock(page);
--#endif
--	return flags;
--}
--
--static inline void compound_unlock_irqrestore(struct page *page,
--					      unsigned long flags)
--{
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--	compound_unlock(page);
--	local_irq_restore(flags);
--#endif
--}
--
- static inline struct page *compound_head(struct page *page)
+ static inline int page_mapcount(struct page *page)
  {
- 	if (unlikely(PageTail(page)))
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index 676f72d29ac2..46ebd9c05a59 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -106,9 +106,6 @@ enum pageflags {
- #ifdef CONFIG_MEMORY_FAILURE
- 	PG_hwpoison,		/* hardware poisoned page. Don't touch */
- #endif
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--	PG_compound_lock,
--#endif
- 	__NR_PAGEFLAGS,
+-	return atomic_read(&(page)->_mapcount) + 1;
++	return atomic_read(&(page)->_mapcount) + compound_mapcount(page) + 1;
+ }
  
- 	/* Filesystems */
-@@ -511,12 +508,6 @@ static inline void ClearPageSlabPfmemalloc(struct page *page)
- #define __PG_MLOCKED		0
- #endif
- 
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--#define __PG_COMPOUND_LOCK		(1 << PG_compound_lock)
--#else
--#define __PG_COMPOUND_LOCK		0
--#endif
--
- /*
-  * Flags checked when a page is freed.  Pages being freed should not have
-  * these flags set.  It they are, there is a problem.
-@@ -526,8 +517,7 @@ static inline void ClearPageSlabPfmemalloc(struct page *page)
- 	 1 << PG_private | 1 << PG_private_2 | \
- 	 1 << PG_writeback | 1 << PG_reserved | \
- 	 1 << PG_slab	 | 1 << PG_swapcache | 1 << PG_active | \
--	 1 << PG_unevictable | __PG_MLOCKED | __PG_HWPOISON | \
--	 __PG_COMPOUND_LOCK)
-+	 1 << PG_unevictable | __PG_MLOCKED | __PG_HWPOISON)
+ static inline int page_count(struct page *page)
+@@ -1017,7 +1030,7 @@ static inline pgoff_t page_file_index(struct page *page)
+  */
+ static inline int page_mapped(struct page *page)
+ {
+-	return atomic_read(&(page)->_mapcount) >= 0;
++	return atomic_read(&(page)->_mapcount) + compound_mapcount(page) >= 0;
+ }
  
  /*
-  * Flags checked when a page is prepped for return by the page allocator.
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index ef09ca48c789..a9499ad8c037 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -180,9 +180,9 @@ void hugepage_add_anon_rmap(struct page *, struct vm_area_struct *,
+ void hugepage_add_new_anon_rmap(struct page *, struct vm_area_struct *,
+ 				unsigned long);
+ 
+-static inline void page_dup_rmap(struct page *page)
++static inline void page_dup_rmap(struct page *page, bool compound)
+ {
+-	atomic_inc(&page->_mapcount);
++	atomic_inc(compound ? compound_mapcount_ptr(page) : &page->_mapcount);
+ }
+ 
+ /*
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 9c53800c4eea..869f9bcf481e 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -904,7 +904,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 	src_page = pmd_page(pmd);
+ 	VM_BUG_ON_PAGE(!PageHead(src_page), src_page);
+ 	get_page(src_page);
+-	page_dup_rmap(src_page);
++	page_dup_rmap(src_page, true);
+ 	add_mm_counter(dst_mm, MM_ANONPAGES, HPAGE_PMD_NR);
+ 
+ 	pmdp_set_wrprotect(src_mm, addr, src_pmd);
+@@ -1763,8 +1763,8 @@ static void __split_huge_page_refcount(struct page *page,
+ 		struct page *page_tail = page + i;
+ 
+ 		/* tail_page->_mapcount cannot change */
+-		BUG_ON(page_mapcount(page_tail) < 0);
+-		tail_count += page_mapcount(page_tail);
++		BUG_ON(atomic_read(&page_tail->_mapcount) + 1 < 0);
++		tail_count += atomic_read(&page_tail->_mapcount) + 1;
+ 		/* check for overflow */
+ 		BUG_ON(tail_count < 0);
+ 		BUG_ON(atomic_read(&page_tail->_count) != 0);
+@@ -1781,8 +1781,7 @@ static void __split_huge_page_refcount(struct page *page,
+ 		 * atomic_set() here would be safe on all archs (and
+ 		 * not only on x86), it's safer to use atomic_add().
+ 		 */
+-		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
+-			   &page_tail->_count);
++		atomic_add(page_mapcount(page_tail) + 1, &page_tail->_count);
+ 
+ 		/* after clearing PageTail the gup refcount can be released */
+ 		smp_mb__after_atomic();
+@@ -1819,15 +1818,18 @@ static void __split_huge_page_refcount(struct page *page,
+ 		 * status is achieved setting a reserved bit in the
+ 		 * pmd, not by clearing the present bit.
+ 		*/
+-		page_tail->_mapcount = page->_mapcount;
++		atomic_set(&page_tail->_mapcount, compound_mapcount(page) - 1);
+ 
+-		BUG_ON(page_tail->mapping);
+-		page_tail->mapping = page->mapping;
++		/* ->mapping in first tail page is compound_mapcount */
++		if (i != 1) {
++			BUG_ON(page_tail->mapping);
++			page_tail->mapping = page->mapping;
++			BUG_ON(!PageAnon(page_tail));
++		}
+ 
+ 		page_tail->index = page->index + i;
+ 		page_cpupid_xchg_last(page_tail, page_cpupid_last(page));
+ 
+-		BUG_ON(!PageAnon(page_tail));
+ 		BUG_ON(!PageUptodate(page_tail));
+ 		BUG_ON(!PageDirty(page_tail));
+ 		BUG_ON(!PageSwapBacked(page_tail));
+@@ -1837,6 +1839,9 @@ static void __split_huge_page_refcount(struct page *page,
+ 	atomic_sub(tail_count, &page->_count);
+ 	BUG_ON(atomic_read(&page->_count) <= 0);
+ 
++	page->_mapcount = *compound_mapcount_ptr(page);
++	page[1].mapping = page->mapping;
++
+ 	__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
+ 
+ 	ClearPageCompound(page);
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index dad8e0732922..445db64a8b08 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2603,7 +2603,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+-			page_dup_rmap(ptepage);
++			page_dup_rmap(ptepage, true);
+ 			set_huge_pte_at(dst, addr, dst_pte, entry);
+ 		}
+ 		spin_unlock(src_ptl);
+@@ -3058,7 +3058,7 @@ retry:
+ 		ClearPagePrivate(page);
+ 		hugepage_add_new_anon_rmap(page, vma, address);
+ 	} else
+-		page_dup_rmap(page);
++		page_dup_rmap(page, true);
+ 	new_pte = make_huge_pte(vma, page, ((vma->vm_flags & VM_WRITE)
+ 				&& (vma->vm_flags & VM_SHARED)));
+ 	set_huge_pte_at(mm, address, ptep, new_pte);
+diff --git a/mm/memory.c b/mm/memory.c
+index 6f84c8a51cc0..1b17a72dc93f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -872,7 +872,7 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 	page = vm_normal_page(vma, addr, pte);
+ 	if (page) {
+ 		get_page(page);
+-		page_dup_rmap(page);
++		page_dup_rmap(page, false);
+ 		if (PageAnon(page))
+ 			rss[MM_ANONPAGES]++;
+ 		else
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 6b9413df1661..f1a12ced2531 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -161,7 +161,7 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
+ 		if (PageAnon(new))
+ 			hugepage_add_anon_rmap(new, vma, addr);
+ 		else
+-			page_dup_rmap(new);
++			page_dup_rmap(new, false);
+ 	} else if (PageAnon(new))
+ 		page_add_anon_rmap(new, vma, addr, false);
+ 	else
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index b19d1e69ca12..cf3096f97c6d 100644
+index d0e3d2fee585..b19d1e69ca12 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -6598,9 +6598,6 @@ static const struct trace_print_flags pageflag_names[] = {
- #ifdef CONFIG_MEMORY_FAILURE
- 	{1UL << PG_hwpoison,		"hwpoison"	},
- #endif
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--	{1UL << PG_compound_lock,	"compound_lock"	},
--#endif
- };
+@@ -369,6 +369,7 @@ void prep_compound_page(struct page *page, unsigned long order)
  
- static void dump_page_flags(unsigned long flags)
-diff --git a/mm/swap.c b/mm/swap.c
-index da28e0767088..537592dfc6c4 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -80,16 +80,9 @@ static void __put_compound_page(struct page *page)
- 	(*dtor)(page);
- }
+ 	set_compound_page_dtor(page, free_compound_page);
+ 	set_compound_order(page, order);
++	atomic_set(compound_mapcount_ptr(page), -1);
+ 	__SetPageHead(page);
+ 	for (i = 1; i < nr_pages; i++) {
+ 		struct page *p = page + i;
+@@ -643,7 +644,9 @@ static inline int free_pages_check(struct page *page)
  
--static inline bool compound_lock_needed(struct page *page)
--{
--	return IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE) &&
--		!PageSlab(page) && !PageHeadHuge(page);
--}
--
- static void put_compound_page(struct page *page)
+ 	if (unlikely(page_mapcount(page)))
+ 		bad_reason = "nonzero mapcount";
+-	if (unlikely(page->mapping != NULL))
++	if (unlikely(compound_mapcount(page)))
++		bad_reason = "nonzero compound_mapcount";
++	if (unlikely(page->mapping != NULL) && !PageTail(page))
+ 		bad_reason = "non-NULL mapping";
+ 	if (unlikely(atomic_read(&page->_count) != 0))
+ 		bad_reason = "nonzero _count";
+@@ -760,6 +763,8 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+ 		bad += free_pages_check(page + i);
+ 	if (bad)
+ 		return false;
++	if (order)
++		page[1].mapping = NULL;
+ 
+ 	if (!PageHighMem(page)) {
+ 		debug_check_no_locks_freed(page_address(page),
+@@ -6632,10 +6637,12 @@ static void dump_page_flags(unsigned long flags)
+ void dump_page_badflags(struct page *page, const char *reason,
+ 		unsigned long badflags)
  {
- 	struct page *page_head;
--	unsigned long flags;
- 
- 	if (likely(!PageTail(page))) {
- 		if (put_page_testzero(page)) {
-@@ -108,58 +101,33 @@ static void put_compound_page(struct page *page)
- 	/* __split_huge_page_refcount can run under us */
- 	page_head = compound_head(page);
- 
--	if (!compound_lock_needed(page_head)) {
--		/*
--		 * If "page" is a THP tail, we must read the tail page flags
--		 * after the head page flags. The split_huge_page side enforces
--		 * write memory barriers between clearing PageTail and before
--		 * the head page can be freed and reallocated.
--		 */
--		smp_rmb();
--		if (likely(PageTail(page))) {
--			/* __split_huge_page_refcount cannot race here. */
--			VM_BUG_ON_PAGE(!PageHead(page_head), page_head);
--			VM_BUG_ON_PAGE(page_mapcount(page) != 0, page);
--			if (put_page_testzero(page_head)) {
--				/*
--				 * If this is the tail of a slab compound page,
--				 * the tail pin must not be the last reference
--				 * held on the page, because the PG_slab cannot
--				 * be cleared before all tail pins (which skips
--				 * the _mapcount tail refcounting) have been
--				 * released. For hugetlbfs the tail pin may be
--				 * the last reference on the page instead,
--				 * because PageHeadHuge will not go away until
--				 * the compound page enters the buddy
--				 * allocator.
--				 */
--				VM_BUG_ON_PAGE(PageSlab(page_head), page_head);
--				__put_compound_page(page_head);
--			}
--		} else if (put_page_testzero(page))
--			__put_single_page(page);
--		return;
--	}
--
--	flags = compound_lock_irqsave(page_head);
--	/* here __split_huge_page_refcount won't run anymore */
--	if (likely(page != page_head && PageTail(page))) {
--		bool free;
--
--		free = put_page_testzero(page_head);
--		compound_unlock_irqrestore(page_head, flags);
--		if (free) {
--			if (PageHead(page_head))
--				__put_compound_page(page_head);
--			else
--				__put_single_page(page_head);
-+	/*
-+	 * If "page" is a THP tail, we must read the tail page flags after the
-+	 * head page flags. The split_huge_page side enforces write memory
-+	 * barriers between clearing PageTail and before the head page can be
-+	 * freed and reallocated.
-+	 */
-+	smp_rmb();
-+	if (likely(PageTail(page))) {
-+		/* __split_huge_page_refcount cannot race here. */
-+		VM_BUG_ON_PAGE(!PageHead(page_head), page_head);
-+		if (put_page_testzero(page_head)) {
-+			/*
-+			 * If this is the tail of a slab compound page, the
-+			 * tail pin must not be the last reference held on the
-+			 * page, because the PG_slab cannot be cleared before
-+			 * all tail pins (which skips the _mapcount tail
-+			 * refcounting) have been released. For hugetlbfs the
-+			 * tail pin may be the last reference on the page
-+			 * instead, because PageHeadHuge will not go away until
-+			 * the compound page enters the buddy allocator.
-+			 */
-+			VM_BUG_ON_PAGE(PageSlab(page_head), page_head);
-+			__put_compound_page(page_head);
- 		}
--	} else {
--		compound_unlock_irqrestore(page_head, flags);
--		VM_BUG_ON_PAGE(PageTail(page), page);
--		if (put_page_testzero(page))
--			__put_single_page(page);
--	}
-+	} else if (put_page_testzero(page))
-+		__put_single_page(page);
-+	return;
- }
- 
- void put_page(struct page *page)
-@@ -178,42 +146,29 @@ EXPORT_SYMBOL(put_page);
- void __get_page_tail(struct page *page)
+-	printk(KERN_ALERT
+-	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
++	pr_alert("page:%p count:%d mapcount:%d mapping:%p index:%#lx",
+ 		page, atomic_read(&page->_count), page_mapcount(page),
+ 		page->mapping, page->index);
++	if (PageCompound(page))
++		printk(" compound_mapcount: %d", compound_mapcount(page));
++	printk("\n");
+ 	dump_page_flags(page->flags);
+ 	if (reason)
+ 		pr_alert("page dumped because: %s\n", reason);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index f706a6af1801..eecc9301847d 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -986,9 +986,30 @@ void page_add_anon_rmap(struct page *page,
+ void do_page_add_anon_rmap(struct page *page,
+ 	struct vm_area_struct *vma, unsigned long address, int flags)
  {
- 	struct page *page_head = compound_head(page);
--	unsigned long flags;
- 
--	if (!compound_lock_needed(page_head)) {
--		smp_rmb();
--		if (likely(PageTail(page))) {
--			/*
--			 * This is a hugetlbfs page or a slab page.
--			 * __split_huge_page_refcount cannot race here.
--			 */
--			VM_BUG_ON_PAGE(!PageHead(page_head), page_head);
--			VM_BUG_ON(page_head != page->first_page);
--			VM_BUG_ON_PAGE(atomic_read(&page_head->_count) <= 0,
--					page);
--			atomic_inc(&page_head->_count);
--		} else {
--			/*
--			 * __split_huge_page_refcount run before us, "page" was
--			 * a thp tail. the split page_head has been freed and
--			 * reallocated as slab or hugetlbfs page of smaller
--			 * order (only possible if reallocated as slab on x86).
--			 */
--			VM_BUG_ON_PAGE(atomic_read(&page->_count) <= 0, page);
--			atomic_inc(&page->_count);
--		}
--		return;
--	}
--
--	flags = compound_lock_irqsave(page_head);
--	/* here __split_huge_page_refcount won't run anymore */
--	if (unlikely(page == page_head || !PageTail(page) ||
--				!get_page_unless_zero(page_head))) {
--		/* page is not part of THP page anymore */
-+	smp_rmb();
-+	if (likely(PageTail(page))) {
-+		/*
-+		 * This is a hugetlbfs page or a slab page.
-+		 * __split_huge_page_refcount cannot race here.
-+		 */
-+		VM_BUG_ON_PAGE(!PageHead(page_head), page_head);
-+		VM_BUG_ON(page_head != page->first_page);
-+		VM_BUG_ON_PAGE(atomic_read(&page_head->_count) <= 0,
-+				page);
-+		atomic_inc(&page_head->_count);
+-	int first = atomic_inc_and_test(&page->_mapcount);
++	bool compound = flags & RMAP_COMPOUND;
++	bool first;
++
++	VM_BUG_ON_PAGE(!PageLocked(compound_head(page)), page);
++
++	if (PageTransCompound(page)) {
++		struct page *head_page = compound_head(page);
++
++		if (compound) {
++			VM_BUG_ON_PAGE(!PageTransHuge(page), page);
++			first = atomic_inc_and_test(compound_mapcount_ptr(page));
++		} else {
++			/* Anon THP always mapped first with PMD */
++			first = 0;
++			VM_BUG_ON_PAGE(!compound_mapcount(head_page),
++					head_page);
++			atomic_inc(&page->_mapcount);
++		}
 +	} else {
-+		/*
-+		 * __split_huge_page_refcount run before us, "page" was
-+		 * a thp tail. the split page_head has been freed and
-+		 * reallocated as slab or hugetlbfs page of smaller
-+		 * order (only possible if reallocated as slab on x86).
-+		 */
- 		VM_BUG_ON_PAGE(atomic_read(&page->_count) <= 0, page);
- 		atomic_inc(&page->_count);
- 	}
--	compound_unlock_irqrestore(page_head, flags);
-+	return;
- }
- EXPORT_SYMBOL(__get_page_tail);
++		VM_BUG_ON_PAGE(compound, page);
++		first = atomic_inc_and_test(&page->_mapcount);
++	}
++
+ 	if (first) {
+-		bool compound = flags & RMAP_COMPOUND;
+ 		int nr = compound ? hpage_nr_pages(page) : 1;
+ 		/*
+ 		 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
+@@ -1006,7 +1027,6 @@ void do_page_add_anon_rmap(struct page *page,
+ 	if (unlikely(PageKsm(page)))
+ 		return;
  
+-	VM_BUG_ON_PAGE(!PageLocked(page), page);
+ 	/* address might be in next vma when migration races vma_adjust */
+ 	if (first)
+ 		__page_set_anon_rmap(page, vma, address,
+@@ -1032,10 +1052,19 @@ void page_add_new_anon_rmap(struct page *page,
+ 
+ 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+ 	SetPageSwapBacked(page);
+-	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
+ 	if (compound) {
++		atomic_t *compound_mapcount;
++
+ 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
++		compound_mapcount = (atomic_t *)&page[1].mapping;
++		/* increment count (starts at -1) */
++		atomic_set(compound_mapcount, 0);
+ 		__inc_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
++	} else {
++		/* Anon THP always mapped first with PMD */
++		VM_BUG_ON_PAGE(PageTransCompound(page), page);
++		/* increment count (starts at -1) */
++		atomic_set(&page->_mapcount, 0);
+ 	}
+ 	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES, nr);
+ 	__page_set_anon_rmap(page, vma, address, 1);
+@@ -1081,7 +1110,9 @@ void page_remove_rmap(struct page *page, bool compound)
+ 		mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+ 
+ 	/* page still mapped by someone else? */
+-	if (!atomic_add_negative(-1, &page->_mapcount))
++	if (!atomic_add_negative(-1, compound ?
++				compound_mapcount_ptr(page) :
++				&page->_mapcount))
+ 		goto out;
+ 
+ 	/*
+@@ -1098,9 +1129,14 @@ void page_remove_rmap(struct page *page, bool compound)
+ 	if (anon) {
+ 		int nr = compound ? hpage_nr_pages(page) : 1;
+ 		if (compound) {
++			int i;
+ 			VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+ 			__dec_zone_page_state(page,
+ 					NR_ANON_TRANSPARENT_HUGEPAGES);
++			/* The page can be mapped with ptes */
++			for (i = 0; i < HPAGE_PMD_NR; i++)
++				if (page_mapcount(page + i))
++					nr--;
+ 		}
+ 		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES, -nr);
+ 	} else {
+@@ -1749,7 +1785,7 @@ void hugepage_add_anon_rmap(struct page *page,
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(!anon_vma);
+ 	/* address might be in next vma when migration races vma_adjust */
+-	first = atomic_inc_and_test(&page->_mapcount);
++	first = atomic_inc_and_test(compound_mapcount_ptr(page));
+ 	if (first)
+ 		__hugepage_set_anon_rmap(page, vma, address, 0);
+ }
+@@ -1758,7 +1794,7 @@ void hugepage_add_new_anon_rmap(struct page *page,
+ 			struct vm_area_struct *vma, unsigned long address)
+ {
+ 	BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+-	atomic_set(&page->_mapcount, 0);
++	atomic_set(compound_mapcount_ptr(page), 0);
+ 	__hugepage_set_anon_rmap(page, vma, address, 1);
+ }
+ #endif /* CONFIG_HUGETLB_PAGE */
 -- 
 2.1.1
 
