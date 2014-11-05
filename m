@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301AbaKERtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:49:22 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52439 "EHLO
+	id S1751391AbaKERtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:49:32 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39065 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751110AbaKERtT (ORCPT
+	with ESMTP id S1751110AbaKERt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:49:19 -0500
+	Wed, 5 Nov 2014 12:49:26 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next v2 18/26] tty: Change tty lock order to master->slave
-Date: Wed,  5 Nov 2014 12:13:01 -0500
-Message-Id: <1415207589-15967-19-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next v2 19/26] tty: Preset lock subclass for nested tty locks
+Date: Wed,  5 Nov 2014 12:13:02 -0500
+Message-Id: <1415207589-15967-20-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
 References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
@@ -26,131 +26,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When releasing the master pty, the slave pty also needs to be locked
-to prevent concurrent tty count changes for the slave pty and to
-ensure that only one parallel master and slave release observe the
-final close, and proceed to destruct the pty pair. Conversely, when
-releasing the slave pty, locking the master pty is not necessary
-(since the master's state can be inferred by the slave tty count).
+Eliminate the requirement of specifying the tty lock nesting at
+lock time; instead, set the lock subclass for slave ptys at pty
+install (normal ttys and master ptys use subclass 0).
 
-Introduce tty_lock_slave()/tty_unlock_slave() which acquires/releases
-the tty lock of the slave pty. Remove tty_lock_pair()/tty_unlock_pair().
-
-Dropping the tty_lock is no longer required to re-establish a stable
-lock order.
-
-Reviewed-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_io.c    | 10 ++++++----
- drivers/tty/tty_mutex.c | 32 +++++++++++++-------------------
- include/linux/tty.h     |  7 ++-----
- 3 files changed, 21 insertions(+), 28 deletions(-)
+ drivers/tty/pty.c       |  2 ++
+ drivers/tty/tty_mutex.c | 19 +++++++++----------
+ include/linux/tty.h     |  1 +
+ 3 files changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index bbc940d..fabf4c0 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1792,7 +1792,9 @@ int tty_release(struct inode *inode, struct file *filp)
- 	if (tty->ops->close)
- 		tty->ops->close(tty, filp);
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index bdb8fd1..11db7dc 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -399,6 +399,8 @@ static int pty_common_install(struct tty_driver *driver, struct tty_struct *tty,
+ 	if (!o_tty)
+ 		goto err_put_module;
  
--	tty_unlock(tty);
-+	/* If tty is pty master, lock the slave pty (stable lock order) */
-+	tty_lock_slave(o_tty);
++	tty_set_lock_subclass(o_tty);
 +
- 	/*
- 	 * Sanity check: if tty->count is going to zero, there shouldn't be
- 	 * any waiters on tty->read_wait or tty->write_wait.  We test the
-@@ -1806,8 +1808,6 @@ int tty_release(struct inode *inode, struct file *filp)
- 	 * Thus this test wouldn't be triggered at the time the slave closed,
- 	 * so we do it now.
- 	 */
--	tty_lock_pair(tty, o_tty);
--
- 	while (1) {
- 		do_sleep = 0;
- 
-@@ -1888,7 +1888,9 @@ int tty_release(struct inode *inode, struct file *filp)
- 	/* check whether both sides are closing ... */
- 	final = !tty->count && !(o_tty && o_tty->count);
- 
--	tty_unlock_pair(tty, o_tty);
-+	tty_unlock_slave(o_tty);
-+	tty_unlock(tty);
-+
- 	/* At this point, the tty->count == 0 should ensure a dead tty
- 	   cannot be re-opened by a racing opener */
- 
+ 	if (legacy) {
+ 		/* We always use new tty termios data so we can do this
+ 		   the easy way .. */
 diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
-index 2e41abe..f43e995 100644
+index f43e995..4486741 100644
 --- a/drivers/tty/tty_mutex.c
 +++ b/drivers/tty/tty_mutex.c
-@@ -4,6 +4,11 @@
- #include <linux/semaphore.h>
- #include <linux/sched.h>
- 
-+/*
-+ * Nested tty locks are necessary for releasing pty pairs.
-+ * The stable lock order is master pty first, then slave pty.
-+ */
-+
- /* Legacy tty mutex glue */
+@@ -13,15 +13,14 @@
  
  enum {
-@@ -45,29 +50,18 @@ void __lockfunc tty_unlock(struct tty_struct *tty)
- }
- EXPORT_SYMBOL(tty_unlock);
+ 	TTY_MUTEX_NORMAL,
+-	TTY_MUTEX_NESTED,
++	TTY_MUTEX_SLAVE,
+ };
  
--/*
-- * Getting the big tty mutex for a pair of ttys with lock ordering
-- * On a non pty/tty pair tty2 can be NULL which is just fine.
-- */
--void __lockfunc tty_lock_pair(struct tty_struct *tty,
--					struct tty_struct *tty2)
-+void __lockfunc tty_lock_slave(struct tty_struct *tty)
+ /*
+  * Getting the big tty mutex.
+  */
+ 
+-static void __lockfunc tty_lock_nested(struct tty_struct *tty,
+-				       unsigned int subclass)
++void __lockfunc tty_lock(struct tty_struct *tty)
  {
--	if (tty < tty2) {
--		tty_lock(tty);
--		tty_lock_nested(tty2, TTY_MUTEX_NESTED);
--	} else {
--		if (tty2 && tty2 != tty)
--			tty_lock(tty2);
-+	if (tty && tty != tty->link) {
-+		WARN_ON(!mutex_is_locked(&tty->link->legacy_mutex) ||
-+			!tty->driver->type == TTY_DRIVER_TYPE_PTY ||
-+			!tty->driver->type == PTY_TYPE_SLAVE);
- 		tty_lock_nested(tty, TTY_MUTEX_NESTED);
+ 	if (tty->magic != TTY_MAGIC) {
+ 		pr_err("L Bad %p\n", tty);
+@@ -29,12 +28,7 @@ static void __lockfunc tty_lock_nested(struct tty_struct *tty,
+ 		return;
+ 	}
+ 	tty_kref_get(tty);
+-	mutex_lock_nested(&tty->legacy_mutex, subclass);
+-}
+-
+-void __lockfunc tty_lock(struct tty_struct *tty)
+-{
+-	return tty_lock_nested(tty, TTY_MUTEX_NORMAL);
++	mutex_lock(&tty->legacy_mutex);
+ }
+ EXPORT_SYMBOL(tty_lock);
+ 
+@@ -56,7 +50,7 @@ void __lockfunc tty_lock_slave(struct tty_struct *tty)
+ 		WARN_ON(!mutex_is_locked(&tty->link->legacy_mutex) ||
+ 			!tty->driver->type == TTY_DRIVER_TYPE_PTY ||
+ 			!tty->driver->type == PTY_TYPE_SLAVE);
+-		tty_lock_nested(tty, TTY_MUTEX_NESTED);
++		tty_lock(tty);
  	}
  }
--EXPORT_SYMBOL(tty_lock_pair);
  
--void __lockfunc tty_unlock_pair(struct tty_struct *tty,
--						struct tty_struct *tty2)
-+void __lockfunc tty_unlock_slave(struct tty_struct *tty)
- {
--	tty_unlock(tty);
--	if (tty2 && tty2 != tty)
--		tty_unlock(tty2);
-+	if (tty && tty != tty->link)
-+		tty_unlock(tty);
+@@ -65,3 +59,8 @@ void __lockfunc tty_unlock_slave(struct tty_struct *tty)
+ 	if (tty && tty != tty->link)
+ 		tty_unlock(tty);
  }
--EXPORT_SYMBOL(tty_unlock_pair);
++
++void tty_set_lock_subclass(struct tty_struct *tty)
++{
++	lockdep_set_subclass(&tty->legacy_mutex, TTY_MUTEX_SLAVE);
++}
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index af1a7f3..a07b4b4 100644
+index a07b4b4..196c352 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
-@@ -638,11 +638,8 @@ extern long vt_compat_ioctl(struct tty_struct *tty,
- /* functions for preparation of BKL removal */
- extern void __lockfunc tty_lock(struct tty_struct *tty);
+@@ -640,6 +640,7 @@ extern void __lockfunc tty_lock(struct tty_struct *tty);
  extern void __lockfunc tty_unlock(struct tty_struct *tty);
--extern void __lockfunc tty_lock_pair(struct tty_struct *tty,
--				struct tty_struct *tty2);
--extern void __lockfunc tty_unlock_pair(struct tty_struct *tty,
--				struct tty_struct *tty2);
--
-+extern void __lockfunc tty_lock_slave(struct tty_struct *tty);
-+extern void __lockfunc tty_unlock_slave(struct tty_struct *tty);
+ extern void __lockfunc tty_lock_slave(struct tty_struct *tty);
+ extern void __lockfunc tty_unlock_slave(struct tty_struct *tty);
++extern void tty_set_lock_subclass(struct tty_struct *tty);
  /*
   * this shall be called only from where BTM is held (like close)
   *
