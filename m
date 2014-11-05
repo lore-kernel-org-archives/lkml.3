@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaKEUny (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:43:54 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63596 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751310AbaKEUnw (ORCPT
+	id S1752351AbaKEUor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:44:47 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:33742 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaKEUop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:43:52 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-Date: Wed, 05 Nov 2014 22:04:38 +0100
-Message-ID: <2470178.4zbWKgRd7I@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54595ED7.2090406@codeaurora.org>
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <545959A8.7010305@codeaurora.org> <54595ED7.2090406@codeaurora.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 5 Nov 2014 15:44:45 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] include/linux/socket.h: Fix comment
+Date: Wed,  5 Nov 2014 21:44:27 +0100
+Message-Id: <1415220267-20044-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 04, 2014 05:18:47 PM Timur Tabi wrote:
-> On 11/04/2014 04:56 PM, Timur Tabi wrote:
-> >
-> >  >  I'm
-> >> not sure how much of that code can be shared between DT and ACPI ATM, but
-> >> it looks like at least some of it can be shared.
-> >
-> > So ACPI does not support the concept if variable length properties?
-> 
-> Ah, I see that it does:
-> 
-> int acpi_dev_prop_read_array(struct acpi_device *adev, const char *propname,
-> 			     enum dev_prop_type proptype, void *val,
-> 			     size_t nval)
-> {
-> ...
-> 	if (!val)
-> 		return obj->package.count;
-> 
-> 
-> If I pass NULL for 'val', it returns the number of items.
+File descriptors are always closed on exit :-)
 
-Yes, it does that.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ include/linux/socket.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-If you pass NULL for val to device_property_read_*_array(), it will also
-return the number of items in the property.  Including the string one.
-
-We're missing a couple of calls that you'd need for pinctrl, but I'd rather
-add those along with some users.
-
-Rafael
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index ec538fc..bb9b836 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -256,7 +256,7 @@ struct ucred {
+ #define MSG_EOF         MSG_FIN
+ 
+ #define MSG_FASTOPEN	0x20000000	/* Send data in TCP SYN */
+-#define MSG_CMSG_CLOEXEC 0x40000000	/* Set close_on_exit for file
++#define MSG_CMSG_CLOEXEC 0x40000000	/* Set close_on_exec for file
+ 					   descriptor received through
+ 					   SCM_RIGHTS */
+ #if defined(CONFIG_COMPAT)
+-- 
+2.0.4
 
