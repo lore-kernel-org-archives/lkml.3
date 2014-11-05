@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641AbaKEHwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 02:52:36 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42877 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210AbaKEHwf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 02:52:35 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2 v3] ftracetest: Add a couple of ftrace test cases
-References: <20141104152845.521858531@goodmis.org>
-	<20141104153028.602754370@goodmis.org>
-Date: Wed, 05 Nov 2014 16:52:33 +0900
-In-Reply-To: <20141104153028.602754370@goodmis.org> (Steven Rostedt's message
-	of "Tue, 04 Nov 2014 10:28:47 -0500")
-Message-ID: <87zjc6ulry.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753826AbaKEHyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 02:54:17 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:60130 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752385AbaKEHyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 02:54:14 -0500
+Message-ID: <1415174051.2589.6.camel@sipsolutions.net>
+Subject: Re: [PATCH v2 06/13] backports: update dependencies map file
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yann.morin.1998@free.fr, mmarek@suse.cz, sassmann@kpanic.de,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Wed, 05 Nov 2014 08:54:11 +0100
+In-Reply-To: <1415157517-15442-7-git-send-email-mcgrof@do-not-panic.com> (sfid-20141105_042137_742710_12F2DE3B)
+References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1415157517-15442-7-git-send-email-mcgrof@do-not-panic.com>
+	 (sfid-20141105_042137_742710_12F2DE3B)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Tue, 2014-11-04 at 19:18 -0800, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> 
+> During development of kernel integration support using CONFIG_BACKPORT
+> was evaluated as a prefix over CPTCFG even for packaging backports,
+> for some reason this change lifted some restrictions one some device
+> drivers which was present before and as such requires some changes to
+> the dependencies map file to ensure correct compilation for respective
+> kernel versions.
 
-On Tue, 04 Nov 2014 10:28:47 -0500, Steven Rostedt wrote:
-> +count=`cat trace | grep '()' | grep -v schedule | wc -l`
-> +
-> +if [ $count -ne 0 ]; then
-> +    echo "Graph filtering not working after stack tracer disabled?"
-> +    exit -1
-> +fi
-> +
-> +count=`cat trace | grep 'schedule()' | wc -l` 
-> +if [ $count -eq 0 ]; then
-> +    echo "No schedule traces found?"
-> +    exit -1
+This is confusing ... I think what you're trying to say is that you
+noticed it because your integration system was broken and not honouring
+restrictions properly?
 
-Hmm.. in this case don't we need to call do_reset especially for the
-last testcase?  Maybe we could define a simple function like:
+johannes
 
-fail() { # msg
-	do_reset
-	echo $1
-	exit -1
-}
-
-Thanks,
-Namhyung
-
-
-> +fi
-> +
-> +do_reset
-> +
-> +exit 0
