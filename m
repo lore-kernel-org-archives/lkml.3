@@ -1,141 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087AbaKEO2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:28:42 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:51631 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803AbaKEO2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:28:40 -0500
-Message-ID: <545A3414.7030500@linaro.org>
-Date: Wed, 05 Nov 2014 15:28:36 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754928AbaKEOe6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:34:58 -0500
+Received: from svenfoo.org ([82.94.215.22]:46473 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754246AbaKEOe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:34:56 -0500
+Message-ID: <545A3588.2010903@zonque.org>
+Date: Wed, 05 Nov 2014 15:34:48 +0100
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Preeti Murthy <preeti.lkml@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        patches@linaro.org
-Subject: Re: [PATCH V2 1/5] sched: idle: cpuidle: Check the latency req before
- idle
-References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pOg1GFW82WD8b6Vas5xhYQrQtdP1STGxyzYtrBNSa+-Pw@mail.gmail.com> <544FE787.8090108@linaro.org> <54504A60.2090908@linux.vnet.ibm.com>
-In-Reply-To: <54504A60.2090908@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Andy Lutomirski <luto@amacapital.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
+        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Djalal Harouni <tixxdz@opendz.org>, simon.mcvittie@collabora.co.uk,
+        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
+        Tom Gundersen <teg@jklm.no>
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org> <CALCETrUBegZ4F1sKq3LxUgANX3=syYOrqOp9=F--g9pkVHHgUA@mail.gmail.com>
+In-Reply-To: <CALCETrUBegZ4F1sKq3LxUgANX3=syYOrqOp9=F--g9pkVHHgUA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2014 03:01 AM, Preeti U Murthy wrote:
-> On 10/29/2014 12:29 AM, Daniel Lezcano wrote:
->> On 10/28/2014 04:51 AM, Preeti Murthy wrote:
->>> Hi Daniel,
->>>
->>> On Thu, Oct 23, 2014 at 2:31 PM, Daniel Lezcano
->>> <daniel.lezcano@linaro.org> wrote:
->>>> When the pmqos latency requirement is set to zero that means "poll in
->>>> all the
->>>> cases".
->>>>
->>>> That is correctly implemented on x86 but not on the other archs.
->>>>
->>>> As how is written the code, if the latency request is zero, the
->>>> governor will
->>>> return zero, so corresponding, for x86, to the poll function, but for
->>>> the
->>>> others arch the default idle function. For example, on ARM this is
->>>> wait-for-
->>>> interrupt with a latency of '1', so violating the constraint.
->>>
->>> This is not true actually. On PowerPC the idle state 0 has an
->>> exit_latency of 0.
->>>
->>>>
->>>> In order to fix that, do the latency requirement check *before*
->>>> calling the
->>>> cpuidle framework in order to jump to the poll function without entering
->>>> cpuidle. That has several benefits:
->>>
->>> Doing so actually hurts on PowerPC. Because the idle loop defined for
->>> idle state 0 is different from what cpu_relax() does in cpu_idle_loop().
->>> The spinning is more power efficient in the former case. Moreover we
->>> also set
->>> certain register values which indicate an idle cpu. The ppc_runlatch bits
->>> do precisely this. These register values are being read by some user
->>> space
->>> tools.  So we will end up breaking them with this patch
->>>
->>> My suggestion is very well keep the latency requirement check in
->>> kernel/sched/idle.c
->>> like your doing in this patch. But before jumping to cpu_idle_loop
->>> verify if the
->>> idle state 0 has an exit_latency > 0 in addition to your check on the
->>> latency_req == 0.
->>> If not, you can fall through to the regular path of calling into the
->>> cpuidle driver.
->>> The scheduler can query the cpuidle_driver structure anyway.
->>>
->>> What do you think?
->>
->> Thanks for reviewing the patch and spotting this.
->>
->> Wouldn't make sense to create:
->>
->> void __weak_cpu_idle_poll(void) ?
->>
->> and override it with your specific poll function ?
->>
->
-> No this would become ugly as far as I can see. A weak function has to be
-> defined under arch/* code. We will either need to duplicate the idle
-> loop that we already have in the drivers or point the weak function to
-> the first idle state defined by our driver. Both of which is not
-> desirable (calling into the driver from arch code is ugly). Another
-> reason why I don't like the idea of a weak function is that if you have
-> missed looking at a specific driver and they have an idle loop with
-> features similar to on powerpc, you will have to spot it yourself and
-> include the arch specific cpu_idle_poll() for them.
+On 10/29/2014 11:19 PM, Andy Lutomirski wrote:
+> I think that each piece of trustable metadata needs to be explicitly
+> opted-in to by the sender at the time of capture.  Otherwise you're
+> asking for lots of information leaks and privilege escalations.  This
+> is especially important given that some of the items in the current
+> list could be rather sensitive.
 
-Yes, I agree this is a fair point. But actually I don't see the interest 
-of having the poll loop in the cpuidle driver. These cleanups are 
-preparing the removal of the CPUIDLE_DRIVER_STATE_START macro which 
-leads to a lot of mess in the cpuidle code.
+Alright, the above seems to pretty much sum up that end of our
+discussion. To address this, We've now added the following functionality
+for v2:
 
-With the removal of this macro, we should be able to move the select 
-loop from the menu governor and use it everywhere else. Furthermore, 
-this state which is flagged with TIME_VALID, isn't because the local 
-interrupt are enabled so we are measuring the interrupt time processing.
-Beside that the idle loop for x86 is mostly not used.
+ * The attach_flags in kdbus_cmd_hello was split into two parts,
+   attach_flags_send and attach_flags_recv, so each peer may chose what
+   exactly it want to transmit or receive.
 
-So the idea would be to extract those idle loop from the drivers and use 
-them directly when:
-  1. the idle selection fails (use the poll loop under certain 
-circumstances we have to redefine)
-  2. when the latency req is zero
+ * Metadata will only be attached to the final message in the
+   receiver's pool if both the sender's attach_flags_send and the
+   receiver's attach_flags_recv bit are set.
 
-That will result in a cleaner code in cpuidle and in the governor.
+ * Consequently, the existing KDBUS_ITEM_ATTACH_FLAGS item type is
+   split into KDBUS_ITEM_ATTACH_FLAGS_SEND and
+   KDBUS_ITEM_ATTACH_FLAGS_RECV, so that both connection details can be
+   separately updated through KDBUS_CMD_CONN_UPDATE.
 
-Do you agree with that ?
-
-> But by having a check on the exit_latency, you are claiming that since
-> the driver's 0th idle state is no better than the generic idle loop in
-> cases of 0 latency req, we are better off calling the latter, which
-> looks reasonable. That way you don't have to bother about worsening the
-> idle loop behavior on any other driver.
+ * To allow for use cases that require certain metadata to be attached
+   on each message, we've added a negotiation mechanism to the HELLO
+   ioctl: An optional metadata mask can be passed during the creation
+   of buses, so bus owners may require certain bits in
+   attach_flags_send to be set. That way, the creator of the bus will
+   specify which metadata is required to fulfill the requirements of
+   the specification of the role of the bus.
 
 
+Thanks again for your input!
 
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Daniel
