@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaKEK5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:57:12 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:57353 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477AbaKEK5L (ORCPT
+	id S1754549AbaKEK5X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:57:23 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:50112 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754431AbaKEK5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:57:11 -0500
+	Wed, 5 Nov 2014 05:57:21 -0500
+Message-ID: <545A0282.4070001@huawei.com>
+Date: Wed, 5 Nov 2014 18:57:06 +0800
+From: Hu Keping <hukeping@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20141105104359.GP3337@twins.programming.kicks-ass.net>
-References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
-	<1415156173-10035-14-git-send-email-kan.liang@intel.com>
-	<20141105092145.GP10501@worktop.programming.kicks-ass.net>
-	<CABPqkBS89jrjOMR9b_7WudJ0rDn0uD8XxX2gCJYDvTEssjXcww@mail.gmail.com>
-	<20141105104359.GP3337@twins.programming.kicks-ass.net>
-Date: Wed, 5 Nov 2014 11:57:10 +0100
-Message-ID: <CABPqkBQFqoZdRZvRT3kHukpYXHBJdB4mUWARNoo1QZmgH24p4w@mail.gmail.com>
-Subject: Re: [PATCH V7 13/17] perf, x86: enable LBR callstack when recording callchain
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kan Liang <kan.liang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <swarren@nvidia.com>, <ebiederm@xmission.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <sdu.liu@huawei.com>, <wangnan0@huawei.com>, <peifeiyue@huawei.com>
+Subject: Re: [RESEND PATCH] ARM: kexec: Fix validating CPU hotplug support
+References: <1415094025-66180-1-git-send-email-hukeping@huawei.com> <20141104105525.GE4042@n2100.arm.linux.org.uk>
+In-Reply-To: <20141104105525.GE4042@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.111.89.121]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020206.545A028F.0177,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 4fe2e03a0ee80cfaae3460938c15bf30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 11:43 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Nov 05, 2014 at 10:58:28AM +0100, Stephane Eranian wrote:
->> On Wed, Nov 5, 2014 at 10:21 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Tue, Nov 04, 2014 at 09:56:09PM -0500, Kan Liang wrote:
->> >> From: Yan, Zheng <zheng.z.yan@intel.com>
->> >>
->> >> Only enable LBR callstack when user requires fp callgraph. The feature
->> >> is not available when PERF_SAMPLE_BRANCH_STACK or PERF_SAMPLE_STACK_USER
->> >> is required.
->> >> Also, this feature only affects how to get user callchain. The kernel
->> >> callchain is always got by frame pointers.
->> >
->> > Since FP callchains should not change, this doesn't appear to make any
->> > sense either.
+
+
+于 2014/11/4 18:55, Russell King - ARM Linux 写道:
+> On Tue, Nov 04, 2014 at 05:40:25PM +0800, HuKeping wrote:
+>> Commit 2103f6cba61a8b8bea3fc1b63661d830a2125e76 added a hotplug checking in
+>> machine_kexec_prepare(), but it will lead a failure when loading the
+>> crash-kernel in some cases.
 >>
->> If I recall earlier discussion, the FP callchain are not changed. On
->> HSW, when requesting fp at the user level only, then the kernel
->> automatically tries to use the LBR callstack mode.  Advantage is that
->> the user app does not require frame-pointer or dwarf debug info to get
->> correct callchains with perf record. The downside is that LBR
->> callstack does not work in certain callchain corner cases.
+>> Kexec utility can load the crash kernel by two ways:
+>> 1. kexec -l kernel-image
+>> 2. kexec -p kernel-image
+>>
+>> In case #1, for rapid reboot, it's correct to do the hotplug checking things,
+>> for it will shut down cpus in _cpu_down() later when command "kexec -e" be
+>> sent, this routine needs the support of cpu hotplug.
+>>
+>> In case #2, for use on panic, it's unnecessary to do the same thing, the whole
+>> routing has no business with cpu shutting down. Check for cpu hot plug will
+>> lead a failure to load the kernel.
 >
-> But this patch changes the FP callchain interface. I see no need of
-> that. We already have multiple independent callchain options (FP and
-> Dwarf) adding a third option should also be independent (LBR).
+> So what happens to the other CPUs when you kexec into the new kernel,
+> possibly overwriting the instructions which those CPUs are executing?
 >
-> Allowing all 3 at the same time allows for identifying those corner
-> cases.
->
-> That is I simply don't see a good reason intertwine these things at the
-> interface level. All it does is reduce options. Would it not be 'nice'
-> to allow both FP and LBR at the same time?
 
-Yes, but I wonder how would the tool sort this out if you have FP and LBR
-for each sample.
+Actually, i do think there is something wrong in the panic-rountine:
+when panic comes, we clear the cpu_online_bits of other CPUs and
+keep them calling cpu_relax(). That's why I post that patch ,because
+we do not really shut down the CPUs.
 
-My understanding of the patch is that it does not change the user interface,
-it changes the way callchains are gathered by the kernel on HSW.
+But as your mentioned , there is another problem:
+what's in the pc register of each cpu is unknown after the MMU has been
+shut down.
 
-Is there explicit mention in the API that CALLCHAIN is relying on FP?
+On X86, there is a halt() before the cpu_relax(), so do you think we
+need a call wfi() before cpu_relax() to keep the other CPUs on
+status-WFI on ARM?
 
-I think in general it would be better for tools to know which
-low-level mechanism
-is used to better interpret the results and especially be aware of the
-limitations of
-each mechanism.
-
-I think the patch is trying some auto-promotion of CALLCHAIN to FP based
-on the belief it is better in most cases. It reminds me of the discussion about
-precise mode. Why not default to precise for all events that support it?
-
-I would be okay if the patch was introducing the 3rd mode for callchains.
