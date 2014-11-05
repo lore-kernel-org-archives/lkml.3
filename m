@@ -1,112 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346AbaKERSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:18:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58066 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932310AbaKERSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:18:21 -0500
-Date: Wed, 5 Nov 2014 18:18:16 +0100
-From: Jan Kara <jack@suse.cz>
-To: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Cc: Jan Kara <jack@suse.cz>,
-        "Sergey \"Shnatsel\" Davidoff" <sergey@elementaryos.org>,
-        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141105171816.GE30558@quack.suse.cz>
-References: <1413881397.30379.7.camel@hadess.net>
- <loom.20141021T140216-28@post.gmane.org>
- <20141027092311.GA9807@amd>
- <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com>
- <20141031093618.GB30321@quack.suse.cz>
- <5457C7B7.7050302@gmx.de>
- <20141104092809.GB2953@quack.suse.cz>
- <54592F23.9000102@gmx.de>
+	id S1756190AbaKERSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:18:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41981 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260AbaKERSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 12:18:33 -0500
+Date: Wed, 5 Nov 2014 09:17:11 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-5c9e8e9d5c88e1e83ac47d918fb8662de43a269b@git.kernel.org>
+Cc: gregkh@linuxfoundation.org, yinghai@kernel.org, tglx@linutronix.de,
+        grant.likely@linaro.org, bp@alien8.de, bhelgaas@google.com,
+        tony.luck@intel.com, mingo@kernel.org, joro@8bytes.org,
+        rdunlap@infradead.org, konrad.wilk@oracle.com,
+        benh@kernel.crashing.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        prarit@redhat.com, rjw@rjwysocki.net, jiang.liu@linux.intel.com
+Reply-To: jiang.liu@linux.intel.com, prarit@redhat.com,
+        linux-kernel@vger.kernel.org, rjw@rjwysocki.net, hpa@zytor.com,
+        rdunlap@infradead.org, konrad.wilk@oracle.com,
+        benh@kernel.crashing.org, joro@8bytes.org, tony.luck@intel.com,
+        mingo@kernel.org, grant.likely@linaro.org, bp@alien8.de,
+        bhelgaas@google.com, gregkh@linuxfoundation.org, yinghai@kernel.org,
+        tglx@linutronix.de
+In-Reply-To: <1414397531-28254-17-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-17-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, irq:
+  Use helpers to access irq_cfg data structure associated with IRQ
+Git-Commit-ID: 5c9e8e9d5c88e1e83ac47d918fb8662de43a269b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <54592F23.9000102@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-11-14 20:55:15, Heinrich Schuchardt wrote:
-> On 04.11.2014 10:28, Jan Kara wrote:
-> 
-> >>If inotify_add_watch() would allow to mark a complete mount (like
-> >>fanotify_mark() called with FAN_MOUNT) events for all files on this
-> >>mount could be detected. If furthermore inotify_read() would return
-> >>the complete relative path of the changed file relative to the mount
-> >>in inotify_event->name, it would be obvious what the meaning of the
-> >>event is.
-> >   There are two catches though:
-> >1) Getting of the path itself is unreliable due to presence of other fs
-> >changes happening in parallel to you traversing the directory tree.
-> >
-> >2) The name you get from inotify_event->name is unreliable because by the
-> >time you read the event, directory tree may be completely different.
-> >
-> >   These are the reasons why fanotify passes file descriptors with the
-> >events instead of names.
-> >
-> >   Also for mountpoint wide notification your app has to be much faster
-> >processing events so that the event queue doesn't overflow (and thus forces
-> >you to do full rescan). fanotify deals with this by not limiting event
-> >queue length at all but that's one of the reason why it's restricted to
-> >CAP_SYS_ADMIN users.
-> 
-> This is reflected in fanotify_init already by explicitly checking
-> CAP_SYS_ADMIN when using flag FAN_UNLIMITED_QUEUE.
-  Right. So this is already handled, although we'd possibly need to have
-the user limit tunable, not a compile time constant.
+Commit-ID:  5c9e8e9d5c88e1e83ac47d918fb8662de43a269b
+Gitweb:     http://git.kernel.org/tip/5c9e8e9d5c88e1e83ac47d918fb8662de43a269b
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:12:07 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 5 Nov 2014 18:10:47 +0100
 
-> >   So all in all I would find it better to extend fanotify to provide
-> >directory events (that was originally planned but the support was dropped
-> >due to technical issues),
-> 
-> I had a brief look at the systemd coding. They use at least:
-> IN_ATTRIB
-> IN_CLOSE_WRITE
-> IN_CLOSE_NOWRITE
-> IN_CREATE
-> IN_DELETE
-> IN_DELETE_SELF
-> IN_MODIFY
-> IN_MOVE_SELF
-> IN_MOVED_FROM
-> IN_MOVED_TO
-> 
-> Most of the sources of these events are passed as dentry and not as
-> path. Bug 86781 describes that fanotify does not create events for
-> double mounted file systems. It suggest to use the mount list of the
-> superblock (which the dentry points to) instead of the mount
-> indicated by a path.
-> https://bugzilla.kernel.org/show_bug.cgi?id=86781
-  I think there was a reason for this behavior but I forgot...
+x86, irq: Use helpers to access irq_cfg data structure associated with IRQ
 
-> Using dentries would allow to minimize code changes outside the core
-> of the notification framework. Hence this is a central design
-> decision to take before implementing the additional fanotify events.
-> 
-> > solve problems with unlimited event queues,
-> 
-> Isn't this already solved by
-> group->max_events = FANOTIFY_DEFAULT_MAX_EVENTS?
-  Mostly.
+Use helpers to access irq_cfg data structure associated with IRQ,
+instead of accessing irq_data->chip_data directly. Later we can
+rewrite those helpers to support hierarchy irqdomain.
 
-> > add some permission checking for passed file descriptors
-> 
-> This brings us back to
-> https://lkml.org/lkml/2014/4/19/151
-> (fanotify: check permissions when creating file descriptor)
-  Yeah, somewhat. So when we'd open fanotify for ordinary users, we have to
-add permission checks. Not only to the inode about whose change the event
-notifies but also to all the path that leads to the inode (and that's going
-to be tricky). Otherwise you could get file descriptors of files you'd
-otherwise never be able to open. Hum, that's ugly.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1414397531-28254-17-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/apic/htirq.c   |  2 +-
+ arch/x86/kernel/apic/io_apic.c | 10 +++++-----
+ arch/x86/kernel/apic/msi.c     |  6 +++---
+ arch/x86/kernel/apic/vector.c  |  6 +++---
+ arch/x86/platform/uv/uv_irq.c  |  4 ++--
+ 5 files changed, 14 insertions(+), 14 deletions(-)
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
+index a4980c5..816f36e 100644
+--- a/arch/x86/kernel/apic/htirq.c
++++ b/arch/x86/kernel/apic/htirq.c
+@@ -39,7 +39,7 @@ static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
+ static int
+ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned int dest;
+ 	int ret;
+ 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 2619cbe..3f5f604 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -501,7 +501,7 @@ static void mask_ioapic(struct irq_cfg *cfg)
+ 
+ static void mask_ioapic_irq(struct irq_data *data)
+ {
+-	mask_ioapic(data->chip_data);
++	mask_ioapic(irqd_cfg(data));
+ }
+ 
+ static void __unmask_ioapic(struct irq_cfg *cfg)
+@@ -520,7 +520,7 @@ static void unmask_ioapic(struct irq_cfg *cfg)
+ 
+ static void unmask_ioapic_irq(struct irq_data *data)
+ {
+-	unmask_ioapic(data->chip_data);
++	unmask_ioapic(irqd_cfg(data));
+ }
+ 
+ /*
+@@ -1801,7 +1801,7 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
+ 		if (legacy_pic->irq_pending(irq))
+ 			was_pending = 1;
+ 	}
+-	__unmask_ioapic(data->chip_data);
++	__unmask_ioapic(irqd_cfg(data));
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 
+ 	return was_pending;
+@@ -1852,7 +1852,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 	if (!ret) {
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+-		__target_IO_APIC_irq(irq, dest, data->chip_data);
++		__target_IO_APIC_irq(irq, dest, irqd_cfg(data));
+ 		ret = IRQ_SET_MASK_OK_NOCOPY;
+ 	}
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+@@ -1943,7 +1943,7 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
+ 
+ static void ack_ioapic_level(struct irq_data *data)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	int i, irq = data->irq;
+ 	unsigned long v;
+ 	bool masked;
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index 7eff986..75f4f56 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -78,7 +78,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+ static int
+ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	struct msi_msg msg;
+ 	unsigned int dest;
+ 	int ret;
+@@ -180,7 +180,7 @@ static int
+ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		      bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned int dest, irq = data->irq;
+ 	struct msi_msg msg;
+ 	int ret;
+@@ -235,7 +235,7 @@ int arch_setup_dmar_msi(unsigned int irq)
+ static int hpet_msi_set_affinity(struct irq_data *data,
+ 				 const struct cpumask *mask, bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	struct msi_msg msg;
+ 	unsigned int dest;
+ 	int ret;
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 19fcb57..6cedd79 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -321,7 +321,7 @@ void setup_vector_irq(int cpu)
+ 
+ int apic_retrigger_irq(struct irq_data *data)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned long flags;
+ 	int cpu;
+ 
+@@ -335,7 +335,7 @@ int apic_retrigger_irq(struct irq_data *data)
+ 
+ void apic_ack_edge(struct irq_data *data)
+ {
+-	irq_complete_move(data->chip_data);
++	irq_complete_move(irqd_cfg(data));
+ 	irq_move_irq(data);
+ 	ack_APIC_irq();
+ }
+@@ -348,7 +348,7 @@ void apic_ack_edge(struct irq_data *data)
+ int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		      unsigned int *dest_id)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned int irq = data->irq;
+ 	int err;
+ 
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index 3e8fab7..0ce6736 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -131,7 +131,7 @@ arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
+ 		       unsigned long mmr_offset, int limit)
+ {
+ 	const struct cpumask *eligible_cpu = cpumask_of(cpu);
+-	struct irq_cfg *cfg = irq_get_chip_data(irq);
++	struct irq_cfg *cfg = irq_cfg(irq);
+ 	unsigned long mmr_value;
+ 	struct uv_IO_APIC_route_entry *entry;
+ 	int mmr_pnode, err;
+@@ -198,7 +198,7 @@ static int
+ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		    bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned int dest;
+ 	unsigned long mmr_value, mmr_offset;
+ 	struct uv_IO_APIC_route_entry *entry;
