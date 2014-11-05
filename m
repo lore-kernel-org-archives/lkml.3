@@ -1,182 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaKEUHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:07:39 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:55519 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513AbaKEUHg (ORCPT
+	id S1751986AbaKEUHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:07:53 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:39212 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899AbaKEUHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:07:36 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 5/5] of: of_reconfig_get_state_change() of notifier
- helper.
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <1414528433-9650-6-git-send-email-pantelis.antoniou@konsulko.com>
-References: <1414528433-9650-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1414528433-9650-6-git-send-email-pantelis.antoniou@konsulko.com>
-Date: Wed, 05 Nov 2014 20:07:31 +0000
-Message-Id: <20141105200731.C44B4C41C40@trevor.secretlab.ca>
+	Wed, 5 Nov 2014 15:07:52 -0500
+From: Gregory Fong <gregory.0xf0@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-arm-kernel@lists.infradead.org, f.fainelli@gmail.com,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Masanari Iida <standby24x7@gmail.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/2] lib: bitmap: Added alignment offset for bitmap_find_next_zero_area()
+Date: Wed,  5 Nov 2014 12:07:54 -0800
+Message-Id: <1415218078-10078-1-git-send-email-gregory.0xf0@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014 22:33:53 +0200
-, Pantelis Antoniou <pantelis.antoniou@konsulko.com>
- wrote:
-> Introduce of_reconfig_get_state_change() which allows an of notifier
-> to query about device state changes.
-> 
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
 
-Applied, thanks.
+This commit adds a bitmap_find_next_zero_area_off() function which
+works like bitmap_find_next_zero_area() function expect it allows an
+offset to be specified when alignment is checked.  This lets caller
+request a bit such that its number plus the offset is aligned
+according to the mask.
 
-g.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
+[gregory.0xf0@gmail.com: Retrieved from
+https://patchwork.linuxtv.org/patch/6254/ and updated documentation]
+Signed-off-by: Gregory Fong <gregory.0xf0@gmail.com>
+---
+ include/linux/bitmap.h | 36 +++++++++++++++++++++++++++++++-----
+ lib/bitmap.c           | 24 +++++++++++++-----------
+ 2 files changed, 44 insertions(+), 16 deletions(-)
 
-> ---
->  drivers/of/dynamic.c | 96 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of.h   |  1 +
->  2 files changed, 97 insertions(+)
-> 
-> diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-> index 9eb8528..303a59b 100644
-> --- a/drivers/of/dynamic.c
-> +++ b/drivers/of/dynamic.c
-> @@ -85,6 +85,102 @@ int of_reconfig_notify(unsigned long action, void *p)
->  	return notifier_to_errno(rc);
->  }
->  
-> +/*
-> + * of_reconfig_get_state_change()	- Returns new state of device
-> + * @action	- action of the of notifier
-> + * @arg		- argument of the of notifier
-> + *
-> + * Returns the new state of a device based on the notifier used.
-> + * Returns 0 on device going from enabled to disabled, 1 on device
-> + * going from disabled to enabled and -1 on no change.
-> + */
-> +int of_reconfig_get_state_change(unsigned long action, void *arg)
-> +{
-> +	struct device_node *dn;
-> +	struct property *prop, *old_prop;
-> +	struct of_prop_reconfig *pr;
-> +	int is_status, status_state, old_status_state, prev_state, new_state;
-> +
-> +	/* figure out if a device should be created or destroyed */
-> +	dn = NULL;
-> +	prop = old_prop = NULL;
-> +	switch (action) {
-> +	case OF_RECONFIG_ATTACH_NODE:
-> +	case OF_RECONFIG_DETACH_NODE:
-> +		dn = arg;
-> +		prop = of_find_property(dn, "status", NULL);
-> +		break;
-> +	case OF_RECONFIG_ADD_PROPERTY:
-> +	case OF_RECONFIG_REMOVE_PROPERTY:
-> +		pr = arg;
-> +		dn = pr->dn;
-> +		prop = pr->prop;
-> +		break;
-> +	case OF_RECONFIG_UPDATE_PROPERTY:
-> +		pr = arg;
-> +		dn = pr->dn;
-> +		prop = pr->prop;
-> +		old_prop = pr->old_prop;
-> +		break;
-> +	default:
-> +		return -1;	/* don't care */
-> +	}
-> +
-> +	is_status = 0;
-> +	status_state = -1;
-> +	old_status_state = -1;
-> +	prev_state = -1;
-> +	new_state = -1;
-> +
-> +	if (prop && !strcmp(prop->name, "status")) {
-> +		is_status = 1;
-> +		status_state = !strcmp(prop->value, "okay") ||
-> +			       !strcmp(prop->value, "ok");
-> +		if (old_prop)
-> +			old_status_state = !strcmp(old_prop->value, "okay") ||
-> +					   !strcmp(old_prop->value, "ok");
-> +	}
-> +
-> +	switch (action) {
-> +	case OF_RECONFIG_ATTACH_NODE:
-> +		prev_state = 0;
-> +		/* -1 & 0 status either missing or okay */
-> +		new_state = status_state != 0;
-> +		break;
-> +	case OF_RECONFIG_DETACH_NODE:
-> +		/* -1 & 0 status either missing or okay */
-> +		prev_state = status_state != 0;
-> +		new_state = 0;
-> +		break;
-> +	case OF_RECONFIG_ADD_PROPERTY:
-> +		if (is_status) {
-> +			/* no status property -> enabled (legacy) */
-> +			prev_state = 1;
-> +			new_state = status_state;
-> +		}
-> +		break;
-> +	case OF_RECONFIG_REMOVE_PROPERTY:
-> +		if (is_status) {
-> +			prev_state = status_state;
-> +			/* no status property -> enabled (legacy) */
-> +			new_state = 1;
-> +		}
-> +		break;
-> +	case OF_RECONFIG_UPDATE_PROPERTY:
-> +		if (is_status) {
-> +			prev_state = old_status_state != 0;
-> +			new_state = status_state != 0;
-> +		}
-> +		break;
-> +	}
-> +
-> +	if (prev_state == new_state)
-> +		return -1;
-> +
-> +	return new_state;
-> +}
-> +EXPORT_SYMBOL_GPL(of_reconfig_get_state_change);
-> +
->  int of_property_notify(int action, struct device_node *np,
->  		       struct property *prop, struct property *oldprop)
->  {
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 71d25aa..9ff1ec5 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -328,6 +328,7 @@ struct of_prop_reconfig {
->  extern int of_reconfig_notifier_register(struct notifier_block *);
->  extern int of_reconfig_notifier_unregister(struct notifier_block *);
->  extern int of_reconfig_notify(unsigned long, void *);
-> +extern int of_reconfig_get_state_change(unsigned long action, void *arg);
->  
->  extern int of_attach_node(struct device_node *);
->  extern int of_detach_node(struct device_node *);
-> -- 
-> 1.7.12
-> 
+diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
+index e1c8d08..34e020c 100644
+--- a/include/linux/bitmap.h
++++ b/include/linux/bitmap.h
+@@ -45,6 +45,7 @@
+  * bitmap_set(dst, pos, nbits)			Set specified bit area
+  * bitmap_clear(dst, pos, nbits)		Clear specified bit area
+  * bitmap_find_next_zero_area(buf, len, pos, n, mask)	Find bit free area
++ * bitmap_find_next_zero_area_off(buf, len, pos, n, mask)	as above
+  * bitmap_shift_right(dst, src, n, nbits)	*dst = *src >> n
+  * bitmap_shift_left(dst, src, n, nbits)	*dst = *src << n
+  * bitmap_remap(dst, src, old, new, nbits)	*dst = map(old, new)(src)
+@@ -114,11 +115,36 @@ extern int __bitmap_weight(const unsigned long *bitmap, unsigned int nbits);
+ 
+ extern void bitmap_set(unsigned long *map, unsigned int start, int len);
+ extern void bitmap_clear(unsigned long *map, unsigned int start, int len);
+-extern unsigned long bitmap_find_next_zero_area(unsigned long *map,
+-					 unsigned long size,
+-					 unsigned long start,
+-					 unsigned int nr,
+-					 unsigned long align_mask);
++
++extern unsigned long bitmap_find_next_zero_area_off(unsigned long *map,
++						    unsigned long size,
++						    unsigned long start,
++						    unsigned int nr,
++						    unsigned long align_mask,
++						    unsigned long align_offset);
++
++/**
++ * bitmap_find_next_zero_area - find a contiguous aligned zero area
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @align_mask: Alignment mask for zero area
++ *
++ * The @align_mask should be one less than a power of 2; the effect is that
++ * the bit offset of all zero areas this function finds is multiples of that
++ * power of 2. A @align_mask of 0 means no alignment is required.
++ */
++static inline unsigned long
++bitmap_find_next_zero_area(unsigned long *map,
++			   unsigned long size,
++			   unsigned long start,
++			   unsigned int nr,
++			   unsigned long align_mask)
++{
++	return bitmap_find_next_zero_area_off(map, size, start, nr,
++					      align_mask, 0);
++}
+ 
+ extern int bitmap_scnprintf(char *buf, unsigned int len,
+ 			const unsigned long *src, int nbits);
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index b499ab6..969ae8f 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -326,30 +326,32 @@ void bitmap_clear(unsigned long *map, unsigned int start, int len)
+ }
+ EXPORT_SYMBOL(bitmap_clear);
+ 
+-/*
+- * bitmap_find_next_zero_area - find a contiguous aligned zero area
++/**
++ * bitmap_find_next_zero_area_off - find a contiguous aligned zero area
+  * @map: The address to base the search on
+  * @size: The bitmap size in bits
+  * @start: The bitnumber to start searching at
+  * @nr: The number of zeroed bits we're looking for
+  * @align_mask: Alignment mask for zero area
++ * @align_offset: Alignment offset for zero area.
+  *
+  * The @align_mask should be one less than a power of 2; the effect is that
+- * the bit offset of all zero areas this function finds is multiples of that
+- * power of 2. A @align_mask of 0 means no alignment is required.
++ * the bit offset of all zero areas this function finds plus @align_offset
++ * is multiple of that power of 2.
+  */
+-unsigned long bitmap_find_next_zero_area(unsigned long *map,
+-					 unsigned long size,
+-					 unsigned long start,
+-					 unsigned int nr,
+-					 unsigned long align_mask)
++unsigned long bitmap_find_next_zero_area_off(unsigned long *map,
++					     unsigned long size,
++					     unsigned long start,
++					     unsigned int nr,
++					     unsigned long align_mask,
++					     unsigned long align_offset)
+ {
+ 	unsigned long index, end, i;
+ again:
+ 	index = find_next_zero_bit(map, size, start);
+ 
+ 	/* Align allocation */
+-	index = __ALIGN_MASK(index, align_mask);
++	index = __ALIGN_MASK(index + align_offset, align_mask) - align_offset;
+ 
+ 	end = index + nr;
+ 	if (end > size)
+@@ -361,7 +363,7 @@ again:
+ 	}
+ 	return index;
+ }
+-EXPORT_SYMBOL(bitmap_find_next_zero_area);
++EXPORT_SYMBOL(bitmap_find_next_zero_area_off);
+ 
+ /*
+  * Bitmap printing & parsing functions: first version by Nadia Yvette Chambers,
+-- 
+1.9.1
 
