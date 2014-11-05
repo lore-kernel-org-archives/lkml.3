@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048AbaKEQgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:36:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41164 "EHLO
+	id S1755177AbaKEQg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:36:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41167 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaKEQgU (ORCPT
+	with ESMTP id S1755066AbaKEQgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:36:20 -0500
-Date: Wed, 5 Nov 2014 08:34:19 -0800
+	Wed, 5 Nov 2014 11:36:23 -0500
+Date: Wed, 5 Nov 2014 08:34:57 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-e70425eb31f79a802d601fd411fe694458c4561b@git.kernel.org>
-Cc: jiang.liu@linux.intel.com, tony.luck@intel.com, rjw@rjwysocki.net,
-        yinghai@kernel.org, konrad.wilk@oracle.com, bhelgaas@google.com,
-        joro@8bytes.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        bp@alien8.de, hpa@zytor.com, tglx@linutronix.de,
-        benh@kernel.crashing.org, rdunlap@infradead.org,
-        gregkh@linuxfoundation.org
-Reply-To: rjw@rjwysocki.net, yinghai@kernel.org, jiang.liu@linux.intel.com,
-        tony.luck@intel.com, joro@8bytes.org, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, bhelgaas@google.com, hpa@zytor.com,
-        tglx@linutronix.de, mingo@kernel.org, bp@alien8.de,
-        rdunlap@infradead.org, gregkh@linuxfoundation.org,
-        benh@kernel.crashing.org
-In-Reply-To: <1414397531-28254-21-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-21-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-f24388633986e3ff792b0ab059d5915fdbdf5ad2@git.kernel.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, jiang.liu@linux.intel.com,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, len.brown@intel.com,
+        rjw@rjwysocki.net, konrad.wilk@oracle.com, benh@kernel.crashing.org,
+        yinghai@kernel.org, bp@alien8.de, joro@8bytes.org, hpa@zytor.com,
+        bhelgaas@google.com, tglx@linutronix.de, pavel@ucw.cz,
+        rdunlap@infradead.org
+Reply-To: rjw@rjwysocki.net, len.brown@intel.com, benh@kernel.crashing.org,
+        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        jiang.liu@linux.intel.com, gregkh@linuxfoundation.org,
+        tony.luck@intel.com, hpa@zytor.com, tglx@linutronix.de,
+        bhelgaas@google.com, rdunlap@infradead.org, pavel@ucw.cz,
+        yinghai@kernel.org, bp@alien8.de, joro@8bytes.org
+In-Reply-To: <1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Provide empty send_cleanup_vector()
-  stub for UP builds
-Git-Commit-ID: e70425eb31f79a802d601fd411fe694458c4561b
+Subject: [tip:x86/apic] x86, irq, ACPI:
+  Fix building warning of unused code
+Git-Commit-ID: f24388633986e3ff792b0ab059d5915fdbdf5ad2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,20 +40,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e70425eb31f79a802d601fd411fe694458c4561b
-Gitweb:     http://git.kernel.org/tip/e70425eb31f79a802d601fd411fe694458c4561b
+Commit-ID:  f24388633986e3ff792b0ab059d5915fdbdf5ad2
+Gitweb:     http://git.kernel.org/tip/f24388633986e3ff792b0ab059d5915fdbdf5ad2
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:12:11 +0800
+AuthorDate: Mon, 27 Oct 2014 16:11:53 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 5 Nov 2014 11:04:46 +0100
 
-x86, irq: Provide empty send_cleanup_vector() stub for UP builds
+x86, irq, ACPI: Fix building warning of unused code
 
-Define an empty send_cleanup_vector() for UP kernel to fix link error
-of undefined reference, which is used by uv_irq and irq_remapping.
-
-[ tglx: Made it an inline stub and moved it ahead of the file split
-  	changes ]
+Fix building warning when CONFIG_X86_LOCAL_APIC is disabled.
+arch/x86/kernel/acpi/boot.c:699:20: warning: ‘acpi_set_irq_model_ioapic’ defined but not used [-Wunused-function]
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -66,25 +63,31 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1414397531-28254-21-git-send-email-jiang.liu@linux.intel.com
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Link: http://lkml.kernel.org/r/1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/hw_irq.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/acpi/boot.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index cb7917f..8dbe237 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -153,7 +153,11 @@ struct irq_cfg {
- };
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index a0e095f..4433a4b 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -703,6 +703,7 @@ void acpi_unregister_gsi(u32 gsi)
+ }
+ EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
  
- extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
-+#ifdef CONFIG_SMP
- extern void send_cleanup_vector(struct irq_cfg *);
-+#else
-+static inline void send_cleanup_vector(struct irq_cfg *c) { }
++#ifdef CONFIG_X86_LOCAL_APIC
+ static void __init acpi_set_irq_model_ioapic(void)
+ {
+ 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+@@ -710,6 +711,7 @@ static void __init acpi_set_irq_model_ioapic(void)
+ 	__acpi_unregister_gsi = acpi_unregister_gsi_ioapic;
+ 	acpi_ioapic = 1;
+ }
 +#endif
  
- struct irq_data;
- int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+ /*
+  *  ACPI based hotplug support for CPU
