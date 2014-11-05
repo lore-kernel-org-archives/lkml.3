@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbaKENwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:52:31 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:43288 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbaKENw2 (ORCPT
+	id S1754744AbaKENzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:55:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:41752 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751198AbaKENzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:52:28 -0500
+	Wed, 5 Nov 2014 08:55:04 -0500
+Date: Wed, 5 Nov 2014 14:51:31 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/11] dmaengine: Cleanup chancnt
+Message-ID: <20141105135131.GA2989@lukather>
+References: <1413450063-23829-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20141016090346.GE1638@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <5459740B.6000906@huawei.com>
-References: <1414497065-9808-1-git-send-email-thunder.leizhen@huawei.com>
- <20141104162054.4CC9BC423D0@trevor.secretlab.ca> <CAErSpo6Upf=QPn7=Cd=XDazXVnSPhb-9gDZjH9_CcY37-xUKLw@mail.gmail.com>
- <5459740B.6000906@huawei.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Wed, 5 Nov 2014 13:52:07 +0000
-X-Google-Sender-Auth: oQpUfccOXkph5c87TML1mQ7O3mk
-Message-ID: <CACxGe6tkOWtqtt9nVk2R=NqsEVZBDCV-1deVhEXf1pAGS7YhFA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] of/fdt: simplify early_init_dt_verify
-To: leizhen <thunder.leizhen@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        Kefeng Wang <wangkefeng.wang@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+Content-Disposition: inline
+In-Reply-To: <20141016090346.GE1638@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 12:49 AM, leizhen <thunder.leizhen@huawei.com> wrote:
-> On 2014/11/5 1:03, Bjorn Helgaas wrote:
->> On Tue, Nov 4, 2014 at 9:20 AM, Grant Likely <grant.likely@linaro.org> wrote:
->>> On Tue, 28 Oct 2014 19:51:05 +0800
->>> , Zhen Lei <thunder.leizhen@huawei.com>
->>>  wrote:
->>>> put off initial_boot_params = params; until all checks finished. If any check
->>>> failed, initial_boot_params is equal NULL, base upon bss segment initial value.
->>>>
->>>> Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
->>>
->>> Interesting. I received exactly the same patch from Bjorn Helgaas. Were
->>> the two of you working together, or is this merely a coincedence?
->>
->> LOL, that's really funny.  We're not working together, so it's a total
->> coincidence :)
->>
-> Haha!!!
->
-> Hi, Bjorn Helgaas. Nice to meet you.
 
-I've applied Bjorn's version, but since the diffstat is *identical*,
-I've put both of your s-o-b lines into it.
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-BTW Lei, what prompted you to write this patch? Was there a bug you
-were fixing, or did you just notice the inconsistency and decide to
-fix it?
+Hi Vinod,
 
-g.
+On Thu, Oct 16, 2014 at 02:33:46PM +0530, Vinod Koul wrote:
+> On Thu, Oct 16, 2014 at 11:00:52AM +0200, Maxime Ripard wrote:
+> > Hi everyone,
+> >=20
+> > As pointed out in the documentation thread [1], the chancnt variable
+> > is filled during the driver registration in dma_async_device_register,
+> > from the liste of channels that has been set.
+> >=20
+> > This serie removes the occurences of the drivers that set it in their
+> > probe function.
+> Barring the typos in the cover letter, series looks fine.
+
+It's been 3 weeks already, and there's been no reviews justifying to
+send a second version of the patch set.
+
+Can we merge this in?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUWitjAAoJEBx+YmzsjxAgizwQAKmHIePrZOmL87voLW/9TRTk
+DbEp5aSL04pqr0CYhaWk07yG7LIR4R98DQIIJupmWq1bpgPnLsDUtpkoy8XHraEC
+DgBrrHyVJa/6B7wOliRrUP54OFg4YrVGNx1MaLLbGicsupWDD1Eue5Yiaa3O1OBF
+kYgwoOoYGVVPc8+F0tMfeGKTXwORnG3do77Rl5H4BFHQx6m7r5zgrzBzA7Gas2ZZ
+qezSbsprc3nmjYPzkow8dXFuOFaKLG8OEzJe4boJv3qkWcA7pVNqvOfQIo0njWeR
+szDp9ZiPokhZDo0gQxw0ht00/LkKGng3HkivF5vDLSuZqxYVbOICZMP8A12QG59Q
+4BA+V23S2DLem2OBWDFk6+6loxsfEI7yD5USQNMwjO/dBNYY7IpsXdw71mp5hS/M
+E4I23POu+nmK9dgvbyZ1cZJi/LrNx0wcYcMdQZkwXOApmN3Jyq0abFyVj621gw8P
+CkFewTUAp/JE2pMWUwLmXlRdo+2+xtno3R200sJ5nVdvoBVFCSoxXCdfAsA08Tz4
+dbGdseTY2GmTGOVukJDhmpNU6Gnwc9TCba57w32mIvxaJQphHExJ7jJtJ/letT2f
+JYZOATkBqUQ1b3/ql9HWqmzMnMsYvS0LmTT5Kzxv8s1rYE0sTJbL+/rBX9DF20kK
+nE6yiMjJcOW/NJRQcpet
+=56qH
+-----END PGP SIGNATURE-----
+
+--XsQoSWH+UP9D9v3l--
