@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906AbaKEQnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:43:00 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.148]:43349 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755522AbaKEQkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:40:15 -0500
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-7.tower-178.messagelabs.com!1415205598!33699058!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.4; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 05 Nov 2014 17:39:59 +0100
-Date: Wed, 5 Nov 2014 17:39:53 +0100
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] tty: serial: men_z135_uart: Fix driver for changes in
- hardware
-Message-ID: <20141105163952.GA21159@jtlinux>
-References: <1415030753-26885-1-git-send-email-johannes.thumshirn@men.de>
- <5457ED0C.3090705@hurleysoftware.com>
- <5457F30F.2030203@hurleysoftware.com>
+	id S932159AbaKEQo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:44:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56822 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754039AbaKEQoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:44:25 -0500
+From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+To: Sangbeom Kim <sbkim73@samsung.com>, alsa-devel@alsa-project.org
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] ASoC: samsung: Add MODULE_DEVICE_TABLE for Snow
+Date: Wed,  5 Nov 2014 17:44:52 +0100
+Message-Id: <1415205892-5553-1-git-send-email-afaerber@suse.de>
+X-Mailer: git-send-email 2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5457F30F.2030203@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 04:26:39PM -0500, Peter Hurley wrote:
-> On 11/03/2014 04:01 PM, Peter Hurley wrote:
-> > On 11/03/2014 11:05 AM, Johannes Thumshirn wrote:
-> >> * Enable the handling of UART core's automatic flow control feature.
-> >>   When AFE is active disable generation of modem status IRQs.
-> >
-> > So HUPCL doesn't work when CRTSCTS is set?
->
-> Sorry, I meant !CLOCAL. IOW,
->
-> 'So !CLOCAL doesn't work when CRTSCTS is set?'
+This enables the snd_soc_snow module to be auto-loaded.
 
-Yes, unfortunately
+Fixes: da5993df2374 ("ASoC: samsung: Add sound card driver for Snow board")
+Signed-off-by: Andreas Färber <afaerber@suse.de>
+---
+ Tested using patches for Spring, but should apply to Snow/Peach-pi equally.
+ Rebased onto sound.git for-next branch.
 
->
-> > Is this because there's actually a problem with the IP core that
-> > MSIs trash the autoCTS state, or is the problem that the driver
-> > just shouldn't be calling uart_handle_cts_change() when autoCTS is
-> > on?
->
+ sound/soc/samsung/snow.c | 1 +
+ 1 file changed, 1 insertion(+)
 
->From our investigations it looks like it trashes the autoCTS state.
+diff --git a/sound/soc/samsung/snow.c b/sound/soc/samsung/snow.c
+index 0acf5d0eed53..72118a77dd5b 100644
+--- a/sound/soc/samsung/snow.c
++++ b/sound/soc/samsung/snow.c
+@@ -110,6 +110,7 @@ static const struct of_device_id snow_of_match[] = {
+ 	{ .compatible = "google,snow-audio-max98095", },
+ 	{},
+ };
++MODULE_DEVICE_TABLE(of, snow_of_match);
+ 
+ static struct platform_driver snow_driver = {
+ 	.driver = {
+-- 
+2.1.2
 
-Johannes
