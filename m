@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaKEVGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:06:23 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:9823 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751017AbaKEVGU (ORCPT
+	id S1751692AbaKEVGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:06:54 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:64907 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaKEVGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:06:20 -0500
-Date: Wed, 5 Nov 2014 16:06:18 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 07/12 v3] tracing: Have seq_buf use full buffer
-Message-ID: <20141105160618.6c684f23@gandalf.local.home>
-In-Reply-To: <20141105152130.09779ccf@gandalf.local.home>
-References: <20141104155237.228431433@goodmis.org>
-	<20141104160222.502133196@goodmis.org>
-	<20141105163150.GI4570@pathway.suse.cz>
-	<20141105152130.09779ccf@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 5 Nov 2014 16:06:51 -0500
+Date: Wed, 5 Nov 2014 13:06:47 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Marek Vasut <marex@denx.de>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Huang Shijie <b32955@freescale.com>, linux-mtd@lists.infradead.org,
+        Harini Katakam <harini.katakam@xilinx.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] mtd: spi-nor: Add support for SST spi flash
+Message-ID: <20141105210647.GU23619@ld-irv-0074>
+References: <29606567142da0d52c462ef0aebacc2b91fe2508.1413891469.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <29606567142da0d52c462ef0aebacc2b91fe2508.1413891469.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014 15:21:30 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
- 
-> > 
-> > I wonder if we want this change at all. It means that we are not able to
-> > detect overflow in some functions. It is pity because the users
-> > might want to increase the buffer size and try again if the print
-> > was incomplete.
+On Tue, Oct 21, 2014 at 01:37:59PM +0200, Michal Simek wrote:
+> From: Harini Katakam <harini.katakam@xilinx.com>
 > 
-> What do you mean we can't detect overflow? That's what
-> seq_buf_has_overflowed() does.
+> Add sst25wf080 to the spi-nor device id table.
 > 
+> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+> Reviewed-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 
-Although I'm looking at the seq_file versions of the bitmap code, which
-does only return the len of what was written and not what would have
-been written, and it does have this issue.
+Applied to l2-mtd.git. Thanks!
 
-I hate to go back to the -1 of the size of buffer as that causes
-inconsistencies within the functions themselves, as proved with the
-seq_file code.
-
-What I might do as just have the bitmap calls not be allowed to fill
-the buffer and keep the logic the same. That is, if the bitmap calls
-fill the rest of the length, assume we overflowed, otherwise we are
-fine.
-
-I'm going to change seq_buf to do that instead of my new update with
-the bitmask code.
-
--- Steve
+Brian
