@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083AbaKERWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:22:39 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39889 "EHLO
+	id S932641AbaKERWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:22:36 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42601 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755489AbaKERNe (ORCPT
+	with ESMTP id S1755490AbaKERNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Nov 2014 12:13:34 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
@@ -13,9 +13,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next v2 04/26] tty: Clarify re-open behavior of master ptys
-Date: Wed,  5 Nov 2014 12:12:47 -0500
-Message-Id: <1415207589-15967-5-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next v2 05/26] tty: Check tty->count instead of TTY_CLOSING in tty_reopen()
+Date: Wed,  5 Nov 2014 12:12:48 -0500
+Message-Id: <1415207589-15967-6-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
 References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
@@ -26,78 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re-opening master ptys is not allowed. Once opened and for the remaining
-lifetime of the master pty, its tty count is 1. If its tty count has
-dropped to 0, then the master pty was closed and TTY_CLOSING was set,
-and destruction may begin imminently.
+Although perhaps not obvious, the TTY_CLOSING bit is set when the
+tty count has been decremented to 0 (which occurs while holding
+tty_lock). The only other case when tty count is 0 during a re-open
+is when a legacy BSD pty master has been opened in parallel but
+after the pty slave, which is unsupported and returns an error.
 
-Besides the normal case of a legacy BSD pty master being re-opened
-(which always returns -EIO), this code is only reachable in 2 degenerate
-cases:
-1. The pty master is the controlling terminal (this is possible through
-   the TIOCSCTTY ioctl). pty masters are not designed to be controlling
-   terminals and it's an oversight that tiocsctty() ever let that happen.
-   The attempted open of /dev/tty will always fail. No known program does
-   this.
-2. The legacy BSD pty slave was opened first. The slave open will fail
-   in pty_open() and tty_release() will commence. But before tty_release()
-   claims the tty_mutex, there is a very small window where a parallel
-   master open might succeed. In a test of racing legacy BSD slave and
-   master parallel opens, where:
-      slave open attempts:  10000   success:4527  failure:5473
-      master open attempts: 11728   success:5789  failure:5939
-   only 8 master open attempts would have succeeded reaching this code and
-   successfully opened the master pty. This case is not possible with
-   SysV ptys.
-
-Always return -EIO if a master pty is re-opened or the slave is opened
-first and the master opened in parallel (for legacy BSD ptys).
-
-Furthermore, now that changing the slave's count is not required,
-the tty_lock is sufficient for preventing concurrent changes to the
-tty being re-opened (or failing re-opening).
+Thus !tty->count contains the complete set of degenerate conditions
+under which a tty open fails.
 
 Reviewed-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_io.c | 15 ++++-----------
- 1 file changed, 4 insertions(+), 11 deletions(-)
+ drivers/tty/tty_io.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index bb4d2f2..6dc3fa0 100644
+index 6dc3fa0..97445c2 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -1444,9 +1444,9 @@ void tty_driver_remove_tty(struct tty_driver *driver, struct tty_struct *tty)
-  * 	@tty	- the tty to open
-  *
-  *	Return 0 on success, -errno on error.
-+ *	Re-opens on master ptys are not allowed and return -EIO.
-  *
-- *	Locking: tty_mutex must be held from the time the tty was found
-- *		 till this open completes.
-+ *	Locking: Caller must hold tty_lock
-  */
- static int tty_reopen(struct tty_struct *tty)
+@@ -1452,7 +1452,7 @@ static int tty_reopen(struct tty_struct *tty)
  {
-@@ -1456,16 +1456,9 @@ static int tty_reopen(struct tty_struct *tty)
+ 	struct tty_driver *driver = tty->driver;
+ 
+-	if (test_bit(TTY_CLOSING, &tty->flags))
++	if (!tty->count)
  		return -EIO;
  
  	if (driver->type == TTY_DRIVER_TYPE_PTY &&
--	    driver->subtype == PTY_TYPE_MASTER) {
--		/*
--		 * special case for PTY masters: only one open permitted,
--		 * and the slave side open count is incremented as well.
--		 */
--		if (tty->count)
--			return -EIO;
-+	    driver->subtype == PTY_TYPE_MASTER)
-+		return -EIO;
- 
--		tty->link->count++;
--	}
- 	tty->count++;
- 
- 	WARN_ON(!tty->ldisc);
 -- 
 2.1.3
 
