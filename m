@@ -1,121 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687AbaKEUjH (ORCPT <rfc822;w@1wt.eu>);
+	id S1751983AbaKEUjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:39:14 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61762 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750702AbaKEUjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Nov 2014 15:39:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34219 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702AbaKEUjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:39:05 -0500
-Date: Wed, 5 Nov 2014 21:39:03 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Wu <alan.c.wu@gmail.com>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Jarrad Whitaker <jarrad.whitaker@gmail.com>
-Subject: Re: [PATCH 1/1] x86: Surface Pro 3 Type Cover 3
-In-Reply-To: <1415067972-3239-1-git-send-email-alan.c.wu@gmail.com>
-Message-ID: <alpine.LNX.2.00.1411052137430.29198@pobox.suse.cz>
-References: <1415067972-3239-1-git-send-email-alan.c.wu@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
+Date: Wed, 05 Nov 2014 21:59:51 +0100
+Message-ID: <2251117.W1kfIOl2SD@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5459646E.9000707@linux.intel.com>
+References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <3196606.Sy6xFg88zg@vostro.rjw.lan> <5459646E.9000707@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Nov 2014, Alan Wu wrote:
-
-> Surface Pro 3 Type Cover that works with Ubuntu (and possibly Arch) from this thread. Both trackpad and keyboard work after compiling my own kernel.
-> http://ubuntuforums.org/showthread.php?t=2231207&page=2&s=44910e0c56047e4f93dfd9fea58121ef
+On Tuesday, November 04, 2014 03:42:38 PM Darren Hart wrote:
 > 
-> Also includes Jarrad Whitaker's message which sources
-> http://winaero.com/blog/how-to-install-linux-on-surface-pro-3/
-> which he says is sourced from a Russian site
+> On 11/4/14 14:54, Rafael J. Wysocki wrote:
 > 
-> Signed-off-by: Alan Wu <alan.c.wu@gmail.com>
-
-Adding Jarrad to CC so that he can test your patch as well.
-
-Jarrad, if you could provide your Tested-by: to Alan's patch, I'd 
-appreciate it (that would mean that we've reached the right super-position 
-of both the patches you guys submitted).
-
-I don't own the device, so I fully depend on what you guys submit and 
-test.
-
-Thanks.
-
-> ---
->  drivers/hid/hid-core.c          | 6 ++++++
->  drivers/hid/hid-ids.h           | 1 +
->  drivers/hid/hid-microsoft.c     | 2 ++
->  drivers/hid/usbhid/hid-quirks.c | 1 +
->  4 files changed, 10 insertions(+)
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: ACPI / property: Drop size_prop from acpi_dev_get_property_reference()
+> > 
+> > The size_prop argument of the recently added function
+> > acpi_dev_get_property_reference() is not used by the only current
+> > caller of that function and is very unlikely to be used at any time
+> > going forward.
+> > 
+> > Namely, for a property whose value is a list of items each containing
+> > a references to a device object possibly accompanied by some integers,
+> > the number of items in the list can always be computed as the number
+> > of elements of type ACPI_TYPE_LOCAL_REFERENCE in the property package.
+> > Thus it should never be necessary to provide an additional "cells"
+> > property with a value equal to the number of items in that list.
 > 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 73bd9e2..e94afcc 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -702,6 +702,11 @@ static void hid_scan_collection(struct hid_parser *parser, unsigned type)
->  	if (((parser->global.usage_page << 16) == HID_UP_SENSOR) &&
->  	    type == HID_COLLECTION_PHYSICAL)
->  		hid->group = HID_GROUP_SENSOR_HUB;
-> +
-> +	if (hid->vendor == USB_VENDOR_ID_MICROSOFT &&
-> +	    hid->product == USB_DEVICE_ID_MS_TYPE_COVER_3 &&
-> +	    hid->group == HID_GROUP_MULTITOUCH)
-> +		hid->group = HID_GROUP_GENERIC;
->  }
->  
->  static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
-> @@ -1861,6 +1866,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_OFFICE_KB) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_3) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY, USB_DEVICE_ID_GENIUS_KB29E) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index e23ab8b..15f32c2 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -648,6 +648,7 @@
->  #define USB_DEVICE_ID_MS_SURFACE_PRO_2   0x0799
->  #define USB_DEVICE_ID_MS_TOUCH_COVER_2   0x07a7
->  #define USB_DEVICE_ID_MS_TYPE_COVER_2    0x07a9
-> +#define USB_DEVICE_ID_MS_TYPE_COVER_3    0x07dc
->  
->  #define USB_VENDOR_ID_MOJO		0x8282
->  #define USB_DEVICE_ID_RETRO_ADAPTER	0x3201
-> diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
-> index 8ba17a9..cacda43 100644
-> --- a/drivers/hid/hid-microsoft.c
-> +++ b/drivers/hid/hid-microsoft.c
-> @@ -274,6 +274,8 @@ static const struct hid_device_id ms_devices[] = {
->  		.driver_data = MS_NOGET },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500),
->  		.driver_data = MS_DUPLICATE_USAGES },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_3),
-> +		.driver_data = MS_HIDINPUT },
->  
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT),
->  		.driver_data = MS_PRESENTER },
-> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-> index 5014bb5..cebfaf2 100644
-> --- a/drivers/hid/usbhid/hid-quirks.c
-> +++ b/drivers/hid/usbhid/hid-quirks.c
-> @@ -77,6 +77,7 @@ static const struct hid_blacklist {
->  	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
->  	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
-> +	{ USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_3, HID_QUIRK_NO_INIT_REPORTS },
->  	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
->  	{ USB_VENDOR_ID_NEXIO, USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750, HID_QUIRK_NO_INIT_REPORTS },
->  	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
-> -- 
-> 2.1.0
+> In this case, do we never expect a property to contain more than one
+> ACPI_TYPE_LOCAL_REFERENCE?
 > 
+> Package () { "foobar",
+>               Package () {
+>                   "PCI0.FOO", "PCI0.BAR", 0, 1, 0,
+>                   "PCI0.FOO", "PCI0.BAR2", 0, 1, 1
+>               }
+> }
+> 
+> This seems like it could be useful for connecting various types of
+> devices together, but I confess not to have a specific exmaple in mind.
+> It does concern me to limit the data format in this way.
 
--- 
-Jiri Kosina
-SUSE Labs
+We don't support this even with size_prop, so it doesn't seem to be relevant here.
+
+Now, if we were to support this, I'd rather not use acpi_dev_get_property_reference()
+for that, but add a new function specifically for it.  Moreover, I would extend the
+format definition then so that we could do
+
+Package () {
+	"foobar", Package () {
+			Package () {"PCI0.FOO", "PCI0.BAR", 0, 1, 0},
+			Package () {"PCI0.FOO", "PCI0.BAR2", 0, 1, 1}
+	}
+}
+
+in which case adding a special "size" property could be avoided.
+
+That said, I have no idea why it might be necessary.  One reference in a property
+value means that we're connecting the current node (the owner of the _DSD
+containing that property) with some other node in the namespace.  Two references
+in there would mean that the current node is to be connected with *two* other
+nodes in the namespace at the same time.  That raises some questions that I'd
+rather not consider in detail here, unless you insist. ;-)
+
+> I suppose should such a case become necessary, we can deal with the
+> issue then - and still avoid having a potential abuse point in the API
+> from the start.
+
+What we have today is sufficient for all of the cases we've considered so far.
+If we find a case where it is not sufficient, we'll need to consider extending
+the data format as well as the API.
+
+Rafael
+
