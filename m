@@ -1,191 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296AbaKEPZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:25:51 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43321 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809AbaKEPZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:25:49 -0500
-Message-ID: <545A4177.90803@kernel.org>
-Date: Wed, 05 Nov 2014 15:25:43 +0000
-From: Jonathan Cameron <jic23@kernel.org>
+	id S1755314AbaKEP0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:26:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53747 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754809AbaKEP0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:26:24 -0500
+Message-ID: <545A419C.3090900@suse.cz>
+Date: Wed, 05 Nov 2014 16:26:20 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>, linux-iio@vger.kernel.org
-CC: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cw00.choi@samsung.com, Greg KH <gregkh@linuxfoundation.org>,
-        naveenkrishna.ch@gmail.com, lars@metafoo.de, CPGS <cpgs@samsung.com>,
-        grundler@chromium.org
-Subject: Re: [PATCH v2 1/3] iio: exyno-adc: use syscon for PMU register access
-References: <1410857931-4980-1-git-send-email-ch.naveen@samsung.com>	<1410857931-4980-2-git-send-email-ch.naveen@samsung.com> <CAFp+6iH77ToXfOG1bXpCi60JpuzhhxOqaz99=9v4_9DppkSCNw@mail.gmail.com>
-In-Reply-To: <CAFp+6iH77ToXfOG1bXpCi60JpuzhhxOqaz99=9v4_9DppkSCNw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+To: "P. Christeas" <xrg@linux.gr>
+CC: linux-mm@kvack.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Early test: hangs in mm/compact.c w. Linus's 12d7aacab56e9ef185c
+References: <12996532.NCRhVKzS9J@xorhgos3.pefnos> <54589465.3080708@suse.cz> <2357788.X5UHX7WJZF@xorhgos3.pefnos>
+In-Reply-To: <2357788.X5UHX7WJZF@xorhgos3.pefnos>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/10/14 12:31, Vivek Gautam wrote:
-> Hi all,
+On 11/04/2014 10:36 AM, P. Christeas wrote:
+> On Tuesday 04 November 2014, Vlastimil Babka wrote:
+>> Please do keep testing (and see below what we need), and don't try
+>> another tree - it's 3.18 we need to fix!
+> Let me apologize/warn you about the poor quality of this report (and debug 
+> data).
+> It is on a system meant for everyday desktop usage, not kernel development. 
+> Thus, it is tuned to be "slightly" debuggable ; mostly for performance.
 > 
+>> I'm not sure what you mean by "race" here and your snippet is
+>> unfortunately just a small portion of the output ...
 > 
-> CC'ing Naveen's gmail id, since the Samsung id is invalid now.
+> It is a shot in the dark. System becomes non-responsive (narrowed to desktop 
+> apps waiting each other, or the X+kwin blocking), I can feel the CPU heating 
+> and /sometimes/ disk I/O.
 > 
+> No BUG, Oops or any kernel message. (is printk level 4 adequate? )
 > 
-> On Tue, Sep 16, 2014 at 2:28 PM, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> This patch updates the IIO based ADC driver to use syscon and regmap
->> APIs to access and use PMU registers instead of remapping the PMU
->> registers in the driver.
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> To: linux-iio@vger.kernel.org
->> ---
->> Changes since v1:
->> Rebased on top of togreg branch of IIO git
+> Then, I try to drop to a console and collect as much data as possible with 
+> SysRq.
 > 
-> If the changes look good, then first two patches of this series can be
-> picked up ?
-> The last dt patch then belongs to samsung tree.
-Given the interlinked nature of the patches and Kukjin Kim's ack I'll
-take the lot. Obviously if someone wants to pull the 3rd patch into
-Samsung's tree as well, then git will deal with it just fine at merge
-time!
+> The snippet I'd sent you is from all-cpus-backtrace (l), trying to see which 
+> traces appear consistently during the lockup. There is also the huge traces of 
+> "task-states" (t), but I reckon they are too noisy.
+> That trace also matches the usage profile, because AFAICG[uess] the issue 
+> appears when allocating during I/O load. 
+> 
+> After turning on full-preemption, I have been able to terminate/kill all tasks 
+> and continue with same kernel but new userspace.
+> 
+>> OK so the process is not dead due to the problem? That probably rules
+>> out some kinds of errors but we still need the full output. Thanks in
+>> advance. 
+>> I'm not aware of this, CCing lkml for wider coverage.
+> 
+> Thank you. As I've told in the first mail, this is an early report of possible 
+> 3.18 regression. I'm trying to narrow down the case and make it reproducible 
+> or get a good trace.
 
-Thanks,
+I see. I've tried to reproduce such issues with 3.18-rc3 but wasn't successful.
+But I noticed a possible issue that could lead to your problem.
+Can you please try the following patch?
 
-Jonathan
-> 
->>
->>  drivers/iio/adc/exynos_adc.c |   30 +++++++++++++++++++++---------
->>  1 file changed, 21 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
->> index 43620fd..fe03177 100644
->> --- a/drivers/iio/adc/exynos_adc.c
->> +++ b/drivers/iio/adc/exynos_adc.c
->> @@ -39,6 +39,8 @@
->>  #include <linux/iio/iio.h>
->>  #include <linux/iio/machine.h>
->>  #include <linux/iio/driver.h>
->> +#include <linux/mfd/syscon.h>
->> +#include <linux/regmap.h>
->>
->>  /* S3C/EXYNOS4412/5250 ADC_V1 registers definitions */
->>  #define ADC_V1_CON(x)          ((x) + 0x00)
->> @@ -90,11 +92,14 @@
->>
->>  #define EXYNOS_ADC_TIMEOUT     (msecs_to_jiffies(100))
->>
->> +#define EXYNOS_ADCV1_PHY_OFFSET        0x0718
->> +#define EXYNOS_ADCV2_PHY_OFFSET        0x0720
->> +
->>  struct exynos_adc {
->>         struct exynos_adc_data  *data;
->>         struct device           *dev;
->>         void __iomem            *regs;
->> -       void __iomem            *enable_reg;
->> +       struct regmap           *pmu_map;
->>         struct clk              *clk;
->>         struct clk              *sclk;
->>         unsigned int            irq;
->> @@ -110,6 +115,7 @@ struct exynos_adc_data {
->>         int num_channels;
->>         bool needs_sclk;
->>         bool needs_adc_phy;
->> +       int phy_offset;
->>         u32 mask;
->>
->>         void (*init_hw)(struct exynos_adc *info);
->> @@ -183,7 +189,7 @@ static void exynos_adc_v1_init_hw(struct exynos_adc *info)
->>         u32 con1;
->>
->>         if (info->data->needs_adc_phy)
->> -               writel(1, info->enable_reg);
->> +               regmap_write(info->pmu_map, info->data->phy_offset, 1);
->>
->>         /* set default prescaler values and Enable prescaler */
->>         con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
->> @@ -198,7 +204,7 @@ static void exynos_adc_v1_exit_hw(struct exynos_adc *info)
->>         u32 con;
->>
->>         if (info->data->needs_adc_phy)
->> -               writel(0, info->enable_reg);
->> +               regmap_write(info->pmu_map, info->data->phy_offset, 0);
->>
->>         con = readl(ADC_V1_CON(info->regs));
->>         con |= ADC_V1_CON_STANDBY;
->> @@ -225,6 +231,7 @@ static const struct exynos_adc_data exynos_adc_v1_data = {
->>         .num_channels   = MAX_ADC_V1_CHANNELS,
->>         .mask           = ADC_DATX_MASK,        /* 12 bit ADC resolution */
->>         .needs_adc_phy  = true,
->> +       .phy_offset     = EXYNOS_ADCV1_PHY_OFFSET,
->>
->>         .init_hw        = exynos_adc_v1_init_hw,
->>         .exit_hw        = exynos_adc_v1_exit_hw,
->> @@ -314,7 +321,7 @@ static void exynos_adc_v2_init_hw(struct exynos_adc *info)
->>         u32 con1, con2;
->>
->>         if (info->data->needs_adc_phy)
->> -               writel(1, info->enable_reg);
->> +               regmap_write(info->pmu_map, info->data->phy_offset, 1);
->>
->>         con1 = ADC_V2_CON1_SOFT_RESET;
->>         writel(con1, ADC_V2_CON1(info->regs));
->> @@ -332,7 +339,7 @@ static void exynos_adc_v2_exit_hw(struct exynos_adc *info)
->>         u32 con;
->>
->>         if (info->data->needs_adc_phy)
->> -               writel(0, info->enable_reg);
->> +               regmap_write(info->pmu_map, info->data->phy_offset, 0);
->>
->>         con = readl(ADC_V2_CON1(info->regs));
->>         con &= ~ADC_CON_EN_START;
->> @@ -362,6 +369,7 @@ static const struct exynos_adc_data exynos_adc_v2_data = {
->>         .num_channels   = MAX_ADC_V2_CHANNELS,
->>         .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
->>         .needs_adc_phy  = true,
->> +       .phy_offset     = EXYNOS_ADCV2_PHY_OFFSET,
->>
->>         .init_hw        = exynos_adc_v2_init_hw,
->>         .exit_hw        = exynos_adc_v2_exit_hw,
->> @@ -374,6 +382,7 @@ static const struct exynos_adc_data exynos3250_adc_data = {
->>         .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
->>         .needs_sclk     = true,
->>         .needs_adc_phy  = true,
->> +       .phy_offset     = EXYNOS_ADCV1_PHY_OFFSET,
->>
->>         .init_hw        = exynos_adc_v2_init_hw,
->>         .exit_hw        = exynos_adc_v2_exit_hw,
->> @@ -558,10 +567,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
->>
->>
->>         if (info->data->needs_adc_phy) {
->> -               mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
->> -               info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
->> -               if (IS_ERR(info->enable_reg))
->> -                       return PTR_ERR(info->enable_reg);
->> +               info->pmu_map = syscon_regmap_lookup_by_phandle(
->> +                                       pdev->dev.of_node,
->> +                                       "samsung,syscon-phandle");
->> +               if (IS_ERR(info->pmu_map)) {
->> +                       dev_err(&pdev->dev, "syscon regmap lookup failed.\n");
->> +                       return PTR_ERR(info->pmu_map);
->> +               }
->>         }
->>
->>         irq = platform_get_irq(pdev, 0);
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> 
+--------8<-------
+>From fe9c963cc665cdab50abb41f3babb5b19d08fab1 Mon Sep 17 00:00:00 2001
+From: Vlastimil Babka <vbabka@suse.cz>
+Date: Wed, 5 Nov 2014 14:19:18 +0100
+Subject: [PATCH] mm, compaction: do not reset deferred compaction
+ optimistically
+
+In try_to_compact_pages() we reset deferred compaction for a zone where we
+think compaction has succeeded. Although this action does not reset the
+counters affecting deferred compaction period, just bumping the deferred order
+means that another compaction attempt will be able to pass the check in
+compaction_deferred() and proceed with compaction.
+
+This is a problem when try_to_compact_pages() thinks compaction was successful
+just because the watermark check is missing proper classzone_idx parameter,
+but then the allocation attempt itself will fail due to its watermark check
+having the proper value. Although __alloc_pages_direct_compact() will re-defer
+compaction in such case, this happens only in the case of sync compaction.
+Async compaction will leave the zone open for another compaction attempt which
+may reset the deferred order again. This could possibly explain what
+P. Christeas reported - a system where many processes include the following
+backtrace:
+
+        [<ffffffff813b1025>] preempt_schedule_irq+0x3c/0x59
+        [<ffffffff813b4810>] retint_kernel+0x20/0x30
+        [<ffffffff810d7481>] ? __zone_watermark_ok+0x77/0x85
+        [<ffffffff810d8256>] zone_watermark_ok+0x1a/0x1c
+        [<ffffffff810eee56>] compact_zone+0x215/0x4b2
+        [<ffffffff810ef13f>] compact_zone_order+0x4c/0x5f
+        [<ffffffff810ef2fe>] try_to_compact_pages+0xc4/0x1e8
+        [<ffffffff813ad7f8>] __alloc_pages_direct_compact+0x61/0x1bf
+        [<ffffffff810da299>] __alloc_pages_nodemask+0x409/0x799
+        [<ffffffff8110d3fd>] new_slab+0x5f/0x21c
+
+The issue has been made visible by commit 53853e2d2bfb ("mm, compaction: defer
+each zone individually instead of preferred zone"), since before the commit,
+deferred compaction for fallback zones (where classzone_idx matters) was not
+considered separately.
+
+Although work is underway to fix the underlying zone watermark check mismatch,
+this patch fixes the immediate problem by removing the optimistic defer reset
+completely. Its usefulness is questionable anyway, since if the allocation
+really succeeds, a full defer reset (including the period counters) follows.
+
+Fixes: 53853e2d2bfb748a8b5aa2fd1de15699266865e0
+Reported-by: P. Christeas <xrg@linux.gr>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+---
+ mm/compaction.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index ec74cf0..f0335f9 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -1325,13 +1325,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 				      alloc_flags)) {
+ 			*candidate_zone = zone;
+ 			/*
+-			 * We think the allocation will succeed in this zone,
+-			 * but it is not certain, hence the false. The caller
+-			 * will repeat this with true if allocation indeed
+-			 * succeeds in this zone.
+-			 */
+-			compaction_defer_reset(zone, order, false);
+-			/*
+ 			 * It is possible that async compaction aborted due to
+ 			 * need_resched() and the watermarks were ok thanks to
+ 			 * somebody else freeing memory. The allocation can
+-- 
+2.1.2
+
