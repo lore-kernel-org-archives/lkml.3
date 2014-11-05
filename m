@@ -1,72 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaKEOs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:48:59 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:39785 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898AbaKEOs6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:48:58 -0500
-Message-ID: <545A379D.30608@plexistor.com>
-Date: Wed, 05 Nov 2014 16:43:41 +0200
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Boaz Harrosh <boaz@plexistor.com>
-CC: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] brd: Request from fdisk 4k alignment
-References: <545A2D69.8090003@plexistor.com> <545A2F52.3040303@plexistor.com> <yq1k339enl5.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1k339enl5.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1755081AbaKEOuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:50:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:53868 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755009AbaKEOuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:50:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
+   d="scan'208";a="602777174"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 02/19] thp: cluster split_huge_page* code together
+Date: Wed,  5 Nov 2014 16:49:37 +0200
+Message-Id: <1415198994-15252-3-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 04:20 PM, Martin K. Petersen wrote:
->>>>>> "Boaz" == Boaz Harrosh <boaz@plexistor.com> writes:
-> 
-> Hey Boaz,
-> 
-> Boaz> Note that blk_queue_physical_block_size() also trashes io_min, but
-> Boaz> we can leave this one to be 512. io_min as opposed to
-> Boaz> physical_block_size will actually change Kernel behavior
-> 
-> Care to elaborate?
-> 
-> Boaz> before this patch running fdisk on a default size brd of 4M
-> Boaz> the first sector offered is 34 (BAD), but after this patch it
-> Boaz> will be 40, ie 8 sectors aligned. Also when entering some random
-> Boaz> partition sizes the next partition-start sector is offered 8 sectors
-> Boaz> aligned after this patch. (Please note that with fdisk the user
-> Boaz> can still enter bad values, only the offered default values will
-> Boaz> be correct)
+Rearrange code in mm/huge_memory.c to make future changes somewhat
+easier.
 
-I did elaborate, Please try with these numbers above and see for
-yourself. (Summery brd-size=4M before this patch will offer 34 as
-first-sector, after 40)
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/huge_memory.c | 223 +++++++++++++++++++++++++++----------------------------
+ 1 file changed, 111 insertions(+), 112 deletions(-)
 
-> Also, fdisk and parted should be aligning on 1MB by default regardless
-> of block size. So I'm also not sure why you need to trick fdisk to align
-> by setting the pbs.
-> 
-
-fdisk will not align partition-start on 1M, only the very first-sector,
-libgparted and cfdisk are as you say, but with fdisk if you put any odd
-numbered partition-size, the next start-sector will just be the sum, but
-with this patch it will offer a small hole and will align the
-partition-start on 4K.
-(And even with this patch user can enter bad values)
-
-Please believe me that I did not try to invent work for myself. I wanted
-to fix the partition bugs, with the use of direct_access and to my dismay
-I found that it is very easy to have broken partition alignments. With this
-patch it is still possible but mach harder to do so.
-
-Thanks
-Boaz
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 8efe27b86370..52973809777f 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1600,6 +1600,117 @@ unlock:
+ 	return NULL;
+ }
+ 
++static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
++		unsigned long haddr, pmd_t *pmd)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	pgtable_t pgtable;
++	pmd_t _pmd;
++	int i;
++
++	pmdp_clear_flush(vma, haddr, pmd);
++	/* leave pmd empty until pte is filled */
++
++	pgtable = pgtable_trans_huge_withdraw(mm, pmd);
++	pmd_populate(mm, &_pmd, pgtable);
++
++	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
++		pte_t *pte, entry;
++		entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
++		entry = pte_mkspecial(entry);
++		pte = pte_offset_map(&_pmd, haddr);
++		VM_BUG_ON(!pte_none(*pte));
++		set_pte_at(mm, haddr, pte, entry);
++		pte_unmap(pte);
++	}
++	smp_wmb(); /* make pte visible before pmd */
++	pmd_populate(mm, pmd, pgtable);
++	put_huge_zero_page();
++}
++
++void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
++		pmd_t *pmd)
++{
++	spinlock_t *ptl;
++	struct page *page;
++	struct mm_struct *mm = vma->vm_mm;
++	unsigned long haddr = address & HPAGE_PMD_MASK;
++	unsigned long mmun_start;	/* For mmu_notifiers */
++	unsigned long mmun_end;		/* For mmu_notifiers */
++
++	BUG_ON(vma->vm_start > haddr || vma->vm_end < haddr + HPAGE_PMD_SIZE);
++
++	mmun_start = haddr;
++	mmun_end   = haddr + HPAGE_PMD_SIZE;
++again:
++	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
++	ptl = pmd_lock(mm, pmd);
++	if (unlikely(!pmd_trans_huge(*pmd))) {
++		spin_unlock(ptl);
++		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
++		return;
++	}
++	if (is_huge_zero_pmd(*pmd)) {
++		__split_huge_zero_page_pmd(vma, haddr, pmd);
++		spin_unlock(ptl);
++		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
++		return;
++	}
++	page = pmd_page(*pmd);
++	VM_BUG_ON_PAGE(!page_count(page), page);
++	get_page(page);
++	spin_unlock(ptl);
++	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
++
++	split_huge_page(page);
++
++	put_page(page);
++
++	/*
++	 * We don't always have down_write of mmap_sem here: a racing
++	 * do_huge_pmd_wp_page() might have copied-on-write to another
++	 * huge page before our split_huge_page() got the anon_vma lock.
++	 */
++	if (unlikely(pmd_trans_huge(*pmd)))
++		goto again;
++}
++
++void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
++		pmd_t *pmd)
++{
++	struct vm_area_struct *vma;
++
++	vma = find_vma(mm, address);
++	BUG_ON(vma == NULL);
++	split_huge_page_pmd(vma, address, pmd);
++}
++
++static void split_huge_page_address(struct mm_struct *mm,
++				    unsigned long address)
++{
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++
++	VM_BUG_ON(!(address & ~HPAGE_PMD_MASK));
++
++	pgd = pgd_offset(mm, address);
++	if (!pgd_present(*pgd))
++		return;
++
++	pud = pud_offset(pgd, address);
++	if (!pud_present(*pud))
++		return;
++
++	pmd = pmd_offset(pud, address);
++	if (!pmd_present(*pmd))
++		return;
++	/*
++	 * Caller holds the mmap_sem write mode, so a huge pmd cannot
++	 * materialize from under us.
++	 */
++	split_huge_page_pmd_mm(mm, address, pmd);
++}
+ static int __split_huge_page_splitting(struct page *page,
+ 				       struct vm_area_struct *vma,
+ 				       unsigned long address)
+@@ -2808,118 +2919,6 @@ static int khugepaged(void *none)
+ 	return 0;
+ }
+ 
+-static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
+-		unsigned long haddr, pmd_t *pmd)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	pgtable_t pgtable;
+-	pmd_t _pmd;
+-	int i;
+-
+-	pmdp_clear_flush(vma, haddr, pmd);
+-	/* leave pmd empty until pte is filled */
+-
+-	pgtable = pgtable_trans_huge_withdraw(mm, pmd);
+-	pmd_populate(mm, &_pmd, pgtable);
+-
+-	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+-		pte_t *pte, entry;
+-		entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
+-		entry = pte_mkspecial(entry);
+-		pte = pte_offset_map(&_pmd, haddr);
+-		VM_BUG_ON(!pte_none(*pte));
+-		set_pte_at(mm, haddr, pte, entry);
+-		pte_unmap(pte);
+-	}
+-	smp_wmb(); /* make pte visible before pmd */
+-	pmd_populate(mm, pmd, pgtable);
+-	put_huge_zero_page();
+-}
+-
+-void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
+-		pmd_t *pmd)
+-{
+-	spinlock_t *ptl;
+-	struct page *page;
+-	struct mm_struct *mm = vma->vm_mm;
+-	unsigned long haddr = address & HPAGE_PMD_MASK;
+-	unsigned long mmun_start;	/* For mmu_notifiers */
+-	unsigned long mmun_end;		/* For mmu_notifiers */
+-
+-	BUG_ON(vma->vm_start > haddr || vma->vm_end < haddr + HPAGE_PMD_SIZE);
+-
+-	mmun_start = haddr;
+-	mmun_end   = haddr + HPAGE_PMD_SIZE;
+-again:
+-	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+-	ptl = pmd_lock(mm, pmd);
+-	if (unlikely(!pmd_trans_huge(*pmd))) {
+-		spin_unlock(ptl);
+-		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+-		return;
+-	}
+-	if (is_huge_zero_pmd(*pmd)) {
+-		__split_huge_zero_page_pmd(vma, haddr, pmd);
+-		spin_unlock(ptl);
+-		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+-		return;
+-	}
+-	page = pmd_page(*pmd);
+-	VM_BUG_ON_PAGE(!page_count(page), page);
+-	get_page(page);
+-	spin_unlock(ptl);
+-	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+-
+-	split_huge_page(page);
+-
+-	put_page(page);
+-
+-	/*
+-	 * We don't always have down_write of mmap_sem here: a racing
+-	 * do_huge_pmd_wp_page() might have copied-on-write to another
+-	 * huge page before our split_huge_page() got the anon_vma lock.
+-	 */
+-	if (unlikely(pmd_trans_huge(*pmd)))
+-		goto again;
+-}
+-
+-void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
+-		pmd_t *pmd)
+-{
+-	struct vm_area_struct *vma;
+-
+-	vma = find_vma(mm, address);
+-	BUG_ON(vma == NULL);
+-	split_huge_page_pmd(vma, address, pmd);
+-}
+-
+-static void split_huge_page_address(struct mm_struct *mm,
+-				    unsigned long address)
+-{
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-
+-	VM_BUG_ON(!(address & ~HPAGE_PMD_MASK));
+-
+-	pgd = pgd_offset(mm, address);
+-	if (!pgd_present(*pgd))
+-		return;
+-
+-	pud = pud_offset(pgd, address);
+-	if (!pud_present(*pud))
+-		return;
+-
+-	pmd = pmd_offset(pud, address);
+-	if (!pmd_present(*pmd))
+-		return;
+-	/*
+-	 * Caller holds the mmap_sem write mode, so a huge pmd cannot
+-	 * materialize from under us.
+-	 */
+-	split_huge_page_pmd_mm(mm, address, pmd);
+-}
+-
+ void __vma_adjust_trans_huge(struct vm_area_struct *vma,
+ 			     unsigned long start,
+ 			     unsigned long end,
+-- 
+2.1.1
 
