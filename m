@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaKENnv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:43:51 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40503 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888AbaKENnt (ORCPT
+	id S932137AbaKENpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:45:00 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:36037 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890AbaKENoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:43:49 -0500
-Date: Wed, 5 Nov 2014 15:43:44 +0200
-From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Jarod Wilson <jarod@wilsonet.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Gulsah Kose <gulsah.1004@gmail.com>,
-        Matina Maria Trompouki <mtrompou@gmail.com>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: media: lirc: modify print calls
-Message-ID: <20141105134344.GB2493@localhost.localdomain>
-References: <20141104214307.GA6709@localhost.localdomain>
- <20141105081711.4c6abcc3@recife.lan>
+	Wed, 5 Nov 2014 08:44:55 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm 2/3] memcg: turn memcg_kmem_skip_account into a bit field
+Date: Wed, 5 Nov 2014 16:44:43 +0300
+Message-ID: <bb4c78a617a67231e539400d7deb2e192c39feb8.1415194280.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <9ac4c9e767d437f744bb61feb7e042c93c67f727.1415194280.git.vdavydov@parallels.com>
+References: <9ac4c9e767d437f744bb61feb7e042c93c67f727.1415194280.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105081711.4c6abcc3@recife.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 08:17:11AM -0200, Mauro Carvalho Chehab wrote:
-> Em Tue, 4 Nov 2014 23:43:07 +0200
-> Aya Mahfouz <mahfouz.saif.elyazal@gmail.com> escreveu:
-> 
-> > This patches replaces one pr_debug call by dev_dbg and
-> > changes the device used by one of the dev_err calls.
-> 
-> Also doesn't apply. Probably made to apply on Greg's tree.
-> 
-> Regards,
-> Mauro
-> 
+It isn't supposed to stack, so turn it into a bit-field to save 4 bytes
+on the task_struct.
 
-Yes, I submit patches to Greg's tree. Should I clone your
-tree?
+Also, remove the memcg_stop/resume_kmem_account helpers - it is clearer
+to set/clear the flag inline. Regarding the overwhelming comment to the
+helpers, which is removed by this patch too, we already have a compact
+yet accurate explanation in memcg_schedule_cache_create, no need in yet
+another one.
 
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ include/linux/sched.h |    7 +++++--
+ mm/memcontrol.c       |   35 ++---------------------------------
+ 2 files changed, 7 insertions(+), 35 deletions(-)
 
-Kind Regards,
-Aya Saif El-yazal Mahfouz
-> > 
-> > Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-> > ---
-> >  drivers/staging/media/lirc/lirc_zilog.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-> > index 52f8e91..dca806a 100644
-> > --- a/drivers/staging/media/lirc/lirc_zilog.c
-> > +++ b/drivers/staging/media/lirc/lirc_zilog.c
-> > @@ -1447,7 +1447,7 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> >  	int ret;
-> >  	bool tx_probe = false;
-> >  
-> > -	pr_debug("%s: %s on i2c-%d (%s), client addr=0x%02x\n",
-> > +	dev_dbg(&client->dev, "%s: %s on i2c-%d (%s), client addr=0x%02x\n",
-> >  		__func__, id->name, adap->nr, adap->name, client->addr);
-> >  
-> >  	/*
-> > @@ -1631,7 +1631,7 @@ out_put_xx:
-> >  out_put_ir:
-> >  	put_ir_device(ir, true);
-> >  out_no_ir:
-> > -	dev_err(ir->l.dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
-> > +	dev_err(&client->dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
-> >  		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
-> >  		   ret);
-> >  	mutex_unlock(&ir_devices_lock);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 40497a2ed2d4..7b08b0240736 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1364,6 +1364,10 @@ struct task_struct {
+ 	unsigned sched_reset_on_fork:1;
+ 	unsigned sched_contributes_to_load:1;
+ 
++#ifdef CONFIG_MEMCG_KMEM
++	unsigned memcg_kmem_skip_account:1;
++#endif
++
+ 	unsigned long atomic_flags; /* Flags needing atomic access. */
+ 
+ 	pid_t pid;
+@@ -1684,8 +1688,7 @@ struct task_struct {
+ 	/* bitmask and counter of trace recursion */
+ 	unsigned long trace_recursion;
+ #endif /* CONFIG_TRACING */
+-#ifdef CONFIG_MEMCG /* memcg uses this to do batch job */
+-	unsigned int memcg_kmem_skip_account;
++#ifdef CONFIG_MEMCG
+ 	struct memcg_oom_info {
+ 		struct mem_cgroup *memcg;
+ 		gfp_t gfp_mask;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b3fe830fdb29..52d1e933bb9f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2575,37 +2575,6 @@ void memcg_update_array_size(int num)
+ 	memcg_limited_groups_array_size = num;
+ }
+ 
+-/*
+- * During the creation a new cache, we need to disable our accounting mechanism
+- * altogether. This is true even if we are not creating, but rather just
+- * enqueing new caches to be created.
+- *
+- * This is because that process will trigger allocations; some visible, like
+- * explicit kmallocs to auxiliary data structures, name strings and internal
+- * cache structures; some well concealed, like INIT_WORK() that can allocate
+- * objects during debug.
+- *
+- * If any allocation happens during memcg_kmem_get_cache, we will recurse back
+- * to it. This may not be a bounded recursion: since the first cache creation
+- * failed to complete (waiting on the allocation), we'll just try to create the
+- * cache again, failing at the same point.
+- *
+- * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
+- * memcg_kmem_skip_account. So we enclose anything that might allocate memory
+- * inside the following two functions.
+- */
+-static inline void memcg_stop_kmem_account(void)
+-{
+-	VM_BUG_ON(!current->mm);
+-	current->memcg_kmem_skip_account++;
+-}
+-
+-static inline void memcg_resume_kmem_account(void)
+-{
+-	VM_BUG_ON(!current->mm);
+-	current->memcg_kmem_skip_account--;
+-}
+-
+ struct memcg_cache_create_work {
+ 	struct mem_cgroup *memcg;
+ 	struct kmem_cache *cachep;
+@@ -2660,9 +2629,9 @@ static void memcg_schedule_cache_create(struct mem_cgroup *memcg,
+ 	 * this point we can't allow ourselves back into memcg_kmem_get_cache,
+ 	 * the safest choice is to do it like this, wrapping the whole function.
+ 	 */
+-	memcg_stop_kmem_account();
++	current->memcg_kmem_skip_account = 1;
+ 	__memcg_schedule_cache_create(memcg, cachep);
+-	memcg_resume_kmem_account();
++	current->memcg_kmem_skip_account = 0;
+ }
+ 
+ /*
+-- 
+1.7.10.4
+
