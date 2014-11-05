@@ -1,96 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaKETNC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 14:13:02 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43922 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750891AbaKETM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 14:12:58 -0500
-Message-ID: <545A76B7.1060801@hurleysoftware.com>
-Date: Wed, 05 Nov 2014 14:12:55 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Add --strict test for function pointer calling
- style
-References: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>	 <1415208392-16189-3-git-send-email-peter@hurleysoftware.com> <1415212917.6634.17.camel@perches.com>
-In-Reply-To: <1415212917.6634.17.camel@perches.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	id S1751431AbaKETZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 14:25:22 -0500
+Received: from mout.gmx.net ([212.227.17.20]:52070 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751046AbaKETZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 14:25:20 -0500
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: Jan Kara <jack@suse.cz>, Eric Paris <eparis@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Christoph Hellwig <hch@lst.de>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH 1/1] fanotify: ignore marks not respected
+Date: Wed,  5 Nov 2014 20:24:47 +0100
+Message-Id: <1415215487-821-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 2.1.1
+X-Provags-ID: V03:K0:mhPVkvYQ7pea21o5hMAG9PBBqHN99etkteoqp3gfVubwvcim3Hv
+ g0QTwVXUEm4fC2MXqxqWJN5SicKaba/nf+zHpafztPBpZEBLqQKrXFvClMughwtt5ob9DIb
+ snmbdulpC8NAWlLD+tbMHTUjwPXDqNMfBwKxHgB3rg8xXvdJNPSQnZcoj5b4kEKU6uwlKyw
+ glM5LzQhzwl6y+sKnIb4w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 01:41 PM, Joe Perches wrote:
-> Peter Hurley wrote:
-> 
-> The use of older function ptr calling style, (*fn)(), makes static
-> analysis more error-prone; replace with modern fn() style.
-> 
-> So make checkpatch emit a --strict test for that condition.
-> 
-> Update the unnecessary parentheses test for dereferencing
-> objects at the same time and create a $fix mechanism too.
+The fanotify API allows to mark mounts, directories, and files for
+notification. Furthermore it allows to create marks with an ignore mask to
+indicate which events shall be ignored.
 
-Cool.
+Function fsnotify_add_inode_mark() stores marks for inodes as list in attribute
+i_list of the inode. The list is sorted by priority and group.
 
-perl's not my thing; how does it know not to trip up on
+Function fsnotify_add_vfsmount_mark() stores marks for mounts as list in
+attribute m_list of the vfsmount. The list is sorted by priority and group.
 
-	initcall_t *call;
+If an event occurs function fsnotify() is called. This function loops over all
+mount and inode marks and sends the event to the respective groups using
+function send_to_group().
 
-	(*call)();
+For an event and a group both an inode mark and a vfsmount mark may coexist.
+E.g. a user program may want to monitor one mount for FAN_MODIFY events but
+wants to ignore FAN_MODIFY events for some file.
 
-[which I verified it properly does not flag in drivers/tty/tty_io.c]
+If for an event and a group both an inode mark and a vfsmount mark exist, it is
+important to call send_to_group() for both marks as once. Otherwise ignore mask
+bits set on the one mark cannot be considered for the other mark.
 
-Regards,
-Peter Hurley
+Function fsnotify() assumes that m_list and i_list are sorted by group and
+ignores the sorting by priority. Hence some ignore marks may not be correctly
+considered.
 
+Bug report 87721 provides an example code demonstrating the error.
+https://bugzilla.kernel.org/show_bug.cgi?id=87721
 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  scripts/checkpatch.pl | 24 +++++++++++++++++++++---
->  1 file changed, 21 insertions(+), 3 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 24d6702..552e5dd 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3838,9 +3838,27 @@ sub process {
->  # ie: &(foo->bar) should be &foo->bar and *(foo->bar) should be *foo->bar
->  
->  		while ($line =~ /(?:[^&]&\s*|\*)\(\s*($Ident\s*(?:$Member\s*)+)\s*\)/g) {
-> -			CHK("UNNECESSARY_PARENTHESES",
-> -			    "Unnecessary parentheses around $1\n" . $herecurr);
-> -		    }
-> +			my $var = $1;
-> +			if (CHK("UNNECESSARY_PARENTHESES",
-> +				"Unnecessary parentheses around $var\n" . $herecurr) &&
-> +			    $fix) {
-> +				$fixed[$fixlinenr] =~ s/\(\s*\Q$var\E\s*\)/$var/;
-> +			}
-> +		}
-> +
-> +# check for unnecessary parentheses around function pointer uses
-> +# ie: (foo->bar)(); should be foo->bar();
-> +# but not "if (foo->bar) (" to avoid some false positives
-> +		if ($line =~ /(\bif\s*|)(\(\s*$Ident\s*(?:$Member\s*)+\))[ \t]*\(/ && $1 !~ /^if/) {
-> +			my $var = $2;
-> +			if (CHK("UNNECESSARY_PARENTHESES",
-> +				"Unnecessary parentheses around function pointer $var\n" . $herecurr) &&
-> +			    $fix) {
-> +				my $var2 = deparenthesize($var);
-> +				$var2 =~ s/\s//g;
-> +				$fixed[$fixlinenr] =~ s/\Q$var\E/$var2/;
-> +			}
-> +		}
->  
->  #goto labels aren't indented, allow a single space however
->  		if ($line=~/^.\s+[A-Za-z\d_]+:(?![0-9]+)/ and
-> 
-> 
+The appended patch changes fsnotify() to assume sorting by priority and group.
+Furthermore some comments are added to render the function more legible.
+
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ fs/notify/fsnotify.c | 56 +++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 42 insertions(+), 14 deletions(-)
+
+diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
+index 9d3e9c5..afc1215 100644
+--- a/fs/notify/fsnotify.c
++++ b/fs/notify/fsnotify.c
+@@ -187,6 +187,13 @@ static int send_to_group(struct inode *to_tell,
+  * in linux/fsnotify.h.  Those functions then in turn call here.  Here will call
+  * out to all of the registered fsnotify_group.  Those groups can then use the
+  * notification event in whatever means they feel necessary.
++ *
++ * To correctly interprete the ignore mask it is necessary to pass the inode
++ * mark and the vfsmount mark of the same notification group in a single call
++ * to send_to_group().
++ *
++ * The marks of each inode and each vfsmount are sorted by group-priority and
++ * group (see fsnotify_add_inode_mark() and fsnotify_add_vfsmount_mark()).
+  */
+ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+ 	     const unsigned char *file_name, u32 cookie)
+@@ -232,6 +239,9 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+ 	while (inode_node || vfsmount_node) {
+ 		inode_group = vfsmount_group = NULL;
+ 
++		/*
++		 * Read current marks and groups.
++		 */
+ 		if (inode_node) {
+ 			inode_mark = hlist_entry(srcu_dereference(inode_node, &fsnotify_mark_srcu),
+ 						 struct fsnotify_mark, i.i_list);
+@@ -244,25 +254,43 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+ 			vfsmount_group = vfsmount_mark->group;
+ 		}
+ 
+-		if (inode_group > vfsmount_group) {
+-			/* handle inode */
+-			ret = send_to_group(to_tell, inode_mark, NULL, mask,
+-					    data, data_is, cookie, file_name);
+-			/* we didn't use the vfsmount_mark */
+-			vfsmount_group = NULL;
+-		} else if (vfsmount_group > inode_group) {
+-			ret = send_to_group(to_tell, NULL, vfsmount_mark, mask,
+-					    data, data_is, cookie, file_name);
+-			inode_group = NULL;
+-		} else {
+-			ret = send_to_group(to_tell, inode_mark, vfsmount_mark,
+-					    mask, data, data_is, cookie,
+-					    file_name);
++		/*
++		 * Determine if the inode group or the vfsmount group is
++		 * first in the sorting order.
++		 * Only the mark for the group that is first will be passed to
++		 * send_to_group().
++		 */
++		if (inode_group == NULL)
++			inode_mark = NULL;
++		else if (vfsmount_group == NULL)
++			vfsmount_mark = NULL;
++		else {
++			if (inode_group->priority
++			    > vfsmount_group->priority) {
++				vfsmount_mark = NULL;
++				vfsmount_group = NULL;
++			} else if (inode_group->priority
++				   < vfsmount_group->priority) {
++				inode_mark = NULL;
++				inode_group = NULL;
++			} else if (inode_group > vfsmount_group) {
++				vfsmount_mark = NULL;
++				vfsmount_group = NULL;
++			} else if (inode_group < vfsmount_group) {
++				inode_mark = NULL;
++				inode_group = NULL;
++			}
+ 		}
++		ret = send_to_group(to_tell, inode_mark, vfsmount_mark,
++				    mask, data, data_is, cookie,
++				    file_name);
+ 
+ 		if (ret && (mask & ALL_FSNOTIFY_PERM_EVENTS))
+ 			goto out;
+ 
++		/*
++		 * Point to the next marks.
++		 */
+ 		if (inode_group)
+ 			inode_node = srcu_dereference(inode_node->next,
+ 						      &fsnotify_mark_srcu);
+-- 
+2.1.1
 
