@@ -1,134 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751077AbaKEXbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 18:31:41 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:40166 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaKEXbi (ORCPT
+	id S1751232AbaKEXbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 18:31:46 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:43418 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaKEXbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 18:31:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <544AD7CF.5020006@gmail.com>
-References: <469h2cuyy0a5y5fn77uh3y1b.1413332405802@email.android.com>
- <20141015210355.GB6579@laptop.dumpdata.com> <544AD7CF.5020006@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Nov 2014 16:31:17 -0700
-Message-ID: <CAErSpo78mX9Q8HDsOFMhzNTjtGqD1aiTTrWH-zwGUEo24EF9CA@mail.gmail.com>
-Subject: Re: [PATCH next] xen: pcifront: Process failure for pcifront_(re)scan_root()
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+	Wed, 5 Nov 2014 18:31:43 -0500
+Date: Thu, 6 Nov 2014 00:31:40 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Michal Marek <mmarek@suse.cz>, Stefan Assmann <sassmann@kpanic.de>
+Subject: Re: [PATCH v2 03/13] backports: allow for different backport prefix
+Message-ID: <20141105233140.GE12538@two.firstfloor.org>
+References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com>
+ <1415157517-15442-4-git-send-email-mcgrof@do-not-panic.com>
+ <1415173596.2589.3.camel@sipsolutions.net>
+ <20141105091610.GM12953@wotan.suse.de>
+ <1415179364.2589.13.camel@sipsolutions.net>
+ <20141105194215.GN12953@wotan.suse.de>
+ <1415222258.7485.10.camel@sipsolutions.net>
+ <20141105222159.GS12953@wotan.suse.de>
+ <20141105230907.GD12538@two.firstfloor.org>
+ <CAB=NE6Wu7gFh+_1ebiaWCq2cUt_SnCMB-+1Xv9ZuZtBafdg0Vg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6Wu7gFh+_1ebiaWCq2cUt_SnCMB-+1Xv9ZuZtBafdg0Vg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-pci again]
+> The only thing that was not clear to me from reviewing the module
+> namespace stuff a while ago was the original intent, but I confess I
+> actually only looked at the technical details to see if it was
+> applicable to the backports case, do you recall the original
+> motivation ?
 
-On Fri, Oct 24, 2014 at 4:50 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
-> On 10/16/14 5:03, Konrad Rzeszutek Wilk wrote:
->> On Wed, Oct 15, 2014 at 08:20:06AM +0800, Chen Gang wrote:
->>>
->>> At least for me, what you said sound OK.
->>
->> Let me review it - next week.
->
-> Please help check this patch, when you have time.
+The original intent was to provide a cleaner export symbol API.
 
-linux-pci got dropped from the cc list, which makes it harder for me
-to track this in patchwork.
+There are roughly two classes of exported symbols:
 
-But I'm waiting for Konrad to either ack this or just take it
-directly.  Here's my ack if you want it:
+- Generally usable, well designed, interfaces intended to be used by multiple
+modules (e.g. functions for drivers to register themselves or
+library functions)
 
-Acked-by: Bjorn Helgas <bhelgaas@google.com>
+- Special purpose exports that are only really for a single
+module, but are not intended as a general interface. These interfaces
+are usually not really clean and reusable.
 
->>> Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>
->>>> On Mon, Oct 06, 2014 at 11:04:45AM +0800, Chen Gang wrote:
->>>>> When pcifront_rescan_root() or pcifront_scan_root() fails, need return
->>>>> error code, neither set XenbusStateConnected state, just like the other
->>>>> areas have done.
->>>>>
->>>>> For pcifront_rescan_root(), it will return error code ("num_roots = 0;",
->>>>> skip xenbus_switch_state return value).
->>>>>
->>>>> For pcifront_scan_root(), it will return 0 ("num_roots = 0;", set 0 by
->>>>> the return value of xenbus_switch_state, which always return 0, at
->>>>> present).
->>>>
->>>> The changelog is somewhat confusing because it talks about the patch hunks
->>>> in reverse order (the pcifront_scan_root() change is first in the patch,
->>>> but the changelog mentions pcifront_rescan_root() first).  I *think* this
->>>> means:
->>>>
->>>>  When pcifront_try_connect() finds no PCI roots, it falls back to calling
->>>>  pcifront_scan_root() for 0000:00.  If that fails, it used to switch to
->>>>  XenbusStateConnected and return success (because xenbus_switch_state()
->>>>  currently always succeeds).
->>>>
->>>>  If pcifront_scan_root() fails, leave the XenbusState unchanged and
->>>>  return an error code.
->>>>
->>>>  Similarly, pcifront_attach_devices() falls back to calling
->>>>  pcifront_rescan_root() for 0000:00.  If that fails, it used to
->>>>  switch to XenbusStateConnected and return an error code.
->>>>
->>>>  If pcifront_rescan_root() fails, leave the XenbusState unchanged and
->>>>  return the error code.
->>>>
->>>> The "num_roots" part doesn't seem relevant to me.
->>>>
->>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>>>
->>>> Konrad, if you want to take this, feel free.  Otherwise, if you ack it and
->>>> you think my changelog understanding makes sense, I can pick it up.
->>>>
->>>> It does seem odd that pcifront_attach_devices() ignores the
->>>> xenbus_switch_state() return value while pcifront_try_connect() does not.
->>>> But many other callers also ignore the return value, so maybe that's OK.
->>>>
->>>> Bjorn
->>>>
->>>>> ---
->>>>>  drivers/pci/xen-pcifront.c | 10 ++++++++++
->>>>>  1 file changed, 10 insertions(+)
->>>>>
->>>>> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
->>>>> index 53df39a..d78d884 100644
->>>>> --- a/drivers/pci/xen-pcifront.c
->>>>> +++ b/drivers/pci/xen-pcifront.c
->>>>> @@ -866,6 +866,11 @@ static int pcifront_try_connect(struct pcifront_device *pdev)
->>>>>            xenbus_dev_error(pdev->xdev, err,
->>>>>                             "No PCI Roots found, trying 0000:00");
->>>>>            err = pcifront_scan_root(pdev, 0, 0);
->>>>> +          if (err) {
->>>>> +                  xenbus_dev_fatal(pdev->xdev, err,
->>>>> +                                   "Error scanning PCI root 0000:00");
->>>>> +                  goto out;
->>>>> +          }
->>>>>            num_roots = 0;
->>>>>    } else if (err != 1) {
->>>>>            if (err == 0)
->>>>> @@ -947,6 +952,11 @@ static int pcifront_attach_devices(struct pcifront_device *pdev)
->>>>>            xenbus_dev_error(pdev->xdev, err,
->>>>>                             "No PCI Roots found, trying 0000:00");
->>>>>            err = pcifront_rescan_root(pdev, 0, 0);
->>>>> +          if (err) {
->>>>> +                  xenbus_dev_fatal(pdev->xdev, err,
->>>>> +                                   "Error scanning PCI root 0000:00");
->>>>> +                  goto out;
->>>>> +          }
->>>>>            num_roots = 0;
->>>>>    } else if (err != 1) {
->>>>>            if (err == 0)
->>>>> --
->>>>> 1.9.3
->
-> --
-> Chen Gang
->
-> Open, share, and attitude like air, water, and life which God blessed
+The idea was to mark the later special purpose exports with the name of the
+module that is supposed to them. They wouldn't be available
+to everybody else and wouldn't become part of the general
+kernel module API.
+
+-Andi
+
