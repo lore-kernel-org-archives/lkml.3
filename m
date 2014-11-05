@@ -1,138 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaKEIqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:46:11 -0500
-Received: from mga11.intel.com ([192.55.52.93]:35026 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176AbaKEIqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:46:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,318,1413270000"; 
-   d="scan'208";a="626833205"
-Date: Wed, 5 Nov 2014 10:40:33 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, mathias.nyman@linux.intel.com
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141105084033.GU1618@lahna.fi.intel.com>
-References: <20141103154207.GC1618@lahna.fi.intel.com>
- <20141103155011.GH27425@saruman>
- <20141103184247.GD1618@lahna.fi.intel.com>
- <20141103221903.GA20305@psi-dev26.jf.intel.com>
- <20141104075936.GF1618@lahna.fi.intel.com>
- <20141104180526.GB2224@psi-dev26.jf.intel.com>
- <20141104185702.GR1618@lahna.fi.intel.com>
- <20141104191115.GC2224@psi-dev26.jf.intel.com>
- <20141104193424.GT1618@lahna.fi.intel.com>
- <20141104215153.GA25606@psi-dev26.jf.intel.com>
+	id S1754178AbaKEIqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 03:46:19 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:59291 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaKEIqQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 03:46:16 -0500
+Message-ID: <5459E3D2.3050106@hitachi.com>
+Date: Wed, 05 Nov 2014 17:46:10 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104215153.GA25606@psi-dev26.jf.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, srikar@linux.vnet.ibm.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options
+ for cache
+References: <20141031185128.27889.32747.stgit@localhost.localdomain> <20141031121301.GI1313@kernel.org> <545770E6.2010506@hitachi.com> <20141103161900.GA18464@kernel.org> <545857CF.3060709@hitachi.com> <20141104143814.GH18464@kernel.org> <5458FD56.8040304@hitachi.com> <87h9yew4gf.fsf@sejong.aot.lge.com>
+In-Reply-To: <87h9yew4gf.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 01:51:53PM -0800, David Cohen wrote:
-> On Tue, Nov 04, 2014 at 09:34:24PM +0200, Mika Westerberg wrote:
-> > On Tue, Nov 04, 2014 at 11:11:16AM -0800, David Cohen wrote:
-> > > > It is not implicit at all.
-> > > > 
-> > > > The user of the GPIO in ACPI DSDT table says something like:
-> > > > 
-> > > > 	Name (_DEP, Package () { \_SB.GPO2 })
-> > > > 
-> > > > or similar. That is *explicit* dependency. Here \_SB.GPO2 is one of the
-> > > > GPIO banks.
-> > > 
-> > > Either kernel knows on-the-fly or statically the required dependency.
-> > > The static dependency is well described by Kconfig. An on-the-fly
-> > > dependency could be a probe execution failing because it couldn't access
-> > > part of required resources. If the dependency is temporarily not
-> > > described this way, it would still be acceptable a documentation
-> > > somewhere explaining that we do have this hidden thing going on.
-> > 
-> > The only thing kernel knows about this is when it finds that the
-> > device in question has _DEP object. Once that happens and it evaluates
+(2014/11/05 15:23), Namhyung Kim wrote:
+> On Wed, 05 Nov 2014 01:22:46 +0900, Masami Hiramatsu wrote:
+>> (2014/11/04 23:38), Arnaldo Carvalho de Melo wrote:
+>>> Em Tue, Nov 04, 2014 at 01:36:31PM +0900, Masami Hiramatsu escreveu:
+>>>> OK, I agree using .debug/.buildid/ to store caches.
+>>>> Here is what I'm thinking,
+>>>  
+>>>>   # this makes caches for given pattern instead of adding probes.
+>>>>   perf probe --cache '* $params'
+>>>
+>>>>   # the cache is stored in .debug/.buildid/<buildid>.probe
+>>>>   # the cache entry can be queried by buildid and eventname
+>>>
+>>> To follow the existing standard this would instead go to:
+>>>
+>>>>   # the cache is stored in .debug/probes/path/to/dso/name/buildid
+>>>>   # And can be found via its buildid link .debug/.buildid/bu/ildid -> ../../probes/path/to/dso/name/buildid
+>>
+>> Ah, I see. so you meant adding a top-level .debug/probes/ dir.
+>> But in that case, shouldn't we change .debug/.buildid/bu/ildid to
+>> .debug/probes/.buildid/bu/ildid ?
 > 
-> That's all kernel needs to know.
+> Either is fine to me.  But my concern is that it might be bloated as
+> system/package update is going on, so we need to control it somehow.
+> That's why I suggested the probe-cache command.
+
+Yes, that is also my question. Should we really have 3 cache management
+commands? At the first step, maybe we can have those as separated,
+but it would better be consolidated to one perf-cache command, I think.
+
+
+>>>>   perf probe --query ${remote_buildid}:do_fork
+>>>>   p:probe/do_fork _text+298722 clone_flags=%di:u64 stack_start=%si:u64 stack_size=%dx:u64 parent_tidptr=%cx:u64 child_tidptr=%r8:u64
+>>>
+>>>>   # or perf can set it up directly to local
+>>>>   perf probe --query-add do_fork
+>>>
+>>> You missed the build id above, no? I.e. it would be:
+>>>
+>>>>   # or perf can set it up directly to local
+>>>>   perf probe --query-add ${remote_buildid}:do_fork
+>>
+>> No, since this command set the event to local machine, perf-probe
+>> should check the local build-id and query the appropriate event
+>> from the cache.
+>> # BTW, maybe we'd better use perf probe --add '$do_fork' (calls
+>> # "cache of do_fork")  instead of long --query-add. :)
 > 
-> > to a list of devices we depend on, we can defer this particular driver
-> > going further in probe until all the dependencies listed in _DEP are
-> > resolved.
+> It should take care of uprobe case too.  So simple do_fork should have
+> group/event or provider/marker form instead so that it can help to find
+> which binary defines the cached event.  Maybe we also need to keep a
+> event-to-binary table and then check (current?) build-id somehow to
+> identify correct event to be used.
 > 
-> That's the best way to prevent this issue IMHO, but looks like it's
-> already being addressed:
-> https://lkml.org/lkml/2014/10/27/455
 
-Yes, that's the patch series.
+Good catch! :)
 
-> > 
-> > The documentation you are after is ACPI 5.1 specification downloadable
-> > freely at uefi.org/acpi.
-> 
-> Nope. The documentation I am referring to is the one that doesn't exist.
-> It supposed to be a simple comment on pinctrl_baytrail.c's file, or
-> maybe a comment on Kconfig. Wherever it could tell ppl not involved with
-> original development that there might be an implicit dependency to this
-> gpio driver by other drivers. And because of that, it's recommended to
-> let this driver probed as soon as possible on Bay Trail platforms.
+ perf probe --add '$group:event $params' # for cached event
+ perf probe --add '%provider[@path]:marker $params' # for SDT event
 
-Are we going to add similar to other drivers as well? I2C core for
-example installs I2C operation region handlers for every I2C controller
-that happens to have an ACPI handle.
+and these are automatically check the build-id.
 
-> BTW if we can't find the dependency either on Kconfig or on kernel
-> codes, if no dependent is checking for this resource when probing, if
-> all we have to define that this dependency exists is by looking random
-> ACPI tables (which are neither generic, nor part of kernel), it is then
-> implicit WRT kernel. Kernel cannot find it, nor developers can foresee
-> it.
+> Also this function entry level event cache can be used with uprobes..
 
-OK.
+Yes, of course :)
 
-> > > > > But IMHO all dependency to a driver should be explicitly described
-> > > > > (e.g. on Kconfigs, or maybe failing probe). With current situation if we
-> > > > > do not select pinctrl_baytrail, instead of affecting just the drivers
-> > > > > that explicitly depend on that, it affects others which we are unable to
-> > > > > easily identify.
-> > > > 
-> > > > So how do you propose we describe the dependency? It is completely in
-> > > > firmware. Should we make i2c-hid.c dependent on pinctrl-baytrail.c just
-> > > > because some underlying firmware method (_PSx for example) needs the
-> > > > GPIO but the driver itself does not?
-> > > 
-> > > i2c-hid.c should fail, WARN, yell, scream or whatever :)
-> > > This way one could say: hey, we needed GPIO.
-> > 
-> > But i2c-hid.c does not know anything about GPIOS in the first place.
-> > Like I said the dependency is in the firmware level. It may need GPIOs
-> > to do something or not but the driver never sees those GPIOs.
-> 
-> AFAIU any gpio usage by FW would start from a call from i2c-hid.c
+Thank you,
 
-Not necesarily. Even before we enter the probe of the i2c-hid.c, the
-ACPI power domain might try to power on the device. That might involve
-toggling GPIOs from the AML code.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Same thing during system suspend/resume.
 
-The driver is not involved in this but it is the ACPI device related to
-the i2c-hid.c that has the GPIO dependency.
-
-> driver. Maybe this call could fail, and then nothing implicit happens.
-> But i2c-hid.c does know about the dependency if checks its ACPI table
-> during the probe. But that's being addressed by the thread I posted
-> above.
-
-Indeed.
-
-However, now that I look at the _DEP implementation closely it seems to
-leave this to the drivers and not automatically prevent probing a driver
-if the device in questions has unmet dependencies...
