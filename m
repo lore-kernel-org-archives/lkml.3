@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaKENzH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:55:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:41752 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751198AbaKENzE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:55:04 -0500
-Date: Wed, 5 Nov 2014 14:51:31 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/11] dmaengine: Cleanup chancnt
-Message-ID: <20141105135131.GA2989@lukather>
-References: <1413450063-23829-1-git-send-email-maxime.ripard@free-electrons.com>
- <20141016090346.GE1638@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
-Content-Disposition: inline
-In-Reply-To: <20141016090346.GE1638@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754827AbaKEN5U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:57:20 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:56789 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753898AbaKEN5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 08:57:18 -0500
+Message-ID: <1415195855.3660.4.camel@mm-sol.com>
+Subject: Re: [PATCH v4 2/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Date: Wed, 05 Nov 2014 15:57:35 +0200
+In-Reply-To: <545A218F.5060301@kernel.org>
+References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com>
+	 <1415028270-25860-3-git-send-email-iivanov@mm-sol.com>
+	 <545A218F.5060301@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.6-fta3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---XsQoSWH+UP9D9v3l
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-11-05 at 13:09 +0000, Jonathan Cameron wrote:
+> On 03/11/14 15:24, Ivan T. Ivanov wrote:
+> > From: Stanimir Varbanov <svarbanov@mm-sol.com>
+> > 
+> > The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+> > 15 bits resolution and register space inside PMIC accessible across
+> > SPMI bus.
+> > 
+> > The vadc driver registers itself through IIO interface.
+> > 
+> > Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> Hi Ivan,
+> 
+> Couple of utterly tiny bits inline.  The biggest one is that
+> you store some info about the calibration that you never actually
+> use... Left over from some debugging perhaps?
+> 
+> Jonathan
 
-Hi Vinod,
+<snip>
 
-On Thu, Oct 16, 2014 at 02:33:46PM +0530, Vinod Koul wrote:
-> On Thu, Oct 16, 2014 at 11:00:52AM +0200, Maxime Ripard wrote:
-> > Hi everyone,
-> >=20
-> > As pointed out in the documentation thread [1], the chancnt variable
-> > is filled during the driver registration in dma_async_device_register,
-> > from the liste of channels that has been set.
-> >=20
-> > This serie removes the occurences of the drivers that set it in their
-> > probe function.
-> Barring the typos in the cover letter, series looks fine.
+> > +
+> > +/*
+> > + * VADC_CALIB_ABSOLUTE: uses the 625mV and 1.25V as reference channels.
+> > + * VADC_CALIB_RATIOMETRIC: uses the reference voltage (1.8V) and GND for
+> > + * calibration.
+> > + */
+> > +enum vadc_calibration {
+> > +       VADC_CALIB_ABSOLUTE = 0,
+> > +       VADC_CALIB_RATIOMETRIC
+> > +};
+> > +
+> > +/**
+> > + * struct vadc_linear_graph - Represent ADC characteristics.
+> > + * @dy: numerator slope to calculate the gain.
+> As dy is always equal to vref-gnd you could drop it and use those
+> directly...
+> 
+> Conversly you store vref or grnd and never use them...
 
-It's been 3 weeks already, and there's been no reviews justifying to
-send a second version of the patch set.
+I am not sure I am following you. Please take a look in 
+vadc_measure_ref_points() and vadc_calibrate().
 
-Can we merge this in?
+> 
+> > + * @dx: denominator slope to calculate the gain.
+> > + * @vref: A/D word of the voltage reference used for the channel.
+> > + * @gnd: A/D word of the ground reference used for the channel.
+> > + *
+> > + * Each ADC device has different offset and gain parameters which are
+> > + * computed to calibrate the device.
+> > + */
+> > +struct vadc_linear_graph {
+> > +       s32 dy;
+> > +       s32 dx;
+> > +       s32 vref;
+> > +       s32 gnd;
+> > +};
+> > +
+> > 
 
-Thanks,
-Maxime
+Will address blank line comment.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---XsQoSWH+UP9D9v3l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUWitjAAoJEBx+YmzsjxAgizwQAKmHIePrZOmL87voLW/9TRTk
-DbEp5aSL04pqr0CYhaWk07yG7LIR4R98DQIIJupmWq1bpgPnLsDUtpkoy8XHraEC
-DgBrrHyVJa/6B7wOliRrUP54OFg4YrVGNx1MaLLbGicsupWDD1Eue5Yiaa3O1OBF
-kYgwoOoYGVVPc8+F0tMfeGKTXwORnG3do77Rl5H4BFHQx6m7r5zgrzBzA7Gas2ZZ
-qezSbsprc3nmjYPzkow8dXFuOFaKLG8OEzJe4boJv3qkWcA7pVNqvOfQIo0njWeR
-szDp9ZiPokhZDo0gQxw0ht00/LkKGng3HkivF5vDLSuZqxYVbOICZMP8A12QG59Q
-4BA+V23S2DLem2OBWDFk6+6loxsfEI7yD5USQNMwjO/dBNYY7IpsXdw71mp5hS/M
-E4I23POu+nmK9dgvbyZ1cZJi/LrNx0wcYcMdQZkwXOApmN3Jyq0abFyVj621gw8P
-CkFewTUAp/JE2pMWUwLmXlRdo+2+xtno3R200sJ5nVdvoBVFCSoxXCdfAsA08Tz4
-dbGdseTY2GmTGOVukJDhmpNU6Gnwc9TCba57w32mIvxaJQphHExJ7jJtJ/letT2f
-JYZOATkBqUQ1b3/ql9HWqmzMnMsYvS0LmTT5Kzxv8s1rYE0sTJbL+/rBX9DF20kK
-nE6yiMjJcOW/NJRQcpet
-=56qH
------END PGP SIGNATURE-----
-
---XsQoSWH+UP9D9v3l--
+Regards,
+Ivan
