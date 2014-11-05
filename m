@@ -1,293 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaKEPcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:32:52 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47523 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077AbaKEPcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:32:50 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rongjun.ying@csr.com>, <Baohua.Song@csr.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, George Cherian <george.cherian@ti.com>
-Subject: [RESEND PATCH 1/2] extcon: gpio: Add dt support for the driver
-Date: Wed, 5 Nov 2014 20:59:47 +0530
-Message-ID: <1415201388-32060-2-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1415201388-32060-1-git-send-email-george.cherian@ti.com>
-References: <1415201388-32060-1-git-send-email-george.cherian@ti.com>
+	id S1755758AbaKEPc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:32:58 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:62308 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755725AbaKEPc4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:32:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAH_=xoa36gKcEpi8mSE9cedghqE4FhBCVMQNPV_1qDyk1Bb2ng@mail.gmail.com>
+References: <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
+ <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+ <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
+ <20141031084220.GA29085@infradead.org> <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
+ <CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
+ <20141103083447.GA8617@infradead.org> <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
+ <CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
+ <CA+55aFw29MUj+w46yneut2yxXOH1RQmDud5KL8V-SPyPWm1WqA@mail.gmail.com>
+ <20141105082721.GB19607@infradead.org> <CAH_=xoa36gKcEpi8mSE9cedghqE4FhBCVMQNPV_1qDyk1Bb2ng@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 5 Nov 2014 07:32:34 -0800
+Message-ID: <CALCETrXDq_k+7w0RXJMpPv36w_Jf+3rJiihfMxS=TFo8rq95ew@mail.gmail.com>
+Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+To: Eric Rannaud <e@nanocritical.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support to extcon-gpio driver.
-Add devicetree binding documentation
+On Wed, Nov 5, 2014 at 7:21 AM, Eric Rannaud <e@nanocritical.com> wrote:
+> On Wed, Nov 5, 2014 at 12:27 AM, Christoph Hellwig <hch@infradead.org> wrote:
+>> On Mon, Nov 03, 2014 at 11:04:27AM -0800, Linus Torvalds wrote:
+>>> Oh, so you don't actually need any file contents at all?
+>>>
+>>> If that is actually a real usage, then maybe we should just say that
+>>> "O_TMPFILE|O_RDONLY" is fine, and remove the check that it has to be
+>>> writable.
+>>
+>> Wasn't this disallowed to prevent problems on old kernels that don't use
+>> O_TMPFILE?  In that case we'd ignore the flag and would just get a file
+>> handle for the directory instead.
+>
+> Yes, that was the idea at first, as discussed at
+> http://article.gmane.org/gmane.linux.file-systems/76273, in commit
+> bb458c644. But soon after that, O_WRONLY was allowed (ba57ea64cb1),
+> and O_RDWR was removed from O_TMPFILE. Now only remain the explicit
+> checks in build_open_flags() that Linus mentioned.
+>
+> If we allow
+>     fd = open("/tmp", O_TMPFILE|O_RDONLY, 0600)
+> it would be seen by an old kernel as
+>     fd = open("/tmp", O_DIRECTORY|O_RDONLY, 0600)
+> which will succeed.
+>
+> But unlike the other cases the creative definition of O_TMPFILE was
+> meant to prevent, this does not create a security risk for anyone
+> implementing a secure tmpfile, as they would be asking for a writable
+> fd.
 
-While at that
-	- Cleanup the pdata as there are no users for the same.
-	- Convert the driver to use gpiod_* API's.
-	- Some gpio's can sleep while reading, so always use gpio_get_value_cansleep
-	to get data. This fixes warning from gpiolib due to wrong API usage.
+I have no idea whether it's a security risk, but it's a serious "wtf?!?" risk.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- .../devicetree/bindings/extcon/extcon-gpio.txt     | 21 ++++++
- drivers/extcon/extcon-gpio.c                       | 83 +++++++---------------
- include/linux/extcon/extcon-gpio.h                 | 59 ---------------
- 3 files changed, 46 insertions(+), 117 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio.txt
- delete mode 100644 include/linux/extcon/extcon-gpio.h
+>
+> To implement an atomic open() with O_TMPFILE+flink, if neither
+> O_WRONLY nor O_RDWR is in flags, you would have to manually check with
+> fstat that fd is indeed a regular file and not a directory. At least
+> if you need to run on old kernels.
+>
+> If such a changes goes in, the man page for open(2) should talk about
+> what happens on old kernels (it already has an explanation for the
+> writable case).
 
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-new file mode 100644
-index 0000000..30aa2e1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-@@ -0,0 +1,21 @@
-+GPIO based EXTCON
-+
-+EXTCON GPIO
-+-----------
-+
-+Required Properties:
-+ - compatible: should be:
-+	* "linux,extcon-gpio"
-+ - gpios: specifies the gpio pin used.
-+
-+Optional Properties:
-+ - debounce: Debounce time for GPIO IRQ in ms
-+
-+
-+Eg:
-+
-+	extcon1: am43_usbid_extcon1 {
-+		compatible = "linux,extcon-gpio";
-+		gpios = <&gpio3 12 GPIO_ACTIVE_HIGH>;
-+		debounce = <20>;
-+		};
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 72f19a3..85795de 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -21,26 +21,23 @@
- */
- 
- #include <linux/extcon.h>
--#include <linux/extcon/extcon-gpio.h>
- #include <linux/gpio.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of_gpio.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
- 
- struct gpio_extcon_data {
- 	struct extcon_dev *edev;
--	unsigned gpio;
--	bool gpio_active_low;
--	const char *state_on;
--	const char *state_off;
-+	struct gpio_desc *gpiod;
- 	int irq;
- 	struct delayed_work work;
- 	unsigned long debounce_jiffies;
--	bool check_on_resume;
- };
- 
- static void gpio_extcon_work(struct work_struct *work)
-@@ -50,9 +47,7 @@ static void gpio_extcon_work(struct work_struct *work)
- 		container_of(to_delayed_work(work), struct gpio_extcon_data,
- 			     work);
- 
--	state = gpio_get_value(data->gpio);
--	if (data->gpio_active_low)
--		state = !state;
-+	state = gpiod_get_value_cansleep(data->gpiod);
- 	extcon_set_state(data->edev, state);
- }
- 
-@@ -65,34 +60,16 @@ static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
--{
--	struct device *dev = edev->dev.parent;
--	struct gpio_extcon_data *extcon_data = dev_get_drvdata(dev);
--	const char *state;
--
--	if (extcon_get_state(edev))
--		state = extcon_data->state_on;
--	else
--		state = extcon_data->state_off;
--
--	if (state)
--		return sprintf(buf, "%s\n", state);
--	return -EINVAL;
--}
--
- static int gpio_extcon_probe(struct platform_device *pdev)
- {
--	struct gpio_extcon_platform_data *pdata = dev_get_platdata(&pdev->dev);
-+	struct device_node *np = pdev->dev.of_node;
- 	struct gpio_extcon_data *extcon_data;
-+	unsigned int irq_flags;
-+	unsigned int debounce = 0;
- 	int ret;
- 
--	if (!pdata)
--		return -EBUSY;
--	if (!pdata->irq_flags) {
--		dev_err(&pdev->dev, "IRQ flag is not specified.\n");
-+	if (!np)
- 		return -EINVAL;
--	}
- 
- 	extcon_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_extcon_data),
- 				   GFP_KERNEL);
-@@ -104,27 +81,23 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "failed to allocate extcon device\n");
- 		return -ENOMEM;
- 	}
--	extcon_data->edev->name = pdata->name;
--
--	extcon_data->gpio = pdata->gpio;
--	extcon_data->gpio_active_low = pdata->gpio_active_low;
--	extcon_data->state_on = pdata->state_on;
--	extcon_data->state_off = pdata->state_off;
--	extcon_data->check_on_resume = pdata->check_on_resume;
--	if (pdata->state_on && pdata->state_off)
--		extcon_data->edev->print_state = extcon_gpio_print_state;
--
--	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
--				    pdev->name);
--	if (ret < 0)
--		return ret;
-+	extcon_data->edev->name = np->name;
-+	extcon_data->gpiod = gpiod_get(&pdev->dev, NULL);
-+	if (IS_ERR(extcon_data->gpiod))
-+		return PTR_ERR(extcon_data->gpiod);
- 
--	if (pdata->debounce) {
--		ret = gpio_set_debounce(extcon_data->gpio,
--					pdata->debounce * 1000);
-+	extcon_data->irq = gpiod_to_irq(extcon_data->gpiod);
-+	if (extcon_data->irq < 0)
-+		return extcon_data->irq;
-+
-+	irq_flags = irq_get_trigger_type(extcon_data->irq);
-+	of_property_read_u32(np, "debounce", &debounce);
-+	if (debounce) {
-+		ret = gpiod_set_debounce(extcon_data->gpiod,
-+					 debounce * 1000);
- 		if (ret < 0)
- 			extcon_data->debounce_jiffies =
--				msecs_to_jiffies(pdata->debounce);
-+				msecs_to_jiffies(debounce);
- 	}
- 
- 	ret = devm_extcon_dev_register(&pdev->dev, extcon_data->edev);
-@@ -132,13 +105,8 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 		return ret;
- 
- 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
--
--	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
--	if (extcon_data->irq < 0)
--		return extcon_data->irq;
--
- 	ret = request_any_context_irq(extcon_data->irq, gpio_irq_handler,
--				      pdata->irq_flags, pdev->name,
-+				      irq_flags, pdev->name,
- 				      extcon_data);
- 	if (ret < 0)
- 		return ret;
-@@ -166,9 +134,8 @@ static int gpio_extcon_resume(struct device *dev)
- 	struct gpio_extcon_data *extcon_data;
- 
- 	extcon_data = dev_get_drvdata(dev);
--	if (extcon_data->check_on_resume)
--		queue_delayed_work(system_power_efficient_wq,
--			&extcon_data->work, extcon_data->debounce_jiffies);
-+	queue_delayed_work(system_power_efficient_wq,
-+			   &extcon_data->work, extcon_data->debounce_jiffies);
- 
- 	return 0;
- }
-diff --git a/include/linux/extcon/extcon-gpio.h b/include/linux/extcon/extcon-gpio.h
-deleted file mode 100644
-index 0b17ad4..0000000
---- a/include/linux/extcon/extcon-gpio.h
-+++ /dev/null
-@@ -1,59 +0,0 @@
--/*
-- *  External connector (extcon) class generic GPIO driver
-- *
-- * Copyright (C) 2012 Samsung Electronics
-- * Author: MyungJoo Ham <myungjoo.ham@samsung.com>
-- *
-- * based on switch class driver
-- * Copyright (C) 2008 Google, Inc.
-- * Author: Mike Lockwood <lockwood@android.com>
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
--*/
--#ifndef __EXTCON_GPIO_H__
--#define __EXTCON_GPIO_H__ __FILE__
--
--#include <linux/extcon.h>
--
--/**
-- * struct gpio_extcon_platform_data - A simple GPIO-controlled extcon device.
-- * @name:		The name of this GPIO extcon device.
-- * @gpio:		Corresponding GPIO.
-- * @gpio_active_low:	Boolean describing whether gpio active state is 1 or 0
-- *			If true, low state of gpio means active.
-- *			If false, high state of gpio means active.
-- * @debounce:		Debounce time for GPIO IRQ in ms.
-- * @irq_flags:		IRQ Flags (e.g., IRQF_TRIGGER_LOW).
-- * @state_on:		print_state is overriden with state_on if attached.
-- *			If NULL, default method of extcon class is used.
-- * @state_off:		print_state is overriden with state_off if detached.
-- *			If NUll, default method of extcon class is used.
-- * @check_on_resume:	Boolean describing whether to check the state of gpio
-- *			while resuming from sleep.
-- *
-- * Note that in order for state_on or state_off to be valid, both state_on
-- * and state_off should be not NULL. If at least one of them is NULL,
-- * the print_state is not overriden.
-- */
--struct gpio_extcon_platform_data {
--	const char *name;
--	unsigned gpio;
--	bool gpio_active_low;
--	unsigned long debounce;
--	unsigned long irq_flags;
--
--	/* if NULL, "0" or "1" will be printed */
--	const char *state_on;
--	const char *state_off;
--	bool check_on_resume;
--};
--
--#endif /* __EXTCON_GPIO_H__ */
+With my occasional-API-reviewer hat on, NAK NAK NAK.  This is even
+more insane than the rest of the O_TMPFILE interface.  If you want to
+support this kind of use case (which seems entirely reasonable to me),
+then just add a syscall, please.
+
+Also, you can, mostly, downgrade from O_RDWR to O_RDONLY.  We could
+easily add a way to downgrade all the way, I think.
+
+--Andy
+
 -- 
-1.8.3.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
