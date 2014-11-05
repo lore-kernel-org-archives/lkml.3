@@ -1,201 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaKEV7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:59:25 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:49671 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaKEV7V (ORCPT
+	id S1752091AbaKEV7w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:59:52 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:42305 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaKEV7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:59:21 -0500
-Date: Wed, 5 Nov 2014 13:59:18 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Prarit Bhargava <prarit@redhat.com>
-cc: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
-        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v8] kernel, add panic_on_warn
-In-Reply-To: <1415187736-16242-1-git-send-email-prarit@redhat.com>
-Message-ID: <alpine.DEB.2.10.1411051357050.31575@chino.kir.corp.google.com>
-References: <1415187736-16242-1-git-send-email-prarit@redhat.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 5 Nov 2014 16:59:49 -0500
+Message-ID: <545A9DD2.7050602@codeaurora.org>
+Date: Wed, 05 Nov 2014 15:59:46 -0600
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
+        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
+References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com> <20141104082056.GG1618@lahna.fi.intel.com> <545912D2.5090708@codeaurora.org> <CACxGe6t=nK83pGNDKmZJ28BZJqgNjGZgckrzVrBiFko1AcT0xg@mail.gmail.com>
+In-Reply-To: <CACxGe6t=nK83pGNDKmZJ28BZJqgNjGZgckrzVrBiFko1AcT0xg@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014, Prarit Bhargava wrote:
+On 11/05/2014 03:46 PM, Grant Likely wrote:
+>
+> Before even attempting to put pinctrl mappings into your driver, there
+> should instead be a conversation at the ACPI spec level about whether
+> or not it makes sense and what such a binding should look like.
 
-> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-> index 6c0b9f2..bc4bd5a 100644
-> --- a/Documentation/kdump/kdump.txt
-> +++ b/Documentation/kdump/kdump.txt
-> @@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
->  
->     http://people.redhat.com/~anderson/
->  
-> +Trigger Kdump on WARN()
-> +=======================
-> +
-> +The kernel parameter, panic_on_warn, calls panic() in all WARN() paths.  This
-> +will cause a kdump to occur at the panic() call.  In cases where a user wants
-> +to specify this during runtime, /proc/sys/kernel/panic_on_warn can be set to 1
-> +to achieve the same behaviour.
->  
->  Contact
->  =======
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 4c81a86..ea5d57c 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2509,6 +2509,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			timeout < 0: reboot immediately
->  			Format: <timeout>
->  
-> +	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
-> +			on a WARN().
-> +
->  	crash_kexec_post_notifiers
->  			Run kdump after running panic-notifiers and dumping
->  			kmsg. This only for the users who doubt kdump always
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> index 57baff5..b5d0c85 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -54,8 +54,9 @@ show up in /proc/sys/kernel:
->  - overflowuid
->  - panic
->  - panic_on_oops
-> -- panic_on_unrecovered_nmi
->  - panic_on_stackoverflow
-> +- panic_on_unrecovered_nmi
-> +- panic_on_warn
->  - pid_max
->  - powersave-nap               [ PPC only ]
->  - printk
-> @@ -527,19 +528,6 @@ the recommended setting is 60.
->  
->  ==============================================================
->  
-> -panic_on_unrecovered_nmi:
-> -
-> -The default Linux behaviour on an NMI of either memory or unknown is
-> -to continue operation. For many environments such as scientific
-> -computing it is preferable that the box is taken out and the error
-> -dealt with than an uncorrected parity/ECC error get propagated.
-> -
-> -A small number of systems do generate NMI's for bizarre random reasons
-> -such as power management so the default is off. That sysctl works like
-> -the existing panic controls already in that directory.
-> -
-> -==============================================================
-> -
->  panic_on_oops:
->  
->  Controls the kernel's behaviour when an oops or BUG is encountered.
-> @@ -563,6 +551,30 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
->  
->  ==============================================================
->  
-> +panic_on_unrecovered_nmi:
-> +
-> +The default Linux behaviour on an NMI of either memory or unknown is
-> +to continue operation. For many environments such as scientific
-> +computing it is preferable that the box is taken out and the error
-> +dealt with than an uncorrected parity/ECC error get propagated.
-> +
-> +A small number of systems do generate NMI's for bizarre random reasons
-> +such as power management so the default is off. That sysctl works like
-> +the existing panic controls already in that directory.
-> +
-> +==============================================================
-> +
-> +panic_on_warn:
-> +
-> +Calls panic() in the WARN() path when set to 1.  This is useful to avoid
-> +a kernel rebuild when attempting to kdump at the location of a WARN().
-> +
-> +0: only WARN(), default behaviour.
-> +
-> +1: call panic() after printing out WARN() location.
-> +
-> +==============================================================
-> +
->  perf_cpu_time_max_percent:
->  
->  Hints to the kernel how much CPU time it should be allowed to
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 3d770f55..d60d31d 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -422,6 +422,7 @@ extern int panic_timeout;
->  extern int panic_on_oops;
->  extern int panic_on_unrecovered_nmi;
->  extern int panic_on_io_nmi;
-> +extern int panic_on_warn;
->  extern int sysctl_panic_on_stackoverflow;
->  /*
->   * Only to be used by arch init code. If the user over-wrote the default
-> diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
-> index 43aaba1..0956373 100644
-> --- a/include/uapi/linux/sysctl.h
-> +++ b/include/uapi/linux/sysctl.h
-> @@ -153,6 +153,7 @@ enum
->  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
->  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
->  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
-> +	KERN_PANIC_ON_WARN=77, /* int: call panic() in WARN() functions */
->  };
->  
->  
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index d09dc5c..c6a7723 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -33,6 +33,7 @@ static int pause_on_oops;
->  static int pause_on_oops_flag;
->  static DEFINE_SPINLOCK(pause_on_oops_lock);
->  static bool crash_kexec_post_notifiers;
-> +int panic_on_warn __read_mostly;
->  
->  int panic_timeout = CONFIG_PANIC_TIMEOUT;
->  EXPORT_SYMBOL_GPL(panic_timeout);
-> @@ -420,13 +421,23 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
->  {
->  	disable_trace_on_warning();
->  
-> -	pr_warn("------------[ cut here ]------------\n");
-> +	if (!panic_on_warn)
-> +		pr_warn("------------[ cut here ]------------\n");
+Fair enough.  For GPIO, using the Linux GPIO driver as a back-end for 
+the ASL means that we don't have to duplicate the Linux GPIO driver in 
+firmware, and it also allows a high degree of flexibility.  That sounds 
+like highly desirable features for any device support, including pin 
+control.
 
-Is this really necessary?
+I don't really understand ACPI/ASL enough to really have much insight in 
+this area, but I've been waiting over six months for someone ... anyone 
+... to do someone on this area.  So I'm kinda stuck -- I have a vested 
+interested in this area, and yet I'm not in a position to contribute much.
 
->  	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
->  		raw_smp_processor_id(), current->pid, file, line, caller);
->  
->  	if (args)
->  		vprintk(args->fmt, args->args);
->  
-> +	if (panic_on_warn) {
-> +		/*
-> +		 * A flood of WARN()s may occur.  Prevent further WARN()s
-> +		 * from panicking the system.
-> +		 */
-
-What synchronization is preventing this race and further WARN()s panicking 
-the system?
-
-> +		panic_on_warn = 0;
-> +		panic("panic_on_warn set ...\n");
-> +	}
-> +
->  	print_modules();
->  	dump_stack();
->  	print_oops_end_marker();
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, a Linux Foundation Collaborative Project.
