@@ -1,56 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaKESyC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 13:54:02 -0500
-Received: from ozlabs.org ([103.22.144.67]:38924 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984AbaKESx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 13:53:59 -0500
-Date: Thu, 6 Nov 2014 05:53:57 +1100
-From: Anton Blanchard <anton@samba.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: uobergfe@redhat.com, drjones@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>
-Subject: Re: Confusing behaviour with /proc/sys/kernel/nmi_watchdog
-Message-ID: <20141106055357.530e1458@kryten>
-In-Reply-To: <20141105145356.GL135937@redhat.com>
-References: <20141105093420.1c7500d8@kryten>
-	<20141105145356.GL135937@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751547AbaKESyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 13:54:54 -0500
+Received: from 201-248-70-110.estatic.cantv.net ([201.248.70.110]:55347 "EHLO
+	correo.inavi.gob.ve" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750984AbaKESyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 13:54:53 -0500
+Date: Wed, 5 Nov 2014 14:16:22 -0430 (VET)
+From: Finance Department <vdelgado@inavi.gob.ve>
+Reply-To: Finance Department <dpfuk@qq.com>
+Message-ID: <1159902436.195889.1415213182480.JavaMail.zimbra@inavi.gob.ve>
+Subject: Payment
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [197.220.169.18]
+X-Mailer: Zimbra 8.0.4_GA_5737 (zclient/8.0.4_GA_5737)
+Thread-Topic: Payment
+Thread-Index: 9/i4xZgbOAeq/wV0+H7G08uunjPabw==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Recipient,
 
-Hi Don,
+You have been awarded the sum of  8,000,000.00 (Eight Million Pounds sterling) with reference number 77100146 by office of the ministry of finance UK.Send us your personal details to deliver your funds.
 
-> > commit 9919e39a1738 ("kvm: ensure hard lockup detection is disabled
-> > by default") provided a way for the kernel to disable the hard
-> > lockup detector at runtime.
-> > 
-> > I'm using it on ppc64 but notice some weird behaviour with the
-> > nmi_watchdog procfs variable. At boot, that the hard lockup
-> > detector appears to be enabled even when we disable it via
-> > watchdog_enable_hardlockup_detector(false):
-> > 
-> > # cat /proc/sys/kernel/nmi_watchdog 
-> > 1
-> > 
-> > I have to echo 0 to it then echo 1 again to enable it.
-> 
-> I believe Andrew answered the question for you, it's a WIP and we have
-> patches to clean that up.
-
-Thanks, yes good to see it being worked on.
-
-> I don't see ppc64 watchdog support in arch/powerpc, is that something
-> you are working with on implementing?
-
-I've submitted it over on linuxppc-dev:
-
-http://patchwork.ozlabs.org/patch/406802/
-
-Anton
+Gloria Peter
