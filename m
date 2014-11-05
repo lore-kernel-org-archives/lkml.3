@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaKEIUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:20:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaKEIUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:20:31 -0500
-Date: Wed, 5 Nov 2014 09:20:29 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de
-Subject: Re: [PATCH v1 10/11] backports: prefix c-file / h-file auto
-	backport with BPAUTO
-Message-ID: <20141105082029.GL12953@wotan.suse.de>
-References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com> <1415090582-14129-11-git-send-email-mcgrof@do-not-panic.com> <1415096092.2064.13.camel@sipsolutions.net> <20141104215002.GF12953@wotan.suse.de> <1415137850.2064.23.camel@sipsolutions.net> <20141105002147.GJ12953@wotan.suse.de> <1415172590.2589.1.camel@sipsolutions.net> <20141105080252.GK12953@wotan.suse.de> <1415175123.2589.10.camel@sipsolutions.net>
+	id S1753345AbaKEIZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 03:25:59 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:55155 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaKEIZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 03:25:58 -0500
+Date: Wed, 5 Nov 2014 00:25:55 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeremy Allison <jra@samba.org>
+Cc: Eric Rannaud <e@nanocritical.com>, Andy Lutomirski <luto@amacapital.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+Message-ID: <20141105082555.GA19607@infradead.org>
+References: <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
+ <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+ <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
+ <20141031084220.GA29085@infradead.org>
+ <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
+ <CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
+ <20141103083447.GA8617@infradead.org>
+ <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
+ <CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
+ <20141103220707.GJ5389@samba2>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415175123.2589.10.camel@sipsolutions.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20141103220707.GJ5389@samba2>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 09:12:03AM +0100, Johannes Berg wrote:
-> On Wed, 2014-11-05 at 09:02 +0100, Luis R. Rodriguez wrote:
-> 
-> > > But the *code* changes
-> > > you're making here that check whether bp_prefix is being duplicated
-> > > aren't necessary for that, and are in fact confusing and dangerous.
-> > 
-> > Understood, thanks for the review, hopefully this is addressed with the
-> > latest series.
-> 
-> Actually, maybe you wanted these changes because you didn't want to end
-> up with CONFIG_BACKPORT_BPAUTO_ for integration? I think that's a small
-> price to pay though for code complexity trade-off, IMHO you should
-> accept CONFIG_BACKPORT_BPAUTO_ and remove the code changes.
+On Mon, Nov 03, 2014 at 02:07:07PM -0800, Jeremy Allison wrote:
+> Which we already do, actually..
 
-Quite the contrary, I did this to get CONFIG_BACKPORT_BPAUTO_ and not
-CONFIG_BACKPORT_BACKPORT_. So right now I do get CONFIG_BACKPORT_BPAUTO_
-for integration (with the v2 patch series).
+Hmm, I didn't notice that part when implementing the atomic open,
+guess I need to dig deeper into the code.
 
-  Luis
+I still think supporting full open semantics with O_TMFILE + flink is
+useful, so that others can make use of it it without such an additional
+enforcement layer.
