@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaKETm7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 14:42:59 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58338 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556AbaKETm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 14:42:56 -0500
-Date: Wed, 5 Nov 2014 13:43:21 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Robert Baldyga <r.baldyga@samsung.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
-        <andrzej.p@samsung.com>, <m.szyprowski@samsung.com>,
-        <k.opasiak@samsung.com>
-Subject: Re: [PATCH v4] usb: gadget: f_fs: add "no_disconnect" mode
-Message-ID: <20141105194321.GS6548@saruman>
-Reply-To: <balbi@ti.com>
-References: <1412860911-23985-1-git-send-email-r.baldyga@samsung.com>
- <20141103161102.GM27425@saruman>
+	id S1752045AbaKETn2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 14:43:28 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:50162 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaKETnZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 14:43:25 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Wed, 5 Nov 2014 14:43:23 -0500
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 11/13] arm: dts: dra7: add DMA properties for UART
+Message-ID: <20141105194323.GI24112@csclub.uwaterloo.ca>
+References: <20141104170233.GB24112@csclub.uwaterloo.ca>
+ <5459079D.7080703@linutronix.de>
+ <20141104172117.GC24112@csclub.uwaterloo.ca>
+ <20141104183315.GD24112@csclub.uwaterloo.ca>
+ <20141104210315.GF24112@csclub.uwaterloo.ca>
+ <20141105011506.GG24112@csclub.uwaterloo.ca>
+ <5459DBB7.1090702@linutronix.de>
+ <20141105153307.GN24110@csclub.uwaterloo.ca>
+ <20141105162024.GH24112@csclub.uwaterloo.ca>
+ <545A50BB.2020307@linutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f0Ums9VvOMUG7syy"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141103161102.GM27425@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <545A50BB.2020307@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f0Ums9VvOMUG7syy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 05, 2014 at 05:30:51PM +0100, Sebastian Andrzej Siewior wrote:
+> On 11/05/2014 05:20 PM, Lennart Sorensen wrote:
+> > On Wed, Nov 05, 2014 at 10:33:15AM -0500, Lennart Sorensen wrote:
+> >> Two systems ran 16 hours each so far with no issues.  Pushed 170MB of
+> >> data through the pair of serial ports on one system at 230400.
+> > 
+> > The console on uart3 doesn't appear to be using the dma assuming the
+> > values in /sys for the dma controller and bytes transferred mean anything.
+> > It does mention in dmesg that it allocated dma channels for uart3 though.
+> 
+> Then it should use it :)
 
-On Mon, Nov 03, 2014 at 10:11:02AM -0600, Felipe Balbi wrote:
-> Hi,
->=20
-> On Thu, Oct 09, 2014 at 03:21:51PM +0200, Robert Baldyga wrote:
-> > Since we can compose gadgets from many functions, there is the problem
-> > related to gadget breakage while FunctionFS daemon being closed. FFS
-> > function is userspace code so there is no way to know when it will close
-> > files (it doesn't matter what is the reason of this situation, it can
-> > be daemon logic, program breakage, process kill or any other). So when
-> > we have another function in gadget which, for example, sends some amount
-> > of data, does some software update or implements some real-time functio=
-nality,
-> > we may want to keep the gadget connected despite FFS function is no lon=
-ger
-> > functional.
-> >=20
-> > We can't just remove one of functions from gadget since it has been
-> > enumerated, so the only way to keep entire gadget working is to make
-> > broken FFS function deactivated but still visible to host. For this
-> > purpose this patch introduces "no_disconnect" mode. It can be enabled
-> > by setting mount option "no_disconnect=3D1", and results with defering
-> > function disconnect to the moment of reopen ep0 file or filesystem
-> > unmount. After closing all endpoint files, FunctionFS is set to state
-> > FFS_DEACTIVATED.
-> >=20
-> > When ffs->state =3D=3D FFS_DEACTIVATED:
-> > - function is still bound and visible to host,
-> > - setup requests are automatically stalled,
-> > - transfers on other endpoints are refused,
-> > - epfiles, except ep0, are deleted from the filesystem,
-> > - opening ep0 causes the function to be closes, and then FunctionFS
-> >   is ready for descriptors and string write,
-> > - unmounting of the FunctionFS instance causes the function to be close=
-d.
-> >=20
-> > Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
->=20
-> David, you have been messing with ffs lately, can I get a Tested-by from
-> you on this patch ?
+I managed to get something dma related on uart3.  But it isn't happy:
 
-ping. David ? Any chance you can test this one out ?
+[   95.577401] DMA misaligned error with device 53
+repeated many times.
 
---=20
-balbi
+I wonder if the dma support isn't quite working for the omap572x yet in
+this tree (ti's 3.12.y tree), or maybe it is picky and the driver still
+needs a bit of work.
 
---f0Ums9VvOMUG7syy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I have had no issues on uart7 and 8 without dma.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> There is omap_8250_tx_dma() and omap_8250_rx_dma(). Both setup
+> callbacks (the rx+tx _complete). Upon successful DMA transfer you
+> should see them invoked with bytes transfered (>0).
+> For RX transfer you need at least trigger bytes in the FIFO within a
+> given time frame (I think it was 46 bytes and the delay may be up to 2
+> bytes). If you miss this then DMA for RX won't wire and you purge the
+> FIFO manually via "timeout-interrupt" (the callback will be invoked
+> with an error condition and 0 bytes).
+> 
+> Assuming this works for you then one should figure out why the counters
+> in /sys are not updated…
 
-iQIcBAEBAgAGBQJUWn3ZAAoJEIaOsuA1yqREuM0P/iH++EEFBJJuq+1MyPrGOyw/
-5xYRmyWwK6La9C0z3qGaVM4H2MSxvtbWcx/a8zU92tkZH8P/FPIrwUhdgd2gAkaz
-j7pAB6cqJM5XBAGsqHzimidlwEy80xJyu2rQW/kmSVlCLkfFN1FGV1YxJl9voFf+
-H4pdscGVmMEdOANTYEVDUh90rtpeCoIiKJOHB7zrQl/6v36RGQe4goTaxcmO3AvB
-y25nIJEtQdW6a2O+u6gupoOhmCNO00X0/H/sh4x2azDWzwucEjjuCAWCEfmAjfY1
-OfR6+1Y5PZe5+tVR/o+w/6ysKO/5XdfSFaCSwfZ+p4LebwCH4OoNNXQFsJ0CnH1Z
-ufnKgAtsB+If0OOYAN9BKnzKJbEc976NUkPgqQ3vgfl4z7+o1jPc9JD/TwYgkg6m
-TajTrBEqZrd/3KloreyEgIx5GGjy92orAWTDUmnuTubKMfYBvR3WYuyI0LEzsrfu
-usJZ5wDE1KWXbvw1V3A+DvS0GQlh3Jb3ECEAI870gcSoxWJ0RZieOZLapBcEK2/q
-bWnWblgSHtLEJHXSSYaZkXjKTTPyibM/NTnsNvzCbx3CAN4znIXSZGwLGip+WG32
-K68Ne/5zklpr4iSEuqkeeNje39y8okK+O69A9ynnoAAUBqlkyZaiGLA//JaGkQmH
-8rHXs4X30zbWUqvLSDpB
-=U6wf
------END PGP SIGNATURE-----
-
---f0Ums9VvOMUG7syy--
+-- 
+Len Sorensen
