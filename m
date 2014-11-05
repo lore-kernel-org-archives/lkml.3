@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373AbaKEVTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:19:20 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:38028 "EHLO sipsolutions.net"
+	id S1752020AbaKEVUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:20:08 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:38040 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936AbaKEVTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:19:18 -0500
-Message-ID: <1415222354.7485.12.camel@sipsolutions.net>
-Subject: Re: [PATCH v2 05/13] backports: use BACKPORT_DIR prefix on kconfig
- sources
+	id S1750936AbaKEVUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 16:20:06 -0500
+Message-ID: <1415222401.7485.13.camel@sipsolutions.net>
+Subject: Re: [PATCH v2 06/13] backports: update dependencies map file
 From: Johannes Berg <johannes@sipsolutions.net>
 To: "Luis R. Rodriguez" <mcgrof@suse.com>
 Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
         linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
         sassmann@kpanic.de
-Date: Wed, 05 Nov 2014 22:19:14 +0100
-In-Reply-To: <20141105201105.GO12953@wotan.suse.de>
+Date: Wed, 05 Nov 2014 22:20:01 +0100
+In-Reply-To: <20141105201326.GP12953@wotan.suse.de>
 References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1415157517-15442-6-git-send-email-mcgrof@do-not-panic.com>
-	 <1415173905.2589.5.camel@sipsolutions.net>
-	 <20141105201105.GO12953@wotan.suse.de>
+	 <1415157517-15442-7-git-send-email-mcgrof@do-not-panic.com>
+	 <1415174051.2589.6.camel@sipsolutions.net>
+	 <20141105201326.GP12953@wotan.suse.de>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.12.7-1 
 Mime-Version: 1.0
@@ -28,24 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 21:11 +0100, Luis R. Rodriguez wrote:
+On Wed, 2014-11-05 at 21:13 +0100, Luis R. Rodriguez wrote:
+> On Wed, Nov 05, 2014 at 08:54:11AM +0100, Johannes Berg wrote:
+> > On Tue, 2014-11-04 at 19:18 -0800, Luis R. Rodriguez wrote:
+> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > > 
+> > > During development of kernel integration support using CONFIG_BACKPORT
+> > > was evaluated as a prefix over CPTCFG even for packaging backports,
+> > > for some reason this change lifted some restrictions one some device
+> > > drivers which was present before and as such requires some changes to
+> > > the dependencies map file to ensure correct compilation for respective
+> > > kernel versions.
+> > 
+> > This is confusing ... I think what you're trying to say is that you
+> > noticed it because your integration system was broken and not honouring
+> > restrictions properly?
+> 
+> No I verified each reported case I got and verified the issues found
+> were valid. For some reason some of these drivers were not allowed to
+> compile on some older versions, and from what me and Hauke could tell
+> they should, but they weren't. So the new annotations on requirements
+> are valid.
 
-> This does mean that bp_prefix topic *can* also be tied down
-> with this other directory prefix as a form of 'builder' for
-> integration. Making the prefix configurable would make sense
-> then only if also making the directory prefix should be
-> configurable.
-
-Indeed.
-
-> I think we're better off right now with just supporting two
-> approaches with their own directory prefix, and prefixes
-> for variables.
-
-Sure, that's fine. I have no issues with either, but I'd like to see the
-two cases actually combined and separated, in the sense that you don't
-have magic code that tries both and just succeeds on one, but only have
-code that tries the right thing.
+Right, ok, it's just a roundabout way of describing that you audited the
+dependencies and found some unnecessary ones :-)
 
 johannes
 
