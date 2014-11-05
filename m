@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131AbaKEQC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:02:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50147 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791AbaKEQCz (ORCPT
+	id S1755486AbaKEQBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:01:45 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:43020 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755223AbaKEQBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:02:55 -0500
-Date: Wed, 5 Nov 2014 16:02:49 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Amos Kong <akong@redhat.com>
-Cc: stable@vger.kernel.org, gregkh@linuxfoundation.org, rusty@rustcorp.com.au,
-        amit.shah@redhat.com, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.16 stable PATCH 0/2] virtio-rng: two backports to fix stuck
-Message-ID: <20141105160249.GG9403@hercules>
-References: <1412981509-30025-1-git-send-email-akong@redhat.com>
- <20141104043227.GA13409@air.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141104043227.GA13409@air.redhat.com>
+	Wed, 5 Nov 2014 11:01:34 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 03/11] mfd: syscon: Add atmel-smc registers definition
+Date: Wed,  5 Nov 2014 17:01:19 +0100
+Message-Id: <1415203287-21517-4-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amos
+Atmel AT91 SoCs have a memory range reserved for SMC (Static Memory
+Controller) configuration.
+Expose those registers so that drivers can make use of the smc syscon
+declared in at91 DTs.
 
-On Tue, Nov 04, 2014 at 12:32:27PM +0800, Amos Kong wrote:
-> On Sat, Oct 11, 2014 at 06:51:47AM +0800, Amos Kong wrote:
-> > I received two mails about faile to apply patches to 3.16-stable tree:
-> > 
-> > FAILED: patch "[PATCH] virtio-rng: skip reading when we start to remove the device" failed to apply to 3.16-stable tree
-> > FAILED: patch "[PATCH] virtio-rng: fix stuck of hot-unplugging busy device" failed to apply to 3.16-stable tree
-> > 
-> > Amit already backported two patches for 3.16-stable, then cherry-pick
-> > of my two patches works.
-> > 
-> > Thanks.
-> 
-> Ping Greg, thanks.
->  
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ include/linux/mfd/syscon/atmel-smc.h | 60 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
+ create mode 100644 include/linux/mfd/syscon/atmel-smc.h
 
-I'm now doing the extended stable maintenance of the 3.16 kernel, as
-Greg has EOL'ed it.
+diff --git a/include/linux/mfd/syscon/atmel-smc.h b/include/linux/mfd/syscon/atmel-smc.h
+new file mode 100644
+index 0000000..430f486
+--- /dev/null
++++ b/include/linux/mfd/syscon/atmel-smc.h
+@@ -0,0 +1,60 @@
++/*
++ * Atmel SMC (Static Memory Controller) register offsets and bit definitions.
++ *
++ * Copyright (C) 2014 Atmel
++ * Copyright (C) 2014 Free Electrons
++ *
++ * Author: Boris Brezillon <boris.brezillon@free-electrons.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _LINUX_MFD_SYSCON_ATMEL_SMC_H_
++#define _LINUX_MFD_SYSCON_ATMEL_SMC_H_
++
++#include <linux/regmap.h>
++
++#define AT91SAM9_SMC_GENERIC_OFFSET	0x00
++#define AT91SAM9_SMC_GENERIC_BLK_SZ	0x10
++
++#define SAMA5_SMC_GENERIC_OFFSET	0x600
++#define SAMA5_SMC_GENERIC_BLK_SZ	0x14
++
++#define AT91SAM9_SMC_SETUP(o)		((o) + 0x00)
++#define AT91SAM9_SMC_NWESETUP_SHFT	0
++#define AT91SAM9_SMC_NCS_WRSETUP_SHFT	8
++#define AT91SAM9_SMC_NRDSETUP_SHFT	16
++#define AT91SAM9_SMC_NCS_NRDSETUP_SHFT	24
++
++#define AT91SAM9_SMC_PULSE(o)		((o) + 0x04)
++
++#define AT91SAM9_SMC_CYCLE(o)		((o) + 0x08)
++
++#define AT91SAM9_SMC_MODE(o)		((o) + 0x0c)
++#define SAMA5_SMC_MODE(o)		((o) + 0x10)
++#define AT91_SMC_READMODE		BIT(0)
++#define AT91_SMC_WRITEMODE		BIT(1)
++#define AT91_SMC_EXNWMODE		GENMASK(5, 4)
++#define AT91_SMC_EXNWMODE_DISABLE	(0 << 4)
++#define AT91_SMC_EXNWMODE_FROZEN	(2 << 4)
++#define AT91_SMC_EXNWMODE_READY		(3 << 4)
++#define AT91_SMC_BAT			BIT(8)
++#define AT91_SMC_BAT_SELECT		(0 << 8)
++#define AT91_SMC_BAT_WRITE		(1 << 8)
++#define AT91_SMC_DBW			GENMASK(13, 12)
++#define AT91_SMC_DBW_8			(0 << 12)
++#define AT91_SMC_DBW_16			(1 << 12)
++#define AT91_SMC_DBW_32			(2 << 12)
++#define AT91_SMC_TDF			GENMASK(19, 16)
++#define AT91_SMC_TDF_(x)		(((x) & 0xf) << 16)
++#define AT91_SMC_TDFMODE		BIT(20)
++#define AT91_SMC_PMEN			BIT(24)
++#define AT91_SMC_PS			GENMASK(29, 28)
++#define AT91_SMC_PS_4			(0 << 28)
++#define AT91_SMC_PS_8			(1 << 28)
++#define AT91_SMC_PS_16			(2 << 28)
++#define AT91_SMC_PS_32			(3 << 28)
++
++#endif /* _LINUX_MFD_SYSCON_ATMEL_SMC_H_ */
+-- 
+1.9.1
 
-Anyway, I will be queuing these 2 patches for the extended 3.16
-kernel.  Thank you!
-
-Cheers,
---
-Luís
-
-> > Amos Kong (2):
-> >   virtio-rng: fix stuck of hot-unplugging busy device
-> >   virtio-rng: skip reading when we start to remove the device
-> > 
-> >  drivers/char/hw_random/virtio-rng.c | 7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > -- 
-> > 1.9.3
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> 			Amos.
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
