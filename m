@@ -1,184 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaKEKIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:08:12 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:48462 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754133AbaKEKII convert rfc822-to-8bit (ORCPT
+	id S1754544AbaKEKI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:08:58 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:43266 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191AbaKEKIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:08:08 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="42889411"
-Message-ID: <5459F387.909@cn.fujitsu.com>
-Date: Wed, 5 Nov 2014 17:53:11 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Wed, 5 Nov 2014 05:08:55 -0500
 MIME-Version: 1.0
-To: <bcrl@kvack.org>, <akpm@linux-foundation.org>
-CC: Gu Zheng <guz.fnst@cn.fujitsu.com>, <linux-aio@kvack.org>,
-        <m.koenigshaus@wut.de>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] aio: fix uncorrent dirty pages accouting when truncating
- AIO ring buffer
-References: <1414750042-20832-1-git-send-email-guz.fnst@cn.fujitsu.com>
-In-Reply-To: <1414750042-20832-1-git-send-email-guz.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.167.226.100]
+X-Originating-IP: [2a01:e35:2434:4600:c0ab:7493:ff17:bb99]
+In-Reply-To: <1414784174.27420.327.camel@ul30vt.home>
+References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1414433284-31719-13-git-send-email-a.motakis@virtualopensystems.com> <1414784174.27420.327.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Wed, 5 Nov 2014 11:08:34 +0100
+Message-ID: <CAG8rG2wWEjr2ADayuqS9EKQp-2SP=X0QkD152W=jVsOGZVfeHg@mail.gmail.com>
+Subject: Re: [PATCH v9 12/19] vfio/platform: trigger an interrupt via eventfd
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Eric Auger <eric.auger@linaro.org>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping...
+On Fri, Oct 31, 2014 at 8:36 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Mon, 2014-10-27 at 19:07 +0100, Antonios Motakis wrote:
+>> This patch allows to set an eventfd for a patform device's interrupt,
+>> and also to trigger the interrupt eventfd from userspace for testing.
+>> Level sensitive interrupts are marked as maskable and are handled in
+>> a later patch. Edge triggered interrupts are not advertised as maskable
+>> and are implemented here using a simple and efficient IRQ handler.
+>>
+>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> ---
+>>  drivers/vfio/platform/vfio_platform_irq.c     | 93 ++++++++++++++++++++++++++-
+>>  drivers/vfio/platform/vfio_platform_private.h |  2 +
+>>  2 files changed, 93 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+>> index 007b386..2ac8ed7 100644
+>> --- a/drivers/vfio/platform/vfio_platform_irq.c
+>> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+>> @@ -45,11 +45,91 @@ static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
+>>       return -EINVAL;
+>>  }
+>>
+>> +static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
+>> +{
+>> +     struct vfio_platform_irq *irq_ctx = dev_id;
+>> +
+>> +     eventfd_signal(irq_ctx->trigger, 1);
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>> +
+>> +static int vfio_set_trigger(struct vfio_platform_device *vdev, int index,
+>> +                         int fd, irq_handler_t handler)
+>> +{
+>> +     struct vfio_platform_irq *irq = &vdev->irqs[index];
+>> +     struct eventfd_ctx *trigger;
+>> +     int ret;
+>> +
+>> +     if (irq->trigger) {
+>> +             free_irq(irq->hwirq, irq);
+>> +             kfree(irq->name);
+>> +             eventfd_ctx_put(irq->trigger);
+>> +             irq->trigger = NULL;
+>> +     }
+>> +
+>> +     if (fd < 0) /* Disable only */
+>> +             return 0;
+>> +
+>> +     irq->name = kasprintf(GFP_KERNEL, "vfio-irq[%d](%s)",
+>> +                                             irq->hwirq, vdev->name);
+>> +     if (!irq->name)
+>> +             return -ENOMEM;
+>> +
+>> +     trigger = eventfd_ctx_fdget(fd);
+>> +     if (IS_ERR(trigger)) {
+>> +             kfree(irq->name);
+>> +             return PTR_ERR(trigger);
+>> +     }
+>> +
+>> +     irq->trigger = trigger;
+>> +
+>> +     ret = request_irq(irq->hwirq, handler, 0, irq->name, irq);
+>> +     if (ret) {
+>> +             kfree(irq->name);
+>> +             eventfd_ctx_put(trigger);
+>> +             irq->trigger = NULL;
+>> +             return ret;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>> +
+>>  static int vfio_platform_set_irq_trigger(struct vfio_platform_device *vdev,
+>>                                    unsigned index, unsigned start,
+>>                                    unsigned count, uint32_t flags, void *data)
+>>  {
+>> -     return -EINVAL;
+>> +     struct vfio_platform_irq *irq = &vdev->irqs[index];
+>> +     irq_handler_t handler;
+>> +
+>> +     if (vdev->irqs[index].flags & VFIO_IRQ_INFO_MASKABLE)
+>> +             return -EINVAL; /* not implemented */
+>> +     else
+>> +             handler = vfio_irq_handler;
+>> +
+>> +     if (!count && (flags & VFIO_IRQ_SET_DATA_NONE))
+>> +             return vfio_set_trigger(vdev, index, -1, handler);
+>> +
+>> +     if (start != 0 || count != 1)
+>> +             return -EINVAL;
+>> +
+>> +     if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
+>> +             int32_t fd = *(int32_t *)data;
+>> +
+>> +             return vfio_set_trigger(vdev, index, fd, handler);
+>> +     }
+>> +
+>> +     if (flags & VFIO_IRQ_SET_DATA_NONE) {
+>> +             handler(irq->hwirq, irq);
+>> +
+>> +     } else if (flags & VFIO_IRQ_SET_DATA_BOOL) {
+>> +             uint8_t trigger = *(uint8_t *)data;
+>> +
+>> +             if (trigger)
+>> +                     handler(irq->hwirq, irq);
+>> +     }
+>> +
+>> +     return 0;
+>>  }
+>>
+>>  int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
+>> @@ -95,7 +175,11 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
+>>               if (hwirq < 0)
+>>                       goto err;
+>>
+>> -             vdev->irqs[i].flags = 0;
+>> +             vdev->irqs[i].flags = VFIO_IRQ_INFO_EVENTFD;
+>> +
+>> +             if (irq_get_trigger_type(hwirq) & IRQ_TYPE_LEVEL_MASK)
+>> +                     vdev->irqs[i].flags |= VFIO_IRQ_INFO_MASKABLE;
+>
+> This is a bit confusing because edge interrupts can support masking, but
+> they don't require it.  Level interrupts really must support masking
+> because we need to mask them on the host and therefore the user needs to
+> be able to unmask them (ignoring the irq prioritization thing you guys
+> can do on arm).  So this works, but I would really have expected
+> VFIO_IRQ_INFO_AUTOMASKED here and in the above function.
 
-On 10/31/2014 06:07 PM, Gu Zheng wrote:
+You're right, it will be clearer by using automasked as the defining
+property for level sensitive interrupts.
 
-> https://bugzilla.kernel.org/show_bug.cgi?id=86831
-> 
-> Markus reported that when shutting down mysqld (with AIO support,
-> on a ext3 formatted Harddrive) leads to a negative number of dirty pages
-> (underrun to the counter). The negative number results in a drastic reduction
-> of the write performance because the page cache is not used, because the kernel
-> thinks it is still 2 ^ 32 dirty pages open.
-> 
-> Add a warn trace in __dec_zone_state will catch this easily:
-> 
-> static inline void __dec_zone_state(struct zone *zone, enum
-> 	zone_stat_item item)
-> {
->      atomic_long_dec(&zone->vm_stat[item]);
-> +    WARN_ON_ONCE(item == NR_FILE_DIRTY &&
-> 	atomic_long_read(&zone->vm_stat[item]) < 0);
->      atomic_long_dec(&vm_stat[item]);
-> }
-> 
-> [   21.341632] ------------[ cut here ]------------
-> [   21.346294] WARNING: CPU: 0 PID: 309 at include/linux/vmstat.h:242
-> cancel_dirty_page+0x164/0x224()
-> [   21.355296] Modules linked in: wutbox_cp sata_mv
-> [   21.359968] CPU: 0 PID: 309 Comm: kworker/0:1 Not tainted 3.14.21-WuT #80
-> [   21.366793] Workqueue: events free_ioctx
-> [   21.370760] [<c0016a64>] (unwind_backtrace) from [<c0012f88>]
-> (show_stack+0x20/0x24)
-> [   21.378562] [<c0012f88>] (show_stack) from [<c03f8ccc>]
-> (dump_stack+0x24/0x28)
-> [   21.385840] [<c03f8ccc>] (dump_stack) from [<c0023ae4>]
-> (warn_slowpath_common+0x84/0x9c)
-> [   21.393976] [<c0023ae4>] (warn_slowpath_common) from [<c0023bb8>]
-> (warn_slowpath_null+0x2c/0x34)
-> [   21.402800] [<c0023bb8>] (warn_slowpath_null) from [<c00c0688>]
-> (cancel_dirty_page+0x164/0x224)
-> [   21.411524] [<c00c0688>] (cancel_dirty_page) from [<c00c080c>]
-> (truncate_inode_page+0x8c/0x158)
-> [   21.420272] [<c00c080c>] (truncate_inode_page) from [<c00c0a94>]
-> (truncate_inode_pages_range+0x11c/0x53c)
-> [   21.429890] [<c00c0a94>] (truncate_inode_pages_range) from
-> [<c00c0f6c>] (truncate_pagecache+0x88/0xac)
-> [   21.439252] [<c00c0f6c>] (truncate_pagecache) from [<c00c0fec>]
-> (truncate_setsize+0x5c/0x74)
-> [   21.447731] [<c00c0fec>] (truncate_setsize) from [<c013b3a8>]
-> (put_aio_ring_file.isra.14+0x34/0x90)
-> [   21.456826] [<c013b3a8>] (put_aio_ring_file.isra.14) from
-> [<c013b424>] (aio_free_ring+0x20/0xcc)
-> [   21.465660] [<c013b424>] (aio_free_ring) from [<c013b4f4>]
-> (free_ioctx+0x24/0x44)
-> [   21.473190] [<c013b4f4>] (free_ioctx) from [<c003d8d8>]
-> (process_one_work+0x134/0x47c)
-> [   21.481132] [<c003d8d8>] (process_one_work) from [<c003e988>]
-> (worker_thread+0x130/0x414)
-> [   21.489350] [<c003e988>] (worker_thread) from [<c00448ac>]
-> (kthread+0xd4/0xec)
-> [   21.496621] [<c00448ac>] (kthread) from [<c000ec18>]
-> (ret_from_fork+0x14/0x20)
-> [   21.503884] ---[ end trace 79c4bf42c038c9a1 ]---
-> 
-> The cause is that we set the aio ring file pages as *DIRTY* via SetPageDirty
-> (bypasses the VFS dirty pages increment) when init, and aio fs uses
-> *default_backing_dev_info* as the backing dev, which does not disable
-> the dirty pages accounting capability.
-> So truncating aio ring file contributes to accounting dirty pages,
-> error occurs.
-> The original goal is keeping these pages in memory (can not be reclaimed
-> or swapped) in life-time via marking it dirty. But thinking more,
-> pinning pages can already achieve the goal, so the SetPageDirty seems
-> unnecessary.
-> In order to fix the issue, using the __set_page_dirty_no_writeback instead
-> of the nop .set_page_dirty, and dropped the SetPageDirty (don't manually
-> set the dirty flags, don't disable set_page_dirty(), rely on default behaviour).
-> And an aio private backing dev info (disabled the ACCT_DIRTY/WRITEBACK/ACCT_WB
-> capabilities) is introduced to replace the default one to avoid accounting
-> dirty pages.
-> 
-> Reported-by: Markus Königshaus <m.koenigshaus@wut.de>
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Cc: stable <stable@vger.kernel.org>
-> ---
->  fs/aio.c |   18 +++++++++++-------
->  1 files changed, 11 insertions(+), 7 deletions(-)
-> 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 84a7510..b23dc31 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -165,6 +165,12 @@ static struct vfsmount *aio_mnt;
->  static const struct file_operations aio_ring_fops;
->  static const struct address_space_operations aio_ctx_aops;
->  
-> +static struct backing_dev_info aio_fs_backing_dev_info = {
-> +	.name           = "aiofs",
-> +	.state          = 0,
-> +	.capabilities   = BDI_CAP_NO_ACCT_AND_WRITEBACK | BDI_CAP_MAP_COPY,
-> +};
-> +
->  static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
->  {
->  	struct qstr this = QSTR_INIT("[aio]", 5);
-> @@ -176,6 +182,7 @@ static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
->  
->  	inode->i_mapping->a_ops = &aio_ctx_aops;
->  	inode->i_mapping->private_data = ctx;
-> +	inode->i_mapping->backing_dev_info = &aio_fs_backing_dev_info;
->  	inode->i_size = PAGE_SIZE * nr_pages;
->  
->  	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb, &this);
-> @@ -220,6 +227,9 @@ static int __init aio_setup(void)
->  	if (IS_ERR(aio_mnt))
->  		panic("Failed to create aio fs mount.");
->  
-> +	if (bdi_init(&aio_fs_backing_dev_info))
-> +		panic("Failed to init aio fs backing dev info.");
-> +
->  	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
->  	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
->  
-> @@ -281,11 +291,6 @@ static const struct file_operations aio_ring_fops = {
->  	.mmap = aio_ring_mmap,
->  };
->  
-> -static int aio_set_page_dirty(struct page *page)
-> -{
-> -	return 0;
-> -}
-> -
->  #if IS_ENABLED(CONFIG_MIGRATION)
->  static int aio_migratepage(struct address_space *mapping, struct page *new,
->  			struct page *old, enum migrate_mode mode)
-> @@ -357,7 +362,7 @@ out:
->  #endif
->  
->  static const struct address_space_operations aio_ctx_aops = {
-> -	.set_page_dirty = aio_set_page_dirty,
-> +	.set_page_dirty = __set_page_dirty_no_writeback,
->  #if IS_ENABLED(CONFIG_MIGRATION)
->  	.migratepage	= aio_migratepage,
->  #endif
-> @@ -412,7 +417,6 @@ static int aio_setup_ring(struct kioctx *ctx)
->  		pr_debug("pid(%d) page[%d]->count=%d\n",
->  			 current->pid, i, page_count(page));
->  		SetPageUptodate(page);
-> -		SetPageDirty(page);
->  		unlock_page(page);
->  
->  		ctx->ring_pages[i] = page;
-
-
+>
+>> +
+>>               vdev->irqs[i].count = 1;
+>>               vdev->irqs[i].hwirq = hwirq;
+>>       }
+>> @@ -110,6 +194,11 @@ err:
+>>
+>>  void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
+>>  {
+>> +     int i;
+>> +
+>> +     for (i = 0; i < vdev->num_irqs; i++)
+>> +             vfio_set_trigger(vdev, i, -1, NULL);
+>> +
+>>       vdev->num_irqs = 0;
+>>       kfree(vdev->irqs);
+>>  }
+>> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+>> index ffa2459..a3f2411 100644
+>> --- a/drivers/vfio/platform/vfio_platform_private.h
+>> +++ b/drivers/vfio/platform/vfio_platform_private.h
+>> @@ -28,6 +28,8 @@ struct vfio_platform_irq {
+>>       u32                     flags;
+>>       u32                     count;
+>>       int                     hwirq;
+>> +     char                    *name;
+>> +     struct eventfd_ctx      *trigger;
+>>  };
+>>
+>>  struct vfio_platform_region {
+>
+>
+>
