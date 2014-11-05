@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751065AbaKEWNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:13:14 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45088 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750926AbaKEWNM (ORCPT
+	id S1751249AbaKEWNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:13:54 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:48713 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaKEWNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:13:12 -0500
-Message-Id: <1415225591.3444747.187568145.134CEE91@webmail.messagingengine.com>
-X-Sasl-Enc: OsWyiODkv3Ay+zCqBlODb/Q5n2pRUuHn40ArTlHovsyG 1415225591
-From: Martin Tournoij <martin@arp242.net>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
+	Wed, 5 Nov 2014 17:13:52 -0500
+Date: Wed, 05 Nov 2014 17:13:48 -0500 (EST)
+Message-Id: <20141105.171348.1010570676094960613.davem@davemloft.net>
+To: gregory.0xf0@gmail.com
+Cc: netdev@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, carlos@redhat.com, eblake@redhat.com,
+        galak@codeaurora.org, f.fainelli@gmail.com, xiyou.wangcong@gmail.com
+Subject: Re: [PATCH] bridge: include in6.h in if_bridge.h for struct
+ in6_addr
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1415128881-30183-1-git-send-email-gregory.0xf0@gmail.com>
+References: <1415128881-30183-1-git-send-email-gregory.0xf0@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-c51dec4f
-In-Reply-To: <20141105201404.GH27083@thunk.org>
-References: <1415200663.3247743.187387481.75CE9317@webmail.messagingengine.com>
- <545A7B00.1040309@gmail.com> <20141105201404.GH27083@thunk.org>
-Subject: Re: [RFC] The SIGINFO signal from BSD
-Date: Wed, 05 Nov 2014 23:13:11 +0100
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 05 Nov 2014 14:13:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014, at 20:31, Austin S Hemmelgarn wrote:
-> The people to talk to about that for the core 
-> utilities on Linux would be the maintainers of the GNU coreutils, or 
-> whatever your distribution might use in their place (I think it's very 
-> unlikely that busybox or toybox would implement it however).
+From: Gregory Fong <gregory.0xf0@gmail.com>
+Date: Tue,  4 Nov 2014 11:21:21 -0800
 
-Well, if the kernel doesn't provide the feature, then we can be sure it
-will never be implemented :-)
-I thought this was a good place to start asking,, and even if GNU
-coreutils opt to not implement this for whatever reasons, other
-applications still can (mine will!)
-Besides, there are already many tools which use this feature when
-available, these would for with no or minimal adjustments.
+> if_bridge.h uses struct in6_addr ip6, but wasn't including the in6.h
+> header.  Thomas Backlund originally sent a patch to do this, but this
+> revealed a redefinition issue: https://lkml.org/lkml/2013/1/13/116
+> 
+> The redefinition issue should have been fixed by the following Linux
+> commits:
+> ee262ad827f89e2dc7851ec2986953b5b125c6bc inet: defines IPPROTO_* needed for module alias generation
+> cfd280c91253cc28e4919e349fa7a813b63e71e8 net: sync some IP headers with glibc
+> 
+> and the following glibc commit:
+> 6c82a2f8d7c8e21e39237225c819f182ae438db3 Coordinate IPv6 definitions for Linux and glibc
+> 
+> so actually include the header now.
+> 
+> Reported-by: Colin Guthrie <colin@mageia.org>
+> Reported-by: Christiaan Welvaart <cjw@daneel.dyndns.org>
+> Reported-by: Thomas Backlund <tmb@mageia.org>
+> Cc: Florian Fainelli <f.fainelli@gmail.com>
+> Cc: Cong Wang <xiyou.wangcong@gmail.com>
+> Cc: David Miller <davem@davemloft.net>
+> Signed-off-by: Gregory Fong <gregory.0xf0@gmail.com>
 
-
-On Wed, Nov 5, 2014, at 21:14, Theodore Ts'o wrote: 
-> In a world where we have a GUI desktop, I suspect implementing ^T is
-> much less interesting but if someone were to submit a patch to at
-> least make ^T send a SIGINFO, I can't think of a reason why it
-> wouldn't be accepted.  (BTW, if you're going to do this, note that ^T
-> could be remapped to any control character via stty; so to do this we
-> would need to define an extra index in c_cc[] array in the struct
-> termios.)
-
-Thanks, this is what I needed :-) I wondered if there is a specific reason
-it's not implemented, or if it was just something no one ever did.
-
-I can start my investigation in the kernel sources ;)
-
-Thanks,
-Martin
+Applied, thank you.
